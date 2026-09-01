@@ -11,9 +11,11 @@
 Invoke the `decompose-spec` skill (from `~/agent-skills`) with:
 
 - `spec` = `docs/rhema-design-spec.md` — the canonical, ratified (v1.0) Rhema design spec
-- `tickets_dir` = `docs/tickets` (gitignored; derived build scaffolding — the skill's native
-  per-ticket-file layout: one `P<phase>.<k>__<slug>.md` implement-spec contract per ticket plus a
-  `00_MANIFEST.md` runbook; the spec has named phases, so use phase-numbered filenames)
+- `tickets_dir` = `docs/tickets` (committed, tracked; a *derived* build artifact regenerable from the
+  spec — the skill's native per-ticket-file layout: one `P<phase>.<k>__<slug>.md` implement-spec
+  contract per ticket plus a `00_MANIFEST.md` runbook; the spec has named phases, so use
+  phase-numbered filenames). **Preserve any non-`NN_` maintained companions already in the dir —
+  notably `DEFERRALS.md` — do not overwrite or delete them on regeneration.**
 - `dispatch_target` = `manual` — tickets will be driven by hand-chained fresh sessions running
   `implement-spec spec=docs/tickets/<file>`, PRs stacking per the manifest's how-to-build
 - `build_name` = `rhema`
@@ -38,11 +40,11 @@ instance of the same layout. Rhema-specific binding constraints, all from the sp
    are evaluated.
 4. **Five contracts adopted by reference** (spec §0.1): tickets implementing them must open the
    named design-doc sections (design/3 §3.2–3.3, design/4 §6.3, design/7 §8, design/9 §7.2 —
-   gitignored under `docs/design/`) and apply the spec's renames from Appendix A.
+   tracked under `docs/design/`) and apply the spec's renames from Appendix A.
 5. **Stack and conventions:** TypeScript everywhere, no Python (Q-3; the sanctioned Docling
    sidecar exception is deferred per the spec); pnpm + Turborepo monorepo, SST stages, AWS-first
-   per §13; closed-source but open-source-ready (Q-19). Ensure `docs/tickets/` is in
-   `.gitignore` before writing.
+   per §13; closed-source but open-source-ready (Q-19). `docs/` (spec, design, research, tickets) is
+   committed and tracked — do not gitignore it.
 6. **Acceptance criteria:** draw from the spec's AC hooks (Appendix A); hooks marked
    "to write (O6)" must be written now, in the ticket, as testable criteria. Feature-matrix row
    numbers (§3.2) are the epic ids.

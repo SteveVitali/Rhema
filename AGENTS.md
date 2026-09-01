@@ -4,8 +4,9 @@ This file is authoritative for the conventions **every later ticket inherits** (
 lint rules, CI job names, stage names). P0.01 owns it. Read it before adding code.
 
 ## Deferred obligations — READ FIRST, EVERY RUN
-`DEFERRALS.md` is the durable ledger of acceptance criteria/deliverables a ticket could not fully
-satisfy at implementation time (usually needing a live AWS deploy or a HUMAN prerequisite like H0).
+`docs/tickets/DEFERRALS.md` is the durable ledger of acceptance criteria/deliverables a ticket could
+not fully satisfy at implementation time (usually needing a live AWS deploy or a HUMAN prerequisite
+like H0).
 At the **start of every `implement-spec` run**: read `DEFERRALS.md`; if this ticket — or a
 prerequisite it depends on — unblocks any `OPEN` row, **closing that row (verify for real, flip to
 `DONE` with evidence) is part of your run**. When you defer something new, append a row in the same

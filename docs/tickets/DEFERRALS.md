@@ -1,5 +1,10 @@
 # Deferred obligations ledger
 
+> **Maintained companion — NOT a generated ticket.** This file is hand-maintained and committed. It
+> is not produced by `decompose-spec` and must be **preserved across any ticket regeneration** — never
+> overwritten or deleted. Rows are append-only (see rules below). It has no `NN_` sequence prefix
+> precisely so it is not mistaken for a chain ticket.
+
 Durable, in-repo record of **acceptance criteria and deliverables that a ticket could not fully
 satisfy at implementation time** — almost always because they need a live AWS deploy or a HUMAN
 prerequisite (Phase 0a / H0 etc.) that was not yet done. Each row names how it was proxied now, what

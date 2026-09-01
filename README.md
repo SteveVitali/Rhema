@@ -23,4 +23,5 @@ pnpm test
 - `tools/` — repo-local tooling (ESLint plugin)
 
 See `AGENTS.md` for conventions, `CONTRIBUTING.md` to get started, `SECURITY.md` for the security
-posture, and `LICENSES.md` for the dependency licence policy.
+posture, `LICENSES.md` for the dependency licence policy, and `docs/tickets/DEFERRALS.md` for the
+ledger of acceptance criteria deferred to later prerequisites (e.g. live AWS deploys).
