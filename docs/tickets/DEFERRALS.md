@@ -39,4 +39,10 @@ Status values: `OPEN` (owed) · `DONE` (verified — add date + evidence) · `WO
 | D-P0.01-5 | **IAM as code** — explicit least-privilege policies | SST `link:` grants scoped access implicitly; explicit policies not yet authored | Security hardening | Author + review explicit IAM policy documents per service | `sst.config.ts` `link:` grants | ACCEPTED-SKELETON (revisit: P1.22) |
 | D-P0.01-6 | Non-sandbox subnets sized `/20` | Only the sandbox subnet is explicitly `/20`; SST manages the public/private subnets | Infra hardening | Confirm/adjust SST-managed subnet CIDR masks to `/20` | `sst.config.ts` sandbox `/20` | ACCEPTED-SKELETON (revisit: infra hardening) |
 
+## P0.02 — contracts & data model (PR #2)
+
+| ID | Item (AC / deliverable) | Why deferred | Unblocked by | How to verify when unblocked | Proxy in place now | Status |
+|---|---|---|---|---|---|---|
+| D-P0.02-1 | Run the forward-only migrations + real-project seed against a **server** Postgres (the CI `postgres:16` service / real Aurora), not only the in-process PGlite build | The deterministic DB ACs run on PGlite (a real Postgres compiled to WASM) in the unit/contracts jobs — no DB service needed; the server-Postgres run belongs in the `integration` job, which P0.08 fills | **P0.08** (fills the `integration` CI job + wires a pg client) | In the integration job: connect the `pg` client to the `postgres:16` service, run `applyMigrations` + `seedRealProjects`, assert success | `@rhema/db` `applyMigrations`/`seedRealProjects` are engine-agnostic (an `{exec,query}` target); PGlite covers AC2 now (migrate/seed/rls/invariants tests) | ACCEPTED-SKELETON (revisit: P0.08 integration job) |
+
 <!-- Later tickets append their own sections below. Keep the newest ticket's section at the bottom. -->

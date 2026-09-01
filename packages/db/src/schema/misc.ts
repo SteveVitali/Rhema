@@ -1,0 +1,83 @@
+import { pgTable, text, integer, timestamp, boolean, jsonb, unique } from "drizzle-orm/pg-core";
+
+// Guidance, threads, protocols, notifications, figures — mirrors migrations/0002_schema.sql.
+
+export const guidance = pgTable("guidance", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id"),
+  source: text("source"),
+  anchors: jsonb("anchors"),
+  body: text("body").notNull(),
+  standing: boolean("standing").notNull().default(false),
+  createdBy: jsonb("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const threads = pgTable("threads", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id"),
+  name: text("name"),
+  sessionStoreKey: text("session_store_key"),
+  briefKey: text("brief_key"),
+  createdBy: text("created_by"),
+  archivedAt: timestamp("archived_at"),
+});
+
+export const protocols = pgTable(
+  "protocols",
+  {
+    id: text("id").notNull(),
+    version: integer("version").notNull(),
+    body: jsonb("body").notNull(),
+    seededAt: timestamp("seeded_at").notNull().defaultNow(),
+    venueTableVerifiedAt: timestamp("venue_table_verified_at"),
+  },
+  (t) => ({ idVersion: unique().on(t.id, t.version) }),
+);
+
+export const inboxItems = pgTable("inbox_items", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  projectId: text("project_id"),
+  kind: text("kind").notNull(),
+  payload: jsonb("payload").notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const notificationDevices = pgTable("notification_devices", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  platform: text("platform").notNull(),
+  token: text("token").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const notificationPrefs = pgTable("notification_prefs", {
+  userId: text("user_id").primaryKey(),
+  prefs: jsonb("prefs").notNull().default({}),
+});
+
+export const figures = pgTable("figures", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id"),
+  artifactId: text("artifact_id"),
+  specKind: text("spec_kind").notNull(),
+  specVersionId: text("spec_version_id"),
+  dataVersionId: text("data_version_id"),
+  renderedVersionId: text("rendered_version_id"),
+  caption: text("caption"),
+  alt: text("alt"),
+  sourceLine: text("source_line"),
+  provenance: jsonb("provenance"),
+  insertedInDraftId: text("inserted_in_draft_id"),
+});
+
+export const figureVersions = pgTable("figure_versions", {
+  id: text("id").primaryKey(),
+  figureId: text("figure_id").notNull(),
+  ordinal: integer("ordinal").notNull(),
+  specVersionId: text("spec_version_id"),
+  renderedVersionId: text("rendered_version_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

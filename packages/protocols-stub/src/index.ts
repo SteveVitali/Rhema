@@ -6,7 +6,7 @@
 // deliberately NO rubric text, calibration language, skill prompts, or protocol markers (REQ-ARCH-33).
 // The `public-safe` CI job builds exactly this.
 
-import type { RigorLevel, Seat } from "@rhema/contracts";
+import type { Rigor, AgentTypeKey } from "@rhema/contracts";
 
 /** Phase class routing category (§12.2 / §12.3). */
 export type PhaseClass = "research" | "judge" | "generate" | "package";
@@ -17,12 +17,12 @@ export interface PhaseManifest {
   index: number;
   label: string;
   skillPhase: string;
-  seat: Seat;
+  seat: AgentTypeKey;
   artifacts: string[];
   predicates: string[];
   sidecars: string[];
   gateAfter?: string;
-  optional?: RigorLevel;
+  optional?: Rigor;
   phaseClass: PhaseClass;
   parallelGroup?: string;
   maxIterations?: number;
@@ -52,7 +52,7 @@ export const fixtureManifest: WorkflowManifest = {
       index: 0,
       label: "Fixture phase",
       skillPhase: "0",
-      seat: "harness",
+      seat: "system",
       artifacts: [],
       predicates: [],
       sidecars: [],

@@ -1,0 +1,93 @@
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 6,
+      "text": "Investigators showed a grand jury a diagram of the surveillance operation.",
+      "tier": 1,
+      "verdict": "substantially_accurate",
+      "kind": "factual",
+      "url": "https://minnesotareformer.com/",
+      "normalizedUrl": "minnesotareformer.com",
+      "accessedAt": "2026-08-21T00:00:00Z",
+      "note": "Minnesota Reformer's report of a grand-jury diagram; re-attribute from [1] (AP) to [2].",
+      "sourceCheck": "matches_citation",
+      "humanAdded": false,
+      "anchor": {
+        "blockId": "p-intro-2",
+        "quote": "shown to a grand jury",
+        "startOffset": 41,
+        "endOffset": 62,
+        "confidence": 0.94
+      }
+    },
+    {
+      "ordinal": 39,
+      "text": "The constitutionality of the entire operation was challenged in court.",
+      "tier": 1,
+      "verdict": "substantially_accurate",
+      "kind": "factual",
+      "url": "https://www.fbi.gov/history",
+      "normalizedUrl": "fbi.gov/history",
+      "accessedAt": "2026-08-21T00:00:00Z",
+      "note": "FBI's reachable history page reads 'questioned', not 'challenged'; soften the final clause.",
+      "humanAdded": false
+    },
+    {
+      "ordinal": 49,
+      "text": "The ruling likened the arrangement to leaving the government's fox in charge of the henhouse.",
+      "tier": 1,
+      "verdict": "verified",
+      "kind": "quotation",
+      "url": "https://www.courtlistener.com/",
+      "normalizedUrl": "courtlistener.com",
+      "accessedAt": "2026-08-21T00:00:00Z",
+      "note": "Quote truncated in the draft; full ruling reads 'the Washington Post's henhouse'.",
+      "sources": [
+        {
+          "url": "https://www.courtlistener.com/",
+          "normalizedUrl": "courtlistener.com",
+          "accessedAt": "2026-08-21T00:00:00Z",
+          "stance": "supports",
+          "note": "primary court document"
+        }
+      ],
+      "humanAdded": false,
+      "anchor": {
+        "blockId": "p-sec9-4",
+        "quote": "fox in charge of the henhouse",
+        "startOffset": 12,
+        "endOffset": 41,
+        "confidence": 0.98
+      }
+    },
+    {
+      "ordinal": 51,
+      "text": "Philadelphia Yearly Meeting v. DHS granted a preliminary injunction, affirmed on appeal.",
+      "tier": 1,
+      "verdict": "verified",
+      "kind": "factual",
+      "url": "https://clearinghouse.net/case/45979",
+      "normalizedUrl": "clearinghouse.net/case/45979",
+      "accessedAt": "2026-08-21T00:00:00Z",
+      "note": "Content is true; the draft's pointer to case/46097 (Mennonite Church USA v. DHS, PI denied) is wrong.",
+      "sources": [
+        {
+          "url": "https://clearinghouse.net/case/45979",
+          "normalizedUrl": "clearinghouse.net/case/45979",
+          "accessedAt": "2026-08-21T00:00:00Z",
+          "stance": "supports"
+        },
+        {
+          "url": "https://clearinghouse.net/case/46097",
+          "normalizedUrl": "clearinghouse.net/case/46097",
+          "accessedAt": "2026-08-21T00:00:00Z",
+          "stance": "contradicts",
+          "note": "the mis-cited case: PI was denied here"
+        }
+      ],
+      "humanAdded": false
+    }
+  ]
+}
