@@ -1,0 +1,24 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "remoteCache": {
+    "enabled": true
+  },
+  "globalDependencies": ["tsconfig.base.json", ".npmrc"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "*.tsbuildinfo"]
+    },
+    "typecheck": {
+      "dependsOn": ["build"]
+    },
+    "lint": {
+      "dependsOn": []
+    },
+    "test": {
+      "dependsOn": [],
+      "outputs": ["coverage/**"]
+    }
+  }
+}

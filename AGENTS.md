@@ -1,0 +1,56 @@
+# AGENTS.md — Rhema monorepo conventions
+
+This file is authoritative for the conventions **every later ticket inherits** (package boundaries,
+lint rules, CI job names, stage names). P0.01 owns it. Read it before adding code.
+
+## Stack (Q-3, §13.1)
+TypeScript **end-to-end; no Python anywhere**. pnpm + Turborepo; SST v3 stages; AWS-first. Node ≥ 20
+(CI: 22). Test runner: Vitest. Linter: ESLint 9 flat config. Formatter: Prettier.
+
+## Commands
+```bash
+pnpm install                       # runs against public stubs unless RHEMA_PROTOCOLS_PATH is set
+pnpm turbo build lint typecheck    # the green gate (per-package, remote-cached)
+pnpm test                          # vitest, colocated *.test.ts
+pnpm check:licenses                # licence allowlist + exceptions (public-safe)
+pnpm check:protocol-markers        # no protocol IP in public bundles (public-safe)
+```
+
+## Bazel-compatible invariants (enforced, not advised)
+1. **Explicit per-package dependencies.** Import only what a package's `package.json` declares.
+2. **Project references.** Every package is a composite TS project; `tsc -b` builds the graph.
+3. **No cross-package relative imports.** Cross the package boundary only via `@rhema/*`
+   (`eslint-plugin-rhema/no-cross-package-relative-import`). Within a package, relative imports must
+   carry the `.js` extension (NodeNext).
+4. **Canonical vocabulary** (Appendix D.2; REQ-SPEC-2). Plans / model tiers / rigor / seats /
+   approvals are disjoint and verbatim; banned synonyms are lint-errors
+   (`eslint-plugin-rhema/no-banned-strings`). The harness is **never** called "Claude Code" in
+   user-facing strings.
+
+## Adding a package
+1. Create `apps/<name>` or `packages/<name>` with `package.json` (`@rhema/<name>`, `type: module`,
+   `build`/`typecheck`/`lint` scripts) and a `tsconfig.json` extending `../../tsconfig.base.json` with
+   `references` to each `@rhema/*` dependency.
+2. Add it to the root `tsconfig.json` `references` and (if a new container) `sst.config.ts`.
+3. Colocate tests as `*.test.ts` (excluded from `tsc` build; run by Vitest).
+
+## Private packages (REQ-ARCH-37)
+`@rhema/protocols` and `@rhema/evals` resolve **by path** to a separate private checkout when
+`RHEMA_PROTOCOLS_PATH` / `RHEMA_EVALS_PATH` are set (see `.pnpmfile.cjs`), and fall back to
+`packages/protocols-stub` / `evals-stub` otherwise — **never git submodules**. A public clone and the
+`public-safe` CI job build against the stubs. No protocol text (skills, rubrics, calibration language,
+prompts) may reach a client bundle, the OpenAPI document, or an event payload (REQ-ARCH-33).
+
+## Stages (§13.2)
+`dev` (shared integration), `pr-<n>` (per-PR preview: 0-ACU Aurora, isolated buckets, Base tier,
+`max_usd` $3/run, never production secrets — REQ-ARCH-38), `prod` (Aurora ≥ 4 ACU floor). Stage facts
+live in `infra/config/stages.ts` and are unit-tested; `sst.config.ts` consumes them.
+
+## CI jobs (§13.2), in order
+`typecheck/lint/unit` → `contracts` → `integration` → `images` → `public-safe`. Jobs may be thin
+placeholders that later tickets fill; the pipeline, licence policy, and public-safe checks are real.
+
+## Secrets (REQ-ARCH-30)
+Never in the repo (gitleaks-scanned). Provider keys only in `egress-proxy`; Stripe/Better-Auth secrets
+in Secrets Manager/SSM. No secret as a plaintext env var to `web`/`collab`. Never reachable from the
+model's process.

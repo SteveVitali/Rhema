@@ -1,0 +1,13 @@
+{
+  "name": "eslint-plugin-rhema",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repo-local ESLint rules enforcing the monorepo's Bazel-compatible invariants and canonical vocabulary (spec §13.2, cross-cutting invariant 1).",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": ["index.js", "rules"]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@rhema/infra",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SST v3 stages, VPC/Aurora/S3/Redis/ECS scaffolding, IAM as code, retention + provenance config (spec §13.2/§13.3).",
+  "license": "MIT",
+  "main": "./dist/config/index.js",
+  "types": "./dist/config/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/config/index.d.ts", "default": "./dist/config/index.js" }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "deploy": "sst deploy",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*"
+  }
+}

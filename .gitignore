@@ -10,3 +10,9 @@ build/
 .env
 .env.*
 !.env.example
+provenance-artifacts/
+# Private checkouts (REQ-ARCH-33/37): never commit protocol/eval IP. The public stubs
+# (packages/protocols-stub, evals-stub) are the tracked fallbacks; an in-tree private checkout at
+# these paths must stay untracked. Sanctioned resolution is external via RHEMA_PROTOCOLS_PATH.
+packages/protocols/
+evals/

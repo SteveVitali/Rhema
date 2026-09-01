@@ -1,0 +1,14 @@
+# gitleaks config for the `public-safe` CI job (spec §13.2). Extends the upstream default ruleset;
+# secrets live only in Secrets Manager/SSM (REQ-ARCH-30), never in the repo, so any hit fails CI.
+title = "Rhema gitleaks policy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Paths that are documentation or fixtures, not secret-bearing source."
+paths = [
+  '''docs/.*''',
+  '''.*\.example$''',
+  '''pnpm-lock\.yaml''',
+]

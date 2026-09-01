@@ -1,0 +1,16 @@
+{
+  "$comment": "Permissive SPDX licences allowed with no per-package rationale (REQ-ARCH-40, spec §13.2). Anything not here fails the public-safe CI job unless it is listed in licenses.exceptions.json. SSPL / BUSL (BSL) / AGPL are never allowlisted.",
+  "allow": [
+    "MIT",
+    "MIT-0",
+    "ISC",
+    "0BSD",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Apache-2.0",
+    "BlueOak-1.0.0",
+    "CC0-1.0",
+    "Unlicense",
+    "Python-2.0"
+  ]
+}

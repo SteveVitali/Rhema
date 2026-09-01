@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["config"],
+  "//": "sst.config.ts is executed/bundled by the SST CLI (which supplies the `sst` global types),",
+  "//2": "so it is intentionally excluded from tsc -b. The pure config in config/ IS typechecked.",
+  "exclude": ["dist", "sst.config.ts", "**/*.test.ts", "node_modules"],
+  "references": [{ "path": "../packages/contracts" }]
+}

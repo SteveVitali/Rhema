@@ -1,0 +1,12 @@
+# pnpm workspace — the monorepo package graph (spec §13.2).
+# Bazel-compatible invariant: every package is an explicit member; cross-package code is consumed
+# only through the `@rhema/*` package graph, never a relative import that escapes a package.
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "infra"
+  - "evals-stub"
+  - "tools/*"
+  # `packages/protocols` and `evals/` are PRIVATE, resolved by path when present (REQ-ARCH-37).
+  # They are gitignored and absent from a public clone, which then builds against the stubs
+  # (`packages/protocols-stub` published as @rhema/protocols; `evals-stub` as @rhema/evals).

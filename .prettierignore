@@ -1,0 +1,8 @@
+dist
+node_modules
+.turbo
+.sst
+*.tsbuildinfo
+pnpm-lock.yaml
+docs
+.agents

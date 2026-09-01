@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/harness"
+    },
+    {
+      "path": "../../packages/hooks"
+    },
+    {
+      "path": "../../packages/protocols-stub"
+    }
+  ],
+  "exclude": [
+    "dist",
+    "**/*.test.ts"
+  ]
+}
