@@ -1,2 +1,12 @@
+.agents/
 agent-scratch/
+node_modules/
 .DS_Store
+.sst/
+.turbo/
+dist/
+build/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
