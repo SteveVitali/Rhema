@@ -7,6 +7,7 @@ packages:
   - "infra"
   - "evals-stub"
   - "tools/*"
-  # `packages/protocols` and `evals/` are PRIVATE, resolved by path when present (REQ-ARCH-37).
-  # They are gitignored and absent from a public clone, which then builds against the stubs
-  # (`packages/protocols-stub` published as @rhema/protocols; `evals-stub` as @rhema/evals).
+  # `packages/protocols` is a COMMITTED member (name `@rhema/protocols`); the renamed public fallback
+  # `@rhema/protocols-stub` (dir `packages/protocols-stub`) is swapped in only at open-source export.
+  # `evals/` remains PRIVATE, resolved by path (REQ-ARCH-37) with `evals-stub` (`@rhema/evals`) as its
+  # fallback via `.pnpmfile.cjs`; a public clone builds against that stub.

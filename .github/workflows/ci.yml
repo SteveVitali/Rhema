@@ -32,11 +32,15 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      # Build WITHOUT the private protocols checkout — a public clone must build against stubs
-      # (REQ-ARCH-37). RHEMA_PROTOCOLS_PATH is intentionally unset here.
+      # `@rhema/protocols` is a committed workspace member, so the whole graph (incl. the ported skills,
+      # manifests, parsers/serializers and their tests) builds and tests here. `@rhema/evals` still
+      # resolves to its stub (RHEMA_EVALS_PATH unset).
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build lint typecheck
       - run: pnpm test
+      # Upstream-diff gate (REQ-ARCH-5; AC1): the ported skills equal the vendored pin + only sanctioned
+      # edits. Self-contained (reads packages/protocols/upstream-pin) — no external repo needed.
+      - run: node scripts/check-upstream-diff.mjs
 
   contracts:
     name: contracts
@@ -137,9 +141,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      # Build STUB-ONLY: no private protocols/evals checkout present (REQ-ARCH-37).
+      # Prove the open-source-export fallback builds: `@rhema/protocols-stub` (swapped in for the
+      # committed `@rhema/protocols` at export) and the `@rhema/evals` stub (RHEMA_EVALS_PATH unset).
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo build --filter=@rhema/protocols --filter=@rhema/evals
+      - run: pnpm turbo build --filter=@rhema/protocols-stub --filter=@rhema/evals
       - name: gitleaks (no secrets in the repo — REQ-ARCH-30)
         uses: gitleaks/gitleaks-action@v2
         env:

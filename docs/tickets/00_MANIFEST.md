@@ -212,9 +212,10 @@ this gate reads.
    seats / approvals are disjoint, verbatim, lint-enforced; banned strings never appear.
 2. **TypeScript everywhere; no Python** (Q-3; the Docling sidecar exception is deferred, not used).
    Licence allowlist + checked-in exception list (REQ-ARCH-40).
-3. **Closed-source, open-source-ready** (Q-19): `packages/protocols` + `evals/` private,
-   path-resolved; no protocol text in client bundles, OpenAPI, or events (REQ-ARCH-33; SS §8.4);
-   public clone builds with stubs.
+3. **Closed-source, open-source-ready** (Q-19): `packages/protocols` is a **committed member** of this
+   private repo (amended 2026-09-01); `evals/` stays private + path-resolved. No protocol/eval text in
+   client bundles, OpenAPI, or events (REQ-ARCH-33; SS §8.4); a public export drops `packages/protocols`
+   and swaps in `@rhema/protocols-stub`, and the `public-safe` job builds that stub.
 4. **Five contracts adopted by reference** (§0.1): design/3 §3.2 + §3.3, design/4 §6.3, design/7
    §8, design/9 §7.2 — tickets implementing them open the named sections and apply Appendix A's
    renames (REQ-IDE-50).
@@ -349,8 +350,12 @@ has exactly one owner.
 
 ## Spec amendments applied
 
-*(append one line whenever `docs/rhema-design-spec.md` is amended and ticket Load/AC lines are
-updated to match — none yet)*
+- **2026-09-01 (REQ-ARCH-37 / §13.2 / cross-cutting invariant 3):** `packages/protocols` moved from a
+  gitignored path-resolved private checkout to a **committed workspace member** (operator decision — the
+  repo is private). Open-source-readiness is now an export-time swap to `@rhema/protocols-stub` (renamed
+  from `@rhema/protocols`), not a live resolution; `.pnpmfile.cjs` path-resolution now covers `@rhema/evals`
+  only; the ported skills are drift-checked against the vendored pin `packages/protocols/upstream-pin/`.
+  Affects P0.01 (private-package wiring) and P0.03 (the protocols package now lands in-tree, tracked).
 
 ## Decomposition decisions (operator may veto; see the session report)
 

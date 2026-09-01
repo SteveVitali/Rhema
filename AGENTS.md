@@ -44,11 +44,15 @@ pnpm check:protocol-markers        # no protocol IP in public bundles (public-sa
 2. Add it to the root `tsconfig.json` `references` and (if a new container) `sst.config.ts`.
 3. Colocate tests as `*.test.ts` (excluded from `tsc` build; run by Vitest).
 
-## Private packages (REQ-ARCH-37)
-`@rhema/protocols` and `@rhema/evals` resolve **by path** to a separate private checkout when
-`RHEMA_PROTOCOLS_PATH` / `RHEMA_EVALS_PATH` are set (see `.pnpmfile.cjs`), and fall back to
-`packages/protocols-stub` / `evals-stub` otherwise — **never git submodules**. A public clone and the
-`public-safe` CI job build against the stubs. No protocol text (skills, rubrics, calibration language,
+## Private packages (REQ-ARCH-37, amended 2026-09-01)
+`@rhema/protocols` is a **committed workspace member** (`packages/protocols`): this repo is private, so
+the protocol IP lives in its history. Open-source-readiness is an **export-time swap** — a public export
+drops `packages/protocols` and renames `@rhema/protocols-stub` (`packages/protocols-stub`) back to
+`@rhema/protocols`; the `public-safe` CI job builds that stub to prove the fallback still compiles. The
+drift gate `scripts/check-upstream-diff.mjs` verifies the ported skills against the vendored pin at
+`packages/protocols/upstream-pin/` (REQ-ARCH-5). `@rhema/evals` is still **path-resolved** to a separate
+private checkout when `RHEMA_EVALS_PATH` is set (see `.pnpmfile.cjs`), falling back to `evals-stub`
+otherwise — **never git submodules**. No protocol/eval text (skills, rubrics, calibration language,
 prompts) may reach a client bundle, the OpenAPI document, or an event payload (REQ-ARCH-33).
 
 ## Stages (§13.2)

@@ -8,6 +8,7 @@
     { "path": "packages/engine" },
     { "path": "packages/hooks" },
     { "path": "packages/harness" },
+    { "path": "packages/protocols" },
     { "path": "packages/protocols-stub" },
     { "path": "packages/measure" },
     { "path": "packages/figures" },

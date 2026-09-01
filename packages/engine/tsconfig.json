@@ -12,7 +12,7 @@
       "path": "../contracts"
     },
     {
-      "path": "../protocols-stub"
+      "path": "../protocols"
     }
   ],
   "exclude": [
