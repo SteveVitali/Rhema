@@ -22,6 +22,13 @@ and a filename ever disagree.
 > the canonical spec, not committed. `implement-spec` reads them from the working tree.
 > The machine ledger `orchestrate-build` parses lives at `.agents/scratch/rhema-build-ledger.md`.
 
+> **Deferrals ledger:** acceptance criteria/deliverables a ticket cannot finish at implementation
+> time (live AWS deploys, HUMAN prerequisites) are tracked in **`DEFERRALS.md` at the repo root** —
+> deliberately NOT here, because these docs are gitignored/derived and a record of real, verified
+> deferrals must be committed and survive regeneration. Every `implement-spec` run reads it (via
+> `AGENTS.md`) and closes any row this ticket or its prerequisites unblock; phase-exit GATE rows must
+> not pass while an `OPEN` row scoped to that phase remains.
+
 Stack: **TypeScript everywhere, no Python** (Q-3); pnpm + Turborepo; SST stages; AWS-first (§13);
 closed-source but open-source-ready (Q-19).
 
