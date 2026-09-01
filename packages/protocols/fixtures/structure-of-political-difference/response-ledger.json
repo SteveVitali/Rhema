@@ -1,0 +1,83 @@
+{
+  "sidecar": "response_ledger",
+  "version": 1,
+  "entries": [
+    {
+      "findingOrdinal": 1,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "'Why five axes' is unargued and the neighbours (8values, Lewis, Caplan) go unnamed; state the selection principle and situate the alternatives.",
+        "adaptedText": "Five axes, not eight, because each earns its place by predicting a coalition the others cannot.",
+        "moveOrdinal": 1
+      },
+      "anchor": {
+        "blockId": "p-sec2-1",
+        "quote": "Five axes",
+        "startOffset": 0,
+        "endOffset": 9,
+        "confidence": 0.84
+      }
+    },
+    {
+      "findingOrdinal": 2,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "The CHES-derived composites are unfalsifiable and irreproducible as presented; caption the method and mark the caveat.",
+        "moveOrdinal": 2
+      }
+    },
+    {
+      "findingOrdinal": 3,
+      "disposition": {
+        "kind": "accept",
+        "status": "done",
+        "rationale": "The Trump and Orbán profiles violate the essay's own rules and read as Misleading; correct them against C23a/d.",
+        "moveOrdinal": 3,
+        "applied": true
+      },
+      "anchor": {
+        "blockId": "p-profile-orban-2",
+        "quote": "Orbán",
+        "startOffset": 0,
+        "endOffset": 5,
+        "confidence": 0.79
+      }
+    },
+    {
+      "findingOrdinal": 4,
+      "disposition": {
+        "kind": "accept",
+        "status": "verified",
+        "rationale": "Attribution debts to Müller, Akkerman, welfare chauvinism, and Collier & Mahon; add the citations.",
+        "moveOrdinal": 4,
+        "applied": true
+      }
+    },
+    {
+      "findingOrdinal": 5,
+      "disposition": {
+        "kind": "escalate",
+        "status": "escalated",
+        "rationale": "Whether to retitle the piece is an identity-level call for the author; escalated and resolved by guidance in favour of the working title."
+      }
+    },
+    {
+      "findingOrdinal": 6,
+      "disposition": {
+        "kind": "rebut",
+        "status": "done",
+        "rationale": "The second read's 'graveyard of compasses' framing misreads the piece's purpose; the typology is a predictive instrument, not another compass. Clarify the framing paragraph but hold the design."
+      }
+    },
+    {
+      "findingOrdinal": 7,
+      "disposition": {
+        "kind": "defer",
+        "status": "deferred",
+        "rationale": "A full worked Green-party example is worth doing but belongs to the next round's agenda."
+      }
+    }
+  ]
+}

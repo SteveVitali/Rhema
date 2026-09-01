@@ -1,0 +1,75 @@
+{
+  "sidecar": "response_ledger",
+  "version": 1,
+  "entries": [
+    {
+      "findingOrdinal": 1,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "The piece doesn't name its conversation; situate it against Balkin's National Surveillance State and Snowden's turnkey-tyranny framing in the opening.",
+        "adaptedText": "Snowden called it turnkey tyranny; Balkin mapped the National Surveillance State — this essay works the seam between them.",
+        "moveOrdinal": 1
+      },
+      "anchor": {
+        "blockId": "p-thesis-1",
+        "quote": "Snowden called it turnkey tyranny; Balkin mapped the National Surveillance State",
+        "startOffset": 0,
+        "endOffset": 79,
+        "confidence": 0.88
+      }
+    },
+    {
+      "findingOrdinal": 2,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "Chilling is under-evidenced and Posner's collection/use distinction is left unanswered; answer it in §XI on non-domination rather than adding a section.",
+        "adaptedText": "The capacity itself, not its exercise, is the injury — Posner's collection/use line answers a different question.",
+        "moveOrdinal": 2
+      }
+    },
+    {
+      "findingOrdinal": 3,
+      "disposition": { "kind": "accept", "status": "done", "moveOrdinal": 3, "applied": true },
+      "anchor": {
+        "blockId": "p-sec1-4",
+        "quote": "presumes a favorable ruling the courts have not yet delivered",
+        "startOffset": 12,
+        "endOffset": 73,
+        "confidence": 0.81
+      }
+    },
+    {
+      "findingOrdinal": 4,
+      "disposition": { "kind": "accept", "status": "verified", "moveOrdinal": 4, "applied": true }
+    },
+    {
+      "findingOrdinal": 5,
+      "disposition": {
+        "kind": "rebut",
+        "status": "done",
+        "rationale": "The Wayback capture of the FBI centennial book PDF reads 'was questionable' verbatim; the live web page differs, so the draft's characterization stands — no change."
+      }
+    },
+    {
+      "findingOrdinal": 6,
+      "disposition": {
+        "kind": "rebut",
+        "status": "done",
+        "rationale": "The OUP publisher preview confirms Fraenkel p. xxiii (Introduction to the 1941 Edition); the page cite is correct, tweak the ref only."
+      },
+      "anchor": {
+        "blockId": "p-sec7-2",
+        "quote": "Fraenkel's dual state",
+        "startOffset": 0,
+        "endOffset": 21,
+        "confidence": 0.9
+      }
+    },
+    {
+      "findingOrdinal": 7,
+      "disposition": { "kind": "defer", "status": "deferred", "rationale": "Length trim to the corpus ceiling belongs to a dedicated cut-to-length pass next round." }
+    }
+  ]
+}

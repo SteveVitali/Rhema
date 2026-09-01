@@ -41,6 +41,9 @@ jobs:
       # Upstream-diff gate (REQ-ARCH-5; AC1): the ported skills equal the vendored pin + only sanctioned
       # edits. Self-contained (reads packages/protocols/upstream-pin) — no external repo needed.
       - run: node scripts/check-upstream-diff.mjs
+      # protocols_version is frozen over the trio (REQ-SPEC-22 / P0.04 AC5): a trio edit not re-frozen
+      # fails here (the hash mechanism itself is unit-tested in scripts/lib/protocols-version.test.mjs).
+      - run: node scripts/compute-protocols-version.mjs
 
   contracts:
     name: contracts

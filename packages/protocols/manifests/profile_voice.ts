@@ -77,6 +77,7 @@ export const personaPhases: PhaseManifest[] = [
     predicates: ["hold-out predicted before read; produced by the input-scoped query"],
     sidecars: [],
     optional: "quick",
+    optOutFlag: "calibration",
     phaseClass: "judge",
     maxIterations: 3,
     budgetShare: 0.12,

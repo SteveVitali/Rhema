@@ -14,7 +14,7 @@ export const calibrateVoice: WorkflowManifest = {
   defaultInputs: { mode: "bootstrap", calibration: true },
   phases: [
     // calibration IS this workflow's purpose here, not an opt-out phase — drop the flag it inherits.
-    { ...byKey("calibration"), index: 0, budgetShare: 0.8, optional: undefined },
+    { ...byKey("calibration"), index: 0, budgetShare: 0.8, optional: undefined, optOutFlag: undefined },
     { ...byKey("package"), index: 1, budgetShare: 0.2 },
   ],
 };

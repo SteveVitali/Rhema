@@ -1,0 +1,44 @@
+{
+  "sidecar": "cut_list",
+  "version": 1,
+  "targetWords": 6800,
+  "cuts": [
+    {
+      "ordinal": 1,
+      "anchor": {
+        "blockId": "p-sec2-3",
+        "quote": "It is worth pausing here to observe, as many have,",
+        "startOffset": 0,
+        "endOffset": 49,
+        "confidence": 0.96
+      },
+      "words": 9,
+      "reason": "throat-clearing; the observation stands without the frame"
+    },
+    {
+      "ordinal": 2,
+      "anchor": {
+        "blockId": "p-sec5-7",
+        "quote": "a third aphorism restating the same point in a new key",
+        "startOffset": 0,
+        "endOffset": 54,
+        "confidence": 0.74
+      },
+      "words": 120,
+      "reason": "aphorism saturation flagged in craft notes; one instance is enough"
+    },
+    {
+      "ordinal": 3,
+      "anchor": {
+        "blockId": "p-sec6-2",
+        "quote": "the scholastic disputation institutionalized arguing both sides",
+        "startOffset": 0,
+        "endOffset": 62,
+        "confidence": 0.91
+      },
+      "words": 40,
+      "reason": "duplicated from the spine statement in §II",
+      "protect": true
+    }
+  ]
+}

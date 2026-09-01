@@ -1,0 +1,84 @@
+{
+  "sidecar": "response_ledger",
+  "version": 1,
+  "entries": [
+    {
+      "findingOrdinal": 1,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "Deflationism is raised and never answered, leaving the thesis unfalsifiable as stated; make the predictions explicit and answer the deflationist directly.",
+        "adaptedText": "If reason were merely a faculty, adversarial institutions would not outperform solitary genius — but they do, measurably.",
+        "moveOrdinal": 1
+      },
+      "anchor": {
+        "blockId": "p-sec1-3",
+        "quote": "unfalsifiable as stated",
+        "startOffset": 0,
+        "endOffset": 23,
+        "confidence": 0.76
+      }
+    },
+    {
+      "findingOrdinal": 2,
+      "disposition": {
+        "kind": "accept",
+        "status": "done",
+        "rationale": "The piece is unsituated against Rauch, Popper, Hayek, Anderson, Estlund, and Farrell–Shalizi; add the map.",
+        "moveOrdinal": 2,
+        "applied": true
+      }
+    },
+    {
+      "findingOrdinal": 3,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "No concrete case grounds the argument; work the live disputatio as the causal-adversary example.",
+        "moveOrdinal": 3
+      }
+    },
+    {
+      "findingOrdinal": 4,
+      "disposition": {
+        "kind": "accept",
+        "status": "verified",
+        "rationale": "Cite the exact figures (80%, 15×) for the monoculture claim.",
+        "moveOrdinal": 4,
+        "applied": true
+      },
+      "anchor": {
+        "blockId": "p-sec4-6",
+        "quote": "80%",
+        "startOffset": 4,
+        "endOffset": 7,
+        "confidence": 0.95
+      }
+    },
+    {
+      "findingOrdinal": 5,
+      "disposition": {
+        "kind": "rebut",
+        "status": "done",
+        "rationale": "The second read's 'amputate the history, publish §VI–VII plus the spine' would gut the essay's causal claim; the history is load-bearing evidence, not ornament. Hold, with the incentive engine now made explicit."
+      }
+    },
+    {
+      "findingOrdinal": 6,
+      "disposition": {
+        "kind": "defer",
+        "status": "deferred",
+        "rationale": "Crediting the B2 translation and the Landemore cite-and-distance are real but belong to a follow-up research note, not this round."
+      }
+    },
+    {
+      "findingOrdinal": 7,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "Aphorism saturation and the 'Not X. It is Y.' hinge are a reception risk; thin the cadence and turn the test on the essay itself.",
+        "moveOrdinal": 5
+      }
+    }
+  ]
+}

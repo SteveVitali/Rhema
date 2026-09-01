@@ -1,0 +1,56 @@
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 1,
+      "text": "The worked profiles were checked against live sources on 2026-07-30/31.",
+      "tier": 2,
+      "verdict": "verified",
+      "kind": "factual",
+      "humanAdded": false
+    },
+    {
+      "ordinal": 231,
+      "text": "Trump's economic program is best described as market-leaning.",
+      "tier": 1,
+      "verdict": "misleading_in_context",
+      "kind": "interpretive",
+      "note": "C23a — escalated to Tier 1: 'market-leaning' is misleading in context given the tariff program.",
+      "sources": [
+        {
+          "url": "https://www.reuters.com/",
+          "normalizedUrl": "reuters.com",
+          "accessedAt": "2026-07-31T00:00:00Z",
+          "stance": "contradicts",
+          "note": "documents broad tariff program"
+        }
+      ],
+      "humanAdded": false,
+      "anchor": {
+        "blockId": "p-profile-trump-3",
+        "quote": "market-leaning",
+        "startOffset": 22,
+        "endOffset": 36,
+        "confidence": 0.66
+      }
+    },
+    {
+      "ordinal": 234,
+      "text": "Orbán's government is 'governing' the currency by conventional means.",
+      "tier": 1,
+      "verdict": "misleading_in_context",
+      "kind": "interpretive",
+      "note": "C23d — escalated to Tier 1: misleading on currency.",
+      "humanAdded": false
+    },
+    {
+      "ordinal": 12,
+      "text": "The five-axis model was first sketched in a 2019 working paper.",
+      "tier": 2,
+      "verdict": "substantially_accurate",
+      "kind": "factual",
+      "humanAdded": false
+    }
+  ]
+}
