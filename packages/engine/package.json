@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@rhema/contracts": "workspace:*",
+    "@rhema/hooks": "workspace:*",
     "@rhema/protocols": "workspace:*"
   }
 }

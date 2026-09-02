@@ -184,6 +184,9 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@rhema/hooks':
+        specifier: workspace:*
+        version: link:../hooks
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../protocols
