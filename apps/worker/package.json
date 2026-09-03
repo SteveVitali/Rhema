@@ -22,9 +22,15 @@
   "dependencies": {
     "@rhema/db": "workspace:*",
     "@rhema/contracts": "workspace:*",
-    "@rhema/orchestrator": "workspace:*"
+    "@rhema/orchestrator": "workspace:*",
+    "@rhema/ledger": "workspace:*",
+    "@rhema/live-clients": "workspace:*",
+    "ioredis": "6.0.0",
+    "pg": "8.23.0",
+    "pg-boss": "12.30.0"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.2.17"
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/pg": "8.23.1"
   }
 }

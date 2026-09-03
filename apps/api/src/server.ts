@@ -15,9 +15,9 @@ import {
   randomUlids,
   RUN_JOBS,
 } from "@rhema/orchestrator";
-import { SqlHoldLedger } from "@rhema/ledger";
+import { SqlHoldLedger, circuitBreakerState } from "@rhema/ledger";
 import { createGcsContentStore } from "@rhema/mirror";
-import { createObligationMountProvider } from "@rhema/obligations";
+import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
 import {
   PgPoolTxRunner,
   RedisHeartbeatStore,
@@ -61,6 +61,12 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   });
 
   const bus = new RedisRunEventBus(redis, subscriber);
+  // A system-scoped SqlClient for the platform-wide circuit-breaker read (credit_ledger across accounts). The
+  // deploy connects the api's pool as a role able to read it (the breaker is platform-wide, not tenant-scoped).
+  const systemExec = {
+    query: (sql: string, params?: readonly unknown[]) =>
+      pool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
+  };
   const deps: ApiDeps = {
     txRunner: new PgPoolTxRunner(pool),
     eventWriter: new SqlEventWriter(bus), // post-commit user-event fan-out over Redis
@@ -71,10 +77,15 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     ledger: new SqlHoldLedger({ ids, clock }),
     queue: new PgBossQueue(boss),
     obligationMount: createObligationMountProvider(),
+    // the obligation spawn/join hook, constructed into the delivery transaction (D-P0.12-1).
+    obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),
     // the SSE tail subscribes to the same Redis bus for the post-commit wakeup (replay-then-tail from Postgres).
     eventSubscriber: bus,
     // write-only content store: gate write-back overlays put versioned bytes (tenant-explicit; REQ-SPEC-9).
     store: await createGcsContentStore({ bucketName: env.objectsBucket }),
+    // a per-run workspace-bound store for delivery reads (a run is single-tenant; D-P0.09-1).
+    contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
+    circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })),
     principal: headerPrincipal,
   };
   return { deps, boss, pool };
