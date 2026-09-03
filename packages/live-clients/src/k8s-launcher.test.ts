@@ -7,7 +7,6 @@ import {
   kubeName,
   runJobName,
   runSecretName,
-  HARNESS_UID,
   HARNESS_SECRET_MOUNT,
   RUN_TOKEN_FILE,
   type GkeLauncherConfig,
@@ -63,12 +62,16 @@ describe("buildRunTaskJobManifest", () => {
     expect(container.image).toBe("us-central1-docker.pkg.dev/rhema-507501/rhema/run-task@sha256:deadbeef");
   });
 
-  it("grants CAP_SYS_ADMIN, read-only root FS, and starts as the harness uid", () => {
+  it("grants the privilege-drop + mount-isolation caps, read-only root FS, restart Never", () => {
     expect(podSpec.restartPolicy).toBe("Never");
-    expect((podSpec.securityContext as { runAsUser: number }).runAsUser).toBe(HARNESS_UID);
-    const csc = container.securityContext as { readOnlyRootFilesystem: boolean; capabilities: { add: string[] } };
+    // the image starts as root and drops root→harness→agent itself, so the pod does not force runAsUser.
+    expect(podSpec.securityContext).toBeUndefined();
+    const csc = container.securityContext as { readOnlyRootFilesystem: boolean; capabilities: { add: string[]; drop: string[] }; allowPrivilegeEscalation: boolean };
     expect(csc.readOnlyRootFilesystem).toBe(true);
-    expect(csc.capabilities.add).toContain("SYS_ADMIN");
+    expect(csc.allowPrivilegeEscalation).toBe(true);
+    // SETUID/SETGID for the harness→agent uid drop; SYS_ADMIN for unshare/mount; SYS_CHROOT for the scoped runner.
+    expect(csc.capabilities.add).toEqual(expect.arrayContaining(["SETUID", "SETGID", "SYS_ADMIN", "SYS_CHROOT"]));
+    expect(csc.capabilities.drop).toEqual(["ALL"]);
   });
 
   it("mounts the harness secret read-only at the harness-only path and points env at the files", () => {
