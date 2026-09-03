@@ -33,7 +33,7 @@ function build() {
     skillsDir: "/opt/skills",
     tier: "base",
     hook: () => ({}),
-    sessionStore: { kind: "s3" },
+    sessionStore: { kind: "gcs" },
     abortController: new AbortController(),
   });
 }

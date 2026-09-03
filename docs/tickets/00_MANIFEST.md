@@ -31,8 +31,9 @@ and a filename ever disagree.
 > `implement-spec` run reads it (via `AGENTS.md`) and closes any row this ticket or its prerequisites
 > unblock; phase-exit GATE rows must not pass while an `OPEN` row scoped to that phase remains.
 
-Stack: **TypeScript everywhere, no Python** (Q-3); pnpm + Turborepo; SST stages; AWS-first (§13);
-closed-source but open-source-ready (Q-19).
+Stack: **TypeScript everywhere, no Python** (Q-3); pnpm + Turborepo; Pulumi (TypeScript) stacks;
+**GCP-first** (§13; amended 2026-09-02 from AWS-first — see § Spec amendments applied), inference from
+the **direct Anthropic API** (platform-billed); closed-source but open-source-ready (Q-19).
 
 ## How to build (stacked PR chain)
 
@@ -65,14 +66,17 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 
 ## Human prerequisites (HUMAN rows — operator work, not code tickets)
 
-- **H0 — Phase 0a accounts and registrations** (spec §17 Phase 0a; before/alongside P0.01): Stripe
-  account + Stripe Tax registrations (L13); AWS Marketplace subscription to Claude Platform + the
-  account-rep conversation (C8); Apple + Google developer accounts; Expo/EAS org; Google OAuth
-  consent screen (`drive.file` review can start now for 1.x); `rhema.app` + `rhemausercontent.com`
-  domains; SES production access. *Exit: every account exists under the operator's ownership;
-  secrets in Secrets Manager.*
-- **H1 — M15 auth-mode spike** (before P0.07): Claude Platform on AWS — SigV4 vs direct key; the
-  shape of its Usage & Cost report; whether responses carry the `usage` block (§16.3 #5).
+- **H0 — Phase 0a accounts and registrations** (spec §17 Phase 0a; before/alongside P0.01; **amended
+  2026-09-02: AWS→GCP**): Stripe account + Stripe Tax registrations (L13); a **GCP project + billing
+  account** (C8); an **Anthropic API account + key** (platform-billed — replaces the former AWS
+  Marketplace subscription to Claude Platform; no cloud marketplace needed); Apple + Google developer
+  accounts; Expo/EAS org; Google OAuth consent screen (`drive.file` review can start now for 1.x);
+  `rhema.app` + `rhemausercontent.com` domains; a **Resend** account (transactional email — replaces
+  SES). *Exit: every account exists under the operator's ownership; secrets in Secret Manager.*
+- **H1 — RESOLVED BY DESIGN (2026-09-02).** The AWS Marketplace / SigV4-vs-key spike is moot:
+  inference now comes from the **direct Anthropic API** (platform-billed, a direct key). The first-party
+  API returns the `usage` block (incl. `server_tool_use`) and a request-id-matchable cost report, so
+  the metering + reconciliation design holds. No spike is needed before P0.07 (§16.3 #5 closed).
 - **H2 — §18 corpus commissioning** (start during Phase 0; must be complete before G2's wave 1):
   ≥24 (target 30) commissioned drafts per REQ-EVAL-1 with REQ-EVAL-2 evidence; two annotating
   editors + senior adjudicator contracted (REQ-EVAL-4); A6 human-editor arm engaged; A1 steelman
@@ -92,13 +96,13 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | # | Ticket file | Phase | Scope (one line) |
 |---|---|---|---|
 | — | `00a_HUMAN-H0__phase0a-accounts.md` | 0a | **HUMAN** — Phase 0a accounts; blocks P0.01 secrets and P0.07/PRB.08/PRB.09 integrations |
-| 1 | `01_P0.01__monorepo-and-infra.md` | 0 | monorepo, SST stages, core AWS, Better Auth, CI + licence policy |
+| 1 | `01_P0.01__monorepo-and-infra.md` | 0 | monorepo, Pulumi stages, core GCP, Better Auth, CI + licence policy |
 | 2 | `02_P0.02__contracts-and-data-model.md` | 0 | `packages/contracts` + `packages/db`: §11 schema, RLS, policy table, seed |
 | 3 | `03_P0.03__protocols-port-and-manifests.md` | 0 | skill port (Review/Revise/Fact-check/persona-quick), phase manifests, Essay protocol |
 | 4 | `04_P0.04__parsers-serializers-protocols-version.md` | 0 | sidecar parsers + gate serializers + drift contract test + `protocols_version` |
 | 5 | `05_P0.05__boundary-hooks.md` | 0 | `packages/hooks`: path/URL policy, audit, denial semantics |
 | 6 | `06_P0.06__engine-and-run-task.md` | 0 | `Engine`/`AgentSdkEngine`, two-uid image, event mapper, FakeEngine, scoped subagents |
-| — | `06a_HUMAN-H1__claude-platform-auth-spike.md` | 0 | **HUMAN** — M15 auth spike; resolve before #7 |
+| — | `06a_HUMAN-H1__claude-platform-auth-spike.md` | 0 | **HUMAN** — H1 resolved by design (direct Anthropic API); no spike |
 | 7 | `07_P0.07__egress-proxy.md` | 0 | meter of record, per-run credentials, cap 402, fetch log, outbound limits |
 | 8 | `08_P0.08__run-orchestration.md` | 0 | lifecycle, state function, internal API + fencing, queue/locks, reaper |
 | 9 | `09_P0.08b__run-events-and-streaming.md` | 0 | run_events persistence/partitioning, Redis fan-out, SSE replay |
@@ -350,6 +354,20 @@ has exactly one owner.
 
 ## Spec amendments applied
 
+- **2026-09-02 (cloud provider + inference channel; Q-3 / §12 / §13 / REQ-ARCH-1/2/30/31):** the ratified
+  "AWS-first" decision is superseded — **compute moves to GCP** and **inference moves to the direct
+  Anthropic API** (platform-billed, key in Secret Manager, proxy-injected). Rationale: the operator could
+  not create an AWS account, and the load-bearing AWS tie was the inference channel ("Claude Platform on
+  AWS" = Anthropic's first-party API + Marketplace billing + server web tools), which GCP's Vertex Claude
+  (like Bedrock) lacks — so sourcing inference from the direct Anthropic API is cloud-independent and also
+  **collapses the M15 auth spike (H1)**. Service mapping (Fargate→Cloud Run; run-task→GKE Standard for
+  `CAP_SYS_ADMIN`; Aurora→AlloyDB; S3→GCS; CloudFront/ALB→Cloud CDN/HTTPS-LB; Secrets Manager→Secret
+  Manager; SigV4/task-role→Workload Identity; SES→Resend; SST→Pulumi; CloudWatch→Cloud Operations;
+  Bedrock→Vertex AI; us-east-1→us-central1) is in the §12 amendment banner. Affects §12.1/12.3/12.4/12.7/12.9,
+  §13.1–13.5, H0/H1, and P0.01/P0.06/P0.07/P0.08/P0.15/PRB.09. The **SST→Pulumi IaC rewrite** lands on a
+  P0.01 re-run once the GCP project exists (DEFERRALS D-P0.01-7); the committed `infra/` SST skeleton is
+  marked superseded meanwhile. pg-boss, Expo Push, Stripe, Better Auth, and the boundary/uid model are
+  unchanged.
 - **2026-09-01 (REQ-ARCH-37 / §13.2 / cross-cutting invariant 3):** `packages/protocols` moved from a
   gitignored path-resolved private checkout to a **committed workspace member** (operator decision — the
   repo is private). Open-source-readiness is now an export-time swap to `@rhema/protocols-stub` (renamed

@@ -5,7 +5,7 @@ lint rules, CI job names, stage names). P0.01 owns it. Read it before adding cod
 
 ## Deferred obligations — READ FIRST, EVERY RUN
 `docs/tickets/DEFERRALS.md` is the durable ledger of acceptance criteria/deliverables a ticket could
-not fully satisfy at implementation time (usually needing a live AWS deploy or a HUMAN prerequisite
+not fully satisfy at implementation time (usually needing a live GCP deploy or a HUMAN prerequisite
 like H0).
 At the **start of every `implement-spec` run**: read `DEFERRALS.md`; if this ticket — or a
 prerequisite it depends on — unblocks any `OPEN` row, **closing that row (verify for real, flip to
@@ -14,8 +14,9 @@ run. Phase-exit gates (`docs/tickets/*GATE*`) must not pass while an `OPEN` row 
 remains.
 
 ## Stack (Q-3, §13.1)
-TypeScript **end-to-end; no Python anywhere**. pnpm + Turborepo; SST v3 stages; AWS-first. Node ≥ 20
-(CI: 22). Test runner: Vitest. Linter: ESLint 9 flat config. Formatter: Prettier.
+TypeScript **end-to-end; no Python anywhere**. pnpm + Turborepo; Pulumi (TypeScript) stacks; **GCP-first**
+(amended 2026-09-02 from AWS-first; inference from the direct Anthropic API — see 00_MANIFEST § Spec
+amendments applied). Node ≥ 20 (CI: 22). Test runner: Vitest. Linter: ESLint 9 flat config. Formatter: Prettier.
 
 ## Commands
 ```bash
@@ -56,8 +57,8 @@ otherwise — **never git submodules**. No protocol/eval text (skills, rubrics, 
 prompts) may reach a client bundle, the OpenAPI document, or an event payload (REQ-ARCH-33).
 
 ## Stages (§13.2)
-`dev` (shared integration), `pr-<n>` (per-PR preview: 0-ACU Aurora, isolated buckets, Base tier,
-`max_usd` $3/run, never production secrets — REQ-ARCH-38), `prod` (Aurora ≥ 4 ACU floor). Stage facts
+`dev` (shared integration), `pr-<n>` (per-PR preview: small/paused AlloyDB, isolated GCS buckets, Base tier,
+`max_usd` $3/run, never production secrets — REQ-ARCH-38), `prod` (AlloyDB min primary kept warm). Stage facts
 live in `infra/config/stages.ts` and are unit-tested; `sst.config.ts` consumes them.
 
 ## CI jobs (§13.2), in order
@@ -66,5 +67,5 @@ placeholders that later tickets fill; the pipeline, licence policy, and public-s
 
 ## Secrets (REQ-ARCH-30)
 Never in the repo (gitleaks-scanned). Provider keys only in `egress-proxy`; Stripe/Better-Auth secrets
-in Secrets Manager/SSM. No secret as a plaintext env var to `web`/`collab`. Never reachable from the
+in Secret Manager. No secret as a plaintext env var to `web`/`collab`. Never reachable from the
 model's process.

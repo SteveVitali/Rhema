@@ -86,7 +86,7 @@ describe("event-mapper conformance suite (REQ-ARCH-7)", () => {
         configDir: "/work/.config",
         skillsDir: "/opt/skills",
         hook: () => ({}),
-        sessionStore: { kind: "s3" },
+        sessionStore: { kind: "gcs" },
       });
       const managed = new ManagedAgentsEngine({ run: () => replayQuery(f.messages)() });
 
