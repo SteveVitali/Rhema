@@ -1,0 +1,25 @@
+{
+  "$comment": "Checked-in exception list (REQ-ARCH-40; review 13 F48): dependencies whose licence is NOT on the permissive allowlist but is knowingly accepted, each with a rationale. An allowlist without an exception list dies by undocumented exceptions. Keep every entry justified; CI reads this file.",
+  "exceptions": {
+    "@anthropic-ai/claude-agent-sdk": {
+      "type": "npm",
+      "license": "Commercial",
+      "rationale": "The Agent SDK is a proprietary dependency the whole run model depends on — the largest control concession in the design (Q-3, §12.1 REQ-ARCH-4). Mitigated by the Engine abstraction (REQ-ARCH-7). Hosted under our own brand; never surfaced or marketed as 'Claude Code'."
+    },
+    "pandoc": {
+      "type": "system-binary",
+      "license": "GPL-2.0-or-later",
+      "rationale": "Used only in the isolated `export`/`convert` containers, invoked as a SEPARATE PROCESS over files — no linking into our TypeScript. GPL's copyleft is not triggered by separate-process invocation. Not an npm dependency; shipped in the container image."
+    },
+    "typst": {
+      "type": "system-binary",
+      "license": "Apache-2.0",
+      "rationale": "PDF rendering in the `export` container; separate process. Apache-2.0 is permissive but recorded here because it is a system binary, not an npm dep, so the automated npm scan cannot see it."
+    },
+    "fonts": {
+      "type": "asset",
+      "license": "OFL-1.1 / vendor-specific",
+      "rationale": "Bundled font files (SIL Open Font License and vendor licences) shipped as assets in export/marketing containers. Redistribution terms honored per font; enumerated in LICENSES.md as fonts are added."
+    }
+  }
+}

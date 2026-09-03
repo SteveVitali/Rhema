@@ -1,0 +1,26 @@
+{
+  "name": "@rhema/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "mobile — Expo/React Native companion (skeleton service).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/api-client": "workspace:*",
+    "@rhema/tokens": "workspace:*"
+  }
+}

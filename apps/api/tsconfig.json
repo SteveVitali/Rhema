@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../packages/contracts"
+    },
+    {
+      "path": "../../packages/db"
+    },
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/hooks"
+    }
+  ],
+  "exclude": [
+    "dist",
+    "**/*.test.ts"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@rhema/protocols",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PUBLIC STUB of @rhema/protocols: manifest types + a fixture skill, no rubric text (REQ-ARCH-37).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*"
+  }
+}

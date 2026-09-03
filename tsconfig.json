@@ -1,0 +1,32 @@
+{
+  "//": "Solution-style root config: references every composite project so `tsc -b` builds and",
+  "//2": "typechecks the whole graph in dependency order (Bazel-compatible project references).",
+  "files": [],
+  "references": [
+    { "path": "packages/contracts" },
+    { "path": "packages/db" },
+    { "path": "packages/engine" },
+    { "path": "packages/hooks" },
+    { "path": "packages/harness" },
+    { "path": "packages/protocols-stub" },
+    { "path": "packages/measure" },
+    { "path": "packages/figures" },
+    { "path": "packages/ui" },
+    { "path": "packages/api-client" },
+    { "path": "packages/tokens" },
+    { "path": "packages/findings-core" },
+    { "path": "packages/markdown-view" },
+    { "path": "apps/web" },
+    { "path": "apps/api" },
+    { "path": "apps/collab" },
+    { "path": "apps/worker" },
+    { "path": "apps/run-task" },
+    { "path": "apps/fetcher" },
+    { "path": "apps/convert" },
+    { "path": "apps/egress-proxy" },
+    { "path": "apps/export" },
+    { "path": "apps/mobile" },
+    { "path": "infra" },
+    { "path": "evals-stub" }
+  ]
+}
