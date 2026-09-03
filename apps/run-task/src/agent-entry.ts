@@ -118,7 +118,6 @@ export async function main(): Promise<void> {
   });
 
   const result = await runAgentPhase(engine, spec.request, events);
-  // eslint-disable-next-line no-console
   console.log(`[agent-entry] phase ${spec.request.phase.key} → ${result.subtype} (${result.eventsPosted} events)`);
   // a non-success SDK subtype is a phase-level outcome the oracle judges server-side; exit 0 either way (the
   // agent ran) — the harness reads .rhema/phase-result.json + the result subtype to decide.
@@ -127,7 +126,6 @@ export async function main(): Promise<void> {
 // Run when invoked as the container's agent command (`node dist/agent-entry.js`), not when imported.
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   main().catch((err: unknown) => {
-    // eslint-disable-next-line no-console
     console.error("[agent-entry] phase failed:", err);
     process.exit(1);
   });

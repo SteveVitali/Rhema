@@ -62,7 +62,6 @@ export async function startProxy(): Promise<void> {
     newId: () => ulid(),
   });
   server.listen(env.port, () => {
-    // eslint-disable-next-line no-console
     console.log(`[egress-proxy] listening on :${env.port} → ${env.providerHost}`);
   });
 }
@@ -70,7 +69,6 @@ export async function startProxy(): Promise<void> {
 // Run when invoked as the container entrypoint (`node dist/main.js`), not when imported.
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   startProxy().catch((err: unknown) => {
-    // eslint-disable-next-line no-console
     console.error("[egress-proxy] failed to start:", err);
     process.exit(1);
   });

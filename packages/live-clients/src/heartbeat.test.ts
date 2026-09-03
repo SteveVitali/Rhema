@@ -36,7 +36,12 @@ class FakeRedis implements RedisLike {
     const s = this.sets.get(key) ?? new Set<string>();
     this.sets.set(key, s);
     let n = 0;
-    for (const m of members) if (!s.has(m)) (s.add(m), n++);
+    for (const m of members) {
+      if (!s.has(m)) {
+        s.add(m);
+        n++;
+      }
+    }
     return Promise.resolve(n);
   }
   srem(key: string, ...members: string[]): Promise<number> {

@@ -112,14 +112,12 @@ export async function startApiServer(): Promise<void> {
   server.requestTimeout = 0;
   server.keepAliveTimeout = env.sseIdleTimeoutMs;
   server.headersTimeout = env.sseIdleTimeoutMs + 5_000;
-  // eslint-disable-next-line no-console
   console.log(`[api] listening on :${env.port}`);
 }
 
 // Run when invoked as the container entrypoint (`node dist/server.js`), not when imported.
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   startApiServer().catch((err: unknown) => {
-    // eslint-disable-next-line no-console
     console.error("[api] failed to start:", err);
     process.exit(1);
   });
