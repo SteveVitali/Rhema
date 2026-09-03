@@ -182,9 +182,24 @@ Status values: `OPEN` (owed) · `DONE` (verified — add date + evidence) · `WO
 > D-P0.01-1/2/5/6/7 (the Pulumi/GCP program is written + **typechecks clean against `@pulumi/gcp@8.41.1`**;
 > `stages.ts` re-expressed for GCP + tested); D-P0.04-2 (the CI `images` job now stamps the real
 > `protocols_version`); D-P0.06-4 (the SDK adapter + Dockerfile vendoring are written); D-P0.08-1 (the
-> RS256 `RunTokenService` signer is written + tested — one of its seams); D-P0.14-1/2 (the arm executors
-> + the blind match/adjudication workshop CLI are written + tested); D-P0.15-1/2/5 (the live-exit driver
-> is built). See `docs/phase0-exit-readout.md` § "Stage A complete".
+> RS256 `RunTokenService` signer is written + tested — one of its seams); **D-P0.08-2 (the `CreditRenderer`
+> is bound to the shared rate table — provisional `usage.tick` credits, tested; only the live ±2%
+> cross-check remains); D-P0.08b-4 (the fetch `EventTransport` shell is written + tested — only the live
+> POST remains);** D-P0.14-1/2 (the arm executors + the blind match/adjudication workshop CLI are written
+> + tested); D-P0.15-1/2/5 (the live-exit driver is built). See `docs/phase0-exit-readout.md` § "Stage A
+> complete".
+>
+> **Deviation (recorded, not silent) — the pure GCP/k8s network-client shells were NOT hand-written this
+> run:** the `pg.Pool` `TxRunner`, the Redis `HeartbeatStore` + `RunEventPublisher`/`Subscriber`, the
+> pg-boss `Queue`, the GKE `JobLauncher`, the Secret Manager `load` closure, the GCS `ContentStore` /
+> `EnclaveBlobStore`, the live `apps/api`/`apps/worker` entrypoints, the ledger resume/cron call-sites,
+> and the obligation-hook construction. Rationale: each is a thin delegating wrapper over a heavy client
+> library that **cannot be exercised without live infra** (no offline test value), and each is already
+> tracked as an OPEN row with the seam + in-memory fake in place (D-P0.07-1/2, D-P0.08-1, D-P0.08b-1,
+> D-P0.09-1, D-P0.11-1, D-P0.12-1, D-P0.13-1). Stage A prioritized the artifacts with offline validation
+> (the IaC — typechecked; the pure-logic + fake-testable shells above). These wrappers are the first
+> coding step of the Stage-B `pulumi up` bring-up (D-P0.15b-1/2/3), authored against the live deploy so
+> they can be smoke-tested as they are written.
 
 | ID | Item (AC / deliverable) | Why deferred | Unblocked by | How to verify when unblocked | Proxy in place now | Status |
 |---|---|---|---|---|---|---|
