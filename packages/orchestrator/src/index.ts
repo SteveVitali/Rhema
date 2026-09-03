@@ -32,3 +32,10 @@ export * from "./delivery.js";
 export * from "./reaper.js";
 export * from "./phase-loop.js";
 export * from "./reactions.js";
+
+// gates, decisions, guidance, write-back overlays (P0.10; §6.4/§6.5/§11.5)
+export * from "./gate-policy.js";
+export * from "./gate-overlay.js";
+export * from "./gate-resolution.js";
+export * from "./gate-expiry.js";
+export * from "./guidance.js";

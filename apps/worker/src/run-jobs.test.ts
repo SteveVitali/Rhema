@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createOrchestratorTestDb, seedProject, seedRun, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
+import { createOrchestratorTestDb, seedProject, seedRun, seedGate, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import type { JobLauncher } from "@rhema/orchestrator";
-import { handleRunStart, handleRunReap, handleRunCancel, completeCancellation, gateExpiryJob, type WorkerRunDeps } from "./run-jobs.js";
+import { handleRunStart, handleRunReap, handleRunCancel, completeCancellation, handleGateExpiryJob, gateExpiryJob, type WorkerRunDeps } from "./run-jobs.js";
 
 let db: OrchestratorTestDb;
 let base: TestDeps;
@@ -77,5 +77,14 @@ describe("worker run-lifecycle handlers", () => {
 
   it("gateExpiryJob names the gate:<id> type (registered here; handled by P0.10)", () => {
     expect(gateExpiryJob("g1")).toBe("gate:g1");
+  });
+
+  it("handleGateExpiryJob runs the due gate's onExpiry (auto-proceed → run.resume)", async () => {
+    await seedRun(db, { runId: "rung", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedGate(db, { gateId: "gg", runId: "rung", kind: "approve_plan", onExpiry: "proceed_conservative", deadlineAt: new Date("2026-09-01T00:00:00Z") });
+    const out = await handleGateExpiryJob(deps, { gateId: "gg", workspaceId: seed.workspaceId });
+    expect(out).toMatchObject({ action: "resolved", state: "queued" });
+    expect(await stateOf("rung")).toBe("queued");
+    expect(base.queue.ofName("run.resume")).toHaveLength(1);
   });
 });

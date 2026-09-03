@@ -8,6 +8,8 @@ import type { EventWriter } from "./event-writer.js";
 import type { TxRunner } from "./tx.js";
 import { applyTransition } from "./transition.js";
 import { openGate, failRun, type OrchestratorDeps } from "./internal-api.js";
+import { resolveGatePolicy, type ApprovalPolicy } from "./gate-policy.js";
+import { conditionalResolve, writeDecision, emitGateResolved } from "./gate-resolution.js";
 
 /** A phase may re-plan at most twice (§12.2 back-edges; REQ-WF-5). */
 export const MAX_REPLANS = 2;
@@ -39,16 +41,44 @@ export async function recordReplan(
 }
 
 /**
- * Re-open Approve-plan (§6.4; §12.2) — when a back-edge changes the plan artifact's hash after it was approved,
- * the orchestrator re-opens the gate (or auto-approves within the consented cap under Run-to-completion — that
- * policy resolution is P0.10). This takes `running → waiting_gate` and opens the gate; P0.10 resumes. (The
- * plan-hash-change DETECTION uses P0.09's committed artifact hashes.)
+ * Re-open Approve-plan (§6.4; §12.2; REQ-GATE-6) — when a declared back-edge changes the plan artifact's hash
+ * after it was approved. Under a NAMED policy the gate re-opens and the run parks (`running → waiting_gate`);
+ * under Run-to-completion or the autonomous flag it AUTO-APPROVES within the consented cap (a gate row + a
+ * `Decision{by:'policy'}`, the run staying `running` so the phase loop continues). The plan-hash-change
+ * DETECTION uses P0.09's committed artifact hashes; this is the reaction.
  */
 export async function reopenApprovePlan(
   deps: MinDeps & { ids: OrchestratorDeps["ids"] },
-  args: { runId: string; workspaceId: string; stepId?: string; artifactVersionId?: string },
-): Promise<{ gateId: string }> {
+  args: {
+    runId: string;
+    workspaceId: string;
+    stepId?: string;
+    artifactVersionId?: string;
+    /** the project's approval policy + autonomous flag; default named (park). */
+    policy?: ApprovalPolicy;
+    gatesOff?: boolean;
+  },
+): Promise<{ gateId: string; autoApproved: boolean }> {
+  const now = deps.clock.now();
+  const decision = resolveGatePolicy("approve_plan", { policy: args.policy ?? "named", gatesOff: args.gatesOff, now });
+
   return deps.txRunner.run(args.workspaceId, async (tx) => {
+    if (decision.action === "skip") {
+      // auto-approve within the consented cap: a gate row for the record + a policy Decision; stay running.
+      const gateId = await openGate(tx, deps, {
+        runId: args.runId,
+        kind: "approve_plan",
+        blocking: true,
+        onExpiry: "proceed_conservative",
+        stepId: args.stepId,
+        artifactVersionId: args.artifactVersionId,
+      });
+      await conditionalResolve(tx, gateId, now);
+      await writeDecision(tx, now, { gateId, by: "policy", action: "proceed_as_proposed" });
+      await emitGateResolved(tx, deps, args.runId, "proceed_as_proposed", "policy", now);
+      return { gateId, autoApproved: true };
+    }
+    // named: re-open and park; P0.10's resolveGate resumes.
     await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "waiting_gate", reason: "replan" });
     const gateId = await openGate(tx, deps, {
       runId: args.runId,
@@ -58,7 +88,7 @@ export async function reopenApprovePlan(
       stepId: args.stepId,
       artifactVersionId: args.artifactVersionId,
     });
-    return { gateId };
+    return { gateId, autoApproved: false };
   });
 }
 

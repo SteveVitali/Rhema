@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createOrchestratorTestDb, seedProject, seedRun, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
+import { createOrchestratorTestDb, seedProject, seedRun, seedGate, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { createApp, type Principal } from "./index.js";
 
 // The HTTP adapter wires correctly onto the orchestrator: run creation, token-authenticated internal routes,
@@ -130,5 +130,49 @@ describe("internal run API — token auth + fencing", () => {
     });
     expect(res.status).toBe(413);
     expect((await res.json()) as { code: string }).toMatchObject({ code: "event_batch_too_large" });
+  });
+});
+
+describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)", () => {
+  it("resolves an approval, returns queued, and 404s an unknown gate", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedGate(db, { gateId: "gate1", runId: "run1", kind: "approve_plan", onExpiry: "proceed_conservative" });
+
+    const ok = await app.request("/runs/run1/gates/gate1", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "approve" }),
+    });
+    expect(ok.status).toBe(200);
+    expect((await ok.json()) as { resolved: boolean; state: string }).toMatchObject({ resolved: true, state: "queued" });
+
+    const missing = await app.request("/runs/run1/gates/nope", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "approve" }),
+    });
+    expect(missing.status).toBe(404);
+  });
+
+  it("409 when the gate is already resolved (idempotent second click)", async () => {
+    await seedRun(db, { runId: "run2", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedGate(db, { gateId: "gate2", runId: "run2", kind: "approve_plan", onExpiry: "proceed_conservative" });
+    const body = JSON.stringify({ action: "approve" });
+    const first = await app.request("/runs/run2/gates/gate2", { method: "POST", headers: { "content-type": "application/json" }, body });
+    expect(first.status).toBe(200);
+    const second = await app.request("/runs/run2/gates/gate2", { method: "POST", headers: { "content-type": "application/json" }, body });
+    expect(second.status).toBe(409);
+  });
+
+  it("401 without a principal; activity + hold routes respond", async () => {
+    const anon = createApp({ ...deps, principal: () => null });
+    const unauth = await anon.request("/runs/run3/gates/g/hold", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    expect(unauth.status).toBe(401);
+
+    await seedRun(db, { runId: "run3", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedGate(db, { gateId: "gate3", runId: "run3", kind: "approve_plan", onExpiry: "proceed_conservative", deadlineAt: new Date("2026-09-03T00:00:00Z") });
+    const hold = await app.request("/runs/run3/gates/gate3/hold", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    expect(hold.status).toBe(200);
+    expect((await hold.json()) as { held: boolean }).toEqual({ held: true });
   });
 });

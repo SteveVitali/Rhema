@@ -35,12 +35,24 @@ describe("phase-loop reactions", () => {
     expect(MAX_REPLANS).toBe(2);
   });
 
-  it("reopenApprovePlan takes running → waiting_gate and opens an approve_plan gate (signal to P0.10)", async () => {
+  it("reopenApprovePlan (named policy) takes running → waiting_gate and opens an approve_plan gate", async () => {
     await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
-    const { gateId } = await reopenApprovePlan(deps, { runId: "run1", workspaceId: seed.workspaceId });
+    const { gateId, autoApproved } = await reopenApprovePlan(deps, { runId: "run1", workspaceId: seed.workspaceId });
     expect(gateId).toBeTruthy();
+    expect(autoApproved).toBe(false);
     expect(await stateOf("run1")).toBe("waiting_gate");
     expect(await gateKind("run1")).toBe("approve_plan");
+  });
+
+  it("reopenApprovePlan under Run-to-completion auto-approves within the cap (Decision{by:'policy'}, stays running)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    const { gateId, autoApproved } = await reopenApprovePlan(deps, { runId: "run1", workspaceId: seed.workspaceId, policy: "run_to_completion" });
+    expect(autoApproved).toBe(true);
+    expect(await stateOf("run1")).toBe("running"); // the run keeps going (REQ-GATE-6)
+    const d = (await db.client.query("select by_actor, resolved_at from decisions join gates on gates.id = decisions.gate_id where gates.id = $1", [gateId])).rows[0] as { by_actor: string } | undefined;
+    expect(d?.by_actor).toBe("policy");
+    const resolved = (await db.client.query("select resolved_at from gates where id=$1", [gateId])).rows[0] as { resolved_at: Date | null };
+    expect(resolved.resolved_at).not.toBeNull();
   });
 
   it("pauseRun (REQ-ARCH-32) parks the run at a refusal card on a suspicious_query", async () => {

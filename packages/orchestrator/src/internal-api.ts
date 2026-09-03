@@ -13,7 +13,7 @@ import type { EventWriter } from "./event-writer.js";
 import type { HeartbeatStore } from "./heartbeat.js";
 import type { HoldLedger } from "./ledger.js";
 import type { RunTokenService } from "./token.js";
-import type { Queue } from "./queue.js";
+import { scheduleGateExpiry, type Queue } from "./queue.js";
 import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
@@ -111,10 +111,10 @@ export async function openGate(tx: SqlClient, deps: MinDeps, args: OpenGateArgs)
   const now = deps.clock.now();
   const gateId = deps.ids("gate");
   await tx.query(
-    `insert into gates(id, run_id, step_id, kind, opened_at, deadline_at, blocking, on_expiry, held,
-       paused_while_reading)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,false,false)`,
-    [gateId, args.runId, args.stepId ?? null, args.kind, now, args.deadlineAt ?? null, args.blocking, args.onExpiry],
+    `insert into gates(id, run_id, step_id, kind, artifact_version_id, opened_at, deadline_at, blocking,
+       on_expiry, held, paused_while_reading)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,false,false)`,
+    [gateId, args.runId, args.stepId ?? null, args.kind, args.artifactVersionId ?? null, now, args.deadlineAt ?? null, args.blocking, args.onExpiry],
   );
   await deps.eventWriter.append(tx, {
     runId: args.runId,
@@ -322,7 +322,9 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
     };
     const inputs = typeof row.inputs === "string" ? (JSON.parse(row.inputs) as Record<string, unknown>) : row.inputs;
     const seat = (row.seat ?? "editor") as AgentTypeKey;
-    const overlays = args.overlays ?? [];
+    // On resume, apply the run's accumulated gate-derived overlays (REQ-SPEC-9): a caller may pass them
+    // explicitly, else they are loaded from the resolved gates' `Decision.overlayVersionIds`. [] on attempt 1.
+    const overlays = args.overlays ?? (await loadRunOverlays(tx, args.runId));
 
     const manifest = await buildSeatManifest(tx, {
       seat,
@@ -344,6 +346,26 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       manifest,
     };
   });
+}
+
+/**
+ * Load a run's accumulated gate-derived overlays (REQ-SPEC-9): the `overlay_version_ids` from every resolved
+ * gate's decision, in resolution order. materialize's overlay map keys by path, so a later decision editing the
+ * same file wins over an earlier one. [] when no gate serialized an overlay (the common resume case too).
+ */
+export async function loadRunOverlays(tx: SqlClient, runId: string): Promise<Overlay[]> {
+  const res = await tx.query(
+    `select d.overlay_version_ids as ids
+       from decisions d join gates g on g.id = d.gate_id
+      where g.run_id = $1 and d.overlay_version_ids is not null
+      order by d.at, g.opened_at`,
+    [runId],
+  );
+  const overlays: Overlay[] = [];
+  for (const r of res.rows as { ids: string[] | null }[]) {
+    for (const id of r.ids ?? []) overlays.push({ artifactVersionId: id });
+  }
+  return overlays;
 }
 
 // ---------------------------------------------------------------------------- commit / fail / finalize
@@ -383,7 +405,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
  */
 export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): Promise<CommitStepResult> {
   try {
-    return await deps.txRunner.run(args.workspaceId, async (tx) => {
+    const res = await deps.txRunner.run(args.workspaceId, async (tx): Promise<CommitStepResult & { ok: true }> => {
       await fence(tx, args.runId, args.attempt);
 
       // idempotency on (run_id, step_key, attempt): a replay of an already-committed step is a no-op.
@@ -480,6 +502,17 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       });
       return { ok: true, idempotent: false, state: "waiting_gate", gateId };
     });
+    // Schedule the `gate:<id>` expiry job AFTER commit (§6.4 item 6; the queue send is not transactional with
+    // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing.
+    if (res.ok && res.gateId && args.next.kind === "gate" && args.next.deadlineAt) {
+      await scheduleGateExpiry(deps, {
+        gateId: res.gateId,
+        workspaceId: args.workspaceId,
+        deadlineAt: args.next.deadlineAt,
+        now: deps.clock.now(),
+      });
+    }
+    return res;
   } catch (e) {
     if (e instanceof StaleTaskError) return { ok: false, code: "stale_task", currentAttempt: e.currentAttempt };
     throw e;

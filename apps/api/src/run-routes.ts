@@ -4,7 +4,7 @@
 // in the package; the live DB/Redis/queue clients behind `deps` are constructed at deploy (deferred).
 
 import { Hono } from "hono";
-import type { WorkflowKey } from "@rhema/contracts";
+import type { DecisionAction, WorkflowKey } from "@rhema/contracts";
 import {
   createRun,
   heartbeat,
@@ -13,6 +13,9 @@ import {
   failStep,
   audit,
   hydration,
+  resolveGate,
+  recordGateActivity,
+  holdGate,
   seatForWorkflow,
   phaseClassesForWorkflow,
   RevokedTokenError,
@@ -21,6 +24,9 @@ import {
   type OrchestratorDeps,
   type RunTokenClaims,
   type CommitNext,
+  type GateActivity,
+  type GateEdit,
+  type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
 
@@ -34,6 +40,8 @@ export interface Principal {
 export interface RunApiDeps extends OrchestratorDeps {
   /** Resolve the authenticated principal from the request (session cookie in prod). */
   principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
+  /** content store for serializing gate write-back overlays (REQ-SPEC-9); required to resolve gates with edits. */
+  readonly store?: ContentStore;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -100,6 +108,50 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (res.ok) return c.json({ runId: res.runId, state: res.state, deduped: res.deduped }, res.deduped ? 200 : 201);
     if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
     return c.json({ error: res.reason, detail: res.error.message }, 422);
+  });
+
+  // ---- gate resolution: the user's decision (§6.4; §12.4 step 7). Session-authenticated (not a run token) —
+  // the human, not the sandbox, resolves a gate. Writes the Decision, serializes any structured edits into
+  // write-back overlays (REQ-SPEC-9), and resumes the run. ----
+  app.post("/runs/:id/gates/:gid", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const body = (await c.req.json()) as GateDecisionBody;
+    if (!body.action) return c.json({ error: "action required" }, 400);
+    const res = await resolveGate(deps, {
+      runId: c.req.param("id"),
+      gateId: c.req.param("gid"),
+      workspaceId: principal.workspaceId,
+      userId: principal.userId,
+      action: body.action,
+      presence: body.presence,
+      guidance: body.guidance,
+      standingRule: body.standingRule,
+      edits: body.edits,
+    });
+    if (!res.ok) {
+      if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
+      return c.json({ error: res.reason }, 404);
+    }
+    if (!res.resolved) return c.json({ resolved: false, reason: res.reason }, 409);
+    return c.json({ resolved: true, state: res.state, overlayVersionIds: res.overlayVersionIds, guidanceId: res.guidanceId });
+  });
+
+  // record presence / reading activity on an open gate (§6.4 item 1/2; REQ-SPEC-18) — server-side deadline state.
+  app.post("/runs/:id/gates/:gid/activity", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const body = (await c.req.json()) as { activity: GateActivity };
+    const res = await recordGateActivity(deps, { gateId: c.req.param("gid"), workspaceId: principal.workspaceId, activity: body.activity });
+    return c.json(res);
+  });
+
+  // "Wait for me" — remove the deadline for this card without resolving it (§6.4 item 1).
+  app.post("/runs/:id/gates/:gid/hold", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const res = await holdGate(deps, { gateId: c.req.param("gid"), workspaceId: principal.workspaceId });
+    return c.json(res);
   });
 
   // ---- internal run API: run-token auth; every call carries `attempt` (fencing) ----
@@ -233,4 +285,11 @@ interface CommitBody {
   durationMs?: number;
   result: { status: "done"; sdkSubtype: string; predicatesPassed: boolean; compactions: number };
   next: CommitNext;
+}
+interface GateDecisionBody {
+  action: DecisionAction;
+  presence?: boolean;
+  guidance?: string;
+  standingRule?: boolean;
+  edits?: GateEdit;
 }
