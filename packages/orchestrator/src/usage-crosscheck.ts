@@ -9,9 +9,12 @@
 // §17), and > 5% is the SLO alert threshold.
 //
 // It is a PURE READER over `usage_records` — the meter and the SDK rows are written elsewhere (the proxy
-// at the wire; the phase loop for `sdk_stream`; the commit path for `sdk_estimate`, D-P0.08-2). When a
-// run has no SDK-reported figure yet, the check reports `comparable: false` rather than a false pass:
-// an unrun cross-check is never reported as within tolerance.
+// at the wire; the phase loop for `sdk_stream`; the commit path for `sdk_estimate`, D-P0.08-2). The SDK's
+// per-phase reported COST is the `sdk_estimate` row; the streamed `sdk_stream` (usage.tick) rows carry
+// `list_cost_usd = 0` (token markers, not a dollar figure — phase-loop.ts) and so are NOT the SDK figure.
+// A run with no `sdk_estimate` row yet (the live writer is D-P0.08-2) reports `comparable: false` — an unrun
+// cross-check is never a false pass NOR a false failure (a 0-dollar `sdk_stream` alone would otherwise read
+// as a spurious 100% divergence).
 
 import type { SqlClient } from "./tx.js";
 
@@ -20,14 +23,15 @@ export const CROSS_CHECK_TOLERANCE_PCT = 2;
 /** The §13.5 SLO alert threshold: any run diverging > 5% pages. */
 export const CROSS_CHECK_ALERT_PCT = 5;
 
-/** Which SDK-source rows carry the SDK's own reported dollar figure for the cross-check. */
-export const SDK_REPORTED_SOURCES = ["sdk_estimate", "sdk_stream"] as const;
+/** The source row that carries the SDK's own reported dollar figure (§12.7 cross-check 1). `sdk_stream` is
+ *  excluded: it is the streamed usage.tick token-marker rows, written with `list_cost_usd = 0`. */
+export const SDK_REPORTED_SOURCE = "sdk_estimate" as const;
 
 export interface UsageCrossCheck {
   readonly runId: string;
   /** Σ list cost from the meter of record (`source='proxy'`). */
   readonly proxyListUsd: number;
-  /** Σ list cost the SDK reported (`source in ('sdk_estimate','sdk_stream')`). */
+  /** Σ list cost the SDK reported (`source='sdk_estimate'`). */
   readonly sdkListUsd: number;
   /** |proxy − sdk| / proxy, as a percentage (0 when both are 0). */
   readonly divergencePct: number;
@@ -76,15 +80,16 @@ export async function proxyVsSdkCrossCheck(exec: SqlClient, runId: string): Prom
     if (r.source === "proxy") {
       proxyListUsd += usd;
       sawProxy = true;
-    } else if ((SDK_REPORTED_SOURCES as readonly string[]).includes(r.source)) {
+    } else if (r.source === SDK_REPORTED_SOURCE) {
       sdkListUsd += usd;
       sawSdk = true;
     }
   }
 
-  // "comparable" needs BOTH sides to have rows AND a non-zero denominator; the SDK dollar figure is only
-  // present once the commit path records `sdk_estimate` (D-P0.08-2), so a run without it is honestly
-  // not-yet-comparable rather than a spurious 0% pass.
+  // "comparable" needs a proxy figure, an `sdk_estimate` figure, AND a non-zero denominator. The SDK dollar
+  // figure is only present once the commit path records `sdk_estimate` (D-P0.08-2); until then a run has only
+  // proxy rows (and 0-dollar `sdk_stream` rows, which do not count), so it is honestly not-yet-comparable —
+  // never a spurious pass NOR a spurious 100%-divergence failure.
   const comparable = sawProxy && sawSdk && proxyListUsd > 0;
   const divergencePct = comparable ? (Math.abs(proxyListUsd - sdkListUsd) / proxyListUsd) * 100 : 0;
   const withinTolerance = comparable && divergencePct <= CROSS_CHECK_TOLERANCE_PCT;

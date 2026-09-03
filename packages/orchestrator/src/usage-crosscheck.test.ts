@@ -67,13 +67,24 @@ describe("proxyVsSdkCrossCheck (§12.7 cross-check 1)", () => {
     expect(r.alert).toBe(true);
   });
 
-  it("sums sdk_stream + sdk_estimate as the SDK-reported figure", async () => {
+  it("takes the SDK figure from sdk_estimate only; ignores 0-dollar sdk_stream rows", async () => {
     await usage("run1", "proxy", 2.0);
-    await usage("run1", "sdk_estimate", 1.4);
-    await usage("run1", "sdk_stream", 0.6);
+    await usage("run1", "sdk_estimate", 2.0);
+    await usage("run1", "sdk_stream", 0); // the streamed usage.tick rows carry list_cost_usd = 0
     const r = await check("run1");
-    expect(r.sdkListUsd).toBeCloseTo(2.0, 6);
+    expect(r.sdkListUsd).toBeCloseTo(2.0, 6); // sdk_stream did not contribute
     expect(r.withinTolerance).toBe(true);
+  });
+
+  it("a real run with only proxy + 0-dollar sdk_stream (no sdk_estimate) is NOT comparable (no false failure)", async () => {
+    // this is the live shape until D-P0.08-2 writes sdk_estimate: proxy meters real cost, phase-loop writes
+    // sdk_stream at list_cost_usd=0. It must read as not-yet-comparable, never a spurious 100% divergence.
+    await usage("run1", "proxy", 1.0);
+    await usage("run1", "sdk_stream", 0);
+    const r = await check("run1");
+    expect(r.comparable).toBe(false);
+    expect(r.flagged).toBe(false);
+    expect(r.withinTolerance).toBe(false);
   });
 
   it("scopes to the run: another run's rows do not leak into the sum", async () => {

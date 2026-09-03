@@ -43,7 +43,7 @@ Two things are true at once, and the honest readout keeps them distinct:
 | 2 | cited ⇒ fetched passes against the proxy log | **Demonstrated**: `validateCitedFetched` runs at delivery (a miss ⇒ `failed(validation)`); the post-run asserter re-checks every persisted `claim.url` + `claim.sources[].url` against the `fetch_log` and fails on a miss. | Deferred (H0) — over the live proxy log. | `packages/mirror/validation.ts`; `assessPhase0ExitForRun` (miss test) |
 | 3 | every sidecar validates (`parseStatus = ok`) on all three | **Demonstrated**: `validateSidecars`/`parseSidecar` (ok\|failed only) at delivery; the asserter reads persisted `artifact_versions.parse_status` and fails on any `failed`. | Deferred (H0) — over live-delivered sidecars (D-P0.03-1). | `packages/mirror/validation.ts`; `assessPhase0ExitForRun` (failed-sidecar test) |
 | 4 | a gate edit round-trips through the serializer into the next phase's file | **Demonstrated (serializer half)**: the write-back serializers round-trip `parse(serialize(rows)) ≡ rows` on all three projects; the gate resolves through the **real api route** and resumes the run. | Deferred (H0) — the write into the next phase's *file* on live `dev`. | `packages/protocols/serializers/roundtrip.test.ts`; `packages/orchestrator/gate-overlay.ts`; `g21.test.ts` (gate scenario) |
-| 5 | proxy-metered cost = SDK-reported cost ± 2% | **Demonstrated (comparator)**: `proxyVsSdkCrossCheck` sums `usage_records{source:'proxy'}` vs the SDK figure and flags > 2% / alerts > 5%; an un-comparable run is never a false pass. | **Deferred (H0)** — a metered live run populates the SDK-cost row (D-P0.08-2). | `packages/orchestrator/usage-crosscheck.ts` + tests; `g21.test.ts` (divergence test) |
+| 5 | proxy-metered cost = SDK-reported cost ± 2% | **Demonstrated (comparator)**: `proxyVsSdkCrossCheck` sums `usage_records{source:'proxy'}` vs the SDK's `sdk_estimate` figure and flags > 2% / alerts > 5%. The SDK dollar figure is the `sdk_estimate` row (populated live by D-P0.08-2); the 0-dollar `sdk_stream` usage.tick rows are excluded, so a run without `sdk_estimate` reads as **not-yet-comparable** — never a false pass nor a false 100%-divergence failure. | **Deferred (H0)** — a metered live run populates the SDK-cost row (D-P0.08-2). | `packages/orchestrator/usage-crosscheck.ts` + tests; `g21.test.ts` (divergence test) |
 | 6 | pilot wave e2e on the dev set: 6 arms, matchers trained, scorers green, σ_d estimated, n fixed | **MET (deterministic)**: the pilot wave runs end-to-end over the dev set with the six arms via `fakeExecutor`, human-recorded match decisions, all deterministic scorers green (report renders ⇒ C-a…C-g passed), σ_d estimated from the report's per-draft paired recalls, n fixed and recorded on the wave. | Machinery met; **real paired-difference variance** still needs live pilot runs (D-P0.13-4). | `packages/benchmark-runner/pilot.ts` + `pilot.test.ts` + `pilot-wave.e2e.test.ts`; migration `0015` |
 | — | Integration suite (gates, orphan resume, cancel, cap exhaustion, stale task) green in CI | **MET**: the `FakeEngine` suite composes api + worker + PGlite for all five G21 scenarios; wired into the CI `integration` job. | — | `integration/src/g21.test.ts`; `.github/workflows/ci.yml` |
 | — | Instrumented constants merged; estimator no longer provisional for ported workflows | **Machinery MET**: `estimateCredits` consumer + §6.1 `RIGOR_MULTIPLIERS` + `foldInstrumentedRun` (measured→calibrated, `provisional:false`). **Values still provisional** — a real proxy-metered run per workflow is H0-deferred. | Deferred (H0) — the measured values (§16.3 #1). | `packages/protocols/estimator.ts` + tests |
@@ -69,7 +69,13 @@ composition level with their **live `dev` half explicitly deferred on H0**.
 3. **Estimate-and-cap, metered at the wire.** The proxy is the meter of record (`usage_records
    {source:'proxy'}`) and the cap enforcer (402 at Σ ≥ cap → `budget` → `resume_partial`); the
    `budget-stop` fixture drives exactly that path in `g21.test.ts` (cap-exhaustion scenario), and
-   `proxyVsSdkCrossCheck` wires §12.7 cross-check 1. The *live* wire metering is the H0 leg.
+   `proxyVsSdkCrossCheck` wires §12.7 cross-check 1 (against the SDK's `sdk_estimate` figure). The
+   *live* wire metering is the H0 leg.
+
+## G1 linkage
+
+This readout is referenced from `docs/tickets/16a_GATE-G1__phase0-exit.md` (the gate the operator
+reads out) and from the P0.15 section of `docs/tickets/DEFERRALS.md` (the live-leg rows that gate it).
 
 ---
 
