@@ -7,7 +7,7 @@
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import { type StageConfig, sandboxSubnetOf } from "../config/stages.js";
+import { type StageConfig, sandboxSubnetOf } from "../config/stages";
 
 /** The network tag the egress-proxy instances carry; the sandbox's only egress firewall target. */
 export const EGRESS_PROXY_TAG = "egress-proxy";

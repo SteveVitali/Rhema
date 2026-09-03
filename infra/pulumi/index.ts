@@ -11,12 +11,12 @@
 // provisions the SUBSTRATE only; service business logic ships in the app images later tickets build.
 
 import * as pulumi from "@pulumi/pulumi";
-import { stageConfigFor } from "../config/stages.js";
-import { createNetwork } from "./network.js";
-import { createData } from "./data.js";
-import { createSecrets } from "./secrets.js";
-import { createIam } from "./iam.js";
-import { createCompute } from "./compute.js";
+import { stageConfigFor } from "../config/stages";
+import { createNetwork } from "./network";
+import { createData } from "./data";
+import { createSecrets } from "./secrets";
+import { createIam } from "./iam";
+import { createCompute } from "./compute";
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();

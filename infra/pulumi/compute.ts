@@ -8,10 +8,10 @@
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import { type StageConfig } from "../config/stages.js";
-import type { Network } from "./network.js";
-import { EGRESS_PROXY_TAG, SANDBOX_TAG } from "./network.js";
-import { SERVICES, type Iam, type ServiceName } from "./iam.js";
+import { type StageConfig } from "../config/stages";
+import type { Network } from "./network";
+import { EGRESS_PROXY_TAG, SANDBOX_TAG } from "./network";
+import { SERVICES, type Iam, type ServiceName } from "./iam";
 
 export interface ComputeArgs {
   stack: string;
