@@ -1,0 +1,17 @@
+{
+  "//": "Standalone tsconfig for the Pulumi program. NOT part of the monorepo `tsc -b` graph — the CLI's",
+  "//2": "ts-node runtime uses this. The program imports the pure, dependency-free stage facts directly",
+  "//3": "from ../config/*.ts (compiled here alongside the program), so no build step or @rhema/* refs are",
+  "//4": "needed and there is no ESM/CJS boundary to cross.",
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "bin",
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["*.ts", "../config/stages.ts", "../config/retention.ts"]
+}
