@@ -23,6 +23,7 @@
     "@rhema/engine": "workspace:*",
     "@rhema/protocols": "workspace:*",
     "@rhema/harness": "workspace:*",
-    "@rhema/hooks": "workspace:*"
+    "@rhema/hooks": "workspace:*",
+    "@rhema/mirror": "workspace:*"
   }
 }
