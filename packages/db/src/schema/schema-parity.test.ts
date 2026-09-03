@@ -47,9 +47,13 @@ describe("Drizzle schema ↔ migrations parity", () => {
 
   it("every migrated table (except _migrations) has a Drizzle definition — no table left un-typed", async () => {
     const db = await createTestDb();
+    // Exclude partition CHILD tables (relispartition): a daily `run_events` partition is not separately typed —
+    // Drizzle models the partitioned PARENT (relkind 'p'), which this query keeps.
     const rows = (
       await db.query(
-        "select table_name from information_schema.tables where table_schema='public' and table_type='BASE TABLE'",
+        `select c.relname as table_name
+           from pg_class c join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relispartition`,
       )
     ).rows as { table_name: string }[];
     const dbTableNames = new Set(rows.map((r) => r.table_name));
@@ -63,7 +67,8 @@ describe("Drizzle schema ↔ migrations parity", () => {
     }
     // and no Drizzle table names a table the DB lacks
     expect(drizzleNames.has("backlog_items")).toBe(false);
-    expect(drizzleNames.has("run_events")).toBe(false);
+    // run_events IS now defined (P0.08b) and is the partitioned parent, not a child partition.
+    expect(drizzleNames.has("run_events")).toBe(true);
     await db.close();
   });
 });

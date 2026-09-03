@@ -5,6 +5,7 @@
 export * from "./deletion.js";
 export * from "./jobs.js";
 export * from "./run-jobs.js";
+export * from "./run-events-jobs.js";
 
 /** Queue names this worker owns (§12.1). Handlers are stubbed until P0.08. */
 export const WORKER_QUEUES = [
@@ -19,6 +20,9 @@ export const WORKER_QUEUES = [
   "notify",
   "usage.reconcile",
   "figure.render",
+  // Run-event store maintenance (§12.5, P0.08b):
+  "run_events.retention", // daily: expire internal rows at 30 days (user rows survive)
+  "run_events.partition", // daily: pre-create the upcoming daily run_events partitions
   // Deletion / retention pipeline (REQ-ARCH-28/29):
   "project.purge", // tombstone -> 30-day purge -> lifecycle delete
   "account.hard-delete", // 14-day grace -> hard delete (retain anonymized ledger + Stripe customer)

@@ -118,4 +118,17 @@ describe("internal run API — token auth + fencing", () => {
     const res = await app.request("/internal/runs/run1/heartbeat", { method: "PUT", headers: { authorization: `Bearer ${token}` } });
     expect(res.status).toBe(403);
   });
+
+  it("413 when a POST events batch exceeds the 250-event limit (§12.5)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running" });
+    const token = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
+    const events = Array.from({ length: 251 }, () => ({ type: "usage.tick", payload: { spentCredits: 1, capCredits: 10 } }));
+    const res = await app.request("/internal/runs/run1/events", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ events }),
+    });
+    expect(res.status).toBe(413);
+    expect((await res.json()) as { code: string }).toMatchObject({ code: "event_batch_too_large" });
+  });
 });
