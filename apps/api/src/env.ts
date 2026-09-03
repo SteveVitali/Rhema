@@ -4,8 +4,14 @@
 
 export interface ApiEnv {
   readonly port: number;
-  /** AlloyDB connection string (`postgresql://…`). */
+  /** AlloyDB connection string (`postgresql://…`) — a RESTRICTED, RLS-ENFORCED role for user-facing reads. */
   readonly databaseUrl: string;
+  /**
+   * Optional elevated connection for the platform-wide circuit-breaker read (credit_ledger across accounts).
+   * Set this to a role that can read it, so `databaseUrl` above can stay a restricted RLS-enforced role and
+   * tenant isolation is never bypassed on user requests. Unset ⇒ the circuit breaker is disabled (caps unscaled).
+   */
+  readonly systemDatabaseUrl?: string;
   /** Memorystore Redis URL (`redis://…`). */
   readonly redisUrl: string;
   /** the versioned objects GCS bucket (gate write-back overlays — REQ-SPEC-9). */
@@ -34,6 +40,7 @@ export function readApiEnv(): ApiEnv {
     runTokenPublicKeySecret: required("RUN_TOKEN_PUBLIC_KEY_SECRET"),
     // the run-event SSE route pings every 25 s (§12.5); keep the idle timeout well above it (default 120 s).
     sseIdleTimeoutMs: Number(process.env.SSE_IDLE_TIMEOUT_MS ?? 120_000),
+    ...(process.env.SYSTEM_DATABASE_URL ? { systemDatabaseUrl: process.env.SYSTEM_DATABASE_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

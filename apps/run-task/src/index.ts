@@ -16,7 +16,16 @@ export * from "./bootstrap.js";
 export * from "./event-buffer.js";
 export * from "./event-transport.js";
 export * from "./sdk-adapter.js";
-export { runAgentPhase, buildPreToolUseHook, type AgentPhaseResult } from "./agent-entry.js";
+export {
+  runAgentPhase,
+  buildPreToolUseHook,
+  createFdEventTransport,
+  HARNESS_EVENT_FD,
+  PHASE_SPEC_FILENAME,
+  type AgentPhaseResult,
+  type AgentPhaseSpec,
+} from "./agent-entry.js";
+export { parseAgentEventLine, forwardAgentEvents, toLines } from "./harness-main.js";
 export * from "./materialize-work.js";
 
 /** Marker export retained for the build graph / provenance job. */

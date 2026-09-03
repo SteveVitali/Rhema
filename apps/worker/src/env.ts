@@ -3,7 +3,14 @@
 // required var.
 
 export interface WorkerEnv {
+  /** a RESTRICTED, RLS-ENFORCED role for the worker's tenant-scoped transactions. */
   readonly databaseUrl: string;
+  /**
+   * Optional elevated connection for the worker's SYSTEM-scoped reads (the parked-run sweep + run-event
+   * maintenance scan across tenants / system tables). Set it so `databaseUrl` can stay a restricted RLS-enforced
+   * role; unset ⇒ those reads fall back to the main pool (whose role must then be able to read across tenants).
+   */
+  readonly systemDatabaseUrl?: string;
   readonly redisUrl: string;
   /** RS256 run-token key secret-version resource names (the worker MINTS at provision → needs both). */
   readonly runTokenPrivateKeySecret: string;
@@ -46,6 +53,7 @@ export function readWorkerEnv(): WorkerEnv {
     internalApiUrl: required("API_INTERNAL_URL"),
     proxyBaseUrl: required("ANTHROPIC_BASE_URL"),
     defaultConcurrency: Number(process.env.DEFAULT_CONCURRENCY ?? 2),
+    ...(process.env.SYSTEM_DATABASE_URL ? { systemDatabaseUrl: process.env.SYSTEM_DATABASE_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

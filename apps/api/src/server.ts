@@ -61,12 +61,17 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   });
 
   const bus = new RedisRunEventBus(redis, subscriber);
-  // A system-scoped SqlClient for the platform-wide circuit-breaker read (credit_ledger across accounts). The
-  // deploy connects the api's pool as a role able to read it (the breaker is platform-wide, not tenant-scoped).
-  const systemExec = {
-    query: (sql: string, params?: readonly unknown[]) =>
-      pool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
-  };
+  // The platform-wide circuit-breaker read (credit_ledger across accounts) must NOT run on the user-facing
+  // `pool` if that role bypasses RLS — that would disable tenant isolation on user requests. Use a SEPARATE
+  // elevated connection when `systemDatabaseUrl` is set (so `pool` can stay a restricted RLS-enforced role); if
+  // it is unset the breaker is disabled and caps are left unscaled (a safe default, not a tenant hole).
+  const systemPool = env.systemDatabaseUrl ? new pg.Pool({ connectionString: env.systemDatabaseUrl }) : null;
+  const systemExec = systemPool
+    ? {
+        query: (sql: string, params?: readonly unknown[]) =>
+          systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
+      }
+    : null;
   const deps: ApiDeps = {
     txRunner: new PgPoolTxRunner(pool),
     eventWriter: new SqlEventWriter(bus), // post-commit user-event fan-out over Redis
@@ -85,7 +90,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     store: await createGcsContentStore({ bucketName: env.objectsBucket }),
     // a per-run workspace-bound store for delivery reads (a run is single-tenant; D-P0.09-1).
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
-    circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })),
+    ...(systemExec ? { circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })) } : {}),
     principal: headerPrincipal,
   };
   return { deps, boss, pool };
