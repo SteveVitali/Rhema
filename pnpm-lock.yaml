@@ -168,6 +168,9 @@ importers:
       '@rhema/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
+      '@rhema/mirror':
+        specifier: workspace:*
+        version: link:../../packages/mirror
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../../packages/protocols

@@ -17,6 +17,7 @@ export * from "./event-buffer.js";
 export * from "./event-transport.js";
 export * from "./sdk-adapter.js";
 export { runAgentPhase, buildPreToolUseHook, type AgentPhaseResult } from "./agent-entry.js";
+export * from "./materialize-work.js";
 
 /** Marker export retained for the build graph / provenance job. */
 export function packageInfo(): { name: string } {
