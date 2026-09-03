@@ -8,6 +8,7 @@
     { "path": "packages/engine" },
     { "path": "packages/hooks" },
     { "path": "packages/orchestrator" },
+    { "path": "packages/live-clients" },
     { "path": "packages/ledger" },
     { "path": "packages/mirror" },
     { "path": "packages/obligations" },

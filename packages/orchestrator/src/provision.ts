@@ -29,6 +29,14 @@ export interface JobSpec {
   readonly projectId?: string;
   /** Workload-Identity service account scoped to project/voice prefixes. */
   readonly serviceAccount: string;
+  /**
+   * The per-run run token (2 h JWT) and proxy credential secret, delivered to the HARNESS uid only (a 0600
+   * projected file — never the agent's env; REQ-SPEC-10/11). Optional: the in-process fake launcher ignores
+   * them; the live GKE launcher (D-P0.08-1) injects them so the harness can call the internal API + present the
+   * credential to the proxy. Rotated per attempt with the launch (revoked at terminal state).
+   */
+  readonly runToken?: string;
+  readonly proxyCredential?: string;
 }
 
 export const MAX_LAUNCH_ATTEMPTS = 3; // 3 launch attempts with backoff (§12.4 step 4)
@@ -194,6 +202,8 @@ export async function provisionRun(
         workspaceId: args.workspaceId,
         projectId: args.projectId,
         serviceAccount: args.serviceAccount,
+        runToken: token,
+        proxyCredential: credential,
       });
       return { ok: true, runId: args.runId, attempt, token, credential, jobId };
     } catch (e) {
