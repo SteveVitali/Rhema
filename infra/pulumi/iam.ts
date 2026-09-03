@@ -7,7 +7,7 @@
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import type { Secrets } from "./secrets.js";
+import type { Secrets } from "./secrets";
 
 export interface IamArgs {
   stack: string;

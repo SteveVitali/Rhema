@@ -4,9 +4,9 @@
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import { type StageConfig } from "../config/stages.js";
-import { RETENTION_SCHEDULE } from "../config/retention.js";
-import type { Network } from "./network.js";
+import { type StageConfig } from "../config/stages";
+import { RETENTION_SCHEDULE } from "../config/retention";
+import type { Network } from "./network";
 
 export interface DataArgs {
   stack: string;
