@@ -1,0 +1,66 @@
+{
+  "sidecar": "findings",
+  "version": 1,
+  "findings": [
+    {
+      "ordinal": 1,
+      "kind": "discourse",
+      "severity": "major",
+      "origin": "both",
+      "reconciliation": "kept",
+      "anchor": {
+        "blockId": "p-thesis-1",
+        "quote": "which conversation it is in",
+        "startOffset": 0,
+        "endOffset": 27,
+        "confidence": 0.71
+      },
+      "title": "The essay doesn't name the conversation it is in — and its educated readers live there",
+      "body": "Its thesis, §XIII, §XV and its declared philosophical center each have famous predecessors it never names; at this venue that converts synthesis into apparent rediscovery. Direction: name the coinage's lineage (Balkin's National Surveillance State, coercive capacity), a Solove sentence in §XIII, a Pettit sentence in §XI, Brandeis in §XV.",
+      "rubricDims": ["originality_situatedness", "argument_rigor"],
+      "letterSection": "major"
+    },
+    {
+      "ordinal": 2,
+      "kind": "argument",
+      "severity": "blocking",
+      "origin": "both",
+      "reconciliation": "kept",
+      "anchor": {
+        "blockId": "p-injury-1",
+        "quote": "anticipatory chilling",
+        "startOffset": 4,
+        "endOffset": 25,
+        "confidence": 0.83
+      },
+      "title": "The injury is the thesis, and it is the least-evidenced thing in the piece — Posner's counterargument unanswered",
+      "body": "The central injury claim (anticipatory chilling) is the least-evidenced element, and the strongest published counterargument (Posner's collection/use distinction) goes unanswered. The independent second read, given only the draft, reached the same verdict on independent grounds.",
+      "rubricDims": ["argument_rigor", "evidence_accuracy"],
+      "letterSection": "major"
+    },
+    {
+      "ordinal": 7,
+      "kind": "claim",
+      "severity": "minor",
+      "origin": "editor",
+      "anchor": {
+        "blockId": "p-intro-2",
+        "quote": "shown to a grand jury",
+        "startOffset": 41,
+        "endOffset": 62,
+        "confidence": 0.94
+      },
+      "title": "\"Shown to a grand jury\" (opening): re-attribute to Minnesota Reformer",
+      "body": "Minnesota Reformer's report, not AP's; re-attribute or soften — see Major issue 3.",
+      "evidence": {
+        "verdict": "substantially_accurate",
+        "urls": [{ "url": "https://minnesotareformer.com/", "accessed": "2026-08-21T00:00:00Z" }]
+      },
+      "suggestion": {
+        "replacement": "reported by the Minnesota Reformer as shown to a grand jury"
+      },
+      "rubricDims": ["evidence_accuracy"],
+      "letterSection": "roadmap"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+import { z } from "zod";
+import { idSchema, isoSchema, urlSchema } from "./ids.js";
+import {
+  claimVerdictSchema,
+  dispositionKindSchema,
+  findingKindSchema,
+  gateKindSchema,
+  rubricDimensionSchema,
+  severitySchema,
+} from "./enums.js";
+import { anchorSchema } from "./domain/anchor.js";
+import { actorSchema } from "./domain/common.js";
+import { FINDING_ORIGIN, FINDING_RECONCILIATION, LETTER_SECTIONS } from "./domain/findings.js";
+
+// Read models the beta's phone-width-shared surfaces consume (§5.7 FindingView, §10.5 GateView). The full
+// mobile-facing contract family (InboxItem, DocumentView, DispositionInput, BlockPatch, NotificationDevice)
+// is deferred to 1.x; only these two are in scope now, because the beta's phone-width web consumes them.
+
+/** FindingView — the IDE read model (§5.7). Field names match §11.3's canonical Finding/Disposition. */
+export const findingViewSchema = z.object({
+  id: idSchema,
+  correspondenceId: idSchema,
+  draftId: idSchema,
+  kind: findingKindSchema,
+  severity: severitySchema,
+  origin: FINDING_ORIGIN,
+  reconciliation: FINDING_RECONCILIATION.optional(),
+  anchor: anchorSchema.nullable(),
+  projection: anchorSchema.optional(),
+  title: z.string(),
+  body: z.string(),
+  evidence: z
+    .object({
+      claimId: idSchema.optional(),
+      verdict: claimVerdictSchema.optional(),
+      urls: z.array(z.object({ url: urlSchema, accessed: isoSchema })),
+    })
+    .optional(),
+  suggestion: z.object({ replacement: z.string() }).optional(),
+  rubricDims: z.array(rubricDimensionSchema),
+  letterSection: LETTER_SECTIONS.optional(),
+  provisional: z.boolean(),
+  disposition: z
+    .object({
+      kind: dispositionKindSchema,
+      rationale: z.string().optional(),
+      by: actorSchema,
+      at: isoSchema,
+      moveId: idSchema.optional(),
+      frozen: z.boolean(),
+      applied: z.boolean().optional(),
+    })
+    .optional(),
+});
+export type FindingView = z.infer<typeof findingViewSchema>;
+
+/** GateView — the approval read model (§10.5; design/7 §8 with §11.3 renames). */
+export const gateViewSchema = z.object({
+  id: idSchema,
+  runId: idSchema,
+  kind: gateKindSchema,
+  artifactVersionId: idSchema.optional(),
+  openedAt: isoSchema,
+  deadlineAt: isoSchema.nullable().optional(),
+  /** false only for the informational scope card (§6.4). */
+  blocking: z.boolean(),
+  /** the 10-minute auto-proceed countdown while the user is present and not reading the artifact (REQ-SPEC-18). */
+  presenceTimer: z.object({ deadlineAt: isoSchema, paused: z.boolean() }).optional(),
+});
+export type GateView = z.infer<typeof gateViewSchema>;

@@ -50,10 +50,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Placeholder: mapper conformance, hook policy tests, artifact schema tests, markdown
-      # round-trip golden corpus land in P0.02–P0.05. For now, contract types must build.
-      - run: pnpm --filter @rhema/contracts build
-      - run: echo "contracts conformance suite: placeholder (filled by P0.02+)"
+      # P0.02: the contract suites — the REQ-SPEC-14 policy≡kind test, the frozen ClaimVerdict golden, the
+      # sidecar/anchor (REQ-OBJ-16/17) and event/notes/analytics schemas, and the @rhema/db deterministic ACs
+      # (migrations, immutability + obligation triggers, two-tenant RLS isolation, real-project seed) run here
+      # in-process on PGlite (a real Postgres build) — no DB service needed. Mapper conformance and the
+      # markdown round-trip corpus land in P0.04–P0.06.
+      - run: pnpm --filter @rhema/contracts --filter @rhema/db build
+      - run: pnpm exec vitest run packages/contracts packages/db
 
   integration:
     name: integration

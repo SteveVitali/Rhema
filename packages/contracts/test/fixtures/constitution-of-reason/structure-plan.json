@@ -1,0 +1,41 @@
+{
+  "sidecar": "structure_plan",
+  "version": 1,
+  "spine": [
+    "Reason is a practice before it is a faculty.",
+    "The scholastic disputation institutionalized arguing both sides.",
+    "The Enlightenment inherited the practice while disavowing the institution.",
+    "A constitution of reason is a set of disciplines, not a set of axioms."
+  ],
+  "sections": [
+    {
+      "ref": "I",
+      "title": "The faculty and the practice",
+      "targetWords": 900,
+      "purpose": "Set the thesis: reason as a trained practice."
+    },
+    {
+      "ref": "II",
+      "title": "The disputation as an institution",
+      "targetWords": 1200,
+      "purpose": "History of the scholastic method."
+    },
+    {
+      "ref": "III",
+      "title": "The Enlightenment's disavowal",
+      "targetWords": 1100,
+      "purpose": "Trace the inheritance and its denial.",
+      "anchor": {
+        "blockId": "p-sec3-1",
+        "quote": "the Enlightenment inherited the practice",
+        "startOffset": 0,
+        "endOffset": 40,
+        "confidence": 0.79
+      }
+    }
+  ],
+  "alternativesConsidered": [
+    "Open with Kant rather than the scholastics (rejected: buries the practice claim)."
+  ],
+  "gaps": ["Need one primary source for the disputation's two-sided requirement."]
+}

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Drizzle schema, migrations, RLS wrapper; Better Auth tables (skeleton).",
+  "description": "Drizzle schema, forward-only SQL migrations, RLS wrapper, and the three-real-project seed (§11).",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,6 +25,7 @@
     "better-auth": "^1.7.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
     "drizzle-kit": "^0.31.4"
   }
 }

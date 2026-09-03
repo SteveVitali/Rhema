@@ -1,0 +1,32 @@
+{
+  "sidecar": "cut_list",
+  "version": 1,
+  "targetWords": 5200,
+  "cuts": [
+    {
+      "ordinal": 1,
+      "anchor": {
+        "blockId": "p-sec5-2",
+        "quote": "As many commentators have noted over the years,",
+        "startOffset": 0,
+        "endOffset": 46,
+        "confidence": 0.97
+      },
+      "words": 8,
+      "reason": "throat-clearing; the point stands without the appeal to authority"
+    },
+    {
+      "ordinal": 2,
+      "anchor": {
+        "blockId": "p-sec12-4",
+        "quote": "a second worked example that repeats the first's structure",
+        "startOffset": 0,
+        "endOffset": 57,
+        "confidence": 0.72
+      },
+      "words": 140,
+      "reason": "redundant illustration",
+      "protect": true
+    }
+  ]
+}

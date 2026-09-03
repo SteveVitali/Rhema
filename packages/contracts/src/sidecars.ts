@@ -1,0 +1,156 @@
+import { z } from "zod";
+import { isoSchema, urlSchema } from "./ids.js";
+import {
+  claimVerdictSchema,
+  dispositionKindSchema,
+  dispositionStatusSchema,
+  findingKindSchema,
+  rubricDimensionSchema,
+  severitySchema,
+  CLAIM_KINDS,
+  CLAIM_SOURCE_CHECKS,
+} from "./enums.js";
+import { anchorSchema } from "./domain/anchor.js";
+import { claimSourceSchema } from "./domain/claims.js";
+import { FINDING_ORIGIN, FINDING_RECONCILIATION, LETTER_SECTIONS } from "./domain/findings.js";
+
+// The six structured-output sidecar schemas (REQ-SPEC-12). Each is the machine-readable twin of a markdown
+// deliverable, emitted by the ported skill and validated at commit; the rows come from the sidecar, and a
+// markdown↔sidecar mismatch is a validation failure (P0.04 owns the parsers; P0.02 owns only these SCHEMAS).
+// A sidecar carries the SKILL's output — no server-assigned ULIDs (the parser assigns ids at insert), so the
+// row schemas here are the field subset the skill produces. Every anchor-bearing sidecar embeds `anchorSchema`
+// (§11.3 Anchor) VERBATIM (REQ-OBJ-16); the structural-sidecar contract test enforces that.
+
+/** Shared header on every sidecar: a version and the sidecar kind, so the parser dispatches on data, not path. */
+const envelope = <K extends string>(kind: K) =>
+  z.object({ sidecar: z.literal(kind), version: z.literal(1) });
+
+// ---- findings.json (the object the Margin/triage/rubric/what-changed depend on) ----
+export const findingRowSchema = z.object({
+  ordinal: z.number().int().nonnegative(),
+  kind: findingKindSchema,
+  severity: severitySchema, // emitted explicitly, never inferred from prose (REQ-SPEC-4)
+  origin: FINDING_ORIGIN,
+  reconciliation: FINDING_RECONCILIATION.optional(),
+  anchor: anchorSchema.nullable(), // §11.3 Anchor verbatim
+  title: z.string(),
+  body: z.string().max(4096),
+  evidence: z
+    .object({
+      verdict: claimVerdictSchema.optional(),
+      urls: z.array(z.object({ url: urlSchema, accessed: isoSchema })).default([]),
+    })
+    .optional(),
+  suggestion: z.object({ replacement: z.string() }).optional(),
+  rubricDims: z.array(rubricDimensionSchema).default([]),
+  letterSection: LETTER_SECTIONS.optional(),
+});
+export const findingsSidecarSchema = envelope("findings").extend({
+  findings: z.array(findingRowSchema),
+});
+export type FindingsSidecar = z.infer<typeof findingsSidecarSchema>;
+
+// ---- 01-claim-ledger.json ----
+export const claimRowSchema = z.object({
+  ordinal: z.number().int().nonnegative(),
+  text: z.string(),
+  tier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  verdict: claimVerdictSchema,
+  kind: z.enum(CLAIM_KINDS).optional(),
+  url: urlSchema.optional(),
+  normalizedUrl: z.string().optional(),
+  accessedAt: isoSchema.optional(),
+  note: z.string().optional(),
+  sources: z.array(claimSourceSchema).optional(),
+  sourceCheck: z.enum(CLAIM_SOURCE_CHECKS).optional(),
+  anchor: anchorSchema.optional(), // §11.3 Anchor verbatim
+  humanAdded: z.boolean().default(false),
+});
+export const claimLedgerSidecarSchema = envelope("claim_ledger").extend({
+  claims: z.array(claimRowSchema),
+});
+export type ClaimLedgerSidecar = z.infer<typeof claimLedgerSidecarSchema>;
+
+// ---- rubric.json (eight dimensions, 1–5, entailment caps; NEVER an aggregate — REQ-IDE-30) ----
+export const rubricRowSchema = z.object({
+  dimension: rubricDimensionSchema,
+  score: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  cap: z
+    .object({
+      at: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+      reason: z.string(),
+      entailedByFindingOrdinal: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
+});
+export const rubricSidecarSchema = envelope("rubric").extend({
+  dimensions: z.array(rubricRowSchema),
+  /** protocols may swap at most one dimension and add at most one (§6.7). */
+  swaps: z.array(z.object({ from: z.string(), to: rubricDimensionSchema })).optional(),
+});
+export type RubricSidecar = z.infer<typeof rubricSidecarSchema>;
+
+// ---- structure-plan.json (the Drafter's plan; structured fields the user edits at Approve plan) ----
+export const structureSectionSchema = z.object({
+  ref: z.string(),
+  title: z.string(),
+  targetWords: z.number().int().nonnegative().optional(),
+  purpose: z.string().optional(),
+  anchor: anchorSchema.optional(), // §11.3 Anchor verbatim (when the plan reverse-outlines an existing draft)
+});
+export const structurePlanSidecarSchema = envelope("structure_plan").extend({
+  /** the spine: claims the piece must establish, in order (§7.3). */
+  spine: z.array(z.string()).default([]),
+  sections: z.array(structureSectionSchema),
+  alternativesConsidered: z.array(z.string()).optional(),
+  gaps: z.array(z.string()).optional(),
+});
+export type StructurePlanSidecar = z.infer<typeof structurePlanSidecarSchema>;
+
+// ---- response-ledger.json (parsed into finding + disposition rows; frozen at delivery) ----
+export const responseLedgerEntrySchema = z.object({
+  /** which review finding this responds to (by that review's finding ordinal). */
+  findingOrdinal: z.number().int().nonnegative(),
+  disposition: z.object({
+    kind: dispositionKindSchema,
+    status: dispositionStatusSchema,
+    rationale: z.string().optional(), // required for rebut/escalate at the row layer above
+    adaptedText: z.string().optional(),
+    moveOrdinal: z.number().int().optional(),
+    applied: z.boolean().optional(),
+  }),
+  anchor: anchorSchema.optional(), // §11.3 Anchor verbatim (the move's location in v(N+1))
+});
+export const responseLedgerSidecarSchema = envelope("response_ledger").extend({
+  entries: z.array(responseLedgerEntrySchema),
+});
+export type ResponseLedgerSidecar = z.infer<typeof responseLedgerSidecarSchema>;
+
+// ---- cut-list.json (cut to length; reasons + protect toggles; restorable) ----
+export const cutRowSchema = z.object({
+  ordinal: z.number().int().nonnegative(),
+  anchor: anchorSchema, // §11.3 Anchor verbatim (the span to cut)
+  words: z.number().int().nonnegative(),
+  reason: z.string(),
+  protect: z.boolean().optional(),
+});
+export const cutListSidecarSchema = envelope("cut_list").extend({
+  targetWords: z.number().int().nonnegative().optional(),
+  cuts: z.array(cutRowSchema),
+});
+export type CutListSidecar = z.infer<typeof cutListSidecarSchema>;
+
+/**
+ * The sidecar registry: canonical filename → schema, and whether the sidecar is anchor-bearing (REQ-OBJ-16).
+ * P0.04's parsers dispatch on this; the structural-sidecar contract test iterates the anchor-bearing set.
+ */
+export const SIDECAR_REGISTRY = {
+  "findings.json": { schema: findingsSidecarSchema, anchorBearing: true },
+  "01-claim-ledger.json": { schema: claimLedgerSidecarSchema, anchorBearing: true },
+  "rubric.json": { schema: rubricSidecarSchema, anchorBearing: false },
+  "structure-plan.json": { schema: structurePlanSidecarSchema, anchorBearing: true },
+  "response-ledger.json": { schema: responseLedgerSidecarSchema, anchorBearing: true },
+  "cut-list.json": { schema: cutListSidecarSchema, anchorBearing: true },
+} as const;
+
+export type SidecarFilename = keyof typeof SIDECAR_REGISTRY;

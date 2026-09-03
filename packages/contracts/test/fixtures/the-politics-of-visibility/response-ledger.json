@@ -1,0 +1,31 @@
+{
+  "sidecar": "response_ledger",
+  "version": 1,
+  "entries": [
+    {
+      "findingOrdinal": 1,
+      "disposition": { "kind": "accept", "status": "done", "moveOrdinal": 1, "applied": false },
+      "anchor": {
+        "blockId": "p-thesis-1",
+        "quote": "Snowden called it turnkey tyranny; Balkin mapped the National Surveillance State",
+        "startOffset": 0,
+        "endOffset": 79,
+        "confidence": 0.88
+      }
+    },
+    {
+      "findingOrdinal": 2,
+      "disposition": {
+        "kind": "adapt",
+        "status": "done",
+        "rationale": "Answer Posner in §XI where non-domination gives it philosophical footing, rather than adding a new section.",
+        "adaptedText": "The capacity itself, not its exercise, is the injury — Posner's collection/use line answers a different question.",
+        "moveOrdinal": 2
+      }
+    },
+    {
+      "findingOrdinal": 7,
+      "disposition": { "kind": "accept", "status": "verified", "applied": true, "moveOrdinal": 3 }
+    }
+  ]
+}
