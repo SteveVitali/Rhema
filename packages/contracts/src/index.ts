@@ -22,6 +22,9 @@ export * from "./domain/obligations.js";
 export * from "./domain/gates.js";
 export * from "./domain/guidance.js";
 
+// versioned provider rate tables + list-cost math (REQ-SPEC-11, REQ-BILL-2; §12.7, §14.1)
+export * from "./domain/rates.js";
+
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";
 
