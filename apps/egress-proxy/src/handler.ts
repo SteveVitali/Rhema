@@ -27,11 +27,13 @@ import { meterResponse } from "./metering.js";
 import { registrableDomainOf } from "./domains.js";
 import {
   extractResponseServerTools,
+  extractResponseServerToolsSse,
   extractServerToolInvocations,
   guardWebFetchUrl,
   NovelDomainTracker,
   rewriteFetchUrl,
 } from "./outbound-limits.js";
+import { isSseBody } from "./usage-block.js";
 import { checkSearchQuery, SUSPICIOUS_QUERY_THRESHOLD } from "./ngram.js";
 import { isModelPriceable } from "./rates.js";
 import type { FetchLogWriter, SecretProvider, UsageWriter } from "./sinks.js";
@@ -271,7 +273,10 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
     }
     // The fetch log of record's per-fetch/search rows: THIS turn's real server-tool activity, from the
     // response (logged once — the source for source cards and cited ⇒ fetched, REQ-DATA-16).
-    for (const act of extractResponseServerTools(upstream.body)) {
+    const serverTools = isSseBody(upstream.body, contentType)
+      ? extractResponseServerToolsSse(upstream.body) // streaming response (D-P0.07-5)
+      : extractResponseServerTools(upstream.body); // buffered JSON response
+    for (const act of serverTools) {
       await writeFetch(
         act.kind === "search"
           ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: act.query, decision: "allow" })
