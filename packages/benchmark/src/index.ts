@@ -17,6 +17,7 @@ export * from "./provider-verification.js";
 // power + evals integration
 export * from "./power.js";
 export * from "./fixture.js";
+export * from "./fixture-floors.js";
 export * from "./report-guard.js";
 
 // deterministic scorers

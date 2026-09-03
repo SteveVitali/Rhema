@@ -1,0 +1,30 @@
+{
+  "name": "@rhema/integration-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase-0 FakeEngine integration suite (ledger G21): api + worker + FakeEngine + PGlite end-to-end.",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/api": "workspace:*",
+    "@rhema/worker": "workspace:*",
+    "@rhema/orchestrator": "workspace:*",
+    "@rhema/engine": "workspace:*",
+    "@rhema/mirror": "workspace:*",
+    "@rhema/protocols": "workspace:*",
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*",
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1"
+  }
+}

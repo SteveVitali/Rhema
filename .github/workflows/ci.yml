@@ -85,9 +85,22 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Placeholder: api + worker against a preview Aurora with a FakeEngine replaying recorded
-      # fixtures (gates, orphan resume, cancel, cap exhaustion, stale task) land in P0.08 (ledger G21).
-      - run: echo "integration suite: placeholder (filled by P0.08)"
+      # Build the graph so the integration workspace's `@rhema/*` dist imports resolve (api + worker + orchestrator
+      # + engine + mirror). Vitest transpiles the tests themselves, but they import the built packages.
+      - run: pnpm turbo build
+      # G21 (ledger G21; P0.15): the FakeEngine integration suite — api + worker + FakeEngine + PGlite end-to-end:
+      # gates, orphan resume, cancel, cap exhaustion, stale task, plus the delivered-run Phase-0 exit assessment.
+      # DATABASE_URL points the server-Postgres migrate+seed test (D-P0.02-1) at the postgres:16 service; the rest
+      # of the suite runs deterministically on in-process PGlite.
+      - name: G21 FakeEngine integration suite + server-Postgres migrate/seed (D-P0.02-1)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: pnpm exec vitest run integration
+      # The two-uid privilege-separation image (D-P0.06-2): the vitest test builds Dockerfile.privsep-test and runs
+      # it with `--cap-add SYS_ADMIN` (uid `agent` denied the secrets file; scoped mount-namespace isolation). It
+      # SKIPS where Docker is unavailable; this Linux runner has it.
+      - name: two-uid privsep image kernel legs (D-P0.06-2)
+        run: pnpm exec vitest run apps/run-task/src/privsep.docker.test.ts
 
   images:
     name: images (build + scan, pin digests)

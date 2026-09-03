@@ -8,6 +8,7 @@ export default defineConfig({
       "packages/**/*.test.ts",
       "apps/**/*.test.ts",
       "infra/**/*.test.ts",
+      "integration/**/*.test.ts",
       "tools/**/*.test.{ts,mjs}",
       "scripts/**/*.test.mjs",
     ],
