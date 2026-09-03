@@ -92,13 +92,44 @@ below); it is the empirical input to G19, and this readout flags it as unmeasure
 
 ---
 
+## Stage A complete (P0.15b) — the deployable artifacts exist and are validated offline
+
+`16_P0.15b` splits the live bring-up into **Stage A** (offline, no spend: write + validate every
+deployable artifact) and **Stage B** (operator-gated: the live deploy + the exit runs). **Stage A is
+done** — the following are written, build/lint/typecheck green, and unit-tested where a fake can stand
+in; none require a live deploy to validate:
+
+- **GCP/Pulumi IaC** (`infra/pulumi/`, D-P0.01-1/2/5/6/7): the full Pulumi (TypeScript) program — VPC
+  with the no-egress sandbox subnet (no Cloud NAT / no default route; egress firewall → proxy only),
+  AlloyDB, versioned+isolated GCS with the §13.3 retention lifecycle + the access-logged enclave
+  bucket, Memorystore, Secret Manager, per-service Workload-Identity SAs with explicit least-privilege
+  bindings, a GKE Standard cluster for run-task, the egress-proxy MIG, seven Cloud Run services, and the
+  HTTPS LB + Cloud CDN. **Typechecks clean against the real `@pulumi/gcp@8.41.1`.** The pure stage facts
+  (`infra/config/stages.ts`) are re-expressed for GCP and unit-tested.
+- **Live SDK adapter** (`apps/run-task/src/sdk-adapter.ts`, D-P0.06-4): binds the engine's `QueryFn`
+  seam to the vendored `@anthropic-ai/claude-agent-sdk`; the Dockerfile vendors it (guarded).
+- **Live arm executors + workshop CLI** (`packages/benchmark-runner/src/executors.ts` +
+  `workshop-cli.ts`, D-P0.14-1/2): A1/A2/A4/A5/A6 runners + the blind match/adjudication CLI.
+- **Live-exit driver** (`integration/src/live-exit-driver.ts`, item 6): `driveLiveExit` orchestrates the
+  three Reviews + Revise/Fact-check/Quick Voice + instrumented runs + the pilot wave, runs the built
+  asserters over the live rows, measures start-latency p95, and rolls up G1 readiness — fail-closed
+  without an authorized dev target.
+- **RS256 run-token signer** (`packages/orchestrator/src/token.ts`, D-P0.08-1): the deploy signer behind
+  the `RunTokenService` seam.
+- **Real `protocols_version` provenance** (D-P0.04-2): the CI `images` job now stamps the real version.
+
+What is **NOT** in Stage A (it is Stage B, operator-gated): `pulumi up`, the paid engine bring-up, the
+three live Reviews, the instrumented cost runs, the pilot spend, the start-latency measurement, and
+therefore the **measured** results and the G1 flag. Those run against a deployed `dev` under the
+[OPERATOR GATE]s in the ticket.
+
 ## G1 readiness — the honest recommendation
 
 **G1 cannot be flagged "ready to pass" yet**, and the gate rule is explicit: a phase-exit gate must not
 pass while any `OPEN` DEFERRALS row scoped to that phase remains (`DEFERRALS.md` rule 4;
-`00_MANIFEST.md`). The live-`dev` half of the exit criterion is exactly such a set of open rows (the
-`dev` deploy chain: D-P0.01-1/7, D-P0.06-1, D-P0.07-1, D-P0.08-1, D-P0.09-1, and the P0.15 live rows
-appended this run).
+`00_MANIFEST.md`). Stage A wrote the deploy artifacts but did **not** execute them; the live-`dev` half
+of the exit criterion is still a set of open rows (the `dev` deploy + exit runs: D-P0.01-1/7, D-P0.06-1,
+D-P0.07-1, D-P0.08-1, D-P0.09-1, and the P0.15/P0.15b live rows).
 
 What the operator has in hand for the G1 decision:
 
@@ -107,20 +138,26 @@ What the operator has in hand for the G1 decision:
   live deploy — the point of Phase 0 (validate the composition before a pixel of the IDE).
 - **The pilot wave met** on the dev set (σ_d estimated, n fixed) — the one §17 criterion that is a pure
   machinery check is done.
-- **A precise remaining checklist**: stand up `dev` (the Pulumi/GCP rewrite + service deploy), then run
-  the three real Reviews + the instrumented cost runs + the live gate round-trip, and re-run
-  `assessPhase0ExitForRun` against the live rows. Every asserter that will read those rows already
-  exists and is tested here.
+- **A precise remaining checklist, now with the artifacts to run it**: `pulumi up` the `pr-test` + `dev`
+  stacks (`infra/pulumi/README.md` has the runbook), vendor the SDK into the run-task image, then run
+  `driveLiveExit` (the built driver) against `dev` — it launches the three Reviews + the instrumented
+  cost runs + the pilot wave and runs `assessPhase0ExitForRun` over the live rows. Every asserter and
+  every deployable artifact already exists and is tested here; Stage B is execution, not construction.
 
-**Recommended disposition:** treat G1 as **blocked pending the `dev` deploy**, authorize the deploy
-work (D-P0.01-7 first), and re-read G1 once the three live Reviews pass the asserters already built.
-The marketing claims of §1.4/§15.1 remain unshippable until then (§16.4), which this readout does not
-relax.
+**Recommended disposition:** treat G1 as **blocked pending the Stage-B `dev` deploy + exit runs**. Stage
+A removed the construction risk (the IaC typechecks against the real provider; the driver + adapters +
+executors are built and tested); authorize the operator-gated Stage-B steps (starting `pulumi up` on
+`pr-test`), then re-read G1 once `driveLiveExit` reports `ready` on `dev`. The marketing claims of
+§1.4/§15.1 remain unshippable until then (§16.4), which this readout does not relax.
 
 ---
 
 ## Pointers
 
+- **Stage-A deploy artifacts (P0.15b):** Pulumi/GCP IaC `infra/pulumi/` (+ `README.md` runbook); live SDK
+  adapter `apps/run-task/src/sdk-adapter.ts`; arm executors + workshop CLI
+  `packages/benchmark-runner/src/{executors,workshop-cli}.ts`; live-exit driver
+  `integration/src/live-exit-driver.ts`; RS256 signer `packages/orchestrator/src/token.ts`.
 - Integration suite + asserters: `integration/` (`@rhema/integration-tests`).
 - Cost cross-check: `packages/orchestrator/src/usage-crosscheck.ts`.
 - Pilot power: `packages/benchmark-runner/src/pilot.ts`; migration `0015_phase0_pilot_power.sql`.
