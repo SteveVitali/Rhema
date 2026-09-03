@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "SST v3 stages, VPC/Aurora/S3/Redis/ECS scaffolding, IAM as code, retention + provenance config (spec §13.2/§13.3).",
+  "description": "GCP stage facts + retention/provenance config (spec §13.2/§13.3) — the pure, unit-tested data the Pulumi program in ./pulumi consumes to provision Cloud Run/GKE/AlloyDB/GCS/Memorystore/Secret Manager and the no-egress sandbox subnet.",
   "license": "MIT",
   "main": "./dist/config/index.js",
   "types": "./dist/config/index.d.ts",
@@ -14,7 +14,7 @@
     "build": "tsc -b",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "deploy": "sst deploy",
+    "deploy": "echo 'Deploy runs from ./pulumi (operator-gated): cd pulumi && pulumi up — see pulumi/README.md' && exit 1",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {

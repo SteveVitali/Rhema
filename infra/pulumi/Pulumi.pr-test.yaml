@@ -1,0 +1,3 @@
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1

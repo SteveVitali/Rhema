@@ -114,7 +114,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @rhema/infra build # provenance builder used below
+      # Build @rhema/infra (the provenance builder) AND @rhema/protocols (so the real protocols_version can
+      # be computed over the committed trio — D-P0.04-2).
+      - run: pnpm --filter @rhema/infra --filter @rhema/protocols build
       - name: Build + scan service images, pin digests, record provenance (REQ-ARCH-39)
         # Build run-task, export, fetcher, egress-proxy per §13.2, scan with Trivy, pin digests, then
         # record the deploy provenance artifact. Placeholder images build today; scans wired here.
@@ -137,7 +139,11 @@ jobs:
             first=0
           done
           json+="}"
-          GIT_SHA="${{ github.sha }}" IMAGE_DIGESTS="$json" STAGE="ci" \
+          # The REAL protocols_version over the committed trio (D-P0.04-2): --bare prints just the value,
+          # empty when there is no protocols checkout (then the record falls back to its stub-0.0.0 default).
+          PROTOCOLS_VERSION="$(node scripts/compute-protocols-version.mjs --bare)"
+          echo "protocols_version for provenance: ${PROTOCOLS_VERSION:-<stub fallback>}"
+          GIT_SHA="${{ github.sha }}" IMAGE_DIGESTS="$json" STAGE="ci" PROTOCOLS_VERSION="$PROTOCOLS_VERSION" \
             node scripts/record-provenance.mjs
       - uses: actions/upload-artifact@v4
         with:

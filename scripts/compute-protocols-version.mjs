@@ -6,8 +6,13 @@
  * record (REQ-ARCH-39) and every run stamp the exact skill+manifest+parser text they ran on.
  *
  * Usage:
- *   node scripts/compute-protocols-version.mjs          # print the current computed version
+ *   node scripts/compute-protocols-version.mjs          # print the current computed version + drift check
  *   node scripts/compute-protocols-version.mjs --write   # freeze it into src/version.ts PROTOCOLS_VERSION
+ *   node scripts/compute-protocols-version.mjs --bare    # print ONLY the version (for CI capture); empty
+ *                                                        # when there is no private checkout (no drift check)
+ *
+ * The `--bare` mode is what the CI `images` job captures into PROTOCOLS_VERSION so the deploy-provenance
+ * record (REQ-ARCH-39 / D-P0.04-2) stamps the real `0.4.0+<sha>` instead of the `stub-0.0.0` default.
  *
  * Env: RHEMA_PROTOCOLS_PATH (the private checkout; default packages/protocols under the repo root). When
  * unset and the default is absent (a public clone) it is a no-op success — there is nothing private to
@@ -18,13 +23,17 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const WRITE = process.argv.includes("--write");
+const BARE = process.argv.includes("--bare");
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const pkgRoot = process.env.RHEMA_PROTOCOLS_PATH
   ? resolve(process.env.RHEMA_PROTOCOLS_PATH)
   : resolve(repoRoot, "packages/protocols");
 
 if (!existsSync(pkgRoot) || !existsSync(resolve(pkgRoot, "manifests"))) {
-  console.log("compute-protocols-version: no private @rhema/protocols checkout — nothing to hash (no-op).");
+  // In --bare mode print nothing, so a CI capture (`PROTOCOLS_VERSION=$(… --bare)`) stays empty and the
+  // provenance record falls back to its stub default rather than swallowing this log line.
+  if (!BARE)
+    console.log("compute-protocols-version: no private @rhema/protocols checkout — nothing to hash (no-op).");
   process.exit(0);
 }
 
@@ -41,6 +50,14 @@ const { computeProtocolsVersion } = await import(pathToFileURL(resolve(repoRoot,
 
 const files = collectTrioFiles(pkgRoot);
 const version = computeProtocolsVersion(files);
+
+// --bare: emit ONLY the version on stdout (for CI to capture into PROTOCOLS_VERSION) and stop — no drift
+// check, no decorative logging.
+if (BARE) {
+  console.log(version);
+  process.exit(0);
+}
+
 console.log(`protocols_version = ${version}  (${Object.keys(files).length} trio files)`);
 
 if (WRITE) {
