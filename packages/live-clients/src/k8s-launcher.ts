@@ -140,16 +140,24 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
           serviceAccountName: config.kubeServiceAccount,
           // pin the pod to the isolated sandbox node pool (no Cloud NAT / no default route — REQ-ARCH-2).
           nodeSelector: { "cloud.google.com/gke-nodepool": config.sandboxNodePool },
-          securityContext: { runAsUser: HARNESS_UID, runAsNonRoot: true },
           containers: [
             {
               name: "run-task",
               image,
               env,
+              // The Phase-0 stand-in image (bookworm-slim) starts as ROOT under tini ONLY so its entrypoint can
+              // drop root → harness (uid 10001) → agent (uid 10002) via setpriv, then unshare/mount the scoped-
+              // subagent namespaces. Root is dropped immediately and does nothing else (Dockerfile). The
+              // hardened distroless + ambient-caps + runAsNonRoot target is D-P0.06-3. Least-privilege here:
+              // drop ALL, then add back exactly the caps the privilege-drop + mount isolation need.
               securityContext: {
                 readOnlyRootFilesystem: true,
-                // CAP_SYS_ADMIN for the scoped-subagent unshare/mount kernel isolation (§12.6).
-                capabilities: { add: ["SYS_ADMIN"], drop: ["ALL"] },
+                capabilities: {
+                  // SETUID/SETGID: the harness→agent uid drop (setpriv). SYS_ADMIN: unshare/mount the input-
+                  // scoped subagent namespaces (§12.6). SYS_CHROOT: the scoped-runner chroot.
+                  add: ["SETUID", "SETGID", "SYS_ADMIN", "SYS_CHROOT"],
+                  drop: ["ALL"],
+                },
                 allowPrivilegeEscalation: true,
               },
               volumeMounts: [
