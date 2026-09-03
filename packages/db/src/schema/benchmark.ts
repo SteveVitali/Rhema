@@ -121,3 +121,132 @@ export const benchmarkEnclaveAccessLog = pgTable("benchmark_enclave_access_log",
   runId: text("run_id"),
   purpose: text("purpose"),
 });
+
+// §18 evaluation-program EXECUTION layer — mirrors migrations/0014_benchmark_runner.sql. Same access model as the
+// P0.13 tables above (no workspace_id, not RLS-forced; reached only by rhema_benchmark). Table shape only; the arms/
+// normalization/matching/judge/pre-registration/report LOGIC is @rhema/benchmark-runner (P0.14).
+
+export const benchmarkArmConfigs = pgTable(
+  "benchmark_arm_configs",
+  {
+    waveId: text("wave_id").notNull(),
+    arm: text("arm").notNull(),
+    config: jsonb("config").notNull(),
+    configHash: text("config_hash").notNull(),
+    modelFamily: text("model_family"),
+    engineBuild: text("engine_build"),
+    protocolVersion: text("protocol_version"),
+    steelmanOwner: text("steelman_owner"),
+    published: boolean("published").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.waveId, t.arm] }) }),
+);
+
+export const benchmarkNormalizedFindings = pgTable("benchmark_normalized_findings", {
+  id: text("id").primaryKey(),
+  armRunId: text("arm_run_id").notNull(),
+  finding: jsonb("finding").notNull(),
+  extractor: text("extractor").notNull(),
+  blind: boolean("blind").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const benchmarkExtractionAudits = pgTable("benchmark_extraction_audits", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  normalizedFindingId: text("normalized_finding_id").notNull(),
+  auditor: text("auditor").notNull(),
+  verdict: text("verdict").notNull(),
+  note: text("note"),
+  auditedAt: timestamp("audited_at").notNull().defaultNow(),
+});
+
+export const benchmarkMatchRecords = pgTable("benchmark_match_records", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  draftId: text("draft_id").notNull(),
+  arm: text("arm").notNull(),
+  armFindingId: text("arm_finding_id").notNull().unique(),
+  goldFindingId: text("gold_finding_id"),
+  suggestedVerdict: text("suggested_verdict"),
+  suggestedBy: text("suggested_by"),
+  verdict: text("verdict"),
+  decidedBy: text("decided_by"),
+  blindToArm: boolean("blind_to_arm").notNull().default(true),
+  noveltyConfirmed: boolean("novelty_confirmed"),
+  adjudicator: text("adjudicator"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  decidedAt: timestamp("decided_at"),
+});
+
+export const benchmarkPairwisePreferences = pgTable("benchmark_pairwise_preferences", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  draftId: text("draft_id").notNull(),
+  armA: text("arm_a").notNull(),
+  armB: text("arm_b").notNull(),
+  presentation: text("presentation").notNull(),
+  preferred: text("preferred").notNull(),
+  judgeKind: text("judge_kind").notNull(),
+  judgeId: text("judge_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const benchmarkJudgeCalibrations = pgTable("benchmark_judge_calibrations", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  judgeId: text("judge_id").notNull(),
+  model: text("model").notNull(),
+  family: text("family").notNull(),
+  weightedKappa: numeric("weighted_kappa").notNull(),
+  kappaFloor: numeric("kappa_floor").notNull().default("0.6"),
+  disqualified: boolean("disqualified").notNull(),
+  positionConsistency: numeric("position_consistency"),
+  calibratedAt: timestamp("calibrated_at").notNull().defaultNow(),
+});
+
+export const benchmarkJudgeScores = pgTable("benchmark_judge_scores", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  draftId: text("draft_id").notNull(),
+  arm: text("arm").notNull(),
+  judgeId: text("judge_id").notNull(),
+  metric: text("metric").notNull(),
+  score: numeric("score").notNull(),
+  lengthUnits: integer("length_units"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const benchmarkPreregistrations = pgTable("benchmark_preregistrations", {
+  waveId: text("wave_id").primaryKey(),
+  hash: text("hash").notNull(),
+  bundle: jsonb("bundle").notNull(),
+  publicRegistrationRef: text("public_registration_ref"),
+  frozenAt: timestamp("frozen_at").notNull().defaultNow(),
+});
+
+export const benchmarkDeviations = pgTable("benchmark_deviations", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  kind: text("kind").notNull(),
+  detail: text("detail").notNull(),
+  loggedAt: timestamp("logged_at").notNull().defaultNow(),
+});
+
+export const benchmarkWaveReports = pgTable("benchmark_wave_reports", {
+  waveId: text("wave_id").primaryKey(),
+  publicReport: jsonb("public_report").notNull(),
+  privateReport: jsonb("private_report").notNull(),
+  lift: jsonb("lift").notNull(),
+  generatedAt: timestamp("generated_at").notNull().defaultNow(),
+});
+
+export const benchmarkConsequenceLog = pgTable("benchmark_consequence_log", {
+  id: text("id").primaryKey(),
+  waveId: text("wave_id").notNull(),
+  outcome: text("outcome").notNull(),
+  disposition: text("disposition").notNull(),
+  note: text("note"),
+  loggedAt: timestamp("logged_at").notNull().defaultNow(),
+});

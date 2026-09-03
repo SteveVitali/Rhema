@@ -1,0 +1,34 @@
+{
+  "name": "@rhema/benchmark-runner",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "§18 evaluation-program EXECUTION layer (P0.14, REQ-EVAL-6..11/15/16/17/18/20): the six arms as runnable configurations, blind normalization of arm outputs into the common finding schema, the blind-to-arm human matching/adjudication tooling, LLM-judge hardening (cross-family, position-swap, per-wave κ≥0.6 calibration gate, C-a..C-g report-blocking checks), pre-registration freeze + hash-commit with a deviation log, and the wave runner + report (twelve REQ-EVAL-11 metrics, the REQ-EVAL-15 LIFT readout, stability bands, the REQ-EVAL-18 public/private split, the REQ-EVAL-16 consequence log). Orchestrates the P0.13 @rhema/benchmark scorers + data layer; NEVER re-implements scoring.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/benchmark": "workspace:*",
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}
