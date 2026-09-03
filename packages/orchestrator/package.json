@@ -28,6 +28,7 @@
     "@rhema/db": "workspace:*",
     "@rhema/engine": "workspace:*",
     "@rhema/hooks": "workspace:*",
+    "@rhema/mirror": "workspace:*",
     "@rhema/protocols": "workspace:*"
   },
   "devDependencies": {

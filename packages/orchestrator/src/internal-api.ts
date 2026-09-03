@@ -5,7 +5,8 @@
 // event (REQ-DATA-33). Artifact materialization/harvest (P0.09), gate resolution (P0.10) and ledger internals
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
-import type { GateKind } from "@rhema/contracts";
+import type { AgentTypeKey, GateKind } from "@rhema/contracts";
+import { buildSeatManifest, recordMounts, type MirrorManifest, type Overlay } from "@rhema/mirror";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -284,17 +285,26 @@ export interface HydrationResponse {
   readonly inputs: Record<string, unknown>;
   /** overlay versions serialized from gate decisions (P0.10 populates on resume); [] on the first attempt. */
   readonly overlays: string[];
+  /** the server-generated hydration manifest (§12.6 attestation) — persisted to `run_mounts` and returned so
+   *  the harness fetches bytes per entry to write `/work` (P0.09). */
+  readonly manifest: MirrorManifest;
+}
+
+export interface HydrationArgs {
+  readonly runId: string;
+  readonly attempt: number;
+  readonly workspaceId: string;
+  /** gate-derived overlays applied over the committed tree at resume (P0.10 supplies these); [] on attempt 1. */
+  readonly overlays?: readonly Overlay[];
 }
 
 /**
- * `GET /internal/runs/:id/hydration` — the descriptor the harness materializes `/work` from (§11.5). Fenced.
- * The S3 materialization of paths is P0.09's harvest/mirror; this returns the run's frozen inputs + seat so the
- * harness knows what to hydrate. `overlays[]` is filled by P0.10 on resume from gate decisions.
+ * `GET /internal/runs/:id/hydration` — the descriptor the harness materializes `/work` from (§11.5/§12.6).
+ * Fenced. Generates the per-seat hydration manifest SERVER-SIDE (the attestation fact — "which paths were
+ * mounted for which seat"), persists it to `run_mounts` (materialization before step 1 and at every resume),
+ * and returns it with the run's frozen inputs + seat. `overlays[]` (P0.10) override the committed tree at resume.
  */
-export async function hydration(
-  deps: OrchestratorDeps,
-  args: { runId: string; attempt: number; workspaceId: string },
-): Promise<HydrationResponse> {
+export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Promise<HydrationResponse> {
   return deps.txRunner.run(args.workspaceId, async (tx) => {
     await fence(tx, args.runId, args.attempt);
     const res = await tx.query(
@@ -311,15 +321,27 @@ export async function hydration(
       seat: string | null;
     };
     const inputs = typeof row.inputs === "string" ? (JSON.parse(row.inputs) as Record<string, unknown>) : row.inputs;
+    const seat = (row.seat ?? "editor") as AgentTypeKey;
+    const overlays = args.overlays ?? [];
+
+    const manifest = await buildSeatManifest(tx, {
+      seat,
+      projectId: row.project_id,
+      personaId: row.persona_id,
+      overlays,
+    });
+    await recordMounts(tx, { runId: args.runId, attempt: args.attempt, manifest });
+
     return {
       runId: args.runId,
       attempt: args.attempt,
-      seat: row.seat ?? "editor",
+      seat,
       workflow: row.workflow,
       projectId: row.project_id,
       personaId: row.persona_id,
       inputs,
-      overlays: [],
+      overlays: overlays.map((o) => o.artifactVersionId),
+      manifest,
     };
   });
 }
