@@ -127,10 +127,23 @@ the Cloud NAT source list and its egress firewalls are a deny-all beaten only by
 rule — a one-way street to the proxy (REQ-ARCH-2). `pulumi up` + `pulumi destroy` both clean; zero
 orphaned resources. This closes the live half of AC3 (**D-P0.01-2 DONE**).
 
-What is **NOT** yet done (Stage B, operator-gated): the full-stack `pulumi up` (AlloyDB/GKE/LB — real
-spend), the paid engine bring-up, the three live Reviews, the instrumented cost runs, the pilot spend,
-the start-latency measurement, and therefore the **measured** results and the G1 flag. Those run against
-a deployed `dev` under the [OPERATOR GATE]s in the ticket.
+**Stage A of `16_P0.15c` (PR #19) then wrote the LIVE CLIENT BINDINGS behind every DI seam** — the
+"constructed at deploy" call-sites P0.15b's recorded deviation deferred, so Stage B is now execution, not
+construction. New `@rhema/live-clients` package (`PgPoolTxRunner`, `RedisHeartbeatStore`, `RedisRunEventBus`,
+`PgBossQueue`, `GkeJobLauncher` + the two-uid Job/Secret manifest, the Secret-Manager RS256 loader); the live
+`apps/api`/`apps/worker`/`apps/egress-proxy` entrypoints (construct every seam, register the pg-boss consumers
++ crons, bind the DB run-context resolver + the SIGHUP-refreshable provider key); `GcsContentStore` +
+`materializeWork`; the run-task `agent-entry` (drives one phase through `AgentSdkEngine`); the ledger/obligation
+call-sites (resume re-debit, parked sweep, circuit-breaker cap sizing, the delivery obligation hook); SSE
+server-tool logging; and real run-task + egress-proxy Dockerfiles. Pure logic unit-tested with fakes (~55
+tests); `pnpm typecheck`/`lint`/`test` all green. See `DEFERRALS.md` § P0.15c.
+
+What is **NOT** yet done (Stage B, operator-gated — `DEFERRALS.md` D-P0.15c-1…5): the full-stack `pulumi up`
+(AlloyDB/GKE/LB — real spend), the image build+push, the paid engine bring-up, the three live Reviews, the
+instrumented cost runs (which also wire `renderCredits`/`refundPhases` into the live phase loop), the pilot
+spend (gated on the provider no-training verification, D-P0.13-2), the start-latency measurement, and therefore
+the **measured** results and the G1 flag. Those run against a deployed `dev` under the [OPERATOR GATE]s in the
+ticket. **This session authorized no spend budget and recorded no provider verification, so Stage B did not run.**
 
 ## G1 readiness — the honest recommendation
 
