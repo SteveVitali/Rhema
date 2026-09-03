@@ -113,9 +113,15 @@ importers:
 
   apps/egress-proxy:
     dependencies:
+      '@google-cloud/secret-manager':
+        specifier: 7.0.0
+        version: 7.0.0
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      pg:
+        specifier: 8.23.0
+        version: 8.23.0
       undici:
         specifier: ^7.29.0
         version: 7.29.0
@@ -126,6 +132,9 @@ importers:
       '@rhema/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
 
   apps/export:
     dependencies:
@@ -183,13 +192,31 @@ importers:
       '@rhema/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@rhema/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@rhema/live-clients':
+        specifier: workspace:*
+        version: link:../../packages/live-clients
       '@rhema/orchestrator':
         specifier: workspace:*
         version: link:../../packages/orchestrator
+      ioredis:
+        specifier: 6.0.0
+        version: 6.0.0
+      pg:
+        specifier: 8.23.0
+        version: 8.23.0
+      pg-boss:
+        specifier: 12.30.0
+        version: 12.30.0
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.2.17
         version: 0.2.17
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
 
   evals-stub: {}
 

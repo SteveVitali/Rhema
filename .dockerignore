@@ -1,0 +1,13 @@
+# Keep the Docker build context reproducible from the lockfile: never copy installed deps, build outputs, or
+# local agent/git state into the builder stage (the image installs + builds from source).
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.agents
+agent-scratch
+.github
+**/*.log
+# run-task vendors the SDK explicitly in its Dockerfile (a separate COPY); keep it out of the broad context.
+apps/run-task/vendor
