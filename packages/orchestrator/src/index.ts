@@ -31,6 +31,7 @@ export * from "./internal-api.js";
 export * from "./delivery.js";
 export * from "./reaper.js";
 export * from "./phase-loop.js";
+export * from "./credit-renderer.js";
 export * from "./reactions.js";
 
 // gates, decisions, guidance, write-back overlays (P0.10; §6.4/§6.5/§11.5)
