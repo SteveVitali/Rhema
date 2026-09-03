@@ -75,9 +75,12 @@ export async function startWorker(): Promise<void> {
     concurrencyFor: () => env.defaultConcurrency,
   };
 
-  // A system-scoped client for the reaper's / sweep's cross-tenant reads (BYPASSRLS worker role at deploy).
+  // A system-scoped client for the parked sweep + run-event maintenance (cross-tenant / system-table reads).
+  // Uses a SEPARATE elevated connection when `systemDatabaseUrl` is set, so the tenant `pool` above can stay a
+  // restricted RLS-enforced role (defense-in-depth); falls back to the main pool otherwise.
+  const systemPool = env.systemDatabaseUrl ? new pg.Pool({ connectionString: env.systemDatabaseUrl }) : pool;
   const systemExec: SqlClient = {
-    query: (sql, params) => pool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
+    query: (sql, params) => systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
 
   const deps: WorkerRunDeps & WorkerLedgerDeps = {

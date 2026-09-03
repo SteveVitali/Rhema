@@ -4,8 +4,9 @@
 # Runs as root under tini for exactly one purpose: start the harness supervisor as uid `harness` (which holds
 # the token/credential, the hook daemon and the audit writer), which in turn launches the SDK as uid `agent`
 # with the scrubbed env. The uid drop is irreversible (`setpriv --reuid/--regid --clear-groups`), so a shell
-# escape from `agent` cannot climb back to `harness` or root. The actual wiring (read secrets, start the hook
-# daemon, launch the agent via bootstrap.buildAgentLaunch) lives in dist/index.js — the harness supervisor.
+# escape from `agent` cannot climb back to `harness` or root. The actual wiring (read the token, materialize
+# /work from the hydration manifest, start the hook daemon, launch the agent via bootstrap.buildAgentLaunch,
+# and forward the agent's fd-3 events to the internal API with the token) lives in dist/harness-main.js.
 set -eu
 
 HARNESS_UID=10001
@@ -25,4 +26,4 @@ exec setpriv \
   --bounding-set -all,+setuid,+sys_admin \
   --inh-caps -all,+setuid,+sys_admin \
   --ambient-caps -all,+setuid,+sys_admin \
-  -- node /app/dist/index.js
+  -- node /app/dist/harness-main.js

@@ -59,64 +59,75 @@ export function buildPreToolUseHook(socketPath: string): PreToolUseHook {
 }
 
 // -------------------------------------------------------------------- the deploy entrypoint (main) -----------
+//
+// CRITICAL two-uid boundary (REQ-SPEC-10/11; the #1 riskiest bet): this process runs as uid `agent` with a
+// SCRUBBED env (only RUN_ID / ANTHROPIC_BASE_URL / CLAUDE_CONFIG_DIR) and NO secret in scope. It therefore
+// CANNOT read the run token or reach the internal API. Events flow to the HARNESS over a dedicated pipe
+// (fd 3) with NO credential; the harness supervisor (harness-main.ts, uid `harness`) holds the token and
+// forwards them to `POST /internal/runs/:id/events`. The agent reads its phase spec from a fixed path the
+// harness wrote under CLAUDE_CONFIG_DIR — never from a secret file or a network call.
 
-/** The phase spec the harness writes for the agent process to run (a serialized PhaseRequest + engine config). */
-interface AgentPhaseSpec {
+/** The fd the agent writes its §12.5 event stream to; the harness reads the other end (no token crosses it). */
+export const HARNESS_EVENT_FD = 3;
+
+/** The fixed filename (under CLAUDE_CONFIG_DIR) the harness writes the phase spec to for the agent to read. */
+export const PHASE_SPEC_FILENAME = "phase-spec.json";
+
+/** The phase spec the harness writes for the agent process. No secrets — the agent has none in scope. */
+export interface AgentPhaseSpec {
   readonly request: PhaseRequest;
-  readonly proxyBaseUrl: string;
-  readonly configDir: string;
   readonly skillsDir: string;
   readonly hookSocketPath: string;
   readonly tier?: "base" | "balanced" | "frontier";
-  readonly api: { readonly baseUrl: string; readonly runToken: string };
-  readonly bufferPath: string;
 }
 
-function reqEnv(name: string): string {
+/** An `EventTransport` that writes each batch as one NDJSON line to the harness event fd — no token, no network. */
+export function createFdEventTransport(fd: number = HARNESS_EVENT_FD): EventTransport {
+  return {
+    async post(events: readonly OutboundEvent[]): Promise<void> {
+      const { writeSync } = await import("node:fs");
+      writeSync(fd, JSON.stringify(events) + "\n");
+    },
+  };
+}
+
+function agentEnv(name: string): string {
   const v = process.env[name];
-  if (!v) throw new Error(`agent-entry: missing required env ${name}`);
+  if (!v) throw new Error(`agent-entry: missing scrubbed env ${name}`);
   return v;
 }
 
-/** Read the harness-written phase spec + the run token (from the harness-only mounted file). */
-async function readAgentSpec(): Promise<AgentPhaseSpec> {
+/** Read the harness-written phase spec from `${CLAUDE_CONFIG_DIR}/phase-spec.json` (no token, no api). */
+async function readAgentSpec(): Promise<{ spec: AgentPhaseSpec; proxyBaseUrl: string; configDir: string }> {
   const { readFile } = await import("node:fs/promises");
-  const specPath = reqEnv("PHASE_SPEC_FILE");
-  const spec = JSON.parse(await readFile(specPath, "utf8")) as Omit<AgentPhaseSpec, "api"> & { api: { baseUrl: string; runTokenFile: string } };
-  const runToken = (await readFile(spec.api.runTokenFile, "utf8")).trim();
-  return { ...spec, api: { baseUrl: spec.api.baseUrl, runToken } };
+  const configDir = agentEnv("CLAUDE_CONFIG_DIR");
+  const proxyBaseUrl = agentEnv("ANTHROPIC_BASE_URL");
+  const spec = JSON.parse(await readFile(`${configDir}/${PHASE_SPEC_FILENAME}`, "utf8")) as AgentPhaseSpec;
+  return { spec, proxyBaseUrl, configDir };
 }
 
-/** Construct the live `EventTransport` (fetch → the internal events endpoint with the run token). */
-async function buildLiveTransport(spec: AgentPhaseSpec): Promise<EventTransport> {
-  const { createFetchEventTransport } = await import("./event-transport.js");
-  return createFetchEventTransport({ baseUrl: spec.api.baseUrl, runId: spec.request.runId, runToken: spec.api.runToken });
-}
-
-/** Run the phase as uid `agent`: load the vendored SDK, build the engine, stream events, exit by subtype. */
+/** Run the phase as uid `agent`: load the vendored SDK, build the engine, stream events to fd 3, exit by subtype. */
 export async function main(): Promise<void> {
   const { loadSdkQuery } = await import("./sdk-adapter.js");
   const { AgentSdkEngine } = await import("@rhema/engine");
-  const { FileBufferStore } = await import("./event-buffer.js");
+  const { InMemoryBufferStore } = await import("./event-buffer.js");
 
-  const spec = await readAgentSpec();
+  const { spec, proxyBaseUrl, configDir } = await readAgentSpec();
   const query = await loadSdkQuery(); // fails fast if the SDK was not vendored into the image
   const sessionStore: SessionStore = { kind: "gcs" };
   const engine = new AgentSdkEngine({
     query,
-    proxyBaseUrl: spec.proxyBaseUrl,
-    configDir: spec.configDir,
+    proxyBaseUrl,
+    configDir,
     skillsDir: spec.skillsDir,
     hook: buildPreToolUseHook(spec.hookSocketPath),
     sessionStore,
     ...(spec.tier ? { tier: spec.tier } : {}),
   });
 
-  const transport = await buildLiveTransport(spec);
-  const events = new EventBufferClient(transport, new FileBufferStore(spec.bufferPath), {
-    onPause: (reason, buffered) => engine.abort(`event backpressure: ${reason} (${buffered} buffered)`),
-  });
-
+  // events go to the harness over fd 3; if the harness stops reading, the pipe fills and this write blocks —
+  // natural back-pressure, no token on this side. A memory buffer is enough (the fd write never "fails").
+  const events = new EventBufferClient(createFdEventTransport(), new InMemoryBufferStore());
   const result = await runAgentPhase(engine, spec.request, events);
   console.log(`[agent-entry] phase ${spec.request.phase.key} → ${result.subtype} (${result.eventsPosted} events)`);
   // a non-success SDK subtype is a phase-level outcome the oracle judges server-side; exit 0 either way (the
