@@ -133,7 +133,14 @@ export function createCompute(args: ComputeArgs): Compute {
     protocol: "HTTPS",
     loadBalancingScheme: "EXTERNAL_MANAGED",
     enableCdn: true, // Cloud CDN (§13.1)
-    cdnPolicy: { cacheMode: "CACHE_ALL_STATIC", clientTtl: 3600, defaultTtl: 3600 },
+    cdnPolicy: {
+      cacheMode: "CACHE_ALL_STATIC",
+      clientTtl: 3600,
+      defaultTtl: 3600,
+      maxTtl: 86400,
+      // The cache key: host + protocol + full query string (the default web-asset keying).
+      cacheKeyPolicy: { includeHost: true, includeProtocol: true, includeQueryString: true },
+    },
     backends: [{ group: webNeg.id }],
   });
   const urlMap = new gcp.compute.URLMap(name("urlmap"), { defaultService: webBackend.id });
