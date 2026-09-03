@@ -7,8 +7,8 @@ package layout (spec §13.2), Pulumi (TypeScript) stacks, the core GCP scaffoldi
 Memorystore Redis, Cloud Run + a GKE cluster for run-task, a no-egress sandbox subnet), Better Auth
 (Google + magic link), and the five-job CI pipeline with the licence policy and public-safe checks.
 Services ship as placeholders; their logic lands in later tickets. *(Cloud amended 2026-09-02 from
-AWS to GCP — see `docs/tickets/00_MANIFEST.md` § Spec amendments applied; the `infra/` SST skeleton is
-superseded pending the Pulumi rewrite, DEFERRALS D-P0.01-7.)*
+AWS to GCP — see `docs/tickets/00_MANIFEST.md` § Spec amendments applied. The Pulumi/GCP IaC rewrite
+landed in P0.15b, DEFERRALS D-P0.01-7; the live `pulumi up` is operator-gated, D-P0.15b-1.)*
 
 ## Quickstart
 ```bash
@@ -20,7 +20,7 @@ pnpm test
 ## Layout
 - `apps/*` — deployable services (web, api, collab, worker, run-task, fetcher, convert, egress-proxy, export, mobile)
 - `packages/*` — shared libraries (contracts, db, engine, hooks, harness, protocols-stub, measure, figures, ui, api-client, tokens, findings-core, markdown-view)
-- `infra/` — Pulumi (TypeScript) stacks, GCP IAM/service-accounts, retention + provenance config *(currently the superseded SST skeleton; Pulumi rewrite pending — DEFERRALS D-P0.01-7)*
+- `infra/` — pure GCP stage/retention/provenance config (`config/`, unit-tested) + the Pulumi (TypeScript) program (`pulumi/`, operator-run IaC — Cloud Run, GKE, AlloyDB, GCS, Memorystore, Secret Manager, the no-egress sandbox subnet)
 - `evals-stub/` — public stub of the private `evals/` package
 - `tools/` — repo-local tooling (ESLint plugin)
 
