@@ -21,6 +21,7 @@
     { "path": "packages/tokens" },
     { "path": "packages/findings-core" },
     { "path": "packages/markdown-view" },
+    { "path": "packages/benchmark" },
     { "path": "apps/web" },
     { "path": "apps/api" },
     { "path": "apps/collab" },
