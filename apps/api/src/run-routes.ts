@@ -13,6 +13,8 @@ import {
   failStep,
   audit,
   hydration,
+  deliverRun,
+  type DeliverRunDeps,
   resolveGate,
   recordGateActivity,
   holdGate,
@@ -29,6 +31,7 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
+import type { DeliveryArgs, ObligationHook } from "@rhema/mirror";
 
 /** Auth principal for run creation — the session's user + billing scope (Better Auth wiring is P0.01/PRB). */
 export interface Principal {
@@ -42,6 +45,23 @@ export interface RunApiDeps extends OrchestratorDeps {
   principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
   /** content store for serializing gate write-back overlays (REQ-SPEC-9); required to resolve gates with edits. */
   readonly store?: ContentStore;
+  /**
+   * The obligation spawn/join hook (P0.12; D-P0.12-1) constructed into the delivery transaction. Unset ⇒ the
+   * mirror's no-op (the pre-P0.12 shape).
+   */
+  readonly obligationHook?: ObligationHook;
+  /**
+   * A per-run, workspace-BOUND content store factory (D-P0.09-1). Delivery reads prior versions, so it needs a
+   * store scoped to the run's tenant (a run is single-tenant); the write-only `store` above cannot read. The
+   * live deploy binds this to a GCS store bound to the run's workspace.
+   */
+  contentStoreFor?(workspaceId: string): Promise<ContentStore>;
+  /**
+   * The platform circuit breaker's new-run cap multiplier (REQ-SPEC-24.5; D-P0.11-1). Injected so run-routes
+   * stays decoupled from the ledger; the deploy binds it to `circuitBreakerState` over a system-scoped read.
+   * Unset ⇒ 1× (no scaling).
+   */
+  circuitBreaker?(now: Date): Promise<{ capMultiplier: 1 | 2 }>;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -73,6 +93,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (!body.idempotencyKey || !body.workflow) return c.json({ error: "idempotencyKey and workflow required" }, 400);
     const workflow = body.workflow as WorkflowKey;
 
+    // Circuit breaker (REQ-SPEC-24.5; D-P0.11-1): when absorbed cap-overruns have drifted past threshold in the
+    // last 24 h, NEW runs get a 2× cap (widening the safety band while the estimator re-fits). Applied once at
+    // creation; a no-op (1×) when the platform has absorbed nothing. Full estimator cap sizing is PRB.3.
+    let capCredits = body.capCredits;
+    if (deps.circuitBreaker && capCredits != null) {
+      const { capMultiplier } = await deps.circuitBreaker(deps.clock.now());
+      capCredits = capCredits * capMultiplier;
+    }
+
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey,
       workflow,
@@ -86,7 +115,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       modelTier: body.modelTier,
       rigor: body.rigor,
       estimateCredits: body.estimateCredits,
-      capCredits: body.capCredits,
+      capCredits,
       rateTableVersion: body.rateTableVersion,
       phaseClassesUsed: phaseClassesForWorkflow(workflow),
       inputs: body.inputs ?? {},
@@ -222,6 +251,34 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     });
   });
 
+  // Finalize → deliver (§12.4 step 8; D-P0.09-1/D-P0.12-1). The run-task posts the delivering dossier at the
+  // final commit; the api runs the @rhema/mirror delivery transaction (validation → correspondence + freeze +
+  // the obligation hook → attestation) atomically with `finalizing → completed`. The content store is bound to
+  // the run's workspace (delivery reads prior versions); the obligation hook is constructed at deploy.
+  internal.post("/runs/:id/deliver", (c) => {
+    const run = c.get("run");
+    return guard(c, async () => {
+      const body = (await c.req.json()) as DeliverBody;
+      const store = deps.contentStoreFor ? await deps.contentStoreFor(run.workspaceId) : deps.store;
+      if (!store) return c.json({ error: "delivery requires a content store" }, 500);
+      const deliverDeps: DeliverRunDeps = {
+        ...deps,
+        store,
+        ...(deps.obligationHook ? { obligationHook: deps.obligationHook } : {}),
+      };
+      const res = await deliverRun(deliverDeps, {
+        billingAccountId: body.billingAccountId,
+        spentCredits: body.spentCredits,
+        capCredits: body.capCredits,
+        ...(body.holdLedgerId ? { holdLedgerId: body.holdLedgerId } : {}),
+        ...(body.refundCredits != null ? { refundCredits: body.refundCredits } : {}),
+        ...(body.byPhase ? { byPhase: body.byPhase } : {}),
+        delivery: body.delivery,
+      });
+      return c.json(res, res.ok ? 200 : 409);
+    });
+  });
+
   internal.post("/runs/:id/steps/:key/fail", (c) => {
     const run = c.get("run");
     return guard(c, async () => {
@@ -285,6 +342,16 @@ interface CommitBody {
   durationMs?: number;
   result: { status: "done"; sdkSubtype: string; predicatesPassed: boolean; compactions: number };
   next: CommitNext;
+}
+/** The finalizing run's delivery payload the run-task posts to `POST /internal/runs/:id/deliver`. */
+interface DeliverBody {
+  billingAccountId: string;
+  spentCredits: number;
+  capCredits: number;
+  holdLedgerId?: string;
+  refundCredits?: number;
+  byPhase?: Record<string, number>;
+  delivery: DeliveryArgs;
 }
 interface GateDecisionBody {
   action: DecisionAction;

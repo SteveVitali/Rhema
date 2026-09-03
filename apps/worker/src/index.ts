@@ -6,6 +6,7 @@ export * from "./deletion.js";
 export * from "./jobs.js";
 export * from "./run-jobs.js";
 export * from "./run-events-jobs.js";
+export * from "./ledger-jobs.js";
 
 /** Queue names this worker owns (§12.1). Handlers are stubbed until P0.08. */
 export const WORKER_QUEUES = [
