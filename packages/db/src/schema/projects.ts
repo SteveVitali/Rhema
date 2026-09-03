@@ -23,6 +23,7 @@ export const projects = pgTable("projects", {
   tags: text("tags").array(),
   monthlyCreditCap: integer("monthly_credit_cap"),
   acceptedDraftId: text("accepted_draft_id"),
+  activeWriterRunId: text("active_writer_run_id"), // per-project writer lock (§12.4; 0007)
   archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

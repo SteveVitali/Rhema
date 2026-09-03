@@ -21,6 +21,10 @@
   },
   "dependencies": {
     "@rhema/db": "workspace:*",
-    "@rhema/contracts": "workspace:*"
+    "@rhema/contracts": "workspace:*",
+    "@rhema/orchestrator": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
   }
 }

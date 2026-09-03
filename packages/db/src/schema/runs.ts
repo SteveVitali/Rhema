@@ -36,6 +36,7 @@ export const runs = pgTable("runs", {
   imageDigest: text("image_digest"),
   protocolsVersion: text("protocols_version"),
   replans: integer("replans").notNull().default(0),
+  resumeCount: integer("resume_count").notNull().default(0), // reaper re-enqueue budget per step (0007)
   failure: jsonb("failure"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   startedAt: timestamp("started_at"),
