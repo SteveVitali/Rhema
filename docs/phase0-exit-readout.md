@@ -118,10 +118,19 @@ in; none require a live deploy to validate:
   the `RunTokenService` seam.
 - **Real `protocols_version` provenance** (D-P0.04-2): the CI `images` job now stamps the real version.
 
-What is **NOT** in Stage A (it is Stage B, operator-gated): `pulumi up`, the paid engine bring-up, the
-three live Reviews, the instrumented cost runs, the pilot spend, the start-latency measurement, and
-therefore the **measured** results and the G1 flag. Those run against a deployed `dev` under the
-[OPERATOR GATE]s in the ticket.
+**Live-verified this session (2026-09-03, pr-test on `rhema-507501`, then destroyed):** a real
+`pulumi preview` validated the whole program (61 resources, 0 errors) against the live GCP API — catching
+and fixing four bugs the offline typecheck could not (Pulumi.yaml config namespacing, `.js` import
+extensions, the CDN `cacheKeyPolicy`, and the AlloyDB/Redis private-services-access peering gap). The
+**network layer was then deployed live and asserted off the real VPC**: the sandbox subnet is absent from
+the Cloud NAT source list and its egress firewalls are a deny-all beaten only by an allow-to-the-proxy
+rule — a one-way street to the proxy (REQ-ARCH-2). `pulumi up` + `pulumi destroy` both clean; zero
+orphaned resources. This closes the live half of AC3 (**D-P0.01-2 DONE**).
+
+What is **NOT** yet done (Stage B, operator-gated): the full-stack `pulumi up` (AlloyDB/GKE/LB — real
+spend), the paid engine bring-up, the three live Reviews, the instrumented cost runs, the pilot spend,
+the start-latency measurement, and therefore the **measured** results and the G1 flag. Those run against
+a deployed `dev` under the [OPERATOR GATE]s in the ticket.
 
 ## G1 readiness — the honest recommendation
 
