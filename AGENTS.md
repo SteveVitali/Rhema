@@ -42,7 +42,7 @@ pnpm check:protocol-markers        # no protocol IP in public bundles (public-sa
 1. Create `apps/<name>` or `packages/<name>` with `package.json` (`@rhema/<name>`, `type: module`,
    `build`/`typecheck`/`lint` scripts) and a `tsconfig.json` extending `../../tsconfig.base.json` with
    `references` to each `@rhema/*` dependency.
-2. Add it to the root `tsconfig.json` `references` and (if a new container) `sst.config.ts`.
+2. Add it to the root `tsconfig.json` `references` and (if a new container) the Pulumi program in `infra/pulumi/`.
 3. Colocate tests as `*.test.ts` (excluded from `tsc` build; run by Vitest).
 
 ## Private packages (REQ-ARCH-37, amended 2026-09-01)
@@ -59,7 +59,7 @@ prompts) may reach a client bundle, the OpenAPI document, or an event payload (R
 ## Stages (§13.2)
 `dev` (shared integration), `pr-<n>` (per-PR preview: small/paused AlloyDB, isolated GCS buckets, Base tier,
 `max_usd` $3/run, never production secrets — REQ-ARCH-38), `prod` (AlloyDB min primary kept warm). Stage facts
-live in `infra/config/stages.ts` and are unit-tested; `sst.config.ts` consumes them.
+live in `infra/config/stages.ts` and are unit-tested; the Pulumi program in `infra/pulumi/` consumes them.
 
 ## CI jobs (§13.2), in order
 `typecheck/lint/unit` → `contracts` → `integration` → `images` → `public-safe`. Jobs may be thin
