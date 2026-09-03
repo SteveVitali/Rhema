@@ -55,6 +55,8 @@ export const findingSchema = z.object({
   rubricDims: z.array(rubricDimensionSchema),
   letterSection: LETTER_SECTIONS.optional(),
   projections: z.array(findingProjectionSchema).default([]),
+  /** a re-review's finding may declare the open obligation it carries (lineage matcher 2 — REQ-OBJ-4/§11.7). */
+  carriesObligationId: idSchema.optional(),
 });
 export type Finding = z.infer<typeof findingSchema>;
 

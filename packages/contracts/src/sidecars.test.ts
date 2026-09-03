@@ -36,6 +36,27 @@ describe("sidecar schemas validate the three real projects' fixtures (AC6, REQ-S
     expect(covered).toEqual(new Set(Object.keys(SIDECAR_REGISTRY)));
   });
 
+  it("a re-review findings sidecar carries carriesObligationId + obligationCounts (REQ-OBJ-4/REQ-WF-7)", () => {
+    const doc = loadFixture("the-politics-of-visibility", "findings.json") as {
+      findings: Array<Record<string, unknown>>;
+      obligationCounts?: unknown;
+    };
+    doc.findings[0]!.carriesObligationId = "01J0OBLIGATION00000000000A";
+    doc.obligationCounts = { carried: 3, closed: 1, new: 2 };
+    const parsed = SIDECAR_REGISTRY["findings.json"].schema.parse(doc) as {
+      findings: Array<{ carriesObligationId?: string }>;
+      obligationCounts?: { carried: number; closed: number; new: number };
+    };
+    expect(parsed.findings[0]!.carriesObligationId).toBe("01J0OBLIGATION00000000000A");
+    expect(parsed.obligationCounts).toEqual({ carried: 3, closed: 1, new: 2 });
+  });
+
+  it("both v0.3 re-review fields are optional (a first review's sidecar omits them)", () => {
+    const doc = loadFixture("the-politics-of-visibility", "findings.json");
+    const parsed = SIDECAR_REGISTRY["findings.json"].schema.parse(doc) as { obligationCounts?: unknown };
+    expect(parsed.obligationCounts).toBeUndefined();
+  });
+
   it("a ClaimVerdict drift in a real ledger fixture is rejected (REQ-OBJ-17)", () => {
     const doc = loadFixture("structure-of-political-difference", "01-claim-ledger.json") as {
       claims: Array<{ verdict: string }>;

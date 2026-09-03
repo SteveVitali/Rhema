@@ -44,9 +44,23 @@ export const findingRowSchema = z.object({
   suggestion: z.object({ replacement: z.string() }).optional(),
   rubricDims: z.array(rubricDimensionSchema).default([]),
   letterSection: LETTER_SECTIONS.optional(),
+  /** a re-review declares which open obligation this finding carries (lineage matcher 2 — REQ-OBJ-4). */
+  carriesObligationId: z.string().optional(),
 });
 export const findingsSidecarSchema = envelope("findings").extend({
   findings: z.array(findingRowSchema),
+  /**
+   * The Editor's own carried/closed/new obligation tally on a re-review (REQ-WF-7 amended). The orchestrator
+   * computes the authoritative counts from obligation rows at delivery and RECONCILES against this — a mismatch
+   * is a delivery-validation warning, never a failure (§11.7; P0.12 `reconcileCounts`).
+   */
+  obligationCounts: z
+    .object({
+      carried: z.number().int().nonnegative(),
+      closed: z.number().int().nonnegative(),
+      new: z.number().int().nonnegative(),
+    })
+    .optional(),
 });
 export type FindingsSidecar = z.infer<typeof findingsSidecarSchema>;
 

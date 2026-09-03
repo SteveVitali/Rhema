@@ -48,7 +48,35 @@ export class DeliveryValidationError extends Error {
   }
 }
 
-/** The obligation spawn/join hook (P0.12 fills the logic; this ticket owns the seam). Default: no-op. */
+/**
+ * The obligation spawn/join hook (the logic is P0.12 `@rhema/obligations`; this module owns the seam). The
+ * context carries everything the spawn/lineage/counts logic needs from the just-committed delivery, so the hook
+ * re-reads nothing it already has: the persisted findings with their origin / reconciliation / anchor and any
+ * `carriesObligationId` the re-review declared (REQ-OBJ-4), the persisted claims (lineage matcher 1's
+ * `normalized_url` + quote), and the Editor's own carried/closed/new tally from the findings sidecar (REQ-WF-7,
+ * reconciled — a mismatch is a warning, never a failure). Default: no-op.
+ */
+export interface ObligationDeliveryFinding {
+  readonly findingId: string;
+  readonly ordinal: number;
+  readonly severity: string;
+  readonly kind: string;
+  readonly title: string;
+  readonly origin: string;
+  readonly reconciliation?: string | null;
+  /** the finding's canonical anchor (§11.3), for lineage matchers 1 & 3. */
+  readonly anchor?: unknown | null;
+  /** the normalized url of the finding's first evidence source (lineage matcher 1 — claim identity). */
+  readonly normalizedUrl?: string | null;
+  /** the open obligation this re-review finding declares it carries (lineage matcher 2 — REQ-OBJ-4). */
+  readonly carriesObligationId?: string | null;
+}
+export interface ObligationDeliveryClaim {
+  readonly claimId: string;
+  readonly ordinal: number;
+  readonly normalizedUrl?: string | null;
+  readonly anchor?: unknown | null;
+}
 export interface ObligationDeliveryContext {
   readonly exec: SqlExecutor;
   readonly runId: string;
@@ -56,7 +84,17 @@ export interface ObligationDeliveryContext {
   readonly draftId: string;
   readonly correspondenceId: string;
   readonly correspondenceKind: CorrespondenceKind;
-  readonly findings: ReadonlyArray<{ findingId: string; ordinal: number; severity: string; kind: string }>;
+  readonly findings: ReadonlyArray<ObligationDeliveryFinding>;
+  readonly claims: ReadonlyArray<ObligationDeliveryClaim>;
+  /** the Editor's own {carried, closed, new} from the findings sidecar (REQ-WF-7); absent on a first review. */
+  readonly sidecarCounts?: { carried: number; closed: number; new: number } | null;
+  /**
+   * Whether this delivery is a WHOLE-DRAFT covering review (default true). Only a covering review discharges an
+   * obligation the review did not re-raise (REQ-WF-7's "closed" set). A phase-subset / scoped run (Fact-check,
+   * a scoped Review — REQ-WF-13) sets this false: it can carry / reopen / spawn, but it must NOT discharge
+   * obligations outside its scope by mere omission.
+   */
+  readonly coversAllObligations?: boolean;
 }
 export interface ObligationHook {
   onDelivery(ctx: ObligationDeliveryContext): Promise<void>;
@@ -98,6 +136,8 @@ export interface DeliveryArgs {
   readonly secondReadProducerQueryId?: string | null;
   readonly verdictContext: VerdictSourceContext;
   readonly frozenBy?: unknown;
+  /** whole-draft covering review (default true); a scoped/phase-subset run sets false (see ObligationDeliveryContext). */
+  readonly coversAllObligations?: boolean;
 }
 
 export interface DeliveryResult {
@@ -182,6 +222,7 @@ export async function runDeliveryTransaction(
   );
 
   // ---- 3. claims + claim_sources -------------------------------------------------------------------
+  const persistedClaims: { claimId: string; ordinal: number; normalizedUrl?: string | null; anchor?: unknown | null }[] = [];
   for (const a of applied) {
     const c = a.claim;
     const claimId = deps.ids("clm");
@@ -214,10 +255,16 @@ export async function runDeliveryTransaction(
         [claimId, i, s.url, s.normalizedUrl, s.accessedAt, s.stance, s.note ?? null],
       );
     }
+    persistedClaims.push({
+      claimId,
+      ordinal: c.ordinal,
+      normalizedUrl: c.normalizedUrl ?? (c.url ? normalizeUrl(c.url) : null),
+      anchor: c.anchor ?? null,
+    });
   }
 
   // ---- 4. findings ---------------------------------------------------------------------------------
-  const persistedFindings: { findingId: string; ordinal: number; severity: string; kind: string }[] = [];
+  const persistedFindings: ObligationDeliveryFinding[] = [];
   for (const f of args.findings?.findings ?? []) {
     const findingId = deps.ids("fnd");
     await exec.query(
@@ -242,7 +289,18 @@ export async function runDeliveryTransaction(
         f.anchor ? JSON.stringify(f.anchor) : null,
       ],
     );
-    persistedFindings.push({ findingId, ordinal: f.ordinal, severity: f.severity, kind: f.kind });
+    persistedFindings.push({
+      findingId,
+      ordinal: f.ordinal,
+      severity: f.severity,
+      kind: f.kind,
+      title: f.title,
+      origin: f.origin,
+      reconciliation: f.reconciliation ?? null,
+      anchor: f.anchor ?? null,
+      normalizedUrl: f.evidence?.urls?.[0]?.url ? normalizeUrl(f.evidence.urls[0].url) : null,
+      carriesObligationId: f.carriesObligationId ?? null,
+    });
   }
 
   // ---- 5. mark the delivered artifacts immutable (delivered artifacts are immutable — REQ-VIS-4/5) -
@@ -270,6 +328,9 @@ export async function runDeliveryTransaction(
     correspondenceId,
     correspondenceKind: args.correspondenceKind,
     findings: persistedFindings,
+    claims: persistedClaims,
+    sidecarCounts: args.findings?.obligationCounts ?? null,
+    coversAllObligations: args.coversAllObligations ?? true,
   });
 
   // ---- 8. attestation: build the access_report, write it as an SR artifact, emit boundary.attested -
