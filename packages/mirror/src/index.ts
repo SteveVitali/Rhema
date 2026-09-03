@@ -6,6 +6,7 @@
 
 export * from "./sql.js";
 export * from "./content-store.js";
+export * from "./content-store-gcs.js";
 export * from "./mounts.js";
 export * from "./manifest.js";
 export * from "./materialize.js";
