@@ -35,6 +35,9 @@ export default tseslint.config(
       "**/*.tsbuildinfo",
       "docs/**",
       ".agents/**",
+      // Vendored proprietary bundles (e.g. apps/run-task/vendor/claude-agent-sdk) are gitignored, copied into
+      // the image verbatim, and never part of the lint graph — a fresh CI checkout has no vendor dir at all.
+      "**/vendor/**",
       "**/.sst/**",
       // The Pulumi program (infra/pulumi) is operator-run IaC executed by the Pulumi CLI's own ts-node
       // runtime with its own deps (@pulumi/*), not part of the monorepo build/lint graph — same posture

@@ -134,14 +134,12 @@ export async function startWorker(): Promise<void> {
   });
   await boss.schedule(RUN_EVENT_JOBS.partition, "0 3 * * *");
 
-  // eslint-disable-next-line no-console
   console.log("[worker] run-lifecycle consumers + crons registered");
 }
 
 // Run when invoked as the container entrypoint (`node dist/main.js`), not when imported.
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   startWorker().catch((err: unknown) => {
-    // eslint-disable-next-line no-console
     console.error("[worker] failed to start:", err);
     process.exit(1);
   });
