@@ -42,7 +42,8 @@ export function createData(args: DataArgs): Data {
     },
     // prod is retained; dev/previews are deletable so a `pulumi destroy` tears down cleanly (AC2).
     deletionPolicy: cfg.kind === "prod" ? "DEFAULT" : "FORCE",
-  });
+    // The PSA peering must exist before AlloyDB allocates its private IP.
+  }, { dependsOn: [network.psaConnection] });
 
   const primary = new gcp.alloydb.Instance(name("alloydb-primary"), {
     cluster: cluster.name,
@@ -100,7 +101,7 @@ export function createData(args: DataArgs): Data {
     authorizedNetwork: network.network.id,
     connectMode: "PRIVATE_SERVICE_ACCESS",
     redisVersion: "REDIS_7_0",
-  });
+  }, { dependsOn: [network.psaConnection] });
 
   return { alloydbCluster: cluster, alloydbPrimary: primary, buckets, redis };
 }

@@ -25,6 +25,11 @@ export interface Network {
   subnets: Record<string, gcp.compute.Subnetwork>;
   /** The name of the sandbox subnet, for placing the run-task node pool. */
   sandboxSubnetSelfLink: pulumi.Output<string>;
+  /**
+   * The private-services-access peering AlloyDB + Memorystore(PRIVATE_SERVICE_ACCESS) require. Data-plane
+   * resources must depend on this so the peering exists before they try to allocate a private IP.
+   */
+  psaConnection: gcp.servicenetworking.Connection;
 }
 
 // The three /20 subnet CIDRs. Distinct ranges so the VPC has no overlap; the sandbox is deliberately the
@@ -109,6 +114,22 @@ export function createNetwork(args: NetworkArgs): Network {
     description: "The egress-proxy reaches api.anthropic.com (443) via Cloud NAT.",
   });
 
+  // Private Services Access: a reserved /16 + a servicenetworking peering. AlloyDB and Memorystore Redis
+  // (PRIVATE_SERVICE_ACCESS) allocate their private IPs out of this range over the VPC peering — without it
+  // their creation fails (surfaced by the live `pulumi preview`/`up`). This grants NO internet egress.
+  const psaRange = new gcp.compute.GlobalAddress(name("psa-range"), {
+    purpose: "VPC_PEERING",
+    addressType: "INTERNAL",
+    prefixLength: 16,
+    network: network.id,
+    description: "Reserved range for private services access (AlloyDB / Memorystore).",
+  });
+  const psaConnection = new gcp.servicenetworking.Connection(name("psa"), {
+    network: network.id,
+    service: "servicenetworking.googleapis.com",
+    reservedPeeringRanges: [psaRange.name],
+  });
+
   const sandboxSubnet = sandboxSubnetOf(cfg);
   if (!sandboxSubnet) throw new pulumi.RunError("stage config has no sandbox subnet — refusing to deploy");
 
@@ -116,5 +137,6 @@ export function createNetwork(args: NetworkArgs): Network {
     network,
     subnets,
     sandboxSubnetSelfLink: subnets["sandbox"].selfLink,
+    psaConnection,
   };
 }
