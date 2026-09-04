@@ -142,6 +142,10 @@ export function createCompute(args: ComputeArgs): Compute {
   for (const svc of CLOUD_RUN_SERVICES) {
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
+      // Cloud Run v2 defaults deletionProtection=true, which BLOCKS a `pulumi destroy` of a dev/preview stack
+      // (surfaced live 2026-09-04 — the teardown errored on all 7 services). Match the AlloyDB/GKE policy: only
+      // prod is protected, so a dev/preview stack tears down cleanly to honor the cost-conscious mandate.
+      deletionProtection: cfg.kind === "prod",
       // `web` is internet-facing; everything else is reachable only via the internal/LB path.
       ingress: svc === "web" ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
       template: {
