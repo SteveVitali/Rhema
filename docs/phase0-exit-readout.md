@@ -224,6 +224,38 @@ cited⇒fetched, sidecars, attestation, key-denial) get verified. The pilot (ite
 provider no-training verification (D-P0.13-2), still unrecorded. The §1.4/§15.1 marketing claims remain
 unshippable until this criterion holds (§16.4), which this readout does not relax.
 
+## Stage A complete (P0.15e) — the last construction blockers are closed
+
+**P0.15e (this PR) built the two remaining construction blockers P0.15d surfaced live**, so `pulumi up` +
+the image build now stand up a stack that a live Review can actually run green:
+
+1. **The pod→server commit/deliver loop (D-P0.15d-4 — the load-bearing blocker).** The harness now drives
+   `runCommitLoop` (`apps/run-task/harness-loop.ts`): per phase it fetches the server-authored run spec, runs
+   the phase (`agent-entry` writes `.rhema/agent-result.json`), reads `/work` (`work-reader.ts`), evaluates the
+   orchestrator's PURE completion oracle (one guided retry), then calls the token-authed internal routes — a new
+   `POST .../steps/:key/harvest` (persists the produced versions + the provisional `sdk_stream`/`usage.tick`
+   row, D-P0.15d-3), `commit` with a `CommitNext` from the new pure `decideCommitNext` (advance / open the
+   `gateAfter` gate via `resolveGatePolicy` / finalize), and, on the final phase, `deliver` a `DeliveryArgs`
+   assembled from `/work` + the run spec's server-side delivery facts (a bare `finalize` for a pinned `phase:N`
+   or a no-draft run). **Proven end-to-end through the REAL api routes + PGlite** (`integration/pod-loop.test.ts`:
+   a run advances intake → opens the `approve_scope` gate; the letter phase → `deliver` → `completed`, and
+   `assessPhase0ExitForRun` reads `boundary=0`, `citedFetched.ok`, `sidecars.allOk`). No secret crosses to the
+   loop — the harness (uid `harness`) client is the sole token holder (REQ-SPEC-10/11).
+2. **A deployable worker (closes the worker-deploy half of D-P0.15c-1).** `apps/worker/Dockerfile` mirrors the
+   api image (`node dist/main.js`); `cloudbuild.yaml` builds `worker:dev`; `infra/pulumi/compute.ts` runs it
+   always-on (`minInstanceCount:1`, `cpuIdle:false`) with a `node:http` health server for the Cloud Run startup
+   probe; `infra/pulumi/iam.ts` grants the worker SA the RS256 signing key (it mints run tokens) + `container.developer`
+   (GKE Job launch). `tsc --noEmit` clean vs `@pulumi/gcp@8.41.1`.
+
+**What is NOT relaxed:** every live-`dev` row stays OPEN. Stage B is now a plain `pulumi up` + budgeted paid
+re-run (no further construction is expected): the harness fetches the spec, the agent runs through the
+SDK → proxy → Anthropic, the loop commits each phase + delivers, and the wire-level criteria (cap-402,
+proxy = SDK ±2%, cited⇒fetched, sidecars, attestation, key-denial, start-latency p95) get verified for real.
+The commit `credits` are provisional (SDK × the rate table) until the live proxy reconciliation (D-P0.15-2);
+the reduced-rigor active-phase filter (D-P0.15d-1) and the `refundPhases` reduced-commit call-site (D-P0.15d-2)
+stay OPEN (both need semantics/paths the pod loop's happy path does not yet exercise). See `DEFERRALS.md § P0.15e`.
+G1 stays blocked pending the operator-gated Stage-B re-run.
+
 ---
 
 ## Pointers

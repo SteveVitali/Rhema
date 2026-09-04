@@ -29,6 +29,23 @@ export interface ComputeArgs {
   anthropicKeySecret?: pulumi.Input<string>;
   /** The proxy's DATABASE_URL (a Pulumi secret config, not committed) for the RunContextResolver. */
   proxyDatabaseUrl?: pulumi.Input<string>;
+  // The always-on worker's dynamic env (D-P0.08-1). All optional so `pulumi preview` stays clean with empty
+  // defaults; the operator sets them (Pulumi config) before the `dev` deploy. The CONSTANT worker env
+  // (K8S_NAMESPACE, KUBE_SERVICE_ACCOUNT) + the derivable ones (run SA, sandbox node pool) are set in-program.
+  /** the worker's RLS-enforced tenant connection (a Pulumi secret config). */
+  workerDatabaseUrl?: pulumi.Input<string>;
+  /** the worker's elevated system-scoped connection for cross-tenant sweeps (a Pulumi secret config). */
+  workerSystemDatabaseUrl?: pulumi.Input<string>;
+  /** the worker's Memorystore Redis URL (a Pulumi secret config). */
+  workerRedisUrl?: pulumi.Input<string>;
+  /** the digest-pinned run-task image the worker launches as the two-uid GKE Job. */
+  runTaskImageDigest?: pulumi.Input<string>;
+  /** the api's internal URL the worker + pod reach (`API_INTERNAL_URL`). */
+  internalApiUrl?: pulumi.Input<string>;
+  /** the egress-proxy base URL the Job's sandbox uses (`ANTHROPIC_BASE_URL`). */
+  proxyBaseUrl?: pulumi.Input<string>;
+  /** the GCS artifacts bucket the run-task harness materializes `/work` from (`OBJECTS_BUCKET`). */
+  objectsBucket?: pulumi.Input<string>;
 }
 
 export interface Compute {
@@ -137,9 +154,32 @@ export function createCompute(args: ComputeArgs): Compute {
     });
   }
 
+  // The always-on worker's env (D-P0.08-1). Constants set in-program; the two SA/node-pool facts derived from
+  // the resources above; the dynamic connection strings + URLs threaded (optional) from Pulumi config. The
+  // RS256 run-token key secrets (RUN_TOKEN_PRIVATE/PUBLIC_KEY_SECRET) + RUN_TASK_IMAGE_REPO are set at deploy
+  // (they need the Secret Manager naming reconciliation that is outside this offline change); the worker reads
+  // the key from Secret Manager via ADC at boot (its SA is granted access in iam.ts).
+  const workerEnvs: pulumi.Input<gcp.types.input.cloudrunv2.ServiceTemplateContainerEnv>[] = [
+    { name: "K8S_NAMESPACE", value: "runs" },
+    { name: "KUBE_SERVICE_ACCOUNT", value: "run-task-ksa" },
+    { name: "RUN_SERVICE_ACCOUNT", value: iam.serviceAccounts["run-task"].email },
+    { name: "SANDBOX_NODE_POOL", value: runTaskPool.name },
+    ...(args.workerDatabaseUrl ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }] : []),
+    ...(args.workerSystemDatabaseUrl ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }] : []),
+    ...(args.workerRedisUrl ? [{ name: "REDIS_URL", value: args.workerRedisUrl }] : []),
+    ...(args.runTaskImageDigest ? [{ name: "RUN_TASK_IMAGE_DIGEST", value: args.runTaskImageDigest }] : []),
+    ...(args.internalApiUrl ? [{ name: "API_INTERNAL_URL", value: args.internalApiUrl }] : []),
+    ...(args.proxyBaseUrl ? [{ name: "ANTHROPIC_BASE_URL", value: args.proxyBaseUrl }] : []),
+    ...(args.objectsBucket ? [{ name: "OBJECTS_BUCKET", value: args.objectsBucket }] : []),
+  ];
+
   // --- Cloud Run services: placeholder image, per-service SA, VPC egress to the private-app tier. ----
   const services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>> = {};
   for (const svc of CLOUD_RUN_SERVICES) {
+    // The worker consumes pg-boss + runs crons: it CANNOT scale to zero and needs CPU allocated OUTSIDE a
+    // request (background work), so it runs min-instances=1 + cpuIdle=false with its env baked on. A tiny
+    // health server (main.ts) answers the Cloud Run startup probe.
+    const isWorker = svc === "worker";
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
       // Cloud Run v2 defaults deletionProtection=true, which BLOCKS a `pulumi destroy` of a dev/preview stack
@@ -150,8 +190,16 @@ export function createCompute(args: ComputeArgs): Compute {
       ingress: svc === "web" ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
       template: {
         serviceAccount: iam.serviceAccounts[svc].email,
-        scaling: { minInstanceCount: cfg.kind === "prod" ? 1 : 0, maxInstanceCount: cfg.kind === "prod" ? 10 : 2 },
-        containers: [{ image: placeholderImage }],
+        scaling: {
+          minInstanceCount: isWorker ? 1 : cfg.kind === "prod" ? 1 : 0,
+          maxInstanceCount: isWorker ? (cfg.kind === "prod" ? 3 : 1) : cfg.kind === "prod" ? 10 : 2,
+        },
+        containers: [
+          {
+            image: placeholderImage,
+            ...(isWorker ? { resources: { cpuIdle: false }, envs: workerEnvs } : {}),
+          },
+        ],
         vpcAccess: {
           networkInterfaces: [{ network: network.network.id, subnetwork: network.subnets["private-app"].id }],
           egress: "PRIVATE_RANGES_ONLY",

@@ -73,6 +73,17 @@ export const HARNESS_EVENT_FD = 3;
 /** The fixed filename (under CLAUDE_CONFIG_DIR) the harness writes the phase spec to for the agent to read. */
 export const PHASE_SPEC_FILENAME = "phase-spec.json";
 
+/** The file the agent writes under `<cwd>/.rhema/` with the SDK result subtype + usage — the harness (uid
+ *  harness) reads it after the agent exits to feed the completion oracle (leg a) + provisional credits. It is
+ *  a FACT the agent reports (like `.rhema/phase-result.json`); it carries no secret and no run token. */
+export const AGENT_RESULT_FILENAME = ".rhema/agent-result.json";
+
+/** The agent→harness result the harness reads from `<cwd>/.rhema/agent-result.json` (no secret, no token). */
+export interface AgentResultFile {
+  readonly subtype: ResultSubtype;
+  readonly usage: UsageSnapshot;
+}
+
 /** The phase spec the harness writes for the agent process. No secrets — the agent has none in scope. */
 export interface AgentPhaseSpec {
   readonly request: PhaseRequest;
@@ -130,8 +141,19 @@ export async function main(): Promise<void> {
   const events = new EventBufferClient(createFdEventTransport(), new InMemoryBufferStore());
   const result = await runAgentPhase(engine, spec.request, events);
   console.log(`[agent-entry] phase ${spec.request.phase.key} → ${result.subtype} (${result.eventsPosted} events)`);
+
+  // report the SDK result (subtype + usage) to the harness by writing `<cwd>/.rhema/agent-result.json`. The
+  // harness (uid harness) reads it after this process exits to run the completion oracle (leg a) + price the
+  // provisional credits. No secret / token is written — the agent has none in scope (REQ-SPEC-10/11).
+  const { writeFile, mkdir } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const resultPath = path.join(process.cwd(), AGENT_RESULT_FILENAME);
+  await mkdir(path.dirname(resultPath), { recursive: true });
+  const agentResult: AgentResultFile = { subtype: result.subtype, usage: result.usage };
+  await writeFile(resultPath, JSON.stringify(agentResult), "utf8");
+
   // a non-success SDK subtype is a phase-level outcome the oracle judges server-side; exit 0 either way (the
-  // agent ran) — the harness reads .rhema/phase-result.json + the result subtype to decide.
+  // agent ran) — the harness reads .rhema/phase-result.json + this result file to decide.
 }
 
 // Run when invoked as the container's agent command (`node dist/agent-entry.js`), not when imported.

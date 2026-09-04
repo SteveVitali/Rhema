@@ -35,6 +35,16 @@ const placeholderImage = rhemaConfig.get("placeholderImage") ?? "gcr.io/google-c
 const proxyImage = rhemaConfig.get("proxyImage") ?? placeholderImage;
 const proxyDatabaseUrl = rhemaConfig.getSecret("proxyDatabaseUrl");
 
+// The always-on worker's dynamic env (D-P0.08-1): secret configs for the connection strings, plain config for
+// the URLs/digest. All optional — a preview with none set stays clean; the operator sets them before `dev`.
+// OBJECTS_BUCKET defaults to the artifacts bucket (always provisioned) so it need not be configured by hand.
+const workerDatabaseUrl = rhemaConfig.getSecret("workerDatabaseUrl");
+const workerSystemDatabaseUrl = rhemaConfig.getSecret("workerSystemDatabaseUrl");
+const workerRedisUrl = rhemaConfig.getSecret("workerRedisUrl");
+const runTaskImageDigest = rhemaConfig.get("runTaskImageDigest");
+const internalApiUrl = rhemaConfig.get("internalApiUrl");
+const proxyBaseUrl = rhemaConfig.get("proxyBaseUrl");
+
 const network = createNetwork({ stack, cfg, region });
 const secrets = createSecrets({ stack, region });
 const data = createData({ stack, cfg, region, network });
@@ -50,6 +60,14 @@ const compute = createCompute({
   proxyImage,
   anthropicKeySecret: secrets.anthropicApiKey.secretId,
   ...(proxyDatabaseUrl ? { proxyDatabaseUrl } : {}),
+  // worker env (all optional; OBJECTS_BUCKET defaults to the artifacts bucket).
+  ...(workerDatabaseUrl ? { workerDatabaseUrl } : {}),
+  ...(workerSystemDatabaseUrl ? { workerSystemDatabaseUrl } : {}),
+  ...(workerRedisUrl ? { workerRedisUrl } : {}),
+  ...(runTaskImageDigest ? { runTaskImageDigest } : {}),
+  ...(internalApiUrl ? { internalApiUrl } : {}),
+  ...(proxyBaseUrl ? { proxyBaseUrl } : {}),
+  objectsBucket: data.buckets["artifacts"].name,
 });
 
 // Stack outputs — consumed by the deploy step (to feed the app env) and by the post-deploy network

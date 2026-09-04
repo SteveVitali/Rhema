@@ -32,6 +32,7 @@ export * from "./runspec.js";
 export * from "./delivery.js";
 export * from "./reaper.js";
 export * from "./phase-loop.js";
+export * from "./commit-decision.js";
 export * from "./credit-renderer.js";
 export * from "./reactions.js";
 
