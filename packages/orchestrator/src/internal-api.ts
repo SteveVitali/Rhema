@@ -6,7 +6,17 @@
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
 import type { AgentTypeKey, GateKind } from "@rhema/contracts";
-import { buildSeatHydration, recordMounts, type MirrorManifest, type Overlay, type ServerFile } from "@rhema/mirror";
+import type { UsageSnapshot } from "@rhema/engine";
+import {
+  buildSeatHydration,
+  persistHarvest,
+  recordMounts,
+  type ContentStore,
+  type MirrorManifest,
+  type NewVersion,
+  type Overlay,
+  type ServerFile,
+} from "@rhema/mirror";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -403,6 +413,131 @@ export async function loadRunOverlays(tx: SqlClient, runId: string): Promise<Ove
     for (const id of r.ids ?? []) overlays.push({ artifactVersionId: id });
   }
   return overlays;
+}
+
+// ---------------------------------------------------------------------------- harvest (persist produced versions)
+
+/** Provisional-credit renderer seam (usage × versioned rate table); default 0 until wired (D-P0.15d-3). */
+type ProvisionalCreditRenderer = (usage: UsageSnapshot, modelTier: string, rateTableVersion: number) => number;
+
+export interface HarvestStepDeps extends OrchestratorDeps {
+  /** the content-addressed artifact store, bound to the run's workspace (GCS in prod). */
+  readonly store: ContentStore;
+  /** renders the running phase's provisional credits from the reported SDK usage (D-P0.15d-3); default 0. */
+  readonly renderCredits?: ProvisionalCreditRenderer;
+}
+
+export interface HarvestStepArgs {
+  readonly runId: string;
+  readonly attempt: number;
+  readonly workspaceId: string;
+  readonly stepKey: string;
+  readonly ordinal: number;
+  readonly seat: AgentTypeKey;
+  readonly projectId?: string | null;
+  readonly personaId?: string | null;
+  /** the harvested writable versions (content-addressed bytes) the pod produced this phase. */
+  readonly versions: readonly NewVersion[];
+  /** the SDK usage snapshot for the phase (provisional `usage.tick`; the proxy stays the meter of record). */
+  readonly usage: UsageSnapshot;
+}
+
+export type HarvestStepResult =
+  | {
+      readonly ok: true;
+      readonly producedVersionIds: string[];
+      readonly byPath: Record<string, string>;
+      /** the provisional per-phase credits (SDK usage × the run's rate table) — the harness forwards this to
+       *  `commit` as the step cost. The proxy-metered reconciliation (±2%) is the live leg (D-P0.15-2). */
+      readonly provisionalCredits: number;
+    }
+  | { readonly ok: false; readonly code: "stale_task"; readonly currentAttempt: number };
+
+/**
+ * `POST /internal/runs/:id/steps/:key/harvest` (P0.15e; §12.2 commit step 2). The pod harness reports the
+ * phase's produced writable versions (it cannot write GCS or the DB itself — REQ-SPEC-10/11); the api persists
+ * them content-addressed and returns their version ids for the subsequent `commit`. In the same fenced tx it
+ * records the phase's PROVISIONAL running usage — an `sdk_stream` `usage_records` row + a `usage.tick` event
+ * (credits via the injected renderer, D-P0.15d-3) — so Σ includes the just-run phase before the reconciled
+ * commit. The proxy's `{source:'proxy'}` rows remain the meter of record.
+ */
+export async function harvestStep(deps: HarvestStepDeps, args: HarvestStepArgs): Promise<HarvestStepResult> {
+  const renderCredits = deps.renderCredits ?? (() => 0);
+  try {
+    return await deps.txRunner.run(args.workspaceId, async (tx): Promise<HarvestStepResult> => {
+      await fence(tx, args.runId, args.attempt);
+
+      // the artifact scope is a SERVER fact (the run's project/persona), never trusted from the pod; the
+      // harness-supplied projectId is a fallback only. `artifacts` requires exactly one of project/persona.
+      const scope = (await tx.query("select project_id, persona_id from runs where id = $1", [args.runId])).rows[0] as
+        | { project_id: string | null; persona_id: string | null }
+        | undefined;
+      const projectId = scope?.project_id ?? args.projectId ?? null;
+      const personaId = scope?.persona_id ?? args.personaId ?? null;
+
+      const persisted = await persistHarvest(
+        tx,
+        deps.store,
+        { ids: deps.ids, clock: deps.clock },
+        { workspaceId: args.workspaceId, projectId, personaId },
+        args.versions,
+      );
+
+      // provisional running usage (D-P0.15d-3): the run's model tier + rate-table version price the reported SDK
+      // usage; the `sdk_stream` row + `usage.tick` reflect the just-run phase (the commit reconciles against the
+      // proxy's metered rows). The renderer returns fractional credits; the int column rounds this DISPLAY figure.
+      const runRow = (
+        await tx.query("select model_tier, rate_table_version, spent_credits, cap_credits from runs where id = $1", [args.runId])
+      ).rows[0] as { model_tier: string; rate_table_version: number; spent_credits: number; cap_credits: number } | undefined;
+      let provisionalCredits = 0;
+      if (runRow) {
+        const credits = Math.round(renderCredits(args.usage, runRow.model_tier, runRow.rate_table_version));
+        provisionalCredits = credits;
+        const now = deps.clock.now();
+        await tx.query(
+          `insert into usage_records(
+             id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+             model_tier, rate_table_version, input_tokens, cache_write_tokens, cache_read_tokens, output_tokens,
+             searches, fetches, list_cost_usd, credits, source)
+           select $1,$2,r.workspace_id,w.billing_account_id,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'sdk_stream'
+             from runs r join workspaces w on w.id = r.workspace_id where r.id = $3`,
+          [
+            deps.ids("usg"),
+            now,
+            args.runId,
+            args.attempt,
+            `step:${args.stepKey}`,
+            args.seat,
+            "anthropic",
+            runRow.model_tier,
+            runRow.model_tier,
+            runRow.rate_table_version,
+            args.usage.inputTokens,
+            args.usage.cacheCreationTokens,
+            args.usage.cacheReadTokens,
+            args.usage.outputTokens,
+            args.usage.webSearchRequests,
+            args.usage.webFetchRequests,
+            0,
+            credits,
+          ],
+        );
+        await deps.eventWriter.append(tx, {
+          runId: args.runId,
+          type: "usage.tick",
+          payload: { spentCredits: runRow.spent_credits + credits, capCredits: runRow.cap_credits },
+          at: now,
+        });
+      }
+
+      const byPath: Record<string, string> = {};
+      for (const p of persisted) byPath[p.path] = p.versionId;
+      return { ok: true, producedVersionIds: persisted.map((p) => p.versionId), byPath, provisionalCredits };
+    });
+  } catch (e) {
+    if (e instanceof StaleTaskError) return { ok: false, code: "stale_task", currentAttempt: e.currentAttempt };
+    throw e;
+  }
 }
 
 // ---------------------------------------------------------------------------- commit / fail / finalize

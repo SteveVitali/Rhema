@@ -1,4 +1,5 @@
-# Cloud Build: build + push the three live images the Phase-0 exit runs need (run-task, egress-proxy, api)
+# Cloud Build: build + push the four live images the Phase-0 exit runs need (run-task, egress-proxy, api,
+# worker)
 # to Artifact Registry, natively on amd64 (the run-task/Cloud Run target arch). Invoked by:
 #   gcloud builds submit --config cloudbuild.yaml --project rhema-507501
 # The whole repo is the build context (the Dockerfiles COPY . . and pnpm install from the lockfile); the
@@ -22,10 +23,15 @@ steps:
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]
     args: ["build", "-f", "apps/api/Dockerfile", "-t", "${_AR}/api:dev", "."]
+  - id: worker
+    name: gcr.io/cloud-builders/docker
+    env: ["DOCKER_BUILDKIT=1"]
+    args: ["build", "-f", "apps/worker/Dockerfile", "-t", "${_AR}/worker:dev", "."]
 images:
   - "${_AR}/run-task:dev"
   - "${_AR}/egress-proxy:dev"
   - "${_AR}/api:dev"
+  - "${_AR}/worker:dev"
 options:
   machineType: E2_HIGHCPU_8
   diskSizeGb: 100

@@ -159,6 +159,9 @@ importers:
 
   apps/run-task:
     dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@rhema/engine':
         specifier: workspace:*
         version: link:../../packages/engine
@@ -171,6 +174,9 @@ importers:
       '@rhema/mirror':
         specifier: workspace:*
         version: link:../../packages/mirror
+      '@rhema/orchestrator':
+        specifier: workspace:*
+        version: link:../../packages/orchestrator
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../../packages/protocols
@@ -252,6 +258,9 @@ importers:
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../packages/protocols
+      '@rhema/run-task':
+        specifier: workspace:*
+        version: link:../apps/run-task
       '@rhema/worker':
         specifier: workspace:*
         version: link:../apps/worker

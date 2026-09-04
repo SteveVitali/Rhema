@@ -7,7 +7,7 @@
 // avoids mounting a large spec as a Secret. NO secret is ever in the spec (REQ-SPEC-10/11) — the run token and
 // the proxy credential reach only the harness uid via the 0400 Secret mount, never this JSON.
 
-import type { AgentTypeKey, ModelTier, WorkflowKey } from "@rhema/contracts";
+import type { AgentTypeKey, CorrespondenceKind, ModelTier, WorkflowKey } from "@rhema/contracts";
 import { MODEL_TIERS } from "@rhema/contracts";
 import type { PhaseRequest } from "@rhema/engine";
 import type { MirrorManifest } from "@rhema/mirror";
@@ -57,7 +57,32 @@ export interface HarnessRunSpec {
   readonly serverFiles: Record<string, string>;
   /** the §12.6 boundary policy inputs (the harness compiles the live `SeatPolicy` + fresh `DenialState`). */
   readonly hookPolicyInput: HookPolicyInput;
+  /** true when the run pins an explicit `phase` in its frozen inputs (REQ-SPEC-13): the pod commits this one
+   *  phase then STOPS — it does not advance/gate/finalize. The commit loop reads this to end after one phase. */
+  readonly stopAfterPhase?: boolean;
+  /** server-side facts the harness needs to assemble the final `DeliveryArgs` from /work (§12.6: the harness
+   *  supplies the /work-derived dossier content, the server supplies these attestation facts). Present only for
+   *  a draft-targeting run (a Review); absent ⇒ the loop finalizes WITHOUT delivering (a no-draft/scoped run). */
+  readonly delivery?: DeliveryFacts;
 }
+
+/** The server-side delivery facts the harness folds into the final `DeliveryArgs` (P0.15e). */
+export interface DeliveryFacts {
+  readonly projectId: string;
+  readonly draftId: string;
+  readonly correspondenceKind: CorrespondenceKind;
+  /** the reviewed draft's promoted head version to freeze at (a frozen draft requires a promoted version). */
+  readonly draftPromotedVersionId: string;
+  readonly protocolId?: string;
+  readonly protocolVersion?: number;
+}
+
+/** The correspondence kind each workflow delivers (drives `correspondence_items.kind`); default `review`. */
+const CORRESPONDENCE_KIND_BY_WORKFLOW: Partial<Record<WorkflowKey, CorrespondenceKind>> = {
+  review: "review",
+  fact_check: "review",
+  revise: "response",
+};
 
 export interface BuildRunSpecArgs {
   readonly runId: string;
@@ -75,6 +100,9 @@ interface RunSpecFacts {
   readonly tools: string[];
   /** distinct committed (`done`) phases so far → the index of the phase to run next (0 on a fresh run). */
   readonly committedPhases: number;
+  readonly projectId: string | null;
+  /** the reviewed draft's promoted head version (null when the run's draft has no promoted version). */
+  readonly draftPromotedVersionId: string | null;
 }
 
 function round2(n: number): number {
@@ -105,9 +133,10 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   const seat = hyd.seat as AgentTypeKey;
 
   // 2) run-level facts: model tier, the seat's tool set, the committed-phase count, the run's URL policy.
+  const draftId = typeof hyd.inputs.draftId === "string" ? hyd.inputs.draftId : undefined;
   const facts = await deps.txRunner.run(args.workspaceId, async (tx): Promise<RunSpecFacts> => {
-    const runRow = (await tx.query("select model_tier from runs where id = $1", [args.runId])).rows[0] as
-      | { model_tier: string }
+    const runRow = (await tx.query("select model_tier, project_id from runs where id = $1", [args.runId])).rows[0] as
+      | { model_tier: string; project_id: string | null }
       | undefined;
     if (!runRow) throw new Error(`buildHarnessRunSpec: run ${args.runId} not found`);
     const at = (await tx.query("select tools from agent_types where key = $1", [seat])).rows[0] as
@@ -116,7 +145,19 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     const done = (
       await tx.query("select count(distinct ordinal)::int as n from steps where run_id = $1 and state = 'done'", [args.runId])
     ).rows[0] as { n: number };
-    return { modelTier: runRow.model_tier, tools: at?.tools ?? [], committedPhases: done.n };
+    // the reviewed draft's promoted head version — the delivery freezes the draft at it (REQ-DATA-14).
+    const draftRow = draftId
+      ? ((await tx.query("select promoted_version_id from drafts where id = $1", [draftId])).rows[0] as
+          | { promoted_version_id: string | null }
+          | undefined)
+      : undefined;
+    return {
+      modelTier: runRow.model_tier,
+      tools: at?.tools ?? [],
+      committedPhases: done.n,
+      projectId: runRow.project_id,
+      draftPromotedVersionId: draftRow?.promoted_version_id ?? null,
+    };
   });
 
   // 3) the phase to run. An explicit `phase` pin in the run's FROZEN inputs wins (REQ-SPEC-13: a run created
@@ -176,6 +217,18 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     agentLabel: seat,
   };
 
+  // delivery facts — only for a draft-targeting run whose draft has a promoted head to freeze at. A run with no
+  // draft (or an un-promoted draft) delivers nothing here; the loop finalizes without a dossier POST.
+  const delivery: DeliveryFacts | undefined =
+    facts.projectId && draftId && facts.draftPromotedVersionId
+      ? {
+          projectId: facts.projectId,
+          draftId,
+          correspondenceKind: CORRESPONDENCE_KIND_BY_WORKFLOW[workflow] ?? "review",
+          draftPromotedVersionId: facts.draftPromotedVersionId,
+        }
+      : undefined;
+
   return {
     request,
     skillsDir: args.skillsDir ?? DEFAULT_SKILLS_DIR,
@@ -183,5 +236,9 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     manifest: hyd.manifest,
     serverFiles: hyd.serverFiles,
     hookPolicyInput,
+    // a user-pinned phase (frozen input, before the merge above) makes this a one-phase run that stops after
+    // committing (REQ-SPEC-13); a normal run has no pin and advances/gates/finalizes through the loop.
+    ...(pinnedSkillPhase ? { stopAfterPhase: true } : {}),
+    ...(delivery ? { delivery } : {}),
   };
 }

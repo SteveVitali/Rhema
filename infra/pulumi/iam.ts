@@ -58,6 +58,9 @@ export function createIam(args: IamArgs): Iam {
   // one secret and let the proxy read it (it uses only the JWK public component); the api signs with it.
   grantSecret("proxy-reads-runtoken", secrets.runTokenSigningKey, serviceAccounts["egress-proxy"]);
   grantSecret("api-signs-runtoken", secrets.runTokenSigningKey, serviceAccounts["api"]);
+  // The worker MINTS run tokens at provision (Rs256RunTokenService over the signing key) — it needs the
+  // same keypair the api verifies with (D-P0.08-1).
+  grantSecret("worker-signs-runtoken", secrets.runTokenSigningKey, serviceAccounts["worker"]);
   // api reads the auth secrets; web/collab read NONE (no binding = no access under uniform IAM).
   grantSecret("api-reads-betterauth", secrets.betterAuthSecret, serviceAccounts["api"]);
   grantSecret("api-reads-google-oauth", secrets.googleOauthClientSecret, serviceAccounts["api"]);
@@ -86,6 +89,15 @@ export function createIam(args: IamArgs): Iam {
     project,
     role: "roles/artifactregistry.reader",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["run-task"].email}`,
+  });
+
+  // The worker launches the two-uid run-task Jobs on the GKE cluster (createGkeJobLauncher → k8s Job create).
+  // `container.developer` grants the k8s-API access to create/read Jobs in the cluster (D-P0.08-1); a tighter
+  // per-namespace RBAC role is a later hardening (P1.22 / ops).
+  new gcp.projects.IAMMember(`rhema-${stack}-worker-gke-job-launcher`, {
+    project,
+    role: "roles/container.developer",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["worker"].email}`,
   });
 
   return { serviceAccounts };

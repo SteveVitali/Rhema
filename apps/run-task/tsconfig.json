@@ -9,6 +9,9 @@
   ],
   "references": [
     {
+      "path": "../../packages/contracts"
+    },
+    {
       "path": "../../packages/engine"
     },
     {
@@ -22,6 +25,9 @@
     },
     {
       "path": "../../packages/mirror"
+    },
+    {
+      "path": "../../packages/orchestrator"
     }
   ],
   "exclude": [

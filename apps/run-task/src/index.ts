@@ -26,7 +26,12 @@ export {
   type AgentPhaseSpec,
 } from "./agent-entry.js";
 export { parseAgentEventLine, forwardAgentEvents, toLines } from "./harness-main.js";
+export { AGENT_RESULT_FILENAME, type AgentResultFile } from "./agent-entry.js";
 export * from "./materialize-work.js";
+// the pod→server commit/deliver loop (P0.15e; D-P0.15d-4) + its seams + the prod api client + /work reader.
+export * from "./harness-loop.js";
+export { createHarnessApiClient, type HarnessApiClientConfig } from "./internal-client.js";
+export { buildPhaseOutputs, readWorkDir } from "./work-reader.js";
 
 /** Marker export retained for the build graph / provenance job. */
 export function packageInfo(): { name: string } {
