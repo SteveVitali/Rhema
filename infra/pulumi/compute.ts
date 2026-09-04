@@ -66,6 +66,9 @@ export function createCompute(args: ComputeArgs): Compute {
   // --- GKE Standard cluster for run-task (needs CAP_SYS_ADMIN — REQ-ARCH-2/36). ------------------
   const gke = new gcp.container.Cluster(name("run-task-gke"), {
     location: region,
+    // Non-prod pins node zones to avoid a single-zone GCE stockout wedging the whole regional create (a live
+    // us-central1-f e2 stockout ERROR'd the cluster in P0.15f Stage B). prod stays fully multi-zone (regional HA).
+    ...(cfg.kind !== "prod" ? { nodeLocations: [`${region}-a`, `${region}-c`] } : {}),
     network: network.network.id,
     subnetwork: network.subnets["sandbox"].id,
     removeDefaultNodePool: true,
@@ -151,6 +154,9 @@ export function createCompute(args: ComputeArgs): Compute {
       targetSize: cfg.kind === "prod" ? 2 : 1,
       namedPorts: [{ name: "https", port: Number(proxyPort) }],
       autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
+      // Non-prod pins the proxy VM to zones with capacity (a us-central1-f e2 stockout blocked the MIG instance
+      // in P0.15f Stage B). prod stays fully regional (multi-zone HA).
+      ...(cfg.kind !== "prod" ? { distributionPolicyZones: [`${region}-a`, `${region}-c`] } : {}),
     });
   }
 

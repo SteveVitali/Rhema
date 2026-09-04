@@ -21,8 +21,19 @@ export interface AgentLaunchInput {
   readonly agentGid: number;
   /** the seat mount the SDK runs in (`/work/project`). */
   readonly cwd: string;
-  /** the SDK entry command (e.g. `["node","/app/dist/agent-entry.js"]`). */
+  /**
+   * The SDK entry command. It MUST use ABSOLUTE paths (e.g. `[process.execPath, "/app/dist/agent-entry.js"]`):
+   * the scrubbed agent env has no `PATH` (assertScrubbed forbids it — REQ-SPEC-10), so `setpriv` cannot resolve
+   * a bare `node` after the uid drop. A bare command yields `spawn … ENOENT` and the agent never launches — the
+   * live D-P0.15e-2 root cause, diagnosed P0.15f.
+   */
   readonly command: readonly string[];
+  /**
+   * Absolute path to `setpriv` (default `/usr/bin/setpriv`, the util-linux location on the Debian base). MUST be
+   * absolute for the same PATH-less reason as `command`: `spawn("setpriv", …, {env: scrubbed})` cannot resolve a
+   * bare name without `PATH`.
+   */
+  readonly setprivPath?: string;
 }
 
 export interface AgentLaunch {
@@ -46,7 +57,7 @@ export function buildAgentLaunch(input: AgentLaunchInput): AgentLaunch {
   // the SDK's telemetry inherits it. It is added AFTER the scrub assertion (OTel keys are not secrets).
   const env = { ...scrubbed, ...buildOtelConfig() };
   const argv = [
-    "setpriv",
+    input.setprivPath ?? "/usr/bin/setpriv", // absolute: the scrubbed env has no PATH to resolve a bare name
     "--reuid",
     String(input.agentUid),
     "--regid",

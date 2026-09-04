@@ -174,14 +174,31 @@ export function createNetwork(args: NetworkArgs): Network {
   });
 
   // Egress-allow to the GKE private control plane so the node can register + the kubelet can be reached.
+  // Port 8132 is the KONNECTIVITY proxy-server (the node's konnectivity-agent dials `<master>:8132`); without
+  // it the agent never registers and `kubectl logs`/`exec` fail "No agent available" — the live pod-log blind
+  // spot (D-P0.15e-4, diagnosed P0.15f). 443 = API server, 10250 = kubelet.
   new gcp.compute.Firewall(name("sandbox-allow-gke-master"), {
     network: network.id,
     direction: "EGRESS",
     priority: 900,
     destinationRanges: [GKE_MASTER_CIDR],
-    allows: [{ protocol: "tcp", ports: ["443", "10250"] }],
+    allows: [{ protocol: "tcp", ports: ["443", "10250", "8132"] }],
     targetTags: [SANDBOX_TAG],
-    description: "D-P0.15c-8: sandbox nodes reach the GKE control plane (API server + konnectivity/kubelet).",
+    description: "D-P0.15c-8/D-P0.15e-4: sandbox nodes reach the GKE control plane (API server + kubelet + konnectivity 8132).",
+  });
+
+  // Egress-allow node→node kubelet (10250) within the sandbox subnet: `kubectl logs`/`exec` proxy from the
+  // API server through a konnectivity-agent to the TARGET node's kubelet, which is cross-node when the agent
+  // and the pod are on different nodes. The deny-all-egress (priority 1000) would otherwise block it, leaving
+  // logs failing "dial <node>:10250 i/o timeout" even after konnectivity registers (D-P0.15e-4, P0.15f).
+  new gcp.compute.Firewall(name("sandbox-node-kubelet"), {
+    network: network.id,
+    direction: "EGRESS",
+    priority: 900,
+    destinationRanges: [SUBNET_CIDRS["sandbox"]],
+    allows: [{ protocol: "tcp", ports: ["10250"] }],
+    targetTags: [SANDBOX_TAG],
+    description: "D-P0.15e-4: node→node kubelet (10250) within the sandbox subnet for kubectl logs/exec via konnectivity.",
   });
 
   // Private DNS: override googleapis.com / pkg.dev / gcr.io to resolve to the VIP inside the VPC, so a

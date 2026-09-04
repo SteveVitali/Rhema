@@ -343,9 +343,35 @@ Status values: `OPEN` (owed) · `DONE` (verified — add date + evidence) · `WO
 > byte-identical). Konnectivity egress (item 4) was determined NOT an offline IaC gap (network.ts already allows
 > sandbox→master 443+10250); the sink is the primary mechanism, konnectivity restoration is a Stage-B ops matter.
 >
-> **Stage B (the budgeted live re-deploy + the paid green Reviews + the exit assertions) stays [OPERATOR GATE]d
-> and unchanged** — no spend budget / ADC / Pulumi / Docker authorization was given this session, so per the
-> ticket's modified autonomy contract Stage B was surfaced, NOT guessed past. Every live-`dev` row below and in
-> P0.15/P0.15c/e stays OPEN until the operator authorizes the budgeted re-run; **GATE G1 stays blocked while any
-> is OPEN.** No row flips to DONE this run (no live evidence). See `docs/phase0-exit-readout.md` § "Stage A
-> complete (2026-09-04, P0.15f)".
+> **Stage B WAS EXECUTED LIVE (2026-09-04, operator-authorized $50 ceiling / $10-per-run; pilot SKIPPED).** The
+> full `dev` stack was re-deployed and a Review run driven to the agent-execution boundary WITH POD LOGS in hand
+> (the P0.15e blind spot is gone). **$0 inference** (no run reached the model). Live findings:
+>
+> - **D-P0.15e-3 — CLOSED LIVE:** the Cloud Run worker launched the two-uid GKE Job via the metadata-token
+>   `KubeConfig` launcher with NO out-of-band step. Job + pod ran.
+> - **D-P0.15e-4 (pod logs) — REAL IaC GAPS FOUND + FIXED (my Stage-A "not an IaC gap" call was WRONG):**
+>   konnectivity-agent dials `<master>:8132` (not just 443/10250) → firewall missing 8132 → "No agent available".
+>   Then `kubectl logs` failed "dial `<node>`:10250 i/o timeout" → node→node kubelet egress blocked by deny-all.
+>   Added BOTH to `network.ts` (`sandbox-allow-gke-master` +8132; new `sandbox-node-kubelet` egress) + applied
+>   live via gcloud → `kubectl logs`/`exec` WORK. **Pod-log observability is RESTORED on `dev`.**
+> - **D-P0.15e-2 (agent→proxy) — TRUE ROOT CAUSE, and it is a CHAIN, NOT a single hang (overturns the P0.15e
+>   "SDK hang / proxy-buffering" hypothesis):** with logs, the pod fails `spawn … ENOENT` — **the agent was
+>   NEVER SPAWNED.** (1) `buildAgentLaunch` spawned bare `setpriv`/`node`, but the scrubbed agent env forbids
+>   `PATH` → unresolvable; FIXED (absolute `/usr/bin/setpriv` + `process.execPath`). (2) the agent cwd
+>   `/work/project` was never created (`materializeWork` writes `/work` root) → `spawn` ENOENT on the missing
+>   cwd; FIXED (cwd = workDir + mkdir). After both, the agent process SPAWNS live — then the NEXT link surfaced:
+>   **`setpriv: setresgid failed: Operation not permitted`** (the non-root harness lacks ambient CAP_SETUID/SETGID
+>   to drop to the agent uid — the two-uid capability model, D-P0.15f-1), and behind THAT the **per-run proxy
+>   credential is never injected** into the agent's request (D-P0.15f-2). A green phase needs those + the untested
+>   first live SDK exercise (D-P0.06-1). Also found + fixed: the pod NetworkPolicy blocked the WI metadata server
+>   (169.254.169.254) the harness needs for GCS auth (added to `infra/k8s/20-run-task-egress-policy.yaml`).
+>
+> **The setpriv/cwd/konnectivity/NetworkPolicy fixes are committed on this branch (code + IaC).** The billable
+> stack was torn down after the run (cost mandate). **GATE G1 stays blocked** — D-P0.15e-2 stays OPEN (the chain
+> is not fully closed), the live-pilot rows stay OPEN (pilot SKIPPED), and D-P0.15f-1/2 are new construction
+> blockers. See `docs/phase0-exit-readout.md` § "Stage B — live execution (2026-09-04, P0.15f)".
+
+| ID | Item (AC / deliverable) | Why deferred | Unblocked by | How to verify when unblocked | Proxy in place now | Status |
+|---|---|---|---|---|---|---|
+| D-P0.15f-1 | **Two-uid capability model: the harness cannot `setpriv`-drop to the agent uid** (`setpriv: setresgid failed: Operation not permitted`, surfaced live P0.15f). The entrypoint drops root→harness (uid 10001); the harness (non-root, caps dropped on the uid change) then lacks CAP_SETUID/SETGID to drop harness→agent (uid 10002), so the agent process exits 127 and never runs. | The Phase-0 image starts as root under tini and drops via `setpriv` without preserving ambient CAP_SETUID/SETGID for the harness; the two-uid drop needs the harness to RETAIN those caps (ambient) — image/entrypoint construction (D-P0.06-3 hardening territory), best as a reviewed PR. | A PR: give the harness ambient CAP_SETUID+CAP_SETGID (entrypoint `setpriv --keep-caps` + `--ambient-caps`, or an ambient-caps entrypoint), so its `setpriv`→agent drop succeeds; re-run and assert the agent runs as uid 10002. | On `dev`: a run's pod logs show the agent running as uid 10002 (no `setresgid` error), reaching the SDK. | The spawn/cwd blockers are FIXED (the agent process launches); only the cap-drop fails. | **OPEN — the next agent-launch blocker after spawn/cwd; blocks a green phase.** |
+| D-P0.15f-2 | **The per-run proxy credential is never injected into the agent's requests.** `injectProxyCredential` (`apps/run-task/src/proxy-injector.ts`) is a pure function with NO live caller; the agent points `ANTHROPIC_BASE_URL` directly at the egress-proxy and its scrubbed env forbids the credential — so every request would 403 `egress.denied` (missing credential). | The intended design (a harness-side per-request injector — the credential lives with uid `harness`, never the agent) was never wired live. It is security-critical construction (the credential MUST NOT leak to the agent uid), best as a reviewed PR — a small local injecting proxy (agent SDK → `127.0.0.1:<port>` [harness, adds `x-rhema-proxy-credential`] → egress-proxy). | A PR: run a harness-side injecting proxy that stamps the per-run credential + forwards to the egress-proxy; point the agent's `ANTHROPIC_BASE_URL` at it; assert the proxy accepts the run's request (not 403). | On `dev`: a run's request reaches Anthropic via the proxy (`usage_records{source:'proxy'}` appear); a shell-escape without the credential still 403s. | The pure injector + the proxy's credential gate are built + tested; only the live wiring (an injector server + the base-URL redirect) is missing. | **OPEN — blocks a green phase; behind D-P0.15f-1.** |
