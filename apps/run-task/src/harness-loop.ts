@@ -96,6 +96,8 @@ export interface FailCall {
 
 /** The token-authed internal-api client the harness calls (a `fetch` in prod; the real routes in the G21 test). */
 export interface HarnessApiClient {
+  /** first beat: take `provisioning → running` (§12.4 step 5) + refresh the token; returns cancel state. */
+  heartbeat?(): Promise<{ ok: boolean; cancelRequested?: boolean; state?: string }>;
   fetchRunSpec(): Promise<HarnessRunSpec>;
   harvest(args: HarvestCall): Promise<HarvestReply>;
   commit(args: CommitCall): Promise<{ ok: boolean; state?: string; code?: string }>;
@@ -135,6 +137,10 @@ export type LoopResult =
 export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
   const now = deps.now ?? (() => new Date());
   let phasesCommitted = 0;
+
+  // first beat: take the run `provisioning → running` before any commit (§12.4 step 5). Without it the commit
+  // route's `running → …` transition is invalid and the run is stuck provisioning (surfaced live P0.15e).
+  if (deps.client.heartbeat) await deps.client.heartbeat();
 
   for (;;) {
     const spec = await deps.client.fetchRunSpec();

@@ -7,6 +7,7 @@ import {
   kubeName,
   runJobName,
   runSecretName,
+  HARNESS_GID,
   HARNESS_SECRET_MOUNT,
   RUN_TOKEN_FILE,
   type GkeLauncherConfig,
@@ -64,8 +65,9 @@ describe("buildRunTaskJobManifest", () => {
 
   it("grants the privilege-drop + mount-isolation caps, read-only root FS, restart Never", () => {
     expect(podSpec.restartPolicy).toBe("Never");
-    // the image starts as root and drops root→harness→agent itself, so the pod does not force runAsUser.
-    expect(podSpec.securityContext).toBeUndefined();
+    // the image starts as root and drops root→harness→agent itself, so the pod does not force runAsUser — but it
+    // DOES set fsGroup to the harness group so the harness can read the 0440 per-run Secret (P0.15e).
+    expect(podSpec.securityContext).toEqual({ fsGroup: HARNESS_GID });
     const csc = container.securityContext as { readOnlyRootFilesystem: boolean; capabilities: { add: string[]; drop: string[] }; allowPrivilegeEscalation: boolean };
     expect(csc.readOnlyRootFilesystem).toBe(true);
     expect(csc.allowPrivilegeEscalation).toBe(true);
@@ -86,10 +88,10 @@ describe("buildRunTaskJobManifest", () => {
     expect(env.find((e) => e.value === spec.proxyCredential)).toBeUndefined();
   });
 
-  it("backs work/config/tmp with memory tmpfs and mounts the secret 0400", () => {
+  it("backs work/config/tmp with memory tmpfs and mounts the secret 0440 (group-readable by the harness)", () => {
     const volumes = podSpec.volumes as Array<Record<string, unknown>>;
     const secretVol = volumes.find((v) => v.name === "harness-secrets")!;
-    expect(secretVol.secret).toMatchObject({ secretName: runSecretName(spec), defaultMode: 0o400 });
+    expect(secretVol.secret).toMatchObject({ secretName: runSecretName(spec), defaultMode: 0o440 });
     expect((volumes.find((v) => v.name === "work")!.emptyDir as { medium: string }).medium).toBe("Memory");
   });
 });
