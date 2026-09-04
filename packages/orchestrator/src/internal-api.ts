@@ -711,6 +711,16 @@ export async function failStep(
            ended_at=excluded.ended_at, result=excluded.result`,
         [stepId, args.runId, args.stepKey, args.ordinal, args.attempt, now, JSON.stringify({ errorClass: args.errorClass, reason: args.reason })],
       );
+      // Observability (D-P0.15e-4): emit an `engine.error` run event in the SAME tx as the step-fail row, so a
+      // failed phase — an agent crash included, its class+message folded into `reason` by the pod loop — is
+      // queryable from `run_events` (not only `steps`) without pod exec. `engine.error` is INTERNAL-visibility
+      // (never streamed to the user SSE) and carries no secret / user content (the harness reports facts only).
+      await deps.eventWriter.append(tx, {
+        runId: args.runId,
+        type: "engine.error",
+        payload: { errorClass: args.errorClass, phase: args.stepKey, ordinal: args.ordinal, ...(args.reason ? { reason: args.reason } : {}) },
+        at: now,
+      });
       return { ok: true };
     });
   } catch (e) {

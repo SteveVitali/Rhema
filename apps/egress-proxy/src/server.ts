@@ -2,22 +2,40 @@
 //
 // A forward proxy (not a CONNECT tunnel) so the proxy can read response usage and rewrite server-tool bodies —
 // exactly why the ticket chose undici over Envoy (per-run policy needs a DB lookup + body rewriting). The
-// sandbox points `ANTHROPIC_BASE_URL` at this server; it terminates, runs `handleProxyRequest`, and forwards to
-// the provider over its own TLS. The DB-backed resolver, the Secret Manager key source and the network bind are
+// sandbox points `ANTHROPIC_BASE_URL` at this server; it terminates, runs the pipeline, and forwards to the
+// provider over its own TLS. The DB-backed resolver, the Secret Manager key source and the network bind are
 // LIVE wiring (needs a GCP deploy — deferred, see DEFERRALS P0.07); the pipeline itself is fully tested in-process.
+//
+// The server STREAMS the upstream response through to the sandbox incrementally (`streamProxyRequest`,
+// D-P0.07-5): the Agent SDK's `stream:true` responses reach it frame-by-frame instead of waiting for the whole
+// buffered body (the P0.15e agent→proxy-hang suspect). Metering still folds the COMPLETE response once, after
+// delivery — the proxy stays the meter of record.
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { request as undiciRequest } from "undici";
-import { handleProxyRequest, type Forwarder, type HandlerDeps, type ProxyRequest } from "./handler.js";
+import {
+  streamProxyRequest,
+  type Forwarder,
+  type HandlerDeps,
+  type ProxyRequest,
+  type StreamingForwarder,
+  type StreamingHandlerDeps,
+} from "./handler.js";
 import { ReloadableSecretProvider } from "./sinks.js";
 
-/** Response headers the proxy must not pass back verbatim (the Node server re-derives framing). */
-const HOP_BY_HOP_RESPONSE = new Set(["transfer-encoding", "connection", "keep-alive", "content-length"]);
+/** Normalize undici's response headers (string | string[] | undefined) into a flat record. */
+function normalizeUndiciHeaders(raw: Record<string, string | string[] | undefined>): Record<string, string> {
+  const headers: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === "string") headers[k] = v;
+    else if (Array.isArray(v)) headers[k] = v.join(", ");
+  }
+  return headers;
+}
 
 /**
- * A Forwarder backed by undici: forwards the validated, rewritten request to the provider over HTTPS. The
- * target host is the run's provider endpoint (the sandbox only ever reaches this proxy). Buffers the response
- * so the pipeline can read its usage block — the proxy is the meter of record, not a passthrough tunnel.
+ * A buffered `Forwarder` backed by undici (retained for the buffered `handleProxyRequest` path + tests). Buffers
+ * the whole response so the pipeline can read its usage block. The live server uses `undiciStreamForwarder`.
  */
 export function undiciForwarder(scheme: "https" | "http" = "https"): Forwarder {
   return async (req) => {
@@ -27,16 +45,27 @@ export function undiciForwarder(scheme: "https" | "http" = "https"): Forwarder {
       body: req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
     });
     const body = await res.body.text();
-    const headers: Record<string, string> = {};
-    for (const [k, v] of Object.entries(res.headers)) {
-      if (typeof v === "string") headers[k] = v;
-      else if (Array.isArray(v)) headers[k] = v.join(", ");
-    }
-    return { status: res.statusCode, headers, body };
+    return { status: res.statusCode, headers: normalizeUndiciHeaders(res.headers), body };
   };
 }
 
-/** Read the full request body as a string. */
+/**
+ * A streaming `StreamingForwarder` backed by undici: forwards the validated, rewritten request to the provider
+ * over HTTPS and returns the response as a byte stream (undici's `res.body` is an `AsyncIterable<Buffer>`), so
+ * the server can pipe each SSE frame to the sandbox as it arrives (D-P0.07-5).
+ */
+export function undiciStreamForwarder(scheme: "https" | "http" = "https"): StreamingForwarder {
+  return async (req) => {
+    const res = await undiciRequest(`${scheme}://${req.host}${req.path}`, {
+      method: req.method as "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
+      headers: { ...req.headers, host: req.host },
+      body: req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
+    });
+    return { status: res.statusCode, headers: normalizeUndiciHeaders(res.headers), body: res.body };
+  };
+}
+
+/** Read the full request body as a string (the request — the model's turn — is small; only the response streams). */
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -46,15 +75,19 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-export interface ServerOptions extends HandlerDeps {
+export interface ServerOptions extends StreamingHandlerDeps {
   /** The provider host every request is forwarded to (the sandbox reaches only this proxy). */
   readonly providerHost: string;
 }
 
+/** A HandlerDeps view (unused by the streaming server; retained so callers may still buffer if they wish). */
+export type BufferedServerOptions = HandlerDeps & { readonly providerHost: string };
+
 /**
  * Create the proxy HTTP server. Each request becomes a `ProxyRequest` targeting the provider host (path from the
- * incoming URL), runs through `handleProxyRequest`, and the result is written back. If the secret provider is a
- * `ReloadableSecretProvider`, SIGHUP re-reads the provider key (REQ-ARCH-30) — a rotated key needs no restart.
+ * incoming URL) and is streamed through `streamProxyRequest` — the upstream response is piped back frame-by-frame
+ * while the full body is metered once after it ends. If the secret provider is a `ReloadableSecretProvider`,
+ * SIGHUP re-reads the provider key (REQ-ARCH-30) — a rotated key needs no restart.
  */
 export function createProxyServer(opts: ServerOptions): Server {
   if (opts.secrets instanceof ReloadableSecretProvider) {
@@ -78,18 +111,20 @@ export function createProxyServer(opts: ServerOptions): Server {
           headers,
           body,
         };
-        const out = await handleProxyRequest(proxyReq, opts);
-        const outHeaders: Record<string, string> = {};
-        for (const [k, v] of Object.entries(out.headers)) {
-          if (!HOP_BY_HOP_RESPONSE.has(k.toLowerCase())) outHeaders[k] = v;
-        }
-        res.writeHead(out.status, outHeaders);
-        res.end(out.body);
+        await streamProxyRequest(proxyReq, opts, res);
       } catch (err) {
-        // Never leak an internal error body to the sandbox; log server-side (stderr) only.
+        // Never leak an internal error body to the sandbox; log server-side (stderr) only. If the response has
+        // already begun streaming (headers sent), we can only close it — a truncated stream, not a 502.
         console.error("[egress-proxy] request failed:", err);
-        res.writeHead(502, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: { type: "proxy_error", message: "upstream request failed" } }));
+        if (!res.headersSent) {
+          res.writeHead(502, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: { type: "proxy_error", message: "upstream request failed" } }));
+        } else if (!res.writableEnded) {
+          // the stream had begun but not finished (e.g. an upstream mid-stream error); close it — the client
+          // sees a truncated stream, never a wrong status. A post-`end()` throw (a metering anomaly) is already
+          // finished, so we do nothing (avoid ERR_STREAM_ALREADY_FINISHED).
+          res.end();
+        }
       }
     })();
   });

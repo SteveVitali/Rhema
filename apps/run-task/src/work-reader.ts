@@ -166,6 +166,8 @@ export function buildPhaseOutputs(files: ReadonlyMap<string, Uint8Array>, spec: 
     phaseResult,
     versions,
     facts,
+    // surface a thrown SDK/engine error the agent captured (D-P0.15e-4); the loop folds it into failStep.
+    ...(agentResult?.error ? { agentError: agentResult.error } : {}),
     ...(isFinal ? { delivery: dossierForPhase(files, phase) } : {}),
   };
 }

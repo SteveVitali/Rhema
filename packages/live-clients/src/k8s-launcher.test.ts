@@ -2,16 +2,23 @@ import { describe, it, expect } from "vitest";
 import type { JobSpec } from "@rhema/orchestrator";
 import {
   GkeJobLauncher,
+  MetadataTokenGkeJobLauncher,
+  buildGkeKubeConfigOptions,
   buildRunTaskJobManifest,
   buildRunTaskSecretManifest,
+  fetchGceMetadataAccessToken,
+  GCE_METADATA_TOKEN_URL,
   kubeName,
   runJobName,
   runSecretName,
   HARNESS_GID,
   HARNESS_SECRET_MOUNT,
   RUN_TOKEN_FILE,
+  type FetchLike,
   type GkeLauncherConfig,
   type KubeBatchApi,
+  type KubeClientModule,
+  type KubeConfigOptions,
   type KubeCoreApi,
 } from "./k8s-launcher.js";
 
@@ -124,5 +131,98 @@ describe("GkeJobLauncher", () => {
     const { jobId } = await launcher.launch(spec);
     expect(jobId).toBe("run-run-abc123-a2");
     expect(created).toEqual(["secret:run-run-abc123-a2-secrets", "job:run-run-abc123-a2"]); // secret first
+  });
+});
+
+// -------------------------------------------------------- Cloud Run → GKE auth (metadata token; D-P0.15e-3)
+
+describe("buildGkeKubeConfigOptions", () => {
+  it("https-prefixes a bare endpoint and carries the CA + token in the loadFromOptions shape", () => {
+    const opts = buildGkeKubeConfigOptions({ endpoint: "34.10.20.30", caData: "Q0FDRVJU", token: "ya29.abc" });
+    expect(opts.clusters[0]).toMatchObject({ server: "https://34.10.20.30", caData: "Q0FDRVJU" });
+    expect(opts.users[0]).toMatchObject({ token: "ya29.abc" });
+    expect(opts.currentContext).toBe(opts.contexts[0]!.name);
+    expect(opts.contexts[0]).toMatchObject({ cluster: opts.clusters[0]!.name, user: opts.users[0]!.name });
+  });
+
+  it("leaves an already-scheme-qualified endpoint intact", () => {
+    expect(buildGkeKubeConfigOptions({ endpoint: "https://gke.example", caData: "c", token: "t" }).clusters[0]!.server).toBe("https://gke.example");
+  });
+});
+
+describe("fetchGceMetadataAccessToken", () => {
+  it("GETs the metadata token endpoint with the Metadata-Flavor header and returns the access token", async () => {
+    let seenUrl = "";
+    let seenHeaders: Record<string, string> | undefined;
+    const fetchImpl: FetchLike = (url, init) => {
+      seenUrl = url;
+      seenHeaders = init?.headers;
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ access_token: "ya29.fresh", expires_in: 3599 }) });
+    };
+    const token = await fetchGceMetadataAccessToken(fetchImpl);
+    expect(token).toBe("ya29.fresh");
+    expect(seenUrl).toBe(GCE_METADATA_TOKEN_URL);
+    expect(seenHeaders).toMatchObject({ "Metadata-Flavor": "Google" });
+  });
+
+  it("throws on a non-OK response or a missing access_token", async () => {
+    await expect(fetchGceMetadataAccessToken(() => Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({}) }))).rejects.toThrow(/metadata token fetch failed 500/);
+    await expect(fetchGceMetadataAccessToken(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) }))).rejects.toThrow(/no access_token/);
+  });
+});
+
+describe("MetadataTokenGkeJobLauncher", () => {
+  /** A fake `@kubernetes/client-node` module: records the loadFromOptions config and hands back marker clients. */
+  function fakeK8s(onLaunch: (kind: "secret" | "job", name: string) => void) {
+    const marker = { BatchV1Api: Symbol("batch"), CoreV1Api: Symbol("core") };
+    let lastOptions: KubeConfigOptions | undefined;
+    const batch: KubeBatchApi = {
+      createNamespacedJob: ({ body }) => {
+        const nm = (body as { metadata: { name: string } }).metadata.name;
+        onLaunch("job", nm);
+        return Promise.resolve({ metadata: { name: nm } });
+      },
+    };
+    const core: KubeCoreApi = {
+      createNamespacedSecret: ({ body }) => {
+        onLaunch("secret", (body as { metadata: { name: string } }).metadata.name);
+        return Promise.resolve({});
+      },
+    };
+    const mod: KubeClientModule = {
+      BatchV1Api: marker.BatchV1Api,
+      CoreV1Api: marker.CoreV1Api,
+      KubeConfig: class {
+        loadFromOptions(opts: KubeConfigOptions) {
+          lastOptions = opts;
+        }
+        makeApiClient(api: unknown) {
+          return api === marker.BatchV1Api ? batch : core;
+        }
+      },
+    };
+    return { mod, getLastOptions: () => lastOptions };
+  }
+
+  const gkeConfig = { ...config, gkeEndpoint: "34.1.2.3", gkeCaData: "Q0E=" };
+
+  it("fetches a FRESH token per launch, builds the KubeConfig from it, and creates secret→job", async () => {
+    const created: string[] = [];
+    const { mod, getLastOptions } = fakeK8s((kind, nm) => created.push(`${kind}:${nm}`));
+    let tokenCalls = 0;
+    const fetchToken = () => Promise.resolve(`ya29.tok${++tokenCalls}`);
+
+    const launcher = new MetadataTokenGkeJobLauncher(gkeConfig, mod, fetchToken);
+    const first = await launcher.launch(spec);
+    expect(first.jobId).toBe("run-run-abc123-a2");
+    expect(created).toEqual(["secret:run-run-abc123-a2-secrets", "job:run-run-abc123-a2"]);
+    // the KubeConfig was built from the endpoint/CA + the fetched token.
+    expect(getLastOptions()!.clusters[0]!.server).toBe("https://34.1.2.3");
+    expect(getLastOptions()!.users[0]!.token).toBe("ya29.tok1");
+
+    // a second launch fetches a FRESH token (expiry-proof) — not a cached one.
+    await launcher.launch({ ...spec, attempt: 3 });
+    expect(getLastOptions()!.users[0]!.token).toBe("ya29.tok2");
+    expect(tokenCalls).toBe(2);
   });
 });

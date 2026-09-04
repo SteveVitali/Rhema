@@ -1,11 +1,12 @@
 // The LIVE egress-proxy entrypoint (D-P0.07-1/2/3/4). Constructs the running proxy against real infrastructure:
 // the DB-backed run-context resolver + usage/fetch-log writers + cap accountant over a pg.Pool, the Secret
-// Manager provider key (SIGHUP-refreshable), and the undici forwarder to the provider. The sandbox's ONLY egress
-// route points `ANTHROPIC_BASE_URL` here; it terminates, runs `handleProxyRequest`, and forwards over its own
-// TLS. Deploy wiring only — the pipeline + every seam are unit-tested in-process; this file needs a live deploy.
+// Manager provider key (SIGHUP-refreshable), and the undici STREAMING forwarder to the provider. The sandbox's
+// ONLY egress route points `ANTHROPIC_BASE_URL` here; it terminates, runs the pipeline (`streamProxyRequest`),
+// and pipes the response back over its own TLS. Deploy wiring only — the pipeline + every seam are unit-tested
+// in-process; this file needs a live deploy.
 
 import pg from "pg";
-import { createProxyServer, undiciForwarder } from "./server.js";
+import { createProxyServer, undiciStreamForwarder } from "./server.js";
 import { createDbRunContextResolver } from "./resolver.js";
 import { ReloadableAnthropicSecretProvider, createSecretAccessor } from "./secret-manager.js";
 import { SqlUsageWriter, SqlFetchLogWriter, SqlCapAccountant, type SqlExecutor } from "./sinks.js";
@@ -54,7 +55,9 @@ export async function startProxy(): Promise<void> {
     providerHost: env.providerHost,
     resolver: createDbRunContextResolver(db),
     secrets,
-    forward: undiciForwarder("https"),
+    // stream the upstream response through to the sandbox incrementally (D-P0.07-5); the SDK's stream:true
+    // responses arrive frame-by-frame instead of waiting for the whole buffered body.
+    streamForward: undiciStreamForwarder("https"),
     usageWriter: new SqlUsageWriter(db),
     fetchLogWriter: new SqlFetchLogWriter(db),
     capAccountant: new SqlCapAccountant(db),

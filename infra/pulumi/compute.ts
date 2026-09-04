@@ -164,6 +164,10 @@ export function createCompute(args: ComputeArgs): Compute {
     { name: "KUBE_SERVICE_ACCOUNT", value: "run-task-ksa" },
     { name: "RUN_SERVICE_ACCOUNT", value: iam.serviceAccounts["run-task"].email },
     { name: "SANDBOX_NODE_POOL", value: runTaskPool.name },
+    // Cloud Run → GKE auth (D-P0.15e-3): the worker has no in-cluster kubeconfig, so it builds one from the GKE
+    // public endpoint + cluster CA + a per-launch metadata OAuth token (its SA has roles/container.developer).
+    { name: "GKE_ENDPOINT", value: gke.endpoint },
+    { name: "GKE_CA_DATA", value: gke.masterAuth.clusterCaCertificate },
     ...(args.workerDatabaseUrl ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }] : []),
     ...(args.workerSystemDatabaseUrl ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }] : []),
     ...(args.workerRedisUrl ? [{ name: "REDIS_URL", value: args.workerRedisUrl }] : []),

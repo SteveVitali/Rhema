@@ -307,6 +307,43 @@ re-run that reaches a green Review.
 
 ---
 
+## Stage A complete (2026-09-04, P0.15f) — the diagnosis + fix enablers for the last live blocker
+
+**P0.15f (this PR) is diagnosis-first and offline: it builds the three enablers P0.15e's live run needed to turn
+its one remaining green-Review blocker (the agent never reaches the proxy, `$0` metered) from *undiagnosable*
+into *diagnosable-and-likely-fixed* — without any spend.** The paid live re-run that confirms the fix + runs the
+§17 exit criterion is **Stage B, still [OPERATOR GATE]d** (a stated budget + ADC/Pulumi/Docker; none authorized
+this session — surfaced, not guessed past).
+
+1. **Readable agent-error observability sink (D-P0.15e-4 / D-P0.06-1).** The run-task pod is now debuggable even
+   with konnectivity down: `agent-entry` captures a thrown SDK/engine error into `.rhema/agent-result.json`
+   (`sanitizeAgentError` — error class + a bounded, redacted, single-line message; no secret/user content),
+   `work-reader` threads it out, the commit loop folds it into the `failStep` reason, and `@rhema/orchestrator`
+   `failStep` emits an INTERNAL `engine.error` run event **in the same tx as the step-fail row**. So an agent
+   hang/crash surfaces in `run_events`/`steps` (queryable from the DB) with no `kubectl logs`/`exec`.
+2. **Worker GKE-Job launcher without an out-of-band step (D-P0.15e-3).** Chose **option (b)** to keep the proven
+   Cloud Run worker topology: `MetadataTokenGkeJobLauncher` builds the `KubeConfig` from the GKE endpoint + CA
+   (`buildGkeKubeConfigOptions`) + a FRESH GCE metadata OAuth token fetched per launch
+   (`fetchGceMetadataAccessToken`) — sidestepping token expiry with no refresh machinery — and delegates to the
+   existing `GkeJobLauncher`. Wired through `apps/worker` env/main + `infra/pulumi/compute.ts`
+   (`GKE_ENDPOINT`/`GKE_CA_DATA` from `gke.endpoint` + `masterAuth.clusterCaCertificate`; the worker SA already
+   has `roles/container.developer`). `pulumi tsc --noEmit` clean.
+3. **Proxy SSE/streaming pass (D-P0.07-5).** The proxy now STREAMS the upstream response through incrementally
+   (`streamProxyRequest` + `undiciStreamForwarder`; the live server uses them) instead of buffering the whole
+   body — the P0.15e agent→proxy-hang suspect — while metering the ACCUMULATED body ONCE. The pipeline split
+   (`prepareProxyRequest` → forward → `meter`) keeps the buffered `handleProxyRequest` byte-identical (all 63
+   existing proxy tests green). This defensively closes the *buffering* branch of the D-P0.15e-2 hypothesis;
+   **whether pre-SDK-hang (D-P0.06-1/4) or buffering is THE cause is confirmed live in Stage B** with the sink's
+   error in hand.
+
+**Konnectivity (item 4) is NOT an offline IaC gap.** `infra/pulumi/network.ts` `sandbox-allow-gke-master`
+already allows sandbox→master `443`+`10250` (konnectivity/kubelet), pri 900 > deny-all 1000. So restoring
+`kubectl logs` is a cluster-config/ops matter to diagnose live; the item-1 sink is the mechanism the run relies
+on meanwhile (the ticket permits this). **All Stage-A work is unit + integration-tested; typecheck/lint/pulumi-tsc
+green.** No DEFERRALS row flips to DONE (no live evidence); **G1 stays blocked.** See `DEFERRALS.md § P0.15f`.
+
+---
+
 ## Pointers
 
 - **Stage-A deploy artifacts (P0.15b):** Pulumi/GCP IaC `infra/pulumi/` (+ `README.md` runbook); live SDK
