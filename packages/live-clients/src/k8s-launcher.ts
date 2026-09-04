@@ -33,6 +33,8 @@ export interface GkeLauncherConfig {
   readonly internalApiUrl: string;
   /** the egress-proxy base URL the sandbox's only egress route points at (`ANTHROPIC_BASE_URL`). */
   readonly proxyBaseUrl: string;
+  /** the GCS bucket the harness materializes `/work` from (`OBJECTS_BUCKET`). */
+  readonly objectsBucket: string;
   /** the Workload-Identity-bound k8s ServiceAccount name the pod runs as (annotated with the GSA). */
   readonly kubeServiceAccount: string;
   /** clean up a finished Job after this many seconds (defaults to 1 h). */
@@ -118,6 +120,8 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
     { name: "WORKSPACE_ID", value: spec.workspaceId },
     { name: "API_INTERNAL_URL", value: config.internalApiUrl },
     { name: "ANTHROPIC_BASE_URL", value: config.proxyBaseUrl },
+    // the harness materializes /work read-only from this GCS bucket (server-generated hydration manifest).
+    { name: "OBJECTS_BUCKET", value: config.objectsBucket },
     // the harness reads the token + credential from the mounted files, NOT from env (REQ-SPEC-10).
     { name: "RUN_TOKEN_FILE", value: `${HARNESS_SECRET_MOUNT}/${RUN_TOKEN_FILE}` },
     { name: "PROXY_CREDENTIAL_FILE", value: `${HARNESS_SECRET_MOUNT}/${PROXY_CREDENTIAL_FILE}` },

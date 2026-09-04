@@ -65,6 +65,7 @@ export async function startWorker(): Promise<void> {
     imageRepo: env.runTaskImageRepo,
     internalApiUrl: env.internalApiUrl,
     proxyBaseUrl: env.proxyBaseUrl,
+    objectsBucket: env.objectsBucket,
     kubeServiceAccount: env.kubeServiceAccount,
   });
   const config: WorkerRunConfig = {

@@ -1,3 +1,4 @@
 config:
   gcp:project: rhema-507501
   gcp:region: us-central1
+  rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello

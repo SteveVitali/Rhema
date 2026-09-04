@@ -20,6 +20,7 @@ import {
   holdGate,
   seatForWorkflow,
   phaseClassesForWorkflow,
+  RUN_JOBS,
   RevokedTokenError,
   StaleTaskError,
   EventBatchTooLargeError,
@@ -134,7 +135,16 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       },
     });
 
-    if (res.ok) return c.json({ runId: res.runId, state: res.state, deduped: res.deduped }, res.deduped ? 200 : 201);
+    if (res.ok) {
+      // §12.4 step 3: a sheet-launched run lands in `queued`; enqueue the provision job so the worker
+      // admits + provisions it (mints the token/credential, launches the run-task Job). pg-boss send is
+      // post-commit + singleton-keyed on the runId, so a duplicate/replay is a no-op. A deduped replay
+      // already enqueued it; an `awaiting_consent` run enqueues on the later consent transition, not here.
+      if (res.state === "queued" && !res.deduped) {
+        await deps.queue.send(RUN_JOBS.start, { runId: res.runId, workspaceId: principal.workspaceId }, { singletonKey: res.runId });
+      }
+      return c.json({ runId: res.runId, state: res.state, deduped: res.deduped }, res.deduped ? 200 : 201);
+    }
     if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
     return c.json({ error: res.reason, detail: res.error.message }, 422);
   });

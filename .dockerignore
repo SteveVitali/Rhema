@@ -9,5 +9,7 @@
 agent-scratch
 .github
 **/*.log
-# run-task vendors the SDK explicitly in its Dockerfile (a separate COPY); keep it out of the broad context.
-apps/run-task/vendor
+# NOTE: apps/run-task/vendor (the Agent SDK) is intentionally NOT excluded — the run-task Dockerfile's
+# explicit `COPY apps/run-task/vendor/ /app/vendor/` needs it in the build context (a .dockerignore
+# exclusion is context-global and would silently defeat that COPY, yielding a no-SDK image). It is not a
+# workspace package, so `pnpm install` in the broad builder stage ignores it.

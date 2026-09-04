@@ -13,16 +13,18 @@ RUN corepack enable
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @rhema/egress-proxy... build
-RUN pnpm --filter @rhema/egress-proxy --prod deploy /bundle
+RUN pnpm --filter @rhema/egress-proxy --prod deploy --legacy /bundle
 
 # ---- runtime: non-root, minimal ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
-RUN groupadd --gid 10003 proxy \
-  && useradd --uid 10003 --gid 10003 --home-dir /home/proxy --create-home --shell /usr/sbin/nologin proxy
+# NOTE: the user/group is `proxyd`, NOT `proxy` — Debian bookworm ships a system group named `proxy`
+# (gid 13), so `groupadd proxy` fails (exit 9, name already in use). Any non-root, non-reserved name works.
+RUN groupadd --gid 10003 proxyd \
+  && useradd --uid 10003 --gid 10003 --home-dir /home/proxyd --create-home --shell /usr/sbin/nologin proxyd
 WORKDIR /app
 COPY --from=builder /bundle /app
-USER proxy
+USER proxyd
 EXPOSE 8443
 # The provider key is read from Secret Manager at boot + on SIGHUP (secret-manager.ts) — never baked in.
 CMD ["node", "/app/dist/main.js"]
