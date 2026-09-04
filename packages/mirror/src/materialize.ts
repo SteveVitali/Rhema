@@ -158,8 +158,34 @@ export async function buildSeatManifest(exec: SqlExecutor, args: MaterializeArgs
   return manifest;
 }
 
+/** A server-generated (non-artifact) mount file's bytes, keyed by manifest path (manifest.md, obligations.json). */
+export interface DerivedMountFile {
+  readonly path: string;
+  readonly bytes: Uint8Array;
+}
+
+/**
+ * Build the seat's hydration manifest AND the bytes of its derived (non-artifact) mount files — the pieces the
+ * harness cannot fetch from the content store because they are server-generated, not content-addressed artifact
+ * versions (the derived `manifest.md`, REQ-VIS-6; the re-review `obligations.json`, REQ-OBJ-8). Both come from
+ * the SAME `resolveSeatTree` pass, so every derived file's bytes hash to exactly the sha its manifest entry
+ * carries (no drift between the attestation manifest and the delivered bytes). `buildHarnessRunSpec` folds these
+ * into the run spec so the harness materializes `/work` for every manifest entry (D-P0.15c-6). Artifact-backed
+ * entries still carry only their sha here — the harness fetches those bytes from GCS.
+ */
+export async function buildSeatHydration(
+  exec: SqlExecutor,
+  args: MaterializeArgs,
+): Promise<{ manifest: MirrorManifest; derived: DerivedMountFile[] }> {
+  const { manifest, derived } = await resolveSeatTree(exec, args);
+  return { manifest, derived };
+}
+
 /** Resolve the mounted (artifact-backed) entries + the assembled manifest — the shared core of manifest + tree. */
-async function resolveSeatTree(exec: SqlExecutor, args: MaterializeArgs): Promise<{ backed: BackedEntry[]; manifest: MirrorManifest }> {
+async function resolveSeatTree(
+  exec: SqlExecutor,
+  args: MaterializeArgs,
+): Promise<{ backed: BackedEntry[]; manifest: MirrorManifest; derived: DerivedMountFile[] }> {
   const overlayByPath = await readOverlays(exec, args.overlays ?? []);
   const backed: BackedEntry[] = [];
   const seen = new Set<string>();
@@ -215,17 +241,24 @@ async function resolveSeatTree(exec: SqlExecutor, args: MaterializeArgs): Promis
 
   // manifest.md — regenerated from tables (REQ-VIS-6), a derived read-only file whose entry heads the manifest.
   const manifestMd = renderManifestMd({ seat: args.seat, entries: artifactEntries });
+  const manifestMdBytes = Buffer.from(manifestMd, "utf8");
   const derivedManifestEntry: MirrorManifestEntry = {
     path: "manifest.md",
     root: "project",
     artifactVersionId: null,
-    sha256: sha256Hex(Buffer.from(manifestMd, "utf8")),
+    sha256: sha256Hex(manifestMdBytes),
     mode: "read",
     kind: null,
     namespace: "shared",
     immutable: false,
   };
-  return { backed, manifest: { seat: args.seat, entries: [derivedManifestEntry, ...serverEntries, ...artifactEntries] } };
+  // The derived (server-generated) files' BYTES, in manifest order, so `buildHarnessRunSpec` can hand the
+  // harness exactly what it must write for every non-artifact entry (their shas already match the entries above).
+  const derived: DerivedMountFile[] = [
+    { path: "manifest.md", bytes: manifestMdBytes },
+    ...(args.serverFiles ?? []).map((s) => ({ path: s.path, bytes: s.bytes })),
+  ];
+  return { backed, manifest: { seat: args.seat, entries: [derivedManifestEntry, ...serverEntries, ...artifactEntries] }, derived };
 }
 
 /**

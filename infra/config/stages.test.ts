@@ -26,6 +26,22 @@ describe("sandbox subnet has no internet reachability (REQ-ARCH-2, AC3 — GCP)"
   }
 });
 
+describe("sandbox node bootstrap egress is scoped, pod egress stays proxy-only (D-P0.15c-8)", () => {
+  for (const stage of ["dev", "pr-7", "prod"]) {
+    it(`stage ${stage}`, () => {
+      const sandbox = sandboxSubnetOf(stageConfigFor(stage))!;
+      // The POD guarantee is unchanged — the NetworkPolicy confines pods to the proxy (REQ-ARCH-2).
+      expect(sandbox.egressTargets).toEqual(["fw:egress-proxy"]);
+      // The NODE firewall additionally permits exactly the two bootstrap targets — Google APIs via the PGA
+      // VIP and the GKE control plane — and nothing else. No default route / NAT (asserted above) means this
+      // is still not arbitrary-internet egress.
+      expect(sandbox.nodeEgressTargets).toEqual(["fw:egress-proxy", "pga:private-googleapis", "fw:gke-master"]);
+      // the node egress is a strict SUPERSET of the pod egress (the pod layer only ever tightens).
+      for (const t of sandbox.egressTargets) expect(sandbox.nodeEgressTargets).toContain(t);
+    });
+  }
+});
+
 describe("no other subnet accidentally opens the sandbox posture", () => {
   it("only the sandbox lacks both a default route and Cloud NAT", () => {
     for (const cfg of Object.values(STAGES)) {

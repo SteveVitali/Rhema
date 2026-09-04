@@ -1,0 +1,11 @@
+# The `runs` namespace the two-uid run-task Jobs land in (D-P0.15c-8). The GkeJobLauncher (worker) creates one
+# Job + one per-run Secret per attempt in this namespace. Provisioned as a documented post-`pulumi up` apply
+# (see infra/k8s/apply.sh + infra/pulumi/README.md) because it is stack-parameterized k8s state, not a GCP
+# resource. The NetworkPolicy in this directory only takes effect for pods in this namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: runs
+  labels:
+    app.kubernetes.io/part-of: rhema
+    rhema.dev/purpose: run-task

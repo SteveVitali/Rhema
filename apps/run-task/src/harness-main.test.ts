@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { parseAgentEventLine, forwardAgentEvents, toLines } from "./harness-main.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { parseAgentEventLine, forwardAgentEvents, toLines, fetchRunSpec } from "./harness-main.js";
 import { createFdEventTransport } from "./agent-entry.js";
 import { EventBufferClient, InMemoryBufferStore, type EventTransport, type OutboundEvent } from "./event-buffer.js";
 
@@ -30,6 +30,28 @@ describe("parseAgentEventLine", () => {
     expect(parseAgentEventLine("  ")).toBeNull();
     expect(parseAgentEventLine('{"type":"x"}')).toBeNull(); // not an array
     expect(parseAgentEventLine("[INFO] the model said hi")).toBeNull(); // not JSON
+  });
+});
+
+describe("fetchRunSpec (D-P0.15c-6 — the harness fetches the server-authored spec, never constructs it)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("GETs /internal/runs/:id/runspec with the run token and parses the spec", async () => {
+    const spec = { request: { skill: "editorial-review" }, skillsDir: "/app/skills", manifest: { seat: "editor", entries: [] }, hookPolicyInput: { seat: "editor", tools: ["read"] } };
+    const calls: Array<{ url: string; auth?: string }> = [];
+    vi.stubGlobal("fetch", (url: string, init?: { headers?: Record<string, string> }) => {
+      calls.push({ url, auth: init?.headers?.authorization });
+      return Promise.resolve(new Response(JSON.stringify(spec), { status: 200 }));
+    });
+    const got = await fetchRunSpec({ apiBaseUrl: "http://api.internal/", runId: "run1", runToken: "tok-abc" });
+    expect(got).toEqual(spec);
+    expect(calls[0]!.url).toBe("http://api.internal/internal/runs/run1/runspec");
+    expect(calls[0]!.auth).toBe("Bearer tok-abc");
+  });
+
+  it("throws on a non-200 (never runs a phase without a spec)", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("nope", { status: 401 })));
+    await expect(fetchRunSpec({ apiBaseUrl: "http://api.internal", runId: "run1", runToken: "t" })).rejects.toThrow(/401/);
   });
 });
 

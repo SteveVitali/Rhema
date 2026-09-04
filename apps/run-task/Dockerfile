@@ -63,6 +63,11 @@ COPY apps/run-task/docker/entrypoint.sh /app/entrypoint.sh
 COPY apps/run-task/docker/scoped-runner.sh /app/scoped-runner.sh
 RUN chmod 0755 /app/entrypoint.sh /app/scoped-runner.sh
 
+# Bake the ported @rhema/protocols skills at /app/skills — the `skillsDir` the run spec points the SDK at
+# (D-P0.15c-6). World-readable, no secret; the agent uid loads the SKILL.md dirs from here. Copied explicitly
+# (not relied on via the pnpm-deploy bundle) so the path is deterministic and independent of package `files`.
+COPY packages/protocols/skills /app/skills
+
 # Vendor the proprietary Agent SDK (REQ-ARCH-4 / D-P0.06-4). The operator drops the built package under
 # apps/run-task/vendor/claude-agent-sdk/ (see vendor/README.md); it is copied into node_modules here, NEVER
 # fetched at run time. If absent (a CI placeholder build) the image still builds and the run loop fails fast at

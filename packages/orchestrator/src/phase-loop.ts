@@ -157,7 +157,11 @@ async function recordProvisionalUsage(
   usage: UsageSnapshot,
   renderCredits: CreditRenderer,
 ): Promise<void> {
-  const credits = renderCredits(usage, args.modelTier, args.rateTableVersion);
+  // The renderer returns FRACTIONAL credits (the cap accountant rounds once at debit — credit-renderer.ts); this
+  // provisional `sdk_stream` row is a transient DISPLAY figure (the running-card total), not the meter of record
+  // (the proxy's `{source:'proxy'}` rows are, reconciled at commit), so round it for the integer `credits`
+  // column — that never double-rounds the actual charge, which comes from the reconciled commit path.
+  const credits = Math.round(renderCredits(usage, args.modelTier, args.rateTableVersion));
   await deps.txRunner.run(args.workspaceId, async (tx) => {
     const spentRow = (await tx.query("select spent_credits, cap_credits from runs where id = $1", [args.runId]))
       .rows[0] as { spent_credits: number; cap_credits: number };

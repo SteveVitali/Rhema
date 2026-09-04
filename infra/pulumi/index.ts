@@ -30,12 +30,27 @@ const rhemaConfig = new pulumi.Config("rhema");
 // A placeholder container image until each service ships real logic; overridden per-deploy with the
 // digest-pinned image from the `images` job (REQ-ARCH-39).
 const placeholderImage = rhemaConfig.get("placeholderImage") ?? "gcr.io/google-containers/pause:3.9";
+// The digest-pinned egress-proxy image + its DATABASE_URL (a Pulumi SECRET config — encrypted, not committed);
+// the proxy reads the provider key from Secret Manager itself (only the secret NAME is passed). D-P0.15c-7.
+const proxyImage = rhemaConfig.get("proxyImage") ?? placeholderImage;
+const proxyDatabaseUrl = rhemaConfig.getSecret("proxyDatabaseUrl");
 
 const network = createNetwork({ stack, cfg, region });
 const secrets = createSecrets({ stack, region });
 const data = createData({ stack, cfg, region, network });
 const iam = createIam({ stack, project, secrets, buckets: data.buckets });
-const compute = createCompute({ stack, cfg, project, region, network, iam, placeholderImage });
+const compute = createCompute({
+  stack,
+  cfg,
+  project,
+  region,
+  network,
+  iam,
+  placeholderImage,
+  proxyImage,
+  anthropicKeySecret: secrets.anthropicApiKey.secretId,
+  ...(proxyDatabaseUrl ? { proxyDatabaseUrl } : {}),
+});
 
 // Stack outputs — consumed by the deploy step (to feed the app env) and by the post-deploy network
 // assertion that reads the sandbox subnet's firewall/route facts back off the live VPC (D-P0.01-2).
