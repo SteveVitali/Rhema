@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Engine, EngineEvent, PhaseRequest, UsageSnapshot } from "@rhema/engine";
-import { runAgentPhase } from "./agent-entry.js";
+import { runAgentPhase, sanitizeAgentError } from "./agent-entry.js";
 import { EventBufferClient, InMemoryBufferStore, type EventTransport, type OutboundEvent } from "./event-buffer.js";
 
 const usage: UsageSnapshot = {
@@ -69,5 +69,34 @@ describe("runAgentPhase", () => {
     };
     await expect(runAgentPhase(engine, req, client)).rejects.toThrow(/sdk crashed/);
     expect(transport.batches.flat().map((e) => e.type)).toEqual(["step.started"]); // not lost
+  });
+});
+
+describe("sanitizeAgentError — the observability sink's error fact (D-P0.15e-4)", () => {
+  it("captures the error class + message from an Error", () => {
+    const fact = sanitizeAgentError(new TypeError("query() is not a function"));
+    expect(fact).toEqual({ class: "TypeError", message: "query() is not a function" });
+  });
+
+  it("collapses whitespace/newlines and bounds the message length", () => {
+    const long = "boom\n  at frame1\n    at frame2 " + "x".repeat(1000);
+    const fact = sanitizeAgentError(new Error(long));
+    expect(fact.class).toBe("Error");
+    expect(fact.message).not.toContain("\n");
+    expect(fact.message.length).toBeLessThanOrEqual(500);
+    expect(fact.message.startsWith("boom at frame1 at frame2")).toBe(true);
+  });
+
+  it("handles a non-Error throw (string/unknown)", () => {
+    expect(sanitizeAgentError("plain string")).toEqual({ class: "string", message: "plain string" });
+    expect(sanitizeAgentError({ weird: true }).class).toBe("object");
+  });
+
+  it("redacts auth-token-like substrings (never leak the run token/key — REQ-SPEC-10/11)", () => {
+    const fact = sanitizeAgentError(new Error("401 Unauthorized: Authorization: Bearer eyJhbGci.secret.sig and x-api-key sk-ant-abc123DEF"));
+    expect(fact.message).not.toContain("eyJhbGci.secret.sig");
+    expect(fact.message).not.toContain("sk-ant-abc123DEF");
+    expect(fact.message).toContain("Bearer [redacted]");
+    expect(fact.message).toContain("sk-[redacted]");
   });
 });

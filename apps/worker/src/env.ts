@@ -29,6 +29,13 @@ export interface WorkerEnv {
   readonly kubeServiceAccount: string;
   readonly internalApiUrl: string;
   readonly proxyBaseUrl: string;
+  /**
+   * Cloud Run → GKE auth (D-P0.15e-3): the GKE public endpoint + base64 cluster CA. When both are set the
+   * launcher builds its KubeConfig from them + a per-launch metadata OAuth token (the Cloud Run worker has no
+   * in-cluster kubeconfig); unset ⇒ the ambient kubeconfig (`loadFromDefault`, for an in-cluster/local run).
+   */
+  readonly gkeEndpoint?: string;
+  readonly gkeCaData?: string;
   /** default plan concurrency (the real per-account lookup is the subscription tier — PRB.8/P1.16). */
   readonly defaultConcurrency: number;
 }
@@ -57,6 +64,8 @@ export function readWorkerEnv(): WorkerEnv {
     proxyBaseUrl: required("ANTHROPIC_BASE_URL"),
     defaultConcurrency: Number(process.env.DEFAULT_CONCURRENCY ?? 2),
     ...(process.env.SYSTEM_DATABASE_URL ? { systemDatabaseUrl: process.env.SYSTEM_DATABASE_URL } : {}),
+    ...(process.env.GKE_ENDPOINT ? { gkeEndpoint: process.env.GKE_ENDPOINT } : {}),
+    ...(process.env.GKE_CA_DATA ? { gkeCaData: process.env.GKE_CA_DATA } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

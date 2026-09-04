@@ -201,6 +201,37 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(rec.fails[0]!.errorClass).toBe("artifact_missing");
   });
 
+  it("folds a captured agent error into the failStep reason (D-P0.15e-4 observability sink)", async () => {
+    // the agent crashed: subtype error_during_execution (→ infra) + a captured error fact. The loop must fail
+    // the step and surface the CLASS + message so it reaches run_events/steps without pod exec.
+    const { rec, client, runPhase } = makeHarness([makeSpec({ ...byKey("craft"), index: 5 })], () => ({
+      subtype: "error_during_execution",
+      usage: emptyUsage(),
+      phaseResult: null,
+      versions: [],
+      facts: {},
+      agentError: { class: "TypeError", message: "query() is not a function" },
+    }));
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("failed");
+    expect(rec.commits).toHaveLength(0);
+    expect(rec.fails).toHaveLength(1);
+    expect(rec.fails[0]!.errorClass).toBe("infra");
+    expect(rec.fails[0]!.reason).toContain("TypeError");
+    expect(rec.fails[0]!.reason).toContain("query() is not a function");
+    // no guided retry is worth it for an SDK crash (infra is re-runnable ONCE, so it ran twice) — but it still fails.
+    if (res.kind === "failed") expect(res.reason).toContain("query() is not a function");
+  });
+
+  it("a phase incomplete WITHOUT an agent error keeps the plain oracle reason (no message appended)", async () => {
+    const { rec, client, runPhase } = makeHarness([makeSpec({ ...byKey("craft"), index: 5 })], () =>
+      completeOutputs({ nonempty: { "04-craft-notes.md": false } }),
+    );
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("failed");
+    expect(rec.fails[0]!.reason).not.toContain("agent error");
+  });
+
   it("never sees the run token or any secret — the loop's inputs carry only server-authored data", async () => {
     const spec = makeSpec({ ...byKey("craft"), index: OF - 1 });
     const { client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));

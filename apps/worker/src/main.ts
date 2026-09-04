@@ -78,6 +78,9 @@ export async function startWorker(): Promise<void> {
     proxyBaseUrl: env.proxyBaseUrl,
     objectsBucket: env.objectsBucket,
     kubeServiceAccount: env.kubeServiceAccount,
+    // Cloud Run → GKE auth (D-P0.15e-3): endpoint + CA present ⇒ metadata-token KubeConfig; absent ⇒ loadFromDefault.
+    ...(env.gkeEndpoint ? { gkeEndpoint: env.gkeEndpoint } : {}),
+    ...(env.gkeCaData ? { gkeCaData: env.gkeCaData } : {}),
   });
   const config: WorkerRunConfig = {
     imageDigest: env.runTaskImageDigest,
