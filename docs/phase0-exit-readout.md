@@ -256,6 +256,55 @@ the reduced-rigor active-phase filter (D-P0.15d-1) and the `refundPhases` reduce
 stay OPEN (both need semantics/paths the pod loop's happy path does not yet exercise). See `DEFERRALS.md § P0.15e`.
 G1 stays blocked pending the operator-gated Stage-B re-run.
 
+## Stage B — live execution (2026-09-04, P0.15e; operator-authorized $300 / $10-per-run)
+
+The full `dev` stack was re-deployed and the pod→server commit/deliver loop was driven LIVE. **The loop runs
+live** — the harness reads the run token, heartbeats `provisioning → running`, fetches the server-authored run
+spec over the wire, materializes `/work`, and launches the agent. **A green Review did NOT complete**: the run
+blocks at the agent's live SDK call, so G1 is still NOT ready. **No paid inference occurred** (`usage_records`
+and `fetch_log` are empty across all runs — the SDK never reached Anthropic through the proxy); spend was idle
+infra only (~$3).
+
+**Proven live:** `pulumi up` (54 resources) → AlloyDB/GKE/Redis/GCS/SecretMgr/Cloud Run/proxy MIG; `k8s apply`
+(runs namespace + WI-bound KSA + NetworkPolicy); migrate + `seedRealProjects` on live AlloyDB (3 projects, 6
+drafts); all four images built with the new commit-loop code; the api deployed + reachable by the pod; the
+worker (run out-of-band — see the Cloud-Run-GKE gap below) provisioned a run and launched the two-uid GKE Job;
+the pod ran the harness commit loop to the agent-execution boundary; the egress-proxy container came up, is
+reachable from a sandbox pod (a probe got a correct `403`), and passes its health check.
+
+**~10 live-only deploy bugs found + fixed this run** (invisible to the offline typecheck/preview — the value of
+executing Stage B). Code fixes shipped in this PR: (1) the per-run Secret mount was `root:root 0400` so the
+harness (uid 10001) got **EACCES** on the run token — now `fsGroup` + `0440` (`k8s-launcher.ts`); (2) the commit
+loop dropped the **heartbeat** that takes `provisioning → running` — restored (`harness-loop.ts`); (3–5) the
+proxy COS startup script couldn't pull its image (regional AR host missing from the docker auth; `docker login`
+needed instead of the gcr helper; `DOCKER_CONFIG` on a writable tmpfs because COS `/` is read-only) and (6)
+served on `--network host` which COS's host iptables drops — now `-p` port-publish (`proxy.ts`); (7) the proxy
+`ANTHROPIC_KEY_SECRET` needed the full resource name, not the bare id (`index.ts`); (8) the egress-proxy SA
+lacked `artifactregistry.reader` (`iam.ts`). Infra fixes baked into the IaC (`network.ts`): (9) a `run.app`
+private DNS zone → the PGA VIP (the pod couldn't reach the internal Cloud Run api at its public frontend); (10)
+a proxy-tier **ingress** firewall (sandbox + pod range on 8443/443; the health-check probers on 8443 — else
+autohealing recreated the proxy in a loop). Runtime config: `ANTHROPIC_BASE_URL` is `http://` (the proxy serves
+HTTP; proxy→Anthropic is HTTPS).
+
+**The remaining blocker (G1-gating):** with the proxy healthy + reachable, a real run's agent still does not
+reach the proxy (a root probe does), so no inference happens. The agent (uid `agent`) is either hanging before
+its live SDK call (the vendored-SDK / `AgentSdkEngine` first live exercise — D-P0.06-1/4) or the proxy's
+response-buffering is incompatible with the SDK's streaming (D-P0.07-5). It could not be diagnosed further this
+session because the pod's logs are unreachable: `kubectl logs`/`exec` fail with konnectivity **"No agent
+available"** (a P0.15c-noted cluster issue) and Cloud Logging is empty for long-running pods. This is
+egress-proxy / run-task live bring-up (D-P0.06 / D-P0.07), NOT the P0.15e commit loop (proven live to this
+boundary). See `DEFERRALS.md` § P0.15e.
+
+**Two deploy-topology findings (recorded, not yet re-platformed):** (a) the Cloud Run worker cannot launch GKE
+Jobs — `@kubernetes/client-node` `loadFromDefault()` finds no kubeconfig on Cloud Run; this session ran the
+worker out-of-band against the live cluster to validate the path. The worker needs either a GKE Deployment
+topology (in-cluster SA) or an injected kubeconfig. (b) konnectivity is down (no `kubectl logs`/`exec`), which
+blocks pod-level debugging.
+
+The billable stack was **torn down** after the run (cost-conscious mandate); a temporary AlloyDB public IP +
+`allUsers` api invoker + IAP-SSH firewall added for the session were removed. G1 stays blocked pending a live
+re-run that reaches a green Review.
+
 ---
 
 ## Pointers

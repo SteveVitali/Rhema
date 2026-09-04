@@ -49,6 +49,12 @@ export function createHarnessApiClient(cfg: HarnessApiClientConfig): HarnessApiC
   }
 
   return {
+    async heartbeat() {
+      const res = await fetch(runUrl("/heartbeat"), { method: "PUT", headers: authHeaders() });
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; cancelRequested?: boolean; state?: string };
+      return { ok: json.ok === true, ...(json.cancelRequested != null ? { cancelRequested: json.cancelRequested } : {}), ...(json.state ? { state: json.state } : {}) };
+    },
+
     async fetchRunSpec(): Promise<HarnessRunSpec> {
       const res = await fetch(runUrl("/runspec"), { headers: authHeaders() });
       if (!res.ok) throw new Error(`harness: run spec fetch failed ${res.status} for run ${cfg.runId}`);

@@ -129,6 +129,20 @@ export function createNetwork(args: NetworkArgs): Network {
     description: "The egress-proxy reaches api.anthropic.com (443) via Cloud NAT.",
   });
 
+  // INGRESS to the proxy tier — the custom VPC has no default allow-internal for the 10.8.x ranges, so without
+  // this the sandbox's SYN to the proxy is dropped (surfaced live P0.15e — the pod connect + the MIG health
+  // check both timed out). Allow the sandbox subnet + the GKE pod range (pod egress may keep the pod IP) on
+  // 8443/443, and the GCP health-check prober ranges on 8443 (else autohealing recreates the proxy in a loop).
+  new gcp.compute.Firewall(name("proxy-ingress"), {
+    network: network.id,
+    direction: "INGRESS",
+    priority: 1000,
+    sourceRanges: [SUBNET_CIDRS["sandbox"], "10.92.0.0/14", "35.191.0.0/16", "130.211.0.0/22"],
+    allows: [{ protocol: "tcp", ports: ["443", "8443"] }],
+    targetTags: [EGRESS_PROXY_TAG],
+    description: "Sandbox + pod range reach the proxy (8443/443); GCP health-check probers reach 8443.",
+  });
+
   // --- Sandbox NODE bootstrap over Private Google Access (D-P0.15c-8) -----------------------------
   // The run-task nodes sit in the no-NAT/no-internet sandbox subnet, so the subnet-level deny-all-egress
   // (correct for the PODS) also blocks NODE bootstrap: image pull from Artifact Registry, the kubelet ↔
@@ -209,7 +223,9 @@ export function createNetwork(args: NetworkArgs): Network {
  * VPC, so it changes nothing for any other network.
  */
 function privateGoogleApisDns(name: (suffix: string) => string, network: gcp.compute.Network): void {
-  for (const domain of ["googleapis.com", "pkg.dev", "gcr.io"]) {
+  // `run.app` resolves to the VIP too, so the sandbox pod reaches the INTERNAL Cloud Run api over Private
+  // Google Access (its public frontend IP is blocked by the sandbox egress — surfaced live P0.15e).
+  for (const domain of ["googleapis.com", "pkg.dev", "gcr.io", "run.app"]) {
     const slug = domain.replace(/\./g, "-");
     const zone = new gcp.dns.ManagedZone(name(`pga-${slug}`), {
       dnsName: `${domain}.`,

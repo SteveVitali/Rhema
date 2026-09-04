@@ -13,6 +13,11 @@ import type { JobLauncher, JobSpec } from "@rhema/orchestrator";
 
 /** The two-uid image contract (ledger M11): harness holds the token; the agent runs the SDK with no secrets. */
 export const HARNESS_UID = 10001;
+/** The harness group. The per-run Secret is group-owned by it (pod `fsGroup`) + mode 0440, so the harness (its
+ *  primary gid, after the entrypoint's `setpriv --regid 10001 --clear-groups`) can read the token while the
+ *  agent (gid 10002, groups cleared) cannot. Without `fsGroup` the Secret is root:root 0400 → EACCES for uid
+ *  10001 (surfaced live P0.15e). */
+export const HARNESS_GID = 10001;
 export const AGENT_UID = 10002;
 export const AGENT_GID = 10002;
 
@@ -148,6 +153,10 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
         spec: {
           restartPolicy: "Never",
           serviceAccountName: config.kubeServiceAccount,
+          // group-own the mounted volumes by the harness group so the harness (primary gid 10001) can read the
+          // per-run Secret (mode 0440); the agent (gid 10002, --clear-groups) cannot. Without this the Secret is
+          // root:root 0400 and uid 10001 gets EACCES on the run token (surfaced live P0.15e).
+          securityContext: { fsGroup: HARNESS_GID },
           // pin the pod to the isolated sandbox node pool (no Cloud NAT / no default route — REQ-ARCH-2).
           nodeSelector: { "cloud.google.com/gke-nodepool": config.sandboxNodePool },
           containers: [
@@ -181,7 +190,7 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
           volumes: [
             // 0400, harness-only: the per-run token + credential. The agent uid drops the harness group (setpriv
             // --clear-groups) so it cannot read this even though the file exists in the pod.
-            { name: "harness-secrets", secret: { secretName, defaultMode: 0o400 } },
+            { name: "harness-secrets", secret: { secretName, defaultMode: 0o440 } },
             { name: "work", emptyDir: { medium: "Memory" } },
             { name: "config", emptyDir: { medium: "Memory" } },
             { name: "tmp", emptyDir: { medium: "Memory" } },

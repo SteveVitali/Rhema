@@ -23,8 +23,9 @@ describe("buildProxyStartupScript (D-P0.15c-7)", () => {
     expect(script).toContain('-e DATABASE_URL="$DB_URL"');
     expect(script).toContain('-e ANTHROPIC_KEY_SECRET="$KEY_SECRET"');
     expect(script).toContain('-e PORT="$PORT"');
-    // authenticates docker to Artifact Registry with the instance SA (no baked key).
-    expect(script).toContain("configure-docker");
+    // authenticates docker to Artifact Registry with the instance SA's metadata OAuth token (no baked key).
+    expect(script).toContain("docker login -u oauth2accesstoken");
+    expect(script).toContain("access_token");
   });
 
   it("does NOT use the discontinued COS container-declaration path", () => {

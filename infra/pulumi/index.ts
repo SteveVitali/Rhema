@@ -58,7 +58,10 @@ const compute = createCompute({
   iam,
   placeholderImage,
   proxyImage,
-  anthropicKeySecret: secrets.anthropicApiKey.secretId,
+  // the proxy's ReloadableAnthropicSecretProvider needs the FULL secret-version resource name
+  // (`projects/<p>/secrets/<name>/versions/latest`); the bare secretId is parsed as the project id by the
+  // Secret Manager client → CONSUMER_INVALID (surfaced live P0.15e).
+  anthropicKeySecret: pulumi.interpolate`${secrets.anthropicApiKey.id}/versions/latest`,
   ...(proxyDatabaseUrl ? { proxyDatabaseUrl } : {}),
   // worker env (all optional; OBJECTS_BUCKET defaults to the artifacts bucket).
   ...(workerDatabaseUrl ? { workerDatabaseUrl } : {}),
