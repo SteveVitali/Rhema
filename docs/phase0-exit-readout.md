@@ -1,10 +1,11 @@
 # Phase-0 exit readout — the input to milestone gate G1
 
-> **Status: composition proven deterministically; the live-`dev` half is H0-blocked. G1 is NOT yet
-> passable.** This document is produced by ticket **P0.15** (`16_P0.15__phase0-integration-and-exit.md`)
-> and is the operator's input to **GATE G1** (`docs/tickets/16a_GATE-G1__phase0-exit.md`). It maps each
-> §17 Phase-0 exit criterion to its measured result, states which half is demonstrated in-process and
-> which awaits the live `dev` deploy, and gives the first characterization of start latency.
+> **Status: composition proven deterministically; Stage B was executed LIVE on `dev` (2026-09-03) and the
+> deploy + orchestration pipeline is proven end-to-end up to the agent-execution boundary — but NO live
+> Review completed, so G1 is NOT passable.** This document is produced by **P0.15** and updated by
+> **P0.15c** (Stage B live execution); it is the operator's input to **GATE G1**
+> (`docs/tickets/16a_GATE-G1__phase0-exit.md`). See **"Stage B — live execution (2026-09-03)"** below for
+> what was proven live, the ~16 deploy-surfaced bugs fixed, and the one core gap that blocks the live Review.
 
 Generated at commit on branch `stevevitali/p0-15-phase0-integration-and-exit` (stacked on the P0.14 tip).
 
@@ -138,12 +139,54 @@ call-sites (resume re-debit, parked sweep, circuit-breaker cap sizing, the deliv
 server-tool logging; and real run-task + egress-proxy Dockerfiles. Pure logic unit-tested with fakes (~55
 tests); `pnpm typecheck`/`lint`/`test` all green. See `DEFERRALS.md` § P0.15c.
 
-What is **NOT** yet done (Stage B, operator-gated — `DEFERRALS.md` D-P0.15c-1…5): the full-stack `pulumi up`
-(AlloyDB/GKE/LB — real spend), the image build+push, the paid engine bring-up, the three live Reviews, the
-instrumented cost runs (which also wire `renderCredits`/`refundPhases` into the live phase loop), the pilot
-spend (gated on the provider no-training verification, D-P0.13-2), the start-latency measurement, and therefore
-the **measured** results and the G1 flag. Those run against a deployed `dev` under the [OPERATOR GATE]s in the
-ticket. **This session authorized no spend budget and recorded no provider verification, so Stage B did not run.**
+## Stage B — live execution (2026-09-03, P0.15c)
+
+Stage B was **executed live** on `rhema-507501` under explicit operator authorization (full `dev` deploy,
+$300 ceiling, $10/run cap). The honest result: **the deploy + orchestration pipeline works end-to-end up to
+the agent-execution boundary, but no live Review completed** — it is blocked by a genuine Stage-A
+implementation gap. G1 is **not** ready.
+
+**Proven live (evidence):**
+- **Full `dev` deployed** via `pulumi up`: AlloyDB (PostgreSQL 17.9), GKE Standard + the run-task node pool,
+  Memorystore Redis, versioned GCS, Secret Manager, seven Cloud Run services, the network. The sandbox subnet
+  has **no Cloud NAT / no default route** (D-P0.01-2 extended to the full stack).
+- **All three images built + pushed** (run-task, egress-proxy, api) to Artifact Registry via Cloud Build
+  (digest-pinned, native amd64).
+- **Migrations + seed on live AlloyDB:** `applyMigrations` (0001–0015) + `seedRealProjects` → 3 real projects
+  (proj_cr/pv/sd) + 6 drafts + the Essay protocol body (**closes D-P0.02-1 live, D-P0.03-5**).
+- **The live services ran:** the api + egress-proxy as in-VPC containers (healthz + `/pricing/rates` served,
+  the proxy loaded `anthropic-api-key` from Secret Manager and listened); the worker minted an RS256 run token
+  + credential and **launched the two-uid run-task Job onto GKE**; the pod scheduled, pulled the digest-pinned
+  image, and the harness executed — reaching `/work` materialization.
+
+**The blocker (D-P0.15c-6):** the run-task harness reads a `HarnessRunSpec` (the agent's phase `request` +
+skills dir + the mirror hydration manifest + derived server files + the §12.6 hook policy/state) from
+`RUN_SPEC_FILE` — and **nothing builds or delivers it.** The constituent pieces exist (`hydration()`, the
+protocols manifests, the SeatPolicy builder) but the assembly `buildHarnessRunSpec(run)` + its delivery into
+the pod is unbuilt. This is **core orchestration, not a "thin live shell,"** so it belongs in a reviewed PR,
+not a live hack. Until it lands, the agent never runs — so the cap-402, the proxy-metered = SDK cross-check,
+cited⇒fetched, sidecar validation, attestation, and the wire key-denial are **all still unverified live.**
+**No paid Anthropic inference occurred** (the run never reached the SDK).
+
+**~16 deploy-surfaced bugs** — every one invisible to the offline typecheck/`pulumi preview` that "passed
+clean" in Stage A — were found and fixed (commit `10d1df9`). Notable structural ones: the api never enqueued
+`run.start` for a queued run (so nothing provisioned); `OBJECTS_BUCKET` was never passed to the run-task Job;
+the egress-proxy MIG used a **discontinued** GCP feature (COS container-via-metadata; D-P0.15c-7); the
+run-task GKE **nodes couldn't bootstrap** in the no-egress sandbox subnet (fixed live via Private Google
+Access; D-P0.15c-8); `api/Dockerfile` was still a P0.01 sleeper; the `.dockerignore` silently excluded the
+vendored SDK; pnpm-v10 `deploy --legacy`; the Debian-reserved `proxy` group; the `.rhema.example` cert TLD;
+the `pause:3.9` placeholder; servicenetworking/cloudbuild APIs disabled; the Pulumi stack-tag length limit.
+
+**This overturns the ticket's "Stage B is execution, not construction" premise.** Completing the live Review
+needs real new code (the RUN_SPEC assembly, D-P0.15c-6) plus infra re-platforming (proxy MIG D-P0.15c-7;
+sandbox-node egress + pod NetworkPolicy D-P0.15c-8) — all reviewed-PR work, not deploy glue.
+
+**The billable stack was torn down** after the run (cost-conscious mandate); re-deploy is a proven ~30-min
+path (see the runbook pointers in `DEFERRALS.md § P0.15c` + the ledger). Total spend was minimal (~a few
+dollars of idle infra; **$0 inference** — no run reached the model).
+
+**Still deferred independent of the above:** the pilot wave (item 11) also requires the provider
+no-training/retention verification (D-P0.13-2), which is **not recorded** — never fabricated; it stays OPEN.
 
 ## G1 readiness — the honest recommendation
 
@@ -166,11 +209,20 @@ What the operator has in hand for the G1 decision:
   cost runs + the pilot wave and runs `assessPhase0ExitForRun` over the live rows. Every asserter and
   every deployable artifact already exists and is tested here; Stage B is execution, not construction.
 
-**Recommended disposition:** treat G1 as **blocked pending the Stage-B `dev` deploy + exit runs**. Stage
-A removed the construction risk (the IaC typechecks against the real provider; the driver + adapters +
-executors are built and tested); authorize the operator-gated Stage-B steps (starting `pulumi up` on
-`pr-test`), then re-read G1 once `driveLiveExit` reports `ready` on `dev`. The marketing claims of
-§1.4/§15.1 remain unshippable until then (§16.4), which this readout does not relax.
+**Recommended disposition (updated after Stage B ran live):** treat G1 as **blocked pending three
+reviewed PRs, then a re-run of the live exit**. Stage B proved the deploy + orchestration substrate works
+live (deploy, images, migrate/seed, api/proxy/worker, GKE two-uid Job launch) and removed the deployment
+risk — but it also revealed that the ticket's "execution, not construction" premise is **false**: the live
+Review is blocked by **unbuilt core orchestration** (the harness `RUN_SPEC` assembly, D-P0.15c-6) plus two
+infra re-platforming needs (D-P0.15c-7 proxy MIG, D-P0.15c-8 sandbox-node egress + pod NetworkPolicy). The
+precise path to G1: (1) land the `buildHarnessRunSpec` PR (worker builds + mounts the phase request +
+hydration manifest + hook policy; set `RUN_SPEC_FILE`/`CLAUDE_CONFIG_DIR` on the Job); (2) land the two
+infra PRs so `pulumi up` alone stands up a working stack (bake in the PGA node egress + `artifactregistry.reader`
++ the proxy re-platform + the api `run.start` enqueue, already fixed); (3) re-run the live bring-up and let
+`driveLiveExit` report `ready` on `dev` — only then do the wire-level criteria (cap-402, proxy = SDK ±2%,
+cited⇒fetched, sidecars, attestation, key-denial) get verified. The pilot (item 11) additionally needs the
+provider no-training verification (D-P0.13-2), still unrecorded. The §1.4/§15.1 marketing claims remain
+unshippable until this criterion holds (§16.4), which this readout does not relax.
 
 ---
 
