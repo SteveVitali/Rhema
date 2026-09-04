@@ -14,6 +14,21 @@ export const EGRESS_PROXY_TAG = "egress-proxy";
 /** The network tag the run-task (sandbox) pods/nodes carry. */
 export const SANDBOX_TAG = "sandbox";
 
+/**
+ * The GKE private control-plane CIDR (must match `compute.ts` `privateClusterConfig.masterIpv4CidrBlock`).
+ * Sandbox NODES need egress to it (443 for the API server, 10250 for kubelet ↔ konnectivity) to register.
+ */
+export const GKE_MASTER_CIDR = "172.16.0.0/28";
+
+/**
+ * The `private.googleapis.com` VIP block (199.36.153.8/30 = .8–.11). A no-NAT/no-internet subnet reaches
+ * every Google API (Artifact Registry, GCS, Secret Manager, the GKE API, logging) ONLY through this VIP over
+ * Private Google Access — a route to it + a DNS override + an egress-allow to it, and nothing else. This is
+ * NOT arbitrary-internet egress: the pods are still locked to the proxy by a k8s NetworkPolicy (D-P0.15c-8).
+ */
+export const PRIVATE_GOOGLE_APIS_CIDR = "199.36.153.8/30";
+const PRIVATE_GOOGLE_APIS_IPS = ["199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"];
+
 export interface NetworkArgs {
   stack: string;
   cfg: StageConfig;
@@ -114,6 +129,52 @@ export function createNetwork(args: NetworkArgs): Network {
     description: "The egress-proxy reaches api.anthropic.com (443) via Cloud NAT.",
   });
 
+  // --- Sandbox NODE bootstrap over Private Google Access (D-P0.15c-8) -----------------------------
+  // The run-task nodes sit in the no-NAT/no-internet sandbox subnet, so the subnet-level deny-all-egress
+  // (correct for the PODS) also blocks NODE bootstrap: image pull from Artifact Registry, the kubelet ↔
+  // control-plane connection, and every Google-API call a node makes. Give the SANDBOX-tagged nodes exactly
+  // two egress targets beyond the proxy — the Private-Google-APIs VIP and the GKE master CIDR — and nothing
+  // else. Pods are still locked to the proxy by a k8s NetworkPolicy (infra/k8s), a strictly tighter layer;
+  // the node keeping Google-API egress is NOT arbitrary-internet egress (REQ-ARCH-2 holds at the pod layer).
+
+  // A route for the VIP block via the default internet gateway — with no default route, the sandbox has no
+  // way to the VIP otherwise. Restricted to the sandbox tag so only run-task nodes use it.
+  new gcp.compute.Route(name("sandbox-pga-route"), {
+    network: network.id,
+    destRange: PRIVATE_GOOGLE_APIS_CIDR,
+    nextHopGateway: "default-internet-gateway",
+    tags: [SANDBOX_TAG],
+    priority: 1000,
+    description: "Private Google Access: sandbox nodes reach googleapis via the VIP (no internet egress).",
+  });
+
+  // Egress-allow to the Private-Google-APIs VIP (443 for the APIs, 80 for a redirect some clients use).
+  new gcp.compute.Firewall(name("sandbox-allow-google-apis"), {
+    network: network.id,
+    direction: "EGRESS",
+    priority: 900, // beats the deny-all-egress (1000)
+    destinationRanges: [PRIVATE_GOOGLE_APIS_CIDR],
+    allows: [{ protocol: "tcp", ports: ["443", "80"] }],
+    targetTags: [SANDBOX_TAG],
+    description: "D-P0.15c-8: sandbox nodes reach Google APIs (Artifact Registry / GCS / SM) via PGA only.",
+  });
+
+  // Egress-allow to the GKE private control plane so the node can register + the kubelet can be reached.
+  new gcp.compute.Firewall(name("sandbox-allow-gke-master"), {
+    network: network.id,
+    direction: "EGRESS",
+    priority: 900,
+    destinationRanges: [GKE_MASTER_CIDR],
+    allows: [{ protocol: "tcp", ports: ["443", "10250"] }],
+    targetTags: [SANDBOX_TAG],
+    description: "D-P0.15c-8: sandbox nodes reach the GKE control plane (API server + konnectivity/kubelet).",
+  });
+
+  // Private DNS: override googleapis.com / pkg.dev / gcr.io to resolve to the VIP inside the VPC, so a
+  // no-internet node resolves Artifact Registry, GCS, Secret Manager, etc. to the PGA VIP (not a public IP
+  // it cannot reach). Standard private-GKE DNS setup.
+  privateGoogleApisDns(name, network);
+
   // Private Services Access: a reserved /16 + a servicenetworking peering. AlloyDB and Memorystore Redis
   // (PRIVATE_SERVICE_ACCESS) allocate their private IPs out of this range over the VPC peering — without it
   // their creation fails (surfaced by the live `pulumi preview`/`up`). This grants NO internet egress.
@@ -139,4 +200,36 @@ export function createNetwork(args: NetworkArgs): Network {
     sandboxSubnetSelfLink: subnets["sandbox"].selfLink,
     psaConnection,
   };
+}
+
+/**
+ * Private DNS override so a no-internet node resolves Google API + registry hostnames to the PGA VIP. For each
+ * of googleapis.com / pkg.dev / gcr.io: a VPC-private managed zone with an A record for the apex → the VIP
+ * IPs and a wildcard CNAME → the apex, the canonical private-GKE pattern (D-P0.15c-8). Visible only inside the
+ * VPC, so it changes nothing for any other network.
+ */
+function privateGoogleApisDns(name: (suffix: string) => string, network: gcp.compute.Network): void {
+  for (const domain of ["googleapis.com", "pkg.dev", "gcr.io"]) {
+    const slug = domain.replace(/\./g, "-");
+    const zone = new gcp.dns.ManagedZone(name(`pga-${slug}`), {
+      dnsName: `${domain}.`,
+      visibility: "private",
+      privateVisibilityConfig: { networks: [{ networkUrl: network.id }] },
+      description: `Private Google Access override for ${domain} (sandbox reaches Google APIs via the VIP).`,
+    });
+    new gcp.dns.RecordSet(name(`pga-${slug}-a`), {
+      managedZone: zone.name,
+      name: `${domain}.`,
+      type: "A",
+      ttl: 300,
+      rrdatas: PRIVATE_GOOGLE_APIS_IPS,
+    });
+    new gcp.dns.RecordSet(name(`pga-${slug}-cname`), {
+      managedZone: zone.name,
+      name: `*.${domain}.`,
+      type: "CNAME",
+      ttl: 300,
+      rrdatas: [`${domain}.`],
+    });
+  }
 }

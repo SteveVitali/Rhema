@@ -79,5 +79,14 @@ export function createIam(args: IamArgs): Iam {
   // run-task's harness uid materializes /work from artifact bytes — read-only.
   grantBucket("runtask-ro-artifacts", buckets["artifacts"], serviceAccounts["run-task"], "roles/storage.objectViewer");
 
+  // The run-task GKE nodes pull the digest-pinned image from Artifact Registry over Private Google Access
+  // (the sandbox subnet has no NAT / no internet). Without this the nodes fail to pull and never register
+  // (P0.15c symptom: 0/1 nodes). A project-level reader on the node/pod GSA is the minimum (D-P0.15c-8).
+  new gcp.projects.IAMMember(`rhema-${stack}-runtask-artifactregistry-reader`, {
+    project,
+    role: "roles/artifactregistry.reader",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["run-task"].email}`,
+  });
+
   return { serviceAccounts };
 }

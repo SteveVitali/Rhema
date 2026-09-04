@@ -18,7 +18,9 @@ deployed shape cannot drift from what the tests prove.
 | Data | AlloyDB cluster + primary (preview = small/paused), isolated + versioned GCS buckets with the §13.3 retention lifecycle, Memorystore Redis (`data.ts`) |
 | Secrets | Secret Manager containers: `anthropic-api-key` (proxy-only), Better-Auth, Google OAuth, Stripe, run-token signing key (`secrets.ts`) |
 | IAM | One Workload-Identity SA per service + explicit least-privilege secret/bucket bindings (`iam.ts`) |
-| Compute | GKE **Standard** cluster + node pool for run-task (CAP_SYS_ADMIN), egress-proxy MIG behind an internal LB, seven Cloud Run services, external HTTPS LB + Cloud CDN for `web` (`compute.ts`) |
+| Compute | GKE **Standard** cluster (dataplane-v2 for NetworkPolicy) + node pool for run-task (CAP_SYS_ADMIN), egress-proxy MIG (startup-script `docker run` — the supported re-platform, D-P0.15c-7), seven Cloud Run services, external HTTPS LB + Cloud CDN for `web` (`compute.ts`) |
+| Sandbox node egress | A Private-Google-Access route + firewalls (to the `199.36.153.8/30` VIP and the GKE master CIDR) + private DNS zones so the no-NAT sandbox nodes bootstrap + pull images (`network.ts`); the run-task GSA gets `roles/artifactregistry.reader` (`iam.ts`) — D-P0.15c-8 |
+| Run-task k8s state | The `runs` namespace, the WI-bound `run-task-ksa`, and the pod egress NetworkPolicy (`infra/k8s/`, applied post-`up` by `infra/k8s/apply.sh`) — D-P0.15c-8 |
 
 ## Operator runbook
 
@@ -39,7 +41,20 @@ pulumi up                         # provisions the pr-test stack (small/paused A
 pulumi destroy                    # MUST tear down cleanly (AC2)
 
 pulumi stack select dev
-pulumi up                         # stands up shared dev
+# the proxy MIG needs its DATABASE_URL as an ENCRYPTED Pulumi secret config (never committed); the proxy
+# reads the provider KEY from Secret Manager itself, so only the key's secret NAME is passed (automatic).
+pulumi config set --secret rhema:proxyDatabaseUrl "postgresql://…"   # the run-context DB the proxy resolves
+pulumi config set rhema:proxyImage "<region>-docker.pkg.dev/<proj>/<repo>/egress-proxy@sha256:…"  # optional
+pulumi up                         # stands up shared dev — the proxy MIG + sandbox node egress come up with
+                                  # NO out-of-band steps now (D-P0.15c-7/8 baked into the IaC)
+```
+
+**Apply the run-task k8s state** (the `runs` namespace + WI-bound KSA + pod egress NetworkPolicy — D-P0.15c-8).
+Stack-parameterized k8s state, so it is a documented post-`up` apply rather than a GCP resource:
+
+```bash
+gcloud container clusters get-credentials rhema-dev-run-task-gke --region us-central1 --project rhema-507501
+PROJECT=rhema-507501 STACK=dev ./infra/k8s/apply.sh   # namespace + run-task-ksa (WI-bound) + NetworkPolicy
 ```
 
 **Add secret versions out-of-band** (never in the repo or Pulumi state — REQ-ARCH-30):

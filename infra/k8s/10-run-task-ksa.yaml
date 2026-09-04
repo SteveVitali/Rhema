@@ -1,0 +1,12 @@
+# The Workload-Identity-bound KSA the run-task pods run as (D-P0.15c-8). The GkeJobLauncher sets the Job's
+# `serviceAccountName` to this (worker env `KUBE_SERVICE_ACCOUNT`); the annotation binds it to the run-task
+# GSA (`rhema-<stack>-run-task@<project>.iam.gserviceaccount.com`) so pods assume that GSA via GKE_METADATA —
+# the GSA that iam.ts grants `roles/artifactregistry.reader` (image pull) + read-only artifacts bucket.
+# ${RUN_TASK_GSA_EMAIL} is substituted by infra/k8s/apply.sh from the stack's project.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: run-task-ksa
+  namespace: runs
+  annotations:
+    iam.gke.io/gcp-service-account: ${RUN_TASK_GSA_EMAIL}

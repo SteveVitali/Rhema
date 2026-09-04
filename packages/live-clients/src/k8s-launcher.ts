@@ -35,6 +35,9 @@ export interface GkeLauncherConfig {
   readonly proxyBaseUrl: string;
   /** the GCS bucket the harness materializes `/work` from (`OBJECTS_BUCKET`). */
   readonly objectsBucket: string;
+  /** the writable config dir the harness writes the agent phase spec + hook socket to (`CLAUDE_CONFIG_DIR`;
+   *  defaults to the `/config` tmpfs mount). No secret is written here — the agent reads its spec from it. */
+  readonly configDir?: string;
   /** the Workload-Identity-bound k8s ServiceAccount name the pod runs as (annotated with the GSA). */
   readonly kubeServiceAccount: string;
   /** clean up a finished Job after this many seconds (defaults to 1 h). */
@@ -122,6 +125,9 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
     { name: "ANTHROPIC_BASE_URL", value: config.proxyBaseUrl },
     // the harness materializes /work read-only from this GCS bucket (server-generated hydration manifest).
     { name: "OBJECTS_BUCKET", value: config.objectsBucket },
+    // the harness writes the agent's phase spec + hook socket here (a writable tmpfs; NO secret — the agent
+    // reads its spec from this dir). The harness fetches the RUN_SPEC token-authed (D-P0.15c-6), not from a file.
+    { name: "CLAUDE_CONFIG_DIR", value: config.configDir ?? "/config" },
     // the harness reads the token + credential from the mounted files, NOT from env (REQ-SPEC-10).
     { name: "RUN_TOKEN_FILE", value: `${HARNESS_SECRET_MOUNT}/${RUN_TOKEN_FILE}` },
     { name: "PROXY_CREDENTIAL_FILE", value: `${HARNESS_SECRET_MOUNT}/${PROXY_CREDENTIAL_FILE}` },
