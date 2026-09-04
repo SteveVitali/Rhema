@@ -114,7 +114,11 @@ export async function main(): Promise<void> {
   const objectsBucket = reqEnv("OBJECTS_BUCKET");
   const configDir = reqEnv("CLAUDE_CONFIG_DIR");
   const workDir = process.env.WORK_DIR ?? "/work";
-  const cwd = process.env.AGENT_CWD ?? `${workDir}/project`;
+  // The agent's cwd is the materialized work root: `materializeWork` writes the manifest's paths at `<workDir>/…`
+  // (e.g. /work/drafts/v1.md, /work/manifest.md) — there is NO `project` subdir, so the old `<workDir>/project`
+  // default did not exist and `spawn` failed ENOENT (Node reports a missing cwd as an ENOENT on the command —
+  // the D-P0.15e-2 blocker surfaced live in P0.15f). The loop harvests the agent's output from this same cwd.
+  const cwd = process.env.AGENT_CWD ?? workDir;
   const hookSocketPath = process.env.HOOK_SOCKET_PATH ?? `${configDir}/hook.sock`;
   const agentUid = Number(process.env.AGENT_UID ?? 10002);
   const agentGid = Number(process.env.AGENT_GID ?? 10002);
@@ -136,6 +140,7 @@ export async function main(): Promise<void> {
     const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
     await materializeWork({ workDir, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
 
+    await mkdir(cwd, { recursive: true }); // the agent's cwd must exist or `spawn` fails ENOENT (see cwd note above)
     await mkdir(configDir, { recursive: true });
     const request = opts.guidance
       ? { ...spec.request, inputs: { ...spec.request.inputs, guidance: opts.guidance } }
@@ -155,7 +160,9 @@ export async function main(): Promise<void> {
     const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy, state: newDenialState() });
 
     try {
-      const launch = buildAgentLaunch({ runId, proxyBaseUrl, configDir, agentUid, agentGid, cwd, command: ["node", "/app/dist/agent-entry.js"] });
+      // ABSOLUTE node path (process.execPath) — the scrubbed agent env has no PATH, so setpriv cannot resolve a
+      // bare `node` after the uid drop (bare `node`/`setpriv` → `spawn … ENOENT`, the D-P0.15e-2 root cause).
+      const launch = buildAgentLaunch({ runId, proxyBaseUrl, configDir, agentUid, agentGid, cwd, command: [process.execPath, "/app/dist/agent-entry.js"] });
       const child = spawn(launch.argv[0]!, launch.argv.slice(1), {
         cwd: launch.cwd,
         env: launch.env,

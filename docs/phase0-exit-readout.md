@@ -340,7 +340,43 @@ this session — surfaced, not guessed past).
 already allows sandbox→master `443`+`10250` (konnectivity/kubelet), pri 900 > deny-all 1000. So restoring
 `kubectl logs` is a cluster-config/ops matter to diagnose live; the item-1 sink is the mechanism the run relies
 on meanwhile (the ticket permits this). **All Stage-A work is unit + integration-tested; typecheck/lint/pulumi-tsc
-green.** No DEFERRALS row flips to DONE (no live evidence); **G1 stays blocked.** See `DEFERRALS.md § P0.15f`.
+green.** See `DEFERRALS.md § P0.15f`.
+
+> **CORRECTION (Stage B, below): konnectivity WAS an IaC gap after all** — the sandbox→master firewall was
+> missing the konnectivity port 8132 (+ node→node kubelet 10250). Fixed live + in `network.ts`; pod logs restored.
+
+---
+
+## Stage B — live execution (2026-09-04, P0.15f; operator-authorized $50 / $10-per-run; pilot SKIPPED)
+
+The full `dev` stack was re-deployed and a Review run driven to the agent-execution boundary — this time **WITH
+POD LOGS in hand** (the P0.15e blind spot is gone). **$0 inference** (no run reached the model; spend was idle
+infra only). Deploy churn: transient GCP failures (an http2 wait-drop, then a `us-central1-f` e2 STOCKOUT on the
+cluster + proxy MIG) — dodged by pinning dev `nodeLocations`/`distributionPolicyZones` to `a`+`c` and recovering
+with `pulumi refresh` + `--continue-on-error`.
+
+**What the live run proved (and corrected):**
+- **D-P0.15e-3 CLOSED LIVE** — the Cloud Run worker launched the two-uid GKE Job via the metadata-token
+  `KubeConfig` launcher, NO out-of-band step.
+- **D-P0.15e-4 pod logs RESTORED** — two real IaC gaps found + fixed: the konnectivity-agent dials
+  `<master>:8132` (firewall was missing 8132 → "No agent available"), and `kubectl logs` needs node→node kubelet
+  `10250` egress (blocked by the deny-all). Both baked into `network.ts` + applied live; `kubectl logs`/`exec`
+  now work on `dev`.
+- **D-P0.15e-2 TRUE ROOT CAUSE — a CHAIN, not a single hang, overturning the P0.15e "SDK hang / proxy-buffering"
+  hypothesis.** With logs, the pod fails `spawn … ENOENT`: **the agent was never spawned.** (1) bare
+  `setpriv`/`node` are unresolvable in the PATH-less scrubbed env → FIXED (absolute `/usr/bin/setpriv` +
+  `process.execPath`); (2) the agent cwd `/work/project` was never created (`materializeWork` writes `/work`
+  root) → FIXED (cwd = workDir + mkdir). The agent process then SPAWNS live, revealing the next links:
+  `setpriv: setresgid failed: Operation not permitted` (the non-root harness lacks ambient CAP_SETUID/SETGID to
+  drop to the agent uid — **D-P0.15f-1**), and behind it the per-run proxy credential is never injected into the
+  agent's request (**D-P0.15f-2**). Also fixed: the pod NetworkPolicy blocked the WI metadata server
+  (169.254.169.254) the harness needs for GCS auth.
+
+**Net:** the agent→proxy hang is now precisely understood — three fixes landed (spawn/cwd/konnectivity + the
+NetworkPolicy), two new construction blockers (D-P0.15f-1 harness ambient caps, D-P0.15f-2 credential injector)
++ the untested first live SDK exercise (D-P0.06-1) remain before a green phase. The billable stack was torn down
+after the run (cost mandate). **G1 stays blocked**, now with a precise remaining checklist rather than an
+undiagnosable hang.
 
 ---
 
