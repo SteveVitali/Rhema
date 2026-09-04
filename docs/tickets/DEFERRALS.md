@@ -222,6 +222,9 @@ Status values: `OPEN` (owed) · `DONE` (verified — add date + evidence) · `WO
 > deploy-only bugs (invisible to the offline typecheck/preview) — landed in commit `10d1df9`. This overturns
 > the ticket premise that Stage B is "execution, not construction": completing it needs real orchestration
 > code (RUN_SPEC assembly) + infra re-platforming (proxy MIG, sandbox-node egress), best done as reviewed PRs.
+> **These outstanding rows (D-P0.15c-6/7/8 + the live re-run legs) are synthesized into one implementable
+> ticket — `docs/tickets/16_P0.15d__live-runspec-infra-and-green-review.md` (Stage A offline construction = one
+> implement-spec session; Stage B operator-gated live execution).**
 > The billable stack was torn down after the run to honor the cost-conscious mandate; re-deploy is a proven
 > ~30-min path (see the exit readout runbook). GATE G1 stays blocked while any G1-scoped OPEN row remains.
 >
