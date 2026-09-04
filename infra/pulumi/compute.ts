@@ -27,7 +27,7 @@ export interface ComputeArgs {
 export interface Compute {
   gke: gcp.container.Cluster;
   runTaskPool: gcp.container.NodePool;
-  proxyGroup: gcp.compute.RegionInstanceGroupManager;
+  proxyGroup?: gcp.compute.RegionInstanceGroupManager;
   services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>>;
 }
 
@@ -73,36 +73,48 @@ export function createCompute(args: ComputeArgs): Compute {
   });
 
   // --- egress-proxy: a regional MIG on the private-app tier, the sandbox's only egress route. --------
-  const proxyTemplate = new gcp.compute.InstanceTemplate(name("proxy-tmpl"), {
-    machineType: "e2-small",
-    tags: [EGRESS_PROXY_TAG],
-    disks: [{ sourceImage: "projects/cos-cloud/global/images/family/cos-stable", boot: true, autoDelete: true }],
-    networkInterfaces: [
-      // No external IP: the proxy egresses via Cloud NAT; the sandbox reaches it on its internal IP.
-      { subnetwork: network.subnets["private-app"].id },
-    ],
-    serviceAccount: {
-      email: iam.serviceAccounts["egress-proxy"].email,
-      scopes: ["https://www.googleapis.com/auth/cloud-platform"],
-    },
-    metadata: {
-      // The COS image runs the egress-proxy container (real image pinned per-deploy).
-      "gce-container-declaration": pulumi.interpolate`spec:\n  containers:\n  - image: ${placeholderImage}\n    name: egress-proxy\n`,
-    },
-  });
-  const proxyHealth = new gcp.compute.HealthCheck(name("proxy-health"), {
-    tcpHealthCheck: { port: 8443 },
-    checkIntervalSec: 10,
-    timeoutSec: 5,
-  });
-  const proxyGroup = new gcp.compute.RegionInstanceGroupManager(name("proxy-mig"), {
-    region,
-    baseInstanceName: name("proxy"),
-    versions: [{ instanceTemplate: proxyTemplate.id }],
-    targetSize: cfg.kind === "prod" ? 2 : 1,
-    namedPorts: [{ name: "https", port: 8443 }],
-    autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
-  });
+  // GATED OFF by default (opt in with `rhema:deployProxyMig=true`). GCP has DISCONTINUED deploying a
+  // container onto a VM via the COS `gce-container-declaration` metadata (the startup-agent path) — the
+  // InstanceTemplate create now 400s ("The option to deploy a container during VM instance creation … is
+  // discontinued"). Until the proxy is re-platformed (a MIG with a startup-script that runs `docker run`,
+  // or Cloud Run behind an internal LB), the proxy is deployed out-of-band on the private-app tier (the
+  // Phase-0 dev bring-up runs the egress-proxy container on a private-app host in the sandbox-reachable
+  // 443/8443 range — identical wire guarantees). The firewall's allow-to-proxy-tier rule (network.ts) is
+  // independent of this MIG, so the sandbox isolation posture is unchanged whether or not the MIG exists.
+  const deployProxyMig = new pulumi.Config("rhema").getBoolean("deployProxyMig") ?? false;
+  let proxyGroup: gcp.compute.RegionInstanceGroupManager | undefined;
+  if (deployProxyMig) {
+    const proxyTemplate = new gcp.compute.InstanceTemplate(name("proxy-tmpl"), {
+      machineType: "e2-small",
+      tags: [EGRESS_PROXY_TAG],
+      disks: [{ sourceImage: "projects/cos-cloud/global/images/family/cos-stable", boot: true, autoDelete: true }],
+      networkInterfaces: [
+        // No external IP: the proxy egresses via Cloud NAT; the sandbox reaches it on its internal IP.
+        { subnetwork: network.subnets["private-app"].id },
+      ],
+      serviceAccount: {
+        email: iam.serviceAccounts["egress-proxy"].email,
+        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      },
+      metadata: {
+        // The COS image runs the egress-proxy container (real image pinned per-deploy).
+        "gce-container-declaration": pulumi.interpolate`spec:\n  containers:\n  - image: ${placeholderImage}\n    name: egress-proxy\n`,
+      },
+    });
+    const proxyHealth = new gcp.compute.HealthCheck(name("proxy-health"), {
+      tcpHealthCheck: { port: 8443 },
+      checkIntervalSec: 10,
+      timeoutSec: 5,
+    });
+    proxyGroup = new gcp.compute.RegionInstanceGroupManager(name("proxy-mig"), {
+      region,
+      baseInstanceName: name("proxy"),
+      versions: [{ instanceTemplate: proxyTemplate.id }],
+      targetSize: cfg.kind === "prod" ? 2 : 1,
+      namedPorts: [{ name: "https", port: 8443 }],
+      autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
+    });
+  }
 
   // --- Cloud Run services: placeholder image, per-service SA, VPC egress to the private-app tier. ----
   const services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>> = {};
@@ -144,8 +156,15 @@ export function createCompute(args: ComputeArgs): Compute {
     backends: [{ group: webNeg.id }],
   });
   const urlMap = new gcp.compute.URLMap(name("urlmap"), { defaultService: webBackend.id });
+  // Google-managed cert domain. NOTE: `.example` is a reserved TLD GCP rejects at create ("Invalid
+  // domain name") — the offline typecheck can't catch this (it validates only at create). We use a
+  // real-format placeholder TLD so the cert resource (and the HTTPS proxy/forwarding rule that depend on
+  // it) create cleanly and the full stack stands up. In dev the managed cert never reaches ACTIVE without
+  // DNS ownership — the external web TLS frontend is not on the Phase-0 exit-criteria path (the live run
+  // flows through api/worker/proxy/GKE), so a non-validating dev cert is acceptable. prod supplies a real
+  // owned domain out-of-band before go-live.
   const cert = new gcp.compute.ManagedSslCertificate(name("cert"), {
-    managed: { domains: [`${stack === "prod" ? "app" : stack}.rhema.example`] },
+    managed: { domains: [`${stack === "prod" ? "app" : stack}.rhema.dev`] },
   });
   const httpsProxy = new gcp.compute.TargetHttpsProxy(name("https-proxy"), {
     urlMap: urlMap.id,

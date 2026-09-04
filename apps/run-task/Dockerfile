@@ -33,7 +33,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @rhema/run-task... build
 # `pnpm deploy` writes a self-contained bundle (run-task's dist + its workspace deps + prod node_modules) to
 # /bundle — the only thing the runtime image needs.
-RUN pnpm --filter @rhema/run-task --prod deploy /bundle
+RUN pnpm --filter @rhema/run-task --prod deploy --legacy /bundle
 
 # ---- runtime: two uids, util-linux, read-only-rootfs friendly ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime

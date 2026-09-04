@@ -20,6 +20,8 @@ export interface WorkerEnv {
   readonly runTaskImageDigest: string;
   readonly runTaskImageRepo: string;
   readonly runServiceAccount: string;
+  /** the GCS bucket the run-task harness materializes `/work` from (passed to the Job as OBJECTS_BUCKET). */
+  readonly objectsBucket: string;
   readonly provider: string;
   /** the GKE launcher config. */
   readonly k8sNamespace: string;
@@ -46,6 +48,7 @@ export function readWorkerEnv(): WorkerEnv {
     runTaskImageDigest: required("RUN_TASK_IMAGE_DIGEST"),
     runTaskImageRepo: required("RUN_TASK_IMAGE_REPO"),
     runServiceAccount: required("RUN_SERVICE_ACCOUNT"),
+    objectsBucket: required("OBJECTS_BUCKET"),
     provider: process.env.PROVIDER ?? "anthropic",
     k8sNamespace: process.env.K8S_NAMESPACE ?? "runs",
     sandboxNodePool: required("SANDBOX_NODE_POOL"),
