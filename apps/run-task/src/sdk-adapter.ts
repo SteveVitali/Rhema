@@ -36,8 +36,8 @@ export function toSdkOptions(options: AgentSdkQueryOptions): Record<string, unkn
   const out: Record<string, unknown> = {
     cwd: options.cwd,
     model: options.model,
-    agents: options.agents,
-    hooks: options.hooks,
+    agents: toSdkAgents(options.agents),
+    hooks: toSdkHooks(options.hooks),
     permissionMode: options.permissionMode,
     allowedTools: options.allowedTools,
     disallowedTools: options.disallowedTools,
@@ -48,6 +48,37 @@ export function toSdkOptions(options: AgentSdkQueryOptions): Record<string, unkn
     abortController: options.abortController,
   };
   if (options.pathToClaudeCodeExecutable) out.pathToClaudeCodeExecutable = options.pathToClaudeCodeExecutable;
+  return out;
+}
+
+/**
+ * Map our `{ PreToolUse: [callback] }` to the vendored SDK's `Partial<Record<HookEvent, HookCallbackMatcher[]>>`:
+ * each event's callbacks become ONE matcher `{ hooks: [...] }` with no `matcher` (so it applies to every tool).
+ * Our engine holds the flat `{event: callback[]}` shape (its §12.2 contract); the SDK-specific matcher wrapping
+ * lives HERE, the single mapping point. Passing the flat array directly left the SDK unable to invoke the hook
+ * (a function where it expects a matcher object) → the §12.6 PreToolUse boundary never ran (D-P0.06-1).
+ */
+function toSdkHooks(hooks: AgentSdkQueryOptions["hooks"]): Record<string, { hooks: unknown[] }[]> {
+  const out: Record<string, { hooks: unknown[] }[]> = {};
+  for (const [event, callbacks] of Object.entries(hooks)) {
+    if (Array.isArray(callbacks) && callbacks.length > 0) out[event] = [{ hooks: callbacks }];
+  }
+  return out;
+}
+
+/**
+ * Map our roster `AgentDef`s to the vendored SDK's `AgentDefinition`: the SDK REQUIRES `prompt: string` (the
+ * agent's system prompt) + `description`, and reads `tools`/`model`; our roster carries `description`/`tools`/
+ * `model` plus the non-SDK `effort`/`inputScoped` (dropped). We synthesize `prompt` from the description (a
+ * faithful minimal system prompt — the input-scoped subagents are launched by the orchestrator as separate
+ * scoped queries anyway; only `researcher` fans out in-query). Without a `prompt` the `agents` option is
+ * malformed and the SDK rejects it at `query()` construction (D-P0.06-1).
+ */
+function toSdkAgents(agents: AgentSdkQueryOptions["agents"]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [name, def] of Object.entries(agents)) {
+    out[name] = { description: def.description, prompt: def.description, tools: def.tools, model: def.model };
+  }
   return out;
 }
 

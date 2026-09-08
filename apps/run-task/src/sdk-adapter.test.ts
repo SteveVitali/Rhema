@@ -2,14 +2,17 @@ import { describe, it, expect } from "vitest";
 import type { AgentSdkQueryOptions, SdkMessage } from "@rhema/engine";
 import { adaptSdkQuery, toSdkOptions, resolveClaudeCodeExecutable, VENDORED_CLAUDE_BINARY, type SdkQueryLike } from "./sdk-adapter.js";
 
+const hookFn = () => ({});
 // A representative AgentSdkQueryOptions carrying both REAL SDK fields and the §12.2 fields the SDK ignores.
 const OPTIONS = {
   cwd: "/work/project",
   model: "claude-opus-5",
   skillsDir: "/app/skills",
   skills: "all",
-  agents: {},
-  hooks: { PreToolUse: [] },
+  agents: {
+    researcher: { description: "Research fan-out", tools: ["Read", "WebSearch"], model: "claude-haiku-4-5", effort: "medium", inputScoped: false },
+  },
+  hooks: { PreToolUse: [hookFn] },
   permissionMode: "dontAsk",
   allowedTools: ["Read"],
   disallowedTools: ["Bash(curl *)"],
@@ -66,6 +69,25 @@ describe("adaptSdkQuery (D-P0.06-4 — the QueryFn↔SDK bridge)", () => {
     for (const dropped of ["skillsDir", "cacheControlTtl", "maxSubagentDepth", "maxConcurrentSubagents", "sessionStore"]) {
       expect(dropped in mapped).toBe(false);
     }
+  });
+
+  it("wraps hooks into HookCallbackMatcher[] (D-P0.06-1 — the §12.6 boundary shape)", () => {
+    const hooks = (toSdkOptions(OPTIONS) as { hooks: Record<string, { hooks: unknown[] }[]> }).hooks;
+    // one matcher (no `matcher` key ⇒ applies to every tool) carrying the callbacks — NOT a bare fn array.
+    expect(hooks.PreToolUse).toEqual([{ hooks: [hookFn] }]);
+  });
+
+  it("maps roster AgentDefs to SDK AgentDefinition with a required prompt (D-P0.06-1)", () => {
+    const agents = (toSdkOptions(OPTIONS) as { agents: Record<string, Record<string, unknown>> }).agents;
+    expect(agents.researcher).toEqual({
+      description: "Research fan-out",
+      prompt: "Research fan-out", // synthesized — the SDK requires a system prompt
+      tools: ["Read", "WebSearch"],
+      model: "claude-haiku-4-5",
+    });
+    // the non-SDK fields are dropped:
+    expect("effort" in agents.researcher).toBe(false);
+    expect("inputScoped" in agents.researcher).toBe(false);
   });
 
   it("toSdkOptions pins pathToClaudeCodeExecutable only when set (F1)", () => {
