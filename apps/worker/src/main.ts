@@ -145,11 +145,30 @@ export async function startWorker(): Promise<void> {
     systemExec,
   };
 
+  // The pg-boss connection BURST at startup (start + createQueue×N) can hit a transient AlloyDB connect timeout
+  // over Cloud Run Direct-VPC egress — and unlike steady-state polling (covered by boss.on('error')), a throw
+  // here escapes startWorker → exit(1) → a slow restart loop that can outlive the run.start job (live). Retry the
+  // idempotent init a few times with backoff so one slow connect does not crash the worker before it registers.
+  const retryStartup = async (label: string, fn: () => Promise<unknown>): Promise<void> => {
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        await fn();
+        return;
+      } catch (err) {
+        lastErr = err;
+        console.error(`[worker] startup ${label} attempt ${attempt} failed (will retry):`, err instanceof Error ? err.message : err);
+        await new Promise((r) => setTimeout(r, Math.min(1000 * attempt, 5000)));
+      }
+    }
+    throw lastErr;
+  };
+
   console.log("[worker] startup: launcher built; starting pg-boss");
-  await boss.start();
+  await retryStartup("boss.start", () => boss.start());
   console.log("[worker] startup: pg-boss started; creating queues");
   for (const name of [...Object.values(RUN_JOBS), ...Object.values(RUN_EVENT_JOBS), LEDGER_JOBS.sweepParked]) {
-    await boss.createQueue(name);
+    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
   console.log("[worker] startup: queues created; registering consumers");
 
