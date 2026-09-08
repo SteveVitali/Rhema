@@ -23,9 +23,26 @@ import { AGENT_RESULT_FILENAME, type AgentResultFile } from "./agent-entry.js";
 
 const PHASE_RESULT_PATH = ".rhema/phase-result.json";
 
-/** Parse a JSON file from the map, or null when absent/unparseable. */
+/**
+ * Resolve a completion-predicate artifact path to the actual `/work` key (K5 / D-P0.06-1, diagnosed live). The
+ * manifest predicates name bare paths (`00-piece-brief.md`, `.rhema/phase-result.json`), but the skill writes its
+ * dossier under an `output_dir` subtree (live: `correspondence/v1-review/00-piece-brief.md`). Match, in order:
+ * an exact key, then a key ENDING WITH `/<target>` (the dossier-subdir case), then one whose basename matches —
+ * so the oracle finds the artifact wherever the skill placed it. Returns the resolved key, or the target itself.
+ */
+function resolveKey(files: ReadonlyMap<string, Uint8Array>, target: string): string {
+  if (files.has(target)) return target;
+  const suffix = `/${target}`;
+  const bySuffix = [...files.keys()].filter((k) => k.endsWith(suffix)).sort((a, b) => a.length - b.length)[0];
+  if (bySuffix) return bySuffix;
+  const base = target.slice(target.lastIndexOf("/") + 1);
+  const byBase = [...files.keys()].filter((k) => k.slice(k.lastIndexOf("/") + 1) === base).sort((a, b) => a.length - b.length)[0];
+  return byBase ?? target;
+}
+
+/** Parse a JSON file from the map (resolving the dossier location), or null when absent/unparseable. */
 function readJson<T>(files: ReadonlyMap<string, Uint8Array>, path: string): T | null {
-  const bytes = files.get(path);
+  const bytes = files.get(resolveKey(files, path));
   if (!bytes) return null;
   try {
     return JSON.parse(Buffer.from(bytes).toString("utf8")) as T;
@@ -35,7 +52,7 @@ function readJson<T>(files: ReadonlyMap<string, Uint8Array>, path: string): T | 
 }
 
 function textOf(files: ReadonlyMap<string, Uint8Array>, path: string): string | null {
-  const bytes = files.get(path);
+  const bytes = files.get(resolveKey(files, path));
   return bytes ? Buffer.from(bytes).toString("utf8") : null;
 }
 
@@ -71,7 +88,7 @@ function factsForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManif
   for (const p of phase.completionPredicates ?? []) {
     switch (p.kind) {
       case "artifact_present":
-        present[p.artifact] = files.has(p.artifact);
+        present[p.artifact] = files.has(resolveKey(files, p.artifact));
         break;
       case "artifact_nonempty":
         nonempty[p.artifact] = (textOf(files, p.artifact)?.trim().length ?? 0) > 0;
