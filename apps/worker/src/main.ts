@@ -78,10 +78,15 @@ export async function startWorker(): Promise<void> {
     publicKeyName: env.runTokenPublicKeySecret,
     ...(env.runTokenKeyId ? { keyId: env.runTokenKeyId } : {}),
   });
-  console.log("[worker] startup: keys loaded; building GKE job launcher");
+  console.log("[worker] startup: keys loaded; GKE launcher is lazy (built on first launch)");
   const ledger = new SqlHoldLedger({ ids, clock });
   const bus = new RedisRunEventBus(redis, subscriber);
-  const launcher = await createGkeJobLauncher({
+  // LAZY GKE launcher: `createGkeJobLauncher` dynamically imports `@kubernetes/client-node`, a very heavy module
+  // whose cold import over Cloud Run's gVisor filesystem can take MINUTES — long enough to stall startup past the
+  // point where pg-boss's own DB connection times out and crashes the worker before its run consumers register
+  // (diagnosed live). Deferring the import to the first actual launch lets the worker register its consumers +
+  // become stable immediately; the one-time import cost is paid on the first run's provisioning instead.
+  const launcherConfig = {
     namespace: env.k8sNamespace,
     sandboxNodePool: env.sandboxNodePool,
     imageRepo: env.runTaskImageRepo,
@@ -92,7 +97,17 @@ export async function startWorker(): Promise<void> {
     // Cloud Run → GKE auth (D-P0.15e-3): endpoint + CA present ⇒ metadata-token KubeConfig; absent ⇒ loadFromDefault.
     ...(env.gkeEndpoint ? { gkeEndpoint: env.gkeEndpoint } : {}),
     ...(env.gkeCaData ? { gkeCaData: env.gkeCaData } : {}),
-  });
+  };
+  let realLauncher: Awaited<ReturnType<typeof createGkeJobLauncher>> | undefined;
+  const launcher = {
+    launch: async (spec: Parameters<Awaited<ReturnType<typeof createGkeJobLauncher>>["launch"]>[0]) => {
+      if (!realLauncher) {
+        console.log("[worker] first launch — importing @kubernetes/client-node + building GKE launcher");
+        realLauncher = await createGkeJobLauncher(launcherConfig);
+      }
+      return realLauncher.launch(spec);
+    },
+  };
   const config: WorkerRunConfig = {
     imageDigest: env.runTaskImageDigest,
     serviceAccount: env.runServiceAccount,
