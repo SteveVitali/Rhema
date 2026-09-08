@@ -58,7 +58,14 @@ describe("startCredentialInjector (D-P0.15f-2 — the harness-side credential pa
 
     const res = await fetch(`${injector.url}/v1/messages?beta=1`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-custom": "keep-me" },
+      headers: {
+        "content-type": "application/json",
+        "x-custom": "keep-me",
+        // the agent's placeholder key rides as x-api-key/authorization; the injector must strip them so they
+        // never leave the pod (the proxy authenticates via the injected credential + injects the real key).
+        "x-api-key": "sk-ant-placeholder",
+        authorization: "Bearer sk-ant-placeholder",
+      },
       body: JSON.stringify({ model: "claude-opus-5" }),
     });
     const text = await res.text();
@@ -70,6 +77,9 @@ describe("startCredentialInjector (D-P0.15f-2 — the harness-side credential pa
     expect(upstream.received.url).toBe("/v1/messages?beta=1");
     expect(upstream.received.body).toBe(JSON.stringify({ model: "claude-opus-5" }));
     expect(upstream.received.headers["x-custom"]).toBe("keep-me");
+    // the placeholder auth headers were stripped — they never leave the pod:
+    expect(upstream.received.headers["x-api-key"]).toBeUndefined();
+    expect(upstream.received.headers["authorization"]).toBeUndefined();
     // the SSE response streams back verbatim:
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("text/event-stream");

@@ -37,6 +37,11 @@ const DROP_REQUEST_HEADERS = new Set<string>([
   "transfer-encoding",
   "content-length",
   PROXY_CREDENTIAL_HEADER, // never trust an agent-supplied credential header — we stamp the real one
+  // the agent's env carries a NON-SECRET placeholder ANTHROPIC_API_KEY so the CLI runs (D-P0.06-1); strip the
+  // resulting x-api-key/authorization here so it never leaves the pod — the egress-proxy authenticates via the
+  // injected credential and injects the REAL provider key itself (defense-in-depth; the proxy also strips these).
+  "authorization",
+  "x-api-key",
 ]);
 
 /** Response headers the injector must not forward verbatim: the per-connection hop-by-hop + body-framing set.
