@@ -11,6 +11,13 @@ import type { WorkflowManifest } from "../src/manifest-types.js";
 export const review: WorkflowManifest = {
   workflow: "review",
   skill: "editorial-review",
+  // Harness inputs (REQ-ARCH-5, added at port): pin the dossier to the Editor's WRITABLE seat namespace
+  // (`agents/editor/**` — §12.6) instead of the skill's default `correspondence/…` dossier, which is a READ-only
+  // mount for the seat (the SERVER delivers to correspondence via the delivery tx, not the agent). `sidecar: true`
+  // makes the skill emit the §11.1 structured twins + write `.rhema/phase-result.json {status}` at each phase end
+  // (the completion oracle's leg b). Diagnosed live: without these the agent wrote 00-piece-brief.md into the
+  // read-only correspondence mount and never emitted phase-result.json, so no phase could commit (D-P0.06-1/K5).
+  defaultInputs: { output_dir: "agents/editor", sidecar: true },
   phases: [
     {
       key: "intake",

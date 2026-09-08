@@ -208,7 +208,12 @@ export async function main(): Promise<void> {
     }
 
     const files = await readWorkDir(cwd);
-    return buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+    const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+    // DIAGNOSTIC (K5 / D-P0.06-1, the first live SDK exercise): dump what the agent actually produced in /work vs
+    // what the completion oracle judged, so the intake predicate can be reconciled against real skill output.
+    console.log(`[harness] phase ${spec.request.phase.key} /work files: ${[...files.keys()].sort().join(", ") || "(none)"}`);
+    console.log(`[harness] phase ${spec.request.phase.key} outputs: subtype=${outputs.subtype} versions=${outputs.versions.length} facts=${JSON.stringify(outputs.facts)} phaseResult=${JSON.stringify(outputs.phaseResult)}`);
+    return outputs;
   };
 
   // drive the run phase-by-phase to a terminal outcome (§12.4 steps 6–8); always tear the injector down after.
