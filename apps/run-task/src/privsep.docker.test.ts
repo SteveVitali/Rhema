@@ -43,6 +43,12 @@ describe.skipIf(!ENABLED)("run-task image privilege separation (AC1, AC4)", () =
       }).toString();
 
       expect(out).toContain("AC1: uid agent is denied the harness secrets file (EACCES)");
+      // D-P0.15f-1: the two-uid launch path — the harness (ambient CAP_SETUID+SETGID) drops to agent uid 10002
+      // with no setresgid EPERM, the dropped agent still cannot read the secrets file, and the drop fails
+      // without CAP_SETGID (the negative control that proves the +setgid entrypoint fix is load-bearing).
+      expect(out).toContain("D-P0.15f-1: harness (ambient CAP_SETUID+SETGID) drops to agent uid 10002");
+      expect(out).toContain("D-P0.15f-1: agent (via the harness drop) is denied the harness secrets file (EACCES)");
+      expect(out).toContain("D-P0.15f-1: without CAP_SETGID the harness→agent --regid drop fails as expected");
       expect(out).toContain("AC4: scoped mount namespace contains exactly the enumerated file");
       expect(out).toContain("ALL PRIVSEP CHECKS PASSED");
     },

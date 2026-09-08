@@ -12,8 +12,24 @@ import type { AgentTypeKey } from "@rhema/contracts";
 import type { MountRoot, MountRule, MountSpec, Namespace, PhasePolicy, SeatPolicy, UrlPolicy } from "./types.js";
 import { EMPTY_URL_POLICY } from "./types.js";
 
-const DEFAULT_PROJECT_ROOT = "/work/project";
-const DEFAULT_PERSONA_ROOT = "/work/personas/<id>";
+export const DEFAULT_PROJECT_ROOT = "/work/project";
+export const DEFAULT_PERSONA_ROOT = "/work/personas/<id>";
+
+/**
+ * Resolve a run's mount roots (the `/work` base for each `MountRoot`) from the seat-policy inputs — the SINGLE
+ * source of truth shared by the hook (which classifies reads against these roots) and the harness materializer
+ * (which must WRITE the files there). Keeping them on one function makes the §12.6 boundary and the on-disk
+ * layout drift-free (F3): a project entry lands where the hook expects to find it, and the SDK cwd (also
+ * `roots.project`) exists. `<id>` in the persona template is substituted with the run's persona directory id.
+ */
+export function resolveSeatRoots(input: {
+  readonly roots?: { readonly project?: string; readonly persona?: string };
+  readonly personaId?: string;
+}): { project: string; persona: string } {
+  const personaTemplate = input.roots?.persona ?? DEFAULT_PERSONA_ROOT;
+  const persona = input.personaId ? personaTemplate.replace("<id>", input.personaId) : personaTemplate;
+  return { project: input.roots?.project ?? DEFAULT_PROJECT_ROOT, persona };
+}
 
 /** Shared-record project paths readable by every author-side seat (§12.6; read-only bind mounts). */
 const SHARED_READ: readonly MountSpec[] = [
@@ -131,11 +147,7 @@ function baseFor(root: MountRoot, roots: { project: string; persona: string }): 
  * and phase. The result is what the hook evaluates against; the same hook code serves every seat.
  */
 export function compileSeatPolicy(input: CompileInput): SeatPolicy {
-  const personaRootTemplate = input.roots?.persona ?? DEFAULT_PERSONA_ROOT;
-  const personaRoot = input.personaId
-    ? personaRootTemplate.replace("<id>", input.personaId)
-    : personaRootTemplate;
-  const roots = { project: input.roots?.project ?? DEFAULT_PROJECT_ROOT, persona: personaRoot };
+  const roots = resolveSeatRoots({ roots: input.roots, personaId: input.personaId });
 
   const specs: MountSpec[] = [...SEAT_MOUNTS[input.seat]];
   for (const file of input.compositeVoiceMemberFiles ?? []) {

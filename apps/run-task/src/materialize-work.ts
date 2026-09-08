@@ -7,6 +7,7 @@
 // ContentStore + fs are injected, so it is unit-tested with an in-memory store + fs.
 
 import type { ContentStore, MirrorManifest, MirrorManifestEntry } from "@rhema/mirror";
+import type { MountRoot } from "@rhema/hooks";
 
 /** The minimal filesystem surface the materializer needs (node fs binds it live; a fake backs the tests). */
 export interface WorkFs {
@@ -18,8 +19,16 @@ export interface WorkFs {
 }
 
 export interface MaterializeWorkArgs {
-  /** the writable-mount root the seat runs in (e.g. /work). */
-  readonly workDir: string;
+  /**
+   * The `/work` base directory for each mount root: a `project`-root entry is written under `roots.project`
+   * (e.g. `/work/project/drafts/v1.md`), a `persona`-root entry under `roots.persona`
+   * (e.g. `/work/personas/<id>/PERSONA.md`). These MUST be the SAME roots the §12.6 hook compiles against
+   * (`@rhema/hooks` `resolveSeatRoots`) and the SDK's cwd (`request.cwd` = `roots.project`) — otherwise the
+   * agent's read of `/work/drafts/v1.md` would fall OUTSIDE `/work/project` and the hook would DENY it
+   * (`boundary.attested violations ≠ 0`), and the CLI cwd would not exist (F3). The manifest entry's `path`
+   * is relative to its root and carries no root prefix (the seed's `mirror_path` is `drafts/v1.md`).
+   */
+  readonly roots: { readonly project: string; readonly persona: string };
   readonly manifest: MirrorManifest;
   /** content-addressed bytes for artifact-version entries (GCS in prod). */
   readonly contentStore: ContentStore;
@@ -38,11 +47,16 @@ export interface MaterializeWorkResult {
   readonly readOnlyPaths: readonly string[];
 }
 
-/** Join the work dir with a manifest path, keeping it inside the mount (no `..` escape). */
-export function workPath(workDir: string, entryPath: string): string {
+/** Join a mount-root base with a manifest path, keeping it inside the mount (no `..` escape). */
+export function workPath(base: string, entryPath: string): string {
   const clean = entryPath.replace(/^\/+/, "");
   if (clean.split("/").includes("..")) throw new Error(`materialize: unsafe manifest path '${entryPath}'`);
-  return `${workDir.replace(/\/$/, "")}/${clean}`;
+  return `${base.replace(/\/$/, "")}/${clean}`;
+}
+
+/** The `/work` base for one manifest entry's mount root. */
+function baseForRoot(root: MountRoot, roots: MaterializeWorkArgs["roots"]): string {
+  return root === "persona" ? roots.persona : roots.project;
 }
 
 function parentDir(path: string): string {
@@ -71,9 +85,18 @@ export async function materializeWork(args: MaterializeWorkArgs): Promise<Materi
   const written: string[] = [];
   const readOnlyPaths: string[] = [];
   for (const entry of args.manifest.entries) {
-    const abs = workPath(args.workDir, entry.path);
+    const abs = workPath(baseForRoot(entry.root, args.roots), entry.path);
     const bytes = await bytesForEntry(entry, args);
     await args.fs.mkdirp(parentDir(abs));
+    // Idempotent re-materialization (K3): a prior attempt (a guided retry re-runs a phase in the same pod)
+    // may have left a read-only entry at 0444, and a plain writeFile onto it fails EACCES (the live P0.15f
+    // failure re-writing /work/manifest.md). Make the target writable FIRST; on the initial materialization
+    // the file does not yet exist and the chmod is a no-op (ENOENT swallowed).
+    try {
+      await args.fs.chmod(abs, READWRITE_MODE);
+    } catch {
+      /* first materialization — the file does not exist yet; the writeFile below creates it */
+    }
     await args.fs.writeFile(abs, bytes);
     const readOnly = entry.mode === "read";
     await args.fs.chmod(abs, readOnly ? READ_ONLY_MODE : READWRITE_MODE);

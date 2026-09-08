@@ -170,9 +170,12 @@ export async function main(): Promise<void> {
   let engineUsage: () => UsageSnapshot = () => emptyUsage();
 
   try {
-    const { loadSdkQuery } = await import("./sdk-adapter.js");
+    const { loadSdkQuery, resolveClaudeCodeExecutable } = await import("./sdk-adapter.js");
+    const { existsSync } = await import("node:fs");
     const { AgentSdkEngine } = await import("@rhema/engine");
     const query = await loadSdkQuery(); // fails fast if the SDK was not vendored into the image
+    // Pin the native `claude` binary the vendored SDK spawns (F1); unset in a placeholder build (SDK default).
+    const claudeCodeExecutablePath = resolveClaudeCodeExecutable(existsSync);
     const sessionStore: SessionStore = { kind: "gcs" };
     const engine = new AgentSdkEngine({
       query,
@@ -182,6 +185,7 @@ export async function main(): Promise<void> {
       hook: buildPreToolUseHook(spec.hookSocketPath),
       sessionStore,
       ...(spec.tier ? { tier: spec.tier } : {}),
+      ...(claudeCodeExecutablePath ? { claudeCodeExecutablePath } : {}),
     });
     engineUsage = () => engine.usage(); // partial usage to report if the run throws mid-phase
 
