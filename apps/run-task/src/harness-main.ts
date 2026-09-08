@@ -100,7 +100,7 @@ export async function fetchRunSpec(args: { apiBaseUrl: string; runId: string; ru
 }
 
 export async function main(): Promise<void> {
-  const { readFile, writeFile, mkdir } = await import("node:fs/promises");
+  const { readFile, writeFile, mkdir, chmod } = await import("node:fs/promises");
   const { spawn } = await import("node:child_process");
   const { createFetchEventTransport } = await import("./event-transport.js");
   const { createHookDaemon } = await import("./hook-daemon.js");
@@ -155,6 +155,16 @@ export async function main(): Promise<void> {
     // loop harvests from the same dir. It MUST exist or `spawn` fails ENOENT (the D-P0.15e-2 symptom).
     const cwd = spec.request.cwd;
     await mkdir(cwd, { recursive: true });
+    // The agent (uid `agent`, 10002) runs in `cwd` and must create its OUTPUT tree there — `.rhema/agent-result.json`
+    // + `.rhema/phase-result.json` + the seat's writable namespaces (`agents/<seat>/**`). `cwd` and its parents were
+    // created by the harness (uid `harness`, 10001) during materialize, so they are harness-owned and the agent
+    // cannot write into them (live: `EACCES mkdir /work/project/.rhema` AFTER a successful model phase). The harness
+    // is non-root (no CAP_CHOWN) so it cannot chown to the agent uid; instead make the writable roots world-writable
+    // (0777). The mounted INPUT files stay 0444 (materializeWork), so this widens only the dirs, not the read set —
+    // the boundary remains the proxy + uid split + the §12.6 hook, never the /work perms.
+    await chmod(cwd, 0o777);
+    const workRoot = roots.project.replace(/\/[^/]+\/?$/, "") || "/work"; // e.g. /work (parent of /work/project)
+    await chmod(workRoot, 0o777).catch(() => undefined); // best-effort: the agent must traverse+write scratch here too
     await mkdir(configDir, { recursive: true });
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
