@@ -35,13 +35,17 @@ export const PLATFORM_RATE = 1.4 as const;
 export const USD_PER_CREDIT = 0.01 as const;
 
 /**
- * Rate table version 1 (§12.7): Sonnet 5 $2/$10, Opus 5 $5/$25, Fable 5 $10/$50 per MTok; cache read 0.1×,
- * cache write 1.25×; web search $10/1k. Keys are canonical model families; a dated model id (e.g.
- * `claude-fable-5-1`) matches its family by prefix.
+ * Rate table version 1 (§12.7): Haiku 4.5 $1/$5, Sonnet 5 $2/$10, Opus 5 $5/$25, Fable 5 $10/$50 per MTok;
+ * cache read 0.1×, cache write 1.25×; web search $10/1k. Keys are canonical model families; a dated model id
+ * (e.g. `claude-fable-5-1`) matches its family by prefix. `claude-haiku-4-5` is the base-tier research fan-out
+ * model (`@rhema/engine` roster) and is on every tier's proxy allowlist (`MODELS_BY_TIER`) — it MUST be priced
+ * here or a base-tier research request would 403 as unpriceable (F4). Adding a family key is additive: no prior
+ * run could have been metered against a model absent from the table (it would have failed closed).
  */
 export const RATE_TABLE_V1: RateTable = {
   version: 1,
   models: {
+    "claude-haiku-4-5": { inputUsdPerMTok: 1, outputUsdPerMTok: 5 },
     "claude-sonnet-5": { inputUsdPerMTok: 2, outputUsdPerMTok: 10 },
     "claude-opus-5": { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
     "claude-fable-5": { inputUsdPerMTok: 10, outputUsdPerMTok: 50 },

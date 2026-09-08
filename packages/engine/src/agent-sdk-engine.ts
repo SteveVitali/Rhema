@@ -30,6 +30,8 @@ export interface AgentSdkEngineDeps {
   readonly hook: PreToolUseHook;
   readonly sessionStore: SessionStore;
   readonly tier?: "base" | "balanced" | "frontier";
+  /** the vendored native `claude` binary path in the image (F1); unset ⇒ the SDK resolves its default. */
+  readonly claudeCodeExecutablePath?: string;
 }
 
 export class AgentSdkEngine implements Engine {
@@ -55,6 +57,7 @@ export class AgentSdkEngine implements Engine {
       hook: this.deps.hook,
       sessionStore: this.deps.sessionStore,
       abortController: this.controller,
+      ...(this.deps.claudeCodeExecutablePath ? { claudeCodeExecutablePath: this.deps.claudeCodeExecutablePath } : {}),
     });
     const prompt = buildPrompt(req.skill, { ...req.inputs, phase: req.phase.skillPhase });
     this.lastOptions = options;

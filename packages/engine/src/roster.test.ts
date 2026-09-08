@@ -21,7 +21,8 @@ describe("buildAgentRoster (§12.2/§12.3)", () => {
 
   it("routes research subagents to Haiku at Base and judges to Sonnet (§12.3)", () => {
     const r = buildAgentRoster({ tier: "base" });
-    expect(r.researcher.model).toBe("claude-haiku-4-5-20251001");
+    // bare family id (F4) — must match the proxy allowlist + rate table exactly, not a dated id.
+    expect(r.researcher.model).toBe("claude-haiku-4-5");
     expect(r["second-reader"].model).toBe("claude-sonnet-5");
   });
 

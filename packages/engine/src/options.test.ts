@@ -46,6 +46,14 @@ describe("buildQueryOptions (§12.2)", () => {
     expect(o.skillsDir).toBe("/opt/skills");
   });
 
+  it("sets an explicit main-context model (F4) — base tier ⇒ claude-sonnet-5", () => {
+    expect(o.model).toBe("claude-sonnet-5");
+  });
+
+  it("enables the harness-staged skills so /editorial-review resolves (F2)", () => {
+    expect(o.skills).toBe("all");
+  });
+
   it("is non-interactive (permissionMode dontAsk)", () => {
     expect(o.permissionMode).toBe("dontAsk");
   });

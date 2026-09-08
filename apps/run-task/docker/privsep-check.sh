@@ -1,7 +1,10 @@
 #!/bin/sh
-# privsep-check.sh — the KERNEL-LEVEL proof of AC1 + AC4, run inside the built image (no SDK needed).
+# privsep-check.sh — the KERNEL-LEVEL proof of AC1 + AC4 + D-P0.15f-1, run inside the built image (no SDK needed).
 #
 # AC1: a process under uid `agent` cannot read the harness-only secrets file (mode 0600, owner harness).
+# D-P0.15f-1: the two-uid launch — the harness (uid 10001, non-root, ambient CAP_SETUID+CAP_SETGID) can
+#      `setpriv --reuid agent --regid agent` drop to uid 10002 with NO setresgid EPERM; the dropped agent is
+#      still denied the secrets file; and the drop FAILS without CAP_SETGID (proving the +setgid fix is required).
 # AC4: an input-scoped subagent's private mount namespace (`unshare -m` + tmpfs + ro binds, then chroot)
 #      contains EXACTLY the enumerated files, and a Read outside them fails at the KERNEL, not just the hook
 #      (review 13 F13).
@@ -31,6 +34,42 @@ if setpriv --reuid agent --regid agent --clear-groups -- cat "$SECRETS" >/dev/nu
   bad  "AC1: uid agent READ the harness secrets file (must be denied)"
 else
   pass "AC1: uid agent is denied the harness secrets file (EACCES)"
+fi
+
+# ---------- D-P0.15f-1 — the harness→agent setpriv drop (the two-uid launch) ----------
+# The entrypoint drops root→harness retaining ambient CAP_SETUID+CAP_SETGID (+SYS_ADMIN,+SYS_CHROOT). The
+# harness (uid 10001, non-root) then launches the agent via `setpriv --reuid agent --regid agent --clear-groups`
+# (bootstrap.buildAgentLaunch). Changing to a DIFFERENT gid from a non-root process needs CAP_SETGID; without it
+# the `--regid` (setresgid) fails EPERM and the agent exits 127 — the exact bug diagnosed live in P0.15f. Prove
+# the drop succeeds WITH the entrypoint's ambient set (uid 10002 reached), and — the negative control — that it
+# FAILS without CAP_SETGID (so we know the +setgid fix is load-bearing, not incidental).
+HARNESS_AMBIENT="-all,+setuid,+setgid,+sys_admin,+sys_chroot"
+harness_drop() { # $1 = ambient/inh/bounding cap set; runs the harness→agent drop, then "$@" (shifted)
+  set="$1"; shift
+  setpriv --reuid harness --regid harness --clear-groups \
+    --bounding-set "$set" --inh-caps "$set" --ambient-caps "$set" \
+    -- setpriv --reuid agent --regid agent --clear-groups -- "$@"
+}
+dropped_uid=$(harness_drop "$HARNESS_AMBIENT" id -u 2>/dev/null || true)
+if [ "$dropped_uid" = "10002" ]; then
+  pass "D-P0.15f-1: harness (ambient CAP_SETUID+SETGID) drops to agent uid 10002 (no setresgid EPERM)"
+else
+  bad  "D-P0.15f-1: harness could not setpriv-drop to agent (got uid '[$dropped_uid]', want 10002)"
+fi
+
+# the agent reached via the harness drop STILL cannot read the harness-only secrets file (REQ-SPEC-10 holds
+# through the real two-hop launch path, not only the direct root→agent drop tested in AC1 above):
+if harness_drop "$HARNESS_AMBIENT" cat "$SECRETS" >/dev/null 2>&1; then
+  bad  "D-P0.15f-1: agent (via the harness drop) READ the harness secrets file (must be denied)"
+else
+  pass "D-P0.15f-1: agent (via the harness drop) is denied the harness secrets file (EACCES)"
+fi
+
+# negative control: WITHOUT CAP_SETGID the --regid drop must fail (the setresgid EPERM the +setgid fix cures):
+if harness_drop "-all,+setuid,+sys_admin" id -u >/dev/null 2>&1; then
+  bad  "D-P0.15f-1: agent drop SUCCEEDED without CAP_SETGID (the setresgid EPERM guard is not exercised)"
+else
+  pass "D-P0.15f-1: without CAP_SETGID the harness→agent --regid drop fails as expected (setresgid EPERM)"
 fi
 
 # ---------- AC4 — the input-scoped mount namespace ----------

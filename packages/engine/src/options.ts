@@ -11,7 +11,7 @@
 import type { PhaseRequest } from "./engine.js";
 import { buildAgentEnv } from "./scrubbed-env.js";
 import { buildOtelConfig } from "./otel.js";
-import { buildAgentRoster } from "./roster.js";
+import { buildAgentRoster, mainModelForTier } from "./roster.js";
 import type { AgentDef } from "./roster.js";
 
 /** A `PreToolUse` hook callback shape (the SDK's; kept structural — the callback is injected by run-task). */
@@ -48,15 +48,27 @@ export const COSMETIC_DISALLOWED_TOOLS = [
   "Bash(grep -r*)",
 ] as const;
 
-/** The §12.2 options object (our contract for what the adapter passes to the vendored SDK `query()`). */
+/** The §12.2 options object (our contract for what the adapter passes to the vendored SDK `query()`). Some
+ *  fields are REAL vendored-SDK `Options` fields the adapter forwards; others (`skillsDir`, `cacheControlTtl`,
+ *  `maxSubagentDepth`, `maxConcurrentSubagents`, `sessionStore`) are our §12.2 INTENT but are NOT real SDK
+ *  fields — `sdk-adapter.toSdkOptions` drops them and records that those caps are advisory (F5). */
 export interface AgentSdkQueryOptions {
   cwd: string;
-  /** where the baked, verbatim-ported skills live (§12.2; loaded read-only). */
+  /** the main-context model (§12.3). A REAL SDK field: set explicitly so the CLI does not fall back to a
+   *  default off the run's proxy allowlist (F4). Exactly one of `MODELS_BY_TIER[tier]`, and priceable. */
+  model: string;
+  /** where the baked, verbatim-ported skills live (§12.2). NOT a real SDK field — the HARNESS stages these
+   *  into a CLI-discoverable dir (`skills-staging.ts`); `skills` below enables them. Kept for provenance. */
   skillsDir: string;
+  /** REAL SDK field: enable the staged skills so `/editorial-review` resolves (F2). `"all"` = every discovered. */
+  skills: "all" | string[];
+  /** REAL SDK field (optional): pin the native `claude` CLI binary so the SDK does not resolve a missing one
+   *  (F1). Set to the vendored binary path in the image; unset in placeholder builds (SDK default applies). */
+  pathToClaudeCodeExecutable?: string;
   /** the subagent roster from the model profile (§12.2). */
   agents: Record<string, AgentDef>;
   hooks: { PreToolUse: PreToolUseHook[] };
-  /** spec-literal (§12.2): non-interactive, never prompts. */
+  /** spec-literal (§12.2): non-interactive, never prompts. A REAL SDK `PermissionMode`. */
   permissionMode: "dontAsk";
   allowedTools: string[];
   /** cosmetic only (§12.2). */
@@ -66,12 +78,12 @@ export interface AgentSdkQueryOptions {
   maxTurns: number;
   /** the SCRUBBED env for the model's processes, merged with OTel (content flags off). */
   env: Record<string, string>;
-  /** subagent fan-out limits (§12.2). */
+  /** subagent fan-out limits (§12.2). NOT real SDK fields — advisory only (F5); un-enforced by the wrapper. */
   maxSubagentDepth: 1;
   maxConcurrentSubagents: number;
-  /** 1-hour prompt caching (§12.2). */
+  /** 1-hour prompt caching (§12.2). NOT a real SDK field — advisory only (F5). */
   cacheControlTtl: "1h";
-  /** the GCS session store (§12.2). */
+  /** the GCS session store (§12.2). NOT a real SDK field — advisory only (F5); not applied by the wrapper. */
   sessionStore: SessionStore;
   abortController: AbortController;
 }
@@ -92,6 +104,8 @@ export interface BuildOptionsDeps {
   hook: PreToolUseHook;
   sessionStore: SessionStore;
   abortController: AbortController;
+  /** the vendored native `claude` binary path (image-specific; run-task supplies it — F1). Unset ⇒ SDK default. */
+  claudeCodeExecutablePath?: string;
 }
 
 /** Build the §12.2 options object for one phase. */
@@ -100,10 +114,14 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
     ...buildAgentEnv({ runId: req.runId, proxyBaseUrl: deps.proxyBaseUrl, configDir: deps.configDir }),
     ...buildOtelConfig(),
   };
+  const tier = deps.tier ?? "base";
   return {
     cwd: req.cwd,
+    model: mainModelForTier(tier), // explicit + allowlisted + priceable (F4) — never the CLI's off-list default
     skillsDir: deps.skillsDir,
-    agents: buildAgentRoster({ tier: deps.tier ?? "base" }),
+    skills: "all", // enable the harness-staged skills so `/editorial-review` resolves (F2)
+    ...(deps.claudeCodeExecutablePath ? { pathToClaudeCodeExecutable: deps.claudeCodeExecutablePath } : {}),
+    agents: buildAgentRoster({ tier }),
     hooks: { PreToolUse: [deps.hook] },
     permissionMode: "dontAsk",
     allowedTools: [...ALLOWED_TOOLS],
