@@ -55,19 +55,30 @@ export async function startWorker(): Promise<void> {
   });
   health.listen(Number(process.env.PORT ?? 8080));
 
+  console.log("[worker] startup: health server listening; constructing deps");
   const pool = new pg.Pool({ connectionString: env.databaseUrl });
-  const redis = new Redis(env.redisUrl);
+  const redis = new Redis(env.redisUrl, { maxRetriesPerRequest: 3, enableOfflineQueue: true, lazyConnect: false });
   const subscriber = redis.duplicate();
   const boss = new PgBoss(env.databaseUrl);
 
+  // A background service must never let a transient infra blip become an UNHANDLED error that exits the process
+  // (a single pg-boss connection timeout on the reaper cron was crashing the whole worker → EventEmitter
+  // 'error' with no listener → ERR_UNHANDLED_ERROR → exit(1), losing the run consumers). Attach listeners so a
+  // blip is logged and pg-boss/pg recover on their own retry cadence instead of killing the run lifecycle.
+  boss.on("error", (err: unknown) => console.error("[worker] pg-boss error (non-fatal, will retry):", err));
+  pool.on("error", (err: unknown) => console.error("[worker] pg pool error (non-fatal):", err));
+  redis.on("error", (err: unknown) => console.error("[worker] redis error (non-fatal):", err));
+
   const clock = systemClock;
   const ids = randomUlids();
+  console.log("[worker] startup: loading run-token keys from Secret Manager");
   const access = await createSecretAccessor();
   const keys = await loadRs256KeysFromSecretManager(access, {
     privateKeyName: env.runTokenPrivateKeySecret,
     publicKeyName: env.runTokenPublicKeySecret,
     ...(env.runTokenKeyId ? { keyId: env.runTokenKeyId } : {}),
   });
+  console.log("[worker] startup: keys loaded; building GKE job launcher");
   const ledger = new SqlHoldLedger({ ids, clock });
   const bus = new RedisRunEventBus(redis, subscriber);
   const launcher = await createGkeJobLauncher({
@@ -112,10 +123,13 @@ export async function startWorker(): Promise<void> {
     systemExec,
   };
 
+  console.log("[worker] startup: launcher built; starting pg-boss");
   await boss.start();
+  console.log("[worker] startup: pg-boss started; creating queues");
   for (const name of [...Object.values(RUN_JOBS), ...Object.values(RUN_EVENT_JOBS), LEDGER_JOBS.sweepParked]) {
     await boss.createQueue(name);
   }
+  console.log("[worker] startup: queues created; registering consumers");
 
   // run.start / resume / cancel consumers (the payload → orchestrator mapping). pg-boss delivers a batch.
   await boss.work<RunJobPayload>(RUN_JOBS.start, async (jobs) => {

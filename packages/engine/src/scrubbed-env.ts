@@ -8,13 +8,24 @@
 // (REQ-SPEC-11). `buildAgentEnv` is the sole constructor of that env, and it is total: it starts from {} and
 // adds only the allowed keys, so nothing leaks in by inheritance.
 
+/**
+ * A NON-SECRET placeholder `ANTHROPIC_API_KEY` the agent env carries (D-P0.06-1, diagnosed live): the vendored
+ * Claude Code CLI refuses to run — "Not logged in · Please run /login" — when NO credential is in its env, so it
+ * never even sends the request to `ANTHROPIC_BASE_URL` (the proxy). This fake key satisfies that pre-flight check
+ * and makes the CLI issue the request in x-api-key mode; the egress-proxy STRIPS the inbound `x-api-key` (and
+ * `authorization`) and injects the REAL provider key itself (credential.ts NEVER_FORWARD), so this value never
+ * reaches Anthropic and the real key never enters the agent process. It is deliberately not a real key.
+ */
+export const PROXY_PLACEHOLDER_ANTHROPIC_API_KEY = "sk-ant-api03-rhema-proxy-injected-placeholder-not-a-real-key-do-not-use-000000000000000000000000000000AA";
+
 /** Keys the model's process must NEVER see (they authenticate the harness to the internal API / proxy). */
 export const FORBIDDEN_AGENT_ENV_KEYS = [
   "RUN_TOKEN",
   "API_INTERNAL_URL",
   "PROXY_CREDENTIAL",
   "PROXY_CREDENTIAL_FILE",
-  "ANTHROPIC_API_KEY",
+  // ANTHROPIC_API_KEY is NOT forbidden outright — the agent carries the NON-SECRET placeholder above so the CLI
+  // will run; assertScrubbed enforces that if present it is EXACTLY that placeholder (never the real key).
   "ANTHROPIC_AUTH_TOKEN",
   // cloud credentials — GCP is the platform (from 2026-09-02); AWS keys stay forbidden as defense-in-depth.
   "GOOGLE_APPLICATION_CREDENTIALS",
@@ -42,6 +53,8 @@ export function buildAgentEnv(input: AgentEnvInput): Record<string, string> {
   const env: Record<string, string> = {
     RUN_ID: input.runId,
     ANTHROPIC_BASE_URL: input.proxyBaseUrl,
+    // the NON-SECRET placeholder so the CLI runs (D-P0.06-1); the proxy strips it + injects the real key.
+    ANTHROPIC_API_KEY: PROXY_PLACEHOLDER_ANTHROPIC_API_KEY,
     CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
     CLAUDE_CONFIG_DIR: input.configDir,
   };
@@ -53,6 +66,7 @@ export function buildAgentEnv(input: AgentEnvInput): Record<string, string> {
 export const ALLOWED_AGENT_ENV_KEYS = [
   "RUN_ID",
   "ANTHROPIC_BASE_URL",
+  "ANTHROPIC_API_KEY",
   "CLAUDE_CODE_DISABLE_AUTO_MEMORY",
   "CLAUDE_CONFIG_DIR",
 ] as const;
@@ -64,6 +78,11 @@ export const ALLOWED_AGENT_ENV_KEYS = [
 export function assertScrubbed(env: Record<string, string>): void {
   for (const k of FORBIDDEN_AGENT_ENV_KEYS) {
     if (k in env) throw new Error(`agent env must not contain the secret key ${k} (REQ-SPEC-10)`);
+  }
+  // ANTHROPIC_API_KEY may be present ONLY as the known non-secret placeholder — never a real provider key
+  // (the real key lives with the proxy). A value that is not exactly the placeholder is a leak (REQ-SPEC-10/11).
+  if ("ANTHROPIC_API_KEY" in env && env.ANTHROPIC_API_KEY !== PROXY_PLACEHOLDER_ANTHROPIC_API_KEY) {
+    throw new Error("agent env ANTHROPIC_API_KEY must be the proxy placeholder, not a real key (REQ-SPEC-10/11)");
   }
   const allowed = new Set<string>(ALLOWED_AGENT_ENV_KEYS);
   for (const k of Object.keys(env)) {
