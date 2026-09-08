@@ -56,10 +56,16 @@ export async function startWorker(): Promise<void> {
   health.listen(Number(process.env.PORT ?? 8080));
 
   console.log("[worker] startup: health server listening; constructing deps");
-  const pool = new pg.Pool({ connectionString: env.databaseUrl });
+  // Long-lived DB connections over Cloud Run Direct-VPC egress → the AlloyDB PSA path get SILENTLY DROPPED when
+  // idle (a NAT/idle connection lifetime), surfacing as pg-boss "Connection terminated due to connection timeout"
+  // on every poll and starving run provisioning (diagnosed live — the api's short per-request queries are
+  // unaffected). TCP keepalive holds the connections open; bounded pools + a real connect timeout keep the
+  // footprint sane and fail fast rather than hanging.
+  const pgOpts = { keepAlive: true, keepAliveInitialDelayMillis: 10_000, connectionTimeoutMillis: 15_000, idleTimeoutMillis: 30_000 };
+  const pool = new pg.Pool({ connectionString: env.databaseUrl, max: 6, ...pgOpts });
   const redis = new Redis(env.redisUrl, { maxRetriesPerRequest: 3, enableOfflineQueue: true, lazyConnect: false });
   const subscriber = redis.duplicate();
-  const boss = new PgBoss(env.databaseUrl);
+  const boss = new PgBoss({ connectionString: env.databaseUrl, max: 5, ...pgOpts });
 
   // A background service must never let a transient infra blip become an UNHANDLED error that exits the process
   // (a single pg-boss connection timeout on the reaper cron was crashing the whole worker → EventEmitter
@@ -119,7 +125,8 @@ export async function startWorker(): Promise<void> {
   // A system-scoped client for the parked sweep + run-event maintenance (cross-tenant / system-table reads).
   // Uses a SEPARATE elevated connection when `systemDatabaseUrl` is set, so the tenant `pool` above can stay a
   // restricted RLS-enforced role (defense-in-depth); falls back to the main pool otherwise.
-  const systemPool = env.systemDatabaseUrl ? new pg.Pool({ connectionString: env.systemDatabaseUrl }) : pool;
+  const systemPool = env.systemDatabaseUrl ? new pg.Pool({ connectionString: env.systemDatabaseUrl, max: 4, ...pgOpts }) : pool;
+  systemPool.on("error", (err: unknown) => console.error("[worker] system pg pool error (non-fatal):", err));
   const systemExec: SqlClient = {
     query: (sql, params) => systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
