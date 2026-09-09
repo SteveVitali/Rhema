@@ -191,4 +191,27 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(spec.request.phase.key).toBe(review.phases[1]!.key);
     expect(spec.request.inputs.phase).toBe(review.phases[1]!.skillPhase);
   });
+
+  it("skips an opted-out phase (second_read=false) — the committed count selects the next ACTIVE phase (D-P0.15d-1)", async () => {
+    const runId = await seedWorkflowRun("run_optout", "review");
+    const review = WORKFLOW_MANIFESTS.review!;
+    const argument = review.phases.find((p) => p.key === "argument")!; // index 5, the active phase AFTER second_read
+    // freeze the second_read opt-out on the run inputs, and commit phases 0..3 (through discourse) as done.
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ second_read: false })]),
+    );
+    for (let i = 0; i < 4; i++) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_optout_${i}`, runId, review.phases[i]!.key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    // committed count = 4 → the 4th ACTIVE phase is `argument` (second_read, manifest index 4, is skipped).
+    expect(spec.request.phase.key).toBe("argument");
+    expect(spec.request.ordinal).toBe(argument.index); // ordinal stays the manifest index (5), not the position
+    // `of` stays the full manifest length so the delivery trigger (index === of-1, the always-active letter) holds.
+    expect(spec.request.of).toBe(review.phases.length);
+  });
 });
