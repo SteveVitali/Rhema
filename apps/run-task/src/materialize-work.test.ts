@@ -37,6 +37,9 @@ class FakeWorkFs implements WorkFs {
     this.modes.set(path, mode);
     return Promise.resolve();
   }
+  exists(path: string): Promise<boolean> {
+    return Promise.resolve(this.files.has(path));
+  }
 }
 
 const entry = (over: Partial<MirrorManifest["entries"][number]>): MirrorManifest["entries"][number] => ({
@@ -110,9 +113,15 @@ describe("materializeWork (F3 — honors the mount root; the seed carries no `pr
     const serverFiles = new Map([["manifest.md", Buffer.from("# Manifest\n")]]);
     const fs = new FakeWorkFs();
     await materializeWork({ roots: ROOTS, manifest, contentStore: store, serverFiles, fs });
-    // both files are now 0444; a naive re-write would EACCES (the live P0.15f failure). The guard makes them
-    // writable first, so the SECOND materialization succeeds and leaves them read-only again.
-    await expect(materializeWork({ roots: ROOTS, manifest, contentStore: store, serverFiles, fs })).resolves.toBeTruthy();
+    // both files are now 0444 and (in prod) kernel ro-mounted; a naive re-write EACCES'd (the live P0.15h craft-
+    // retry crash re-writing /work/project/manifest.md). A read-only entry that already exists is immutable, so
+    // the SECOND materialization SKIPS it — no chmod/write against the ro-mount — and still reports it written.
+    let wrote = false;
+    const spyFs: WorkFs = { ...fs, writeFile: (p, b) => { wrote = true; return fs.writeFile(p, b); }, exists: (p) => fs.exists(p), mkdirp: (d) => fs.mkdirp(d), chmod: (p, m) => fs.chmod(p, m) };
+    const res = await materializeWork({ roots: ROOTS, manifest, contentStore: store, serverFiles, fs: spyFs });
+    expect(res.written).toContain("/work/project/manifest.md");
+    expect(res.readOnlyPaths).toContain("/work/project/manifest.md");
+    expect(wrote).toBe(false); // the read-only re-materialize skipped the write entirely (ro-mount safe)
     expect(fs.modes.get("/work/project/manifest.md")).toBe(READ_ONLY_MODE);
   });
 

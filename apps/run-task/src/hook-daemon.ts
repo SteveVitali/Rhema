@@ -83,6 +83,12 @@ export function createHookDaemon(opts: HookDaemonOptions): Promise<HookDaemon> {
       ...(opts.audit ? { sink: opts.audit } : {}),
       ...(opts.resolveRealpath ? { resolveRealpath: opts.resolveRealpath } : {}),
     });
+    // Diagnostic (harness-side, no secret): log each tool decision with its classified path(s) to stdout so a
+    // phase's write targets + any denials are visible in the pod log even when the DB access-log sink is not
+    // wired. Paths are not secrets; this is the boundary observability the §12.6 attestation wants.
+    for (const row of decision.accessRows) {
+      console.log(`[hook] ${row.tool} ${row.decision}${row.path ? ` ${row.path}` : ""}${decision.reason ? ` — ${decision.reason}` : ""}`);
+    }
     if (decision.control) opts.onControl?.(decision.control);
     const result = toPreToolUseResult(decision);
     // The reply is the DECISION ONLY — `hookSpecificOutput`. The control signal (`rhemaControl`) is handled
