@@ -207,11 +207,12 @@ export async function startWorker(): Promise<void> {
   }
   console.log("[worker] startup: queues created; registering consumers");
 
-  // Eager-warm the GKE launcher (import + KubeConfig) in the background so the FIRST real launch is not the
-  // cold path that hung live (P0.15h). Non-fatal + timeout-guarded; a real launch also retries if this loses.
-  void ensureLauncher()
-    .then(() => console.log("[worker] GKE launcher warmed"))
-    .catch((e) => console.error("[worker] eager launcher warm failed (non-fatal, launch will retry):", e instanceof Error ? e.message : e));
+  // NOTE: the GKE launcher is built LAZILY on the first run.start (below), NOT eagerly here. The
+  // `@kubernetes/client-node` import is event-loop-BLOCKING and, on a cold Cloud Run instance, can take minutes
+  // (live P0.15h). Doing it eagerly at startup starved pg-boss's job poller during the block, so a queued run
+  // was never delivered. Lazily inside the handler, pg-boss delivers the job first (the run enters
+  // `provisioning`), then the blocking import runs, then the Job launches — slow on the first launch, reliable.
+  // The timeout+retry around the build/launch (see `ensureLauncher`/`launcher.launch`) still bounds a true hang.
 
   // run.start / resume / cancel consumers (the payload → orchestrator mapping). pg-boss delivers a batch.
   await boss.work<RunJobPayload>(RUN_JOBS.start, async (jobs) => {
