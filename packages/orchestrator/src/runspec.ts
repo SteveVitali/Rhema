@@ -186,10 +186,15 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   const maxBudgetUsd = Math.max(0.5, round2(phase.budgetShare * maxUsdPerRun));
 
   // frozen run inputs win over the manifest defaults; `phase` pins the one skill phase to run (REQ-SPEC-13).
+  // `phase_output` names the exact artifact(s) this phase must write, taken from the manifest so the agent's
+  // write target can never drift from the completion oracle's predicate (residue 1, diagnosed live P0.15g: the
+  // single-phase craft invocation produced no `04-craft-notes.md`). Phase-derived, so it wins over any frozen
+  // input, exactly as `phase` does.
   const inputs: Record<string, unknown> = {
     ...(manifest.defaultInputs ?? {}),
     ...hyd.inputs,
     phase: phase.skillPhase,
+    ...(phase.artifacts.length > 0 ? { phase_output: phase.artifacts.join(", ") } : {}),
   };
 
   const request: PhaseRequest = {

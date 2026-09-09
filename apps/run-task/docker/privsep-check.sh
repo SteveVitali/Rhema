@@ -112,6 +112,23 @@ else
   bad  "AC4: scoped mount-namespace isolation failed (rc=$rc)"
 fi
 
+# ---------- P0.15h — a read-only bind mount BLOCKS a write at the KERNEL (boundary "true zero", defense in depth) ----------
+# The §12.6 boundary's authoritative enforcer is the PreToolUse hook (proven at the daemon+SDK-contract layer in
+# hook-enforcement.test.ts). This is the INDEPENDENT kernel backstop: a path mounted read-only cannot be written
+# even by uid agent even if the hook were bypassed — so a read-only mount makes `boundary.attested` a true zero
+# from two layers, closing the P0.15g concern that a correspondence/ write once SUCCEEDED.
+mkdir -p /work/ro-src
+echo "READ ONLY CORRESPONDENCE" > /work/ro-src/00-piece-brief.md
+mkdir -p /work/ro-mnt
+mount --bind /work/ro-src /work/ro-mnt
+mount -o remount,ro,bind /work/ro-mnt   # apply MS_RDONLY on the bind (a plain --bind -o ro is not enough on all kernels)
+if setpriv --reuid agent --regid agent --clear-groups -- /bin/sh -c 'echo x > /work/ro-mnt/00-piece-brief.md' 2>/dev/null; then
+  bad  "P0.15h: uid agent WROTE a read-only bind mount (the kernel backstop is not enforcing)"
+else
+  pass "P0.15h: uid agent cannot write a read-only bind mount (EROFS) — the boundary is a true zero at the kernel"
+fi
+umount /work/ro-mnt 2>/dev/null || true
+
 echo "----"
 if [ "$fail" -eq 0 ]; then echo "ALL PRIVSEP CHECKS PASSED"; else echo "PRIVSEP CHECKS FAILED"; fi
 exit "$fail"

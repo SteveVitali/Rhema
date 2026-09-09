@@ -91,6 +91,17 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // a per-run workspace-bound store for delivery reads (a run is single-tenant; D-P0.09-1).
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
     ...(systemExec ? { circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })) } : {}),
+    // the harness run-spec sizing config (residue 2 / D-P0.15c-6): the per-run USD ceiling the per-phase SDK
+    // budget brake is taken against, and the skills image path. Unset ⇒ the runspec defaults ($10, /app/skills);
+    // the outer `capCredits` hold is the hard ceiling regardless.
+    ...(env.maxUsdPerRun !== undefined || env.skillsDir !== undefined
+      ? {
+          runSpecConfig: {
+            ...(env.maxUsdPerRun !== undefined ? { maxUsdPerRun: env.maxUsdPerRun } : {}),
+            ...(env.skillsDir !== undefined ? { skillsDir: env.skillsDir } : {}),
+          },
+        }
+      : {}),
     principal: headerPrincipal,
   };
   return { deps, boss, pool };

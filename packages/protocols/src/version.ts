@@ -19,7 +19,7 @@ export const PROTOCOLS_VERSION_BASE = "0.4.0" as const;
  * The content-addressed protocols version, frozen. Regenerate with
  * `node scripts/compute-protocols-version.mjs --write` whenever the trio changes.
  */
-export const PROTOCOLS_VERSION = "0.4.0+5ae6645b89fced85" as const;
+export const PROTOCOLS_VERSION = "0.4.0+62faf1b9fd4c987c" as const;
 
 /** False in the private package (true in the public stub) — lets consumers detect stub resolution. */
 export const IS_PROTOCOLS_STUB = false as const;

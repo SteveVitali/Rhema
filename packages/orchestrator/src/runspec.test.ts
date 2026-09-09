@@ -68,6 +68,9 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
       expect(spec.request.ordinal).toBe(0);
       expect(spec.request.of).toBe(manifest.phases.length);
       expect(spec.request.inputs.phase).toBe(phase0.skillPhase);
+      // residue 1: `phase_output` names the phase's declared artifact(s) from the manifest, so the agent's
+      // write target can never drift from the completion oracle's predicate.
+      expect(spec.request.inputs.phase_output).toBe(phase0.artifacts.join(", "));
       expect(spec.request.seat).toBe(seat);
       expect(spec.request.maxBudgetUsd).toBeGreaterThan(0);
       expect(spec.tier).toBe("balanced"); // seedRun's model_tier
@@ -141,6 +144,37 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(spec.request.phase.skillPhase).toBe(craft.skillPhase);
     expect(spec.request.ordinal).toBe(craft.index);
     expect(spec.request.inputs.phase).toBe(craft.skillPhase); // the pin is preserved, never clobbered
+  });
+
+  it("threads the pinned phase's declared artifact as `phase_output` (residue 1 — the write target)", async () => {
+    const runId = await seedWorkflowRun("run_phaseout", "review");
+    const review = WORKFLOW_MANIFESTS.review!;
+    const craft = review.phases[1]!; // artifacts: ["04-craft-notes.md"]
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ phase: craft.skillPhase })]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.inputs.phase_output).toBe("04-craft-notes.md");
+    expect(spec.request.inputs.phase_output).toBe(craft.artifacts.join(", "));
+  });
+
+  it("residue 2: maxUsdPerRun scales the per-phase SDK budget brake (default → configured), with a $0.5 floor", async () => {
+    const runId = await seedWorkflowRun("run_budget", "review");
+    const review = WORKFLOW_MANIFESTS.review!;
+    const intakeShare = review.phases[0]!.budgetShare; // 0.1
+
+    // default (dev max_usd $10): budgetShare × 10.
+    const dflt = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(dflt.request.maxBudgetUsd).toBeCloseTo(intakeShare * 10, 5);
+
+    // a configured ceiling scales the brake linearly (the frontier-tier bump).
+    const bumped = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId, maxUsdPerRun: 60 });
+    expect(bumped.request.maxBudgetUsd).toBeCloseTo(intakeShare * 60, 5);
+    expect(bumped.request.maxBudgetUsd).toBeGreaterThan(dflt.request.maxBudgetUsd);
+
+    // the $0.5 floor holds when the share × ceiling would round below it (a tiny ceiling never zeroes a phase).
+    const tiny = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId, maxUsdPerRun: 1 });
+    expect(tiny.request.maxBudgetUsd).toBe(0.5);
   });
 
   it("resume: advances to the next uncommitted phase (a committed phase 0 → phase 1)", async () => {
