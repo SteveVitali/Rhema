@@ -11,6 +11,26 @@ Generated at commit on branch `stevevitali/p0-15-phase0-integration-and-exit` (s
 
 ---
 
+## UPDATE — P0.15h Stage B (2026-09-09): the live Review pipeline is PROVEN end-to-end; G1 blocked on ONE capability
+
+The whole live Review pipeline now runs with **real inference**: two-uid agent launch → **all 6 required phases
+commit green** (intake, craft, verification, discourse, argument, letter — `second_read` opted out, deferred
+D-P0.15h-5) → the complete dossier is harvested to the mirror → the harness takes the **deliver** path. The
+launcher cold-start (root-caused to Cloud Run CPU throttling), the sidecar-schema conformance, same-pod phase
+advance, opt-out phase selection, and the delivered-dossier path resolution are all fixed + verified (PR #24,
+commits `511f024`/`4f280c3`/`0514679`/`73a432a`/`f242ab8`).
+
+**G1 is NOT yet passable — one capability remains:** the delivery transaction correctly refuses
+`cited_not_fetched` because the fact-check agent does **no real, logged web fetches** (`usage_records.searches=0`)
+— its SDK request never enables Anthropic's server-side web-search tool, so the claim-ledger citations are
+model-knowledge, not fetch-backed. This is the `cited⇒fetched` half of the §17 criterion and is scoped to
+**`docs/tickets/16_P0.15i__agent-web-research-in-sandbox.md`** (runs after P0.15h, before this gate). Once that
+lands, a COMPLETE green Review delivers with a `correspondence_items` row and `assessPhase0ExitForRun` green. The
+full §17 exit matrix (all three projects + Revise/Fact-check/Quick-Voice + a cap-402 run + the instrumented-cost
+and pilot rows) is then the remaining live exercise for this gate.
+
+---
+
 ## The criterion (spec §17 Phase-0 row, verbatim; quoted in `00_MANIFEST.md` § Milestone gates)
 
 > "a Review of each of the three real projects runs end-to-end in `dev` with `boundary.attested
