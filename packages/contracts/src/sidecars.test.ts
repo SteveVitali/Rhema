@@ -36,6 +36,60 @@ describe("sidecar schemas validate the three real projects' fixtures (AC6, REQ-S
     expect(covered).toEqual(new Set(Object.keys(SIDECAR_REGISTRY)));
   });
 
+  // D-P0.15h-1 (diagnosed live): the skill authors the ledger with the review protocol's HUMAN verdict
+  // vocabulary (Title Case + spaces) while the enum is snake_case — a faithful ledger failed sidecar_validates
+  // and blocked the phase. The sidecar enums now coerce the human form → canonical, so a real ledger validates.
+  it("coerces the skill's human verdict vocabulary to the canonical enum (01-claim-ledger.json)", () => {
+    const doc = {
+      sidecar: "claim_ledger",
+      version: 1,
+      claims: [
+        { ordinal: 0, text: "A tier-1 factual claim.", tier: 1, verdict: "Contradicted" },
+        { ordinal: 1, text: "Another claim.", tier: 2, verdict: "Substantially accurate" },
+        { ordinal: 2, text: "A third.", tier: 1, verdict: "Misleading in context" },
+        { ordinal: 3, text: "A fourth.", tier: 3, verdict: "Unverifiable" },
+      ],
+    };
+    const parsed = SIDECAR_REGISTRY["01-claim-ledger.json"].schema.parse(doc) as {
+      claims: Array<{ verdict: string }>;
+    };
+    expect(parsed.claims.map((c) => c.verdict)).toEqual([
+      "contradicted",
+      "substantially_accurate",
+      "misleading_in_context",
+      "unverifiable",
+    ]);
+  });
+
+  it("coerces human forms in findings/rubric too, and still REJECTS a genuinely invalid verdict", () => {
+    const findings = {
+      sidecar: "findings",
+      version: 1,
+      findings: [
+        {
+          ordinal: 0,
+          kind: "argument",
+          severity: "Major",
+          origin: "Second read",
+          anchor: null,
+          title: "t",
+          body: "b",
+          evidence: { verdict: "Contradicted", urls: [] },
+          rubricDims: ["Evidence accuracy"],
+        },
+      ],
+    };
+    const p = SIDECAR_REGISTRY["findings.json"].schema.parse(findings) as {
+      findings: Array<{ severity: string; origin: string; evidence?: { verdict?: string } }>;
+    };
+    expect(p.findings[0]!.severity).toBe("major");
+    expect(p.findings[0]!.origin).toBe("second_read");
+    expect(p.findings[0]!.evidence!.verdict).toBe("contradicted");
+    // a value that does not canonicalize to any member is still rejected (coercion never masks a real error).
+    const bad = { ...findings, findings: [{ ...findings.findings[0], severity: "catastrophic" }] };
+    expect(() => SIDECAR_REGISTRY["findings.json"].schema.parse(bad)).toThrow();
+  });
+
   it("a re-review findings sidecar carries carriesObligationId + obligationCounts (REQ-OBJ-4/REQ-WF-7)", () => {
     const doc = loadFixture("the-politics-of-visibility", "findings.json") as {
       findings: Array<Record<string, unknown>>;
