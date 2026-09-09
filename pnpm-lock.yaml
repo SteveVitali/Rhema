@@ -4,7 +4,7 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-pnpmfileChecksum: sha256-ei7+n8mtJ3ZUrgPr0VK5JOPjvUQ7x/zbxkOhOSRiONE=
+pnpmfileChecksum: sha256-0zdcJDDv3eS1+htgU7MEC90GJldcBUX5huPSGU3qfyM=
 
 importers:
 
@@ -117,7 +117,7 @@ importers:
         version: link:../../packages/hooks
       '@rhema/protocols':
         specifier: workspace:*
-        version: link:../../packages/protocols-stub
+        version: link:../../packages/protocols
 
   apps/web:
     dependencies:
@@ -186,7 +186,7 @@ importers:
         version: link:../contracts
       '@rhema/protocols':
         specifier: workspace:*
-        version: link:../protocols-stub
+        version: link:../protocols
 
   packages/figures: {}
 
@@ -218,6 +218,19 @@ importers:
         version: link:../contracts
 
   packages/measure: {}
+
+  packages/protocols:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
 
   packages/protocols-stub:
     dependencies:

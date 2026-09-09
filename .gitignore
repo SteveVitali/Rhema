@@ -11,8 +11,9 @@ build/
 .env.*
 !.env.example
 provenance-artifacts/
-# Private checkouts (REQ-ARCH-33/37): never commit protocol/eval IP. The public stubs
-# (packages/protocols-stub, evals-stub) are the tracked fallbacks; an in-tree private checkout at
-# these paths must stay untracked. Sanctioned resolution is external via RHEMA_PROTOCOLS_PATH.
-packages/protocols/
+# Private checkout (REQ-ARCH-37): `evals/` holds eval IP and stays untracked — the tracked `evals-stub`
+# is its public fallback, resolved by path via RHEMA_EVALS_PATH. NOTE: `packages/protocols` is now a
+# COMMITTED workspace member (operator decision, 2026-09-01; spec amendment to REQ-ARCH-37/§13.2) — the
+# repo is private, so the protocol IP lives in its history; open-source-readiness is an export-time swap
+# to `packages/protocols-stub` (renamed `@rhema/protocols-stub`) rather than a live path resolution.
 evals/

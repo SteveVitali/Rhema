@@ -1,0 +1,30 @@
+{
+  "name": "@rhema/protocols",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "@rhema/protocols: ported skills, phase manifests, estimator constants, protocol seeds, path→kind map (SS §8.4). A committed workspace member in this private repo; excluded from a public export (which builds against @rhema/protocols-stub).",
+  "license": "UNLICENSED",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

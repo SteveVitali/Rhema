@@ -1,14 +1,16 @@
 "use strict";
 
 /**
- * pnpm hook that implements private-package resolution BY PATH (REQ-ARCH-37 amended, spec §13.2).
+ * pnpm hook that implements private-package resolution BY PATH for `@rhema/evals` (REQ-ARCH-37, §13.2).
  *
- * When `RHEMA_PROTOCOLS_PATH` / `RHEMA_EVALS_PATH` point at a valid private checkout, every
- * dependency on `@rhema/protocols` / `@rhema/evals` is rewritten to a `link:` against that path, so
- * the private code overrides the in-repo stub without git submodules and without a duplicate
- * workspace member. When the env vars are unset (a public clone, or the `public-safe` CI job), this
- * hook is a no-op and the stubs — `packages/protocols-stub` (@rhema/protocols) and `evals-stub`
- * (@rhema/evals) — satisfy the graph. Read automatically by pnpm on every install.
+ * When `RHEMA_EVALS_PATH` points at a valid private checkout, every dependency on `@rhema/evals` is
+ * rewritten to a `link:` against that path, so the private eval code overrides the in-repo `evals-stub`
+ * without a git submodule. When it is unset (a public clone, or the `public-safe` CI job), this hook is
+ * a no-op and `evals-stub` (`@rhema/evals`) satisfies the graph.
+ *
+ * NOTE (2026-09-01): `@rhema/protocols` is no longer path-resolved — it is a COMMITTED workspace member
+ * (`packages/protocols`), with `@rhema/protocols-stub` swapped in only at open-source export. So this
+ * hook deliberately does NOT rewrite `@rhema/protocols`. Read automatically by pnpm on every install.
  */
 
 const fs = require("node:fs");
@@ -23,9 +25,7 @@ function linkTargetFor(envVar) {
 }
 
 const overrides = {};
-const protocolsLink = linkTargetFor("RHEMA_PROTOCOLS_PATH");
 const evalsLink = linkTargetFor("RHEMA_EVALS_PATH");
-if (protocolsLink) overrides["@rhema/protocols"] = protocolsLink;
 if (evalsLink) overrides["@rhema/evals"] = evalsLink;
 
 function rewrite(deps) {
