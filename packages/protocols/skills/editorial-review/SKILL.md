@@ -54,6 +54,9 @@ inputs:
   - name: sidecar
     required: false
     description: "Rhema harness (REQ-ARCH-5, REQ-SPEC-4): when true, emit the structured-output sidecar twins of §11.1 under .rhema/ beside each markdown deliverable (findings.json, 01-claim-ledger.json, rubric.json), and write .rhema/phase-result.json {status} at the end of every phase. Absent, the skill runs exactly as upstream."
+  - name: phase_output
+    required: false
+    description: "Rhema harness (REQ-ARCH-5): the exact dossier file(s) the pinned phase must write under output_dir — supplied by the harness from the phase manifest so the write target never drifts from the completion oracle. When set, the pinned phase writes precisely these file(s) (comma-separated) before .rhema/phase-result.json."
 ---
 
 # Editorial Board Review
@@ -156,6 +159,33 @@ These are harness-neutral additions; the review regimen is upstream-verbatim.
 - `changed_since` names the version this draft was human-revised from; `prior_review` names the review being answered, so a re-review reads the response letter first and does not re-raise well-rebutted findings.
 - `resume_from` is a section-granular resume point (1.x).
 - `sidecar: true` emits the structured-output twins of §11.1 to `.rhema/` beside each markdown deliverable — `findings.json`, `01-claim-ledger.json`, `rubric.json` — and writes `.rhema/phase-result.json {status}` at the end of every phase. The `findings.json` sidecar states each finding's `severity` explicitly (`blocking | major | minor | note` — REQ-SPEC-4), never inferred from prose; a re-review's `findings.json` may declare `carriesObligationId` (REQ-OBJ-4). With `sidecar` absent the skill runs exactly as upstream.
+- `phase_output` names the exact dossier file(s) the pinned phase must write under `output_dir`, supplied by the harness from the phase manifest so the write target never drifts from the completion oracle. Honor it as authoritative.
+
+### Per-phase artifacts under harness execution (REQ-ARCH-5)
+
+Run whole (no `phase`), the regimen keeps craft (Phase 4) and argument (Phase 3) in context and synthesizes
+them into the editor's letter, so it writes no standalone `03-`/`04-` file. Run **one phase at a time** by the
+harness (`phase="N"`), each phase instead runs in a fresh context and communicates only through files — so
+**every** phase, craft and argument included, must persist its full findings to its own dossier file before it
+ends. Write exactly the file named by `phase_output` (equivalently, the file below for the pinned phase) under
+`output_dir`, then write `.rhema/phase-result.json {status:"done"}`:
+
+| Phase (fallback order) | `phase` | Dossier file to write |
+|---|---|---|
+| Intake | `0` | `00-piece-brief.md` |
+| Craft (structure/prose/voice) | `4` | `04-craft-notes.md` |
+| Verification | `1` | `01-claim-ledger.md` (+ `01-claim-ledger.json`) |
+| Discourse | `2` | `02-discourse-report.md` |
+| Second read | `5` | `05-second-read.md` |
+| Argument | `3` | `03-argument-notes.md` |
+| Letter | `6` | `editors-letter.md` (+ `findings.json`, `rubric.json`) |
+
+The pinned phase reads the prior phases' dossier files it needs from `output_dir` (they are re-materialized into
+the workspace at the start of each phase) rather than re-deriving them; it never treats the presence of an
+earlier phase's `00-piece-brief.md`, or a stale `.rhema/phase-result.json`, as evidence that its own phase is
+already done — it produces its declared file regardless. `03-argument-notes.md` and `04-craft-notes.md` carry
+the same argument- and craft-critique findings the letter will later synthesize; writing them per phase is what
+lets the letter phase run in its own fresh context.
 
 ## Workspace and memory
 

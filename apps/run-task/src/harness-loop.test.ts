@@ -232,6 +232,22 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(rec.fails[0]!.reason).not.toContain("agent error");
   });
 
+  it("enriches the failStep reason with the SDK subtype, failed leg, and the missing artifact (residue 1 observability)", async () => {
+    // the live craft case: the agent exited clean (SDK success, phase-result done) but wrote no
+    // `04-craft-notes.md`, so leg (c) fails. The reason reaching run_events must name WHICH artifact was
+    // missing (not just "1 completion predicate(s) failed"), so the non-committing phase is diagnosable.
+    const { rec, client, runPhase } = makeHarness([makeSpec({ ...byKey("craft"), index: 5 })], () =>
+      completeOutputs({ nonempty: { "04-craft-notes.md": false } }),
+    );
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("failed");
+    const reason = rec.fails[0]!.reason!;
+    expect(reason).toContain("sdk=success"); // the SDK result subtype
+    expect(reason).toContain("leg=predicate"); // the failed oracle leg
+    expect(reason).toContain("artifact_nonempty:04-craft-notes.md"); // the exact missing artifact
+    expect(reason).toContain("(nonempty)"); // the evaluator detail
+  });
+
   it("never sees the run token or any secret — the loop's inputs carry only server-authored data", async () => {
     const spec = makeSpec({ ...byKey("craft"), index: OF - 1 });
     const { client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));

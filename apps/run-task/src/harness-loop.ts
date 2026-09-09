@@ -22,6 +22,7 @@ import {
   type CommitNext,
   type DeliveryFacts,
   type ErrorClass,
+  type EvaluatedPredicate,
   type GatePolicyContext,
   type HarnessRunSpec,
   type PhaseResultFile,
@@ -30,6 +31,22 @@ import {
 
 /** Error classes whose remedy is re-running the same phase once (guided for artifact_missing) — mirrors runPhase. */
 const RERUN_CLASSES: ReadonlySet<ErrorClass> = new Set(["artifact_missing", "infra", "provider_transient"]);
+
+/**
+ * Render each failed completion predicate as `<kind>:<artifact-or-sidecar> (<detail>)` for the failStep reason
+ * (residue 1 observability). The bare `verdict.reason` only names the predicate KINDS; this adds the exact
+ * artifact/sidecar the phase was missing plus the evaluator's detail — so a non-committing phase's `engine.error`
+ * event names the file that was absent (the live craft case: `artifact_nonempty:04-craft-notes.md (nonempty)`).
+ */
+function describePredicateFailures(failed: readonly EvaluatedPredicate[]): string {
+  if (failed.length === 0) return "";
+  const parts = failed.map((e) => {
+    const p = e.predicate;
+    const target = "artifact" in p ? p.artifact : "sidecar" in p ? p.sidecar : "";
+    return `${p.kind}${target ? `:${target}` : ""}${e.detail ? ` (${e.detail})` : ""}`;
+  });
+  return ` — ${parts.join("; ")}`;
+}
 
 // ---------------------------------------------------------------------------- seams
 
@@ -176,7 +193,15 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
     // a non-complete verdict fails the step and stops the pod (the caller/reaper decides escalation vs quarantine).
     if (verdict.outcome !== "complete") {
       const errorClass = verdict.outcome === "incomplete" ? verdict.errorClass : verdict.outcome;
-      const baseReason = verdict.outcome === "incomplete" ? verdict.reason : `phase-result ${verdict.outcome}`;
+      // Build a REAL diagnostic (residue 1): the plain `verdict.reason` only names the failed predicate KINDS,
+      // so a phase that exited clean but wrote no artifact (the live craft case — `04-craft-notes.md` absent)
+      // reached `run_events` as an opaque "1 completion predicate(s) failed". Fold in the SDK subtype, the
+      // failed leg, and each failed predicate's TARGET + evaluated detail so the non-committing phase is
+      // diagnosable from the `engine.error` event alone, without pod exec.
+      const baseReason =
+        verdict.outcome === "incomplete"
+          ? `${verdict.reason} [sdk=${outputs.subtype}, leg=${verdict.failedLeg}]${describePredicateFailures(verdict.failedPredicates)}`
+          : `phase-result ${verdict.outcome} [sdk=${outputs.subtype}]`;
       // fold the agent-reported error (if any) into the reason so its CLASS + message reaches run_events/steps
       // via failStep — the observability sink (D-P0.15e-4) makes an agent crash diagnosable without pod exec.
       const reason = outputs.agentError
