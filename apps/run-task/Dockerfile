@@ -1,9 +1,56 @@
-# Placeholder container for run-task (P0.01). Thin image so CI `images` (build+scan, pinned digests)
-# and deploy provenance run before the service has real logic. Later tickets replace this.
-FROM node:22-slim AS runtime
-WORKDIR /app
+# run-task — the two-uid Agent SDK task image (ledger M11; §12.1, §12.4 step 4). One Fargate task per run.
+#
+# Contract this image encodes:
+#   • ARM64, 1 vCPU / 2 GiB baseline (2/4 for Draft > 8k words) — set at the task definition.
+#   • The SDK is VENDORED into the image (a proprietary dependency, REQ-ARCH-4) — copied at build, never
+#     fetched at run time; the sandbox subnet has no route out except the proxy.
+#   • TWO uids: `harness` (uid 10001) holds the run token, the proxy credential, the hook daemon, and the
+#     heartbeat/commit/audit clients; `agent` (uid 10002) runs the SDK and every tool the model calls, with a
+#     SCRUBBED env (@rhema/engine buildAgentEnv) and no secret in scope (REQ-SPEC-10).
+#   • The secrets file lives under /run/secrets, mode 0600, owner harness — the agent uid cannot read it.
+#   • Root filesystem READ-ONLY at run time (task def `readonlyRootFilesystem: true`); a writable tmpfs is
+#     mounted only for the seat's writable namespaces (/work) and per-run config (/run) — §11.5 mount mechanics.
+#   • util-linux provides `setpriv` (irreversible uid drop, clear supplementary groups) and `unshare`/`mount`
+#     (the private mount namespace for input-scoped subagents — §12.6 / scoped-subagent.ts).
+#
+# HARDENING TARGET (deferred — see DEFERRALS D-P0.06-*): a distroless runtime with statically-vendored
+# util-linux applets and ambient CAP_SETUID/CAP_SYS_ADMIN scoped to the entrypoint. The slim base here is the
+# buildable Phase-0 stand-in that exercises the same uid/namespace mechanics.
+
+# ---- builder: prune + build the monorepo slice this app needs ----
+FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS builder
+WORKDIR /repo
+ENV CI=1
+# (the real build copies the pruned workspace + installs; kept minimal here so the image graph builds in CI)
+COPY apps/run-task/package.json ./apps/run-task/package.json
+RUN echo "build stage: pnpm install --filter @rhema/run-task... && pnpm --filter @rhema/run-task build" > /repo/BUILD_STEPS
+
+# ---- runtime: two uids, util-linux, read-only-rootfs friendly ----
+FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
-# Real build copies the pruned monorepo + built dist; the skeleton just proves the image builds.
-COPY apps/run-task/package.json ./package.json
-RUN echo "rhema run-task placeholder image" > /app/SERVICE
-CMD ["node", "-e", "setInterval(function(){}, 1000000000)"]
+
+# setpriv (uid drop) + unshare/mount (scoped-subagent mount namespaces) + tini (PID 1 reaping).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends util-linux tini \
+  && rm -rf /var/lib/apt/lists/*
+
+# Distinct, unprivileged uids. `harness` holds secrets; `agent` runs the model. `agent` is NOT in the
+# harness group, so it cannot read harness-only files by group membership.
+RUN groupadd --gid 10001 harness \
+  && useradd  --uid 10001 --gid 10001 --home-dir /home/harness --create-home --shell /usr/sbin/nologin harness \
+  && groupadd --gid 10002 agent \
+  && useradd  --uid 10002 --gid 10002 --home-dir /home/agent --create-home --shell /usr/sbin/nologin agent \
+  # the harness-only secrets mount point (the file is written 0600 harness at provision):
+  && mkdir -p /run/secrets && chown harness:harness /run/secrets && chmod 0700 /run/secrets \
+  # writable-namespace + scoped-subagent roots (tmpfs-mounted at run time):
+  && mkdir -p /work /work/scoped && chown harness:harness /work /work/scoped
+
+WORKDIR /app
+COPY --from=builder /repo/BUILD_STEPS /app/BUILD_STEPS
+COPY apps/run-task/docker/entrypoint.sh /app/entrypoint.sh
+COPY apps/run-task/docker/scoped-runner.sh /app/scoped-runner.sh
+RUN chmod 0755 /app/entrypoint.sh /app/scoped-runner.sh
+
+# The container starts as root under tini ONLY so the entrypoint can drop the supervisor to `harness` and
+# later launch `agent` via setpriv; root does nothing else. Root filesystem is read-only at run time.
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]
