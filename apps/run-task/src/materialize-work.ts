@@ -18,6 +18,8 @@ export interface WorkFs {
   chmod(path: string, mode: number): Promise<void>;
   /** true if a path already exists (used to skip re-writing an immutable, already-ro-mounted read-only entry). */
   exists(path: string): Promise<boolean>;
+  /** Remove a file if present (used to replace a prior-phase agent-created file the harness cannot chmod). */
+  rm(path: string): Promise<void>;
 }
 
 export interface MaterializeWorkArgs {
@@ -101,13 +103,12 @@ export async function materializeWork(args: MaterializeWorkArgs): Promise<Materi
     }
     const bytes = await bytesForEntry(entry, args);
     await args.fs.mkdirp(parentDir(abs));
-    // Make the target writable FIRST so a re-write of a writable entry left at 0444 by a prior attempt succeeds;
-    // on the initial materialization the file does not yet exist and the chmod is a no-op (ENOENT swallowed).
-    try {
-      await args.fs.chmod(abs, READWRITE_MODE);
-    } catch {
-      /* first materialization — the file does not exist yet; the writeFile below creates it */
-    }
+    // A readwrite entry may already exist from a PRIOR phase in the same pod, created by the AGENT (uid 10002)
+    // and therefore not chmod-able or overwritable by the harness (uid 10001) — the live P0.15h crash advancing
+    // craft→verification: `EACCES open agents/editor/04-craft-notes.md`. The seat namespace dir is world-writable
+    // (harness-main makeTreeAgentWritable), so UNLINK the stale file first (needs only dir-write, not file
+    // ownership), then write the server-truth bytes fresh (harness-owned). rm is a no-op when absent.
+    await args.fs.rm(abs);
     await args.fs.writeFile(abs, bytes);
     await args.fs.chmod(abs, readOnly ? READ_ONLY_MODE : READWRITE_MODE);
     written.push(abs);
@@ -133,5 +134,9 @@ export const nodeWorkFs: WorkFs = {
   async exists(path) {
     const { access } = await import("node:fs/promises");
     return access(path).then(() => true).catch(() => false);
+  },
+  async rm(path) {
+    const { rm } = await import("node:fs/promises");
+    await rm(path, { force: true }).catch(() => undefined);
   },
 };

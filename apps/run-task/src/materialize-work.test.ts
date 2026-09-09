@@ -40,6 +40,11 @@ class FakeWorkFs implements WorkFs {
   exists(path: string): Promise<boolean> {
     return Promise.resolve(this.files.has(path));
   }
+  rm(path: string): Promise<void> {
+    this.files.delete(path);
+    this.modes.delete(path);
+    return Promise.resolve();
+  }
 }
 
 const entry = (over: Partial<MirrorManifest["entries"][number]>): MirrorManifest["entries"][number] => ({
@@ -117,7 +122,7 @@ describe("materializeWork (F3 — honors the mount root; the seed carries no `pr
     // retry crash re-writing /work/project/manifest.md). A read-only entry that already exists is immutable, so
     // the SECOND materialization SKIPS it — no chmod/write against the ro-mount — and still reports it written.
     let wrote = false;
-    const spyFs: WorkFs = { ...fs, writeFile: (p, b) => { wrote = true; return fs.writeFile(p, b); }, exists: (p) => fs.exists(p), mkdirp: (d) => fs.mkdirp(d), chmod: (p, m) => fs.chmod(p, m) };
+    const spyFs: WorkFs = { ...fs, writeFile: (p, b) => { wrote = true; return fs.writeFile(p, b); }, exists: (p) => fs.exists(p), mkdirp: (d) => fs.mkdirp(d), chmod: (p, m) => fs.chmod(p, m), rm: (p) => fs.rm(p) };
     const res = await materializeWork({ roots: ROOTS, manifest, contentStore: store, serverFiles, fs: spyFs });
     expect(res.written).toContain("/work/project/manifest.md");
     expect(res.readOnlyPaths).toContain("/work/project/manifest.md");
