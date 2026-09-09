@@ -100,7 +100,37 @@ export async function fetchRunSpec(args: { apiBaseUrl: string; runId: string; ru
 }
 
 export async function main(): Promise<void> {
-  const { readFile, writeFile, mkdir, chmod } = await import("node:fs/promises");
+  const { readFile, writeFile, mkdir, chmod, readdir, stat } = await import("node:fs/promises");
+
+  /**
+   * Make the agent's writable work tree agent-writable (residue 1, diagnosed live P0.15h). materializeWork
+   * (uid harness, 10001) creates the seat's namespace directories (`agents/<seat>/**`) 0755 and its readwrite
+   * files 0644 — all harness-owned. The agent (uid 10002) therefore gets EACCES creating its declared artifacts
+   * inside `agents/editor/` (the live symptom: the agent wrote a `_write_test` probe at the 0777 project ROOT,
+   * then reported the phase `blocked` because `agents/editor/00-piece-brief.md` could not be written). chmod'ing
+   * only the project root (below) is not enough — the NESTED writable dirs must be world-writable too. Walk the
+   * tree: every DIRECTORY → 0777 (so the agent can create new files anywhere), every FILE that is not the 0444
+   * read-only mount → 0666 (so the agent can overwrite a prior-round output). Read-only mounts (0444) are left
+   * untouched, so this widens only the writable set — the boundary stays the proxy + uid split + §12.6 hook.
+   */
+  const makeTreeAgentWritable = async (dir: string): Promise<void> => {
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      const abs = `${dir}/${e.name}`;
+      if (e.isDirectory()) {
+        await chmod(abs, 0o777).catch(() => undefined);
+        await makeTreeAgentWritable(abs);
+      } else if (e.isFile()) {
+        const mode = (await stat(abs).then((s) => s.mode & 0o777).catch(() => 0o444));
+        if (mode !== 0o444) await chmod(abs, 0o666).catch(() => undefined); // keep read-only mounts read-only
+      }
+    }
+  };
   const { spawn } = await import("node:child_process");
   const { createFetchEventTransport } = await import("./event-transport.js");
   const { createHookDaemon } = await import("./hook-daemon.js");
@@ -165,6 +195,10 @@ export async function main(): Promise<void> {
     await chmod(cwd, 0o777);
     const workRoot = roots.project.replace(/\/[^/]+\/?$/, "") || "/work"; // e.g. /work (parent of /work/project)
     await chmod(workRoot, 0o777).catch(() => undefined); // best-effort: the agent must traverse+write scratch here too
+    // Recurse into the writable tree so the NESTED seat namespace (`agents/<seat>/**`) is agent-writable too —
+    // chmod'ing only the root left `agents/editor/` harness-owned 0755, so the agent could not create its
+    // declared artifacts there (residue 1, live P0.15h). Read-only mounts stay 0444.
+    await makeTreeAgentWritable(cwd);
     await mkdir(configDir, { recursive: true });
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
