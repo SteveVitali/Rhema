@@ -212,7 +212,11 @@ export function createCompute(args: ComputeArgs): Compute {
   for (const svc of CLOUD_RUN_SERVICES) {
     // The worker consumes pg-boss + runs crons: it CANNOT scale to zero and needs CPU allocated OUTSIDE a
     // request (background work), so it runs min-instances=1 + cpuIdle=false with its env baked on. A tiny
-    // health server (main.ts) answers the Cloud Run startup probe.
+    // health server (main.ts) answers the Cloud Run startup probe. It also does the ~event-loop-blocking cold
+    // import of @kubernetes/client-node on the first GKE launch (D-P0.15e-3), which STARVED under the default
+    // 512Mi / throttled CPU (diagnosed live 2026-09-09 — the first launch hung ~9 min): pin 1 vCPU + 1Gi and
+    // startup CPU boost so the cold import finishes in seconds. (A gcloud image-swap that omits these silently
+    // reverts to the throttled default — the live-deploy step must preserve them, hence they live in IaC.)
     const isWorker = svc === "worker";
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
@@ -231,7 +235,16 @@ export function createCompute(args: ComputeArgs): Compute {
         containers: [
           {
             image: placeholderImage,
-            ...(isWorker ? { resources: { cpuIdle: false }, envs: workerEnvs } : {}),
+            ...(isWorker
+              ? {
+                  resources: {
+                    cpuIdle: false,
+                    startupCpuBoost: true,
+                    limits: { cpu: "1", memory: "1Gi" },
+                  },
+                  envs: workerEnvs,
+                }
+              : {}),
           },
         ],
         vpcAccess: {
