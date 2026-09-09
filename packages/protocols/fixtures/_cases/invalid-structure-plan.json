@@ -1,0 +1,9 @@
+{
+  "sidecar": "structure_plan",
+  "version": 1,
+  "spine": ["A single spine claim."],
+  "sections": [
+    { "ref": "I", "title": "A valid section" },
+    { "ref": "II" }
+  ]
+}

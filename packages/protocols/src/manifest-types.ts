@@ -53,6 +53,9 @@ export interface PhaseManifest {
   sidecars: string[];
   gateAfter?: string;
   optional?: Rigor;
+  /** the SKILL.md frontmatter opt-out flag that disables this phase (REQ-SPEC-22 contract test extracts
+   *  these and asserts equality with the skill's `Default true. Run Phase …` inputs). */
+  optOutFlag?: string;
   phaseClass: PhaseClass;
   parallelGroup?: string;
   maxIterations?: number;

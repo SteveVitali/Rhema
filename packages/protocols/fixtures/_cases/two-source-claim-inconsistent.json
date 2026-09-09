@@ -1,0 +1,32 @@
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 51,
+      "text": "Philadelphia Yearly Meeting v. DHS granted a preliminary injunction, affirmed on appeal.",
+      "tier": 1,
+      "verdict": "verified",
+      "kind": "factual",
+      "url": "https://clearinghouse.net/case/46097",
+      "normalizedUrl": "clearinghouse.net/case/46097",
+      "accessedAt": "2026-08-21T00:00:00Z",
+      "note": "INVALID: singular url points at the contradicting source, not sources[0] of the verdict-determining (supports) stance.",
+      "sources": [
+        {
+          "url": "https://clearinghouse.net/case/46097",
+          "normalizedUrl": "clearinghouse.net/case/46097",
+          "accessedAt": "2026-08-21T00:00:00Z",
+          "stance": "contradicts"
+        },
+        {
+          "url": "https://clearinghouse.net/case/45979",
+          "normalizedUrl": "clearinghouse.net/case/45979",
+          "accessedAt": "2026-08-21T00:00:00Z",
+          "stance": "supports"
+        }
+      ],
+      "humanAdded": false
+    }
+  ]
+}

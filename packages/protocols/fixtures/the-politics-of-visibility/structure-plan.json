@@ -1,0 +1,61 @@
+{
+  "sidecar": "structure_plan",
+  "version": 1,
+  "spine": [
+    "The Minnesota investigation is neither ordinary policing nor totalitarianism; the vocabulary we reach for fails it, and the failure is the subject.",
+    "Democracies now lose liberal substance through law rather than against it, so \"was it legal?\" is the wrong test.",
+    "To govern is first to see: state capacity begins in legibility, and digital legibility has shifted from who you are to whom you appear beside.",
+    "No single eye watches; a modular, largely private ecosystem observes, and its political danger is interoperability, not any one camera.",
+    "Fusion converts observations into relationships; capacity grows combinatorially, and doctrine adapts behind the technology.",
+    "The right model is Fraenkel's dual state, not the police state: zones of thinned legal protection already exist, and immigration is the laboratory.",
+    "Some opacity between citizen and state is democratic infrastructure, not a consumer preference.",
+    "The checks matter until the day they do not; the moment to defend them is while they still do."
+  ],
+  "sections": [
+    {
+      "ref": "Opening",
+      "title": "The vocabulary that fails",
+      "targetWords": 700,
+      "purpose": "Set the Minnesota miniature and the thesis: the failure of our words is the subject."
+    },
+    {
+      "ref": "II",
+      "title": "To govern is to see",
+      "targetWords": 1100,
+      "purpose": "State capacity begins in legibility; the shift from identity to behaviour."
+    },
+    {
+      "ref": "IV",
+      "title": "Fusion and the closing gap",
+      "targetWords": 1200,
+      "purpose": "Observations become relationships; spyware closes the last gap.",
+      "anchor": {
+        "blockId": "p-sec4-1",
+        "quote": "Fusion converts observations into relationships",
+        "startOffset": 0,
+        "endOffset": 47,
+        "confidence": 0.82
+      }
+    },
+    {
+      "ref": "VII",
+      "title": "The dual state",
+      "targetWords": 1300,
+      "purpose": "Fraenkel over the police-state model; immigration as the laboratory."
+    },
+    {
+      "ref": "Coda",
+      "title": "While they still do",
+      "targetWords": 500,
+      "purpose": "Return to Minneapolis; the checks bind until they do not."
+    }
+  ],
+  "alternativesConsidered": [
+    "Open with the legal analysis rather than the miniature (rejected: buries the thesis that the vocabulary itself fails).",
+    "Merge the dual-state and history sections (rejected: the history earns the 'not foreign to America' claim separately)."
+  ],
+  "gaps": [
+    "Need one primary source for the NSPM-7 ideological-classifier claim.",
+    "The §XI non-domination turn needs its philosophical citation nailed down."
+  ]
+}

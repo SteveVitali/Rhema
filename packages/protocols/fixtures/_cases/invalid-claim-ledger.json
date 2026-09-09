@@ -1,0 +1,20 @@
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 1,
+      "text": "A well-formed claim, so a permissive parser might be tempted to keep it.",
+      "tier": 1,
+      "verdict": "verified",
+      "humanAdded": false
+    },
+    {
+      "ordinal": 2,
+      "text": "This row has an out-of-enum verdict — the whole sidecar must fail, never a partial two-becomes-one set.",
+      "tier": 1,
+      "verdict": "probably_true",
+      "humanAdded": false
+    }
+  ]
+}

@@ -4,7 +4,7 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src", "manifests"],
+  "include": ["src", "manifests", "parsers", "serializers"],
   "references": [{ "path": "../contracts" }],
   "exclude": ["dist", "**/*.test.ts"]
 }

@@ -1,0 +1,32 @@
+{
+  "sidecar": "cut_list",
+  "version": 1,
+  "targetWords": 4800,
+  "cuts": [
+    {
+      "ordinal": 1,
+      "anchor": {
+        "blockId": "p-sec3-4",
+        "quote": "As is by now well established in the literature,",
+        "startOffset": 0,
+        "endOffset": 47,
+        "confidence": 0.97
+      },
+      "words": 8,
+      "reason": "apparatus intrusion flagged in line notes; drop the hedge"
+    },
+    {
+      "ordinal": 2,
+      "anchor": {
+        "blockId": "p-sec4-9",
+        "quote": "a second worked profile that repeats the first's structure without adding a coalition",
+        "startOffset": 0,
+        "endOffset": 84,
+        "confidence": 0.7
+      },
+      "words": 160,
+      "reason": "redundant illustration; the first profile carries the point",
+      "protect": true
+    }
+  ]
+}

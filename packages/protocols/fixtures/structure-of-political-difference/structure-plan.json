@@ -1,0 +1,50 @@
+{
+  "sidecar": "structure_plan",
+  "version": 1,
+  "spine": [
+    "The one-dimensional left–right axis loses information a five-axis model recovers.",
+    "Each axis earns its place by predicting a coalition the single line cannot.",
+    "Expert-survey (CHES) composites make the axes measurable but must be read with their caveats.",
+    "Worked profiles show the model classifying real actors — and where it strains."
+  ],
+  "sections": [
+    {
+      "ref": "I",
+      "title": "The compass and its failures",
+      "targetWords": 900,
+      "purpose": "Set the problem: the left–right line and what it cannot predict."
+    },
+    {
+      "ref": "II",
+      "title": "Five axes, and why five",
+      "targetWords": 1300,
+      "purpose": "State the selection principle and situate 8values, Lewis, and Caplan.",
+      "anchor": {
+        "blockId": "p-sec2-1",
+        "quote": "Five axes, not eight",
+        "startOffset": 0,
+        "endOffset": 20,
+        "confidence": 0.8
+      }
+    },
+    {
+      "ref": "III",
+      "title": "Measuring the axes",
+      "targetWords": 1100,
+      "purpose": "CHES-derived composites; reproducibility caveats stated up front."
+    },
+    {
+      "ref": "IV",
+      "title": "Worked profiles",
+      "targetWords": 1000,
+      "purpose": "Classify real actors; mark where the model strains (Trump, Orbán)."
+    }
+  ],
+  "alternativesConsidered": [
+    "Present the axes as independent scales with no coalition claim (rejected: the coalitions are the whole payoff)."
+  ],
+  "gaps": [
+    "One fully worked party example (Green) is still owed.",
+    "The figure order (5-before-4) needs fixing before the measurement section."
+  ]
+}
