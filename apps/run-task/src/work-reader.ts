@@ -58,10 +58,28 @@ function textOf(files: ReadonlyMap<string, Uint8Array>, path: string): string | 
 
 /** true when a sidecar file validates against its registered schema. */
 function sidecarValidates(files: ReadonlyMap<string, Uint8Array>, filename: string): boolean {
-  const entry = (SIDECAR_REGISTRY as Record<string, { schema: { safeParse(v: unknown): { success: boolean } } }>)[filename];
+  type Parser = {
+    safeParse(v: unknown): { success: boolean; error?: { issues: unknown[] } };
+  };
+  const entry = (SIDECAR_REGISTRY as Record<string, { schema: Parser }>)[filename];
   const json = readJson<unknown>(files, filename);
-  if (!entry || json == null) return false;
-  return entry.schema.safeParse(json).success;
+  if (!entry) {
+    console.log(`[sidecar] ${filename}: no registered schema`);
+    return false;
+  }
+  if (json == null) {
+    console.log(`[sidecar] ${filename}: missing or unparseable JSON`);
+    return false;
+  }
+  const res = entry.schema.safeParse(json);
+  if (!res.success) {
+    // Log WHY (the zod issues) + a content head, so a schema/skill drift is diagnosable from the pod log
+    // instead of a bare `sidecarValidates:false` (P0.15h — the error was previously discarded).
+    const issues = JSON.stringify(res.error?.issues ?? []).slice(0, 1500);
+    const head = JSON.stringify(json).slice(0, 800);
+    console.log(`[sidecar] ${filename}: INVALID issues=${issues} content-head=${head}`);
+  }
+  return res.success;
 }
 
 /** Build the `HarvestFile[]` for the write-back diff: every non-derived `/work` file with its mount root. */

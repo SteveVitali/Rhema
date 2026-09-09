@@ -90,6 +90,43 @@ describe("sidecar schemas validate the three real projects' fixtures (AC6, REQ-S
     expect(() => SIDECAR_REGISTRY["findings.json"].schema.parse(bad)).toThrow();
   });
 
+  // D-P0.15h-1 (second live failure): the skill also authors numeric fields as STRINGS and the envelope kind
+  // with a hyphen — a faithful ledger arrived as {sidecar:"claim-ledger", version:"1", tier:"1"} and failed
+  // sidecar_validates. The envelope + numeric literals now coerce string→number and hyphen→underscore.
+  it("coerces a string version / hyphenated kind / string tier in the envelope + numeric fields", () => {
+    const doc = {
+      sidecar: "claim-ledger",
+      version: "1",
+      claims: [{ ordinal: 0, text: "A claim.", tier: "2", verdict: "verified" }],
+    };
+    const parsed = SIDECAR_REGISTRY["01-claim-ledger.json"].schema.parse(doc) as {
+      sidecar: string;
+      version: number;
+      claims: Array<{ tier: number }>;
+    };
+    expect(parsed.sidecar).toBe("claim_ledger");
+    expect(parsed.version).toBe(1);
+    expect(parsed.claims[0]!.tier).toBe(2);
+  });
+
+  it("coerces a string rubric score, and still REJECTS an out-of-range numeric field", () => {
+    const ok = {
+      sidecar: "rubric",
+      version: 1,
+      dimensions: [{ dimension: "prose", score: "4" }],
+    };
+    const parsed = SIDECAR_REGISTRY["rubric.json"].schema.parse(ok) as {
+      dimensions: Array<{ score: number }>;
+    };
+    expect(parsed.dimensions[0]!.score).toBe(4);
+    // a numeric string that is not a member (6 is out of 1–5) is still rejected — coercion never masks it.
+    const bad = { ...ok, dimensions: [{ dimension: "prose", score: "6" }] };
+    expect(() => SIDECAR_REGISTRY["rubric.json"].schema.parse(bad)).toThrow();
+    // a wrong envelope kind is still rejected.
+    const badKind = { ...ok, sidecar: "rubrik" };
+    expect(() => SIDECAR_REGISTRY["rubric.json"].schema.parse(badKind)).toThrow();
+  });
+
   it("a re-review findings sidecar carries carriesObligationId + obligationCounts (REQ-OBJ-4/REQ-WF-7)", () => {
     const doc = loadFixture("the-politics-of-visibility", "findings.json") as {
       findings: Array<Record<string, unknown>>;

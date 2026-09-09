@@ -32,15 +32,41 @@ import { FINDING_ORIGIN, FINDING_RECONCILIATION, LETTER_SECTIONS } from "./domai
  * value (never masks a real error). Applied only to the LLM-authored sidecar fields — the strict `z.enum`
  * schemas stay strict for machine-authored events / DB writes.
  */
+const canon = (s: string) => s.trim().toLowerCase().replace(/[\s\-/]+/g, "_");
 function coercedEnum<const T extends readonly [string, ...string[]]>(values: T) {
   const members = new Set<string>(values);
-  const canon = (s: string) => s.trim().toLowerCase().replace(/[\s\-/]+/g, "_");
   return z.preprocess((v) => (typeof v === "string" && members.has(canon(v)) ? canon(v) : v), z.enum(values));
 }
 
-/** Shared header on every sidecar: a version and the sidecar kind, so the parser dispatches on data, not path. */
+/**
+ * LLM-tolerant numeric literal (same rationale as `coercedEnum`, P0.15h): the skill authors a sidecar by hand,
+ * so a `tier`/`score`/`version` field routinely arrives as the STRING "1" rather than the number 1 and failed
+ * `sidecar_validates` at commit. Coerce a numeric string to its number BEFORE the literal-union check; a real
+ * number passes through, and a non-numeric string is left as-is so the union still REJECTS a genuinely wrong
+ * value. Applied only to the LLM-authored sidecar fields.
+ */
+const coerceNum = (v: unknown) =>
+  typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : v;
+const tierField = z.preprocess(coerceNum, z.union([z.literal(1), z.literal(2), z.literal(3)]));
+const scoreField = z.preprocess(
+  coerceNum,
+  z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+);
+const capAtField = z.preprocess(
+  coerceNum,
+  z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+);
+
+/**
+ * Shared header on every sidecar: a version and the sidecar kind, so the parser dispatches on data, not path.
+ * Both fields are LLM-tolerant (P0.15h): `sidecar` canonicalizes ("claim-ledger" → "claim_ledger") and `version`
+ * coerces the string "1" → 1, so a faithfully-authored-but-loosely-typed envelope still validates.
+ */
 const envelope = <K extends string>(kind: K) =>
-  z.object({ sidecar: z.literal(kind), version: z.literal(1) });
+  z.object({
+    sidecar: z.preprocess((v) => (typeof v === "string" && canon(v) === kind ? kind : v), z.literal(kind)),
+    version: z.preprocess(coerceNum, z.literal(1)),
+  });
 
 // ---- findings.json (the object the Margin/triage/rubric/what-changed depend on) ----
 export const findingRowSchema = z.object({
@@ -85,7 +111,7 @@ export type FindingsSidecar = z.infer<typeof findingsSidecarSchema>;
 export const claimRowSchema = z.object({
   ordinal: z.number().int().nonnegative(),
   text: z.string(),
-  tier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  tier: tierField,
   verdict: coercedEnum(CLAIM_VERDICTS),
   kind: coercedEnum(CLAIM_KINDS).optional(),
   url: urlSchema.optional(),
@@ -105,10 +131,10 @@ export type ClaimLedgerSidecar = z.infer<typeof claimLedgerSidecarSchema>;
 // ---- rubric.json (eight dimensions, 1–5, entailment caps; NEVER an aggregate — REQ-IDE-30) ----
 export const rubricRowSchema = z.object({
   dimension: coercedEnum(RUBRIC_DIMENSIONS),
-  score: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  score: scoreField,
   cap: z
     .object({
-      at: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+      at: capAtField,
       reason: z.string(),
       entailedByFindingOrdinal: z.number().int().nonnegative().optional(),
     })

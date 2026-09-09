@@ -187,6 +187,88 @@ already done — it produces its declared file regardless. `03-argument-notes.md
 the same argument- and craft-critique findings the letter will later synthesize; writing them per phase is what
 lets the letter phase run in its own fresh context.
 
+### Sidecar JSON — the EXACT shape the harness validates (REQ-SPEC-12)
+
+When `sidecar: true`, each `.json` twin is validated at commit against a strict schema; a shape mismatch fails
+the phase (`sidecar_validates`). Emit **exactly** these structures. Every sidecar carries the envelope keys
+`"sidecar"` and `"version": 1`; unknown extra keys are ignored; the listed enum tokens are the accepted values
+(case / spaces / hyphens are canonicalized to snake_case, and a numeric string like `"1"` is accepted for a
+numeric field, but stay close to these). Numeric fields (`tier`, `score`, `version`) are NUMBERS, not strings.
+
+**`01-claim-ledger.json`** (Verification, phase `1`) — one row per claim in `01-claim-ledger.md`:
+
+```json
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 0,
+      "text": "the claim, quoted from the draft",
+      "tier": 1,
+      "verdict": "verified",
+      "kind": "factual",
+      "sourceCheck": "matches_citation",
+      "sources": [
+        { "url": "https://example.org/x", "normalizedUrl": "https://example.org/x", "accessedAt": "2026-09-09T00:00:00Z", "stance": "supports" }
+      ],
+      "note": "one line on the evidence"
+    }
+  ]
+}
+```
+
+Required per claim row: `ordinal` (integer ≥ 0), `text` (string), `tier` (1, 2, or 3), `verdict`. All else is
+optional. `verdict` ∈ {`verified`, `substantially_accurate`, `misleading_in_context`, `unsupported`,
+`contradicted`, `unverifiable`, `verified_against_user_source`}. `kind` ∈ {`factual`, `statistical`,
+`quotation`, `interpretive`, `normative`, `predictive`}. `sourceCheck` ∈ {`matches_citation`, `reputable_list`,
+`from_search`, `suspicious_source`}. A source's `stance` ∈ {`supports`, `contradicts`, `contextualizes`}.
+
+**`findings.json`** (Letter, phase `6`) — one row per finding:
+
+```json
+{
+  "sidecar": "findings",
+  "version": 1,
+  "findings": [
+    {
+      "ordinal": 0,
+      "kind": "argument",
+      "severity": "major",
+      "origin": "editor",
+      "anchor": null,
+      "title": "short finding title",
+      "body": "the finding, at most 4096 characters",
+      "rubricDims": ["argument_rigor"],
+      "letterSection": "major"
+    }
+  ]
+}
+```
+
+Required per finding row: `ordinal`, `kind`, `severity`, `origin`, `anchor` (an anchor object OR `null`),
+`title`, `body`. `kind` ∈ {`claim`, `discourse`, `argument`, `structure`, `craft`, `voice`, `continuity`}.
+`severity` ∈ {`blocking`, `major`, `minor`, `note`}. `origin` ∈ {`editor`, `second_read`, `both`}.
+`letterSection` ∈ {`one_thing`, `major`, `strength`, `roadmap`, `considered_rejected`}. `rubricDims` entries are
+rubric dimensions (below). An anchor object is `{"blockId": "b1", "quote": "…", "startOffset": 0, "endOffset": 0, "confidence": 1}`.
+
+**`rubric.json`** (Letter, phase `6`) — the eight dimensions, each scored 1–5, NEVER aggregated:
+
+```json
+{
+  "sidecar": "rubric",
+  "version": 1,
+  "dimensions": [
+    { "dimension": "thesis_contribution", "score": 3 },
+    { "dimension": "argument_rigor", "score": 2, "cap": { "at": 2, "reason": "why the score is capped" } }
+  ]
+}
+```
+
+Required per row: `dimension`, `score` (1–5). The eight dimensions: `thesis_contribution`, `argument_rigor`,
+`evidence_accuracy`, `originality_situatedness`, `structure`, `prose`, `voice_audience_fit`,
+`intellectual_honesty`.
+
 ## Workspace and memory
 
 All phase outputs are written to a dossier directory as they are produced:
