@@ -66,6 +66,24 @@ describe("buildPhaseOutputs — reading a phase's /work outputs (P0.15e)", () =>
     expect(out.delivery!.coversAllObligations).toBe(true);
   });
 
+  it("resolves the delivered dossier paths when /work is keyed by the SEAT-ROOTED path (P0.15h — the bare-name miss that finalized without delivering)", () => {
+    // Live, the harness materializes files under the seat output_dir, so the map is keyed
+    // "agents/editor/editors-letter.md", NOT the bare "editors-letter.md" the manifest declares. A raw
+    // `files.has("editors-letter.md")` matched nothing → deliveredPaths empty → the run finalized BARE.
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["agents/editor/.rhema/phase-result.json", enc({ status: "done" })],
+      ["agents/editor/editors-letter.md", enc("# Editor's letter\n\nThorough and complete.")],
+      ["agents/editor/.rhema/findings.json", enc(validFindings)],
+      ["agents/editor/.rhema/rubric.json", enc(validRubric)],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(letter), "editor");
+    expect(out.delivery).toBeDefined();
+    // deliveredPaths resolves to the seat-rooted key (non-empty → the loop DELIVERS the dossier, not finalize-bare).
+    expect(out.delivery!.deliveredPaths).toEqual(["agents/editor/editors-letter.md"]);
+    expect(out.delivery!.sidecars.map((s) => s.filename).sort()).toEqual(["findings.json", "rubric.json"]);
+  });
+
   it("a missing/unparseable phase-result reads as null (the oracle then treats the phase incomplete)", () => {
     const files = new Map<string, Uint8Array>([
       [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
