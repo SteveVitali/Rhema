@@ -15,7 +15,8 @@ describe("buildAgentRoster (§12.2/§12.3)", () => {
 
   it("gives the researcher search + fetch and marks it in-query fan-out", () => {
     const r = buildAgentRoster({ tier: "base" });
-    expect(r.researcher.tools).toEqual(["Read", "WebSearch", "WebFetch"]);
+    // client-side WebFetch dropped (P0.15i AC1): server-side fetch is proxy-guaranteed, not a client tool.
+    expect(r.researcher.tools).toEqual(["Read", "WebSearch"]);
     expect(r.researcher.inputScoped).toBe(false);
   });
 

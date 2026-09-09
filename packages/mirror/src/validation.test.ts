@@ -63,6 +63,18 @@ describe("cited ⇒ fetched (REQ-VIS-9)", () => {
     expect(r.ok).toBe(false);
     expect(r.misses[0]!.which).toBe("source");
   });
+
+  it("passes when a citation resolves against a proxy-logged web-SEARCH RESULT url, and still fails an unfetched one — the P0.15i provenance, guard intact (AC2)", () => {
+    // Once the agent does real server-side web_search, the proxy logs each RESULT page url (P0.15h `collectResultUrls`).
+    // `fetchedNormalizedUrls` is built from those rows; a claim citing one of them now has provenance and passes.
+    const proxyLogged = new Set([normalizeUrl("https://reuters.com/article/x")]);
+    expect(
+      validateCitedFetched([claim({ url: "https://reuters.com/article/x?utm=1" })], proxyLogged).ok,
+    ).toBe(true);
+    // A citation reachable only from inside a fetched page (never a search result / direct fetch) is still a miss —
+    // the §12.8(c) guard is preserved by this ticket, not weakened.
+    expect(validateCitedFetched([claim({ url: "https://model-knowledge.example/z" })], proxyLogged).ok).toBe(false);
+  });
 });
 
 describe("verdict source check (§12.8(c))", () => {

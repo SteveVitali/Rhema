@@ -62,6 +62,11 @@ describe("buildQueryOptions (§12.2)", () => {
     expect(o.disallowedTools).toEqual([...COSMETIC_DISALLOWED_TOOLS]);
   });
 
+  it("allows WebSearch but NOT the sandbox-unroutable client WebFetch (P0.15i AC1)", () => {
+    expect(o.allowedTools).toContain("WebSearch");
+    expect(o.allowedTools).not.toContain("WebFetch");
+  });
+
   it("passes the per-phase budget and turn ceilings", () => {
     expect(o.maxBudgetUsd).toBe(4.2);
     expect(o.maxTurns).toBe(40);
