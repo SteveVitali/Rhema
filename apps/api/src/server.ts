@@ -50,6 +50,15 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   const subscriber = redis.duplicate(); // a subscriber connection cannot issue other commands (§12.5)
   const boss = new PgBoss(env.databaseUrl);
 
+  // Crash-resilience (diagnosed live P0.15h — the api exited 1 on a transient AlloyDB connect timeout over
+  // Cloud Run Direct-VPC egress, which pg-boss/pg surface as an EMITTED 'error' event; an unhandled emitter
+  // 'error' throws and kills the process). Handle them non-fatally, exactly as the worker does — a transient
+  // pool/boss/redis error must not take the api down; the next query/poll reconnects.
+  pool.on("error", (err: unknown) => console.error("[api] pg pool error (non-fatal):", err instanceof Error ? err.message : err));
+  boss.on("error", (err: unknown) => console.error("[api] pg-boss error (non-fatal):", err instanceof Error ? err.message : err));
+  redis.on("error", (err: unknown) => console.error("[api] redis error (non-fatal):", err instanceof Error ? err.message : err));
+  subscriber.on("error", (err: unknown) => console.error("[api] redis subscriber error (non-fatal):", err instanceof Error ? err.message : err));
+
   const clock = systemClock;
   const ids = randomUlids();
 
@@ -113,9 +122,26 @@ export async function startApiServer(): Promise<void> {
   const { deps, boss } = await buildApiDeps(env);
 
   // pg-boss requires each queue to exist before a send; the api sends to the run.* queues (the worker also
-  // creates them — createQueue is idempotent).
-  await boss.start();
-  for (const name of Object.values(RUN_JOBS)) await boss.createQueue(name);
+  // creates them — createQueue is idempotent). The startup connection BURST can hit a transient AlloyDB connect
+  // timeout over Cloud Run Direct-VPC egress (a throw here escapes → exit(1) → a slow restart loop, live
+  // P0.15h); retry the idempotent init a few times with backoff so one slow connect does not crash the api
+  // before it listens (mirrors the worker).
+  const retryStartup = async (label: string, fn: () => Promise<unknown>): Promise<void> => {
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        await fn();
+        return;
+      } catch (err) {
+        lastErr = err;
+        console.error(`[api] startup ${label} attempt ${attempt} failed (will retry):`, err instanceof Error ? err.message : err);
+        await new Promise((r) => setTimeout(r, Math.min(1000 * attempt, 5000)));
+      }
+    }
+    throw lastErr;
+  };
+  await retryStartup("boss.start", () => boss.start());
+  for (const name of Object.values(RUN_JOBS)) await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
 
   const app = createApp(deps);
   const server = serve({ fetch: app.fetch, port: env.port }) as unknown as {
