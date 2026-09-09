@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { injectUrlPolicyIntoBody } from "./url-policy.js";
+import {
+  DEFAULT_WEB_FETCH_MAX_USES,
+  DEFAULT_WEB_SEARCH_MAX_USES,
+  ensureServerWebTools,
+  injectUrlPolicyIntoBody,
+  resolveServerWebToolConfig,
+  WEB_FETCH_TOOL_TYPE,
+  WEB_SEARCH_TOOL_TYPE,
+} from "./url-policy.js";
 
 function messagesBody() {
   return {
@@ -51,5 +59,89 @@ describe("URL policy body injection (§12.6)", () => {
     expect(injectUrlPolicyIntoBody({ model: "x", messages: [] }, { blockedDomains: ["h.example"] }).rewritten).toBe(
       false,
     );
+  });
+});
+
+describe("resolveServerWebToolConfig (P0.15i)", () => {
+  it("defaults web_search ON and web_fetch OFF (no beta header) with default max_uses when the policy is absent", () => {
+    expect(resolveServerWebToolConfig(undefined)).toEqual({
+      search: true,
+      fetch: false,
+      searchMaxUses: DEFAULT_WEB_SEARCH_MAX_USES,
+      fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
+    });
+  });
+
+  it("honors an explicit web_search opt-out and custom caps", () => {
+    expect(resolveServerWebToolConfig({ search: false, searchMaxUses: 3 })).toEqual({
+      search: false,
+      fetch: false,
+      searchMaxUses: 3,
+      fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
+    });
+  });
+
+  it("lets a run explicitly opt web_fetch IN (once the beta header is wired)", () => {
+    expect(resolveServerWebToolConfig({ fetch: true }).fetch).toBe(true);
+  });
+});
+
+describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6; P0.15i)", () => {
+  const config = resolveServerWebToolConfig(undefined);
+  const bareBody = () => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: "fact-check this" }] });
+
+  it("adds the server web_search tool to a request that has no tools at all (the P0.15h searches=0 case)", () => {
+    const { body, added } = ensureServerWebTools(bareBody(), config);
+    expect(added).toBe(true);
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools).toContainEqual({ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: DEFAULT_WEB_SEARCH_MAX_USES });
+    // web_fetch is OFF by default (needs a beta header) — not injected unless explicitly enabled.
+    expect(tools.some((t) => t["name"] === "web_fetch")).toBe(false);
+  });
+
+  it("adds web_fetch too when a run explicitly opts it in", () => {
+    const { body } = ensureServerWebTools(bareBody(), resolveServerWebToolConfig({ fetch: true }));
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools).toContainEqual({ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: DEFAULT_WEB_FETCH_MAX_USES });
+  });
+
+  it("adds the missing tool alongside existing custom tools, keeping them", () => {
+    const { body, added } = ensureServerWebTools(
+      { ...bareBody(), tools: [{ type: "custom_tool", name: "calculator" }] },
+      config,
+    );
+    expect(added).toBe(true);
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools[0]).toEqual({ type: "custom_tool", name: "calculator" });
+    expect(tools.some((t) => t["name"] === "web_search")).toBe(true);
+  });
+
+  it("does NOT duplicate a server web tool the CLI already added, for either kind (add-if-absent)", () => {
+    const { added } = ensureServerWebTools(
+      { ...bareBody(), tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }, { type: "web_fetch_20250910", name: "web_fetch" }] },
+      resolveServerWebToolConfig({ fetch: true }), // both enabled — still no duplicate
+    );
+    expect(added).toBe(false);
+  });
+
+  it("never touches a non-Messages body (no `messages` array) or a non-object", () => {
+    expect(ensureServerWebTools({ input: "x" }, config).added).toBe(false);
+    expect(ensureServerWebTools("not-json", config).added).toBe(false);
+    expect(ensureServerWebTools(null, config).added).toBe(false);
+  });
+
+  it("does not mutate the input body", () => {
+    const original = bareBody();
+    const snapshot = JSON.stringify(original);
+    ensureServerWebTools(original, config);
+    expect(JSON.stringify(original)).toBe(snapshot);
+  });
+
+  it("the injected tool is then domain-scoped by injectUrlPolicyIntoBody (the guarantor + scoper chain)", () => {
+    const ensured = ensureServerWebTools(bareBody(), resolveServerWebToolConfig({ fetch: false }));
+    const { body, rewritten } = injectUrlPolicyIntoBody(ensured.body, { blockedDomains: ["holdout.example"] });
+    expect(rewritten).toBe(true);
+    const search = (body as { tools: Record<string, unknown>[] }).tools.find((t) => t["name"] === "web_search")!;
+    expect(search["blocked_domains"]).toEqual(["holdout.example"]);
   });
 });

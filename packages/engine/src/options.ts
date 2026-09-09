@@ -22,7 +22,11 @@ export interface SessionStore {
   readonly kind: string;
 }
 
-/** The fixed tool set the model may call (cosmetic list is separate). Kept small and Read/Write-centric. */
+/** The fixed tool set the model may call (cosmetic list is separate). Kept small and Read/Write-centric.
+ *  `WebSearch` stays (its results come from Anthropic's server-side search); the client-side `WebFetch` is
+ *  DROPPED (P0.15i AC1) — a client fetch cannot reach the internet through the sandbox's proxy-only egress, so
+ *  leaving it enabled only wastes turns on no-ops. Real web research is the proxy-guaranteed server-side
+ *  web_search/web_fetch tools (see `@rhema/egress-proxy` `ensureServerWebTools`). */
 export const ALLOWED_TOOLS = [
   "Read",
   "Write",
@@ -31,7 +35,6 @@ export const ALLOWED_TOOLS = [
   "Glob",
   "Grep",
   "Bash",
-  "WebFetch",
   "WebSearch",
   "Task",
 ] as const;

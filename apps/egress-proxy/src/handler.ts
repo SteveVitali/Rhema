@@ -38,7 +38,7 @@ import { checkSearchQuery, SUSPICIOUS_QUERY_THRESHOLD } from "./ngram.js";
 import { isModelPriceable } from "./rates.js";
 import type { FetchLogWriter, SecretProvider, UsageWriter } from "./sinks.js";
 import { DenialSpikeTracker, type EventSink } from "./signals.js";
-import { injectUrlPolicyIntoBody } from "./url-policy.js";
+import { ensureServerWebTools, injectUrlPolicyIntoBody, resolveServerWebToolConfig } from "./url-policy.js";
 import { extractModel, extractUsage } from "./usage-block.js";
 
 /** One inbound request as the proxy sees it (method, target, headers, raw body). */
@@ -276,10 +276,18 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
     }
   }
 
-  // --- 6. URL policy: inject allowed/blocked_domains into server-tool bodies (§12.6) ---
-  const injected = injectUrlPolicyIntoBody(outboundBody, ctx.urlPolicy);
+  // --- 6. Server web tools + URL policy (§12.6; P0.15i). GUARANTEE the run's server web_search tool is in the
+  //        request (the vendored CLI does not reliably add it — P0.15h `searches=0`; web_fetch is off by default,
+  //        see `WebToolPolicy.fetch`), then scope every server web tool to the run's allowed/blocked domains.
+  //        Injection is limited to a Messages create request; a run tunes it via `ctx.webTools`. The search
+  //        RESULT urls land in the fetch log at step 9, so `cited⇒fetched` has real provenance. ---
+  const isMessagesCreate = req.method.toUpperCase() === "POST" && req.path.replace(/\?.*$/, "").endsWith("/v1/messages");
+  const ensured = isMessagesCreate
+    ? ensureServerWebTools(outboundBody, resolveServerWebToolConfig(ctx.webTools))
+    : { body: outboundBody, added: false };
+  const injected = injectUrlPolicyIntoBody(ensured.body, ctx.urlPolicy);
   const finalBody =
-    injected.rewritten || outboundBody !== body ? JSON.stringify(injected.body) : req.body;
+    injected.rewritten || ensured.added || outboundBody !== body ? JSON.stringify(injected.body) : req.body;
 
   // --- 7. Prepare the forward with the provider key; the sandbox's own auth is stripped (AC5). The caller runs
   //        it (buffered or streaming); the `meter` closure below folds steps 8–9 over the COMPLETE response. ---

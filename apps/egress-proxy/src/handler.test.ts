@@ -335,6 +335,82 @@ describe("handleProxyRequest — outbound-channel limits (AC4)", () => {
   });
 });
 
+describe("handleProxyRequest — server web tools guaranteed + logged end-to-end (P0.15i)", () => {
+  it("injects a server web_search into a Messages request that carried no tools (the P0.15h searches=0 fix)", async () => {
+    const h = harness();
+    await handleProxyRequest(request(), h); // base body has NO tools[]
+    const fwdBody = JSON.parse(h.forwarded.req!.body) as { tools?: { name?: string; type?: string; blocked_domains?: string[] }[] };
+    const search = fwdBody.tools?.find((t) => t.name === "web_search");
+    expect(search).toBeDefined();
+    expect(search!.type).toBe("web_search_20250305");
+    // and it is domain-scoped to the run policy in the same pass.
+    expect(search!.blocked_domains).toContain("holdout.example");
+    // web_fetch is OFF by default (needs a beta header) — never injected unasked.
+    expect(fwdBody.tools?.some((t) => t.name === "web_fetch")).toBe(false);
+  });
+
+  it("still forwards the injected web_search when the run has NO url policy (the common case — S3)", async () => {
+    // Most Reviews have no blocked/allowed domains, so `injected.rewritten` is false; the `ensured.added` term is
+    // what forwards the tool. Without it the injected tool would be silently dropped for these runs.
+    const h = harness({ context: ctx({ urlPolicy: { blockedDomains: [] } }) });
+    await handleProxyRequest(request(), h);
+    const fwdBody = JSON.parse(h.forwarded.req!.body) as { tools?: { name?: string; blocked_domains?: string[] }[] };
+    const search = fwdBody.tools?.find((t) => t.name === "web_search");
+    expect(search).toBeDefined();
+    // no policy ⇒ the tool is present but unscoped (no blocked_domains added).
+    expect(search!.blocked_domains).toBeUndefined();
+  });
+
+  it("injects web_fetch only when the run explicitly opts it in via ctx.webTools", async () => {
+    const off = harness();
+    await handleProxyRequest(request(), off);
+    expect((JSON.parse(off.forwarded.req!.body) as { tools?: { name?: string }[] }).tools?.some((t) => t.name === "web_fetch")).toBe(false);
+
+    const on = harness({ context: ctx({ webTools: { fetch: true } }) });
+    await handleProxyRequest(request(), on);
+    expect((JSON.parse(on.forwarded.req!.body) as { tools?: { name?: string }[] }).tools?.some((t) => t.name === "web_fetch")).toBe(true);
+  });
+
+  it("does not inject into a non-Messages endpoint (e.g. count_tokens)", async () => {
+    const h = harness();
+    const req = request({ path: "/v1/messages/count_tokens", url: "https://api.anthropic.com/v1/messages/count_tokens" });
+    await handleProxyRequest(req, h);
+    const fwdBody = JSON.parse(h.forwarded.req!.body) as { tools?: unknown };
+    expect(fwdBody.tools).toBeUndefined();
+  });
+
+  it("meters searches>0 and logs the RESULT urls as fetch rows once the model actually searches (AC3 chain)", async () => {
+    // The server-side search returns pages; those result urls become the fetch log of record for cited⇒fetched.
+    const response: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1, server_tool_use: { web_search_requests: 2 } },
+        content: [
+          { type: "server_tool_use", name: "web_search", input: { query: "is the claim true" } },
+          {
+            type: "web_search_tool_result",
+            content: [
+              { type: "web_search_result", url: "https://reuters.com/article/x", title: "X" },
+              { type: "web_search_result", url: "https://nature.com/y", title: "Y" },
+            ],
+          },
+          { type: "text", text: "verified" },
+        ],
+      }),
+    };
+    const h = harness({ response });
+    await handleProxyRequest(request(), h);
+    // usage_records.searches > 0 (the §12.7 meter of record).
+    expect(h.usageWriter.rows[0]!.searches).toBe(2);
+    // and the RESULT urls are logged as fetch rows (the provenance cited⇒fetched resolves against).
+    const fetchedUrls = h.fetchLogWriter.rows.filter((r) => r.kind === "fetch").map((r) => r.url);
+    expect(fetchedUrls).toContain("https://reuters.com/article/x");
+    expect(fetchedUrls).toContain("https://nature.com/y");
+  });
+});
+
 describe("handleProxyRequest — denial spike pause (REQ-ARCH-32)", () => {
   it("emits a single pause signal once egress denials reach the spike threshold", async () => {
     // Reuse one events sink + spike tracker across denials by sharing the harness.
