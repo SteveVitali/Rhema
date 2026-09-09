@@ -1,0 +1,163 @@
+// @rhema/hooks — the §12.6 seat mount tables, encoded as data (the authoritative policy input the hook
+// classifies against), and the per-run policy compiler.
+//
+// This file OWNS the §12.6 mount layer at the tool-classification level (ticket Notes). The `agent_types`
+// rows P0.02 seeds carry the coarse namespace tokens + tool set; the fine-grained per-seat path globs —
+// which cannot be reduced to a namespace token (preferences.md is `shared`-adjacent yet Editor-invisible;
+// the persona view is a per-seat *subset* of `profile/*.md`) — live here, keyed by seat, verbatim from the
+// §12.6 seat table. `compileSeatPolicy` resolves them against a run's mount roots. The Editor↔Drafter wall
+// and the persona hold-out are load-bearing here: no row below widens them (cross-cutting invariant).
+
+import type { AgentTypeKey } from "@rhema/contracts";
+import type { MountRoot, MountRule, MountSpec, Namespace, PhasePolicy, SeatPolicy, UrlPolicy } from "./types.js";
+import { EMPTY_URL_POLICY } from "./types.js";
+
+const DEFAULT_PROJECT_ROOT = "/work/project";
+const DEFAULT_PERSONA_ROOT = "/work/personas/<id>";
+
+/** Shared-record project paths readable by every author-side seat (§12.6; read-only bind mounts). */
+const SHARED_READ: readonly MountSpec[] = [
+  { glob: "manifest.md", root: "project", mode: "read", namespace: "shared" },
+  { glob: "drafts/**", root: "project", mode: "read", namespace: "shared" },
+  { glob: "assets/**", root: "project", mode: "read", namespace: "shared" },
+  { glob: "correspondence/**", root: "project", mode: "read", namespace: "shared" },
+];
+
+/** PERSONA.md is always readable wherever a persona is mounted (§12.6). */
+const PERSONA_SEED: MountSpec = {
+  glob: "PERSONA.md",
+  root: "persona",
+  mode: "read",
+  namespace: "persona:<id>",
+};
+
+/** A persona `profile/<name>.md` read mount. */
+function profileRead(name: string): MountSpec {
+  return { glob: `profile/${name}.md`, root: "persona", mode: "read", namespace: "persona:<id>" };
+}
+
+/**
+ * The §12.6 seat mount tables, verbatim. Each seat's `project` and `persona` cells become the readable /
+ * writable globs the classifier keys on. `preferences.md` is Drafter/Assistant-only (REQ-OBJ-10); the
+ * Editor's persona set excludes voice-print / lexicon / exemplars (§12.6 Editor row; §12.10 row 3); the persona builder writes
+ * `profile/` but the hold-out is a URL concern (see url-policy), not a mount.
+ */
+export const SEAT_MOUNTS: Record<AgentTypeKey, readonly MountSpec[]> = {
+  author: [
+    ...SHARED_READ,
+    { glob: "preferences.md", root: "project", mode: "read", namespace: "shared" }, // REQ-OBJ-10 (Drafter)
+    { glob: "agents/author/**", root: "project", mode: "readwrite", namespace: "agent:author" },
+    PERSONA_SEED,
+    profileRead("index"),
+    profileRead("voice-print"),
+    profileRead("structure-repertoire"),
+    profileRead("lexicon"),
+    profileRead("exemplars"),
+    profileRead("audience-and-venue"),
+    profileRead("continuity"),
+  ],
+  editor: [
+    ...SHARED_READ,
+    // NEVER preferences.md (REQ-OBJ-10); NEVER agents/author/** (the Editor↔Drafter wall).
+    { glob: "agents/editor/**", root: "project", mode: "readwrite", namespace: "agent:editor" },
+    PERSONA_SEED,
+    profileRead("index"),
+    profileRead("structure-repertoire"),
+    profileRead("audience-and-venue"),
+    profileRead("positions"),
+    profileRead("continuity"),
+    // NEVER voice-print / lexicon / exemplars (§12.6 Editor row; §12.10 row 3).
+  ],
+  assistant: [
+    ...SHARED_READ,
+    { glob: "preferences.md", root: "project", mode: "read", namespace: "shared" }, // REQ-OBJ-10 (Assistant)
+    { glob: "agents/assistant/**", root: "project", mode: "readwrite", namespace: "agent:assistant" },
+    // The declared Assistant↔Drafter departure, narrowed to frozen ledgers (§7.1; F19/C12): read-only.
+    { glob: "agents/author/ledgers/**", root: "project", mode: "read", namespace: "agent:author" },
+    PERSONA_SEED,
+    profileRead("index"),
+    profileRead("structure-repertoire"),
+    profileRead("audience-and-venue"),
+    profileRead("positions"),
+    profileRead("continuity"),
+    profileRead("exemplars"), // as Editor plus exemplars (§12.6)
+  ],
+  persona_builder: [
+    // No project mount (§12.6). PERSONA.md read; docs/ read-only; profile/ writable.
+    PERSONA_SEED,
+    { glob: "docs/**", root: "persona", mode: "read", namespace: "persona:<id>" },
+    { glob: "profile/**", root: "persona", mode: "readwrite", namespace: "persona:<id>" },
+  ],
+  // The System seat (the orchestrator loop) reads tables, never a mirror (§12.6): no mounts at all.
+  system: [],
+};
+
+/** Inputs to compile a run's seat policy. Everything is per-run data (REQ-ARCH-17). */
+export interface CompileInput {
+  readonly seat: AgentTypeKey;
+  /** The persona directory id for this run (substituted for `<id>` in persona namespaces/roots). */
+  readonly personaId?: string;
+  /** Mount roots; defaults to the container layout `/work/project` + `/work/personas/<id>`. */
+  readonly roots?: { readonly project?: string; readonly persona?: string };
+  /** The seat's permitted tool tokens (from the `agent_types` row). */
+  readonly tools: Iterable<string>;
+  readonly urlPolicy?: UrlPolicy;
+  readonly phase: PhasePolicy;
+  readonly runId: string;
+  /** The attributing `agent_id` (REQ-DATA-12); defaults to the seat key. */
+  readonly agentLabel?: string;
+  /**
+   * Composite-persona voice member (§9.6, §12.6): for a Drafter running a composite persona, the single
+   * member whose voice files are mounted, by `register`. Its `profile/*.md` are added under `persona:<id>`.
+   */
+  readonly compositeVoiceMemberFiles?: readonly string[];
+  /** True only for the input-scoped holdout-calibrator subagent (§12.6). */
+  readonly isCalibrator?: boolean;
+}
+
+function resolveNamespace(ns: Namespace, personaId: string | undefined): Namespace {
+  if (ns === "persona:<id>") {
+    return personaId ? (`persona:${personaId}` as Namespace) : "persona:<id>";
+  }
+  return ns;
+}
+
+function baseFor(root: MountRoot, roots: { project: string; persona: string }): string {
+  return root === "project" ? roots.project : roots.persona;
+}
+
+/**
+ * Compile a per-run seat policy from the §12.6 seat table plus this run's roots, persona, tools, URL policy
+ * and phase. The result is what the hook evaluates against; the same hook code serves every seat.
+ */
+export function compileSeatPolicy(input: CompileInput): SeatPolicy {
+  const personaRootTemplate = input.roots?.persona ?? DEFAULT_PERSONA_ROOT;
+  const personaRoot = input.personaId
+    ? personaRootTemplate.replace("<id>", input.personaId)
+    : personaRootTemplate;
+  const roots = { project: input.roots?.project ?? DEFAULT_PROJECT_ROOT, persona: personaRoot };
+
+  const specs: MountSpec[] = [...SEAT_MOUNTS[input.seat]];
+  for (const file of input.compositeVoiceMemberFiles ?? []) {
+    specs.push({ glob: file, root: "persona", mode: "read", namespace: "persona:<id>" });
+  }
+
+  const hasPersonaMount = specs.some((s) => s.root === "persona");
+  const mounts: MountRule[] = specs.map((s) => ({
+    ...s,
+    namespace: resolveNamespace(s.namespace, input.personaId),
+    base: baseFor(s.root, roots),
+  }));
+
+  return {
+    seat: input.seat,
+    roots: { project: roots.project, ...(hasPersonaMount ? { persona: roots.persona } : {}) },
+    mounts,
+    tools: new Set(input.tools),
+    urlPolicy: input.urlPolicy ?? EMPTY_URL_POLICY,
+    phase: input.phase,
+    runId: input.runId,
+    agentLabel: input.agentLabel ?? input.seat,
+    ...(input.isCalibrator ? { isCalibrator: true } : {}),
+  };
+}
