@@ -162,22 +162,26 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
 
   // 3) the phase to run. An explicit `phase` pin in the run's FROZEN inputs wins (REQ-SPEC-13: a run created
   //    to "run exactly phase N then stop" — the `phase:"N"` path); the pin names the skill's native phase
-  //    number (`skillPhase`). Otherwise the next uncommitted phase by index (0 on a fresh run; index ===
-  //    committed-phase count on resume). LIMITATION: for a REDUCED-rigor run (phases opted out via a manifest
-  //    `optional` notch) the default derivation over the FULL manifest can select an opted-out phase — deriving
-  //    a run's ACTIVE phase set from its rigor is owned by §6.5/P0.06 and not available here; the default
-  //    full-rigor run (the first-green milestone) is correct, and a `phase` pin is always honored. Tracked as a
-  //    DEFERRALS limitation (D-P0.15d-1).
+  //    number (`skillPhase`). Otherwise the next uncommitted phase in the run's ACTIVE phase set (0 on a fresh
+  //    run; position === committed-phase count on resume). A phase is opted OUT when it declares an `optOutFlag`
+  //    and the run's frozen inputs set that flag to `false` (§6.5); opted-out phases produce no committed step,
+  //    so the committed-phase COUNT is exactly the position of the next active phase — selecting by position in
+  //    `activePhases` skips them. `of` stays the full manifest length so the delivery trigger
+  //    (`phase.index === of - 1`, keyed to the always-active final `letter` phase) is unaffected. Closes the
+  //    D-P0.15d-1 limitation (reduced-rigor runs previously selected an opted-out phase over the full manifest).
+  const isOptedOut = (p: (typeof manifest.phases)[number]): boolean =>
+    p.optOutFlag != null && hyd.inputs[p.optOutFlag] === false;
+  const activePhases = manifest.phases.filter((p) => !isOptedOut(p));
   const pin = hyd.inputs.phase;
   const pinnedSkillPhase = typeof pin === "string" || typeof pin === "number" ? String(pin) : undefined;
   const phase = pinnedSkillPhase
     ? manifest.phases.find((p) => p.skillPhase === pinnedSkillPhase)
-    : manifest.phases.find((p) => p.index === facts.committedPhases);
+    : activePhases[facts.committedPhases];
   if (!phase) {
     throw new Error(
       pinnedSkillPhase
         ? `buildHarnessRunSpec: run ${args.runId} pins phase '${pinnedSkillPhase}', absent from workflow '${hyd.workflow}'`
-        : `buildHarnessRunSpec: run ${args.runId} has committed ${facts.committedPhases} of ${manifest.phases.length} phases — no phase to run`,
+        : `buildHarnessRunSpec: run ${args.runId} has committed ${facts.committedPhases} of ${activePhases.length} active phase(s) — no phase to run`,
     );
   }
 
