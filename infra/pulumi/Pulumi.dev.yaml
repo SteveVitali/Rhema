@@ -2,3 +2,14 @@ config:
   gcp:project: rhema-507501
   gcp:region: us-central1
   rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
+  rhema:deployProxyMig: "true"
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/egress-proxy@sha256:14ef1097c17ca75f5345c644c415629e8fbe7e72db431e6a785a9239b81b6ea6
+  rhema:proxyDatabaseUrl:
+    secure: AAABAEwmbigwPCueEZIV8InN9Q+4HZUFvSSeEX9PwsUUZjzLEz5d1JULEwRgtgo1lP/hn6vtYxk3A1uwt7PYdxxNAR9RCaCpotyS2yVeCsIKBENuEvdrVKFoZF0Tvdie5g6TqMQzkw3ms9qDFfdufBzx7iX1HGC9V6PU
+  rhema:workerDatabaseUrl:
+    secure: AAABAGoWTp0brekwScb5WgTohYzGzBARo4twAc8bEkcnbhF98WBY6ZG1KblB/JEWHHUGRr+MixLTu1tblGgugzKQBG+zvPzFZQ7loOd+oZNGG3WANW2SNjE/sXSzREQ+NXrIp8qdQ0O1nsWp1+nOUH07s+5W4/BbpVbE
+  rhema:workerSystemDatabaseUrl:
+    secure: AAABANinhgLxDZ+Ri4AKTbBErot//U7NycMnSpGYdiferYHKgX0SfoLxuTx7cxr3gWrsj3A3+RW39Ui/MDut9isgAj/0xqdgvjvyeDo8IdkdOp/VGMq5dFu3fH8v+en7T5bP7kJr9qv9QlRU//uozn6Gls9hdzlM5jwi
+  rhema:workerRedisUrl:
+    secure: AAABAIgPCveM8nsUckmJxlXwIjwNFECc60tlYtbQFume7kA0lJw2rEoRpxlhdXcdGQaqW57K+Y1e
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/run-task@sha256:72b78a9494cb4905d4481784e750a48c6f4454a98c07f8ccebc6385cbb54d891

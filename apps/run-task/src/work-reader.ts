@@ -69,7 +69,13 @@ function harvestFiles(files: ReadonlyMap<string, Uint8Array>, manifest: MirrorMa
   const byPath = manifestByPath(manifest);
   const out: HarvestFile[] = [];
   for (const [path, bytes] of files) {
-    if (path === "manifest.md" || path.startsWith(".rhema/")) continue; // derived — never harvested
+    // Never harvest derived/transient files: the manifest.md, and any `.rhema/` sidecar ANYWHERE in the tree —
+    // not just at the root. The completion sidecars (`phase-result.json`, `agent-result.json`) are written
+    // UNDER the seat's `output_dir` (e.g. `agents/editor/.rhema/phase-result.json`), so a `startsWith(".rhema/")`
+    // check missed them: they were harvested as versions and re-materialized into the NEXT phase's /work, where
+    // the completion oracle then read a STALE prior-phase `{status:"complete"}` (diagnosed live P0.15h — the
+    // craft phase read intake's phase-result). A per-phase transient must never persist across phases.
+    if (path === "manifest.md" || path.startsWith(".rhema/") || path.includes("/.rhema/")) continue;
     const root = byPath.get(path)?.root ?? defaultRoot;
     out.push({ path, root, bytes });
   }
