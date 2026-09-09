@@ -91,19 +91,39 @@ export type ServerToolActivity =
   | { readonly kind: "search"; readonly query: string }
   | { readonly kind: "fetch"; readonly url: string };
 
+/**
+ * Pull the RESULT urls out of a `web_search_tool_result` (or `web_fetch_tool_result`) block's content — the
+ * pages the server-side search/fetch actually returned and the model then reads and CITES. Without this the
+ * fetch log held only the search QUERY (no url), so `cited_not_fetched` failed every claim on a run that did its
+ * research through Anthropic's SERVER-SIDE web tools (the fetches never traverse the proxy as separate requests
+ * — D-P0.15-2, diagnosed live P0.15h). An error result is an object (not an array) → nothing was fetched.
+ */
+function collectResultUrls(content: unknown, out: ServerToolActivity[]): void {
+  const results = Array.isArray(content) ? content : content && typeof content === "object" ? [content] : [];
+  for (const r of results) {
+    if (!r || typeof r !== "object") continue;
+    const u = (r as Record<string, unknown>)["url"];
+    if (typeof u === "string" && u) out.push({ kind: "fetch", url: u });
+  }
+}
+
 function collectFromContent(content: unknown, out: ServerToolActivity[]): void {
   if (!Array.isArray(content)) return;
   for (const block of content) {
     if (!block || typeof block !== "object") continue;
     const b = block as Record<string, unknown>;
     const type = b["type"];
-    if (type !== "tool_use" && type !== "server_tool_use") continue;
-    const tag = toolNameOf(b);
-    const input = (b["input"] ?? {}) as Record<string, unknown>;
-    if (tag.includes("web_search") && typeof input["query"] === "string") {
-      out.push({ kind: "search", query: input["query"] });
-    } else if (tag.includes("web_fetch") && typeof input["url"] === "string") {
-      out.push({ kind: "fetch", url: input["url"] });
+    if (type === "tool_use" || type === "server_tool_use") {
+      const tag = toolNameOf(b);
+      const input = (b["input"] ?? {}) as Record<string, unknown>;
+      if (tag.includes("web_search") && typeof input["query"] === "string") {
+        out.push({ kind: "search", query: input["query"] });
+      } else if (tag.includes("web_fetch") && typeof input["url"] === "string") {
+        out.push({ kind: "fetch", url: input["url"] });
+      }
+    } else if (typeof type === "string" && (type.includes("web_search_tool_result") || type.includes("web_fetch_tool_result"))) {
+      // the server-tool RESULT block: its `content` carries the pages the search/fetch returned (each with `url`).
+      collectResultUrls(b["content"], out);
     }
   }
 }
@@ -177,6 +197,10 @@ export function extractResponseServerToolsSse(body: string): ServerToolActivity[
         // some responses inline a complete `input` at start (no deltas) — seed the json from it.
         const seeded = cb?.["input"] && Object.keys(cb["input"] as object).length > 0 ? JSON.stringify(cb["input"]) : "";
         blocks.set(index, { name, json: seeded });
+      } else if (typeof cbType === "string" && (cbType.includes("web_search_tool_result") || cbType.includes("web_fetch_tool_result"))) {
+        // a server-tool RESULT block streams complete at `content_block_start` (not via input deltas): its
+        // `content` holds the returned pages, each with the `url` the model reads + cites (feeds cited⇒fetched).
+        collectResultUrls(cb?.["content"], out);
       }
     } else if (type === "content_block_delta") {
       const index = ev["index"];

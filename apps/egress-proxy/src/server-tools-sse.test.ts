@@ -63,4 +63,47 @@ describe("extractResponseServerToolsSse (D-P0.07-5)", () => {
     // and the JSON extractor still returns [] for an SSE body (they are complementary).
     expect(extractResponseServerTools(body)).toEqual([]);
   });
+
+  it("captures the RESULT urls of a web_search_tool_result block (SSE) — the sources the model cites (P0.15h, cited⇒fetched)", () => {
+    const body = sse([
+      { type: "content_block_start", index: 0, content_block: { type: "server_tool_use", name: "web_search", input: { query: "rhema" } } },
+      { type: "content_block_stop", index: 0 },
+      {
+        type: "content_block_start",
+        index: 1,
+        content_block: {
+          type: "web_search_tool_result",
+          tool_use_id: "srvtoolu_1",
+          content: [
+            { type: "web_search_result", url: "https://a.test/one", title: "One" },
+            { type: "web_search_result", url: "https://b.test/two", title: "Two" },
+          ],
+        },
+      },
+      { type: "content_block_stop", index: 1 },
+    ]);
+    expect(extractResponseServerToolsSse(body)).toEqual([
+      { kind: "search", query: "rhema" },
+      { kind: "fetch", url: "https://a.test/one" },
+      { kind: "fetch", url: "https://b.test/two" },
+    ]);
+  });
+
+  it("captures web_search_tool_result urls from a buffered JSON response, and an error result yields none", () => {
+    const ok = JSON.stringify({
+      content: [
+        { type: "server_tool_use", name: "web_search", input: { query: "q" } },
+        { type: "web_search_tool_result", content: [{ type: "web_search_result", url: "https://c.test/p" }] },
+      ],
+    });
+    expect(extractResponseServerTools(ok)).toEqual([
+      { kind: "search", query: "q" },
+      { kind: "fetch", url: "https://c.test/p" },
+    ]);
+    // a web_search_tool_result ERROR carries an object (error_code), not a results array → nothing fetched.
+    const err = JSON.stringify({
+      content: [{ type: "web_search_tool_result", content: { type: "web_search_tool_result_error", error_code: "max_uses_exceeded" } }],
+    });
+    expect(extractResponseServerTools(err)).toEqual([]);
+  });
 });
