@@ -69,13 +69,15 @@ function harvestFiles(files: ReadonlyMap<string, Uint8Array>, manifest: MirrorMa
   const byPath = manifestByPath(manifest);
   const out: HarvestFile[] = [];
   for (const [path, bytes] of files) {
-    // Never harvest derived/transient files: the manifest.md, and any `.rhema/` sidecar ANYWHERE in the tree —
-    // not just at the root. The completion sidecars (`phase-result.json`, `agent-result.json`) are written
-    // UNDER the seat's `output_dir` (e.g. `agents/editor/.rhema/phase-result.json`), so a `startsWith(".rhema/")`
-    // check missed them: they were harvested as versions and re-materialized into the NEXT phase's /work, where
-    // the completion oracle then read a STALE prior-phase `{status:"complete"}` (diagnosed live P0.15h — the
-    // craft phase read intake's phase-result). A per-phase transient must never persist across phases.
-    if (path === "manifest.md" || path.startsWith(".rhema/") || path.includes("/.rhema/")) continue;
+    // Never harvest the manifest.md or the per-phase TRANSIENT status files — `phase-result.json` and
+    // `agent-result.json` — wherever they sit (they are written under the seat output_dir, e.g.
+    // `agents/editor/.rhema/phase-result.json`, so a root-only check missed them and they got harvested +
+    // re-materialized, making the NEXT phase's oracle read a STALE `{status:"complete"}` — the live P0.15h
+    // craft-read-intake bug). But the STRUCTURED SIDECARS (`01-claim-ledger.json`, `findings.json`,
+    // `rubric.json`) ALSO live under `.rhema/` and ARE deliverables — they MUST be harvested. So exclude only
+    // the two transient basenames, never the whole `.rhema/` subtree.
+    const base = path.slice(path.lastIndexOf("/") + 1);
+    if (path === "manifest.md" || base === "phase-result.json" || base === "agent-result.json") continue;
     const root = byPath.get(path)?.root ?? defaultRoot;
     out.push({ path, root, bytes });
   }
