@@ -164,8 +164,14 @@ function dossierForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseMan
     const json = readJson<unknown>(files, filename);
     if (json != null) sidecars.push({ filename: filename as SidecarFilename, json });
   }
-  // the delivered dossier artifacts are the phase's declared markdown artifacts that were produced.
-  const deliveredPaths = phase.artifacts.filter((a) => a.endsWith(".md") && files.has(a));
+  // the delivered dossier artifacts are the phase's declared markdown artifacts that were produced. The manifest
+  // names them by BASENAME ("editors-letter.md") but the /work files map is keyed by the seat-rooted path
+  // ("agents/editor/editors-letter.md"), so resolve each like the sidecar/ledger reads do — a raw `files.has`
+  // matched nothing and the run finalized BARE (no delivery / no correspondence row), diagnosed live P0.15h.
+  const deliveredPaths = phase.artifacts
+    .filter((a) => a.endsWith(".md"))
+    .map((a) => resolveKey(files, a))
+    .filter((k) => files.has(k));
   const claimLedger = readJson<WorkDeliveryContent["claimLedger"]>(files, "01-claim-ledger.json") ?? undefined;
   const findings = readJson<WorkDeliveryContent["findings"]>(files, "findings.json") ?? undefined;
   const rubric = readJson<WorkDeliveryContent["rubric"]>(files, "rubric.json") ?? undefined;
