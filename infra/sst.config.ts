@@ -1,5 +1,12 @@
 /// <reference path="./.sst/platform/config.d.ts" />
 
+// ⚑ SUPERSEDED (2026-09-02): the platform moved AWS → GCP (00_MANIFEST § Spec amendments applied; §12
+// amendment banner). This SST/AWS skeleton is kept only so the repo builds/tests green while the
+// **Pulumi (TypeScript) + GCP** rewrite is pending — it lands on a P0.01 re-run once the GCP project
+// exists (DEFERRALS D-P0.01-7). Do NOT extend this file; the amended `docs/tickets/01_P0.01` specifies
+// the GCP/Pulumi target (Cloud Run + GKE for run-task, AlloyDB, GCS, Memorystore, Secret Manager,
+// Workload Identity, Cloud CDN, no-egress sandbox subnet).
+//
 // SST v3 (ion) config — the deployable skeleton (spec §13.2). Executed and bundled by the SST CLI
 // (`sst deploy --stage <dev|pr-<n>|prod>`), NOT by tsc (it is excluded from the TS build). The
 // security- and cost-critical numbers come from ./config/stages so the same values that tests assert

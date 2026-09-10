@@ -1,15 +1,18 @@
-# run-task — the two-uid Agent SDK task image (ledger M11; §12.1, §12.4 step 4). One Fargate task per run.
+# run-task — the two-uid Agent SDK task image (ledger M11; §12.1, §12.4 step 4). One GKE Job pod per run.
 #
 # Contract this image encodes:
-#   • ARM64, 1 vCPU / 2 GiB baseline (2/4 for Draft > 8k words) — set at the task definition.
+#   • linux/amd64 (GKE default; arm64 optional), 1 vCPU / 2 GiB baseline (2/4 for Draft > 8k words) — set on
+#     the GKE Job/Pod spec. Runs on GKE (not Cloud Run) because the input-scoped mount namespace needs
+#     CAP_SYS_ADMIN, which Cloud Run/Autopilot cannot grant.
 #   • The SDK is VENDORED into the image (a proprietary dependency, REQ-ARCH-4) — copied at build, never
 #     fetched at run time; the sandbox subnet has no route out except the proxy.
 #   • TWO uids: `harness` (uid 10001) holds the run token, the proxy credential, the hook daemon, and the
 #     heartbeat/commit/audit clients; `agent` (uid 10002) runs the SDK and every tool the model calls, with a
 #     SCRUBBED env (@rhema/engine buildAgentEnv) and no secret in scope (REQ-SPEC-10).
 #   • The secrets file lives under /run/secrets, mode 0600, owner harness — the agent uid cannot read it.
-#   • Root filesystem READ-ONLY at run time (task def `readonlyRootFilesystem: true`); a writable tmpfs is
-#     mounted only for the seat's writable namespaces (/work) and per-run config (/run) — §11.5 mount mechanics.
+#   • Root filesystem READ-ONLY at run time (Pod `securityContext.readOnlyRootFilesystem: true`); a writable
+#     tmpfs (emptyDir medium: Memory) is mounted only for the seat's writable namespaces (/work) and per-run
+#     config (/run) — §11.5 mount mechanics.
 #   • util-linux provides `setpriv` (irreversible uid drop, clear supplementary groups) and `unshare`/`mount`
 #     (the private mount namespace for input-scoped subagents — §12.6 / scoped-subagent.ts).
 #

@@ -2,7 +2,7 @@
 //
 // Builds `query({ prompt: "/<skill> …inputs…", options })` with the §12.2 options (scrubbed env, dontAsk,
 // cosmetic disallowedTools, per-phase budget/turns, ≤5 concurrent subagents at depth 1, 1-h caching, OTel
-// content-flags-off, S3 sessionStore, the PreToolUse hook, an abortController) and streams the SDK messages
+// content-flags-off, GCS sessionStore, the PreToolUse hook, an abortController) and streams the SDK messages
 // through the mapper. The SDK is a VENDORED, proprietary dependency of run-task (REQ-ARCH-4); it is injected
 // as a `QueryFn` so the engine is unit-testable with recorded fixtures and no SDK install.
 

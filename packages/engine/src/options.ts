@@ -17,7 +17,7 @@ import type { AgentDef } from "./roster.js";
 /** A `PreToolUse` hook callback shape (the SDK's; kept structural — the callback is injected by run-task). */
 export type PreToolUseHook = (input: unknown) => unknown | Promise<unknown>;
 
-/** A minimal session-store handle (S3-backed in prod; injected). The SDK persists/resumes session state here. */
+/** A minimal session-store handle (GCS-backed in prod; injected). The SDK persists/resumes session state here. */
 export interface SessionStore {
   readonly kind: string;
 }
@@ -71,7 +71,7 @@ export interface AgentSdkQueryOptions {
   maxConcurrentSubagents: number;
   /** 1-hour prompt caching (§12.2). */
   cacheControlTtl: "1h";
-  /** the S3 session store (§12.2). */
+  /** the GCS session store (§12.2). */
   sessionStore: SessionStore;
   abortController: AbortController;
 }

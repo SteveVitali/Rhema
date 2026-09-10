@@ -16,6 +16,11 @@ export const FORBIDDEN_AGENT_ENV_KEYS = [
   "PROXY_CREDENTIAL_FILE",
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
+  // cloud credentials — GCP is the platform (from 2026-09-02); AWS keys stay forbidden as defense-in-depth.
+  "GOOGLE_APPLICATION_CREDENTIALS",
+  "GOOGLE_API_KEY",
+  "GCLOUD_PROJECT",
+  "GCP_PROJECT",
   "AWS_ACCESS_KEY_ID",
   "AWS_SECRET_ACCESS_KEY",
   "AWS_SESSION_TOKEN",

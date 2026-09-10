@@ -7,7 +7,7 @@
 - **Run:** `implement-spec spec=docs/tickets/25_PRB.09__email-notifications.md`
 
 ## Goal
-The beta's off-desk channel: SES email for the §5.11 event classes the beta has, with **signed
+The beta's off-desk channel: Resend email for the §5.11 event classes the beta has, with **signed
 one-click *Wait for me* and *Open* links (never Approve)**, reminder cadence, collapse-per-run, and
 server-side per-event-type preferences.
 
@@ -22,7 +22,7 @@ server-side per-event-type preferences.
   actions").
 
 ## In scope — deliverables
-1. **Mailer worker** (`mail.send` jobs, SES): templated emails, IDs-and-template-text only (no
+1. **Mailer worker** (`mail.send` jobs, Resend — a new third-party email dep replacing SES): templated emails, IDs-and-template-text only (no
    finding/draft text beyond titles per the §10.4 payload rule's spirit — document the choice),
    deep links to the beta surfaces.
 2. **Signed actions:** single-use, expiring signed URLs for *Wait for me* (`POST /gates/:id/hold`)

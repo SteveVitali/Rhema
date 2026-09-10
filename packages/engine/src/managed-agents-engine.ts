@@ -5,7 +5,7 @@
 // event-mapper conformance suite (AC5). Managed Agents is not the MVP engine (it is beta and not ZDR-eligible
 // — §12.9 rejected-for-stage-1); the value it delivers now is the CONFORMANCE it shares, holding the mapper
 // honest as the single point where SDK-shaped messages become §12.5 events regardless of who produced them.
-// Its provisioning (Fargate sandboxes, its own hooks/routing) is out of scope until the §12.9 stage-5 trigger.
+// Its provisioning (GKE sandboxes, its own hooks/routing) is out of scope until the §12.9 stage-5 trigger.
 
 import type { Engine, EngineEvent, PhaseRequest, UsageSnapshot } from "./engine.js";
 import { emptyUsage } from "./engine.js";
