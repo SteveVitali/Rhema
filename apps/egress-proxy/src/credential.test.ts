@@ -40,6 +40,7 @@ describe("credential + header scrub", () => {
         cookie: "session=1",
         host: "proxy.internal",
         "content-length": "42",
+        "accept-encoding": "gzip, br",
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },
@@ -48,6 +49,8 @@ describe("credential + header scrub", () => {
     // The only key that reaches the provider is the injected one.
     expect(upstream["x-api-key"]).toBe("sk-PROVIDER");
     expect(upstream["authorization"]).toBeUndefined();
+    // accept-encoding is stripped so the response is uncompressed and the proxy can meter + log it (P0.15i).
+    expect(upstream["accept-encoding"]).toBeUndefined();
     expect(upstream[PROXY_CREDENTIAL_HEADER]).toBeUndefined();
     expect(upstream[AGENT_ID_HEADER]).toBeUndefined();
     expect(upstream["cookie"]).toBeUndefined();
