@@ -23,10 +23,15 @@ export interface SessionStore {
 }
 
 /** The fixed tool set the model may call (cosmetic list is separate). Kept small and Read/Write-centric.
- *  `WebSearch` stays (its results come from Anthropic's server-side search); the client-side `WebFetch` is
- *  DROPPED (P0.15i AC1) — a client fetch cannot reach the internet through the sandbox's proxy-only egress, so
- *  leaving it enabled only wastes turns on no-ops. Real web research is the proxy-guaranteed server-side
- *  web_search/web_fetch tools (see `@rhema/egress-proxy` `ensureServerWebTools`). */
+ *  BOTH client web tools are DROPPED (P0.15i AC1, confirmed live 2026-09-09): the sandbox's egress is
+ *  proxy-only, so a CLIENT `WebFetch`/`WebSearch` cannot function — and worse, leaving `WebSearch` enabled made
+ *  the model call the CLI's CLIENT web-search tool instead of the proxy-injected SERVER `web_search`, so no
+ *  server-side search ever executed (`usage_records.searches = 0`, no `web_search_tool_result` blocks, hence no
+ *  `fetch_log` rows and a `cited_not_fetched` delivery failure). With no competing client tool, the model uses
+ *  the proxy-guaranteed server-side `web_search` (see `@rhema/egress-proxy` `ensureServerWebTools`), which
+ *  Anthropic executes and meters. Server tools are invoked as `server_tool_use` and are NOT gated by this
+ *  client-tool allowlist, so dropping the name here does not disable real research — it forces it onto the
+ *  metered, proxy-logged path. */
 export const ALLOWED_TOOLS = [
   "Read",
   "Write",
@@ -35,7 +40,6 @@ export const ALLOWED_TOOLS = [
   "Glob",
   "Grep",
   "Bash",
-  "WebSearch",
   "Task",
 ] as const;
 

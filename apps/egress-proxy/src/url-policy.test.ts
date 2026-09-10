@@ -99,6 +99,26 @@ describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6
     expect(tools.some((t) => t["name"] === "web_fetch")).toBe(false);
   });
 
+  it("STRIPS the CLI's client WebSearch/WebFetch tools so they cannot pre-empt the injected server tool (P0.15i, live-confirmed)", () => {
+    const body = {
+      ...bareBody(),
+      tools: [
+        { name: "Read" },
+        { name: "WebSearch" }, // the CLI's client web-search tool — must be stripped
+        { name: "WebFetch" }, // the CLI's client web-fetch tool — must be stripped
+        { type: "custom_tool", name: "calculator" },
+      ],
+    };
+    const { body: out, added } = ensureServerWebTools(body, config);
+    expect(added).toBe(true);
+    const names = (out as { tools: Record<string, unknown>[] }).tools.map((t) => t["name"]);
+    expect(names).not.toContain("WebSearch"); // client tool gone
+    expect(names).not.toContain("WebFetch"); // client tool gone
+    expect(names).toContain("Read"); // non-web tools kept
+    expect(names).toContain("calculator");
+    expect(names).toContain("web_search"); // server tool injected in their place
+  });
+
   it("adds web_fetch too when a run explicitly opts it in", () => {
     const { body } = ensureServerWebTools(bareBody(), resolveServerWebToolConfig({ fetch: true }));
     const tools = (body as { tools: Record<string, unknown>[] }).tools;

@@ -37,6 +37,19 @@ function isServerWebTool(tool: unknown): tool is Record<string, unknown> {
   return serverWebToolKind(tool) !== null;
 }
 
+/**
+ * The vendored `claude` CLI's own CLIENT-side web tools (§12.6; P0.15i). It DECLARES these in the request
+ * `tools[]` by their Claude Code names regardless of `allowedTools` — and the model, seeing a familiar
+ * `WebSearch`, calls it in preference to Anthropic's server-side `web_search`, so no server search executes
+ * (`usage_records.searches = 0`, no `web_search_tool_result`, hence `cited_not_fetched`). Confirmed live
+ * 2026-09-09 via the proxy request diagnostic. A client fetch/search cannot traverse the sandbox's proxy-only
+ * egress anyway. So the proxy STRIPS these from the body, leaving only the injected server tool for the model.
+ */
+const CLIENT_WEB_TOOL_NAMES: ReadonlySet<string> = new Set(["WebSearch", "WebFetch"]);
+function isClientWebTool(tool: unknown): boolean {
+  return !!tool && typeof tool === "object" && CLIENT_WEB_TOOL_NAMES.has((tool as { name?: unknown }).name as string);
+}
+
 /** The concrete, resolved web-tool config the proxy acts on for one request (defaults filled in). */
 export interface ServerWebToolConfig {
   readonly search: boolean;
@@ -66,10 +79,13 @@ export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): S
  * meter of record and its only route to `api.anthropic.com` — GUARANTEES the tool, regardless of the CLI. This
  * makes the fact-check's web research REAL and proxy-logged so `cited⇒fetched` (§12.8(c)) has provenance.
  *
- * ADD-IF-ABSENT, never duplicate: a server web tool the CLI already put in the body is left in place (the API
- * rejects two web tools of the same kind, and `injectUrlPolicyIntoBody` scopes whichever is present). Only a
- * Messages request (a `messages` array) is touched; the input body is never mutated. Returns a NEW body when
- * it added a tool, else the body unchanged.
+ * Two moves, both required for the model to actually do metered, proxy-logged research (confirmed live):
+ *   1. STRIP the CLI's client `WebSearch`/`WebFetch` tools (see `isClientWebTool`) — otherwise the model calls
+ *      the familiar client `WebSearch` in preference to the server tool and no server search ever runs.
+ *   2. ADD-IF-ABSENT the server `web_search` (+ `web_fetch` when enabled). A server web tool already in the body
+ *      is left in place (the API rejects two of the same kind; `injectUrlPolicyIntoBody` scopes whichever is
+ *      present). Only a Messages request (a `messages` array) is touched; the input body is never mutated.
+ * Returns a NEW body when it stripped or added anything, else the body unchanged.
  */
 export function ensureServerWebTools(
   body: unknown,
@@ -82,9 +98,13 @@ export function ensureServerWebTools(
   if (!Array.isArray(b.messages)) return { body, added: false };
 
   const tools = Array.isArray(b.tools) ? b.tools : [];
-  const hasSearch = tools.some((t) => serverWebToolKind(t) === "search");
-  const hasFetch = tools.some((t) => serverWebToolKind(t) === "fetch");
+  // (1) strip the CLI's client web tools so they cannot pre-empt the server tool.
+  const kept = tools.filter((t) => !isClientWebTool(t));
+  const strippedAny = kept.length !== tools.length;
+  const hasSearch = kept.some((t) => serverWebToolKind(t) === "search");
+  const hasFetch = kept.some((t) => serverWebToolKind(t) === "fetch");
 
+  // (2) add the server web tool(s) the run wants and does not already have.
   const additions: Record<string, unknown>[] = [];
   if (config.search && !hasSearch) {
     additions.push({ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: config.searchMaxUses });
@@ -92,10 +112,10 @@ export function ensureServerWebTools(
   if (config.fetch && !hasFetch) {
     additions.push({ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: config.fetchMaxUses });
   }
-  if (additions.length === 0) return { body, added: false };
+  if (!strippedAny && additions.length === 0) return { body, added: false };
 
   const clone = JSON.parse(JSON.stringify(body)) as { tools?: unknown[] };
-  clone.tools = [...tools, ...additions];
+  clone.tools = [...kept.map((t) => JSON.parse(JSON.stringify(t)) as unknown), ...additions];
   return { body: clone, added: true };
 }
 

@@ -87,10 +87,11 @@ export function buildAgentRoster(input: RosterInput): Record<string, AgentDef> {
     },
     researcher: {
       description: "Research fan-out: search + fetch + read (§12.3 research row); inherits the seat's mounts.",
-      // `WebSearch` only (P0.15i AC1): the client-side `WebFetch` cannot reach the internet through the
-      // sandbox's proxy-only egress. Real fetch/search is the proxy-guaranteed SERVER-side web tools, which the
-      // model invokes directly (not gated by this client-tool list) — see `@rhema/egress-proxy`.
-      tools: ["Read", "WebSearch"],
+      // NO client web tools (P0.15i AC1, confirmed live): both client `WebFetch` and `WebSearch` are dropped —
+      // they cannot function under the sandbox's proxy-only egress, and a client `WebSearch` pre-empts the
+      // proxy-injected SERVER `web_search` (so no server search executes / meters). Research is the
+      // proxy-guaranteed server-side web tools, invoked directly (not gated by this list) — see `@rhema/egress-proxy`.
+      tools: ["Read"],
       model: research,
       effort: "medium",
       inputScoped: false,

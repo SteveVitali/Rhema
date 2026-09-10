@@ -62,9 +62,9 @@ describe("buildQueryOptions (§12.2)", () => {
     expect(o.disallowedTools).toEqual([...COSMETIC_DISALLOWED_TOOLS]);
   });
 
-  it("allows WebSearch but NOT the sandbox-unroutable client WebFetch (P0.15i AC1)", () => {
-    expect(o.allowedTools).toContain("WebSearch");
+  it("enables NEITHER client web tool — both are sandbox-unroutable and pre-empt the proxy server tool (P0.15i AC1)", () => {
     expect(o.allowedTools).not.toContain("WebFetch");
+    expect(o.allowedTools).not.toContain("WebSearch");
   });
 
   it("passes the per-phase budget and turn ceilings", () => {
