@@ -75,10 +75,19 @@ treat them as hard constraints, not aspirations.
    "consider more examples," "the ending feels rushed"), it is banned — replace
    it with the specific instance and the specific fix.
 
-5. **Never cite what you have not read.** Any external source referenced in the
-   review — for verification or discourse mapping — must be one you actually
-   fetched and read this session, cited with its URL. If you could not verify
-   something, the verdict is "unverifiable," never a guessed citation.
+5. **Cite only what you retrieved this session — every cited URL must be one a
+   tool returned to you.** Any external URL in the review (claim-ledger sources,
+   discourse citations) must be one you retrieved THIS session: either a URL that
+   appeared in your own `web_search` results, or one you pulled with `web_fetch`.
+   Copy the URL exactly as the tool returned it — never reconstruct, shorten, or
+   cite a URL from memory or from a reference printed inside a page you did not
+   yourself retrieve. Before you cite a source that did not come back in a search
+   result, fetch it with `web_fetch` first; if you cannot retrieve it, the verdict
+   is "unverifiable," never a guessed citation. This is mechanically enforced: at
+   delivery, every cited URL is checked against the run's fetch log, and a single
+   URL that was not retrieved this session fails the ENTIRE review
+   ("cited_not_fetched") — so cite retrieved URLs only, and drop (mark
+   unverifiable) any claim whose source you could not pull with a tool.
 
 6. **Report against interest.** If your research shows the piece is *right*
    where you suspected it was wrong, or that its claim is more original than you
