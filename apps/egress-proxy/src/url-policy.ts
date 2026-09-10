@@ -59,14 +59,19 @@ export interface ServerWebToolConfig {
 }
 
 /**
- * Resolve the run's `WebToolPolicy` into a concrete config with defaults applied. web_search defaults ON (GA,
- * no beta header — the provenance source for `cited⇒fetched`); web_fetch defaults OFF (its basic variant needs
- * the `web-fetch-2025-09-10` beta header the proxy does not yet set — see `WebToolPolicy.fetch`).
+ * Resolve the run's `WebToolPolicy` into a concrete config with defaults applied. BOTH web tools default ON:
+ * `web_search_20250305` and `web_fetch_20250910` are GA and need no beta header (verified live 2026-09-10).
+ * web_fetch matters for `cited⇒fetched`: the fact-check cites specific sources (search results, the draft's own
+ * citations) it must FETCH to verify — without it, those cited URLs are never in the proxy fetch log and
+ * delivery fails `cited_not_fetched` even though the search ran (diagnosed live P0.15i: 18/40 cited sources were
+ * search-adjacent URLs the model never directly fetched). The outbound-channel guards (query-string strip +
+ * novel-domain cap, `outbound-limits.ts`) still bound the fetch channel; web_fetch only reaches URLs already in
+ * the conversation, so it cannot exfiltrate a novel target.
  */
 export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): ServerWebToolConfig {
   return {
     search: policy?.search ?? true,
-    fetch: policy?.fetch ?? false,
+    fetch: policy?.fetch ?? true,
     searchMaxUses: policy?.searchMaxUses ?? DEFAULT_WEB_SEARCH_MAX_USES,
     fetchMaxUses: policy?.fetchMaxUses ?? DEFAULT_WEB_FETCH_MAX_USES,
   };

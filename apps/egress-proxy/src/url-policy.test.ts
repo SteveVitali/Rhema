@@ -63,17 +63,17 @@ describe("URL policy body injection (§12.6)", () => {
 });
 
 describe("resolveServerWebToolConfig (P0.15i)", () => {
-  it("defaults web_search ON and web_fetch OFF (no beta header) with default max_uses when the policy is absent", () => {
+  it("defaults BOTH web_search and web_fetch ON (both GA, no beta header) with default max_uses when the policy is absent", () => {
     expect(resolveServerWebToolConfig(undefined)).toEqual({
       search: true,
-      fetch: false,
+      fetch: true,
       searchMaxUses: DEFAULT_WEB_SEARCH_MAX_USES,
       fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
     });
   });
 
-  it("honors an explicit web_search opt-out and custom caps", () => {
-    expect(resolveServerWebToolConfig({ search: false, searchMaxUses: 3 })).toEqual({
+  it("honors explicit opt-outs and custom caps", () => {
+    expect(resolveServerWebToolConfig({ search: false, fetch: false, searchMaxUses: 3 })).toEqual({
       search: false,
       fetch: false,
       searchMaxUses: 3,
@@ -81,8 +81,8 @@ describe("resolveServerWebToolConfig (P0.15i)", () => {
     });
   });
 
-  it("lets a run explicitly opt web_fetch IN (once the beta header is wired)", () => {
-    expect(resolveServerWebToolConfig({ fetch: true }).fetch).toBe(true);
+  it("lets a run explicitly opt web_fetch OUT (e.g. a scoped subagent)", () => {
+    expect(resolveServerWebToolConfig({ fetch: false }).fetch).toBe(false);
   });
 });
 
@@ -90,13 +90,13 @@ describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6
   const config = resolveServerWebToolConfig(undefined);
   const bareBody = () => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: "fact-check this" }] });
 
-  it("adds the server web_search tool to a request that has no tools at all (the P0.15h searches=0 case)", () => {
+  it("adds BOTH server web tools to a request that has no tools at all (the P0.15h searches=0 case)", () => {
     const { body, added } = ensureServerWebTools(bareBody(), config);
     expect(added).toBe(true);
     const tools = (body as { tools: Record<string, unknown>[] }).tools;
     expect(tools).toContainEqual({ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: DEFAULT_WEB_SEARCH_MAX_USES });
-    // web_fetch is OFF by default (needs a beta header) — not injected unless explicitly enabled.
-    expect(tools.some((t) => t["name"] === "web_fetch")).toBe(false);
+    // web_fetch is ON by default (GA, no beta header) — required for cited⇒fetched of directly-fetched sources.
+    expect(tools).toContainEqual({ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: DEFAULT_WEB_FETCH_MAX_USES });
   });
 
   it("STRIPS the CLI's client WebSearch/WebFetch tools so they cannot pre-empt the injected server tool (P0.15i, live-confirmed)", () => {
@@ -119,10 +119,11 @@ describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6
     expect(names).toContain("web_search"); // server tool injected in their place
   });
 
-  it("adds web_fetch too when a run explicitly opts it in", () => {
-    const { body } = ensureServerWebTools(bareBody(), resolveServerWebToolConfig({ fetch: true }));
+  it("injects only web_search when a run opts web_fetch OUT", () => {
+    const { body } = ensureServerWebTools(bareBody(), resolveServerWebToolConfig({ fetch: false }));
     const tools = (body as { tools: Record<string, unknown>[] }).tools;
-    expect(tools).toContainEqual({ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: DEFAULT_WEB_FETCH_MAX_USES });
+    expect(tools.some((t) => t["name"] === "web_search")).toBe(true);
+    expect(tools.some((t) => t["name"] === "web_fetch")).toBe(false);
   });
 
   it("adds the missing tool alongside existing custom tools, keeping them", () => {

@@ -39,8 +39,9 @@ export interface ProxyUrlPolicy {
  * Whether — and how much — server-side web research is enabled for this run (§12.6; P0.15i). The vendored
  * `claude` CLI does NOT reliably add Anthropic's server-side web_search tool to the `/v1/messages` request
  * (proven live at P0.15h: `usage_records.searches = 0`), so the proxy — the run's single meter of record and
- * its only network path — GUARANTEES the tool is present. Absent ⇒ web_search defaults ON (it is GA, needs no
- * beta header, and its RESULT urls give `cited⇒fetched` its provenance); web_fetch defaults OFF (see `fetch`).
+ * its only network path — GUARANTEES the tool is present. Absent ⇒ BOTH web_search and web_fetch default ON (both
+ * GA, no beta header); their RESULT urls give `cited⇒fetched` its provenance (the fact-check must fetch the
+ * specific sources it cites, not only see them in a search result — see `fetch`).
  *
  * SCOPED SUBAGENTS: the run's credential — and thus this policy — is shared by the harness and every §12.6
  * input-scoped subagent (second-reader / fidelity-auditor / gap-analyst / holdout-calibrator), which are
@@ -53,11 +54,12 @@ export interface WebToolPolicy {
   /** Inject the server web_search tool when the request lacks one (default true — GA, no beta header). */
   readonly search?: boolean;
   /**
-   * Inject the server web_fetch tool when the request lacks one (default FALSE). Off by default because the
-   * basic `web_fetch_20250910` variant is gated behind the `anthropic-beta: web-fetch-2025-09-10` header, which
-   * the proxy does not currently set (`buildUpstreamHeaders`) — injecting the tool without it would 400 the
-   * whole inference request. web_search alone satisfies `cited⇒fetched`. Enabling `fetch` requires wiring that
-   * beta header first; the injection plumbing is kept ready for that follow-up.
+   * Inject the server web_fetch tool when the request lacks one (default TRUE). `web_fetch_20250910` is GA and
+   * needs no beta header (verified live 2026-09-10). It is required for `cited⇒fetched`: the fact-check must
+   * FETCH the specific sources it cites (search results, the draft's own citations) so their URLs land in the
+   * proxy fetch log — search alone leaves search-adjacent citations un-fetched and delivery fails
+   * `cited_not_fetched`. web_fetch only reaches URLs already in the conversation, and the outbound guards
+   * (query-strip + novel-domain cap) bound the channel.
    */
   readonly fetch?: boolean;
   /** `max_uses` for the injected web_search tool (default `DEFAULT_WEB_SEARCH_MAX_USES`). */

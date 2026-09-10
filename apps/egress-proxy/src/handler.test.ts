@@ -345,8 +345,8 @@ describe("handleProxyRequest — server web tools guaranteed + logged end-to-end
     expect(search!.type).toBe("web_search_20250305");
     // and it is domain-scoped to the run policy in the same pass.
     expect(search!.blocked_domains).toContain("holdout.example");
-    // web_fetch is OFF by default (needs a beta header) — never injected unasked.
-    expect(fwdBody.tools?.some((t) => t.name === "web_fetch")).toBe(false);
+    // web_fetch is ON by default (GA, no beta header) — injected alongside web_search.
+    expect(fwdBody.tools?.some((t) => t.name === "web_fetch")).toBe(true);
   });
 
   it("still forwards the injected web_search when the run has NO url policy (the common case — S3)", async () => {
@@ -361,14 +361,14 @@ describe("handleProxyRequest — server web tools guaranteed + logged end-to-end
     expect(search!.blocked_domains).toBeUndefined();
   });
 
-  it("injects web_fetch only when the run explicitly opts it in via ctx.webTools", async () => {
-    const off = harness();
-    await handleProxyRequest(request(), off);
-    expect((JSON.parse(off.forwarded.req!.body) as { tools?: { name?: string }[] }).tools?.some((t) => t.name === "web_fetch")).toBe(false);
-
-    const on = harness({ context: ctx({ webTools: { fetch: true } }) });
+  it("injects web_fetch by default; a run can opt it OUT via ctx.webTools", async () => {
+    const on = harness();
     await handleProxyRequest(request(), on);
     expect((JSON.parse(on.forwarded.req!.body) as { tools?: { name?: string }[] }).tools?.some((t) => t.name === "web_fetch")).toBe(true);
+
+    const off = harness({ context: ctx({ webTools: { fetch: false } }) });
+    await handleProxyRequest(request(), off);
+    expect((JSON.parse(off.forwarded.req!.body) as { tools?: { name?: string }[] }).tools?.some((t) => t.name === "web_fetch")).toBe(false);
   });
 
   it("does not inject into a non-Messages endpoint (e.g. count_tokens)", async () => {
