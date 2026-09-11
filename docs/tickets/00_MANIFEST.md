@@ -22,14 +22,19 @@ and a filename ever disagree.
 > canonical spec (`docs/rhema-design-spec.md`) and regenerable via `docs/6_ticket-decomposition-prompt.md`
 > — so to change a requirement, amend the spec first, then regenerate/update the affected ticket. But
 > they are versioned in git, not local-only scratch. `implement-spec` reads them from the working tree.
-> The machine ledger `orchestrate-build` parses lives at `.agents/scratch/rhema-build-ledger.md`
-> (that one stays gitignored — it is per-run machine state, not a doc).
+> The machine ledger `orchestrate-build` parses lives at **`docs/build/LEDGER.md`** (committed under the
+> build-memory v2 layout since MAINT.1 / ADR-004; the per-ticket run ledgers are **`docs/build/runs/<ID>.md`**
+> and PR bodies **`docs/build/pr/<ID>.md`** — `.agents/scratch/` is retired).
 
 > **Deferrals ledger:** acceptance criteria/deliverables a ticket cannot finish at implementation
 > time (live AWS deploys, HUMAN prerequisites) are tracked in **`DEFERRALS.md` in this directory** — a
 > hand-maintained companion (not a generated ticket; preserved across regeneration). Every
 > `implement-spec` run reads it (via `AGENTS.md`) and closes any row this ticket or its prerequisites
 > unblock; phase-exit GATE rows must not pass while an `OPEN` row scoped to that phase remains.
+
+companions: `DEFERRALS.md`, `16_P0.15g__preflight-audit.md`
+
+req_id_pattern: `REQ-[A-Z]+-[0-9]+`
 
 Stack: **TypeScript everywhere, no Python** (Q-3); pnpm + Turborepo; Pulumi (TypeScript) stacks;
 **GCP-first** (§13; amended 2026-09-02 from AWS-first — see § Spec amendments applied), inference from
@@ -116,6 +121,11 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 16* | `16_P0.15b__phase0-live-bringup-and-g1.md` | 0 | **live bring-up Stage A** (sorts right after 16): the Pulumi/GCP IaC (typechecked + network proven live), the live SDK adapter, arm executors + workshop CLI, the live-exit driver, RS256 signer, CreditRenderer, fetch EventTransport, real `protocols_version` provenance — the offline, PR-able deploy artifacts (operator-gated Stage B deferred to 16**) |
 | 16** | `16_P0.15c__phase0-live-bindings-and-engine-e2e.md` | 0 | **live bindings + engine E2E** (sorts right after 16_P0.15b): write the deferred live client bindings + app entrypoints, build/push the run-task image with the vendored SDK, deploy the full `dev` stack, run the live 3-project Reviews + instrumented cost + gate round-trip + cap-402 + start-latency, close every G1-scoped deferral, flag G1 — the **live execution** (operator-gated: real infra + paid inference; the live pilot wave rides the D-P0.13-2 human verification) |
 | 16*** | `16_P0.15d__live-runspec-infra-and-green-review.md` | 0 | **the live run-spec + the infra a run needs + the first green Review** (sorts right after 16_P0.15c): P0.15c deployed `dev` + drove the pipeline to the agent boundary but hit 3 real gaps — this builds the server-authored harness `RUN_SPEC` (the load-bearing blocker), bakes the sandbox-node PGA egress + pod NetworkPolicy + the re-platformed proxy into the IaC, then re-runs the §17 exit criterion (the 3 live Reviews + instrumented + cross-check + cap-402 + latency) and flags G1. **Stage A offline (one session); Stage B operator-gated (may iterate)** |
+| 16e | `16_P0.15e__pod-commit-loop-worker-deploy-and-green-review.md` | 0 | **live Stage A** (sorts after 16_P0.15d): the pod→server commit/deliver loop + a deployable worker (run-time insert synthesized from P0.15d's live blockers; see § Plan extensions, ADR-003) |
+| 16f | `16_P0.15f__green-review-agent-proxy-and-pod-logs.md` | 0 | **live Stage A** (sorts after 16_P0.15e): pod-log observability + the agent→proxy path + the worker GKE launcher (run-time insert) |
+| 16g | `16_P0.15g__agent-launch-caps-credential-path-green-review.md` | 0 | **live Stage A** (sorts after 16_P0.15f): agent-launch ambient/setgid caps + the credential injector + the green-review construction half (run-time insert; audit companion `16_P0.15g__preflight-audit.md`) |
+| 16h | `16_P0.15h__per-phase-review-execution-and-green-exit.md` | 0 | **live Stage A/B** (sorts after 16_P0.15g): per-phase skill artifacts + per-run budget config + hook-enforcement true-zero test + IaC; the full 6-phase Review proven live to the deliver path (run-time insert) |
+| 16i | `16_P0.15i__agent-web-research-in-sandbox.md` | 0 | **live Stage A/B** (sorts after 16_P0.15h): the egress-proxy as GUARANTOR of server-side `web_search` (cited⇒fetched provenance); AC3 proven live, AC4 → 16_P0.15j (run-time insert) |
 | 16+ | `16z_MAINT.1__build-memory-v2-migration.md` | 0 | **(post-P0.15i follow-up, RUN 1 of 3)** MAINT.1 / RH.1 — migrate Rhēma onto build memory v2 (committed `docs/build/` root, moved run ledgers, reconstructed LEDGER/BUILD_INDEX, retro-fit ADRs, chain-table + docs reconciliation). Offline, no code, no spend. Also reconciles the chain-table rows for the hand-inserted `16_P0.15e…i` + these three follow-ups. |
 | 16+ | `16_P0.15j__fact-check-citation-discipline.md` | 0→B | **(post-P0.15i follow-up, RUN 2 of 3)** the fact-check must cite only tool-retrieved URLs so a Review DELIVERS (`cited⇒fetched` green) — a citation-fetch-compliance eval + skill/model discipline (or, on an operator spec-ruling, a harness citation-backfill). Closes D-P0.15i-2. **Stage A offline; Stage B operator-gated (live).** |
 | 16+ | `16_P0.15k__live-three-project-reviews-and-instrumented-cost.md` | 0→B | **(post-P0.15i follow-up, RUN 3 of 3)** the last live G1 legs — the three-project Reviews (D-P0.15-1) + instrumented cost runs (D-P0.15-2) + gate round-trip + rewrite `docs/phase0-exit-readout.md` with measured values, flag G1 ready. **Operator-gated (real infra + paid inference).** Depends on 16_P0.15j. |
@@ -371,15 +381,15 @@ has exactly one owner.
   Manager; SigV4/task-role→Workload Identity; SES→Resend; SST→Pulumi; CloudWatch→Cloud Operations;
   Bedrock→Vertex AI; us-east-1→us-central1) is in the §12 amendment banner. Affects §12.1/12.3/12.4/12.7/12.9,
   §13.1–13.5, H0/H1, and P0.01/P0.06/P0.07/P0.08/P0.15/PRB.09. The **SST→Pulumi IaC rewrite** lands on a
-  P0.01 re-run once the GCP project exists (DEFERRALS D-P0.01-7); the committed `infra/` SST skeleton is
+  P0.01 re-run once the GCP project exists (DEFERRALS D-P0.01-7; **ADR-003**); the committed `infra/` SST skeleton is
   marked superseded meanwhile. pg-boss, Expo Push, Stripe, Better Auth, and the boundary/uid model are
-  unchanged.
+  unchanged. **(ADR-001)**
 - **2026-09-01 (REQ-ARCH-37 / §13.2 / cross-cutting invariant 3):** `packages/protocols` moved from a
   gitignored path-resolved private checkout to a **committed workspace member** (operator decision — the
   repo is private). Open-source-readiness is now an export-time swap to `@rhema/protocols-stub` (renamed
   from `@rhema/protocols`), not a live resolution; `.pnpmfile.cjs` path-resolution now covers `@rhema/evals`
   only; the ported skills are drift-checked against the vendored pin `packages/protocols/upstream-pin/`.
-  Affects P0.01 (private-package wiring) and P0.03 (the protocols package now lands in-tree, tracked).
+  Affects P0.01 (private-package wiring) and P0.03 (the protocols package now lands in-tree, tracked). **(ADR-002)**
 
 ## Decomposition decisions (operator may veto; see the session report)
 
@@ -402,3 +412,24 @@ has exactly one owner.
    transaction; `gate:<id>` job ownership split stated (P0.08 registers, P0.10 owns semantics);
    analytics event schemas moved to P0.02; P1.14's forward dependency on P1.15 removed; matrix
    row 37 citation import named in P1.02; duplicate coverage claims annotated as halves.
+
+## Plan extensions (append-only: inserts, splits, rounds)
+
+Run-time inserts and splits, recorded here and reflected in the chain table + `docs/build/LEDGER.md` PHASE LOG.
+The Phase-0 `P0.15*` sub-tickets were each **synthesized from the previous ticket's live blockers** — the
+validation-first live bring-up (spec §17) surfaced work the offline decomposition could not foresee. They keep
+the `16_` prefix (ID-suffixed inserts, not `16a/b/c` which the G1/H2/G2 markers hold); the chain table carries the
+sequence (BM-COMPAT-05 — historical filenames are not renamed).
+
+- **2026-09-01 — SPLIT** P0.08 → P0.08b (run events / SSE) per the Phase-4 adversarial review (decomposition-decision #8); both files kept.
+- **2026-09-02 — INSERT** `cloud-switch` (PR #7): AWS→GCP + inference via the direct Anthropic API (ADR-001); collapsed the H1 auth spike. Recorded as an amendment (see § Spec amendments applied).
+- **2026-09-03 — INSERT** `16_P0.15b` (PR #18): live Stage A bring-up artifacts (Pulumi/GCP IaC, SDK adapter, arm executors, live-exit driver; ADR-003).
+- **2026-09-03 — INSERT** `16_P0.15c` (PR #19): live client bindings + Stage B dev execution (live Review blocked on the unbuilt RUN_SPEC).
+- **2026-09-04 — INSERT** `16_P0.15d` (PR #20): the server-authored harness RUN_SPEC + node-egress/proxy IaC.
+- **2026-09-04 — INSERT** `16_P0.15e` (PR #21): pod→server commit/deliver loop + deployable worker.
+- **2026-09-04 — INSERT** `16_P0.15f` (PR #22): pod-log observability + agent→proxy path + worker GKE launcher.
+- **2026-09-08 — INSERT** `16_P0.15g` (PR #23): agent-launch caps + credential injector + green-review construction (+ audit companion `16_P0.15g__preflight-audit.md`).
+- **2026-09-09 — INSERT** `16_P0.15h` (PR #24): per-phase artifacts + budget config + hook enforcement + IaC; full 6-phase Review proven live to the deliver path.
+- **2026-09-09 — INSERT** `16_P0.15i` (PR #25): proxy-guaranteed server-side web research (cited⇒fetched provenance; AC3 live).
+- **2026-09-10 — INSERT** `16z_MAINT.1` (this PR): build-memory v2 migration (RUN 1 of 3 post-P0.15i follow-ups; ADR-004).
+- **2026-09-10 — INSERT** `16_P0.15j`, `16_P0.15k` (RUN 2 & 3 of the follow-ups): the fact-check citation-discipline eval, then the last live G1 legs. G1 now reads after `16_P0.15k`.
