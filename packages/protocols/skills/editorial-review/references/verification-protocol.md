@@ -113,3 +113,40 @@ highlight reel.
 
 Every evidence entry must carry the URL of a source actually read this
 session. No source you did not open appears anywhere in the ledger.
+
+## 6. The fetch-then-cite loop (do this for every cited URL)
+
+The ledger's citations are checked mechanically at delivery: every URL you cite
+is matched against the set of URLs your tools actually returned this session,
+and **one URL that was not retrieved fails the entire review**. So treat every
+citation as a gated write. Before a URL goes into a ledger row — as the source
+link, or anywhere in the evidence line — it must already be one of:
+
+- a URL that came back in one of **your own `web_search` result blocks** this
+  session, or
+- a URL **you passed to `web_fetch`** this session and got a result for.
+
+A URL you "know" is not retrieved. The URL of a well-known outlet (a Snopes
+fact-check, a Scientific American piece, a Forbes column, a journal DOI), and a
+URL you saw as a *reference or footnote inside a page you fetched*, are both
+un-retrieved until **you** fetch them. Do not reconstruct, shorten, or
+recall a URL from memory.
+
+The loop, per claim you are about to write:
+
+1. Decide which source(s) settle the claim.
+2. For each one, check: is its exact URL already in your search results, or did
+   you already `web_fetch` it? If yes, cite it (copy the URL verbatim).
+3. If not, **`web_fetch` it now.** If the fetch succeeds, cite the fetched URL.
+4. If you cannot retrieve it — the fetch fails, the page is unreachable, or you
+   only have the source from memory — the verdict is **Unverifiable** and the row
+   carries **no URL**. Say in the finding that the source could not be retrieved
+   this session; never substitute a remembered or reconstructed link to make the
+   row look sourced.
+
+A claim you genuinely cannot source with a retrieved URL is worth more as an
+honest `Unverifiable` than as a `Verified`/`Contradicted` row that fails
+delivery for the whole review. When in doubt, fetch; if you can't fetch, downgrade.
+If `web_fetch` is not available in your run, only the URLs your `web_search`
+returned are citable — everything you cannot get from a search result is
+`Unverifiable`.

@@ -108,7 +108,12 @@ treat them as hard constraints, not aspirations.
    delivery, every cited URL is checked against the run's fetch log, and a single
    URL that was not retrieved this session fails the ENTIRE review
    ("cited_not_fetched") — so cite retrieved URLs only, and drop (mark
-   unverifiable) any claim whose source you could not pull with a tool.
+   unverifiable) any claim whose source you could not pull with a tool. Run the
+   **fetch-then-cite loop** (verification protocol §6) for every claim-ledger row:
+   before the URL goes in, confirm it came from a search result or `web_fetch` it
+   now; if you cannot retrieve it, the row is Unverifiable and carries no URL. A
+   remembered URL for a famous outlet, and a link printed *inside* a page you
+   fetched, both count as un-retrieved until you fetch them yourself.
 
 6. **Report against interest.** If your research shows the piece is *right*
    where you suspected it was wrong, or that its claim is more original than you

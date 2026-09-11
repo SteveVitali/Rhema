@@ -30,3 +30,4 @@ export * from "./scorers/meaning-diff.js";
 export * from "./scorers/economics.js";
 export * from "./scorers/diversity.js";
 export * from "./scorers/style-control.js";
+export * from "./scorers/citation-fetch.js";
