@@ -7,10 +7,12 @@
 
 Per spec §17 Phase 0a (ledger L13, C8):
 
-- [ ] **GCP project + billing account** (enable AlloyDB, GCS, GKE, Cloud Run, Memorystore, Secret
+- [x] **GCP project + billing account** (enable AlloyDB, GCS, GKE, Cloud Run, Memorystore, Secret
       Manager, Cloud CDN; region `us-central1`) — the ground everything live sits on
-- [ ] **Anthropic API account + API key** (platform-billed) — no cloud marketplace needed; feeds
+      *(done — project `rhema-507501`, us-central1; the `dev` stack deployed live from P0.15b onward, evidence `docs/build/runs/P0.15b.md`, `P0.15c.md`)*
+- [x] **Anthropic API account + API key** (platform-billed) — no cloud marketplace needed; feeds
       tickets 03/06/16 and the egress proxy
+      *(done — a workspace-scoped key in Secret Manager; live paid inference ran from P0.15g, evidence `docs/build/runs/P0.15g.md`; `provided: yes` — no value in any ledger)*
 - [ ] Stripe account + Stripe Tax registrations by geography
 - [ ] Google OAuth consent screen (native on GCP; `drive.file` review can start now for 1.x)
 - [ ] `rhema.app` + `rhemausercontent.com` domains

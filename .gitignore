@@ -6,6 +6,10 @@ node_modules/
 .turbo/
 dist/
 build/
+# docs/build/ is the COMMITTED build-memory v2 root (build-memory migrate, MAINT.1) — re-include it
+# above the generic build/ ignore; only its regenerable logs stay ignored.
+!docs/build/
+docs/build/logs/
 *.tsbuildinfo
 .env
 .env.*
