@@ -39,4 +39,4 @@ operator-gated/deferred (DEFERRALS + G1); `fixture-only` = deterministic/integra
 | 23 | P0.15g | ticket | `stevevitali/p0-15g-agent-launch-caps-credential-path` | #23 | `stevevitali/p0-15f-green-review-agent-proxy-and-pod-logs` | 2026-09-08 | — | — | run | `runs/P0.15g.md#evidence` |
 | 24 | P0.15h | ticket | `stevevitali/p0-15h-per-phase-review-green-exit` | #24 | `stevevitali/p0-15g-agent-launch-caps-credential-path` | 2026-09-09 | — | D-P0.15h-1..8 opened → none closed | run | `pr/P0.15h.md` |
 | 25 | P0.15i | ticket | `stevevitali/p0-15i-agent-web-research-sandbox` | #25 | `stevevitali/p0-15h-per-phase-review-green-exit` | 2026-09-09 | — | D-P0.15i-1..2 opened → none closed | run | `runs/P0.15i.md#evidence` |
-| 26 | MAINT.1 | ticket | `stevevitali/maint-1-build-memory-v2` | (this PR) | `stevevitali/p0-15i-agent-web-research-sandbox` | 2026-09-10 | ADR-001, ADR-002, ADR-003, ADR-004 | — | n-a | `runs/MAINT.1.md#evidence` |
+| 26 | MAINT.1 | ticket | `stevevitali/maint-1-build-memory-v2` | #26 | `stevevitali/p0-15i-agent-web-research-sandbox` | 2026-09-10 | ADR-001, ADR-002, ADR-003, ADR-004 | — | n-a | `runs/MAINT.1.md#evidence` |
