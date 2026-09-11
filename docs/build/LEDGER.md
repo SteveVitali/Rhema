@@ -17,11 +17,11 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      P0.15j            # 16_P0.15j__fact-check-citation-discipline.md (RUN 2 of 3 post-P0.15i follow-ups)
-lastCompleted:   MAINT.1           # build-memory v2 migration, closed by D4 (this PR)
+nextTicket:      P0.15k            # 16_P0.15k__live-three-project-reviews-and-instrumented-cost.md (RUN 3 of 3 post-P0.15i follow-ups), then GATE G1
+lastCompleted:   P0.15j            # fact-check citation-fetch eval + skill discipline (Stage A), PR #27
 blockedOn:       (nothing)         # a REAL block only (red verification, missing dependency/infra). Human gates + pending G1 are NOT blocks
 pauseRequested:  false
-returnPass:      (none)
+returnPass:      P0.15j            # AC3 (live second_read=false deliver) is Stage B [OPERATOR GATE]; re-run after the operator releases budget
 manifest:        docs/tickets/00_MANIFEST.md
 canonicalSpec:   docs/rhema-design-spec.md
 memoryRoot:      docs/build
@@ -29,12 +29,12 @@ dispatchTarget:  manual
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, stevevitali/p0-01-monorepo-and-infra) — P0.01's fork point
-chainTip:        stevevitali/maint-1-build-memory-v2
+chainTip:        stevevitali/p0-15j-fact-check-citation-discipline
 benchmarkSet:    PENDING_CREATE     # §18 corpus is HUMAN row H2; dev set = the three real projects
 autonomy:        checkpoint
 mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up at the end
 round:           1
-updatedAt:       2026-09-10
+updatedAt:       2026-09-11
 ```
 
 ## OPEN FINDINGS
@@ -64,7 +64,7 @@ _(tickets run with a gate skipped; re-run after the operator acts. `returnPass:`
 
 | ticket | gates | what the operator must do | re-run line |
 |---|---|---|---|
-| (none) | — | — | — |
+| P0.15j | AC3 (live `second_read=false` deliver, [OPERATOR GATE]) | release `dev` Anthropic budget; bake the hardened skill into a new run-task image + roll `RUN_TASK_IMAGE_DIGEST` | launch a `second_read=false` Review of `proj_pv` on `dev`, score its claim ledger vs fetch_log with `citationFetchCompliance`, confirm DELIVERS (no `cited_not_fetched`, `assessPhase0ExitForRun` green) → closes D-P0.15i-2 |
 
 ## PHASE LOG (append-only, newest last)
 
@@ -101,3 +101,4 @@ run-time `P0.15b…P0.15i` inserts are `inserted` events. Reconstructed by MAINT
 - 2026-09-09 — P0.15i done — branch `stevevitali/p0-15i-agent-web-research-sandbox` · PR #25 · base `stevevitali/p0-15h-per-phase-review-green-exit` · proxy-guaranteed server-side web research (cited⇒fetched provenance; AC3 proven live) · **Deferrals:** D-P0.15i-1..2
 - 2026-09-03…09 — P0.15b…P0.15i inserted — the eight live-bring-up sub-tickets were inserted at run time under the `16_` prefix (ID-suffixed), each synthesized from the prior ticket's live blockers; see manifest § Plan extensions and **ADR-003**.
 - 2026-09-10 — MAINT.1 done — branch `stevevitali/maint-1-build-memory-v2` · PR #26 · base `stevevitali/p0-15i-agent-web-research-sandbox` · build-memory v2 migration: committed `docs/build/` root, 23 run ledgers moved (byte-identical), LEDGER + BUILD_INDEX reconstructed from 25 PRs, ADR-001..004 retro-fitted, chain-table + docs reconciled · **Verify:** `check-build-memory.sh .` exit 0; `pnpm turbo build lint typecheck` + `pnpm test` unchanged (no code) · **Deferrals:** opened none · closed none · **Deviations:** patched the shared build-memory validator (ID-keyed dup check + status-prose tolerance; separate agent-skills PR); 3 DEFERRALS rows given a canonical status prefix; BM-COMPAT-05 (SHOULD) honored — no ticket renamed · chainTip → `stevevitali/maint-1-build-memory-v2` · next → P0.15j
+- 2026-09-11 — P0.15j done — branch `stevevitali/p0-15j-fact-check-citation-discipline` · PR #27 · base `stevevitali/maint-1-build-memory-v2` · citation-fetch-compliance eval (`@rhema/benchmark` §18 scorer, guard-parity) + editorial-review fetch-then-cite skill discipline (Path A; Path B not taken — no operator ruling); `validateCitedFetched` unchanged · **Verify:** eval 8; guard 12 (still rejects un-retrieved); benchmark+protocols+mirror 294; `pnpm turbo build lint typecheck` 102/102; drift gate OK; `PROTOCOLS_VERSION` → `0.4.0+5b08d37da59aad92`; `check-build-memory.sh .` 0 violations · **Deferrals:** opened none · closed none (D-P0.15i-2 Stage-A construction done; live AC3 gate-pending) · **Deviations:** Path A(b) model-routing left unchanged offline (Stage-B lever, no offline proof) · chainTip → `stevevitali/p0-15j-fact-check-citation-discipline` · next → P0.15k (RETURN PASS: P0.15j AC3)
