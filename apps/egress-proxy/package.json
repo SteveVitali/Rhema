@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "egress-proxy — per-run allowlist + credential; the usage meter of record (skeleton service).",
+  "description": "egress-proxy — the only route out of the sandbox: per-run credential + allowlist, the usage meter of record, the cap enforcer, and the fetch log of record (§12.7).",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,6 +20,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@rhema/contracts": "workspace:*"
+    "@rhema/contracts": "workspace:*",
+    "undici": "^7.29.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@rhema/db": "workspace:*"
   }
 }

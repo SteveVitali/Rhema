@@ -16,6 +16,8 @@ export const fetchLog = pgTable("fetch_log", {
   runId: text("run_id").notNull(),
   ts: timestamp("ts").notNull(),
   agentLabel: text("agent_label").notNull(),
+  // The run attempt this request belongs to (added 0006; the proxy tags run_id/attempt/agent_id — §12.7).
+  attempt: integer("attempt").notNull().default(1),
   kind: text("kind").notNull(),
   query: text("query"),
   url: text("url"),
