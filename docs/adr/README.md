@@ -10,3 +10,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-002](ADR-002-protocols-committed-workspace-member.md) | `@rhema/protocols` is a committed workspace member with an export-time stub swap — retro-fitted record | P0.03 (PR #3); wiring P0.01 (PR #1) | Accepted |
 | [ADR-003](ADR-003-sst-to-pulumi-iac-rewrite.md) | IaC rewritten from SST (AWS) to Pulumi (GCP, TypeScript) — retro-fitted record | P0.15b (PR #18); origin `D-P0.01-7` | Accepted |
 | [ADR-004](ADR-004-build-memory-committed-in-git.md) | `docs/` is committed and build memory is versioned in git under `docs/build/` — retro-fitted record | MAINT.1 (this PR); origin Q-13 | Accepted |
+| [ADR-005](ADR-005-instrumented-fold-registry.md) | the instrumented-fold registry — a process-local override so a live metered run flips `estimatorsAreProvisional()` | P0.15k | Accepted |

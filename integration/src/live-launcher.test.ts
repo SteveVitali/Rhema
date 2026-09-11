@@ -49,10 +49,13 @@ describe("LiveWorkflowLauncher — run creation contract", () => {
     expect(headers["x-rhema-workspace-id"]).toBe("ws_seed");
     expect(headers["x-rhema-billing-account-id"]).toBe("bill_seed");
     expect(headers["content-type"]).toBe("application/json");
-    const body = JSON.parse(calls[0]!.init.body as string) as { workflow: string; rigor: string; idempotencyKey: string };
+    const body = JSON.parse(calls[0]!.init.body as string) as { workflow: string; rigor: string; idempotencyKey: string; inputs: { second_read?: boolean; sidecar?: boolean } };
     expect(body.workflow).toBe("review");
     expect(body.rigor).toBe("standard");
     expect(body.idempotencyKey).toMatch(/^live-review-proj_pv-standard-n-1$/);
+    // a review run opts second_read OUT (G1 delivery mode, D-P0.15h-5) and always emits sidecars.
+    expect(body.inputs.second_read).toBe(false);
+    expect(body.inputs.sidecar).toBe(true);
   });
 
   it("maps full rigor to full_board and quick_voice to a quick profile_voice run", async () => {
@@ -65,6 +68,9 @@ describe("LiveWorkflowLauncher — run creation contract", () => {
     expect(revise.workflow).toBe("revise");
     expect(revise.rigor).toBe("full_board");
     expect(revise.inputs.instrumented).toBe(true);
+
+    // second_read is a review-only input — a non-review run does not carry it.
+    expect((revise as { inputs: { second_read?: boolean } }).inputs.second_read).toBeUndefined();
 
     await launcher.launch({ projectId: "p1", workflow: "quick_voice" });
     const voice = JSON.parse(calls[1]!.init.body as string) as { workflow: string; rigor: string };

@@ -135,7 +135,9 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
       estimateCredits: this.opts.estimateCredits ?? DEFAULTS.estimateCredits,
       capCredits: this.opts.capCredits ?? DEFAULTS.capCredits,
       rateTableVersion: this.opts.rateTableVersion ?? DEFAULTS.rateTableVersion,
-      inputs: { ...(draftId ? { draftId } : {}), sidecar: true, instrumented },
+      // `second_read` is opted OUT for the G1 review runs (the §12.6 scoped second-read producer is D-P0.15h-5;
+      // G1 delivers with second_read off — this ticket's Stage B AC1). It is a review-only input.
+      inputs: { ...(draftId ? { draftId } : {}), sidecar: true, instrumented, ...(workflow === "review" ? { second_read: false } : {}) },
       ...(draftId ? { draftId } : {}),
     };
 

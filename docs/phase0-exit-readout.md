@@ -1,11 +1,18 @@
 # Phase-0 exit readout — the input to milestone gate G1
 
-> **Status: composition proven deterministically; Stage B was executed LIVE on `dev` (2026-09-03) and the
-> deploy + orchestration pipeline is proven end-to-end up to the agent-execution boundary — but NO live
-> Review completed, so G1 is NOT passable.** This document is produced by **P0.15** and updated by
-> **P0.15c** (Stage B live execution); it is the operator's input to **GATE G1**
-> (`docs/tickets/16a_GATE-G1__phase0-exit.md`). See **"Stage B — live execution (2026-09-03)"** below for
-> what was proven live, the ~16 deploy-surfaced bugs fixed, and the one core gap that blocks the live Review.
+> **Status (updated 2026-09-11, P0.15k Stage A): the full live Review pipeline is PROVEN end-to-end with real
+> inference (P0.15g/h/i) — but G1 is NOT yet flaggable-ready.** Two live legs remain, both operator-gated: (a)
+> a Review must DELIVER `cited⇒fetched`-green (owned by **16_P0.15j**, its live AC3 still a RETURN PASS), and
+> (b) THIS ticket's three-project Review matrix + instrumented cost runs + gate round-trip (**D-P0.15-1/-2/-3**,
+> AC1–AC3, [OPERATOR GATE]d — paid inference on a deployed `dev`). This document is produced by **P0.15** and
+> updated by **P0.15c/e/f** (Stage B live execution) and **P0.15k** (this section); it is the operator's input
+> to **GATE G1** (`docs/tickets/16a_GATE-G1__phase0-exit.md`). The **measured-value rewrite of the
+> criterion-by-criterion table below is gate-pending** — it lands when the operator-gated Stage B of 16_P0.15k
+> runs. See **"P0.15k Stage A (2026-09-11)"** at the end for the Stage-A construction and the exact remaining
+> live checklist.
+>
+> ⚠️ The dated Stage-B sections below (2026-09-03 … 09-04) are the append-only live-execution HISTORY and predate
+> the P0.15g/h/i green-Review milestone — read them as history, not as the current state, which is the banner above.
 
 Generated at commit on branch `stevevitali/p0-15-phase0-integration-and-exit` (stacked on the P0.14 tip).
 
@@ -399,6 +406,49 @@ after the run (cost mandate). **G1 stays blocked**, now with a precise remaining
 undiagnosable hang.
 
 ---
+
+## P0.15k Stage A (2026-09-11) — the three-project + instrumented-cost machinery is wired; the live matrix is gate-pending
+
+**P0.15k is the LAST live G1 leg (three-project Reviews + instrumented cost → rewrite this readout → flag G1
+ready).** It is mostly a live-execution ticket → **[OPERATOR GATE]d** (real infra + paid inference), and its
+Stage B additionally depends on **16_P0.15j**'s own live AC3 (a Review must DELIVER `cited⇒fetched`-green
+first — still a RETURN PASS). This session had **no operator authorization, no stated spend budget, and no
+confirmed deployed `dev`**, so Stage B was **not** run and no pass was fabricated (BM-DEFER-02). What Stage A
+built + verified offline, no spend:
+
+- **Multi-project fixture (AC1).** `integration/src/live-prepare-fixture.ts` now repoints **all three** real
+  drafts (`proj_pv` / `proj_sd` / `proj_cr`) to real ~800–900-word prose (was `proj_pv`-only). The seed writes
+  each `<proj>_av1` head with a placeholder sha + no GCS bytes; the fixup uploads real bytes + repoints each so
+  `/work` materialization does not dangle for any of the three. `run-live-exit.ts` wires `draftIdFor` so each
+  project reviews its seeded `<proj>_d1`, and the launcher opts `second_read` **out** for review runs (the G1
+  delivery mode, D-P0.15h-5).
+- **The instrumented-fold call-site (AC2 / D-P0.15-2), previously missing.** `foldInstrumentedRun` is pure and
+  was never applied in the live path, and `estimatorsAreProvisional()` read a hardcoded const — so nothing could
+  ever flip it, and AC2 could not pass even on a perfect live run. Now: a process-local **instrumented-override
+  registry** (`@rhema/protocols` `recordInstrumentedFold` / `estimatorSpec` / `resetInstrumentedOverrides`;
+  `estimatorsAreProvisional()` reads override-first), the driver **folds each instrumented run** through an
+  injectable `InstrumentedFolder` and surfaces the folds (`estimatorFolds`), and the live binding
+  (`integration/src/instrumented-folder.ts` `createDbInstrumentedFolder`) reads the run's measured proxy cost
+  (`proxyVsSdkCrossCheck`) → `platformCredits` and records the fold. Design + the process-local-vs-durable
+  tradeoff: **ADR-005**. `proxyVsSdkCrossCheck` (±2%, AC2) and `assessPhase0ExitForRun` (AC1) already read the
+  live rows and handle all three projects.
+- **Credit renderer (D-P0.15d-3) verified wired live.** The pod harvest route already defaults its
+  `renderCredits` to `rateTableCreditRenderer` (`apps/api/src/run-routes.ts`), so a live phase emits a
+  provisional `usage.tick` / `sdk_stream` row; the "emits live" leg rides Stage B.
+
+**Verify (offline):** `pnpm turbo build lint typecheck` 102/102; the affected suites (protocols + integration +
+mirror + orchestrator) 394 pass / 1 skip (server-postgres, needs `DATABASE_URL`); the new estimator-registry,
+driver-fold, folder, and launcher tests green; upstream-diff OK; `protocols_version` unchanged
+(`0.4.0+5b08d37da59aad92` — the estimator is outside the hashed trio). **No spend.**
+
+**The exact remaining live checklist (Stage B, operator-gated):** on a deployed `dev` (redeploy via the
+P0.15f/g runbook; populate the workspace-scoped `anthropic-api-key`), after 16_P0.15j's live AC3 delivers:
+`node scripts/live/prepare-fixture.mjs` (funds `bill_seed` + repoints all three drafts) → `RHEMA_LIVE_EXIT=1
+PROJECT_IDS=proj_pv,proj_sd,proj_cr … tsx integration/src/run-live-exit.ts` — it drives the three Reviews +
+Revise/Fact-check/Quick-Voice + the instrumented cost runs (folding each), a gate round-trip, and runs
+`assessPhase0ExitForRun` over the live rows, then prints the readout. **Then** the criterion-by-criterion table
+above gets rewritten with the MEASURED values, D-P0.15-1/-2/-3 close with evidence, and G1 is flagged ready.
+**G1 remains the operator's gate** (this ticket does not run or disposition it).
 
 ## Pointers
 
