@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { SqlClient } from "@rhema/orchestrator";
+import type { EstimatorSpec } from "@rhema/protocols";
 import type { Phase0ExitAssessment } from "./harness.js";
 import {
   driveLiveExit,
@@ -11,6 +12,9 @@ import {
   type WorkflowLauncher,
   type LaunchedRun,
 } from "./live-exit-driver.js";
+
+const foldedSpec = (workflow: string): EstimatorSpec =>
+  ({ workflow, provisional: false, source: "instrumented", version: "instrumented@2026-09-11" }) as EstimatorSpec;
 
 const EXEC = {} as SqlClient; // the assessor is stubbed, so the executor is never touched in these tests.
 
@@ -99,6 +103,41 @@ describe("driveLiveExit — orchestration + rollup", () => {
   it("flags a start-latency SLO miss", async () => {
     const out = await driveLiveExit(baseDeps({ launcher: fakeLauncher([START_LATENCY_SLO_MS + 1]) }));
     expect(out.startLatency.withinSlo).toBe(false);
+  });
+
+  it("folds each instrumented run via the injected folder and surfaces the folds (§16.3 #1 / D-P0.15-2)", async () => {
+    const seen: string[] = [];
+    const out = await driveLiveExit(
+      baseDeps({
+        pilot: { run: () => Promise.resolve({ waveId: "w", sigmaD: 0.1, n: 24, scorersGreen: true }) },
+        foldInstrumented: (_exec, run) => {
+          seen.push(`${run.workflow}:${run.rigor}`);
+          return Promise.resolve(foldedSpec(run.workflow));
+        },
+      }),
+    );
+    // 4 ported workflows × 2 rigors = 8 instrumented folds.
+    expect(out.estimatorFolds).toHaveLength(8);
+    expect(seen).toEqual([
+      "review:standard", "review:full",
+      "revise:standard", "revise:full",
+      "fact_check:standard", "fact_check:full",
+      "profile_voice:standard", "profile_voice:full",
+    ]);
+    expect(out.estimatorFolds[0]).toMatchObject({ workflow: "review", rigor: "standard" });
+  });
+
+  it("records no fold for a run the folder returns null for (unmetered) — never a fabricated fold", async () => {
+    const out = await driveLiveExit(baseDeps({ foldInstrumented: () => Promise.resolve(null) }));
+    expect(out.estimatorFolds).toHaveLength(0);
+  });
+
+  it("records no folds when no folder is injected (estimators stay provisional by default)", async () => {
+    const out = await driveLiveExit(baseDeps({ estimatorsProvisional: undefined, foldInstrumented: undefined }));
+    expect(out.estimatorFolds).toHaveLength(0);
+    // with no fold recorded, the real estimatorsAreProvisional() is true ⇒ not ready.
+    expect(out.estimatorsProvisional).toBe(true);
+    expect(out.ready).toBe(false);
   });
 });
 
