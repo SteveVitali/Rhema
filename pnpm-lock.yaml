@@ -296,6 +296,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.2.17
         version: 0.2.17
+      '@rhema/mirror':
+        specifier: workspace:*
+        version: link:../mirror
 
   packages/benchmark-runner:
     dependencies:
