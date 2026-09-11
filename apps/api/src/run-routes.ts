@@ -37,7 +37,8 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
-import type { DeliveryArgs, NewVersion, ObligationHook } from "@rhema/mirror";
+import { registrableDomain } from "@rhema/mirror";
+import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
 import type { AgentTypeKey } from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
 
@@ -367,7 +368,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         ...(body.refundCredits != null ? { refundCredits: body.refundCredits } : {}),
         ...(body.byPhase ? { byPhase: body.byPhase } : {}),
         // the run/attempt/workspace of record come from the token, not the pod's dossier (§12.6 attestation).
-        delivery: { ...body.delivery, runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId },
+        // Rebuild verdictContext SERVER-SIDE from the claim ledger: the pod's Sets do not survive the JSON POST
+        // (a Set serializes to `{}`), so a wire verdictContext has no working `.has` (§12.8(c) would crash). The
+        // citation domains are recoverable from the ledger's own cited urls — the same conservative build the
+        // harness does — so reconstruct them here rather than trusting the (Set-less) wire value.
+        delivery: { ...body.delivery, runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId, verdictContext: verdictContextFromLedger(body.delivery.claimLedger) },
       });
       return c.json(res, res.ok ? 200 : 409);
     });
@@ -487,6 +492,21 @@ interface DeliverBody {
   refundCredits?: number;
   byPhase?: Record<string, number>;
   delivery: DeliveryArgs;
+}
+
+/**
+ * Build the §12.8(c) verdict-source context from the claim ledger's own cited domains (server-side). The pod's
+ * `verdictContext` Sets do not survive the JSON deliver POST (a `Set` stringifies to `{}`), so the api
+ * reconstructs them from the ledger — the same conservative build the harness does (citation domains from the
+ * ledger; reputable/search-reached left empty). Robust to a missing/degraded wire value.
+ */
+function verdictContextFromLedger(claimLedger: DeliveryArgs["claimLedger"]): VerdictSourceContext {
+  const citationDomains = new Set<string>();
+  for (const c of claimLedger?.claims ?? []) {
+    if (c.url) citationDomains.add(registrableDomain(c.url));
+    for (const s of c.sources ?? []) if (s.url) citationDomains.add(registrableDomain(s.url));
+  }
+  return { citationDomains, reputableDomains: new Set<string>(), searchResultDomains: new Set<string>() };
 }
 
 /** Resolve a run's delivery money facts from server truth (the run row + its workspace's billing account). */

@@ -150,10 +150,23 @@ export interface AppliedClaim {
   readonly downgraded: boolean;
 }
 
+/** Coerce a domain field to a real Set — defensive against a context that crossed a JSON boundary (a `Set`
+ *  stringifies to `{}`, an array to `[...]`), so `verdictSourceCheck` never throws on `.has`. */
+function asDomainSet(v: unknown): ReadonlySet<string> {
+  if (v instanceof Set) return v as ReadonlySet<string>;
+  if (Array.isArray(v)) return new Set(v as string[]);
+  return new Set<string>();
+}
+
 /** Apply the verdict source check across a claim ledger, returning each claim's (possibly downgraded) verdict. */
 export function applyVerdictSourceChecks(claims: readonly ClaimRow[], ctx: VerdictSourceContext): AppliedClaim[] {
+  const safeCtx: VerdictSourceContext = {
+    citationDomains: asDomainSet(ctx?.citationDomains),
+    reputableDomains: asDomainSet(ctx?.reputableDomains),
+    searchResultDomains: asDomainSet(ctx?.searchResultDomains),
+  };
   return claims.map((claim) => {
-    const o = verdictSourceCheck(claim, ctx);
+    const o = verdictSourceCheck(claim, safeCtx);
     return { claim, verdict: o.verdict, downgraded: o.downgraded, ...(o.sourceCheck ? { sourceCheck: o.sourceCheck } : {}) };
   });
 }
