@@ -124,26 +124,41 @@ describe("delivery transaction", () => {
     expect(rep.n).toBe(1);
   });
 
-  // AC3 — a claim citing a URL absent from the proxy fetch log fails delivery; nothing is written or frozen.
-  it("fails delivery when a claim.url is not in the proxy fetch log (AC3)", async () => {
+  // AC3 (Path B, ADR-006) — a claim citing a URL absent from the proxy fetch log NO LONGER hard-fails delivery:
+  // the unfetched url is STRIPPED from the persisted ledger and the claim's verdict downgraded (the §12.8(c)
+  // treatment), so the delivered dossier cites only fetch-verified sources. Delivery SUCCEEDS.
+  it("strips a claim.url absent from the proxy fetch log + downgrades the claim, delivering (AC3 / Path B)", async () => {
     const args = baseArgs({
       claimLedger: claimLedger([{ ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: "https://nope.example/x", normalizedUrl: normalizeUrl("https://nope.example/x"), humanAdded: false }]),
     });
-    await expect(runDeliveryTransaction(db.exec, deps, args)).rejects.toBeInstanceOf(DeliveryValidationError);
-    // nothing committed / frozen / immutable (the caller ends the run failed(validation)).
-    expect(((await db.exec.query("select count(*)::int as n from correspondence_items where run_id=$1", [runId])).rows[0] as { n: number }).n).toBe(0);
-    expect(((await db.exec.query("select state from drafts where id='dft_v2'")).rows[0] as { state: string }).state).toBe("working");
-    expect(((await db.exec.query("select immutable from artifact_versions where id='av_v2'")).rows[0] as { immutable: boolean }).immutable).toBe(false);
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    // delivered: a correspondence item + a frozen, immutable draft.
+    expect(result.strippedCitations).toBe(1);
+    expect(result.downgradedClaimOrdinals).toEqual([1]);
+    expect(((await db.exec.query("select count(*)::int as n from correspondence_items where run_id=$1", [runId])).rows[0] as { n: number }).n).toBe(1);
+    // the unfetched url was stripped + the verdict downgraded; the persisted ledger cites nothing unfetched.
+    const claim = (await db.exec.query("select url, verdict, source_check from claims where correspondence_id=$1", [result.correspondenceId])).rows[0] as { url: string | null; verdict: string; source_check: string };
+    expect(claim.url).toBeNull();
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.source_check).toBe("suspicious_source");
   });
 
-  it("fails delivery when a claim.sources[].url is not in the proxy fetch log (REQ-OBJ-18 / AC3)", async () => {
+  it("strips an unfetched claim.sources[].url but keeps the fetched ones, delivering (REQ-OBJ-18 / Path B)", async () => {
     const args = baseArgs({
       claimLedger: claimLedger([
         { ordinal: 1, text: "c1", tier: 2, verdict: "contradicted", url: FETCHED_URL, normalizedUrl: normalizeUrl(FETCHED_URL),
-          sources: [{ url: "https://unfetched.example/s", normalizedUrl: normalizeUrl("https://unfetched.example/s"), accessedAt: "2026-09-03T00:00:00.000Z", stance: "contradicts" }], humanAdded: false },
+          sources: [
+            { url: "https://unfetched.example/s", normalizedUrl: normalizeUrl("https://unfetched.example/s"), accessedAt: "2026-09-03T00:00:00.000Z", stance: "contradicts" },
+            { url: FETCHED_URL, normalizedUrl: normalizeUrl(FETCHED_URL), accessedAt: "2026-09-03T00:00:00.000Z", stance: "supports" },
+          ], humanAdded: false },
       ]),
     });
-    await expect(runDeliveryTransaction(db.exec, deps, args)).rejects.toBeInstanceOf(DeliveryValidationError);
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.strippedCitations).toBe(1);
+    expect(result.downgradedClaimOrdinals).toEqual([1]);
+    // only the fetched source survives; the unfetched one was stripped.
+    const srcs = (await db.exec.query("select cs.url from claim_sources cs join claims c on c.id=cs.claim_id where c.correspondence_id=$1 order by cs.ordinal", [result.correspondenceId])).rows as { url: string }[];
+    expect(srcs.map((s) => s.url)).toEqual([FETCHED_URL]);
   });
 
   // AC6 (at the commit level) — a Tier-1 contradicted verdict from a suspicious source is downgraded on write.
