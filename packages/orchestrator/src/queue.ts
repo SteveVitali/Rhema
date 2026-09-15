@@ -19,6 +19,25 @@ export function gateExpiryJob(gateId: string): string {
   return `gate:${gateId}`;
 }
 
+/**
+ * Schedule (or reschedule) the `gate:<id>` expiry job for a deadline (P0.10; §6.4 item 6). The singleton key
+ * includes the deadline instant, so scheduling the SAME deadline twice dedupes, but a MOVED deadline schedules a
+ * fresh job (the stale job's fire is a harmless no-op — the handler re-reads the deadline). `null` (a *wait*
+ * gate) schedules nothing.
+ */
+export async function scheduleGateExpiry(
+  deps: { queue: Queue },
+  args: { gateId: string; workspaceId: string; deadlineAt: Date | null; now: Date },
+): Promise<void> {
+  if (args.deadlineAt == null) return;
+  const startAfterMs = Math.max(0, args.deadlineAt.getTime() - args.now.getTime());
+  await deps.queue.send(
+    gateExpiryJob(args.gateId),
+    { gateId: args.gateId, workspaceId: args.workspaceId },
+    { singletonKey: `${gateExpiryJob(args.gateId)}:${args.deadlineAt.getTime()}`, startAfterMs },
+  );
+}
+
 export interface SendOptions {
   /** pg-boss singleton key: at most one active job per key (dedupes run.start / re-enqueues). */
   readonly singletonKey?: string;

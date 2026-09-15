@@ -1,0 +1,82 @@
+import { describe, it, expect } from "vitest";
+import { GATE_KINDS, NEVER_AUTOPROCEED_GATES, isAutoProceed, type GateKind } from "@rhema/contracts";
+import { resolveGatePolicy, type ApprovalPolicy } from "./gate-policy.js";
+
+const NOW = new Date("2026-09-03T12:00:00Z");
+const POLICIES: ApprovalPolicy[] = ["named", "wait_each", "run_to_completion"];
+
+describe("resolveGatePolicy (§6.4; REQ-GATE-3; REQ-SPEC-1)", () => {
+  it("AC2 — spend/refusal kinds never auto-proceed and are never skipped, under any policy/timer/flag", () => {
+    for (const kind of NEVER_AUTOPROCEED_GATES) {
+      for (const policy of POLICIES) {
+        for (const gatesOff of [false, true]) {
+          const r = resolveGatePolicy(kind, { policy, gatesOff, now: NOW });
+          expect(r.action).toBe("open"); // never skipped
+          if (r.action === "open") expect(isAutoProceed(r.onExpiry)).toBe(false); // never proceed_*
+        }
+      }
+    }
+  });
+
+  it("Run-to-completion skips named gates (Decision{by:'policy'}) but opens spend/refusal + continue_rounds", () => {
+    for (const kind of GATE_KINDS) {
+      const r = resolveGatePolicy(kind, { policy: "run_to_completion", now: NOW });
+      const isSpendOrRefusal = (NEVER_AUTOPROCEED_GATES as readonly GateKind[]).includes(kind);
+      if (isSpendOrRefusal || kind === "continue_rounds") {
+        expect(r.action).toBe("open");
+      } else {
+        expect(r).toMatchObject({ action: "skip", by: "policy", reason: "run_to_completion" });
+      }
+    }
+  });
+
+  it("the autonomous flag turns off later NAMED gates (skip:autonomous), spend/refusal still open", () => {
+    expect(resolveGatePolicy("approve_plan", { policy: "named", gatesOff: true, now: NOW })).toMatchObject({ action: "skip", reason: "autonomous" });
+    expect(resolveGatePolicy("spend_overrun", { policy: "named", gatesOff: true, now: NOW }).action).toBe("open");
+  });
+
+  it("named policy uses the R3 default deadline (approve_plan → 24 h, proceed_conservative)", () => {
+    const r = resolveGatePolicy("approve_plan", { policy: "named", now: NOW });
+    expect(r).toMatchObject({ action: "open", onExpiry: "proceed_conservative" });
+    if (r.action === "open") expect(r.deadlineAt).toEqual(new Date(NOW.getTime() + 24 * 3600_000));
+  });
+
+  it("wait_each removes deadlines everywhere and blocks (no auto-proceed)", () => {
+    const r = resolveGatePolicy("approve_plan", { policy: "wait_each", now: NOW });
+    expect(r).toMatchObject({ action: "open", blocking: true });
+    if (r.action === "open") {
+      expect(r.deadlineAt).toBeNull();
+      expect(isAutoProceed(r.onExpiry)).toBe(false);
+    }
+  });
+
+  it("approve_scope is informational by default, blocking under a blocking condition, waits when over cap (REQ-SPEC-17)", () => {
+    const info = resolveGatePolicy("approve_scope", { policy: "named", now: NOW });
+    expect(info).toMatchObject({ action: "open", blocking: false });
+
+    const blocking = resolveGatePolicy("approve_scope", { policy: "named", now: NOW, scopeBlocking: true });
+    expect(blocking).toMatchObject({ action: "open", blocking: true, onExpiry: "proceed_as_proposed" });
+    if (blocking.action === "open") expect(blocking.deadlineAt).toEqual(new Date(NOW.getTime() + 2 * 3600_000));
+
+    const spend = resolveGatePolicy("approve_scope", { policy: "named", now: NOW, scopeExceedsCap: true });
+    expect(spend).toMatchObject({ action: "open", blocking: true, onExpiry: "wait" });
+    if (spend.action === "open") expect(spend.deadlineAt).toBeNull();
+  });
+
+  it("applies a lengthen override (approve_plan 24 h → 48 h) and a remove override (→ wait)", () => {
+    const lengthened = resolveGatePolicy("approve_plan", { policy: "named", now: NOW, overrides: { approve_plan: 48 * 3600_000 } });
+    if (lengthened.action === "open") expect(lengthened.deadlineAt).toEqual(new Date(NOW.getTime() + 48 * 3600_000));
+
+    const removed = resolveGatePolicy("approve_plan", { policy: "named", now: NOW, overrides: { approve_plan: null } });
+    if (removed.action === "open") {
+      expect(removed.deadlineAt).toBeNull();
+      expect(removed.onExpiry).toBe("wait");
+    }
+  });
+
+  it("an add override on a wait-default kind opens with the added deadline + proceed_as_proposed", () => {
+    const r = resolveGatePolicy("approve_triage", { policy: "named", now: NOW, overrides: { approve_triage: 2 * 3600_000 } });
+    expect(r).toMatchObject({ action: "open", onExpiry: "proceed_as_proposed" });
+    if (r.action === "open") expect(r.deadlineAt).toEqual(new Date(NOW.getTime() + 2 * 3600_000));
+  });
+});

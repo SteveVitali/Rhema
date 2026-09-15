@@ -112,6 +112,61 @@ export interface SeedRunArgs {
   readonly agentInstanceId?: string;
 }
 
+export interface SeedGateArgs {
+  readonly gateId: string;
+  readonly runId: string;
+  readonly kind: string;
+  readonly onExpiry: string;
+  readonly blocking?: boolean;
+  readonly openedAt?: Date;
+  readonly deadlineAt?: Date | null;
+  readonly presenceDeadlineAt?: Date | null;
+  readonly held?: boolean;
+  readonly artifactVersionId?: string | null;
+  readonly stepId?: string | null;
+}
+
+/** Insert an open (unresolved) `gates` row directly — gates is not RLS, so a bare client insert is fine. */
+export async function seedGate(db: OrchestratorTestDb, args: SeedGateArgs): Promise<string> {
+  await db.client.query(
+    `insert into gates(id, run_id, step_id, kind, artifact_version_id, opened_at, deadline_at, blocking,
+       on_expiry, held, paused_while_reading, presence_deadline_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,false,$11)`,
+    [
+      args.gateId,
+      args.runId,
+      args.stepId ?? null,
+      args.kind,
+      args.artifactVersionId ?? null,
+      args.openedAt ?? new Date("2026-09-02T12:00:00Z"),
+      args.deadlineAt ?? null,
+      args.blocking ?? true,
+      args.onExpiry,
+      args.held ?? false,
+      args.presenceDeadlineAt ?? null,
+    ],
+  );
+  return args.gateId;
+}
+
+/** Read the decision row for a gate (or null), for resolution/expiry assertions. */
+export async function readDecision(
+  db: OrchestratorTestDb,
+  gateId: string,
+): Promise<{ by_actor: string; action: string; presence: boolean | null; overlay_version_ids: string[] | null } | null> {
+  const res = await db.client.query(
+    "select by_actor, action, presence, overlay_version_ids from decisions where gate_id = $1",
+    [gateId],
+  );
+  return (res.rows[0] as { by_actor: string; action: string; presence: boolean | null; overlay_version_ids: string[] | null } | undefined) ?? null;
+}
+
+/** Count decision rows for a gate (race tests: exactly one resolution wins). */
+export async function countDecisions(db: OrchestratorTestDb, gateId: string): Promise<number> {
+  const res = await db.client.query("select count(*)::int n from decisions where gate_id = $1", [gateId]);
+  return (res.rows[0] as { n: number }).n;
+}
+
 /** Insert a `runs` row directly in a chosen state/attempt for internal-API / reaper / provision tests. */
 export async function seedRun(db: OrchestratorTestDb, args: SeedRunArgs): Promise<string> {
   await db.txRunner.run(args.workspaceId, (tx) =>

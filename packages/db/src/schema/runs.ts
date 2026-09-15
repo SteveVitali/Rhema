@@ -37,6 +37,7 @@ export const runs = pgTable("runs", {
   protocolsVersion: text("protocols_version"),
   replans: integer("replans").notNull().default(0),
   resumeCount: integer("resume_count").notNull().default(0), // reaper re-enqueue budget per step (0007)
+  gatesOff: boolean("gates_off").notNull().default(false), // "Approve and run autonomously" (0010; REQ-GATE-3)
   failure: jsonb("failure"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   startedAt: timestamp("started_at"),

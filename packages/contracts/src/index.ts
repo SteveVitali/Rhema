@@ -19,6 +19,8 @@ export * from "./domain/common.js";
 export * from "./domain/claims.js";
 export * from "./domain/findings.js";
 export * from "./domain/obligations.js";
+export * from "./domain/gates.js";
+export * from "./domain/guidance.js";
 
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";

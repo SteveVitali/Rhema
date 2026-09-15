@@ -5,10 +5,14 @@ import { pgTable, text, integer, timestamp, boolean, jsonb, unique } from "drizz
 export const guidance = pgTable("guidance", {
   id: text("id").primaryKey(),
   projectId: text("project_id"),
+  runId: text("run_id"), // run-scope guidance (0010); null = project-scope standing guidance
   source: text("source"),
   anchors: jsonb("anchors"),
   body: text("body").notNull(),
-  standing: boolean("standing").notNull().default(false),
+  standing: boolean("standing").notNull().default(false), // true = project-scope standing guidance
+  workflows: text("workflows").array(), // narrows which workflows the guidance applies to (0010)
+  consumedBy: jsonb("consumed_by").notNull().default([]), // {runId, phase}[] delivery records (0010)
+  active: boolean("active").notNull().default(true), // standing guidance is retirable, never deleted (0010)
   createdBy: jsonb("created_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
