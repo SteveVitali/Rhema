@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared UI component library (skeleton).",
+  "description": "Shared UI primitives (React) for the beta shell.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,6 +20,12 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@rhema/tokens": "workspace:*"
+    "@rhema/tokens": "workspace:*",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "react-dom": "^18.3.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1"
   }
 }
