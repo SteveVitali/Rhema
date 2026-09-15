@@ -9,6 +9,7 @@
 const noCrossPackageRelativeImport = require("./rules/no-cross-package-relative-import.js");
 const noBannedStrings = require("./rules/no-banned-strings.js");
 const noRawSetTenant = require("./rules/no-raw-set-tenant.js");
+const requireEstimateProp = require("./rules/require-estimate-prop.js");
 
 module.exports = {
   meta: { name: "eslint-plugin-rhema", version: "0.0.0" },
@@ -16,5 +17,6 @@ module.exports = {
     "no-cross-package-relative-import": noCrossPackageRelativeImport,
     "no-banned-strings": noBannedStrings,
     "no-raw-set-tenant": noRawSetTenant,
+    "require-estimate-prop": requireEstimateProp,
   },
 };

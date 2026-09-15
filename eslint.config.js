@@ -60,6 +60,8 @@ export default tseslint.config(
       ],
       // REQ-DATA-4 / REQ-ARCH-25: the tenant is set only via the withTenant wrapper (set_config).
       "rhema/no-raw-set-tenant": "error",
+      // REQ-GROWTH-16: <RunButton> requires an `estimate` prop (a run is never launched without a shown estimate).
+      "rhema/require-estimate-prop": "error",
       // Underscore-prefixed args/vars are intentional placeholders (skeleton stubs, unimplemented seams).
       "@typescript-eslint/no-unused-vars": [
         "error",

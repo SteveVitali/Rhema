@@ -9,11 +9,16 @@ import {
   projectElement,
   importElement,
   importPreviewElement,
+  runSheetElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput } from "./data.js";
 import type { ConversionResult } from "@rhema/contracts";
+import { RIGORS, MODEL_TIERS, type ModelTier, type Rigor, type WorkflowKey } from "@rhema/contracts";
+import { buildRunSheetView, sheetProfile, type ToggleState } from "@rhema/run-sheet";
+import { ApiError } from "@rhema/api-client";
+import { randomUUID } from "node:crypto";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
 // client bundle). Auth-gated routes redirect to /login. The invite gate is enforced HERE at POST /login: no
@@ -161,9 +166,115 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/p/${slug}`);
   });
 
+  // Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6).
+  // GET renders the sheet for the chosen workflow/rigor (query-driven, no client bundle); the estimate is
+  // computed via the shared @rhema/run-sheet estimator (the same one the stateless /estimates endpoint uses).
+  app.get("/p/:project/run", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const view = buildSheet(c.req.query());
+    return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view } }));
+  });
+
+  // The Run click — the ONLY run creator (REQ-CHAT-25). Mints nothing new: the sheet-minted idempotency key
+  // comes in the form. On success the sheet reports the run started (§5.6 item 10).
+  app.post("/p/:project/run", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const workflow = normalizeWorkflow(str("workflow"));
+    const rigor = normalizeRigor(str("rigor"));
+    // §6.5: model tier is a CONSEQUENCE of rigor (the beta has no tier selector). Derive it from the
+    // submitted rigor rather than trusting a possibly-stale (no-JS) hidden field — run creation re-derives
+    // the estimate/cap from these, so the frozen figures always match the run's rigor+tier.
+    const modelTier = normalizeTier("", workflow, rigor);
+    const words = Number(str("words")) || 0;
+    const claims = Number(str("claims")) || undefined;
+    const view = buildSheet({ workflow, rigor });
+    try {
+      await deps.dataSource.createRun(session, row.id, {
+        idempotencyKey: str("idempotencyKey") || randomUUID(),
+        workflow,
+        modelProfile: { tier: modelTier },
+        modelTier,
+        rigor,
+        estimateCredits: Number(str("estimateCredits")) || 0,
+        capCredits: Number(str("capCredits")) || 0,
+        rateTableVersion: Number(str("rateTableVersion")) || 1,
+        inputs: {},
+        // REQ-BILL-6: freeze the word/claim counts the estimate was computed for on the run record.
+        inputSnapshot: { wordCount: words, ...(claims != null ? { claimCount: claims } : {}) },
+      });
+    } catch (e) {
+      // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
+      // no run created. Any other api error is a real failure and propagates.
+      if (e instanceof ApiError && e.status === 402) {
+        return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient } }));
+      }
+      throw e;
+    }
+    // Re-render the sheet with the run-started confirmation (the run card lives on the project view — P1.01).
+    return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, started: true } }));
+  });
+
   app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));
 
   return app;
+}
+
+// ---- run sheet helpers (§5.6) ----
+
+/** Generous beta house-credit balance (REQ-BETA-14): no plans/trials in the beta; runs draw house credits. */
+const BETA_HOUSE_CREDITS = 200_000;
+
+const RUN_SHEET_WORKFLOWS = new Set<WorkflowKey>(["review", "revise", "fact_check"]);
+function normalizeWorkflow(v: string): WorkflowKey {
+  return RUN_SHEET_WORKFLOWS.has(v as WorkflowKey) ? (v as WorkflowKey) : "review";
+}
+function normalizeRigor(v: string): Rigor {
+  return (RIGORS as readonly string[]).includes(v) ? (v as Rigor) : "standard";
+}
+function normalizeTier(v: string, workflow: WorkflowKey, rigor: Rigor): ModelTier {
+  if ((MODEL_TIERS as readonly string[]).includes(v)) return v as ModelTier;
+  return sheetProfile(workflow).rigorDefaults[rigor].modelTier;
+}
+
+/** Build the RunSheetView from the query (beta launcher). Word count is query-driven; the live per-draft
+ *  metadata binding is the deploy leg (like the import pipeline). Balance = beta house credits (REQ-BETA-14). */
+function buildSheet(query: Record<string, string>) {
+  const workflow = normalizeWorkflow(query.workflow ?? "review");
+  const rigor = normalizeRigor(query.rigor ?? "standard");
+  // §6.5: model tier follows rigor in the beta (no tier selector) — always the rigor's default.
+  const modelTier = normalizeTier("", workflow, rigor);
+  const words = Number(query.words) > 0 ? Number(query.words) : 5180;
+  const toggles: ToggleState = {};
+  for (const key of ["fact_check", "discourse", "second_read", "repair_research", "gap_check"] as const) {
+    if (query[`toggle.${key}`] === "on") toggles[key] = true;
+    else if (query[`toggle.${key}`] === "off") toggles[key] = false;
+  }
+  return buildRunSheetView({
+    workflow,
+    targetVersion: "v1",
+    rigor,
+    modelTier,
+    inputs: { words },
+    ...(Object.keys(toggles).length ? { toggles } : {}),
+    scope: {
+      protocol: "Essay",
+      ...(query.venue ? { venue: query.venue } : {}),
+      ...(query.stage ? { stage: query.stage } : {}),
+    },
+    spendableCredits: BETA_HOUSE_CREDITS,
+    idempotencyKey: randomUUID(),
+    insufficientMode: "beta",
+  });
 }
 
 /** Render the §5.3 count line from the structured counts. */

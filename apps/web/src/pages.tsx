@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Shell, SectionTitle, ProjectList, DossierView, ConversionPreview, type DossierLabels } from "@rhema/ui";
+import { Shell, SectionTitle, ProjectList, DossierView, ConversionPreview, RunSheet, type DossierLabels, type RunSheetLabels } from "@rhema/ui";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { usePageData } from "./page-data.js";
@@ -146,8 +146,9 @@ export function ProjectPage(): ReactNode {
       {project ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{project.pill}</p> : null}
       <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px", maxWidth: "68ch" }}>{COPY.project.betaNote}</p>
       {project ? (
-        <p>
+        <p style={{ display: "flex", gap: "16px" }}>
           <a href={`/p/${project.slug}/import`}>{COPY.project.importCta}</a>
+          <a href={`/p/${project.slug}/run`}>{COPY.runSheet.runReview}</a>
         </p>
       ) : null}
     </Shell>
@@ -227,6 +228,58 @@ export function ImportPreviewPage(): ReactNode {
             noWarnings: COPY.import.noWarnings,
             fixNowNote: COPY.import.fixNowNote,
           }}
+        />
+      ) : null}
+    </Shell>
+  );
+}
+
+const runLabelFor: Record<string, string> = {
+  review: COPY.runSheet.runReview,
+  revise: COPY.runSheet.runRevise,
+  fact_check: COPY.runSheet.runFactCheck,
+};
+
+const runSheetLabels: RunSheetLabels = {
+  rigorLegend: COPY.runSheet.rigorLegend,
+  runLabel: COPY.runSheet.runReview,
+  confirmLabel: COPY.runSheet.confirm,
+  askLabel: COPY.runSheet.ask,
+  changeLabel: COPY.runSheet.change,
+  whyPrefix: COPY.runSheet.why,
+  advancedLegend: COPY.runSheet.advanced,
+  toggleLabels: {
+    fact_check: COPY.runSheet.factCheckToggle,
+    discourse: COPY.runSheet.discourseToggle,
+    second_read: COPY.runSheet.secondReadToggle,
+    repair_research: COPY.runSheet.repairResearchToggle,
+    gap_check: COPY.runSheet.gapCheckToggle,
+  },
+};
+
+/** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
+export function RunSheetPage(): ReactNode {
+  const { runSheet } = usePageData();
+  const slug = runSheet?.slug ?? "";
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.runSheet.backToProject}</a>} footer={footer()}>
+      <SectionTitle>{COPY.runSheet.heading}</SectionTitle>
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.runSheet.lede}</p>
+      {runSheet?.started ? (
+        <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
+          {COPY.runSheet.started}
+        </p>
+      ) : null}
+      {runSheet?.notice ? (
+        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>
+          {runSheet.notice}
+        </p>
+      ) : null}
+      {runSheet ? (
+        <RunSheet
+          view={runSheet.view}
+          labels={{ ...runSheetLabels, runLabel: runLabelFor[runSheet.view.workflow] ?? COPY.runSheet.runReview }}
+          runAction={`/p/${slug}/run`}
         />
       ) : null}
     </Shell>

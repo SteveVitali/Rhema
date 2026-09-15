@@ -26,6 +26,7 @@ export * from "./domain/conversion.js";
 
 // versioned provider rate tables + list-cost math (REQ-SPEC-11, REQ-BILL-2; §12.7, §14.1)
 export * from "./domain/rates.js";
+export * from "./domain/estimate.js";
 
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";

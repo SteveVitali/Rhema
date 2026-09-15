@@ -1,5 +1,5 @@
 import { createApiClient } from "@rhema/api-client";
-import type { ProjectRow, InviteCheckDto } from "@rhema/api-client";
+import type { ProjectRow, InviteCheckDto, CreateRunDto, CreatedRunDto } from "@rhema/api-client";
 import type { ConversionResult } from "@rhema/contracts";
 
 // The web shell's data seam. SSR loaders never touch the DB directly — they call the api through this
@@ -25,6 +25,8 @@ export interface DataSource {
   previewImport(session: SessionHeaders, input: ImportInput): Promise<ConversionResult>;
   /** Create the imported draft from a preview; returns the new draft id. */
   createImport(session: SessionHeaders, input: ImportInput): Promise<{ draftId: string }>;
+  /** The sheet's Run click → the api's only run creator (REQ-CHAT-25). Session forwarded. */
+  createRun(session: SessionHeaders, projectId: string, req: CreateRunDto): Promise<CreatedRunDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -42,5 +44,10 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl }).checkInvite(code, email),
     previewImport: notWired,
     createImport: notWired,
+    // The estimate service is stateless + pure (no GCS/DB-write infra), so the Run click is a real api call:
+    // the api's run-creation lifecycle needs a live worker to EXECUTE (D-P0.08-1), but creating the row +
+    // hold is the deployed api's job. Session forwarded so the api resolves the principal.
+    createRun: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createRun(projectId, req),
   };
 }

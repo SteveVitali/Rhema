@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { ProjectRow } from "@rhema/api-client";
+import { ApiError, type ProjectRow } from "@rhema/api-client";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
 import type { DataSource } from "./data.js";
 
@@ -43,6 +43,7 @@ function makeDeps(over: Partial<WebDeps> = {}, checkInvite?: DataSource["checkIn
       checkInvite: checkInvite ?? (async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" })),
       previewImport: async () => PREVIEW,
       createImport: async () => ({ draftId: "d_new" }),
+      createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
     },
     session: () => null,
     ...over,
@@ -212,5 +213,82 @@ describe("AC5 — private + capped (REQ-BETA-19)", () => {
   it("healthz responds", async () => {
     const app = createWebApp(makeDeps());
     expect((await app.request("/healthz")).status).toBe(200);
+  });
+});
+
+describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
+  const authed = () => makeDeps({ session: () => ({}) });
+
+  it("GET /p/:project/run requires a session", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/p/the-politics-of-visibility/run");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/login");
+  });
+
+  it("renders the launcher: title, Rigor, the dollars-first estimate box and the single Paywall mount", async () => {
+    const app = createWebApp(authed());
+    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=standard&words=5180")).text();
+    expect(html).toContain("Run the Editor");
+    expect(html).toContain("Review v1 · 5,180 words");
+    expect(html).toContain("≈ $"); // dollars-first
+    expect(html).toContain("never more than");
+    expect(html).toContain('data-paywall="run-sheet"');
+    expect((html.match(/data-paywall="run-sheet"/g) ?? []).length).toBe(1); // REQ-GROWTH-13: exactly one mount
+    expect(html).not.toMatch(/token/i); // AC6
+  });
+
+  it("renders the Fact-check verb from the query (Run label when no consent is needed)", async () => {
+    const app = createWebApp(authed());
+    // low-cost config (Base tier, few words) so the estimate stays under the consent threshold.
+    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=fact_check&rigor=quick&modelTier=base&words=800")).text();
+    expect(html).toContain("Fact-check v1");
+    expect(html).toContain(">Run fact-check</button>"); // the visible button label (not the confirm label)
+    expect(html).toContain('data-needs-consent="false"');
+  });
+
+  it("404 for an unknown project", async () => {
+    const app = createWebApp(authed());
+    expect((await app.request("/p/nope/run")).status).toBe(404);
+  });
+
+  it("POST /p/:project/run is the only run creator — it calls createRun and reports the run started", async () => {
+    const calls: { projectId: string; workflow: string }[] = [];
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async (_s, projectId, req) => {
+        calls.push({ projectId, workflow: req.workflow });
+        return { runId: "run_x", state: "queued", deduped: false };
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_sheet", estimateCredits: "560", capCredits: "840", modelTier: "balanced" }),
+    });
+    expect(res.status).toBe(200);
+    expect(calls).toEqual([{ projectId: "proj_pv", workflow: "review" }]);
+    const html = await res.text();
+    expect(html).toContain("Your run has started");
+  });
+
+  it("an insufficient-balance 402 re-renders the sheet with the resolution notice, not started (§14.6)", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async () => {
+        throw new ApiError(402, "http://api/projects/proj_pv/runs");
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_x", estimateCredits: "560", capCredits: "840" }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("more than your spendable balance");
+    expect(html).not.toContain("Your run has started");
   });
 });
