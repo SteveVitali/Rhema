@@ -23,6 +23,9 @@
     },
     {
       "path": "../../packages/run-sheet"
+    },
+    {
+      "path": "../../packages/findings-core"
     }
   ],
   "exclude": [

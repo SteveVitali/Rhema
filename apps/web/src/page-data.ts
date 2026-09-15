@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { ProjectRowView } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
+import type { DossierData } from "./data.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
 // hands to the page tree through React context. Pages read it with `usePageData()`.
@@ -32,6 +33,8 @@ export interface PageData {
     /** a blocking notice (e.g. insufficient balance — §14.6) shown in place of the started confirmation. */
     readonly notice?: string;
   };
+  /** the delivered-review dossier the reading surfaces render (PRB.04). */
+  readonly dossier?: DossierData;
 }
 
 export const PageDataContext = createContext<PageData>({});

@@ -1,8 +1,49 @@
 import type { ReactNode } from "react";
-import { Shell, SectionTitle, ProjectList, DossierView, ConversionPreview, RunSheet, type DossierLabels, type RunSheetLabels } from "@rhema/ui";
+import {
+  Shell,
+  SectionTitle,
+  ProjectList,
+  DossierView,
+  ConversionPreview,
+  RunSheet,
+  RunCard,
+  LetterView,
+  ClaimsTable,
+  RubricView,
+  SecondReadView,
+  FindingsList,
+  VersionObligationChip,
+  type DossierLabels,
+  type RunSheetLabels,
+  type RunCardLabels,
+  type LetterViewLabels,
+  type ClaimsTableLabels,
+  type RubricLabels,
+  type SecondReadLabels,
+  type FindingsListLabels,
+  type ClaimTableRow,
+} from "@rhema/ui";
+import {
+  buildRunCardView,
+  buildRubricView,
+  buildTrustChip,
+  groupFindingsForList,
+  detectReconciliationConflicts,
+  collapsedRejected,
+  summarizeReconciliation,
+  claimUrlViews,
+  fetchLogFromRows,
+  type TrustChipLabels,
+} from "@rhema/findings-core";
+import { CHECKABLE_CLAIM_KINDS, type ClaimKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { usePageData } from "./page-data.js";
+
+/** Replace `{key}` placeholders in a copy template with string/number values. */
+function fmt(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
+}
 
 // The beta's flat pages. Every string comes from COPY (lint-checked). Progressive enhancement: forms POST and
 // links navigate — no client JS is required.
@@ -282,6 +323,144 @@ export function RunSheetPage(): ReactNode {
           runAction={`/p/${slug}/run`}
         />
       ) : null}
+    </Shell>
+  );
+}
+
+// ---- the delivered-review dossier reading surface (PRB.04, §5.5/§5.7/§6.6) ----
+
+const R = COPY.review;
+
+const runCardLabels: RunCardLabels = {
+  phaseLabel: (k) => R.phaseLabel[k] ?? k,
+  stateLabel: (s) => R.runStateLabel[s] ?? s,
+  creditsLabel: (spent, cap) => `${spent.toLocaleString("en-US")} / ${cap.toLocaleString("en-US")} cr`,
+  etaLabel: (lo, hi) => `~${lo}–${hi} min`,
+  offLabel: R.offLabel,
+  counterLabel: (_key, value, of) => (of != null ? `${value} / ${of}` : String(value)),
+};
+
+const letterLabels: LetterViewLabels = {
+  tocHeading: R.letterTocHeading,
+  attestationHeading: R.attestationHeading,
+};
+
+const trustLabels: TrustChipLabels = {
+  boundary: R.trust.boundary,
+  fetched: R.trust.fetchedFmt,
+  secondRead: R.trust.secondRead,
+  blockedOne: R.trust.blockedOne,
+  blockedMany: R.trust.blockedMany,
+};
+
+const claimsLabels: ClaimsTableLabels = {
+  heading: R.claimsHeading,
+  tierLabel: (t) => `Tier ${t}`,
+  fetchedLabel: R.fetchedLabel,
+  stanceLabel: (s) => R.stanceLabel[s] ?? s,
+  notCheckableLabel: (k) => (k ? fmt(R.notCheckableFmt, { kind: R.kindNounLabel[k] ?? k }) : ""),
+  accessedLabel: (a) => a.slice(0, 10),
+  contradictedTierOneLabel: R.contradictedTierOneLabel,
+};
+
+const rubricLabels: RubricLabels = {
+  heading: R.rubricHeading,
+  dimensionLabel: (d) => R.dimensionLabel[d] ?? d,
+  capLabel: (c) => fmt(R.capFmt, { at: c.at, reason: c.reason }),
+};
+
+const secondReadLabels: SecondReadLabels = {
+  heading: R.secondReadHeading,
+  corroboratedLabel: (n) => fmt(R.corroboratedFmt, { n }),
+  secondReadOnlyLabel: (n) => fmt(R.secondReadOnlyFmt, { n }),
+  rejectedHeading: R.rejectedHeading,
+  promoteLabel: R.promoteLabel,
+  emptyRejectedLabel: R.emptyRejected,
+};
+
+const findingsLabels: FindingsListLabels = {
+  kindLabel: (k) => R.findingKindLabel[k] ?? k,
+  severityLabel: (s) => R.severityLabel[s] ?? s,
+  provisionalLabel: R.provisionalLabel,
+  dispositionLabel: (kind, applied) =>
+    applied ? R.appliedLabel : fmt(R.disposedFmt, { verb: R.dispositionPast[kind] ?? kind }),
+  conflictLine: (kind) => fmt(R.conflictLineFmt, { verb: R.dispositionPast[kind] ?? kind }),
+  conflictsHeading: R.conflictsHeading,
+  rejectedHeading: R.rejectedHeading,
+  promoteLabel: R.promoteLabel,
+};
+
+function checkable(kind: string | undefined): boolean {
+  return kind == null || CHECKABLE_CLAIM_KINDS.includes(kind as ClaimKind);
+}
+
+/** Auth-gated: the delivered-review dossier (run card, letter, claims, second read, rubric, findings). */
+export function DossierPage(): ReactNode {
+  const { dossier } = usePageData();
+  if (!dossier) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{R.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{R.notReviewed}</p>
+      </Shell>
+    );
+  }
+
+  const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
+  const claimRows: ClaimTableRow[] = dossier.claims.map((c) => ({
+    ordinal: c.ordinal,
+    text: c.text,
+    tier: c.tier,
+    verdict: c.verdict,
+    verdictLabel: R.verdictLabel[c.verdict] ?? c.verdict,
+    ...(c.kind ? { kind: c.kind } : {}),
+    checkable: checkable(c.kind),
+    ...(c.note ? { note: c.note } : {}),
+    urls: claimUrlViews(c, fetchLog),
+  }));
+
+  const trustChip = buildTrustChip(dossier.accessReport, trustLabels);
+  const groups = groupFindingsForList([...dossier.findings]);
+  const conflicts = detectReconciliationConflicts([...dossier.findings]);
+  const rejected = collapsedRejected([...dossier.findings]);
+  const reconciliation = summarizeReconciliation([...dossier.findings]);
+
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${dossier.slug}`}>{R.backToProject}</a>} footer={footer()}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <SectionTitle>{dossier.projectTitle}</SectionTitle>
+        <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>
+        <VersionObligationChip
+          open={dossier.openObligations}
+          addressed={dossier.addressedObligations}
+          label={fmt(R.obligationSummaryFmt, { open: dossier.openObligations, addressed: dossier.addressedObligations })}
+        />
+      </div>
+
+      <div style={{ margin: "16px 0" }}>
+        <RunCard view={buildRunCardView(dossier.runCard)} labels={runCardLabels} />
+      </div>
+
+      <div style={{ margin: "16px 0" }}>
+        <LetterView title={dossier.letterTitle} sections={dossier.letterSections} trustChip={trustChip} labels={letterLabels} />
+      </div>
+
+      <div style={{ margin: "16px 0" }}>
+        <ClaimsTable rows={claimRows} labels={claimsLabels} />
+      </div>
+
+      <div style={{ margin: "16px 0" }}>
+        <SecondReadView summary={reconciliation} rejected={rejected} labels={secondReadLabels} />
+      </div>
+
+      <div style={{ margin: "16px 0" }}>
+        <RubricView view={buildRubricView([...dossier.rubric])} labels={rubricLabels} />
+      </div>
+
+      <div style={{ margin: "16px 0" }}>
+        <h2 style={{ fontSize: "16px", fontWeight: 600 }}>{R.findingsHeading}</h2>
+        <FindingsList groups={groups} conflicts={conflicts} collapsedRejected={rejected} labels={findingsLabels} />
+      </div>
     </Shell>
   );
 }

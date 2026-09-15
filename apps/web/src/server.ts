@@ -10,6 +10,7 @@ import {
   importElement,
   importPreviewElement,
   runSheetElement,
+  dossierElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -222,6 +223,19 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     // Re-render the sheet with the run-started confirmation (the run card lives on the project view — P1.01).
     return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, started: true } }));
+  });
+
+  // Auth-gated: the delivered-review dossier reading surface (PRB.04, §5.5/§5.7/§6.6). The findings-core read
+  // models + @rhema/ui surfaces render server-side; the live data binding (reading a delivered run) is D-PRB.04-1.
+  app.get("/p/:project/review/:runId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const runId = c.req.param("runId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
+    return c.html(renderDocument(c.req.path, dossierElement, { dossier }));
   });
 
   app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));

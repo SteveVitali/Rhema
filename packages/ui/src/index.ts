@@ -21,3 +21,20 @@ export type {
   DossierSource,
   DossierLabels,
 } from "./dossier.js";
+
+// The beta dossier reading surfaces (PRB.04, §5.5/§5.7/§6.6). All text-agnostic; they render the read models
+// @rhema/findings-core builds. Disposition verb controls + gate cards are PRB.05; diffs PRB.06.
+export { TrustChip, ObligationChip, VersionObligationChip } from "./chips.js";
+export type { ObligationStateKind } from "./chips.js";
+export { RunCard, LiveFeed } from "./run-card.js";
+export type { RunCardLabels, LiveFeedLabels, FeedRow } from "./run-card.js";
+export { FindingCard, FindingsList, ConflictRow } from "./findings.js";
+export type { FindingCardProps, FindingCardLabels, FindingsListProps, FindingsListLabels, ConflictRowLabels } from "./findings.js";
+export { ClaimsTable } from "./claims.js";
+export type { ClaimsTableLabels, ClaimTableRow } from "./claims.js";
+export { RubricView } from "./rubric.js";
+export type { RubricLabels } from "./rubric.js";
+export { SecondReadView } from "./second-read.js";
+export type { SecondReadLabels, SecondReadViewProps } from "./second-read.js";
+export { LetterView } from "./letter.js";
+export type { LetterViewProps, LetterViewLabels, LetterSection, LetterFindingRef } from "./letter.js";
