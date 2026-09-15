@@ -138,6 +138,10 @@ export const estimateCache = pgTable("estimate_cache", {
   estimateCredits: integer("estimate_credits").notNull(),
   capCredits: integer("cap_credits").notNull(),
   rateTableVersion: integer("rate_table_version").notNull(),
+  // The Haiku-class claim pre-pass (PRB.03; 0017): the refined claim count, and whether the figure is still
+  // provisional (word-count only) vs refined (§5.6 item 1).
+  claimCount: integer("claim_count"),
+  provisional: boolean("provisional").notNull().default(true),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 });
 

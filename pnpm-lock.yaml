@@ -73,6 +73,12 @@ importers:
       '@rhema/orchestrator':
         specifier: workspace:*
         version: link:../../packages/orchestrator
+      '@rhema/protocols':
+        specifier: workspace:*
+        version: link:../../packages/protocols
+      '@rhema/run-sheet':
+        specifier: workspace:*
+        version: link:../../packages/run-sheet
       better-auth:
         specifier: ^1.7.2
         version: 1.7.2(@opentelemetry/api@1.9.1)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(gel@2.2.0)(kysely@0.29.5)(pg@8.23.0))(pg@8.23.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(vitest@2.1.9(@types/node@26.4.1))
@@ -226,6 +232,9 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@rhema/run-sheet':
+        specifier: workspace:*
+        version: link:../../packages/run-sheet
       '@rhema/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -606,10 +615,22 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
+  packages/run-sheet:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/protocols':
+        specifier: workspace:*
+        version: link:../protocols
+
   packages/tokens: {}
 
   packages/ui:
     dependencies:
+      '@rhema/run-sheet':
+        specifier: workspace:*
+        version: link:../run-sheet
       '@rhema/tokens':
         specifier: workspace:*
         version: link:../tokens

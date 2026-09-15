@@ -11,6 +11,8 @@ export { ProjectList, ProjectRow } from "./project-list.js";
 export type { ProjectRowView } from "./project-list.js";
 export { ConversionPreview, ConversionNotesCard } from "./conversion.js";
 export type { ConversionPreviewProps, PreviewWarning } from "./conversion.js";
+export { RunSheet, RunButton, AskButton, Paywall } from "./run-sheet.js";
+export type { RunSheetProps, RunSheetLabels, RunButtonProps, RunButtonEstimate } from "./run-sheet.js";
 export { DossierView, honorsContradictedTierOneRule } from "./dossier.js";
 export type {
   DossierViewProps,

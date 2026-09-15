@@ -199,4 +199,49 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     expect(hold.status).toBe(200);
     expect((await hold.json()) as { held: boolean }).toEqual({ held: true });
   });
+
+  // PRB.3 — the cap is re-derived server-side from the levers, never trusted from the client (money integrity;
+  // REQ-BILL-3/6). A crafted low cap is overridden with `ceil(1.5 × server-estimate)`.
+  it("re-derives estimate + cap server-side from the frozen levers (ignores a crafted client cap)", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({
+          idempotencyKey: "idem-recompute",
+          workflow: "review",
+          modelTier: "base",
+          rigor: "standard",
+          estimateCredits: 1, // crafted
+          capCredits: 1, // crafted — must be overridden
+          inputSnapshot: { wordCount: 8000, claimCount: 45 },
+        }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const row = (await db.pg.query("select estimate_credits, cap_credits from runs where id = $1", [runId])).rows[0] as {
+      estimate_credits: number;
+      cap_credits: number;
+    };
+    // review/standard/base on 8k words + 45 claims = 1394 credits; cap = ceil(1.5 × 1394) = 2091.
+    expect(row.estimate_credits).toBe(1394);
+    expect(row.cap_credits).toBe(2091);
+  });
+
+  // AC4 (run path) — insufficient balance returns 402 and creates NO run row (never billed; §5.6 item 6, §14.6).
+  it("insufficient balance → 402 and no run row is created", async () => {
+    deps.ledger.primeInsufficient();
+    const before = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-insufficient", capCredits: 999999 })),
+    });
+    expect(r.status).toBe(402);
+    const body = (await r.json()) as { error: string; required: number };
+    expect(body.error).toBe("insufficient_balance");
+    const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    expect(after.n).toBe(before.n); // the creation transaction rolled back — no abandoned row
+  });
 });

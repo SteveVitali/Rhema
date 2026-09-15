@@ -67,6 +67,28 @@ export const COPY = {
     created: "Draft created.",
   },
 
+  runSheet: {
+    heading: "Run the Editor",
+    lede: "Choose how thorough the read is. The estimate updates as you change it; you are never charged more than the cap.",
+    rigorLegend: "Rigor",
+    runReview: "Run review",
+    runRevise: "Run revise",
+    runFactCheck: "Run fact-check",
+    confirm: "Confirm and run",
+    ask: "Ask a question first",
+    change: "Change",
+    why: "Why this estimate?",
+    advanced: "Advanced",
+    started: "Your run has started. Watch it on the project.",
+    insufficient: "This run's cap is more than your spendable balance. Lower the rigor to fit, or ask for more credits.",
+    factCheckToggle: "Fact-check every claim",
+    discourseToggle: "Map the field",
+    secondReadToggle: "Second read",
+    repairResearchToggle: "Repair research",
+    gapCheckToggle: "Gap check",
+    backToProject: "Back to the project",
+  },
+
   dossier: {
     letterHeading: "The Editor's letter",
     claimsHeading: "Claim ledger",

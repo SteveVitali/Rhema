@@ -11,10 +11,14 @@
   "references": [
     {
       "path": "../tokens"
+    },
+    {
+      "path": "../run-sheet"
     }
   ],
   "exclude": [
     "dist",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

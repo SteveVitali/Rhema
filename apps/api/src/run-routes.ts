@@ -37,6 +37,8 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
+import { buildEstimate } from "@rhema/run-sheet";
+import { capFromEstimate } from "@rhema/contracts";
 import { registrableDomain } from "@rhema/mirror";
 import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
 import type { AgentTypeKey } from "@rhema/contracts";
@@ -113,10 +115,37 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (!body.idempotencyKey || !body.workflow) return c.json({ error: "idempotencyKey and workflow required" }, 400);
     const workflow = body.workflow as WorkflowKey;
 
+    // Estimator cap sizing (PRB.3; REQ-BILL-3/6, §5.6 item 4). The cap is the hard proxy budget, so the
+    // estimate + cap the run is CREATED with must be re-derived server-side from the levers, never trusted
+    // from the client (a crafted or JS-stale POST could otherwise freeze money figures that do not match the
+    // run's rigor/tier/inputs). For a beta sheet workflow we recompute `estimate` + `cap = ceil(1.5×estimate)`
+    // from the run's frozen inputs (rigor, tier, word/claim counts); the circuit breaker then scales the cap.
+    // A non-sheet workflow (not launchable from the beta sheet — REQ-WF-3) keeps the client figure, but the
+    // cap is always floored at `ceil(1.5×estimate)` so it can never be sized below the guarantee.
+    let estimateCredits = body.estimateCredits;
+    let capCredits = body.capCredits;
+    try {
+      const snap = body.inputSnapshot ?? {};
+      const derived = buildEstimate({
+        workflow,
+        rigor: body.rigor,
+        modelTier: body.modelTier,
+        inputs: {
+          ...(typeof snap.wordCount === "number" ? { words: snap.wordCount } : {}),
+          ...(typeof snap.claimCount === "number" ? { claims: snap.claimCount } : {}),
+        },
+        ...(typeof snap.claimCount === "number" ? { claimCount: snap.claimCount } : {}),
+      });
+      estimateCredits = derived.estimateCredits;
+      capCredits = derived.capCredits;
+    } catch {
+      // not a beta sheet workflow — keep the client estimate but floor the cap at the 1.5× guarantee.
+      if (estimateCredits != null) capCredits = Math.max(capCredits ?? 0, capFromEstimate(estimateCredits));
+    }
+
     // Circuit breaker (REQ-SPEC-24.5; D-P0.11-1): when absorbed cap-overruns have drifted past threshold in the
     // last 24 h, NEW runs get a 2× cap (widening the safety band while the estimator re-fits). Applied once at
-    // creation; a no-op (1×) when the platform has absorbed nothing. Full estimator cap sizing is PRB.3.
-    let capCredits = body.capCredits;
+    // creation; a no-op (1×) when the platform has absorbed nothing.
     if (deps.circuitBreaker && capCredits != null) {
       const { capMultiplier } = await deps.circuitBreaker(deps.clock.now());
       capCredits = capCredits * capMultiplier;
@@ -134,7 +163,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       modelProfile: body.modelProfile,
       modelTier: body.modelTier,
       rigor: body.rigor,
-      estimateCredits: body.estimateCredits,
+      estimateCredits,
       capCredits,
       rateTableVersion: body.rateTableVersion,
       phaseClassesUsed: phaseClassesForWorkflow(workflow),

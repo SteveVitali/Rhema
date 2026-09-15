@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@rhema/tokens": "workspace:*",
+    "@rhema/run-sheet": "workspace:*",
     "react": "^18.3.1"
   },
   "devDependencies": {

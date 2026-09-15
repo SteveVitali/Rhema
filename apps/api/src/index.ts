@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { buildRatesPublication } from "@rhema/contracts";
 import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
+import { createEstimateRoutes, type EstimateApiDeps } from "./estimate-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
@@ -17,6 +18,14 @@ export { createAuth } from "./auth.js";
 export type { AuthSecrets, SendMagicLink } from "./auth.js";
 export { createRunRoutes } from "./run-routes.js";
 export type { RunApiDeps, Principal } from "./run-routes.js";
+export { createEstimateRoutes, estimateCacheKey } from "./estimate-routes.js";
+export type {
+  EstimateApiDeps,
+  ClaimPrePass,
+  EstimateCacheStore,
+  CachedEstimate,
+  RunEstimatedEvent,
+} from "./estimate-routes.js";
 export { createSseRoutes, resolveSseAccess, parseAfterSeq } from "./sse-routes.js";
 export type { SseApiDeps } from "./sse-routes.js";
 export { createInviteGate } from "./invite.js";
@@ -36,8 +45,9 @@ export {
   type CreatedDraft,
 } from "./import.js";
 
-/** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b). */
-export type ApiDeps = RunApiDeps & SseApiDeps;
+/** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
+ *  + the stateless estimate endpoint (PRB.03). `principal` is shared; the estimate seams are optional. */
+export type ApiDeps = RunApiDeps & SseApiDeps & Omit<EstimateApiDeps, "principal">;
 
 /** Extra deps for the beta shell (PRB.01) + draft import (PRB.02) routes. */
 export interface BetaApiDeps {
@@ -58,6 +68,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   app.get("/pricing/rates", (c) => c.json(buildRatesPublication()));
   if (deps) {
     app.route("/", createRunRoutes(deps));
+    app.route("/", createEstimateRoutes(deps));
     app.route("/", createSseRoutes(deps));
     if (deps.db) {
       const db = deps.db;

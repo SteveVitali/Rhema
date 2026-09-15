@@ -20,10 +20,14 @@
     },
     {
       "path": "../../packages/contracts"
+    },
+    {
+      "path": "../../packages/run-sheet"
     }
   ],
   "exclude": [
     "dist",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

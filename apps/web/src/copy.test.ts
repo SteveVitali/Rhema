@@ -8,8 +8,13 @@ import { collectCopyStrings } from "./copy.js";
 
 describe("copy vocabulary lint (Appendix D.2)", () => {
   it("the entire UI copy table is free of banned strings", () => {
-    const violations = lintCopy(collectCopyStrings());
+    // "Advanced" is the ONE sanctioned Appendix D.2 exception the beta copy uses — the run sheet's
+    // progressive-disclosure label (§6.5), used in exactly its permitted role. Every other banned/excepted
+    // term (incl. "tokens") must still be absent.
+    const violations = lintCopy(collectCopyStrings(), { allow: ["Advanced"] });
     expect(violations).toEqual([]);
+    // and the sanctioned term is genuinely only the disclosure label (nowhere else, and never "tokens").
+    expect(lintCopy(collectCopyStrings()).map((v) => v.term)).toEqual(["Advanced"]);
   });
 
   it("collectCopyStrings walks every string leaf", () => {

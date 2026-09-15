@@ -34,6 +34,12 @@
     },
     {
       "path": "../../packages/live-clients"
+    },
+    {
+      "path": "../../packages/protocols"
+    },
+    {
+      "path": "../../packages/run-sheet"
     }
   ],
   "exclude": [
