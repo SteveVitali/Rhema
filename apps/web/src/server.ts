@@ -7,10 +7,13 @@ import {
   loginElement,
   projectsElement,
   projectElement,
+  importElement,
+  importPreviewElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
-import type { DataSource, SessionHeaders } from "./data.js";
+import type { DataSource, SessionHeaders, ImportInput } from "./data.js";
+import type { ConversionResult } from "@rhema/contracts";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
 // client bundle). Auth-gated routes redirect to /login. The invite gate is enforced HERE at POST /login: no
@@ -124,12 +127,70 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     return c.html(
       renderDocument(c.req.path, projectElement, {
-        project: { title: row.title, pill: row.state.pill },
+        project: { title: row.title, pill: row.state.pill, slug },
       }),
     );
+  });
+
+  // Auth-gated: the §5.3 import flow (upload/paste → conversion preview → create).
+  app.get("/p/:project/import", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(renderDocument(c.req.path, importElement, { project: { title: row.title, pill: row.state.pill, slug } }));
+  });
+
+  app.post("/p/:project/import/preview", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const input = await parseImportInput(c, slug);
+    const result = await deps.dataSource.previewImport(session, input);
+    return c.html(renderDocument(c.req.path, importPreviewElement, { conversion: toConversionData(slug, input, result) }));
+  });
+
+  app.post("/p/:project/import/create", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const input = await parseImportInput(c, slug);
+    await deps.dataSource.createImport(session, input);
+    // The draft now exists; the flat project view shows it. (Fix-now block editing is PRB.07.)
+    return c.redirect(`/p/${slug}`);
   });
 
   app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));
 
   return app;
+}
+
+/** Render the §5.3 count line from the structured counts. */
+function countLine(c: ConversionResult["counts"]): string {
+  const n = (x: number) => x.toLocaleString("en-US");
+  const p = (x: number, one: string) => `${n(x)} ${x === 1 ? one : one + "s"}`;
+  return [p(c.words, "word"), p(c.footnotes, "footnote"), `${n(c.citationSpans)} citation-like ${c.citationSpans === 1 ? "span" : "spans"}`, p(c.tables, "table"), p(c.figures, "figure")].join(" · ");
+}
+
+async function parseImportInput(c: Context, slug: string): Promise<ImportInput> {
+  const form = await c.req.parseBody();
+  const paste = typeof form.paste === "string" ? form.paste : "";
+  const file = form.file;
+  if (file && typeof file === "object" && "arrayBuffer" in file) {
+    const f = file as File;
+    return { projectSlug: slug, fileName: f.name, bytes: new Uint8Array(await f.arrayBuffer()) };
+  }
+  return { projectSlug: slug, text: paste };
+}
+
+function toConversionData(slug: string, input: ImportInput, result: ConversionResult) {
+  return {
+    projectSlug: slug,
+    sourceLabel: input.fileName ?? "pasted text",
+    sourceText: input.text ?? (input.bytes ? `(${input.bytes.byteLength} bytes)` : ""),
+    convertedMarkdown: result.markdown,
+    countLine: countLine(result.counts),
+    warnings: result.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+  };
 }

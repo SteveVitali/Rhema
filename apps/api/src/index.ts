@@ -4,6 +4,9 @@ import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
+import { createImportRoutes, type Converter } from "./import.js";
+import { randomUUID } from "node:crypto";
+import type { ContentStore } from "@rhema/mirror";
 
 // api — Hono REST + SSE. P0.08 adds run creation + the internal run API (run-routes.ts); P0.08b adds the
 // viewer-facing run-event SSE route (sse-routes.ts). Both mount when the orchestrator deps are supplied. The
@@ -25,13 +28,29 @@ export {
   type ProjectListRow,
   type ShellApiDeps,
 } from "./project-list.js";
+export {
+  createImportRoutes,
+  createImportedDraft,
+  type Converter,
+  type ImportApiDeps,
+  type CreatedDraft,
+} from "./import.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b). */
 export type ApiDeps = RunApiDeps & SseApiDeps;
 
+/** Extra deps for the beta shell (PRB.01) + draft import (PRB.02) routes. */
+export interface BetaApiDeps {
+  db?: SqlClient;
+  importConverter?: Converter;
+  contentStore?: ContentStore;
+  ids?: () => string;
+}
+
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
- *  `deps.db` (a SqlClient) to also mount the beta shell's project-list route (PRB.01). */
-export function createApp(deps?: ApiDeps & { db?: SqlClient }): Hono {
+ *  `deps.db` (a SqlClient) to also mount the beta shell's project-list route (PRB.01) and — with a converter +
+ *  content store — the draft-import routes (PRB.02). */
+export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   const app = new Hono();
   app.get("/healthz", (c) => c.json({ ok: true, service: "api" }));
   // Public rate publication (REQ-BILL-19; §14.6): current + previous rate tables with effective dates and the
@@ -41,14 +60,27 @@ export function createApp(deps?: ApiDeps & { db?: SqlClient }): Hono {
     app.route("/", createRunRoutes(deps));
     app.route("/", createSseRoutes(deps));
     if (deps.db) {
+      const db = deps.db;
       app.route(
         "/",
         createShellRoutes({
           principal: deps.principal,
-          db: deps.db,
-          inviteGate: createInviteGate(deps.db),
+          db,
+          inviteGate: createInviteGate(db),
         }),
       );
+      if (deps.importConverter && deps.contentStore) {
+        app.route(
+          "/",
+          createImportRoutes({
+            principal: deps.principal,
+            db,
+            contentStore: deps.contentStore,
+            converter: deps.importConverter,
+            ids: deps.ids ?? (() => `id_${randomUUID()}`),
+          }),
+        );
+      }
     }
   }
   return app;

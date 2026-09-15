@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "fetcher — network-only link reads, no parsers (skeleton service).",
+  "description": "fetcher — network-only link reads; SSRF-guarded, parses nothing (§13.3).",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,9 +17,14 @@
     "build": "tsc -b",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "start": "node dist/server.js"
   },
   "dependencies": {
-    "@rhema/contracts": "workspace:*"
+    "@rhema/contracts": "workspace:*",
+    "@rhema/hooks": "workspace:*",
+    "hono": "^4.6.14",
+    "@hono/node-server": "^2.1.1",
+    "undici": "^7.29.0"
   }
 }

@@ -9,6 +9,8 @@ export type { Tone, Severity } from "./primitives.js";
 export { Shell, SectionTitle } from "./shell.js";
 export { ProjectList, ProjectRow } from "./project-list.js";
 export type { ProjectRowView } from "./project-list.js";
+export { ConversionPreview, ConversionNotesCard } from "./conversion.js";
+export type { ConversionPreviewProps, PreviewWarning } from "./conversion.js";
 export { DossierView, honorsContradictedTierOneRule } from "./dossier.js";
 export type {
   DossierViewProps,
