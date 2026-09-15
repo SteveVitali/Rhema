@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "convert — no-network file conversion to canonical markdown (skeleton service).",
+  "description": "convert — no-network, no-DB conversion of quarantine bytes to canonical Rhema Markdown (§12.1).",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,9 +17,19 @@
     "build": "tsc -b",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "start": "node dist/main.js"
   },
   "dependencies": {
-    "@rhema/contracts": "workspace:*"
+    "@rhema/contracts": "workspace:*",
+    "@rhema/markdown": "workspace:*",
+    "mammoth": "^1.12.3",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
+    "pdfjs-dist": "^4.10.38"
+  },
+  "devDependencies": {
+    "@types/turndown": "^5.0.5",
+    "jszip": "^3.10.2"
   }
 }

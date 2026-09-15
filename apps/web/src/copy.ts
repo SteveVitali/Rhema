@@ -47,6 +47,24 @@ export const COPY = {
   project: {
     backToList: "All projects",
     betaNote: "The full editing surface arrives with the studio. This is the beta view.",
+    importCta: "Import a draft",
+  },
+
+  import: {
+    heading: "Import a draft",
+    lede: "Upload a manuscript (.md, .txt, .html, .docx, .pdf) or paste it. We convert it to clean text and show you exactly what changed before anything is created.",
+    fileLabel: "Choose a file",
+    pasteLabel: "…or paste your draft",
+    convertCta: "Convert and preview",
+    previewHeading: "Conversion preview",
+    sourceHeading: "Source",
+    convertedHeading: "Converted",
+    warningsHeading: "Conversion notes",
+    noWarnings: "Everything converted cleanly.",
+    createLabel: "Create and fix later",
+    fixNowLabel: "Fix now",
+    fixNowNote: "Fix now opens the affected block; Create and fix later keeps notes on the timeline.",
+    created: "Draft created.",
   },
 
   dossier: {

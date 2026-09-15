@@ -26,11 +26,23 @@ const PROJECTS: ProjectRow[] = [
   },
 ];
 
+const PREVIEW = {
+  sourceFormat: "html" as const,
+  markdown: "## Heading\n\nA paragraph.\n\n<!-- rhema:unconverted id=\"unconv-1\" -->\n<iframe></iframe>\n<!-- /rhema:unconverted -->\n",
+  counts: { words: 3, footnotes: 0, citationSpans: 0, tables: 0, figures: 0 },
+  warnings: [{ kind: "unconverted_span" as const, message: "1 iframe block could not be converted — kept verbatim", anchor: { blockId: "unconv-1", quote: "<iframe>", startOffset: 0, endOffset: 8, confidence: 1 } }],
+  unconverted: [{ blockId: "unconv-1", raw: "<iframe></iframe>", reason: "<iframe> is not convertible" }],
+  quality: "partial" as const,
+  qualityNotes: [],
+};
+
 function makeDeps(over: Partial<WebDeps> = {}, checkInvite?: DataSource["checkInvite"]): WebDeps {
   return {
     dataSource: {
       listProjects: async () => PROJECTS,
       checkInvite: checkInvite ?? (async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" })),
+      previewImport: async () => PREVIEW,
+      createImport: async () => ({ draftId: "d_new" }),
     },
     session: () => null,
     ...over,
@@ -139,6 +151,51 @@ describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
     // read-only: no disposition/triage controls on the public page
     expect(html).not.toContain("<button");
     expect(html).not.toContain("<form");
+  });
+});
+
+describe("§5.3 import flow (deliverable 4)", () => {
+  const authed = () => makeDeps({ session: () => ({}) });
+
+  it("GET /p/:project/import renders the upload form", async () => {
+    const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Import a draft");
+    expect(html).toContain('type="file"');
+    expect(html).toContain("Convert and preview");
+  });
+
+  it("POST preview renders source-beside-converted, the count line, warnings + two actions", async () => {
+    const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import/preview", {
+      method: "POST",
+      ...form({ paste: "<h1>Heading</h1><p>A paragraph.</p><iframe></iframe>" }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Conversion preview");
+    expect(html).toContain("3 words · 0 footnotes"); // count line
+    expect(html).toContain("Source");
+    expect(html).toContain("Converted");
+    expect(html).toContain("could not be converted"); // the anchored warning (Conversion notes)
+    expect(html).toContain("Create and fix later");
+    expect(html).toContain("Fix now");
+    expect(html).toContain("unconv-1"); // the unconverted block id shown in the notes
+  });
+
+  it("POST create makes the draft and redirects to the project", async () => {
+    const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import/create", {
+      method: "POST",
+      ...form({ paste: "hello" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility");
+  });
+
+  it("import is auth-gated (unauthenticated → /login)", async () => {
+    const res = await createWebApp(makeDeps()).request("/p/x/import");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/login");
   });
 });
 
