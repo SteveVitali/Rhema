@@ -13,6 +13,7 @@ export * from "./hook-daemon.js";
 export * from "./hook-client.js";
 export * from "./proxy-injector.js";
 export * from "./bootstrap.js";
+export * from "./event-buffer.js";
 
 /** Marker export retained for the build graph / provenance job. */
 export function packageInfo(): { name: string } {

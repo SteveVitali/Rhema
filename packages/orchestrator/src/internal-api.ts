@@ -17,6 +17,7 @@ import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { MAX_EVENT_BATCH } from "./event-store.js";
 
 /** The full DI bundle the internal API + provisioning + reaper + phase loop share. */
 export interface OrchestratorDeps {
@@ -44,6 +45,19 @@ export class StaleTaskError extends Error {
   ) {
     super(`stale_task: attempt ${attempt} < current ${currentAttempt} for run ${runId}`);
     this.name = "StaleTaskError";
+  }
+}
+
+/** A `POST events` batch exceeded the §12.5 limit (≤250); the run-task client must chunk before sending. */
+export class EventBatchTooLargeError extends Error {
+  readonly httpStatus = 413;
+  readonly code = "event_batch_too_large";
+  constructor(
+    readonly size: number,
+    readonly max: number,
+  ) {
+    super(`event batch of ${size} exceeds the ${max}-event limit (§12.5)`);
+    this.name = "EventBatchTooLargeError";
   }
 }
 
@@ -176,6 +190,7 @@ export async function postEvents(
   deps: OrchestratorDeps,
   args: { runId: string; attempt: number; workspaceId: string; events: readonly EventBatchItem[] },
 ): Promise<{ ok: true; lastSeq: number }> {
+  if (args.events.length > MAX_EVENT_BATCH) throw new EventBatchTooLargeError(args.events.length, MAX_EVENT_BATCH);
   return deps.txRunner.run(args.workspaceId, async (tx) => {
     await fence(tx, args.runId, args.attempt);
     let lastSeq = 0;

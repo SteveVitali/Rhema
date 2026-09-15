@@ -17,6 +17,7 @@ import {
   phaseClassesForWorkflow,
   RevokedTokenError,
   StaleTaskError,
+  EventBatchTooLargeError,
   type OrchestratorDeps,
   type RunTokenClaims,
   type CommitNext,
@@ -41,7 +42,15 @@ type Vars = { Variables: { run: RunTokenClaims } };
 function statusForError(e: unknown): number | null {
   if (e instanceof StaleTaskError) return 409;
   if (e instanceof RevokedTokenError) return 401;
+  if (e instanceof EventBatchTooLargeError) return 413;
   return null;
+}
+
+/** The stable error code for a mapped orchestrator error. */
+function codeForError(e: unknown): string {
+  if (e instanceof StaleTaskError) return "stale_task";
+  if (e instanceof EventBatchTooLargeError) return "event_batch_too_large";
+  return "revoked";
 }
 
 export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
@@ -110,7 +119,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       return await fn();
     } catch (e) {
       const status = statusForError(e);
-      if (status != null) return c.json({ code: e instanceof StaleTaskError ? "stale_task" : "revoked" }, status as 401 | 409);
+      if (status != null) return c.json({ code: codeForError(e) }, status as 401 | 409 | 413);
       throw e;
     }
   };

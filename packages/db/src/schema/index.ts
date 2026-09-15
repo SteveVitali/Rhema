@@ -13,6 +13,7 @@ export * from "./correspondence.js";
 export * from "./obligations.js";
 export * from "./agents.js";
 export * from "./runs.js";
+export * from "./run-events.js"; // P0.08b: run_events (partitioned) + run_events_internal + run_event_seq
 export * from "./billing.js";
 export * from "./enforcement.js";
 export * from "./misc.js";

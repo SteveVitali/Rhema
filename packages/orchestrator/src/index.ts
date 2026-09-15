@@ -17,6 +17,8 @@ export * from "./heartbeat.js";
 export * from "./token.js";
 export * from "./ledger.js";
 export * from "./event-writer.js";
+export * from "./event-store.js";
+export * from "./event-stream.js";
 export * from "./credentials.js";
 export * from "./transition.js";
 
