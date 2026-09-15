@@ -1,0 +1,31 @@
+// @rhema/orchestrator — the run-orchestration core (§12.4): the state machine, run creation, lock-set
+// concurrency, provisioning, the internal run API, the reaper, the phase loop, and the §6.3 project-state
+// function. Pure and dependency-injected; apps/api and apps/worker are thin adapters over it (P0.08).
+
+export * from "./state-machine.js";
+export * from "./error-class.js";
+export * from "./capabilities.js";
+export * from "./project-state.js";
+export * from "./locks.js";
+export * from "./completion-oracle.js";
+
+export * from "./clock.js";
+export * from "./ids.js";
+export * from "./tx.js";
+export * from "./queue.js";
+export * from "./heartbeat.js";
+export * from "./token.js";
+export * from "./ledger.js";
+export * from "./event-writer.js";
+export * from "./credentials.js";
+export * from "./transition.js";
+
+export * from "./run-creation.js";
+export * from "./run-shape.js";
+export * from "./allowlist.js";
+export * from "./provision.js";
+export * from "./resolver.js";
+export * from "./internal-api.js";
+export * from "./reaper.js";
+export * from "./phase-loop.js";
+export * from "./reactions.js";

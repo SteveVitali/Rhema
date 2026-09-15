@@ -55,12 +55,19 @@ importers:
       '@rhema/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
+      '@rhema/orchestrator':
+        specifier: workspace:*
+        version: link:../../packages/orchestrator
       better-auth:
         specifier: ^1.7.2
         version: 1.7.2(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@electric-sql/pglite@0.2.17)(gel@2.2.0)(kysely@0.29.5))(vitest@2.1.9(@types/node@22.20.1))
       hono:
         specifier: ^4.6.14
         version: 4.13.5
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
 
   apps/collab:
     dependencies:
@@ -149,6 +156,13 @@ importers:
       '@rhema/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@rhema/orchestrator':
+        specifier: workspace:*
+        version: link:../../packages/orchestrator
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
 
   evals-stub: {}
 
@@ -231,6 +245,28 @@ importers:
         version: link:../contracts
 
   packages/measure: {}
+
+  packages/orchestrator:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/db':
+        specifier: workspace:*
+        version: link:../db
+      '@rhema/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@rhema/hooks':
+        specifier: workspace:*
+        version: link:../hooks
+      '@rhema/protocols':
+        specifier: workspace:*
+        version: link:../protocols
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
 
   packages/protocols:
     dependencies:

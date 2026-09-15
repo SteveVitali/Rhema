@@ -101,6 +101,12 @@ export const proxyCredentials = pgTable("proxy_credentials", {
   runId: text("run_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   revokedAt: timestamp("revoked_at"),
+  // richer resolution shape (0007; D-P0.07-3): the credential secret is never stored, only its hash.
+  credentialHash: text("credential_hash"),
+  attempt: integer("attempt").notNull().default(1),
+  allowlistId: text("allowlist_id"),
+  expiresAt: timestamp("expires_at"),
+  context: jsonb("context"), // denormalized RunContext attribution (proxy resolver, RLS-free)
 });
 
 export const proxyAllowlists = pgTable("proxy_allowlists", {
@@ -108,7 +114,23 @@ export const proxyAllowlists = pgTable("proxy_allowlists", {
   runId: text("run_id"),
   hosts: text("hosts").array().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // richer allowlist (0007; D-P0.07-3): endpoints/models/URL policy/cap the proxy RunContext consumes.
+  endpoints: jsonb("endpoints").notNull().default([]),
+  models: text("models").array().notNull().default([]),
+  urlPolicy: jsonb("url_policy").notNull().default({}),
+  capCredits: integer("cap_credits"),
 });
+
+export const runIdempotency = pgTable(
+  "run_idempotency",
+  {
+    billingAccountId: text("billing_account_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    runId: text("run_id").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.billingAccountId, t.idempotencyKey] }) }),
+);
 
 export const estimateCache = pgTable("estimate_cache", {
   id: text("id").primaryKey(),

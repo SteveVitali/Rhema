@@ -1,9 +1,10 @@
-// worker — pg-boss consumers (skeleton service, P0.01). Real consumers land in P0.08+. P0.01 fixes
-// the deletion/retention job identities (R8) and the pure policy they call, so `images` + deploy
-// provenance run before any job has logic.
+// worker — pg-boss consumers. P0.08 adds the run-lifecycle handlers (run-jobs.ts) over @rhema/orchestrator;
+// P0.01's deletion/retention pipeline stays. The live pg-boss registration (a PgBoss instance + `.work`) is
+// wired at deploy; the handlers are the payload → orchestrator mapping and are unit-tested directly.
 
 export * from "./deletion.js";
 export * from "./jobs.js";
+export * from "./run-jobs.js";
 
 /** Queue names this worker owns (§12.1). Handlers are stubbed until P0.08. */
 export const WORKER_QUEUES = [

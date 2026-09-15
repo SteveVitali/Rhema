@@ -19,6 +19,9 @@
     },
     {
       "path": "../../packages/hooks"
+    },
+    {
+      "path": "../../packages/orchestrator"
     }
   ],
   "exclude": [
