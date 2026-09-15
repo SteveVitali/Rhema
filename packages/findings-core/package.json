@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Findings core model (skeleton).",
+  "description": "Framework-free disposition/anchor/reconciliation/rubric/ledger/run-card/deadline/trust-chip logic web and 1.x mobile share (§5.7, REQ-MOBILE-4). No React.",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

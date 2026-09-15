@@ -1,7 +1,62 @@
 import { describe, it, expect, vi } from "vitest";
 import { ApiError, type ProjectRow } from "@rhema/api-client";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
-import type { DataSource } from "./data.js";
+import type { DataSource, DossierData } from "./data.js";
+
+// A minimal-but-representative delivered-review dossier fixture (PRB.04): a contradicted Tier-1 claim carrying a
+// fetched URL, a two-source stance claim, an unanchored finding (Whole piece), a pre-triage-then-rejected
+// conflict, a rubric cap, and an access_report the trust chip derives from.
+const DOSSIER: DossierData = {
+  slug: "the-politics-of-visibility",
+  runId: "run_1",
+  projectTitle: "The Politics of Visibility",
+  versionLabel: "Review of v2",
+  openObligations: 3,
+  addressedObligations: 2,
+  runCard: {
+    runId: "run_1",
+    state: "completed",
+    phases: [
+      { key: "reading_the_piece", ordinal: 1, status: "done" },
+      { key: "checking_claims", ordinal: 2, status: "done", counters: [{ key: "claims", value: 56, of: 56 }] },
+      { key: "mapping_the_field", ordinal: 3, status: "off" },
+      { key: "second_read", ordinal: 4, status: "done" },
+    ],
+    spentCredits: 412,
+    capCredits: 1860,
+  },
+  letterTitle: "The Politics of Visibility",
+  letterSections: [
+    { id: "verdict", title: "Verdict", paragraphs: ["The center holds."] },
+    { id: "one-thing", title: "The one thing", paragraphs: ["Answer the strongest counterargument."], findingRefs: [{ findingId: "f_1", label: "See finding 1" }] },
+  ],
+  claims: [
+    { id: "cl_12", correspondenceId: "c_1", draftId: "d_1", ordinal: 12, text: "The court struck it down.", tier: 1, verdict: "contradicted", url: "https://www.courtlistener.com/o/1?x=1", normalizedUrl: "https://courtlistener.com/o/1", accessedAt: "2026-09-16T00:00:00Z", humanAdded: false },
+    { id: "cl_20", correspondenceId: "c_1", draftId: "d_1", ordinal: 20, text: "A contested reading.", tier: 2, verdict: "misleading_in_context", humanAdded: false, sources: [
+      { url: "https://a.test/s", normalizedUrl: "https://a.test/s", accessedAt: "2026-09-16T00:00:00Z", stance: "supports" },
+      { url: "https://courtlistener.com/o/1", normalizedUrl: "https://courtlistener.com/o/1", accessedAt: "2026-09-16T00:00:00Z", stance: "contradicts" },
+    ] },
+    { id: "cl_30", correspondenceId: "c_1", draftId: "d_1", ordinal: 30, text: "The most important essay of the decade.", tier: 3, verdict: "unverifiable", kind: "interpretive", humanAdded: false },
+  ],
+  fetchLog: ["https://courtlistener.com/o/1"],
+  findings: [
+    { id: "f_1", correspondenceId: "c_1", draftId: "d_1", kind: "argument", severity: "blocking", origin: "both", anchor: null, title: "The injury is the least-evidenced thing in the piece.", body: "Asserted more than shown.", rubricDims: [], provisional: false },
+    { id: "f_2", correspondenceId: "c_1", draftId: "d_1", kind: "claim", severity: "major", origin: "editor", anchor: { blockId: "b1", quote: "q", startOffset: 0, endOffset: 1, confidence: 1 }, title: "A load-bearing citation is misstated.", body: "The ruling did the opposite.", rubricDims: [], provisional: false },
+    { id: "f_conf", correspondenceId: "c_1", draftId: "d_1", kind: "discourse", severity: "major", origin: "second_read", reconciliation: "rejected", anchor: { blockId: "b2", quote: "z", startOffset: 0, endOffset: 1, confidence: 1 }, title: "The lineage claim.", body: "Withdrawn by the second read.", rubricDims: [], provisional: false, disposition: { kind: "accept", by: { kind: "user", userId: "u_1" }, at: "2026-09-16T00:00:00Z", frozen: false } },
+    { id: "f_rej", correspondenceId: "c_1", draftId: "d_1", kind: "craft", severity: "minor", origin: "second_read", reconciliation: "rejected", anchor: null, title: "A withdrawn craft note.", body: "On reflection, fine.", rubricDims: [], provisional: false },
+  ],
+  rubric: [
+    { dimension: "thesis_contribution", score: 4 },
+    { dimension: "argument_rigor", score: 3 },
+    { dimension: "evidence_accuracy", score: 2, cap: { at: 2, reason: "a contradicted Tier-1 claim caps Evidence at 2", entailedByFindingOrdinal: 12 } },
+    { dimension: "originality_situatedness", score: 3 },
+    { dimension: "structure", score: 4 },
+    { dimension: "prose", score: 5 },
+    { dimension: "voice_audience_fit", score: 4 },
+    { dimension: "intellectual_honesty", score: 5 },
+  ],
+  accessReport: { seat: "editor", mountedPathCount: 12, fetches: 52, deniedAttempts: 1, violations: 0, subagents: [{ label: "Second read", inputsKind: "explicit_files", fileCount: 1 }] },
+};
 
 // AC1 (invite gating), AC2 (state-fn rows), AC3 (read-only sample dossier), AC5 (no pricing). Driven via
 // Hono's app.request (no network), with an in-memory data source + injected session/auth seams.
@@ -44,6 +99,7 @@ function makeDeps(over: Partial<WebDeps> = {}, checkInvite?: DataSource["checkIn
       previewImport: async () => PREVIEW,
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
+      getDossier: async () => DOSSIER,
     },
     session: () => null,
     ...over,
@@ -290,5 +346,92 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     const html = await res.text();
     expect(html).toContain("more than your spendable balance");
     expect(html).not.toContain("Your run has started");
+  });
+});
+
+describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/§6.6)", () => {
+  async function getDossierHtml(over: Partial<DossierData> = {}): Promise<string> {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = { ...deps.dataSource, getDossier: async () => ({ ...DOSSIER, ...over }) };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/review/run_1");
+    expect(res.status).toBe(200);
+    return res.text();
+  }
+
+  it("requires a session (redirects to /login)", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/p/the-politics-of-visibility/review/run_1");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/login");
+  });
+
+  it("renders every reading surface: run card, letter, claims, second read, rubric, findings", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-run-card="run_1"');
+    expect(html).toContain('data-letter-view="true"');
+    expect(html).toContain('data-claims-table="true"');
+    expect(html).toContain('data-second-read="true"');
+    expect(html).toContain('data-rubric="true"');
+    expect(html).toContain('data-findings-list="true"');
+  });
+
+  it("AC2/REQ-IDE-11 — the run card shows the off phase and the orchestrator credits, no agent prose", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-phase-status="off"');
+    expect(html).toContain("412 / 1,860 cr");
+  });
+
+  it("AC4 — the contradicted Tier-1 claim carries a fetched-✓ chip; the two-source claim shows both stances", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-contradicted-tier1="true"');
+    expect(html).toContain('data-fetched="true"'); // the courtlistener URL is in the fetch log
+    expect(html).toContain('data-stance="supports"');
+    expect(html).toContain('data-stance="contradicts"');
+    expect(html).toContain("not a matter of verification"); // interpretive claim (REQ-OBJ-19)
+  });
+
+  it("AC5 — the rubric renders eight dot rows + a cap, with no aggregate", async () => {
+    const html = await getDossierHtml();
+    expect((html.match(/data-rubric-row=/g) ?? []).length).toBe(8);
+    expect(html).toContain("capped at 2");
+    expect(html.toLowerCase()).not.toContain("out of 40");
+    expect(html).not.toMatch(/\/\s*40/);
+  });
+
+  it("AC6 — the trust chip renders text derived from access_report only", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-trust-chip="true"');
+    expect(html).toContain("52 URLs fetched");
+    expect(html).toContain("second read received the draft only");
+    expect(html).toContain("1 blocked attempt");
+  });
+
+  it("AC7 — an unanchored finding is listed under 'Whole piece', never dropped", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-group="Whole piece"');
+    expect(html).toContain("The injury is the least-evidenced thing in the piece.");
+  });
+
+  it("REQ-IDE-15 — the pre-triage-then-rejected finding renders a conflict row", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-conflict-row="f_conf"');
+    expect(html).toContain("the Editor withdrew it");
+  });
+
+  it("REQ-OBJ-6 — the version header carries the open/addressed obligation summary", async () => {
+    const html = await getDossierHtml();
+    expect(html).toContain('data-version-obligations="true"');
+    expect(html).toContain("⚑ 3 open · 2 addressed");
+  });
+
+  it("404s for an unknown project slug (no dossier read attempted)", async () => {
+    let called = false;
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = { ...deps.dataSource, getDossier: async () => { called = true; return DOSSIER; } };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/no-such-project/review/run_1");
+    expect(res.status).toBe(404);
+    expect(called).toBe(false);
   });
 });
