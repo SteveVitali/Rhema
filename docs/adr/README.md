@@ -12,3 +12,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-004](ADR-004-build-memory-committed-in-git.md) | `docs/` is committed and build memory is versioned in git under `docs/build/` — retro-fitted record | MAINT.1 (this PR); origin Q-13 | Accepted |
 | [ADR-005](ADR-005-instrumented-fold-registry.md) | the instrumented-fold registry — a process-local override so a live metered run flips `estimatorsAreProvisional()` | P0.15k | Accepted |
 | [ADR-006](ADR-006-cited-fetched-delivery-downgrade.md) | `cited⇒fetched` is a per-claim delivery downgrade + strip (Path B), not a run-fatal reject — operator ruling | P0.15k (implements the Path B that 16_P0.15j deferred pending this ruling); closes the semantics half of D-P0.15i-2 | Accepted |
+| [ADR-007](ADR-007-beta-shell-react-ssr-no-vite.md) | The beta shell is React Router SSR built with `tsc` (no Vite / no framework mode) | PRB.01 (beta web shell, invite gating, sample dossier) | Accepted |

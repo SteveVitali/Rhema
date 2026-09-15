@@ -5,6 +5,7 @@
 // vocabularies + reserved strings (REQ-SPEC-2, REQ-PROD-6, REQ-BILL-18; Appendix D.2)
 export * from "./vocab.js";
 export * from "./reserved-strings.js";
+export * from "./vocab-lint.js";
 
 // ids + structural enums
 export * from "./ids.js";

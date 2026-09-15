@@ -1,9 +1,19 @@
-// @rhema/ui — Shared UI component library (skeleton).
-// Skeleton package (P0.01). Real implementation lands in a later ticket.
+// @rhema/ui — presentational React primitives for the beta flat shell (REQ-BETA-21 stopgap #2). Text-agnostic:
+// every user-facing string is a prop, so the vocabulary lint lives over the app's copy table, not here. The
+// full IDE design system (panes, tokens-as-components) is P1.01.
 
 export const PACKAGE_NAME = "@rhema/ui" as const;
 
-/** Marker export so the skeleton service/library is importable and the build graph is exercised. */
-export function packageInfo(): { name: string } {
-  return { name: PACKAGE_NAME };
-}
+export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor } from "./primitives.js";
+export type { Tone, Severity } from "./primitives.js";
+export { Shell, SectionTitle } from "./shell.js";
+export { ProjectList, ProjectRow } from "./project-list.js";
+export type { ProjectRowView } from "./project-list.js";
+export { DossierView, honorsContradictedTierOneRule } from "./dossier.js";
+export type {
+  DossierViewProps,
+  DossierClaim,
+  DossierFinding,
+  DossierSource,
+  DossierLabels,
+} from "./dossier.js";
