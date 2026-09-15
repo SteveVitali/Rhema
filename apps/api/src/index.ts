@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { buildRatesPublication } from "@rhema/contracts";
 import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 
@@ -21,6 +22,9 @@ export type ApiDeps = RunApiDeps & SseApiDeps;
 export function createApp(deps?: ApiDeps): Hono {
   const app = new Hono();
   app.get("/healthz", (c) => c.json({ ok: true, service: "api" }));
+  // Public rate publication (REQ-BILL-19; §14.6): current + previous rate tables with effective dates and the
+  // 1.4 platform rate. No auth — every run report links to its version. The full pricing page is PRB.8/P1.16.
+  app.get("/pricing/rates", (c) => c.json(buildRatesPublication()));
   if (deps) {
     app.route("/", createRunRoutes(deps));
     app.route("/", createSseRoutes(deps));

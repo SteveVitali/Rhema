@@ -1,0 +1,34 @@
+{
+  "name": "@rhema/ledger",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The money layer (§14.4; REQ-SPEC-24): the sole implementation of the orchestrator's HoldLedger port — grant/hold/debit/release/expire/refund/adjustment ops with idempotency, credit_balances maintained in the ledger's own transaction, cap-clamped debits under the run row's lock, refund/resume-re-debit semantics, the nightly balances=Σledger assertion, the absorbed-adjustment circuit breaker, the 30-day parked-run auto-cancel, and the /pricing/rates publication (P0.11).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*",
+    "@rhema/orchestrator": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}
