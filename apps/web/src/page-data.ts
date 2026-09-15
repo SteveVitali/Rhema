@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { ProjectRowView } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
+import type { ApprovalOverridesDto, DecisionItemDto, GateCardDto } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
@@ -35,6 +36,23 @@ export interface PageData {
   };
   /** the delivered-review dossier the reading surfaces render (PRB.04). */
   readonly dossier?: DossierData;
+  /** PRB.05 — per-request shell state for the triage surfaces. */
+  readonly triage?: {
+    /** a disposition-validation error from the last POST (re-rendered under the finding card). */
+    readonly dispositionError?: { readonly findingId: string; readonly message: string };
+    /** a saved marker ("Saved") under the card the last POST wrote. */
+    readonly savedFindingId?: string;
+  };
+  /** PRB.05 — the Needs-you surface feed: open gate cards for the project's runs. */
+  readonly gates?: readonly GateCardDto[];
+  /** PRB.05 — the Decisions list (open decision_requests). */
+  readonly decisions?: readonly DecisionItemDto[];
+  /** PRB.05 — pre-triage facts for the Revise sheet ("you pre-triaged N of M"). */
+  readonly pretriage?: { readonly triaged: number; readonly total: number };
+  /** PRB.05 — the project's approval-deadline overrides (§6.4 R3; approve_triage 24-h opt-in). */
+  readonly approvalOverrides?: ApprovalOverridesDto;
+  /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
+  readonly compact?: boolean;
 }
 
 export const PageDataContext = createContext<PageData>({});

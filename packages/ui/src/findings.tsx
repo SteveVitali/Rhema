@@ -122,10 +122,15 @@ export interface FindingsListProps {
   readonly collapsedRejected?: readonly FindingView[];
   readonly labels: FindingsListLabels;
   readonly obligationFor?: (view: FindingView) => { state: ObligationStateKind; label: string } | undefined;
+  /**
+   * PRB.05 — the disposition verb controls for a finding (Accept/Adapt/Rebut/Defer/Escalate + note +
+   * reason chips). Rendered only when `canDispose` permits (never on provisional or frozen cards).
+   */
+  readonly controlsFor?: (view: FindingView) => ReactNode;
 }
 
 /** The list-first findings surface: grouped cards (Whole piece heads the list), conflict rows, rejected group. */
-export function FindingsList({ groups, conflicts, collapsedRejected, labels, obligationFor }: FindingsListProps): ReactNode {
+export function FindingsList({ groups, conflicts, collapsedRejected, labels, obligationFor, controlsFor }: FindingsListProps): ReactNode {
   return (
     <div data-findings-list="true">
       {conflicts && conflicts.length > 0 ? (
@@ -143,7 +148,7 @@ export function FindingsList({ groups, conflicts, collapsedRejected, labels, obl
         <section key={g.key} data-group={g.key} style={{ marginBottom: "16px" }}>
           <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{g.label}</h3>
           {g.findings.map((v) => (
-            <FindingCard key={v.id} view={v} labels={labels} obligation={obligationFor?.(v)} />
+            <FindingCard key={v.id} view={v} labels={labels} obligation={obligationFor?.(v)} controls={controlsFor?.(v)} />
           ))}
         </section>
       ))}

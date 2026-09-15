@@ -77,6 +77,8 @@ export function renderResponseLedgerMd(v: {
       adaptedText?: string;
       moveOrdinal?: number;
       applied?: boolean;
+      /** PRB.05 — user-authored rows carry `actor: "user"` (REQ-SPEC-9). */
+      actor?: string;
     };
     anchor?: unknown;
   }[];
@@ -91,6 +93,7 @@ export function renderResponseLedgerMd(v: {
     if (e.disposition.applied !== undefined) out.push(fieldLine("disposition.applied", e.disposition.applied));
     if (e.disposition.rationale !== undefined) out.push(fieldLine("disposition.rationale", e.disposition.rationale));
     if (e.disposition.adaptedText !== undefined) out.push(fieldLine("disposition.adaptedText", e.disposition.adaptedText));
+    if (e.disposition.actor !== undefined) out.push(fieldLine("disposition.actor", e.disposition.actor));
     if (e.anchor !== undefined) out.push(fieldLine("anchor", e.anchor));
     out.push("");
   }
@@ -110,6 +113,7 @@ export function parseResponseLedgerMd(md: string): unknown {
       adaptedText: f.get("disposition.adaptedText"),
       moveOrdinal: f.get("disposition.moveOrdinal"),
       applied: f.get("disposition.applied"),
+      actor: f.get("disposition.actor"),
     });
     entries.push(
       omitUndefined({ findingOrdinal: f.get("findingOrdinal"), disposition, anchor: f.get("anchor") }),

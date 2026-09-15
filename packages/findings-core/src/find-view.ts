@@ -49,6 +49,12 @@ export function buildFindingView(finding: Finding, opts: BuildFindingViewOptions
           disposition: {
             kind: opts.disposition.kind,
             ...(opts.disposition.rationale != null ? { rationale: opts.disposition.rationale } : {}),
+            ...(opts.disposition.adaptedText != null
+              ? { adaptedText: opts.disposition.adaptedText }
+              : {}),
+            ...(opts.disposition.reasonCode != null
+              ? { reasonCode: opts.disposition.reasonCode }
+              : {}),
             by: opts.disposition.by,
             at: opts.disposition.at,
             ...(opts.disposition.moveId != null ? { moveId: opts.disposition.moveId } : {}),

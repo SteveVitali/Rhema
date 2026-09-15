@@ -38,3 +38,12 @@ export { SecondReadView } from "./second-read.js";
 export type { SecondReadLabels, SecondReadViewProps } from "./second-read.js";
 export { LetterView } from "./letter.js";
 export type { LetterViewProps, LetterViewLabels, LetterSection, LetterFindingRef } from "./letter.js";
+
+// The triage write surfaces (PRB.05, §5.7/§6.4/§10.1). Same components on desktop and phone widths
+// (REQ-SPEC-20): `compact` renders the §10.1 input set.
+export { DispositionControls, DEFER_PREFILL } from "./dispositions.js";
+export type { DispositionControlsProps, DispositionControlsLabels } from "./dispositions.js";
+export { GateCard, TriageLedger, remainingLabel } from "./gate-card.js";
+export type { GateCardProps, GateCardLabels, TriageLedgerRow, TriageLedgerLabels } from "./gate-card.js";
+export { DecisionsList } from "./decisions.js";
+export type { DecisionsListProps, DecisionsListLabels } from "./decisions.js";

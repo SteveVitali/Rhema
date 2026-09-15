@@ -11,6 +11,7 @@ import {
 import { anchorSchema } from "./domain/anchor.js";
 import { actorSchema } from "./domain/common.js";
 import { FINDING_ORIGIN, FINDING_RECONCILIATION, LETTER_SECTIONS } from "./domain/findings.js";
+import { reasonCodeSchema } from "./analytics.js";
 
 // Read models the beta's phone-width-shared surfaces consume (§5.7 FindingView, §10.5 GateView). The full
 // mobile-facing contract family (InboxItem, DocumentView, DispositionInput, BlockPatch, NotificationDevice)
@@ -44,11 +45,15 @@ export const findingViewSchema = z.object({
     .object({
       kind: dispositionKindSchema,
       rationale: z.string().optional(),
+      /** PRB.05 — the adapt suggestion text the human left on the row. */
+      adaptedText: z.string().optional(),
       by: actorSchema,
       at: isoSchema,
       moveId: idSchema.optional(),
       frozen: z.boolean(),
       applied: z.boolean().optional(),
+      /** REQ-BETA-6 — the one-tap reason chip the human picked (optional). */
+      reasonCode: reasonCodeSchema.optional(),
     })
     .optional(),
 });

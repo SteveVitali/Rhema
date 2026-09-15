@@ -38,6 +38,8 @@ import {
   type ModelProfile,
 } from "@rhema/orchestrator";
 import { buildEstimate } from "@rhema/run-sheet";
+import { captureGuidance } from "@rhema/orchestrator";
+import { loadPretriage } from "./triage-routes.js";
 import { capFromEstimate } from "@rhema/contracts";
 import { registrableDomain } from "@rhema/mirror";
 import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
@@ -151,6 +153,28 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       capCredits = capCredits * capMultiplier;
     }
 
+    // PRB.05 / REQ-IDE-28: pre-triage dispositions reach the Revise run as HIGHEST-PRECEDENCE guidance.
+    // The user's unfrozen rows on the latest review correspondence serialize into `inputs.pretriage` as
+    // a response-ledger sidecar (actor: "user") — the file-level source the triage phase reads — and a
+    // run-scope guidance record states "you pre-triaged N of M" so the run never overrides a user row.
+    let inputs = body.inputs ?? {};
+    let pretriage: { triaged: number; total: number } | null = null;
+    if (workflow === "revise") {
+      const pre = await deps.txRunner.run(principal.workspaceId, (tx) => loadPretriage(tx, projectId));
+      if (pre.correspondenceId != null && pre.entries.length > 0) {
+        inputs = {
+          ...inputs,
+          pretriage: {
+            correspondenceId: pre.correspondenceId,
+            sidecar: "response_ledger",
+            version: 1,
+            entries: pre.entries,
+          },
+        };
+        pretriage = { triaged: pre.triaged, total: pre.total };
+      }
+    }
+
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey,
       workflow,
@@ -167,7 +191,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       capCredits,
       rateTableVersion: body.rateTableVersion,
       phaseClassesUsed: phaseClassesForWorkflow(workflow),
-      inputs: body.inputs ?? {},
+      inputs,
       inputSnapshot: body.inputSnapshot ?? {},
       sheetLaunched: body.sheetLaunched ?? true,
       entitlementId: body.entitlementId,
@@ -184,6 +208,20 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     });
 
     if (res.ok) {
+      // Pre-triage guidance (REQ-IDE-28): a run-scope record the Revise phase delivers verbatim — the
+      // user's rows are authoritative ("you pre-triaged N of M"); agent triage may add rows, never override.
+      if (pretriage && !res.deduped) {
+        await captureGuidance(deps, {
+          workspaceId: principal.workspaceId,
+          projectId,
+          userId: principal.userId,
+          source: "run_sheet",
+          text: `You pre-triaged ${pretriage.triaged} of ${pretriage.total} findings — rows marked actor:user are authoritative and must not be overridden.`,
+          scope: "run",
+          runId: res.runId,
+          workflows: ["revise"],
+        });
+      }
       // §12.4 step 3: a sheet-launched run lands in `queued`; enqueue the provision job so the worker
       // admits + provisions it (mints the token/credential, launches the run-task Job). pg-boss send is
       // post-commit + singleton-keyed on the runId, so a duplicate/replay is a no-op. A deduped replay

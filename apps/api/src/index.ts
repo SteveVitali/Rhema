@@ -4,6 +4,7 @@ import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
 import { createEstimateRoutes, type EstimateApiDeps } from "./estimate-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
+import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
 import { createImportRoutes, type Converter } from "./import.js";
 import { randomUUID } from "node:crypto";
@@ -44,6 +45,8 @@ export {
   type ImportApiDeps,
   type CreatedDraft,
 } from "./import.js";
+export { createTriageRoutes, loadPretriage } from "./triage-routes.js";
+export type { TriageApiDeps } from "./triage-routes.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
  *  + the stateless estimate endpoint (PRB.03). `principal` is shared; the estimate seams are optional. */
@@ -72,6 +75,9 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     app.route("/", createSseRoutes(deps));
     if (deps.db) {
       const db = deps.db;
+      // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the
+      // same deps the run API uses (txRunner for the atomic write + obligation routing).
+      app.route("/", createTriageRoutes({ ...(deps as TriageApiDeps), db }));
       app.route(
         "/",
         createShellRoutes({
