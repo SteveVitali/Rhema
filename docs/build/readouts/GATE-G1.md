@@ -56,3 +56,29 @@ validator, a formal G1 clear must have **no OPEN row referencing G1**; several O
 now satisfy have not yet been reconciled/closed. So the honest state is **G1 core-ready, formal clear pending
 the reconciliation** (a `reconcile-build` pass: close the live-proven P0.x deferrals, disposition the narrow
 remainder). Only then is the verdict token written here.
+
+---
+
+## Disposition — 2026-09-15 (reconciled): **PASSED, with accepted exceptions**
+
+The Phase-0 deferrals reconciliation is done (see `docs/tickets/DEFERRALS.md` § "Reconciliation — G1 clear"):
+the live P0.15k Stage B (the three green Reviews + the full `dev` deploy) closed the live-deploy/agent/proxy/
+mirror/orchestrator rows; the §18-eval rows are scoped to GATE **G2** (not G1); the beta/IDE/CI/ops rows are
+scoped to their later phases. No OPEN DEFERRALS row references the literal `GATE-G1`.
+
+**Verdict: PASSED** — the §17 Phase-0 exit criterion is met: a Review of each of the three real projects delivers
+green on `dev` (`boundary.attested violations = 0`, `cited⇒fetched` green, every sidecar `parseStatus = ok`),
+start-latency p95 well under the 45 s SLO, and the §18 pilot-wave clause met deterministically (FakeEngine).
+
+**Accepted exceptions (operator, 2026-09-15) — tracked post-Phase-0 follow-ups, none is the review pipeline:**
+- **D-P0.15-2 / D-P0.08-2** — proxy-metered = SDK cost ± 2% is *not comparable* live (no `sdk_estimate` rows);
+  the estimator fold is proven live for review + fact_check, owed for revise/profile_voice (**D-P0.15k-1**).
+- **D-P0.15-3 / D-P0.15k-2** — the live *structured* gate-EDIT round-trip (gate *resolution* is proven live).
+
+**Standing consequence (§16.4):** the §1.4/§15.1 marketing claims do NOT ship until the citation-completeness
+follow-up lands — under Path B (ADR-006) reviews currently deliver with many `unverifiable` verdicts. This is
+acceptable for a Phase-0 *exit* (the pipeline is proven end-to-end) but is a release-gating caveat.
+
+**Consequence:** Phase 0 is exited. The forward chain is **H2 (benchmark corpus) → G2 (wave-1 LIFT)**, which
+gates all Phase-B UI (`17_PRB.01`+). The two accepted-exception legs + the citation-completeness follow-up are
+tracked in DEFERRALS.

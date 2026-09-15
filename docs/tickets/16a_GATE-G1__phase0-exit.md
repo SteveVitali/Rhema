@@ -29,7 +29,7 @@ the live 3-project Reviews + instrumented cost + gate round-trip + cap-402 + sta
 G1-scoped deferral, rewrite the readout with measured values). Both run after ticket 16 and before this
 gate; read G1 only once P0.15c reports G1 ready.
 
-- [ ] Operator disposition recorded in `docs/build/LEDGER.md` GATE DECISIONS and the readout `docs/build/readouts/GATE-G1.md`.
+- [x] Operator disposition recorded (2026-09-15: PASSED with accepted exceptions) in `docs/build/LEDGER.md` GATE DECISIONS and the readout `docs/build/readouts/GATE-G1.md`.
 
 > **Updated 2026-09-10 (MAINT.1 / build-memory v2).** The disposition now lives in `docs/build/LEDGER.md`
 > GATE DECISIONS and the append-only readout `docs/build/readouts/GATE-G1.md` (replacing the retired gitignored scratch pointer).
