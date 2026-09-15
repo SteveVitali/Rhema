@@ -1,0 +1,34 @@
+{
+  "name": "@rhema/obligations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Revision obligations (§11.7; REQ-OBJ-2..8, REQ-WF-7/15, REQ-DATA-26): the one deliberately mutable object over the immutable record. Owns obligation semantics end-to-end — spawn at dossier delivery (the mirror's ObligationHook), disposition routing, the closed-world discharge paths, cross-round lineage matching, the §6.8 stall query feeding the Decisions inbox, the REQ-WF-7 carried/closed/new counts reconciled with the Editor's sidecar, and the read APIs the beta obligation surfaces consume (P0.12).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*",
+    "@rhema/mirror": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}

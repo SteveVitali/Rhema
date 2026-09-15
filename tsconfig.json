@@ -10,6 +10,7 @@
     { "path": "packages/orchestrator" },
     { "path": "packages/ledger" },
     { "path": "packages/mirror" },
+    { "path": "packages/obligations" },
     { "path": "packages/harness" },
     { "path": "packages/protocols" },
     { "path": "packages/protocols-stub" },

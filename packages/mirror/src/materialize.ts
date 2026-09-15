@@ -20,12 +20,29 @@ export interface Overlay {
   readonly artifactVersionId: string;
 }
 
+/**
+ * A SERVER-GENERATED read-only mount file that is NOT an artifact version — the projection of live rows into a
+ * seat's context, like the derived `manifest.md`. The caller is responsible for supplying it only to the seat
+ * and context it belongs in (it bypasses the §12.6 allowlist because it is not an artifact path). The re-review
+ * `obligations.json` is the v0.3 case (letter-writing context only — REQ-OBJ-4/8; P0.12 builds the bytes); a
+ * server file is `derived`, so `materializeScoped` never hands it to an input-scoped independence subagent.
+ */
+export interface ServerFile {
+  readonly path: string;
+  readonly root: MountRoot;
+  readonly bytes: Uint8Array;
+  readonly kind?: MirrorManifestEntry["kind"];
+  readonly namespace?: string;
+}
+
 export interface MaterializeArgs {
   readonly seat: AgentTypeKey;
   readonly projectId?: string | null;
   readonly personaId?: string | null;
   /** gate-derived overlays applied over the committed tree at resume (REQ-SPEC-9); [] on the first attempt. */
   readonly overlays?: readonly Overlay[];
+  /** server-generated read-only mount files (e.g. the re-review `obligations.json` — REQ-OBJ-8); [] normally. */
+  readonly serverFiles?: readonly ServerFile[];
 }
 
 /** One materialized file in the mirror tree (bytes + its manifest entry). */
@@ -183,6 +200,19 @@ async function resolveSeatTree(exec: SqlExecutor, args: MaterializeArgs): Promis
     immutable: b.immutable,
   }));
 
+  // server-generated read-only files (e.g. the re-review obligations.json — REQ-OBJ-8): derived manifest
+  // entries, so they are attested like every other mount but are never artifact-backed.
+  const serverEntries: MirrorManifestEntry[] = (args.serverFiles ?? []).map((s) => ({
+    path: s.path,
+    root: s.root,
+    artifactVersionId: null,
+    sha256: sha256Hex(Buffer.from(s.bytes)),
+    mode: "read",
+    kind: s.kind ?? null,
+    namespace: s.namespace ?? "shared",
+    immutable: false,
+  }));
+
   // manifest.md — regenerated from tables (REQ-VIS-6), a derived read-only file whose entry heads the manifest.
   const manifestMd = renderManifestMd({ seat: args.seat, entries: artifactEntries });
   const derivedManifestEntry: MirrorManifestEntry = {
@@ -195,7 +225,7 @@ async function resolveSeatTree(exec: SqlExecutor, args: MaterializeArgs): Promis
     namespace: "shared",
     immutable: false,
   };
-  return { backed, manifest: { seat: args.seat, entries: [derivedManifestEntry, ...artifactEntries] } };
+  return { backed, manifest: { seat: args.seat, entries: [derivedManifestEntry, ...serverEntries, ...artifactEntries] } };
 }
 
 /**
@@ -210,6 +240,22 @@ export async function materializeSeat(exec: SqlExecutor, store: ContentStore, ar
   const manifestMd = renderManifestMd({ seat: args.seat, entries: manifest.entries.filter((e) => e.artifactVersionId) });
   const manifestMdBytes = Buffer.from(manifestMd, "utf8");
   files.push({ path: "manifest.md", root: "project", bytes: manifestMdBytes, sha256: sha256Hex(manifestMdBytes), artifactVersionId: null, mode: "read", kind: null, namespace: "shared", immutable: false, derived: true });
+
+  // server-generated read-only files (derived; excluded from input-scoped subagents by materializeScoped).
+  for (const s of args.serverFiles ?? []) {
+    files.push({
+      path: s.path,
+      root: s.root,
+      bytes: s.bytes,
+      sha256: sha256Hex(Buffer.from(s.bytes)),
+      artifactVersionId: null,
+      mode: "read",
+      kind: s.kind ?? null,
+      namespace: s.namespace ?? "shared",
+      immutable: false,
+      derived: true,
+    });
+  }
 
   for (const b of backed) {
     files.push(await fileFor(store, b.root, b.path, b.sha256, b.versionId, b.mode, b.immutable));

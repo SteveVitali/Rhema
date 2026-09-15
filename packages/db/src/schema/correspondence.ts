@@ -88,6 +88,7 @@ export const decisionRequests = pgTable("decision_requests", {
   id: text("id").primaryKey(),
   projectId: text("project_id"),
   sourceRunId: text("source_run_id"),
+  obligationId: text("obligation_id"), // escalation link (§11.7; added in migration 0012)
   text: text("text").notNull(),
   options: text("options").array().notNull(),
   state: text("state").notNull().default("open"),

@@ -6,7 +6,7 @@
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
 import type { AgentTypeKey, GateKind } from "@rhema/contracts";
-import { buildSeatManifest, recordMounts, type MirrorManifest, type Overlay } from "@rhema/mirror";
+import { buildSeatManifest, recordMounts, type MirrorManifest, type Overlay, type ServerFile } from "@rhema/mirror";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -30,6 +30,20 @@ export interface OrchestratorDeps {
   readonly tokens: RunTokenService;
   readonly ledger: HoldLedger;
   readonly queue: Queue;
+  /**
+   * Optional obligations-mount provider (P0.12; the app binds `@rhema/obligations` here). On a re-review's
+   * Editor hydration it returns the read-only `obligations.json` server file for the letter-writing context —
+   * never an independence context (REQ-OBJ-4/8). Unset ⇒ no obligations.json is mounted (the pre-P0.12 shape).
+   */
+  readonly obligationMount?: ObligationMountProvider;
+}
+
+/** Builds the re-review `obligations.json` mount file for a seat's hydration, or null when none applies. */
+export interface ObligationMountProvider {
+  forHydration(
+    exec: SqlClient,
+    args: { runId: string; projectId: string | null; seat: AgentTypeKey; workflow: string; inputs: Record<string, unknown> },
+  ): Promise<ServerFile | null>;
 }
 
 /** A subset sufficient for the transition/gate helpers. */
@@ -326,11 +340,27 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
     // explicitly, else they are loaded from the resolved gates' `Decision.overlayVersionIds`. [] on attempt 1.
     const overlays = args.overlays ?? (await loadRunOverlays(tx, args.runId));
 
+    // A re-review's letter-writing context gains a read-only obligations.json (REQ-OBJ-4/8; P0.12). The
+    // provider decides applicability (Editor seat + a re-review) and returns null otherwise; a server file is
+    // `derived`, so materializeScoped never hands it to an input-scoped independence subagent.
+    const serverFiles: ServerFile[] = [];
+    if (deps.obligationMount) {
+      const oblFile = await deps.obligationMount.forHydration(tx, {
+        runId: args.runId,
+        projectId: row.project_id,
+        seat,
+        workflow: row.workflow,
+        inputs,
+      });
+      if (oblFile) serverFiles.push(oblFile);
+    }
+
     const manifest = await buildSeatManifest(tx, {
       seat,
       projectId: row.project_id,
       personaId: row.persona_id,
       overlays,
+      serverFiles,
     });
     await recordMounts(tx, { runId: args.runId, attempt: args.attempt, manifest });
 
