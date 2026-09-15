@@ -246,6 +246,28 @@ importers:
 
   packages/measure: {}
 
+  packages/mirror:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/db':
+        specifier: workspace:*
+        version: link:../db
+      '@rhema/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@rhema/hooks':
+        specifier: workspace:*
+        version: link:../hooks
+      '@rhema/protocols':
+        specifier: workspace:*
+        version: link:../protocols
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
+
   packages/orchestrator:
     dependencies:
       '@rhema/contracts':
@@ -260,6 +282,9 @@ importers:
       '@rhema/hooks':
         specifier: workspace:*
         version: link:../hooks
+      '@rhema/mirror':
+        specifier: workspace:*
+        version: link:../mirror
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../protocols

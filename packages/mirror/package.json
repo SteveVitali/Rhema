@@ -1,0 +1,36 @@
+{
+  "name": "@rhema/mirror",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The artifact pipeline between tables and files (§11.5/§12.2/§12.6): per-seat mirror materialization, write-back harvest, the delivery transaction (sidecar/cited⇒fetched/verdict-source validation, correspondence + freeze + obligation hook), and the server-side boundary attestation. Pure and dependency-injected (P0.09).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*",
+    "@rhema/engine": "workspace:*",
+    "@rhema/hooks": "workspace:*",
+    "@rhema/protocols": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}

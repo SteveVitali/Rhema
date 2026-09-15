@@ -10,6 +10,7 @@
     { "path": "../db" },
     { "path": "../engine" },
     { "path": "../hooks" },
+    { "path": "../mirror" },
     { "path": "../protocols" }
   ],
   "exclude": ["dist", "**/*.test.ts"]
