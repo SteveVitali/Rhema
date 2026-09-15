@@ -178,6 +178,19 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
+  packages/benchmark:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
+
   packages/contracts:
     dependencies:
       zod:

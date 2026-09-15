@@ -21,11 +21,11 @@ describe("migrations (REQ-DATA-3)", () => {
       "select count(*)::int n from information_schema.tables where table_schema='public'",
     );
     expect(Number(n)).toBeGreaterThan(50);
-    // the three limited roles exist (REQ-ARCH-25)
+    // the limited roles exist (REQ-ARCH-25): the three product roles + the dedicated benchmark-runner role (0013)
     const roles = (
       await db.query("select rolname from pg_roles where rolname like 'rhema%' order by 1")
     ).rows.map((r) => (r as { rolname: string }).rolname);
-    expect(roles).toEqual(["rhema_app", "rhema_collab", "rhema_harvester"]);
+    expect(roles).toEqual(["rhema_app", "rhema_benchmark", "rhema_collab", "rhema_harvester"]);
     // backlog_items is dropped by the final migration
     const { exists } = await one(
       db,

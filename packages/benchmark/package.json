@@ -1,0 +1,33 @@
+{
+  "name": "@rhema/benchmark",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "§18 comparative-benchmark data layer + deterministic scorers (REQ-EVAL-1..5, REQ-EVAL-12/13/14, REQ-EVAL-20). Owns the access-logged corpus enclave, the contamination controls, the gold-annotation intake + IAA, the power machinery, and the deterministic scorer set (anchoring/specificity, severity-calibration kappa, voice band + claim-inventory meaning diff, second-read marginal contribution, cost/latency metering join, recall/FP over adjudicated matches, finding diversity, style-perturbed control). Runs beside evals/ and reuses its scorer framework (P0.13). LLM-judge machinery and wave orchestration are P0.14.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}
