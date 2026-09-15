@@ -77,6 +77,7 @@ export const dispositions = pgTable("dispositions", {
   status: text("status").notNull().default("proposed"),
   rationale: text("rationale"),
   adaptedText: text("adapted_text"),
+  reasonCode: text("reason_code"), // PRB.05 — REQ-BETA-6 one-tap chip (optional)
   moveOrdinal: integer("move_ordinal"),
   applied: boolean("applied"),
   byActor: jsonb("by_actor").notNull(),

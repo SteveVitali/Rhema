@@ -175,9 +175,13 @@ export const responseLedgerEntrySchema = z.object({
     adaptedText: z.string().optional(),
     moveOrdinal: z.number().int().optional(),
     applied: z.boolean().optional(),
+    /** PRB.05 — rows the human wrote at the gate or in pre-triage carry `actor: "user"`
+     *  (REQ-SPEC-9; REQ-IDE-28: the run may add rows but never overrides them). */
+    actor: z.enum(["user", "drafter"]).optional(),
   }),
   anchor: anchorSchema.optional(), // §11.3 Anchor verbatim (the move's location in v(N+1))
 });
+export type ResponseLedgerEntry = z.infer<typeof responseLedgerEntrySchema>;
 export const responseLedgerSidecarSchema = envelope("response_ledger").extend({
   entries: z.array(responseLedgerEntrySchema),
 });

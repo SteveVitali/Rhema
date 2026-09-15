@@ -1,4 +1,4 @@
-import type { Actor, DispositionKind } from "@rhema/contracts";
+import type { Actor, DispositionKind, ReasonCode } from "@rhema/contracts";
 
 // The disposition state machine (§5.7; REQ-IDE-15/27, REQ-MOBILE-11 amended, REQ-SPEC-6). Five verbs, the
 // rationale rules, freeze semantics — framework-free, so the beta web and the 1.x mobile app enforce the SAME
@@ -23,6 +23,10 @@ export function rationaleRequired(kind: DispositionKind): boolean {
 export interface DispositionState {
   readonly kind: DispositionKind;
   readonly rationale?: string;
+  /** `adapt` carries the replacement text the human edited out of the suggestion (§5.7). */
+  readonly adaptedText?: string;
+  /** REQ-BETA-6 — the one-tap reason chip (optional on every verb). */
+  readonly reasonCode?: ReasonCode;
   readonly by: Actor;
   readonly at: string;
   readonly moveId?: string;
@@ -35,6 +39,10 @@ export interface DispositionState {
 export interface DispositionInput {
   readonly kind: DispositionKind;
   readonly rationale?: string;
+  /** `adapt` may carry edited suggestion text — optional (§5.7). */
+  readonly adaptedText?: string;
+  /** REQ-BETA-6 — optional on every verb; never required. */
+  readonly reasonCode?: ReasonCode;
   readonly applied?: boolean;
 }
 
@@ -96,6 +104,8 @@ export function applyDisposition(
   return {
     ...state,
     ...(v.normalized.rationale != null ? { rationale: v.normalized.rationale } : {}),
+    ...(v.normalized.adaptedText != null ? { adaptedText: v.normalized.adaptedText } : {}),
+    ...(v.normalized.reasonCode != null ? { reasonCode: v.normalized.reasonCode } : {}),
     ...(v.normalized.applied != null ? { applied: v.normalized.applied } : {}),
   };
 }

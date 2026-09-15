@@ -123,7 +123,8 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.html(renderDocument(c.req.path, projectsElement, { projects: rows }));
   });
 
-  // Auth-gated: the flat project view (canonical /p/:project).
+  // Auth-gated: the flat project view (canonical /p/:project) + the Needs-you surface (PRB.05: the open
+  // gate cards) and the Decisions list (the beta Inbox stand-in, §5.7).
   app.get("/p/:project", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
@@ -131,11 +132,98 @@ export function createWebApp(deps: WebDeps): Hono {
     const rows = await deps.dataSource.listProjects(session);
     const row = rows.find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const [gates, decisions, approvalOverrides] = await Promise.all([
+      deps.dataSource.listGates(session, row.id).catch(() => []),
+      deps.dataSource.listDecisions(session, row.id).catch(() => []),
+      deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>),
+    ]);
+    // a bounced disposition write (a gate row's per-finding override) re-renders with the error under
+    // that row's controls — never dropped silently.
+    const derror = c.req.query("derror");
     return c.html(
       renderDocument(c.req.path, projectElement, {
         project: { title: row.title, pill: row.state.pill, slug },
+        gates,
+        decisions,
+        approvalOverrides,
+        compact: isPhoneRequest(c),
+        ...(derror
+          ? {
+              triage: {
+                dispositionError: {
+                  findingId: derror,
+                  message: COPY.triage.noteRequired,
+                },
+              },
+            }
+          : {}),
       }),
     );
+  });
+
+  // PRB.05 — the per-project approve_triage 24-h opt-in (§6.4 R3): the checkbox writes the
+  // `approval_overrides` row the api validates (≥2 h, wait-default kinds only — REQ-SPEC-1).
+  app.post("/p/:project/approval-overrides", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const current = await deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>);
+    const overrides: Record<string, number | null> = { ...current };
+    if (form.approve_triage_24h === "on") overrides.approve_triage = 24 * 60 * 60 * 1000;
+    else delete overrides.approve_triage;
+    await deps.dataSource.setApprovalOverrides(session, row.id, overrides);
+    return c.redirect(`/p/${slug}`);
+  });
+
+  // PRB.05 — a gate card's decision (§6.4). The card's action buttons POST here; the api resolves/holds.
+  app.post("/p/:project/gates/:gid", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const action = typeof form.action === "string" ? form.action : "";
+    const guidance = typeof form.guidance === "string" && form.guidance.trim() !== "" ? form.guidance : undefined;
+    const standing = form.standing === "true" || form.standing === "on";
+    await deps.dataSource.decideGate(session, row.id, c.req.param("gid"), {
+      action: action === "wait" ? "wait" : (action as "approve" | "approve_autonomous" | "keep_planning" | "stop"),
+      ...(guidance != null ? { guidance } : {}),
+      ...(standing ? { standingRule: true } : {}),
+    });
+    return c.redirect(`/p/${slug}`);
+  });
+
+  // PRB.05 — a presence/reading ping from a gate card's inline script (§6.4 item 2; REQ-SPEC-18).
+  // Progressive enhancement: with no JS the pings simply never arrive and the gate keeps its long
+  // deadline. Returns 204 — the script doesn't navigate.
+  app.post("/p/:project/gates/:gid/activity", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.body(null, 401);
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.body(null, 404);
+    const form = await c.req.parseBody();
+    const activity = typeof form.activity === "string" ? form.activity : "";
+    if (activity !== "present" && activity !== "reading" && activity !== "blur") return c.body(null, 422);
+    await deps.dataSource.recordGateActivity(session, row.id, c.req.param("gid"), activity).catch(() => undefined);
+    return c.body(null, 204);
+  });
+
+  // PRB.05 — answer a Decisions row (the row's option, or "dismiss").
+  app.post("/p/:project/decisions/:dcr", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const answer = typeof form.answer === "string" ? form.answer : "";
+    await deps.dataSource.answerDecision(session, row.id, c.req.param("dcr"), answer);
+    return c.redirect(`/p/${slug}`);
   });
 
   // Auth-gated: the §5.3 import flow (upload/paste → conversion preview → create).
@@ -177,7 +265,20 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const view = buildSheet(c.req.query());
-    return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view } }));
+    // PRB.05 / REQ-IDE-28: the Revise sheet shows "you pre-triaged N of M" (the user's rows are
+    // highest-precedence guidance for the run). A failed read never blocks the sheet.
+    let pretriage: { triaged: number; total: number } | undefined;
+    if (view.workflow === "revise") {
+      pretriage = await deps.dataSource
+        .getPretriage(session, row.id)
+        .then((p) => ({ triaged: p.triaged, total: p.total }))
+        .catch(() => undefined);
+    }
+    return c.html(renderDocument(c.req.path, runSheetElement, {
+      runSheet: { slug, projectTitle: row.title, view },
+      ...(pretriage ? { pretriage } : {}),
+      compact: isPhoneRequest(c),
+    }));
   });
 
   // The Run click — the ONLY run creator (REQ-CHAT-25). Mints nothing new: the sheet-minted idempotency key
@@ -235,12 +336,82 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
-    return c.html(renderDocument(c.req.path, dossierElement, { dossier }));
+    const savedFindingId = c.req.query("disposed") || undefined;
+    return c.html(renderDocument(c.req.path, dossierElement, {
+      dossier,
+      compact: isPhoneRequest(c),
+      ...(savedFindingId ? { triage: { savedFindingId } } : {}),
+    }));
   });
+
+  // PRB.05 — the disposition write (§5.7): the five verbs + note + optional reason chip. Progressive
+  // enhancement: a plain form POST; a validation error re-renders the dossier with the error under the
+  // card (a rebut/escalate with no rationale round-trips a 422). Two mount paths: the dossier route (its
+  // runId locates the dossier to re-render) and the project-scoped route a gate card's per-row override uses.
+  const dispositionHandler = async (c: Context) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const runId = c.req.param("runId") ?? "";
+    const findingId = c.req.param("fid") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row || findingId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const verb = str("verb");
+    const note = str("note");
+    const adaptedText = str("adapted_text");
+    const reasonCode = str("reason_code");
+    const back = safeBack(str("next"), runId !== "" ? `/p/${slug}/review/${runId}` : `/p/${slug}`);
+    try {
+      await deps.dataSource.recordDisposition(session, row.id, findingId, {
+        kind: verb as "accept" | "adapt" | "rebut" | "defer" | "escalate",
+        ...(note.trim() !== "" ? { rationale: note } : {}),
+        ...(adaptedText.trim() !== "" ? { adaptedText } : {}),
+        ...(reasonCode.trim() !== "" ? { reasonCode } : {}),
+      });
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 422 || e.status === 409)) {
+        // Re-render the dossier with the error under the card when we have one; otherwise bounce back
+        // to the project page (the error is on the gate row's form — the POST stays idempotent).
+        if (runId === "") return c.redirect(`${back}${back.includes("?") ? "&" : "?"}derror=${encodeURIComponent(findingId)}`);
+        const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
+        const message =
+          e.status === 409
+            ? "This finding's disposition is frozen — the ledger locked at delivery."
+            : `a rationale is required for ${verb}`;
+        return c.html(
+          renderDocument(c.req.path, dossierElement, {
+            dossier,
+            compact: isPhoneRequest(c),
+            triage: { dispositionError: { findingId, message } },
+          }),
+          e.status as 422 | 409,
+        );
+      }
+      throw e;
+    }
+    return c.redirect(`${back}${back.includes("?") ? "&" : "?"}disposed=${encodeURIComponent(findingId)}`);
+  };
+  app.post("/p/:project/review/:runId/findings/:fid/disposition", dispositionHandler);
+  app.post("/p/:project/findings/:fid/disposition", dispositionHandler);
 
   app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));
 
   return app;
+}
+
+/** §10.1 — the phone-width input set is a server-rendered variant of the SAME components (REQ-SPEC-20);
+ *  the shell picks it from the request's mobile hints (UA / Sec-CH-UA-Mobile). */
+function isPhoneRequest(c: Context): boolean {
+  if (c.req.header("sec-ch-ua-mobile") === "?1") return true;
+  const ua = c.req.header("user-agent") ?? "";
+  return /Mobi|iPhone|Android/i.test(ua);
+}
+
+/** A `next` redirect target must stay inside the app (no open redirects). */
+function safeBack(next: string, fallback: string): string {
+  return next.startsWith("/p/") ? next : fallback;
 }
 
 // ---- run sheet helpers (§5.6) ----

@@ -342,6 +342,27 @@ export async function runDeliveryTransaction(
     at: now,
   });
 
+  // ---- 6b. freeze the triage ledger (§5.7; PRB.05) -------------------------------------------------
+  // A delivered `response` correspondence answers the review it responds to: every open disposition on
+  // the project's latest review correspondence locks (`frozen_at`) and links forward (`response_id` →
+  // this response item). `move_ordinal` stays null — the forward move link lands with PRB.06's move rows.
+  if (args.correspondenceKind === "response") {
+    await exec.query(
+      `update dispositions d
+          set response_id = $2, frozen_at = $3
+         from findings f
+        where d.finding_id = f.id
+          and d.response_id is null
+          and d.frozen_at is null
+          and f.correspondence_id = (
+            select ci.id from correspondence_items ci
+             where ci.project_id = $1 and ci.kind = 'review'
+             order by ci.delivered_at desc limit 1
+          )`,
+      [args.projectId, correspondenceId, now],
+    );
+  }
+
   // ---- 7. obligation spawn/join hook (logic is P0.12; the transactional seam is here — REQ-OBJ-2) --
   await hook.onDelivery({
     exec,
