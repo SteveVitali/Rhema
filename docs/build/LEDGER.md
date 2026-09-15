@@ -31,7 +31,7 @@ buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, stevevitali/p0-01-monorepo-and-infra) — P0.01's fork point
 chainTip:        stevevitali/prb-02-import-fetcher-convert
 benchmarkSet:    PENDING_CREATE     # §18 corpus is HUMAN row H2; dev set = the three real projects
-autonomy:        checkpoint
+autonomy:        manual            # operator approves EVERY ticket (pause at each implement-spec completion); headless dispatch via drive-build.sh --yolo. Was `checkpoint` (auto-advances green tickets) — switched 2026-09-15 for per-ticket review of the large Phase-B tickets.
 mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up at the end
 round:           1
 updatedAt:       2026-09-15         # PRB.02 landed (PR #30); ingestion pipeline in
