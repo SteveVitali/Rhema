@@ -17,8 +17,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      GATE-G1           # 16a_GATE-G1__phase0-exit.md — the operator's readout; BLOCKED on the RETURN PASS live re-runs (P0.15j + P0.15k Stage B) — do NOT disposition until they close
-lastCompleted:   P0.15k            # live three-project Reviews + instrumented cost — Stage A construction, PR #28
+nextTicket:      GATE-G1           # read out 2026-09-15: CORE criterion MET (3-project reviews green live); formal clear pending a Phase-0 deferrals reconciliation (a reconcile-build pass closes the live-proven P0.x rows), THEN the gate clears. Forward chain after G1: H2 corpus → G2 wave-1 eval (gates all Phase-B UI)
+lastCompleted:   P0.15k            # live three-project Reviews + instrumented cost + Stage B live (PR #28); G1 core criterion met
 blockedOn:       (nothing)         # a REAL block only (red verification, missing dependency/infra). Human gates + pending G1 are NOT blocks
 pauseRequested:  false
 returnPass:      (none)            # P0.15j AC3 + P0.15k AC1 DONE live (2026-09-11, PR #28); the remaining narrow legs (D-P0.15-2/-3, D-P0.15k-1/-2, D-P0.08-2) are gate-pending DEFERRALS, not full-ticket re-runs
@@ -34,7 +34,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus is HUMAN row H2; dev set = the
 autonomy:        checkpoint
 mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up at the end
 round:           1
-updatedAt:       2026-09-11         # P0.15k Stage B executed live: AC1 (3-project reviews green) MET; G1 core criterion satisfied
+updatedAt:       2026-09-15         # G1 read out: core criterion MET; formal clear pending Phase-0 deferrals reconciliation
 ```
 
 ## OPEN FINDINGS
@@ -60,7 +60,7 @@ _(append-only: `| date | ticket | gate | item | answer | consequence |`)_
 
 | date | ticket | gate | item | answer | consequence |
 |---|---|---|---|---|---|
-| — | — | — | (none recorded; G1 has not been read out — its disposition, when taken, lands here and in `docs/build/readouts/GATE-G1.md`) | — | — |
+| 2026-09-15 | 16a_GATE-G1 | G1 | Phase-0 exit — disposition after P0.15k Stage B (PR #28) | **CORE CRITERION MET; formal clear deferred pending a Phase-0 deferrals reconciliation.** Three-project Reviews deliver green live (assessor clean); operator accepts D-P0.15-2/-3, D-P0.15k-1/-2, D-P0.08-2 as tracked post-Phase-0 follow-ups. | The formal verdict token is NOT yet written in `readouts/GATE-G1.md` (OPEN P0.x rows still reference G1 — validator + rule 4). Next: a `reconcile-build` pass closes the live-proven P0.x rows + dispositions the remainder, then G1 clears. The forward chain (H2 corpus → G2 wave-1 eval) gates all Phase-B UI. See `readouts/GATE-G1.md` (2026-09-15). |
 
 ## RETURN PASS
 
