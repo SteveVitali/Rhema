@@ -36,6 +36,8 @@ export interface ProjectRow {
   readonly slug: string;
   readonly title: string;
   readonly state: ProjectStateDto;
+  /** The highest-n draft head — the source editor's entry point (PRB.07). */
+  readonly headDraftId?: string | null;
 }
 
 export interface InviteCheckDto {
@@ -286,6 +288,79 @@ export interface HunkCommentDto {
   readonly hunkId: string;
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21, REQ-DATA-24/26/41). The CodeMirror stopgap's wire
+// shapes: document + run lock + projected findings rail; the debounced autosave; the note→Guidance field;
+// Cancel-run; and "Revise using your edits" (REQ-DATA-26). There is no Save button — `saveEditorDraft` is
+// the debounced autosave POST.
+// ---------------------------------------------------------------------------------------------------------
+
+/** The §6.3 run lock the editor's read-only banner renders (null ⇒ editable). */
+export interface EditorLockDto {
+  readonly runId: string;
+  readonly kind: "writer" | "reader";
+  readonly workflow: string;
+}
+
+/** A finding projected onto the edited head — the rail's "from Review of vN" card. */
+export interface EditorFindingDto {
+  readonly findingId: string;
+  readonly title: string;
+  readonly severity: string;
+  /** e.g. "from Review of v2" — the finding is a projection of the source review, not a re-file. */
+  readonly sourceLabel: string;
+  readonly anchor: unknown;
+  readonly method: "exact" | "normalized" | "fuzzy" | "unresolved" | "unanchored";
+  /** true ⇒ "passage changed — still applies?" under Whole piece (a moot candidate at triage). */
+  readonly lost: boolean;
+}
+
+/** The editor document read (GET …/editor/:draftId). */
+export interface EditorDocDto {
+  readonly draftId: string;
+  readonly draftN: number;
+  readonly origin: string;
+  readonly state: string;
+  readonly baseDraftId: string | null;
+  readonly baseDraftN: number | null;
+  readonly markdown: string;
+  readonly sha256: string | null;
+  readonly lock: EditorLockDto | null;
+  readonly findings: EditorFindingDto[];
+}
+
+/** The autosave response — `forked` marks the first save on a frozen head (v(N+1) created). */
+export interface EditorSaveDto {
+  readonly draftId: string;
+  readonly draftN: number;
+  readonly versionId: string;
+  readonly sha256: string;
+  readonly forked: boolean;
+  readonly changed: boolean;
+  readonly restorePointId: string | null;
+  readonly sync: "synced";
+}
+
+/** The note field → a `Guidance` row (§6.3's comment path; REQ-DATA-41's beta form). */
+export interface EditorNoteDto {
+  readonly guidanceId: string;
+}
+
+/** The Cancel-run release (§6.3). */
+export interface EditorCancelRunDto {
+  readonly ok: true;
+  readonly state: string;
+  readonly alreadyTerminal: boolean;
+}
+
+/** "Revise using your edits" (REQ-DATA-26): the run id + the auto-mooted findings awaiting triage. */
+export interface EditorReviseDto {
+  readonly runId: string;
+  readonly state: string;
+  readonly deduped?: boolean;
+  readonly mootedFindingIds: string[];
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -357,6 +432,17 @@ export interface ApiClient {
     text: string,
     init?: RequestInitLite,
   ): Promise<HunkCommentDto>;
+  /** The editor document: markdown + the §6.3 run lock + the projected findings rail (PRB.07). */
+  getEditorDoc(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorDocDto>;
+  /** The debounced autosave — forks a frozen head to v(N+1) `human_revision` on first save (REQ-DATA-24).
+   *  Throws `ApiError(409)` while a run holds the head (read-only during runs, §6.3). */
+  saveEditorDraft(projectId: string, draftId: string, markdown: string, init?: RequestInitLite): Promise<EditorSaveDto>;
+  /** The one note field → a Guidance row the next Revise consumes (REQ-DATA-41's comment path). */
+  postEditorNote(projectId: string, draftId: string, text: string, init?: RequestInitLite): Promise<EditorNoteDto>;
+  /** "Cancel run to edit" — cancels the run holding the head (§6.3 banner release). */
+  cancelEditorRun(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorCancelRunDto>;
+  /** "Revise using your edits" (REQ-DATA-26): review of vN + base v(N+1); lost quotes auto-mooted. */
+  reviseWithEdits(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorReviseDto>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -491,6 +577,44 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
           headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
           body: JSON.stringify({ text }),
         },
+      );
+    },
+    async getEditorDoc(projectId, draftId, init): Promise<EditorDocDto> {
+      return json<EditorDocDto>(
+        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async saveEditorDraft(projectId, draftId, markdown, init): Promise<EditorSaveDto> {
+      return json<EditorSaveDto>(
+        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/save`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({ markdown }),
+        },
+      );
+    },
+    async postEditorNote(projectId, draftId, text, init): Promise<EditorNoteDto> {
+      return json<EditorNoteDto>(
+        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/note`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({ text }),
+        },
+      );
+    },
+    async cancelEditorRun(projectId, draftId, init): Promise<EditorCancelRunDto> {
+      return json<EditorCancelRunDto>(
+        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/cancel-run`,
+        { method: "POST", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async reviseWithEdits(projectId, draftId, init): Promise<EditorReviseDto> {
+      return json<EditorReviseDto>(
+        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/revise`,
+        { method: "POST", headers: init?.headers as Record<string, string> | undefined },
       );
     },
   };

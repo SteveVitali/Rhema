@@ -9,13 +9,10 @@ import { createHash } from "node:crypto";
 import type { WorkflowKey } from "@rhema/contracts";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
-import { firstConflict, isWriterWorkflow, lockKeys, type LockKey } from "./locks.js";
+import { firstConflict, isWriterWorkflow, lockKeys, HOLDING_STATES, type LockKey } from "./locks.js";
 import { revokeRunCredentials } from "./credentials.js";
 import type { SqlClient } from "./tx.js";
 import type { RunAllowlistData, RunContextData } from "./resolver.js";
-
-/** Run states that HOLD their lock set (a queued run has not acquired locks yet). */
-const HOLDING_STATES = ["provisioning", "running", "waiting_gate", "orphaned", "cancelling", "finalizing"];
 
 /** GKE Job launch (§12.4 step 4). Live k8s client is the deploy's; this is the seam. */
 export interface JobLauncher {

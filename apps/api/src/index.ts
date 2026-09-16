@@ -6,6 +6,7 @@ import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
 import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
 import { createRevisionRoutes, type RevisionApiDeps } from "./revision-routes.js";
+import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
 import { createImportRoutes, type Converter } from "./import.js";
 import { randomUUID } from "node:crypto";
@@ -50,6 +51,8 @@ export { createTriageRoutes, loadPretriage } from "./triage-routes.js";
 export type { TriageApiDeps } from "./triage-routes.js";
 export { createRevisionRoutes } from "./revision-routes.js";
 export type { RevisionApiDeps } from "./revision-routes.js";
+export { createEditorRoutes } from "./editor-routes.js";
+export type { EditorApiDeps, EditorFindingDto } from "./editor-routes.js";
 export { loadWhatChanged, computeReReviewSeed } from "./what-changed.js";
 export type { WhatChangedResult, WhatChangedOutcome, ReReviewSeed } from "./what-changed.js";
 
@@ -85,6 +88,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the
       // same deps the run API uses (txRunner for the atomic write + obligation routing).
       app.route("/", createTriageRoutes({ ...(deps as TriageApiDeps), db }));
+      // PRB.07 — the source editor (document read, autosave, note→Guidance, cancel-run, revise-with-edits).
+      app.route("/", createEditorRoutes({ ...(deps as EditorApiDeps), db }));
       app.route(
         "/",
         createShellRoutes({

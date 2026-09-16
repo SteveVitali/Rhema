@@ -106,3 +106,50 @@ export function computeLockSet(spec: LockSetSpec): LockKey[] {
   if (spec.draftId && spec.corrKind) keys.push(lockKeys.corr(spec.draftId, spec.corrKind, spec.corrK ?? 1));
   return keys;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// the editor's view of the locks (PRB.07; §5.4/§6.3 "read-only during runs · Cancel run to edit")
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** The run states that HOLD their declared lock set (a queued run has not acquired locks yet — provision's
+ *  conflict scan and the editor's read-only check share this list). */
+export const HOLDING_STATES: readonly string[] = [
+  "provisioning",
+  "running",
+  "waiting_gate",
+  "orphaned",
+  "cancelling",
+  "finalizing",
+];
+
+/** What the editor's read-only banner names when a run holds the page. */
+export interface EditorLock {
+  readonly runId: string;
+  /** 'writer' — a run is writing this project (ns:write / draft:write); 'reader' — a run is reading THIS head. */
+  readonly kind: "writer" | "reader";
+  readonly workflow: string;
+}
+
+/**
+ * The run lock the Page surfaces (§6.3): a writer run in the project (any `ns:write:*:<projectId>` key, or a
+ * `draft:write` on the head) locks the whole project; a reader run holding `draft:read:<headId>` locks that
+ * frozen head. Writers win over readers. `runs` are the project's lock-holding rows (caller filters to
+ * HOLDING_STATES); pure so the editor read + the save guard share one rule.
+ */
+export function editorLockForRuns(
+  runs: readonly { readonly id: string; readonly workflow: string; readonly lockSet: readonly string[] }[],
+  args: { readonly projectId: string; readonly draftId: string },
+): EditorLock | null {
+  for (const r of runs) {
+    const writerKey =
+      r.lockSet.some((k) => k.startsWith("ns:write:") && k.endsWith(`:${args.projectId}`)) ||
+      r.lockSet.includes(lockKeys.draftWrite(args.draftId));
+    if (writerKey) return { runId: r.id, kind: "writer", workflow: r.workflow };
+  }
+  for (const r of runs) {
+    if (r.lockSet.includes(lockKeys.draftRead(args.draftId))) {
+      return { runId: r.id, kind: "reader", workflow: r.workflow };
+    }
+  }
+  return null;
+}

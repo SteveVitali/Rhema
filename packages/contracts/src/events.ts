@@ -300,6 +300,12 @@ export const RUN_EVENTS = {
     density: "normal",
     payload: z.object({ figureId: idSchema }),
   },
+  // drafts — a human edit on a frozen head forked v(N+1) (PRB.07; REQ-DATA-24's timeline event; ids + n only)
+  "draft.forked": {
+    visibility: "user",
+    density: "summary",
+    payload: z.object({ draftId: idSchema, baseDraftId: idSchema, n: z.number().int() }),
+  },
   // revision trace (PRB.06; REQ-BETA-7/8) — ids + counts only, never hunk text or ledger prose
   "revision.move_traced": {
     visibility: "user",

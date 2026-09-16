@@ -1,7 +1,13 @@
 import { createContext, useContext } from "react";
 import type { ProjectRowView } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
-import type { ApprovalOverridesDto, DecisionItemDto, GateCardDto, WhatChangedDto } from "@rhema/api-client";
+import type {
+  ApprovalOverridesDto,
+  DecisionItemDto,
+  EditorDocDto,
+  GateCardDto,
+  WhatChangedDto,
+} from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
@@ -15,7 +21,13 @@ export interface PageData {
     readonly code?: string;
     readonly email?: string;
   };
-  readonly project?: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly project?: {
+    readonly title: string;
+    readonly pill: string;
+    readonly slug: string;
+    /** the highest-n draft head — the "Edit source" link's target (PRB.07). */
+    readonly headDraftId?: string | null;
+  };
   readonly conversion?: {
     readonly projectSlug: string;
     readonly sourceLabel: string;
@@ -53,6 +65,14 @@ export interface PageData {
   readonly approvalOverrides?: ApprovalOverridesDto;
   /** PRB.06 — the What-changed read for a delivered response (the revision page; §5.8). */
   readonly revision?: { readonly slug: string; readonly data: WhatChangedDto; readonly commentedHunkId?: string };
+  /** PRB.07 — the source editor (§5.4/§6.3): the doc + lock + projected rail the SSR page renders. */
+  readonly editor?: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly doc: EditorDocDto;
+    /** a note POST redirected back with this set — the "Noted" marker renders. */
+    readonly noteSaved?: boolean;
+  };
   /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
   readonly compact?: boolean;
 }

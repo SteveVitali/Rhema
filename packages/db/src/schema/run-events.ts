@@ -41,3 +41,15 @@ export const runEventSeq = pgTable("run_event_seq", {
   workspaceId: text("workspace_id").notNull(),
   seq: integer("seq").notNull().default(0),
 });
+
+// The project-scoped, non-run half of the §5.5 timeline (migration 0019; PRB.07): human-revision events
+// (`draft.forked`, the manual `revision.move_traced`) carry no runs FK target, so they land here instead of
+// `run_events`. Payloads are the same RUN_EVENTS catalogue shapes — `parseRunEvent` gates every write.
+export const timelineEvents = pgTable("timeline_events", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull(),
+  workspaceId: text("workspace_id").notNull(), // denormalized tenant key (RLS)
+  type: text("type").notNull(),
+  payload: jsonb("payload").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull(),
+});

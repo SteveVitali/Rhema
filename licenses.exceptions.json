@@ -20,6 +20,16 @@
       "type": "asset",
       "license": "OFL-1.1 / vendor-specific",
       "rationale": "Bundled font files (SIL Open Font License and vendor licences) shipped as assets in export/marketing containers. Redistribution terms honored per font; enumerated in LICENSES.md as fonts are added."
+    },
+    "duck": {
+      "type": "npm",
+      "license": "BSD",
+      "rationale": "Transitive dep of mammoth (docx conversion, apps/convert) via lop. The declared SPDX string is the bare 'BSD', but the checked-in LICENSE file is the permissive 2-clause text (no advertising clause) — equivalent to allowlisted BSD-2-Clause. Server-side conversion only; never in a client bundle."
+    },
+    "pako": {
+      "type": "npm",
+      "license": "(MIT AND Zlib)",
+      "rationale": "Transitive dep of mammoth via jszip (docx conversion). The declared SPDX expression is a conjunction of two permissive licences — MIT is allowlisted and Zlib is a permissive zlib licence. Server-side only."
     }
   }
 }

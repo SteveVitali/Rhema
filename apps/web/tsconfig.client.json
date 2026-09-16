@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The browser client bundle (PRB.07): DOM lib + bundler resolution (esbuild consumes these sources
+    // directly; extensionless relative imports are allowed here — the NodeNext `.js` rule is for the
+    // server graph). No emit: `tsc -p` is the typecheck; `build-client.mjs` produces the artifact.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": ["src/client"],
+  "exclude": ["**/*.test.ts"]
+}
