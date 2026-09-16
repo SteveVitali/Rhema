@@ -24,6 +24,7 @@ import {
   type AiUseStatement,
 } from "@rhema/ai-use";
 import type { SqlClient, TxRunner } from "@rhema/orchestrator";
+import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
 import { resolveEditorHead, versionText, type DraftHeadRow } from "./editor-routes.js";
 
@@ -283,6 +284,22 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
     if (!prepared.ok) return c.json({ error: prepared.reason }, prepared.reason === "empty_draft" ? 422 : 404);
 
     const result = await deps.exportRunner.run({ markdown: prepared.markdown, format });
+    // The export succeeded — this route owns `project.exported` (PRB.12; the audit scans this file for
+    // the literal). Post-commit and non-fatal: a telemetry failure is logged, never a failed download;
+    // opt-out is honored inside recordAnalyticsEvent (no row, no throw).
+    await deps.txRunner
+      .run(principal.workspaceId, async (tx) => {
+        await recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
+          userId: principal.userId,
+          workspaceId: principal.workspaceId,
+          projectId,
+          event: "project.exported",
+          props: { format },
+        });
+      })
+      .catch((err: unknown) =>
+        console.error("[api] project.exported analytics failed:", err instanceof Error ? err.message : err),
+      );
     return new Response(Buffer.from(result.bytes), {
       status: 200,
       headers: {

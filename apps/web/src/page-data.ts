@@ -8,6 +8,7 @@ import type {
   ExportDialogDto,
   GateCardDto,
   ProjectVoiceDto,
+  UsageDto,
   VoiceDetailDto,
   VoiceEstimateDto,
   VoiceListRowDto,
@@ -107,6 +108,15 @@ export interface PageData {
   };
   /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
   readonly compact?: boolean;
+  // ---- PRB.12 — beta analytics chrome ----
+  /** the §14.5 level-0 balance chip's data (spendable + held-on-hover); the authed shells render it in nav. */
+  readonly balance?: { readonly spendableCredits: number; readonly heldCredits: number };
+  /** the settings page's privacy toggle (REQ-PROD-15 — binds "user".analytics_opt_out). */
+  readonly privacy?: { readonly analyticsOptOut: boolean; readonly saved?: boolean };
+  /** the level-1 usage glance (balance + recent runs' spend). */
+  readonly usage?: UsageDto;
+  /** the page's dwell-heartbeat surface label — set ⇒ renderDocument emits the beacon script (REQ-BETA-10). */
+  readonly dwellSurface?: string;
 }
 
 export const PageDataContext = createContext<PageData>({});

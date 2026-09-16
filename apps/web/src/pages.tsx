@@ -13,6 +13,7 @@ import {
   SecondReadView,
   FindingsList,
   VersionObligationChip,
+  BalanceChip,
   DispositionControls,
   GateCard,
   TriageLedger,
@@ -179,13 +180,23 @@ export function LoginPage(): ReactNode {
 
 /** Auth-gated: the project list, each row's pill + action derived from the §6.3 state function. */
 export function ProjectsPage(): ReactNode {
-  const { projects = [] } = usePageData();
+  const { projects = [], balance } = usePageData();
   return (
     <Shell
       brand={COPY.brand}
       nav={
         <span style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+          {/* PRB.12 — the §14.5 level-0 balance chip (held rides the tooltip). */}
+          {balance ? (
+            <BalanceChip
+              spendableCredits={balance.spendableCredits}
+              heldCredits={balance.heldCredits}
+              label={fmt(COPY.balance.labelFmt, { n: balance.spendableCredits.toLocaleString() })}
+              heldTitle={fmt(COPY.balance.heldTitleFmt, { n: balance.heldCredits.toLocaleString() })}
+            />
+          ) : null}
           <a href="/voices" style={{ fontSize: "13px" }}>{COPY.voice.nav}</a>
+          <a href="/settings" style={{ fontSize: "13px" }}>{COPY.settings.nav}</a>
           <form method="post" action="/logout" style={{ margin: 0 }}>
             <button type="submit" style={{ background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", fontSize: "13px" }}>
               {COPY.projects.signOut}
@@ -1309,6 +1320,92 @@ export function ExportPage(): ReactNode {
               </p>
             </section>
           ) : null}
+        </>
+      ) : null}
+    </Shell>
+  );
+}
+
+/** PRB.12 — Settings (level-0 minimal): the one control REQ-PROD-15 requires to exist and bind — the
+ *  analytics opt-out. A plain form POST; the flag also hides existing events from every read. */
+export function SettingsPage(): ReactNode {
+  const { privacy } = usePageData();
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{COPY.settings.heading}</SectionTitle>
+      <section aria-label={COPY.settings.privacyHeading} style={{ marginTop: "16px", maxWidth: "68ch" }}>
+        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.settings.privacyHeading}</h3>
+        <form method="post" action="/settings/privacy" data-privacy-form="true">
+          <label style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)" }}>
+            <input
+              type="checkbox"
+              name="analytics"
+              defaultChecked={!(privacy?.analyticsOptOut ?? false)}
+              data-analytics-toggle="true"
+            />
+            {COPY.settings.analyticsLabel}
+          </label>
+          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 10px" }}>
+            {COPY.settings.analyticsNote}
+          </p>
+          <button type="submit" style={{ fontSize: "13px" }}>{COPY.settings.saveCta}</button>
+          {privacy?.saved ? (
+            <span data-privacy-saved="true" style={{ marginLeft: "10px", fontSize: "12px", color: "var(--state-ready)" }}>
+              {COPY.settings.saved}
+            </span>
+          ) : null}
+        </form>
+      </section>
+    </Shell>
+  );
+}
+
+/** PRB.12 — the §14.5 level-1 usage glance: the balance (spendable + held) and the account's recent runs'
+ *  credit spend (P0.11 data). Per-run cost on run rows — the whole contract. */
+export function UsagePage(): ReactNode {
+  const { usage } = usePageData();
+  const credits = (n: number) => `${n.toLocaleString()} ${COPY.usage.creditsSuffix}`;
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{COPY.usage.heading}</SectionTitle>
+      {usage ? (
+        <>
+          <p style={{ fontSize: "14px", margin: "12px 0" }} data-usage-balance="true">
+            {COPY.usage.spendableLabel}: <strong>{credits(usage.spendableCredits)}</strong>
+            {" · "}
+            <span title={COPY.usage.heldNote}>
+              {COPY.usage.heldLabel}: {credits(usage.heldCredits)}
+            </span>
+          </p>
+          <h3 style={{ fontSize: "14px", margin: "16px 0 8px" }}>{COPY.usage.runsHeading}</h3>
+          {usage.runs.length === 0 ? (
+            <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.usage.runEmpty}</p>
+          ) : (
+            <table style={{ fontSize: "13px", borderCollapse: "collapse", width: "100%" }} data-usage-runs="true">
+              <thead>
+                <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Run</th>
+                  <th style={{ padding: "4px 8px" }}>Workflow</th>
+                  <th style={{ padding: "4px 8px" }}>State</th>
+                  <th style={{ padding: "4px 0 4px 8px", textAlign: "right" }}>Spent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usage.runs.map((r) => (
+                  <tr key={r.runId} data-usage-run={r.runId}>
+                    <td style={{ padding: "4px 8px 4px 0", fontVariantNumeric: "tabular-nums" }}>
+                      {r.createdAt.slice(0, 10)}
+                    </td>
+                    <td style={{ padding: "4px 8px" }}>{r.workflow}</td>
+                    <td style={{ padding: "4px 8px" }}>{r.state}</td>
+                    <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                      {credits(r.spentCredits)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </>
       ) : null}
     </Shell>

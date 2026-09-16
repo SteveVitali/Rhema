@@ -110,12 +110,13 @@ describe("POST /stripe/webhook — §14.6 discipline (AC2)", () => {
 });
 
 describe("GET /billing/balance", () => {
-  it("returns the spendable sum + suspension + the beta Payment Link", async () => {
-    await db.pg.query("insert into credit_balances(billing_account_id, bucket, available, held) values ($1,'included',1200,0),($1,'promo',300,0)", [BA]);
+  it("returns the spendable sum + held + suspension + the beta Payment Link (§14.5 level-0)", async () => {
+    await db.pg.query("insert into credit_balances(billing_account_id, bucket, available, held) values ($1,'included',1200,0),($1,'promo',300,0),($1,'topup',0,140)", [BA]);
     const res = await app().request("/billing/balance");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       spendableCredits: 1500,
+      heldCredits: 140, // PRB.12 — the chip's held-on-hover figure
       suspended: false,
       clawbackDebt: 0,
       paymentLinkUrl: "https://buy.stripe.com/test_beta",

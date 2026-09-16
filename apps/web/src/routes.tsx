@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -27,6 +27,9 @@ export const exportElement = <ExportPage />;
 export const voicesElement = <VoicesPage />;
 export const voiceNewElement = <VoiceNewPage />;
 export const voiceDetailElement = <VoiceDetailPage />;
+// PRB.12 — the Settings privacy toggle + the §14.5 usage glance.
+export const settingsElement = <SettingsPage />;
+export const usageElement = <UsagePage />;
 export const notFoundElement = <NotFoundPage />;
 
 export const routes: readonly AppRoute[] = [
@@ -47,6 +50,9 @@ export const routes: readonly AppRoute[] = [
   { path: "/voices", public: false, element: voicesElement },
   { path: "/voices/new", public: false, element: voiceNewElement },
   { path: "/v/:persona", public: false, element: voiceDetailElement },
+  // PRB.12 — the privacy toggle (REQ-PROD-15) + the usage glance (§14.5 level 1).
+  { path: "/settings", public: false, element: settingsElement },
+  { path: "/usage", public: false, element: usageElement },
 ];
 
 /** Resolve a pathname to its route (React Router param matching). Undefined ⇒ 404. */

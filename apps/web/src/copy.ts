@@ -493,6 +493,34 @@ export const COPY = {
     exportFailed: "The export did not complete — nothing was downloaded.",
   },
 
+  // PRB.12 — the §14.5 balance chip + usage glance, and the Settings privacy toggle (REQ-PROD-15).
+  balance: {
+    /** the chip's label — "1,240 cr". */
+    labelFmt: "{n} cr",
+    /** the hover line — "300 cr held against running jobs". */
+    heldTitleFmt: "{n} cr held against running jobs",
+  },
+  settings: {
+    nav: "Settings",
+    heading: "Settings",
+    privacyHeading: "Privacy",
+    analyticsLabel: "Share product analytics",
+    analyticsNote:
+      "Usage events tell us which parts of the beta earn their keep. Turning this off stops new telemetry and removes your events from every report.",
+    saveCta: "Save",
+    saved: "Saved.",
+  },
+  usage: {
+    nav: "Usage",
+    heading: "Usage",
+    spendableLabel: "Spendable",
+    heldLabel: "Held",
+    heldNote: "credits held against running jobs",
+    runsHeading: "Recent runs",
+    runEmpty: "No runs yet.",
+    creditsSuffix: "cr",
+  },
+
   footer: "Rhēma · private beta",
 } as const;
 

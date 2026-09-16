@@ -37,6 +37,9 @@ import type {
   ExportDownloadDto,
   AiUseStatementDto,
   AiUseAdditionDto,
+  AnalyticsEventRequestDto,
+  PrivacySettingsDto,
+  UsageDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -221,6 +224,18 @@ export interface DataSource {
     projectId: string,
     sentence: string,
   ): Promise<AiUseAdditionDto>;
+  // ---- PRB.12 — beta analytics + the privacy toggle + the usage glance ----
+  /** mint a client-whitelisted analytics event (the SSR surfaces' view/dwell/timer emissions). */
+  postAnalyticsEvent(
+    session: SessionHeaders,
+    req: AnalyticsEventRequestDto,
+  ): Promise<{ ok: boolean; recorded: boolean }>;
+  /** the account's analytics opt-out flag (the Settings toggle). */
+  getPrivacySettings(session: SessionHeaders): Promise<PrivacySettingsDto>;
+  /** flip `analytics_opt_out` — stops future writes AND hides existing rows from reads (REQ-PROD-15). */
+  setAnalyticsOptOut(session: SessionHeaders, analyticsOptOut: boolean): Promise<PrivacySettingsDto>;
+  /** the level-1 usage glance: balance + recent runs' spend (§14.5). */
+  getUsage(session: SessionHeaders): Promise<UsageDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -321,5 +336,14 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).downloadAiUseStatement(projectId, format),
     appendAiUseAddition: (session, projectId, sentence) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).appendAiUseAddition(projectId, sentence),
+    // ---- PRB.12 — analytics + privacy + usage ----
+    postAnalyticsEvent: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postAnalyticsEvent(req),
+    getPrivacySettings: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPrivacySettings(),
+    setAnalyticsOptOut: (session, analyticsOptOut) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setAnalyticsOptOut(analyticsOptOut),
+    getUsage: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsage(),
   };
 }

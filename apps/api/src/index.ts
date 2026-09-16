@@ -13,6 +13,7 @@ import { createInviteGate, type SqlClient } from "./invite.js";
 import { createImportRoutes, type Converter } from "./import.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
+import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore } from "@rhema/mirror";
 
@@ -66,6 +67,8 @@ export type { VoiceApiDeps } from "./voice-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
 export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
+export { createAnalyticsRoutes } from "./analytics-routes.js";
+export type { AnalyticsApiDeps } from "./analytics-routes.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
  *  + the stateless estimate endpoint (PRB.03). `principal` is shared; the estimate seams are optional. */
@@ -138,6 +141,17 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         principal: deps.principal,
         ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
         ...(deps.importConverter ? { converter: deps.importConverter } : {}),
+      }),
+    );
+    // PRB.12 — the analytics client mint (CLIENT_ANALYTICS_EVENTS only — server-owned facts are never
+    // client-forgeable) + the settings privacy toggle that binds "user".analytics_opt_out.
+    app.route(
+      "/",
+      createAnalyticsRoutes({
+        principal: deps.principal,
+        txRunner: deps.txRunner,
+        clock: deps.clock,
+        ids: deps.ids,
       }),
     );
     // PRB.09 — notification prefs (session-authed) + the signed one-click action consume (unauthenticated;
