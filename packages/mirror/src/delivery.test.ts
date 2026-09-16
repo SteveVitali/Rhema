@@ -239,7 +239,135 @@ describe("delivery transaction", () => {
     ).rows[0] as { response_id: string | null; frozen_at: Date | null; move_ordinal: number | null };
     expect(d.frozen_at).not.toBeNull(); // cards lock at delivery
     expect(d.response_id).toBe(result.correspondenceId); // links forward to the response
-    expect(d.move_ordinal).toBeNull(); // the move link lands with PRB.06
+    expect(d.move_ordinal).toBeNull(); // no response-ledger sidecar → no move link (PRB.06 fills it when present)
+  });
+
+  // PRB.06 (§5.8) — the response-ledger fold: the frozen ledger's rows persist as dispositions carrying the
+  // move link, the v(N+1) draft row is created, and `revision.move_traced` fires per move (REQ-BETA-7).
+  it("folds the response ledger at delivery: dispositions + move_ordinal + v(N+1) + revision.move_traced", async () => {
+    // entity ids that land in the revision.move_traced payload must be valid ULIDs (idSchema) —
+    // mint them from the harness factory rather than using the short test ids.
+    const reviewCorrId = deps.ids("corr");
+    const findingId = deps.ids("fnd");
+    const baseDraftId = deps.ids("dft");
+    const nextDraftId = deps.ids("dft");
+    // the review the Revise run answers: one finding + one open (user-authored) disposition.
+    await db.exec.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ($1,$2,'review','dft_v2','run_rev', now(), '{}')`,
+      [reviewCorrId, projectId],
+    );
+    await db.exec.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ($1,$2,'dft_v2',1,'argument','major','editor','weak pillar','b')`,
+      [findingId, reviewCorrId],
+    );
+    await db.exec.query(
+      `insert into dispositions(id, finding_id, kind, status, rationale, by_actor)
+       values ('dsp_open',$1,'accept','open',null,'{"kind":"user","userId":"u_1"}'::jsonb)`,
+      [findingId],
+    );
+    // the base draft under a ULID id, as THE working head (dft_v2 freezes first — one working head per
+    // project, REQ-DATA-14). It freezes onto av_v2 at delivery → the diff's "before".
+    await db.exec.query("update drafts set state='frozen', promoted_version_id='av_v2' where id='dft_v2'");
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, base_draft_id)
+       values ($1,$2,3,'response_to_review','working','dft_v2')`,
+      [baseDraftId, projectId],
+    );
+
+    // the delivered v3 draft + the frozen response-ledger.json artifact.
+    const v3 = await store.putText(workspaceId, "# v2\n\nThe restated pillar paragraph.\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_v3',$1,$2,'draft','shared','drafts/v3.md','av_v3')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_v3','art_v3',1,$1,'k',40,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [v3.sha256],
+    );
+    const ledger = {
+      sidecar: "response_ledger",
+      version: 1,
+      entries: [
+        {
+          findingOrdinal: 1,
+          disposition: { kind: "accept", status: "done", moveOrdinal: 1, actor: "drafter" },
+          anchor: { blockId: "b2", quote: "restated pillar paragraph", startOffset: 0, endOffset: 0, confidence: 1 },
+        },
+      ],
+      moves: [{ ordinal: 1, title: "Restate the pillar" }],
+    };
+    const ledgerBlob = await store.putText(workspaceId, JSON.stringify(ledger));
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_ledger',$1,$2,'sidecar','run','correspondence/response-ledger.json','av_ledger')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_ledger','art_ledger',1,$1,'k',400,'application/json','{"kind":"system"}'::jsonb)`,
+      [ledgerBlob.sha256],
+    );
+
+    const base = baseArgs();
+    const result = await runDeliveryTransaction(db.exec, deps, {
+      runId: base.runId,
+      attempt: base.attempt,
+      workspaceId: base.workspaceId,
+      projectId: base.projectId,
+      draftId: baseDraftId,
+      correspondenceKind: "response",
+      priorReviewId: reviewCorrId,
+      newDraftId: nextDraftId,
+      deliveredVersionIds: ["av_v3", "av_ledger"],
+      draftPromotedVersionId: "av_v2",
+      sidecars: [{ filename: "response-ledger.json", json: ledger as never }],
+      verdictContext: EMPTY_VERDICT_CTX,
+    });
+
+    // the disposition row: the ledger's kind/status + the move link + the freeze — actor kept ("user").
+    const d = (
+      await db.exec.query(
+        "select kind, status, move_ordinal, response_id, frozen_at, by_actor from dispositions where id='dsp_open'",
+      )
+    ).rows[0] as { kind: string; status: string; move_ordinal: number | null; response_id: string | null; frozen_at: Date | null; by_actor: { kind: string } };
+    expect(d.kind).toBe("accept");
+    expect(d.status).toBe("done");
+    expect(d.move_ordinal).toBe(1);
+    expect(d.response_id).toBe(result.correspondenceId);
+    expect(d.frozen_at).not.toBeNull();
+    expect(d.by_actor.kind).toBe("user");
+
+    // the v(N+1) draft row: origin response_to_review, based on the frozen head, promoted to the
+    // delivered drafts/v3.md version.
+    expect(result.newDraftId).toBe(nextDraftId);
+    const next = (
+      await db.exec.query("select n, origin, base_draft_id, promoted_version_id from drafts where id=$1", [nextDraftId])
+    ).rows[0] as { n: number; origin: string; base_draft_id: string; promoted_version_id: string };
+    expect(next).toMatchObject({ n: 4, origin: "response_to_review", base_draft_id: baseDraftId, promoted_version_id: "av_v3" });
+
+    // prior_review_id on the response correspondence.
+    const corr = (
+      await db.exec.query("select prior_review_id from correspondence_items where id=$1", [result.correspondenceId])
+    ).rows[0] as { prior_review_id: string | null };
+    expect(corr.prior_review_id).toBe(reviewCorrId);
+
+    // revision.move_traced: one row for the joined move (the added paragraph resolved into its hunk) —
+    // the diff has exactly one hunk (the added b2), claimed by Move 1, so no unlinked remainder.
+    const traces = events.filter((e) => e.type === "revision.move_traced");
+    expect(traces.length).toBe(1);
+    expect(traces[0]!.payload).toMatchObject({
+      findingId,
+      moveId: "M1",
+      hunkCount: 1,
+      draftId: nextDraftId,
+      baseDraftId,
+    });
+    expect((traces[0]!.payload as { charsChanged: number }).charsChanged).toBeGreaterThan(0);
+    expect(result.moveTraces).toMatchObject([{ moveId: "M1", hunkCount: 1 }]);
   });
 
   it("delivering a 'review' does NOT touch dispositions (only a response freezes the ledger)", async () => {

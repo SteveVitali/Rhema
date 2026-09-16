@@ -40,6 +40,7 @@ import {
 import { buildEstimate } from "@rhema/run-sheet";
 import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
+import { computeReReviewSeed } from "./what-changed.js";
 import { capFromEstimate } from "@rhema/contracts";
 import { registrableDomain } from "@rhema/mirror";
 import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
@@ -159,8 +160,16 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // run-scope guidance record states "you pre-triaged N of M" so the run never overrides a user row.
     let inputs = body.inputs ?? {};
     let pretriage: { triaged: number; total: number } | null = null;
+    // PRB.06: prior_review is a SERVER-resolved fact (never client-trusted — a crafted input cannot point a
+    // response at the wrong dossier, and a re-review's changed_since is computed from the store's bytes).
+    //   · Revise: the response answers the project's latest review + reserves the v(N+1) draft row id its
+    //     delivery creates (`nextDraftId`), so What-changed + the move trace find it deterministically.
+    //   · Review: a re-review carries `priorReviewId` + `changedSince` (the vN→v(N+1) block diff the Editor
+    //     reads first; human-edited blocks arrive as `humanAdded`/`unverifiable` placeholders, REQ-DATA-25).
     if (workflow === "revise") {
       const pre = await deps.txRunner.run(principal.workspaceId, (tx) => loadPretriage(tx, projectId));
+      if (pre.correspondenceId != null) inputs = { ...inputs, priorReviewId: pre.correspondenceId };
+      inputs = { ...inputs, nextDraftId: deps.ids("dft") };
       if (pre.correspondenceId != null && pre.entries.length > 0) {
         inputs = {
           ...inputs,
@@ -172,6 +181,14 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           },
         };
         pretriage = { triaged: pre.triaged, total: pre.total };
+      }
+    } else if (workflow === "review") {
+      const store = deps.contentStoreFor ? await deps.contentStoreFor(principal.workspaceId) : deps.store;
+      if (store) {
+        const seed = await deps.txRunner.run(principal.workspaceId, (tx) =>
+          computeReReviewSeed(tx, store, { projectId, ...(body.draftId != null ? { headDraftId: body.draftId } : {}) }),
+        );
+        if (seed) inputs = { ...inputs, priorReviewId: seed.priorReviewId, changedSince: seed.changedSince };
       }
     }
 
@@ -201,7 +218,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         projectId,
         personaId: body.personaId,
         draftId: body.draftId,
-        nextDraftId: body.nextDraftId,
+        // a Revise run's v(N+1) row id is server-reserved above; the write lock binds that same id.
+        nextDraftId: typeof inputs.nextDraftId === "string" ? inputs.nextDraftId : body.nextDraftId,
         corrKind: body.corrKind,
         corrK: body.corrK,
       },
@@ -439,7 +457,28 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         // (a Set serializes to `{}`), so a wire verdictContext has no working `.has` (§12.8(c) would crash). The
         // citation domains are recoverable from the ledger's own cited urls — the same conservative build the
         // harness does — so reconstruct them here rather than trusting the (Set-less) wire value.
-        delivery: { ...body.delivery, runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId, verdictContext: verdictContextFromLedger(body.delivery.claimLedger) },
+        // PRB.06: priorReviewId + newDraftId are likewise server truth — read from the run's frozen inputs
+        // (seeded at creation), never the pod's dossier.
+        delivery: await (async () => {
+          const runInputs = (
+            await deps.txRunner.run(run.workspaceId, (tx) =>
+              tx.query(`select inputs from runs where id = $1`, [run.runId]),
+            )
+          ).rows[0] as { inputs: Record<string, unknown> | string } | undefined;
+          const ins =
+            typeof runInputs?.inputs === "string"
+              ? (JSON.parse(runInputs.inputs) as Record<string, unknown>)
+              : (runInputs?.inputs ?? {});
+          return {
+            ...body.delivery,
+            runId: run.runId,
+            attempt: run.attempt,
+            workspaceId: run.workspaceId,
+            verdictContext: verdictContextFromLedger(body.delivery.claimLedger),
+            ...(typeof ins.priorReviewId === "string" ? { priorReviewId: ins.priorReviewId } : {}),
+            ...(typeof ins.nextDraftId === "string" ? { newDraftId: ins.nextDraftId } : {}),
+          };
+        })(),
       });
       return c.json(res, res.ok ? 200 : 409);
     });

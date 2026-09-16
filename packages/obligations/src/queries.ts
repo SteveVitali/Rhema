@@ -82,6 +82,27 @@ export async function loadObligationByRootFinding(exec: SqlExecutor, findingId: 
   return row ? rowToObligation(row) : null;
 }
 
+/**
+ * The obligation a finding belongs to — as the obligation's root finding OR via a lineage edge (a finding
+ * carried into a later round shares the obligation it matched; PRB.06's response-ledger routing resolves a
+ * disposition's finding through either link).
+ */
+export async function loadObligationByFinding(
+  exec: SqlExecutor,
+  projectId: string,
+  findingId: string,
+): Promise<ObligationRow | null> {
+  const res = await exec.query(
+    `select ${OBLIGATION_COLUMNS} from revision_obligations
+      where project_id = $2 and (finding_id = $1
+        or id in (select obligation_id from obligation_findings where finding_id = $1))
+      order by created_at limit 1`,
+    [findingId, projectId],
+  );
+  const row = res.rows[0] as RawObligation | undefined;
+  return row ? rowToObligation(row) : null;
+}
+
 /** A lineage edge as stored (obligation_findings). */
 export interface LineageEdge {
   readonly obligationId: string;

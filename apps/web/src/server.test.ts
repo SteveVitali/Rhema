@@ -435,3 +435,132 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     expect(called).toBe(false);
   });
 });
+
+// PRB.06 — the What-changed page (§5.8): the server-joined view SSRs (move cards + strip + unlinked +
+// rebutted) and the hunk-comment POST forwards to the api then redirects back with the saved marker.
+describe("PRB.06 — the revision (What-changed) page", () => {
+  const WHAT_CHANGED = {
+    ok: true as const,
+    responseId: "corr_resp",
+    reviewId: "corr_rev",
+    beforeN: 2,
+    afterN: 3,
+    view: {
+      strip: { addressed: 1, rebutted: 1, stillOpen: 2, moves: 1, hunks: 2 },
+      moves: [
+        {
+          moveOrdinal: 1,
+          moveId: "M1",
+          title: "Restate the pillar",
+          type: "argument",
+          findings: [{ findingOrdinal: 1, kind: "accept" as const }],
+          dischargeLines: [
+            { obligationId: "obl_1", label: "OBL-1", lineage: "(F-01, carried from v2)", verifiedBy: "gap_check" as const, state: "discharged" },
+          ],
+          hunks: [
+            {
+              id: "h1",
+              kind: "edited" as const,
+              before: [{ index: 2, blockId: "b2", text: "The old claim.", startOffset: 0, endOffset: 14 }],
+              after: [{ index: 2, blockId: "b2", text: "The restated claim.", startOffset: 0, endOffset: 19 }],
+              charsChanged: 33,
+            },
+          ],
+        },
+      ],
+      unlinked: {
+        hunks: [
+          {
+            id: "h2",
+            kind: "added" as const,
+            before: [],
+            after: [{ index: 4, blockId: "b4", text: "A new paragraph.", startOffset: 0, endOffset: 16 }],
+            charsChanged: 16,
+          },
+        ],
+        entries: [],
+      },
+      rebutted: [{ findingOrdinal: 2, title: "unsupported stat", rationale: "the stat is sourced in §2" }],
+    },
+  };
+
+  function revisionDeps(extra: Partial<WebDeps["dataSource"]> = {}) {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      getWhatChanged: async () => WHAT_CHANGED,
+      commentOnHunk: async () => ({ guidanceId: "gdn_1", hunkId: "h1" }),
+      ...extra,
+    };
+    return deps;
+  }
+
+  it("renders the strip, the move card with its discharge line + hunk, Unlinked, and the rebutted card", async () => {
+    const app = createWebApp(revisionDeps());
+    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-what-changed="true"');
+    expect(html).toContain("v2 → v3");
+    expect(html).toContain('data-move-card="M1"');
+    expect(html).toContain("discharges OBL-1");
+    expect(html).toContain("The restated claim.");
+    expect(html).toContain('data-unlinked-group="true"');
+    expect(html).toContain("A new paragraph.");
+    expect(html).toContain('data-rebutted-finding="2"');
+    expect(html).toContain("the stat is sourced in §2");
+    // every hunk carries a no-JS comment form (→ Guidance for the next Revise).
+    expect(html).toContain('action="/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments"');
+    expect(html).toContain('action="/p/the-politics-of-visibility/revisions/corr_resp/hunks/h2/comments"');
+  });
+
+  it("the hunk-comment POST forwards the text and redirects back with the saved marker", async () => {
+    const calls: { responseId: string; hunkId: string; text: string }[] = [];
+    const deps = revisionDeps({
+      commentOnHunk: async (_s, _p, responseId, hunkId, text) => {
+        calls.push({ responseId, hunkId, text });
+        return { guidanceId: "gdn_1", hunkId };
+      },
+    });
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments", {
+      method: "POST",
+      ...form({ text: "tighten this" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
+    expect(calls).toEqual([{ responseId: "corr_resp", hunkId: "h1", text: "tighten this" }]);
+    // the saved marker renders on the redirect target.
+    const page = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
+    expect((await page.text()).includes('data-comment-saved="true"')).toBe(true);
+  });
+
+  it("an empty comment is a no-op redirect (no api call)", async () => {
+    let called = false;
+    const deps = revisionDeps({
+      commentOnHunk: async () => {
+        called = true;
+        return { guidanceId: "gdn_1", hunkId: "h1" };
+      },
+    });
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp/hunks/h1/comments", {
+      method: "POST",
+      ...form({ text: "   " }),
+    });
+    expect(res.status).toBe(302);
+    expect(called).toBe(false);
+  });
+
+  it("unauthenticated GET redirects to login; unknown response 404s", async () => {
+    const unauth = createWebApp(makeDeps());
+    expect((await unauth.request("/p/the-politics-of-visibility/revisions/corr_resp")).status).toBe(302);
+    const deps = revisionDeps({
+      getWhatChanged: async () => {
+        throw new ApiError(404, "/x", "not_found");
+      },
+    });
+    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope");
+    expect(res.status).toBe(404);
+  });
+});

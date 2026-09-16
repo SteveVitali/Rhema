@@ -17,6 +17,9 @@ import {
   GateCard,
   TriageLedger,
   DecisionsList,
+  WhatChangedView,
+  RubricDelta,
+  type WhatChangedLabels,
   type DispositionControlsLabels,
   type GateCardLabels,
   type TriageLedgerLabels,
@@ -45,6 +48,7 @@ import {
   summarizeReconciliation,
   claimUrlViews,
   fetchLogFromRows,
+  buildRubricDelta,
   type TrustChipLabels,
   type DoNothingOutcome,
 } from "@rhema/findings-core";
@@ -682,6 +686,21 @@ export function DossierPage(): ReactNode {
 
       <div style={{ margin: "16px 0" }}>
         <RubricView view={buildRubricView([...dossier.rubric])} labels={rubricLabels} />
+        {/* PRB.06 — a re-review dossier carries the prior round's rubric: the round-summary delta renders
+            per-dimension before/after, never an aggregate (REQ-IDE-30). */}
+        {dossier.priorRubric ? (
+          <div style={{ marginTop: "12px" }}>
+            <RubricDelta
+              view={buildRubricDelta([...dossier.priorRubric], [...dossier.rubric])}
+              labels={{
+                heading: COPY.revision.rubricDeltaHeading,
+                dimensionLabel: (d) => COPY.review.dimensionLabel[d] ?? d,
+                beforeLabel: COPY.revision.rubricBeforeLabel,
+                afterLabel: COPY.revision.rubricAfterLabel,
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div style={{ margin: "16px 0" }}>
@@ -732,6 +751,66 @@ export function NotFoundPage(): ReactNode {
       <p>
         <a href="/">{COPY.notFound.home}</a>
       </p>
+    </Shell>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PRB.06 — the What-changed page (§5.8). Server-rendered, read-only apart from the hunk comment forms
+// (each POSTs to /p/:slug/revisions/:cid/hunks/:hunkId/comments → a Guidance row for the next Revise).
+// ---------------------------------------------------------------------------------------------------------------------
+
+const V = COPY.revision;
+
+const whatChangedLabels: WhatChangedLabels = {
+  heading: V.heading,
+  versionLabel: (beforeN, afterN) =>
+    fmt(V.versionFmt, { before: beforeN, after: afterN ?? beforeN + 1 }),
+  stripLabel: (s) =>
+    `${fmt(V.stripFmt, { addressed: s.addressed, rebutted: s.rebutted, stillOpen: s.stillOpen })} · ${fmt(V.movesFmt, { moves: s.moves, hunks: s.hunks })}`,
+  moveHeading: (m) => fmt(V.moveHeadingFmt, { ordinal: m.moveOrdinal, title: m.title }),
+  findingLine: (f) =>
+    fmt(V.findingLineFmt, { ordinal: String(f.findingOrdinal).padStart(2, "0"), kind: f.kind }),
+  dischargeLine: (l) =>
+    l.verifiedBy
+      ? fmt(V.dischargeVerifiedFmt, { label: l.label, lineage: l.lineage ?? "", by: V.verifiedByLabel[l.verifiedBy] ?? l.verifiedBy })
+      : fmt(V.dischargePlainFmt, { label: l.label, lineage: l.lineage ?? "", state: l.state }),
+  hunkKindLabel: (kind) => V.hunkKindLabel[kind] ?? kind,
+  unlinkedHeading: V.unlinkedHeading,
+  rebuttedHeading: V.rebuttedHeading,
+  rebutLabel: V.rebutLabel,
+  commentLabel: V.commentLabel,
+  commentPlaceholder: V.commentPlaceholder,
+  commentSubmit: V.commentSubmit,
+};
+
+/** Auth-gated: the What-changed page for a delivered response (`/p/:slug/revisions/:cid`). */
+export function RevisionPage(): ReactNode {
+  const { revision } = usePageData();
+  if (!revision) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{V.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
+      </Shell>
+    );
+  }
+  const { slug, data } = revision;
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.review.backToProject}</a>} footer={footer()}>
+      <WhatChangedView
+        // the wire shape is the findings-core view model modulo `unlinked.entries` being unknown[].
+        view={data.view as unknown as Parameters<typeof WhatChangedView>[0]["view"]}
+        beforeN={data.beforeN}
+        afterN={data.afterN}
+        commentFormAction={(hunkId) => `/p/${slug}/revisions/${data.responseId}/hunks/${hunkId}/comments`}
+        labels={whatChangedLabels}
+      />
+      {revision.commentedHunkId ? (
+        <p data-comment-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)" }}>
+          {V.commentSavedLabel}
+        </p>
+      ) : null}
     </Shell>
   );
 }

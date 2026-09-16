@@ -80,6 +80,33 @@ describe("serializer round-trip goldens (AC1, REQ-SPEC-9)", () => {
     }
   });
 
+  // PRB.06 — the response ledger's `moves` table round-trips through BOTH twins (markdown + json): the
+  // What-changed move cards read titles/types from these rows, so a dropped move is a lost card.
+  it("the moves table + entry moveOrdinal survive serialize→parse on both twins (PRB.06)", () => {
+    const rows = responseLedgerSidecarSchema.parse({
+      sidecar: "response_ledger",
+      version: 1,
+      entries: [
+        { findingOrdinal: 1, disposition: { kind: "accept", status: "verified", moveOrdinal: 1, actor: "drafter" } },
+        { findingOrdinal: 2, disposition: { kind: "rebut", status: "done", rationale: "load-bearing" } },
+      ],
+      moves: [
+        { ordinal: 1, title: "Restate the pillar", type: "argument", status: "done", discharges: [1] },
+        { ordinal: 2, title: "Cut the digression", type: "structure", moots: [4] },
+      ],
+    });
+    const { markdown, json } = serializeResponseLedger(rows);
+    expect(markdown).toContain("## Moves");
+    expect(markdown).toContain("### Move 1");
+    // both twins reproduce the rows exactly — moves, moots/discharges lists, and the entry→move link.
+    const both = parseResponseLedger(JSON.parse(json), markdown);
+    expect(both.parseStatus).toBe("ok");
+    if (both.parseStatus === "ok") expect(both.value).toEqual(rows);
+    const jsonOnly = parseResponseLedger(JSON.parse(json));
+    expect(jsonOnly.parseStatus).toBe("ok");
+    if (jsonOnly.parseStatus === "ok") expect(jsonOnly.value).toEqual(rows);
+  });
+
   it("a corrupted markdown twin fails the cross-check (markdown ↔ sidecar mismatch, REQ-SPEC-12)", () => {
     const rows = responseLedgerSidecarSchema.parse(loadJson("the-politics-of-visibility", "response-ledger.json"));
     const { markdown, json } = serializeResponseLedger(rows);
