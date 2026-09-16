@@ -2,7 +2,7 @@
 
 - **Spec:** `docs/tickets/27_PRB.11__export-and-ai-use.md`
 - **Base:** `stevevitali/prb-10-quick-voice` @ `66c6bbf`
-- **Branch:** `stevevitali/prb-11-export-and-ai-use` · PR TBD
+- **Branch:** `stevevitali/prb-11-export-and-ai-use` · PR #39
 - **Config:** implement-spec full preset (deterministic only — no live/dev execution; the live
   export-path leg is deferred per the standing constraints)
 

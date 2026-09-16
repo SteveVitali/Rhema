@@ -4,7 +4,7 @@
 generator core, §13.4 beta formats, REQ-OBJ-3 `pre_export` horizon, REQ-OBJ-6 export-dialog half;
 §8.4, §11.7, Q-9)
 · **Base:** `stevevitali/prb-10-quick-voice` · **Stacked PR — do not merge
-(mergePolicy=OPERATOR).** · **PR TBD**
+(mergePolicy=OPERATOR).** · **PR #39**
 
 ## Summary
 
