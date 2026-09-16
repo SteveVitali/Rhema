@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, VoicesPage, VoiceNewPage, VoiceDetailPage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -23,6 +23,9 @@ export const runSheetElement = <RunSheetPage />;
 export const dossierElement = <DossierPage />;
 export const revisionElement = <RevisionPage />;
 export const editorElement = <EditorPage />;
+export const voicesElement = <VoicesPage />;
+export const voiceNewElement = <VoiceNewPage />;
+export const voiceDetailElement = <VoiceDetailPage />;
 export const notFoundElement = <NotFoundPage />;
 
 export const routes: readonly AppRoute[] = [
@@ -36,6 +39,10 @@ export const routes: readonly AppRoute[] = [
   { path: "/p/:project/review/:runId", public: false, element: dossierElement },
   { path: "/p/:project/revisions/:cid", public: false, element: revisionElement },
   { path: "/p/:project/edit/:draftId", public: false, element: editorElement },
+  // PRB.10 — the voice surface (§9.2–§9.6): the library, the creation sheet, the detail page.
+  { path: "/voices", public: false, element: voicesElement },
+  { path: "/voices/new", public: false, element: voiceNewElement },
+  { path: "/v/:persona", public: false, element: voiceDetailElement },
 ];
 
 /** Resolve a pathname to its route (React Router param matching). Undefined ⇒ 404. */

@@ -173,8 +173,14 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   //    `activePhases` skips them. `of` stays the full manifest length so the delivery trigger
   //    (`phase.index === of - 1`, keyed to the always-active final `letter` phase) is unaffected. Closes the
   //    D-P0.15d-1 limitation (reduced-rigor runs previously selected an opted-out phase over the full manifest).
+  //    PRB.10 — a persona workflow's `optional: <tier>` phases are likewise omitted when the run's frozen
+  //    `inputs.tier` matches: profile_voice{tier: quick} drops `substance` + `calibration` (§9.2 — Quick
+  //    Voice = census + close reading + voice + package). `inputs.tier` is the PERSONA build tier; the
+  //    sheet workflows never set it, so this rule cannot fire for review/revise (whose `optional` rigor
+  //    notes are informational only, per the review manifest header).
   const isOptedOut = (p: (typeof manifest.phases)[number]): boolean =>
-    p.optOutFlag != null && hyd.inputs[p.optOutFlag] === false;
+    (p.optOutFlag != null && hyd.inputs[p.optOutFlag] === false) ||
+    (p.optional != null && hyd.inputs.tier === p.optional);
   const activePhases = manifest.phases.filter((p) => !isOptedOut(p));
   const pin = hyd.inputs.phase;
   const pinnedSkillPhase = typeof pin === "string" || typeof pin === "number" ? String(pin) : undefined;

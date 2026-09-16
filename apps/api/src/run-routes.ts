@@ -192,6 +192,52 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       }
     }
 
+    // PRB.10 — the linked voice freezes into the run's FROZEN inputs at creation (§9.6; REQ-PERSONA-17):
+    // the project pins the exact profile snapshot the run writes against (the project's pin wins; an unpinned
+    // project resolves the persona's CURRENT profile and persists the pin). A stale / untested / never-built
+    // voice NEVER blocks a run — the facts are recorded, not gated. No linked persona → mode 'ad_hoc', the
+    // label a no-voice piece carries (REQ-PERSONA-20).
+    const voiceFacts = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const p = (
+        await tx.query(`select persona_id, persona_profile_snapshot_id from projects where id = $1`, [projectId])
+      ).rows[0] as { persona_id: string | null; persona_profile_snapshot_id: string | null } | undefined;
+      if (!p?.persona_id) return { mode: "ad_hoc" as const };
+      let snapshotId = p.persona_profile_snapshot_id;
+      let snapshotAt: string | null = null;
+      if (snapshotId) {
+        const prof = (
+          await tx.query(`select built_at from persona_profiles where id = $1`, [snapshotId])
+        ).rows[0] as { built_at: Date | string } | undefined;
+        snapshotAt = prof ? new Date(prof.built_at).toISOString() : null;
+      } else {
+        const prof = (
+          await tx.query(
+            `select id, built_at from persona_profiles where persona_id = $1 order by built_at desc limit 1`,
+            [p.persona_id],
+          )
+        ).rows[0] as { id: string; built_at: Date | string } | undefined;
+        snapshotId = prof?.id ?? null;
+        snapshotAt = prof ? new Date(prof.built_at).toISOString() : null;
+        if (snapshotId) {
+          await tx.query(`update projects set persona_profile_snapshot_id = $2 where id = $1`, [
+            projectId,
+            snapshotId,
+          ]);
+        }
+      }
+      return {
+        mode: "linked" as const,
+        personaId: p.persona_id,
+        profileSnapshotId: snapshotId,
+        snapshotAt,
+      };
+    });
+    inputs = { ...inputs, voice: voiceFacts };
+    // The run's persona_id is the frozen fact: a linked project's persona wins over the body's personaId
+    // (which carries the profile_voice target for build runs), so a main run against a linked voice is
+    // stamped with the persona it writes against.
+    const frozenPersonaId = voiceFacts.mode === "linked" ? voiceFacts.personaId : body.personaId;
+
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey,
       workflow,
@@ -199,7 +245,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       billingAccountId: principal.billingAccountId,
       requestedBy: principal.userId,
       projectId,
-      personaId: body.personaId,
+      personaId: frozenPersonaId,
       seat: seatForWorkflow(workflow),
       modelProfile: body.modelProfile,
       modelTier: body.modelTier,
@@ -216,7 +262,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       protocolsVersion: body.protocolsVersion,
       lockSetSpec: {
         projectId,
-        personaId: body.personaId,
+        personaId: frozenPersonaId,
         draftId: body.draftId,
         // a Revise run's v(N+1) row id is server-reserved above; the write lock binds that same id.
         nextDraftId: typeof inputs.nextDraftId === "string" ? inputs.nextDraftId : body.nextDraftId,
@@ -472,6 +518,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             typeof runInputs?.inputs === "string"
               ? (JSON.parse(runInputs.inputs) as Record<string, unknown>)
               : (runInputs?.inputs ?? {});
+          // PRB.10 — the voice facts frozen at creation (inputs.voice) stamp the delivered note: the
+          // profile snapshot id + its build date the note was written against (REQ-PERSONA-17), and the
+          // 'linked' | 'ad_hoc' mode (REQ-PERSONA-20). Server truth — never the pod's dossier.
+          const voice = (ins.voice ?? null) as
+            | { mode?: string; personaId?: string; profileSnapshotId?: string | null; snapshotAt?: string | null }
+            | null;
           return {
             ...body.delivery,
             runId: run.runId,
@@ -480,6 +532,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             verdictContext: verdictContextFromLedger(body.delivery.claimLedger),
             ...(typeof ins.priorReviewId === "string" ? { priorReviewId: ins.priorReviewId } : {}),
             ...(typeof ins.nextDraftId === "string" ? { newDraftId: ins.nextDraftId } : {}),
+            ...(typeof voice?.profileSnapshotId === "string"
+              ? { personaProfileSnapshotId: voice.profileSnapshotId }
+              : {}),
+            ...(typeof voice?.snapshotAt === "string" ? { personaSnapshotAt: voice.snapshotAt } : {}),
+            ...(voice?.mode === "linked" || voice?.mode === "ad_hoc" ? { voiceMode: voice.mode } : {}),
           };
         })(),
       });

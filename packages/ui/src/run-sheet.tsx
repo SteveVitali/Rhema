@@ -112,6 +112,13 @@ export interface RunSheetLabels {
   readonly suspendedNotice?: string;
   /** PRB.08 — the final-month beta-plan offer copy + link text (copy + link only, no subscription UI). */
   readonly planOffer?: { readonly text: string; readonly linkLabel: string };
+  /** PRB.10 — the voice line's chrome labels (§9.6; COPY-owned). */
+  readonly voiceLabels?: {
+    readonly lineLabel: string;
+    readonly adHocLabel: string;
+    /** "Update voice first (≈{n} cr)" — `{n}` interpolates the priced estimate. */
+    readonly updateFirstFmt: string;
+  };
 }
 
 export interface RunSheetProps {
@@ -242,6 +249,43 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
       {view.scopeLine ? (
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-scope-line>
           {view.scopeLine}
+        </p>
+      ) : null}
+
+      {/* PRB.10 — the voice line (§9.6): the linked persona's name + the shared pill, or the ad-hoc
+          default. A stale/untested/never-built voice NEVER blocks the run; when the pill's action is
+          `update_voice` the priced chained action renders beside it (its submit retargets via
+          formAction — the same progressive-enhancement pattern as the exhaustion button). */}
+      {view.voice && labels.voiceLabels ? (
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-voice-line>
+          {labels.voiceLabels.lineLabel}:{" "}
+          {view.voice.mode === "ad_hoc" ? (
+            <span data-voice-mode="ad_hoc">{labels.voiceLabels.adHocLabel}</span>
+          ) : (
+            <span data-voice-mode="linked">
+              {view.voice.name ?? view.voice.personaId}
+              {view.voice.pill ? (
+                <>
+                  {" · "}
+                  <span data-voice-pill={view.voice.pill.tone}>{view.voice.pill.label}</span>
+                </>
+              ) : null}
+            </span>
+          )}
+          {view.voice.updateAction && view.voice.updateEstimateCredits != null ? (
+            <>
+              {" · "}
+              <input type="hidden" name="voice_persona" value={view.voice.personaId ?? ""} />
+              <button
+                type="submit"
+                formAction={view.voice.updateAction}
+                data-update-voice="true"
+                style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: "13px", padding: 0 }}
+              >
+                {labels.voiceLabels.updateFirstFmt.replace("{n}", String(view.voice.updateEstimateCredits))}
+              </button>
+            </>
+          ) : null}
         </p>
       ) : null}
 
