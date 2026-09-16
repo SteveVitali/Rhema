@@ -94,6 +94,16 @@ export interface DataSource {
   getDossier(session: SessionHeaders, args: { projectSlug: string; runId: string }): Promise<DossierData>;
   /** Validate a beta invite before any auth request is made (REQ-BETA-19). */
   checkInvite(code: string, email?: string): Promise<InviteCheckDto>;
+  /**
+   * PRB.13 — admit + provision an account through the api's `POST /signup` (REQ-BETA-19 amended
+   * 2026-09-16). Invite mode requires `code`; open mode treats it as optional. The api owns admission —
+   * invite consume happens there at creation; a returning account resolves `created:false`. Pre-auth: no
+   * session is forwarded.
+   */
+  signup(req: { email: string; code?: string; method?: string }): Promise<
+    | { readonly ok: true; readonly created: boolean }
+    | { readonly ok: false; readonly status: number; readonly error: string }
+  >;
   /** Convert an upload/paste to a §5.3 preview (the api routes it to the convert service). */
   previewImport(session: SessionHeaders, input: ImportInput): Promise<ConversionResult>;
   /** Create the imported draft from a preview; returns the new draft id. */
@@ -259,6 +269,8 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     getDossier: dossierNotWired,
     checkInvite: (code, email) =>
       createApiClient({ baseUrl, fetch: fetchImpl }).checkInvite(code, email),
+    // PRB.13 — the api's account-creation path (pre-auth; the api throttles per source IP + email).
+    signup: (req) => createApiClient({ baseUrl, fetch: fetchImpl }).signup(req),
     previewImport: notWired,
     createImport: notWired,
     // The estimate service is stateless + pure (no GCS/DB-write infra), so the Run click is a real api call:

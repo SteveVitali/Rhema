@@ -77,3 +77,11 @@ describe("AlloyDB + preview guards (AC2 — GCP)", () => {
     }
   });
 });
+
+describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () => {
+  it("every stage is invite until the prod bring-up (PRB.15) deliberately flips prod — the flag fails closed", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      expect(cfg.signupMode, `stage ${name}`).toBe("invite");
+    }
+  });
+});

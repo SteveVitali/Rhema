@@ -72,6 +72,43 @@ describe("createApiClient", () => {
     expect((seen!.init.headers as Record<string, string>).cookie).toBe("s=1");
   });
 
+  it("signup POSTs /signup and returns the created flag (PRB.13)", async () => {
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch((url, init) => {
+        expect(url).toBe("http://api.local/signup");
+        expect(JSON.parse(String(init.body))).toEqual({ email: "a@b.com", code: "BETA-1", method: "magic_link" });
+        return new Response(JSON.stringify({ ok: true, created: true }), { status: 201 });
+      }),
+    });
+    expect(await client.signup({ email: "a@b.com", code: "BETA-1", method: "magic_link" })).toEqual({
+      ok: true,
+      created: true,
+    });
+  });
+
+  it("signup surfaces an expected refusal as {ok:false,error} — the api's {error} code is data", async () => {
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch(() => new Response(JSON.stringify({ error: "invite_required" }), { status: 403 })),
+    });
+    expect(await client.signup({ email: "a@b.com" })).toEqual({
+      ok: false,
+      status: 403,
+      error: "invite_required",
+    });
+  });
+
+  it("ApiError carries the api's {error} code so callers can branch on a 403's reason", async () => {
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch(() => new Response(JSON.stringify({ error: "email_unverified" }), { status: 403 })),
+    });
+    const err = await client.listProjects().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).code).toBe("email_unverified");
+  });
+
   it("createRun POSTs /projects/:id/runs with the client-minted idempotency key (REQ-CHAT-25)", async () => {
     let body: string | null = null;
     const client = createApiClient({

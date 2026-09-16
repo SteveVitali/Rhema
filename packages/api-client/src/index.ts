@@ -51,6 +51,26 @@ export interface InviteCheckDto {
   readonly reason?: string;
 }
 
+/**
+ * PRB.13 — the self-serve/invite signup admission request (REQ-BETA-19 amended 2026-09-16). `code` is
+ * required when the deploy runs `signup.mode=invite` and optional when `open` (a supplied code is still
+ * validated + consumed — partner cohorts keep redeeming). `method` labels the auth path for telemetry.
+ */
+export interface SignupRequestDto {
+  readonly email: string;
+  readonly code?: string;
+  readonly method?: string;
+}
+
+/**
+ * `POST /signup`'s outcome. Expected refusals come back as data (`ok:false` + a stable `error` code:
+ * `email_required`, `invite_required`, an invite reject reason, or `rate_limited`), matching
+ * `checkInvite`'s `{ok, reason}` shape — only transport failures throw.
+ */
+export type SignupResultDto =
+  | { readonly ok: true; readonly created: boolean }
+  | { readonly ok: false; readonly status: number; readonly error: string };
+
 /** The stateless estimate request (REQ-SPEC-16). Mirrors the api's `POST /projects/:id/estimates` body. */
 export interface EstimateRequestDto {
   readonly workflow: string;
@@ -708,6 +728,11 @@ export class ApiError extends Error {
     readonly status: number,
     readonly url: string,
     message?: string,
+    /**
+     * The api's stable `{error}` code when the response body carried one (PRB.13 — lets a caller
+     * distinguish a 403's reason: `account_suspended` vs `email_unverified` vs an invite refusal).
+     */
+    readonly code?: string,
   ) {
     super(message ?? `api ${status} for ${url}`);
     this.name = "ApiError";
@@ -719,6 +744,12 @@ export interface ApiClient {
   listProjects(init?: RequestInitLite): Promise<ProjectRow[]>;
   /** Validate a beta invite code (and, for an email-bound invite, the email) before a signup is attempted. */
   checkInvite(code: string, email?: string): Promise<InviteCheckDto>;
+  /**
+   * PRB.13 — admit + provision an account through `POST /signup` (REQ-BETA-19 amended 2026-09-16): in
+   * `invite` mode a valid code is required and consumed at creation; in `open` mode the code is optional.
+   * Expected refusals resolve as `{ok:false, error}` — the same data shape `checkInvite` returns.
+   */
+  signup(req: SignupRequestDto): Promise<SignupResultDto>;
   /** The stateless, cached estimate (REQ-SPEC-16) — creates no run row and emits `run.estimated`. */
   estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto>;
   /** The sheet's Run click — the ONLY run creator (REQ-CHAT-25); the client-minted idempotency key is in the body. */
@@ -852,7 +883,16 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       ...init,
       headers: { ...baseHeaders, ...(init.headers as Record<string, string> | undefined) },
     });
-    if (!res.ok) throw new ApiError(res.status, url);
+    if (!res.ok) {
+      // Surface the api's stable `{error}` code on the ApiError so callers can branch on it.
+      const errBody = (await res.json().catch(() => null)) as { error?: unknown } | null;
+      throw new ApiError(
+        res.status,
+        url,
+        undefined,
+        typeof errBody?.error === "string" ? errBody.error : undefined,
+      );
+    }
     return (await res.json()) as T;
   }
 
@@ -887,6 +927,26 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code, email }),
       });
+    },
+    async signup(req: SignupRequestDto): Promise<SignupResultDto> {
+      try {
+        const body = await json<{ ok: true; created: boolean }>("/signup", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(req),
+        });
+        return { ok: true, created: body.created === true };
+      } catch (e) {
+        // Expected refusals (invite codes, the 429 throttle) arrive as ApiError carrying the api's
+        // `{error}` code — data, not an exception. Anything else (transport, 5xx) rethrows.
+        if (e instanceof ApiError && e.status < 500 && e.code) {
+          return { ok: false, status: e.status, error: e.code };
+        }
+        if (e instanceof ApiError && e.status < 500) {
+          return { ok: false, status: e.status, error: "signup_failed" };
+        }
+        throw e;
+      }
     },
     async estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto> {
       return json<EstimateDto>(`/projects/${encodeURIComponent(projectId)}/estimates`, {

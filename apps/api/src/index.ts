@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { buildRatesPublication } from "@rhema/contracts";
+import { buildRatesPublication, createIpEmailThrottle, type SignupMode, type IpEmailThrottle } from "@rhema/contracts";
 import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
 import { createEstimateRoutes, type EstimateApiDeps } from "./estimate-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
@@ -10,6 +10,7 @@ import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
 import { createBillingRoutes } from "./billing-routes.js";
 import { createNotificationRoutes } from "./notification-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
+import { createSignupRoutes, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
 import { createImportRoutes, type Converter } from "./import.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
@@ -38,6 +39,8 @@ export { createSseRoutes, resolveSseAccess, parseAfterSeq } from "./sse-routes.j
 export type { SseApiDeps } from "./sse-routes.js";
 export { createInviteGate } from "./invite.js";
 export type { InviteGate, InviteCheck, InviteRejectReason, SqlClient } from "./invite.js";
+export { createSignupRoutes, admitSignup, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
+export type { SignupApiDeps, SignupPolicyDeps, SignupAdmission, SignupRejectReason } from "./signup.js";
 export {
   createShellRoutes,
   listProjectStates,
@@ -100,6 +103,18 @@ export interface BetaApiDeps {
    * reads still work).
    */
   exportRunner?: ExportRunner;
+  /**
+   * PRB.13 — `signup.mode` (REQ-BETA-19 amended 2026-09-16): `invite` keeps the PRB.01 gate (no valid code
+   * ⇒ no account); `open` permits self-serve creation with the code optional (still validated+consumed when
+   * supplied). Unset ⇒ `invite` — the flag fails closed. Read by `POST /signup` AND exported via
+   * `admitSignup` for the live `user.create` binding (D-PRB.01-1).
+   */
+  signupMode?: SignupMode;
+  /**
+   * PRB.13 — the account-creation throttle (per source IP + per email). Unset ⇒ the beta-grade default
+   * (`SIGNUP_THROTTLE_DEFAULTS`); injected in tests for a deterministic window.
+   */
+  signupThrottle?: IpEmailThrottle;
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -112,7 +127,17 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   // 1.4 platform rate. No auth — every run report links to its version. The full pricing page is PRB.8/P1.16.
   app.get("/pricing/rates", (c) => c.json(buildRatesPublication()));
   if (deps) {
-    app.route("/", createRunRoutes(deps));
+    // PRB.13 — the verified-email run-creation gate (REQ-BETA-19 amended) binds whenever a user lookup
+    // exists (`deps.db`): a missing row or `email_verified=false` refuses `POST /projects/:id/runs` 403.
+    // Unbound ⇒ the gate is inert (fixture/deploys without a user table read).
+    const userEmailVerified = deps.db
+      ? async (userId: string): Promise<boolean> => {
+          const db = deps.db!;
+          const r = await db.query(`select email_verified from "user" where id = $1`, [userId]);
+          return (r.rows[0] as { email_verified: boolean } | undefined)?.email_verified === true;
+        }
+      : undefined;
+    app.route("/", createRunRoutes({ ...deps, ...(userEmailVerified ? { userEmailVerified } : {}) }));
     app.route("/", createEstimateRoutes(deps));
     app.route("/", createSseRoutes(deps));
     // PRB.08 — the billing surface: the §14.6 Stripe webhook (Payment Links are the only money channel),
@@ -167,6 +192,22 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     );
     if (deps.db) {
       const db = deps.db;
+      const inviteGate = createInviteGate(db);
+      // PRB.13 — signup admission + self-serve provisioning (REQ-BETA-19 amended 2026-09-16): POST
+      // /signup reads `signup.mode` (default invite — fail closed), throttles account creation per
+      // IP + email, and consumes a supplied invite at creation. The invite machinery is retained.
+      app.route(
+        "/",
+        createSignupRoutes({
+          db,
+          mode: deps.signupMode ?? "invite",
+          inviteGate,
+          throttle: deps.signupThrottle ?? createIpEmailThrottle({ ...SIGNUP_THROTTLE_DEFAULTS }),
+          ids: deps.ids,
+          clock: deps.clock,
+          txRunner: deps.txRunner,
+        }),
+      );
       // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the
       // same deps the run API uses (txRunner for the atomic write + obligation routing).
       app.route("/", createTriageRoutes({ ...(deps as TriageApiDeps), db }));
@@ -192,7 +233,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         createShellRoutes({
           principal: deps.principal,
           db,
-          inviteGate: createInviteGate(db),
+          inviteGate,
         }),
       );
       if (deps.importConverter && deps.contentStore) {

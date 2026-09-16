@@ -125,6 +125,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // PRB.11 — the export seam: markdown+format → the isolated export container → bytes. Unset ⇒ POST
     // /export answers 503 `export_not_wired` (dialog + statement reads still work).
     ...(env.exportServiceUrl ? { exportRunner: createServiceExportRunner(env.exportServiceUrl) } : {}),
+    // PRB.13 — `signup.mode` (REQ-BETA-19 amended): stage-config-driven; the routes it gates (POST
+    // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
+    // stays D-PRB.01-3's leg (PRB.16).
+    signupMode: env.signupMode,
     // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
     // telemetry emitters to the same validated + opt-out-honoring writer the billing telemetry uses.
     // finding.disposed (D-PRB.05-1 leg b) + run.estimated (D-PRB.03-1's emit leg). A telemetry write is

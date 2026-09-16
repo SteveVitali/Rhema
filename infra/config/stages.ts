@@ -10,6 +10,8 @@
 // group→egress firewall. The abstract facts (no internet reachability for the sandbox; per-run caps;
 // versioned isolated buckets) are provider-independent and carry over verbatim.
 
+import type { SignupMode } from "@rhema/contracts";
+
 export type StageKind = "dev" | "preview" | "prod";
 
 export interface AlloyDbConfig {
@@ -69,6 +71,13 @@ export interface StageConfig {
   maxUsdPerRun: number;
   /** Previews never receive production secrets or user-text fixtures (REQ-ARCH-38). */
   allowsProductionSecrets: boolean;
+  /**
+   * PRB.13 — `signup.mode` (REQ-BETA-19 amended 2026-09-16), deployed to BOTH consumers as `SIGNUP_MODE`
+   * (the api's `POST /signup` admission gate + the web `/login` pre-gate — one source of truth, never a
+   * secret). `invite` keeps the PRB.01 private-beta gate; `open` is the self-serve paid beta. Every stage
+   * stays `invite` until the prod bring-up (PRB.15) deliberately flips prod — the flag fails closed.
+   */
+  signupMode: SignupMode;
 }
 
 /**
@@ -110,6 +119,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     gcsVersioning: true,
     maxUsdPerRun: 10,
     allowsProductionSecrets: false,
+    signupMode: "invite", // PRB.13 — invite until PRB.15 flips prod to open
   },
   preview: {
     kind: "preview",
@@ -119,6 +129,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     gcsVersioning: true,
     maxUsdPerRun: 3, // REQ-ARCH-38
     allowsProductionSecrets: false, // REQ-ARCH-38
+    signupMode: "invite", // PRB.13 — invite until PRB.15 flips prod to open
   },
   prod: {
     kind: "prod",
@@ -128,6 +139,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     gcsVersioning: true,
     maxUsdPerRun: 100,
     allowsProductionSecrets: true,
+    signupMode: "invite", // PRB.13 — invite until PRB.15 flips prod to open
   },
 };
 

@@ -26,6 +26,12 @@ export interface PageData {
     readonly sent?: boolean;
     readonly code?: string;
     readonly email?: string;
+    /** PRB.13 — `signup.mode === "open"`: the code field is optional and the copy shifts to self-serve. */
+    readonly signupOpen?: boolean;
+  };
+  /** PRB.13 — the public invite/landing page's mode flag (the access note + sign-in CTA copy). */
+  readonly invite?: {
+    readonly signupOpen?: boolean;
   };
   readonly project?: {
     readonly title: string;
