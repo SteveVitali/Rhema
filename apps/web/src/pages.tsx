@@ -19,7 +19,9 @@ import {
   DecisionsList,
   WhatChangedView,
   RubricDelta,
+  SourceEditor,
   type WhatChangedLabels,
+  type SourceEditorLabels,
   type DispositionControlsLabels,
   type GateCardLabels,
   type TriageLedgerLabels,
@@ -52,7 +54,7 @@ import {
   type TrustChipLabels,
   type DoNothingOutcome,
 } from "@rhema/findings-core";
-import type { GateCardDto } from "@rhema/api-client";
+import type { EditorDocDto, GateCardDto } from "@rhema/api-client";
 import { CHECKABLE_CLAIM_KINDS, type ClaimKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
@@ -211,6 +213,11 @@ export function ProjectPage(): ReactNode {
         <p style={{ display: "flex", gap: "16px" }}>
           <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
           <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
+          {project.headDraftId ? (
+            <a data-edit-source="true" href={`/p/${slug}/edit/${project.headDraftId}`}>
+              {COPY.project.editCta}
+            </a>
+          ) : null}
         </p>
       ) : null}
       {gates.length > 0 ? (
@@ -813,4 +820,76 @@ export function RevisionPage(): ReactNode {
       ) : null}
     </Shell>
   );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21 stopgap #1 → 1.x Source mode). SSRs the CodeMirror host
+// + the §6.3 lock banner + the projected findings rail; the client bundle upgrades the textarea and runs the
+// debounced autosave. There is no Save button and no unsaved-changes dialog anywhere on this page.
+// ---------------------------------------------------------------------------------------------------------------------
+
+const E = COPY.editor;
+
+const editorLabels: SourceEditorLabels = {
+  versionLabel: (n, baseN) =>
+    baseN != null ? fmt(E.versionForkFmt, { n, base: baseN }) : fmt(E.versionFmt, { n }),
+  writerLockText: (workflow) => fmt(E.writerLockFmt, { workflow }),
+  readerLockText: (workflow) => fmt(E.readerLockFmt, { workflow }),
+  cancelRun: E.cancelRun,
+  sync: { synced: E.sync.synced, syncing: E.sync.syncing, queued: E.sync.queued, locked: E.sync.locked },
+  findingsHeading: E.findingsHeading,
+  wholePiece: E.wholePiece,
+  lostNote: E.lostNote,
+  noteLabel: E.noteLabel,
+  notePlaceholder: E.notePlaceholder,
+  noteSubmit: E.noteSubmit,
+  noteSaved: E.noteSaved,
+  revise: E.revise,
+};
+
+export function EditorPage(): ReactNode {
+  const { editor } = usePageData();
+  if (!editor) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{E.notFound}</SectionTitle>
+      </Shell>
+    );
+  }
+  const { slug, doc } = editor;
+  const base = `/p/${slug}/edit/${doc.draftId}`;
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.review.backToProject}</a>} footer={footer()}>
+      <SourceEditor
+        markdown={doc.markdown}
+        draftId={doc.draftId}
+        draftN={doc.draftN}
+        baseDraftN={doc.baseDraftN}
+        origin={doc.origin}
+        lock={doc.lock}
+        findings={doc.findings.map((f) => ({
+          findingId: f.findingId,
+          title: f.title,
+          severity: f.severity,
+          sourceLabel: f.sourceLabel,
+          quote: anchorQuote(f),
+          lost: f.lost,
+        }))}
+        saveUrl={`${base}/save`}
+        docUrl={`${base}/doc`}
+        noteUrl={`${base}/note`}
+        cancelUrl={`${base}/cancel-run`}
+        reviseUrl={`${base}/revise`}
+        noteSaved={editor.noteSaved}
+        labels={editorLabels}
+      />
+    </Shell>
+  );
+}
+
+/** The projected finding's display quote — null when the anchor is unanchored (Whole piece) or lost. */
+function anchorQuote(f: EditorDocDto["findings"][number]): string | null {
+  const a = f.anchor as { quote?: string; unanchored?: true } | null | undefined;
+  if (!a || a.unanchored || !a.quote) return null;
+  return a.quote;
 }

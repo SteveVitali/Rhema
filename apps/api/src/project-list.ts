@@ -15,6 +15,8 @@ export interface ProjectListRow {
   readonly slug: string;
   readonly title: string;
   readonly state: ProjectState;
+  /** The highest-n draft head — the source editor's entry point (PRB.07). Null only for a draft-less row. */
+  readonly headDraftId: string | null;
 }
 
 interface ProjectRowDb {
@@ -114,7 +116,11 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
       acceptedVersionN,
       archivedAt: p.archived_at,
     });
-    return { id: p.id, slug: p.slug, title: p.title, state: projectState(input) };
+    const head = byProject(drafts, p.id).reduce<DraftRowDb | null>(
+      (best, d) => (best == null || d.n > best.n ? d : best),
+      null,
+    );
+    return { id: p.id, slug: p.slug, title: p.title, state: projectState(input), headDraftId: head?.id ?? null };
   });
 }
 

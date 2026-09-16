@@ -23,7 +23,13 @@ function tone(state: ProjectStateDto): Tone {
 export function toProjectRowView(row: ProjectRow): ProjectRowView {
   const href = `/p/${row.slug}`;
   const label = row.state.suggested.label;
-  const action = row.state.suggested.action !== "none" && label ? { label, href } : undefined;
+  // PRB.07 — "Revise using your edits" lands in the source editor on the draft head (the manual-revision
+  // surface IS the action); every other action routes into the project view like before.
+  const actionHref =
+    row.state.suggested.action === "revise_using_edits" && row.headDraftId
+      ? `${href}/edit/${row.headDraftId}`
+      : href;
+  const action = row.state.suggested.action !== "none" && label ? { label, href: actionHref } : undefined;
   return {
     title: row.title,
     href,

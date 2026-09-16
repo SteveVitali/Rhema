@@ -48,6 +48,7 @@ export const COPY = {
     backToList: "All projects",
     betaNote: "The full editing surface arrives with the studio. This is the beta view.",
     importCta: "Import a draft",
+    editCta: "Edit source",
   },
 
   import: {
@@ -338,6 +339,33 @@ export const COPY = {
     rubricDeltaHeading: "Rubric across rounds",
     rubricBeforeLabel: "before",
     rubricAfterLabel: "after",
+  },
+
+  // PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21 stopgap #1): CodeMirror over the canonical markdown
+  // with the debounced autosave, the §6.3 lock banner + Cancel-run release, the projected findings rail,
+  // the note field (→ Guidance), and "Revise using your edits". No Save button exists — the sync pill tells
+  // the save story (synced / syncing / offline-queued).
+  editor: {
+    notFound: "That draft isn't here.",
+    versionFmt: "v{n}",
+    versionForkFmt: "v{n} — your revision of v{base}",
+    writerLockFmt: "A {workflow} run is writing this draft — editing is locked until it finishes.",
+    readerLockFmt: "A {workflow} run is reading the frozen draft — editing is locked until it finishes.",
+    cancelRun: "Cancel run to edit",
+    sync: {
+      synced: "Synced",
+      syncing: "Syncing…",
+      queued: "Offline — queued",
+      locked: "Locked",
+    },
+    findingsHeading: "Findings on this draft",
+    wholePiece: "Whole piece",
+    lostNote: "passage changed — still applies?",
+    noteLabel: "A note for the next revision",
+    notePlaceholder: "Anything the revision should keep in mind…",
+    noteSubmit: "Add note",
+    noteSaved: "Noted — the next revision will read it.",
+    revise: "Revise using your edits",
   },
 
   notFound: {

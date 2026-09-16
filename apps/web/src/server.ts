@@ -12,6 +12,7 @@ import {
   runSheetElement,
   dossierElement,
   revisionElement,
+  editorElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -21,6 +22,7 @@ import { RIGORS, MODEL_TIERS, type ModelTier, type Rigor, type WorkflowKey } fro
 import { buildRunSheetView, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
 // client bundle). Auth-gated routes redirect to /login. The invite gate is enforced HERE at POST /login: no
@@ -143,7 +145,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const derror = c.req.query("derror");
     return c.html(
       renderDocument(c.req.path, projectElement, {
-        project: { title: row.title, pill: row.state.pill, slug },
+        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
         gates,
         decisions,
         approvalOverrides,
@@ -434,6 +436,135 @@ export function createWebApp(deps: WebDeps): Hono {
       await deps.dataSource.commentOnHunk(session, row.id, cid, hunkId, text).catch(() => undefined);
     }
     return c.redirect(`/p/${slug}/revisions/${cid}?commented=${encodeURIComponent(hunkId)}`);
+  });
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21 stopgap #1 → 1.x Source mode). GET renders the SSR
+  // page (CodeMirror host + lock banner + projected findings rail + note field); the client bundle then
+  // drives the debounced autosave + lock poll through the same-origin routes below — the browser never
+  // talks to the api directly, so the session stays server-side. The form POSTs (note / cancel-run /
+  // revise) are progressive enhancement: they work with no JS at all. There is no Save button and no
+  // unsaved-changes dialog anywhere — /save is the autosave/beacon endpoint, not a control.
+  // -------------------------------------------------------------------------------------------------------------------
+
+  /** Resolve :project → the row + draftId param, or null (404). */
+  const editorTarget = async (c: Context, session: SessionHeaders) => {
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return null;
+    return { slug, row, draftId: c.req.param("draftId") ?? "" };
+  };
+
+  app.get("/p/:project/edit/:draftId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await editorTarget(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const doc = await deps.dataSource.getEditorDoc(session, t.row.id, t.draftId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!doc) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(
+      renderDocument(c.req.path, editorElement, {
+        editor: {
+          slug: t.slug,
+          projectId: t.row.id,
+          doc,
+          ...(c.req.query("noted") ? { noteSaved: true } : {}),
+        },
+      }),
+    );
+  });
+
+  // The client bundle's lock poll — the doc read as JSON (the api's EditorDocDto verbatim).
+  app.get("/p/:project/edit/:draftId/doc", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const t = await editorTarget(c, session);
+    if (!t) return c.json({ error: "not_found" }, 404);
+    const doc = await deps.dataSource.getEditorDoc(session, t.row.id, t.draftId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!doc) return c.json({ error: "not_found" }, 404);
+    return c.json(doc);
+  });
+
+  // The debounced autosave (no Save button — this IS the save). The client bundle POSTs
+  // application/json { markdown }; the pagehide beacon POSTs text/plain raw markdown (beacons can't set
+  // JSON content types). A held §6.3 lock → the api's 409 passes through.
+  app.post("/p/:project/edit/:draftId/save", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const t = await editorTarget(c, session);
+    if (!t) return c.json({ error: "not_found" }, 404);
+    const contentType = c.req.header("content-type") ?? "";
+    let markdown: string | null = null;
+    if (contentType.includes("text/plain")) {
+      markdown = await c.req.text();
+    } else {
+      const body = (await c.req.json().catch(() => ({}))) as { markdown?: string };
+      if (typeof body.markdown === "string") markdown = body.markdown;
+    }
+    if (markdown == null) return c.json({ error: "markdown required" }, 400);
+    try {
+      const saved = await deps.dataSource.saveEditorDraft(session, t.row.id, t.draftId, markdown);
+      return c.json(saved);
+    } catch (e) {
+      // The api's status passes through — 409 (locked) is what flips the client bundle into the
+      // read-only banner state; 5xx/network failures queue the doc for retry.
+      if (e instanceof ApiError) return c.json({ error: e.message }, e.status as 400);
+      throw e;
+    }
+  });
+
+  // The note field → a Guidance row (REQ-DATA-41's beta form). Progressive enhancement: a plain form POST.
+  app.post("/p/:project/edit/:draftId/note", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await editorTarget(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const text = typeof form.text === "string" ? form.text.trim() : "";
+    if (text !== "") {
+      await deps.dataSource.postEditorNote(session, t.row.id, t.draftId, text).catch(() => undefined);
+    }
+    return c.redirect(`/p/${t.slug}/edit/${t.draftId}?noted=1`);
+  });
+
+  // The banner's "Cancel run to edit" release (§6.3). A stale banner (the run already ended) just
+  // re-renders — the next doc poll shows the released lock.
+  app.post("/p/:project/edit/:draftId/cancel-run", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await editorTarget(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    await deps.dataSource.cancelEditorRun(session, t.row.id, t.draftId).catch(() => undefined);
+    return c.redirect(`/p/${t.slug}/edit/${t.draftId}`);
+  });
+
+  // "Revise using your edits" (REQ-DATA-26): review of vN + the v(N+1) human-revision base. Lands on the
+  // project page where the new run's card reports progress.
+  app.post("/p/:project/edit/:draftId/revise", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await editorTarget(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    await deps.dataSource.reviseWithEdits(session, t.row.id, t.draftId).catch(() => undefined);
+    return c.redirect(`/p/${t.slug}`);
+  });
+
+  // The client bundle (built by build-client.mjs at `pnpm build`; gitignored). Missing → the page still
+  // works: the textarea stays the read-only no-JS view and the form POSTs carry the write paths.
+  const clientBundlePath = new URL("../public/editor.js", import.meta.url);
+  app.get("/assets/editor.js", async (c) => {
+    const body = await readFile(clientBundlePath).catch(() => null);
+    if (!body) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": "text/javascript; charset=utf-8",
+      "cache-control": "no-cache",
+    });
   });
 
   app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));
