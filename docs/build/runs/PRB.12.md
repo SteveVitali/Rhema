@@ -108,9 +108,11 @@ approval UI). Findings:
 
 ## Status
 
-_Implemented; all ACs green deterministically. Verification: `turbo build lint typecheck`
-111/111; `pnpm test` 1920 pass / 2 skip / 265 files; `check:protocol-markers` OK;
-`check:licenses` OK (502 pkgs, zero new deps). Self-review caught one real bug — `voice.staleness_shown`
+**Done — PR #40** (stacked on `stevevitali/prb-11-export-and-ai-use`; not merged — operator
+merges the chain bottom-up). All ACs green deterministically. Verification:
+`turbo build lint typecheck` 111/111; `pnpm test` 1920 pass / 2 skip / 265 files;
+`check:protocol-markers` OK; `check:licenses` OK (502 pkgs, zero new deps).
+Self-review caught one real bug — `voice.staleness_shown`
 was emitted via the web intake but missing from `CLIENT_ANALYTICS_EVENTS` (would have 403'd and
 dropped silently); added to the whitelist + an audit-test guard now pins every web-emitted event
 to the whitelist. PR body (`docs/build/pr/PRB.12.md`) carries the AC5 dwell-heartbeat
