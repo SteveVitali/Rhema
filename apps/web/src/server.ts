@@ -24,16 +24,28 @@ import {
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput } from "./data.js";
 import type { ConversionResult } from "@rhema/contracts";
-import { RIGORS, MODEL_TIERS, type ModelTier, type Rigor, type WorkflowKey } from "@rhema/contracts";
+import {
+  RIGORS,
+  MODEL_TIERS,
+  createIpEmailThrottle,
+  type ModelTier,
+  type Rigor,
+  type SignupMode,
+  type IpEmailThrottle,
+  type WorkflowKey,
+} from "@rhema/contracts";
 import { buildRunSheetView, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
-// client bundle). Auth-gated routes redirect to /login. The invite gate is enforced HERE at POST /login: no
-// valid invitation ⇒ no auth request is ever made (REQ-BETA-19). The live Better Auth session/OAuth binding is
-// D-P0.01-3 (deploy) — injected via `session` / `beginAuth` so the shell is fully unit-testable offline.
+// client bundle). Auth-gated routes redirect to /login. `signup.mode` decides what POST /login requires
+// (REQ-BETA-19 amended 2026-09-16): `invite` — no code ⇒ no auth request is ever made; `open` — self-serve
+// signup, a supplied code still validated. Account admission itself is the api's `POST /signup` (throttled
+// per IP + email; invite consume happens there at creation); the magic-link SEND is throttled here. The
+// live Better Auth session/OAuth binding is D-P0.01-3 (deploy) — injected via `session` / `beginAuth` so
+// the shell is fully unit-testable offline.
 
 export interface AuthOutcome {
   /** Redirect the browser here (e.g. the Google OAuth start, or the post-login landing). */
@@ -52,6 +64,24 @@ export interface WebDeps {
   endSession?(c: Context): Promise<void>;
   /** PRB.08 — the final-month beta-plan offer's link (copy + link only; unset ⇒ no offer line renders). */
   readonly betaPlanOfferUrl?: string;
+  /**
+   * PRB.13 — `signup.mode` (REQ-BETA-19 amended 2026-09-16): `invite` keeps the PRB.01 gate; `open`
+   * permits a no-code signup. Unset ⇒ `invite` — the flag fails closed.
+   */
+  readonly signupMode?: SignupMode;
+  /**
+   * PRB.13 — the magic-link request throttle (per source IP + per email; REQ-BETA-19 abuse control).
+   * Unset ⇒ the beta-grade default below. Only requests that reach the send count against it.
+   */
+  readonly magicLinkThrottle?: IpEmailThrottle;
+}
+
+/** The beta-grade magic-link throttle — per IP + per email, fixed window (PRB.13; D-PRB.13-1: in-memory). */
+export const MAGIC_LINK_THROTTLE_DEFAULTS = { perIp: 20, perEmail: 4, windowMs: 3_600_000 } as const;
+
+/** The source IP the LB forwarded (first XFF hop); absent ⇒ every headerless caller shares "unknown". */
+function clientIp(c: Context): string {
+  return c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
 function loginErrorFor(reason: string | undefined): string {
@@ -72,9 +102,27 @@ function loginErrorFor(reason: string | undefined): string {
 const defaultBeginAuth = async (method: string): Promise<AuthOutcome> =>
   method === "google" ? { redirect: "/auth/google/start" } : { sent: true };
 
+/** Map a refused admission's stable error code to copy (invite reject reasons reuse the invite copy). */
+function signupErrorFor(error: string, open: boolean): string {
+  switch (error) {
+    case "rate_limited":
+      return COPY.login.errorRateLimited;
+    case "invite_required":
+      return COPY.login.errorRequired;
+    case "email_required":
+      return open ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired;
+    case "signup_failed":
+      return COPY.login.errorSignupUnavailable;
+    default:
+      return loginErrorFor(error);
+  }
+}
+
 export function createWebApp(deps: WebDeps): Hono {
   const app = new Hono();
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
+  const signupOpen = deps.signupMode === "open";
+  const magicLinkThrottle = deps.magicLinkThrottle ?? createIpEmailThrottle({ ...MAGIC_LINK_THROTTLE_DEFAULTS });
 
   /** PRB.12 — mint a client-whitelisted analytics event through the api intake (POST /analytics/events).
    *  Fire-and-forget: telemetry NEVER breaks a page render, and an opted-out user simply records nothing. */
@@ -93,13 +141,17 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/healthz", (c) => c.json({ ok: true, service: "web" }));
 
-  // Public: the invite page (+ read-only sample dossier).
-  const invite = (c: Context) => c.html(renderDocument(c.req.path, inviteElement));
+  // Public: the invite page (+ read-only sample dossier). In `open` mode the access note drops the
+  // invitation requirement — still no marketing page, still factual.
+  const invite = (c: Context) =>
+    c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
   app.get("/", invite);
   app.get("/invite", invite);
 
-  // Public: sign in — invitation required. GET renders the form; POST enforces the gate.
-  app.get("/login", (c) => c.html(renderDocument(c.req.path, loginElement, { login: {} })));
+  // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
+  // POST enforces the mode gate (REQ-BETA-19 amended).
+  app.get("/login", (c) =>
+    c.html(renderDocument(c.req.path, loginElement, { login: { signupOpen } })));
 
   app.post("/login", async (c) => {
     const form = await c.req.parseBody();
@@ -112,25 +164,56 @@ export function createWebApp(deps: WebDeps): Hono {
       sent?: boolean;
       code?: string;
       email?: string;
-    }, status: 200 | 400) => c.html(renderDocument(c.req.path, loginElement, { login }), status);
+    }, status: 200 | 400 | 429) =>
+      // every re-render carries the mode flag — an error page must keep the open-mode copy.
+      c.html(renderDocument(c.req.path, loginElement, { login: { ...login, signupOpen } }), status);
 
-    if (!code.trim()) {
+    // invite mode: no code ⇒ no auth request is ever made (the PRB.01 gate, preserved verbatim).
+    if (!signupOpen && !code.trim()) {
       return renderLogin({ error: COPY.login.errorRequired, code, email }, 400);
     }
-    // Google resolves the email via OAuth (unknown pre-auth), so an email-bound (allowlist) invite is validated
-    // code-only here and its email binding is enforced at consume() post-OAuth (D-PRB.01-1). Magic link supplies
-    // the email up front, so its binding is enforced now.
-    const check = await deps.dataSource.checkInvite(
-      code,
-      method === "google" ? undefined : email || undefined,
-    );
-    if (!check.ok) {
-      return renderLogin({ error: loginErrorFor(check.reason), code, email }, 400);
+
+    if (method === "magic_link") {
+      // a magic link needs an email; Google resolves it via OAuth instead.
+      if (!email.trim()) {
+        return renderLogin(
+          { error: signupOpen ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired, code, email },
+          400,
+        );
+      }
+      // the link SEND is the abusable resource — throttle per IP + email before any auth request is made.
+      const verdict = magicLinkThrottle.attempt(clientIp(c), email);
+      if (!verdict.allowed) {
+        return renderLogin({ error: COPY.login.errorRateLimited, code, email }, 429);
+      }
+      // Admission + provisioning is the api's `POST /signup` — invite mode requires a valid code there and
+      // consumes it at creation; open mode treats the code as optional (still validated when supplied);
+      // a returning account resolves `created:false` so a re-login with an exhausted code still sends.
+      let res: Awaited<ReturnType<DataSource["signup"]>> | null;
+      try {
+        res = await deps.dataSource.signup({ email, ...(code.trim() ? { code } : {}), method });
+      } catch {
+        res = null; // a transport/5xx failure is "unavailable", never a refusal
+      }
+      if (!res) {
+        return renderLogin({ error: COPY.login.errorSignupUnavailable, code, email }, 400);
+      }
+      if (!res.ok) {
+        return renderLogin(
+          { error: signupErrorFor(res.error, signupOpen), code, email },
+          res.status === 429 ? 429 : 400,
+        );
+      }
+    } else if (!signupOpen || code.trim()) {
+      // Google resolves the email via OAuth (unknown pre-auth), so admission — invite consume included —
+      // runs post-OAuth at `user.create` in the live deploy (D-PRB.01-1). Here we only pre-gate the code:
+      // required in invite mode; optional-but-validated in open mode.
+      const check = await deps.dataSource.checkInvite(code, undefined);
+      if (!check.ok) {
+        return renderLogin({ error: loginErrorFor(check.reason), code, email }, 400);
+      }
     }
-    // Invite is valid. A magic link needs an email; Google resolves the email via OAuth.
-    if (method === "magic_link" && !email.trim()) {
-      return renderLogin({ error: COPY.login.errorEmailRequired, code, email }, 400);
-    }
+
     const outcome = await beginAuth(method, { code, email: email || undefined });
     if (outcome.redirect) return c.redirect(outcome.redirect);
     return renderLogin({ sent: true, email }, 200);
@@ -467,11 +550,13 @@ export function createWebApp(deps: WebDeps): Hono {
         await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
         return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient } }));
       }
-      // REQ-SPEC-24.7: a suspension can land between the sheet render and the Run click — the api 403s
-      // (account_suspended); re-render the sheet, which now reads the suspended balance and shows the notice.
+      // REQ-SPEC-24.7 + PRB.13: a suspension or an unverified email can land between the sheet render and
+      // the Run click — the api 403s with the reason code on the error (`account_suspended` /
+      // `email_unverified`); re-render the sheet with the matching notice, never a silent failure.
       if (e instanceof ApiError && e.status === 403) {
         const fresh = buildSheet({ workflow, rigor }, await deps.dataSource.getBillingBalance(session).catch(() => undefined), deps.betaPlanOfferUrl);
-        return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view: fresh, notice: COPY.runSheet.suspended } }), 403);
+        const notice = e.code === "email_unverified" ? COPY.runSheet.emailUnverified : COPY.runSheet.suspended;
+        return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view: fresh, notice } }), 403);
       }
       throw e;
     }

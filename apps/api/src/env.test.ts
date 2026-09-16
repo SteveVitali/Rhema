@@ -49,3 +49,15 @@ describe("readApiEnv — harness run-spec sizing (residue 2)", () => {
     expect(() => readApiEnv()).toThrow(/DATABASE_URL/);
   });
 });
+
+describe("readApiEnv — PRB.13 signup.mode (REQ-BETA-19 amended 2026-09-16)", () => {
+  it("SIGNUP_MODE unset or unknown ⇒ invite (the flag fails closed); only 'open' opens", () => {
+    expect(readApiEnv().signupMode).toBe("invite");
+    for (const bad of ["OPEN", "public", "1"]) {
+      process.env.SIGNUP_MODE = bad;
+      expect(readApiEnv().signupMode, `for ${JSON.stringify(bad)}`).toBe("invite");
+    }
+    process.env.SIGNUP_MODE = "open";
+    expect(readApiEnv().signupMode).toBe("open");
+  });
+});

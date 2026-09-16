@@ -35,7 +35,9 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   // D-P0.01-3). The sample dossier on the invite page renders pre-auth by design.
   "landing.viewed": { status: "beta_absent", reason: "pre-auth funnel; the invite-only beta has no public landing surface and the intake is session-authed" },
   "landing.dropzone_used": { status: "beta_absent", reason: "pre-auth funnel; no public dropzone at beta" },
-  "signup.completed": { status: "beta_absent", reason: "the auth lifecycle (Better Auth mount) is D-P0.01-3; no signup hook exists at beta" },
+  // PRB.13 (REQ-BETA-19 amended 2026-09-16): the signup surface exists now — `POST /signup` emits
+  // `signup.completed{method}` on account creation (server-owned, opt-out-honoring).
+  "signup.completed": { status: "emitted", source: "apps/api/src/signup.ts" },
   "email.verified": { status: "beta_absent", reason: "the auth lifecycle (Better Auth mount) is D-P0.01-3; no verification hook exists at beta" },
   "showcase.opened": { status: "beta_absent", reason: "the sample dossier renders on the pre-auth invite page; the intake is session-authed" },
   "showcase.finding_anchor_viewed": { status: "beta_absent", reason: "pre-auth sample dossier; no session to mint the event" },

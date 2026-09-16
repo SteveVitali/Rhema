@@ -52,6 +52,12 @@ export interface SeedProjectArgs {
   /** create a working draft with this version number (omit for no draft). */
   readonly draftN?: number;
   readonly draftId?: string;
+  /**
+   * PRB.13 — the seeded user's `email_verified` (the run-creation gate, REQ-BETA-19 amended). Defaults
+   * `true`: the fixture stands in for a signed-in account, and every signed-in beta account verified its
+   * mailbox via its sign-in link. Pass `false` to seed an unverified self-serve account.
+   */
+  readonly emailVerified?: boolean;
 }
 
 export interface SeededProject {
@@ -71,8 +77,8 @@ export async function seedProject(db: OrchestratorTestDb, args: SeedProjectArgs 
   const draftId = args.draftId ?? (args.draftN != null ? `dft_${projectId}_${args.draftN}` : undefined);
 
   await db.pg.query(
-    `insert into "user"(id, email) values ($1,$2) on conflict (id) do nothing`,
-    [userId, `${userId}@example.test`],
+    `insert into "user"(id, email, email_verified) values ($1,$2,$3) on conflict (id) do nothing`,
+    [userId, `${userId}@example.test`, args.emailVerified ?? true],
   );
   await db.pg.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
     billingAccountId,

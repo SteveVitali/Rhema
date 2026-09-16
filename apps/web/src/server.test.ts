@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { ApiError, type ProjectRow } from "@rhema/api-client";
+import { createIpEmailThrottle } from "@rhema/contracts";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
 
@@ -91,11 +92,25 @@ const PREVIEW = {
   qualityNotes: [],
 };
 
-function makeDeps(over: Partial<WebDeps> = {}, checkInvite?: DataSource["checkInvite"]): WebDeps {
+function makeDeps(
+  over: Partial<WebDeps> = {},
+  checkInvite?: DataSource["checkInvite"],
+  signup?: DataSource["signup"],
+): WebDeps {
   return {
     dataSource: {
       listProjects: async () => PROJECTS,
       checkInvite: checkInvite ?? (async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" })),
+      // The api's POST /signup stand-in (PRB.13): "GOOD" redeems, anything else refuses like the real
+      // invite reasons; a missing code answers `invite_required` (the api's invite-mode refusal).
+      signup:
+        signup ??
+        (async (req) =>
+          req.code === "GOOD"
+            ? { ok: true as const, created: true }
+            : req.code == null
+              ? { ok: false as const, status: 403, error: "invite_required" }
+              : { ok: false as const, status: 403, error: "unknown" }),
       previewImport: async () => PREVIEW,
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
@@ -175,6 +190,136 @@ describe("AC1 — invite gating", () => {
     const res = await app.request("/app");
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/login");
+  });
+});
+
+describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", () => {
+  // The api stand-in for open mode: no code creates, a supplied bad code still refuses.
+  const openSignup: DataSource["signup"] = async (req) =>
+    req.code == null || req.code === "GOOD"
+      ? { ok: true as const, created: true }
+      : { ok: false as const, status: 403, error: "unknown" };
+
+  it("GET /login in open mode renders the optional-code form (no invite-required copy)", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }));
+    const res = await app.request("/login");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("an invitation code is optional");
+    expect(html).toContain("Invitation code (optional)");
+    expect(html).not.toContain("an invitation code is required");
+  });
+
+  it("open mode: no code admits the account through POST /signup and sends the link", async () => {
+    const beginAuth = vi.fn(async () => ({ sent: true }) as AuthOutcome);
+    const signup = vi.fn(openSignup);
+    const app = createWebApp(makeDeps({ signupMode: "open", beginAuth }, undefined, signup));
+    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    expect(res.status).toBe(200);
+    expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link" }); // no code field
+    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "", email: "a@b.com" });
+    expect(await res.text()).toContain("Check your email");
+  });
+
+  it("open mode: a supplied bad code still refuses (partner codes are never silently ignored)", async () => {
+    const beginAuth = vi.fn();
+    const app = createWebApp(makeDeps({ signupMode: "open", beginAuth }, undefined, openSignup));
+    const res = await app.request("/login", { method: "POST", ...form({ code: "NOPE", email: "a@b.com", method: "magic_link" }) });
+    expect(res.status).toBe(400);
+    const html = await res.text();
+    expect(html).toContain("code isn");
+    // the error re-render keeps the open-mode copy (the optional label, not the invite-required note).
+    expect(html).toContain("Invitation code (optional)");
+    expect(html).not.toContain("an invitation code is required");
+    expect(beginAuth).not.toHaveBeenCalled();
+  });
+
+  it("open mode: a magic link with no email is refused with the self-serve copy", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }, undefined, openSignup));
+    const res = await app.request("/login", { method: "POST", ...form({ method: "magic_link" }) });
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("Enter your email to get a sign-in link");
+  });
+
+  it("open mode: Google with no code skips the invite check entirely", async () => {
+    const checkInvite = vi.fn(async () => ({ ok: false as const, reason: "unknown" }));
+    const app = createWebApp(
+      makeDeps({ signupMode: "open", beginAuth: async () => ({ redirect: "/auth/google/start" }) }, checkInvite),
+    );
+    const res = await app.request("/login", { method: "POST", ...form({ method: "google" }) });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/auth/google/start");
+    expect(checkInvite).not.toHaveBeenCalled(); // admission runs post-OAuth in the live deploy
+  });
+
+  it("the landing page in open mode drops the invitation requirement (still no marketing)", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }));
+    const res = await app.request("/");
+    const html = await res.text();
+    expect(html).toContain("credits you add yourself");
+    expect(html).not.toContain("Access is by invitation");
+  });
+
+  it("magic-link requests throttle per IP — the send is refused 429, never silent", async () => {
+    const app = createWebApp(
+      makeDeps(
+        { signupMode: "open", magicLinkThrottle: createIpEmailThrottle({ perIp: 2, perEmail: 100, windowMs: 60_000 }) },
+        undefined,
+        openSignup,
+      ),
+    );
+    const post = () => app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    expect((await post()).status).toBe(200);
+    expect((await post()).status).toBe(200);
+    const res = await post();
+    expect(res.status).toBe(429);
+    expect(await res.text()).toContain("Too many attempts");
+  });
+
+  it("magic-link requests throttle per email across IPs", async () => {
+    const app = createWebApp(
+      makeDeps(
+        { signupMode: "open", magicLinkThrottle: createIpEmailThrottle({ perIp: 100, perEmail: 1, windowMs: 60_000 }) },
+        undefined,
+        openSignup,
+      ),
+    );
+    const post = (ip: string) =>
+      app.request("/login", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": ip },
+        body: new URLSearchParams({ email: "a@b.com", method: "magic_link" }).toString(),
+      });
+    expect((await post("1.1.1.1")).status).toBe(200);
+    expect((await post("2.2.2.2")).status).toBe(429); // same email, fresh IP ⇒ still blocked
+  });
+
+  it("an api-side 429 (account-creation throttle) propagates as the rate-limit copy", async () => {
+    const signup: DataSource["signup"] = async () => ({ ok: false as const, status: 429, error: "rate_limited" });
+    const app = createWebApp(makeDeps({ signupMode: "open" }, undefined, signup));
+    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    expect(res.status).toBe(429);
+    expect(await res.text()).toContain("Too many attempts");
+  });
+
+  it("a run-sheet 403 with error=email_unverified renders the verification notice (not the suspension one)", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async () => {
+        throw new ApiError(403, "http://api/projects/proj_pv/runs", undefined, "email_unverified");
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_uv", estimateCredits: "560", capCredits: "840" }),
+    });
+    expect(res.status).toBe(403);
+    const html = await res.text();
+    expect(html).toContain("Runs need a verified email");
+    expect(html).not.toContain("payment dispute");
+    expect(html).not.toContain("Your run has started");
   });
 });
 

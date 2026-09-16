@@ -12,16 +12,22 @@ export const COPY = {
     lede:
       "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources, maps the argument, and hands back a dossier you can act on.",
     accessNote: "Access is by invitation. If you have a code, sign in below.",
+    // PRB.13 — `signup.mode === "open"` variants (REQ-BETA-19 amended 2026-09-16): factual only — no
+    // marketing copy, no pricing page language.
+    accessNoteOpen: "Create an account or sign in — runs are paid for with credits you add yourself.",
     sampleHeading: "See what it hands back",
     sampleLede:
       "A read-only sample dossier from a real essay. Note the contradicted claim, verified against the source it cites.",
     signInCta: "Have a code? Sign in",
+    signInCtaOpen: "Sign in or create an account",
   },
 
   login: {
     heading: "Sign in",
     note: "Private beta — an invitation code is required.",
+    noteOpen: "Create an account or sign in — an invitation code is optional.",
     codeLabel: "Invitation code",
+    codeLabelOptional: "Invitation code (optional)",
     codePlaceholder: "Enter your code",
     emailLabel: "Email",
     emailPlaceholder: "you@example.com",
@@ -36,6 +42,10 @@ export const COPY = {
     errorExhausted: "That invitation code has already been used.",
     errorEmailMismatch: "That invitation code is reserved for a different email.",
     errorEmailRequired: "Enter the email your invitation was sent to.",
+    // PRB.13 — self-serve + abuse-control copy (factual; REQ-POS-4/5/13).
+    emailRequiredSelfServe: "Enter your email to get a sign-in link.",
+    errorRateLimited: "Too many attempts — wait a few minutes and try again.",
+    errorSignupUnavailable: "Signup isn't available right now — try again shortly.",
   },
 
   projects: {
@@ -87,6 +97,8 @@ export const COPY = {
     // beta-plan offer (copy + link only — REQ-BETA-14/15, §14.6; no subscription machinery).
     buyCredits: "Add credits",
     suspended: "This account is paused while a payment dispute is open — runs can't start until it resolves.",
+    // PRB.13 — the verified-email gate's notice (REQ-BETA-19 amended): the sign-in link is the verification.
+    emailUnverified: "Runs need a verified email — your sign-in link verifies it.",
     planOffer: "Beta pricing ends when we launch. Founding users keep the beta rate for a year.",
     planOfferLink: "See the beta plan",
     factCheckToggle: "Fact-check every claim",

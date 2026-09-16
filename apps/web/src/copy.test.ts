@@ -17,6 +17,24 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
     expect(lintCopy(collectCopyStrings()).map((v) => v.term)).toEqual(["Advanced"]);
   });
 
+  it("PRB.13 — the open-mode signup copy is factual and lint-clean (REQ-POS-4/5/13)", () => {
+    const keys = collectCopyStrings().map(([k]) => k);
+    for (const k of [
+      "invite.accessNoteOpen",
+      "invite.signInCtaOpen",
+      "login.noteOpen",
+      "login.codeLabelOptional",
+      "login.emailRequiredSelfServe",
+      "login.errorRateLimited",
+      "login.errorSignupUnavailable",
+      "runSheet.emailUnverified",
+    ]) {
+      expect(keys).toContain(k);
+    }
+    // the §16.4 gate is still closed — efficacy/superiority phrasing is caught if introduced.
+    expect(lintCopy({ bad: "writes like you — unlimited, better than Pro" }).length).toBeGreaterThan(0);
+  });
+
   it("collectCopyStrings walks every string leaf", () => {
     const pairs = collectCopyStrings();
     const keys = pairs.map(([k]) => k);

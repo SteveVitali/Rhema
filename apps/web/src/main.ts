@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { createWebApp } from "./server.js";
 import { apiDataSource } from "./data.js";
 import type { SessionHeaders } from "./data.js";
+import { parseSignupMode } from "@rhema/contracts";
 
 // Container entrypoint. The Phase-0 session stand-in reads the gateway-injected identity headers (the same
 // `x-rhema-*` contract the api's `headerPrincipal` consumes) and forwards them to the api; the live Better
@@ -17,6 +18,8 @@ export function startWebServer(): void {
     dataSource: apiDataSource(apiBaseUrl),
     // PRB.08 — the final-month beta-plan offer (copy + a link only; set by the deploy when the window opens).
     ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
+    // PRB.13 — signup.mode (REQ-BETA-19 amended): the flag fails closed — unset/unparseable ⇒ `invite`.
+    signupMode: parseSignupMode(process.env.SIGNUP_MODE),
     session(c) {
       const forwarded: Record<string, string> = {};
       for (const h of IDENTITY_HEADERS) {

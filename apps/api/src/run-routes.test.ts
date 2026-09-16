@@ -76,6 +76,37 @@ describe("POST /projects/:id/runs", () => {
     const res = await anon.request(`/projects/${seed.projectId}/runs`, { method: "POST", body: "{}" });
     expect(res.status).toBe(401);
   });
+
+  it("PRB.13 — the verified-email gate: unbound ⇒ inert; false ⇒ 403 email_unverified; true ⇒ creates", async () => {
+    // unbound (no user lookup): the gate is inert — fixtures without a db keep working.
+    expect(
+      (
+        await app.request(`/projects/${seed.projectId}/runs`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(runBody({ idempotencyKey: "idem-gate-0" })),
+        })
+      ).status,
+    ).toBe(201);
+
+    const gated = (verified: boolean) =>
+      createApp({ ...deps, principal: () => principal(), userEmailVerified: async () => verified });
+    const blocked = await gated(false).request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-gate-1" })),
+    });
+    expect(blocked.status).toBe(403);
+    expect(await blocked.json()).toEqual({ error: "email_unverified" });
+    expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 1 }); // only the unbound one
+
+    const ok = await gated(true).request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-gate-2" })),
+    });
+    expect(ok.status).toBe(201);
+  });
 });
 
 describe("internal run API — token auth + fencing", () => {
