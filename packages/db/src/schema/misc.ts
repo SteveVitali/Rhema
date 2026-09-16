@@ -62,6 +62,38 @@ export const notificationPrefs = pgTable("notification_prefs", {
   prefs: jsonb("prefs").notNull().default({}),
 });
 
+// PRB.09 — signed one-click action state + the per-(user, channel, event) delivery ledger (0021).
+
+export const emailActionTokens = pgTable("email_action_tokens", {
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id").notNull(),
+  gateId: text("gate_id").notNull(),
+  runId: text("run_id").notNull(),
+  userId: text("user_id").notNull(),
+  action: text("action").notNull(), // 'open' | 'hold' — never an approve action
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const notificationDeliveries = pgTable(
+  "notification_deliveries",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    userId: text("user_id").notNull(),
+    channel: text("channel").notNull().default("email"),
+    eventType: text("event_type").notNull(),
+    dedupKey: text("dedup_key").notNull(),
+    runId: text("run_id"),
+    subject: text("subject"),
+    status: text("status").notNull().default("claimed"), // 'claimed' | 'sent'
+    sentAt: timestamp("sent_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({ dedup: unique().on(t.userId, t.channel, t.dedupKey) }),
+);
+
 export const figures = pgTable("figures", {
   id: text("id").primaryKey(),
   projectId: text("project_id"),

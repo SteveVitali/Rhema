@@ -73,6 +73,14 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   const stripeWebhookSecret = env.stripeWebhookSecretName
     ? await access(env.stripeWebhookSecretName)
     : undefined;
+  // PRB.09: the one-click email-action HMAC key is a Secret Manager secret like the run-token keys — the api
+  // verifies at /api/action/<token>; unset ⇒ the route 404s (notification emails are not minted either — the
+  // worker holds the same seam).
+  const emailActionSecret = env.emailActionSecretName ? await access(env.emailActionSecretName) : undefined;
+  const notificationConfig =
+    emailActionSecret && env.apiPublicUrl && env.appBaseUrl
+      ? { actionSecret: emailActionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
+      : undefined;
 
   const bus = new RedisRunEventBus(redis, subscriber);
   // The platform-wide circuit-breaker read (credit_ledger across accounts) must NOT run on the user-facing
@@ -111,6 +119,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     ...(systemExec ? { systemExec } : {}),
     ...(stripeWebhookSecret ? { stripeWebhookSecret } : {}),
     ...(env.stripePaymentLinkUrl ? { paymentLinkUrl: env.stripePaymentLinkUrl } : {}),
+    // PRB.09 — the signed-action config the notification routes consume (+ the OrchestratorDeps field the
+    // notify path uses when the api process itself schedules/emits).
+    ...(notificationConfig ? { notifications: notificationConfig } : {}),
     // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
     // telemetry emitters to the same validated + opt-out-honoring writer the billing telemetry uses.
     // finding.disposed (D-PRB.05-1 leg b) + run.estimated (D-PRB.03-1's emit leg). A telemetry write is
@@ -189,7 +200,7 @@ export async function startApiServer(): Promise<void> {
     throw lastErr;
   };
   await retryStartup("boss.start", () => boss.start());
-  for (const name of [...Object.values(RUN_JOBS), STRIPE_EVENT_JOB]) {
+  for (const name of [...Object.values(RUN_JOBS), STRIPE_EVENT_JOB, "notify", "mail.send"]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
 

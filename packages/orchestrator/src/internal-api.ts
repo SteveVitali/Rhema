@@ -5,7 +5,7 @@
 // event (REQ-DATA-33). Artifact materialization/harvest (P0.09), gate resolution (P0.10) and ledger internals
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
-import type { AgentTypeKey, GateKind } from "@rhema/contracts";
+import type { AgentTypeKey, GateKind, GateOnExpiry } from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
 import {
   buildSeatHydration,
@@ -24,6 +24,12 @@ import type { HeartbeatStore } from "./heartbeat.js";
 import type { HoldLedger } from "./ledger.js";
 import type { RunTokenService } from "./token.js";
 import { scheduleGateExpiry, type Queue } from "./queue.js";
+import {
+  scheduleCreditsCheck,
+  scheduleGateNotifications,
+  scheduleRunTerminalNotification,
+} from "./notifications.js";
+import type { EmailActionConfig } from "./email-actions.js";
 import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
@@ -46,6 +52,12 @@ export interface OrchestratorDeps {
    * never an independence context (REQ-OBJ-4/8). Unset ⇒ no obligations.json is mounted (the pre-P0.12 shape).
    */
   readonly obligationMount?: ObligationMountProvider;
+  /**
+   * PRB.09 email-notification deploy config (the signed-action HMAC key + api/app origins). The api holds it
+   * to CONSUME one-click links; the worker holds it to MINT them inside `notify` jobs. Unset ⇒ notification
+   * jobs are enqueued but the `notify` handler no-ops (`unconfigured`) — a deploy without mail stays green.
+   */
+  readonly notifications?: EmailActionConfig;
 }
 
 /** Builds the re-review `obligations.json` mount file for a seat's hydration, or null when none applies. */
@@ -576,6 +588,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
  * are the ledger's / P0.09's; this owns the durable step + state write.
  */
 export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): Promise<CommitStepResult> {
+  const box: { debitedBillingAccountId: string | null } = { debitedBillingAccountId: null };
   try {
     const res = await deps.txRunner.run(args.workspaceId, async (tx): Promise<CommitStepResult & { ok: true }> => {
       await fence(tx, args.runId, args.attempt);
@@ -642,6 +655,7 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
             args.runId,
           ])
         ).rows[0] as { billing_account_id: string };
+        box.debitedBillingAccountId = ba.billing_account_id;
         await deps.ledger.debit(tx, {
           billingAccountId: ba.billing_account_id,
           workspaceId: args.workspaceId,
@@ -676,12 +690,32 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
     });
     // Schedule the `gate:<id>` expiry job AFTER commit (§6.4 item 6; the queue send is not transactional with
     // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing.
-    if (res.ok && res.gateId && args.next.kind === "gate" && args.next.deadlineAt) {
-      await scheduleGateExpiry(deps, {
+    if (res.ok && !res.idempotent && res.gateId && args.next.kind === "gate") {
+      const now = deps.clock.now();
+      if (args.next.deadlineAt) {
+        await scheduleGateExpiry(deps, {
+          gateId: res.gateId,
+          workspaceId: args.workspaceId,
+          deadlineAt: args.next.deadlineAt,
+          now,
+        });
+      }
+      // PRB.09 — the notification jobs ride the same post-commit seam: the +15 min waiting check (immediate
+      // for spend kinds) and the T−1 h / T−10 m reminders for an auto-proceeding deadline (D-P0.10-1).
+      await scheduleGateNotifications(deps, {
         gateId: res.gateId,
         workspaceId: args.workspaceId,
-        deadlineAt: args.next.deadlineAt,
-        now: deps.clock.now(),
+        kind: args.next.gateKind,
+        onExpiry: args.next.onExpiry as GateOnExpiry,
+        deadlineAt: args.next.deadlineAt ?? null,
+        now,
+      });
+    }
+    // PRB.09 — a landed debit may have crossed a 50/80/100 % threshold (§14.6); the check job re-reads totals.
+    if (res.ok && !res.idempotent && box.debitedBillingAccountId) {
+      await scheduleCreditsCheck(deps, {
+        billingAccountId: box.debitedBillingAccountId,
+        workspaceId: args.workspaceId,
       });
     }
     return res;
@@ -763,6 +797,7 @@ export async function finalizeRun(
   });
   await deps.heartbeats.clear(args.runId);
   // the run token is revoked implicitly: a terminal state rejects every further internal call (see `fence`).
+  await scheduleRunTerminalNotification(deps, { runId: args.runId, workspaceId: args.workspaceId, outcome: "completed" });
   return { ok: true, state: "completed" };
 }
 
@@ -808,5 +843,6 @@ export async function failRun(
     await revokeRunCredentials(tx, args.runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
   });
   await deps.heartbeats.clear(args.runId);
+  await scheduleRunTerminalNotification(deps, { runId: args.runId, workspaceId: args.workspaceId, outcome: "failed" });
   return { ok: true, state: "failed" };
 }

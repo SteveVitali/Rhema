@@ -46,6 +46,22 @@ export interface WorkerEnv {
   readonly anthropicAdminKeySecret?: string;
   /** PRB.08 — the ops alert sink for >2% usage drift / a balance divergence (a webhook URL; console when unset). */
   readonly opsAlertWebhookUrl?: string;
+  /**
+   * PRB.09 — the Resend API key's secret-version NAME (Secret Manager) for `mail.send`. Unset ⇒ the mail
+   * transport no-ops (the delivery row stays 'claimed' for a later re-drive; a preview deploy stays green).
+   */
+  readonly resendApiKeySecret?: string;
+  /** PRB.09 — the From address for beta mail (deploy config, not a secret). */
+  readonly emailFrom?: string;
+  /**
+   * PRB.09 — the HMAC secret-version NAME signing one-click email actions (the api holds the same secret to
+   * verify). Unset ⇒ the `notify` handler no-ops `unconfigured` — no emails are minted.
+   */
+  readonly emailActionSecretName?: string;
+  /** PRB.09 — the api origin one-click links point at (`<apiPublicUrl>/api/action/<token>`). */
+  readonly apiPublicUrl?: string;
+  /** PRB.09 — the web app origin for email deep links (`<appBaseUrl>/p/<project>/review/<run>`). */
+  readonly appBaseUrl?: string;
 }
 
 function required(name: string): string {
@@ -78,6 +94,15 @@ export function readWorkerEnv(): WorkerEnv {
       ? { anthropicAdminKeySecret: process.env.ANTHROPIC_ADMIN_KEY_SECRET }
       : {}),
     ...(process.env.OPS_ALERT_WEBHOOK_URL ? { opsAlertWebhookUrl: process.env.OPS_ALERT_WEBHOOK_URL } : {}),
+    // PRB.09 notifications: the Resend key + the action-signing secret are secret-NAMES (Secret Manager at
+    // boot); the From/api/app origins are plain deploy config.
+    ...(process.env.RESEND_API_KEY_SECRET ? { resendApiKeySecret: process.env.RESEND_API_KEY_SECRET } : {}),
+    ...(process.env.EMAIL_FROM ? { emailFrom: process.env.EMAIL_FROM } : {}),
+    ...(process.env.EMAIL_ACTION_SECRET_NAME
+      ? { emailActionSecretName: process.env.EMAIL_ACTION_SECRET_NAME }
+      : {}),
+    ...(process.env.API_PUBLIC_URL ? { apiPublicUrl: process.env.API_PUBLIC_URL } : {}),
+    ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

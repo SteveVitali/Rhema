@@ -45,6 +45,15 @@ export interface ApiEnv {
   readonly stripePaymentLinkUrl?: string;
   /** The final-month beta-plan offer's link (copy + link only — no subscription machinery; REQ-BETA-14). */
   readonly betaPlanOfferUrl?: string;
+  /**
+   * PRB.09 — the HMAC secret-version NAME signing one-click email actions (the worker holds the same secret
+   * to mint; the api verifies at `/api/action/<token>`). Unset ⇒ the action route 404s.
+   */
+  readonly emailActionSecretName?: string;
+  /** PRB.09 — the api origin one-click links point at (`<apiPublicUrl>/api/action/<token>`). */
+  readonly apiPublicUrl?: string;
+  /** PRB.09 — the web app origin for email deep links (`<appBaseUrl>/p/<project>/review/<run>`). */
+  readonly appBaseUrl?: string;
 }
 
 function required(name: string): string {
@@ -83,6 +92,13 @@ export function readApiEnv(): ApiEnv {
       : {}),
     ...(process.env.STRIPE_PAYMENT_LINK_URL ? { stripePaymentLinkUrl: process.env.STRIPE_PAYMENT_LINK_URL } : {}),
     ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
+    // PRB.09 notifications: the action-signing secret is a secret-NAME (Secret Manager at boot); the api/app
+    // origins are plain deploy config.
+    ...(process.env.EMAIL_ACTION_SECRET_NAME
+      ? { emailActionSecretName: process.env.EMAIL_ACTION_SECRET_NAME }
+      : {}),
+    ...(process.env.API_PUBLIC_URL ? { apiPublicUrl: process.env.API_PUBLIC_URL } : {}),
+    ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

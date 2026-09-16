@@ -20,16 +20,17 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@rhema/db": "workspace:*",
     "@rhema/contracts": "workspace:*",
-    "@rhema/orchestrator": "workspace:*",
+    "@rhema/db": "workspace:*",
     "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
     "@rhema/mirror": "workspace:*",
+    "@rhema/orchestrator": "workspace:*",
     "@rhema/protocols": "workspace:*",
     "ioredis": "6.0.0",
     "pg": "8.23.0",
-    "pg-boss": "12.30.0"
+    "pg-boss": "12.30.0",
+    "resend": "6.26.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
