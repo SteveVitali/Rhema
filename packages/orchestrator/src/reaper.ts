@@ -9,6 +9,7 @@ import { openGate } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { RUN_JOBS } from "./queue.js";
+import { scheduleGateNotifications } from "./notifications.js";
 import { HEARTBEAT_STALE_MS } from "./heartbeat.js";
 import type { SqlClient } from "./tx.js";
 
@@ -45,6 +46,7 @@ export async function reap(
   const outcomes: ReapOutcome[] = [];
 
   for (const hb of stale) {
+    const gateBox: { opened: { gateId: string; deadlineAt: Date } | null } = { opened: null };
     const outcome = await deps.txRunner.run(hb.workspaceId, async (tx): Promise<ReapOutcome> => {
       const res = await tx.query(
         `select r.state, r.current_attempt, r.resume_count, r.cap_credits, r.hold_ledger_id, w.billing_account_id
@@ -101,13 +103,15 @@ export async function reap(
         reason: "resume_partial",
         fields: { parkedUntil: new Date(now.getTime() + THIRTY_DAYS_MS) },
       });
-      await openGate(tx, deps, {
+      const partialDeadline = new Date(now.getTime() + THIRTY_DAYS_MS);
+      const gateId = await openGate(tx, deps, {
         runId: hb.runId,
         kind: "resume_partial",
         blocking: true,
         onExpiry: "accept_partial",
-        deadlineAt: new Date(now.getTime() + THIRTY_DAYS_MS),
+        deadlineAt: partialDeadline,
       });
+      gateBox.opened = { gateId, deadlineAt: partialDeadline };
       return { runId: hb.runId, action: "resume_partial" };
     });
 
@@ -120,6 +124,17 @@ export async function reap(
         { runId: hb.runId, attempt: outcome.attempt, fromStep: "current" },
         { singletonKey: hb.runId, startAfterMs: STOP_TASK_GRACE_MS },
       );
+    }
+    // PRB.09 — the resume_partial card emails its waiting notice (neverAutoProceed ⇒ no reminders armed).
+    if (outcome.action === "resume_partial" && gateBox.opened) {
+      await scheduleGateNotifications(deps, {
+        gateId: gateBox.opened.gateId,
+        workspaceId: hb.workspaceId,
+        kind: "resume_partial",
+        onExpiry: "accept_partial",
+        deadlineAt: gateBox.opened.deadlineAt,
+        now,
+      });
     }
     outcomes.push(outcome);
   }
