@@ -105,11 +105,31 @@ const FACT_CHECK: WorkflowSheetProfile = {
   },
 };
 
-/** The beta's three verbs (REQ-WF-3). Other workflows fall through to a caller error. */
+// ---- Profile voice (§9.2; PRB.10): the build TIER (quick/full) is the estimator VARIANT the caller
+// passes (`args.variant`), not a rigor notch — profile_voice carries no rigor multiplier (§6.1/§12.2).
+// The voice sheet's lever is the corpus word count; the estimator is `40 + 0.012 × words` at Base
+// (×2.2 Balanced, ×4.5 Frontier). Model tier defaults to Base at every rigor notch (the beta's Quick
+// Voice runs on Base); the caller may still pass a higher modelTier — the estimator multiplies. ------
+const PROFILE_VOICE: WorkflowSheetProfile = {
+  workflow: "profile_voice",
+  toggles: [],
+  rigorDefaults: {
+    quick: { modelTier: "base", toggles: {} },
+    standard: { modelTier: "base", toggles: {} },
+    full_board: { modelTier: "base", toggles: {} },
+  },
+  applyToggles(baseInputs) {
+    return { inputs: baseInputs, enabledAddends: [] };
+  },
+};
+
+/** The beta's three verbs + the persona build (REQ-WF-3; §9.2 Quick Voice — PRB.10). Other workflows
+ *  fall through to a caller error. */
 export const WORKFLOW_SHEET_PROFILES: Partial<Record<WorkflowKey, WorkflowSheetProfile>> = {
   review: REVIEW,
   revise: REVISE,
   fact_check: FACT_CHECK,
+  profile_voice: PROFILE_VOICE,
 };
 
 /** Resolve a workflow's sheet profile; throws for a workflow the beta sheet does not launch. */

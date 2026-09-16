@@ -22,3 +22,4 @@ export * from "./gate-card.js";
 export * from "./decisions.js";
 export * from "./what-changed.js";
 export * from "./manual-revision.js";
+export * from "./voice-status.js";

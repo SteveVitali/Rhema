@@ -214,4 +214,61 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     // `of` stays the full manifest length so the delivery trigger (index === of-1, the always-active letter) holds.
     expect(spec.request.of).toBe(review.phases.length);
   });
+
+  it("profile_voice{tier: quick} omits substance + calibration — after close_reading the next ACTIVE phase is voice (PRB.10; §9.2)", async () => {
+    const runId = await seedWorkflowRun("run_quick_voice", "profile_voice");
+    const manifest = WORKFLOW_MANIFESTS.profile_voice!;
+    // The build froze inputs.tier = 'quick' — the `optional: "quick"` phases (substance, calibration)
+    // drop out of the ACTIVE set; census + close_reading committed → voice runs next.
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ tier: "quick" })]),
+    );
+    for (const [key, i] of [["census", 0], ["close_reading", 1]] as const) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_qv_${i}`, runId, key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("voice"); // manifest index 2 — substance (3) is skipped
+    expect(spec.request.ordinal).toBe(2);
+    expect(spec.request.of).toBe(manifest.phases.length); // still 6 — package stays the delivery trigger
+  });
+
+  it("profile_voice{tier: quick} — voice + package committed ⇒ no active phase remains (Quick runs 4 phases)", async () => {
+    const runId = await seedWorkflowRun("run_quick_done", "profile_voice");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ tier: "quick" })]),
+    );
+    // The four ACTIVE phases done (package is manifest ordinal 5 — substance/calibration never ran).
+    for (const [key, i] of [["census", 0], ["close_reading", 1], ["voice", 2], ["package", 5]] as const) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_qd_${i}`, runId, key, i],
+      );
+    }
+    await expect(
+      buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId }),
+    ).rejects.toThrow(/no phase to run/);
+  });
+
+  it("profile_voice{tier: full} keeps all six phases — after voice the next phase is substance (Quick would jump to package)", async () => {
+    const runId = await seedWorkflowRun("run_full_voice", "profile_voice");
+    const manifest = WORKFLOW_MANIFESTS.profile_voice!;
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ tier: "full" })]),
+    );
+    for (const [key, i] of [["census", 0], ["close_reading", 1], ["voice", 2]] as const) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_fv_${i}`, runId, key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("substance"); // no tier opt-out — all 6 phases active
+    expect(spec.request.of).toBe(manifest.phases.length);
+  });
 });

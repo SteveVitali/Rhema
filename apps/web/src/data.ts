@@ -19,6 +19,19 @@ import type {
   EditorCancelRunDto,
   EditorReviseDto,
   BillingBalanceDto,
+  VoiceListRowDto,
+  CreateVoiceDto,
+  CreatedVoiceDto,
+  VoiceDetailDto,
+  AddVoiceSampleDto,
+  AddedVoiceSampleDto,
+  SaveVoiceSeedDto,
+  SavedVoiceSeedDto,
+  VoiceEstimateDto,
+  BuildVoiceDto,
+  BuiltVoiceDto,
+  ProjectVoiceDto,
+  VoiceStatusDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -147,6 +160,38 @@ export interface DataSource {
   /** PRB.08 — record `credits.exhausted_prompt{action_taken}` (REQ-BETA-12) when the exhaustion panel shows
    *  or resolves. */
   recordExhaustedPrompt(session: SessionHeaders, actionTaken: string): Promise<void>;
+  // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
+  /** the library's persona list with the shared pill (GET /voices). */
+  listVoices(session: SessionHeaders): Promise<VoiceListRowDto[]>;
+  /** the §9.2 creation sheet's write (name + byline + optional description + Mode metadata). */
+  createVoice(session: SessionHeaders, req: CreateVoiceDto): Promise<CreatedVoiceDto>;
+  /** the detail page's full read (status + samples + history + artifacts + the seed text). */
+  getVoice(session: SessionHeaders, personaId: string): Promise<VoiceDetailDto>;
+  /** a pasted sample through the §9.5 model; returns the refreshed corpus words + status (REQ-PERSONA-3). */
+  addVoiceSample(session: SessionHeaders, personaId: string, req: AddVoiceSampleDto): Promise<AddedVoiceSampleDto>;
+  /** the per-item include/omit toggle (REQ-INGEST-4). */
+  setVoiceSampleIncluded(
+    session: SessionHeaders,
+    personaId: string,
+    itemId: string,
+    included: boolean,
+  ): Promise<{ status: VoiceStatusDto | null }>;
+  /** the seed editor's save — recomputes the J9 hash; the returned status is the live pill (§9.3). */
+  saveVoiceSeed(session: SessionHeaders, personaId: string, req: SaveVoiceSeedDto): Promise<SavedVoiceSeedDto>;
+  /** the tier estimate over the current included corpus (REQ-PERSONA-3). */
+  estimateVoice(session: SessionHeaders, personaId: string, tier: "quick" | "full"): Promise<VoiceEstimateDto>;
+  /** "Create and build" / "Update voice" — a profile_voice{tier} run (§9.2 item 3). */
+  buildVoice(session: SessionHeaders, personaId: string, req: BuildVoiceDto): Promise<BuiltVoiceDto>;
+  /** cancel an open build run. */
+  cancelVoiceRun(session: SessionHeaders, runId: string): Promise<{ runId: string; state: string }>;
+  /** the project's linked-voice facts (§9.6). */
+  getProjectVoice(session: SessionHeaders, projectId: string): Promise<ProjectVoiceDto>;
+  /** REQ-DATA-32 — pin the project's voice (personaId null ⇒ "No voice" / ad-hoc). */
+  setProjectVoice(
+    session: SessionHeaders,
+    projectId: string,
+    req: { personaId: string | null; profileSnapshotId?: string | null },
+  ): Promise<ProjectVoiceDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -213,5 +258,28 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getBillingBalance(),
     recordExhaustedPrompt: (session, actionTaken) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordExhaustedPrompt(actionTaken),
+    // ---- PRB.10 — Quick Voice ----
+    listVoices: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoices(),
+    createVoice: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createVoice(req),
+    getVoice: (session, personaId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoice(personaId),
+    addVoiceSample: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceSample(personaId, req),
+    setVoiceSampleIncluded: (session, personaId, itemId, included) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setVoiceSampleIncluded(personaId, itemId, included),
+    saveVoiceSeed: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveVoiceSeed(personaId, req),
+    estimateVoice: (session, personaId, tier) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).estimateVoice(personaId, tier),
+    buildVoice: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).buildVoice(personaId, req),
+    cancelVoiceRun: (session, runId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelVoiceRun(runId),
+    getProjectVoice: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getProjectVoice(projectId),
+    setProjectVoice: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setProjectVoice(projectId, req),
   };
 }

@@ -38,6 +38,12 @@ export interface ProjectRow {
   readonly state: ProjectStateDto;
   /** The highest-n draft head — the source editor's entry point (PRB.07). */
   readonly headDraftId?: string | null;
+  /** PRB.10 — the linked voice's chip (persona + the shared status pill); null ⇒ ad-hoc (§9.6). */
+  readonly voice?: {
+    readonly personaId: string;
+    readonly name: string | null;
+    readonly status: VoiceStatusDto;
+  } | null;
 }
 
 export interface InviteCheckDto {
@@ -374,6 +380,199 @@ export interface BillingBalanceDto {
   readonly paymentLinkUrl?: string;
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// PRB.10 — Quick Voice (§9.2–§9.6). The shared pill/status DTO mirrors @rhema/findings-core's VoiceStatus
+// (kept structural to avoid a heavy dep); every surface renders this ONE shape byte-identically.
+// ---------------------------------------------------------------------------------------------------------
+
+/** The §9.3 eight states (the beta's reachable subset: never_built / building / seed_changed /
+ *  samples_changed / unfalsified). */
+export type VoiceStateDto =
+  | "never_built"
+  | "building"
+  | "seed_changed"
+  | "samples_changed"
+  | "aged"
+  | "unfalsified"
+  | "badly_off"
+  | "fresh";
+
+/** The ONE shared voice status — `deriveVoiceStatus`'s wire shape (REQ-PERSONA-14). */
+export interface VoiceStatusDto {
+  readonly state: VoiceStateDto;
+  readonly pill: { readonly label: string; readonly tone: string };
+  readonly action: "build" | "open_run" | "update_voice" | "test" | "rebuild" | "none";
+  readonly detail: {
+    readonly seedChanged: boolean;
+    readonly samples: { readonly added: number; readonly removed: number; readonly changed: number };
+    readonly growthRatio: number | null;
+    readonly ageDays: number | null;
+  };
+}
+
+/** The stored profile snapshot's §9.3 facts (persona_profiles row). */
+export interface VoiceSnapshotDto {
+  readonly builtAt: string;
+  readonly seedSha256: string | null;
+  readonly sampleSet: Record<string, string>;
+  readonly corpusWordsAtBuild: number | null;
+  readonly calibrationStatus: string | null;
+  readonly tier: string | null;
+}
+
+/** A library card (GET /voices). */
+export interface VoiceListRowDto {
+  readonly personaId: string;
+  readonly name: string | null;
+  readonly byline: string | null;
+  readonly mode: string;
+  readonly sampleCount: number;
+  readonly status: VoiceStatusDto;
+}
+
+export interface CreateVoiceDto {
+  readonly name: string;
+  readonly byline?: string;
+  readonly description?: string;
+  /** Mode (`self` | `consented` | `house` | `study`) — metadata only (Q-11; REQ-PERSONA-27). */
+  readonly mode?: string;
+  readonly registers?: string[];
+}
+
+export interface CreatedVoiceDto {
+  readonly personaId: string;
+  readonly mode: string;
+  /** 'persona_builder' until the first user seed edit (the agent-drafted marker; REQ-PERSONA-4). */
+  readonly seedAuthoredBy: string;
+  readonly status: VoiceStatusDto | null;
+}
+
+/** A sample row on the detail page (a discovered_item + its head sample_version). */
+export interface VoiceSampleDto {
+  readonly id: string;
+  readonly title: string | null;
+  readonly state: string;
+  readonly access: string | null;
+  readonly date: string | null;
+  readonly version_id: string | null;
+  readonly content_sha256: string | null;
+  readonly word_count: number | null;
+  readonly quality: string | null;
+  readonly n: number | null;
+}
+
+/** A profile snapshot row in the build history. */
+export interface VoiceProfileRowDto {
+  readonly id: string;
+  readonly built_at: string;
+  readonly tier: string | null;
+  readonly corpus_size_at_build: number | null;
+  readonly calibration_status: string | null;
+  readonly built_by_run_id: string | null;
+}
+
+/** A build/refresh run row in the voice's history. */
+export interface VoiceRunRowDto {
+  readonly id: string;
+  readonly state: string;
+  readonly workflow: string;
+  readonly spent_credits: number;
+  readonly created_at: string;
+  readonly ended_at: string | null;
+}
+
+/** A persona artifact row (seed + samples + derived profile artifacts). */
+export interface VoiceArtifactRowDto {
+  readonly id: string;
+  readonly kind: string;
+  readonly mirror_path: string;
+  readonly version_id: string;
+  readonly created_at: string;
+}
+
+/** GET /voices/:id — the detail page's full read. */
+export interface VoiceDetailDto {
+  readonly persona: {
+    readonly id: string;
+    readonly display_name: string | null;
+    readonly slug: string | null;
+    readonly byline: string | null;
+    readonly mode: string;
+    readonly registers: string[] | null;
+    readonly seed_artifact_id: string | null;
+    readonly seed_sha256: string | null;
+    readonly seed_authored_by: string | null;
+    readonly seed_updated_at: string | null;
+    readonly current_profile_id: string | null;
+    readonly active_run_id: string | null;
+  };
+  readonly status: VoiceStatusDto;
+  readonly snapshot: VoiceSnapshotDto | null;
+  readonly seedMarkdown: string;
+  readonly samples: VoiceSampleDto[];
+  readonly profiles: VoiceProfileRowDto[];
+  readonly runs: VoiceRunRowDto[];
+  readonly artifacts: VoiceArtifactRowDto[];
+  readonly projects: { readonly id: string; readonly slug: string; readonly title: string }[];
+}
+
+export interface AddVoiceSampleDto {
+  /** Pasted text, or a quarantine key for an uploaded file (the PRB.02 convert seam). */
+  readonly text?: string;
+  readonly quarantineKey?: string;
+  readonly title?: string;
+}
+
+export interface AddedVoiceSampleDto {
+  readonly itemId: string;
+  readonly sampleVersionId: string;
+  /** the refreshed included-corpus word count (the sheet's estimate re-renders from this; REQ-PERSONA-3). */
+  readonly words: number;
+  readonly status: VoiceStatusDto | null;
+}
+
+export interface SaveVoiceSeedDto {
+  readonly description?: string;
+  readonly byline?: string;
+  readonly registers?: string[];
+}
+
+export interface SavedVoiceSeedDto {
+  readonly seedSha256: string;
+  readonly status: VoiceStatusDto | null;
+}
+
+/** GET /voices/:id/estimate — the tier figure + the corpus words it was computed for. */
+export interface VoiceEstimateDto extends EstimateDto {
+  readonly words: number;
+  readonly samples: number;
+  readonly tier: string;
+}
+
+export interface BuildVoiceDto {
+  readonly tier?: "quick" | "full";
+  readonly projectId?: string;
+  readonly modelTier?: "base" | "balanced" | "frontier";
+  readonly idempotencyKey?: string;
+}
+
+export interface BuiltVoiceDto {
+  readonly runId: string;
+  readonly state: string;
+  readonly deduped?: boolean;
+}
+
+/** GET/PATCH /projects/:id/voice — the project's linked-voice facts (§9.6; REQ-DATA-32). */
+export interface ProjectVoiceDto {
+  readonly voiceMode: "linked" | "ad_hoc";
+  readonly personaId: string | null;
+  readonly name?: string | null;
+  readonly snapshotId?: string | null;
+  readonly profileSnapshotId?: string | null;
+  readonly status: VoiceStatusDto | null;
+  readonly snapshot?: VoiceSnapshotDto | null;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -460,6 +659,38 @@ export interface ApiClient {
   getBillingBalance(init?: RequestInitLite): Promise<BillingBalanceDto>;
   /** PRB.08 — record `credits.exhausted_prompt{action_taken}` when the exhaustion panel resolves (REQ-BETA-12). */
   recordExhaustedPrompt(actionTaken: string, init?: RequestInitLite): Promise<void>;
+  // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
+  /** The library's "Your voices" group — every persona + its shared pill. */
+  listVoices(init?: RequestInitLite): Promise<VoiceListRowDto[]>;
+  /** The §9.2 creation sheet — name + byline + optional description + Mode metadata. */
+  createVoice(req: CreateVoiceDto, init?: RequestInitLite): Promise<CreatedVoiceDto>;
+  /** The voice detail read: status + samples + build history + profile artifacts. */
+  getVoice(personaId: string, init?: RequestInitLite): Promise<VoiceDetailDto>;
+  /** Upload/paste a sample through the §9.5 model (REQ-INGEST-1); returns the refreshed corpus words. */
+  addVoiceSample(personaId: string, req: AddVoiceSampleDto, init?: RequestInitLite): Promise<AddedVoiceSampleDto>;
+  /** The per-item include/omit toggle (REQ-INGEST-4). */
+  setVoiceSampleIncluded(
+    personaId: string,
+    itemId: string,
+    included: boolean,
+    init?: RequestInitLite,
+  ): Promise<{ status: VoiceStatusDto | null }>;
+  /** The seed editor's save — recomputes the J9 hash and flips the pill live (§9.3; REQ-PERSONA-4). */
+  saveVoiceSeed(personaId: string, req: SaveVoiceSeedDto, init?: RequestInitLite): Promise<SavedVoiceSeedDto>;
+  /** The ≤500 ms tier estimate over the current included corpus (REQ-PERSONA-3). */
+  estimateVoice(personaId: string, tier: "quick" | "full", init?: RequestInitLite): Promise<VoiceEstimateDto>;
+  /** "Create and build" — a `profile_voice{tier}` run (§9.2 item 3). */
+  buildVoice(personaId: string, req: BuildVoiceDto, init?: RequestInitLite): Promise<BuiltVoiceDto>;
+  /** Cancel an open build run. */
+  cancelVoiceRun(runId: string, init?: RequestInitLite): Promise<{ runId: string; state: string }>;
+  /** The project's linked-voice facts (the run-sheet line / picker chip; §9.6). */
+  getProjectVoice(projectId: string, init?: RequestInitLite): Promise<ProjectVoiceDto>;
+  /** REQ-DATA-32 — pin the project's voice (personaId null ⇒ "No voice" / ad-hoc). */
+  setProjectVoice(
+    projectId: string,
+    req: { personaId: string | null; profileSnapshotId?: string | null },
+    init?: RequestInitLite,
+  ): Promise<ProjectVoiceDto>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -645,6 +876,84 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ action_taken: actionTaken }),
+      });
+    },
+    // ---- PRB.10 — Quick Voice ----
+    async listVoices(init): Promise<VoiceListRowDto[]> {
+      const body = await json<{ voices: VoiceListRowDto[] }>("/voices", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+      return body.voices;
+    },
+    async createVoice(req, init): Promise<CreatedVoiceDto> {
+      return json<CreatedVoiceDto>("/voices", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getVoice(personaId, init): Promise<VoiceDetailDto> {
+      return json<VoiceDetailDto>(`/voices/${encodeURIComponent(personaId)}`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async addVoiceSample(personaId, req, init): Promise<AddedVoiceSampleDto> {
+      return json<AddedVoiceSampleDto>(`/voices/${encodeURIComponent(personaId)}/samples`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async setVoiceSampleIncluded(personaId, itemId, included, init): Promise<{ status: VoiceStatusDto | null }> {
+      return json<{ status: VoiceStatusDto | null }>(
+        `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({ included }),
+        },
+      );
+    },
+    async saveVoiceSeed(personaId, req, init): Promise<SavedVoiceSeedDto> {
+      return json<SavedVoiceSeedDto>(`/voices/${encodeURIComponent(personaId)}/seed`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async estimateVoice(personaId, tier, init): Promise<VoiceEstimateDto> {
+      return json<VoiceEstimateDto>(
+        `/voices/${encodeURIComponent(personaId)}/estimate?tier=${encodeURIComponent(tier)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async buildVoice(personaId, req, init): Promise<BuiltVoiceDto> {
+      return json<BuiltVoiceDto>(`/voices/${encodeURIComponent(personaId)}/build`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async cancelVoiceRun(runId, init): Promise<{ runId: string; state: string }> {
+      return json<{ runId: string; state: string }>(`/runs/${encodeURIComponent(runId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+    },
+    async getProjectVoice(projectId, init): Promise<ProjectVoiceDto> {
+      return json<ProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async setProjectVoice(projectId, req, init): Promise<ProjectVoiceDto> {
+      return json<ProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
       });
     },
   };

@@ -64,6 +64,26 @@ export interface RigorOption {
   readonly selected: boolean;
 }
 
+/**
+ * The sheet's voice line (PRB.10; §9.6). `linked` renders the persona name + the shared pill (the api's
+ * `deriveVoiceStatus` projection — never re-derived in the sheet); `ad_hoc` renders the "No voice"
+ * default (REQ-PERSONA-20). A stale/untested/never-built voice NEVER blocks the run — the line is a fact
+ * plus an optional priced "Update voice first" action (§9.3's one verb), not a gate.
+ */
+export interface RunSheetVoice {
+  readonly mode: "linked" | "ad_hoc";
+  readonly personaId?: string;
+  readonly name?: string | null;
+  /** the shared pill's label + tone (server-computed); absent for `ad_hoc`. */
+  readonly pill?: { readonly label: string; readonly tone: string };
+  /** the profile snapshot build date the run will write against (ISO), when pinned. */
+  readonly snapshotAt?: string | null;
+  /** the priced chained action — set only when the pill's action is `update_voice`. */
+  readonly updateEstimateCredits?: number;
+  /** the form action the update button POSTs to (`/p/:slug/update-voice`). */
+  readonly updateAction?: string;
+}
+
 export interface RunSheetView {
   readonly workflow: WorkflowKey;
   readonly title: RunSheetTitle;
@@ -80,6 +100,9 @@ export interface RunSheetView {
   readonly whyLine: string;
   /** the obligation scope line (REQ-OBJ-6), when the caller supplied obligation data. */
   readonly scopeLine?: string;
+  /** PRB.10 — the linked-voice line (§9.6): name + shared pill + the optional "Update voice first"
+   *  chained action. `ad_hoc` renders the "No voice" label; never a run blocker. */
+  readonly voice?: RunSheetVoice;
   /** the client's in-place recompute table (progressive enhancement). */
   readonly leverMatrix: LeverMatrix;
   /** the idempotency key minted at sheet open (§5.6; review 13 F34) — the Run click sends it. */

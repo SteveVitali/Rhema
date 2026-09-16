@@ -102,6 +102,37 @@ describe("deliverRun (orchestrator wiring)", () => {
     expect(deps.eventWriter.events.some((e) => e.type === "boundary.attested")).toBe(true);
   });
 
+  it("PRB.10 — the delivered note records the voice facts (snapshot id + build date + mode) on the correspondence row", async () => {
+    const result = await deliverRun(
+      { ...deps, store },
+      {
+        billingAccountId: "ba_seed",
+        holdLedgerId: "hold_1",
+        spentCredits: 42,
+        capCredits: 100,
+        delivery: delivery({
+          personaProfileSnapshotId: "pp_snap_1",
+          personaSnapshotAt: "2026-08-20T00:00:00Z",
+          voiceMode: "linked",
+        }),
+      },
+    );
+    expect(result.ok).toBe(true);
+    const corr = (
+      await db.client.query(
+        "select persona_profile_snapshot_id, persona_snapshot_at, voice_mode from correspondence_items where run_id=$1",
+        [RUN],
+      )
+    ).rows[0] as {
+      persona_profile_snapshot_id: string | null;
+      persona_snapshot_at: Date | null;
+      voice_mode: string | null;
+    };
+    expect(corr.persona_profile_snapshot_id).toBe("pp_snap_1");
+    expect(corr.persona_snapshot_at?.toISOString()).toBe("2026-08-20T00:00:00.000Z");
+    expect(corr.voice_mode).toBe("linked");
+  });
+
   // NB: an unfetched citation no longer hard-fails delivery (Path B / ADR-006) — it is stripped + downgraded.
   // A genuine validation failure (a sidecar that fails its schema) still ends the run failed(validation).
   it("a delivery-validation (sidecar) failure ends the run failed(validation), nothing committed", async () => {

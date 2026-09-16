@@ -794,6 +794,53 @@ export async function finalizeRun(
       at: deps.clock.now(),
     });
     await revokeRunCredentials(tx, args.runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
+    // PRB.10 — a completed persona build catalogs its snapshot (§9.3 "stored facts"): the persona_profiles
+    // row every staleness read diffs against, from the facts FROZEN into inputs.snapshot at creation (never
+    // re-derived from mutable persona state) + the artifact ids the committed steps produced. The persona's
+    // current_profile_id points at it and active_run_id clears — all inside the finalize transaction.
+    const runRow = (
+      await tx.query(`select workflow, persona_id, inputs from runs where id = $1`, [args.runId])
+    ).rows[0] as { workflow: string; persona_id: string | null; inputs: Record<string, unknown> | string } | undefined;
+    const runInputs =
+      typeof runRow?.inputs === "string" ? (JSON.parse(runRow.inputs) as Record<string, unknown>) : (runRow?.inputs ?? {});
+    const snap = (runInputs.snapshot ?? null) as Record<string, unknown> | null;
+    if (
+      runRow?.persona_id &&
+      (runRow.workflow === "profile_voice" || runRow.workflow === "refresh_voice" || runRow.workflow === "calibrate_voice")
+    ) {
+      const produced = await tx.query(
+        `select distinct av.artifact_id from steps s
+           join artifact_versions av on av.id = any(s.produced_version_ids)
+          where s.run_id = $1 and s.state = 'done'`,
+        [args.runId],
+      );
+      const artifactIds = (produced.rows as { artifact_id: string }[]).map((r) => r.artifact_id);
+      const profileId = deps.ids("pp");
+      await tx.query(
+        `insert into persona_profiles
+           (id, persona_id, built_by_run_id, built_at, tier, seed_sha256, sample_set_hash, sample_set,
+            corpus_size_at_build, calibration_status, artifact_ids)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [
+          profileId,
+          runRow.persona_id,
+          args.runId,
+          deps.clock.now(),
+          typeof snap?.tier === "string" ? snap.tier : null,
+          typeof snap?.seed_sha256 === "string" ? snap.seed_sha256 : null,
+          typeof snap?.sample_set_hash === "string" ? snap.sample_set_hash : null,
+          JSON.stringify(snap?.sample_set ?? {}),
+          typeof snap?.corpus_size_at_build === "number" ? snap.corpus_size_at_build : null,
+          // a Quick Voice's resting calibration state is 'untested' (§9.3 row 6 — a fact about the tier).
+          typeof snap?.calibration_status === "string" ? snap.calibration_status : "untested",
+          artifactIds,
+        ],
+      );
+      await tx.query(
+        `update personas set current_profile_id = $2, active_run_id = null where id = $1`,
+        [runRow.persona_id, profileId],
+      );
+    }
   });
   await deps.heartbeats.clear(args.runId);
   // the run token is revoked implicitly: a terminal state rejects every further internal call (see `fence`).
