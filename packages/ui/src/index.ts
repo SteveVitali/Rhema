@@ -24,7 +24,7 @@ export type {
 
 // The beta dossier reading surfaces (PRB.04, §5.5/§5.7/§6.6). All text-agnostic; they render the read models
 // @rhema/findings-core builds. Disposition verb controls + gate cards are PRB.05; diffs PRB.06.
-export { TrustChip, ObligationChip, VersionObligationChip } from "./chips.js";
+export { TrustChip, ObligationChip, VersionObligationChip, BalanceChip } from "./chips.js";
 export type { ObligationStateKind } from "./chips.js";
 export { RunCard, LiveFeed } from "./run-card.js";
 export type { RunCardLabels, LiveFeedLabels, FeedRow } from "./run-card.js";

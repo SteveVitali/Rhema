@@ -17,6 +17,8 @@ import {
   voicesElement,
   voiceNewElement,
   voiceDetailElement,
+  settingsElement,
+  usageElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -74,6 +76,21 @@ export function createWebApp(deps: WebDeps): Hono {
   const app = new Hono();
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
 
+  /** PRB.12 — mint a client-whitelisted analytics event through the api intake (POST /analytics/events).
+   *  Fire-and-forget: telemetry NEVER breaks a page render, and an opted-out user simply records nothing. */
+  const emit = (
+    session: SessionHeaders,
+    event: string,
+    props: Record<string, unknown> = {},
+    ids: { projectId?: string; runId?: string } = {},
+  ): void => {
+    try {
+      void deps.dataSource.postAnalyticsEvent(session, { event, props, ...ids }).catch(() => undefined);
+    } catch {
+      // a seam that isn't bound yet drops the event — telemetry is never fatal to a page render.
+    }
+  };
+
   app.get("/healthz", (c) => c.json({ ok: true, service: "web" }));
 
   // Public: the invite page (+ read-only sample dossier).
@@ -129,7 +146,52 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const rows = (await deps.dataSource.listProjects(session)).map(toProjectRowView);
-    return c.html(renderDocument(c.req.path, projectsElement, { projects: rows }));
+    // PRB.12 — the §14.5 level-0 balance chip rides the nav (best-effort: a billing-read miss never
+    // blocks the list).
+    const bal = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+    return c.html(renderDocument(c.req.path, projectsElement, {
+      projects: rows,
+      ...(bal ? { balance: { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 } } : {}),
+    }));
+  });
+
+  // ---- PRB.12 — Settings (the REQ-PROD-15 toggle) + the §14.5 usage glance + the dwell beacon sink ----
+  app.get("/settings", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const privacy = await deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false }));
+    return c.html(renderDocument(c.req.path, settingsElement, {
+      privacy: { analyticsOptOut: privacy.analyticsOptOut, saved: c.req.query("saved") === "1" },
+    }));
+  });
+  app.post("/settings/privacy", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    // The checkbox posts "on" when sharing is on — the flag it binds is the inverse (opt-OUT).
+    const optOut = form.analytics !== "on";
+    await deps.dataSource.setAnalyticsOptOut(session, optOut);
+    return c.redirect("/settings?saved=1");
+  });
+  app.get("/usage", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const usage = await deps.dataSource.getUsage(session).catch(() => undefined);
+    return c.html(renderDocument(c.req.path, usageElement, {
+      ...(usage ? { usage } : {}),
+      dwellSurface: "usage",
+    }));
+  });
+  // The dwell heartbeat's sink (REQ-BETA-10): the beacon posts {surface, ms}; the route wraps it into the
+  // whitelisted `surface.dwell` mint. A missing/malformed body is a quiet 204 — heartbeats are lossy by design.
+  app.post("/a/dwell", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.body(null, 401);
+    const body = (await c.req.json().catch(() => null)) as { surface?: unknown; ms?: unknown } | null;
+    if (typeof body?.surface === "string" && typeof body?.ms === "number" && body.ms > 0) {
+      emit(session, "surface.dwell", { surface: body.surface.slice(0, 40), ms: Math.min(Math.round(body.ms), 3_600_000) });
+    }
+    return c.body(null, 204);
   });
 
   // Auth-gated: the flat project view (canonical /p/:project) + the Needs-you surface (PRB.05: the open
@@ -155,10 +217,18 @@ export function createWebApp(deps: WebDeps): Hono {
     // a bounced disposition write (a gate row's per-finding override) re-renders with the error under
     // that row's controls — never dropped silently.
     const derror = c.req.query("derror");
+    // PRB.12 — the presence timer actually rendered on this page for a card with a live countdown
+    // (§6.4 item 2; REQ-SPEC-18). One mint per timer shown.
+    for (const g of gates) {
+      if (g.presenceDeadlineAt && !g.pausedWhileReading) {
+        emit(session, "gate.presence_timer_shown", { kind: g.kind }, { projectId: row.id, runId: g.runId });
+      }
+    }
     return c.html(
       renderDocument(c.req.path, projectElement, {
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
         gates,
+        dwellSurface: "project",
         decisions,
         approvalOverrides,
         ...(projectVoice ? { projectVoice } : {}),
@@ -310,6 +380,10 @@ export function createWebApp(deps: WebDeps): Hono {
           .catch(() => null)
       )?.estimateCredits;
     }
+    // PRB.12 — the staleness banner showing IS the `voice.staleness_shown` event (state = the pill's state).
+    if (pv?.status?.action === "update_voice") {
+      emit(session, "voice.staleness_shown", { state: pv.status.state }, { projectId: row.id });
+    }
     const view = {
       ...buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl),
       ...(pv
@@ -436,9 +510,19 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
     const savedFindingId = c.req.query("disposed") || undefined;
+    // PRB.12 — the reading surface's view emissions (the intake whitelist's whole reason to exist):
+    // the report view itself, each rendered finding, and the second-read section when it has content.
+    emit(session, "run.report_viewed", { cost_actual: dossier.runCard.spentCredits }, { projectId: row.id, runId });
+    for (const f of dossier.findings) {
+      emit(session, "finding.viewed", { severity: f.severity, phase_of_origin: f.origin }, { projectId: row.id, runId });
+    }
+    if (dossier.findings.some((f) => f.origin === "second_read")) {
+      emit(session, "secondread.opened", {}, { projectId: row.id, runId });
+    }
     return c.html(renderDocument(c.req.path, dossierElement, {
       dossier,
       compact: isPhoneRequest(c),
+      dwellSurface: "dossier",
       ...(savedFindingId ? { triage: { savedFindingId } } : {}),
     }));
   });
@@ -569,6 +653,7 @@ export function createWebApp(deps: WebDeps): Hono {
           doc,
           ...(c.req.query("noted") ? { noteSaved: true } : {}),
         },
+        dwellSurface: "editor",
       }),
     );
   });

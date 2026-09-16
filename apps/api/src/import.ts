@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sha256Hex, type ContentStore } from "@rhema/mirror";
 import type { ConversionResult } from "@rhema/contracts";
+import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 
@@ -106,6 +107,8 @@ export interface ImportApiDeps {
   readonly contentStore: ContentStore;
   readonly converter: Converter;
   readonly ids: () => string;
+  /** for the `draft.imported` analytics write (PRB.12); defaults to wall-clock when unset. */
+  readonly clock?: { now(): Date };
 }
 
 /** The import routes: preview a conversion, and create the draft from it (session-authed). */
@@ -131,6 +134,26 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     const created = await createImportedDraft(
       { db: deps.db, contentStore: deps.contentStore, ids: deps.ids },
       { projectId, workspaceId: principal.workspaceId, actor: { kind: "user", userId: principal.userId }, result },
+    );
+    // draft.imported (PRB.12 emission audit — this route owns it): `origin` is the converted source
+    // format; `is_new_manuscript` = the import opened the project (its first draft); `venue_set`
+    // reports whether the partner had already declared a venue on the project. Post-commit and
+    // non-fatal: a telemetry failure is logged, never a failed import.
+    const venue = (
+      await deps.db.query("select venue from projects where id = $1", [projectId]).catch(() => ({ rows: [] as unknown[] }))
+    ).rows[0] as { venue: string | null } | undefined;
+    await recordAnalyticsEvent(deps.db, { ids: deps.ids, clock: deps.clock ?? { now: () => new Date() } }, {
+      userId: principal.userId,
+      workspaceId: principal.workspaceId,
+      projectId,
+      event: "draft.imported",
+      props: {
+        origin: result.sourceFormat,
+        is_new_manuscript: created.n === 1,
+        venue_set: venue?.venue != null,
+      },
+    }).catch((err: unknown) =>
+      console.error("[api] draft.imported analytics failed:", err instanceof Error ? err.message : err),
     );
     return c.json({ draft: created }, 201);
   });

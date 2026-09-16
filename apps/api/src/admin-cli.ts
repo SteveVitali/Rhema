@@ -23,6 +23,9 @@ import {
   suspendAccount,
   reinstateAccount,
   recordAnalyticsEvent,
+  materializeRunAnalytics,
+  computeBetaDashboard,
+  renderBetaDashboard,
   type EntryDeps,
 } from "@rhema/ledger";
 import { systemClock, randomUlids, RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
@@ -68,6 +71,7 @@ const USAGE = `rhema admin — operator billing actions (every action is audited
   suspend      --billing-account <id> [--workspace <id>] [--note <s>]
   reinstate    --billing-account <id> [--workspace <id>] [--note <s>]
   wtp          --workspace <id> --amount <usd> [--source interview]
+  beta-report  [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>]   (default: the trailing 7 days)
 `;
 
 /**
@@ -192,6 +196,25 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
         });
         out(eventId ? `wtp.recorded {source:${source}, amount:$${amount}} → ${eventId}` : `wtp skipped — user opted out of analytics`);
         return 0;
+      }
+      case "beta-report": {
+        // PRB.12 — the weekly REQ-PROD-16 readout: refresh the domain→stream projection for the window
+        // (idempotent — mat:* dedupe keys make a re-run a no-op), then render every REQ-BETA-18 gate
+        // metric beside its registered threshold. READS the gates; the decision is the beta review's.
+        const now = deps.clock.now();
+        const to = flag(rest, "to") ? new Date(`${flag(rest, "to")}T00:00:00Z`) : now;
+        const from = flag(rest, "from")
+          ? new Date(`${flag(rest, "from")}T00:00:00Z`)
+          : new Date(to.getTime() - 7 * 24 * 3600 * 1000);
+        if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from >= to) {
+          out(USAGE);
+          return 2;
+        }
+        const mat = await materializeRunAnalytics(deps.systemExec, deps, { from, to });
+        const d = await computeBetaDashboard(deps.systemExec, { window: { from, to }, now });
+        out(renderBetaDashboard(d));
+        out(`\n(materializer: ${mat.inserted}/${mat.attempted} projected rows inserted)`);
+        return d.readout.stopTripped ? 1 : 0; // a tripped stop clause is a nonzero exit — mechanical, not vibes
       }
       default:
         out(USAGE);

@@ -23,13 +23,26 @@ export interface AnalyticsInput {
   readonly tier?: string;
   readonly event: AnalyticsEventName;
   readonly props: Record<string, unknown>;
+  /**
+   * When the event happened. Live emitters leave it unset (the ledger clock stamps it); the
+   * domain→stream materializer passes the source fact's timestamp (a delivered review's
+   * `delivered_at`, a run's `created_at`), so a backfilled row lands in the week it belongs to —
+   * not the week the projector ran.
+   */
+  readonly at?: Date;
+  /**
+   * Idempotent-intake key (PRB.12; 0024 `dedupe_key`). The domain→stream materializer writes with
+   * `mat:<event>:<source row key>`; a replayed projection is a no-op (the partial unique index
+   * rejects the duplicate, `on conflict … do nothing` absorbs it). Live emitters leave it unset.
+   */
+  readonly dedupeKey?: string;
 }
 
 /**
  * Validate + persist one analytics event. Returns the row id, or `null` when the user has opted out of
- * product analytics (REQ-PROD-15 — the row simply does not exist for them; the absence IS the honor).
- * Throws on an unknown event name or a payload that fails the catalogue schema — a bad emitter is a bug,
- * never a silently-dropped write.
+ * product analytics (REQ-PROD-15 — the row simply does not exist for them; the absence IS the honor) or
+ * when the `dedupe_key` already exists (an idempotent-intake replay). Throws on an unknown event name or
+ * a payload that fails the catalogue schema — a bad emitter is a bug, never a silently-dropped write.
  */
 export async function recordAnalyticsEvent(
   tx: SqlClient,
@@ -56,9 +69,11 @@ export async function recordAnalyticsEvent(
   );
 
   const id = deps.ids("anev");
-  await tx.query(
-    `insert into analytics_events (id, user_id, workspace_id, project_id, run_id, event, props, at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+  const inserted = await tx.query(
+    `insert into analytics_events (id, user_id, workspace_id, project_id, run_id, event, props, dedupe_key, at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+     on conflict (dedupe_key) where dedupe_key is not null do nothing
+     returning id`,
     [
       id,
       parsed.user_id,
@@ -67,8 +82,9 @@ export async function recordAnalyticsEvent(
       parsed.run_id ?? null,
       parsed.event,
       JSON.stringify(parsed.props),
-      deps.clock.now(),
+      input.dedupeKey ?? null,
+      input.at ?? deps.clock.now(),
     ],
   );
-  return id;
+  return (inserted.rows[0] as { id: string } | undefined)?.id ?? null;
 }

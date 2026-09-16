@@ -375,9 +375,50 @@ export interface EditorReviseDto {
 /** GET /billing/balance — the account's spendable credits + suspension + the beta Payment Link. */
 export interface BillingBalanceDto {
   readonly spendableCredits: number;
+  /** PRB.12 — credits held against in-flight runs (the §14.5 level-0 chip's hover line). */
+  readonly heldCredits?: number;
   readonly suspended: boolean;
   readonly clawbackDebt: number;
   readonly paymentLinkUrl?: string;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// PRB.12 — beta analytics (REQ-PROD-15/16; design/9 §7.2). The client mint accepts ONLY the whitelisted
+// view/dwell/timer events (`CLIENT_ANALYTICS_EVENTS` in @rhema/contracts); server-owned facts are never
+// client-forgeable.
+// ---------------------------------------------------------------------------------------------------------
+
+/** POST /analytics/events — a client-whitelisted event mint (view/dwell/timer signals). */
+export interface AnalyticsEventRequestDto {
+  readonly event: string;
+  readonly props?: Record<string, unknown>;
+  readonly projectId?: string;
+  readonly runId?: string;
+  /** retry-safe mint: a heartbeat/beacon can name its key so a replayed POST lands once. */
+  readonly dedupeKey?: string;
+}
+
+/** GET/POST /settings/privacy — the account's analytics opt-out flag. */
+export interface PrivacySettingsDto {
+  readonly analyticsOptOut: boolean;
+}
+
+/** GET /billing/usage — the level-1 usage glance: balance + the account's recent runs' spend. */
+export interface UsageRunDto {
+  readonly runId: string;
+  readonly projectId: string | null;
+  readonly workflow: string;
+  readonly state: string;
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+  readonly spentCredits: number;
+  readonly createdAt: string;
+  readonly endedAt: string | null;
+}
+export interface UsageDto {
+  readonly spendableCredits: number;
+  readonly heldCredits: number;
+  readonly runs: readonly UsageRunDto[];
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -735,6 +776,18 @@ export interface ApiClient {
   getBillingBalance(init?: RequestInitLite): Promise<BillingBalanceDto>;
   /** PRB.08 — record `credits.exhausted_prompt{action_taken}` when the exhaustion panel resolves (REQ-BETA-12). */
   recordExhaustedPrompt(actionTaken: string, init?: RequestInitLite): Promise<void>;
+  // ---- PRB.12 — beta analytics + privacy + the usage glance ----
+  /** Mint a client-whitelisted analytics event (view/dwell/timer). `recorded:false` ⇒ the user opted out. */
+  postAnalyticsEvent(
+    req: AnalyticsEventRequestDto,
+    init?: RequestInitLite,
+  ): Promise<{ ok: boolean; recorded: boolean }>;
+  /** The account's analytics opt-out flag (the Settings toggle's read). */
+  getPrivacySettings(init?: RequestInitLite): Promise<PrivacySettingsDto>;
+  /** Flip `analytics_opt_out` (REQ-PROD-15 — stops future writes AND hides existing rows from reads). */
+  setAnalyticsOptOut(analyticsOptOut: boolean, init?: RequestInitLite): Promise<PrivacySettingsDto>;
+  /** The level-1 usage glance: the balance + the account's recent runs' spend (P0.11 data). */
+  getUsage(init?: RequestInitLite): Promise<UsageDto>;
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
   /** The library's "Your voices" group — every persona + its shared pill. */
   listVoices(init?: RequestInitLite): Promise<VoiceListRowDto[]>;
@@ -988,6 +1041,33 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ action_taken: actionTaken }),
+      });
+    },
+    // ---- PRB.12 — analytics + privacy + usage ----
+    async postAnalyticsEvent(req, init): Promise<{ ok: boolean; recorded: boolean }> {
+      return json<{ ok: boolean; recorded: boolean }>("/analytics/events", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getPrivacySettings(init): Promise<PrivacySettingsDto> {
+      return json<PrivacySettingsDto>("/settings/privacy", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async setAnalyticsOptOut(analyticsOptOut, init): Promise<PrivacySettingsDto> {
+      return json<PrivacySettingsDto>("/settings/privacy", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ analyticsOptOut }),
+      });
+    },
+    async getUsage(init): Promise<UsageDto> {
+      return json<UsageDto>("/billing/usage", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
       });
     },
     // ---- PRB.10 — Quick Voice ----

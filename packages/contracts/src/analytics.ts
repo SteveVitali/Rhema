@@ -68,28 +68,36 @@ export const ANALYTICS_EVENTS = {
     estimate: z.number(),
     cap: z.number(),
     levers_shown: z.boolean().optional(),
+    cost_actual: z.number().optional(),
+    cost_estimate: z.number().optional(),
   }),
-  "run.lever_changed": z.object({ lever: z.string(), delta: z.number() }),
-  "run.launched": z.object({ kind: z.string(), rigor: rigorSchema, estimate: z.number() }),
+  "run.lever_changed": runEconomicsSchema.extend({ lever: z.string(), delta: z.number() }),
+  "run.launched": z.object({
+    kind: z.string(),
+    rigor: rigorSchema,
+    estimate: z.number(),
+    cost_actual: z.number().optional(),
+    cost_estimate: z.number().optional(),
+  }),
   "run.phase_started": runEconomicsSchema.extend({ phase: z.string() }),
   "run.phase_finished": runEconomicsSchema.extend({
     phase: z.string(),
     duration: z.number().optional(),
     cost: z.number().optional(),
   }),
-  "run.approval_opened": z.object({ approval: gateKindSchema }),
-  "run.approval_decided": z.object({
+  "run.approval_opened": runEconomicsSchema.extend({ approval: gateKindSchema }),
+  "run.approval_decided": runEconomicsSchema.extend({
     decision: z.string(),
     latency: z.number().optional(),
     auto_proceeded: z.boolean().optional(),
   }),
-  "run.stopped": z.object({ phase: z.string(), partials_kept: z.boolean().optional() }),
+  "run.stopped": runEconomicsSchema.extend({ phase: z.string(), partials_kept: z.boolean().optional() }),
   "run.completed": runEconomicsSchema.extend({
     cap_hit: z.boolean().optional(),
     verdict: z.string().optional(),
   }),
-  "run.failed": z.object({ stage: z.string(), refunded: z.boolean() }),
-  "run.report_viewed": z.object({}),
+  "run.failed": runEconomicsSchema.extend({ stage: z.string(), refunded: z.boolean() }),
+  "run.report_viewed": runEconomicsSchema.extend({}),
   // §3.5 additions
   "finding.applied": z.object({ severity: z.string() }), // the free Apply verb (§5.7)
   "triage.mode_entered": z.object({}),
@@ -185,3 +193,93 @@ export function parseAnalyticsEvent(name: string, envelope: unknown, props: unkn
   const p = ANALYTICS_EVENTS[n].parse(props);
   return { event: n, ...env, props: p };
 }
+
+/**
+ * The events a session-authed CLIENT may mint via `POST /analytics/events` (PRB.12): only
+ * view/dwell/timer signals the server cannot observe itself. Server-owned facts (run lifecycle,
+ * billing, ledger, imports/exports) are emitted api-side or materialized by the pipeline —
+ * never trusting a client to attest them keeps spend events forgery-proof.
+ */
+export const CLIENT_ANALYTICS_EVENTS = [
+  "surface.dwell",
+  "letter.rated",
+  "secondread.opened",
+  "finding.viewed",
+  "run.report_viewed",
+  "gate.presence_timer_shown",
+  "voice.staleness_shown", // the staleness banner's render — a view signal only the client sees
+] as const satisfies readonly AnalyticsEventName[];
+export type ClientAnalyticsEventName = (typeof CLIENT_ANALYTICS_EVENTS)[number];
+export const CLIENT_ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set(CLIENT_ANALYTICS_EVENTS);
+
+/**
+ * The pre-registered REQ-BETA-18 gate registry (verbatim values, one row per registered
+ * threshold). The weekly dashboard renders every metric beside its row here — the readout is
+ * mechanical: observed vs threshold, never vibes. `direction` is the comparison the gate makes:
+ * "floor" passes when observed ≥ value, "ceiling" when observed ≤ value, "exact" when equal.
+ */
+export interface BetaGateThreshold {
+  readonly value: number;
+  readonly direction: "floor" | "ceiling" | "exact";
+  /** which REQ-BETA-18 clause registers it. */
+  readonly clause: "proceed" | "stop";
+  /** the gate language printed beside the metric (verbatim REQ-BETA-18). */
+  readonly label: string;
+}
+export const BETA_GATE_THRESHOLDS = {
+  repeatCycleRate: {
+    value: 0.5,
+    direction: "floor",
+    clause: "proceed",
+    label: "≥50% run a manuscript through ≥2 full rounds unprompted",
+  },
+  acceptAdaptShare: {
+    value: 0.55,
+    direction: "floor",
+    clause: "proceed",
+    label: "≥55% of dispositions are accept+adapt",
+  },
+  secondManuscriptImport: {
+    value: 0.6,
+    direction: "floor",
+    clause: "proceed",
+    label: "≥60% import a second manuscript",
+  },
+  paidConversion: {
+    value: 0.4,
+    direction: "floor",
+    clause: "proceed",
+    label: "≥40% convert to paid",
+  },
+  round2Rate: {
+    value: 0.2,
+    direction: "floor",
+    clause: "stop",
+    label: "stop if fewer than 20% take a manuscript past one round",
+  },
+  medianStatedWtp: {
+    value: 20,
+    direction: "floor",
+    clause: "stop",
+    label: "stop if stated WTP medians below $20",
+  },
+  autoProceedShare: {
+    value: 0.4,
+    direction: "ceiling",
+    clause: "stop",
+    label: "stop if >40% of gates auto-proceed",
+  },
+  cancelRate: {
+    value: 0.08,
+    direction: "ceiling",
+    clause: "stop",
+    label: "stop if cancel rate exceeds 8%",
+  },
+  boundaryAttestationFailures: {
+    value: 0,
+    direction: "exact",
+    clause: "stop",
+    label: "boundary-attestation failures must be zero",
+  },
+} as const satisfies Record<string, BetaGateThreshold>;
+export type BetaGateMetric = keyof typeof BETA_GATE_THRESHOLDS;
