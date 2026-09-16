@@ -95,6 +95,14 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
   re-verified with `verified_at` (§16.3 #14; REQ-GENRE-3).
 - **H5 — Showcase content decision** (before P1.17): which essay, licensed, Essay-protocol, with
   ≥1 contradicted Tier-1 claim (§16.3 #21; REQ-POS-3).
+- **H6 — Prod-launch accounts + the Stripe live-mode decision** (prod-launch round, 2026-09-16;
+  before `28f_PRB.15` Stage B): prod domain + DNS access; the GCP prod footing (a dedicated project
+  or `rhema-507501` with a `prod` stack); the prod Secret Manager entries (Anthropic key, RS256
+  run-token key, Stripe secret + webhook signing secret, Resend key, Google OAuth client,
+  `ANTHROPIC_ADMIN_KEY_SECRET`, `OPS_ALERT_WEBHOOK_URL`); the **Stripe live-mode activation
+  decision** (answers the one open unknown — if not activated, `28h_PRB.17`'s real-money leg is a
+  DEFERRALS row); the Google OAuth consent screen published for the prod domain; the Resend
+  sending-domain verification; a stated prod budget.
 
 ## The chain
 
@@ -144,8 +152,14 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 26 | `26_PRB.10__quick-voice.md` | RB | optional inline Quick Voice + sample uploads + pill |
 | 27 | `27_PRB.11__export-and-ai-use.md` | RB | export md/txt/docx + AI-use statement (slice S1) |
 | 28 | `28_PRB.12__beta-analytics-and-dashboard.md` | RB | event catalogue + REQ-BETA events + weekly gate dashboard |
-| — | `28a_HUMAN-H3__beta-partners-and-gate-registration.md` | RB | **HUMAN** — partners + deal + gate pre-registration; **beta opens**, ≥90 days, ≥15 active partners |
-| — | `28b_GATE-G3__beta-gates.md` | RB→1 | **GATE** (operator) — REQ-BETA-18 gates; full-IDE bodies are written after this reads |
+| — | `28a_HUMAN-H3__beta-partners-and-gate-registration.md` | RB | **HUMAN** — partners + deal + gate pre-registration; **beta opens**, ≥90 days, ≥15 active partners. **Deferred in part 2026-09-16** (partner recruitment / REQ-BETA-17 deal / house credits — users pay their own way; the sample-dossier sign-off D-PRB.01-2 stays operator-owed; the REQ-BETA-18 thresholds are already pre-registered in code) — ledger § GATE DECISIONS |
+| — | `28b_GATE-G3__beta-gates.md` | RB→1 | **GATE** (operator) — REQ-BETA-18 gates; full-IDE bodies are written after this reads. **Deferred 2026-09-16** — the ≥90-day / ≥15-active-partner window is not blocking; the gate stays parked in the chain pending real-world data — ledger § GATE DECISIONS |
+| 28c | `28c_HUMAN-H6__prod-launch-accounts.md` | LV | **HUMAN** — prod-launch prerequisites (prod-launch round, 2026-09-16, **ADR-008**): prod domains/DNS, the GCP prod footing, Secret Manager entries, the **Stripe live-mode decision**, OAuth consent + Resend domain for prod |
+| 28d | `28d_PRB.13__open-selfserve-signup.md` | LV | open self-serve signup + the 0-credit purchase path (REQ-BETA-19 amended): `signup.mode` flip, abuse throttle, no §16.4 claims |
+| 28e | `28e_PRB.14__run-resilience-and-cost-fidelity.md` | LV | the stranded-run sweeps (D-P0.08-4/-10-2), ledger call-sites (D-P0.11-1), provisional `usage.tick` (D-P0.08-2), estimator fold (D-P0.15k-1), `PROTOCOLS_VERSION` provenance (D-P0.04-2) — deterministic halves; live legs → PRB.17 |
+| 28f | `28f_PRB.15__prod-bringup.md` | LV | the `prod` stage profile + Pulumi prod stack + domains/TLS + image set + seed/migration runbook (Stage A offline); **`pulumi up prod`** + migrations + smoke + the D-P0.13-2 write (Stage B operator-gated) |
+| 28g | `28g_PRB.16__prod-golden-path-verification.md` | LV | one real user journey end-to-end on prod — every live surface leg asserted from rows/logs (D-P0.01-3, D-PRB.01…11 live rows, D-P0.08b-1…3, D-P0.09-3, D-P0.15h-5, D-P0.15i legs re-verified) |
+| 28h | `28h_PRB.17__billing-live-and-ops-legs.md` | LV | the real-money channel on prod (D-PRB.08-1: Payment-Link purchase live-or-test per the H6 Stripe answer, Usage & Cost reconcile, >2% alert, admin CLI), PRB.14's live halves, live `beta-report` (D-PRB.12-1) |
 | 29 | `29_P1.01__design-system-and-ide-shell.md` | 1 | [skeleton] tokens, panes, a11y, state catalogue |
 | 30 | `30_P1.02__page-editor.md` | 1 | [skeleton] schema-first Tiptap Page, decorations, proposal card, provenance |
 | 31 | `31_P1.03__autosave-collab-restore.md` | 1 | [skeleton] Yjs/Hocuspocus four-layer autosave, restore points |
@@ -356,8 +370,11 @@ log P0.14) · 17→P0.14 · 18→P0.14 · 19→P1.17 · 20→P0.14
 8,9→P1.02 · 10→**deferred 1.x** · 11–13→P1.17
 
 **REQ-BETA:** 1→this manifest (chain trace) · 2→PRB.12 · 3→this manifest (tags) · 4→ledger budget
-row · 5→PRB.12 · 6→PRB.05 · 7,8→PRB.06 · 9–13→PRB.12 (11's emission PRB.02) · 14,15→PRB.08 ·
-16,17→HUMAN H3 · 18→gate G3 · 19→PRB.01 · 20→gates G1–G3 (this manifest) · 21→this manifest +
+row · 5→PRB.12 · 6→PRB.05 · 7,8→PRB.06 · 9–13→PRB.12 (11's emission PRB.02) · 14,15→PRB.08
+(15's self-serve purchase path PRB.13) · 16,17→HUMAN H3 (**deferred 2026-09-16** — users pay their
+own way) · 18→gate G3 (**deferred** — parked pending real-world data; thresholds already
+pre-registered in PRB.12's `BETA_GATE_THRESHOLDS`) · 19→PRB.01 (invite machinery; **amended
+2026-09-16** — the open-signup surface → PRB.13) · 20→gates G1–G3 (this manifest) · 21→this manifest +
 PRB.01/PRB.07 · 22→spec §17 decision record (quoted at G3)
 
 **Deferred (1.x / Later / constraint-only) — target phase named:** REQ-IDE-20/21 (1.x seat pages);
@@ -390,6 +407,18 @@ has exactly one owner.
   from `@rhema/protocols`), not a live resolution; `.pnpmfile.cjs` path-resolution now covers `@rhema/evals`
   only; the ported skills are drift-checked against the vendored pin `packages/protocols/upstream-pin/`.
   Affects P0.01 (private-package wiring) and P0.03 (the protocols package now lands in-tree, tracked). **(ADR-002)**
+- **2026-09-16 (REQ-BETA-19 / §17 beta row — open self-serve paid launch):** the beta is no longer
+  private/invite-only — a **public self-serve signup** and **self-serve credit purchase via Stripe
+  Payment Links** are permitted ahead of the full-IDE launch, so the platform hosts paying users
+  while the H3 partner program (recruitment, the REQ-BETA-17 deal, house-credit grants) is
+  deferred. **Kept verbatim:** no PR / marketing site / launch moment (reserved for the full IDE),
+  no public pricing page beyond the purchase flow's needs, **no §16.4 efficacy/marketing claims on
+  any surface until GATE G2's LIFT criterion is met** (REQ-EVAL-19), Payment Links the one
+  real-money channel (REQ-BETA-15); the invite machinery stays for partner cohorts; REQ-BETA-18's
+  ≥90-day/≥15-active-partner gate still reads before the full-IDE bodies (G3 deferred, reads on
+  real-world usage). Annotated in the spec at the §17 banner + the Appendix A.13 note (original
+  text preserved — append-only). Affects PRB.01 (the invite gate becomes a mode flag — PRB.13 owns
+  the open-signup surface) and the whole `28c`–`28h` round. **(ADR-008)**
 
 ## Decomposition decisions (operator may veto; see the session report)
 
@@ -433,3 +462,4 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
 - **2026-09-09 — INSERT** `16_P0.15i` (PR #25): proxy-guaranteed server-side web research (cited⇒fetched provenance; AC3 live).
 - **2026-09-10 — INSERT** `16z_MAINT.1` (this PR): build-memory v2 migration (RUN 1 of 3 post-P0.15i follow-ups; ADR-004).
 - **2026-09-10 — INSERT** `16_P0.15j`, `16_P0.15k` (RUN 2 & 3 of the follow-ups): the fact-check citation-discipline eval, then the last live G1 legs. G1 now reads after `16_P0.15k`.
+- **2026-09-16 — INSERT round (prod launch — open self-serve signup + live legs).** Six rows slotted after `28b_GATE-G3` and before `29_P1.01`, synthesized from the open DEFERRALS rows + the operator's prod-launch decisions (**ADR-008**; REQ-BETA-19 amended — see § Spec amendments applied): `28c_HUMAN-H6` (prod accounts + the Stripe live-mode decision), `28d_PRB.13` (open self-serve signup + the 0-credit purchase path), `28e_PRB.14` (run resilience + cost fidelity — the stranded-run sweeps, ledger call-sites, provisional `usage.tick`, estimator fold, `PROTOCOLS_VERSION`), `28f_PRB.15` (prod bring-up, Stage A offline / Stage B operator-gated), `28g_PRB.16` (prod golden-path verification), `28h_PRB.17` (billing live + ops legs). H3 is **deferred in part** (partners/deal/house credits — users pay their own way; the sample-dossier sign-off stays operator-owed; thresholds already pre-registered in code) and **G3 is deferred** (parked pending real-world data) — ledger § GATE DECISIONS; H2/G2 stay deferred as before (HARD gate before marketing claims).
