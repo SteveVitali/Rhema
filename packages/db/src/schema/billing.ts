@@ -40,6 +40,8 @@ export const usageRecords = pgTable("usage_records", {
   credits: integer("credits").notNull(),
   source: text("source").notNull(),
   reconciled: boolean("reconciled").default(false),
+  // PRB.08 (0020; REQ-BILL-13): the provider's per-request id — the usage.reconcile join key.
+  providerRequestId: text("provider_request_id"),
 });
 
 export const creditLedger = pgTable("credit_ledger", {
@@ -150,4 +152,33 @@ export const stripeEvents = pgTable("stripe_events", {
   type: text("type").notNull(),
   payload: jsonb("payload").notNull(),
   receivedAt: timestamp("received_at").notNull().defaultNow(),
+  // PRB.08 (0020): set when the queued stripe.event job finished processing (§14.6 discipline audit).
+  processedAt: timestamp("processed_at"),
+});
+
+// PRB.08 (0020) — the operator CLI's audit trail (REQ-BETA-14: every grant/void recorded). Not tenant-scoped:
+// written only by the operator role, never on a user request.
+export const adminActions = pgTable("admin_actions", {
+  id: text("id").primaryKey(),
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
+  billingAccountId: text("billing_account_id"),
+  workspaceId: text("workspace_id"),
+  credits: integer("credits"),
+  note: text("note"),
+  ledgerId: text("ledger_id"),
+  at: timestamp("at").notNull().defaultNow(),
+});
+
+// PRB.08 (0020) — the beta's persisted analytics sink (REQ-BETA-12). Envelope columns lifted for queries;
+// props is the catalogue-validated payload (`parseAnalyticsEvent` at the write boundary).
+export const analyticsEvents = pgTable("analytics_events", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  workspaceId: text("workspace_id").notNull(),
+  projectId: text("project_id"),
+  runId: text("run_id"),
+  event: text("event").notNull(),
+  props: jsonb("props").notNull(),
+  at: timestamp("at").notNull().defaultNow(),
 });

@@ -25,6 +25,8 @@
     "@rhema/orchestrator": "workspace:*",
     "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
+    "@rhema/mirror": "workspace:*",
+    "@rhema/protocols": "workspace:*",
     "ioredis": "6.0.0",
     "pg": "8.23.0",
     "pg-boss": "12.30.0"

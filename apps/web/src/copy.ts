@@ -81,7 +81,13 @@ export const COPY = {
     why: "Why this estimate?",
     advanced: "Advanced",
     started: "Your run has started. Watch it on the project.",
-    insufficient: "This run's cap is more than your spendable balance. Lower the rigor to fit, or ask for more credits.",
+    insufficient: "This run's cap is more than your spendable balance. Lower the rigor to fit, or add credits.",
+    // PRB.08 — the exhaustion panel's Payment Link action + the suspended-account notice + the final-month
+    // beta-plan offer (copy + link only — REQ-BETA-14/15, §14.6; no subscription machinery).
+    buyCredits: "Add credits",
+    suspended: "This account is paused while a payment dispute is open — runs can't start until it resolves.",
+    planOffer: "Beta pricing ends when we launch. Founding users keep the beta rate for a year.",
+    planOfferLink: "See the beta plan",
     factCheckToggle: "Fact-check every claim",
     discourseToggle: "Map the field",
     secondReadToggle: "Second read",
@@ -126,6 +132,8 @@ export const COPY = {
       editors_letter: "Editor's letter and rubric",
     } as Record<string, string>,
     offLabel: "off",
+    // PRB.08 — the run card's refund line (failed/refused/cancelled, or a silent reconciliation refund).
+    refundFmt: "refunded {n} credits; partial results kept",
     feedHeading: "Live feed",
     densityLabel: { summary: "Summary", details: "Details", verbose: "Verbose" } as Record<string, string>,
     letterTocHeading: "Contents",

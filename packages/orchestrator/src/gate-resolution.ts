@@ -11,7 +11,7 @@ export type { ContentStore } from "@rhema/mirror"; // re-exported so adapters ca
 import type { OrchestratorDeps } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
-import { InsufficientBalanceError } from "./ledger.js";
+import { InsufficientBalanceError, AccountSuspendedError } from "./ledger.js";
 import { RUN_JOBS } from "./queue.js";
 import { serializeGateOverlay } from "./gate-overlay.js";
 import { captureGuidanceTx } from "./guidance.js";
@@ -105,7 +105,7 @@ export interface ResolveGateDeps extends OrchestratorDeps {
 export type ResolveGateResult =
   | { readonly ok: true; readonly resolved: true; readonly state: RunState; readonly overlayVersionIds: string[]; readonly guidanceId?: string }
   | { readonly ok: true; readonly resolved: false; readonly reason: "already_resolved" | "not_waiting" }
-  | { readonly ok: false; readonly reason: "not_found" | "insufficient_balance"; readonly required?: number };
+  | { readonly ok: false; readonly reason: "not_found" | "insufficient_balance" | "account_suspended"; readonly required?: number };
 
 interface GateRunRow {
   kind: string;
@@ -235,6 +235,9 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
           await tx.query("update runs set hold_ledger_id = $2, hold_bucket = $3 where id = $1", [args.runId, hold.ledgerId, hold.bucket]);
         } catch (e) {
           if (e instanceof InsufficientBalanceError) throw new ConsentRollback({ ok: false, reason: "insufficient_balance", required: e.required });
+          // REQ-SPEC-24.7: a suspended account's consent cannot place the hold — roll the decision back
+          // (the gate stays open) and surface account_suspended → 403.
+          if (e instanceof AccountSuspendedError) throw new ConsentRollback({ ok: false, reason: "account_suspended" });
           throw e;
         }
         await applyTransition(tx, deps, { runId: args.runId, from: "awaiting_consent", to: "queued" });

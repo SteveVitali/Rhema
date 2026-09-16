@@ -138,6 +138,8 @@ function makeDeps(over: Partial<DataSource> = {}, session: WebDeps["session"] = 
     getPretriage: async () => ({ correspondenceId: "c_1", triaged: 1, total: 3, entries: [] }),
     getApprovalOverrides: async () => ({}),
     setApprovalOverrides: async () => {},
+    getBillingBalance: async () => ({ spendableCredits: 200_000, suspended: false, clawbackDebt: 0 }),
+    recordExhaustedPrompt: async () => undefined,
     ...over,
   };
   return { dataSource, session };

@@ -239,6 +239,14 @@ export const RUN_EVENTS = {
       byPhase: z.record(z.string(), z.number().int()).optional(),
     }),
   },
+  // PRB.08: a run's refund back to available — failed/refused/cancelled runs and the parked-timeout sweep;
+  // "reconcile_drift" is the nightly user-favourable silent refund (REQ-BILL-13). The run row renders it as
+  // "refunded N credits; partial results kept".
+  "cost.refunded": {
+    visibility: "user",
+    density: "summary",
+    payload: z.object({ credits: z.number().int(), reason: boundedText }),
+  },
   // misc summary
   "check.result": {
     visibility: "user",

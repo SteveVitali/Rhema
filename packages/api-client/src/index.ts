@@ -361,6 +361,19 @@ export interface EditorReviseDto {
   readonly mootedFindingIds: string[];
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// PRB.08 — beta billing (REQ-BETA-14/15; §14.6). The spendable-balance read the run sheet's paywall box and
+// the exhaustion prompt's telemetry write; the Payment Link URL arrives from deploy config on the balance.
+// ---------------------------------------------------------------------------------------------------------
+
+/** GET /billing/balance — the account's spendable credits + suspension + the beta Payment Link. */
+export interface BillingBalanceDto {
+  readonly spendableCredits: number;
+  readonly suspended: boolean;
+  readonly clawbackDebt: number;
+  readonly paymentLinkUrl?: string;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -443,6 +456,10 @@ export interface ApiClient {
   cancelEditorRun(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorCancelRunDto>;
   /** "Revise using your edits" (REQ-DATA-26): review of vN + base v(N+1); lost quotes auto-mooted. */
   reviseWithEdits(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorReviseDto>;
+  /** PRB.08 — the account's spendable balance + suspension + the beta Payment Link (§14.6). */
+  getBillingBalance(init?: RequestInitLite): Promise<BillingBalanceDto>;
+  /** PRB.08 — record `credits.exhausted_prompt{action_taken}` when the exhaustion panel resolves (REQ-BETA-12). */
+  recordExhaustedPrompt(actionTaken: string, init?: RequestInitLite): Promise<void>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -616,6 +633,19 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}/revise`,
         { method: "POST", headers: init?.headers as Record<string, string> | undefined },
       );
+    },
+    async getBillingBalance(init?: RequestInitLite): Promise<BillingBalanceDto> {
+      return json<BillingBalanceDto>("/billing/balance", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async recordExhaustedPrompt(actionTaken: string, init?: RequestInitLite): Promise<void> {
+      await json<{ ok: true }>("/billing/exhausted-prompt", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ action_taken: actionTaken }),
+      });
     },
   };
 }

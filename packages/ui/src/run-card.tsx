@@ -26,6 +26,9 @@ export interface RunCardLabels {
   readonly offLabel: string;
   /** e.g. (value, of?) => "23 / 56" for a phase counter. */
   readonly counterLabel?: (key: string, value: number, of?: number) => string;
+  /** PRB.08 — e.g. (credits) => "refunded 312 credits; partial results kept" (shown when a run's debits came
+   *  back: a failed/refused/cancelled run or a reconciliation silent-refund). */
+  readonly refundLabel?: (credits: number) => string;
 }
 
 function PhaseRow({ phase, labels }: { phase: PhaseProgress; labels: RunCardLabels }): ReactNode {
@@ -84,6 +87,11 @@ export function RunCard({ view, labels }: { view: RunCardView; labels: RunCardLa
           <PhaseRow key={p.key} phase={p} labels={labels} />
         ))}
       </ul>
+      {view.refundedCredits > 0 && labels.refundLabel ? (
+        <p data-refund style={{ marginTop: "10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          {labels.refundLabel(view.refundedCredits)}
+        </p>
+      ) : null}
       {view.etaBand && labels.etaLabel ? (
         <p data-eta style={{ marginTop: "10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
           {labels.etaLabel(view.etaBand.lowMin, view.etaBand.highMin)}

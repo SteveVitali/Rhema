@@ -78,3 +78,24 @@ describe("buildRunCardView", () => {
     expect(view.creditFraction).toBe(1);
   });
 });
+
+describe("the refund line (PRB.08; REQ-BETA-18)", () => {
+  it("aggregates every whitelisted cost.refunded event into the card's refunded total", () => {
+    const stream: RunEventLike[] = [
+      ...events,
+      { type: "cost.refunded", payload: { credits: 212, runId: "run_1" } },
+      { type: "cost.refunded", payload: { credits: 100, runId: "run_1" } },
+    ];
+    const input = deriveRunCardInput("run_1", stream, { phaseKeys: PHASES });
+    expect(input.refundedCredits).toBe(312);
+    expect(buildRunCardView(input).refundedCredits).toBe(312);
+    // whitelisted: the card reads ONLY the numeric credits field — no agent text can ride the refund event.
+    expect(CARD_EVENT_TYPES).toContain("cost.refunded");
+  });
+
+  it("a card with no refunds reports 0", () => {
+    const input = deriveRunCardInput("run_1", events, { phaseKeys: PHASES });
+    expect(input.refundedCredits).toBe(0);
+    expect(buildRunCardView(input).refundedCredits).toBe(0);
+  });
+});

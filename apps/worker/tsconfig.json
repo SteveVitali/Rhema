@@ -22,6 +22,12 @@
     },
     {
       "path": "../../packages/live-clients"
+    },
+    {
+      "path": "../../packages/mirror"
+    },
+    {
+      "path": "../../packages/protocols"
     }
   ],
   "exclude": [

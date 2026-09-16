@@ -122,4 +122,15 @@ describe("run creation (§12.4 step 2; REQ-SPEC-16)", () => {
     const memo = await db.client.query("select count(*)::int as n from run_idempotency", []);
     expect((memo.rows[0] as { n: number }).n).toBe(0);
   });
+
+  it("PRB.08 / REQ-SPEC-24.7: a suspended account's hold refusal rolls the creation back as account_suspended", async () => {
+    const ledger = new TestHoldLedger({ suspended: true });
+    const d = makeDeps(db, { ledger });
+    const res = await createRun(d, baseInput());
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("account_suspended"); // the api surfaces 403
+    expect(await runCount()).toBe(0); // no run row, no memo — a suspended account never silently queues
+    const memo = await db.client.query("select count(*)::int as n from run_idempotency", []);
+    expect((memo.rows[0] as { n: number }).n).toBe(0);
+  });
 });
