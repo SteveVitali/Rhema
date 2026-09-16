@@ -106,6 +106,12 @@ export interface RunSheetLabels {
   readonly advancedLegend: string;
   /** display for each toggle key (app-owned, from COPY). */
   readonly toggleLabels: Readonly<Record<string, string>>;
+  /** PRB.08 — the exhaustion panel's add-credits button label (opens the Payment Link). */
+  readonly buyCreditsLabel?: string;
+  /** PRB.08 — the suspended-account notice (a chargeback; REQ-SPEC-24.7). */
+  readonly suspendedNotice?: string;
+  /** PRB.08 — the final-month beta-plan offer copy + link text (copy + link only, no subscription UI). */
+  readonly planOffer?: { readonly text: string; readonly linkLabel: string };
 }
 
 export interface RunSheetProps {
@@ -115,6 +121,9 @@ export interface RunSheetProps {
   readonly runAction: string;
   /** the form action the Ask button POSTs to (the Assistant). */
   readonly askAction?: string;
+  /** PRB.08 — the form action the exhaustion panel's Payment-Link button POSTs to (records
+   *  `credits.exhausted_prompt{action_taken}` then 302s to the Payment Link — telemetry without JS). */
+  readonly exhaustedAction?: string;
 }
 
 const boxStyle: CSSProperties = {
@@ -125,7 +134,7 @@ const boxStyle: CSSProperties = {
   margin: "12px 0",
 };
 
-export function RunSheet({ view, labels, runAction, askAction }: RunSheetProps): ReactNode {
+export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }: RunSheetProps): ReactNode {
   const est = view.estimate;
   const insufficient = view.insufficient;
   return (
@@ -161,13 +170,37 @@ export function RunSheet({ view, labels, runAction, askAction }: RunSheetProps):
 
       {/* the estimate box — dollars first, credits/cap/balance second (§5.6 item 5) — OR the resolution panel. */}
       <Paywall>
-        {insufficient ? (
+        {view.suspended ? (
+          <div style={boxStyle} role="alert" data-suspended="true">
+            <p style={{ margin: 0, fontSize: "14px", color: "var(--sev-major)" }}>
+              {labels.suspendedNotice ?? "This account is suspended while a payment dispute is open. No runs can start until it resolves."}
+            </p>
+          </div>
+        ) : insufficient ? (
           <div style={boxStyle} role="alert" data-insufficient="true">
             {insufficient.sentences.map((s, i) => (
               <p key={i} style={{ margin: i === 0 ? 0 : "6px 0 0", fontSize: "14px", color: i === 0 ? "var(--sev-major)" : "var(--shell-fg)" }}>
                 {s}
               </p>
             ))}
+            {/* PRB.08 — the beta's ONE real-money channel: the Stripe Payment Link (§14.6). The button POSTs
+                the whole form to the exhausted-prompt route (telemetry lands server-side, then a 302 to the
+                link) — the `action_taken` value is the telemetry field. No nested form: `formAction`
+                retargets this submit. */}
+            {view.paymentLinkUrl && exhaustedAction ? (
+              <p style={{ margin: "10px 0 0" }}>
+                <button
+                  type="submit"
+                  formAction={exhaustedAction}
+                  name="action_taken"
+                  value="open_payment_link"
+                  data-payment-link={view.paymentLinkUrl}
+                  style={{ ...buttonBase, background: "var(--accent)", color: "var(--shell-bg)" }}
+                >
+                  {labels.buyCreditsLabel ?? "Add credits"}
+                </button>
+              </p>
+            ) : null}
           </div>
         ) : (
           <div style={boxStyle} data-estimate-box>
@@ -191,10 +224,19 @@ export function RunSheet({ view, labels, runAction, askAction }: RunSheetProps):
             label={labels.runLabel}
             confirmLabel={labels.confirmLabel}
             needsSecondClick={view.consent.needsSecondClick}
-            disabled={!!insufficient}
+            disabled={!!insufficient || !!view.suspended}
           />
         </div>
       </Paywall>
+
+      {/* PRB.08 — the final-month beta-plan offer: copy + a link only (no subscription machinery;
+          REQ-BETA-14). */}
+      {view.planOfferUrl && labels.planOffer ? (
+        <p data-plan-offer style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }}>
+          {labels.planOffer.text}{" "}
+          <a href={view.planOfferUrl} style={{ color: "var(--shell-fg)" }}>{labels.planOffer.linkLabel}</a>
+        </p>
+      ) : null}
 
       {/* the obligation scope line (REQ-OBJ-6). */}
       {view.scopeLine ? (

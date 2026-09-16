@@ -14,7 +14,7 @@ import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
 import type { HoldLedger } from "./ledger.js";
-import { InsufficientBalanceError } from "./ledger.js";
+import { InsufficientBalanceError, AccountSuspendedError } from "./ledger.js";
 import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition } from "./transition.js";
 import { validateModelProfile, ModelProfileRejectedError, type ModelProfile, type PhaseClass } from "./capabilities.js";
@@ -66,6 +66,7 @@ export interface CreateRunDeps {
 export type CreateRunResult =
   | { readonly ok: true; readonly runId: string; readonly state: "queued" | "awaiting_consent"; readonly deduped: boolean }
   | { readonly ok: false; readonly reason: "insufficient_balance"; readonly required: number }
+  | { readonly ok: false; readonly reason: "account_suspended" }
   | { readonly ok: false; readonly reason: "model_profile_rejected"; readonly error: ModelProfileRejectedError };
 
 /**
@@ -146,6 +147,11 @@ export async function createRun(deps: CreateRunDeps, input: CreateRunInput): Pro
         if (e instanceof InsufficientBalanceError) {
           // roll the whole creation back — no run row, no memo, never billed.
           throw new CreationRollback({ ok: false, reason: "insufficient_balance", required: e.required });
+        }
+        if (e instanceof AccountSuspendedError) {
+          // REQ-SPEC-24.7: a chargeback-suspended account takes no new holds — the run is never created
+          // (rolled back like an insufficient balance); the api surfaces 403 account_suspended.
+          throw new CreationRollback({ ok: false, reason: "account_suspended" });
         }
         throw e;
       }

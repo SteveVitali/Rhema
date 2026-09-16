@@ -42,12 +42,17 @@ export interface DeliverRunArgs {
 
 export type DeliverRunResult =
   | { readonly ok: true; readonly state: RunState; readonly correspondenceId: string; readonly downgradedClaimOrdinals: readonly number[] }
-  | { readonly ok: false; readonly state: RunState; readonly code: "validation"; readonly reason: string };
+  | { readonly ok: false; readonly state: RunState; readonly code: "validation" | "withheld"; readonly reason: string };
 
 /**
  * Deliver a finalizing run. On success: the dossier is committed, the draft frozen, the artifacts immutable,
  * the run `completed`, the hold released, `cost.final` emitted, credentials revoked — one atomic transaction.
  * On a validation failure: nothing commits; the run ends `failed(validation)` (partials kept) via `failRun`.
+ *
+ * REQ-SPEC-24.7 (PRB.08): a suspended account's delivery is WITHHELD — the chargeback path marks the run
+ * `delivery_withheld_at`; here the delivery args are stashed on `runs.pending_delivery` and the run stays
+ * `finalizing`. Once the account is non-negative (dispute won / debt settled / operator reinstate), the
+ * `run.deliver` job re-drives the stashed delivery.
  */
 export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Promise<DeliverRunResult> {
   const { runId, workspaceId } = args.delivery;
@@ -65,6 +70,27 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
 
   try {
     const result = await deps.txRunner.run(workspaceId, async (tx) => {
+      // ---- REQ-SPEC-24.7 withhold gate: a suspended account (or a run the chargeback already flagged) ---
+      // stashes the delivery and stays `finalizing`; the `run.deliver` re-drive consumes `pending_delivery`
+      // once the balance is non-negative. Lock the run row so a concurrent chargeback can't split the check.
+      const gate = (
+        await tx.query(
+          `select r.delivery_withheld_at, b.suspended_at
+             from runs r
+             join workspaces w on w.id = r.workspace_id
+             join billing_accounts b on b.id = w.billing_account_id
+            where r.id = $1
+            for update of r`,
+          [runId],
+        )
+      ).rows[0] as { delivery_withheld_at: string | null; suspended_at: string | null } | undefined;
+      if (gate && (gate.delivery_withheld_at !== null || gate.suspended_at !== null)) {
+        await tx.query(
+          "update runs set delivery_withheld_at = coalesce(delivery_withheld_at, $2), pending_delivery = $3 where id = $1",
+          [runId, deps.clock.now(), JSON.stringify(args)],
+        );
+        return null;
+      }
       const delivery = await runDeliveryTransaction(
         tx,
         { ids: deps.ids, clock: deps.clock, store: deps.store, eventWriter, ...(deps.obligationHook ? { obligationHook: deps.obligationHook } : {}) },
@@ -89,6 +115,14 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
       await revokeRunCredentials(tx, runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
       return delivery;
     });
+    if (result === null) {
+      return {
+        ok: false,
+        state: "finalizing",
+        code: "withheld",
+        reason: "account suspended — delivery withheld until the balance is non-negative",
+      };
+    }
     await deps.heartbeats.clear(runId);
     return { ok: true, state: "completed", correspondenceId: result.correspondenceId, downgradedClaimOrdinals: result.downgradedClaimOrdinals };
   } catch (e) {

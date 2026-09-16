@@ -18,6 +18,7 @@ import type {
   EditorNoteDto,
   EditorCancelRunDto,
   EditorReviseDto,
+  BillingBalanceDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -140,6 +141,12 @@ export interface DataSource {
   cancelEditorRun(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorCancelRunDto>;
   /** PRB.07 — "Revise using your edits" (REQ-DATA-26): review of vN + the v(N+1) human-revision base. */
   reviseWithEdits(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorReviseDto>;
+  /** PRB.08 — the account's spendable balance + suspension + the beta Payment Link (§14.6). Drives the run
+   *  sheet's real balance (replacing the flat beta constant) + the exhaustion panel's Payment Link. */
+  getBillingBalance(session: SessionHeaders): Promise<BillingBalanceDto>;
+  /** PRB.08 — record `credits.exhausted_prompt{action_taken}` (REQ-BETA-12) when the exhaustion panel shows
+   *  or resolves. */
+  recordExhaustedPrompt(session: SessionHeaders, actionTaken: string): Promise<void>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -202,5 +209,9 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelEditorRun(projectId, draftId),
     reviseWithEdits: (session, projectId, draftId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).reviseWithEdits(projectId, draftId),
+    getBillingBalance: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getBillingBalance(),
+    recordExhaustedPrompt: (session, actionTaken) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordExhaustedPrompt(actionTaken),
   };
 }

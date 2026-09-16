@@ -8,6 +8,8 @@ export const RUN_JOBS = {
   resume: "run.resume",
   cancel: "run.cancel",
   reap: "run.reap",
+  /** PRB.08 — re-drives a delivery a chargeback withheld (the stashed `runs.pending_delivery`). */
+  deliver: "run.deliver",
 } as const;
 export type RunJobName = (typeof RUN_JOBS)[keyof typeof RUN_JOBS];
 

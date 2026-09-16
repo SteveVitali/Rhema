@@ -7,6 +7,7 @@ import { createShellRoutes } from "./project-list.js";
 import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
 import { createRevisionRoutes, type RevisionApiDeps } from "./revision-routes.js";
 import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
+import { createBillingRoutes } from "./billing-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
 import { createImportRoutes, type Converter } from "./import.js";
 import { randomUUID } from "node:crypto";
@@ -66,6 +67,20 @@ export interface BetaApiDeps {
   importConverter?: Converter;
   contentStore?: ContentStore;
   ids?: () => string;
+  /**
+   * PRB.08 billing: a system-scoped client for the `stripe_events` intake (a system table — never the
+   * RLS-restricted user pool). Required for the webhook mount; the balance/telemetry routes run on txRunner.
+   */
+  systemExec?: SqlClient;
+  /** the Stripe webhook signing secret (loaded from Secret Manager at boot; never an env on web/collab). */
+  stripeWebhookSecret?: string;
+  /** the beta Payment Link the exhaustion panel links to (returned by GET /billing/balance). */
+  paymentLinkUrl?: string;
+  /**
+   * PRB.08 — the `finding.disposed` analytics emitter (REQ-BETA-6). Now that the beta has a real analytics
+   * sink (`analytics_events`, 0020), the live deploy binds this to `recordAnalyticsEvent`; unset ⇒ no row.
+   */
+  emitDisposed?: TriageApiDeps["emitDisposed"];
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -81,6 +96,21 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     app.route("/", createRunRoutes(deps));
     app.route("/", createEstimateRoutes(deps));
     app.route("/", createSseRoutes(deps));
+    // PRB.08 — the billing surface: the §14.6 Stripe webhook (Payment Links are the only money channel),
+    // the spendable-balance read, and the exhaustion-prompt telemetry write.
+    app.route(
+      "/",
+      createBillingRoutes({
+        principal: deps.principal,
+        txRunner: deps.txRunner,
+        ...(deps.systemExec ? { systemExec: deps.systemExec } : {}),
+        queue: deps.queue,
+        clock: deps.clock,
+        ids: deps.ids,
+        ...(deps.stripeWebhookSecret ? { stripeWebhookSecret: deps.stripeWebhookSecret } : {}),
+        ...(deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
+      }),
+    );
     // PRB.06 — What-changed + hunk-comment routes (session-authed; the readable store seam is optional).
     app.route("/", createRevisionRoutes(deps as RevisionApiDeps));
     if (deps.db) {

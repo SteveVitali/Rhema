@@ -15,7 +15,9 @@ import {
   RUN_JOBS,
   type SqlClient,
 } from "@rhema/orchestrator";
-import { SqlHoldLedger } from "@rhema/ledger";
+import { SqlHoldLedger, STRIPE_EVENT_JOB } from "@rhema/ledger";
+import { recordInstrumentedFold, type InstrumentedMeasurement } from "@rhema/protocols";
+import { createGcsContentStore } from "@rhema/mirror";
 import {
   PgPoolTxRunner,
   RedisHeartbeatStore,
@@ -36,10 +38,21 @@ import {
 } from "./run-jobs.js";
 import { handleRunEventsRetention, handleRunEventsPartition, RUN_EVENT_JOBS } from "./run-events-jobs.js";
 import { handleParkedSweep, reDebitOnResume, type WorkerLedgerDeps } from "./ledger-jobs.js";
+import {
+  handleStripeEvent,
+  handleUsageReconcile,
+  handleRunDeliver,
+  type WorkerBillingDeps,
+  type StripeEventJobPayload,
+  type RunDeliverJobPayload,
+} from "./billing-jobs.js";
+import { AnthropicAdminReportSource } from "./provider-report.js";
 import { readWorkerEnv } from "./env.js";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
+/** PRB.08 — the nightly provider-report reconciliation (REQ-BILL-13; the balance assertion rides it). */
+export const USAGE_RECONCILE_JOB = "usage.reconcile" as const;
 
 /** Start the live worker: construct deps, register consumers + crons. */
 export async function startWorker(): Promise<void> {
@@ -166,7 +179,22 @@ export async function startWorker(): Promise<void> {
     query: (sql, params) => systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
 
-  const deps: WorkerRunDeps & WorkerLedgerDeps = {
+  // PRB.08 billing bindings: the provider Usage & Cost report source (admin key from Secret Manager — unset
+  // on preview stages, where usage.reconcile then skips the report pull and still runs the balance
+  // assertion), the ops alert sink, and the estimator-recalibration fold (@rhema/protocols — server-side
+  // only; nothing protocol reaches a payload).
+  const adminKey = env.anthropicAdminKeySecret ? await access(env.anthropicAdminKeySecret) : undefined;
+  const alertSink = env.opsAlertWebhookUrl
+    ? async (a: unknown) => {
+        await fetch(env.opsAlertWebhookUrl!, {
+          method: "post",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(a),
+        });
+      }
+    : undefined;
+
+  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerBillingDeps = {
     txRunner: new PgPoolTxRunner(pool),
     eventWriter: new SqlEventWriter(bus),
     clock,
@@ -178,6 +206,14 @@ export async function startWorker(): Promise<void> {
     launcher,
     config,
     systemExec,
+    ...(adminKey ? { reportSource: new AnthropicAdminReportSource({ adminKey }) } : {}),
+    ...(alertSink ? { alert: alertSink } : {}),
+    // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override
+    // flips the workflow's `provisional` once real reports land).
+    recalibrate: (m) => {
+      recordInstrumentedFold(m.workflow, m as InstrumentedMeasurement);
+    },
+    contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
   };
 
   // The pg-boss connection BURST at startup (start + createQueue×N) can hit a transient AlloyDB connect timeout
@@ -202,7 +238,13 @@ export async function startWorker(): Promise<void> {
   console.log("[worker] startup: launcher built; starting pg-boss");
   await retryStartup("boss.start", () => boss.start());
   console.log("[worker] startup: pg-boss started; creating queues");
-  for (const name of [...Object.values(RUN_JOBS), ...Object.values(RUN_EVENT_JOBS), LEDGER_JOBS.sweepParked]) {
+  for (const name of [
+    ...Object.values(RUN_JOBS),
+    ...Object.values(RUN_EVENT_JOBS),
+    LEDGER_JOBS.sweepParked,
+    STRIPE_EVENT_JOB,
+    USAGE_RECONCILE_JOB,
+  ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
   console.log("[worker] startup: queues created; registering consumers");
@@ -239,6 +281,28 @@ export async function startWorker(): Promise<void> {
     await handleParkedSweep(deps);
   });
   await boss.schedule(LEDGER_JOBS.sweepParked, "0 * * * *");
+
+  // PRB.08 — the §14.6 processing half: `stripe.event` consumes the parked stripe_events rows (top-up grant,
+  // chargeback, dispute-won). A failed process throws → pg-boss retries; every arm is idempotent.
+  await boss.work<StripeEventJobPayload>(STRIPE_EVENT_JOB, async (jobs) => {
+    for (const job of jobs) {
+      const outcome = await handleStripeEvent(deps, job.data);
+      if (outcome.kind === "unresolved") throw new Error(`stripe event unresolved: ${outcome.reason}`);
+      console.log(`[worker] stripe.event ${job.data.eventId} → ${outcome.kind}`);
+    }
+  });
+  // the withheld-delivery re-drive (a chargeback's stash; enqueued by the dispute-won / reinstate path).
+  await boss.work<RunDeliverJobPayload>(RUN_JOBS.deliver, async (jobs) => {
+    for (const job of jobs) await handleRunDeliver(deps, job.data);
+  });
+  // REQ-BILL-13 — nightly provider-report reconciliation + the REQ-SPEC-24.1 balance assertion (3:15 UTC).
+  await boss.work(USAGE_RECONCILE_JOB, async () => {
+    const r = await handleUsageReconcile(deps);
+    console.log(
+      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : "skipped"}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
+    );
+  });
+  await boss.schedule(USAGE_RECONCILE_JOB, "15 3 * * *");
 
   await boss.work(RUN_EVENT_JOBS.retention, async () => {
     await handleRunEventsRetention({ db: systemExec, clock });

@@ -34,6 +34,9 @@ export interface RunCardInput {
   readonly phases: readonly PhaseProgress[];
   readonly spentCredits: number;
   readonly capCredits: number;
+  /** PRB.08 — credits refunded back to available (a failed/refused/cancelled run or a reconciliation
+   *  silent-refund); the card renders "refunded N credits; partial results kept". */
+  readonly refundedCredits?: number;
   readonly elapsedMs?: number;
   readonly etaBand?: { readonly lowMin: number; readonly highMin: number };
 }
@@ -46,6 +49,8 @@ export interface RunCardView {
   readonly capCredits: number;
   /** spent/cap as a 0..1 fraction (clamped), for a meter — never a percentage of agent text. */
   readonly creditFraction: number;
+  /** total credits refunded (the `cost.refunded` Σ) — 0 when nothing was returned. */
+  readonly refundedCredits: number;
   readonly elapsedMs: number | null;
   readonly etaBand: { readonly lowMin: number; readonly highMin: number } | null;
   readonly done: number;
@@ -66,6 +71,7 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
     spentCredits: input.spentCredits,
     capCredits: input.capCredits,
     creditFraction,
+    refundedCredits: input.refundedCredits ?? 0,
     elapsedMs: input.elapsedMs ?? null,
     etaBand: input.etaBand ?? null,
     done,
@@ -95,6 +101,7 @@ export const CARD_EVENT_TYPES: readonly string[] = [
   "claim.progress",
   "usage.tick",
   "cost.final",
+  "cost.refunded",
 ];
 
 interface DeriveOptions {
@@ -133,6 +140,7 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
   let state: RunState = "created";
   let spent = 0;
   let cap = opts.capCredits ?? 0;
+  let refunded = 0;
 
   const ensure = (phase: string, ordinal?: number): void => {
     if (!order.includes(phase)) order.push(phase);
@@ -200,6 +208,12 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
         if (c != null) cap = c;
         break;
       }
+      case "cost.refunded": {
+        // PRB.08 — the "refunded N credits" line: sum every refund row's whitelisted credits count.
+        const r = num(p["credits"]);
+        if (r != null) refunded += r;
+        break;
+      }
       default:
         break;
     }
@@ -220,6 +234,7 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
     phases,
     spentCredits: spent,
     capCredits: cap,
+    refundedCredits: refunded,
     ...(opts.elapsedMs != null ? { elapsedMs: opts.elapsedMs } : {}),
     ...(opts.etaBand != null ? { etaBand: opts.etaBand } : {}),
   };

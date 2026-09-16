@@ -131,4 +131,35 @@ describe("deliverRun (orchestrator wiring)", () => {
     expect(deps.ledger.ops.some((o) => o.op === "refund")).toBe(true);
     expect(deps.ledger.ops.some((o) => o.op === "release")).toBe(true);
   });
+
+  it("REQ-SPEC-24.7 (PRB.08): a suspended account's delivery is withheld — the run stays finalizing with the args stashed", async () => {
+    await db.pg.query("update billing_accounts set suspended_at = now() where id = 'ba_seed'");
+    const result = await deliverRun(
+      { ...deps, store },
+      { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: delivery() },
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe("withheld");
+
+    const run = (await db.client.query("select state, delivery_withheld_at, pending_delivery from runs where id=$1", [RUN])).rows[0] as {
+      state: string; delivery_withheld_at: string | null; pending_delivery: { delivery?: { runId?: string } } | null;
+    };
+    expect(run.state).toBe("finalizing"); // NOT delivered, NOT failed — withheld
+    expect(run.delivery_withheld_at).not.toBeNull();
+    expect(run.pending_delivery?.delivery?.runId).toBe(RUN); // the stash the run.deliver job re-drives
+    // nothing committed: no correspondence, no release, no cost.final
+    expect(deps.ledger.ops.some((o) => o.op === "release")).toBe(false);
+    expect(deps.eventWriter.events.some((e) => e.type === "cost.final")).toBe(false);
+  });
+
+  it("a run flagged delivery_withheld_at by the chargeback (account since reinstated) still withholds until the marker clears", async () => {
+    await db.txRunner.run("ws_seed", (tx) => tx.query("update runs set delivery_withheld_at = now() where id = $1", [RUN]));
+    const result = await deliverRun(
+      { ...deps, store },
+      { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: delivery() },
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.code).toBe("withheld");
+  });
 });

@@ -313,7 +313,16 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
             `metered response for run ${ctx.runId} carries usage but no model — refusing to meter silently (REQ-SPEC-11)`,
           );
         }
-        const metered = meterResponse({ ctx, usage, model: meterModel, agentId, id: newId(), ts: nowIso() });
+        const metered = meterResponse({
+          ctx,
+          usage,
+          model: meterModel,
+          agentId,
+          id: newId(),
+          ts: nowIso(),
+          // the provider's per-request id — the usage.reconcile join key (REQ-BILL-13).
+          providerRequestId: headerValue(upstream.headers, "request-id") ?? null,
+        });
         await deps.usageWriter.write(metered.row);
         await deps.capAccountant.record(ctx.runId, metered.platformCredits);
       }

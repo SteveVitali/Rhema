@@ -67,6 +67,19 @@ export class InsufficientBalanceError extends Error {
   }
 }
 
+/**
+ * A new hold on a chargeback-suspended account (REQ-SPEC-24.7; PRB.08) — the account can never silently run.
+ * Defined here (not in @rhema/ledger) because the orchestrator's run-creation/gate paths must catch it
+ * without a ledger import (the dependency direction is ledger → orchestrator). `SqlHoldLedger.hold` throws
+ * it; creation/consent surfaces it as `account_suspended` → HTTP 403.
+ */
+export class AccountSuspendedError extends Error {
+  constructor(readonly billingAccountId: string) {
+    super(`billing account ${billingAccountId} is suspended`);
+    this.name = "AccountSuspendedError";
+  }
+}
+
 interface RecordedOp {
   readonly op: "hold" | "debit" | "release" | "refund";
   readonly args: HoldArgs | DebitArgs | ReleaseArgs | RefundArgs;
@@ -82,10 +95,15 @@ export class TestHoldLedger implements HoldLedger {
   private seq = 0;
   private bucket: HoldBucket = "included";
 
-  constructor(private opts: { insufficient?: boolean } = {}) {}
+  constructor(private opts: { insufficient?: boolean; suspended?: boolean } = {}) {}
 
   primeInsufficient(v = true): void {
     this.opts.insufficient = v;
+  }
+
+  /** PRB.08 — exercise the chargeback-suspended hold refusal (account_suspended → 403). */
+  primeSuspended(v = true): void {
+    this.opts.suspended = v;
   }
 
   private next(): string {
@@ -93,6 +111,7 @@ export class TestHoldLedger implements HoldLedger {
   }
 
   hold(_tx: SqlClient, args: HoldArgs): Promise<HoldResult> {
+    if (this.opts.suspended) return Promise.reject(new AccountSuspendedError(args.billingAccountId));
     if (this.opts.insufficient) return Promise.reject(new InsufficientBalanceError(args.credits));
     this.ops.push({ op: "hold", args });
     return Promise.resolve({ ledgerId: this.next(), bucket: this.bucket });
