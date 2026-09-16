@@ -195,6 +195,97 @@ export interface PretriageDto {
  *  `approvalOverridesSchema`. */
 export type ApprovalOverridesDto = Record<string, number | null>;
 
+// ---------------------------------------------------------------------------------------------------------
+// PRB.06 — What-changed (§5.8): the server-joined revision read (move cards + Inline hunks + obligation
+// discharge lines + the summary strip) and the hunk-comment → Guidance write. Shapes mirror
+// @rhema/findings-core's WhatChangedView (kept structural to avoid a heavy dep).
+// ---------------------------------------------------------------------------------------------------------
+
+/** One changed block inside a hunk (a heading or blank-line-separated run of canonical markdown). */
+export interface DiffBlockDto {
+  readonly blockId: string;
+  readonly text: string;
+  readonly index: number;
+  readonly startOffset: number;
+  readonly endOffset: number;
+}
+
+/** A contiguous run of changed blocks between two unchanged anchors. */
+export interface DiffHunkDto {
+  readonly id: string;
+  readonly kind: "edited" | "added" | "removed" | "mixed";
+  readonly before: DiffBlockDto[];
+  readonly after: DiffBlockDto[];
+  readonly charsChanged: number;
+}
+
+/** An obligation discharge line on a move card ("discharges OBL-3 (F-07, carried from v2) — verified by
+ *  gap check"). */
+export interface ObligationLineDto {
+  readonly obligationId: string;
+  readonly label: string;
+  readonly lineage?: string;
+  readonly verifiedBy?: "gap_check" | "re_review" | "user";
+  readonly state: string;
+}
+
+/** A move card: the ledger move + its answered findings + its discharge lines + its joined hunks. */
+export interface MoveCardDto {
+  readonly moveOrdinal: number;
+  readonly moveId: string;
+  readonly title: string;
+  readonly type?: string;
+  readonly findings: {
+    readonly findingOrdinal: number;
+    readonly findingId?: string;
+    readonly title?: string;
+    readonly severity?: string;
+    readonly kind: string;
+    readonly rationale?: string;
+  }[];
+  readonly dischargeLines: ObligationLineDto[];
+  readonly hunks: DiffHunkDto[];
+}
+
+/** A rebutted finding card — rationale shown, NO hunk (§5.8). */
+export interface RebuttedCardDto {
+  readonly findingOrdinal: number;
+  readonly findingId?: string;
+  readonly title?: string;
+  readonly severity?: string;
+  readonly rationale: string;
+}
+
+/** The summary strip counts + the move/hunk tallies ("7 obligations addressed · 1 rebutted · 2 still open"). */
+export interface WhatChangedStripDto {
+  readonly addressed: number;
+  readonly rebutted: number;
+  readonly stillOpen: number;
+  readonly moves: number;
+  readonly hunks: number;
+}
+
+/** The full What-changed payload the revision page renders (GET …/what-changed). */
+export interface WhatChangedDto {
+  readonly ok: true;
+  readonly responseId: string;
+  readonly reviewId: string | null;
+  readonly beforeN: number;
+  readonly afterN: number | null;
+  readonly view: {
+    readonly strip: WhatChangedStripDto;
+    readonly moves: MoveCardDto[];
+    readonly unlinked: { readonly hunks: DiffHunkDto[]; readonly entries: unknown[] };
+    readonly rebutted: RebuttedCardDto[];
+  };
+}
+
+/** A hunk comment → the `Guidance` row the next Revise consumes (§6.5). */
+export interface HunkCommentDto {
+  readonly guidanceId: string;
+  readonly hunkId: string;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -256,6 +347,16 @@ export interface ApiClient {
   getApprovalOverrides(projectId: string, init?: RequestInitLite): Promise<ApprovalOverridesDto>;
   /** Set the project's approval-deadline overrides — validated server-side (REQ-SPEC-1 rules). */
   setApprovalOverrides(projectId: string, overrides: ApprovalOverridesDto, init?: RequestInitLite): Promise<void>;
+  /** The server-joined What-changed read for a delivered response (§5.8; PRB.06). */
+  getWhatChanged(projectId: string, responseId: string, init?: RequestInitLite): Promise<WhatChangedDto>;
+  /** A comment on a changed hunk → a `Guidance` row the next Revise consumes (§6.5). */
+  commentOnHunk(
+    projectId: string,
+    responseId: string,
+    hunkId: string,
+    text: string,
+    init?: RequestInitLite,
+  ): Promise<HunkCommentDto>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -375,6 +476,22 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ overrides }),
       });
+    },
+    async getWhatChanged(projectId, responseId, init): Promise<WhatChangedDto> {
+      return json<WhatChangedDto>(
+        `/projects/${encodeURIComponent(projectId)}/responses/${encodeURIComponent(responseId)}/what-changed`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async commentOnHunk(projectId, responseId, hunkId, text, init): Promise<HunkCommentDto> {
+      return json<HunkCommentDto>(
+        `/projects/${encodeURIComponent(projectId)}/responses/${encodeURIComponent(responseId)}/hunks/${encodeURIComponent(hunkId)}/comments`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({ text }),
+        },
+      );
     },
   };
 }

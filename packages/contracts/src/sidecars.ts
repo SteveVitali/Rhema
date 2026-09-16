@@ -182,8 +182,25 @@ export const responseLedgerEntrySchema = z.object({
   anchor: anchorSchema.optional(), // §11.3 Anchor verbatim (the move's location in v(N+1))
 });
 export type ResponseLedgerEntry = z.infer<typeof responseLedgerEntrySchema>;
+/**
+ * A revision move (§5.8 "Move 3 · …") — the ledger's plan table made machine-readable so the What-changed
+ * move cards carry their titles/types without re-parsing markdown. Entries join a move via
+ * `disposition.moveOrdinal`; `moots` lists finding ordinals the move mooted.
+ */
+export const responseLedgerMoveSchema = z.object({
+  ordinal: z.number().int().positive(),
+  title: z.string(),
+  type: z.string().optional(), // structure | argument | craft (skill-authored label)
+  status: z.string().optional(), // done | pending | …
+  discharges: z.array(z.number().int().nonnegative()).optional(),
+  moots: z.array(z.number().int().nonnegative()).optional(),
+});
+export type ResponseLedgerMove = z.infer<typeof responseLedgerMoveSchema>;
 export const responseLedgerSidecarSchema = envelope("response_ledger").extend({
   entries: z.array(responseLedgerEntrySchema),
+  /** the revision plan's moves (the move cards' titles); optional for older ledgers — cards fall back to
+   *  "Move N". */
+  moves: z.array(responseLedgerMoveSchema).optional(),
 });
 export type ResponseLedgerSidecar = z.infer<typeof responseLedgerSidecarSchema>;
 

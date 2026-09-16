@@ -27,6 +27,7 @@
     "@rhema/contracts": "workspace:*",
     "@rhema/db": "workspace:*",
     "@rhema/engine": "workspace:*",
+    "@rhema/findings-core": "workspace:*",
     "@rhema/hooks": "workspace:*",
     "@rhema/protocols": "workspace:*",
     "@google-cloud/storage": "8.0.1"

@@ -47,3 +47,8 @@ export { GateCard, TriageLedger, remainingLabel } from "./gate-card.js";
 export type { GateCardProps, GateCardLabels, TriageLedgerRow, TriageLedgerLabels } from "./gate-card.js";
 export { DecisionsList } from "./decisions.js";
 export type { DecisionsListProps, DecisionsListLabels } from "./decisions.js";
+
+// The revision surfaces (PRB.06, §5.8): What-changed move cards + the Inline hunk list + the rubric delta
+// (per-dimension before/after, never an aggregate — REQ-IDE-30).
+export { WhatChangedView, RubricDelta } from "./what-changed.js";
+export type { WhatChangedProps, WhatChangedLabels, RubricDeltaLabels } from "./what-changed.js";

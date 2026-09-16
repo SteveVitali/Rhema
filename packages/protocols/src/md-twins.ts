@@ -82,6 +82,15 @@ export function renderResponseLedgerMd(v: {
     };
     anchor?: unknown;
   }[];
+  /** PRB.06 — the revision plan's moves (the What-changed move cards' titles/types). */
+  moves?: {
+    ordinal: number;
+    title: string;
+    type?: string;
+    status?: string;
+    discharges?: number[];
+    moots?: number[];
+  }[];
 }): string {
   const out: string[] = ["# Response ledger", "", `<!-- rhema:response_ledger v1 -->`, ""];
   for (const e of v.entries) {
@@ -96,6 +105,19 @@ export function renderResponseLedgerMd(v: {
     if (e.disposition.actor !== undefined) out.push(fieldLine("disposition.actor", e.disposition.actor));
     if (e.anchor !== undefined) out.push(fieldLine("anchor", e.anchor));
     out.push("");
+  }
+  if (v.moves && v.moves.length > 0) {
+    out.push("## Moves", "");
+    for (const mv of v.moves) {
+      out.push(`### Move ${mv.ordinal}`);
+      out.push(fieldLine("ordinal", mv.ordinal));
+      out.push(fieldLine("title", mv.title));
+      if (mv.type !== undefined) out.push(fieldLine("type", mv.type));
+      if (mv.status !== undefined) out.push(fieldLine("status", mv.status));
+      if (mv.discharges !== undefined) out.push(fieldLine("discharges", mv.discharges));
+      if (mv.moots !== undefined) out.push(fieldLine("moots", mv.moots));
+      out.push("");
+    }
   }
   return out.join("\n");
 }
@@ -119,7 +141,24 @@ export function parseResponseLedgerMd(md: string): unknown {
       omitUndefined({ findingOrdinal: f.get("findingOrdinal"), disposition, anchor: f.get("anchor") }),
     );
   }
-  return { sidecar: "response_ledger", version: 1, entries };
+  const moves: unknown[] = [];
+  for (const sec of splitSections(md, 3)) {
+    if (!/^Move\b/.test(sec.heading)) continue;
+    const f = readFields(sec.body);
+    moves.push(
+      omitUndefined({
+        ordinal: f.get("ordinal"),
+        title: f.get("title"),
+        type: f.get("type"),
+        status: f.get("status"),
+        discharges: f.get("discharges"),
+        moots: f.get("moots"),
+      }),
+    );
+  }
+  const out: Record<string, unknown> = { sidecar: "response_ledger", version: 1, entries };
+  if (moves.length > 0) out.moves = moves;
+  return out;
 }
 
 // ---------------- structure-plan ----------------

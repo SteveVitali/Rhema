@@ -11,6 +11,8 @@ import type {
   GateDecisionDto,
   PretriageDto,
   ApprovalOverridesDto,
+  WhatChangedDto,
+  HunkCommentDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -52,6 +54,9 @@ export interface DossierData {
   readonly fetchLog: readonly string[];
   readonly findings: readonly FindingView[];
   readonly rubric: readonly RubricRowInput[];
+  /** PRB.06 — the prior round's rubric when this dossier is a re-review (the round-summary delta renders
+   *  per-dimension before/after, never an aggregate — REQ-IDE-30). */
+  readonly priorRubric?: readonly RubricRowInput[];
   readonly accessReport: AccessReportFacts;
 }
 
@@ -100,6 +105,16 @@ export interface DataSource {
     projectId: string,
     overrides: ApprovalOverridesDto,
   ): Promise<void>;
+  /** PRB.06 — the What-changed read for a delivered response (§5.8 move cards + Inline hunks). */
+  getWhatChanged(session: SessionHeaders, projectId: string, responseId: string): Promise<WhatChangedDto>;
+  /** PRB.06 — a hunk comment → a Guidance row the next Revise consumes (§6.5). */
+  commentOnHunk(
+    session: SessionHeaders,
+    projectId: string,
+    responseId: string,
+    hunkId: string,
+    text: string,
+  ): Promise<HunkCommentDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -148,5 +163,9 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getApprovalOverrides(projectId),
     setApprovalOverrides: (session, projectId, overrides) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setApprovalOverrides(projectId, overrides),
+    getWhatChanged: (session, projectId, responseId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getWhatChanged(projectId, responseId),
+    commentOnHunk: (session, projectId, responseId, hunkId, text) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).commentOnHunk(projectId, responseId, hunkId, text),
   };
 }
