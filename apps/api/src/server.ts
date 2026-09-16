@@ -26,7 +26,7 @@ import {
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
 } from "@rhema/live-clients";
-import { createApp, type ApiDeps, type BetaApiDeps } from "./index.js";
+import { createApp, createServiceExportRunner, type ApiDeps, type BetaApiDeps } from "./index.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
 import type { Principal } from "./run-routes.js";
 
@@ -122,6 +122,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // PRB.09 — the signed-action config the notification routes consume (+ the OrchestratorDeps field the
     // notify path uses when the api process itself schedules/emits).
     ...(notificationConfig ? { notifications: notificationConfig } : {}),
+    // PRB.11 — the export seam: markdown+format → the isolated export container → bytes. Unset ⇒ POST
+    // /export answers 503 `export_not_wired` (dialog + statement reads still work).
+    ...(env.exportServiceUrl ? { exportRunner: createServiceExportRunner(env.exportServiceUrl) } : {}),
     // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
     // telemetry emitters to the same validated + opt-out-honoring writer the billing telemetry uses.
     // finding.disposed (D-PRB.05-1 leg b) + run.estimated (D-PRB.03-1's emit leg). A telemetry write is

@@ -12,6 +12,7 @@ import { createNotificationRoutes } from "./notification-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
 import { createImportRoutes, type Converter } from "./import.js";
 import { createVoiceRoutes } from "./voice-routes.js";
+import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore } from "@rhema/mirror";
 
@@ -63,6 +64,8 @@ export type { NotificationApiDeps } from "./notification-routes.js";
 export { createVoiceRoutes } from "./voice-routes.js";
 export type { VoiceApiDeps } from "./voice-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
+export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
+export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
  *  + the stateless estimate endpoint (PRB.03). `principal` is shared; the estimate seams are optional. */
@@ -88,6 +91,12 @@ export interface BetaApiDeps {
    * sink (`analytics_events`, 0020), the live deploy binds this to `recordAnalyticsEvent`; unset ⇒ no row.
    */
   emitDisposed?: TriageApiDeps["emitDisposed"];
+  /**
+   * PRB.11 — the export conversion seam (§13.4): POSTs markdown+format to the isolated `export` container.
+   * The api NEVER runs pandoc — unset ⇒ POST /export answers 503 `export_not_wired` (the dialog + statement
+   * reads still work).
+   */
+  exportRunner?: ExportRunner;
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -149,6 +158,21 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       app.route("/", createTriageRoutes({ ...(deps as TriageApiDeps), db }));
       // PRB.07 — the source editor (document read, autosave, note→Guidance, cancel-run, revise-with-edits).
       app.route("/", createEditorRoutes({ ...(deps as EditorApiDeps), db }));
+      // PRB.11 — export (md/txt/docx via the ExportRunner seam — pandoc stays in the export image) + the
+      // AI-use statement read/standalone-download/append-only-addition routes.
+      app.route(
+        "/",
+        createExportRoutes({
+          principal: deps.principal,
+          db,
+          txRunner: deps.txRunner,
+          ids: deps.ids,
+          clock: deps.clock,
+          ...(deps.contentStore ? { store: deps.contentStore } : {}),
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
+          ...(deps.exportRunner ? { exportRunner: deps.exportRunner } : {}),
+        }),
+      );
       app.route(
         "/",
         createShellRoutes({

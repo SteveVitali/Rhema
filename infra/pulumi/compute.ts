@@ -56,8 +56,10 @@ export interface Compute {
 }
 
 // Services that run on Cloud Run (everything but the two special cases: run-task on GKE, egress-proxy on
-// a MIG). `web` is public; the rest are internal + LB-fronted.
-const CLOUD_RUN_SERVICES: ServiceName[] = ["web", "api", "worker", "collab", "fetcher", "convert", "export"];
+// a MIG). `web` is public; the rest are internal + LB-fronted. `export` is created FIRST so the api's
+// EXPORT_SERVICE_URL (PRB.11) can reference its uri — the api never carries pandoc; it POSTs the markdown
+// to the isolated export container.
+const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "web", "api", "worker", "collab", "fetcher", "convert"];
 
 export function createCompute(args: ComputeArgs): Compute {
   const { stack, cfg, region, network, iam, placeholderImage } = args;
@@ -244,6 +246,11 @@ export function createCompute(args: ComputeArgs): Compute {
                   },
                   envs: workerEnvs,
                 }
+              : {}),
+            // PRB.11 — the api reaches the isolated export container at EXPORT_SERVICE_URL (the export
+            // service is created first in CLOUD_RUN_SERVICES so its uri resolves here).
+            ...(svc === "api"
+              ? { envs: [{ name: "EXPORT_SERVICE_URL", value: services["export"]!.uri }] }
               : {}),
           },
         ],

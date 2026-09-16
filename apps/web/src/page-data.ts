@@ -5,6 +5,7 @@ import type {
   ApprovalOverridesDto,
   DecisionItemDto,
   EditorDocDto,
+  ExportDialogDto,
   GateCardDto,
   ProjectVoiceDto,
   VoiceDetailDto,
@@ -92,6 +93,17 @@ export interface PageData {
   readonly projectVoice?: {
     readonly current: ProjectVoiceDto;
     readonly options: readonly VoiceListRowDto[];
+  };
+  /** PRB.11 — the export dialog (§13.4, §8.4): the format list, the never-blocking obligation line +
+   *  linkable items (incl. `pre_export` horizons just returned to open), and the statement preview. */
+  readonly export?: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly dialog: ExportDialogDto;
+    /** a bounced export POST re-renders with this error. */
+    readonly error?: string;
+    /** a sentence just appended to the statement. */
+    readonly added?: boolean;
   };
   /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
   readonly compact?: boolean;
