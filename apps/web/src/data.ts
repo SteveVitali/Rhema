@@ -32,6 +32,11 @@ import type {
   BuiltVoiceDto,
   ProjectVoiceDto,
   VoiceStatusDto,
+  ExportDialogDto,
+  ExportRequestDto,
+  ExportDownloadDto,
+  AiUseStatementDto,
+  AiUseAdditionDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -192,6 +197,30 @@ export interface DataSource {
     projectId: string,
     req: { personaId: string | null; profileSnapshotId?: string | null },
   ): Promise<ProjectVoiceDto>;
+  // ---- PRB.11 — export + the AI-use statement (§13.4, §8.4 REQ-VIS-10) ----
+  /** the export dialog read — formats, the never-blocking obligation line + links, the statement preview.
+   *  Opening it sweeps `pre_export` deferral horizons (REQ-OBJ-3). */
+  getExportDialog(session: SessionHeaders, projectId: string): Promise<ExportDialogDto>;
+  /** the export POST → the binary download (bytes + media type + filename). Never blocks on obligations. */
+  exportProject(
+    session: SessionHeaders,
+    projectId: string,
+    req: ExportRequestDto,
+  ): Promise<ExportDownloadDto>;
+  /** the AI-use statement JSON (generated sentences recomputed from run rows + append-only additions). */
+  getAiUseStatement(session: SessionHeaders, projectId: string): Promise<AiUseStatementDto>;
+  /** the standalone statement download (md/txt/docx). */
+  downloadAiUseStatement(
+    session: SessionHeaders,
+    projectId: string,
+    format: "md" | "txt" | "docx",
+  ): Promise<ExportDownloadDto>;
+  /** append one of the viewer's own sentences to the statement (the ONLY statement write — append-only). */
+  appendAiUseAddition(
+    session: SessionHeaders,
+    projectId: string,
+    sentence: string,
+  ): Promise<AiUseAdditionDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -281,5 +310,16 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getProjectVoice(projectId),
     setProjectVoice: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setProjectVoice(projectId, req),
+    // ---- PRB.11 — export + the AI-use statement ----
+    getExportDialog: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getExportDialog(projectId),
+    exportProject: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).exportProject(projectId, req),
+    getAiUseStatement: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getAiUseStatement(projectId),
+    downloadAiUseStatement: (session, projectId, format) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).downloadAiUseStatement(projectId, format),
+    appendAiUseAddition: (session, projectId, sentence) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).appendAiUseAddition(projectId, sentence),
   };
 }

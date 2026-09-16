@@ -573,6 +573,82 @@ export interface ProjectVoiceDto {
   readonly snapshot?: VoiceSnapshotDto | null;
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// PRB.11 — export (md/txt/docx) + the AI-use statement (§13.4, §8.4 REQ-VIS-10). The dialog read carries the
+// format list, the never-blocking obligation line + linkable items, and the statement preview; the export
+// POST returns the binary download. The statement's generated sentences are recomputed from run rows on
+// every read — the only write is `appendAiUseAddition` (append-only; there is no update/delete).
+// ---------------------------------------------------------------------------------------------------------
+
+/** One beta export format on the dialog (the §13.4 beta subset: md/txt/docx). */
+export interface ExportFormatDto {
+  readonly id: "md" | "txt" | "docx";
+  readonly label: string;
+  readonly extension: string;
+}
+
+/** An open obligation surfaced on the export dialog (informational — export never blocks, §11.7). */
+export interface ExportObligationDto {
+  readonly id: string;
+  readonly title: string;
+  readonly severity: string;
+  readonly state: string;
+  readonly findingId: string | null;
+  /** the review run the obligation's root finding was filed on — the dialog's link target. */
+  readonly reviewRunId: string | null;
+}
+
+/** The generated AI-use statement + the author's append-only additions (§8.4 REQ-VIS-10). */
+export interface AiUseStatementDto {
+  readonly template: string;
+  /** generated sentences — recomputed from run rows on every read; never user-editable. */
+  readonly generated: string[];
+  /** the author's appended sentences (oldest first). */
+  readonly additions: { readonly id: string; readonly sentence: string; readonly createdAt: string }[];
+  /** the standalone statement rendered to markdown (title + sentences + additions + generated-on line). */
+  readonly markdown: string;
+  readonly openObligations: number;
+  readonly blockingOpen: number;
+  readonly generatedAt: string;
+}
+
+/** GET /projects/:id/export/dialog — the dialog's whole read. */
+export interface ExportDialogDto {
+  readonly projectId: string;
+  readonly formats: ExportFormatDto[];
+  readonly obligations: {
+    readonly blockingOpen: number;
+    readonly open: number;
+    /** the §11.7 line — "2 blocking obligations open"; export never blocks on it. */
+    readonly line: string;
+    readonly items: ExportObligationDto[];
+    /** deferred obligations whose `pre_export` horizon just arrived (now open). */
+    readonly returnedIds: string[];
+  };
+  readonly statement: AiUseStatementDto;
+}
+
+export interface ExportRequestDto {
+  readonly format: "md" | "txt" | "docx";
+  /** the draft to export (default the highest-n head). */
+  readonly draftId?: string;
+  /** attach the AI-use statement as a trailing section (§8.4). */
+  readonly attachAiUse?: boolean;
+}
+
+/** A binary download result (the export POST + the standalone statement GET). */
+export interface ExportDownloadDto {
+  readonly bytes: ArrayBuffer;
+  readonly mediaType: string;
+  readonly fileName: string;
+}
+
+export interface AiUseAdditionDto {
+  readonly id: string;
+  readonly sentence: string;
+  readonly createdAt: string;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -691,6 +767,25 @@ export interface ApiClient {
     req: { personaId: string | null; profileSnapshotId?: string | null },
     init?: RequestInitLite,
   ): Promise<ProjectVoiceDto>;
+  // ---- PRB.11 — export + the AI-use statement ----
+  /** The export dialog read (formats, the never-blocking obligation line + links, the statement preview).
+   *  Opening the dialog sweeps `pre_export` deferral horizons (REQ-OBJ-3). */
+  getExportDialog(projectId: string, init?: RequestInitLite): Promise<ExportDialogDto>;
+  /** POST /projects/:id/export → the binary download. Never blocks on obligations (§11.7). */
+  exportProject(projectId: string, req: ExportRequestDto, init?: RequestInitLite): Promise<ExportDownloadDto>;
+  /** GET /projects/:id/ai-use — the statement JSON; `format` returns the standalone binary download. */
+  getAiUseStatement(projectId: string, init?: RequestInitLite): Promise<AiUseStatementDto>;
+  downloadAiUseStatement(
+    projectId: string,
+    format: "md" | "txt" | "docx",
+    init?: RequestInitLite,
+  ): Promise<ExportDownloadDto>;
+  /** Append one author sentence to the statement (REQ-VIS-10 — the ONLY statement write; append-only). */
+  appendAiUseAddition(
+    projectId: string,
+    sentence: string,
+    init?: RequestInitLite,
+  ): Promise<AiUseAdditionDto>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -706,6 +801,23 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     });
     if (!res.ok) throw new ApiError(res.status, url);
     return (await res.json()) as T;
+  }
+
+  /** A binary download (the export POST / standalone statement GET): bytes + media type + filename. */
+  async function download(path: string, init: RequestInit): Promise<ExportDownloadDto> {
+    const url = `${base}${path}`;
+    const res = await f(url, {
+      ...init,
+      headers: { ...baseHeaders, ...(init.headers as Record<string, string> | undefined) },
+    });
+    if (!res.ok) throw new ApiError(res.status, url);
+    const cd = res.headers.get("content-disposition") ?? "";
+    const fileName = /filename="?([^";]+)"?/.exec(cd)?.[1] ?? "export";
+    return {
+      bytes: await res.arrayBuffer(),
+      mediaType: res.headers.get("content-type") ?? "application/octet-stream",
+      fileName,
+    };
   }
 
   return {
@@ -954,6 +1066,39 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "PATCH",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify(req),
+      });
+    },
+    // ---- PRB.11 — export + the AI-use statement ----
+    async getExportDialog(projectId, init): Promise<ExportDialogDto> {
+      return json<ExportDialogDto>(`/projects/${encodeURIComponent(projectId)}/export/dialog`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async exportProject(projectId, req, init): Promise<ExportDownloadDto> {
+      return download(`/projects/${encodeURIComponent(projectId)}/export`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getAiUseStatement(projectId, init): Promise<AiUseStatementDto> {
+      return json<AiUseStatementDto>(`/projects/${encodeURIComponent(projectId)}/ai-use`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async downloadAiUseStatement(projectId, format, init): Promise<ExportDownloadDto> {
+      return download(
+        `/projects/${encodeURIComponent(projectId)}/ai-use?format=${encodeURIComponent(format)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async appendAiUseAddition(projectId, sentence, init): Promise<AiUseAdditionDto> {
+      return json<AiUseAdditionDto>(`/projects/${encodeURIComponent(projectId)}/ai-use/additions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ sentence }),
       });
     },
   };

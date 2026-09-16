@@ -1,9 +1,11 @@
-// @rhema/export — export — pandoc + typst container (skeleton service).
-// Skeleton package (P0.01). Real implementation lands in a later ticket.
+// @rhema/export — the pandoc export container (PRB.11; §12.1, §13.4). One conversion per invocation:
+// md / txt / docx from canonical markdown at beta (Typst/PDF + LaTeX → P1.18). Pandoc runs ONLY in
+// this image — `api`, `web` and `worker` call the ExportRunner seam; their images carry no pandoc.
 
 export const PACKAGE_NAME = "@rhema/export" as const;
 
-/** Marker export so the skeleton service/library is importable and the build graph is exercised. */
-export function packageInfo(): { name: string } {
-  return { name: PACKAGE_NAME };
-}
+export { EXPORT_FORMATS, EXPORT_FORMAT_INFO, exportMarkdown, exportFileName, ExportError } from "./export.js";
+export type { ExportFormat, ExportFormatInfo, ExportResult } from "./export.js";
+export { execPandoc, pandocBin, pandocAvailable, PandocError } from "./pandoc.js";
+export type { PandocExec, PandocArgs } from "./pandoc.js";
+export { runExportFile, createExportServer } from "./main.js";

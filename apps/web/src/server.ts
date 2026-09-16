@@ -13,6 +13,7 @@ import {
   dossierElement,
   revisionElement,
   editorElement,
+  exportElement,
   voicesElement,
   voiceNewElement,
   voiceDetailElement,
@@ -648,6 +649,103 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     await deps.dataSource.reviseWithEdits(session, t.row.id, t.draftId).catch(() => undefined);
     return c.redirect(`/p/${t.slug}`);
+  });
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // PRB.11 — export + the AI-use statement (§13.4, §8.4 REQ-VIS-10, §11.7). The dialog GET reads formats +
+  // the never-blocking obligation line + the statement preview (opening it sweeps pre_export horizons);
+  // the export POST proxies the binary download; the addition POST is the only statement write
+  // (append-only); /export/ai-use/:fmt is the standalone statement download.
+  // -------------------------------------------------------------------------------------------------------------------
+
+  /** slug → the project row (the shell's canonical lookup). */
+  const projectRow = async (c: Context, session: SessionHeaders) => {
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    return row ? { slug, row } : null;
+  };
+
+  app.get("/p/:project/export", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await projectRow(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const dialog = await deps.dataSource.getExportDialog(session, t.row.id).catch(() => null);
+    if (!dialog) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(
+      renderDocument(c.req.path, exportElement, {
+        export: {
+          slug: t.slug,
+          projectId: t.row.id,
+          dialog,
+          ...(c.req.query("error") ? { error: COPY.export.exportFailed } : {}),
+          ...(c.req.query("added") ? { added: true } : {}),
+        },
+      }),
+    );
+  });
+
+  // The export POST — a plain form POST that streams the download back (progressive enhancement: no JS).
+  app.post("/p/:project/export", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await projectRow(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const format = typeof form.format === "string" ? form.format : "md";
+    if (format !== "md" && format !== "txt" && format !== "docx") {
+      return c.redirect(`/p/${t.slug}/export?error=1`);
+    }
+    try {
+      const dl = await deps.dataSource.exportProject(session, t.row.id, {
+        format,
+        attachAiUse: form.attachAiUse === "on",
+      });
+      return new Response(dl.bytes, {
+        status: 200,
+        headers: {
+          "content-type": dl.mediaType,
+          "content-disposition": `attachment; filename="${dl.fileName}"`,
+        },
+      });
+    } catch {
+      return c.redirect(`/p/${t.slug}/export?error=1`);
+    }
+  });
+
+  // The append-only statement write — one sentence at a time (REQ-VIS-10; no edit/delete exists).
+  app.post("/p/:project/export/addition", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await projectRow(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const sentence = typeof form.sentence === "string" ? form.sentence.trim() : "";
+    if (sentence !== "") {
+      await deps.dataSource.appendAiUseAddition(session, t.row.id, sentence).catch(() => undefined);
+    }
+    return c.redirect(`/p/${t.slug}/export?added=1`);
+  });
+
+  // The standalone statement download (md/txt/docx — the §8.4 REQ-VIS-10 exportable artifact).
+  app.get("/p/:project/export/ai-use/:fmt", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const t = await projectRow(c, session);
+    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const fmt = c.req.param("fmt");
+    if (fmt !== "md" && fmt !== "txt" && fmt !== "docx") {
+      return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
+    const dl = await deps.dataSource.downloadAiUseStatement(session, t.row.id, fmt).catch(() => null);
+    if (!dl) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return new Response(dl.bytes, {
+      status: 200,
+      headers: {
+        "content-type": dl.mediaType,
+        "content-disposition": `attachment; filename="${dl.fileName}"`,
+      },
+    });
   });
 
   // -------------------------------------------------------------------------------------------------------------------

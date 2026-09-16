@@ -49,6 +49,7 @@ export const COPY = {
     betaNote: "The full editing surface arrives with the studio. This is the beta view.",
     importCta: "Import a draft",
     editCta: "Edit source",
+    exportCta: "Export",
   },
 
   import: {
@@ -471,6 +472,25 @@ export const COPY = {
     heading: "Not found",
     body: "That page doesn't exist.",
     home: "Go home",
+  },
+
+  // PRB.11 — the export dialog + the AI-use statement (§13.4, §8.4 REQ-VIS-10). Authorship-legibility
+  // framing only (REQ-POS-13): what ran, what you decided, what you added — never anything about detection.
+  export: {
+    heading: "Export",
+    lede: "Take the manuscript out as Markdown, plain text, or Word. Exports are never blocked — open obligations are listed, not enforced.",
+    formatLegend: "Format",
+    obligationsNote: "Listed for your records — export always proceeds.",
+    attachLabel: "Attach the AI-use statement",
+    attachNote: "A generated disclosure of how Rhēma was used on this manuscript — the workflows, model tiers, dates, and your decisions, straight from the run record.",
+    statementHeading: "AI-use statement",
+    statementNote: "Recomputed from the run record every time. Add your own sentences below; the generated sentences stay.",
+    additionLabel: "Add a sentence to the statement",
+    additionPlaceholder: "e.g. I rewrote the conclusion myself.",
+    additionCta: "Add sentence",
+    standaloneHeading: "Statement on its own",
+    exportCta: "Export",
+    exportFailed: "The export did not complete — nothing was downloaded.",
   },
 
   footer: "Rhēma · private beta",
