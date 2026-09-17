@@ -165,6 +165,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: licence policy (allowlist + checked-in exceptions — REQ-ARCH-40)
         run: pnpm check:licenses
       - name: no protocol markers in public bundles (REQ-ARCH-33)
