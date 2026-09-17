@@ -35,7 +35,17 @@
   Stripe answer — surface as a hard blocker if absent), and every PRB ticket (the image set).
 - **Run:** `implement-spec spec=docs/tickets/28f_PRB.15__prod-bringup.md`
 - **Gate status:** HUMAN-H6 prerequisites must hold before Stage B; a missing one is a hard
-  blocker, never guessed past.
+  blocker, never guessed past. **DISCHARGED 2026-09-17** — the operator's answers are recorded in
+  `docs/build/LEDGER.md` GATE DECISIONS (five `28f_PRB.15` rows): GCP footing = `rhema-507501` +
+  a separate `prod` Pulumi stack (us-central1; ADC + Pulumi backend verified); prod secrets =
+  sourced-per-plan (5 copied dev→prod, 3 generated fresh, 3 placeholders whose dependent legs defer
+  to PRB.16/PRB.17 — `provided: no` for `stripe-webhook-secret`/`resend-api-key`/
+  `anthropic-admin-key`); DNS = operator-controlled `rhema.tools` at the registrar (no Cloud DNS
+  zone — the agent emits `dnsRecords`, the operator applies them); budget = ~$50/mo target
+  authorized (honest always-on floor ~$95/mo documented; the stage facts implement the cheapest
+  prod-ready shape); Stripe = **test mode** (PRB.17's real-money leg runs test-mode; its live leg
+  self-defers). The Stage-B [OPERATOR GATE]s in this ticket and `infra/PROD-BRINGUP.md` are
+  discharged by those answers.
 - **Live stage:** **operator-gated** — Stage A is offline (IaC + runbook, no spend); Stage B is
   real GCP spend (`pulumi up prod`, prod AlloyDB kept warm).
 
