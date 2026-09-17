@@ -10,9 +10,13 @@ All of these must already hold; the runbook does not create accounts:
 
 - [ ] GCP footing: project `rhema-507501` (or a dedicated prod project) with billing enabled; region
       `us-central1`; ADC + `gcloud auth login` and a reachable Pulumi backend (`pulumi login`).
-- [ ] DNS control of **`rhema.app`** and **`rhemausercontent.com`** zones.
+- [ ] DNS control of the **`rhema.tools`** zone (one zone — the app is the apex, the api is
+      `api.rhema.tools`, the cookieless user-content origin is `usercontent.rhema.tools` +
+      `*.usercontent.rhema.tools`; **amended 2026-09-17** — the earlier `rhema.app` +
+      `rhemausercontent.com` pair is superseded, the operator does not control those domains).
 - [ ] A stated prod budget (AlloyDB stays warm; GKE + MIG + Cloud Run + Redis STANDARD_HA).
-- [ ] Google OAuth consent screen published for the prod domain; Resend sending domain verified.
+- [ ] Google OAuth consent screen published for `rhema.tools`; Resend sending domain verified for
+      `@rhema.tools`.
 - [ ] The Stripe live-mode answer recorded (gates the real-money leg — PRB.17, not this deploy).
 
 ## 1. Select/init the prod stack
@@ -39,7 +43,7 @@ pulumi config set --secret rhema:workerDatabaseUrl       'postgresql://…(restr
 pulumi config set --secret rhema:workerSystemDatabaseUrl 'postgresql://…(elevated)…/rhema'
 pulumi config set --secret rhema:proxyDatabaseUrl        'postgresql://…(restricted)…/rhema'
 pulumi config set --secret rhema:redisUrl                'redis://<redis-host>:6379'   # stack output redisHost
-pulumi config set          rhema:emailFrom               'hello@rhema.app'             # Resend-verified sender
+pulumi config set          rhema:emailFrom               'hello@rhema.tools'           # Resend-verified sender
 # Image refs (digests from step 2b) — real images only, never the placeholder:
 pulumi config set          rhema:proxyImage          '<repo>/egress-proxy@sha256:…'
 pulumi config set          rhema:runTaskImageDigest  '<repo>/run-task@sha256:…'
@@ -47,7 +51,7 @@ pulumi config set          rhema:serviceImages \
   '{"api":"<repo>/api@sha256:…","web":"<repo>/web@sha256:…","worker":"<repo>/worker@sha256:…",
     "fetcher":"<repo>/fetcher@sha256:…","convert":"<repo>/convert@sha256:…",
     "export":"<repo>/export@sha256:…","collab":"<repo>/collab@sha256:…"}'
-# internalApiUrl defaults to https://api.rhema.app on prod; proxyBaseUrl is set after the MIG stands up:
+# internalApiUrl defaults to https://api.rhema.tools on prod; proxyBaseUrl is set after the MIG stands up:
 pulumi config set          rhema:proxyBaseUrl        'https://<proxy-internal-address>:8443'
 ```
 
@@ -93,12 +97,15 @@ PROJECT=rhema-507501 STACK=prod ./infra/k8s/apply.sh
 
 ```bash
 pulumi stack output dnsRecords   # [{name,type,value},…] — every A record → the reserved LB IPv4
-# expected: rhema.app.  api.rhema.app.  rhemausercontent.com.  *.rhemausercontent.com.  → <lbIpAddress>
+# expected: rhema.tools.  api.rhema.tools.  usercontent.rhema.tools.  *.usercontent.rhema.tools.  → <lbIpAddress>
 ```
 
-Apply all four at the DNS provider. **The managed cert cannot authorize until these resolve** — poll
-`gcloud compute ssl-certificates describe rhema-prod-cert --global` until `status: ACTIVE` (can take
-minutes–an hour after DNS propagates).
+Apply all four in the `rhema.tools` zone. **The managed cert cannot authorize until these resolve** —
+poll `gcloud compute ssl-certificates describe rhema-prod-cert --global` until `status: ACTIVE` (can
+take minutes–an hour after DNS propagates). If the `*.usercontent.rhema.tools` SAN refuses managed-cert
+provisioning (wildcard managed certs have constraints), the fallback is dropping the wildcard SAN +
+host rule and serving objects from the bare `usercontent.rhema.tools` host — the app does not depend
+on per-workspace subdomains yet.
 
 ## 6. Seed the Secret Manager versions (out-of-band; values never in repo/state/ledger)
 
@@ -120,7 +127,7 @@ later leg — the key plumbing exists now):
 ```bash
 gcloud compute backend-buckets add-signed-url-key \
   --backend-bucket rhema-prod-usercontent-backend \
-  --key-name rhema-app-key --key-value "<the same base64url key stored in rhema-prod-user-content-signing-key>"
+  --key-name rhema-tools-key --key-value "<the same base64url key stored in rhema-prod-user-content-signing-key>"
 ```
 
 ## 7. Migrations + protocol seed on prod AlloyDB
@@ -179,8 +186,15 @@ recorded attestation differs, use THEIR values and correct the ticket by amendme
 ## 10. Smoke the stack (PRB.16's golden path picks up from here)
 
 ```bash
-curl -fsS https://api.rhema.app/healthz
-curl -fsS https://rhema.app/ | head
+curl -fsS https://api.rhema.tools/healthz
+curl -fsS https://rhema.tools/ | head
+# cookie isolation (single-zone amendment): any auth Set-Cookie must be `__Host-`-named with Secure +
+# Path=/ + HttpOnly and NO Domain= attribute — a Domain=rhema.tools cookie would ride to usercontent.*.
+# e.g. kick an OAuth start and inspect:  curl -si -XPOST https://api.rhema.tools/api/auth/sign-in/social \
+#   -H 'content-type: application/json' -d '{"provider":"google","callbackURL":"https://api.rhema.tools/"}' \
+#   | grep -i '^set-cookie'   # ⇒ __Host-rhema.* …; Secure; HttpOnly; SameSite=Lax  (no Domain=)
+# the user-content origin must never set a cookie of its own:
+curl -fsSI https://usercontent.rhema.tools/<a-seeded-object> | grep -i 'set-cookie' && echo FAIL
 # sandbox egress (from a runs-namespace pod): only the proxy answers; api.anthropic.com is blackholed.
 kubectl -n runs run egress-check --rm -i --image=curlimages/curl -- \
   sh -c 'curl -m5 -sS https://api.anthropic.com || echo BLOCKED; curl -m5 -sSk https://<proxy>:8443/healthz'

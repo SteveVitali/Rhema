@@ -5,9 +5,9 @@
 //
 // Service images come from `rhema:serviceImages` (a JSON `{service: digest-ref}` map the images CI
 // publishes — REQ-ARCH-39); anything unmapped falls back to `placeholderImage` so a bare `pulumi
-// preview` still plans cleanly. PRB.15: prod wires the REAL domains (`rhema.app` +
-// `*.rhemausercontent.com` — the stage facts' `domains` block), host-routing the api and the
-// cookieless user-content origin on the same external HTTPS LB + managed cert.
+// preview` still plans cleanly. PRB.15: prod wires the REAL domains (the `rhema.tools` zone — apex +
+// `api.` + `*.usercontent.` — the stage facts' `domains` block, amended 2026-09-17), host-routing the
+// api and the cookieless user-content origin on the same external HTTPS LB + managed cert.
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
@@ -381,7 +381,7 @@ export function createCompute(args: ComputeArgs): Compute {
                   ],
                 }
               : {}),
-            // PRB.15 — prod's web reads the real api origin (`https://api.rhema.app`) so the SPA's
+            // PRB.15 — prod's web reads the real api origin (`https://api.rhema.tools`) so the SPA's
             // data-source + the magic-link POST hit the LB-fronted api; non-prod keeps the default.
             ...(svc === "web"
               ? {
@@ -439,7 +439,7 @@ export function createCompute(args: ComputeArgs): Compute {
     backends: [{ group: webNeg.id }],
   });
 
-  // The api on the same LB (prod): host `api.rhema.app` routes to the api Cloud Run NEG — no public
+  // The api on the same LB (prod): host `api.rhema.tools` routes to the api Cloud Run NEG — no public
   // `run.app` surface, the service's ingress stays `INTERNAL_LOAD_BALANCER`.
   const apiNeg = new gcp.compute.RegionNetworkEndpointGroup(name("api-neg"), {
     region,
@@ -453,10 +453,12 @@ export function createCompute(args: ComputeArgs): Compute {
     backends: [{ group: apiNeg.id }],
   });
 
-  // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `*.rhemausercontent.com` is host-routed to a
-  // backend bucket over the PRIVATE, uniform-IAM `user-content` bucket — cookieless by construction (the
-  // domain is a separate registrable domain so session cookies can never reach it) and served
-  // attachment/octet-stream by `servingHeadersFor` (apps/convert/src/serving.ts). Objects stay private:
+  // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `usercontent.rhema.tools` + its wildcard
+  // are host-routed to a backend bucket over the PRIVATE, uniform-IAM `user-content` bucket —
+  // cookieless by construction (the origin emits no Set-Cookie, and on the shared `rhema.tools` zone —
+  // amended 2026-09-17 — the session side is defended by host-only `__Host-` cookies, see
+  // apps/api/src/auth.ts) and served attachment/octet-stream by `servingHeadersFor`
+  // (apps/convert/src/serving.ts). Objects stay private:
   // the app signs download URLs (CDN signed-url key added by the operator out-of-band — the runbook's
   // post-up step), so nothing is world-readable and `USE_ORIGIN_HEADERS` honors the private/no-store
   // cache-control the serving layer emits.
@@ -484,8 +486,8 @@ export function createCompute(args: ComputeArgs): Compute {
       : {}),
   });
 
-  // Google-managed cert. prod covers the REAL domains (stage facts): rhema.app + api.rhema.app +
-  // rhemausercontent.com + the *.rhemausercontent.com wildcard. Non-prod keeps the real-format
+  // Google-managed cert. prod covers the REAL domains (stage facts, amended 2026-09-17): rhema.tools +
+  // api.rhema.tools + usercontent.rhema.tools + the *.usercontent.rhema.tools wildcard. Non-prod keeps the real-format
   // placeholder TLD so the cert resource (and the HTTPS proxy/forwarding rule that depend on it) create
   // cleanly (a `.example` name is rejected at create — offline typecheck can't catch that); a non-prod
   // cert never reaches ACTIVE without DNS ownership, which is acceptable — the live run path flows

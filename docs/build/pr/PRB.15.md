@@ -77,3 +77,18 @@ flip the genuinely-proven deferral rows.
   under load (104.9ms vs <100ms; green standalone) — unrelated.
 - `pnpm check:protocol-markers` — OK (39 files) · `pnpm check:licenses` — OK (502 pkgs) ·
   `node scripts/check-upstream-diff.mjs` — OK · `check-build-memory.sh .` — **0 violations**
+
+---
+
+## Addendum — 2026-09-17 (same PR, follow-up commit): prod domains → the `rhema.tools` zone
+
+Operator decision: only **`rhema.tools`** is controlled. `PROD_DOMAINS` is now `rhema.tools` /
+`api.rhema.tools` / `usercontent.rhema.tools` (+ `*.usercontent.rhema.tools`), and every live
+reference (Pulumi program, `Pulumi.prod.yaml`, `PROD-BRINGUP.md`, `SECURITY.md`, fetcher UA,
+`serving.ts`) follows. Because the cookieless origin is now a sibling subdomain on the app's own
+zone, the separate-registrable-domain cookie boundary was rebuilt as **host-only `__Host-` cookies**
+in `apps/api/src/auth.ts` — unit-tested (`auth.test.ts`) at both the computed-cookie level and the
+real emitted `Set-Cookie` level. Dated `> Amended 2026-09-17:` notes were appended to `28c_HUMAN-H6`,
+`28f_PRB.15`, `28g_PRB.16`, the design spec (a `⚑` banner at §13.3), and the D-PRB.02-1 deferral row.
+Nothing else changed: `signupMode:"open"`, the 12 required secret ids, warm AlloyDB, the
+`dnsRecords` output shape, the Stage-B checklist.

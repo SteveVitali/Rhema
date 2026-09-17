@@ -97,15 +97,21 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
 });
 
 describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => {
-  it("prod carries the real domains: rhema.app + api.rhema.app + the cookieless rhemausercontent.com", () => {
+  it("prod carries the real domains: rhema.tools apex + api.rhema.tools + the cookieless usercontent.rhema.tools (amended 2026-09-17)", () => {
     expect(STAGES.prod.domains).toEqual(PROD_DOMAINS);
-    expect(STAGES.prod.domains!.app).toBe("rhema.app");
-    expect(STAGES.prod.domains!.api).toBe("api.rhema.app");
-    // The user-content origin is a SEPARATE registrable domain — the XSS blast-radius cut (§12.3):
-    // neither domain is a subdomain of the other, so session cookies on rhema.app can never reach it.
-    expect(STAGES.prod.domains!.userContent).toBe("rhemausercontent.com");
-    expect(STAGES.prod.domains!.userContent.endsWith(`.${STAGES.prod.domains!.app}`)).toBe(false);
-    expect(STAGES.prod.domains!.app.endsWith(`.${STAGES.prod.domains!.userContent}`)).toBe(false);
+    expect(STAGES.prod.domains!.app).toBe("rhema.tools");
+    expect(STAGES.prod.domains!.api).toBe("api.rhema.tools");
+    expect(STAGES.prod.domains!.userContent).toBe("usercontent.rhema.tools");
+    // Amended 2026-09-17: the operator controls ONE zone (rhema.tools), so the user-content origin is a
+    // SIBLING subdomain on the app's own registrable domain — the earlier separate-registrable-domain
+    // isolation (rhemausercontent.com) is superseded. The origin is still a distinct host + a distinct
+    // origin (different port of entry on the LB, a different backend, zero Set-Cookie), and the session
+    // side of the boundary is enforced by host-only `__Host-` cookies (asserted in
+    // apps/api/src/auth.test.ts): a `Domain=rhema.tools` plant from usercontent.* can neither shadow the
+    // `__Host-`-named session cookie nor receive it.
+    expect(STAGES.prod.domains!.userContent.endsWith(`.${STAGES.prod.domains!.app}`)).toBe(true); // same zone
+    expect(STAGES.prod.domains!.userContent).not.toBe(STAGES.prod.domains!.app); // a distinct host/origin
+    expect(STAGES.prod.domains!.api.endsWith(`.${STAGES.prod.domains!.app}`)).toBe(true);
   });
 
   it("non-prod stages carry no domains block (the placeholder `${stack}.rhema.dev` cert suffices)", () => {

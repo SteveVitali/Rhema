@@ -7,7 +7,7 @@ import { assertPublicHost, type DnsResolver } from "./ssrf.js";
 export const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 export const TIMEOUT_MS = 20_000; // 20 s
 export const MAX_REDIRECTS = 5;
-export const USER_AGENT = "RhemaBot/1.0 (+https://rhema.app/bot)";
+export const USER_AGENT = "RhemaBot/1.0 (+https://rhema.tools/bot)";
 
 /** The content types the fetcher will return (an allowlist; everything else is refused before download). */
 export const DEFAULT_CONTENT_TYPE_ALLOWLIST = [
