@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { InMemoryContentStore } from "@rhema/mirror";
+import { listCostUsd, platformCredits, RATE_TABLE_V1, type MeteredUsage } from "@rhema/contracts";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "./testing/pg.js";
 import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
@@ -6,11 +8,13 @@ import {
   commitStep,
   failStep,
   finalizeRun,
+  harvestStep,
   heartbeat,
   hydration,
   postEvents,
   StaleTaskError,
 } from "./internal-api.js";
+import { rateTableCreditRenderer, TIER_MODEL } from "./credit-renderer.js";
 
 let db: OrchestratorTestDb;
 let deps: TestDeps;
@@ -266,5 +270,73 @@ describe("failStep — records the failure AND surfaces it (D-P0.15e-4 observabi
     });
     expect(res).toEqual({ ok: false, code: "stale_task", currentAttempt: 2 });
     expect(deps.eventWriter.typesForRun("run1")).not.toContain("engine.error");
+  });
+});
+
+describe("harvest — provisional sdk_stream usage priced by the rate table (D-P0.08-2; REQ-PROD-15)", () => {
+  it("the provisional usage.tick lands within ±2% of the proxy-metered figure at production scale", async () => {
+    // The production pod posts each phase's SDK usage here (POST /internal/runs/:id/steps/:key/harvest), and
+    // run-routes binds `rateTableCreditRenderer`. Drive the REAL handler + the REAL renderer over a
+    // production-scale snapshot and compare against the figure the egress proxy would meter for the same
+    // usage — list cost under the run's pinned table at the tier's representative model × the platform peg.
+    // This is the deterministic half of §12.7 cross-check-1 (the live ±2% leg is PRB.17's).
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "running",
+      currentAttempt: 1,
+      spentCredits: 200,
+      capCredits: 2091,
+    });
+    const usage = {
+      inputTokens: 1_800_000,
+      outputTokens: 120_000,
+      cacheReadTokens: 3_000_000,
+      cacheCreationTokens: 250_000,
+      webSearchRequests: 4,
+      webFetchRequests: 2,
+      costUsd: 0,
+    };
+    const res = await harvestStep(
+      { ...deps, store: new InMemoryContentStore(), renderCredits: rateTableCreditRenderer },
+      {
+        runId: "run1",
+        attempt: 1,
+        workspaceId: seed.workspaceId,
+        stepKey: "intake",
+        ordinal: 0,
+        seat: "editor",
+        versions: [],
+        usage,
+      },
+    );
+    expect(res.ok).toBe(true);
+
+    const metered: MeteredUsage = {
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheCreationTokens,
+      webSearchRequests: usage.webSearchRequests,
+      webFetchRequests: usage.webFetchRequests,
+    };
+    const proxyCredits = platformCredits(listCostUsd(metered, RATE_TABLE_V1, TIER_MODEL.balanced!));
+    expect(proxyCredits).toBeGreaterThan(0);
+    if (res.ok) {
+      const divergence = Math.abs(res.provisionalCredits - proxyCredits) / proxyCredits;
+      expect(divergence).toBeLessThanOrEqual(0.02); // within the §17 exit tolerance — only the display round
+    }
+
+    // the provisional row + the usage.tick event carry it; the row is a display figure, never the meter.
+    const row = (
+      await db.txRunner.run(seed.workspaceId, (tx) =>
+        tx.query("select credits, list_cost_usd, source from usage_records where run_id='run1'", []),
+      )
+    ).rows[0] as { credits: number; list_cost_usd: number; source: string };
+    expect(row.source).toBe("sdk_stream");
+    expect(Number(row.list_cost_usd)).toBe(0);
+    const tick = deps.eventWriter.forRun("run1").find((e) => e.type === "usage.tick");
+    expect(tick?.payload).toMatchObject({ spentCredits: 200 + Number(row.credits), capCredits: 2091 });
   });
 });

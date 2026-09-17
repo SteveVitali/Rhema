@@ -32,6 +32,7 @@ import {
   handleRunResume,
   handleRunCancel,
   handleRunReap,
+  handleStrandedSweep,
   type WorkerRunDeps,
   type WorkerRunConfig,
   type RunJobPayload,
@@ -291,9 +292,12 @@ export async function startWorker(): Promise<void> {
     for (const job of jobs) await handleRunCancel(deps, job.data);
   });
 
-  // crons: the reaper (1 min), the parked sweep (hourly), run-event retention + partition maintenance (daily).
+  // crons: the reaper (1 min — heartbeat-orphans + the stranded-run sweep, PRB.14), the parked sweep
+  // (hourly), run-event retention + partition maintenance (daily).
   await boss.work(RUN_JOBS.reap, async () => {
     await handleRunReap(deps);
+    const swept = await handleStrandedSweep(deps);
+    for (const s of swept) console.log("[worker] stranded-sweep:", JSON.stringify(s));
   });
   await boss.schedule(RUN_JOBS.reap, "* * * * *");
 

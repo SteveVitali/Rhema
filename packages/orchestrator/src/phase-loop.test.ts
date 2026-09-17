@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeEngine, FIXTURES, type PhaseRequest } from "@rhema/engine";
 import { WORKFLOW_MANIFESTS, type PhaseManifest } from "@rhema/protocols";
+import { listCostUsd, platformCredits, RATE_TABLE_V1, type MeteredUsage } from "@rhema/contracts";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "./testing/pg.js";
 import { makeDeps, type TestDeps } from "./testing/deps.js";
 import { runPhase, type OracleInputs } from "./phase-loop.js";
-import { rateTableCreditRenderer } from "./credit-renderer.js";
+import { rateTableCreditRenderer, TIER_MODEL } from "./credit-renderer.js";
 import { createRun, type CreateRunInput } from "./run-creation.js";
 import { provisionRun, type JobLauncher, type ProvisionArgs } from "./provision.js";
 import { commitStep, heartbeat, finalizeRun, failStep } from "./internal-api.js";
@@ -138,6 +139,54 @@ describe("phase loop — completion oracle + guided retry (AC8; REQ-SPEC-13)", (
     expect(Number(row.credits)).toBe(777);
     const tick = withRenderer.eventWriter.forRun("run1").find((e) => e.type === "usage.tick");
     expect((tick?.payload as { spentCredits: number }).spentCredits).toBe(777);
+  });
+
+  it("the provisional usage.tick carries the proxy-priced figure (D-P0.08-2; §12.7 cross-check-1 machinery)", async () => {
+    // The deploy binds `rateTableCreditRenderer`; the proxy meters the SAME usage at the SAME pinned table +
+    // platform peg. This drives a real fixture through the loop and asserts the provisional sdk_stream row /
+    // usage.tick figure is EXACTLY the proxy's price for the snapshot (modulo the integer display round) —
+    // the run-scale ±2% check is in internal-api.test.ts's harvest test (per-phase fixtures are small enough
+    // that the display round dominates; the live leg is PRB.17's).
+    const withReal = makeDeps(db, { renderCredits: rateTableCreditRenderer });
+    const engine = new FakeEngine(happyFixture);
+    const outcome = await runPhase(withReal, engine, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      modelTier: "balanced",
+      rateTableVersion: 1,
+      ordinal: 0,
+      of: 7,
+      phase: intake,
+      request: makeReq(intake, 1, 0, 7),
+      readOracleInputs: () => Promise.resolve({ phaseResult: { status: "done" }, facts: { thesisPresent: true, inventoryPresent: true } }),
+    });
+    expect(outcome.kind).toBe("complete");
+
+    // the proxy's figure for the same snapshot: list cost under the run's pinned table at the tier's
+    // representative model, × the platform peg — exactly what a `source:'proxy'` row would carry.
+    const u = engine.usage();
+    const metered: MeteredUsage = {
+      inputTokens: u.inputTokens,
+      outputTokens: u.outputTokens,
+      cacheReadTokens: u.cacheReadTokens,
+      cacheWriteTokens: u.cacheCreationTokens,
+      webSearchRequests: u.webSearchRequests,
+      webFetchRequests: u.webFetchRequests,
+    };
+    const proxyCredits = platformCredits(listCostUsd(metered, RATE_TABLE_V1, TIER_MODEL.balanced!));
+    expect(proxyCredits).toBeGreaterThan(0); // the fixture drives a non-trivial snapshot
+
+    const row = (
+      await db.txRunner.run(seed.workspaceId, (tx) =>
+        tx.query("select credits, list_cost_usd from usage_records where run_id='run1' and source='sdk_stream'", []),
+      )
+    ).rows[0] as { credits: number; list_cost_usd: number };
+    expect(Number(row.credits)).toBe(Math.round(proxyCredits)); // display-round only — never double-charged
+    expect(Number(row.list_cost_usd)).toBe(0); // provisional rows never pretend to meter dollars
+
+    const tick = withReal.eventWriter.forRun("run1").find((e) => e.type === "usage.tick");
+    expect((tick?.payload as { spentCredits: number }).spentCredits).toBe(Number(row.credits));
   });
 
   it("rateTableCreditRenderer (the deploy default) prices a token snapshot into non-zero credits", () => {

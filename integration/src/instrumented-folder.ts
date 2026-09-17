@@ -30,6 +30,11 @@ export interface InstrumentedRunFacts {
   readonly claims: number;
   /** the run's finding count (0 if none). */
   readonly findings: number;
+  /**
+   * the revision moves the run recorded on obligations (0 if none). A revise estimator reads it as
+   * `movesWithResearch` — measured post-run from `obligation_transitions.run_id` (the run's own moves).
+   */
+  readonly moves: number;
   /** when the run was metered. */
   readonly measuredAt: Date | string;
 }
@@ -51,7 +56,7 @@ export function buildInstrumentedMeasurement(run: InstrumentedRunRef, facts: Ins
   const inputs: EstimatorInputs =
     run.workflow === "profile_voice"
       ? { wordsRead: facts.words, piecesRead: 1, holdouts: variant === "full" ? 1 : 0 }
-      : { words: facts.words, claims: facts.claims, findings: facts.findings };
+      : { words: facts.words, claims: facts.claims, findings: facts.findings, movesWithResearch: facts.moves };
   return {
     runId: run.runId,
     tier: facts.tier,
@@ -69,6 +74,7 @@ interface InputRow {
   words: string | number | null;
   claims: string | number | null;
   findings: string | number | null;
+  moves: string | number | null;
 }
 
 function toNum(v: string | number | null): number {
@@ -87,11 +93,17 @@ export function createDbInstrumentedFolder(now: () => Date = () => new Date()): 
 
     const res = await exec.query(
       `select r.model_tier,
-              (select av.word_count
-                 from drafts d join artifact_versions av on av.id = d.promoted_version_id
-                where d.id = (r.inputs->>'draftId')) as words,
+              coalesce(
+                (select av.word_count
+                   from drafts d join artifact_versions av on av.id = d.promoted_version_id
+                  where d.id = (r.inputs->>'draftId')),
+                -- a voice run has no draftId: its corpus words are the §9.3 snapshot's corpus_size_at_build.
+                nullif(r.inputs->'snapshot'->>'corpus_size_at_build', '')::int
+              ) as words,
               (select count(*) from claims c where c.draft_id = (r.inputs->>'draftId')) as claims,
-              (select count(*) from findings f where f.draft_id = (r.inputs->>'draftId')) as findings
+              (select count(*) from findings f where f.draft_id = (r.inputs->>'draftId')) as findings,
+              -- a revise run's measured moves: the obligation transitions the run itself recorded.
+              (select count(*) from obligation_transitions ot where ot.run_id = r.id) as moves
          from runs r where r.id = $1`,
       [run.runId],
     );
@@ -102,6 +114,7 @@ export function createDbInstrumentedFolder(now: () => Date = () => new Date()): 
       words: toNum(row?.words ?? null),
       claims: toNum(row?.claims ?? null),
       findings: toNum(row?.findings ?? null),
+      moves: toNum(row?.moves ?? null),
       measuredAt: now(),
     };
     const m = buildInstrumentedMeasurement(run, facts);

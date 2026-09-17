@@ -7,7 +7,9 @@
 // store and repoint each `<proj>_av1` at it (disabling the immutability trigger for the one update).
 //
 // P0.15k's three-project exit criterion needs all of proj_pv / proj_sd / proj_cr to review real prose, so the
-// fixup covers all three (P0.15f/g/h/i exercised proj_pv only). Idempotent. Run:
+// fixup covers all three (P0.15f/g/h/i exercised proj_pv only); PRB.14 adds (3) the AUTHOR-CORPUS fixup —
+// the seeded persona `per_seed`'s three included samples get real prose repointed over their placeholder shas
+// (D-P0.15k-1), so a `profile_voice` run's §9.3 corpus snapshot materializes. Idempotent. Run:
 //
 //   DATABASE_URL=postgres://…  OBJECTS_BUCKET=rhema-dev-artifacts  node scripts/live/prepare-fixture.mjs
 //
@@ -220,10 +222,96 @@ interface DraftFixup {
 }
 
 const DRAFTS: readonly DraftFixup[] = [
+  // `<proj>_av1`: the frozen v1 a Review materializes; `<proj>_av2`: the WORKING v2 head a Revise targets
+  // (D-P0.15k-1 — the revise-target fixture). The working draft is the same essay mid-revision.
   { versionId: "proj_pv_av1", markdown: DRAFT_PV },
+  { versionId: "proj_pv_av2", markdown: DRAFT_PV },
   { versionId: "proj_sd_av1", markdown: DRAFT_SD },
+  { versionId: "proj_sd_av2", markdown: DRAFT_SD },
   { versionId: "proj_cr_av1", markdown: DRAFT_CR },
+  { versionId: "proj_cr_av2", markdown: DRAFT_CR },
 ];
+
+// ---- author corpus (D-P0.15k-1) ---------------------------------------------------------------------------
+// The seeded persona `per_seed` carries three INCLUDED samples whose `sample_versions` rows have a placeholder
+// sha (`b`×64) and no store bytes — a `profile_voice` run's §9.3 corpus snapshot would dangle the same way the
+// drafts did. Real sample prose (an author's actual body-of-work texture: short nonfiction, a letter, a
+// review-style piece) is uploaded here and each `content_sha256`/`original_sha256`/`word_count` repointed.
+
+const SAMPLE_1 = `Field notes on the caucus
+
+The room smelled of burnt coffee and floor wax, the way these rooms always do, and the folding chairs had been
+set out in rows that assumed twice the attendance we got. Nineteen of us, counting the parliamentarian, who
+counted himself twice out of habit.
+
+What struck me, staying late after the vote, was how little of the evening had been about the motion. The
+motion passed 14–5 and took eleven minutes. The other two hours were the caucus doing its real business: the
+treasurer's recital of obligations, the long negotiation over whether the winter mailing would go out under the
+old name or the new one, the quiet trading of who would call whom about the venue deposit. Democracy's paper
+trail is minutes and motions; democracy's substance is who stays to stack the chairs.
+
+I keep a note of these things because they vanish. The official record will say the motion carried. It will not
+say that Marta cried a little during the treasurer's report, or that the argument about the mailing was really
+about whether the organization still exists. It was. Nineteen people in a church basement on a Tuesday is not
+nothing. It is, on the contrary, nearly everything.
+`;
+
+const SAMPLE_2 = `A letter about slow reading
+
+You asked how I read now, and the honest answer is badly, or rather slowly, which I have decided are different
+things. I used to finish a book the way you finish a meal — course by course, in order, at a sitting pace. Now I
+keep three going and let them argue with each other across the weeks.
+
+The slowness is partly the phone, which you know, but it is also partly deliberate. I have started copying out
+sentences by hand, the way our grandmother copied recipes. It is absurdly inefficient and it is the best reading
+I have done in years. A sentence you have to write out is a sentence you have to understand, or at least decide
+to misunderstand on purpose. You cannot skim with a pen.
+
+The other change: I re-read before I read. Twenty pages of the last book before ten of the new one. It makes
+every book take twice as long and it makes every book better, because the new one arrives into a mind already
+occupied, already arguing. You would hate it. Try it anyway.
+`;
+
+const SAMPLE_3 = `Review of the year in committees
+
+It is customary, in a year-end review, to pretend the year had a shape. Ours had a shape the way a seated crowd
+has a shape: discernible, mostly incidental, and different depending where you stood.
+
+The facilities committee met eleven times and accomplished one thing — the boiler — which is eleven more
+meetings than the boiler needed and one more thing than most years get. The governance committee accomplished
+nothing and met with great seriousness, which is its own accomplishment and should be recorded as such. The
+nominating committee, as always, did the year's real work in the parking lot afterward.
+
+If there is a theme it is this: the institution runs on the labor of people who have learned not to say so.
+The minutes thank no one; the work thanks everyone. A fairer accounting would invert that. We will not produce
+one. Next year the committees will meet again, the boiler will hold or it will not, and the same five people
+will stay after to stack the chairs. This review thanks them, for the record, once.
+`;
+
+interface SampleFixup {
+  /** the sample_versions id the seed created with a placeholder sha. */
+  readonly versionId: string;
+  readonly markdown: string;
+}
+
+const SAMPLES: readonly SampleFixup[] = [
+  { versionId: "sv_seed1", markdown: SAMPLE_1 },
+  { versionId: "sv_seed2", markdown: SAMPLE_2 },
+  { versionId: "sv_seed3", markdown: SAMPLE_3 },
+];
+
+/** Upload real bytes for one sample version + repoint its row (content-sha keyed, like repointDraft). */
+async function repointSample(pool: pg.Pool, store: ContentStore, fixup: SampleFixup, log: (m: string) => void): Promise<void> {
+  const bytes = Buffer.from(fixup.markdown, "utf8");
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
+  const wordCount = fixup.markdown.split(/\s+/).filter(Boolean).length;
+  const { key } = await store.put(WS, sha256, bytes);
+  const res = await pool.query(
+    `update sample_versions set content_sha256=$1, original_sha256=$1, word_count=$2 where id=$3`,
+    [sha256, wordCount, fixup.versionId],
+  );
+  log(`repointed ${fixup.versionId}: ${res.rowCount} row(s) → ${key} (${wordCount} words)`);
+}
 
 /** Upload real bytes for one draft version + repoint its row (the seed placeholder has no GCS object). */
 async function repointDraft(pool: pg.Pool, store: ContentStore, fixup: DraftFixup, log: (m: string) => void): Promise<void> {
@@ -274,6 +362,13 @@ async function main(): Promise<void> {
     const store = await createGcsContentStore({ bucketName: objectsBucket, workspaceId: WS });
     for (const fixup of DRAFTS) {
       await repointDraft(pool, store, fixup, log);
+    }
+
+    // 3. Author-corpus fixup (D-P0.15k-1) — the seeded persona's three included samples get real bytes so a
+    //    `profile_voice` build's §9.3 corpus snapshot materializes (the instrumented voice run's fold reads
+    //    `wordsRead`/`piecesRead` off exactly these rows).
+    for (const fixup of SAMPLES) {
+      await repointSample(pool, store, fixup, log);
     }
     log("done.");
   } finally {
