@@ -148,6 +148,9 @@ jobs:
     name: public-safe (gitleaks / markers / licence policy)
     needs: typecheck-lint-unit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
