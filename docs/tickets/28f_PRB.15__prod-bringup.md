@@ -1,5 +1,15 @@
 # PRB.15 — Prod bring-up: the `prod` stage profile, the Pulumi prod stack, and the operator-gated deploy
 
+> **Amended 2026-09-17:** the operator controls the **`rhema.tools`** zone only — `rhema.app` and
+> `rhemausercontent.com` are NOT available and never will be. The prod serving surface is therefore:
+> app on the **`rhema.tools` apex**, api on **`api.rhema.tools`**, the cookieless user-content origin
+> on **`usercontent.rhema.tools`** (+ the `*.usercontent.rhema.tools` wildcard). "DNS control" below
+> means the one `rhema.tools` zone. The cookie-isolation half of the old separate-domain scheme is
+> preserved by construction instead of by TLD split: the user-content origin emits NO cookies and
+> every auth cookie is host-only `__Host-`-prefixed (`apps/api/src/auth.ts`, unit-asserted by
+> `auth.test.ts`), so a `Domain=rhema.tools` plant from a sibling subdomain can neither shadow nor
+> receive session material.
+
 - **Sequence:** inserted — runs **after `28e_PRB.14`, before `28g_PRB.16`**. Sorts as `28f`
   (prod-launch round; § Plan extensions, **ADR-008**).
 - **Phase:** LV — prod launch (the deploy itself).

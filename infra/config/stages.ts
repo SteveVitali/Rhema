@@ -15,26 +15,30 @@ import type { SignupMode } from "@rhema/contracts";
 export type StageKind = "dev" | "preview" | "prod";
 
 /**
- * PRB.15 — the production serving surface (§13.1; `D-PRB.02-1`'s IaC leg). The app and api ride the
- * apex + `api.` subdomain of `rhema.app`; user-uploaded content serves from the separate registrable
- * `rhemausercontent.com` (cookieless — a same-origin XSS can never reach session material) with a
- * wildcard cert covering per-workspace content subdomains. Non-prod stages keep the
- * `${stack}.rhema.dev` placeholder and carry no `domains` block.
+ * PRB.15 — the production serving surface (§13.1; `D-PRB.02-1`'s IaC leg). **Amended 2026-09-17:** the
+ * operator controls the single `rhema.tools` zone (the earlier `rhema.app` + `rhemausercontent.com`
+ * scheme is superseded). The app rides the apex, the api the `api.` subdomain, and user-uploaded
+ * content serves from the cookieless `usercontent.rhema.tools` origin (+ the `*.` wildcard for
+ * per-workspace content hosts). The separate-registrable-domain split is gone, so cookie isolation
+ * now rests on the `usercontent` origin setting NO cookies and every auth cookie being host-only
+ * `__Host-`-prefixed — a `Domain=rhema.tools` cookie planted from a sibling subdomain can neither
+ * shadow the session nor leak it back (see `apps/api/src/auth.ts`, asserted by `auth.test.ts`).
+ * Non-prod stages keep the `${stack}.rhema.dev` placeholder and carry no `domains` block.
  */
 export interface StageDomains {
-  /** The web app's public origin (`rhema.app` on prod). */
+  /** The web app's public origin (`rhema.tools` apex on prod). */
   readonly app: string;
-  /** The api service's public origin (`api.rhema.app` on prod — same LB, host-routed). */
+  /** The api service's public origin (`api.rhema.tools` on prod — same LB, host-routed). */
   readonly api: string;
-  /** The cookieless user-content origin suffix; objects serve under `*.rhemausercontent.com`. */
+  /** The cookieless user-content origin host; objects may also serve under `*.usercontent.rhema.tools`. */
   readonly userContent: string;
 }
 
 /** Every domain the prod managed certificate + URL map must cover (apex, api, wildcard user-content). */
 export const PROD_DOMAINS: StageDomains = {
-  app: "rhema.app",
-  api: "api.rhema.app",
-  userContent: "rhemausercontent.com",
+  app: "rhema.tools",
+  api: "api.rhema.tools",
+  userContent: "usercontent.rhema.tools",
 } as const;
 
 /**
@@ -57,7 +61,7 @@ export const ALL_SECRET_IDS = [
   "anthropic-admin-key", // worker — the Usage & Cost report for usage.reconcile (PRB.08)
   "ops-alert-webhook-url", // worker — the >2%-drift / balance-divergence alert sink (PRB.08)
   "user-content-signing-key", // api — signs the CDN download URLs for the PRIVATE user-content bucket
-  //   (the *.rhemausercontent.com origin serves only signed requests; the same key is added to the
+  //   (the *.usercontent.rhema.tools origin serves only signed requests; the same key is added to the
   //   backend bucket by the operator — `gcloud compute backend-buckets add-signed-url-key`, runbook)
 ] as const;
 

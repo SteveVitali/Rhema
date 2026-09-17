@@ -1,5 +1,10 @@
 # PRB.16 — Prod golden-path verification: one real user journey end-to-end on prod
 
+> **Amended 2026-09-17:** the prod zone is **`rhema.tools`** only (the `rhema.app` /
+> `rhemausercontent.com` pair referenced below is superseded — see the 28f amendment note): app on
+> the `rhema.tools` apex, api on `api.rhema.tools`, the cookieless user-content origin on
+> `[*.]usercontent.rhema.tools`.
+
 - **Sequence:** inserted — runs **after `28f_PRB.15` (prod is deployed), before
   `28h_PRB.17`**. Sorts as `28g` (prod-launch round; § Plan extensions, **ADR-008**).
 - **Phase:** LV — prod launch (the live-driving verification).

@@ -69,7 +69,7 @@ export function createIam(args: IamArgs): Iam {
   // the values live only in Secret Manager.
   grantSecret("api-verifies-stripe-webhook", secrets.stripeWebhookSecret, serviceAccounts["api"]);
   grantSecret("api-verifies-email-action", secrets.emailActionSecret, serviceAccounts["api"]);
-  // The api signs the CDN download URLs the private `*.rhemausercontent.com` origin verifies (the same
+  // The api signs the CDN download URLs the private `*.usercontent.rhema.tools` origin verifies (the same
   // key is `add-signed-url-key`'d onto the backend bucket out-of-band — the runbook's post-up step).
   grantSecret("api-signs-usercontent", secrets.userContentSigningKey, serviceAccounts["api"]);
   // The billing worker reads Stripe (PRB.08), mints the same one-click HMAC (PRB.09), reads the Resend

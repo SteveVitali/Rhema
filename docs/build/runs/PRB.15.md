@@ -178,3 +178,45 @@ migrations/`seedProtocols`/k8s/DNS/secrets/provenance/the D-P0.13-2 write.
 - **AR repo now IaC'd** (`rhema-<stack>` per stack) — removes the out-of-band `rhema-dev` repo; if a
   same-named repo exists on a re-deployed dev, `pulumi import` it once (documented in the runbook's
   image step).
+
+---
+
+## Addendum — 2026-09-17: prod domain re-scoped to the `rhema.tools` zone
+
+The operator controls **`rhema.tools` only** — `rhema.app` + `rhemausercontent.com` are not
+available (and never will be). The prod serving surface was re-factored onto the single zone:
+
+- `PROD_DOMAINS` (`infra/config/stages.ts`): `rhema.tools` apex · `api.rhema.tools` ·
+  `usercontent.rhema.tools` (+ `*.usercontent.rhema.tools` wildcard — kept for per-workspace
+  content hosts; the runbook notes the bare-host fallback if the wildcard SAN fails managed-cert
+  provisioning). Every `rhema.app`/`rhemausercontent.com` reference in live code, the Pulumi program
+  (comments; the names were always `domains`-block-driven), `Pulumi.prod.yaml`, `PROD-BRINGUP.md`
+  (incl. `emailFrom` → `hello@rhema.tools`), `SECURITY.md` (`security@rhema.tools`), the fetcher
+  UA, and `apps/convert/src/serving.ts` (`USERCONTENT_ORIGIN`) now reads `rhema.tools`.
+
+- **Cookie isolation rebuilt for a single zone (the security-critical half).** The separate-
+  registrable-domain boundary is gone: `usercontent.rhema.tools` is a sibling subdomain of the apex,
+  so a `Domain=rhema.tools` cookie set there would otherwise ride to `rhema.tools`/`api.rhema.tools`
+  (clobber) and a Domain-scoped session cookie would leak back. `createAuth` (`apps/api/src/auth.ts`)
+  now emits every Better Auth cookie **host-only under a literal `__Host-` name**
+  (`cookiePrefix: "__Host-rhema"`, `useSecureCookies: false` so the library's `__Secure-` prefix
+  doesn't break the position-0 rule, `crossSubDomainCookies.enabled: false` — never Domain-scoped,
+  `defaultCookieAttributes: {secure, sameSite:"lax", path:"/", httpOnly:true}` on https base URLs;
+  http dev keeps a plain `rhema-dev.` prefix since browsers reject `__Host-` without Secure). All
+  Better Auth cookies — session, `session_data`, `dont_remember`, `account_data`, OAuth `oauth_state`
+  /`state`/`nonce`/`code_verifier` — flow through the one `createCookieGetter`, so the block covers
+  every Set-Cookie the api can emit. `apps/api/src/auth.test.ts` (new) asserts the computed cookie
+  set AND a real `Set-Cookie` off `auth.handler` (`__Host-rhema.oauth_state=…; Secure; Path=/;
+  HttpOnly; SameSite=Lax` — no `Domain=`). `AuthSecrets` gained optional `trustedOrigins` (the apex→
+  api cross-origin auth calls D-P0.01-3 will need). Web sets no cookies (it only forwards the
+  inbound `cookie` header); the user-content backend bucket cannot emit Set-Cookie — verified by
+  code sweep, and asserted again in the runbook's smoke step.
+
+- **Amendment notes (append-only, history not rewritten):** `28c_HUMAN-H6`, `28f_PRB.15`, and
+  `28g_PRB.16` each carry a dated `> Amended 2026-09-17:` note; `docs/rhema-design-spec.md` carries
+  the `⚑ Amendment — 2026-09-17` banner at §13.3 + a status-line mention; the D-PRB.02-1 deferral
+  row got a dated note re-scoping its "separate registrable domain" AC wording. Everything else
+  (older tickets, design docs, build history, the PHASE LOG) is untouched landed history.
+
+- **Unchanged:** `signupMode:"open"` on prod, the 12 `requiredSecrets` ids, warm ≥4-vCPU AlloyDB,
+  the `dnsRecords` output shape (now emits the `rhema.tools` A records), the Stage-B runbook steps.

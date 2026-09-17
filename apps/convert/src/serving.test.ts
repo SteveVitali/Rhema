@@ -24,10 +24,14 @@ describe("servingHeadersFor (usercontent origin)", () => {
     expect(RENDERED_ALLOWLIST).toContain("image/png");
   });
 
-  it("the usercontent origin is a separate registrable domain and cookieless", () => {
-    expect(USERCONTENT_ORIGIN.registrableDomain).toBe("rhemausercontent.com");
+  it("the usercontent origin is a distinct cookieless host on the app's zone (amended 2026-09-17)", () => {
+    expect(USERCONTENT_ORIGIN.host).toBe("usercontent.rhema.tools");
+    expect(USERCONTENT_ORIGIN.registrableDomain).toBe("rhema.tools");
     expect(USERCONTENT_ORIGIN.setsCookies).toBe(false);
     expect(USERCONTENT_ORIGIN.isSubresourceOfApp).toBe(false);
+    // Same zone, distinct ORIGIN — the cookie boundary is now carried by host-only `__Host-` auth
+    // cookies (apps/api/src/auth.test.ts) plus this origin never emitting Set-Cookie.
+    expect(USERCONTENT_ORIGIN.host.endsWith(`.${USERCONTENT_ORIGIN.registrableDomain}`)).toBe(true);
   });
 });
 

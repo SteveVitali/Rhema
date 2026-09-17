@@ -1,5 +1,5 @@
 # web — the React Router SSR beta shell (PRB.15). The public-facing Cloud Run service behind the
-# external HTTPS LB (`rhema.app` on prod); it forwards the session's `x-rhema-*` identity headers +
+# external HTTPS LB (`rhema.tools` on prod); it forwards the session's `x-rhema-*` identity headers +
 # cookies to the api at API_BASE_URL and serves the flat SSR shell + the bundled editor client
 # (`public/editor.js`, built by `build-client.mjs` during `pnpm build`).
 #

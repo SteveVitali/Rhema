@@ -1,8 +1,9 @@
 # Pulumi stack: prod (PRB.15 — Stage A authors the config; Stage B is operator-gated).
 #
 # The stack name IS the stage name (`prod` → the stage facts' prod profile: warm >=4-vCPU AlloyDB,
-# STANDARD_HA Redis, $100/run guard, signup.mode=open, the real rhema.app / *.rhemausercontent.com
-# domains). Non-secret config is committed; every SECRET below is set with
+# STANDARD_HA Redis, $100/run guard, signup.mode=open, the real rhema.tools / *.usercontent.rhema.tools
+# domains — amended 2026-09-17 to the operator's single zone). Non-secret config is committed; every
+# SECRET below is set with
 # `pulumi config set --secret` IN THE OPERATOR'S ENVIRONMENT ONLY — never committed (REQ-ARCH-30).
 #
 # Operator secrets to set before `pulumi up` (values are HUMAN-H6's out-of-band material):
@@ -18,9 +19,9 @@
 #                                    "convert":…,"export":…,"collab":…} (images CI publishes it)
 #   rhema:runTaskImageDigest       — …/run-task@sha256:…
 #   rhema:proxyImage               — …/egress-proxy@sha256:…
-#   rhema:internalApiUrl           — defaults to https://api.rhema.app when unset
+#   rhema:internalApiUrl           — defaults to https://api.rhema.tools when unset
 #   rhema:proxyBaseUrl             — the proxy MIG's internal base URL (set after the MIG stands up)
-#   rhema:emailFrom                — e.g. hello@rhema.app (Resend-verified domain)
+#   rhema:emailFrom                — e.g. hello@rhema.tools (Resend-verified domain)
 config:
   gcp:project: rhema-507501
   gcp:region: us-central1
