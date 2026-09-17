@@ -33,6 +33,22 @@
 > `usercontent.rhema.tools` host. Per-workspace content hosts are future scope (Certificate Manager +
 > DNS authorization).
 
+> **Amended 2026-09-17 (Stage B executed — outcome):** the live bring-up ran end-to-end on
+> `rhema-507501`/`prod` — 107 resources converged, all 9 images built + digest-pinned, the 11
+> required secrets seeded, 24/24 migrations + `essay v1` on prod Cloud SQL (via an IAP/SSH tunnel —
+> the instance is private-IP-only), the `deployments` row (`prod:3d538e9…`,
+> `protocols_version=0.4.0+64cbeef137b090c2`) and the provider-verification row written, and the
+> sandbox's fail-closed egress proven on the wire (`api.anthropic.com` blackholed; the proxy answers
+> `egress.denied` to uncredentialed requests). Three more live-surfaced defects were fixed en route:
+> Cloud SQL's new ENTERPRISE_PLUS default (`edition: "ENTERPRISE"` pinned), the LB→serverless-NEG
+> path needs `roles/run.invoker`/`allUsers` on `web`+`api`, and the proxy MIG re-assigns ephemeral
+> IPs on every template roll (a reserved internal `Address` is now pinned as the template's
+> `networkIp`; `proxyBaseUrl` is `http://` — the proxy serves plain HTTP). **What remains before
+> this ticket closes: the operator applies the three `dnsRecords` A records at the registrar → the
+> managed cert leaves PROVISIONING → the `*.rhema.tools` smoke legs re-run** (TLS root, api
+> `/healthz`, usercontent no-cookie, cert ACTIVE). `/api/auth/*` 404s are by design — Better Auth is
+> unmounted (D-P0.01-3 → PRB.16), so the `__Host-` cookie smoke runs there.
+
 - **Sequence:** inserted — runs **after `28e_PRB.14`, before `28g_PRB.16`**. Sorts as `28f`
   (prod-launch round; § Plan extensions, **ADR-008**).
 - **Phase:** LV — prod launch (the deploy itself).

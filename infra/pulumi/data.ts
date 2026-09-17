@@ -102,6 +102,10 @@ export function createData(args: DataArgs): Data {
       region,
       settings: {
         tier: cfg.database.cloudSqlTier ?? "db-g1-small",
+        // Shared-core tiers (db-g1-small/db-f1-micro) are ENTERPRISE-edition only — Cloud SQL now
+        // defaults new instances to ENTERPRISE_PLUS (Stage B live, 2026-09-17: 400 "Invalid Tier
+        // (db-g1-small) for (ENTERPRISE_PLUS) Edition"). ENTERPRISE is also the budget-right edition.
+        edition: "ENTERPRISE",
         availabilityType: "ZONAL",
         diskSize: 10, // smallest SSD Cloud SQL provisions; autoresize covers growth
         diskType: "PD_SSD",

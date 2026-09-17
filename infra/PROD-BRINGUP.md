@@ -67,7 +67,7 @@ pulumi config set          rhema:serviceImages \
     "fetcher":"<repo>/fetcher@sha256:…","convert":"<repo>/convert@sha256:…",
     "export":"<repo>/export@sha256:…","collab":"<repo>/collab@sha256:…"}'
 # internalApiUrl defaults to https://api.rhema.tools on prod; proxyBaseUrl is set after the MIG stands up:
-pulumi config set          rhema:proxyBaseUrl        'https://<proxy-internal-address>:8443'
+pulumi config set          rhema:proxyBaseUrl        'http://<proxy-internal-address>:8443'  # the proxy serves PLAIN HTTP (surfaced live 2026-09-17 — https:// gets "wrong version number"); the address is the RESERVED rhema-prod-proxy-ip — read it via `gcloud compute addresses describe rhema-prod-proxy-ip-* --region us-central1` (the MIG re-assigns ephemeral IPs on every template roll without it)
 ```
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
@@ -237,7 +237,7 @@ curl -fsS https://rhema.tools/ | head
 curl -fsSI https://usercontent.rhema.tools/<a-seeded-object> | grep -i 'set-cookie' && echo FAIL
 # sandbox egress (from a runs-namespace pod): only the proxy answers; api.anthropic.com is blackholed.
 kubectl -n runs run egress-check --rm -i --image=curlimages/curl -- \
-  sh -c 'curl -m5 -sS https://api.anthropic.com || echo BLOCKED; curl -m5 -sSk https://<proxy>:8443/healthz'
+  sh -c 'curl -m5 -sS https://api.anthropic.com || echo BLOCKED; curl -m5 -sS http://<proxy>:8443/v1/messages -X POST -d "{}"'  # the proxy is plain HTTP with NO /healthz (surfaced live 2026-09-17) — an uncredentialed request must come back `{"error":{"type":"egress.denied","message":"missing proxy credential"}}` 403; anything else is a wiring bug
 ```
 
 ## What Stage B then records
