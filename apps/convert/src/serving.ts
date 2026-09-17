@@ -1,6 +1,7 @@
 // Usercontent serving policy (REQ-ARCH-24 amended 2026-09-17; §13.3). Uploaded bytes are served ONLY
-// from the dedicated cookieless origin (`usercontent.rhema.tools` / `*.usercontent.rhema.tools` — a
-// distinct host+backend, never a subpath of the app) that sets no cookies, with
+// from the dedicated cookieless origin (`usercontent.rhema.tools` — a distinct host+backend, never a
+// subpath of the app; the `*.` wildcard was dropped at Stage B 2026-09-17 — managed certs reject
+// wildcard SANs) that sets no cookies, with
 // `Content-Disposition: attachment` + `Content-Type: application/octet-stream` for everything not on a
 // small rendered allowlist (so a hostile uploaded HTML can never execute in a first-party context).
 //
