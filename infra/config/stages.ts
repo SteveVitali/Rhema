@@ -19,8 +19,10 @@ export type StageKind = "dev" | "preview" | "prod";
  * PRB.15 — the production serving surface (§13.1; `D-PRB.02-1`'s IaC leg). **Amended 2026-09-17:** the
  * operator controls the single `rhema.tools` zone (the earlier `rhema.app` + `rhemausercontent.com`
  * scheme is superseded). The app rides the apex, the api the `api.` subdomain, and user-uploaded
- * content serves from the cookieless `usercontent.rhema.tools` origin (+ the `*.` wildcard for
- * per-workspace content hosts). The separate-registrable-domain split is gone, so cookie isolation
+ * content serves from the cookieless `usercontent.rhema.tools` origin (the `*.` wildcard for
+ * per-workspace content hosts was dropped at Stage B 2026-09-17 — Google managed certs reject
+ * wildcard SANs; reviving it needs Certificate Manager + DNS authorization). The
+ * separate-registrable-domain split is gone, so cookie isolation
  * now rests on the `usercontent` origin setting NO cookies and every auth cookie being host-only
  * `__Host-`-prefixed — a `Domain=rhema.tools` cookie planted from a sibling subdomain can neither
  * shadow the session nor leak it back (see `apps/api/src/auth.ts`, asserted by `auth.test.ts`).
@@ -31,11 +33,11 @@ export interface StageDomains {
   readonly app: string;
   /** The api service's public origin (`api.rhema.tools` on prod — same LB, host-routed). */
   readonly api: string;
-  /** The cookieless user-content origin host; objects may also serve under `*.usercontent.rhema.tools`. */
+  /** The cookieless user-content origin host (bare host only — no `*.` wildcard; see above). */
   readonly userContent: string;
 }
 
-/** Every domain the prod managed certificate + URL map must cover (apex, api, wildcard user-content). */
+/** Every domain the prod managed certificate + URL map must cover (apex, api, user-content host). */
 export const PROD_DOMAINS: StageDomains = {
   app: "rhema.tools",
   api: "api.rhema.tools",

@@ -469,8 +469,9 @@ export function createCompute(args: ComputeArgs): Compute {
     backends: [{ group: apiNeg.id }],
   });
 
-  // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `usercontent.rhema.tools` + its wildcard
-  // are host-routed to a backend bucket over the PRIVATE, uniform-IAM `user-content` bucket —
+  // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `usercontent.rhema.tools` (the `*.`
+  // wildcard was dropped at Stage B — managed certs reject wildcard SANs; see the cert below) is
+  // host-routed to a backend bucket over the PRIVATE, uniform-IAM `user-content` bucket —
   // cookieless by construction (the origin emits no Set-Cookie, and on the shared `rhema.tools` zone —
   // amended 2026-09-17 — the session side is defended by host-only `__Host-` cookies, see
   // apps/api/src/auth.ts) and served attachment/octet-stream by `servingHeadersFor`
@@ -492,7 +493,10 @@ export function createCompute(args: ComputeArgs): Compute {
       ? {
           hostRules: [
             { hosts: [domains.api], pathMatcher: "api" },
-            { hosts: [domains.userContent, `*.${domains.userContent}`], pathMatcher: "usercontent" },
+            // Bare host only — the `*.usercontent.rhema.tools` wildcard host rule was dropped in
+            // Stage B (2026-09-17): Google `ManagedSslCertificate` rejects wildcard SANs at create
+            // (400 "Wildcard domains not supported"), exactly the fallback the runbook pre-authorized.
+            { hosts: [domains.userContent], pathMatcher: "usercontent" },
           ],
           pathMatchers: [
             { name: "api", defaultService: apiBackend.id },
@@ -503,16 +507,17 @@ export function createCompute(args: ComputeArgs): Compute {
   });
 
   // Google-managed cert. prod covers the REAL domains (stage facts, amended 2026-09-17): rhema.tools +
-  // api.rhema.tools + usercontent.rhema.tools + the *.usercontent.rhema.tools wildcard. Non-prod keeps the real-format
-  // placeholder TLD so the cert resource (and the HTTPS proxy/forwarding rule that depend on it) create
-  // cleanly (a `.example` name is rejected at create — offline typecheck can't catch that); a non-prod
-  // cert never reaches ACTIVE without DNS ownership, which is acceptable — the live run path flows
-  // through api/worker/proxy/GKE.
+  // api.rhema.tools + usercontent.rhema.tools. The `*.usercontent.rhema.tools` SAN was dropped at Stage B
+  // (2026-09-17): `ManagedSslCertificate` rejects wildcards ("Wildcard domains not supported") — the
+  // runbook's pre-authorized fallback; per-workspace content hosts are future scope and need Certificate
+  // Manager + DNS authorization when they arrive. Non-prod keeps the real-format placeholder TLD so the
+  // cert resource (and the HTTPS proxy/forwarding rule that depend on it) create cleanly (a `.example`
+  // name is rejected at create — offline typecheck can't catch that); a non-prod cert never reaches
+  // ACTIVE without DNS ownership, which is acceptable — the live run path flows through
+  // api/worker/proxy/GKE.
   const cert = new gcp.compute.ManagedSslCertificate(name("cert"), {
     managed: {
-      domains: domains
-        ? [domains.app, domains.api, domains.userContent, `*.${domains.userContent}`]
-        : [`${stack}.rhema.dev`],
+      domains: domains ? [domains.app, domains.api, domains.userContent] : [`${stack}.rhema.dev`],
     },
   });
   const httpsProxy = new gcp.compute.TargetHttpsProxy(name("https-proxy"), {
@@ -540,7 +545,8 @@ export function createCompute(args: ComputeArgs): Compute {
           { name: `${domains.app}.`, type: "A", value: ip },
           { name: `${domains.api}.`, type: "A", value: ip },
           { name: `${domains.userContent}.`, type: "A", value: ip },
-          { name: `*.${domains.userContent}.`, type: "A", value: ip },
+          // No `*.usercontent.rhema.tools` record: the cert can't cover it (managed certs reject
+          // wildcards) so an A record would serve a cert-mismatch, not content.
         ])
       : undefined;
 

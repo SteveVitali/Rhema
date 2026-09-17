@@ -116,15 +116,18 @@ PROJECT=rhema-507501 STACK=prod ./infra/k8s/apply.sh
 
 ```bash
 pulumi stack output dnsRecords   # [{name,type,value},…] — every A record → the reserved LB IPv4
-# expected: rhema.tools.  api.rhema.tools.  usercontent.rhema.tools.  *.usercontent.rhema.tools.  → <lbIpAddress>
+# expected: rhema.tools.  api.rhema.tools.  usercontent.rhema.tools.  → <lbIpAddress>
 ```
 
-Apply all four in the `rhema.tools` zone. **The managed cert cannot authorize until these resolve** —
+Apply all three in the `rhema.tools` zone. **The managed cert cannot authorize until these resolve** —
 poll `gcloud compute ssl-certificates describe rhema-prod-cert --global` until `status: ACTIVE` (can
-take minutes–an hour after DNS propagates). If the `*.usercontent.rhema.tools` SAN refuses managed-cert
-provisioning (wildcard managed certs have constraints), the fallback is dropping the wildcard SAN +
-host rule and serving objects from the bare `usercontent.rhema.tools` host — the app does not depend
-on per-workspace subdomains yet.
+take minutes–an hour after DNS propagates).
+
+> **Amended 2026-09-17 (Stage B live): the wildcard fallback was TAKEN.** `gcp.compute.ManagedSslCertificate`
+> rejects `*.usercontent.rhema.tools` at create (`400 "Wildcard domains not supported"` — wildcard SANs
+> need Certificate Manager + DNS authorization, which the runbook flagged as the constraint). The wildcard
+> SAN, URL-map host rule, and DNS record were dropped; user content serves from the bare
+> `usercontent.rhema.tools` host — the app does not depend on per-workspace subdomains yet.
 
 ## 6. Seed the Secret Manager versions (out-of-band; values never in repo/state/ledger)
 

@@ -25,6 +25,13 @@
 > key is `rhema:appDatabaseUrl` (`apiDatabaseUrl` still reads as a fallback). ADR-010 records the
 > decision; the runbook's AlloyDB prerequisites/steps are reworded to Cloud SQL + `cloud-sql-proxy`.
 > Stage B remains operator-gated — nothing live has run.
+>
+> **Amended 2026-09-17 (Stage B live): the `*.usercontent.rhema.tools` wildcard is dropped.** The
+> first `pulumi up prod` proved the runbook's flagged constraint: `ManagedSslCertificate` rejects
+> wildcard SANs (`400 Wildcard domains not supported`). The pre-authorized fallback applied — cert
+> SAN, URL-map host rule, and DNS record all drop the wildcard; user content serves from the bare
+> `usercontent.rhema.tools` host. Per-workspace content hosts are future scope (Certificate Manager +
+> DNS authorization).
 
 - **Sequence:** inserted — runs **after `28e_PRB.14`, before `28g_PRB.16`**. Sorts as `28f`
   (prod-launch round; § Plan extensions, **ADR-008**).
