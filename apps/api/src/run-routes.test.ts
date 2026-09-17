@@ -260,6 +260,29 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     expect(row.cap_credits).toBe(2091);
   });
 
+  // D-P0.11-1 / REQ-SPEC-24.5 — a tripped circuit breaker scales the NEW run's server-derived cap by the
+  // `capMultiplier` (deploy binds the seam to `circuitBreakerState`; a 2× trip doubles the safety band while
+  // the estimator re-fits). Unbound ⇒ 1× (fixtures and a breaker-less deploy stay unchanged).
+  it("a tripped circuit breaker doubles the new run's cap (capMultiplier consumed at creation)", async () => {
+    const tripped = createApp({ ...deps, principal: () => principal(), circuitBreaker: async () => ({ capMultiplier: 2 }) });
+    const r = await tripped.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-breaker", modelTier: "base", inputSnapshot: { wordCount: 8000, claimCount: 45 } }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const row = (await db.pg.query("select estimate_credits, cap_credits from runs where id = $1", [runId])).rows[0] as {
+      estimate_credits: number;
+      cap_credits: number;
+    };
+    // same levers as the re-derive test above: estimate 1394, base cap 2091 — the tripped breaker doubles it.
+    expect(row.estimate_credits).toBe(1394);
+    expect(row.cap_credits).toBe(4182);
+  });
+
   // AC4 (run path) — insufficient balance returns 402 and creates NO run row (never billed; §5.6 item 6, §14.6).
   it("insufficient balance → 402 and no run row is created", async () => {
     deps.ledger.primeInsufficient();

@@ -116,6 +116,8 @@ export interface SeedRunArgs {
   readonly holdLedgerId?: string;
   readonly lockSet?: readonly string[];
   readonly agentInstanceId?: string;
+  /** pin `state_since` (sweep-threshold tests); defaults to now(). */
+  readonly stateSince?: Date;
 }
 
 export interface SeedGateArgs {
@@ -181,7 +183,7 @@ export async function seedRun(db: OrchestratorTestDb, args: SeedRunArgs): Promis
          id, workspace_id, project_id, persona_id, workflow, agent_instance_id, state, state_since,
          current_attempt, inputs, model_profile, model_tier, rigor, estimate_credits, cap_credits,
          spent_credits, rate_table_version, hold_ledger_id, lock_set, created_at)
-       values ($1,$2,$3,$4,$5,$6,$7, now(), $8, '{}'::jsonb, 'balanced', 'balanced', 'standard',
+       values ($1,$2,$3,$4,$5,$6,$7, $13, $8, '{}'::jsonb, 'balanced', 'balanced', 'standard',
                100, $9, $10, 1, $11, $12, now())`,
       [
         args.runId,
@@ -196,6 +198,7 @@ export async function seedRun(db: OrchestratorTestDb, args: SeedRunArgs): Promis
         args.spentCredits ?? 0,
         args.holdLedgerId ?? null,
         (args.lockSet ?? []) as string[],
+        args.stateSince ?? new Date(),
       ],
     ),
   );

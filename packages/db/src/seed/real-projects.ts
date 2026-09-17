@@ -71,11 +71,63 @@ export async function seedRealProjects(db: MigrationDb): Promise<void> {
       `insert into drafts (id, project_id, n, origin, state) values ($1,$2,2,'human_revision','working') on conflict do nothing`,
       [`${p.id}_d2`, p.id],
     );
+    // The WORKING draft's head artifact (D-P0.15k-1): a revise run's target is the working draft, which must
+    // materialize — without an artifact_version there are no bytes to mount. Placeholder sha (`c`×64) +
+    // no store bytes, repointed to real prose by live-prepare-fixture.ts like `<proj>_av1`. A working draft's
+    // head is mutable (immutable=false).
+    await db.query(
+      `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path)
+       values ($1,$2,$3,'draft','shared','drafts/v2.md') on conflict do nothing`,
+      [`${p.id}_art2`, WS, p.id],
+    );
+    await db.query(
+      `insert into artifact_versions (id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by, immutable)
+       values ($1,$2,1,$3,$4,4300,'text/markdown','{"kind":"system"}'::jsonb,false) on conflict do nothing`,
+      [`${p.id}_av2`, `${p.id}_art2`, "c".repeat(64), `tenants/${WS}/objects/${"c".repeat(64)}`],
+    );
   }
 
   await seedPoliticsOfVisibility(db);
   await seedStructureOfDifference(db);
   await seedConstitutionOfReason(db);
+  await seedAuthorCorpus(db);
+}
+
+/**
+ * A seeded author body-of-work for voice profiling (D-P0.15k-1): one persona (`per_seed`) with a manual
+ * connection carrying three INCLUDED samples, each with a v1 sample_version. Like the draft versions, the
+ * sample rows carry a PLACEHOLDER content sha (`b`×64) and no store bytes — `live-prepare-fixture.ts` uploads
+ * the real sample prose and repoints the shas (the same repoint pattern as `<proj>_av1`). This is what a
+ * `profile_voice` run's §9.3 corpus snapshot + the instrumented fold's `wordsRead`/`piecesRead` read.
+ */
+async function seedAuthorCorpus(db: MigrationDb): Promise<void> {
+  await db.query(
+    `insert into personas (id, workspace_id, slug, display_name, byline, mode, kind, provenance)
+     values ('per_seed',$1,'seed-author','Seed Author','Seed Author','self','leaf','user') on conflict do nothing`,
+    [WS],
+  );
+  await db.query(
+    `insert into connections (id, persona_id, provider, handle, status, auto_include_new)
+     values ('conn_seed','per_seed','manual','seed-author-corpus','active',false) on conflict do nothing`,
+    [],
+  );
+  const samples = [
+    { item: "di_seed1", version: "sv_seed1", title: "Field notes on the caucus", words: 640 },
+    { item: "di_seed2", version: "sv_seed2", title: "A letter about slow reading", words: 520 },
+    { item: "di_seed3", version: "sv_seed3", title: "Review of the year in committees", words: 710 },
+  ];
+  for (const s of samples) {
+    await db.query(
+      `insert into discovered_items (id, connection_id, external_id, title, word_count, access, state, current_sample_id)
+       values ($1,'conn_seed',$2,$3,$4,'owner','included',$5) on conflict do nothing`,
+      [s.item, `ext_${s.item}`, s.title, s.words, s.version],
+    );
+    await db.query(
+      `insert into sample_versions (id, discovered_item_id, n, content_sha256, original_sha256, word_count)
+       values ($1,$2,1,$3,$3,$4) on conflict do nothing`,
+      [s.version, s.item, "b".repeat(64), s.words],
+    );
+  }
 }
 
 /** A review correspondence with one finding whose obligation is SPAWNED then ADDRESSED. */

@@ -119,6 +119,7 @@ export async function createG21Harness(): Promise<G21Harness> {
     ...deps,
     launcher: { launch: (a) => { launches.push(a.runId); return Promise.resolve({ jobId: `job-${launches.length}` }); } },
     config: { imageDigest: "sha256:pinned", serviceAccount: "sa", provider: "anthropic", concurrencyFor: () => 10 },
+    systemExec: db.client, // the stranded sweep's system-scoped scan seam (PGlite = the whole DB here)
   };
 
   const principal: Principal = { userId: seed.userId, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId };
