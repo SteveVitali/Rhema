@@ -190,13 +190,23 @@ export function createCompute(args: ComputeArgs): Compute {
   const proxyPort = "8443";
   let proxyGroup: gcp.compute.RegionInstanceGroupManager | undefined;
   if (deployProxyMig) {
+    // A RESERVED internal IP pinned into the template (surfaced live PRB.15 Stage B, 2026-09-17): the
+    // MIG replaces its instance on every template change and a fresh NIC auto-assigns a NEW address —
+    // the api/worker's `ANTHROPIC_BASE_URL` (rhema:proxyBaseUrl) would silently dangle at the old IP.
+    // High end of the private-app /20 so auto-assigned addresses never collide.
+    const proxyIp = new gcp.compute.Address(name("proxy-ip"), {
+      addressType: "INTERNAL",
+      purpose: "GCE_ENDPOINT",
+      subnetwork: network.subnets["private-app"].id,
+      region,
+    });
     const proxyTemplate = new gcp.compute.InstanceTemplate(name("proxy-tmpl"), {
       machineType: "e2-small",
       tags: [EGRESS_PROXY_TAG],
       disks: [{ sourceImage: "projects/cos-cloud/global/images/family/cos-stable", boot: true, autoDelete: true }],
       networkInterfaces: [
         // No external IP: the proxy egresses via Cloud NAT; the sandbox reaches it on its internal IP.
-        { subnetwork: network.subnets["private-app"].id },
+        { subnetwork: network.subnets["private-app"].id, networkIp: proxyIp.address },
       ],
       serviceAccount: {
         email: iam.serviceAccounts["egress-proxy"].email,
@@ -432,6 +442,21 @@ export function createCompute(args: ComputeArgs): Compute {
       },
     },
   });
+
+  // --- Public invoker grants (surfaced live at Stage B, 2026-09-17): the LB-fronted services —
+  // `web` (the public site) and `api` (host-routed api.rhema.tools) — need `roles/run.invoker` for
+  // `allUsers`: the Google Frontend does not mint identity for LB→serverless-NEG hops, so without the
+  // grant every public request 403s. Dev worked only because `gcloud run deploy` granted this
+  // implicitly. Internal services (worker/fetcher/export/collab) stay invoker-gated — their
+  // service-to-service auth wiring is the live leg of D-PRB.02-1 / PRB.16 scope.
+  for (const svc of ["web", "api"] as const) {
+    new gcp.cloudrunv2.ServiceIamMember(name(`${svc}-public-invoker`), {
+      location: region,
+      name: services[svc]!.name,
+      role: "roles/run.invoker",
+      member: "allUsers",
+    });
+  }
 
   // --- External HTTPS LB + Cloud CDN fronting `web`, the api, and (prod) the cookieless user-content
   // origin. prod gets the real domains + a reserved global IP the operator's DNS records point at.

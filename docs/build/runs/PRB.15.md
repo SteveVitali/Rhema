@@ -281,3 +281,154 @@ the ADR index regenerated via `adr-index.sh`; LEDGER's current-state lines updat
 assertions rewritten); full gates re-run in this leg (numbers below in the commit message / PR).
 **Stage B is still operator-gated** — no `pulumi up prod`, no live resources, no migrations, no
 provenance/provider-verification writes.
+
+---
+
+## Stage B — live execution (2026-09-17, operator-authorized)
+
+**Authorization:** the [OPERATOR GATE]s are discharged by the five `2026-09-17 | 28f_PRB.15`
+GATE DECISIONS rows in `docs/build/LEDGER.md` (footing `rhema-507501`/`prod` stack, ~$50/mo budget
+target, secrets sourced-per-plan, `rhema.tools` DNS operator-applied at the registrar, Stripe test
+mode). The ticket's `Gate status` block records the same. `infra/PROD-BRINGUP.md` is followed
+literally; this section logs each numbered step's outcome.
+
+### Step log
+
+_(populated as the runbook executes — see below)_
+
+### Step 0 — HUMAN-H6 prerequisites confirmed
+
+- `gcloud` project = `rhema-507501`, active account `14stevevitali@gmail.com`, ADC present;
+  `pulumi whoami` OK (Pulumi Cloud backend).
+- Dev-scoped copy sources exist in Secret Manager: `anthropic-api-key` (unprefixed) +
+  `rhema-dev-{better-auth-secret,google-oauth-client-secret,run-token-signing-key,stripe-secret}` —
+  exactly the 5 the gate answers name. Zero `rhema-prod-*` containers before `up` (created by the
+  program).
+- Budget: ~$50/mo target authorized; honest ~$95/mo always-on floor documented (runbook §0).
+
+### Step 1 — stack init — DONE
+
+`pulumi stack init prod` created the stack; `pulumi stack select prod`; `pulumi stack output` empty
+as expected pre-`up`.
+
+### Step 2 — prod config — DONE (pre-`up` half)
+
+- `rhema:alloydbPassword` set `--secret` (fresh generated strong random — generated, never printed;
+  the same value seeds `rhema-prod-alloydb-password` in step 6 and builds the DATABASE_URLs).
+- `rhema:emailFrom` = `hello@rhema.tools`.
+- DB URLs / `redisUrl` / image digests / `proxyBaseUrl` are set after the first `up` (the host
+  facts don't exist yet) — per runbook §2's "set after step 3's first up" guidance.
+
+### Step 3 — `pulumi up` (first pass — substrate + placeholder services)
+
+`pulumi preview` clean: **+105 to create**, `stageKind=prod`, `requiredSecrets` = the 11 amended
+ids, `sandboxIsolated{hasCloudNat:false,hasDefaultInternetRoute:false,egressTargets:[fw:egress-proxy]}`.
+`pulumi up --yes` running (log: substrate — VPC/subnets/buckets/secrets/SA/IAM/AR repo
+`rhema-prod`/reserved LB IP created; Cloud SQL db-g1-small + zonal GKE + MIG + LB in progress).
+Cloud Build of all 9 prod images started in parallel against the now-created `rhema-prod` AR repo
+(`_TAG=prod`).
+
+**Step 3 outcome — two live-surfaced defects fixed, then converged:**
+
+1. **Wildcard SAN rejected** — the managed cert was authored with `*.usercontent.rhema.tools`;
+   Google-managed certs reject wildcard domains (400). Fixed in `compute.ts` (wildcard kept in the
+   URL-map host routing, dropped from the cert SAN + the emitted DNS payload) — commit `8980f18`.
+2. **Cloud SQL edition default** — `Invalid Tier (db-g1-small) for (ENTERPRISE_PLUS)`: Cloud SQL
+   now defaults new instances to ENTERPRISE_PLUS; `edition: "ENTERPRISE"` is pinned explicitly in
+   `data.ts` (db-g1-small is shared-core → ENTERPRISE-only, also the budget-right edition).
+3. **Placeholder Job image** — `gcr.io/google-containers/pause:3.9` is no longer pullable; the
+   final `up` ran after the image build with real digest-pinned images instead.
+
+`pulumi up` then converged clean: **107 resources** (105 + 2 public-invoker grants below).
+
+**Image build — DONE.** `gcloud builds submit --config cloudbuild.yaml --substitutions
+_AR=us-central1-docker.pkg.dev/rhema-507501/rhema-prod,_TAG=prod` → **STATUS SUCCESS (7m32s)** —
+all 9 images in the prod AR repo. Digests captured and pinned into `rhema:serviceImages` (7
+services), `rhema:runTaskImageDigest`, `rhema:proxyImage`; AR digests re-verified to match the
+pinned refs exactly.
+
+**Step 4 — k8s post-step — DONE.** `get-credentials --zone us-central1-a` on
+`rhema-prod-run-task-gke-c13cb80`; `PROJECT=rhema-507501 STACK=prod ./infra/k8s/apply.sh` →
+`runs` namespace + `run-task-ksa` (WI-bound to `rhema-prod-run-task@…`) + `run-task-egress`
+NetworkPolicy applied.
+
+**Step 5 — DNS emitted verbatim (operator applies at the registrar):**
+
+```
+pulumi stack output dnsRecords
+[{"name":"rhema.tools.","type":"A","value":"34.8.177.69"},
+ {"name":"api.rhema.tools.","type":"A","value":"34.8.177.69"},
+ {"name":"usercontent.rhema.tools.","type":"A","value":"34.8.177.69"}]
+```
+
+Managed cert `rhema-prod-cert-fc89dad`: `PROVISIONING`, all three domains `FAILED_NOT_VISIBLE` —
+expected until DNS lands; the cert poll is the bounded post-DNS leg.
+
+**Step 6 — secrets — DONE.** All 11 required `rhema-prod-*` secrets carry ≥1 version (verified by
+`gcloud secrets versions list`; values never printed): 5 copied dev→prod by pipe, 3 generated
+(`alloydb-password`, `email-action-secret`, `user-content-signing-key`), 3 placeholders
+(`stripe-webhook-secret`, `resend-api-key`, `anthropic-admin-key`). The same
+`user-content-signing-key` is installed on the backend bucket
+(`rhema-prod-usercontent-backend-7dea6dd.signedUrlKeyNames = [rhema-tools-key]`, `enableCdn`).
+
+**Step 7 — migrations + protocol seed — DONE.** Private-IP-only Cloud SQL reached via an
+SSH/IAP tunnel through a private-app host (`127.0.0.1:15434 → 10.46.0.3:5432`); `DATABASE_URL` →
+`scripts/live/prod-migrate-seed.mjs` applied **24/24 migrations** (matches
+`packages/db/migrations/` exactly) and seeded **`protocols: essay v1`** — `seedRealProjects` never
+invoked. Instance: `rhema-prod-postgres`, PostgreSQL 16.15, `db-g1-small`, ENTERPRISE, ZONAL.
+
+**Step 8 — deploy provenance — DONE.** `record-deployment.mjs` computed the real
+`protocols_version=0.4.0+64cbeef137b090c2` and wrote `deployments` id
+`prod:3d538e9ae334eae874c406ade4cee1d20bdfe1f4` with all nine `sha256:` digests.
+(Live note: `IMAGE_DIGESTS` wants bare `sha256:<hex>` values — the contract regex rejects
+`repo@sha256:` refs; a first pass with full refs failed validation, correctly.)
+
+**Step 9 — provider verification — DONE.** `record-provider-verification.mjs` with the
+runbook-authorized values verbatim (`PROVIDER=anthropic`,
+`TERMS_REF=https://www.anthropic.com/legal/commercial-terms`,
+`VERIFIED_AT=2026-09-03T00:00:00Z`) → row `01M2Q07H6YQ37J06WT98XZGYHS`;
+`providerTransmissible("anthropic", now) === true`.
+
+**Step 10 — smoke (partial; honest split):**
+
+- **PASS — service readiness:** all six Cloud Run services READY on the pinned digests; `web`
+  `/`, `/login`, `/invite` serve real app HTML (200) over the `.run.app` URLs; `api` answers
+  (app-level 404 on unmounted routes — Better Auth is unmounted by design, D-P0.01-3 → PRB.16).
+- **PASS — sandbox egress, on the wire** (from a `runs` pod): `api.anthropic.com` → BLOCKED
+  (unresolvable — no NAT, no default route); `http://10.8.16.4:8443/v1/messages` → the REAL
+  egress-proxy answers `{"error":{"type":"egress.denied","message":"missing proxy credential"}}`
+  403 — reachable, digest-pinned image running, credential gate enforced. Fail-closed posture
+  proven.
+- **PENDING — operator DNS:** every `*.rhema.tools` leg. TLS handshakes to `34.8.177.69` fail
+  while the managed cert is `PROVISIONING`/`FAILED_NOT_VISIBLE`; port 80 has no frontend (HTTPS
+  proxy only). Re-run after the registrar records propagate: `https://rhema.tools/`,
+  `https://api.rhema.tools/healthz`, the `usercontent` no-cookie check, cert → ACTIVE.
+- **BLOCKED-by-design — cookie check:** `POST /api/auth/sign-in/social` 404s because Better Auth
+  is not mounted (D-P0.01-3, routed to PRB.16). The `__Host-` Set-Cookie assertion can't run
+  until then — not a Stage B defect.
+- **Note — Google FE quirk:** exactly `/healthz` on `*.run.app` hosts is answered by Google
+  front-end infra (robot-page 404, no `x-cloud-trace-context`) before the request reaches Cloud
+  Run; neighboring paths (`/healthzz`, `/healthz/`) reach the app normally. Health checks are
+  exercised via the custom domain + LB once DNS lands.
+
+**Live-surfaced defects fixed during Stage B (all committed):**
+
+- `compute.ts` — `roles/run.invoker` for `allUsers` on `web` + `api`: the LB does not mint
+  identity for LB→serverless-NEG hops, so every public request 403'd (dev worked only because
+  `gcloud run deploy` grants it implicitly). Internal services stay invoker-gated.
+- `compute.ts` — reserved internal `Address` (`10.8.16.4`) pinned as the proxy template's
+  `networkIp`: MIG replacement re-assigned ephemeral IPs (16.2→16.3→16.6), silently dangling
+  `rhema:proxyBaseUrl`. Also corrected `proxyBaseUrl` scheme to `http://` — the proxy serves
+  plain HTTP.
+- `data.ts` — `edition: "ENTERPRISE"` on the Cloud SQL instance.
+- `infra/PROD-BRINGUP.md` — smoke command corrected (plain-HTTP proxy, no `/healthz`;
+  credential-gated 403 is the expected response).
+
+**Cost:** always-on floor ≈ $95/mo (Cloud SQL db-g1-small ~$25 + e2-medium ~$24 + BASIC Redis
+~$33 + proxy e2-small ~$13) before Cloud Run/LB/GCS — above the ~$50 target; the honest floor was
+authorized in the gate answers. Tear-down/scheduling policy is the operator's.
+
+**Stage B state: SUBSTANTIALLY COMPLETE, not green.** The full stack is deployed and converged;
+secrets/migrations/seed/provenance/provider-verification are written; the sandbox fail-closed
+egress is proven on the wire. **Pending:** operator applies the 3 A records → cert leaves
+PROVISIONING → the custom-domain smoke legs re-run. `nextTicket` therefore stays on PRB.15.
