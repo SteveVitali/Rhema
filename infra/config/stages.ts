@@ -14,6 +14,77 @@ import type { SignupMode } from "@rhema/contracts";
 
 export type StageKind = "dev" | "preview" | "prod";
 
+/**
+ * PRB.15 — the production serving surface (§13.1; `D-PRB.02-1`'s IaC leg). The app and api ride the
+ * apex + `api.` subdomain of `rhema.app`; user-uploaded content serves from the separate registrable
+ * `rhemausercontent.com` (cookieless — a same-origin XSS can never reach session material) with a
+ * wildcard cert covering per-workspace content subdomains. Non-prod stages keep the
+ * `${stack}.rhema.dev` placeholder and carry no `domains` block.
+ */
+export interface StageDomains {
+  /** The web app's public origin (`rhema.app` on prod). */
+  readonly app: string;
+  /** The api service's public origin (`api.rhema.app` on prod — same LB, host-routed). */
+  readonly api: string;
+  /** The cookieless user-content origin suffix; objects serve under `*.rhemausercontent.com`. */
+  readonly userContent: string;
+}
+
+/** Every domain the prod managed certificate + URL map must cover (apex, api, wildcard user-content). */
+export const PROD_DOMAINS: StageDomains = {
+  app: "rhema.app",
+  api: "api.rhema.app",
+  userContent: "rhemausercontent.com",
+} as const;
+
+/**
+ * Every Secret Manager secret-id suffix the program provisions (stack-prefixed `rhema-<stack>-<id>`);
+ * each stage's `requiredSecrets` names the subset that must carry a *version* before its services
+ * serve. Values are always operator-set out of band — never in repo, Pulumi config, or any ledger
+ * (HUMAN-H6; REQ-ARCH-30). `anthropic-api-key` stays reachable ONLY from the egress-proxy
+ * (REQ-ARCH-31).
+ */
+export const ALL_SECRET_IDS = [
+  "anthropic-api-key", // provider key — egress-proxy only (REQ-ARCH-31)
+  "run-token-signing-key", // RS256 run-token keypair — api/worker mint+verify, proxy verifies
+  "alloydb-password", // the postgres bootstrap password (H6) — the operator builds DATABASE_URLs from it
+  "better-auth-secret", // api — session/signing secret (PRB.12)
+  "google-oauth-client-secret", // api — Google sign-in (PRB.12; the client id is deploy config)
+  "stripe-secret", // worker — Payment Link webhooks + checkout (PRB.08)
+  "stripe-webhook-secret", // api — the whsec_… verifying POST /stripe/webhook (PRB.08)
+  "email-action-secret", // api verifies + worker mints the one-click HMAC (PRB.09)
+  "resend-api-key", // worker — the mail.send transport (PRB.09)
+  "anthropic-admin-key", // worker — the Usage & Cost report for usage.reconcile (PRB.08)
+  "ops-alert-webhook-url", // worker — the >2%-drift / balance-divergence alert sink (PRB.08)
+  "user-content-signing-key", // api — signs the CDN download URLs for the PRIVATE user-content bucket
+  //   (the *.rhemausercontent.com origin serves only signed requests; the same key is added to the
+  //   backend bucket by the operator — `gcloud compute backend-buckets add-signed-url-key`, runbook)
+] as const;
+
+/** The prod secret set — every name HUMAN-H6 must seed a version of before `pulumi up prod` serves. */
+export const PROD_REQUIRED_SECRETS: readonly string[] = ALL_SECRET_IDS;
+
+/** The dev secret set — the shared-integration stack serves the full auth/billing/mail surface
+ *  (PRB.08/09 live legs run there); only the prod-ops alert sink is prod-only. */
+export const DEV_REQUIRED_SECRETS: readonly string[] = [
+  "anthropic-api-key",
+  "run-token-signing-key",
+  "alloydb-password",
+  "better-auth-secret",
+  "google-oauth-client-secret",
+  "stripe-secret",
+  "stripe-webhook-secret",
+  "email-action-secret",
+  "resend-api-key",
+  "anthropic-admin-key",
+];
+
+/** The preview secret set — previews never carry production secrets (REQ-ARCH-38). */
+export const PREVIEW_REQUIRED_SECRETS: readonly string[] = [
+  "anthropic-api-key",
+  "run-token-signing-key",
+];
+
 export interface AlloyDbConfig {
   /** Primary instance vCPU count. AlloyDB sizes by CPU; prod keeps a warm primary (>=4). */
   primaryCpuCount: number;
@@ -78,6 +149,19 @@ export interface StageConfig {
    * stays `invite` until the prod bring-up (PRB.15) deliberately flips prod — the flag fails closed.
    */
   signupMode: SignupMode;
+  /**
+   * PRB.15 — the stage's public serving surface (undefined off prod: previews keep the
+   * `${stack}.rhema.dev` placeholder and never need real DNS). The Pulumi program builds the managed
+   * cert's SAN list + the URL map's host rules from this block — the numbers the tests assert are the
+   * numbers that deploy.
+   */
+  readonly domains?: StageDomains;
+  /**
+   * PRB.15 — the Secret Manager ids (unprefixed — the program prefixes `rhema-<stack>-`) that must
+   * carry a version before this stage serves. `requiredSecrets` is the operator's seeding checklist
+   * (HUMAN-H6); provisioning stays versionless, values never enter the program or any ledger.
+   */
+  readonly requiredSecrets: readonly string[];
 }
 
 /**
@@ -119,7 +203,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     gcsVersioning: true,
     maxUsdPerRun: 10,
     allowsProductionSecrets: false,
-    signupMode: "invite", // PRB.13 — invite until PRB.15 flips prod to open
+    signupMode: "invite", // PRB.13 — dev keeps the private-beta invite gate (open is prod-only)
+    requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
     kind: "preview",
@@ -129,7 +214,8 @@ export const STAGES: Record<StageKind, StageConfig> = {
     gcsVersioning: true,
     maxUsdPerRun: 3, // REQ-ARCH-38
     allowsProductionSecrets: false, // REQ-ARCH-38
-    signupMode: "invite", // PRB.13 — invite until PRB.15 flips prod to open
+    signupMode: "invite", // PRB.13 — previews never self-serve
+    requiredSecrets: PREVIEW_REQUIRED_SECRETS,
   },
   prod: {
     kind: "prod",
@@ -139,7 +225,9 @@ export const STAGES: Record<StageKind, StageConfig> = {
     gcsVersioning: true,
     maxUsdPerRun: 100,
     allowsProductionSecrets: true,
-    signupMode: "invite", // PRB.13 — invite until PRB.15 flips prod to open
+    signupMode: "open", // PRB.15 — self-serve paid beta on prod (REQ-BETA-19 amended)
+    domains: PROD_DOMAINS,
+    requiredSecrets: PROD_REQUIRED_SECRETS,
   },
 };
 

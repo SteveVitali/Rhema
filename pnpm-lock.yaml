@@ -110,12 +110,18 @@ importers:
 
   apps/collab:
     dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.1
+        version: 2.1.1(hono@4.13.5)
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@rhema/db':
         specifier: workspace:*
         version: link:../../packages/db
+      hono:
+        specifier: ^4.6.14
+        version: 4.13.5
 
   apps/convert:
     dependencies:
@@ -351,6 +357,9 @@ importers:
       '@rhema/api':
         specifier: workspace:*
         version: link:../apps/api
+      '@rhema/benchmark':
+        specifier: workspace:*
+        version: link:../packages/benchmark
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../packages/contracts
@@ -360,6 +369,9 @@ importers:
       '@rhema/engine':
         specifier: workspace:*
         version: link:../packages/engine
+      '@rhema/infra':
+        specifier: workspace:*
+        version: link:../infra
       '@rhema/mirror':
         specifier: workspace:*
         version: link:../packages/mirror

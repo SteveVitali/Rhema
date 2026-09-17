@@ -13,6 +13,13 @@ export interface DataArgs {
   cfg: StageConfig;
   region: pulumi.Input<string>;
   network: Network;
+  /**
+   * PRB.15 — the postgres bootstrap password (a Pulumi SECRET config `rhema:alloydbPassword`, set only in
+   * the operator's environment). The cluster's `initialUser` is bound to it so the operator can log in as
+   * `postgres` with the same value they seed into `rhema-<stack>-alloydb-password` (HUMAN-H6). Unset ⇒ the
+   * provider generates one (a dev/preview posture; prod sets it).
+   */
+  alloydbPassword?: pulumi.Input<string>;
 }
 
 export interface Data {
@@ -40,6 +47,12 @@ export function createData(args: DataArgs): Data {
       enabled: true,
       recoveryWindowDays: cfg.alloydb.backupRetentionDays, // PITR window (REQ-ARCH-28)
     },
+    // PRB.15 — bind the bootstrap `postgres` password to the operator-held Pulumi secret config so the
+    // runbook's `applyMigrations`/`seedProtocols` psql step and the DATABASE_URL builds use ONE value
+    // (never generated-and-lost). The value is Pulumi-state-encrypted, never committed.
+    ...(args.alloydbPassword
+      ? { initialUser: { user: "postgres", password: args.alloydbPassword } }
+      : {}),
     // prod is retained; dev/previews are deletable so a `pulumi destroy` tears down cleanly (AC2).
     deletionPolicy: cfg.kind === "prod" ? "DEFAULT" : "FORCE",
     // The PSA peering must exist before AlloyDB allocates its private IP.
