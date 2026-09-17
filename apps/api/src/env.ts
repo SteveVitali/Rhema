@@ -68,6 +68,20 @@ export interface ApiEnv {
    * unset/unknown ⇒ `invite` — the flag fails closed.
    */
   readonly signupMode: SignupMode;
+  /**
+   * PRB.16 — the Better Auth binding (D-P0.01-3): the signing secret's Secret-Manager NAME and the Google
+   * OAuth client id + secret NAME (values loaded at boot; never plaintext env). All three must be present
+   * to mount `/api/auth/*` — a partial config leaves auth unmounted rather than half-broken (the pre-PRB.16
+   * posture). `APP_BASE_URL` doubles as the Better Auth baseURL (the app host proxies `/api/auth/*`).
+   */
+  readonly betterAuthSecretName?: string;
+  readonly googleOauthClientId?: string;
+  readonly googleOauthClientSecretName?: string;
+  /**
+   * PRB.16 — dev/preview ONLY: trust the client-forgeable `x-rhema-*` identity headers when no session
+   * resolves (the PRB.15 deploy shim for stages without sign-in). NEVER set on prod.
+   */
+  readonly identityHeaders?: boolean;
 }
 
 function required(name: string): string {
@@ -117,6 +131,19 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.EXPORT_SERVICE_URL ? { exportServiceUrl: process.env.EXPORT_SERVICE_URL } : {}),
     // PRB.13 — signup mode; unknown/unset parses to `invite` (never fail open).
     signupMode: parseSignupMode(process.env.SIGNUP_MODE),
+    // PRB.16 — Better Auth secret NAMES (values load from Secret Manager at boot). The Google OAuth
+    // client id is public deploy config; its SECRET is a secret name like the rest.
+    ...(process.env.BETTER_AUTH_SECRET_NAME
+      ? { betterAuthSecretName: process.env.BETTER_AUTH_SECRET_NAME }
+      : {}),
+    ...(process.env.GOOGLE_OAUTH_CLIENT_ID
+      ? { googleOauthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID }
+      : {}),
+    ...(process.env.GOOGLE_OAUTH_CLIENT_SECRET_NAME
+      ? { googleOauthClientSecretName: process.env.GOOGLE_OAUTH_CLIENT_SECRET_NAME }
+      : {}),
+    // PRB.16 — the identity-header shim: NEVER on prod (client-forgeable); dev/preview only.
+    ...(process.env.IDENTITY_HEADERS === "true" ? { identityHeaders: true } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

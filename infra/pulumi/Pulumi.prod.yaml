@@ -31,10 +31,16 @@
 #   rhema:internalApiUrl           — defaults to https://api.rhema.tools when unset
 #   rhema:proxyBaseUrl             — the proxy MIG's internal base URL (set after the MIG stands up)
 #   rhema:emailFrom                — e.g. hello@rhema.tools (Resend-verified domain)
+#   rhema:googleOauthClientId      — PRB.16: the OAuth WEB CLIENT ID from APIs & Services → Credentials
+#                                    (plain config — the matching SECRET is SM rhema-prod-google-oauth-client-secret).
+#                                    Currently `pending-h6-…` — a marked placeholder that mounts /api/auth/*
+#                                    (magic-link + session legs work); Google sign-in 400s at Google until the
+#                                    real id + secret land (D-P0.01-3's browser leg → operator).
 config:
   gcp:project: rhema-507501
   gcp:region: us-central1
   rhema:deployProxyMig: "true"
+  rhema:googleOauthClientId: pending-h6-google-oauth-client-id
   rhema:alloydbPassword:
     secure: AAABABdnGSVhDc7r6ZGYBW0ysC0neCWyooEWVhhMkLAelxPgad7/GvJwebXx6mmNWRr9x1EgCl2KAKqkPg6yxxLUVwkqGgcB
   rhema:emailFrom: hello@rhema.tools

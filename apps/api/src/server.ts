@@ -26,22 +26,20 @@ import {
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
 } from "@rhema/live-clients";
-import { createApp, createServiceExportRunner, type ApiDeps, type BetaApiDeps } from "./index.js";
+import {
+  createApp,
+  createAuth,
+  createServiceExportRunner,
+  createScopedDb,
+  resolveSessionPrincipal,
+  sessionScopedPrincipal,
+  sessionTokenFromCookieHeader,
+  type ApiDeps,
+  type BetaApiDeps,
+} from "./index.js";
+import { provisionPersonalAccount } from "./signup.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
-import type { Principal } from "./run-routes.js";
-
-/**
- * Resolve the run-creation principal from the request. The DEPLOY shim reads the identity headers the gateway
- * (IAP / the auth service) injects after a verified session; the full Better Auth session → workspace/billing
- * resolution is D-P0.01-3. Returns null (401) when the identity is absent.
- */
-function headerPrincipal(c: { req: { header(name: string): string | undefined } }): Principal | null {
-  const userId = c.req.header("x-rhema-user-id");
-  const workspaceId = c.req.header("x-rhema-workspace-id");
-  const billingAccountId = c.req.header("x-rhema-billing-account-id");
-  if (!userId || !workspaceId || !billingAccountId) return null;
-  return { userId, workspaceId, billingAccountId };
-}
+import type { SqlClient } from "./invite.js";
 
 /** Build the live api deps from the environment (constructs the heavy clients). */
 export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: PgBoss; pool: pg.Pool }> {
@@ -82,6 +80,53 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
       ? { actionSecret: emailActionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
       : undefined;
 
+  // PRB.16 — the live auth binding (D-P0.01-3). The account-side client is the RAW pool: `user`/`session`/
+  // `account`/`verification`/`workspaces`/`workspace_members`/`billing_accounts`/`invites` are account
+  // tables — NOT workspace-keyed, so FORCE RLS never applies to them and no tenant context is needed.
+  // (Tenant-keyed tables on the same unscoped client answer EMPTY under FORCE RLS — deny by default.)
+  const rawDb: SqlClient = {
+    query: (sql, params) => pool.query(sql, params ? [...params] : undefined),
+  };
+  const queue = new PgBossQueue(boss);
+
+  // PRB.16 — Better Auth mounts only when all three secrets are configured (Secret-Manager NAMES, values
+  // loaded at boot). `baseURL` is the APP origin: the web service proxies `/api/auth/*` server-side, so
+  // the OAuth callback (`<app>/api/auth/callback/google`) and every auth cookie live on `rhema.tools`.
+  // A partial config leaves the surface 404 — a half-mounted auth is worse than none.
+  const authSecretsReady =
+    env.betterAuthSecretName && env.googleOauthClientId && env.googleOauthClientSecretName && env.appBaseUrl;
+  const auth = authSecretsReady
+    ? createAuth(
+        {
+          baseURL: env.appBaseUrl!,
+          betterAuthSecret: await access(env.betterAuthSecretName!),
+          googleClientId: env.googleOauthClientId!,
+          googleClientSecret: await access(env.googleOauthClientSecretName!),
+          // the api's own origin stays trusted for direct hits (runbook smoke, health probes of the auth
+          // surface); the app origin is baseURL-implied but listed for clarity.
+          trustedOrigins: [env.appBaseUrl!, ...(env.apiPublicUrl ? [env.apiPublicUrl] : [])],
+        },
+        pool, // Better Auth's Kysely adapter accepts a pg.Pool directly.
+        // magic-link send → the worker's `auth.mail` queue (Resend is PRB.16's deferred leg — the
+        // enqueue still runs so the transport claim exists for a later re-drive).
+        async ({ email, url }) => {
+          await queue.send("auth.mail", {
+            to: email,
+            subject: "Sign in to Rhema",
+            text: `Sign in to Rhema: ${url}`,
+            html: `<p><a href="${url}">Sign in to Rhema</a></p>`,
+          });
+        },
+        {
+          // self-serve paths that never pass through POST /signup provision the same account rows here
+          // (a session principal needs the personal-workspace membership row to resolve).
+          onUserCreate: async (u) => {
+            await provisionPersonalAccount(rawDb, ids, u.id);
+          },
+        },
+      )
+    : undefined;
+
   const bus = new RedisRunEventBus(redis, subscriber);
   // The platform-wide circuit-breaker read (credit_ledger across accounts) must NOT run on the user-facing
   // `pool` if that role bypasses RLS — that would disable tenant isolation on user requests. Use a SEPARATE
@@ -103,7 +148,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     heartbeats: new RedisHeartbeatStore(redis),
     tokens: new Rs256RunTokenService(keys, clock),
     ledger: new SqlHoldLedger({ ids, clock }),
-    queue: new PgBossQueue(boss),
+    queue,
     obligationMount: createObligationMountProvider(),
     // the obligation spawn/join hook, constructed into the delivery transaction (D-P0.12-1).
     obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),
@@ -177,7 +222,22 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           },
         }
       : {}),
-    principal: headerPrincipal,
+    // PRB.16 — the live session binding (D-P0.01-3): `principal` reads the request-scoped principal the
+    // session middleware resolved (cookie → session row → personal-workspace membership); `db` is the
+    // tenant-scoped client the account routes consume (signup/invite/userEmailVerified); `auth` mounts
+    // the Better Auth surface at /api/auth/*.
+    principal: sessionScopedPrincipal,
+    db: createScopedDb(pool),
+    sessionResolver: async (req) => {
+      const token = sessionTokenFromCookieHeader(req.headers.get("cookie") ?? undefined);
+      return token ? resolveSessionPrincipal(rawDb, token) : null;
+    },
+    ...(auth ? { auth: { handler: (req: Request) => auth.handler(req) } } : {}),
+    // dev/preview ONLY (never prod — env guard): trust the forgeable x-rhema-* identity headers.
+    ...(env.identityHeaders ? { identityHeaders: true } : {}),
+    // the CSRF origin allowlist for mutations (single-zone: usercontent.* is same-site; SameSite=Lax
+    // alone can't stop a user-content page from POSTing to the api with credentials).
+    allowedOrigins: [env.appBaseUrl, env.apiPublicUrl].filter((o): o is string => !!o),
   };
   return { deps, boss, pool };
 }
@@ -207,7 +267,7 @@ export async function startApiServer(): Promise<void> {
     throw lastErr;
   };
   await retryStartup("boss.start", () => boss.start());
-  for (const name of [...Object.values(RUN_JOBS), STRIPE_EVENT_JOB, "notify", "mail.send"]) {
+  for (const name of [...Object.values(RUN_JOBS), STRIPE_EVENT_JOB, "notify", "mail.send", "auth.mail"]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
 

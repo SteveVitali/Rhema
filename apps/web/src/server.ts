@@ -58,10 +58,19 @@ export interface WebDeps {
   readonly dataSource: DataSource;
   /** Resolve the viewer's session into headers to forward to the api, or null when unauthenticated. */
   session(c: Context): SessionHeaders | null;
-  /** Begin auth AFTER the invite passed (magic link / Google). Default: magic-link "sent". */
-  beginAuth?(method: string, args: { code: string; email?: string }): Promise<AuthOutcome>;
+  /**
+   * Begin auth AFTER the invite passed (magic link / Google). Default: magic-link "sent". The Context is
+   * passed so the live impl can relay the api's Set-Cookie (the OAuth `state` cookie) onto the response.
+   */
+  beginAuth?(method: string, args: { code: string; email?: string }, c?: Context): Promise<AuthOutcome>;
   /** End the session (clears the cookie). Default: no-op. */
   endSession?(c: Context): Promise<void>;
+  /**
+   * PRB.16 — the auth proxy: forwards `/api/auth/*` to the api server-side so every Better Auth cookie
+   * plants host-only on THIS (the app) host — the OAuth callback, magic-link verify, sign-out, and the
+   * state cookie all round-trip through it. Unset ⇒ `/api/auth/*` 404s (pre-PRB.16 posture).
+   */
+  authProxy?(req: Request): Promise<Response>;
   /** PRB.08 — the final-month beta-plan offer's link (copy + link only; unset ⇒ no offer line renders). */
   readonly betaPlanOfferUrl?: string;
   /**
@@ -139,7 +148,22 @@ export function createWebApp(deps: WebDeps): Hono {
     }
   };
 
+  // PRB.16 — an api-side 401 on a data call means the session is gone/invalid: land on /login rather
+  // than a bare 500 (the session cookie may be expired while still present).
+  app.onError((err, c) => {
+    if (err instanceof ApiError && err.status === 401) return c.redirect("/login");
+    console.error("[web] unhandled route error:", err instanceof Error ? err.message : err);
+    return c.text("internal error", 500);
+  });
+
   app.get("/healthz", (c) => c.json({ ok: true, service: "web" }));
+
+  // PRB.16 — the Better Auth surface, proxied to the api so the OAuth callback + auth cookies live on
+  // this host (the browser never talks to api.rhema.tools; see apps/api/src/auth-context.ts).
+  if (deps.authProxy) {
+    const proxy = deps.authProxy;
+    app.all("/api/auth/*", (c) => proxy(c.req.raw));
+  }
 
   // Public: the invite page (+ read-only sample dossier). In `open` mode the access note drops the
   // invitation requirement — still no marketing page, still factual.
@@ -214,7 +238,7 @@ export function createWebApp(deps: WebDeps): Hono {
       }
     }
 
-    const outcome = await beginAuth(method, { code, email: email || undefined });
+    const outcome = await beginAuth(method, { code, email: email || undefined }, c);
     if (outcome.redirect) return c.redirect(outcome.redirect);
     return renderLogin({ sent: true, email }, 200);
   });
