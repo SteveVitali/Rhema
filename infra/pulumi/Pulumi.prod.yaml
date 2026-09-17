@@ -35,3 +35,6 @@ config:
   gcp:project: rhema-507501
   gcp:region: us-central1
   rhema:deployProxyMig: "true"
+  rhema:alloydbPassword:
+    secure: AAABABdnGSVhDc7r6ZGYBW0ysC0neCWyooEWVhhMkLAelxPgad7/GvJwebXx6mmNWRr9x1EgCl2KAKqkPg6yxxLUVwkqGgcB
+  rhema:emailFrom: hello@rhema.tools
