@@ -70,6 +70,15 @@ describe("buildRunTaskJobManifest", () => {
     expect(container.image).toBe("us-central1-docker.pkg.dev/rhema-507501/rhema/run-task@sha256:deadbeef");
   });
 
+  it("accepts a fully-qualified repo@digest ref verbatim (the deploy config's pinning shape; PRB.16)", () => {
+    const qualified = buildRunTaskJobManifest(config, {
+      ...spec,
+      imageDigest: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:cafe",
+    });
+    const c = ((qualified.spec.template as { spec: Record<string, unknown> }).spec.containers as Array<Record<string, unknown>>)[0]!;
+    expect(c.image).toBe("us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:cafe");
+  });
+
   it("grants the privilege-drop + mount-isolation caps, read-only root FS, restart Never", () => {
     expect(podSpec.restartPolicy).toBe("Never");
     // the image starts as root and drops root→harness→agent itself, so the pod does not force runAsUser — but it

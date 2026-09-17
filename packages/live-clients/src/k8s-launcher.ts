@@ -130,7 +130,12 @@ export function buildRunTaskSecretManifest(config: GkeLauncherConfig, spec: JobS
 export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec): KubeJobManifest {
   const name = runJobName(spec);
   const secretName = runSecretName(spec);
-  const image = `${config.imageRepo}@${spec.imageDigest}`;
+  // The deploy config `rhema:runTaskImageDigest` carries the full `repo@sha256:…` ref (the runbook's
+  // pinning shape), while tests/specs pass the bare digest — accept both (an already-qualified ref is
+  // used verbatim; double-qualifying produces an InvalidImageName pod, PRB.16 live finding).
+  const image = spec.imageDigest.includes("@")
+    ? spec.imageDigest
+    : `${config.imageRepo}@${spec.imageDigest}`;
   const labels = runLabels(spec);
   const env: Array<{ name: string; value: string }> = [
     { name: "RUN_ID", value: spec.runId },
