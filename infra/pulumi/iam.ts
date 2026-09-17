@@ -64,8 +64,21 @@ export function createIam(args: IamArgs): Iam {
   // api reads the auth secrets; web/collab read NONE (no binding = no access under uniform IAM).
   grantSecret("api-reads-betterauth", secrets.betterAuthSecret, serviceAccounts["api"]);
   grantSecret("api-reads-google-oauth", secrets.googleOauthClientSecret, serviceAccounts["api"]);
-  // The billing worker reads Stripe.
+  // The api VERIFIES the Stripe webhook signature (STRIPE_WEBHOOK_SECRET_NAME → SM at boot; PRB.08) and
+  // the one-click email-action HMAC (EMAIL_ACTION_SECRET_NAME; PRB.09). Both are secret NAMES in env —
+  // the values live only in Secret Manager.
+  grantSecret("api-verifies-stripe-webhook", secrets.stripeWebhookSecret, serviceAccounts["api"]);
+  grantSecret("api-verifies-email-action", secrets.emailActionSecret, serviceAccounts["api"]);
+  // The api signs the CDN download URLs the private `*.rhemausercontent.com` origin verifies (the same
+  // key is `add-signed-url-key`'d onto the backend bucket out-of-band — the runbook's post-up step).
+  grantSecret("api-signs-usercontent", secrets.userContentSigningKey, serviceAccounts["api"]);
+  // The billing worker reads Stripe (PRB.08), mints the same one-click HMAC (PRB.09), reads the Resend
+  // transport key + the provider admin key for usage.reconcile, and publishes to the ops alert sink.
   grantSecret("worker-reads-stripe", secrets.stripeSecret, serviceAccounts["worker"]);
+  grantSecret("worker-mints-email-action", secrets.emailActionSecret, serviceAccounts["worker"]);
+  grantSecret("worker-reads-resend", secrets.resendApiKey, serviceAccounts["worker"]);
+  grantSecret("worker-reads-anthropic-admin", secrets.anthropicAdminKey, serviceAccounts["worker"]);
+  grantSecret("worker-reads-ops-webhook", secrets.opsAlertWebhookUrl, serviceAccounts["worker"]);
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
   // artifacts (to materialize /work); the benchmark-enclave bucket is granted to NO product SA here — it
@@ -81,6 +94,27 @@ export function createIam(args: IamArgs): Iam {
   grantBucket("worker-rw-artifacts", buckets["artifacts"], serviceAccounts["worker"], "roles/storage.objectAdmin");
   // run-task's harness uid materializes /work from artifact bytes — read-only.
   grantBucket("runtask-ro-artifacts", buckets["artifacts"], serviceAccounts["run-task"], "roles/storage.objectViewer");
+
+  // §13.3 ingest path (PRB.15): uploads land on the `quarantine/` prefix of the user-content bucket via
+  // an api-presigned PUT (presignQuarantinePut); the FETCHER's SA is objectCreator CONDITIONED to that
+  // prefix only ("a service account limited to the quarantine prefix" — §12.1), and the convert Job's SA
+  // is read-only over the bucket so it can fetch the quarantined bytes before writing the canonical doc.
+  new gcp.storage.BucketIAMMember(`rhema-${stack}-fetcher-quarantine-creator`, {
+    bucket: buckets["user-content"].name,
+    role: "roles/storage.objectCreator",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["fetcher"].email}`,
+    condition: {
+      title: "quarantine-prefix-only",
+      description: "The fetcher may create objects only under quarantine/ (§13.3 upload quarantine).",
+      expression: pulumi.interpolate`resource.name.startsWith("projects/_/buckets/${buckets["user-content"].name}/objects/quarantine/")`,
+    },
+  });
+  grantBucket(
+    "convert-ro-usercontent",
+    buckets["user-content"],
+    serviceAccounts["convert"],
+    "roles/storage.objectViewer",
+  );
 
   // The egress-proxy MIG VM pulls its digest-pinned image from Artifact Registry with its instance SA (the COS
   // startup-script `docker pull`). Without this the pull is denied ("Unauthenticated request") — surfaced live

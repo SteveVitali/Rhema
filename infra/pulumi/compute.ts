@@ -1,10 +1,13 @@
 // Compute: the GKE Standard cluster that run-task Jobs land on (Standard, not Autopilot, because the
 // input-scoped mount namespace needs CAP_SYS_ADMIN), the egress-proxy managed instance group behind an
-// internal LB (the sandbox's stable egress target), the seven Cloud Run services, and the external
-// HTTPS load balancer + Cloud CDN fronting web/api.
+// internal LB (the sandbox's stable egress target), the Cloud Run services + the convert Cloud Run Job,
+// and the external HTTPS load balancer + Cloud CDN fronting web/api/user-content.
 //
-// Service images are placeholders here (the P0.01 posture): the deploy provenance record + the images
-// job are exercised before any service ships real logic. Later deploys pin real digests.
+// Service images come from `rhema:serviceImages` (a JSON `{service: digest-ref}` map the images CI
+// publishes — REQ-ARCH-39); anything unmapped falls back to `placeholderImage` so a bare `pulumi
+// preview` still plans cleanly. PRB.15: prod wires the REAL domains (`rhema.app` +
+// `*.rhemausercontent.com` — the stage facts' `domains` block), host-routing the api and the
+// cookieless user-content origin on the same external HTTPS LB + managed cert.
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
@@ -12,6 +15,7 @@ import { type StageConfig } from "../config/stages";
 import type { Network } from "./network";
 import { EGRESS_PROXY_TAG, SANDBOX_TAG, GKE_MASTER_CIDR } from "./network";
 import { SERVICES, type Iam, type ServiceName } from "./iam";
+import type { Secrets } from "./secrets";
 import { buildProxyStartupScript } from "./proxy";
 
 export interface ComputeArgs {
@@ -21,8 +25,19 @@ export interface ComputeArgs {
   region: pulumi.Input<string>;
   network: Network;
   iam: Iam;
+  /** The provisioned secret CONTAINERS (for env secret-NAME wiring — values never appear). */
+  secrets: Secrets;
+  /** The isolated, versioned buckets (api's OBJECTS_BUCKET + the user-content serving origin). */
+  buckets: Record<string, gcp.storage.Bucket>;
   /** A placeholder image ref until each service ships real logic (overridden per-deploy). */
   placeholderImage: string;
+  /**
+   * PRB.15 — the real digest-pinned image per Cloud Run service/Job (`rhema:serviceImages` JSON map,
+   * e.g. `{"api":"…/api@sha256:…"}`); missing entries fall back to `placeholderImage` so `preview` stays
+   * clean before images are published. `run-task`/`egress-proxy` keep their dedicated config keys
+   * (`runTaskImageDigest`/`proxyImage`) — the worker launches one, the MIG runs the other.
+   */
+  serviceImages?: Record<string, string>;
   /** The digest-pinned egress-proxy image the MIG runs (defaults to `placeholderImage` for a preview). */
   proxyImage?: pulumi.Input<string>;
   /** The Secret Manager secret NAME the proxy reads the provider key from (never the value). */
@@ -38,6 +53,14 @@ export interface ComputeArgs {
   workerSystemDatabaseUrl?: pulumi.Input<string>;
   /** the worker's Memorystore Redis URL (a Pulumi secret config). */
   workerRedisUrl?: pulumi.Input<string>;
+  /** the api's RLS-enforced tenant connection (a Pulumi secret config — prod sets `rhema:apiDatabaseUrl`). */
+  apiDatabaseUrl?: pulumi.Input<string>;
+  /** the api's elevated system-scoped connection for the circuit-breaker read (a Pulumi secret config). */
+  apiSystemDatabaseUrl?: pulumi.Input<string>;
+  /** the api's Memorystore Redis URL (a Pulumi secret config; prod shares `rhema:redisUrl`). */
+  apiRedisUrl?: pulumi.Input<string>;
+  /** the worker's Resend From address (`EMAIL_FROM`, plain deploy config). */
+  emailFrom?: pulumi.Input<string>;
   /** the digest-pinned run-task image the worker launches as the two-uid GKE Job. */
   runTaskImageDigest?: pulumi.Input<string>;
   /** the api's internal URL the worker + pod reach (`API_INTERNAL_URL`). */
@@ -53,17 +76,33 @@ export interface Compute {
   runTaskPool: gcp.container.NodePool;
   proxyGroup?: gcp.compute.RegionInstanceGroupManager;
   services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>>;
+  /** §12.1's convert Cloud Run Job (per-batch, no network, no DB) — executed by the caller, never served. */
+  convertJob: gcp.cloudrunv2.Job;
+  /** The external HTTPS LB's reserved global IPv4 (the operator points every prod DNS record at it). */
+  lbIpAddress?: pulumi.Output<string>;
+  /**
+   * The DNS records the operator applies at their registrar/zone before the managed cert can authorize
+   * (PRB.15; undefined off prod). Every record points at `lbIpAddress`.
+   */
+  dnsRecords?: pulumi.Output<{ name: string; type: string; value: string }[]>;
 }
 
-// Services that run on Cloud Run (everything but the two special cases: run-task on GKE, egress-proxy on
-// a MIG). `web` is public; the rest are internal + LB-fronted. `export` is created FIRST so the api's
-// EXPORT_SERVICE_URL (PRB.11) can reference its uri — the api never carries pandoc; it POSTs the markdown
-// to the isolated export container.
-const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "web", "api", "worker", "collab", "fetcher", "convert"];
+// Services that run as Cloud Run SERVICES (run-task on GKE, egress-proxy on a MIG, convert is a Cloud
+// Run JOB — §12.1 "a Cloud Run Job per batch, no network, no DB"). `web` is public; the rest are
+// internal + LB-fronted. `export` is created FIRST so the api's EXPORT_SERVICE_URL (PRB.11) can
+// reference its uri — the api never carries pandoc; it POSTs the markdown to the isolated export
+// container.
+const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "web", "api", "worker", "collab", "fetcher"];
 
 export function createCompute(args: ComputeArgs): Compute {
-  const { stack, cfg, region, network, iam, placeholderImage } = args;
+  const { stack, cfg, project, region, network, iam, secrets, placeholderImage } = args;
   const name = (suffix: string) => `rhema-${stack}-${suffix}`;
+  const domains = cfg.domains; // prod-only (undefined on dev/preview — stage facts)
+  // The public origins the stage's domains imply (prod); non-prod services simply don't set them.
+  const appOrigin = domains ? `https://${domains.app}` : undefined;
+  const apiOrigin = domains ? `https://${domains.api}` : undefined;
+  const imageFor = (svc: ServiceName): pulumi.Input<string> =>
+    args.serviceImages?.[svc] ?? placeholderImage;
 
   // --- GKE Standard cluster for run-task (needs CAP_SYS_ADMIN — REQ-ARCH-2/36). ------------------
   const gke = new gcp.container.Cluster(name("run-task-gke"), {
@@ -180,14 +219,57 @@ export function createCompute(args: ComputeArgs): Compute {
     });
   }
 
+  // --- Artifact Registry: the per-stack docker repo the images CI + `cloudbuild.yaml` push to and the
+  // runtimes pull from (PRB.15 — was hand-created for dev; IaC'd so `pulumi up prod` is self-contained).
+  // `RUN_TASK_IMAGE_REPO` derives from it so the worker's Job spec can never drift from the real repo.
+  const imageRepo = new gcp.artifactregistry.Repository(name("images"), {
+    repositoryId: `rhema-${stack}`,
+    location: region,
+    format: "DOCKER",
+  });
+  const runTaskImageRepo = pulumi.interpolate`${region}-docker.pkg.dev/${project}/${imageRepo.repositoryId}/run-task`;
+
   // The always-on worker's env (D-P0.08-1). Constants set in-program; the two SA/node-pool facts derived from
-  // the resources above; the dynamic connection strings + URLs threaded (optional) from Pulumi config. The
-  // RS256 run-token key secrets (RUN_TOKEN_PRIVATE/PUBLIC_KEY_SECRET) + RUN_TASK_IMAGE_REPO are set at deploy
-  // (they need the Secret Manager naming reconciliation that is outside this offline change); the worker reads
-  // the key from Secret Manager via ADC at boot (its SA is granted access in iam.ts).
+  // the resources above; the dynamic connection strings + URLs threaded (optional) from Pulumi config.
+  // PRB.15 binds the Secret Manager NAMES the worker resolves at boot (RUN_TOKEN_* / ANTHROPIC_ADMIN_KEY /
+  // RESEND_API_KEY / EMAIL_ACTION — never the values) + the ops webhook via a Cloud Run secretKeyRef.
+  const runTokenSecretVersion = pulumi.interpolate`${secrets.runTokenSigningKey.id}/versions/latest`;
+  const secretVersion = (s: gcp.secretmanager.Secret) => pulumi.interpolate`${s.id}/versions/latest`;
+  // Optional-secret env names are wired only for stages whose `requiredSecrets` include them — the
+  // worker/api eagerly `access` a named secret at boot, so naming a versionless preview secret would
+  // crash-loop the service (previews require only the provider + run-token keys — stage facts).
+  const requires = (id: string) => cfg.requiredSecrets.includes(id);
   const workerEnvs: pulumi.Input<gcp.types.input.cloudrunv2.ServiceTemplateContainerEnv>[] = [
     { name: "K8S_NAMESPACE", value: "runs" },
     { name: "KUBE_SERVICE_ACCOUNT", value: "run-task-ksa" },
+    // The RS256 run-token keypair lives in ONE secret (the worker mints → needs both halves; the name
+    // points at `versions/latest`, never the value — REQ-ARCH-30).
+    { name: "RUN_TOKEN_PRIVATE_KEY_SECRET", value: runTokenSecretVersion },
+    { name: "RUN_TOKEN_PUBLIC_KEY_SECRET", value: runTokenSecretVersion },
+    { name: "RUN_TASK_IMAGE_REPO", value: runTaskImageRepo },
+    // PRB.08/09 — the provider admin key (usage.reconcile), the Resend transport, and the one-click
+    // email-action HMAC as secret NAMES (Secret Manager at boot; gated by `requiredSecrets` above).
+    ...(requires("anthropic-admin-key")
+      ? [{ name: "ANTHROPIC_ADMIN_KEY_SECRET", value: secretVersion(secrets.anthropicAdminKey) }]
+      : []),
+    ...(requires("resend-api-key")
+      ? [{ name: "RESEND_API_KEY_SECRET", value: secretVersion(secrets.resendApiKey) }]
+      : []),
+    ...(requires("email-action-secret")
+      ? [{ name: "EMAIL_ACTION_SECRET_NAME", value: secretVersion(secrets.emailActionSecret) }]
+      : []),
+    // The ops alert webhook is a value-bearing secret — Cloud Run mounts it via secretKeyRef (the
+    // worker's SA holds secretAccessor on it — iam.ts), so it never sits in Pulumi config.
+    ...(requires("ops-alert-webhook-url")
+      ? [
+          {
+            name: "OPS_ALERT_WEBHOOK_URL",
+            valueSource: {
+              secretKeyRef: { secret: secrets.opsAlertWebhookUrl.secretId, version: "latest" },
+            },
+          },
+        ]
+      : []),
     // Plan-concurrency default (D-P0.08-4 stopgap, IaC'd from the live P0.15g hand-fix). The reaper does not
     // yet mark queued/failed-agent runs terminal, so a stuck non-terminal run counts against the flat default
     // (worker env, default 2) and blocks new admissions. Raise the default so a wedged dev run does not stall
@@ -203,8 +285,15 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(args.workerDatabaseUrl ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }] : []),
     ...(args.workerSystemDatabaseUrl ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }] : []),
     ...(args.workerRedisUrl ? [{ name: "REDIS_URL", value: args.workerRedisUrl }] : []),
+    ...(args.emailFrom ? [{ name: "EMAIL_FROM", value: args.emailFrom }] : []),
+    ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
+    ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
     ...(args.runTaskImageDigest ? [{ name: "RUN_TASK_IMAGE_DIGEST", value: args.runTaskImageDigest }] : []),
-    ...(args.internalApiUrl ? [{ name: "API_INTERNAL_URL", value: args.internalApiUrl }] : []),
+    // The internal api URL defaults to the prod api origin when domains exist; `rhema:internalApiUrl`
+    // still overrides (dev/previews have no real api host until the LB is up).
+    ...(args.internalApiUrl || apiOrigin
+      ? [{ name: "API_INTERNAL_URL", value: args.internalApiUrl ?? apiOrigin! }]
+      : []),
     ...(args.proxyBaseUrl ? [{ name: "ANTHROPIC_BASE_URL", value: args.proxyBaseUrl }] : []),
     ...(args.objectsBucket ? [{ name: "OBJECTS_BUCKET", value: args.objectsBucket }] : []),
   ];
@@ -236,7 +325,9 @@ export function createCompute(args: ComputeArgs): Compute {
         },
         containers: [
           {
-            image: placeholderImage,
+            // PRB.15 — the real digest-pinned image when `rhema:serviceImages` names one; otherwise the
+            // placeholder keeps `pulumi preview` plannable before the images CI publishes.
+            image: imageFor(svc),
             ...(isWorker
               ? {
                   resources: {
@@ -251,14 +342,52 @@ export function createCompute(args: ComputeArgs): Compute {
             // service is created first in CLOUD_RUN_SERVICES so its uri resolves here).
             // PRB.13 — `signup.mode` (REQ-BETA-19 amended) deploys to BOTH consumers from the one stage
             // fact: the api's `POST /signup` admission gate and the web `/login` pre-gate read the same
-            // `SIGNUP_MODE` (a mode string — never a secret). All stages are `invite` until PRB.15 flips prod.
-            ...(svc === "api" || svc === "web"
+            // `SIGNUP_MODE` (a mode string — never a secret). Prod is `open` (PRB.15).
+            ...(svc === "api"
               ? {
                   envs: [
-                    ...(svc === "api"
-                      ? [{ name: "EXPORT_SERVICE_URL", value: services["export"]!.uri }]
-                      : []),
+                    { name: "EXPORT_SERVICE_URL", value: services["export"]!.uri },
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
+                    { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
+                    { name: "MAX_USD_PER_RUN", value: String(cfg.maxUsdPerRun) },
+                    // The api mints run tokens → both key halves from the ONE signing-key secret (name
+                    // only; the SA holds accessor — REQ-ARCH-30). The Stripe webhook + email-action
+                    // verification secrets are NAMES resolved at boot, gated on `requiredSecrets`.
+                    { name: "RUN_TOKEN_PRIVATE_KEY_SECRET", value: runTokenSecretVersion },
+                    { name: "RUN_TOKEN_PUBLIC_KEY_SECRET", value: runTokenSecretVersion },
+                    ...(requires("stripe-webhook-secret")
+                      ? [
+                          {
+                            name: "STRIPE_WEBHOOK_SECRET_NAME",
+                            value: secretVersion(secrets.stripeWebhookSecret),
+                          },
+                        ]
+                      : []),
+                    ...(requires("email-action-secret")
+                      ? [
+                          {
+                            name: "EMAIL_ACTION_SECRET_NAME",
+                            value: secretVersion(secrets.emailActionSecret),
+                          },
+                        ]
+                      : []),
+                    ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
+                    ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
+                    ...(args.apiDatabaseUrl ? [{ name: "DATABASE_URL", value: args.apiDatabaseUrl }] : []),
+                    ...(args.apiSystemDatabaseUrl
+                      ? [{ name: "SYSTEM_DATABASE_URL", value: args.apiSystemDatabaseUrl }]
+                      : []),
+                    ...(args.apiRedisUrl ? [{ name: "REDIS_URL", value: args.apiRedisUrl }] : []),
+                  ],
+                }
+              : {}),
+            // PRB.15 — prod's web reads the real api origin (`https://api.rhema.app`) so the SPA's
+            // data-source + the magic-link POST hit the LB-fronted api; non-prod keeps the default.
+            ...(svc === "web"
+              ? {
+                  envs: [
+                    { name: "SIGNUP_MODE", value: cfg.signupMode },
+                    ...(apiOrigin ? [{ name: "API_BASE_URL", value: apiOrigin }] : []),
                   ],
                 }
               : {}),
@@ -272,7 +401,24 @@ export function createCompute(args: ComputeArgs): Compute {
     });
   }
 
-  // --- External HTTPS LB + Cloud CDN fronting `web`. -------------------------------------------------
+  // --- convert: a Cloud Run JOB, not a service (§12.1 — "a Cloud Run Job per batch, no network, no DB").
+  // It is created but never executed by the program: the ingest caller supplies the quarantine object
+  // per execution (D-PRB.02-1's live leg). No vpcAccess → the job has no route into the VPC.
+  const convertJob = new gcp.cloudrunv2.Job(name("convert"), {
+    location: region,
+    deletionProtection: cfg.kind === "prod",
+    template: {
+      template: {
+        serviceAccount: iam.serviceAccounts["convert"].email,
+        timeout: "600s",
+        maxRetries: 1,
+        containers: [{ image: imageFor("convert") }],
+      },
+    },
+  });
+
+  // --- External HTTPS LB + Cloud CDN fronting `web`, the api, and (prod) the cookieless user-content
+  // origin. prod gets the real domains + a reserved global IP the operator's DNS records point at.
   const webNeg = new gcp.compute.RegionNetworkEndpointGroup(name("web-neg"), {
     region,
     networkEndpointType: "SERVERLESS",
@@ -292,30 +438,105 @@ export function createCompute(args: ComputeArgs): Compute {
     },
     backends: [{ group: webNeg.id }],
   });
-  const urlMap = new gcp.compute.URLMap(name("urlmap"), { defaultService: webBackend.id });
-  // Google-managed cert domain. NOTE: `.example` is a reserved TLD GCP rejects at create ("Invalid
-  // domain name") — the offline typecheck can't catch this (it validates only at create). We use a
-  // real-format placeholder TLD so the cert resource (and the HTTPS proxy/forwarding rule that depend on
-  // it) create cleanly and the full stack stands up. In dev the managed cert never reaches ACTIVE without
-  // DNS ownership — the external web TLS frontend is not on the Phase-0 exit-criteria path (the live run
-  // flows through api/worker/proxy/GKE), so a non-validating dev cert is acceptable. prod supplies a real
-  // owned domain out-of-band before go-live.
+
+  // The api on the same LB (prod): host `api.rhema.app` routes to the api Cloud Run NEG — no public
+  // `run.app` surface, the service's ingress stays `INTERNAL_LOAD_BALANCER`.
+  const apiNeg = new gcp.compute.RegionNetworkEndpointGroup(name("api-neg"), {
+    region,
+    networkEndpointType: "SERVERLESS",
+    cloudRun: { service: services["api"]!.name },
+  });
+  const apiBackend = new gcp.compute.BackendService(name("api-backend"), {
+    protocol: "HTTPS",
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+    enableCdn: false, // api responses are never edge-cached
+    backends: [{ group: apiNeg.id }],
+  });
+
+  // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `*.rhemausercontent.com` is host-routed to a
+  // backend bucket over the PRIVATE, uniform-IAM `user-content` bucket — cookieless by construction (the
+  // domain is a separate registrable domain so session cookies can never reach it) and served
+  // attachment/octet-stream by `servingHeadersFor` (apps/convert/src/serving.ts). Objects stay private:
+  // the app signs download URLs (CDN signed-url key added by the operator out-of-band — the runbook's
+  // post-up step), so nothing is world-readable and `USE_ORIGIN_HEADERS` honors the private/no-store
+  // cache-control the serving layer emits.
+  const userContentBackend = domains
+    ? new gcp.compute.BackendBucket(name("usercontent-backend"), {
+        bucketName: args.buckets["user-content"].name,
+        enableCdn: true, // CDN is REQUIRED for the signed-url mechanism (the edge verifies the signature)
+        cdnPolicy: { cacheMode: "USE_ORIGIN_HEADERS" },
+      })
+    : undefined;
+
+  const urlMap = new gcp.compute.URLMap(name("urlmap"), {
+    defaultService: webBackend.id,
+    ...(domains && userContentBackend
+      ? {
+          hostRules: [
+            { hosts: [domains.api], pathMatcher: "api" },
+            { hosts: [domains.userContent, `*.${domains.userContent}`], pathMatcher: "usercontent" },
+          ],
+          pathMatchers: [
+            { name: "api", defaultService: apiBackend.id },
+            { name: "usercontent", defaultService: userContentBackend.id },
+          ],
+        }
+      : {}),
+  });
+
+  // Google-managed cert. prod covers the REAL domains (stage facts): rhema.app + api.rhema.app +
+  // rhemausercontent.com + the *.rhemausercontent.com wildcard. Non-prod keeps the real-format
+  // placeholder TLD so the cert resource (and the HTTPS proxy/forwarding rule that depend on it) create
+  // cleanly (a `.example` name is rejected at create — offline typecheck can't catch that); a non-prod
+  // cert never reaches ACTIVE without DNS ownership, which is acceptable — the live run path flows
+  // through api/worker/proxy/GKE.
   const cert = new gcp.compute.ManagedSslCertificate(name("cert"), {
-    managed: { domains: [`${stack === "prod" ? "app" : stack}.rhema.dev`] },
+    managed: {
+      domains: domains
+        ? [domains.app, domains.api, domains.userContent, `*.${domains.userContent}`]
+        : [`${stack}.rhema.dev`],
+    },
   });
   const httpsProxy = new gcp.compute.TargetHttpsProxy(name("https-proxy"), {
     urlMap: urlMap.id,
     sslCertificates: [cert.id],
   });
+  // A reserved global IPv4 gives the operator ONE stable anycast address for every prod DNS record —
+  // without it the forwarding rule's ephemeral IP can churn and silently break DNS.
+  const lbAddress = domains
+    ? new gcp.compute.GlobalAddress(name("lb-ip"), { ipVersion: "IPV4" })
+    : undefined;
   new gcp.compute.GlobalForwardingRule(name("https-fr"), {
+    ...(lbAddress ? { ipAddress: lbAddress.address } : {}),
     target: httpsProxy.id,
     portRange: "443",
     loadBalancingScheme: "EXTERNAL_MANAGED",
   });
 
+  // The DNS records the operator applies at their DNS provider before the managed cert can authorize
+  // (every prod host → the reserved LB IPv4). Emitted as a stack output so the runbook's post-up step
+  // reads them straight off `pulumi stack output` instead of a hand-edited table.
+  const dnsRecords =
+    domains && lbAddress
+      ? lbAddress.address.apply((ip) => [
+          { name: `${domains.app}.`, type: "A", value: ip },
+          { name: `${domains.api}.`, type: "A", value: ip },
+          { name: `${domains.userContent}.`, type: "A", value: ip },
+          { name: `*.${domains.userContent}.`, type: "A", value: ip },
+        ])
+      : undefined;
+
   // Sanity: the Cloud Run + GKE + proxy set covers every declared service exactly once.
-  const covered = new Set<ServiceName>([...CLOUD_RUN_SERVICES, "run-task", "egress-proxy"]);
+  const covered = new Set<ServiceName>([...CLOUD_RUN_SERVICES, "run-task", "egress-proxy", "convert"]);
   for (const s of SERVICES) if (!covered.has(s)) throw new pulumi.RunError(`service ${s} has no compute placement`);
 
-  return { gke, runTaskPool, proxyGroup, services };
+  return {
+    gke,
+    runTaskPool,
+    proxyGroup,
+    services,
+    convertJob,
+    lbIpAddress: lbAddress?.address,
+    dnsRecords,
+  };
 }

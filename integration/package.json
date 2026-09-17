@@ -18,7 +18,9 @@
     "@rhema/engine": "workspace:*",
     "@rhema/mirror": "workspace:*",
     "@rhema/protocols": "workspace:*",
+    "@rhema/benchmark": "workspace:*",
     "@rhema/contracts": "workspace:*",
+    "@rhema/infra": "workspace:*",
     "@rhema/db": "workspace:*",
     "hono": "^4.6.14",
     "@rhema/run-task": "workspace:*"

@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { STAGES, stageConfigFor, stageKindFor, sandboxSubnetOf } from "./stages.js";
+import {
+  ALL_SECRET_IDS,
+  PROD_DOMAINS,
+  PROD_REQUIRED_SECRETS,
+  STAGES,
+  stageConfigFor,
+  stageKindFor,
+  sandboxSubnetOf,
+} from "./stages.js";
 
 describe("stage kinds (§13.2)", () => {
   it("maps concrete stack names to kinds", () => {
@@ -79,9 +87,58 @@ describe("AlloyDB + preview guards (AC2 — GCP)", () => {
 });
 
 describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () => {
-  it("every stage is invite until the prod bring-up (PRB.15) deliberately flips prod — the flag fails closed", () => {
+  it("prod is open (PRB.15's deliberate flip); every non-prod stage stays invite — the flag fails closed", () => {
+    expect(STAGES.prod.signupMode).toBe("open");
     for (const [name, cfg] of Object.entries(STAGES)) {
+      if (name === "prod") continue;
       expect(cfg.signupMode, `stage ${name}`).toBe("invite");
     }
+  });
+});
+
+describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => {
+  it("prod carries the real domains: rhema.app + api.rhema.app + the cookieless rhemausercontent.com", () => {
+    expect(STAGES.prod.domains).toEqual(PROD_DOMAINS);
+    expect(STAGES.prod.domains!.app).toBe("rhema.app");
+    expect(STAGES.prod.domains!.api).toBe("api.rhema.app");
+    // The user-content origin is a SEPARATE registrable domain — the XSS blast-radius cut (§12.3):
+    // neither domain is a subdomain of the other, so session cookies on rhema.app can never reach it.
+    expect(STAGES.prod.domains!.userContent).toBe("rhemausercontent.com");
+    expect(STAGES.prod.domains!.userContent.endsWith(`.${STAGES.prod.domains!.app}`)).toBe(false);
+    expect(STAGES.prod.domains!.app.endsWith(`.${STAGES.prod.domains!.userContent}`)).toBe(false);
+  });
+
+  it("non-prod stages carry no domains block (the placeholder `${stack}.rhema.dev` cert suffices)", () => {
+    expect(STAGES.dev.domains).toBeUndefined();
+    expect(STAGES.preview.domains).toBeUndefined();
+  });
+});
+
+describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; REQ-ARCH-30)", () => {
+  it("prod requires the full production secret set — every id the program provisions", () => {
+    for (const id of ALL_SECRET_IDS) {
+      expect(PROD_REQUIRED_SECRETS, `missing ${id}`).toContain(id);
+    }
+    // The H6-named prod credentials are all present.
+    for (const id of [
+      "alloydb-password",
+      "anthropic-api-key",
+      "anthropic-admin-key",
+      "resend-api-key",
+      "stripe-secret",
+      "stripe-webhook-secret",
+      "google-oauth-client-secret",
+      "ops-alert-webhook-url",
+    ]) {
+      expect(STAGES.prod.requiredSecrets, `missing ${id}`).toContain(id);
+    }
+  });
+
+  it("previews require only the non-production keys; prod is the only allowsProductionSecrets stage", () => {
+    expect(STAGES.preview.requiredSecrets).not.toContain("stripe-secret");
+    expect(STAGES.preview.requiredSecrets).not.toContain("resend-api-key");
+    expect(STAGES.preview.allowsProductionSecrets).toBe(false);
+    expect(STAGES.dev.allowsProductionSecrets).toBe(false);
+    expect(STAGES.prod.allowsProductionSecrets).toBe(true);
   });
 });
