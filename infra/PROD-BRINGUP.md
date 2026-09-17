@@ -14,7 +14,20 @@ All of these must already hold; the runbook does not create accounts:
       `api.rhema.tools`, the cookieless user-content origin is `usercontent.rhema.tools` +
       `*.usercontent.rhema.tools`; **amended 2026-09-17** — the earlier `rhema.app` +
       `rhemausercontent.com` pair is superseded, the operator does not control those domains).
-- [ ] A stated prod budget (AlloyDB stays warm; GKE + MIG + Cloud Run + Redis STANDARD_HA).
+- [ ] A stated prod budget — **amended 2026-09-17 to ~$50/mo**: prod runs **Cloud SQL**
+      `db-g1-small` (Postgres 16, warm, zonal — AlloyDB's ~$270/mo minimum was unaffordable; dev
+      stays on AlloyDB), a **zonal** Standard GKE cluster with **one on-demand e2-medium** node
+      (Spot is the documented lever, never the default — run pods must not be preempted), the
+      **smallest Memorystore BASIC** Redis (not re-architected into the cluster — it is
+      fan-out/presence, not the system of record), and a **single-instance** egress-proxy MIG.
+      Honest floor estimate: Cloud SQL db-g1-small ≈ $25/mo + e2-medium ≈ $24/mo + Basic-1GB Redis
+      ≈ $33/mo + MIG e2-small ≈ $13/mo — **~$95/mo for always-on data+compute before Cloud Run /
+      LB / GCS / egress traffic**, so ~$50/mo is achievable only if (a) the GKE free-tier waiver
+      zeroes the cluster-management fee on this billing account and (b) a further lever is pulled
+      (e.g. scheduling off the proxy MIG or Redis when idle). The $50 figure is the operator's
+      TARGET; the stage facts implement the cheapest prod-ready shape — every bigger lever (HA
+      Cloud SQL, regional GKE, STANDARD_HA Redis, MIG ×2) is documented in `stages.ts`/`data.ts`/
+      `compute.ts` comments.
 - [ ] Google OAuth consent screen published for `rhema.tools`; Resend sending domain verified for
       `@rhema.tools`.
 - [ ] The Stripe live-mode answer recorded (gates the real-money leg — PRB.17, not this deploy).
@@ -32,12 +45,14 @@ pulumi stack output                # sanity: empty until first up
 ## 2. Set the prod config (secrets via `pulumi config set --secret` — never committed)
 
 ```bash
-# The AlloyDB bootstrap password — bind it FIRST; the cluster's `postgres` user is created with it.
+# The Postgres bootstrap password — bind it FIRST; the Cloud SQL `postgres` built-in user is created
+# with it (the key name is `alloydbPassword` for stack continuity — it is engine-agnostic).
 pulumi config set --secret rhema:alloydbPassword '<generated-strong-password>'
-# Database URLs (restricted RLS roles where marked) — built AFTER the cluster exists (its private IP
-# comes from `pulumi stack output`); set them before `up` if you already know the address plan, else
-# `up`, then set them, then `up` again so services pick them up. Recommended: set after step 3's first up.
-pulumi config set --secret rhema:apiDatabaseUrl          'postgresql://…@<alloydb-private-ip>:5432/rhema'
+# Database URLs (restricted RLS roles where marked) — built AFTER the instance exists (its private IP
+# comes from `pulumi stack output databaseHost`); set them before `up` if you already know the
+# address plan, else `up`, then set them, then `up` again so services pick them up. Recommended:
+# set after step 3's first up. Host = the Cloud SQL private IP — e.g. postgresql://<user>:<pw>@<ip>:5432/rhema
+pulumi config set --secret rhema:appDatabaseUrl          'postgresql://…@<cloudsql-private-ip>:5432/rhema'
 pulumi config set --secret rhema:apiSystemDatabaseUrl    'postgresql://…(elevated role)…/rhema'
 pulumi config set --secret rhema:workerDatabaseUrl       'postgresql://…(restricted)…/rhema'
 pulumi config set --secret rhema:workerSystemDatabaseUrl 'postgresql://…(elevated)…/rhema'
@@ -74,12 +89,15 @@ revisions. (Or pre-create the repo: `gcloud artifacts repositories create rhema-
 ## 3. [OPERATOR GATE] `pulumi up`
 
 ```bash
-pulumi preview    # review the plan — AlloyDB STANDARD/warm, prod domains cert, prod-locked deletions
+pulumi preview    # review the plan — Cloud SQL db-g1-small warm + 35d backups/7d PITR, prod domains
+                # cert, prod-locked deletions (Cloud SQL + GKE + buckets)
 pulumi up         # THE spend step
 ```
 
-Expected surface: VPC + 3 subnets (sandbox has NO default route/NAT), AlloyDB 4-vCPU primary warm +
-35-day PITR, Memorystore STANDARD_HA, GKE Standard + run-task pool, the egress-proxy MIG (×2), six
+Expected surface: VPC + 3 subnets (sandbox has NO default route/NAT), **Cloud SQL Postgres 16
+`db-g1-small` warm + private-IP + 35-day automated backups / 7-day PITR** (prod's engine — amended
+2026-09-17; AlloyDB exists only on dev/preview), Memorystore **BASIC** 1 GB, a **zonal** GKE
+Standard cluster + run-task pool (**1 × e2-medium**), the egress-proxy MIG (**×1**), six
 Cloud Run services + the convert Cloud Run **Job**, the Secret Manager containers (all
 `rhema-prod-*`), the AR repo `rhema-prod`, the external HTTPS LB + managed cert (PENDING until DNS is
 live) + the reserved global IP.
@@ -87,8 +105,9 @@ live) + the reserved global IP.
 ## 4. Apply the run-task k8s state (post-`up`, stack-parameterized)
 
 ```bash
+# prod is a ZONAL cluster (us-central1-a) — get-credentials takes --zone, not --region:
 gcloud container clusters get-credentials rhema-prod-run-task-gke \
-  --region us-central1 --project rhema-507501
+  --zone us-central1-a --project rhema-507501
 PROJECT=rhema-507501 STACK=prod ./infra/k8s/apply.sh
 # ⇒ runs namespace + run-task-ksa (WI-bound to rhema-prod-run-task@…) + pod egress NetworkPolicy
 ```
@@ -115,10 +134,13 @@ for s in $(pulumi stack output requiredSecrets --show-secrets=false | jq -r '.[]
 # per secret:  printf %s "$VALUE" | gcloud secrets versions add rhema-prod-<id> --data-file=-
 ```
 
-The 12 ids (from `requiredSecrets` / stage facts): `anthropic-api-key`, `run-token-signing-key`,
+The 11 REQUIRED ids (from `requiredSecrets` / stage facts — **amended 2026-09-17**:
+`ops-alert-webhook-url` is provisioned but NOT required — the operator has no alert destination yet
+and the drift-alert path stays inert; opting back in = seed a version + re-add the id to
+`PROD_REQUIRED_SECRETS`): `anthropic-api-key`, `run-token-signing-key`,
 `alloydb-password`, `better-auth-secret`, `google-oauth-client-secret`, `stripe-secret`,
 `stripe-webhook-secret`, `email-action-secret`, `resend-api-key`, `anthropic-admin-key`,
-`ops-alert-webhook-url`, `user-content-signing-key`.
+`user-content-signing-key`.
 
 Then arm the private user-content origin: the SAME `user-content-signing-key` value is installed on
 the backend bucket so the CDN edge verifies the signatures the api will mint (D-PRB.02-1's signer is a
@@ -130,11 +152,26 @@ gcloud compute backend-buckets add-signed-url-key \
   --key-name rhema-tools-key --key-value "<the same base64url key stored in rhema-prod-user-content-signing-key>"
 ```
 
-## 7. Migrations + protocol seed on prod AlloyDB
+## 7. Migrations + protocol seed on prod Cloud SQL
 
-Reach the private-IP cluster from an in-VPC path (the AlloyDB Auth Proxy on an operator VM, or a
-`gcloud compute ssh` tunnel through a private-app-tier host — the operator's call; there is no public
-endpoint). Then, with `DATABASE_URL` pointed at the privileged `postgres` role:
+Reach the private-IP instance from an in-VPC path — **the Cloud SQL Auth Proxy on the operator's
+machine is the one-liner** (private-IP instances need an authorized-network route; the proxy
+dials out through the VPC):
+
+```bash
+# one-liner: cloud-sql-proxy <PROJECT>:<REGION>:<INSTANCE> — instance name from
+# `pulumi stack output cloudSqlInstance`; requires the proxy binary (brew install cloud-sql-proxy
+# or gcloud components install cloud-sql-proxy) + a source of VPC reachability (the proxy's
+# --private-ip flag needs you on a network that can route to the VPC — e.g. run it from a
+# private-app-tier VM, or over a VPN/Interconnect). For a private-IP-only instance, run the proxy
+# from an in-VPC host:
+cloud-sql-proxy --private-ip rhema-507501:us-central1:rhema-prod-postgres
+# ⇒ listens on 127.0.0.1:5432 by default (-p 5433 to pick a port)
+```
+
+(A `gcloud compute ssh` tunnel through a private-app-tier host to port 5432 works the same — the
+operator's call; there is no public endpoint.) Then, with `DATABASE_URL` pointed at the privileged
+`postgres` role through the proxy:
 
 ```bash
 pnpm build

@@ -1,5 +1,15 @@
 # PRB.17 — Billing live + the ops legs: the real-money channel, provider reconcile, and PRB.14's live halves
 
+> **Amended 2026-09-17:** two prod-environment facts shifted under this ticket's ops legs. (1)
+> **Prod's database is Cloud SQL for PostgreSQL** (`db-g1-small`, warm, private-IP — ADR-010), not
+> AlloyDB — every "prod AlloyDB" reading below should be read as Cloud SQL; the credit-ledger /
+> billing-read-model queries are engine-agnostic Postgres, so no leg's semantics change. (2) The
+> **`ops-alert-webhook-url` secret is provisioned but NOT prod-required** — the operator has no
+> alert destination yet, so the >2%-drift / balance-divergence alert sink this ticket exercises
+> stays **inert** until a destination is seeded (and the id re-added to `PROD_REQUIRED_SECRETS`).
+> The ops legs that assert alert delivery need that seeding step first — it is a documented opt-in,
+> not a blocker for the rest of the ticket.
+
 - **Sequence:** inserted — runs **after `28g_PRB.16`, before `29_P1.01`**. Sorts as `28h` — the
   last row of the prod-launch round (§ Plan extensions, **ADR-008**).
 - **Phase:** LV — prod launch (the money + ops verification).

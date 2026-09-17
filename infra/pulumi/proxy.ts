@@ -35,7 +35,7 @@ export function buildProxyStartupScript(): string {
     "# arbitrary host port (only SSH + established are allowed), so --network host leaves 8443 unreachable from",
     "# the sandbox even with the GCP firewall open (surfaced live P0.15e — the MIG health check + the pod SYN",
     "# both timed out). `-p` makes Docker install the DNAT + ACCEPT rules for the published port. The container",
-    "# still egresses to AlloyDB + the provider via the bridge (SNAT to the host).",
+    "# still egresses to the managed Postgres (AlloyDB dev / Cloud SQL prod) + the provider via the bridge (SNAT to the host).",
     "docker rm -f egress-proxy >/dev/null 2>&1 || true",
     'docker run -d --name egress-proxy --restart always -p "${PORT}:${PORT}" \\',
     '  -e DATABASE_URL="$DB_URL" \\',

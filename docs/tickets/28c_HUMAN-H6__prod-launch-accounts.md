@@ -9,6 +9,16 @@
 > Resend sending domain are `@rhema.tools`/the `rhema.tools` zone. The separate-registrable-domain
 > cookie-isolation argument is superseded by host-only `__Host-` session cookies (see the PRB.15
 > amendment note + `apps/api/src/auth.ts`).
+>
+> **Amended 2026-09-17 (same date, second note):** two items below shift. (1) **The postgres
+> password seeds the prod *Cloud SQL* `postgres` user**, not an AlloyDB cluster — prod's engine
+> moved to Cloud SQL `db-g1-small` for the ~$50/mo budget (ADR-010; the `alloydb-password` Secret
+> Manager id + `rhema:alloydbPassword` key are kept, engine-agnostic). (2) **The required-secret
+> checklist is 11, not 12** — `ops-alert-webhook-url` is provisioned but deliberately optional: no
+> alert destination exists yet, so the drift/balance alert path stays inert rather than blocking
+> bring-up; seeding a version + re-adding the id to `PROD_REQUIRED_SECRETS` opts back in. (3) The
+> "stated prod budget" item now reads ~**$50/mo** — the runbook carries the honest floor estimate
+> (~$95/mo always-on before traffic; the GKE free-tier waiver + documented levers close the gap).
 
 > **Operator work — NOT an `implement-spec` input.** Do before/alongside `28d_PRB.13`–`28f_PRB.15`;
 > everything below must hold **before `28f_PRB.15` Stage B** (the prod `pulumi up`) — the Stripe

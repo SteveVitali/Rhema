@@ -45,10 +45,13 @@ const workerSystemDatabaseUrl = rhemaConfig.getSecret("workerSystemDatabaseUrl")
 const redisUrl = rhemaConfig.getSecret("redisUrl");
 const workerRedisUrl = rhemaConfig.getSecret("workerRedisUrl") ?? redisUrl;
 const apiRedisUrl = rhemaConfig.getSecret("apiRedisUrl") ?? redisUrl;
-// The api's connections (PRB.15 prod) + the AlloyDB bootstrap password binding the cluster's `postgres`
-// user (HUMAN-H6 — the operator builds every DATABASE_URL from it).
-const apiDatabaseUrl = rhemaConfig.getSecret("apiDatabaseUrl");
+// The api's connections (PRB.15 prod). `rhema:appDatabaseUrl` is the canonical key (amended
+// 2026-09-17); `apiDatabaseUrl` stays readable as a fallback for stacks seeded under the old name.
+const apiDatabaseUrl = rhemaConfig.getSecret("appDatabaseUrl") ?? rhemaConfig.getSecret("apiDatabaseUrl");
 const apiSystemDatabaseUrl = rhemaConfig.getSecret("apiSystemDatabaseUrl");
+// The postgres bootstrap password binding the engine's `postgres` user (HUMAN-H6 — the operator
+// builds every DATABASE_URL from it). Engine-agnostic despite the name: AlloyDB initialUser on dev,
+// Cloud SQL built-in user on prod.
 const alloydbPassword = rhemaConfig.getSecret("alloydbPassword");
 const emailFrom = rhemaConfig.get("emailFrom");
 const runTaskImageDigest = rhemaConfig.get("runTaskImageDigest");
@@ -102,7 +105,12 @@ export const stageKind = cfg.kind;
 export const maxUsdPerRun = cfg.maxUsdPerRun;
 export const vpcSelfLink = network.network.selfLink;
 export const sandboxSubnet = network.sandboxSubnetSelfLink;
-export const alloydbCluster = data.alloydbCluster.name;
+// The Postgres endpoint facts — engine-gated (PRB.15 amended 2026-09-17): `alloydbCluster` is set on
+// AlloyDB stages (dev/preview), `cloudSqlInstance` on Cloud SQL stages (prod); `databaseHost` is the
+// private IP either way — what the operator's DATABASE_URLs + the migrate/seed runner point at.
+export const alloydbCluster = data.alloydbCluster?.name;
+export const cloudSqlInstance = data.cloudSqlInstance?.name;
+export const databaseHost = data.databaseHost;
 export const redisHost = data.redis.host;
 export const bucketNames = pulumi.all(Object.values(data.buckets).map((b) => b.name));
 export const gkeCluster = compute.gke.name;

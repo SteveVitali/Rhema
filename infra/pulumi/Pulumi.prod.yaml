@@ -1,19 +1,28 @@
 # Pulumi stack: prod (PRB.15 — Stage A authors the config; Stage B is operator-gated).
 #
-# The stack name IS the stage name (`prod` → the stage facts' prod profile: warm >=4-vCPU AlloyDB,
-# STANDARD_HA Redis, $100/run guard, signup.mode=open, the real rhema.tools / *.usercontent.rhema.tools
-# domains — amended 2026-09-17 to the operator's single zone). Non-secret config is committed; every
-# SECRET below is set with
+# The stack name IS the stage name (`prod` → the stage facts' prod profile: warm Cloud SQL
+# db-g1-small — Postgres engine amended 2026-09-17 from AlloyDB for the ~$50/mo budget — BASIC
+# Memorystore, ZONAL GKE + 1 e2-medium node, $100/run guard, signup.mode=open, the real
+# rhema.tools / *.usercontent.rhema.tools domains — same-day single-zone amendment).
+# Non-secret config is committed; every SECRET below is set with
 # `pulumi config set --secret` IN THE OPERATOR'S ENVIRONMENT ONLY — never committed (REQ-ARCH-30).
 #
 # Operator secrets to set before `pulumi up` (values are HUMAN-H6's out-of-band material):
-#   rhema:alloydbPassword          — postgres bootstrap password (also seed rhema-prod-alloydb-password)
-#   rhema:proxyDatabaseUrl         — egress-proxy's DATABASE_URL (restricted role)
+#   rhema:alloydbPassword          — postgres bootstrap password (engine-agnostic name; binds the
+#                                    Cloud SQL `postgres` built-in user; also seed the SM container
+#                                    rhema-prod-alloydb-password)
+#   rhema:proxyDatabaseUrl         — egress-proxy's DATABASE_URL (restricted role; Cloud SQL
+#                                    private-IP host — get it via `pulumi stack output databaseHost`)
 #   rhema:workerDatabaseUrl        — worker DATABASE_URL (RLS-enforced role)
 #   rhema:workerSystemDatabaseUrl  — worker SYSTEM_DATABASE_URL (elevated, cross-tenant sweeps)
-#   rhema:apiDatabaseUrl           — api DATABASE_URL (RLS-enforced role)
+#   rhema:appDatabaseUrl           — api DATABASE_URL (RLS-enforced role) — canonical name
+#                                    (rhema:apiDatabaseUrl still reads as a fallback for old stacks)
 #   rhema:apiSystemDatabaseUrl     — api SYSTEM_DATABASE_URL (circuit-breaker read)
 #   rhema:redisUrl                 — Memorystore redis:// URL (shared api + worker + web)
+# NOT required (provisioned but intentionally unseeded — amended 2026-09-17):
+#   rhema-prod-ops-alert-webhook-url — the drift/balance alert sink; the alert path stays INERT
+#                                    until a destination exists (seed a version + re-add the id to
+#                                    PROD_REQUIRED_SECRETS to opt back in)
 # Operator plain config to set:
 #   rhema:serviceImages            — JSON {"api":"…@sha256:…","web":…,"worker":…,"fetcher":…,
 #                                    "convert":…,"export":…,"collab":…} (images CI publishes it)
