@@ -432,3 +432,63 @@ authorized in the gate answers. Tear-down/scheduling policy is the operator's.
 secrets/migrations/seed/provenance/provider-verification are written; the sandbox fail-closed
 egress is proven on the wire. **Pending:** operator applies the 3 A records → cert leaves
 PROVISIONING → the custom-domain smoke legs re-run. `nextTicket` therefore stays on PRB.15.
+
+---
+
+## Stage B — continuation: DNS applied, cert poll + domain smoke (2026-09-17, same date)
+
+### Step 5′ — DNS landed at the registrar (operator), verified resolving
+
+The operator applied the three `dnsRecords` A records. Verified from this environment — direct
+authoritative/53 is blocked here, so all checks ran over public resolvers:
+
+```
+# Google DoH + Cloudflare DoH — every name → only the LB's reserved global IP
+rhema.tools            A → ['34.8.177.69']   (dns.google + cloudflare-dns.com, status 0)
+api.rhema.tools        A → ['34.8.177.69']   (same)
+usercontent.rhema.tools A → ['34.8.177.69']  (same)
+# negatives also clean: no AAAA at any of the three; no CAA at the apex; no CNAME at the apex
+# apex sampled across ECS subnets (1.0.0.0/8, 35.190.0.0/16, 104.196.0.0/16,
+# 199.36.153.0/24, 34.8.177.0/24) → all five return 34.8.177.69 only
+```
+
+Zone is hosted at Squarespace DNS (`nsb1..4.squarespacedns.com`); the local caching resolver
+briefly still returned the four pre-change Squarespace IPs (`198.185.159.144/145`,
+`198.49.23.144/145`) — stale TTL-bound cache, not the authoritative answer.
+
+### Cert poll timeline — `rhema-prod-cert-fc89dad` (bounded, ~85 min of 3-min checks)
+
+| time | status | domainStatus |
+|---|---|---|
+| 03:34 | PROVISIONING | all three `FAILED_NOT_VISIBLE` |
+| 03:37 | PROVISIONING | `usercontent` → ACTIVE; api/apex `FAILED_NOT_VISIBLE` |
+| 03:40 | PROVISIONING | `api` → ACTIVE; apex `FAILED_NOT_VISIBLE` |
+| 03:43 → 04:59 (22 more polls) | PROVISIONING | api + usercontent `ACTIVE`; **apex `rhema.tools` still `FAILED_NOT_VISIBLE`** |
+
+Two of three domains provisioned; the apex has been `FAILED_NOT_VISIBLE` for ~85 min despite the
+authoritative RRset being verifiably clean from every reachable vantage — consistent with Google's
+managed-cert checker retry backoff after the pre-DNS failure window (per Google docs provisioning
+can take up to ~24h once DNS is correct). **Operator-check item:** confirm the apex `@` RRset at the
+Squarespace zone contains *only* `34.8.177.69` (no lingering Squarespace A records — a mixed RRset
+would stall the checker permanently; current public-resolver answers show only our IP, so this is a
+verification, not a known fault). No agent-side remediation is safe: the cert can't be deleted while
+attached to the target HTTPS proxy, and detaching/recreating it would fight the Pulumi state.
+
+### Domain smoke — BLOCKED on the cert (no TLS on any host until the cert is `ACTIVE` overall)
+
+```
+curl --resolve api.rhema.tools:443:34.8.177.69 https://api.rhema.tools/healthz
+  → LibreSSL SSL_connect: SSL_ERROR_SYSCALL (TCP connects, TLS reset — HTTPS proxy has no ACTIVE cert)
+curl --resolve usercontent.rhema.tools:443:34.8.177.69 https://usercontent.rhema.tools/
+  → same handshake failure
+```
+
+The `*.rhema.tools` legs — api `/healthz` over the domain, apex web HTML, usercontent no-`Set-Cookie`,
+and the `__Host-` cookie kick — all re-run identically the moment the cert flips ACTIVE; commands are
+`infra/PROD-BRINGUP.md` §10 verbatim. The `__Host-`/auth-kick leg additionally needs Better Auth
+mounted (`/api/auth/*` currently 404s **by design** — D-P0.01-3 → PRB.16).
+
+**Stage B state after this leg: still SUBSTANTIALLY COMPLETE.** New this leg: DNS confirmed applied
++ resolving on all three names; cert 2/3 domains ACTIVE. Remaining before PRB.15 fully closes:
+apex domain-status → ACTIVE → cert ACTIVE → the four `*.rhema.tools` curls (the `__Host-` leg is
+PRB.16's by design). `nextTicket` stays PRB.15.

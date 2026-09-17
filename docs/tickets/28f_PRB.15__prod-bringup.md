@@ -173,25 +173,45 @@ golden-path (`28g_PRB.16`) and billing (`28h_PRB.17`) legs run against.
   AlloyDB).
 
 ## Acceptance criteria
-- [ ] **Stage A, offline:** `stages.ts` carries a tested `prod` profile (warm AlloyDB, real
+- [x] **Stage A, offline:** `stages.ts` carries a tested `prod` profile (warm AlloyDB, real
       domains, `signup.mode: 'open'`, prod secret names, prod guards); `Pulumi.prod.yaml` +
       program deltas `tsc --noEmit`-clean vs `@pulumi/gcp@8.41.1`; the DNS/TLS/origin wiring is
       authored; every prod Dockerfile is real (no sleeper); the seed/migration runbook + the
       `infra/k8s` post-step are written. *(deterministic — `stages.test.ts` + `tsc` + doc review)*
-- [ ] `pulumi up prod` stands the full stack up; the sandbox subnet has no NAT/default route and
-      egresses only to the proxy — asserted on the live prod network. *(live — Stage B)*
-- [ ] Migrations + `seedProtocols` run green on prod AlloyDB; the schema version + Essay protocol
-      row confirmed. *(live — Stage B)*
+- [x] `pulumi up prod` stands the full stack up; the sandbox subnet has no NAT/default route and
+      egresses only to the proxy — asserted on the live prod network. *(live — Stage B; converged
+      2026-09-17 at 107 resources; no-NAT/no-default-route/egress-only-to-proxy asserted on the
+      live VPC AND on the wire from a `runs` pod)*
+- [x] Migrations + `seedProtocols` run green on prod AlloyDB; the schema version + Essay protocol
+      row confirmed. *(live — Stage B; 24/24 migrations + `essay v1` on prod Cloud SQL per the
+      engine amendment, via IAP/SSH tunnel — `seedRealProjects` never invoked)*
 - [ ] Every Cloud Run service healthy; TLS live on `rhema.app` + `*.rhemausercontent.com`; the api
-      answers; the worker consumes; the proxy is the sandbox's only egress. *(live — Stage B)*
-- [ ] `recordProviderVerification` written on prod with the attested `termsRef`;
-      `providerTransmissible("anthropic", now)` true (D-P0.13-2). *(live — Stage B)*
-- [ ] Deploy provenance on prod carries the real `PROTOCOLS_VERSION` + image digests (D-P0.04-2's
-      live half). *(live — Stage B)*
-- [ ] verification green; every new behaviour has a test that fails if it is removed; requirement
+      answers; the worker consumes; the proxy is the sandbox's only egress. *(live — Stage B;
+      domains amended to the `rhema.tools` zone — **see the 2026-09-17 close-out note below**)*
+- [x] `recordProviderVerification` written on prod with the attested `termsRef`;
+      `providerTransmissible("anthropic", now)` true (D-P0.13-2). *(live — Stage B; row
+      `01M2Q07H6YQ37J06WT98XZGYHS`, termsRef verbatim, `providerTransmissible` asserted true)*
+- [x] Deploy provenance on prod carries the real `PROTOCOLS_VERSION` + image digests (D-P0.04-2's
+      live half). *(live — Stage B; `deployments` row `prod:3d538e9…` with
+      `0.4.0+64cbeef137b090c2` + all nine `sha256:` digests)*
+- [x] verification green; every new behaviour has a test that fails if it is removed; requirement
       ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its
       compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md`
       row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
+
+> **2026-09-17 — Stage-B close-out note (the one open AC above).** Of the smoke AC's legs: all six
+> Cloud Run services are READY on pinned digests and serve real app HTML (`web` `/`/`/login`/
+> `/invite` 200 on `.run.app`); the api answers; the proxy is the sandbox's only egress **proven on
+> the wire** (`api.anthropic.com` blackholed; the proxy answers `egress.denied` 403 to
+> uncredentialed requests). Not yet proven: **TLS on the `rhema.tools` hosts** — DNS is applied and
+> verified resolving (`rhema.tools`/`api`/`usercontent` → `34.8.177.69` via Google + Cloudflare DoH)
+> and the managed cert `rhema-prod-cert-fc89dad` has `api`/`usercontent` **ACTIVE** but the apex
+> still `FAILED_NOT_VISIBLE` after ~85 min of bounded polling (checker backoff is the likely cause;
+> the operator is asked to confirm the apex RRset contains only our IP at the Squarespace zone). The
+> `*.rhema.tools` curls in runbook §10 re-run the moment the cert flips. The `__Host-` Set-Cookie
+> kick and the "worker consumes the queue" leg additionally depend on Better Auth being mounted
+> (`/api/auth/*` 404s **by design** — D-P0.01-3 → PRB.16) and on a first real run (PRB.16's golden
+> path) respectively — those are pending-PRB.16, not failures.
 
 ## Requirement IDs to satisfy and stamp in the PR
 REQ-ARCH-1/2 (GCP services + the sandbox no-egress), REQ-ARCH-26/27/28/29 (the deploy shape),
