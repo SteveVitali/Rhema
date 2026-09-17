@@ -9,6 +9,22 @@
 > every auth cookie is host-only `__Host-`-prefixed (`apps/api/src/auth.ts`, unit-asserted by
 > `auth.test.ts`), so a `Domain=rhema.tools` plant from a sibling subdomain can neither shadow nor
 > receive session material.
+>
+> **Amended 2026-09-17 (same date, second note): prod's database engine is Cloud SQL for
+> PostgreSQL, not AlloyDB** — the operator's ~$50/mo prod budget cannot carry AlloyDB's ~$270/mo
+> minimum warm primary; §12's provider table already called Cloud SQL "the simpler swap". Read every
+> "prod AlloyDB" below as "prod Cloud SQL": the stage facts now carry `database.engine`
+> (`alloydb` on dev/preview — dev's live cluster is untouched; `cloudsql` on prod), prod runs a
+> warm `db-g1-small` (the minimal prod-ready shared-core tier — `db-f1-micro` is too thin), private-IP
+> on the SAME PSA peering, 35 daily automated backups + 7-day PITR (Cloud SQL's cap), deletion
+> protection on. Companion prod cost posture: **zonal** Standard GKE + **one on-demand e2-medium**
+> node (Spot stays a lever, never the default — run pods must not be preempted), **smallest
+> Memorystore BASIC** Redis (not re-architected), egress-proxy MIG **×1** (fail-closed, not
+> fail-open). `ops-alert-webhook-url` is provisioned but **no longer prod-required** (no alert
+> destination exists — the worker's alert path stays inert until one is seeded). The canonical api
+> key is `rhema:appDatabaseUrl` (`apiDatabaseUrl` still reads as a fallback). ADR-010 records the
+> decision; the runbook's AlloyDB prerequisites/steps are reworded to Cloud SQL + `cloud-sql-proxy`.
+> Stage B remains operator-gated — nothing live has run.
 
 - **Sequence:** inserted — runs **after `28e_PRB.14`, before `28g_PRB.16`**. Sorts as `28f`
   (prod-launch round; § Plan extensions, **ADR-008**).

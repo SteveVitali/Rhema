@@ -105,10 +105,15 @@ export function createCompute(args: ComputeArgs): Compute {
     args.serviceImages?.[svc] ?? placeholderImage;
 
   // --- GKE Standard cluster for run-task (needs CAP_SYS_ADMIN — REQ-ARCH-2/36). ------------------
+  // PROD IS ZONAL (amended 2026-09-17 — the ~$50/mo budget): a single-zone Standard cluster's
+  // management fee is the lever GCP's free-tier waiver may zero per billing account; a regional
+  // cluster multiplies control-plane+node cost. The pre-existing e2 stockout pin keeps non-prod on
+  // two zones for a different reason (create-time stockout avoidance, not HA).
   const gke = new gcp.container.Cluster(name("run-task-gke"), {
-    location: region,
+    // prod: a ZONAL cluster (`<region>-a`); non-prod: regional (the live dev shape — unchanged).
+    location: cfg.kind === "prod" ? pulumi.interpolate`${region}-a` : region,
     // Non-prod pins node zones to avoid a single-zone GCE stockout wedging the whole regional create (a live
-    // us-central1-f e2 stockout ERROR'd the cluster in P0.15f Stage B). prod stays fully multi-zone (regional HA).
+    // us-central1-f e2 stockout ERROR'd the cluster in P0.15f Stage B). Prod is deliberately single-zone.
     ...(cfg.kind !== "prod" ? { nodeLocations: [`${region}-a`, `${region}-c`] } : {}),
     network: network.network.id,
     subnetwork: network.subnets["sandbox"].id,
@@ -138,10 +143,17 @@ export function createCompute(args: ComputeArgs): Compute {
 
   const runTaskPool = new gcp.container.NodePool(name("run-task-pool"), {
     cluster: gke.id,
-    location: region,
-    nodeCount: cfg.kind === "prod" ? 2 : 1,
+    // Node pool location tracks the cluster's (a zone on prod, the region elsewhere).
+    location: gke.location,
+    // Prod floor: ONE on-demand node (amended 2026-09-17 — budget). Spot stays OFF by default: run
+    // pods must not be preempted mid-run (a spot node's 30s SIGTERM can lose an in-flight run);
+    // it's the documented cost lever if a bigger pool is ever justified.
+    nodeCount: 1,
     nodeConfig: {
-      machineType: "e2-standard-2", // 1 vCPU / 2 GiB baseline (§12.1); Draft>8k bumps the Pod request
+      // prod: e2-medium (2 shared vCPU / 4 GiB) — the cheapest machine that still schedules the
+      // baseline run pod (~3 GiB allocatable after kube-system). A Draft>8k Pod request may exceed
+      // it — bump the pool rather than silently unscheduling. non-prod keeps e2-standard-2.
+      machineType: cfg.kind === "prod" ? "e2-medium" : "e2-standard-2",
       serviceAccount: iam.serviceAccounts["run-task"].email,
       oauthScopes: ["https://www.googleapis.com/auth/cloud-platform"],
       workloadMetadataConfig: { mode: "GKE_METADATA" },
@@ -210,11 +222,15 @@ export function createCompute(args: ComputeArgs): Compute {
       region,
       baseInstanceName: name("proxy"),
       versions: [{ instanceTemplate: proxyTemplate.id }],
-      targetSize: cfg.kind === "prod" ? 2 : 1,
+      // Prod floor: ONE proxy instance (amended 2026-09-17 — budget; two e2-smalls alone would be
+      // ~$25/mo). Fail-CLOSED, not fail-open: if the instance dies, run pods lose egress (runs error,
+      // they never leak) — so the HA cost of a single instance is availability-only. Auto-healing
+      // still replaces it. targetSize 2 is the lever if prod hardens.
+      targetSize: 1,
       namedPorts: [{ name: "https", port: Number(proxyPort) }],
       autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
       // Non-prod pins the proxy VM to zones with capacity (a us-central1-f e2 stockout blocked the MIG instance
-      // in P0.15f Stage B). prod stays fully regional (multi-zone HA).
+      // in P0.15f Stage B). Prod lets the regional MIG place its single instance.
       ...(cfg.kind !== "prod" ? { distributionPolicyZones: [`${region}-a`, `${region}-c`] } : {}),
     });
   }

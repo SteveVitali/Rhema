@@ -1,6 +1,8 @@
 // The LIVE PROD migrate + seed runner (PRB.15 Stage B — operator-gated). Applies the forward-only SQL
 // migrations then seeds the PROTOCOL rows (`seedProtocols` — the Essay protocol; §6.7) against the
-// production AlloyDB over a pg.Pool. Deliberately does NOT run `seedRealProjects` — that fixture is
+// production managed Postgres over a pg.Pool (prod = Cloud SQL, amended 2026-09-17 — reach it via
+// `cloud-sql-proxy --private-ip` per infra/PROD-BRINGUP.md §7). Deliberately does NOT run
+// `seedRealProjects` — that fixture is
 // dev/preview sample data and must never land on prod (real accounts provision themselves through
 // self-serve signup; the only code-seeded data prod needs is the protocol table).
 //
@@ -54,7 +56,7 @@ export async function runProdMigrateSeed(
 export async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    console.error("[prod-migrate-seed] DATABASE_URL is required (a privileged prod AlloyDB connection)");
+    console.error("[prod-migrate-seed] DATABASE_URL is required (a privileged prod Postgres connection — Cloud SQL via cloud-sql-proxy)");
     process.exit(1);
     return;
   }

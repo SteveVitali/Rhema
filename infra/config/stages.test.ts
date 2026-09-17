@@ -62,20 +62,35 @@ describe("no other subnet accidentally opens the sandbox posture", () => {
   });
 });
 
-describe("AlloyDB + preview guards (AC2 — GCP)", () => {
-  it("prod AlloyDB keeps a warm primary at >= 4 vCPU and does not pause", () => {
-    expect(STAGES.prod.alloydb.primaryCpuCount).toBeGreaterThanOrEqual(4);
-    expect(STAGES.prod.alloydb.paused).toBe(false);
-    expect(STAGES.prod.alloydb.backupRetentionDays).toBe(35);
+describe("managed Postgres engine + preview guards (AC2 — GCP; prod→Cloud SQL amended 2026-09-17)", () => {
+  it("prod runs Cloud SQL — db-g1-small (minimal prod-ready shared-core), warm, 35-day backups", () => {
+    const d = STAGES.prod.database;
+    expect(d.engine).toBe("cloudsql");
+    expect(d.cloudSqlTier).toBe("db-g1-small");
+    expect(d.paused).toBe(false); // warm — never paused
+    expect(d.backupRetentionDays).toBe(35); // daily automated backups; PITR caps at 7d (Cloud SQL)
   });
 
-  it("preview AlloyDB is small + paused with isolated buckets and a $3/run guard (REQ-ARCH-38)", () => {
+  it("dev + preview stay on AlloyDB (dev is the already-live substrate; preview is small/paused)", () => {
+    expect(STAGES.dev.database.engine).toBe("alloydb");
+    expect(STAGES.dev.database.paused).toBe(false);
     const p = STAGES.preview;
-    expect(p.alloydb.paused).toBe(true);
-    expect(p.alloydb.primaryCpuCount).toBeLessThanOrEqual(2); // smallest AlloyDB shape
+    expect(p.database.engine).toBe("alloydb");
+    expect(p.database.paused).toBe(true);
+    expect(p.database.primaryCpuCount).toBeLessThanOrEqual(2); // smallest AlloyDB shape
     expect(p.isolatedBuckets).toBe(true);
     expect(p.maxUsdPerRun).toBe(3);
     expect(p.allowsProductionSecrets).toBe(false); // never production secrets in previews
+  });
+
+  it("the engine descriptor is internally consistent (tier only on cloudsql, vCPU only on alloydb)", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      if (cfg.database.engine === "cloudsql") {
+        expect(cfg.database.cloudSqlTier, name).toMatch(/^db-/);
+      } else {
+        expect(cfg.database.primaryCpuCount, name).toBeGreaterThanOrEqual(1);
+      }
+    }
   });
 
   it("every stage versions its GCS buckets and isolates them (REQ-ARCH-28)", () => {
@@ -121,8 +136,9 @@ describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => 
 });
 
 describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; REQ-ARCH-30)", () => {
-  it("prod requires the full production secret set — every id the program provisions", () => {
+  it("prod requires the production secret set minus the opted-out ops webhook (amended 2026-09-17)", () => {
     for (const id of ALL_SECRET_IDS) {
+      if (id === "ops-alert-webhook-url") continue; // operator opted out — inert until a destination exists
       expect(PROD_REQUIRED_SECRETS, `missing ${id}`).toContain(id);
     }
     // The H6-named prod credentials are all present.
@@ -134,10 +150,13 @@ describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; RE
       "stripe-secret",
       "stripe-webhook-secret",
       "google-oauth-client-secret",
-      "ops-alert-webhook-url",
     ]) {
       expect(STAGES.prod.requiredSecrets, `missing ${id}`).toContain(id);
     }
+    // The ops-alert container is still PROVISIONED (opting back in = seed a version + re-add the id)
+    // but is NOT required — the drift-alert path must not block prod bring-up.
+    expect(ALL_SECRET_IDS).toContain("ops-alert-webhook-url");
+    expect(PROD_REQUIRED_SECRETS).not.toContain("ops-alert-webhook-url");
   });
 
   it("previews require only the non-production keys; prod is the only allowsProductionSecrets stage", () => {

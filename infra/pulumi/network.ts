@@ -41,7 +41,8 @@ export interface Network {
   /** The name of the sandbox subnet, for placing the run-task node pool. */
   sandboxSubnetSelfLink: pulumi.Output<string>;
   /**
-   * The private-services-access peering AlloyDB + Memorystore(PRIVATE_SERVICE_ACCESS) require. Data-plane
+   * The private-services-access peering the managed Postgres (AlloyDB dev / Cloud SQL prod — same
+   * mechanism, same reserved range, no collision) + Memorystore(PRIVATE_SERVICE_ACCESS) require. Data-plane
    * resources must depend on this so the peering exists before they try to allocate a private IP.
    */
   psaConnection: gcp.servicenetworking.Connection;
@@ -208,7 +209,9 @@ export function createNetwork(args: NetworkArgs): Network {
   // it cannot reach). Standard private-GKE DNS setup.
   privateGoogleApisDns(name, network);
 
-  // Private Services Access: a reserved /16 + a servicenetworking peering. AlloyDB and Memorystore Redis
+  // Private Services Access: a reserved /16 + a servicenetworking peering. The stage's managed Postgres
+  // (AlloyDB on dev/preview; Cloud SQL on prod — amended 2026-09-17) and Memorystore Redis allocate
+  // their private IPs from this ONE range — a single connection serves all of them, no collision.
   // (PRIVATE_SERVICE_ACCESS) allocate their private IPs out of this range over the VPC peering — without it
   // their creation fails (surfaced by the live `pulumi preview`/`up`). This grants NO internet egress.
   const psaRange = new gcp.compute.GlobalAddress(name("psa-range"), {

@@ -90,5 +90,38 @@ zone, the separate-registrable-domain cookie boundary was rebuilt as **host-only
 in `apps/api/src/auth.ts` — unit-tested (`auth.test.ts`) at both the computed-cookie level and the
 real emitted `Set-Cookie` level. Dated `> Amended 2026-09-17:` notes were appended to `28c_HUMAN-H6`,
 `28f_PRB.15`, `28g_PRB.16`, the design spec (a `⚑` banner at §13.3), and the D-PRB.02-1 deferral row.
-Nothing else changed: `signupMode:"open"`, the 12 required secret ids, warm AlloyDB, the
-`dnsRecords` output shape, the Stage-B checklist.
+Nothing else changed in that leg: `signupMode:"open"`, the `dnsRecords` output shape, the
+Stage-B checklist.
+
+## Amendment — 2026-09-17 (same date, second leg): prod database → Cloud SQL for PostgreSQL
+
+The operator's stated prod budget is **~$50/mo** — AlloyDB's ~$270/mo minimum warm primary cannot
+fit it, and §12's provider table already called Cloud SQL "the simpler swap". So (ADR-010):
+
+- **Stage facts** carry `database.engine`: `alloydb` on dev/preview (dev's live cluster untouched),
+  `cloudsql` on prod — `db-g1-small` (minimal prod-ready shared-core; `db-f1-micro` rejected as too
+  thin), warm/ALWAYS, zonal, private-IP on the SAME PSA peering, 35 daily automated backups + 7-day
+  PITR (Cloud SQL's hard cap — the honest ceiling), `deletionProtection` on. `stages.test.ts`
+  asserts all of it.
+- **Pulumi** (`data.ts`): AlloyDB resources are gated to `engine === "alloydb"`; prod instead gets
+  `gcp.sql.DatabaseInstance` + `Database` + `User` (the `postgres` built-in user binds the same
+  `rhema:alloydbPassword` secret — engine-agnostic name kept for stack continuity). New outputs:
+  `cloudSqlInstance` + `databaseHost` (the private IP the operator's DATABASE_URLs point at);
+  `alloydbCluster` is now optional/empty on prod. `rhema:appDatabaseUrl` is the canonical api key
+  (`apiDatabaseUrl` still reads as a fallback for stacks seeded under the old name).
+- **Companion cost posture (same budget):** prod GKE → **zonal** Standard + **1 × on-demand
+  e2-medium** (Spot stays a lever, never the default — run pods must not be preempted); Memorystore
+  → smallest **BASIC** on prod too (fan-out/presence, not the system of record); egress-proxy MIG →
+  **×1** (fail-closed — a dead proxy loses egress, never leaks). Honest floor ≈ **~$95/mo always-on
+  before traffic** — the $50 target needs the GKE free-tier waiver and/or the documented levers;
+  the runbook says so plainly.
+- **`ops-alert-webhook-url`** is provisioned but **no longer prod-required** (11 required ids — no
+  alert destination exists; the drift-alert path stays inert; opting back in = seed a version +
+  re-add the id to `PROD_REQUIRED_SECRETS`).
+- **Amendments (append-only):** design-spec `⚑` banners at §13.1 (engine + cost posture) and §13.3
+  (backups → Cloud SQL automated + PITR, 7-day cap honest) + the status line; dated notes on
+  `28c_HUMAN-H6`, `28f_PRB.15`, `28h_PRB.17`; `PROD-BRINGUP.md` reworded to Cloud SQL +
+  `cloud-sql-proxy --private-ip` for the migrate/seed leg + the honest monthly floor; **ADR-010**
+  added (index regenerated).
+
+Stage B remains operator-gated — nothing live has run.

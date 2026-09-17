@@ -220,3 +220,64 @@ available (and never will be). The prod serving surface was re-factored onto the
 
 - **Unchanged:** `signupMode:"open"` on prod, the 12 `requiredSecrets` ids, warm ≥4-vCPU AlloyDB,
   the `dnsRecords` output shape (now emits the `rhema.tools` A records), the Stage-B runbook steps.
+
+## Addendum — 2026-09-17 (second, same date): prod database engine → Cloud SQL for PostgreSQL
+
+The operator stated the real prod budget: **~$50/mo of infrastructure**. AlloyDB's minimum warm
+primary (~$270/mo) is ~5x the entire target, so prod's managed Postgres became **Cloud SQL** — the
+swap §12's provider table already foreshadowed ("Cloud SQL is the simpler swap"). ADR-010 records
+the decision; the "Unchanged" bullet above is superseded on exactly the points below (append-only —
+the earlier addendum stays as written).
+
+**What changed in code (all offline; Stage B still gated):**
+
+- `infra/config/stages.ts` — `alloydb: AlloyDbConfig` → `database: DatabaseConfig` with
+  `engine: "alloydb" | "cloudsql"`: dev + preview keep AlloyDB (dev's cluster is live; previews stay
+  small/paused — the spec's "AlloyDB **or Cloud SQL**" preview line licensed either); prod is
+  `cloudsql` + `cloudSqlTier: "db-g1-small"` (the minimal prod-ready shared-core tier —
+  `db-f1-micro` documented as the absolute floor but too thin to call prod-ready), `paused: false`,
+  `backupRetentionDays: 35`.
+- `infra/pulumi/data.ts` — AlloyDB cluster/primary gated behind `engine === "alloydb"`; prod creates
+  a `gcp.sql.DatabaseInstance` (**POSTGRES_16**, `db-g1-small`, **ZONAL**, `ipv4Enabled:false` +
+  `privateNetwork` on the same VPC + SAME `network.psaConnection` peering — Cloud SQL private IP
+  allocates from the existing reserved range, no second connection/collision), `Database` (`rhema`)
+  + `User` (`postgres` BUILT_IN bound to the same `rhema:alloydbPassword` secret — the key/id names
+  are engine-agnostic, kept for stack continuity). Backups: `enabled` + `retainedBackups: 35` +
+  `pointInTimeRecoveryEnabled` + `transactionLogRetentionDays: 7` (Cloud SQL's hard PITR cap —
+  stated honestly; no 35-day continuous window exists on this engine). `deletionProtection` on
+  prod. New `databaseHost` output = the private IP (AlloyDB `primary.ipAddress` / Cloud SQL
+  `privateIpAddress`) — what the operator's DATABASE_URLs + `prod-migrate-seed.mjs` point at.
+- `infra/pulumi/index.ts` — `alloydbCluster` output is now optional (empty on prod); added
+  `cloudSqlInstance` + `databaseHost`. Canonical api URL key is now `rhema:appDatabaseUrl`
+  (`apiDatabaseUrl` reads as a fallback so a stack seeded under the old name still works).
+- `infra/pulumi/compute.ts` — companion prod cost posture from the same budget: the run-task GKE
+  cluster is **ZONAL** (`us-central1-a`; non-prod keeps regional + the e2-stockout zone pin), the
+  node pool is **1 × on-demand `e2-medium`** (Spot documented as a lever, never default — run pods
+  must not be preempted; a >4 GiB Pod request is the documented reason to bump the pool), the
+  egress-proxy MIG → **targetSize 1** (fail-CLOSED: a dead proxy loses egress, never leaks;
+  auto-healing still replaces it). Redis → **BASIC** on prod too (smallest Memorystore; it is
+  fan-out/presence, not the system of record).
+- `infra/config/stages.ts` `PROD_REQUIRED_SECRETS` — `ops-alert-webhook-url` removed from the
+  required set (11 required ids). Its Secret Manager container + IAM grant + conditional worker
+  `secretKeyRef` binding are unchanged — the drift/balance alert path stays **inert** until a
+  destination is seeded and the id re-added; provisioned-not-required is a documented opt-in, not a
+  deletion.
+- Cloud Run reachability: unchanged by design — services egress `PRIVATE_RANGES_ONLY` over the
+  existing Direct-VPC connector; the Cloud SQL private IP routes identically to the AlloyDB one.
+- Honest cost floor (runbook + ADR): db-g1-small ≈$25 + e2-medium ≈$24 + BASIC Redis ≈$33 +
+  proxy e2-small ≈$13 ≈ **~$95/mo always-on before Cloud Run/LB/GCS/traffic** — ~$50 is achievable
+  only with the GKE free-tier waiver (billing-account dependent) and/or the documented levers; the
+  docs say so rather than pretending it fits.
+
+**What changed in docs (append-only amendments):** design-spec `⚑` banners at §13.1 (engine +
+companion cost posture) and §13.3 (backups → Cloud SQL automated ×35 + PITR capped at 7d) + the
+status line; dated notes on `28c_HUMAN-H6`, `28f_PRB.15`, `28h_PRB.17`; `infra/PROD-BRINGUP.md`
+reworded (Cloud SQL prerequisites/expected surface, `cloud-sql-proxy --private-ip` one-liner for
+the migrate/seed leg, zonal `get-credentials --zone`, 11-required-secret checklist, the honest
+floor); `Pulumi.prod.yaml` + `infra/pulumi/README.md` config/key comments; **ADR-010** authored and
+the ADR index regenerated via `adr-index.sh`; LEDGER's current-state lines updated.
+
+**Verify:** `infra/pulumi` `tsc --noEmit` clean; `stages.test.ts` green (engine/tier/secret
+assertions rewritten); full gates re-run in this leg (numbers below in the commit message / PR).
+**Stage B is still operator-gated** — no `pulumi up prod`, no live resources, no migrations, no
+provenance/provider-verification writes.

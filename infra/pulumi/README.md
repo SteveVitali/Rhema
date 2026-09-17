@@ -15,7 +15,7 @@ deployed shape cannot drift from what the tests prove.
 | Area | Resource |
 |---|---|
 | Network | Custom VPC, three `/20` subnets, Cloud NAT for **private-app only**, firewall rules making the sandbox a one-way street to the proxy (`network.ts`) |
-| Data | AlloyDB cluster + primary (preview = small/paused; prod binds the `postgres` bootstrap password to `rhema:alloydbPassword`), isolated + versioned GCS buckets with the §13.3 retention lifecycle, Memorystore Redis (`data.ts`) |
+| Data | The stage's managed Postgres on the shared PSA peering — AlloyDB cluster + primary on dev/preview (preview = small/paused); **Cloud SQL Postgres 16 on prod** (`db-g1-small`, zonal, private-IP, 35 daily backups + 7-day PITR — amended 2026-09-17 for the ~$50/mo budget); the `postgres` bootstrap password binds to `rhema:alloydbPassword` on either engine, isolated + versioned GCS buckets with the §13.3 retention lifecycle, Memorystore Redis (BASIC on all stages — prod included, same-day amendment) (`data.ts`) |
 | Secrets | Secret Manager containers for every id in `ALL_SECRET_IDS` (stage facts — `anthropic-api-key` proxy-only, run-token key, AlloyDB password, Better-Auth, Google OAuth, Stripe + webhook secret, email-action HMAC, Resend, admin key, ops webhook, user-content signing key); versions are always operator-set out of band (`secrets.ts`) |
 | IAM | One Workload-Identity SA per service + explicit least-privilege secret/bucket bindings — incl. the fetcher's `objectCreator` CONDITIONED to `user-content`'s `quarantine/` prefix and the convert Job's read (`iam.ts`) |
 | Images | The per-stack Artifact Registry docker repo `rhema-<stack>` the images CI/`cloudbuild.yaml` push to (`compute.ts`) |

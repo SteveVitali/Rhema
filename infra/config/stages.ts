@@ -1,8 +1,9 @@
 // Stage configuration (spec §13.2), as PURE data so the invariants are unit-testable without a live
 // GCP deploy. The Pulumi program (`infra/pulumi/`) consumes this to build the real GCP resources, so
 // the same numbers the tests assert are the numbers that deploy. The security-critical facts — the
-// sandbox subnet has NO Cloud NAT and NO default internet route (REQ-ARCH-2), prod AlloyDB keeps a
-// warm primary, previews are paused/small with isolated buckets and a per-run spend guard — live here
+// sandbox subnet has NO Cloud NAT and NO default internet route (REQ-ARCH-2), prod's managed Postgres
+// stays warm (Cloud SQL, amended 2026-09-17 — dev/previews keep AlloyDB), previews are paused/small
+// with isolated buckets and a per-run spend guard — live here
 // and are asserted by tests, standing in for the live route/firewall checks that need H0 (the deployed
 // VPC) to read directly (DEFERRALS D-P0.01-2).
 //
@@ -51,7 +52,8 @@ export const PROD_DOMAINS: StageDomains = {
 export const ALL_SECRET_IDS = [
   "anthropic-api-key", // provider key — egress-proxy only (REQ-ARCH-31)
   "run-token-signing-key", // RS256 run-token keypair — api/worker mint+verify, proxy verifies
-  "alloydb-password", // the postgres bootstrap password (H6) — the operator builds DATABASE_URLs from it
+  "alloydb-password", // the postgres bootstrap password (H6) — engine-agnostic (AlloyDB on dev,
+  //   Cloud SQL on prod); the operator builds DATABASE_URLs from it. Id kept for stack continuity.
   "better-auth-secret", // api — session/signing secret (PRB.12)
   "google-oauth-client-secret", // api — Google sign-in (PRB.12; the client id is deploy config)
   "stripe-secret", // worker — Payment Link webhooks + checkout (PRB.08)
@@ -59,14 +61,25 @@ export const ALL_SECRET_IDS = [
   "email-action-secret", // api verifies + worker mints the one-click HMAC (PRB.09)
   "resend-api-key", // worker — the mail.send transport (PRB.09)
   "anthropic-admin-key", // worker — the Usage & Cost report for usage.reconcile (PRB.08)
-  "ops-alert-webhook-url", // worker — the >2%-drift / balance-divergence alert sink (PRB.08)
+  "ops-alert-webhook-url", // worker — the >2%-drift / balance-divergence alert sink (PRB.08).
+  //   PROVISIONED on prod but NOT required (amended 2026-09-17 — the operator has no alert
+  //   destination yet; the drift-alert path stays inert until a version is seeded and the id is
+  //   re-added to PROD_REQUIRED_SECRETS)
   "user-content-signing-key", // api — signs the CDN download URLs for the PRIVATE user-content bucket
   //   (the *.usercontent.rhema.tools origin serves only signed requests; the same key is added to the
   //   backend bucket by the operator — `gcloud compute backend-buckets add-signed-url-key`, runbook)
 ] as const;
 
-/** The prod secret set — every name HUMAN-H6 must seed a version of before `pulumi up prod` serves. */
-export const PROD_REQUIRED_SECRETS: readonly string[] = ALL_SECRET_IDS;
+/**
+ * The prod secret set — every name HUMAN-H6 must seed a version of before `pulumi up prod` serves.
+ * `ops-alert-webhook-url` is deliberately OUT (amended 2026-09-17 — the operator opted out: no alert
+ * destination exists yet; the worker's drift/balance-divergence alert path stays inert rather than
+ * failing closed). Its container is still provisioned — opting back in is seeding a version and
+ * re-adding the id here.
+ */
+export const PROD_REQUIRED_SECRETS: readonly string[] = ALL_SECRET_IDS.filter(
+  (id) => id !== "ops-alert-webhook-url",
+);
 
 /** The dev secret set — the shared-integration stack serves the full auth/billing/mail surface
  *  (PRB.08/09 live legs run there); only the prod-ops alert sink is prod-only. */
@@ -89,15 +102,38 @@ export const PREVIEW_REQUIRED_SECRETS: readonly string[] = [
   "run-token-signing-key",
 ];
 
-export interface AlloyDbConfig {
-  /** Primary instance vCPU count. AlloyDB sizes by CPU; prod keeps a warm primary (>=4). */
-  primaryCpuCount: number;
+/**
+ * The managed Postgres engine for the stage (PRB.15 amended 2026-09-17 — prod moved to Cloud SQL for
+ * cost: the operator's ~$50/mo prod infra budget cannot carry AlloyDB's ~$270/mo minimum primary;
+ * §12's provider table already called Cloud SQL "the simpler swap"). Dev stays on AlloyDB (it is the
+ * already-live dev substrate); previews keep the small/paused AlloyDB shape.
+ */
+export type DatabaseEngine = "alloydb" | "cloudsql";
+
+export interface DatabaseConfig {
+  engine: DatabaseEngine;
   /**
-   * Whether the cluster is stopped/paused when idle (previews only, to avoid idle spend). Dev and
-   * prod keep the primary warm; a preview's AlloyDB is the small/paused stand-in (REQ-ARCH-38).
+   * AlloyDB only: primary instance vCPU count (AlloyDB sizes by CPU). Ignored on Cloud SQL — the
+   * `cloudSqlTier` drives the shape.
+   */
+  primaryCpuCount?: number;
+  /**
+   * Cloud SQL only: the machine tier. `db-g1-small` (1 shared vCPU / 1.7 GiB) is the minimal
+   * prod-ready shared-core tier — `db-f1-micro` is the absolute floor (~0.6 GiB) but too thin to
+   * call prod-ready. Ignored on AlloyDB.
+   */
+  cloudSqlTier?: string;
+  /**
+   * Whether the database is stopped/paused when idle (previews only, to avoid idle spend). Dev and
+   * prod keep the primary warm; a preview's database is the small/paused stand-in (REQ-ARCH-38).
    */
   paused: boolean;
-  /** Continuous backup / point-in-time-recovery retention in days (REQ-ARCH-28). */
+  /**
+   * Backup + point-in-time-recovery retention in days (REQ-ARCH-28). AlloyDB: the continuous-backup
+   * recovery window (35d). Cloud SQL: that many DAILY automated backups retained — its PITR
+   * transaction-log window hard-caps at 7 days, so the PITR half lands at 7 regardless (the honest
+   * ceiling; the 35-day spirit survives as the backup horizon, not the recovery granularity).
+   */
   backupRetentionDays: number;
 }
 
@@ -136,7 +172,8 @@ export interface VpcConfig {
 
 export interface StageConfig {
   kind: StageKind;
-  alloydb: AlloyDbConfig;
+  /** The stage's managed Postgres (AlloyDB on dev/preview; Cloud SQL on prod — amended 2026-09-17). */
+  database: DatabaseConfig;
   vpc: VpcConfig;
   /** GCS buckets isolated per stage (never shared across stages). */
   isolatedBuckets: boolean;
@@ -201,7 +238,7 @@ function baseVpc(): VpcConfig {
 export const STAGES: Record<StageKind, StageConfig> = {
   dev: {
     kind: "dev",
-    alloydb: { primaryCpuCount: 2, paused: false, backupRetentionDays: 35 },
+    database: { engine: "alloydb", primaryCpuCount: 2, paused: false, backupRetentionDays: 35 },
     vpc: baseVpc(),
     isolatedBuckets: true,
     gcsVersioning: true,
@@ -212,7 +249,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
   },
   preview: {
     kind: "preview",
-    alloydb: { primaryCpuCount: 2, paused: true, backupRetentionDays: 1 }, // small + paused
+    database: { engine: "alloydb", primaryCpuCount: 2, paused: true, backupRetentionDays: 1 }, // small + paused
     vpc: baseVpc(),
     isolatedBuckets: true,
     gcsVersioning: true,
@@ -223,7 +260,11 @@ export const STAGES: Record<StageKind, StageConfig> = {
   },
   prod: {
     kind: "prod",
-    alloydb: { primaryCpuCount: 4, paused: false, backupRetentionDays: 35 }, // warm primary, >=4 vCPU
+    // Cloud SQL on prod (amended 2026-09-17): db-g1-small is the minimal prod-ready shared-core tier —
+    // warm/ALWAYS (never paused; the F32 cold-start concern is moot at this size — it stays up), zonal
+    // (REGIONAL HA roughly doubles cost — the lever if prod outgrows the budget), 35 daily backups +
+    // 7-day PITR (Cloud SQL's cap).
+    database: { engine: "cloudsql", cloudSqlTier: "db-g1-small", paused: false, backupRetentionDays: 35 },
     vpc: baseVpc(),
     isolatedBuckets: true,
     gcsVersioning: true,
