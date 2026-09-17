@@ -185,9 +185,11 @@ golden-path (`28g_PRB.16`) and billing (`28h_PRB.17`) legs run against.
 - [x] Migrations + `seedProtocols` run green on prod AlloyDB; the schema version + Essay protocol
       row confirmed. *(live — Stage B; 24/24 migrations + `essay v1` on prod Cloud SQL per the
       engine amendment, via IAP/SSH tunnel — `seedRealProjects` never invoked)*
-- [ ] Every Cloud Run service healthy; TLS live on `rhema.app` + `*.rhemausercontent.com`; the api
+- [x] Every Cloud Run service healthy; TLS live on `rhema.app` + `*.rhemausercontent.com`; the api
       answers; the worker consumes; the proxy is the sandbox's only egress. *(live — Stage B;
-      domains amended to the `rhema.tools` zone — **see the 2026-09-17 close-out note below**)*
+      domains amended to the `rhema.tools` zone — **see the 2026-09-17 close-out notes below**:
+      TLS proven on all three `rhema.tools` hosts via the ACTIVE managed cert; the `__Host-`
+      cookie + worker-consumes legs are pending-PRB.16 by design, not failures)*
 - [x] `recordProviderVerification` written on prod with the attested `termsRef`;
       `providerTransmissible("anthropic", now)` true (D-P0.13-2). *(live — Stage B; row
       `01M2Q07H6YQ37J06WT98XZGYHS`, termsRef verbatim, `providerTransmissible` asserted true)*
@@ -212,6 +214,28 @@ golden-path (`28g_PRB.16`) and billing (`28h_PRB.17`) legs run against.
 > kick and the "worker consumes the queue" leg additionally depend on Better Auth being mounted
 > (`/api/auth/*` 404s **by design** — D-P0.01-3 → PRB.16) and on a first real run (PRB.16's golden
 > path) respectively — those are pending-PRB.16, not failures.
+>
+> **2026-09-17 — close-out (final): the cert leg is DONE.** The stuck apex was the managed-cert
+> checker's `FAILED_NOT_VISIBLE` retry backoff from the pre-DNS failure window, exactly as
+> suspected — the fix was to recycle the cert resource so the checker re-ran against the
+> now-correct DNS: `pulumi up --replace` on the `gcp:compute/managedSslCertificate` URN (stack
+> `prod`; create-before-delete, the cert was never serving). Replacement cert
+> `rhema-prod-cert-5c72967` went **ACTIVE on all three domains ~9 min after creation**
+> (created 02:14:34 PDT; all `domainStatus` ACTIVE by the 05:23 EDT poll) — no operator action on
+> the zone was needed. Runbook §10 smoke, all legs green over the real LB (`34.8.177.69`):
+> `https://api.rhema.tools/healthz` → `{"ok":true,"service":"api"}` 200 (unpinned — the
+> `*.run.app` `/healthz` intercept quirk does not apply on the custom domain, as expected);
+> `https://rhema.tools/` → 200 real Rhēma app HTML (served cert CN=`rhema.tools`, issuer Google
+> Trust Services WR3, SANs = all three names, notAfter 2026-12-16); `https://usercontent.rhema.tools/`
+> → 403 from the private GCS origin (no signed URL — expected shape) with **zero `Set-Cookie`
+> headers** — the cookieless origin holds on the wire. `POST /api/auth/sign-in/social` → 404,
+> confirming the Better Auth mount is PRB.16's (D-P0.01-3) — the `__Host-` cookie kick records as
+> pending-PRB.16, as does "worker consumes the queue" (needs a first real run — PRB.16's golden
+> path). Local-resolver caveat: this machine's caching resolver still returns the stale pre-change
+> Squarespace A records for the bare apex (TTL-bound cache artifact; every public resolver —
+> Google + Cloudflare DoH — answers only `34.8.177.69`), so the apex curls were run with
+> `--resolve rhema.tools:443:34.8.177.69` pinned to the LB; the api/usercontent names resolve
+> fresh locally and pass unpinned. Evidence: `docs/build/runs/PRB.15.md` "Stage B — close-out".
 
 ## Requirement IDs to satisfy and stamp in the PR
 REQ-ARCH-1/2 (GCP services + the sandbox no-egress), REQ-ARCH-26/27/28/29 (the deploy shape),

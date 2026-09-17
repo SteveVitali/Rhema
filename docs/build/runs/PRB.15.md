@@ -492,3 +492,87 @@ mounted (`/api/auth/*` currently 404s **by design** — D-P0.01-3 → PRB.16).
 + resolving on all three names; cert 2/3 domains ACTIVE. Remaining before PRB.15 fully closes:
 apex domain-status → ACTIVE → cert ACTIVE → the four `*.rhema.tools` curls (the `__Host-` leg is
 PRB.16's by design). `nextTicket` stays PRB.15.
+
+---
+
+## Stage B — close-out: cert recycled → ACTIVE, domain smoke green (2026-09-17, same date)
+
+### The apex fix — recycle the managed cert through Pulumi
+
+The stuck apex was the managed-cert checker's `FAILED_NOT_VISIBLE` retry backoff from the pre-DNS
+failure window (documented Google behavior: retries can take up to ~24h once a domain has failed).
+The remediation stayed inside Pulumi state — no hand-edited cloud resources:
+
+```
+cd infra/pulumi && pulumi stack select prod
+pulumi stack export | grep sslCertificate
+# → urn:pulumi:prod::rhema::gcp:compute/managedSslCertificate:ManagedSslCertificate::rhema-prod-cert
+pulumi up --replace urn:pulumi:prod::rhema::gcp:compute/managedSslCertificate:ManagedSslCertificate::rhema-prod-cert --yes
+# ++ ManagedSslCertificate rhema-prod-cert created replacement (5s)
+# ~  TargetHttpsProxy rhema-prod-https-proxy updated (11s) [diff: ~sslCertificates]
+# -- ManagedSslCertificate rhema-prod-cert deleted original (11s)
+# ~ 6 Cloud Run services updated [diff: -scaling] — reverted live-side scaling drift to the
+#    program-declared shape (program has no scaling block; services redeployed clean)
+# Resources: ~7 updated, +-1 replaced, 100 unchanged — Duration 33s
+```
+
+The cert was never serving (PROVISIONING since creation), so replacement was free and safe.
+The `alloydbCluster` stack-output warning is cosmetic — prod's engine is Cloud SQL (ADR-010), so
+that output is intentionally undefined on this stack.
+
+### Cert timeline — replacement cert `rhema-prod-cert-5c72967`
+
+| time (EDT) | event |
+|---|---|
+| 05:14:34 | replacement cert created by the `pulumi up --replace` (`-fc89dad` deleted after proxy rebind) |
+| 05:17–05:20 | polls: all three domains `PROVISIONING` (fresh checker run — no carried-over failure state) |
+| 05:23:23 | **all three `domainStatus` ACTIVE → `managed.status: ACTIVE`** — ~9 min from creation |
+
+Old cert `rhema-prod-cert-fc89dad` no longer exists (deleted by the replace; `ssl-certificates
+list` shows only `-5c72967` on prod). The apex needed nothing at the zone — the Squarespace RRset
+was already correct; the checker just needed a fresh start.
+
+### Domain smoke — `infra/PROD-BRINGUP.md` §10, all legs green
+
+```
+$ curl -fsS https://api.rhema.tools/healthz        # UNPINNED — local DNS resolves api correctly
+{"ok":true,"service":"api"}                        # HTTP 200 — the *.run.app /healthz intercept
+                                                   # quirk does not apply on the custom domain
+
+$ curl -fsS --resolve rhema.tools:443:34.8.177.69 https://rhema.tools/   # apex pinned (see caveat)
+<!doctype html><html lang="en" data-theme="dark"><head>…<title>Rhēma</title>…   # HTTP 200 — real app
+
+$ echo | openssl s_client -connect 34.8.177.69:443 -servername rhema.tools | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+subject=CN=rhema.tools
+issuer=C=US, O=Google Trust Services, CN=WR3
+notBefore=Sep 17 08:22:23 2026 GMT  notAfter=Dec 16 09:14:35 2026 GMT
+X509v3 SAN: DNS:rhema.tools, DNS:api.rhema.tools, DNS:usercontent.rhema.tools
+
+$ curl -sSI --resolve usercontent.rhema.tools:443:34.8.177.69 https://usercontent.rhema.tools/
+HTTP/2 403  (private GCS origin, no signed URL — expected shape)
+headers: content-type, x-guploader-uploadid, cache-control: private, server: UploadServer, via: 1.1 google
+→ ZERO Set-Cookie headers — the cookieless user-content origin holds on the wire
+
+$ curl -sS -o /dev/null -w '%{http_code}' -XPOST https://api.rhema.tools/api/auth/sign-in/social \
+    -H 'content-type: application/json' -d '{"provider":"google","callbackURL":"https://api.rhema.tools/"}'
+404   # by design — Better Auth unmounted (D-P0.01-3 → PRB.16); the __Host- cookie kick is PRB.16's
+```
+
+**Local-resolver caveat (documented, not a defect):** this machine's caching resolver still returns
+the stale pre-change Squarespace A records (`198.185.159.144/145`, `198.49.23.144/145`) for the
+bare apex — a TTL-bound local cache artifact. Public resolvers are clean: `dns.google` returns
+`status 0`, `rhema.tools A → [34.8.177.69]` only (same for api/usercontent, and no AAAA/CAA/CNAME —
+verified in the prior leg and re-verified this leg). The apex curls were therefore run with
+`--resolve` pinned to the LB IP; `api.`/`usercontent.` resolve fresh locally and pass unpinned.
+
+### Stage B final state: **COMPLETE**
+
+Every Stage-B step of `infra/PROD-BRINGUP.md` is now executed and evidenced: stack converged (107
+resources), k8s post-step, DNS applied + verified, 11 secrets seeded, 24/24 migrations + `essay v1`,
+deployments row with real `PROTOCOLS_VERSION`, provider-verification row + `providerTransmissible`
+true, sandbox fail-closed egress proven on the wire, **managed cert ACTIVE on all three domains,
+and the custom-domain smoke legs green**. The two remaining smoke sub-legs — the `__Host-`
+Set-Cookie kick and "worker consumes the queue" — are pending-PRB.16 **by design** (Better Auth is
+unmounted per D-P0.01-3; worker consumption needs a first real run on PRB.16's golden path), not
+Stage-B failures. `nextTicket` advances to **PRB.16** (28g); `chainTip` stays
+`stevevitali/prb-15-prod-bringup` (PRB.16 forks from it).
