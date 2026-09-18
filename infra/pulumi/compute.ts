@@ -71,6 +71,12 @@ export interface ComputeArgs {
    * secret names resolve (the authSecretsReady gate) — a partial config leaves the surface 404.
    */
   googleOauthClientId?: pulumi.Input<string>;
+  /**
+   * PRB.17 — the Stripe Payment Link URL (plain deploy config, `rhema:stripePaymentLinkUrl`; a URL is
+   * not a secret). The api returns it in `GET /billing/balance` as `paymentLinkUrl`; the web exhaustion
+   * panel + billing surface 302 to it on `open_payment_link`. Unset ⇒ the surfaces hide the action.
+   */
+  stripePaymentLinkUrl?: pulumi.Input<string>;
   /** the egress-proxy base URL the Job's sandbox uses (`ANTHROPIC_BASE_URL`). */
   proxyBaseUrl?: pulumi.Input<string>;
   /** the GCS artifacts bucket the run-task harness materializes `/work` from (`OBJECTS_BUCKET`). */
@@ -421,6 +427,9 @@ export function createCompute(args: ComputeArgs): Compute {
                       : []),
                     ...(args.googleOauthClientId
                       ? [{ name: "GOOGLE_OAUTH_CLIENT_ID", value: args.googleOauthClientId }]
+                      : []),
+                    ...(args.stripePaymentLinkUrl
+                      ? [{ name: "STRIPE_PAYMENT_LINK_URL", value: args.stripePaymentLinkUrl }]
                       : []),
                     // PRB.16 — the x-rhema-* identity-header shim is dev/preview ONLY (client-forgeable;
                     // prod's identity path is the session cookie). Never set on prod.

@@ -22,6 +22,8 @@
     "@rhema/contracts": "workspace:*",
     "@rhema/infra": "workspace:*",
     "@rhema/db": "workspace:*",
+    "@rhema/ledger": "workspace:*",
+    "@rhema/live-clients": "workspace:*",
     "hono": "^4.6.14",
     "@rhema/run-task": "workspace:*"
   },
