@@ -149,3 +149,41 @@ user-create, `auth.mail` queue + placeholder-safe Resend handling, migration `00
   suite 308/308 earlier in the session).
 - **Next live step:** redeploy the api image with this route, then assert `GET …/dossier` for run
   `01M2RGNK9PWKN5M34343GXZC16` against the delivered rows (leg 7), then the remaining legs listed below.
+
+### 2026-09-18 — dossier route live + legs 7/9/10 + LIVE FINDINGs 8/9
+- **Redeploy:** api `64c57fc6…` / web `456ae33e…` rebuilt (cloudbuild subset), pinned in
+  `Pulumi.prod.yaml`, `pulumi up` (update 27) — dossier route live.
+- **Leg 7 (dossier) PROVEN:** `GET /projects/…/review/01M2RGNK9PWKN5M34343GXZC16/dossier` → 200, 89 KB
+  assembled from delivered rows: 12 letter sections (real `editors_letter` bytes), 19 findings = DB count,
+  10 claims, 240-row fetchLog join (run fetch_log 246 fetch + 26 search + 93 inference; accessReport
+  fetches=272, deniedAttempts=6), rubric list, `openObligations`=8 = `revision_obligations` count,
+  runCard 7 phases (`second_read` off). REQ-SPEC-10: every figure re-derived from rows.
+- **Leg 9a (dispositions) PROVEN:** three real POSTs — accept/rebut/defer on run-6 findings → `dispositions`
+  rows carry `by_actor:user` + `reason_code`; obligations routed (rebut→`rebutted`, defer→`deferred`,
+  accept stays `open` proposed). **LIVE FINDING 8:** the `finding.disposed` + `run.estimated` analytics
+  emits are bound + fire on prod, but `recordAnalyticsEvent` validates `project_id` against `idSchema`
+  (26-char ULID) and the fixture project id `proj_prb16` failed → every write dropped (api log shows the
+  zod error at 02:28/02:32Z; `run.estimated` failed identically at 16:18/18:14Z on 09-17). Fixture-shape
+  artifact — fixed by the id repair below; emit legs re-proven after.
+- **LIVE FINDING 9 (real bug, fixed this diff):** `POST /editor/:draftId/save` first 500'd on the
+  fixture's non-ULID draft id (parseRunEvent validating `baseDraftId`), then — after the id repair —
+  `POST /editor/:draftId/note` 500'd on a GENUINE prod bug: `captureGuidanceTx` emitted
+  `guidance.captured` to a stream keyed `runId ?? projectId`; project-scope guidance has no runId →
+  `run_event_seq.run_id → runs.id` FK violation (`23503` in api logs). Dev never caught it:
+  `InMemoryEventWriter` bypasses `run_event_seq`. Fix: emit `guidance.captured` only when `runId` set
+  (a standing guidance's durable record is the row; no run stream exists to fan out to). Regression
+  test asserts run-scope emits + project-scope appends nothing.
+- **Fixture id repair (durable):** the fixture's hand-named ids were the root of findings 8+9 — renamed
+  `proj_prb16`/`proj_prb16_art1`/`proj_prb16_av1`/`proj_prb16_d1`/`cl_prb16_probe_fund` to real ULIDs
+  via insert-copy→repoint-children→delete in one tx (no schema/FK changes; `session_replication_role`
+  denied on Cloud SQL so the copy-repoint-delete pattern dodged `NO ACTION` FKs + unique(project,n)/
+  (project,mirror_path)/(artifact,ordinal) collisions via temp ordinals/paths). New ids: project
+  `01M2S5YQ0AVNF55Y1CG0TYZ9WJ`, artifact `01M2S5YQ0BZWZHTCBT5RTMJZMZ`, version
+  `01M2S5YQ0BSGW31GXBT4PHSK1A`, draft `01M2S5YQ0BXQBA2XX637XYEN72`. A full-column rescan finds ZERO
+  `proj_prb16` strings; `runs.inputs`/`proxy_credentials.context`/`run_mounts.manifest` jsonb rewritten.
+- **Leg 10a (editor save/fork) PROVEN:** `GET …/editor/<d1>` returns frozen head + 19 findings;
+  `POST …/save` → `{forked:true, draftN:2}` — `drafts` row v2 `01M2S63A7CH888TP4Z42RACK0E`
+  `human_revision`/`working`, `base_draft_id`=v1; restore-point version created.
+- API surface for remaining legs confirmed: `PATCH /runs/:id` cancels; revise manifest's triage phase
+  gates `approve_triage` (the approve-triage + pretriage legs ride the sheet-path Revise run);
+  profile_voice census gates `approve_sample`.
