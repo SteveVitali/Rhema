@@ -5,6 +5,16 @@
 > debts PRB.16b/PRB.17 carried forward. After this lands, the launch round is complete and the chain
 > rests on G3's parked read.
 
+> **Amended 2026-09-18** (PRB.18 live finding): **F32 is pulled into scope.** The billing panel's
+> `open_payment_link` route 302s to the Payment Link **bare** — no `client_reference_id` reaches the
+> Stripe checkout session, so a panel-initiated purchase would land `unresolved` (money taken, no
+> `grant(topup)`). Fix: append `client_reference_id=<billingAccountId>` to the redirect (the route
+> already resolves the caller's billing account — the PRB.18 operator leg uses
+> `?client_reference_id=01M2V3PM1133TPH4M8H0T8CSEE` as the workaround). Also fold in the hygiene fix
+> the PRB.18 worker flagged: `dockerUsable()` in the privsep test runs `docker version` synchronously
+> with **no timeout** before the `CI` opt-out — an unresponsive daemon hangs the whole `pnpm test`;
+> bound the call.
+
 - **Sequence:** inserted — runs **after `28i_PRB.18`, before `29_P1.01`**. Sorts as `28j`.
 - **Phase:** LV — prod launch (defect closeout).
 - **base_branch:** current chainTip at dispatch (the PRB.18 branch — stacked PR chain).
@@ -49,7 +59,13 @@ open live-verify rows.
    status/bytes — either extend the proxy's fetch-row writer to record them (small, preferred if the
    data is at hand) or record an accepted-gap decision in the deferral note. Implement the chosen
    half.
-4. Deterministic tests for all of the above; `turbo build lint typecheck` + `pnpm test` green.
+4. **F32 — `client_reference_id` on the Payment-Link redirect** (per the amendment above). The
+   `open_payment_link` route resolves the caller's billing account — append
+   `?client_reference_id=<billingAccountId>` to the 302 target so Stripe-originated checkouts join
+   the workspace; test the composed URL.
+5. **`dockerUsable()` timeout** — bound the synchronous `docker version` probe so an unresponsive
+   daemon can't hang `pnpm test` (per the amendment).
+6. Deterministic tests for all of the above; `turbo build lint typecheck` + `pnpm test` green.
 
 ## In scope — Stage B (live on prod, bounded spend)
 5. **Revise delivery verify.** Drive one real Revise run on prod to a delivered `response` —
