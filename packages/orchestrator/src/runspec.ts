@@ -11,7 +11,7 @@ import type { AgentTypeKey, CorrespondenceKind, ModelTier, SidecarFilename, Work
 import { MODEL_TIERS, SIDECAR_CONTRACT_HINTS } from "@rhema/contracts";
 import type { PhaseRequest } from "@rhema/engine";
 import type { MirrorManifest } from "@rhema/mirror";
-import { EMPTY_URL_POLICY, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
+import { EMPTY_URL_POLICY, resolveSeatRoots, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
@@ -233,6 +233,22 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     ...(manifest.defaultInputs ?? {}),
     ...hyd.inputs,
     phase: phase.skillPhase,
+    // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
+    // frontmatter); the frozen inputs only carried `personaId`, and `conventions/personas.md` — the
+    // file that pins the sandbox layout — is NOT shipped in the pod's skillsDir (`/app/skills`
+    // holds the three skill dirs only). The live Quick Voice census agent never resolved the corpus
+    // and exited `success` twice with zero output (run 01M2T65W5PZ3174FPVFNQRVKZS attempt-1). Pin
+    // the args the skill declares + the ABSOLUTE personas_dir the harness materializes into (the
+    // same resolveSeatRoots derivation the hook policy + materializer use — never a parallel path).
+    ...(hyd.personaId
+      ? {
+          persona: hyd.personaId,
+          personas_dir: resolveSeatRoots({ personaId: hyd.personaId }).persona.replace(
+            /\/[^/]+$/,
+            "",
+          ),
+        }
+      : {}),
     // delivered guidance lands FIRST (highest precedence), then any frozen `inputs.guidance` seed.
     ...(delivered.rendered
       ? {

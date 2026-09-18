@@ -341,3 +341,59 @@ describe("buildPhaseOutputs — response-ledger sidecar twin persistence (PRB.16
     expect(out.versions.some((v) => v.path === "agents/author/ledgers/v1-response-ledger.json")).toBe(false);
   });
 });
+
+// ------------------------------------------------------------------ readWorkRoots (PRB.16b F22)
+
+describe("readWorkRoots — the persona root joins the harvest map (F22)", () => {
+  // Live: Quick Voice run 01M2T65W5PZ3174FPVFNQRVKZS attempt-1 — the census agent's canonical
+  // outputs belong under `/work/personas/<id>/profile/**`, which a project-only walk never saw; a
+  // correct-location write would have produced zero harvestable output.
+  async function tmp(): Promise<string> {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    return mkdtemp(join(tmpdir(), "rhema-f22-"));
+  }
+  async function put(root: string, rel: string, body: string): Promise<void> {
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const { join, dirname } = await import("node:path");
+    const abs = join(root, rel);
+    await mkdir(dirname(abs), { recursive: true });
+    await writeFile(abs, body, "utf8");
+  }
+
+  it("persona-root files fill keys the project walk did not produce", async () => {
+    const project = await tmp();
+    const persona = await tmp();
+    await put(project, "manifest.md", "# Manifest\n");
+    await put(persona, "PERSONA.md", "# Seed\n");
+    await put(persona, "profile/provenance.md", "# Census\n");
+    await put(persona, "docs/samples/a.md", "sample\n");
+    const { readWorkRoots } = await import("./work-reader.js");
+    const files = await readWorkRoots(project, persona);
+    expect(files.has("manifest.md")).toBe(true);
+    expect(files.has("PERSONA.md")).toBe(true);
+    expect(files.has("profile/provenance.md")).toBe(true);
+    expect(files.has("docs/samples/a.md")).toBe(true);
+  });
+
+  it("a project-root write WINS a same-path collision with the stale mounted input", async () => {
+    const project = await tmp();
+    const persona = await tmp();
+    await put(project, "profile/index.md", "fresh agent output\n");
+    await put(persona, "profile/index.md", "stale seeded stub\n");
+    const { readWorkRoots } = await import("./work-reader.js");
+    const files = await readWorkRoots(project, persona);
+    expect(Buffer.from(files.get("profile/index.md")!).toString("utf8")).toBe("fresh agent output\n");
+  });
+
+  it("a missing persona dir is simply empty; undefined personaDir degrades to the project walk", async () => {
+    const project = await tmp();
+    await put(project, "manifest.md", "# Manifest\n");
+    const { readWorkRoots } = await import("./work-reader.js");
+    const files = await readWorkRoots(project, `${project}/no-such-dir`);
+    expect([...files.keys()]).toEqual(["manifest.md"]);
+    const filesOnly = await readWorkRoots(project);
+    expect([...filesOnly.keys()]).toEqual(["manifest.md"]);
+  });
+});

@@ -219,6 +219,64 @@ describe("commitStep — atomicity, idempotency, gate-open", () => {
     expect(run.current_step_id).toBe(existing.id);
     expect(run.state).toBe("waiting_gate");
   });
+
+  // PRB.16b LIVE FINDING 21 — `next.deadlineAt` is a `Date` pod-side but crosses the JSON commit body
+  // as an ISO STRING: `openGate`'s `deadlineAt.toISOString()` threw `TypeError: … is not a function`
+  // and rolled the commit back — EVERY deadline-bearing gate kind (approve_sample & co.) was
+  // uncommittable over the wire while the wait kinds (approve_triage, `deadlineMs: null`) survived.
+  // Live: Quick Voice run 01M2T65W5PZ3174FPVFNQRVKZS — census harvested clean, the approve_sample
+  // open 500'd, the pod recorded "commit rejected: unknown".
+  it("gate: a wire-STRING deadlineAt is coerced to a Date — deadline-bearing gates commit (F21)", async () => {
+    const deadline = new Date("2026-09-19T12:00:00.000Z");
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "census",
+      ordinal: 0,
+      of: 4,
+      credits: 40,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      // the JSON body shape the pod actually POSTs — the string is the wire encoding, not a Date.
+      next: {
+        kind: "gate",
+        gateKind: "approve_sample",
+        blocking: true,
+        onExpiry: "proceed_as_proposed",
+        deadlineAt: deadline.toISOString() as unknown as Date,
+      },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select deadline_at from gates where run_id='run1'", [])
+    ).rows[0] as { deadline_at: Date | null };
+    expect(gate.deadline_at?.getTime()).toBe(deadline.getTime());
+  });
+
+  it("gate: a malformed wire deadlineAt degrades to wait semantics rather than crashing (F21)", async () => {
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "census",
+      ordinal: 0,
+      of: 4,
+      credits: 40,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: {
+        kind: "gate",
+        gateKind: "approve_sample",
+        blocking: true,
+        onExpiry: "proceed_as_proposed",
+        deadlineAt: "not-a-date" as unknown as Date,
+      },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select deadline_at from gates where run_id='run1'", [])
+    ).rows[0] as { deadline_at: Date | null };
+    expect(gate.deadline_at).toBeNull();
+  });
 });
 
 describe("finalize, fail, hydration, audit", () => {

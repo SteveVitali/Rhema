@@ -130,6 +130,25 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     }
   });
 
+  // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
+  // frontmatter); the spec must pin them, with personas_dir the ABSOLUTE mount base the harness
+  // materializes into — the conventions file that documents the layout is not shipped in the pod's
+  // skillsDir, so a run whose agent can't resolve the persona dir produces nothing (live: Quick
+  // Voice 01M2T65W5PZ3174FPVFNQRVKZS attempt-1, two zero-output sub-runs).
+  it("persona-builder spec pins `persona` + `personas_dir` in the phase inputs (F23)", async () => {
+    const runId = await seedWorkflowRun("run_pv", "profile_voice");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set persona_id = $2 where id = $1`, [runId, "per_1"]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.inputs.persona).toBe("per_1");
+    expect(spec.request.inputs.personas_dir).toBe("/work/personas");
+    // a persona-less run carries neither key.
+    const specNp = await buildHarnessRunSpec(deps, { runId: await seedWorkflowRun("run_rv", "review"), attempt: 1, workspaceId: seed.workspaceId });
+    expect(specNp.request.inputs.persona).toBeUndefined();
+    expect(specNp.request.inputs.personas_dir).toBeUndefined();
+  });
+
   it("honors an explicit `phase` pin in the frozen inputs (REQ-SPEC-13 — run exactly phase N)", async () => {
     const runId = await seedWorkflowRun("run_pin", "review");
     const review = WORKFLOW_MANIFESTS.review!;

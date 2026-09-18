@@ -136,7 +136,7 @@ export async function main(): Promise<void> {
   const { createHookDaemon } = await import("./hook-daemon.js");
   const { createGcsContentStore } = await import("@rhema/mirror");
   const { materializeWork, nodeWorkFs } = await import("./materialize-work.js");
-  const { readWorkDir } = await import("./work-reader.js");
+  const { readWorkRoots } = await import("./work-reader.js");
   const { startCredentialInjector } = await import("./credential-injector.js");
 
   const runId = reqEnv("RUN_ID");
@@ -253,7 +253,9 @@ export async function main(): Promise<void> {
       await hookDaemon.close();
     }
 
-    const files = await readWorkDir(cwd);
+    // PRB.16b F22 — read BOTH roots: a persona-builder phase's declared outputs live under
+    // `roots.persona` (`/work/personas/<id>/profile/**`), which a cwd-only walk never saw.
+    const files = await readWorkRoots(cwd, roots.persona);
     const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
     // DIAGNOSTIC (K5 / D-P0.06-1, the first live SDK exercise): dump what the agent actually produced in /work vs
     // what the completion oracle judged, so the intake predicate can be reconciled against real skill output.

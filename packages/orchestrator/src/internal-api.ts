@@ -598,6 +598,23 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
  * are the ledger's / P0.09's; this owns the durable step + state write.
  */
 export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): Promise<CommitStepResult> {
+  // PRB.16b F21 (live): `next.deadlineAt` is a `Date` pod-side but crosses the JSON commit body as an
+  // ISO STRING — `openGate`'s `deadlineAt.toISOString()` then threw `TypeError: … is not a function`
+  // and rolled the whole commit tx back. Every DEADLINE-bearing gate kind was uncommittable over the
+  // wire (approve_sample/approve_cutlist/approve_plan/confirm_cost/resume_partial/refusal); the wait
+  // kinds (approve_triage & co., `deadlineMs: null`) never carried the field and survived — which is
+  // why the defect surfaced first on Quick Voice's `approve_sample` (run 01M2T65W5PZ3174FPVFNQRVKZS:
+  // census harvested 2 versions, the commit 500'd opening the gate, the pod saw
+  // "commit rejected: unknown"). Coerce at this funnel — the single point openGate + the post-commit
+  // schedulers all read — so wire callers need no knowledge of the encoding. A malformed value
+  // degrades to `null` (wait semantics: no expiry job scheduled) rather than crash-looping the step.
+  const next: CommitNext = (() => {
+    if (args.next.kind !== "gate") return args.next;
+    const raw = args.next.deadlineAt as unknown;
+    if (typeof raw !== "string") return args.next;
+    const parsed = new Date(raw);
+    return { ...args.next, deadlineAt: Number.isNaN(parsed.getTime()) ? null : parsed };
+  })();
   const box: { debitedBillingAccountId: string | null } = { debitedBillingAccountId: null };
   try {
     const res = await deps.txRunner.run(args.workspaceId, async (tx): Promise<CommitStepResult & { ok: true }> => {
@@ -683,11 +700,11 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         });
       }
 
-      if (args.next.kind === "advance") {
+      if (next.kind === "advance") {
         const state = (await readRunState(tx, args.runId))!; // stays running (self-edge, no state row change)
         return { ok: true, idempotent: false, state };
       }
-      if (args.next.kind === "finalize") {
+      if (next.kind === "finalize") {
         await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "finalizing" });
         return { ok: true, idempotent: false, state: "finalizing" };
       }
@@ -696,24 +713,24 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "waiting_gate", fields: parkFields });
       const gateId = await openGate(tx, deps, {
         runId: args.runId,
-        kind: args.next.gateKind,
-        blocking: args.next.blocking,
-        onExpiry: args.next.onExpiry,
+        kind: next.gateKind,
+        blocking: next.blocking,
+        onExpiry: next.onExpiry,
         stepId,
-        artifactVersionId: args.next.artifactVersionId,
-        deadlineAt: args.next.deadlineAt,
+        artifactVersionId: next.artifactVersionId,
+        deadlineAt: next.deadlineAt,
       });
       return { ok: true, idempotent: false, state: "waiting_gate", gateId };
     });
     // Schedule the `gate:<id>` expiry job AFTER commit (§6.4 item 6; the queue send is not transactional with
     // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing.
-    if (res.ok && !res.idempotent && res.gateId && args.next.kind === "gate") {
+    if (res.ok && !res.idempotent && res.gateId && next.kind === "gate") {
       const now = deps.clock.now();
-      if (args.next.deadlineAt) {
+      if (next.deadlineAt) {
         await scheduleGateExpiry(deps, {
           gateId: res.gateId,
           workspaceId: args.workspaceId,
-          deadlineAt: args.next.deadlineAt,
+          deadlineAt: next.deadlineAt,
           now,
         });
       }
@@ -722,9 +739,9 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       await scheduleGateNotifications(deps, {
         gateId: res.gateId,
         workspaceId: args.workspaceId,
-        kind: args.next.gateKind,
-        onExpiry: args.next.onExpiry as GateOnExpiry,
-        deadlineAt: args.next.deadlineAt ?? null,
+        kind: next.gateKind,
+        onExpiry: next.onExpiry as GateOnExpiry,
+        deadlineAt: next.deadlineAt ?? null,
         now,
       });
     }

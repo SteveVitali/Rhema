@@ -377,3 +377,26 @@ export async function readWorkDir(root: string): Promise<Map<string, Uint8Array>
   await walk(root);
   return out;
 }
+
+/**
+ * Read BOTH work roots into one path-keyed map (PRB.16b F22 — live). The harvest/judgement pass
+ * historically walked only `roots.project` (`cwd`) — but a persona-builder run's CANONICAL outputs
+ * (`profile/**`) live under `/work/personas/<id>/`, so an agent writing to the correct mount produced
+ * zero harvestable output and failed `artifact_present` (live: Quick Voice 01M2T65W… attempt-1
+ * exited `success` twice with `/work/project` holding only `manifest.md`). Persona-root files fill
+ * keys the project walk did not produce — the PROJECT copy wins a collision, so a stale mounted
+ * input (e.g. the seeded `profile/index.md` stub) can never shadow a fresh same-path agent write in
+ * `cwd`. Mounted read-only inputs enter the map unchanged: identical bytes harvest to `unchanged`
+ * and a tampered read-only artifact still trips `readOnlyHashMismatch` exactly as project files do.
+ */
+export async function readWorkRoots(
+  projectDir: string,
+  personaDir?: string,
+): Promise<Map<string, Uint8Array>> {
+  const files = await readWorkDir(projectDir);
+  if (!personaDir || personaDir === projectDir) return files;
+  for (const [path, bytes] of await readWorkDir(personaDir)) {
+    if (!files.has(path)) files.set(path, bytes);
+  }
+  return files;
+}
