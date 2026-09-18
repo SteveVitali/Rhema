@@ -11,13 +11,19 @@
 // the prod wiring (spawn `agent-entry`, read `/work`, fetch the api) lives in `harness-main.ts`. NO secret ever
 // crosses into this module's inputs beyond the run token the client holds (REQ-SPEC-10/11).
 
-import type { AgentTypeKey, ClaimLedgerSidecar, FindingsSidecar, RubricSidecar } from "@rhema/contracts";
+import type {
+  AgentTypeKey,
+  ClaimLedgerSidecar,
+  FindingsSidecar,
+  RubricSidecar,
+} from "@rhema/contracts";
 import type { ResultSubtype, UsageSnapshot } from "@rhema/engine";
 import type { DeliveryArgs, NewVersion, SidecarInput, VerdictSourceContext } from "@rhema/mirror";
 import {
   createFactsEvaluator,
   decideCommitNext,
   evaluateOracle,
+  HEARTBEAT_INTERVAL_MS,
   retryPolicyFor,
   type CommitNext,
   type DeliveryFacts,
@@ -30,7 +36,11 @@ import {
 } from "@rhema/orchestrator";
 
 /** Error classes whose remedy is re-running the same phase once (guided for artifact_missing) — mirrors runPhase. */
-const RERUN_CLASSES: ReadonlySet<ErrorClass> = new Set(["artifact_missing", "infra", "provider_transient"]);
+const RERUN_CLASSES: ReadonlySet<ErrorClass> = new Set([
+  "artifact_missing",
+  "infra",
+  "provider_transient",
+]);
 
 /**
  * Render each failed completion predicate as `<kind>:<artifact-or-sidecar> (<detail>)` for the failStep reason
@@ -85,7 +95,10 @@ export interface WorkDeliveryContent {
 }
 
 /** Runs ONE phase to its terminal result. Prod: spawn `agent-entry` (uid agent) + read `/work`; test: FakeEngine. */
-export type RunPhaseFn = (spec: HarnessRunSpec, opts: { readonly guidance?: string }) => Promise<PhaseRunOutputs>;
+export type RunPhaseFn = (
+  spec: HarnessRunSpec,
+  opts: { readonly guidance?: string },
+) => Promise<PhaseRunOutputs>;
 
 export interface HarvestCall {
   readonly stepKey: string;
@@ -107,7 +120,12 @@ export interface CommitCall {
   readonly of: number;
   readonly producedVersionIds: readonly string[];
   readonly credits: number;
-  readonly result: { readonly status: "done"; readonly sdkSubtype: string; readonly predicatesPassed: boolean; readonly compactions: number };
+  readonly result: {
+    readonly status: "done";
+    readonly sdkSubtype: string;
+    readonly predicatesPassed: boolean;
+    readonly compactions: number;
+  };
   readonly next: CommitNext;
 }
 export interface FailCall {
@@ -145,7 +163,12 @@ export type LoopResult =
   | { readonly kind: "completed"; readonly phasesCommitted: number } //   finalized without a dossier
   | { readonly kind: "gated"; readonly phasesCommitted: number } //       a gate opened; the pod exits, worker resumes
   | { readonly kind: "stopped"; readonly phasesCommitted: number } //     a pinned phase:N run committed + stopped
-  | { readonly kind: "failed"; readonly phasesCommitted: number; readonly errorClass: string; readonly reason: string };
+  | {
+      readonly kind: "failed";
+      readonly phasesCommitted: number;
+      readonly errorClass: string;
+      readonly reason: string;
+    };
 
 // ---------------------------------------------------------------------------- the loop
 
@@ -163,100 +186,158 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
 
   // first beat: take the run `provisioning → running` before any commit (§12.4 step 5). Without it the commit
   // route's `running → …` transition is invalid and the run is stuck provisioning (surfaced live P0.15e).
-  if (deps.client.heartbeat) await deps.client.heartbeat();
+  // Then KEEP beating every HEARTBEAT_INTERVAL_MS (§12.4: the task beats every 20 s): a phase's agent runs
+  // minutes-long, so a one-shot beat ages past HEARTBEAT_STALE_MS mid-phase and the reaper orphans a LIVE
+  // pod — the PRB.16 prod crash-loop (attempt fence then rejects the phase's commit as `stale_task`). The
+  // interval beat also carries `cancelRequested` back: honored between phases (the pod exits; the reaper
+  // completes `cancelling → cancelled` once the beats stop).
+  let cancelRequested = false;
+  let beatTimer: ReturnType<typeof setInterval> | undefined;
+  if (deps.client.heartbeat) {
+    const beat = deps.client.heartbeat.bind(deps.client);
+    const first = await beat();
+    cancelRequested = first.cancelRequested === true;
+    beatTimer = setInterval(() => {
+      void beat()
+        .then((res) => {
+          if (res.cancelRequested) cancelRequested = true;
+        })
+        .catch(() => {
+          /* best-effort liveness: a transient beat failure must not kill the loop (the next beat retries). */
+        });
+    }, HEARTBEAT_INTERVAL_MS);
+    beatTimer.unref?.();
+  }
 
-  for (;;) {
-    const spec = await deps.client.fetchRunSpec();
-    const phase = spec.request.phase;
-    const predicates = phase.completionPredicates ?? [];
-
-    // run the phase; re-run ONCE (guided) on a re-runnable incomplete verdict (mirror runPhase).
-    let outputs = await deps.runPhase(spec, {});
-    let verdict = evaluateOracle(
-      { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
-      createFactsEvaluator(outputs.facts),
-    );
-    if (verdict.outcome === "incomplete" && RERUN_CLASSES.has(verdict.errorClass)) {
-      const policy = retryPolicyFor(verdict.errorClass);
-      if (policy.maxRetries > 0) {
-        const guidance = policy.guided
-          ? `Previous attempt incomplete: ${verdict.reason}. Complete every declared artifact.`
-          : undefined;
-        outputs = await deps.runPhase(spec, guidance ? { guidance } : {});
-        verdict = evaluateOracle(
-          { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
-          createFactsEvaluator(outputs.facts),
-        );
+  try {
+    for (;;) {
+      if (cancelRequested) {
+        return {
+          kind: "failed",
+          phasesCommitted,
+          errorClass: "infra",
+          reason: "cancel requested via heartbeat",
+        };
       }
-    }
 
-    // a non-complete verdict fails the step and stops the pod (the caller/reaper decides escalation vs quarantine).
-    if (verdict.outcome !== "complete") {
-      const errorClass = verdict.outcome === "incomplete" ? verdict.errorClass : verdict.outcome;
-      // Build a REAL diagnostic (residue 1): the plain `verdict.reason` only names the failed predicate KINDS,
-      // so a phase that exited clean but wrote no artifact (the live craft case — `04-craft-notes.md` absent)
-      // reached `run_events` as an opaque "1 completion predicate(s) failed". Fold in the SDK subtype, the
-      // failed leg, and each failed predicate's TARGET + evaluated detail so the non-committing phase is
-      // diagnosable from the `engine.error` event alone, without pod exec.
-      const baseReason =
-        verdict.outcome === "incomplete"
-          ? `${verdict.reason} [sdk=${outputs.subtype}, leg=${verdict.failedLeg}]${describePredicateFailures(verdict.failedPredicates)}`
-          : `phase-result ${verdict.outcome} [sdk=${outputs.subtype}]`;
-      // fold the agent-reported error (if any) into the reason so its CLASS + message reaches run_events/steps
-      // via failStep — the observability sink (D-P0.15e-4) makes an agent crash diagnosable without pod exec.
-      const reason = outputs.agentError
-        ? `${baseReason} — agent error [${outputs.agentError.class}]: ${outputs.agentError.message}`
-        : baseReason;
-      await deps.client.failStep({ stepKey: phase.key, ordinal: phase.index, errorClass, reason });
-      return { kind: "failed", phasesCommitted, errorClass, reason };
-    }
+      const spec = await deps.client.fetchRunSpec();
+      const phase = spec.request.phase;
+      const predicates = phase.completionPredicates ?? [];
 
-    // complete: harvest+persist the produced versions (→ version ids + provisional credits), then commit.
-    const harvested = await deps.client.harvest({
-      stepKey: phase.key,
-      ordinal: phase.index,
-      seat: spec.request.seat as AgentTypeKey,
-      projectId: spec.delivery?.projectId ?? null,
-      versions: outputs.versions,
-      usage: outputs.usage,
-    });
-
-    const isLastPhase = phase.index === spec.request.of - 1;
-    const gateCtx = deps.gateContext ? deps.gateContext(now()) : { policy: "named" as const, now: now() };
-    // a pinned phase:N run finalizes after this one phase; otherwise the manifest decides advance/gate/finalize.
-    const next: CommitNext = spec.stopAfterPhase ? { kind: "finalize" } : decideCommitNext({ phase, isLastPhase, gate: gateCtx });
-
-    const committed = await deps.client.commit({
-      stepKey: phase.key,
-      ordinal: phase.index,
-      of: spec.request.of,
-      producedVersionIds: harvested.producedVersionIds,
-      credits: harvested.provisionalCredits,
-      result: { status: "done", sdkSubtype: outputs.subtype, predicatesPassed: true, compactions: 0 },
-      next,
-    });
-    if (!committed.ok) {
-      return { kind: "failed", phasesCommitted, errorClass: "infra", reason: `commit rejected: ${committed.code ?? "unknown"}` };
-    }
-    phasesCommitted++;
-
-    // a pinned phase:N run: finalize with NO dossier and stop (the diagnostic single-phase path, REQ-SPEC-13).
-    if (spec.stopAfterPhase) {
-      await deps.client.finalize();
-      return { kind: "stopped", phasesCommitted };
-    }
-    if (next.kind === "gate") return { kind: "gated", phasesCommitted }; //   the pod exits; the worker resumes
-    if (next.kind === "finalize") {
-      // deliver the assembled dossier when the run targets a draft and produced dossier content; else finalize bare.
-      if (spec.delivery && outputs.delivery && outputs.delivery.deliveredPaths.length > 0) {
-        const delivery = assembleDeliveryArgs(spec, deps.workspaceId, harvested.byPath, outputs.delivery);
-        const del = await deps.client.deliver({ delivery });
-        return { kind: "delivered", phasesCommitted, state: del.state ?? "completed" };
+      // run the phase; re-run ONCE (guided) on a re-runnable incomplete verdict (mirror runPhase).
+      let outputs = await deps.runPhase(spec, {});
+      let verdict = evaluateOracle(
+        { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
+        createFactsEvaluator(outputs.facts),
+      );
+      if (verdict.outcome === "incomplete" && RERUN_CLASSES.has(verdict.errorClass)) {
+        const policy = retryPolicyFor(verdict.errorClass);
+        if (policy.maxRetries > 0) {
+          const guidance = policy.guided
+            ? `Previous attempt incomplete: ${verdict.reason}. Complete every declared artifact.`
+            : undefined;
+          outputs = await deps.runPhase(spec, guidance ? { guidance } : {});
+          verdict = evaluateOracle(
+            { sdkSubtype: outputs.subtype, phaseResult: outputs.phaseResult, predicates },
+            createFactsEvaluator(outputs.facts),
+          );
+        }
       }
-      await deps.client.finalize();
-      return { kind: "completed", phasesCommitted };
+
+      // a non-complete verdict fails the step and stops the pod (the caller/reaper decides escalation vs quarantine).
+      if (verdict.outcome !== "complete") {
+        const errorClass = verdict.outcome === "incomplete" ? verdict.errorClass : verdict.outcome;
+        // Build a REAL diagnostic (residue 1): the plain `verdict.reason` only names the failed predicate KINDS,
+        // so a phase that exited clean but wrote no artifact (the live craft case — `04-craft-notes.md` absent)
+        // reached `run_events` as an opaque "1 completion predicate(s) failed". Fold in the SDK subtype, the
+        // failed leg, and each failed predicate's TARGET + evaluated detail so the non-committing phase is
+        // diagnosable from the `engine.error` event alone, without pod exec.
+        const baseReason =
+          verdict.outcome === "incomplete"
+            ? `${verdict.reason} [sdk=${outputs.subtype}, leg=${verdict.failedLeg}]${describePredicateFailures(verdict.failedPredicates)}`
+            : `phase-result ${verdict.outcome} [sdk=${outputs.subtype}]`;
+        // fold the agent-reported error (if any) into the reason so its CLASS + message reaches run_events/steps
+        // via failStep — the observability sink (D-P0.15e-4) makes an agent crash diagnosable without pod exec.
+        const reason = outputs.agentError
+          ? `${baseReason} — agent error [${outputs.agentError.class}]: ${outputs.agentError.message}`
+          : baseReason;
+        await deps.client.failStep({
+          stepKey: phase.key,
+          ordinal: phase.index,
+          errorClass,
+          reason,
+        });
+        return { kind: "failed", phasesCommitted, errorClass, reason };
+      }
+
+      // complete: harvest+persist the produced versions (→ version ids + provisional credits), then commit.
+      const harvested = await deps.client.harvest({
+        stepKey: phase.key,
+        ordinal: phase.index,
+        seat: spec.request.seat as AgentTypeKey,
+        projectId: spec.delivery?.projectId ?? null,
+        versions: outputs.versions,
+        usage: outputs.usage,
+      });
+
+      const isLastPhase = phase.index === spec.request.of - 1;
+      const gateCtx = deps.gateContext
+        ? deps.gateContext(now())
+        : { policy: "named" as const, now: now() };
+      // a pinned phase:N run finalizes after this one phase; otherwise the manifest decides advance/gate/finalize.
+      const next: CommitNext = spec.stopAfterPhase
+        ? { kind: "finalize" }
+        : decideCommitNext({ phase, isLastPhase, gate: gateCtx });
+
+      const committed = await deps.client.commit({
+        stepKey: phase.key,
+        ordinal: phase.index,
+        of: spec.request.of,
+        producedVersionIds: harvested.producedVersionIds,
+        credits: harvested.provisionalCredits,
+        result: {
+          status: "done",
+          sdkSubtype: outputs.subtype,
+          predicatesPassed: true,
+          compactions: 0,
+        },
+        next,
+      });
+      if (!committed.ok) {
+        return {
+          kind: "failed",
+          phasesCommitted,
+          errorClass: "infra",
+          reason: `commit rejected: ${committed.code ?? "unknown"}`,
+        };
+      }
+      phasesCommitted++;
+
+      // a pinned phase:N run: finalize with NO dossier and stop (the diagnostic single-phase path, REQ-SPEC-13).
+      if (spec.stopAfterPhase) {
+        await deps.client.finalize();
+        return { kind: "stopped", phasesCommitted };
+      }
+      if (next.kind === "gate") return { kind: "gated", phasesCommitted }; //   the pod exits; the worker resumes
+      if (next.kind === "finalize") {
+        // deliver the assembled dossier when the run targets a draft and produced dossier content; else finalize bare.
+        if (spec.delivery && outputs.delivery && outputs.delivery.deliveredPaths.length > 0) {
+          const delivery = assembleDeliveryArgs(
+            spec,
+            deps.workspaceId,
+            harvested.byPath,
+            outputs.delivery,
+          );
+          const del = await deps.client.deliver({ delivery });
+          return { kind: "delivered", phasesCommitted, state: del.state ?? "completed" };
+        }
+        await deps.client.finalize();
+        return { kind: "completed", phasesCommitted };
+      }
+      // next.kind === "advance": loop; the next runspec fetch returns the next uncommitted phase.
     }
-    // next.kind === "advance": loop; the next runspec fetch returns the next uncommitted phase.
+  } finally {
+    if (beatTimer) clearInterval(beatTimer);
   }
 }
 
@@ -295,9 +376,13 @@ export function assembleDeliveryArgs(
     ...(content.claimLedger ? { claimLedger: content.claimLedger } : {}),
     ...(content.findings ? { findings: content.findings } : {}),
     ...(content.rubric ? { rubric: content.rubric } : {}),
-    ...(content.secondReadProducerQueryId !== undefined ? { secondReadProducerQueryId: content.secondReadProducerQueryId } : {}),
+    ...(content.secondReadProducerQueryId !== undefined
+      ? { secondReadProducerQueryId: content.secondReadProducerQueryId }
+      : {}),
     verdictContext: buildVerdictContext(content.claimLedger),
-    ...(content.coversAllObligations !== undefined ? { coversAllObligations: content.coversAllObligations } : {}),
+    ...(content.coversAllObligations !== undefined
+      ? { coversAllObligations: content.coversAllObligations }
+      : {}),
   };
 }
 
@@ -312,7 +397,11 @@ function buildVerdictContext(claimLedger?: ClaimLedgerSidecar): VerdictSourceCon
       if (sh) citationDomains.add(sh);
     }
   }
-  return { citationDomains, reputableDomains: new Set<string>(), searchResultDomains: new Set<string>() };
+  return {
+    citationDomains,
+    reputableDomains: new Set<string>(),
+    searchResultDomains: new Set<string>(),
+  };
 }
 
 function hostnameOf(url: string | null | undefined): string | null {

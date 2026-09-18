@@ -5,7 +5,11 @@
 
 export const HEARTBEAT_INTERVAL_MS = 20_000; //  the task beats every 20 s (§12.4)
 export const HEARTBEAT_STALE_MS = 3 * 60_000; // stale > 3 min → orphaned (§12.4)
-export const HEARTBEAT_TTL_MS = HEARTBEAT_STALE_MS; // SETEX TTL
+// The SETEX TTL MUST exceed the stale threshold by a real margin: `at` equals the last beat, so a crashed
+// task's key expires at exactly `at + TTL`. With TTL == STALE the key evaporates the same instant it becomes
+// stale — `listStale` then sees a dangling index entry and prunes it instead of reaping the run (PRB.16 live
+// finding: a dead pod left its run `running` forever, hold still held). 15 min leaves a ~12-min reaper window.
+export const HEARTBEAT_TTL_MS = 15 * 60_000; // SETEX TTL — must be > HEARTBEAT_STALE_MS
 
 export interface HeartbeatRecord {
   readonly runId: string;

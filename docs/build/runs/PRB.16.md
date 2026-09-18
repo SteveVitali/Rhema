@@ -46,7 +46,77 @@ user-create, `auth.mail` queue + placeholder-safe Resend handling, migration `00
   `internal-and-cloud-load-balancing`. Set `rhema:internalApiUrl` to
   `https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app` (pulumi update 18). Run 2 left to the sweep.
 
+### 2026-09-17 — run 3 (first real inference on prod)
+- Run 3 `01M2R5J05VCN7GJHEZN6GJ3FWW` (review/standard/balanced, `second_read:false`): queued →
+  provisioning → **running** (first heartbeat landed 17:10:28Z — `API_INTERNAL_URL` fix works). Pod
+  pulled `run-task@sha256:f45e966f…` in 19 s.
+- **SSE leg live**: `GET /runs/:id/events` replayed `state_changed` ×3, `usage.tick` (cap 623 / spent 131),
+  `step.finished` (intake, ordinal 0 of 7), `gate.opened` (approve_scope), then live-tail after resolve.
+- **Gate round-trip live**: `approve_scope` gate `01M2R5S5YMAKMX02HN8SJHFBAY` resolved via
+  `POST /runs/:id/gates/:gid {action:"approve"}` → `{resolved:true, state:"queued"}`; run re-provisioned
+  on attempt 2 (new pod `…-a2`), `gate.resolved` + `state_changed` events emitted.
+- **Metering live**: `usage_records` accumulating via the proxy (24 rows / $2.59 by mid-craft); steps
+  `intake` 131cr, `craft` 196cr committed.
+
+### 2026-09-17 — import leg finding
+- Quarantine write leg: `gs://rhema-prod-user-content/quarantine/<ws>/prb16-imp-1.md` uploaded OK (the
+  quarantine prefix exists and is writable).
+- **LIVE FINDING 4:** `POST /projects/proj_prb16/import/preview` → **404** — `importConverter` is never
+  bound in `server.ts`, so `createImportRoutes` never mounts. The convert container is a CLI Cloud Run
+  Job (`ENTRYPOINT node dist/main.js <input>`), not an HTTP service, and §12.1 forbids in-api conversion —
+  the `Converter` seam has no live impl to bind. D-PRB.02-1 stays OPEN (the quarantine/presign half has
+  partial evidence; the convert→preview→create half needs a real convert service surface or a Job-invoke
+  binding — routed note, not a silent skip).
+
+### 2026-09-17 — LIVE FINDING 5 (the heartbeat crash-loop) + fix + redeploy
+- Run 3 `01M2R5J05…` crash-looped: the pod's harness beat ONCE at start, so a >3-min phase let the Redis
+  heartbeat age past `HEARTBEAT_STALE_MS`; the reaper orphaned a LIVE pod, re-queued the run, and the old
+  pod's commits were then fenced `stale_task` (attempt mismatch) — repeated to attempt 4. Compounded by
+  `HEARTBEAT_TTL_MS == HEARTBEAT_STALE_MS`: a dead pod's key evaporates the same instant it goes stale, so
+  `listStale` can never see it (a run could sit `running` forever, hold held).
+- **Fix (this diff):** `runCommitLoop` beats on a `setInterval(HEARTBEAT_INTERVAL_MS)` for the whole loop
+  (first beat still takes `provisioning → running`); beats carry `cancelRequested` back — honored between
+  phases. `HEARTBEAT_TTL_MS` → 15 min (> the 3-min stale window). Tests: interval-beating through a
+  minutes-long phase, cancel-flag honored, timer cleared, TTL > STALE asserted.
+- Rebuilt api `328ea74a…` / worker `eb2684cf…` / run-task `31b93afe…` (cloudbuild), pinned in
+  `Pulumi.prod.yaml`, `pulumi up` → stack at 109 resources. **Runs 5+6 then ran multi-minute phases
+  (verification ~12 min) without a single orphan reap — the fix is proven live.**
+- Run 3 terminal: operator-cancelled at 18:02Z (spent 327cr); its `verification` step's last attempt
+  failed `infra` on a REAL 402 — "run … has reached its cap of 623 credits" (cap enforcement on the wire).
+- Run 4 `01M2R8HJX…` (quick/base): intake→craft→verification→discourse committed, then the `second_read`
+  phase failed its completion predicate **`second_read_producer_checked`** ("producerQueryId matches the
+  orchestrator-launched scoped query") — the input-scoped producer marker was not written even after a
+  guided re-run (step attempt 12). Operator-cancelled at 19:37Z (spent 503cr). **LIVE FINDING 6:**
+  `second_read`-enabled runs cannot deliver on prod as deployed — D-P0.15h-5 stays OPEN with this failure
+  mode recorded (the leg is exercised, the green assert is not met — see the gate leg below).
+- Run 5 `01M2RE04R…` (quick/base, `second_read:false`): all 6 phases committed → `completed` 20:19Z,
+  666cr spent, cap 900 never tripped.
+- Run 6 `01M2RGNK9…` (quick/base, `second_read:false`, `draftId` + `lock_set` draft:read): all 6 phases →
+  `completed` 20:19Z…21:00Z, 700cr. **Dossier delivered**: `correspondence_items` review row (ordinal 1,
+  rubric sidecar embedded incl. real caps), 10 dossier artifacts (piece_brief, craft_notes, claim_ledger
+  + sidecar, discourse_report, argument_notes, editors_letter, findings.json, rubric.json, access_report),
+  `drafts`/`live_docs` updated, project state → `reviewed`.
+- Proxy evidence on the wire (all runs): `usage_records` `source:'proxy'` metering every call —
+  run-scoped rows carry attempt/agent/model/`provider_request_id`; `fetch_log` rows carry
+  fetch/search/inference with per-URL allow/deny — incl. a real **deny** (`api.anthropic.com/api/hello`
+  → 403 "not on the run allowlist", the credential-gate probe). Meter totals: run3 $5.39 / run4 $8.06 /
+  run5 $5.75 / run6 $6.38 = **$25.57 list-cost of the $50 envelope** (339 usage rows).
+- Spend to date: $25.57 / $50. Fixture topup 200,000cr; debited holds settled per run.
+
+### 2026-09-17 — LIVE FINDING 7 (dossier read never bound — Stage-A gap)
+- The web production `DataSource.getDossier` is a stub (`dossierNotWired` → throws) and the api has NO
+  dossier-read endpoint — leg 7's "the dossier route renders … from delivered rows" cannot run until a
+  thin read endpoint + web bind exists (ticket-authorized Stage A: "a read endpoint"). Same for the import
+  preview (`notWired`). Building `GET /projects/:id/review/:runId/dossier` assembling DossierData from the
+  delivered rows (letter md → sections, claims+claim_sources+fetch_log join, findings → FindingView,
+  rubric sidecar, `buildAccessReport` re-derivation, `deriveRunCardInput`, obligation counts) + an
+  api-client method + the web `getDossier` bind.
+
 ## Open at last update
-- Run 2 swept `failed` (provisioning timeout) pending; run 3 to be launched after the worker env rolls.
-- Remaining legs: SSE tail, dossier rows, triage, editor read/write, Revise, Quick Voice, export, spend
-  reconciliation, browser Google sign-in (operator step), Resend delivery (deferred — placeholder secret).
+- Runs 5+6 DELIVERED on prod (dossier rows asserted above); run 4's second_read predicate failure is a
+  live finding (D-P0.15h-5 stays OPEN). Heartbeat fix live + proven (finding 5 closed live).
+- Remaining legs: dossier-route render (needs the finding-7 bind → redeploy), triage disposition +
+  approve-triage + finding.disposed, editor fork/note/revise-queue, Revise run (pretriage+manualRevision),
+  Quick Voice run, export docx + ai-use, gate-EDIT resolve, SSE Last-Event-ID/fan-out, cited⇒fetched on
+  the delivered runs, obligation chips, spend reconcile, browser Google sign-in (operator step), Resend
+  delivery (deferred — placeholder secret).

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { HEARTBEAT_STALE_MS, type HeartbeatRecord } from "@rhema/orchestrator";
+import { HEARTBEAT_STALE_MS, HEARTBEAT_TTL_MS, type HeartbeatRecord } from "@rhema/orchestrator";
 import {
   RedisHeartbeatStore,
   heartbeatKey,
@@ -90,7 +90,10 @@ describe("RedisHeartbeatStore", () => {
     const store = new RedisHeartbeatStore(redis);
     await store.beat(rec());
     expect(await store.get("run_1")).toMatchObject({ runId: "run_1", attempt: 1, cancelRequested: false });
-    expect(redis.ttl.get("hb:run_1")).toBe(HEARTBEAT_STALE_MS / 1000);
+    // TTL must exceed the stale window — a crashed task's key has to SURVIVE becoming stale or the
+    // reaper's `listStale` can never see it (PRB.16 live finding).
+    expect(redis.ttl.get("hb:run_1")).toBe(HEARTBEAT_TTL_MS / 1000);
+    expect(HEARTBEAT_TTL_MS).toBeGreaterThan(HEARTBEAT_STALE_MS);
     expect(await redis.smembers(HEARTBEAT_INDEX_KEY)).toContain("run_1");
   });
 
