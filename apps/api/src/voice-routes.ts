@@ -426,7 +426,12 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         workspaceId: principal.workspaceId,
         personaId,
         kind: "sample",
-        mirrorPath: `samples/${itemId}.md`,
+        // PRB.16b F18 — the persona_builder seat mounts `docs/**` only (§12.6 verbatim; conventions/
+        // personas.md: "docs/ is human-supplied and agent-read"). A `samples/` path was structurally
+        // invisible — census self-reported blocked with "no docs/ directory". Corpus files the operator
+        // supplies belong under `docs/`; the item id stays in the filename so the snapshot's sample_set
+        // (itemId → sha) still correlates to the mounted file.
+        mirrorPath: `docs/samples/${itemId}.md`,
         markdown,
         wordCount: words,
         actor: { kind: "user", userId: principal.userId },

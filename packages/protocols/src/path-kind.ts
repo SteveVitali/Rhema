@@ -56,6 +56,9 @@ export const PATH_KIND_RULES: readonly PathRule[] = [
   { re: /(^|\/)profile\/shared-lexicon\.md$/, kind: "shared_lexicon" },
   { re: /(^|\/)profile\/corpus\/HOLDOUT-[^/]+\.md$/, kind: "holdout_note" },
   { re: /(^|\/)profile\/corpus\/[^/]+\.md$/, kind: "corpus_note" },
+  // operator-supplied corpus under the persona's docs/ tree (PRB.16b F18 — `docs/**` is the seat's
+  // only corpus read mount; pasted/uploaded samples persist as kind `sample` at `docs/samples/<item>.md`)
+  { re: /(^|\/)docs\//, kind: "sample" },
 
   // research notes and drafts
   { re: /(^|\/)research\/sources\/[^/]+\.md$/, kind: "source_note" },
@@ -81,7 +84,7 @@ export function pathToNamespace(path: string): Namespace {
   if (/^agents\/editor\//.test(p)) return "agent:editor";
   if (/^agents\/author\//.test(p)) return "agent:author";
   if (/^agents\/assistant\//.test(p)) return "agent:assistant";
-  if (/(^|\/)profile\//.test(p) || /(^|\/)PERSONA\.md$/.test(p)) return "persona";
+  if (/(^|\/)profile\//.test(p) || /(^|\/)PERSONA\.md$/.test(p) || /(^|\/)docs\//.test(p)) return "persona";
   if (/^(correspondence|drafts|assets)\//.test(p)) return "shared";
   return "project";
 }

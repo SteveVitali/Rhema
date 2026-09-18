@@ -131,6 +131,16 @@ describe("samples (REQ-INGEST-1/4) + the live estimate (REQ-PERSONA-3)", () => {
     expect(est.words).toBe(5);
     expect(est.samples).toBe(1);
     expect(est.estimateCredits).toBeGreaterThan(0);
+
+    // PRB.16b F18 — the corpus artifact must land under docs/**, the persona_builder seat's only
+    // corpus read mount (§12.6). A `samples/` path was structurally invisible → census blocked.
+    const art = (
+      await db.pg.query(`select mirror_path, namespace from artifacts where persona_id = $1 and kind = 'sample'`, [
+        personaId,
+      ])
+    ).rows[0] as { mirror_path: string; namespace: string };
+    expect(art.mirror_path).toMatch(/^docs\/samples\//);
+    expect(art.namespace).toBe("persona");
   });
 
   it("the include/omit toggle keeps the bytes but drops the item from the corpus", async () => {

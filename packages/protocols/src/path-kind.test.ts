@@ -23,6 +23,8 @@ describe("path→kind map (F11)", () => {
     ["persona/sjs/profile/corpus/HOLDOUT-abc.md", "holdout_note"],
     ["persona/sjs/profile/corpus/some-essay.md", "corpus_note"],
     ["PERSONA.md", "persona_seed"],
+    ["persona/sjs/docs/samples/item1.md", "sample"], // PRB.16b F18 — operator corpus under docs/
+    ["docs/samples/item1.md", "sample"],
     ["correspondence/v2-review/.rhema/findings.json", "sidecar"],
     ["correspondence/v2-review/.rhema/rubric.json", "sidecar"],
   ])("classifies %s → %s", (path, kind) => {
@@ -38,5 +40,7 @@ describe("path→kind map (F11)", () => {
     expect(pathToNamespace("agents/author/voice-charter.md")).toBe("agent:author");
     expect(pathToNamespace("correspondence/v2-response.md")).toBe("shared");
     expect(pathToNamespace("persona/sjs/profile/index.md")).toBe("persona");
+    expect(pathToNamespace("persona/sjs/docs/samples/item1.md")).toBe("persona"); // F18
+    expect(pathToNamespace("docs/essay.md")).toBe("persona");
   });
 });
