@@ -307,12 +307,18 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         next,
       });
       if (!committed.ok) {
-        return {
-          kind: "failed",
-          phasesCommitted,
-          errorClass: "infra",
-          reason: `commit rejected: ${committed.code ?? "unknown"}`,
-        };
+        // PRB.16b F17: a non-stale commit rejection must still leave a DB trace — previously the pod just
+        // exited, the run stayed `running`, and the orphan/reaper loop parked it on `resume_partial` with NO
+        // step row and NO engine.error (the live 01M2SH38 attempt-5 case: a `gates_step_id_fkey` rollback
+        // surfaced only in api logs). `stale_task` is the exception — a genuinely-stale attempt's failStep
+        // would be stale-fenced too, and the live attempt owns the write.
+        const reason = `commit rejected: ${committed.code ?? "unknown"}`;
+        if (committed.code !== "stale_task") {
+          await deps.client
+            .failStep({ stepKey: phase.key, ordinal: phase.index, errorClass: "infra", reason })
+            .catch(() => undefined); // best-effort diagnostics; the pod still exits failed either way
+        }
+        return { kind: "failed", phasesCommitted, errorClass: "infra", reason };
       }
       phasesCommitted++;
 

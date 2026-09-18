@@ -249,6 +249,16 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
             .join("\n"),
         }
       : {}),
+    // F15 follow-on (live attempt 5): the SAME invisible-contract class hid `.rhema/phase-result.json`'s
+    // status enum — the skill docs say `{status}` with no value, so the live agent wrote "success" and only
+    // the oracle's non-blocked/non-replan fall-through saved leg (b). Pin the enum explicitly whenever the
+    // `sidecar` input (manifest default or frozen override) is what makes the skill write the file.
+    ...((hyd.inputs.sidecar ?? manifest.defaultInputs?.sidecar) === true
+      ? {
+          phase_result_contract:
+            '.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports).',
+        }
+      : {}),
   };
 
   const request: PhaseRequest = {

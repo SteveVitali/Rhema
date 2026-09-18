@@ -615,16 +615,22 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       }
 
       const now = deps.clock.now();
-      const stepId = deps.ids("step");
-      await tx.query(
+      // PRB.16b F17: `returning id` is REQUIRED here — on the conflict path (a RETRIED step whose failed row
+      // already exists for the ordinal) the minted id is discarded and the pre-existing row keeps its own. The
+      // returned id is the ONLY `steps.id` that actually exists downstream: a freshly-minted id used for
+      // `current_step_id` / `debit.phaseId` / `gates.step_id` writes a dangling reference, and `openGate`'s
+      // `gates_step_id_fkey` then rolls the whole commit back (live: run 01M2SH38's attempt-5 triage verdict
+      // was complete and the commit 500'd on exactly this — the pod's "commit rejected" exit orphaned the run).
+      const upserted = await tx.query(
         `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids, started_at,
            ended_at, credits, result)
          values ($1,$2,$3,$4,'done',$5,$6,$7,$7,$8,$9)
          on conflict (run_id, ordinal) do update set
            state='done', attempt=excluded.attempt, produced_version_ids=excluded.produced_version_ids,
-           ended_at=excluded.ended_at, credits=excluded.credits, result=excluded.result`,
+           ended_at=excluded.ended_at, credits=excluded.credits, result=excluded.result
+         returning id`,
         [
-          stepId,
+          deps.ids("step"),
           args.runId,
           args.stepKey,
           args.ordinal,
@@ -635,6 +641,7 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
           JSON.stringify(args.result),
         ],
       );
+      const stepId = (upserted.rows[0] as { id: string }).id;
 
       await deps.eventWriter.append(tx, {
         runId: args.runId,

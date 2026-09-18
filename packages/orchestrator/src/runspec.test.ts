@@ -293,6 +293,9 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(contract).toContain("response-ledger.json");
     expect(contract).toContain('"entries"');
     expect(contract).toContain("findingOrdinal");
+    // the phase-result enum is pinned too (live: the agent wrote "success" — the oracle's
+    // non-blocked/non-replan fall-through was the only thing that passed leg b).
+    expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
   });
 
   it("F15 — a phase with NO declared sidecars carries no sidecar_contract input", async () => {
@@ -301,6 +304,9 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(spec.request.phase.key).toBe("bootstrap"); // sidecars: []
     expect(spec.request.inputs.sidecar_output).toBeUndefined();
     expect(spec.request.inputs.sidecar_contract).toBeUndefined();
+    // …but `sidecar: true` is still in effect (revise defaultInputs), so the phase-result enum hint lands
+    // on EVERY phase of the run — it is the input that makes the skill write the file at all.
+    expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
   });
 
   it("F16 — run-scope guidance is delivered into `inputs.guidance` at the phase boundary + marked consumed", async () => {

@@ -178,6 +178,47 @@ describe("commitStep — atomicity, idempotency, gate-open", () => {
     ).rows[0] as { parked_until: Date | null };
     expect(row.parked_until).not.toBeNull();
   });
+
+  // PRB.16b LIVE FINDING 17 — the resume_partial path: a prior attempt's failStep leaves a `steps` row for
+  // the ordinal, so the retried phase's commit takes the ON CONFLICT update path and the minted id never
+  // lands. `gates.step_id` / `runs.current_step_id` / `debit.phaseId` must use the row that EXISTS — the
+  // live 01M2SH38 attempt-5 verdict was complete and the commit 500'd on `gates_step_id_fkey`, orphaning
+  // the run on resume_partial with zero step trace.
+  it("a re-committed step binds the gate to the EXISTING step row id (F17)", async () => {
+    await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "triage",
+      ordinal: 2,
+      errorClass: "artifact_missing",
+      reason: "attempt 1 predicates failed",
+    });
+    const existing = (
+      await db.client.query("select id from steps where run_id='run1' and ordinal=2", [])
+    ).rows[0] as { id: string };
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "triage",
+      ordinal: 2,
+      of: 7,
+      credits: 60,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "gate", gateKind: "approve_triage", blocking: false, onExpiry: "proceed_as_proposed" },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select step_id from gates where run_id='run1'", [])
+    ).rows[0] as { step_id: string };
+    expect(gate.step_id).toBe(existing.id); // the row that exists — never the discarded minted id
+    const run = (
+      await db.client.query("select current_step_id, state from runs where id='run1'", [])
+    ).rows[0] as { current_step_id: string; state: string };
+    expect(run.current_step_id).toBe(existing.id);
+    expect(run.state).toBe("waiting_gate");
+  });
 });
 
 describe("finalize, fail, hydration, audit", () => {

@@ -248,6 +248,30 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(reason).toContain("(nonempty)"); // the evaluator detail
   });
 
+  it("posts failStep on a NON-stale commit rejection so the failure leaves a DB trace (PRB.16b F17)", async () => {
+    // the live 01M2SH38 case: a complete verdict whose commit rolled back server-side (a `gates_step_id_fkey`
+    // violation) previously exited the pod with NO step row and NO engine.error — the run just orphaned onto
+    // `resume_partial`. The loop must failStep the rejection reason instead (stale_task excepted — that
+    // attempt no longer owns the write).
+    const spec = makeSpec({ ...byKey("craft"), index: 5 });
+    const { rec, client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));
+    client.commit = () => Promise.resolve({ ok: false, code: "conflict" });
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("failed");
+    expect(rec.fails).toHaveLength(1);
+    expect(rec.fails[0]!.errorClass).toBe("infra");
+    expect(rec.fails[0]!.reason).toContain("commit rejected: conflict");
+  });
+
+  it("does NOT failStep on a stale_task commit rejection — the live attempt owns the write", async () => {
+    const spec = makeSpec({ ...byKey("craft"), index: 5 });
+    const { rec, client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));
+    client.commit = () => Promise.resolve({ ok: false, code: "stale_task" });
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("failed");
+    expect(rec.fails).toHaveLength(0);
+  });
+
   it("keeps beating every HEARTBEAT_INTERVAL_MS while a phase runs, so a minutes-long phase is never reaped as stale", async () => {
     // PRB.16 prod finding: a pod that beat only once at start was orphaned mid-phase (stale > 3 min), the
     // run re-queued, and the live pod's commits were then fenced as stale_task — a crash loop. The loop
