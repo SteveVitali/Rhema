@@ -34,7 +34,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus is HUMAN row H2; dev set = the
 autonomy:        checkpoint        # auto-advance green tickets; pause only at SETUP/CAPSTONE, gate rows, real blocks, and mis-sized tickets. History: `checkpoint` → `manual` 2026-09-15 (per-ticket review of the large Phase-B tickets) → back to `checkpoint` 2026-09-17 after PRB.15 Stage B executed (subagent dispatch stays one-fresh-context-per-ticket).
 mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up at the end
 round:           2
-updatedAt:       2026-09-18         # PRB.16 close (subagent): golden-path surfaces proven live on prod; 3 live bugs fixed+deployed; un-run legs → 28g2 PRB.16b (FINDING 12 dossier-not-in-correspondence, FINDING 13 cap-402 never-finalizes, operator browser legs). Ticket closed → nextTicket PRB.16b (28g2). Autonomy: checkpoint (auto-advance).
+updatedAt:       2026-09-19         # PRB.16b (28g2) Stage A landed on stevevitali/prb-16b-golden-path-continuation: F12 dossier→correspondence publish, F13 terminal-failure finalize-in-tx (cap-402/blocked/replan), runs.spent_credits reconcile at every terminal settle — 332 tests + lint/typecheck green, NO prod evidence yet. Stage B owed: deploy api+worker images → forced-cap assert → Revise → Quick Voice → gate-EDIT → stragglers. nextTicket stays PRB.16b.
 ```
 
 ## OPEN FINDINGS
