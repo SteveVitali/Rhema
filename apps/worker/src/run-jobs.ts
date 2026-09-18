@@ -221,13 +221,13 @@ export async function completeCancellation(deps: WorkerRunDeps, job: RunJobPaylo
 }
 
 /**
- * `gate:<id>` expiry job handler (§6.4 item 6/7; P0.10). The live worker registers a `gate:*` pattern
- * consumer that maps the job payload → this handler; the deadline re-read, conditional resolve, reschedule,
- * and onExpiry transition all live in @rhema/orchestrator. The payload carries the gate id + workspace.
+ * Gate-expiry job handler (§6.4 item 6/7; P0.10). The live worker's `gate.expiry` consumer maps the job
+ * payload → this handler; the deadline re-read, conditional resolve, reschedule, and onExpiry transition
+ * all live in @rhema/orchestrator. The payload carries the gate id + workspace.
  */
 export function handleGateExpiryJob(deps: OrchestratorDeps, job: { gateId: string; workspaceId: string }): Promise<GateExpiryOutcome> {
   return handleGateExpiry(deps, job);
 }
 
-/** The `gate:<id>` expiry job TYPE name (P0.08 registered the type; P0.10 owns the handler above). */
+/** The gate-expiry job TYPE name (P0.08 registered the type; P0.10 owns the handler above). */
 export { gateExpiryJob };

@@ -15,7 +15,7 @@ import {
   type StrandedSweepDeps,
 } from "./stranded-sweep.js";
 import { handleGateExpiry } from "./gate-expiry.js";
-import { RUN_JOBS } from "./queue.js";
+import { RUN_JOBS, GATE_EXPIRY_QUEUE } from "./queue.js";
 
 // D-P0.08-4 + D-P0.10-2 (PRB.14): the system-scoped stranded-run sweep. A worker crash in the
 // commit→enqueue window (or before a provisioning run's first heartbeat) leaves a row the heartbeat
@@ -203,7 +203,7 @@ describe("leg C — parked-gate expiry re-arm (D-P0.10-2 consent half)", () => {
       runId: "run_ac",
       workspaceId: seed.workspaceId,
     });
-    const armed = deps.queue.sent.find((j) => j.name === "gate:gate_ac");
+    const armed = deps.queue.sent.find((j) => j.name === GATE_EXPIRY_QUEUE && j.payload.gateId === "gate_ac");
     expect(armed).toBeDefined();
     expect(armed!.startAfterMs).toBe(0); // overdue ⇒ fires immediately
 
@@ -225,13 +225,13 @@ describe("leg C — parked-gate expiry re-arm (D-P0.10-2 consent half)", () => {
     expect(out).toEqual([
       { kind: "gate_rearmed", gateId: "gate_wg", runId: "run_wg", workspaceId: seed.workspaceId },
     ]);
-    const armed = deps.queue.sent.filter((j) => j.name === "gate:gate_wg");
+    const armed = deps.queue.sent.filter((j) => j.name === GATE_EXPIRY_QUEUE && j.payload.gateId === "gate_wg");
     expect(armed).toHaveLength(1);
     expect(armed[0]!.startAfterMs).toBe(60 * 60 * 1000);
-    expect(deps.queue.sent.some((j) => j.name === "gate:gate_held")).toBe(false);
+    expect(deps.queue.sent.some((j) => j.payload.gateId === "gate_held")).toBe(false);
 
     // a second pass dedupes against the active job — no duplicate sends.
     await sweepStrandedRuns(sweepDeps());
-    expect(deps.queue.sent.filter((j) => j.name === "gate:gate_wg")).toHaveLength(1);
+    expect(deps.queue.sent.filter((j) => j.name === GATE_EXPIRY_QUEUE && j.payload.gateId === "gate_wg")).toHaveLength(1);
   });
 });

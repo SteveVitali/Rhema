@@ -13,6 +13,7 @@ import {
   systemClock,
   randomUlids,
   RUN_JOBS,
+  GATE_EXPIRY_QUEUE,
   type SqlClient,
 } from "@rhema/orchestrator";
 import { SqlHoldLedger, STRIPE_EVENT_JOB } from "@rhema/ledger";
@@ -33,6 +34,7 @@ import {
   handleRunCancel,
   handleRunReap,
   handleStrandedSweep,
+  handleGateExpiryJob,
   type WorkerRunDeps,
   type WorkerRunConfig,
   type RunJobPayload,
@@ -270,6 +272,7 @@ export async function startWorker(): Promise<void> {
   for (const name of [
     ...Object.values(RUN_JOBS),
     ...Object.values(RUN_EVENT_JOBS),
+    GATE_EXPIRY_QUEUE, // PRB.16b F25 — one queue for every gate's expiry job (the gate id rides the payload).
     LEDGER_JOBS.sweepParked,
     STRIPE_EVENT_JOB,
     USAGE_RECONCILE_JOB,
@@ -301,6 +304,16 @@ export async function startWorker(): Promise<void> {
   });
   await boss.work<RunJobPayload>(RUN_JOBS.cancel, async (jobs) => {
     for (const job of jobs) await handleRunCancel(deps, job.data);
+  });
+
+  // PRB.16b F25 — the gate-expiry consumer: P0.10's `gate:<id>` design was never registered here AND was an
+  // illegal pg-boss name (`:`), so deadline-bearing gates' expiry jobs were never scheduled or consumed.
+  // One queue, one consumer; the handler re-reads the deadline + resolves per the gate's on_expiry.
+  await boss.work<{ gateId: string; workspaceId: string }>(GATE_EXPIRY_QUEUE, async (jobs) => {
+    for (const job of jobs) {
+      const outcome = await handleGateExpiryJob(deps, job.data);
+      console.log(`[worker] gate.expiry ${job.data.gateId} → ${JSON.stringify(outcome)}`);
+    }
   });
 
   // crons: the reaper (1 min — heartbeat-orphans + the stranded-run sweep, PRB.14), the parked sweep

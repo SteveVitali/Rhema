@@ -170,7 +170,7 @@ export async function sweepStrandedRuns(
   }
 
   // ---- Leg C (D-P0.10-2, consent half): re-arm the expiry job for a parked run's unresolved gate. ----
-  // `scheduleGateExpiry` singleton-keys on `gate:<id>:<deadlineMs>` — a gate whose job is still active
+  // `scheduleGateExpiry` singleton-keys on `gate.expiry:<id>:<deadlineMs>` — a gate whose job is still active
   // dedupes; a gate whose post-commit send was lost (or never armed — confirm_cost's 7-day expiry has no
   // other arming site) gets a job that fires at the deadline (immediately when already overdue → the
   // expiry handler's conditional resolve cancels + releases the hold).
