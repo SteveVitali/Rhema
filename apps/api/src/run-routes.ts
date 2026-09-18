@@ -259,7 +259,10 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       projectId,
       personaId: frozenPersonaId,
       seat: seatForWorkflow(workflow),
-      modelProfile: body.modelProfile,
+      // PRB.17 (F30): a body without `modelProfile` used to TypeError inside createRun → 500. The field is
+      // derivable — the tier IS the profile when no per-class overrides are given — so default it here
+      // (capabilities.ts also tolerates an absent profile, belt + suspenders).
+      modelProfile: body.modelProfile ?? { tier: body.modelTier ?? "base" },
       modelTier: body.modelTier,
       rigor: body.rigor,
       estimateCredits,

@@ -91,12 +91,12 @@ function missingFor(provider: Provider, phaseClass: PhaseClass): Capability[] {
  * the first) so the run sheet can report all of them.
  */
 export function validateModelProfile(
-  profile: ModelProfile,
+  profile: ModelProfile | undefined,
   phaseClassesUsed: readonly PhaseClass[],
 ): ValidationResult {
   const used = new Set(phaseClassesUsed);
   const rejections: CapabilityRejection[] = [];
-  for (const override of profile.overrides ?? []) {
+  for (const override of profile?.overrides ?? []) {
     if (!used.has(override.phaseClass)) continue; // an override for a class this run never runs is inert
     const missing = missingFor(override.provider, override.phaseClass);
     if (missing.length > 0) {
