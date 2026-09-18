@@ -8,7 +8,7 @@
 //   POST /voices/:id/samples            upload/paste → connection + discovered_item + sample v1 (§9.5)
 //   PATCH /voices/:id/samples/:itemId   include/omit an item (the status re-derives at read)
 //   POST /voices/:id/seed               seed save → PERSONA.md version + J9 hash recompute + live pill
-//   GET  /voices/:id/estimate           the ≤500 ms estimate (Quick `40 + 0.012·words` at Base; REQ-PERSONA-3)
+//   GET  /voices/:id/estimate           the ≤500 ms estimate (Quick `40 + 0.09·words` at Base; REQ-PERSONA-3)
 //   POST /voices/:id/build              "Create and build" → a profile_voice{tier} run (§9.2 item 3)
 //   PATCH /runs/:id                     cancel an open build (cancelRun's legal edges)
 //   PUT  /artifacts/:vid                derived-artifact write gate — 405 with `editMode` (§9.5 row 36)

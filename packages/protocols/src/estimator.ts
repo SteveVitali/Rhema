@@ -108,8 +108,12 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
   profile_voice: {
     workflow: "profile_voice",
     variants: {
-      // Quick Voice tier.
-      quick: { intercept: 40, perWord: 0.012 },
+      // Quick Voice tier. PRB.16b recalibration (modeled → first live measurement): the 0.012/word
+      // modeled figure under-priced the build ~5× — the census phase ALONE metered 123–146 proxy
+      // credits against a 5,380-word corpus on prod runs 01M2T2BG…/01M2T3P3… (≈0.025/word for ~20%
+      // of the 4-phase run) and both runs died `cap_reached` at cap 158. 0.09/word sizes the estimate
+      // to the measured burn rate of the whole run; the 1.5× cap multiplier still rides on top.
+      quick: { intercept: 40, perWord: 0.09 },
       // Full Profile.
       full: { intercept: 120, perWordRead: 0.009, perPieceRead: 40, perHoldout: 90 },
     },

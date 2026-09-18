@@ -107,7 +107,7 @@ const FACT_CHECK: WorkflowSheetProfile = {
 
 // ---- Profile voice (§9.2; PRB.10): the build TIER (quick/full) is the estimator VARIANT the caller
 // passes (`args.variant`), not a rigor notch — profile_voice carries no rigor multiplier (§6.1/§12.2).
-// The voice sheet's lever is the corpus word count; the estimator is `40 + 0.012 × words` at Base
+// The voice sheet's lever is the corpus word count; the estimator is `40 + 0.09 × words` at Base
 // (×2.2 Balanced, ×4.5 Frontier). Model tier defaults to Base at every rigor notch (the beta's Quick
 // Voice runs on Base); the caller may still pass a higher modelTier — the estimator multiplies. ------
 const PROFILE_VOICE: WorkflowSheetProfile = {
