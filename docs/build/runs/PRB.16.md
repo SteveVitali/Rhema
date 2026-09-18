@@ -187,3 +187,62 @@ user-create, `auth.mail` queue + placeholder-safe Resend handling, migration `00
 - API surface for remaining legs confirmed: `PATCH /runs/:id` cancels; revise manifest's triage phase
   gates `approve_triage` (the approve-triage + pretriage legs ride the sheet-path Revise run);
   profile_voice census gates `approve_sample`.
+
+### 2026-09-18 — legs 9b/10b/11/12/16 + LIVE FINDINGs 10/11/12 + cap-loop finding
+- **Leg 9b (`finding.disposed`) PROVEN:** after the ULID repair, `POST /projects/…/findings/01M2RJR0TS7WJY7CXV7DYQATX6/disposition`
+  → 200; `analytics_events` row `finding.disposed {disposition:"accept", reason_code:"other"}` at 03:17:48Z.
+- **Leg 10b (revise queue + pretriage) PROVEN:** sheet-path revise `01M2S78CV6JQJ7TXFVA4XSXZ9P` created with
+  `inputs.pretriage.entries` = the 3 user dispositions (actor:"user", ordinals 0–2) and a run-sheet guidance row
+  ("You pre-triaged 3 of 19 findings") captured run-scope.
+- **LIVE FINDING 12 (revise dossier visibility — real gap):** the revise author seat can only read
+  `drafts/ correspondence/ manifest.md agents/author/` (SEAT_MOUNTS by design) but delivery writes ONLY
+  `access-report.md` into `correspondence/review/N/` — the letter/findings/rubric stay under `agents/editor/`
+  (outside the author's allowlist). Bootstrap correctly self-reported `status:"blocked"` ("Dossier not
+  delivered to the author seat") yet the harness logged the phase `failed` and the reaper re-queued the run
+  repeatedly. Same blocker previously seen on dev (D-P0.15-2 note). Owed fix: delivery must also write the
+  dossier artifacts into `correspondence/<kind>/<ordinal>/` (shared namespace) OR the runspec must mount
+  the review dossier for the author seat. → continuation ticket.
+- **LIVE FINDING 13 (cap-dead runs never finalize):** a run that dies with `402 cap reached` inside the pod
+  leaves the run row `running`; heartbeat goes stale → `orphaned` → stranded-sweep re-queues → pod boots →
+  instant 402 → repeat. Both the voice build (65/62 cr) and revise attempts looped until manually cancelled
+  via `PATCH /runs/:id`. Owed fix: on a cap-402 phase failure, finalize the run `failed`/`cap_reached`
+  instead of leaving it running. → continuation ticket.
+- **Leg 11 (Quick Voice) PARTIAL-PROVEN:** `POST /voices` 201 → persona `01M2S7G0SH9V4X7YW0W0TH9XH4` +
+  `persona_seed` artifact `PERSONA.md` persisted through the NEW `contentStoreFor` bind (this exact call 500'd
+  before the fix — regression proven). `POST …/samples` 201 (`discovered_items` + `sample_versions` rows,
+  55 words). `POST …/build` 201 → `profile_voice` run `01M2S7HAV0MQQP4K4QXHXH0KBJ` (est 41 / cap 62).
+  `voice.created {tier:quick}` analytics row at 03:03:25Z. Build census hit the 62-cr cap mid-phase (65 cr
+  recorded) → finding 13 loop → cancelled. `persona_profiles` snapshot leg still owed.
+- **Leg 12 (export + AI-use) PROVEN after 2 live fixes:**
+  - **LIVE FINDING 10 (real bug):** `collectStatementFacts` did `JSON.parse(decisions.by_actor)` but
+    `writeDecision` stores the `GATE_RESOLUTION_BY` enum verbatim ("user"/"timeout"…) → EVERY project with a
+    gate decision 500'd `/export` and `/ai-use` (and the export dialog sweep). Fixed in `facts.ts` (bare enum
+    verbatim, JSON string tolerated); test now seeds the production shape.
+  - **LIVE FINDING 11 (real bug):** `createServiceExportRunner` sent NO credential to the invoker-gated
+    export Cloud Run → `403 Forbidden` from the Google frontend. Fixed two halves:
+    `fetchGceMetadataIdToken(audience)` added to `@rhema/live-clients` (metadata OIDC identity endpoint,
+    text body), runner attaches `Authorization: Bearer` when `tokenFor` wired (server.ts), and Pulumi grants
+    the api SA `roles/run.invoker` on the export service (`api-invokes-export`, update 31).
+  - `POST /projects/…/export {format:docx, attachAiUse:true}` → 200, 12 303-byte real .docx (verified: doc
+    text + appended "AI-use statement" section). `GET /ai-use` JSON: 8 workflows, 12 decisions, v2 human
+    revision, 7 open obligations — all from run rows. `GET /ai-use?format=docx` → 10 810-byte standalone
+    docx. `project.exported {format:"docx"}` analytics row at 03:42:00Z.
+- **Leg 16 (cited⇒fetched) PARTIAL:** on delivered review `01M2RGNK9…` all 11 cited `claim_sources` URLs
+  match `fetch_log` allow rows (43 rows, agent_label editor). `kind=fetch` rows carry no status/bytes on
+  prod — the audit API writes decision-only rows; byte receipts aren't recorded → telemetry gap noted,
+  decision-level provenance confirmed.
+- **Iteration/audit (D-P0.09-3) PARTIAL:** delivered run steps show `attempt=2` on 5 of 6 phases (real
+  iteration occurred); a cap-hit `completed_partial` was not driven → row stays OPEN.
+- **Estimates leg:** `POST /estimates` → 200 provisional figure + `run.estimated {kind:review, estimate:286,
+  cap:429}` analytics row at 03:46:17Z (post-ULID repair emit path verified).
+- **Spend this session:** revise `01M2S6Q93…` 214 cr/$1.53 + revise `01M2S78C…` 378 cr/$2.67 + voice
+  `01M2S7HA…` 65 cr/$0.47 ≈ **$4.67** (fixture lifetime ≈ $30.24 incl. 4 earlier reviews). ≈ $19.8 of the
+  $50 envelope remains.
+- **Deploys:** Pulumi updates 29 (voice bind), 30 (ai-use fix), 31 (export ID-token + invoker grant). API
+  digest `sha256:dc9208ea…`.
+- **Cancelled safely:** `01M2S6Q93WM5Z6SV98AG7QKP55`, `01M2S78CV6JQJ7TXFVA4XSXZ9P`, `01M2S7HAV0MQQP4K4QXHXH0KBJ`
+  all terminal `cancelled`, holds released.
+- **Still OPEN (→ 28g2 / PRB.16b):** completing a Revise run (blocked by finding 12), cap-dead finalization
+  (finding 13), Quick Voice build completion, gate-EDIT round-trip, approve_triage gate on a live run,
+  browser Google sign-in (operator), Resend delivery (placeholder secret), byte-level fetch receipts,
+  iteration-cap hit, sidecar live validation, SSE fetch_log rows, beta-report.
