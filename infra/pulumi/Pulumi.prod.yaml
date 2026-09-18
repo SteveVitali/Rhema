@@ -62,3 +62,4 @@ config:
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:2a64b9031b4ff22cfbbfe7776f6318b3f75b5bbe7b90ca0a9ff5c0b08dd89cf8
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
+  rhema:stripePaymentLinkUrl: https://buy.stripe.com/test_placeholder_pending_real_link
