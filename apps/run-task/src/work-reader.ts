@@ -35,9 +35,36 @@ function resolveKey(files: ReadonlyMap<string, Uint8Array>, target: string): str
   const suffix = `/${target}`;
   const bySuffix = [...files.keys()].filter((k) => k.endsWith(suffix)).sort((a, b) => a.length - b.length)[0];
   if (bySuffix) return bySuffix;
+  // draft-version TEMPLATES (PRB.16b F15): manifest predicates name `vN` / `v(N+1)` placeholders
+  // (`agents/author/ledgers/vN-response-ledger.md`, `drafts/v(N+1).md`) while the agent writes the
+  // concrete ordinal (`v1-response-ledger.md`, `v2.md`) — an exact/basename match never resolves, so
+  // every template-bearing predicate read as missing. Compile the target into a `v\d+` regex.
+  const tpl = versionTemplateRegex(target);
+  if (tpl) {
+    const byTpl = [...files.keys()].filter((k) => tpl.test(k)).sort((a, b) => a.length - b.length)[0];
+    if (byTpl) return byTpl;
+  }
   const base = target.slice(target.lastIndexOf("/") + 1);
   const byBase = [...files.keys()].filter((k) => k.slice(k.lastIndexOf("/") + 1) === base).sort((a, b) => a.length - b.length)[0];
   return byBase ?? target;
+}
+
+/** true when a manifest target carries a draft-version placeholder (`vN`, `v(N+1)`, `(N+1)`). */
+const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)/;
+
+/**
+ * Compile a version-template target (`drafts/v(N+1).md`) into a path-suffix regex
+ * (`(^|/)drafts/v\d+\.md$`) — matching the suffix-resolution convention above (the artifact may sit
+ * under a seat/output_dir subtree, so the pattern anchors at a path boundary, never mid-segment).
+ */
+function versionTemplateRegex(target: string): RegExp | null {
+  if (!VERSION_PLACEHOLDER.test(target)) return null;
+  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = escaped
+    .split("v\\(N\\+1\\)").join("v\\d+")
+    .split("vN").join("v\\d+")
+    .split("\\(N\\+1\\)").join("\\d+");
+  return new RegExp(`(^|/)${pattern}$`);
 }
 
 /** Parse a JSON file from the map (resolving the dossier location), or null when absent/unparseable. */
@@ -56,20 +83,39 @@ function textOf(files: ReadonlyMap<string, Uint8Array>, path: string): string | 
   return bytes ? Buffer.from(bytes).toString("utf8") : null;
 }
 
-/** true when a sidecar file validates against its registered schema. */
-function sidecarValidates(files: ReadonlyMap<string, Uint8Array>, filename: string): boolean {
+/**
+ * A compact one-line summary of why a sidecar failed schema validation (`path: message; …`, ≤3 issues,
+ * bounded) — the text that rides `PredicateFacts.sidecarIssues` into the predicate detail, the failStep
+ * reason, and the guided-retry prompt, so the NEXT attempt sees the exact contract violation (PRB.16b
+ * F15). Kept short: it lands in a prompt line and an event payload.
+ */
+function summarizeIssues(issues: readonly { path?: PropertyKey[]; message?: string }[]): string {
+  return issues
+    .slice(0, 3)
+    .map((i) => `${(i.path ?? []).map(String).join(".") || "(root)"}: ${i.message ?? "invalid"}`)
+    .join("; ")
+    .slice(0, 300);
+}
+
+/** Validate a sidecar file against its registered schema; returns `{ok, issue?}` (issue names WHY). */
+function validateSidecar(
+  files: ReadonlyMap<string, Uint8Array>,
+  filename: string,
+): { readonly ok: boolean; readonly issue?: string } {
   type Parser = {
-    safeParse(v: unknown): { success: boolean; error?: { issues: unknown[] } };
+    safeParse(v: unknown):
+      | { success: true }
+      | { success: false; error: { issues: { path?: PropertyKey[]; message?: string }[] } };
   };
   const entry = (SIDECAR_REGISTRY as Record<string, { schema: Parser }>)[filename];
   const json = readJson<unknown>(files, filename);
   if (!entry) {
     console.log(`[sidecar] ${filename}: no registered schema`);
-    return false;
+    return { ok: false, issue: "no registered schema" };
   }
   if (json == null) {
     console.log(`[sidecar] ${filename}: missing or unparseable JSON`);
-    return false;
+    return { ok: false, issue: "missing or unparseable JSON" };
   }
   const res = entry.schema.safeParse(json);
   if (!res.success) {
@@ -78,8 +124,9 @@ function sidecarValidates(files: ReadonlyMap<string, Uint8Array>, filename: stri
     const issues = JSON.stringify(res.error?.issues ?? []).slice(0, 1500);
     const head = JSON.stringify(json).slice(0, 800);
     console.log(`[sidecar] ${filename}: INVALID issues=${issues} content-head=${head}`);
+    return { ok: false, issue: summarizeIssues(res.error.issues) };
   }
-  return res.success;
+  return { ok: true };
 }
 
 /** Build the `HarvestFile[]` for the write-back diff: every non-derived `/work` file with its mount root. */
@@ -107,6 +154,7 @@ function factsForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManif
   const present: Record<string, boolean> = {};
   const nonempty: Record<string, boolean> = {};
   const sidecarValid: Record<string, boolean> = {};
+  const sidecarIssues: Record<string, string> = {};
   const facts: {
     -readonly [K in keyof PredicateFacts]: PredicateFacts[K];
   } = {};
@@ -119,8 +167,18 @@ function factsForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManif
       case "artifact_nonempty":
         nonempty[p.artifact] = (textOf(files, p.artifact)?.trim().length ?? 0) > 0;
         break;
-      case "sidecar_validates":
-        sidecarValid[p.sidecar] = sidecarValidates(files, p.sidecar);
+      case "sidecar_validates": {
+        const v = validateSidecar(files, p.sidecar);
+        sidecarValid[p.sidecar] = v.ok;
+        // carry WHY into the facts → the predicate detail → failStep reason + guided-retry text (F15).
+        if (!v.ok && v.issue) sidecarIssues[p.sidecar] = v.issue;
+        break;
+      }
+      case "response_ledger_one_row_per_finding":
+        // PRB.16b F15 — this predicate was DECLARED (revise triage) but never COMPUTED: no fact
+        // producer existed, so `responseLedgerRowPerFinding` was always absent → the predicate failed
+        // on every attempt regardless of the agent's output (a guaranteed-incomplete oracle leg).
+        facts.responseLedgerRowPerFinding = responseLedgerRowPerFinding(files, p.artifact);
         break;
       case "thesis_and_inventory_present": {
         const brief = textOf(files, p.artifact) ?? "";
@@ -154,7 +212,35 @@ function factsForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManif
     }
   }
 
-  return { ...facts, present, nonempty, sidecarValidates: sidecarValid };
+  return { ...facts, present, nonempty, sidecarValidates: sidecarValid, sidecarIssues };
+}
+
+/**
+ * `response_ledger_one_row_per_finding` (PRB.16b F15): every finding in the review's `findings.json`
+ * has ≥1 response-ledger row. Rows are read from the structured sidecar's `entries` when it parses
+ * (the machine-readable truth the delivery freezes); otherwise the markdown twin's `## Finding N`
+ * rows stand in — the predicate's declared `artifact` is that twin (an invalid sidecar still fails
+ * `sidecar_validates` independently, so the fallback cannot smuggle a green). `findings.json` absent
+ * ⇒ the row set is unprovable ⇒ false. Extra rows (e.g. user-authored pre-triage dispositions on a
+ * finding) are permitted — coverage, not exact count, is the contract (REQ-IDE-28).
+ */
+function responseLedgerRowPerFinding(
+  files: ReadonlyMap<string, Uint8Array>,
+  ledgerArtifact: string,
+): boolean {
+  const findings = readJson<{ findings?: { ordinal?: unknown }[] }>(files, "findings.json")?.findings;
+  if (!Array.isArray(findings)) return false;
+  const rowOrdinals = new Set<number>();
+  const sidecar = readJson<{ entries?: { findingOrdinal?: unknown }[] }>(files, "response-ledger.json");
+  if (Array.isArray(sidecar?.entries)) {
+    for (const e of sidecar.entries) {
+      if (typeof e.findingOrdinal === "number") rowOrdinals.add(e.findingOrdinal);
+    }
+  } else {
+    const md = textOf(files, ledgerArtifact) ?? "";
+    for (const m of md.matchAll(/^##\s+Finding\s+(\d+)/gm)) rowOrdinals.add(Number(m[1]));
+  }
+  return findings.every((f) => typeof f.ordinal === "number" && rowOrdinals.has(f.ordinal));
 }
 
 /** The dossier content for the final delivery — read the phase's declared sidecars + artifacts from `/work`. */

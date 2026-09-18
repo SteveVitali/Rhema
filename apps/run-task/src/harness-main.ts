@@ -203,8 +203,20 @@ export async function main(): Promise<void> {
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
     await stageSkills({ skillsDir: spec.skillsDir, configDir });
+    // PRB.16b F16 — MERGE the guided-retry text with any guidance the runspec already delivered
+    // (standing / run-scope §6.5 records land in `inputs.guidance` server-side); overwriting it here
+    // would silently drop the human's authoritative rows note exactly on the retry that needs it.
     const request = opts.guidance
-      ? { ...spec.request, inputs: { ...spec.request.inputs, guidance: opts.guidance } }
+      ? {
+          ...spec.request,
+          inputs: {
+            ...spec.request.inputs,
+            guidance:
+              typeof spec.request.inputs.guidance === "string" && spec.request.inputs.guidance.length > 0
+                ? `${spec.request.inputs.guidance}\n${opts.guidance}`
+                : opts.guidance,
+          },
+        }
       : spec.request;
     const agentSpec: AgentPhaseSpec = {
       request,

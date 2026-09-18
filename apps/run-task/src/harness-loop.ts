@@ -233,8 +233,11 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       if (verdict.outcome === "incomplete" && RERUN_CLASSES.has(verdict.errorClass)) {
         const policy = retryPolicyFor(verdict.errorClass);
         if (policy.maxRetries > 0) {
+          // PRB.16b F15 — fold each failed predicate's TARGET + detail (incl. sidecar schema issues)
+          // into the guidance: the bare reason named only predicate KINDS, so a retry re-guessed the
+          // same contract violation (live: `rows` written for the required `entries` array ×3).
           const guidance = policy.guided
-            ? `Previous attempt incomplete: ${verdict.reason}. Complete every declared artifact.`
+            ? `Previous attempt incomplete: ${verdict.reason}${describePredicateFailures(verdict.failedPredicates)}. Complete every declared artifact.`
             : undefined;
           outputs = await deps.runPhase(spec, guidance ? { guidance } : {});
           verdict = evaluateOracle(

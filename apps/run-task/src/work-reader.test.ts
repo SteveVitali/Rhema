@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { WORKFLOW_MANIFESTS, type PhaseManifest } from "@rhema/protocols";
+import { WORKFLOW_MANIFESTS, type PhaseManifest, type WorkflowManifest } from "@rhema/protocols";
 import { RUBRIC_DIMENSIONS } from "@rhema/contracts";
 import type { HarnessRunSpec } from "@rhema/orchestrator";
 import { buildPhaseOutputs } from "./work-reader.js";
@@ -12,7 +12,7 @@ function enc(v: unknown): Uint8Array {
   return Buffer.from(typeof v === "string" ? v : JSON.stringify(v), "utf8");
 }
 
-function makeSpec(phase: PhaseManifest): HarnessRunSpec {
+function makeSpec(phase: PhaseManifest, wf: WorkflowManifest = review, seat = "editor"): HarnessRunSpec {
   return {
     request: {
       runId: "run1",
@@ -20,17 +20,17 @@ function makeSpec(phase: PhaseManifest): HarnessRunSpec {
       cwd: "/work/project",
       phase,
       ordinal: phase.index,
-      of: review.phases.length,
-      skill: review.skill,
+      of: wf.phases.length,
+      skill: wf.skill,
       inputs: {},
-      seat: "editor",
+      seat,
       maxBudgetUsd: 5,
       maxTurns: 40,
     },
     skillsDir: "/app/skills",
-    manifest: { seat: "editor", entries: [] },
+    manifest: { seat, entries: [] },
     serverFiles: {},
-    hookPolicyInput: { seat: "editor", tools: [], urlPolicy: { blockedDomains: [], knownDomains: [] }, phase: { key: phase.key, phaseClass: phase.phaseClass, allowsSubagents: phase.allowsSubagents }, runId: "run1" },
+    hookPolicyInput: { seat, tools: [], urlPolicy: { blockedDomains: [], knownDomains: [] }, phase: { key: phase.key, phaseClass: phase.phaseClass, allowsSubagents: phase.allowsSubagents }, runId: "run1" },
     delivery: { projectId: "prj1", draftId: "dft1", correspondenceKind: "review", draftPromotedVersionId: "av_head" },
   } as unknown as HarnessRunSpec;
 }
@@ -183,5 +183,106 @@ describe("buildPhaseOutputs — per-phase intermediate artifacts under output_di
     ]);
     const out = buildPhaseOutputs(files, makeSpec(craft), "editor");
     expect(out.facts.nonempty?.["04-craft-notes.md"]).toBe(false);
+  });
+});
+
+// PRB.16b F15 — the Revise triage oracle legs that failed 4× on prod run 01M2SH38…:
+//   (1) `response_ledger_one_row_per_finding` was DECLARED but never COMPUTED (no fact producer → a
+//       guaranteed-incomplete predicate no output could satisfy);
+//   (2) `sidecar_validates` reported a bare `false` — the zod issues never reached the facts, so the
+//       guided retry re-guessed the same contract violation (`rows` for the required `entries`);
+//   (3) the predicate's declared artifact carries a `vN` version template
+//       (`agents/author/ledgers/vN-response-ledger.md`, `drafts/v(N+1).md`) that resolveKey could not
+//       match against the concrete `v1`/`v2` files the agent writes.
+describe("buildPhaseOutputs — revise triage sidecar facts (PRB.16b F15)", () => {
+  const reviseWf = WORKFLOW_MANIFESTS.revise!;
+  const triage = reviseWf.phases.find((p) => p.key === "triage")!;
+  const revisePhase = reviseWf.phases.find((p) => p.key === "revise")!;
+
+  const okAgentResult = enc({
+    subtype: "success",
+    usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0.01 },
+  });
+  // the fact reads only `findings[].ordinal` (the row set) — no schema validation of findings.json here.
+  const findings3 = {
+    sidecar: "findings",
+    version: 1,
+    findings: [{ ordinal: 0 }, { ordinal: 1 }, { ordinal: 2 }],
+  };
+  const ledgerEntry = (o: number, actor?: string) => ({
+    findingOrdinal: o,
+    disposition: { kind: "accept", status: "proposed", ...(actor ? { actor } : {}) },
+  });
+
+  it("valid sidecar entries covering every finding ordinal → row-per-finding TRUE + sidecar validates", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["correspondence/review/1/findings.json", enc(findings3)],
+      // user-authored pre-triage rows are permitted extras (coverage, not exact count — REQ-IDE-28).
+      [".rhema/response-ledger.json", enc({ sidecar: "response_ledger", version: 1, entries: [ledgerEntry(0, "user"), ledgerEntry(0), ledgerEntry(1), ledgerEntry(2)] })],
+      ["agents/author/ledgers/v1-response-ledger.md", enc("# Response ledger\n\n<!-- rhema:response_ledger v1 -->\n")],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.responseLedgerRowPerFinding).toBe(true);
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(true);
+    expect(out.facts.sidecarIssues?.["response-ledger.json"]).toBeUndefined();
+  });
+
+  it("markdown-twin fallback: `## Finding N` rows in the vN ledger cover the findings (sidecar absent → still invalid)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["correspondence/review/1/findings.json", enc(findings3)],
+      // the vN TEMPLATE artifact resolves to the concrete v1 file the agent wrote (resolveKey fix).
+      ["agents/author/ledgers/v1-response-ledger.md", enc("# Response ledger\n\n## Finding 0\n## Finding 1\n## Finding 2\n")],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.responseLedgerRowPerFinding).toBe(true);
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(false);
+    expect(out.facts.sidecarIssues?.["response-ledger.json"]).toBe("missing or unparseable JSON");
+  });
+
+  it("a findings-ordinal gap → row-per-finding FALSE (coverage is proven, never assumed)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      ["correspondence/review/1/findings.json", enc(findings3)],
+      [".rhema/response-ledger.json", enc({ sidecar: "response_ledger", version: 1, entries: [ledgerEntry(0), ledgerEntry(1)] })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.responseLedgerRowPerFinding).toBe(false);
+  });
+
+  it("findings.json absent → the row set is unprovable → FALSE", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/response-ledger.json", enc({ sidecar: "response_ledger", version: 1, entries: [ledgerEntry(0), ledgerEntry(1), ledgerEntry(2)] })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.responseLedgerRowPerFinding).toBe(false);
+  });
+
+  it("the LIVE failure shape — `rows` for the required `entries` — fails with the zod issue named in sidecarIssues", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      ["correspondence/review/1/findings.json", enc(findings3)],
+      [".rhema/response-ledger.json", enc({ sidecar: "response_ledger", version: 1, rows: [ledgerEntry(0), ledgerEntry(1), ledgerEntry(2)] })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(false);
+    expect(out.facts.sidecarIssues?.["response-ledger.json"]).toContain("entries");
+    // `rows` is not `entries` → the MD fallback applies; no ledger file → coverage unprovable.
+    expect(out.facts.responseLedgerRowPerFinding).toBe(false);
+  });
+
+  it("revise phase: `drafts/v(N+1).md` resolves the concrete `drafts/v2.md` (version-template resolveKey)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["drafts/v1.md", enc("# Draft v1")],
+      ["drafts/v2.md", enc("# Draft v2\n\nRevised prose with substance.")],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(revisePhase, reviseWf, "author"), "author");
+    expect(out.facts.nonempty?.["drafts/v(N+1).md"]).toBe(true);
   });
 });

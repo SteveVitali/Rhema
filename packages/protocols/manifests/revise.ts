@@ -8,6 +8,11 @@ import type { WorkflowManifest } from "../src/manifest-types.js";
 export const revise: WorkflowManifest = {
   workflow: "revise",
   skill: "respond-to-review",
+  // `sidecar: true` (PRB.16b F15): the ported skill gates BOTH the `.rhema/response-ledger.json` twin
+  // AND `.rhema/phase-result.json` on this input ("with `sidecar` absent the skill runs exactly as
+  // upstream") — but triage's oracle declares `sidecar_validates: response-ledger.json` + leg (b)
+  // requires phase-result.json, so a revise run was asked to prove outputs it was never told to emit.
+  defaultInputs: { sidecar: true },
   phases: [
     {
       key: "bootstrap",

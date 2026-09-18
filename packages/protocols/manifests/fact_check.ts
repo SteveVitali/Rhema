@@ -10,7 +10,9 @@ import type { WorkflowManifest } from "../src/manifest-types.js";
 export const factCheck: WorkflowManifest = {
   workflow: "fact_check",
   skill: "editorial-review",
-  defaultInputs: { scope: "claims", verification: true, discourse: false, second_read: false },
+  // `sidecar: true` (PRB.16b F15): a phase below declares `sidecars: ["01-claim-ledger.json"]` whose
+  // oracle requires the `.rhema/` twin — the ported skill only emits it under this input.
+  defaultInputs: { scope: "claims", verification: true, discourse: false, second_read: false, sidecar: true },
   phases: [
     {
       key: "inventory",
