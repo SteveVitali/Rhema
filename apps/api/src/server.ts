@@ -25,6 +25,7 @@ import {
   PgBossQueue,
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
+  fetchGceMetadataIdToken,
 } from "@rhema/live-clients";
 import {
   createApp,
@@ -169,7 +170,11 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     ...(notificationConfig ? { notifications: notificationConfig } : {}),
     // PRB.11 — the export seam: markdown+format → the isolated export container → bytes. Unset ⇒ POST
     // /export answers 503 `export_not_wired` (dialog + statement reads still work).
-    ...(env.exportServiceUrl ? { exportRunner: createServiceExportRunner(env.exportServiceUrl) } : {}),
+    ...(env.exportServiceUrl
+      ? // The export service is invoker-gated — mint an OIDC ID token per hop (metadata server,
+        // audience = the service root). LIVE FINDING 11.
+        { exportRunner: createServiceExportRunner(env.exportServiceUrl, fetch, fetchGceMetadataIdToken) }
+      : {}),
     // PRB.13 — `signup.mode` (REQ-BETA-19 amended): stage-config-driven; the routes it gates (POST
     // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
     // stays D-PRB.01-3's leg (PRB.16).

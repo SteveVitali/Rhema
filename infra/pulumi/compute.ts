@@ -489,6 +489,16 @@ export function createCompute(args: ComputeArgs): Compute {
     });
   }
 
+  // api → export service-to-service invoker (LIVE FINDING 11): the export container is invoker-gated by
+  // design (the comment above); the api SA gets `roles/run.invoker` and the api mints an OIDC ID token per
+  // hop (fetchGceMetadataIdToken in server.ts). Without BOTH halves the prod export 403s at the frontend.
+  new gcp.cloudrunv2.ServiceIamMember(name("api-invokes-export"), {
+    location: region,
+    name: services["export"]!.name,
+    role: "roles/run.invoker",
+    member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["api"].email}`,
+  });
+
   // --- External HTTPS LB + Cloud CDN fronting `web`, the api, and (prod) the cookieless user-content
   // origin. prod gets the real domains + a reserved global IP the operator's DNS records point at.
   const webNeg = new gcp.compute.RegionNetworkEndpointGroup(name("web-neg"), {
