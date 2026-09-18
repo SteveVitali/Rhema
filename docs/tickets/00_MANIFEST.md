@@ -161,6 +161,8 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 28g | `28g_PRB.16__prod-golden-path-verification.md` | LV | one real user journey end-to-end on prod — every live surface leg asserted from rows/logs (D-P0.01-3, D-PRB.01…11 live rows, D-P0.08b-1…3, D-P0.09-3, D-P0.15h-5, D-P0.15i legs re-verified) |
 | 28g2 | `28g2_PRB.16b__prod-golden-path-continuation.md` | LV | **INSERT 2026-09-18** — PRB.16's un-run legs: LIVE FINDING 12 (revise author seat can't read the dossier — delivery never writes it into `correspondence/`), LIVE FINDING 13 (cap-dead runs orphan/reaper-loop instead of finalizing), then the completing Revise run, Quick Voice build, gate-EDIT, browser sign-in legs + stragglers |
 | 28h | `28h_PRB.17__billing-live-and-ops-legs.md` | LV | the real-money channel on prod (D-PRB.08-1: Payment-Link purchase live-or-test per the H6 Stripe answer, Usage & Cost reconcile, >2% alert, admin CLI), PRB.14's live halves, live `beta-report` (D-PRB.12-1) |
+| 28i | `28i_PRB.18__prod-auth-billing-finish-legs.md` | LV | **INSERT 2026-09-18** — prod credential-apply + finish legs: real Google OAuth client (the `invalid_client` fix) + sign-in click-through, Resend magic-link, Stripe-originated purchase (live-mode key supplied), browser EventSource/editor legs (D-P0.01-3, D-PRB.17-1, D-PRB.04-2a, D-PRB.07-1a) |
+| 28j | `28j_PRB.19__revise-delivery-and-defect-pass.md` | LV | **INSERT 2026-09-18** — F26 Revise `response`-delivery design fix + mount-policy half (D-PRB.16-1), fetch byte-receipts decision, then bounded live verifies (D-PRB.16-2/-4) |
 | 29 | `29_P1.01__design-system-and-ide-shell.md` | 1 | [skeleton] tokens, panes, a11y, state catalogue |
 | 30 | `30_P1.02__page-editor.md` | 1 | [skeleton] schema-first Tiptap Page, decorations, proposal card, provenance |
 | 31 | `31_P1.03__autosave-collab-restore.md` | 1 | [skeleton] Yjs/Hocuspocus four-layer autosave, restore points |
@@ -469,3 +471,13 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   FINDING 12 (revise author seat can't read the delivered dossier; only `access-report.md` lands in
   `correspondence/`), FINDING 13 (cap-402'd runs orphan/reaper-loop instead of finalizing), plus the
   operator browser legs + Resend placeholder. Slots between `28g` and `28h`.
+- **2026-09-18 — INSERT round (prod finish — credentials supplied + defect closeout).** Two rows
+  slotted after `28h_PRB.17` and before `29_P1.01`, synthesized from the operator's credential
+  hand-off (real Google OAuth client ID — the `401 invalid_client` root cause was the
+  `pending-h6-…` placeholder in `Pulumi.prod.yaml`; real Resend key; a **live-mode** Stripe key,
+  amending the earlier test-mode answer; the operator's own Anthropic key) + the PRB.16b/PRB.17 open
+  findings: `28i_PRB.18` (deploy the OAuth config, Google + magic-link sign-in legs, the
+  Stripe-originated purchase D-PRB.17-1, browser EventSource/editor legs) and `28j_PRB.19` (the F26
+  Revise `response`-delivery design fix + mount-policy half, fetch byte-receipts decision, bounded
+  live verifies for D-PRB.16-2/-4). `anthropic-admin-key` stays a placeholder → usage.reconcile
+  stays deferred; D-PRB.16-5 stays an operator ruling. G3 remains parked; P1.* skeletons unchanged.

@@ -40,7 +40,7 @@ config:
   gcp:project: rhema-507501
   gcp:region: us-central1
   rhema:deployProxyMig: "true"
-  rhema:googleOauthClientId: pending-h6-google-oauth-client-id
+  rhema:googleOauthClientId: 25012989319-ivoppj8l0c456hblt74ji6r7u1mf52n0.apps.googleusercontent.com
   rhema:alloydbPassword:
     secure: AAABABdnGSVhDc7r6ZGYBW0ysC0neCWyooEWVhhMkLAelxPgad7/GvJwebXx6mmNWRr9x1EgCl2KAKqkPg6yxxLUVwkqGgcB
   rhema:emailFrom: hello@rhema.tools
