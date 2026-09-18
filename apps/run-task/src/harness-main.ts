@@ -199,6 +199,11 @@ export async function main(): Promise<void> {
     // chmod'ing only the root left `agents/editor/` harness-owned 0755, so the agent could not create its
     // declared artifacts there (residue 1, live P0.15h). Read-only mounts stay 0444.
     await makeTreeAgentWritable(cwd);
+    // PRB.16b F27 — the persona root needs the same treatment: a persona_builder's `profile/**` mount is
+    // `readwrite` in §12.6 but the dir is harness-owned 0755, so the agent gets EACCES on its CANONICAL
+    // mount and falls back to `/work/project` (live: Quick Voice 01M2T65W… att-5's committed phase-result
+    // reported exactly this). The walk keeps 0444 mounts (PERSONA.md, docs/**) read-only.
+    if (roots.persona) await makeTreeAgentWritable(roots.persona);
     await mkdir(configDir, { recursive: true });
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
