@@ -229,6 +229,36 @@ describe("buildPhaseOutputs — revise triage sidecar facts (PRB.16b F15)", () =
     expect(out.facts.sidecarIssues?.["response-ledger.json"]).toBeUndefined();
   });
 
+  // PRB.16b F24 — the LIVE shape: run 01M2T6D3B32AVXHCQH73ZGJGBD's triage agent (both sub-runs) wrote
+  // the structured ledger at its VERSIONED TWIN path `agents/author/ledgers/v1-response-ledger.json`
+  // and skipped `.rhema/` entirely — `resolveKey` never matched the `v1-` prefix, so a valid ledger
+  // read as "missing or unparseable JSON" and BOTH predicates failed the phase.
+  it("the sidecar at its versioned-twin path (`v1-response-ledger.json`) resolves + validates (F24)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["correspondence/review/1/findings.json", enc(findings3)],
+      ["agents/author/ledgers/v1-response-ledger.md", enc("# Response ledger\n")],
+      ["agents/author/ledgers/v1-response-ledger.json", enc({ sidecar: "response_ledger", version: 1, entries: [ledgerEntry(0), ledgerEntry(1), ledgerEntry(2)] })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(true);
+    expect(out.facts.responseLedgerRowPerFinding).toBe(true);
+  });
+
+  it("a literal `.rhema/` sidecar still wins over a versioned-twin namesake (F24 ordering)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["correspondence/review/1/findings.json", enc(findings3)],
+      // INVALID .rhema copy + VALID twin — the literal name resolves first and must still fail.
+      [".rhema/response-ledger.json", enc({ sidecar: "response_ledger", version: 1, rows: [] })],
+      ["agents/author/ledgers/v1-response-ledger.json", enc({ sidecar: "response_ledger", version: 1, entries: [ledgerEntry(0), ledgerEntry(1), ledgerEntry(2)] })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(false);
+  });
+
   it("markdown-twin fallback: `## Finding N` rows in the vN ledger cover the findings (sidecar absent → still invalid)", () => {
     const files = new Map<string, Uint8Array>([
       [AGENT_RESULT_FILENAME, okAgentResult],

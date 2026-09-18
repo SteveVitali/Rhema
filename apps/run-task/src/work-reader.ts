@@ -47,7 +47,20 @@ function resolveKey(files: ReadonlyMap<string, Uint8Array>, target: string): str
   }
   const base = target.slice(target.lastIndexOf("/") + 1);
   const byBase = [...files.keys()].filter((k) => k.slice(k.lastIndexOf("/") + 1) === base).sort((a, b) => a.length - b.length)[0];
-  return byBase ?? target;
+  if (byBase) return byBase;
+  // produced-VERSION basename (PRB.16b F24, live): the agent may write the sidecar/artifact at its
+  // versioned twin path directly — `agents/author/ledgers/v1-response-ledger.json` for the declared
+  // `response-ledger.json` — skipping `.rhema/` entirely. Exact/suffix/template/basename all miss on
+  // the `v1-` prefix, so the oracle read a valid ledger as "missing or unparseable JSON" and failed
+  // `sidecar_validates` + `response_ledger_one_row_per_finding` on BOTH triage sub-runs of live run
+  // 01M2T6D3B32AVXHCQH73ZGJGBD. A literal basename match still wins — this is the last resort.
+  const byVersionedBase = [...files.keys()]
+    .filter((k) => {
+      const b = k.slice(k.lastIndexOf("/") + 1);
+      return /^v\d+-/.test(b) && b.replace(/^v\d+-/, "") === base;
+    })
+    .sort((a, b) => a.length - b.length)[0];
+  return byVersionedBase ?? target;
 }
 
 /**
