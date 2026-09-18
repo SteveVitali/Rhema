@@ -19,6 +19,7 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { failRun } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import type { RunState } from "./state-machine.js";
 import type { SqlClient } from "./tx.js";
 
@@ -106,10 +107,13 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
           idempotencyKey: `release:${runId}`,
         });
       }
+      // PRB.16b: reconcile spent_credits from the usage rows of record before the final figure is
+      // emitted — the run-row figure resolved pre-tx can predate the last metered usage.
+      const spentCredits = Math.max(args.spentCredits, await reconcileRunSpend(tx, runId));
       await deps.eventWriter.append(tx, {
         runId,
         type: "cost.final",
-        payload: { spentCredits: args.spentCredits, capCredits: args.capCredits, ...(args.byPhase ? { byPhase: args.byPhase } : {}) },
+        payload: { spentCredits, capCredits: args.capCredits, ...(args.byPhase ? { byPhase: args.byPhase } : {}) },
         at: deps.clock.now(),
       });
       await revokeRunCredentials(tx, runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)

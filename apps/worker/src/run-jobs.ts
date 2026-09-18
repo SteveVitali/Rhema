@@ -11,6 +11,7 @@ import {
   seatForWorkflow,
   applyTransition,
   revokeRunCredentials,
+  reconcileRunSpend,
   gateExpiryJob,
   handleGateExpiry,
   sweepStrandedRuns,
@@ -152,6 +153,9 @@ async function settleTerminal(
       idempotencyKey: `release:${args.runId}`,
     });
   }
+  // PRB.16b: reconcile spent_credits from the usage rows of record — a mid-phase cancel committed
+  // no step, so the accumulated figure misses the in-flight spend the proxy already metered.
+  await reconcileRunSpend(tx, args.runId);
   await revokeRunCredentials(tx, args.runId, deps.clock.now());
 }
 

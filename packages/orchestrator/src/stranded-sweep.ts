@@ -29,6 +29,7 @@
 
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
 import type { OrchestratorDeps } from "./internal-api.js";
 import type { SqlClient } from "./tx.js";
@@ -138,6 +139,7 @@ export async function sweepStrandedRuns(
           idempotencyKey: `release:${row.id}`,
         });
       }
+      await reconcileRunSpend(tx, row.id); // PRB.16b — the terminal settle owns the spend figure
       await revokeRunCredentials(tx, row.id, now);
       return true;
     });

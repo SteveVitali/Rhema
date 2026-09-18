@@ -8,6 +8,7 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { openGate } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS } from "./queue.js";
 import { scheduleGateNotifications } from "./notifications.js";
 import { HEARTBEAT_STALE_MS } from "./heartbeat.js";
@@ -158,5 +159,8 @@ async function settle(
       idempotencyKey: `release:${runId}`,
     });
   }
+  // PRB.16b: reconcile spent_credits — a cancelling run the reaper completes still owns the usage
+  // its quiesced pod metered before the heartbeat stopped.
+  await reconcileRunSpend(tx, runId);
   await revokeRunCredentials(tx, runId, deps.clock.now());
 }

@@ -34,6 +34,7 @@ import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
 /** The full DI bundle the internal API + provisioning + reaper + phase loop share. */
@@ -726,16 +727,45 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
 }
 
 /**
+ * The cap-402 signature as it reaches the pod-reported failure reason: the egress proxy's 402 body
+ * (`run … has reached its cap of N credits`) surfaces inside the agent's thrown SDK error, folded
+ * into `reason` by the commit loop (D-P0.15e-4). A bare `402` status mention counts too — the proxy
+ * is the only 402 source in the run path.
+ */
+const CAP_REACHED_REASON = /reached its cap|cap[_\s-]?reached|cap of \d+ credits|\b402\b/i;
+
+/**
+ * Terminal phase failures (PRB.16b; LIVE FINDING 13): outcomes the pod and the reaper can NEVER
+ * recover by re-running the same phase. A `budget` subtype or a cap-402 reason means every further
+ * model request 402s instantly (the proxy refuses before forwarding); a phase-result `blocked` is
+ * the agent's own terminal report (e.g. the dossier-visibility block); a `replan` asks for a
+ * back-edge no machinery exists to take. Leaving the run `running` for the reaper was the live
+ * cap-402 crash loop (heartbeat stale → orphaned → re-enqueued → instant 402 → repeat).
+ */
+function terminalPhaseFailure(errorClass: string, reason: string | undefined): { code: string } | null {
+  if (errorClass === "budget" || (reason != null && CAP_REACHED_REASON.test(reason))) {
+    return { code: "cap_reached" };
+  }
+  if (errorClass === "blocked") return { code: "phase_blocked" };
+  if (errorClass === "replan") return { code: "phase_replan" };
+  return null;
+}
+
+/**
  * `POST /internal/runs/:id/steps/:key/fail` — record a step failure. The error-class decision (retry / gate /
- * quarantine) is the phase loop's; this endpoint marks the step failed and fences by attempt.
+ * quarantine) is the phase loop's; this endpoint marks the step failed and fences by attempt. When the
+ * failure is TERMINAL (cap-402 / blocked / replan — F13), the same transaction also fails the RUN:
+ * `running → failed` + spend reconcile + hold release + credential revocation — never left `running`
+ * for the reaper to re-enqueue into the same instant failure.
  */
 export async function failStep(
   deps: OrchestratorDeps,
   args: { runId: string; attempt: number; workspaceId: string; stepKey: string; ordinal: number; errorClass: string; reason?: string },
-): Promise<{ ok: true } | { ok: false; code: "stale_task"; currentAttempt: number }> {
+): Promise<{ ok: true; terminal?: string } | { ok: false; code: "stale_task"; currentAttempt: number }> {
+  let terminalCode: string | undefined;
   try {
-    return await deps.txRunner.run(args.workspaceId, async (tx) => {
-      await fence(tx, args.runId, args.attempt);
+    const res = await deps.txRunner.run(args.workspaceId, async (tx) => {
+      const fenceRow = await fence(tx, args.runId, args.attempt);
       const now = deps.clock.now();
       const stepId = deps.ids("step");
       await tx.query(
@@ -755,8 +785,58 @@ export async function failStep(
         payload: { errorClass: args.errorClass, phase: args.stepKey, ordinal: args.ordinal, ...(args.reason ? { reason: args.reason } : {}) },
         at: now,
       });
-      return { ok: true };
+
+      // F13 (PRB.16b): a terminal phase failure finalizes the run HERE, inside the step-fail tx —
+      // transition + spend reconcile + hold release + credential revocation are one commit, and the
+      // reaper/stranded sweep see a terminal run (no second provisioning).
+      const terminal = terminalPhaseFailure(args.errorClass, args.reason);
+      if (terminal && fenceRow.state === "running") {
+        const money = (
+          await tx.query(
+            `select r.hold_ledger_id, w.billing_account_id
+               from runs r join workspaces w on w.id = r.workspace_id where r.id = $1`,
+            [args.runId],
+          )
+        ).rows[0] as { hold_ledger_id: string | null; billing_account_id: string } | undefined;
+        await applyTransition(tx, deps, {
+          runId: args.runId,
+          from: "running",
+          to: "failed",
+          reason: terminal.code,
+          fields: {
+            failure: {
+              code: terminal.code,
+              // the pod's folded reason can run long (class + SDK subtype + agent message) — bound it.
+              message: (args.reason ?? terminal.code).slice(0, 500),
+              retryable: false,
+            },
+          },
+        });
+        await reconcileRunSpend(tx, args.runId);
+        if (money?.hold_ledger_id) {
+          await deps.ledger.release(tx, {
+            billingAccountId: money.billing_account_id,
+            workspaceId: args.workspaceId,
+            runId: args.runId,
+            holdLedgerId: money.hold_ledger_id,
+            idempotencyKey: `release:${args.runId}`,
+          });
+        }
+        await revokeRunCredentials(tx, args.runId, now); // terminal revocation (REQ-SPEC-11)
+        terminalCode = terminal.code;
+      }
+      return { ok: true as const, ...(terminalCode ? { terminal: terminalCode } : {}) };
     });
+    // post-commit side effects for a terminalized run (the heartbeat stops; the failed notice queues).
+    if (terminalCode) {
+      await deps.heartbeats.clear(args.runId);
+      await scheduleRunTerminalNotification(deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        outcome: "failed",
+      });
+    }
+    return res;
   } catch (e) {
     if (e instanceof StaleTaskError) return { ok: false, code: "stale_task", currentAttempt: e.currentAttempt };
     throw e;
@@ -783,11 +863,14 @@ export async function finalizeRun(
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    // PRB.16b: reconcile spent_credits from the usage rows of record before the final figure is
+    // emitted — a caller-resolved `args.spentCredits` can predate the last metered usage.
+    const spentCredits = Math.max(args.spentCredits, await reconcileRunSpend(tx, args.runId));
     await deps.eventWriter.append(tx, {
       runId: args.runId,
       type: "cost.final",
       payload: {
-        spentCredits: args.spentCredits,
+        spentCredits,
         capCredits: args.capCredits,
         ...(args.byPhase ? { byPhase: args.byPhase } : {}),
       },
@@ -887,6 +970,7 @@ export async function failRun(
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
     await revokeRunCredentials(tx, args.runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
   });
   await deps.heartbeats.clear(args.runId);

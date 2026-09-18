@@ -8,6 +8,7 @@
 
 import {
   applyTransition,
+  reconcileRunSpend,
   type OrchestratorDeps,
   type SqlClient,
   type RunState,
@@ -47,6 +48,7 @@ export function handleParkedSweep(deps: WorkerLedgerDeps): Promise<ParkedSweepRe
         if (!row) return;
         if (row.state !== "waiting_gate" && row.state !== "awaiting_consent") return; // moved on — skip
         await applyTransition(tx, deps, { runId: ref.runId, from: row.state, to: "cancelled", reason: "stop" });
+        await reconcileRunSpend(tx, ref.runId); // PRB.16b — the terminal settle owns the spend figure
       },
     },
     deps.clock.now(),

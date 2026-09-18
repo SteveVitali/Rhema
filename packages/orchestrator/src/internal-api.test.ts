@@ -273,6 +273,149 @@ describe("failStep — records the failure AND surfaces it (D-P0.15e-4 observabi
   });
 });
 
+describe("failStep — terminal phase failures finalize the run in one tx (PRB.16b; LIVE FINDING 13)", () => {
+  // The live defect: a pod that died on `402 cap reached` (or a phase that self-reported blocked) left the
+  // run `running`; the heartbeat went stale → orphaned → stranded-sweep re-enqueue → new pod → instant 402.
+  // The step-fail endpoint now takes `running → failed` + reconciles spend + releases the hold + revokes the
+  // credential inside the SAME transaction, so the reaper sees a terminal run.
+  async function seedTerminalFixture(state = "running"): Promise<void> {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state,
+      holdLedgerId: "led_hold",
+    });
+    await db.client.query(
+      "insert into proxy_credentials(id, run_id, attempt, credential_hash) values ('pcr_1','run1',1,'h')",
+      [],
+    );
+    // the proxy's usage rows of record: 65 credits metered but never committed (the phase died mid-flight).
+    await db.client.query(
+      `insert into usage_records(
+         id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider, model, model_tier,
+         rate_table_version, list_cost_usd, credits, source)
+       values ('ur_1', now(), $1, $2, 'run1', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, 65, 'proxy')`,
+      [seed.workspaceId, seed.billingAccountId],
+    );
+  }
+
+  async function runRow(): Promise<{ state: string; spent_credits: number; failure: { code: string } | null; ended_at: Date | null }> {
+    return (
+      await db.client.query("select state, spent_credits, failure, ended_at from runs where id = 'run1'", [])
+    ).rows[0] as { state: string; spent_credits: number; failure: { code: string } | null; ended_at: Date | null };
+  }
+
+  it("a cap-402 reason takes running → failed + releases the hold + revokes the credential + reconciles spend", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "craft",
+      ordinal: 1,
+      errorClass: "infra",
+      reason: "SDK result subtype error_during_execution — agent error [api_error]: run run1 has reached its cap of 60 credits (402)",
+    });
+    expect(res).toEqual({ ok: true, terminal: "cap_reached" });
+
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.failure).toMatchObject({ code: "cap_reached" });
+    expect(row.ended_at).not.toBeNull();
+    expect(row.spent_credits).toBe(65); // reconciled from the proxy's usage rows
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+    const cred = (await db.client.query("select revoked_at from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      revoked_at: Date | null;
+    };
+    expect(cred.revoked_at).not.toBeNull();
+    // the paired state_changed event rode the same tx; the step row still records the failure.
+    expect(deps.eventWriter.typesForRun("run1")).toEqual(
+      expect.arrayContaining(["engine.error", "run.state_changed"]),
+    );
+    const step = (await db.client.query("select state from steps where run_id='run1' and ordinal=1", [])).rows[0] as {
+      state: string;
+    };
+    expect(step.state).toBe("failed");
+  });
+
+  it("a `budget` error class terminalizes identically (the engine's 402 subtype)", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "verification",
+      ordinal: 2,
+      errorClass: "budget",
+      reason: "SDK result subtype budget (not success)",
+    });
+    expect(res).toEqual({ ok: true, terminal: "cap_reached" });
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.spent_credits).toBe(65);
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
+  it("a `blocked` phase result terminalizes as phase_blocked (the dossier-visibility block)", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "bootstrap",
+      ordinal: 0,
+      errorClass: "blocked",
+      reason: "phase-result blocked [sdk=success]",
+    });
+    expect(res).toEqual({ ok: true, terminal: "phase_blocked" });
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.failure).toMatchObject({ code: "phase_blocked" });
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
+  it("a non-terminal class leaves the run running for the caller/reaper to decide", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "intake",
+      ordinal: 0,
+      errorClass: "infra",
+      reason: "SDK result subtype error_during_execution — agent error [Error]: socket hangup",
+    });
+    expect(res).toEqual({ ok: true });
+    const row = await runRow();
+    expect(row.state).toBe("running");
+    expect(row.ended_at).toBeNull();
+    expect(deps.ledger.opsOf("release")).toHaveLength(0);
+  });
+
+  it("a terminal report on a run no longer `running` records the step but does not transition", async () => {
+    // the pod was mid-cancel: `cancelling` has no →failed edge; the step fact still lands and the
+    // cancellation path owns the terminal settle.
+    await seedTerminalFixture("cancelling");
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "craft",
+      ordinal: 1,
+      errorClass: "budget",
+    });
+    expect(res).toEqual({ ok: true });
+    const row = await runRow();
+    expect(row.state).toBe("cancelling");
+    expect(deps.ledger.opsOf("release")).toHaveLength(0);
+    const step = (await db.client.query("select state from steps where run_id='run1' and ordinal=1", [])).rows[0] as {
+      state: string;
+    };
+    expect(step.state).toBe("failed");
+  });
+});
+
 describe("harvest — provisional sdk_stream usage priced by the rate table (D-P0.08-2; REQ-PROD-15)", () => {
   it("the provisional usage.tick lands within ±2% of the proxy-metered figure at production scale", async () => {
     // The production pod posts each phase's SDK usage here (POST /internal/runs/:id/steps/:key/harvest), and

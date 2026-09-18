@@ -11,6 +11,7 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { firstConflict, isWriterWorkflow, lockKeys, HOLDING_STATES, type LockKey } from "./locks.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import type { SqlClient } from "./tx.js";
 import type { RunAllowlistData, RunContextData } from "./resolver.js";
 
@@ -209,15 +210,16 @@ export async function provisionRun(
   }
   // launch failed 3× → provisioning → failed (§12.4). Release the credential.
   await revokeCredentials(deps, args.runId);
-  await deps.txRunner.run(args.workspaceId, (tx) =>
-    applyTransition(tx, deps, {
+  await deps.txRunner.run(args.workspaceId, async (tx) => {
+    await applyTransition(tx, deps, {
       runId: args.runId,
       from: "provisioning",
       to: "failed",
       reason: "infra",
       fields: { failure: { code: "infra", message: `launch failed ${MAX_LAUNCH_ATTEMPTS}×: ${String(lastErr)}`, retryable: false } },
-    }),
-  );
+    });
+    await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
+  });
   return { ok: false, reason: "launch_failed", attempts: MAX_LAUNCH_ATTEMPTS };
 }
 
