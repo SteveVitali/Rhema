@@ -2,6 +2,9 @@
 // text; REQ-ARCH-33). The DTOs mirror the api's wire shapes; `createApiClient` takes an injectable `fetch` so
 // SSR loaders (which forward the viewer's session) and tests bind their own transport.
 
+import type { Claim, FindingView, ObligationState } from "@rhema/contracts";
+import type { AccessReportFacts, RubricRowInput, RunCardInput } from "@rhema/findings-core";
+
 export const PACKAGE_NAME = "@rhema/api-client" as const;
 
 /** The §6.3 state keys (mirrors @rhema/orchestrator ProjectStateKey; kept structural to avoid a heavy dep). */
@@ -312,6 +315,49 @@ export interface WhatChangedDto {
 export interface HunkCommentDto {
   readonly guidanceId: string;
   readonly hunkId: string;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// PRB.16 — the delivered-review dossier read (PRB.04's deferred live binding): `GET …/review/:runId/dossier`
+// assembles the reading surface's data from the delivered rows — never a client-side reconstruction.
+// ---------------------------------------------------------------------------------------------------------
+
+/** A passage reference in the letter that resolves to a finding card (§5.7). */
+export interface DossierLetterFindingRefDto {
+  readonly findingId: string;
+  readonly label: string;
+}
+
+/** One `## ` section of the delivered editors-letter (structural mirror of @rhema/ui's LetterSection). */
+export interface DossierLetterSectionDto {
+  readonly id: string;
+  readonly title: string;
+  readonly paragraphs: readonly string[];
+  readonly findingRefs?: readonly DossierLetterFindingRefDto[];
+}
+
+/** The full dossier payload: rows → the reading surfaces' models (REQ-SPEC-10 — server-side facts only). */
+export interface DossierDto {
+  readonly slug: string;
+  readonly runId: string;
+  readonly projectTitle: string;
+  readonly versionLabel: string;
+  readonly openObligations: number;
+  readonly addressedObligations: number;
+  readonly runCard: RunCardInput;
+  readonly letterTitle: string;
+  readonly letterSections: readonly DossierLetterSectionDto[];
+  readonly claims: readonly Claim[];
+  /** normalized URLs the proxy request log confirms fetched (the cited⇒fetched source — §12.7). */
+  readonly fetchLog: readonly string[];
+  readonly findings: readonly FindingView[];
+  readonly rubric: readonly RubricRowInput[];
+  /** the prior round's rubric when this dossier is a re-review (REQ-IDE-30). */
+  readonly priorRubric?: readonly RubricRowInput[];
+  /** the §12.6 facts the trust chip derives from (REQ-PROD-2). */
+  readonly accessReport: AccessReportFacts;
+  /** finding id → the obligation's current state — the per-finding state chip (REQ-OBJ-6). */
+  readonly findingObligations: Readonly<Record<string, ObligationState>>;
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -782,6 +828,8 @@ export interface ApiClient {
   getApprovalOverrides(projectId: string, init?: RequestInitLite): Promise<ApprovalOverridesDto>;
   /** Set the project's approval-deadline overrides — validated server-side (REQ-SPEC-1 rules). */
   setApprovalOverrides(projectId: string, overrides: ApprovalOverridesDto, init?: RequestInitLite): Promise<void>;
+  /** The delivered-review dossier (§5.7; PRB.04's live binding) — assembled server-side from delivered rows. */
+  getDossier(projectId: string, runId: string, init?: RequestInitLite): Promise<DossierDto>;
   /** The server-joined What-changed read for a delivered response (§5.8; PRB.06). */
   getWhatChanged(projectId: string, responseId: string, init?: RequestInitLite): Promise<WhatChangedDto>;
   /** A comment on a changed hunk → a `Guidance` row the next Revise consumes (§6.5). */
@@ -1035,6 +1083,12 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ overrides }),
       });
+    },
+    async getDossier(projectId, runId, init): Promise<DossierDto> {
+      return json<DossierDto>(
+        `/projects/${encodeURIComponent(projectId)}/review/${encodeURIComponent(runId)}/dossier`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
     },
     async getWhatChanged(projectId, responseId, init): Promise<WhatChangedDto> {
       return json<WhatChangedDto>(

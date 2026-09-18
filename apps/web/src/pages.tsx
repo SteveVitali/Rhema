@@ -798,11 +798,19 @@ export function DossierPage(): ReactNode {
             </>
           );
         })()}
+        {/* PRB.16 — the per-finding obligation-state chip (REQ-OBJ-6): the dossier payload carries
+            finding id → obligation state, joined from the delivered revision_obligations rows. */}
         <FindingsList
           groups={groups}
           conflicts={conflicts}
           collapsedRejected={rejected}
           labels={findingsLabels}
+          obligationFor={(view) => {
+            const state = dossier.findingObligations?.[view.id];
+            return state
+              ? { state, label: COPY.review.obligationStateLabel[state] ?? state }
+              : undefined;
+          }}
           controlsFor={(view) =>
             dispositionControlsFor(view, dossier.slug, dossier.runId, compact ?? false, triage?.dispositionError)
           }

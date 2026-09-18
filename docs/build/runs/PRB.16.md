@@ -120,3 +120,32 @@ user-create, `auth.mail` queue + placeholder-safe Resend handling, migration `00
   Quick Voice run, export docx + ai-use, gate-EDIT resolve, SSE Last-Event-ID/fan-out, cited⇒fetched on
   the delivered runs, obligation chips, spend reconcile, browser Google sign-in (operator step), Resend
   delivery (deferred — placeholder secret).
+
+### 2026-09-17 — LIVE FINDING 7 fix (the dossier read bind) — Stage-A, code-complete
+- **New:** `apps/api/src/dossier-routes.ts` — `GET /projects/:id/review/:runId/dossier` assembles the whole
+  reading surface from delivered rows inside `txRunner` (REQ-SPEC-10 — server-side facts only):
+  `correspondence_items` review row + embedded rubric sidecar (+ `prior_review_id` → prior rubric for the
+  re-review delta, REQ-IDE-30); `findings` + latest `dispositions` → `buildFindingView`; `claims` +
+  `claim_sources` + the run's `fetch_log` allow-list (the cited⇒fetched source); the delivered
+  `editors_letter` artifact bytes (workspace-bound `contentStoreFor`) → `parseLetterSections` with finding
+  refs joined via the canonical `letter_section` slot → heading-pattern map (never parsed out of agent
+  prose); `buildAccessReport` re-derived from `run_mounts`/`fetch_log`/`access_log`/`subagent_launches`
+  (REQ-PROD-2 trust chip); `deriveRunCardInput` over whitelisted `run_events` only (REQ-IDE-11);
+  `revision_obligations` → open/addressed counts + per-finding state map (REQ-OBJ-6).
+- **Mounted** in `createApp` after the revision routes; exported `createDossierRoutes`/`parseLetterSections`/
+  `DossierApiDeps` from the api index.
+- **`@rhema/api-client`:** `DossierDto`/`DossierLetterSectionDto`/`DossierLetterFindingRefDto` +
+  `client.getDossier(projectId, runId)`; added the `@rhema/findings-core` dep + project reference.
+- **`apps/web`:** `apiDataSource.getDossier` replaces the `dossierNotWired` stub — resolves slug → id via
+  `listProjects` (session forwarded on both calls), 404s as `ApiError` for a foreign slug, and passes the
+  server DTO through as `DossierData` (which gained `findingObligations?` for the per-finding chip);
+  `DossierPage`'s `FindingsList` now wires `obligationFor` (the REQ-OBJ-6 per-finding state chip).
+- **Tests:** `apps/api/src/dossier-routes.test.ts` (3) — letter parsing; 404; the full assembly on PGlite
+  (letter sections + slot-joined finding ref, dispositions on views, claim+source+fetch_log, rubric, trust
+  chip counts incl. the denied proxy call, run card ignoring `agent.note`, obligation chips).
+  `packages/api-client` +1 (`getDossier` URL/method/headers/DTO). `apps/web/src/data.test.ts` (2) —
+  slug→id resolution, session forwarded on both calls, DTO pass-through, ApiError(404).
+- **Green:** `turbo typecheck`/`lint` on the three packages; focused vitest 61/61 (full api+web+client
+  suite 308/308 earlier in the session).
+- **Next live step:** redeploy the api image with this route, then assert `GET …/dossier` for run
+  `01M2RGNK9PWKN5M34343GXZC16` against the delivered rows (leg 7), then the remaining legs listed below.

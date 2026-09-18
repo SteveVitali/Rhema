@@ -16,6 +16,7 @@ import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
 import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
 import { createRevisionRoutes, type RevisionApiDeps } from "./revision-routes.js";
+import { createDossierRoutes, type DossierApiDeps } from "./dossier-routes.js";
 import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
 import { createBillingRoutes } from "./billing-routes.js";
 import { createNotificationRoutes } from "./notification-routes.js";
@@ -94,6 +95,8 @@ export type { VoiceApiDeps } from "./voice-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
 export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
+export { createDossierRoutes, parseLetterSections } from "./dossier-routes.js";
+export type { DossierApiDeps } from "./dossier-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
 export type { AnalyticsApiDeps } from "./analytics-routes.js";
 
@@ -229,6 +232,11 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     );
     // PRB.06 — What-changed + hunk-comment routes (session-authed; the readable store seam is optional).
     app.route("/", createRevisionRoutes(deps as RevisionApiDeps));
+    // PRB.16 — the delivered-review dossier read (PRB.04's deferred live binding, finding 7): the whole
+    // dossier assembled from delivered rows — correspondence/rubric, findings+dispositions, claims+
+    // claim_sources joined to the proxy fetch_log, the letter markdown → sections, the re-derived
+    // access_report, the run's own event stream, and the obligation counts.
+    app.route("/", createDossierRoutes(deps as DossierApiDeps));
     // PRB.10 — the voice surface (§9.2–§9.6): personas, samples, the seed editor, the build run, the
     // project voice pin, and the derived-artifact write gate (405 for editMode:"none").
     app.route(

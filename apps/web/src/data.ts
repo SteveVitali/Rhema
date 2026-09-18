@@ -1,4 +1,4 @@
-import { createApiClient } from "@rhema/api-client";
+import { createApiClient, ApiError } from "@rhema/api-client";
 import type {
   ProjectRow,
   InviteCheckDto,
@@ -41,7 +41,7 @@ import type {
   PrivacySettingsDto,
   UsageDto,
 } from "@rhema/api-client";
-import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
+import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
 import type { LetterSection } from "@rhema/ui";
 
@@ -63,8 +63,8 @@ export interface ImportInput {
  * The delivered-review dossier the reading surfaces render (PRB.04). Semi-raw domain data + the proxy fetch
  * log; the web page assembles the view models via @rhema/findings-core and renders them with @rhema/ui. The
  * `runCard` state is already the orchestrator-only projection (REQ-IDE-11); the `accessReport` is the §12.6
- * facts the trust chip derives from (REQ-PROD-2). The live binding (reading it from a delivered run) is the
- * deferred deploy leg — see D-PRB.04-1.
+ * facts the trust chip derives from (REQ-PROD-2). The live binding (reading it from a delivered run) landed
+ * in PRB.16 — `apiDataSource.getDossier` below hits `GET /projects/:id/review/:runId/dossier` (D-PRB.04-1).
  */
 export interface DossierData {
   readonly slug: string;
@@ -85,12 +85,14 @@ export interface DossierData {
    *  per-dimension before/after, never an aggregate — REQ-IDE-30). */
   readonly priorRubric?: readonly RubricRowInput[];
   readonly accessReport: AccessReportFacts;
+  /** PRB.16 — finding id → its revision obligation's state, for the per-finding state chip (REQ-OBJ-6). */
+  readonly findingObligations?: Readonly<Record<string, ObligationState>>;
 }
 
 export interface DataSource {
   /** The signed-in principal's projects with derived §6.3 state (session forwarded to the api). */
   listProjects(session: SessionHeaders): Promise<ProjectRow[]>;
-  /** The delivered-review dossier for a run (PRB.04 reading surface). Live binding = D-PRB.04-1. */
+  /** The delivered-review dossier for a run (PRB.04 reading surface; live-bound in PRB.16, D-PRB.04-1). */
   getDossier(session: SessionHeaders, args: { projectSlug: string; runId: string }): Promise<DossierData>;
   /** Validate a beta invite before any auth request is made (REQ-BETA-19). */
   checkInvite(code: string, email?: string): Promise<InviteCheckDto>;
@@ -256,17 +258,17 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     // convert pipeline are proven deterministically; this binding lands with the live deploy.
     throw new Error("import is not wired live yet (D-PRB.02)");
   };
-  const dossierNotWired = (): never => {
-    // The delivered-review dossier read (correspondence + findings + claims + rubric + access_report → the
-    // reading surfaces) needs a delivered run, which needs the live worker/orchestrator (D-P0.08-1). The
-    // findings-core read models + @rhema/ui surfaces are proven deterministically; this binding lands with the
-    // live deploy (D-PRB.04-1).
-    throw new Error("the dossier read is not wired live yet (D-PRB.04-1)");
-  };
   return {
     listProjects: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProjects(),
-    getDossier: dossierNotWired,
+    // PRB.16 — the delivered-review dossier read IS wired now (PRB.04's deferred live binding): the api's
+    // dossier endpoint assembles the reading-surface data from the delivered rows server-side.
+    getDossier: async (session, { projectSlug, runId }) => {
+      const client = createApiClient({ baseUrl, fetch: fetchImpl, headers: session });
+      const row = (await client.listProjects()).find((r) => r.slug === projectSlug);
+      if (!row) throw new ApiError(404, `project ${projectSlug}`);
+      return client.getDossier(row.id, runId);
+    },
     checkInvite: (code, email) =>
       createApiClient({ baseUrl, fetch: fetchImpl }).checkInvite(code, email),
     // PRB.13 — the api's account-creation path (pre-auth; the api throttles per source IP + email).
