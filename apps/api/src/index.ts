@@ -245,6 +245,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ...deps,
         principal: deps.principal,
         ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+        ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
         ...(deps.importConverter ? { converter: deps.importConverter } : {}),
       }),
     );
