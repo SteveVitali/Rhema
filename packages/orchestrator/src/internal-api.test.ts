@@ -210,7 +210,43 @@ describe("finalize, fail, hydration, audit", () => {
     const h = await hydration(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
     expect(h.runId).toBe("run1");
     expect(h.workflow).toBe("review");
+    expect(h.seat).toBe("editor");
     expect(h.overlays).toEqual([]);
+  });
+
+  // PRB.16b LIVE FINDING 14 — `runs.agent_instance_id` is never populated by run creation, so the old
+  // `?? "editor"` fallback hydrated EVERY workflow as the editor seat: a Revise ran without its
+  // `agents/author/**` working memory (unmounted → unharvestable → blocked predicates) while the
+  // editor's private namespace was mounted instead (a boundary inversion). The workflow's declared
+  // seat is the frozen authority when no agent instance is bound.
+  it("hydration resolves the workflow's declared seat when no agent instance is bound", async () => {
+    await seedRun(db, { runId: "rev1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "revise", state: "running" });
+    await seedRun(db, { runId: "pv1", workspaceId: seed.workspaceId, personaId: "per_t1", workflow: "profile_voice", state: "running" });
+    await seedRun(db, { runId: "rv1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "review", state: "running" });
+    const revise = await hydration(deps, { runId: "rev1", attempt: 1, workspaceId: seed.workspaceId });
+    const voice = await hydration(deps, { runId: "pv1", attempt: 1, workspaceId: seed.workspaceId });
+    const review = await hydration(deps, { runId: "rv1", attempt: 1, workspaceId: seed.workspaceId });
+    expect(revise.seat).toBe("author");
+    expect(voice.seat).toBe("persona_builder");
+    expect(review.seat).toBe("editor");
+    // the author manifest's entries carry the author seat — never the editor's private namespace.
+    expect(revise.manifest.seat).toBe("author");
+    expect(revise.manifest.entries.every((e) => !e.path.startsWith("agents/editor/"))).toBe(true);
+  });
+
+  it("hydration: a bound agent instance's type_key still wins over the workflow default", async () => {
+    await db.client.query(
+      `insert into agent_types(key, display_name, readable, writable, persona_view, tools, skills, default_model_profile, subagents)
+       values ('assistant','Assistant','{}','{}','{}','{}','{}','balanced','{}')`,
+      [],
+    );
+    await db.client.query(
+      "insert into agent_instances(id, project_id, type_key, namespace) values ('ai_a',$1,'assistant','agent:assistant')",
+      [seed.projectId],
+    );
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "revise", agentInstanceId: "ai_a", state: "running" });
+    const h = await hydration(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    expect(h.seat).toBe("assistant");
   });
 
   it("audit appends fetch_log rows carrying run/attempt", async () => {

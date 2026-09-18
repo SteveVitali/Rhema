@@ -5,7 +5,7 @@
 // event (REQ-DATA-33). Artifact materialization/harvest (P0.09), gate resolution (P0.10) and ledger internals
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
-import type { AgentTypeKey, GateKind, GateOnExpiry } from "@rhema/contracts";
+import type { AgentTypeKey, GateKind, GateOnExpiry, WorkflowKey } from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
 import {
   buildSeatHydration,
@@ -34,6 +34,7 @@ import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { seatForWorkflow } from "./run-shape.js";
 import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
@@ -361,7 +362,15 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       seat: string | null;
     };
     const inputs = typeof row.inputs === "string" ? (JSON.parse(row.inputs) as Record<string, unknown>) : row.inputs;
-    const seat = (row.seat ?? "editor") as AgentTypeKey;
+    // The seat resolves from the run's agent instance when one is bound; otherwise from the workflow's
+    // declared seat (PRB.16b; LIVE FINDING 14 — `agent_instance_id` is never populated by run creation,
+    // so every author-seat and persona-builder-seat run silently hydrated as `editor`: the author's
+    // `agents/author/**` working memory was unmounted/unwritable, the editor's private namespace was
+    // mounted in its place — a boundary inversion — and a Revise bootstrap could never see the dossier
+    // through the author's shared `correspondence/` view as §12.6 intends). The workflow is the frozen
+    // authority: `revise` hydrates `author`, `profile_voice` hydrates `persona_builder`, `review` keeps
+    // `editor`. An explicit agent instance still wins (the seat override hook).
+    const seat = (row.seat ?? seatForWorkflow(row.workflow as WorkflowKey)) as AgentTypeKey;
     // On resume, apply the run's accumulated gate-derived overlays (REQ-SPEC-9): a caller may pass them
     // explicitly, else they are loaded from the resolved gates' `Decision.overlayVersionIds`. [] on attempt 1.
     const overlays = args.overlays ?? (await loadRunOverlays(tx, args.runId));
