@@ -165,6 +165,21 @@ Landed across `3081f7c`/`bd6c23e`/`d9e8402` and earlier commits this leg; detail
   the committed step `failed` (contradictory state) and no expiry/reminder jobs existed. The design
   also never registered a `gate:*` consumer. Fix: single legal queue `gate.expiry` (gate id rides the
   payload + singleton key) + a real worker consumer.
+- **F26 — the Revise `response` delivery never fires (two halves; → D-PRB.16-1).** (a)
+  `runspec.ts` only sets `spec.delivery` when `inputs.draftId` resolves — a revise launch carries
+  `nextDraftId`+`priorReviewId` and `draftId=null`, so the loop calls bare `finalize()` and
+  `deliverRun` never runs: no `response` correspondence row, no response-ledger→dispositions fold,
+  no `drafts` row for the reserved `nextDraftId`, no `revision.move_traced`, no draft freeze.
+  (b) The manifest's declared deliverables (`drafts/v(N+1).md`, `correspondence/vN-response.md`)
+  sit on READ-ONLY shared mounts (§12.6) → `harvest` drops them `out_of_allowlist`; even a fired
+  delivery would have no `kind='draft'` version to promote. Live: run `completed` 14:35 with zero
+  new `correspondence_items`, `drafts/v2.md` head = pre-run version, pod-local outputs lost.
+- **F27 — the persona root is never made agent-writable** (`harness-main.ts`). `makeTreeAgentWritable`
+  walked only `/work/project`; `persona_builder`'s `profile/**` readwrite mount stays harness-owned
+  → `EACCES` on the canonical mount (QV-1 att-5's committed phase-result reports it verbatim) →
+  outputs fell back to `/work/project`. Fix: walk `roots.persona` too (0444 mounts stay read-only).
+  Landed `7caf95e`; deployed via `RUN_TASK_IMAGE_DIGEST` `f79f9816` (Pulumi update 44); live-verify
+  owed on the next persona run (D-PRB.16-2).
 
 ### Live log (2026-09-18, UTC)
 
@@ -212,24 +227,54 @@ Landed across `3081f7c`/`bd6c23e`/`d9e8402` and earlier commits this leg; detail
   `approve_sample` `01M2TBQQ…` opened cleanly — **F25 live**: `pgboss.job` holds a `created`
   `gate.expiry` job `{gateId: 01M2TBQQ…, workspaceId}` (post-commit send no longer 500s). Resolved
   `approve` → att-2 queued (close_reading).
+- `13:46–13:57` QV-2 att-2 same-pod advance: close_reading 72 → voice 84 → package 101 →
+  **`completed`** at 13:57:27 (quick tier correctly skipped substance/calibration). Persona leg
+  verified: `persona_profiles` row `01M2TCXM06G14PQJPKM19HW3Y9` — `tier=quick`,
+  `calibration_status='untested'`, `corpus_size_at_build=5380`, `built_by_run_id` = the run — plus
+  `profile/index.md` (2 versions), `provenance.md`, `corpus/index.md`, `exemplars.md`,
+  `lexicon.md`, `structure-repertoire.md`, `voice-print.md` persisted at persona root.
+- `13:48–14:35` Revise att-4 same-pod advance: revise 215 → verify 150 → gap_analysis 269 →
+  deliver 193 → **`completed`** at 14:35:00 (7/7 steps, spent 2410/2850). Pod log confirms
+  `drafts/v2.md` + `correspondence/v1-response.md` produced in `/work`; the post-Gate-EDIT
+  `revise` phase hydrated the merged overlay versions.
+- `~14:40` **F26 surfaced at final audit**: run finalized BARE — no `correspondence_items` row of
+  kind `response`, no dispositions fold, no `drafts` row for `nextDraftId`, `drafts/v2.md` head =
+  pre-run version. Root causes: `spec.delivery` gated on `inputs.draftId` (revise carries
+  `nextDraftId`/`priorReviewId`) + `drafts/**`/`correspondence/**` read-only mounts → the two
+  declared deliverables were `out_of_allowlist`-dropped at harvest. → **D-PRB.16-1**.
+- `14:54` **F27 landed** (`7caf95e`): persona root made agent-writable; run-task `f79f9816`
+  deployed (Pulumi update 44). Live-verify owed (D-PRB.16-2).
+- Telemetry verdicts (prod, this session): `guidance.delivered` ×4 + `guidance.captured` ×1 in
+  `run_events` (F16 live); `context.compacted` ×5; same-pod advance proven twice (att-4 ×4 phases,
+  att-2 ×3); `gate.expiry` job armed live (F25); `access_log` **empty** — deny telemetry unwired
+  → **D-PRB.16-3**; stranded-gate re-arm not exercised (no unresolved deadline gate) →
+  **D-PRB.16-4**.
 
 Operator-gated (unchanged): Google OAuth click-through, magic-link email (Resend placeholder),
 in-browser EventSource run card, CodeMirror editor.
 
 ## Spend ledger
 
-| Leg | Run | usage_records Σ credits | Notes |
-|-----|-----|--------------------------|-------|
-| (handoff) | — | — | ≈$19.8 remaining of $50 |
-| Stage A | — | 0 | code-only this session |
-| Stage B — QV-1 (failed, cap) | `01M2T65W5PZ3174FPVFNQRVKZS` | proxy 794 / sdk_stream 412 / committed debits 175 | `spent_credits` reconciled 794; hold release 613 (vs committed 175) |
-| Stage B — QV-2 (in flight) | `01M2TB91FESCXYATTB7JQ8RBGW` | proxy 137 / committed 66 @13:36 | census + approve_sample only so far |
-| Stage B — Revise (in flight) | `01M2T6D3B32AVXHCQH73ZGJGBD` | proxy 1351 / sdk_stream 364 / committed 364 @13:31 | bootstrap 101 + research 148 + triage 115 |
-| Stage B — earlier session runs | `01M2T29P94…` `01M2T2BGRT…` `01M2T3P30S…` `01M2SH38…` | see PRB.16 ledger | folded at final reconcile |
+Final reconcile (2026-09-18 ~15:10Z), `usage_records` Σ by source vs `credit_ledger` vs `runs`:
 
-Reconcile note (2026-09-18): the QV-1 settle released the hold against **committed debits**
-(788 − 65 − 110 = 613) while `spent_credits` was reconciled to **proxy truth** (794). The 619 cr
-delta is proxy-metered burn on attempts that never committed a step — the workspace is not
-charged it via `credit_ledger` debits (only `usage_records` records it). Whether that's the
-intended accounting (cap enforcement vs invoiced spend) is a product decision; flagged, not
-silently resolved.
+| Run | Workflow | State | proxy Σ | sdk_stream Σ | ledger debits | hold released | spent_credits | proxy−debit |
+|-----|----------|-------|---------|--------------|---------------|---------------|---------------|-------------|
+| `01M2T29P94…` | revise | failed | 982 | 708 | 708 | 2142 | 982 | 274 |
+| `01M2T2BGRT…` | profile_voice | failed | 146 | 0 | 0 | 158 | 146 | 146 |
+| `01M2T3P30S…` | profile_voice | failed | 163 | 34 | 0 | 158 | 163 | 163 |
+| `01M2T65W…` (QV-1) | profile_voice | failed (cap) | 794 | 412 | 175 | 613 | 794 | 619 |
+| `01M2T6D3…` (Revise) | revise | completed | 2410 | 1191 | 1191 | 1659 | 2410 | 1219 |
+| `01M2TB91…` (QV-2) | profile_voice | completed | 476 | 323 | 323 | 465 | 476 | 153 |
+| **Σ session** | | | **4971** | **2668** | **2397** | **5695** | **4971** | **2574** |
+
+Reconcile findings (2026-09-18):
+- `runs.spent_credits` == `usage_records{source:'proxy'}` Σ on **every** run — the terminal
+  reconcile fix (carry-over) is live-verified on all six states.
+- `credit_ledger` debits == `usage_records{source:'sdk_stream'}` Σ on every run — the ledger
+  charges committed SDK-metered work only.
+- The proxy−debit delta (2574 cr session-wide) is proxy-metered burn on never-committed attempts
+  + proxy-side overhead — recorded, never invoiced (hold releases compute against committed
+  debits only). Accounting question → **D-PRB.16-5** (operator ruling owed).
+- Per-phase debits, Revise `01M2T6D3…`: bootstrap 101 · research 148 · triage 115 · revise 215 ·
+  verify 150 · gap_analysis 269 · deliver 193 = **1191**. QV-2: census 66 · close_reading 72 ·
+  voice 84 · package 101 = **323** (est 525 / cap 788).
