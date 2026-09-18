@@ -116,4 +116,19 @@ describe("hook daemon ⇄ client (§12.4 step 4; §12.6)", () => {
     expect(signals).toContain("abort_failed_boundary");
     expect(JSON.stringify(third)).not.toContain("abort_failed_boundary"); // control stays harness-side
   });
+
+  it("fails CLOSED on a malformed envelope (the SDK `tool_name`/`tool_input` shape verbatim → deny, not silent allow)", async () => {
+    const socketPath = sockPath();
+    daemon = await createHookDaemon({
+      socketPath,
+      policy: editorPolicy(),
+      state: newDenialState(),
+      resolveRealpath: lexicalRealpath,
+    });
+    // The PRB.17 live finding: the SDK's PreToolUseHookInput envelope forwarded verbatim lands here with no
+    // `use.tool` — evaluateToolUse would hit its pass-through branch and silently allow with zero audit.
+    const res = await hookClientDecision(socketPath, { tool_name: "Write", tool_input: { file_path: "/work/project/agents/author/x.md" } } as never);
+    expect(res.hookSpecificOutput.permissionDecision).toBe("deny");
+    expect(res.hookSpecificOutput.permissionDecisionReason).toContain("malformed");
+  });
 });

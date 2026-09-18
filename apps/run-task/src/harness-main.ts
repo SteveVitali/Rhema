@@ -100,6 +100,23 @@ export async function fetchRunSpec(args: { apiBaseUrl: string; runId: string; ru
 }
 
 export async function main(): Promise<void> {
+/** Ship one buffered audit batch to the internal API (run-token auth). A non-2xx throws so the buffered
+ *  writer restores its rows for the next flush — append-only, never silently dropped. */
+async function postAudit(args: {
+  apiBaseUrl: string;
+  runId: string;
+  runToken: string;
+  rows: { access?: readonly unknown[]; fetch?: readonly unknown[] };
+}): Promise<void> {
+  const url = `${args.apiBaseUrl.replace(/\/$/, "")}/internal/runs/${args.runId}/audit`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { authorization: `Bearer ${args.runToken}`, "content-type": "application/json" },
+    body: JSON.stringify(args.rows),
+  });
+  if (!res.ok) throw new Error(`harness: audit ship failed ${res.status} for run ${args.runId}`);
+}
+
   const { readFile, writeFile, mkdir, chmod, readdir, stat } = await import("node:fs/promises");
 
   /**
@@ -235,7 +252,19 @@ export async function main(): Promise<void> {
     // policy is server-authored (REQ-ARCH-17): the api ships JSON-safe compile inputs; the harness compiles the
     // live SeatPolicy here with the SAME @rhema/hooks code + a fresh per-phase DenialState.
     const policy = compileSeatPolicy(spec.hookPolicyInput as unknown as CompileInput);
-    const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy, state: newDenialState() });
+    // REQ-ARCH-18 / REQ-DATA-16: the §12.6 audit sink — the daemon writes every allow/deny + fetch row into a
+    // buffered writer that ships to `POST /internal/runs/:id/audit` (run-token auth, fenced, append-only). The
+    // sink lives harness-side: nothing but the allow/deny decision crosses the agent socket. Rows ship on a
+    // full buffer and at each phase's daemon close.
+    const { createBufferedAuditWriter } = await import("@rhema/hooks");
+    const auditTransport = {
+      sendAccess: async (rows: readonly import("@rhema/hooks").AccessLogRow[]) =>
+        postAudit({ apiBaseUrl, runId, runToken, rows: { access: rows } }),
+      sendFetch: async (rows: readonly import("@rhema/hooks").FetchLogRow[]) =>
+        postAudit({ apiBaseUrl, runId, runToken, rows: { fetch: rows } }),
+    };
+    const audit = createBufferedAuditWriter(auditTransport);
+    const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy, state: newDenialState(), audit });
 
     try {
       // ABSOLUTE node path (process.execPath) — the scrubbed agent env has no PATH, so setpriv cannot resolve a

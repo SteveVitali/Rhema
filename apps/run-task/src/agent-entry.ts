@@ -54,10 +54,25 @@ export async function runAgentPhase(engine: Engine, request: PhaseRequest, event
  *  vendored SDK's `HookCallback` must return a `HookJSONOutput` — i.e. the `{ hookSpecificOutput: {...} }`
  *  WRAPPER (sdk.d.ts `SyncHookJSONOutput`), not the bare inner object. Returning the inner object left the SDK
  *  with no `permissionDecision` to read, so a `deny` would not actually block the tool (the §12.6 boundary would
- *  silently not enforce → a false-green Review). Confirmed live at D-P0.06-1. */
+ *  silently not enforce → a false-green Review). Confirmed live at D-P0.06-1.
+ *
+ *  PRB.17 live finding: the SDK `HookCallback`'s `input` is the `PreToolUseHookInput` ENVELOPE —
+ *  `{hook_event_name, tool_name, tool_input, tool_use_id, session_id, transcript_path, cwd}` — NOT our
+ *  `ToolUse{tool, input}`. Forwarding it verbatim gave the daemon `use.tool === undefined`, which falls into
+ *  evaluateToolUse's "not a matched tool — pass through, no audit" branch: every tool silently allowed, zero
+ *  `[hook]` decisions, zero `access_log` rows on every production pod. Translate the envelope here — the single
+ *  mapping point between the SDK's shape and the §12.6 `ToolUse` contract. */
 export function buildPreToolUseHook(socketPath: string): PreToolUseHook {
   return async (input: unknown) => {
-    const res = await hookClientDecision(socketPath, input as ToolUse);
+    const env = input as { tool_name?: unknown; tool_input?: unknown };
+    const use: ToolUse = {
+      tool: typeof env?.tool_name === "string" ? env.tool_name : "",
+      input:
+        env?.tool_input !== null && typeof env?.tool_input === "object" && !Array.isArray(env.tool_input)
+          ? (env.tool_input as Readonly<Record<string, unknown>>)
+          : {},
+    };
+    const res = await hookClientDecision(socketPath, use);
     return { hookSpecificOutput: res.hookSpecificOutput };
   };
 }
