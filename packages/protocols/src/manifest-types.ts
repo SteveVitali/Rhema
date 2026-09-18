@@ -52,6 +52,9 @@ export interface PhaseManifest {
   predicates: string[];
   sidecars: string[];
   gateAfter?: string;
+  /** the declared artifact (vN templates allowed) whose produced version a `gateAfter` gate binds
+   *  (`gates.artifact_version_id`) — the gate card + write-back overlay read it (PRB.16b F19). */
+  gateArtifact?: string;
   optional?: Rigor;
   /** the SKILL.md frontmatter opt-out flag that disables this phase (REQ-SPEC-22 contract test extracts
    *  these and asserts equality with the skill's `Default true. Run Phase …` inputs). */

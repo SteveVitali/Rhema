@@ -53,6 +53,10 @@ export const revise: WorkflowManifest = {
       predicates: ["one row per finding", "sidecar validates"],
       sidecars: ["response-ledger.json"],
       gateAfter: "approve_triage",
+      // PRB.16b F19 — the gate must BIND the produced ledger version: the approve_triage card and the
+      // merged write-back overlay (loadLedgerEntries → serializeGateOverlay) read the gate's
+      // artifact_version_id; without it the overlay path was dead code (gates opened with NULL).
+      gateArtifact: "agents/author/ledgers/vN-response-ledger.md",
       phaseClass: "judge",
       budgetShare: 0.12,
       allowsSubagents: false,

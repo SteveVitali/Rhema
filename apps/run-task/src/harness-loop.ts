@@ -34,6 +34,7 @@ import {
   type PhaseResultFile,
   type PredicateFacts,
 } from "@rhema/orchestrator";
+import { resolveProducedPath } from "./work-reader.js";
 
 /** Error classes whose remedy is re-running the same phase once (guided for artifact_missing) — mirrors runPhase. */
 const RERUN_CLASSES: ReadonlySet<ErrorClass> = new Set([
@@ -288,9 +289,18 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         ? deps.gateContext(now())
         : { policy: "named" as const, now: now() };
       // a pinned phase:N run finalizes after this one phase; otherwise the manifest decides advance/gate/finalize.
-      const next: CommitNext = spec.stopAfterPhase
+      let next: CommitNext = spec.stopAfterPhase
         ? { kind: "finalize" }
         : decideCommitNext({ phase, isLastPhase, gate: gateCtx });
+      // PRB.16b F19 — bind the gate to the produced version of the phase's declared `gateArtifact`:
+      // `gates.artifact_version_id` is what the approve_triage card and the write-back overlay merge
+      // (mergedTriageLedger → serializeGateOverlay) read — `decideCommitNext` never supplied it, so
+      // every gate opened with NULL and the overlay path was dead code.
+      if (next.kind === "gate" && phase.gateArtifact) {
+        const produced = resolveProducedPath(Object.keys(harvested.byPath), phase.gateArtifact);
+        const versionId = produced ? harvested.byPath[produced] : undefined;
+        if (versionId) next = { ...next, artifactVersionId: versionId };
+      }
 
       const committed = await deps.client.commit({
         stepKey: phase.key,

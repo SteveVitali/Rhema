@@ -14,7 +14,8 @@ import type { AgentTypeKey } from "@rhema/contracts";
 import { SIDECAR_REGISTRY, type SidecarFilename } from "@rhema/contracts";
 import { emptyUsage, type ResultSubtype, type UsageSnapshot } from "@rhema/engine";
 import type { PhaseManifest } from "@rhema/protocols";
-import { harvest, manifestByPath, type HarvestFile, type MirrorManifest, type NewVersion, type SidecarInput } from "@rhema/mirror";
+import { pathToNamespace } from "@rhema/protocols";
+import { harvest, manifestByPath, sha256Hex, type HarvestFile, type MirrorManifest, type NewVersion, type SidecarInput } from "@rhema/mirror";
 import type { MountRoot } from "@rhema/hooks";
 import type { PhaseResultFile, PredicateFacts } from "@rhema/orchestrator";
 import type { HarnessRunSpec } from "@rhema/orchestrator";
@@ -47,6 +48,18 @@ function resolveKey(files: ReadonlyMap<string, Uint8Array>, target: string): str
   const base = target.slice(target.lastIndexOf("/") + 1);
   const byBase = [...files.keys()].filter((k) => k.slice(k.lastIndexOf("/") + 1) === base).sort((a, b) => a.length - b.length)[0];
   return byBase ?? target;
+}
+
+/**
+ * Resolve a manifest target (`vN` templates allowed) against a set of PRODUCED paths — the same
+ * suffix/template/basename cascade as `resolveKey`, for callers that hold a `byPath` map rather than
+ * the `/work` file map (PRB.16b F19: binding the produced version a `gateAfter` gate must carry).
+ * Returns undefined when no produced path matches.
+ */
+export function resolveProducedPath(paths: readonly string[], target: string): string | undefined {
+  const set = new Set(paths);
+  const k = resolveKey(set as unknown as ReadonlyMap<string, Uint8Array>, target);
+  return set.has(k) ? k : undefined;
 }
 
 /** true when a manifest target carries a draft-version placeholder (`vN`, `v(N+1)`, `(N+1)`). */
@@ -292,6 +305,35 @@ export function buildPhaseOutputs(files: ReadonlyMap<string, Uint8Array>, spec: 
 
   const diff = harvest({ seat, manifest: spec.manifest, files: harvestFiles(files, spec.manifest, primaryRoot(seat)) });
   const versions: NewVersion[] = [...diff.newVersions];
+  // PRB.16b F20 — a declared sidecar the agent wrote under `.rhema/` is skipped by the mirror's
+  // derived-file rule (root `.rhema/` is never harvested), so the structured rows the oracle just
+  // validated never became a content-addressed artifact — and the gate card / write-back merge
+  // (`loadLedgerEntries`' `<md> → <json>` twin lookup) read an EMPTY agent set (live: the
+  // approve_triage overlay carried only the 4 user dispositions; the agent's ~15 proposals were
+  // dropped from the materialized ledger). Persist each declared sidecar at its ledger-twin path —
+  // `<resolved gateArtifact .md> → .json`, the same convention serializeGateOverlay writes — so the
+  // agent's proposed rows survive into the merge. Skipped when the agent already wrote the twin.
+  // resolveKey returns the target itself when nothing matched — `files.has` proves a real produced file,
+  // so the twin never lands under an unresolved `vN` template path.
+  const twinBase = phase.gateArtifact ? resolveKey(files, phase.gateArtifact) : undefined;
+  if (twinBase?.endsWith(".md") && files.has(twinBase)) {
+    const twinPath = twinBase.replace(/\.md$/, ".json");
+    for (const filename of phase.sidecars) {
+      if (files.has(twinPath) || versions.some((v) => v.path === twinPath)) break;
+      const bytes = files.get(resolveKey(files, filename));
+      if (!bytes) continue;
+      versions.push({
+        path: twinPath,
+        root: primaryRoot(seat),
+        kind: "sidecar",
+        namespace: pathToNamespace(twinPath),
+        sha256: sha256Hex(bytes),
+        bytes,
+        wordCount: 0,
+      });
+      break; // one twin per gate artifact — the first declared sidecar wins
+    }
+  }
   const facts = factsForPhase(files, phase);
   const isFinal = spec.stopAfterPhase === true || phase.index === spec.request.of - 1;
 

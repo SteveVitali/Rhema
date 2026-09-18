@@ -333,6 +333,50 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     }
   });
 
+  it("binds the produced gateArtifact version onto the gate decision (PRB.16b F19)", async () => {
+    // The live 01M2T29P… gap: revise triage opened `approve_triage` with artifact_version_id NULL —
+    // `decideCommitNext` never carried a version — so the card's merged ledger and the write-back
+    // overlay (loadLedgerEntries → serializeGateOverlay) were dead code. The phase declares
+    // `gateArtifact`; the loop must look the produced version up in the harvest's byPath map.
+    const triage = WORKFLOW_MANIFESTS.revise!.phases.find((p) => p.key === "triage")!;
+    const spec = makeSpec(triage);
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs(
+        { responseLedgerRowPerFinding: true, sidecarValidates: { "response-ledger.json": true } },
+        {
+          versions: [
+            {
+              path: "agents/author/ledgers/v1-response-ledger.md",
+              root: "project",
+              kind: "response_ledger",
+              namespace: "author",
+              sha256: "s",
+              bytes: Buffer.from("# ledger"),
+              wordCount: 2,
+            },
+          ],
+        },
+      ),
+    );
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("gated");
+    expect(rec.commits).toHaveLength(1);
+    const next = rec.commits[0]!.next;
+    expect(next.kind).toBe("gate");
+    // the produced md's version id (the mock harvest mints `av_1`) rides the gate into gates.artifact_version_id.
+    expect(next.artifactVersionId).toBe("av_1");
+  });
+
+  it("a gate WITHOUT a produced gateArtifact still opens — with no artifact binding (F19 fallback)", async () => {
+    const triage = WORKFLOW_MANIFESTS.revise!.phases.find((p) => p.key === "triage")!;
+    const { rec, client, runPhase } = makeHarness([makeSpec(triage)], () =>
+      completeOutputs({ responseLedgerRowPerFinding: true, sidecarValidates: { "response-ledger.json": true } }),
+    );
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("gated");
+    expect(rec.commits[0]!.next.artifactVersionId).toBeUndefined();
+  });
+
   it("never sees the run token or any secret — the loop's inputs carry only server-authored data", async () => {
     const spec = makeSpec({ ...byKey("craft"), index: OF - 1 });
     const { client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));

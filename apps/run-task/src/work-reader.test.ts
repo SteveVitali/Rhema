@@ -286,3 +286,58 @@ describe("buildPhaseOutputs — revise triage sidecar facts (PRB.16b F15)", () =
     expect(out.facts.nonempty?.["drafts/v(N+1).md"]).toBe(true);
   });
 });
+
+// PRB.16b F20 — the agent's structured response-ledger rows never became an artifact: the mirror's
+// derived-file rule skips the root `.rhema/` subtree, so `.rhema/response-ledger.json` validated for
+// the oracle but was then DROPPED. `loadLedgerEntries` (the approve_triage card + the write-back
+// overlay merge) reads the persisted `<ledger .md> → .json` twin — absent, the merge saw an EMPTY
+// agent set and the live overlay carried only the human's 4 dispositions (the ~15 agent proposals
+// vanished). buildPhaseOutputs now persists the declared sidecar at the resolved gateArtifact's twin
+// path — the same convention serializeGateOverlay writes.
+describe("buildPhaseOutputs — response-ledger sidecar twin persistence (PRB.16b F20)", () => {
+  const reviseWf = WORKFLOW_MANIFESTS.revise!;
+  const triage = reviseWf.phases.find((p) => p.key === "triage")!;
+
+  const okAgentResult = enc({
+    subtype: "success",
+    usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0.01 },
+  });
+  const ledger = { sidecar: "response_ledger", version: 1, entries: [{ findingOrdinal: 0, disposition: { kind: "accept", status: "proposed" } }] };
+
+  it("persists `.rhema/response-ledger.json` at the produced ledger's `.json` twin path", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      ["correspondence/review/1/findings.json", enc({ sidecar: "findings", version: 1, findings: [{ ordinal: 0 }] })],
+      [".rhema/response-ledger.json", enc(ledger)],
+      ["agents/author/ledgers/v1-response-ledger.md", enc("# Response ledger\n\n## Finding 0\n")],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    const twin = out.versions.find((v) => v.path === "agents/author/ledgers/v1-response-ledger.json");
+    expect(twin).toBeDefined();
+    expect(twin!.kind).toBe("sidecar");
+    expect(JSON.parse(Buffer.from(twin!.bytes).toString("utf8"))).toEqual(ledger);
+  });
+
+  it("does NOT mint a second twin when the agent already wrote the `.json` ledger sibling", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      ["correspondence/review/1/findings.json", enc({ sidecar: "findings", version: 1, findings: [{ ordinal: 0 }] })],
+      [".rhema/response-ledger.json", enc(ledger)],
+      ["agents/author/ledgers/v1-response-ledger.md", enc("# Response ledger\n\n## Finding 0\n")],
+      ["agents/author/ledgers/v1-response-ledger.json", enc(ledger)],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    // exactly ONE version at the twin path (the harvested one) — no duplicate appended.
+    expect(out.versions.filter((v) => v.path === "agents/author/ledgers/v1-response-ledger.json")).toHaveLength(1);
+  });
+
+  it("no ledger markdown produced → no twin (an unresolved `vN` template path is never persisted)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/response-ledger.json", enc(ledger)],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(triage, reviseWf, "author"), "author");
+    expect(out.versions.some((v) => v.path.includes("vN"))).toBe(false);
+    expect(out.versions.some((v) => v.path === "agents/author/ledgers/v1-response-ledger.json")).toBe(false);
+  });
+});
