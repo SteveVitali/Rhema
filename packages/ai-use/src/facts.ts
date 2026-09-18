@@ -138,7 +138,11 @@ export async function collectStatementFacts(
       action: a.action,
       byKind:
         typeof a.by_actor === "string"
-          ? ((JSON.parse(a.by_actor) as { kind?: string }).kind ?? "unknown")
+          ? // decisions.by_actor is the GATE_RESOLUTION_BY enum verbatim ("user"/"timeout"/…); a
+            // JSON string is tolerated for rows written by earlier harnesses.
+            a.by_actor.startsWith("{")
+            ? ((JSON.parse(a.by_actor) as { kind?: string }).kind ?? "unknown")
+            : a.by_actor
           : (a.by_actor?.kind ?? "unknown"),
       at: new Date(a.at),
     })),

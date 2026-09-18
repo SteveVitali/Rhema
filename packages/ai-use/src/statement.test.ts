@@ -47,15 +47,16 @@ async function seedRunWithSteps(
 
 async function seedApproval(
   db: MirrorTestDb,
-  args: { gateId: string; runId: string; action: string; byActor: unknown; at: string },
+  args: { gateId: string; runId: string; action: string; byActor: string; at: string },
 ): Promise<void> {
   await db.exec.query(
     `insert into gates(id, run_id, kind, opened_at, on_expiry) values ($1,$2,'deliver',$3,'proceed_as_proposed')`,
     [args.gateId, args.runId, args.at],
   );
+  // decisions.by_actor stores the GATE_RESOLUTION_BY enum verbatim (gate-resolution.ts writeDecision).
   await db.exec.query(
     `insert into decisions(gate_id, by_actor, action, at) values ($1,$2,$3,$4)`,
-    [args.gateId, JSON.stringify(args.byActor), args.action, args.at],
+    [args.gateId, args.byActor, args.action, args.at],
   );
 }
 
@@ -87,14 +88,14 @@ async function seedFixture() {
     [project.projectId, project.draftId],
   );
   await seedApproval(db, {
-    gateId: "gt_1", runId: "run_r1", action: "approve", byActor: USER, at: "2026-09-01T11:00:00Z",
+    gateId: "gt_1", runId: "run_r1", action: "approve", byActor: "user", at: "2026-09-01T11:00:00Z",
   });
   await seedApproval(db, {
-    gateId: "gt_2", runId: "run_r2", action: "edit", byActor: USER, at: "2026-09-03T11:00:00Z",
+    gateId: "gt_2", runId: "run_r2", action: "edit", byActor: "user", at: "2026-09-03T11:00:00Z",
   });
   // a non-human resolution must NOT count as an author approval.
   await seedApproval(db, {
-    gateId: "gt_3", runId: "run_r2", action: "proceed_as_proposed", byActor: { kind: "system" },
+    gateId: "gt_3", runId: "run_r2", action: "proceed_as_proposed", byActor: "timeout",
     at: "2026-09-03T12:00:00Z",
   });
   return { db, workspaceId, project };
