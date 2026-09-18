@@ -315,6 +315,38 @@ describe("buildPhaseOutputs — revise triage sidecar facts (PRB.16b F15)", () =
     const out = buildPhaseOutputs(files, makeSpec(revisePhase, reviseWf, "author"), "author");
     expect(out.facts.nonempty?.["drafts/v(N+1).md"]).toBe(true);
   });
+
+  // PRB.19 (F26) — the deliver phase is the dossier phase: its declared sidecars now include the sealed
+  // `response-ledger.json` (the delivery transaction folds ONLY what arrives in `DeliveryArgs.sidecars`),
+  // and the declared `correspondence/vN-response.md` letter resolves to the concrete path the skill wrote.
+  const deliver = reviseWf.phases.find((p) => p.key === "deliver")!;
+  it("deliver phase: the dossier carries the response letter + the sealed response-ledger sidecar (F26)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["drafts/v2.md", enc("# Draft v2\n\nRevised prose with substance.")],
+      ["correspondence/v1-response.md", enc("# Response\n\nMove 1 accepted.\n")],
+      [".rhema/response-ledger.json", enc({ sidecar: "response_ledger", version: 1, entries: [ledgerEntry(0), ledgerEntry(1), ledgerEntry(2)], moves: [{ ordinal: 1, title: "M1" }] })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(deliver, reviseWf, "author"), "author");
+    expect(out.delivery).toBeDefined();
+    expect(out.delivery!.deliveredPaths).toEqual(["correspondence/v1-response.md"]);
+    expect(out.delivery!.sidecars.map((s) => s.filename)).toEqual(["response-ledger.json"]);
+    // the sealed-ledger predicate: a validating sidecar satisfies leg (c) of the deliver oracle.
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(true);
+    expect(out.facts.nonempty?.["correspondence/vN-response.md"]).toBe(true);
+  });
+
+  it("deliver phase: a missing response-ledger fails the declared sidecar predicate (the fold is enforced)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, okAgentResult],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["correspondence/v1-response.md", enc("# Response\n")],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(deliver, reviseWf, "author"), "author");
+    expect(out.facts.sidecarValidates?.["response-ledger.json"]).toBe(false);
+    expect(out.delivery!.sidecars).toEqual([]);
+  });
 });
 
 // PRB.16b F20 — the agent's structured response-ledger rows never became an artifact: the mirror's

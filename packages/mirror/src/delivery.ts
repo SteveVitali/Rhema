@@ -618,27 +618,51 @@ export async function runDeliveryTransaction(
 
     // The revision lands as a new draft row: v(N+1) origin `response_to_review`, based on the frozen head,
     // promoted to the delivered `drafts/v(N+1).md` artifact version.
-    const deliveredDraft = (
+    // PRB.19 (F26): the produced draft version is found across BOTH the delivered dossier versions AND the
+    // run's committed `steps.produced_version_ids` — a Revise's `drafts/v(N+1).md` is produced by the `revise`
+    // phase, NOT the final `deliver` phase, so `deliveredVersionIds` alone (which name only the final phase's
+    // artifacts) never contained it and the reserved `nextDraftId` row + `revision.move_traced` never landed.
+    const base = (
+      await exec.query(`select n from drafts where id = $1`, [args.draftId])
+    ).rows[0] as { n: number } | undefined;
+    const deliveredDraft = base
+      ? ((
+          await exec.query(
+            `select av.id, av.content_sha256, a.mirror_path
+               from artifact_versions av join artifacts a on a.id = av.artifact_id
+              where a.kind = 'draft'
+                and (
+                  av.id = any($1::text[])
+                  or av.id in (
+                    select unnest(s.produced_version_ids) from steps s
+                     where s.run_id = $2 and s.state = 'done'
+                  )
+                )
+              order by (a.mirror_path = $3) desc, av.ordinal desc limit 1`,
+            [args.deliveredVersionIds as string[], args.runId, `drafts/v${base.n + 1}.md`],
+          )
+        ).rows[0] as { id: string; content_sha256: string } | undefined)
+      : undefined;
+    if (deliveredDraft && base) {
+      // the delivered draft bytes are as immutable as every other delivered artifact (REQ-VIS-4/5).
+      await exec.query(`update artifact_versions set immutable = true where id = $1`, [deliveredDraft.id]);
+      newDraftId = args.newDraftId ?? deps.ids("dft");
+      // The v(N+1) draft is born FROZEN (PRB.19): it IS the delivered revision — sealed at the delivered
+      // version like its base (REQ-DATA-14/21); editing it forks a `human_revision` child as usual.
       await exec.query(
-        `select av.id, av.content_sha256
-           from artifact_versions av join artifacts a on a.id = av.artifact_id
-          where av.id = any($1::text[]) and a.kind = 'draft'
-          order by av.ordinal desc limit 1`,
-        [args.deliveredVersionIds as string[]],
-      )
-    ).rows[0] as { id: string; content_sha256: string } | undefined;
-    if (deliveredDraft) {
-      const base = (
-        await exec.query(`select n from drafts where id = $1`, [args.draftId])
-      ).rows[0] as { n: number } | undefined;
-      if (base) {
-        newDraftId = args.newDraftId ?? deps.ids("dft");
-        await exec.query(
-          `insert into drafts(id, project_id, n, origin, state, base_draft_id, promoted_version_id, created_at)
-           values ($1,$2,$3,'response_to_review','working',$4,$5,$6)`,
-          [newDraftId, args.projectId, base.n + 1, args.draftId, deliveredDraft.id, now],
-        );
-      }
+        `insert into drafts(id, project_id, n, origin, state, base_draft_id, promoted_version_id, frozen_at, frozen_by, created_at)
+         values ($1,$2,$3,'response_to_review','frozen',$4,$5,$6,$7,$8)`,
+        [
+          newDraftId,
+          args.projectId,
+          base.n + 1,
+          args.draftId,
+          deliveredDraft.id,
+          now,
+          JSON.stringify(args.frozenBy ?? { kind: "system", runId: args.runId }),
+          now,
+        ],
+      );
     }
 
     // revision.move_traced (REQ-BETA-7): the server diff vN→v(N+1) joined to the ledger's moves. Both

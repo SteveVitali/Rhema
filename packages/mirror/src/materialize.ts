@@ -43,6 +43,14 @@ export interface MaterializeArgs {
   readonly overlays?: readonly Overlay[];
   /** server-generated read-only mount files (e.g. the re-review `obligations.json` — REQ-OBJ-8); [] normally. */
   readonly serverFiles?: readonly ServerFile[];
+  /**
+   * PRB.19 (F26b) — the run's DECLARED phase-output paths the hydration grants as writable
+   * (`declaredWritableArtifacts`): an already-committed artifact at a granted path mounts `readwrite` even
+   * though its §12.6 seat mount is `read`, so a re-materialized declared output (e.g. `drafts/v3.md` from a
+   * committed earlier phase) stays editable through verify/deliver. Paths not present as artifacts simply
+   * have no entry — the new-file grant lives in `harvest`'s allowlist check.
+   */
+  readonly writablePaths?: readonly string[];
 }
 
 /** One materialized file in the mirror tree (bytes + its manifest entry). */
@@ -187,6 +195,7 @@ async function resolveSeatTree(
   args: MaterializeArgs,
 ): Promise<{ backed: BackedEntry[]; manifest: MirrorManifest; derived: DerivedMountFile[] }> {
   const overlayByPath = await readOverlays(exec, args.overlays ?? []);
+  const writableSet = new Set(args.writablePaths ?? []);
   const backed: BackedEntry[] = [];
   const seen = new Set<string>();
 
@@ -197,7 +206,10 @@ async function resolveSeatTree(
     // an overlay for this path overrides the committed version (REQ-SPEC-9); an overlay is user-authored and mutable.
     const overlay = overlayByPath.get(path);
     const eff = overlay && overlay.root === root ? { ...overlay, immutable: false } : { sha256, versionId, immutable };
-    backed.push({ path, root, sha256: eff.sha256, versionId: eff.versionId, mode: mount.mode, immutable: eff.immutable });
+    // PRB.19 (F26b): a run's declared phase outputs are writable for that run even under a §12.6 `read` mount.
+    const mode: BackedEntry["mode"] =
+      mount.mode === "readwrite" || (root === "project" && writableSet.has(path)) ? "readwrite" : "read";
+    backed.push({ path, root, sha256: eff.sha256, versionId: eff.versionId, mode, immutable: eff.immutable });
     seen.add(path);
   };
 

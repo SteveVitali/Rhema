@@ -116,12 +116,19 @@ export const revise: WorkflowManifest = {
       skillPhase: "6",
       seat: "author",
       artifacts: ["correspondence/vN-response.md"],
-      predicates: ["response letter present"],
-      sidecars: [],
+      predicates: ["response letter present", "response ledger sealed"],
+      // PRB.19 (F26): the frozen response-ledger twin is a DELIVER-phase sidecar — `dossierForPhase` reads the
+      // final phase's declared sidecars into `DeliveryArgs.sidecars`, and the delivery transaction folds
+      // `response-ledger.json` into `dispositions` only when it arrives there. Without the declaration the
+      // dossier carried no ledger and a delivered response folded nothing.
+      sidecars: ["response-ledger.json"],
       phaseClass: "package",
       budgetShare: 0.08,
       allowsSubagents: false,
-      completionPredicates: [{ kind: "artifact_nonempty", artifact: "correspondence/vN-response.md" }],
+      completionPredicates: [
+        { kind: "artifact_nonempty", artifact: "correspondence/vN-response.md" },
+        { kind: "sidecar_validates", sidecar: "response-ledger.json" },
+      ],
     },
   ],
 };

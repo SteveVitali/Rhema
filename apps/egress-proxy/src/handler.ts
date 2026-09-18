@@ -336,7 +336,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
         await writeFetch(
           act.kind === "search"
             ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: act.query, decision: "allow" })
-            : buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "fetch", url: act.url, decision: "allow" }),
+            : buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "fetch", url: act.url, ...(act.bytes !== undefined ? { bytes: act.bytes } : {}), decision: "allow" }),
         );
       }
     }

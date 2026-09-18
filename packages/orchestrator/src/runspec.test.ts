@@ -5,7 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { agentTypesSeed } from "@rhema/db";
-import { compileSeatPolicy } from "@rhema/hooks";
+import { classifyPath, compileSeatPolicy } from "@rhema/hooks";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { WorkflowKey } from "@rhema/contracts";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "./testing/pg.js";
@@ -369,5 +369,149 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     // and the record was NOT consumed (it stays deliverable for the next non-independence phase).
     const row = (await db.pg.query(`select consumed_by from guidance where id = $1`, [gdnId])).rows[0] as { consumed_by: unknown[] };
     expect(row.consumed_by).toEqual([]);
+  });
+
+  // -----------------------------------------------------------------------------------------------
+  // PRB.19 (F26) — the revise delivery gate + declared-output writability.
+  // -----------------------------------------------------------------------------------------------
+
+  /** Promote the seeded draft to a real artifact version + file a `review` correspondence on it. */
+  async function seedReviewedDraft(): Promise<{ reviewCorrId: string; versionId: string }> {
+    const draftId = seed.draftId!;
+    const versionId = "av_seed_v1";
+    await db.pg.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_seed_v1',$1,$2,'draft','shared','drafts/v1.md',$3)`,
+      [seed.workspaceId, seed.projectId, versionId],
+    );
+    await db.pg.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ($1,'art_seed_v1',1,'sha_seed_v1','k',10,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [versionId],
+    );
+    await db.pg.query(`update drafts set promoted_version_id = $2 where id = $1`, [draftId, versionId]);
+    const reviewCorrId = deps.ids("corr");
+    await db.pg.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ($1,$2,'review',$3,'run_rev', now(), '{}')`,
+      [reviewCorrId, seed.projectId, draftId],
+    );
+    return { reviewCorrId, versionId };
+  }
+
+  it("F26a — a revise-shaped run (priorReviewId + nextDraftId, NO draftId) produces a delivery spec", async () => {
+    const runId = await seedWorkflowRun("run_revise_del", "revise");
+    const { reviewCorrId, versionId } = await seedReviewedDraft();
+    const nextDraftId = deps.ids("dft");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({ priorReviewId: reviewCorrId, nextDraftId }),
+      ]),
+    );
+
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+
+    // the delivery spec fires on the REVIEWED draft (resolved via priorReviewId → the working head) —
+    // pre-fix this was undefined because revise inputs carry no `draftId` (the bare-finalize defect).
+    expect(spec.delivery).toBeDefined();
+    expect(spec.delivery).toMatchObject({
+      projectId: seed.projectId,
+      draftId: seed.draftId,
+      correspondenceKind: "response",
+      draftPromotedVersionId: versionId,
+      priorReviewId: reviewCorrId,
+      newDraftId: nextDraftId,
+    });
+  });
+
+  it("F26b — the revise run's declared shared outputs are granted writable (drafts/v2.md + v1-response)", async () => {
+    const runId = await seedWorkflowRun("run_revise_w", "revise");
+    const { reviewCorrId } = await seedReviewedDraft();
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({ priorReviewId: reviewCorrId, nextDraftId: deps.ids("dft") }),
+      ]),
+    );
+
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+
+    // the declared `phase.artifacts` resolve to the concrete shared paths the skill writes (SKILL.md:
+    // `drafts/v(N+1).md`, `correspondence/vN-response.md`) — granted writable for THIS run.
+    expect(spec.writablePaths).toEqual(["correspondence/v1-response.md", "drafts/v2.md"]);
+    expect(spec.hookPolicyInput.writableArtifacts).toEqual(spec.writablePaths);
+    // the compiled seat policy now classifies those paths readwrite while every OTHER shared file stays
+    // read-only (the §12.6 table is unchanged — the grant is per-run, path-precise).
+    const policy = compileSeatPolicy(spec.hookPolicyInput);
+    expect(classifyPath("drafts/v2.md", policy).rule?.mode).toBe("readwrite");
+    expect(classifyPath("correspondence/v1-response.md", policy).rule?.mode).toBe("readwrite");
+    expect(classifyPath("drafts/v1.md", policy).rule?.mode).toBe("read"); // the evidence mount is untouched
+    // the hydration manifest mounts the committed seed draft at its granted path as readwrite when the
+    // declared output IS that artifact (not the case here — v1 is not a declared output — stays `read`).
+    const entry = spec.manifest.entries.find((e) => e.path === "drafts/v1.md");
+    expect(entry?.mode).toBe("read");
+  });
+
+  it("F26 — a review run's delivery spec still resolves via inputs.draftId (unchanged)", async () => {
+    const runId = await seedWorkflowRun("run_review_del", "review");
+    const { versionId } = await seedReviewedDraft();
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ draftId: seed.draftId })]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.delivery).toMatchObject({
+      draftId: seed.draftId,
+      correspondenceKind: "review",
+      draftPromotedVersionId: versionId,
+    });
+    // a review declares no shared-path outputs → no writable grant.
+    expect(spec.writablePaths).toEqual([]);
+    expect(spec.hookPolicyInput.writableArtifacts).toBeUndefined();
+  });
+
+  it("F26 — a revise run whose manualRevision names a divergent head delivers on THAT head", async () => {
+    const runId = await seedWorkflowRun("run_revise_man", "revise");
+    const { reviewCorrId } = await seedReviewedDraft();
+    // the human's saved edits forked a working v2 head (the frozen v1 stays reviewed).
+    await db.pg.query(`update drafts set state='frozen' where id = $1`, [seed.draftId]);
+    const headId = deps.ids("dft");
+    await db.pg.query(
+      `insert into drafts(id, project_id, n, origin, state, base_draft_id, promoted_version_id)
+       values ($1,$2,2,'human_revision','working',$3,'av_seed_v1')`,
+      [headId, seed.projectId, seed.draftId],
+    );
+    const nextDraftId = deps.ids("dft");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({
+          priorReviewId: reviewCorrId,
+          nextDraftId,
+          manualRevision: { baseDraftId: headId, mootedFindingIds: [], note: "n" },
+        }),
+      ]),
+    );
+
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    // the base is the divergent head (NOT the reviewed draft) — the revision builds on the user's edits.
+    expect(spec.delivery).toMatchObject({ draftId: headId, newDraftId: nextDraftId, correspondenceKind: "response" });
+    // and the writability grant keys off BOTH ordinals: the correspondence names the reviewed draft (v1)
+    // or the head (v2), and `v(N+1)` expands to v2 (in-place revision of the head) + v3 (the next draft).
+    expect(spec.writablePaths).toEqual([
+      "correspondence/v1-response.md",
+      "correspondence/v2-response.md",
+      "drafts/v2.md",
+      "drafts/v3.md",
+    ]);
+  });
+
+  it("F26 — a revise run on a project with no draft produces no delivery spec + no grant", async () => {
+    const runId = await seedWorkflowRun("run_revise_none", "revise");
+    const empty = await seedProject(db, { projectId: "prj_nodraft", workspaceId: seed.workspaceId });
+    await db.pg.query(`update runs set project_id = $2 where id = $1`, [runId, empty.projectId]);
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.delivery).toBeUndefined();
+    expect(spec.writablePaths).toEqual([]);
   });
 });

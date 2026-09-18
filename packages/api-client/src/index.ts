@@ -446,6 +446,9 @@ export interface BillingBalanceDto {
   readonly suspended: boolean;
   readonly clawbackDebt: number;
   readonly paymentLinkUrl?: string;
+  /** PRB.19 (F32) — the authenticated account's id; the web composes `client_reference_id` onto the
+   *  Payment-Link redirect from it so a Stripe-originated checkout joins this account. */
+  readonly billingAccountId?: string;
 }
 
 // ---------------------------------------------------------------------------------------------------------

@@ -15,7 +15,7 @@ const PROJECTS: ProjectRow[] = [
 const PAY_LINK = "https://buy.stripe.com/test_beta_topup";
 
 function makeDeps(opts: {
-  balance?: { spendableCredits: number; suspended: boolean; clawbackDebt: number; paymentLinkUrl?: string };
+  balance?: { spendableCredits: number; suspended: boolean; clawbackDebt: number; paymentLinkUrl?: string; billingAccountId?: string };
   planOfferUrl?: string;
   recorded?: string[];
 }): WebDeps {
@@ -79,9 +79,11 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
     expect(recorded).toEqual([]);
   });
 
-  it("the panel's Payment-Link POST records open_payment_link then 302s to the link", async () => {
+  it("the panel's Payment-Link POST records open_payment_link then 302s to the link + client_reference_id (F32)", async () => {
     const recorded: string[] = [];
-    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK }, recorded }));
+    const app = createWebApp(
+      makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, billingAccountId: "ba_123" }, recorded }),
+    );
     const res = await app.request(`/p/${SLUG}/exhausted`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -89,8 +91,43 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
       redirect: "manual",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe(PAY_LINK);
+    // F32 (PRB.19): the Stripe-originated checkout joins via client_reference_id — a bare link lands unresolved.
+    expect(res.headers.get("location")).toBe(`${PAY_LINK}?client_reference_id=ba_123`);
     expect(recorded).toEqual(["open_payment_link"]);
+  });
+
+  it("the composed link preserves the configured URL's existing query and encodes the account id", async () => {
+    const app = createWebApp(
+      makeDeps({
+        balance: {
+          spendableCredits: 10, suspended: false, clawbackDebt: 0,
+          paymentLinkUrl: "https://buy.stripe.com/test_link?prefilled_promo_code=ABC",
+          billingAccountId: "ba x+y", // reserved chars → percent-encoded by URL
+        },
+      }),
+    );
+    const res = await app.request(`/p/${SLUG}/exhausted`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action_taken: "open_payment_link" }).toString(),
+      redirect: "manual",
+    });
+    const loc = res.headers.get("location")!;
+    const url = new URL(loc);
+    expect(url.origin + url.pathname).toBe("https://buy.stripe.com/test_link");
+    expect(url.searchParams.get("prefilled_promo_code")).toBe("ABC");
+    expect(url.searchParams.get("client_reference_id")).toBe("ba x+y");
+  });
+
+  it("a balance read without a billingAccountId redirects to the bare link (never breaks the redirect)", async () => {
+    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK } }));
+    const res = await app.request(`/p/${SLUG}/exhausted`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action_taken: "open_payment_link" }).toString(),
+      redirect: "manual",
+    });
+    expect(res.headers.get("location")).toBe(PAY_LINK);
   });
 
   it("an exhausted POST with no configured link returns to the sheet (no open redirect)", async () => {

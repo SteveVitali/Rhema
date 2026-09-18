@@ -106,6 +106,10 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       suspended: row.suspended,
       clawbackDebt: row.clawbackDebt,
       ...(deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
+      // PRB.19 (F32) — the caller's billing account id, so the web's Payment-Link 302 can pin
+      // `client_reference_id` and the Stripe-originated checkout joins THIS account (money never lands
+      // `unresolved`). Server truth from the authenticated principal — never a request field.
+      billingAccountId: principal.billingAccountId,
     });
   });
 

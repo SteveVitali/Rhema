@@ -6,6 +6,7 @@
 // `SEAT_MOUNTS` in @rhema/hooks (P0.05) — this module reuses it verbatim; it is NOT re-derived here.
 
 import type { AgentTypeKey } from "@rhema/contracts";
+import type { WorkflowManifest } from "@rhema/protocols";
 import { SEAT_MOUNTS, type MountRoot, type MountSpec } from "@rhema/hooks";
 
 /** A seat's mount specs, split by the root the path is relative to. */
@@ -48,4 +49,63 @@ export function isWritable(seat: AgentTypeKey, root: MountRoot, path: string): b
 /** Strip a leading `./` and any leading slashes so mount matching is anchored at the root. */
 export function normalizePath(path: string): string {
   return path.replace(/^\.\//, "").replace(/^\/+/, "");
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// PRB.19 (F26b) — declared-output writability. The ported skills write their deliverables at the SHARED paths
+// the manifest declares (`respond-to-review` SKILL.md: "Copy `drafts/vN.md` → `drafts/v(N+1).md`", "write the
+// response letter to `correspondence/vN-response.md`") — while §12.6 mounts `drafts/**`/`correspondence/**`
+// read-only for every seat, so the live Revise's pod-local outputs were dropped at harvest as
+// `out_of_allowlist` and lost with the pod (D-PRB.16-1 evidence). The contract: a run's DECLARED
+// `phase.artifacts` are writable BY that run — the manifest is the delivery contract's own statement of what
+// the run must produce, so the hydration grants exactly those resolved paths as readwrite (all other shared
+// artifacts stay read-only evidence mounts). This keeps the §12.6 seat table byte-identical and the server's
+// delivery transaction the only writer of `correspondence_items`/`drafts` ROWS — the grant widens only which
+// artifact FILES the seat may commit.
+// ---------------------------------------------------------------------------------------------------------
+
+/** `vN` / `v(N+1)` / `(N+1)` placeholders in declared artifact paths (the same tokens resolveKey compiles). */
+const DECLARED_VERSION_TOKEN = /v\(N\+1\)|vN|\(N\+1\)/;
+
+function expandDeclaredPath(path: string, ctx: { baseDraftN: number | null; reviewedDraftN: number | null }): string[] {
+  if (!DECLARED_VERSION_TOKEN.test(path)) return [normalizePath(path)];
+  // `vN` names the REVIEWED draft's ordinal (v1-response-ledger = the ledger answering review-of-v1) and
+  // `v(N+1)`/`(N+1)` names the next draft ordinal. When the delivery base differs from the reviewed draft
+  // (a manual-revision run on a divergent head) both readings are granted — an unused grant commits nothing.
+  const ns = new Set<number>([ctx.reviewedDraftN, ctx.baseDraftN].filter((n): n is number => n != null));
+  const out: string[] = [];
+  for (const n of ns) {
+    const expanded = normalizePath(
+      path
+        .replace(/v\(N\+1\)/g, `v${n + 1}`)
+        .replace(/vN/g, `v${n}`)
+        .replace(/\(N\+1\)/g, String(n + 1)),
+    );
+    if (!out.includes(expanded)) out.push(expanded);
+  }
+  return out;
+}
+
+/**
+ * The project-mirror paths a run may write because the WORKFLOW MANIFEST declares them as phase outputs and
+ * §12.6 mounts them read-only for this seat. `baseDraftN` is the delivery base's `n` (the draft the run
+ * revises); `reviewedDraftN` the reviewed draft's `n` when the response answers a review of a different draft.
+ * A declared path whose mount is already `readwrite` (or not mounted at all) yields no grant — the seat's own
+ * namespaces need none and an unmounted path gains none. Returns sorted, deduped paths.
+ */
+export function declaredWritableArtifacts(
+  seat: AgentTypeKey,
+  manifest: WorkflowManifest,
+  ctx: { baseDraftN: number | null; reviewedDraftN: number | null },
+): string[] {
+  const granted = new Set<string>();
+  for (const phase of manifest.phases) {
+    for (const declared of phase.artifacts) {
+      for (const path of expandDeclaredPath(declared, ctx)) {
+        const mount = mountFor(seat, "project", path);
+        if (mount && mount.mode === "read") granted.add(path);
+      }
+    }
+  }
+  return [...granted].sort();
 }

@@ -77,6 +77,10 @@ export function buildServerToolFetchLogRow(
     kind: "search" | "fetch";
     query?: string;
     url?: string;
+    /** PRB.19 — the byte receipt when the response's server-tool result carried the fetched content inline
+     *  (web_fetch `content.source.data` / web_search `encrypted_content`). Status stays null: Anthropic's
+     *  server-tool results carry no HTTP status, only the payload or an `error_code`. */
+    bytes?: number;
     decision: "allow" | "deny";
     denyReason?: string;
   },
@@ -91,7 +95,7 @@ export function buildServerToolFetchLogRow(
     url: input.url ?? null,
     normalizedUrl: input.url ? normalizeUrl(input.url) : null,
     status: null,
-    bytes: null,
+    bytes: input.bytes ?? null,
     decision: input.decision,
     denyReason: input.denyReason ?? null,
   };

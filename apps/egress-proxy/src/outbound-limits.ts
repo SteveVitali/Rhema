@@ -89,7 +89,27 @@ export function extractServerToolInvocations(body: unknown): ServerToolInvocatio
 /** A server-tool activity the proxy read from a RESPONSE (this turn's real search/fetch), for the fetch log. */
 export type ServerToolActivity =
   | { readonly kind: "search"; readonly query: string }
-  | { readonly kind: "fetch"; readonly url: string };
+  | { readonly kind: "fetch"; readonly url: string; readonly bytes?: number };
+
+/**
+ * The byte receipt for one returned page (PRB.19 — `fetch_log.bytes` on `kind=fetch` server-tool rows). The
+ * Anthropic server-tool result carries the fetched content inline, never an HTTP status: a
+ * `web_fetch_result`'s `content.source.data` (text or base64) and a `web_search_result`'s opaque
+ * `encrypted_content` both size the page the model actually received. Undefined when the block carries
+ * neither (an error result or an unrecognized shape).
+ */
+function resultBytes(r: Record<string, unknown>): number | undefined {
+  const encrypted = r["encrypted_content"];
+  if (typeof encrypted === "string" && encrypted.length > 0) return Buffer.byteLength(encrypted, "utf8");
+  const source = ((r["content"] as Record<string, unknown> | undefined)?.["source"] ?? undefined) as
+    | Record<string, unknown>
+    | undefined;
+  const data = source?.["data"];
+  if (typeof data === "string" && data.length > 0) {
+    return source?.["type"] === "base64" ? Buffer.byteLength(data, "base64") : Buffer.byteLength(data, "utf8");
+  }
+  return undefined;
+}
 
 /**
  * Pull the RESULT urls out of a `web_search_tool_result` (or `web_fetch_tool_result`) block's content — the
@@ -103,7 +123,10 @@ function collectResultUrls(content: unknown, out: ServerToolActivity[]): void {
   for (const r of results) {
     if (!r || typeof r !== "object") continue;
     const u = (r as Record<string, unknown>)["url"];
-    if (typeof u === "string" && u) out.push({ kind: "fetch", url: u });
+    if (typeof u === "string" && u) {
+      const bytes = resultBytes(r as Record<string, unknown>);
+      out.push({ kind: "fetch", url: u, ...(bytes !== undefined ? { bytes } : {}) });
+    }
   }
 }
 
