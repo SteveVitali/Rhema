@@ -101,10 +101,9 @@
 `billing-routes.test.ts` expected-DTO gained `billingAccountId`; `PROTOCOLS_VERSION` re-pinned for the
 manifest trio drift.
 
-## Stage B — bounded prod verify (OWED at this commit)
+## Stage B — bounded prod verify (the plan)
 
-The live legs below run post-deploy of this branch's images; each row names its evidence target. **None is
-asserted yet — statuses here are the plan, not evidence.**
+The live legs below ran post-deploy of this branch's images; each row names its evidence target.
 
 - **D-PRB.16-1 closure:** one real prod Revise to `delivered`; assert `correspondence_items.kind='response'`
   with `artifact_ids` naming the persisted letter, dispositions folded + `frozen_at`/`response_id`, the
@@ -116,10 +115,91 @@ asserted yet — statuses here are the plan, not evidence.**
 - **D-PRB.16-5:** report `spent_credits` vs proxy Σ vs `credit_ledger` debits vs hold release; the ruling
   stays operator-owed.
 
-## Deferral dispositions
+## Stage B — live results (2026-09-19)
 
-- **D-PRB.16-1** → implementation DONE + deterministic proofs green; **live closure leg owed** (Stage B
-  above) — row annotated, stays PARTIAL until the prod Revise asserts.
-- **D-PRB.16-2/-4/-5** → dated annotations; statuses unchanged pending the live legs.
-- **New deferrals:** none — the fetch byte-receipts leg is implemented (rows carry bytes where the provider
-  result exposes them; `null` otherwise by contract, not a gap).
+**Deploys.** Build `e488f00d` (tag `prb19b-76cbbff`, commits through `76cbbff` = F33+F34) → api
+`…@sha256:1e25776b`, worker `…@sha256:9a1064e2`; Pulumi update **58**. The F35 fix (`b3d7a01`) → build
+`d5294c77` (tag `prb19c-b3d7a01`) → worker `…@sha256:a8c6d153`; update **59**. Final prod pins: api
+`1e25776b…`, web `82f293a0…`, worker `a8c6d153…`, run-task `d7c01575…`, egress-proxy `c40d8ad4…`.
+
+**Provider-secret incident (environmental, not a code defect).** The prod `rhema-prod-anthropic-api-key`
+effective SM version 2 was malformed (31 chars, invalid prefix — never a repo value). v2 disabled, v3 created
+from the valid v1 material; after a proxy refresh/restart real inference flowed (attempt-1 401 → attempt-2+
+200s + proxy metering).
+
+**Run `01M2VDHN2ZFDV1SVDX2XN257NN`** (revise; `priorReviewId` `01M2RJR0SKT5BHGD3GK3TRSWW6`; reserved
+`nextDraftId` `01M2VDHN2QRS1Q0B3ZFQZ4SWCE`) — five attempts surfaced three more live defects:
+
+1. `Invalid API key` (malformed secret v2).
+2. Real inference succeeded; finalize failed `missing .rhema/phase-result.json` — the author seat correctly
+   can't write `/work/project/.rhema` (**F34**; fix: the runspec prompt steers control files to
+   `agents/<seat>/.rhema/`, which the work-reader already resolves).
+3. Triage sidecar rejected twice — anchors as strings, then partial anchors; the canonical anchor schema is
+   strict. Guided retry: omit `anchor` (optional), `actor ∈ {user,drafter}`.
+4–5. Phases committed (`correspondence/v2-response.md` + sealed
+   `agents/author/.rhema/response-ledger.json` — 19 entries / 7 moves) but the deliver dossier POST crashed in
+   the fold on closed-world **same-state** obligation transitions — the pretriage had already routed ordinals
+   1/2/5 (`rebutted`/`deferred`), so `rebutted→rebutted`/`deferred→deferred` self-edges threw (**F33**; fix:
+   same-target routes are idempotent no-ops — `76cbbff`). Tx rolled back; run wedged `finalizing`.
+
+**Delivery re-drive.** With F33/F34 live (update 58): `runs.pending_delivery` stashed with the verbatim
+`DeliveryArgs` the pod assembled (sealed ledger bytes + review-dossier claim-ledger/findings/rubric from the
+object store + server-resolved base/money — the api route's own merge), then a `run.deliver` pg-boss job.
+Worker consumed it 01:44:37→01:44:40Z → run `completed` (seq 368), `pending_delivery` cleared.
+
+**Asserted live (the D-PRB.16-1 verify column):**
+
+- `correspondence_items` `01M2VNCH4F9JYH811TXRXE4GVD`: `kind='response'`, ordinal 1, `prior_review_id` =
+  the review, `draft_id` = v2 base, `voice_mode='ad_hoc'`, `artifact_ids` = the persisted letter
+  (`correspondence/v2-response.md` v `01M2VKZYYXEC4EA48RJPSR4CMC`, immutable) + 5 published dossier copies.
+- **19 `dispositions`** — one per finding 0–18: the 6 pretriage `user` rows updated in place (actor kept),
+  13 ledger-authored rows inserted (`by_actor=agent`), all `frozen_at` + `response_id` + `move_ordinal` set.
+- Draft `01M2VDHN2QRS1Q0B3ZFQZ4SWCE` n=3 **born frozen** (`origin='response_to_review'`, `base_draft_id`=v2,
+  `promoted_version_id` = `01M2VJXXJGGJ9ANG86EDT6802Y` = the persisted `drafts/v3.md` version, immutable);
+  the v2 base frozen by the `dossier_ref` trigger (`frozen_by` system/this run).
+- **8 `revision.move_traced` events** (seqs 358–365; M1–M7 + the unattributed diff trace, hunkCount 3 /
+  6105 chars); `boundary.attested` + access-report persisted under `correspondence/response/1/`; `cost.final`
+  seq 369.
+
+**F35 (found this leg).** The worker's `run.deliver` re-drive path didn't wire `obligationHook` — the fold
+committed but response-ledger **obligation routing was silently skipped** (the api's inline POST path wires
+it; the worker's billing deps declared the field but never populated it). Fixed in `b3d7a01`
+(`@rhema/obligations` dep + `SqlObligationHook` in worker deps; deployed as worker `a8c6d153`, update 59), and
+the routing was backfilled for this run by replaying the SAME `SqlObligationHook.onDelivery` code against prod
+in one transaction: **23 `obligation_transitions`** attributed to the run (14 `address` + 9 minor-finding
+`spawn`s routed to `addressed` per REQ-OBJ-2), the pretriaged `rebutted`/`deferred` obligations no-op'd (the
+F33 idempotency path exercised live), the `escalate` row kept `open` with `decision_requests`
+`01M2VNKJ6TVF1C744MMQ5S8CGY` created. (Finding 17 — a minor `defer` — carries no obligation by design.)
+
+**Spend figures (D-PRB.16-5 — reported, no ruling).** Hold 1600 (run create 23:27:49Z) → 5 per-phase debits
+176+145+187+133+170 = **811** → release **789** at delivery (01:44:40Z). `usage_records` (186 rows): proxy Σ
+**1668** = reconciled `runs.spent_credits` (1668); `sdk_stream` Σ 811; `sdk_estimate` Σ 927. So ledger-debited
+811 vs proxy-metered 1668 — **857 cr of real burn** (incl. failed-attempt + investigation-phase inference)
+recorded but not charged via `credit_ledger`: the same divergence shape as QV-1. Cap was raised mid-debug
+1600→2600→3500; the hold stayed 1600.
+
+**D-PRB.16-2 — closed on existing live evidence (no new run needed).** `profile_voice` run
+`01M2TB91FESCXYATTB7JQ8RBGW` (13:28–13:57 on 09-18, after the F27-fixed run-task image `f79f9816` went out
+~13:10) produced **9 `namespace='persona'` artifacts at the persona root** — `profile/{index, voice-print,
+lexicon, exemplars, provenance, structure-repertoire}.md` + `profile/corpus/*` — no EACCES. Persona-root
+writability proven live.
+
+**D-PRB.16-4 — re-arm already proven; a REAL expiry is now armed.** PRB.17 proved the sweep (`gate_rearmed`
+×5 on `01M2TNKY…`). Expiry consumption still unobserved, but an honest deadline-bearing gate exists:
+`01M2TNKY14HSP3ESJH8Y1NK8HW` — `confirm_cost`, unresolved, `deadline_at` 2026-09-25T16:29Z,
+`on_expiry='cancel'`, its `gate.expiry` jobs `created` (start_after 09-25T16:29). It fires organically in ~6
+days; the firing assert stays open. (The QV-2 `approve_sample` gate resolved pre-deadline; its armed job will
+consume + no-op at 13:36Z today.)
+
+## Deferral dispositions (final, 2026-09-19)
+
+- **D-PRB.16-1 → DONE** — prod Revise `01M2VDHN2ZFDV1SVDX2XN257NN` `completed` with every verify-column row
+  asserted above.
+- **D-PRB.16-2 → DONE** — `profile/**` at the persona root on run `01M2TB91…` (F27 fix live).
+- **D-PRB.16-4 → stays PARTIAL** — re-arm proven (PRB.17); expiry consumption armed on a real gate pending
+  2026-09-25 (annotated).
+- **D-PRB.16-5 → stays OPEN** — figures reported above; the committed-vs-proxy charge ruling is the
+  operator's.
+- **New findings this leg:** F33 (same-state obligation routes → idempotent no-op), F34 (seat-dir `.rhema`
+  control-file guidance in the runspec prompt), F35 (worker `run.deliver` missing `obligationHook`) — all
+  fixed + deployed; no open deferrals.

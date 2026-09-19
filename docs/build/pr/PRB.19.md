@@ -56,5 +56,14 @@ composed 302), docker-probe (4), server-tools-sse (10 — byte receipts).
 
 ## Stage B (post-deploy, tracked)
 
-One real prod Revise to `delivered` asserting the D-PRB.16-1 closure criteria; the D-PRB.16-2/-4/-5
-live-verify/reporting legs — all owed, none asserted in this PR. See `runs/PRB.19.md` § Stage B.
+**DONE 2026-09-19.** Prod Revise `01M2VDHN2ZFDV1SVDX2XN257NN` reached `completed`: `response`
+correspondence `01M2VNCH4F9JYH811TXRXE4GVD` (prior-review linked, dossier published immutable), 19
+dispositions folded + frozen, the reserved `nextDraftId` materialized born-frozen with
+`promoted_version_id` → the persisted `drafts/v3.md`, 8 `revision.move_traced` events. Three more live
+defects surfaced + were fixed + deployed en route: F33 (same-state obligation routes → idempotent
+no-ops, `76cbbff`), F34 (`.rhema` control files under the seat dir, same commit), F35 (worker
+`run.deliver` missing `obligationHook`, `b3d7a01`; skipped routing backfilled through the same hook
+code). Deployed digest-pinned: api `1e25776b…`, worker `a8c6d153…` (Pulumi updates 58/59).
+D-PRB.16-1/-2 → DONE; D-PRB.16-4 PARTIAL (a real `confirm_cost` expiry is armed for 09-25);
+D-PRB.16-5 figures reported (hold 1600 → debits 811 → release 789 vs proxy Σ 1668) — ruling stays the
+operator's. See `runs/PRB.19.md` § Stage B.
