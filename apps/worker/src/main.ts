@@ -17,6 +17,7 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import { SqlHoldLedger, STRIPE_EVENT_JOB } from "@rhema/ledger";
+import { SqlObligationHook } from "@rhema/obligations";
 import { recordInstrumentedFold, type InstrumentedMeasurement } from "@rhema/protocols";
 import { createGcsContentStore } from "@rhema/mirror";
 import {
@@ -242,6 +243,10 @@ export async function startWorker(): Promise<void> {
     launcher,
     config,
     systemExec,
+    // PRB.19 (live F35): the `run.deliver` withheld-delivery re-drive folds a `response` ledger into
+    // obligation routing exactly like the api's inline POST path — without the hook wired here, a
+    // re-driven response delivered with its obligations unrouted (prod run 01M2VDHN… routed post-hoc).
+    obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),
     ...(adminKey ? { reportSource: new AnthropicAdminReportSource({ adminKey }) } : {}),
     ...(alertSink ? { alert: alertSink } : {}),
     // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override

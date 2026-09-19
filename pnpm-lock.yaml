@@ -318,6 +318,9 @@ importers:
       '@rhema/mirror':
         specifier: workspace:*
         version: link:../../packages/mirror
+      '@rhema/obligations':
+        specifier: workspace:*
+        version: link:../../packages/obligations
       '@rhema/orchestrator':
         specifier: workspace:*
         version: link:../../packages/orchestrator
