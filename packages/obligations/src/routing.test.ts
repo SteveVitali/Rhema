@@ -124,6 +124,31 @@ describe("disposition routing + discharge (REQ-OBJ-3)", () => {
     expect(ob?.deferHorizon).toBeNull(); // cleared on return
   });
 
+  it("PRB.19 (live F33): a same-target re-route is an idempotent no-op, not a closed-world error", async () => {
+    // live: a pretriage `rebut` routed at record-time, then the frozen response ledger folded at delivery
+    // re-routed the SAME disposition → `rebutted → rebutted` threw inside the delivery tx and wedged the run
+    // in `finalizing` (prod 01M2VDHN…). Same-target must be a no-op; a different target still rejects.
+    const rebutted = await openObligation();
+    await routeDisposition(db.exec, deps, { obligationId: rebutted, kind: "rebut", rationale: "misread", draftId, byActor: USER });
+    const again = await routeDisposition(db.exec, deps, { obligationId: rebutted, kind: "rebut", rationale: "misread", draftId, byActor: USER });
+    expect(again).toEqual({ transitioned: false, to: "rebutted" });
+    expect((await loadObligation(db.exec, rebutted))?.state).toBe("rebutted");
+    // a DIFFERENT target on the closed row still rejects (closed world preserved).
+    await expect(
+      routeDisposition(db.exec, deps, { obligationId: rebutted, kind: "defer", rationale: "later", draftId, byActor: USER }),
+    ).rejects.toBeInstanceOf(ObligationTransitionError);
+
+    const deferred = await openObligation();
+    await routeDisposition(db.exec, deps, { obligationId: deferred, kind: "defer", rationale: "next round", draftId, byActor: USER });
+    const deferAgain = await routeDisposition(db.exec, deps, { obligationId: deferred, kind: "defer", rationale: "next round", draftId, byActor: USER });
+    expect(deferAgain).toEqual({ transitioned: false, to: "deferred" });
+
+    const addressed = await openObligation();
+    await routeDisposition(db.exec, deps, { obligationId: addressed, kind: "accept", status: "done", draftId, byActor: USER });
+    const addrAgain = await routeDisposition(db.exec, deps, { obligationId: addressed, kind: "adapt", status: "done", draftId, byActor: USER });
+    expect(addrAgain).toEqual({ transitioned: false, to: "addressed" });
+  });
+
   it("returnDeferredToOpen refuses a non-deferred obligation (closed world)", async () => {
     const id = await openObligation();
     await expect(returnDeferredToOpen(db.exec, deps, { obligationId: id, byActor: USER })).rejects.toBeInstanceOf(ObligationTransitionError);

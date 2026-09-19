@@ -307,6 +307,12 @@ export class SqlObligationHook implements ObligationHook {
         case "adapt":
           if (d.status === "verified") {
             // the runner verified the move against its discharge evidence → straight to `discharged`.
+            // PRB.19 (live F33): already-`discharged` is the same-target no-op — re-stating the route must
+            // not abort the delivery tx on a closed-world self-edge.
+            if (obl.state === "discharged") {
+              routed.push(obl.id);
+              break;
+            }
             await dischargeByGapCheck(exec, this.deps, {
               obligationId: obl.id,
               draftId: ctx.newDraftId ?? ctx.draftId,
@@ -317,6 +323,11 @@ export class SqlObligationHook implements ObligationHook {
             });
             routed.push(obl.id);
           } else if (d.status === "mooted") {
+            // PRB.19 (live F33): already-`mooted` is the same-target no-op.
+            if (obl.state === "mooted") {
+              routed.push(obl.id);
+              break;
+            }
             await mootObligation(exec, this.deps, {
               obligationId: obl.id,
               byActor: actor,

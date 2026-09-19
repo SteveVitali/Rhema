@@ -274,8 +274,13 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     // `sidecar` input (manifest default or frozen override) is what makes the skill write the file.
     ...((hyd.inputs.sidecar ?? manifest.defaultInputs?.sidecar) === true
       ? {
+          // PRB.19 (live F34) — pin the WRITABLE location too: the bare `.rhema/…` path resolves cwd-relative
+          // to the project root, which the §12.6 seat table denies — the live Revise bootstrap agent's literal
+          // `Write /work/project/.rhema/phase-result.json` was hook-denied and the phase failed on a missing
+          // phase-result despite sdk=success (run 01M2VDHN… att-2). The seat dir `agents/<seat>/.rhema/` is
+          // writable AND suffix-resolves for the oracle.
           phase_result_contract:
-            '.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports).',
+            `.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports). Write it under your writable seat directory as agents/${seat}/.rhema/phase-result.json (likewise agents/${seat}/.rhema/<sidecar>.json for sidecars) — the project root is read-only for your seat.`,
         }
       : {}),
   };
