@@ -169,6 +169,13 @@ jobs:
     name: public-safe (gitleaks / markers / licence policy)
     needs: typecheck-lint-unit
     runs-on: ubuntu-latest
+    # gitleaks-action v2's PR scan lists the PR's commits via the REST API, which needs
+    # pull-requests: read. The repo default GITHUB_TOKEN is contents:read only, so the scan
+    # 403'd ("Resource not accessible by integration") and the job died before it scanned.
+    # (contents: read must be restated — any permissions block zeroes the unlisted scopes.)
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
