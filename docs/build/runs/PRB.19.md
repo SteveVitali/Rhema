@@ -203,3 +203,25 @@ consume + no-op at 13:36Z today.)
 - **New findings this leg:** F33 (same-state obligation routes → idempotent no-op), F34 (seat-dir `.rhema`
   control-file guidance in the runspec prompt), F35 (worker `run.deliver` missing `obligationHook`) — all
   fixed + deployed; no open deferrals.
+
+## Post-Stage-B: prod OAuth finish (operator legs, 2026-09-22)
+
+Live root-cause chain for the operator's prod login failure — three distinct defects, fixed in order:
+
+1. **`invalid_client` (client not found)** — `Pulumi.prod.yaml` carried the placeholder
+   `pending-h6-google-oauth-client-id`; the real client id was config-set + deployed in PRB.18.
+2. **`invalid_client` (bad secret)** — after the redirect-URI console add, the token exchange failed:
+   `rhema-prod-google-oauth-client-secret` still held the *dev* client's secret (copied dev→prod in
+   PRB.15), mismatched to client `25012989319-…`. Google no longer displays existing secrets, so the
+   operator minted a NEW client secret; seeded as secret **v2** (piped, no value in ledger); api rolled
+   to re-read `versions/latest`.
+3. **`account_not_linked`** — token exchange then succeeded; the operator's email already had a
+   magic-link-created account, and Better Auth refuses same-email social linking by default. Fixed by
+   `accountLinking{enabled, trustedProviders:["google"]}` in `apps/api/src/auth.ts` (commit `f20c5e5`,
+   test added) — Google↔magic-link converge on one account per the D-P0.01-3 same-user requirement.
+
+Deployed via Cloud Build `e0a42238` (api+web subset) → `pulumi up` update **60**: api `b89196db…`
+(account linking + secret v2), web `8fa089f1…` (**F32 now live** — the panel payment link composes
+`client_reference_id` itself; the manual `?client_reference_id=…` checkout workaround is retired).
+Google sign-in click-through + magic-link legs still await the operator's browser retry; Resend domain
+`pending` (CNAME verified; DKIM/SPF/MX pending at last check — MX priority corrected to 10).
