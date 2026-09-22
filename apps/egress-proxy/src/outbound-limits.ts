@@ -126,6 +126,75 @@ export function extractResponseServerTools(body: string): ServerToolActivity[] {
   return out;
 }
 
+/**
+ * Extract THIS turn's server-tool activity from a STREAMING (`stream:true`) Messages response (D-P0.07-5). A
+ * `server_tool_use` block streams as `content_block_start` (carrying the tool name) then a run of
+ * `input_json_delta` deltas (the `input` JSON assembled piecewise) closed by `content_block_stop`. We accumulate
+ * the partial JSON per block index, parse it at stop (or end of stream), and emit the same `ServerToolActivity`
+ * the JSON path emits — so a streaming response logs its fetch/search rows once, exactly like a buffered one.
+ * Malformed lines / unparseable input are skipped (best-effort — the fetch log must never crash the response).
+ */
+export function extractResponseServerToolsSse(body: string): ServerToolActivity[] {
+  const out: ServerToolActivity[] = [];
+  // per content-block index: the tool name (from content_block_start) + the accumulated input JSON string.
+  const blocks = new Map<number, { name: string; json: string }>();
+
+  const resolve = (index: number): void => {
+    const b = blocks.get(index);
+    if (!b) return;
+    blocks.delete(index);
+    let input: Record<string, unknown>;
+    try {
+      input = (b.json ? JSON.parse(b.json) : {}) as Record<string, unknown>;
+    } catch {
+      return; // partial/garbled input — skip rather than mis-log
+    }
+    if (b.name.includes("web_search") && typeof input["query"] === "string") {
+      out.push({ kind: "search", query: input["query"] });
+    } else if (b.name.includes("web_fetch") && typeof input["url"] === "string") {
+      out.push({ kind: "fetch", url: input["url"] });
+    }
+  };
+
+  for (const line of body.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) continue;
+    const payload = trimmed.slice("data:".length).trim();
+    if (payload === "" || payload === "[DONE]") continue;
+    let ev: Record<string, unknown>;
+    try {
+      ev = JSON.parse(payload) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    const type = ev["type"];
+    if (type === "content_block_start") {
+      const index = ev["index"];
+      const cb = ev["content_block"] as Record<string, unknown> | undefined;
+      const cbType = cb?.["type"];
+      if (typeof index === "number" && (cbType === "server_tool_use" || cbType === "tool_use")) {
+        const name = typeof cb?.["name"] === "string" ? (cb["name"] as string) : "";
+        // some responses inline a complete `input` at start (no deltas) — seed the json from it.
+        const seeded = cb?.["input"] && Object.keys(cb["input"] as object).length > 0 ? JSON.stringify(cb["input"]) : "";
+        blocks.set(index, { name, json: seeded });
+      }
+    } else if (type === "content_block_delta") {
+      const index = ev["index"];
+      const delta = ev["delta"] as Record<string, unknown> | undefined;
+      if (typeof index === "number" && delta?.["type"] === "input_json_delta" && typeof delta["partial_json"] === "string") {
+        const b = blocks.get(index);
+        if (b) b.json += delta["partial_json"] as string;
+      }
+    } else if (type === "content_block_stop") {
+      const index = ev["index"];
+      if (typeof index === "number") resolve(index);
+    }
+  }
+  // resolve any blocks that never saw an explicit stop (a truncated stream).
+  for (const index of [...blocks.keys()]) resolve(index);
+  return out;
+}
+
 /** Set `body.messages[mi].content[ci].input.url` to `url` on a deep clone; returns the new body. */
 export function rewriteFetchUrl(body: unknown, path: BlockPath, url: string): unknown {
   const clone = JSON.parse(JSON.stringify(body)) as {

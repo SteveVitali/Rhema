@@ -1,0 +1,35 @@
+{
+  "name": "@rhema/live-clients",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deploy-time bindings for the orchestrator DI seams (D-P0.08-1/08b-1): the pg.Pool TxRunner, the Redis heartbeat store + run-event pub/sub, the pg-boss queue, the GKE Job launcher, and the Secret Manager RS256 key source. Thin wrappers over heavy client libraries — constructed at deploy, exercised live; the pure manifest/encoding logic is unit-tested here.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/db": "workspace:*",
+    "@rhema/orchestrator": "workspace:*",
+    "@google-cloud/secret-manager": "7.0.0",
+    "@kubernetes/client-node": "2.0.0",
+    "ioredis": "6.0.0",
+    "pg": "8.23.0",
+    "pg-boss": "12.30.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
+}

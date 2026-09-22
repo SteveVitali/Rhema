@@ -7,7 +7,7 @@
 #   • The SDK is VENDORED into the image (a proprietary dependency, REQ-ARCH-4) — copied at build, never
 #     fetched at run time; the sandbox subnet has no route out except the proxy.
 #   • TWO uids: `harness` (uid 10001) holds the run token, the proxy credential, the hook daemon, and the
-#     heartbeat/commit/audit clients; `agent` (uid 10002) runs the SDK and every tool the model calls, with a
+#     heartbeat/commit/audit clients; `agent` (uid 10002) runs the SDK + agent-entry (agent-entry.ts) with a
 #     SCRUBBED env (@rhema/engine buildAgentEnv) and no secret in scope (REQ-SPEC-10).
 #   • The secrets file lives under /run/secrets, mode 0600, owner harness — the agent uid cannot read it.
 #   • Root filesystem READ-ONLY at run time (Pod `securityContext.readOnlyRootFilesystem: true`); a writable
@@ -16,17 +16,24 @@
 #   • util-linux provides `setpriv` (irreversible uid drop, clear supplementary groups) and `unshare`/`mount`
 #     (the private mount namespace for input-scoped subagents — §12.6 / scoped-subagent.ts).
 #
-# HARDENING TARGET (deferred — see DEFERRALS D-P0.06-*): a distroless runtime with statically-vendored
+# HARDENING TARGET (deferred — see DEFERRALS D-P0.06-3): a distroless runtime with statically-vendored
 # util-linux applets and ambient CAP_SETUID/CAP_SYS_ADMIN scoped to the entrypoint. The slim base here is the
 # buildable Phase-0 stand-in that exercises the same uid/namespace mechanics.
 
-# ---- builder: prune + build the monorepo slice this app needs ----
+# ---- builder: install the workspace, build the run-task slice + its deps, produce a pruned prod bundle ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS builder
 WORKDIR /repo
 ENV CI=1
-# (the real build copies the pruned workspace + installs; kept minimal here so the image graph builds in CI)
-COPY apps/run-task/package.json ./apps/run-task/package.json
-RUN echo "build stage: pnpm install --filter @rhema/run-task... && pnpm --filter @rhema/run-task build" > /repo/BUILD_STEPS
+RUN corepack enable
+# The whole workspace is the build context (turbo needs the graph); the preinstall resolves protocols + the
+# evals stub. A .dockerignore keeps node_modules/dist out so the install is reproducible from the lockfile.
+COPY . .
+RUN pnpm install --frozen-lockfile
+# Build @rhema/run-task and every workspace package it depends on (turbo resolves the order).
+RUN pnpm --filter @rhema/run-task... build
+# `pnpm deploy` writes a self-contained bundle (run-task's dist + its workspace deps + prod node_modules) to
+# /bundle — the only thing the runtime image needs.
+RUN pnpm --filter @rhema/run-task --prod deploy --legacy /bundle
 
 # ---- runtime: two uids, util-linux, read-only-rootfs friendly ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime
@@ -49,16 +56,17 @@ RUN groupadd --gid 10001 harness \
   && mkdir -p /work /work/scoped && chown harness:harness /work /work/scoped
 
 WORKDIR /app
-COPY --from=builder /repo/BUILD_STEPS /app/BUILD_STEPS
+# The built, pruned run-task bundle: /app/dist/agent-entry.js is the agent command; the harness modules run
+# under uid harness. Owned by root, world-readable — no secret is in it.
+COPY --from=builder /bundle /app
 COPY apps/run-task/docker/entrypoint.sh /app/entrypoint.sh
 COPY apps/run-task/docker/scoped-runner.sh /app/scoped-runner.sh
 RUN chmod 0755 /app/entrypoint.sh /app/scoped-runner.sh
 
 # Vendor the proprietary Agent SDK (REQ-ARCH-4 / D-P0.06-4). The operator drops the built package under
 # apps/run-task/vendor/claude-agent-sdk/ (see vendor/README.md); it is copied into node_modules here, NEVER
-# fetched at run time. If absent (the Phase-0 stand-in / CI placeholder build) the image still builds and
-# the run loop fails fast at loadSdkQuery() (sdk-adapter.ts) with a clear error — never a silent no-engine
-# run. The agent uid consumes it; the harness uid never touches the model process.
+# fetched at run time. If absent (a CI placeholder build) the image still builds and the run loop fails fast at
+# loadSdkQuery() (sdk-adapter.ts) with a clear error — never a silent no-engine run. The agent uid consumes it.
 COPY apps/run-task/vendor/ /app/vendor/
 RUN if [ -d /app/vendor/claude-agent-sdk ]; then \
       mkdir -p /app/node_modules/@anthropic-ai \
@@ -66,9 +74,9 @@ RUN if [ -d /app/vendor/claude-agent-sdk ]; then \
       && chown -R agent:agent /app/node_modules/@anthropic-ai \
       && echo "vendored @anthropic-ai/claude-agent-sdk into the image"; \
     else \
-      echo "WARNING: @anthropic-ai/claude-agent-sdk NOT vendored — Phase-0 stand-in build (no live run)"; \
+      echo "WARNING: @anthropic-ai/claude-agent-sdk NOT vendored — placeholder build (no live run)"; \
     fi
 
 # The container starts as root under tini ONLY so the entrypoint can drop the supervisor to `harness` and
-# later launch `agent` via setpriv; root does nothing else. Root filesystem is read-only at run time.
+# later launch `agent` (agent-entry) via setpriv; root does nothing else. Root filesystem is read-only at run time.
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]

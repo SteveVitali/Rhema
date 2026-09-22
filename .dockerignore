@@ -1,0 +1,15 @@
+# Keep the Docker build context reproducible from the lockfile: never copy installed deps, build outputs, or
+# local agent/git state into the builder stage (the image installs + builds from source).
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.agents
+agent-scratch
+.github
+**/*.log
+# NOTE: apps/run-task/vendor (the Agent SDK) is intentionally NOT excluded — the run-task Dockerfile's
+# explicit `COPY apps/run-task/vendor/ /app/vendor/` needs it in the build context (a .dockerignore
+# exclusion is context-global and would silently defeat that COPY, yielding a no-SDK image). It is not a
+# workspace package, so `pnpm install` in the broad builder stage ignores it.

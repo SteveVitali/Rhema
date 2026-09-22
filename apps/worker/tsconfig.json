@@ -16,6 +16,12 @@
     },
     {
       "path": "../../packages/orchestrator"
+    },
+    {
+      "path": "../../packages/ledger"
+    },
+    {
+      "path": "../../packages/live-clients"
     }
   ],
   "exclude": [

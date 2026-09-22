@@ -19,6 +19,9 @@
     },
     {
       "path": "../../packages/protocols"
+    },
+    {
+      "path": "../../packages/mirror"
     }
   ],
   "exclude": [

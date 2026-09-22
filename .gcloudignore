@@ -1,0 +1,13 @@
+# Cloud Build context upload filter (used by `gcloud builds submit`). If ABSENT, gcloud falls back to
+# .gitignore, which excludes apps/run-task/vendor (gitignored) and would ship a no-SDK run-task image.
+# So this file exists precisely to KEEP the vendored SDK + all package sources in the upload while
+# dropping installed deps / build outputs (the Dockerfiles reinstall + rebuild from the lockfile).
+.git
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.agents
+agent-scratch
+**/*.log
+# Keep: apps/run-task/vendor (the Agent SDK the run-task image COPYs explicitly).

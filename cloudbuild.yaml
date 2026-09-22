@@ -1,0 +1,32 @@
+# Cloud Build: build + push the three live images the Phase-0 exit runs need (run-task, egress-proxy, api)
+# to Artifact Registry, natively on amd64 (the run-task/Cloud Run target arch). Invoked by:
+#   gcloud builds submit --config cloudbuild.yaml --project rhema-507501
+# The whole repo is the build context (the Dockerfiles COPY . . and pnpm install from the lockfile); the
+# .gcloudignore keeps installed deps/build outputs out of the upload while KEEPING apps/run-task/vendor.
+substitutions:
+  _AR: us-central1-docker.pkg.dev/rhema-507501/rhema-dev
+# BuildKit is required: the Dockerfiles use `FROM --platform=$TARGETPLATFORM`, and the automatic
+# platform ARGs (TARGETPLATFORM/BUILDPLATFORM) are only populated by BuildKit. Without DOCKER_BUILDKIT=1
+# the classic builder leaves $TARGETPLATFORM empty and fails ("invalid platform component"). On Cloud
+# Build the host is amd64, so TARGETPLATFORM resolves to linux/amd64 (the run-task/Cloud Run target).
+steps:
+  - id: run-task
+    name: gcr.io/cloud-builders/docker
+    env: ["DOCKER_BUILDKIT=1"]
+    args: ["build", "-f", "apps/run-task/Dockerfile", "-t", "${_AR}/run-task:dev", "."]
+  - id: egress-proxy
+    name: gcr.io/cloud-builders/docker
+    env: ["DOCKER_BUILDKIT=1"]
+    args: ["build", "-f", "apps/egress-proxy/Dockerfile", "-t", "${_AR}/egress-proxy:dev", "."]
+  - id: api
+    name: gcr.io/cloud-builders/docker
+    env: ["DOCKER_BUILDKIT=1"]
+    args: ["build", "-f", "apps/api/Dockerfile", "-t", "${_AR}/api:dev", "."]
+images:
+  - "${_AR}/run-task:dev"
+  - "${_AR}/egress-proxy:dev"
+  - "${_AR}/api:dev"
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 100
+timeout: 3600s
