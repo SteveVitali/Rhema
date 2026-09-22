@@ -237,3 +237,11 @@ Api rebuilt `4ed76540…` → `pulumi up` update **61** → revision `…-00027`
 links to the EXISTING user `01M2V3PM0W…` (no duplicate), `account(provider_id=google,
 account_id=110577562545223887695)` created, `session` row live, `email_verified` healed false→true.
 Google half of D-P0.01-3 done; magic-link half still awaits Resend verification + click-through.
+
+**Magic-link leg + sign-in hardening (2026-09-22):** Resend domain verified (all 4 records green);
+real magic-link email delivered + clicked → session `M6fh5tG…` created 15:34Z (verify works; the
+browser stayed logged out — token consumed by mail-client prefetch before the real click, classic
+single-use race). Two follow-on defects fixed + deployed (`08ec8c0`, update 62): `apiFetch` now sends
+`Origin` (better-auth can 403 server-side auth calls), and `advanced.ipAddress.ipAddressHeaders=
+["x-forwarded-for"]` so rate limiting buckets per real client instead of one shared bucket — the
+shared-bucket fallback is what briefly 403/429'd all sign-ins during the retry burst.
