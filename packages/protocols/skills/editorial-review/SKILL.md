@@ -54,6 +54,9 @@ inputs:
   - name: sidecar
     required: false
     description: "Rhema harness (REQ-ARCH-5, REQ-SPEC-4): when true, emit the structured-output sidecar twins of §11.1 under .rhema/ beside each markdown deliverable (findings.json, 01-claim-ledger.json, rubric.json), and write .rhema/phase-result.json {status} at the end of every phase. Absent, the skill runs exactly as upstream."
+  - name: phase_output
+    required: false
+    description: "Rhema harness (REQ-ARCH-5): the exact dossier file(s) the pinned phase must write under output_dir — supplied by the harness from the phase manifest so the write target never drifts from the completion oracle. When set, the pinned phase writes precisely these file(s) (comma-separated) before .rhema/phase-result.json."
 ---
 
 # Editorial Board Review
@@ -156,6 +159,115 @@ These are harness-neutral additions; the review regimen is upstream-verbatim.
 - `changed_since` names the version this draft was human-revised from; `prior_review` names the review being answered, so a re-review reads the response letter first and does not re-raise well-rebutted findings.
 - `resume_from` is a section-granular resume point (1.x).
 - `sidecar: true` emits the structured-output twins of §11.1 to `.rhema/` beside each markdown deliverable — `findings.json`, `01-claim-ledger.json`, `rubric.json` — and writes `.rhema/phase-result.json {status}` at the end of every phase. The `findings.json` sidecar states each finding's `severity` explicitly (`blocking | major | minor | note` — REQ-SPEC-4), never inferred from prose; a re-review's `findings.json` may declare `carriesObligationId` (REQ-OBJ-4). With `sidecar` absent the skill runs exactly as upstream.
+- `phase_output` names the exact dossier file(s) the pinned phase must write under `output_dir`, supplied by the harness from the phase manifest so the write target never drifts from the completion oracle. Honor it as authoritative.
+
+### Per-phase artifacts under harness execution (REQ-ARCH-5)
+
+Run whole (no `phase`), the regimen keeps craft (Phase 4) and argument (Phase 3) in context and synthesizes
+them into the editor's letter, so it writes no standalone `03-`/`04-` file. Run **one phase at a time** by the
+harness (`phase="N"`), each phase instead runs in a fresh context and communicates only through files — so
+**every** phase, craft and argument included, must persist its full findings to its own dossier file before it
+ends. Write exactly the file named by `phase_output` (equivalently, the file below for the pinned phase) under
+`output_dir`, then write `.rhema/phase-result.json {status:"done"}`:
+
+| Phase (fallback order) | `phase` | Dossier file to write |
+|---|---|---|
+| Intake | `0` | `00-piece-brief.md` |
+| Craft (structure/prose/voice) | `4` | `04-craft-notes.md` |
+| Verification | `1` | `01-claim-ledger.md` (+ `01-claim-ledger.json`) |
+| Discourse | `2` | `02-discourse-report.md` |
+| Second read | `5` | `05-second-read.md` |
+| Argument | `3` | `03-argument-notes.md` |
+| Letter | `6` | `editors-letter.md` (+ `findings.json`, `rubric.json`) |
+
+The pinned phase reads the prior phases' dossier files it needs from `output_dir` (they are re-materialized into
+the workspace at the start of each phase) rather than re-deriving them; it never treats the presence of an
+earlier phase's `00-piece-brief.md`, or a stale `.rhema/phase-result.json`, as evidence that its own phase is
+already done — it produces its declared file regardless. `03-argument-notes.md` and `04-craft-notes.md` carry
+the same argument- and craft-critique findings the letter will later synthesize; writing them per phase is what
+lets the letter phase run in its own fresh context.
+
+### Sidecar JSON — the EXACT shape the harness validates (REQ-SPEC-12)
+
+When `sidecar: true`, each `.json` twin is validated at commit against a strict schema; a shape mismatch fails
+the phase (`sidecar_validates`). Emit **exactly** these structures. Every sidecar carries the envelope keys
+`"sidecar"` and `"version": 1`; unknown extra keys are ignored; the listed enum tokens are the accepted values
+(case / spaces / hyphens are canonicalized to snake_case, and a numeric string like `"1"` is accepted for a
+numeric field, but stay close to these). Numeric fields (`tier`, `score`, `version`) are NUMBERS, not strings.
+
+**`01-claim-ledger.json`** (Verification, phase `1`) — one row per claim in `01-claim-ledger.md`:
+
+```json
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 0,
+      "text": "the claim, quoted from the draft",
+      "tier": 1,
+      "verdict": "verified",
+      "kind": "factual",
+      "sourceCheck": "matches_citation",
+      "sources": [
+        { "url": "https://example.org/x", "normalizedUrl": "https://example.org/x", "accessedAt": "2026-09-09T00:00:00Z", "stance": "supports" }
+      ],
+      "note": "one line on the evidence"
+    }
+  ]
+}
+```
+
+Required per claim row: `ordinal` (integer ≥ 0), `text` (string), `tier` (1, 2, or 3), `verdict`. All else is
+optional. `verdict` ∈ {`verified`, `substantially_accurate`, `misleading_in_context`, `unsupported`,
+`contradicted`, `unverifiable`, `verified_against_user_source`}. `kind` ∈ {`factual`, `statistical`,
+`quotation`, `interpretive`, `normative`, `predictive`}. `sourceCheck` ∈ {`matches_citation`, `reputable_list`,
+`from_search`, `suspicious_source`}. A source's `stance` ∈ {`supports`, `contradicts`, `contextualizes`}.
+
+**`findings.json`** (Letter, phase `6`) — one row per finding:
+
+```json
+{
+  "sidecar": "findings",
+  "version": 1,
+  "findings": [
+    {
+      "ordinal": 0,
+      "kind": "argument",
+      "severity": "major",
+      "origin": "editor",
+      "anchor": null,
+      "title": "short finding title",
+      "body": "the finding, at most 4096 characters",
+      "rubricDims": ["argument_rigor"],
+      "letterSection": "major"
+    }
+  ]
+}
+```
+
+Required per finding row: `ordinal`, `kind`, `severity`, `origin`, `anchor` (an anchor object OR `null`),
+`title`, `body`. `kind` ∈ {`claim`, `discourse`, `argument`, `structure`, `craft`, `voice`, `continuity`}.
+`severity` ∈ {`blocking`, `major`, `minor`, `note`}. `origin` ∈ {`editor`, `second_read`, `both`}.
+`letterSection` ∈ {`one_thing`, `major`, `strength`, `roadmap`, `considered_rejected`}. `rubricDims` entries are
+rubric dimensions (below). An anchor object is `{"blockId": "b1", "quote": "…", "startOffset": 0, "endOffset": 0, "confidence": 1}`.
+
+**`rubric.json`** (Letter, phase `6`) — the eight dimensions, each scored 1–5, NEVER aggregated:
+
+```json
+{
+  "sidecar": "rubric",
+  "version": 1,
+  "dimensions": [
+    { "dimension": "thesis_contribution", "score": 3 },
+    { "dimension": "argument_rigor", "score": 2, "cap": { "at": 2, "reason": "why the score is capped" } }
+  ]
+}
+```
+
+Required per row: `dimension`, `score` (1–5). The eight dimensions: `thesis_contribution`, `argument_rigor`,
+`evidence_accuracy`, `originality_situatedness`, `structure`, `prose`, `voice_audience_fit`,
+`intellectual_honesty`.
 
 ## Workspace and memory
 

@@ -58,10 +58,28 @@ function textOf(files: ReadonlyMap<string, Uint8Array>, path: string): string | 
 
 /** true when a sidecar file validates against its registered schema. */
 function sidecarValidates(files: ReadonlyMap<string, Uint8Array>, filename: string): boolean {
-  const entry = (SIDECAR_REGISTRY as Record<string, { schema: { safeParse(v: unknown): { success: boolean } } }>)[filename];
+  type Parser = {
+    safeParse(v: unknown): { success: boolean; error?: { issues: unknown[] } };
+  };
+  const entry = (SIDECAR_REGISTRY as Record<string, { schema: Parser }>)[filename];
   const json = readJson<unknown>(files, filename);
-  if (!entry || json == null) return false;
-  return entry.schema.safeParse(json).success;
+  if (!entry) {
+    console.log(`[sidecar] ${filename}: no registered schema`);
+    return false;
+  }
+  if (json == null) {
+    console.log(`[sidecar] ${filename}: missing or unparseable JSON`);
+    return false;
+  }
+  const res = entry.schema.safeParse(json);
+  if (!res.success) {
+    // Log WHY (the zod issues) + a content head, so a schema/skill drift is diagnosable from the pod log
+    // instead of a bare `sidecarValidates:false` (P0.15h — the error was previously discarded).
+    const issues = JSON.stringify(res.error?.issues ?? []).slice(0, 1500);
+    const head = JSON.stringify(json).slice(0, 800);
+    console.log(`[sidecar] ${filename}: INVALID issues=${issues} content-head=${head}`);
+  }
+  return res.success;
 }
 
 /** Build the `HarvestFile[]` for the write-back diff: every non-derived `/work` file with its mount root. */
@@ -69,7 +87,15 @@ function harvestFiles(files: ReadonlyMap<string, Uint8Array>, manifest: MirrorMa
   const byPath = manifestByPath(manifest);
   const out: HarvestFile[] = [];
   for (const [path, bytes] of files) {
-    if (path === "manifest.md" || path.startsWith(".rhema/")) continue; // derived — never harvested
+    // Never harvest the manifest.md or the per-phase TRANSIENT status files — `phase-result.json` and
+    // `agent-result.json` — wherever they sit (they are written under the seat output_dir, e.g.
+    // `agents/editor/.rhema/phase-result.json`, so a root-only check missed them and they got harvested +
+    // re-materialized, making the NEXT phase's oracle read a STALE `{status:"complete"}` — the live P0.15h
+    // craft-read-intake bug). But the STRUCTURED SIDECARS (`01-claim-ledger.json`, `findings.json`,
+    // `rubric.json`) ALSO live under `.rhema/` and ARE deliverables — they MUST be harvested. So exclude only
+    // the two transient basenames, never the whole `.rhema/` subtree.
+    const base = path.slice(path.lastIndexOf("/") + 1);
+    if (path === "manifest.md" || base === "phase-result.json" || base === "agent-result.json") continue;
     const root = byPath.get(path)?.root ?? defaultRoot;
     out.push({ path, root, bytes });
   }
@@ -138,8 +164,14 @@ function dossierForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseMan
     const json = readJson<unknown>(files, filename);
     if (json != null) sidecars.push({ filename: filename as SidecarFilename, json });
   }
-  // the delivered dossier artifacts are the phase's declared markdown artifacts that were produced.
-  const deliveredPaths = phase.artifacts.filter((a) => a.endsWith(".md") && files.has(a));
+  // the delivered dossier artifacts are the phase's declared markdown artifacts that were produced. The manifest
+  // names them by BASENAME ("editors-letter.md") but the /work files map is keyed by the seat-rooted path
+  // ("agents/editor/editors-letter.md"), so resolve each like the sidecar/ledger reads do — a raw `files.has`
+  // matched nothing and the run finalized BARE (no delivery / no correspondence row), diagnosed live P0.15h.
+  const deliveredPaths = phase.artifacts
+    .filter((a) => a.endsWith(".md"))
+    .map((a) => resolveKey(files, a))
+    .filter((k) => files.has(k));
   const claimLedger = readJson<WorkDeliveryContent["claimLedger"]>(files, "01-claim-ledger.json") ?? undefined;
   const findings = readJson<WorkDeliveryContent["findings"]>(files, "findings.json") ?? undefined;
   const rubric = readJson<WorkDeliveryContent["rubric"]>(files, "rubric.json") ?? undefined;

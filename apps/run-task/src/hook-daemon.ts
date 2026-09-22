@@ -83,6 +83,12 @@ export function createHookDaemon(opts: HookDaemonOptions): Promise<HookDaemon> {
       ...(opts.audit ? { sink: opts.audit } : {}),
       ...(opts.resolveRealpath ? { resolveRealpath: opts.resolveRealpath } : {}),
     });
+    // Diagnostic (harness-side, no secret): log each tool decision with its classified path(s) to stdout so a
+    // phase's write targets + any denials are visible in the pod log even when the DB access-log sink is not
+    // wired. Paths are not secrets; this is the boundary observability the §12.6 attestation wants.
+    for (const row of decision.accessRows) {
+      console.log(`[hook] ${row.tool} ${row.decision}${row.path ? ` ${row.path}` : ""}${decision.reason ? ` — ${decision.reason}` : ""}`);
+    }
     if (decision.control) opts.onControl?.(decision.control);
     const result = toPreToolUseResult(decision);
     // The reply is the DECISION ONLY — `hookSpecificOutput`. The control signal (`rhemaControl`) is handled
@@ -95,9 +101,17 @@ export function createHookDaemon(opts: HookDaemonOptions): Promise<HookDaemon> {
     server.on("error", reject);
     server.listen(opts.socketPath, () => {
       try {
-        chmodSync(opts.socketPath, 0o600); // harness-only: the agent uid cannot even connect if it is not harness-group
+        // The socket MUST be connectable by the AGENT uid: the SDK's PreToolUse hook runs inside the agent
+        // process (uid `agent`, 10002), and it connects here to ask allow/deny. A `0600` harness-only socket
+        // (the earlier default) meant the agent got EACCES on connect, the hook threw, and the SDK fell through
+        // to ALLOW — so the §12.6 boundary NEVER ran live and `boundary.attested` was vacuous (diagnosed live
+        // P0.15h: 0 hook decisions logged; an out-of-namespace write succeeded). This is SAFE: by design ONLY the
+        // allow/deny decision crosses the socket — never the token, audit rows, or policy internals (see the
+        // reply above) — so a world-connectable socket leaks nothing. The token stays with uid `harness` via the
+        // 0400 Secret mount, not this socket's permissions.
+        chmodSync(opts.socketPath, 0o666);
       } catch {
-        /* some platforms disallow chmod on a socket; the daemon still holds the secrets regardless */
+        /* some platforms disallow chmod on a socket; the token never crosses it regardless */
       }
       resolve({
         server,

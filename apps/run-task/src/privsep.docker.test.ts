@@ -50,6 +50,8 @@ describe.skipIf(!ENABLED)("run-task image privilege separation (AC1, AC4)", () =
       expect(out).toContain("D-P0.15f-1: agent (via the harness drop) is denied the harness secrets file (EACCES)");
       expect(out).toContain("D-P0.15f-1: without CAP_SETGID the harness→agent --regid drop fails as expected");
       expect(out).toContain("AC4: scoped mount namespace contains exactly the enumerated file");
+      // P0.15h: the kernel backstop — a read-only bind mount blocks a write even by uid agent (boundary true zero).
+      expect(out).toContain("P0.15h: uid agent cannot write a read-only bind mount (EROFS)");
       expect(out).toContain("ALL PRIVSEP CHECKS PASSED");
     },
     240_000,

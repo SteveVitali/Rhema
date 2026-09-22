@@ -16,6 +16,10 @@ export interface WorkFs {
   writeFile(path: string, bytes: Uint8Array): Promise<void>;
   /** Set the file mode (0o444 read-only, 0o644 writable). */
   chmod(path: string, mode: number): Promise<void>;
+  /** true if a path already exists (used to skip re-writing an immutable, already-ro-mounted read-only entry). */
+  exists(path: string): Promise<boolean>;
+  /** Remove a file if present (used to replace a prior-phase agent-created file the harness cannot chmod). */
+  rm(path: string): Promise<void>;
 }
 
 export interface MaterializeWorkArgs {
@@ -86,19 +90,26 @@ export async function materializeWork(args: MaterializeWorkArgs): Promise<Materi
   const readOnlyPaths: string[] = [];
   for (const entry of args.manifest.entries) {
     const abs = workPath(baseForRoot(entry.root, args.roots), entry.path);
+    const readOnly = entry.mode === "read";
+    // Idempotent re-materialization on a guided retry (same pod): a read-only entry from the first attempt is
+    // already written AND kernel ro-mounted (the entrypoint ro-mounts the read paths, CAP_SYS_ADMIN). Its
+    // content is immutable (content-addressed), so re-writing it is both unnecessary and IMPOSSIBLE — chmod +w
+    // and writeFile fail EACCES/EROFS against the ro-mount (the live P0.15h crash re-writing /work/project/
+    // manifest.md on the craft retry). Skip an already-materialized read-only entry entirely.
+    if (readOnly && (await args.fs.exists(abs))) {
+      written.push(abs);
+      readOnlyPaths.push(abs);
+      continue;
+    }
     const bytes = await bytesForEntry(entry, args);
     await args.fs.mkdirp(parentDir(abs));
-    // Idempotent re-materialization (K3): a prior attempt (a guided retry re-runs a phase in the same pod)
-    // may have left a read-only entry at 0444, and a plain writeFile onto it fails EACCES (the live P0.15f
-    // failure re-writing /work/manifest.md). Make the target writable FIRST; on the initial materialization
-    // the file does not yet exist and the chmod is a no-op (ENOENT swallowed).
-    try {
-      await args.fs.chmod(abs, READWRITE_MODE);
-    } catch {
-      /* first materialization — the file does not exist yet; the writeFile below creates it */
-    }
+    // A readwrite entry may already exist from a PRIOR phase in the same pod, created by the AGENT (uid 10002)
+    // and therefore not chmod-able or overwritable by the harness (uid 10001) — the live P0.15h crash advancing
+    // craft→verification: `EACCES open agents/editor/04-craft-notes.md`. The seat namespace dir is world-writable
+    // (harness-main makeTreeAgentWritable), so UNLINK the stale file first (needs only dir-write, not file
+    // ownership), then write the server-truth bytes fresh (harness-owned). rm is a no-op when absent.
+    await args.fs.rm(abs);
     await args.fs.writeFile(abs, bytes);
-    const readOnly = entry.mode === "read";
     await args.fs.chmod(abs, readOnly ? READ_ONLY_MODE : READWRITE_MODE);
     written.push(abs);
     if (readOnly) readOnlyPaths.push(abs);
@@ -119,5 +130,13 @@ export const nodeWorkFs: WorkFs = {
   async chmod(path, mode) {
     const { chmod } = await import("node:fs/promises");
     await chmod(path, mode);
+  },
+  async exists(path) {
+    const { access } = await import("node:fs/promises");
+    return access(path).then(() => true).catch(() => false);
+  },
+  async rm(path) {
+    const { rm } = await import("node:fs/promises");
+    await rm(path, { force: true }).catch(() => undefined);
   },
 };

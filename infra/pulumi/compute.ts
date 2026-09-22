@@ -78,6 +78,8 @@ export function createCompute(args: ComputeArgs): Compute {
     // VPC-native (alias IPs) is a hard prerequisite of both private nodes AND Dataplane V2 below. An empty
     // policy tells GKE to auto-allocate the pod/service secondary ranges — making the requirement EXPLICIT
     // and preview-stable rather than relying on the API's implicit default (independent-review follow-up).
+    // The auto-allocated pod CIDR is admitted to the proxy tier via the `proxy-ingress-pods` firewall below,
+    // which reads the cluster's actual `clusterIpv4Cidr` output (so the firewall never drifts from GKE's range).
     ipAllocationPolicy: {},
     // Private nodes with no public IPs; the sandbox subnet gives them no egress but the proxy.
     privateClusterConfig: {
@@ -106,6 +108,22 @@ export function createCompute(args: ComputeArgs): Compute {
       shieldedInstanceConfig: { enableSecureBoot: true, enableIntegrityMonitoring: true },
     },
     management: { autoRepair: true, autoUpgrade: true },
+  });
+
+  // Proxy INGRESS from the GKE pod range (D-P0.15c-8 on-the-wire half). A pod egressing to the proxy MAY keep
+  // its own pod IP as the source (Dataplane V2 masquerade config-dependent), so the proxy tier must accept the
+  // cluster's actual pod CIDR — not a guessed one. `ipAllocationPolicy: {}` lets GKE auto-allocate that range,
+  // so we source this rule from the cluster's REAL assigned `clusterIpv4Cidr` output rather than hardcoding a
+  // block that drifts (live P0.15g, the auto-assigned range was 10.236/14, not the guessed 10.92/14 — a
+  // hand firewall `…-proxy-ingress-pods-p0-15g` had to be added by hand; this IS that rule, drift-free).
+  new gcp.compute.Firewall(name("proxy-ingress-pods"), {
+    network: network.network.id,
+    direction: "INGRESS",
+    priority: 1000,
+    sourceRanges: [gke.clusterIpv4Cidr],
+    allows: [{ protocol: "tcp", ports: ["443", "8443"] }],
+    targetTags: [EGRESS_PROXY_TAG],
+    description: "D-P0.15c-8: the GKE pod range (actual assigned CIDR) reaches the egress-proxy (8443/443).",
   });
 
   // --- egress-proxy: a regional MIG on the private-app tier, the sandbox's only egress route. --------
@@ -168,6 +186,12 @@ export function createCompute(args: ComputeArgs): Compute {
   const workerEnvs: pulumi.Input<gcp.types.input.cloudrunv2.ServiceTemplateContainerEnv>[] = [
     { name: "K8S_NAMESPACE", value: "runs" },
     { name: "KUBE_SERVICE_ACCOUNT", value: "run-task-ksa" },
+    // Plan-concurrency default (D-P0.08-4 stopgap, IaC'd from the live P0.15g hand-fix). The reaper does not
+    // yet mark queued/failed-agent runs terminal, so a stuck non-terminal run counts against the flat default
+    // (worker env, default 2) and blocks new admissions. Raise the default so a wedged dev run does not stall
+    // the queue; the real per-account subscription-tier concurrency is PRB.8/P1.16, and the proper stuck-run
+    // sweep is the deferred D-P0.08-4/D-P0.10-2 work.
+    { name: "DEFAULT_CONCURRENCY", value: "25" },
     { name: "RUN_SERVICE_ACCOUNT", value: iam.serviceAccounts["run-task"].email },
     { name: "SANDBOX_NODE_POOL", value: runTaskPool.name },
     // Cloud Run → GKE auth (D-P0.15e-3): the worker has no in-cluster kubeconfig, so it builds one from the GKE
@@ -188,7 +212,11 @@ export function createCompute(args: ComputeArgs): Compute {
   for (const svc of CLOUD_RUN_SERVICES) {
     // The worker consumes pg-boss + runs crons: it CANNOT scale to zero and needs CPU allocated OUTSIDE a
     // request (background work), so it runs min-instances=1 + cpuIdle=false with its env baked on. A tiny
-    // health server (main.ts) answers the Cloud Run startup probe.
+    // health server (main.ts) answers the Cloud Run startup probe. It also does the ~event-loop-blocking cold
+    // import of @kubernetes/client-node on the first GKE launch (D-P0.15e-3), which STARVED under the default
+    // 512Mi / throttled CPU (diagnosed live 2026-09-09 — the first launch hung ~9 min): pin 1 vCPU + 1Gi and
+    // startup CPU boost so the cold import finishes in seconds. (A gcloud image-swap that omits these silently
+    // reverts to the throttled default — the live-deploy step must preserve them, hence they live in IaC.)
     const isWorker = svc === "worker";
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
@@ -207,7 +235,16 @@ export function createCompute(args: ComputeArgs): Compute {
         containers: [
           {
             image: placeholderImage,
-            ...(isWorker ? { resources: { cpuIdle: false }, envs: workerEnvs } : {}),
+            ...(isWorker
+              ? {
+                  resources: {
+                    cpuIdle: false,
+                    startupCpuBoost: true,
+                    limits: { cpu: "1", memory: "1Gi" },
+                  },
+                  envs: workerEnvs,
+                }
+              : {}),
           },
         ],
         vpcAccess: {

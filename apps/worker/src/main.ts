@@ -104,14 +104,49 @@ export async function startWorker(): Promise<void> {
     ...(env.gkeEndpoint ? { gkeEndpoint: env.gkeEndpoint } : {}),
     ...(env.gkeCaData ? { gkeCaData: env.gkeCaData } : {}),
   };
+  // Cold-launch robustness (D-P0.15e-3 / live P0.15h): the FIRST launch on a fresh Cloud Run instance builds the
+  // GKE launcher (dynamic `@kubernetes/client-node` import + a metadata-token KubeConfig) and makes its first
+  // Direct-VPC egress calls (metadata token, GKE API). Cold, that first path can HANG with no timeout, wedging
+  // the run in `provisioning` forever (a warm instance launches fine). Fix: bound the build AND the launch with
+  // timeouts + a few retries (a hung attempt is abandoned; Node caches the in-flight import so a retry resolves
+  // once it lands), and EAGER-WARM the build at startup so the first real job is not the cold path.
   let realLauncher: Awaited<ReturnType<typeof createGkeJobLauncher>> | undefined;
+  let launcherInit: Promise<Awaited<ReturnType<typeof createGkeJobLauncher>>> | undefined;
+  const withTimeout = <T>(pr: Promise<T>, ms: number, label: string): Promise<T> => {
+    let t: ReturnType<typeof setTimeout>;
+    return Promise.race([
+      pr.finally(() => clearTimeout(t)),
+      new Promise<T>((_, rej) => (t = setTimeout(() => rej(new Error(`timeout after ${ms}ms: ${label}`)), ms))),
+    ]);
+  };
+  const ensureLauncher = async (): Promise<Awaited<ReturnType<typeof createGkeJobLauncher>>> => {
+    if (realLauncher) return realLauncher;
+    if (!launcherInit) {
+      console.log("[worker] building GKE launcher (import @kubernetes/client-node + KubeConfig)");
+      launcherInit = createGkeJobLauncher(launcherConfig);
+    }
+    try {
+      realLauncher = await withTimeout(launcherInit, 60_000, "createGkeJobLauncher");
+      return realLauncher;
+    } catch (err) {
+      launcherInit = undefined; // let the next attempt rebuild
+      throw err;
+    }
+  };
   const launcher = {
     launch: async (spec: Parameters<Awaited<ReturnType<typeof createGkeJobLauncher>>["launch"]>[0]) => {
-      if (!realLauncher) {
-        console.log("[worker] first launch — importing @kubernetes/client-node + building GKE launcher");
-        realLauncher = await createGkeJobLauncher(launcherConfig);
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const l = await ensureLauncher();
+          return await withTimeout(l.launch(spec), 90_000, "launch");
+        } catch (err) {
+          lastErr = err;
+          console.error(`[worker] launch attempt ${attempt}/3 failed (will retry):`, err instanceof Error ? err.message : err);
+          await new Promise((r) => setTimeout(r, 2000 * attempt));
+        }
       }
-      return realLauncher.launch(spec);
+      throw lastErr;
     },
   };
   const config: WorkerRunConfig = {
@@ -171,6 +206,13 @@ export async function startWorker(): Promise<void> {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
   console.log("[worker] startup: queues created; registering consumers");
+
+  // NOTE: the GKE launcher is built LAZILY on the first run.start (below), NOT eagerly here. The
+  // `@kubernetes/client-node` import is event-loop-BLOCKING and, on a cold Cloud Run instance, can take minutes
+  // (live P0.15h). Doing it eagerly at startup starved pg-boss's job poller during the block, so a queued run
+  // was never delivered. Lazily inside the handler, pg-boss delivers the job first (the run enters
+  // `provisioning`), then the blocking import runs, then the Job launches — slow on the first launch, reliable.
+  // The timeout+retry around the build/launch (see `ensureLauncher`/`launcher.launch`) still bounds a true hang.
 
   // run.start / resume / cancel consumers (the payload → orchestrator mapping). pg-boss delivers a batch.
   await boss.work<RunJobPayload>(RUN_JOBS.start, async (jobs) => {
