@@ -70,4 +70,11 @@ describe("auth cookies are host-only `__Host-` (single-zone cookie isolation)", 
     // Still never Domain-scoped, even on dev.
     expect(cookies.sessionToken.attributes.domain).toBeUndefined();
   });
+
+  it("account linking is enabled and restricted to the trusted google provider", () => {
+    const auth = createAuth(PROD_LIKE, undefined, noSend);
+    const linking = auth.options.account?.accountLinking;
+    expect(linking?.enabled).toBe(true);
+    expect(linking?.trustedProviders).toEqual(["google"]);
+  });
 });

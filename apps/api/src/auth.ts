@@ -87,6 +87,13 @@ export function createAuth(
         createdAt: "created_at",
         updatedAt: "updated_at",
       },
+      // PRB.19 follow-up — D-P0.01-3 requires Google AND magic-link to work for the SAME user. The
+      // prod operator account was created via magic-link, so a first Google sign-in for that email
+      // previously failed with `account_not_linked` (Better Auth's anti-takeover default). Enable
+      // linking gated to `trustedProviders` (Google verifies its emails; the existing account's
+      // email is already verified via the magic link), so same-email social + magic-link converge
+      // on one account without opening a takeover surface.
+      accountLinking: { enabled: true, trustedProviders: ["google"] },
     },
     verification: {
       fields: { expiresAt: "expires_at", createdAt: "created_at", updatedAt: "updated_at" },
