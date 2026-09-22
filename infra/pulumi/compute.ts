@@ -434,6 +434,15 @@ export function createCompute(args: ComputeArgs): Compute {
                     // PRB.16 — the x-rhema-* identity-header shim is dev/preview ONLY (client-forgeable;
                     // prod's identity path is the session cookie). Never set on prod.
                     ...(cfg.kind !== "prod" ? [{ name: "IDENTITY_HEADERS", value: "true" }] : []),
+                    // PRB.20 — the live ingestion wiring (D-PRB.02-1): the user-content bucket the presign
+                    // targets + the convert Job's full v2 resource name + its bucket mount path. BOTH set ⇒
+                    // the api mounts /import/presign + import/preview|create (server.ts's fail-closed gate).
+                    { name: "USER_CONTENT_BUCKET", value: args.buckets["user-content"].name },
+                    {
+                      name: "CONVERT_JOB",
+                      value: pulumi.interpolate`projects/${project}/locations/${region}/jobs/${name("convert")}`,
+                    },
+                    { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
                     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
                     ...(args.apiDatabaseUrl ? [{ name: "DATABASE_URL", value: args.apiDatabaseUrl }] : []),
@@ -468,8 +477,11 @@ export function createCompute(args: ComputeArgs): Compute {
   }
 
   // --- convert: a Cloud Run JOB, not a service (§12.1 — "a Cloud Run Job per batch, no network, no DB").
-  // It is created but never executed by the program: the ingest caller supplies the quarantine object
-  // per execution (D-PRB.02-1's live leg). No vpcAccess → the job has no route into the VPC.
+  // PRB.20 (D-PRB.02-1): the api executes it per upload with container-arg overrides = MOUNTED paths —
+  // `/usercontent/<quarantineKey>` in, `/usercontent/<convertedKey>` out. The user-content bucket arrives as
+  // a gcsfuse VOLUME (Cloud Run storage mount), so the job process still carries no GCS client, no network
+  // route (no vpcAccess, still), and no DB credential — the mount is the runtime's, gated by the SA's
+  // conditioned converted/-only write (iam.ts). The api owns the arg shape; nothing is baked here.
   const convertJob = new gcp.cloudrunv2.Job(name("convert"), {
     location: region,
     deletionProtection: cfg.kind === "prod",
@@ -478,10 +490,35 @@ export function createCompute(args: ComputeArgs): Compute {
         serviceAccount: iam.serviceAccounts["convert"].email,
         timeout: "600s",
         maxRetries: 1,
-        containers: [{ image: imageFor("convert") }],
+        volumes: [
+          {
+            name: "usercontent",
+            gcs: { bucket: args.buckets["user-content"].name, readOnly: false },
+          },
+        ],
+        containers: [
+          {
+            image: imageFor("convert"),
+            volumeMounts: [{ name: "usercontent", mountPath: "/usercontent" }],
+          },
+        ],
       },
     },
   });
+
+  // PRB.20 — the api drives the Job: `roles/run.invoker` for `jobs:run` + `roles/run.viewer` to poll the
+  // operation (`run.operations.get`). Job-scoped — never project-scoped.
+  for (const [suffix, role] of [
+    ["runs-convert", "roles/run.invoker"],
+    ["reads-convert-ops", "roles/run.viewer"],
+  ] as const) {
+    new gcp.cloudrunv2.JobIamMember(name(`api-${suffix}`), {
+      location: region,
+      name: convertJob.name,
+      role,
+      member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["api"].email}`,
+    });
+  }
 
   // --- Public invoker grants (surfaced live at Stage B, 2026-09-17): the LB-fronted services —
   // `web` (the public site) and `api` (host-routed api.rhema.tools) — need `roles/run.invoker` for

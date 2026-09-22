@@ -384,6 +384,8 @@ export function ImportPreviewPage(): ReactNode {
             formAction: `/p/${slug}/import/create`,
             createLabel: COPY.import.createLabel,
             fixNowLabel: COPY.import.fixNowLabel,
+            // PRB.20 — replay the minted quarantine key; Create never re-uploads the bytes.
+            ...(conversion.quarantineKey ? { hiddenFields: { qk: conversion.quarantineKey } } : {}),
           }}
           labels={{
             sourceHeading: COPY.import.sourceHeading,

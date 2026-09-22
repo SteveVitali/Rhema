@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { sha256Hex, type ContentStore } from "@rhema/mirror";
-import type { ConversionResult } from "@rhema/contracts";
+import {
+  presignQuarantinePut,
+  parseQuarantineKey,
+  type ConversionResult,
+  type SignedUrlProvider,
+} from "@rhema/contracts";
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
@@ -101,26 +106,68 @@ export async function createImportedDraft(
   return { draftId, versionId, artifactId, n, wordCount, contentSha256 };
 }
 
+/** The upload-presign binding (PRB.20): the signer + the user-content bucket the quarantine keys land in. */
+export interface ImportUploadDeps {
+  readonly provider: SignedUrlProvider;
+  readonly bucket: string;
+}
+
 export interface ImportApiDeps {
   principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
   readonly db: SqlClient;
   readonly contentStore: ContentStore;
   readonly converter: Converter;
   readonly ids: () => string;
+  /** the presign binding; when unset the `/import/presign` route is not mounted (PRB.20). */
+  readonly uploads?: ImportUploadDeps;
   /** for the `draft.imported` analytics write (PRB.12); defaults to wall-clock when unset. */
   readonly clock?: { now(): Date };
 }
 
-/** The import routes: preview a conversion, and create the draft from it (session-authed). */
+/**
+ * Validate the wire `quarantineKey` against the session tenant: `quarantine/<workspaceId>/<uploadId>`,
+ * workspace segment === the principal's workspace. 400 on a malformed key, 403 on another tenant's prefix —
+ * a session can never preview or create from an object it could not have presigned (PRB.20).
+ */
+function tenantKey(
+  c: { json: (b: unknown, s: number) => Response },
+  body: unknown,
+  workspaceId: string,
+): string | Response {
+  const parsed = parseQuarantineKey((body as { quarantineKey?: unknown })?.quarantineKey);
+  if (!parsed) return c.json({ error: "quarantineKey required" }, 400);
+  if (parsed.workspaceId !== workspaceId) return c.json({ error: "forbidden" }, 403);
+  return (body as { quarantineKey: string }).quarantineKey;
+}
+
+/** The import routes: presign a quarantine PUT, preview a conversion, create the draft (session-authed). */
 export function createImportRoutes(deps: ImportApiDeps): Hono {
   const app = new Hono();
+
+  // POST /import/presign — mint a workspace-scoped quarantine key + a v4-signed PUT bound to ≤25 MB.
+  // The browser then PUTs bytes straight to GCS with the signed headers; no session cookie ever leaves
+  // the api origin. Not project-scoped: the key carries the workspace, the project binds at create.
+  if (deps.uploads) {
+    const { provider, bucket } = deps.uploads;
+    app.post("/import/presign", async (c) => {
+      const principal = deps.principal(c);
+      if (!principal) return c.json({ error: "unauthenticated" }, 401);
+      const upload = await presignQuarantinePut(provider, {
+        bucket,
+        workspaceId: principal.workspaceId,
+        uploadId: deps.ids(),
+      });
+      return c.json(upload);
+    });
+  }
 
   app.post("/projects/:id/import/preview", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const body = (await c.req.json().catch(() => ({}))) as { quarantineKey?: unknown };
-    if (typeof body.quarantineKey !== "string") return c.json({ error: "quarantineKey required" }, 400);
-    const result = await deps.converter.preview(body.quarantineKey);
+    const body = await c.req.json().catch(() => ({}));
+    const key = tenantKey(c, body, principal.workspaceId);
+    if (key instanceof Response) return key;
+    const result = await deps.converter.preview(key);
     return c.json({ preview: result });
   });
 
@@ -128,9 +175,14 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const body = (await c.req.json().catch(() => ({}))) as { quarantineKey?: unknown };
-    if (typeof body.quarantineKey !== "string") return c.json({ error: "quarantineKey required" }, 400);
-    const result = await deps.converter.preview(body.quarantineKey);
+    const body = await c.req.json().catch(() => ({}));
+    const key = tenantKey(c, body, principal.workspaceId);
+    if (key instanceof Response) return key;
+    // The draft lands under projects/<id> — verify the project is real under this tenant's scope
+    // (the scoped db returns no row for another workspace's project id) BEFORE paying a convert run.
+    const project = await deps.db.query("select id from projects where id = $1", [projectId]);
+    if (project.rows.length === 0) return c.json({ error: "not_found" }, 404);
+    const result = await deps.converter.preview(key);
     const created = await createImportedDraft(
       { db: deps.db, contentStore: deps.contentStore, ids: deps.ids },
       { projectId, workspaceId: principal.workspaceId, actor: { kind: "user", userId: principal.userId }, result },

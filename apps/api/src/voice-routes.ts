@@ -21,7 +21,7 @@
 // The Connection model carries NO cookie/session-token field anywhere (AC-I-B — REQ-INGEST-2/16).
 
 import { Hono } from "hono";
-import { policyFor, artifactKindSchema, type ModelTier } from "@rhema/contracts";
+import { policyFor, artifactKindSchema, parseQuarantineKey, type ModelTier } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import {
   createRun,
@@ -53,9 +53,10 @@ export interface VoiceApiDeps extends OrchestratorDeps {
 }
 
 const MODES = new Set(["self", "consented", "house", "study"]);
-const QUARANTINE_KEY = /^[A-Za-z0-9][A-Za-z0-9_-]{7,63}$/;
-const safeKey = (v: unknown): string | null =>
-  typeof v === "string" && QUARANTINE_KEY.test(v) ? v : null;
+// PRB.20 — the wire shape is the full minted key `quarantine/<ws>/<id>` (was a bare id); the workspace
+// segment must be the session's tenant — a voice sample can never read another workspace's upload.
+const safeKey = (v: unknown, workspaceId: string): string | null =>
+  parseQuarantineKey(v, workspaceId) ? (v as string) : null;
 const asText = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const asTextArray = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
@@ -406,7 +407,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       let provider: "upload" | "paste" = "paste";
       let quality: string | null = null;
       let qualityNotes: string[] = [];
-      const qk = safeKey(body.quarantineKey);
+      const qk = safeKey(body.quarantineKey, principal.workspaceId);
       if (qk) {
         if (!deps.converter) throw new Error("converter unavailable");
         const pv = await deps.converter.preview(qk);

@@ -11,10 +11,15 @@ export { assertSafeArchive, MAX_TOTAL_UNCOMPRESSED } from "./decompression-guard
 export { convertDocx, convertHtml, convertPdf, convertText } from "./converters.js";
 export type { ConverterOutput } from "./converters.js";
 export { servingHeadersFor, RENDERED_ALLOWLIST, USERCONTENT_ORIGIN } from "./serving.js";
+// PRB.20 — the upload wire contract moved to @rhema/contracts (the api's presign route shares it; the
+// parser deps must never reach the api image, REQ-ARCH-23). Re-exported here so the surface is stable.
 export {
   presignQuarantinePut,
   quarantineKey,
+  convertedResultKey,
+  parseQuarantineKey,
   QUARANTINE_PREFIX,
+  CONVERTED_PREFIX,
   MAX_UPLOAD_BYTES,
-} from "./upload.js";
-export type { SignedUrlProvider, PresignedUpload } from "./upload.js";
+} from "@rhema/contracts";
+export type { SignedUrlProvider, PresignedUpload } from "@rhema/contracts";

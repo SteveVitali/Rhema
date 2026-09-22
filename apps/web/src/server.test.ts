@@ -111,7 +111,7 @@ function makeDeps(
             : req.code == null
               ? { ok: false as const, status: 403, error: "invite_required" }
               : { ok: false as const, status: 403, error: "unknown" }),
-      previewImport: async () => PREVIEW,
+      previewImport: async () => ({ preview: PREVIEW, quarantineKey: "quarantine/ws1/up1" }),
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
       getDossier: async () => DOSSIER,
@@ -385,6 +385,8 @@ describe("§5.3 import flow (deliverable 4)", () => {
     expect(html).toContain("Create and fix later");
     expect(html).toContain("Fix now");
     expect(html).toContain("unconv-1"); // the unconverted block id shown in the notes
+    // PRB.20 — the preview form replays the minted quarantine key so Create never re-uploads.
+    expect(html).toContain('type="hidden" name="qk" value="quarantine/ws1/up1"');
   });
 
   it("POST create makes the draft and redirects to the project", async () => {

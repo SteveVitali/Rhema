@@ -26,6 +26,9 @@ import {
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
   fetchGceMetadataIdToken,
+  createStorageV4SignedUrlProvider,
+  createGcsObjects,
+  createConvertJobPreview,
 } from "@rhema/live-clients";
 import {
   createApp,
@@ -141,6 +144,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
       }
     : null;
   const txRunner = new PgPoolTxRunner(pool);
+  // PRB.20 — the artifacts-bucket content store doubles as the imported-draft byte store (the draft create
+  // path writes content-addressed markdown there); hoist so `store` (write-back overlays) and `contentStore`
+  // (import) share one binding.
+  const artifactsStore = await createGcsContentStore({ bucketName: env.objectsBucket });
   const deps: ApiDeps & BetaApiDeps = {
     txRunner,
     eventWriter: new SqlEventWriter(bus), // post-commit user-event fan-out over Redis
@@ -156,9 +163,31 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // the SSE tail subscribes to the same Redis bus for the post-commit wakeup (replay-then-tail from Postgres).
     eventSubscriber: bus,
     // write-only content store: gate write-back overlays put versioned bytes (tenant-explicit; REQ-SPEC-9).
-    store: await createGcsContentStore({ bucketName: env.objectsBucket }),
+    store: artifactsStore,
     // a per-run workspace-bound store for delivery reads (a run is single-tenant; D-P0.09-1).
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
+    // PRB.20 — the live ingestion bindings (D-PRB.02-1). `contentStore` is the imported-draft byte sink;
+    // `importUploads` + `importConverter` are the presign/convert legs — BOTH env vars gate the mount, so a
+    // partial deploy config leaves import unmounted rather than half-wired (fail-closed).
+    contentStore: artifactsStore,
+    ...(env.userContentBucket
+      ? {
+          importUploads: {
+            provider: await createStorageV4SignedUrlProvider(),
+            bucket: env.userContentBucket,
+          },
+        }
+      : {}),
+    ...(env.userContentBucket && env.convertJob
+      ? {
+          importConverter: createConvertJobPreview({
+            job: env.convertJob,
+            bucket: env.userContentBucket,
+            objects: await createGcsObjects(env.userContentBucket),
+            ...(env.convertJobRoot ? { mountPath: env.convertJobRoot } : {}),
+          }),
+        }
+      : {}),
     ...(systemExec ? { circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })) } : {}),
     // PRB.08 billing: the system-scoped exec for the `stripe_events` intake (a system table — the restricted
     // user pool must not own it), the webhook secret, and the beta Payment Link.

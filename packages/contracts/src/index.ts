@@ -46,6 +46,10 @@ export * from "./analytics.js";
 export * from "./signup.js";
 export * from "./rate-limit.js";
 
+// the quarantine-upload wire contract (REQ-ARCH-24; §13.3; PRB.20 — moved from @rhema/convert so the api's
+// presign route + the web upload flow share the key shape without pulling the parser deps)
+export * from "./upload.js";
+
 // phone-width-shared read models (§5.7, §10.5)
 export * from "./views.js";
 

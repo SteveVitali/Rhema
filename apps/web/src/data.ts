@@ -53,10 +53,22 @@ export type SessionHeaders = Readonly<Record<string, string>>;
 
 export interface ImportInput {
   readonly projectSlug: string;
-  /** Pasted markdown/text, or the bytes of an uploaded file (the real impl uploads to quarantine first). */
+  /** Pasted markdown/text, or the bytes of an uploaded file (the impl uploads them to quarantine first). */
   readonly text?: string;
   readonly fileName?: string;
   readonly bytes?: Uint8Array;
+  /**
+   * PRB.20 — the minted `quarantine/<workspaceId>/<uploadId>` from a prior preview (the create form's
+   * hidden `qk` field replays it so Create does not re-upload/re-convert the same bytes). Wins over
+   * bytes/text when present.
+   */
+  readonly quarantineKey?: string;
+}
+
+/** The preview leg's result: the §5.3 conversion payload + the quarantine key the create form replays. */
+export interface ImportPreviewResult {
+  readonly preview: ConversionResult;
+  readonly quarantineKey: string;
 }
 
 /**
@@ -106,9 +118,9 @@ export interface DataSource {
     | { readonly ok: true; readonly created: boolean }
     | { readonly ok: false; readonly status: number; readonly error: string }
   >;
-  /** Convert an upload/paste to a §5.3 preview (the api routes it to the convert service). */
-  previewImport(session: SessionHeaders, input: ImportInput): Promise<ConversionResult>;
-  /** Create the imported draft from a preview; returns the new draft id. */
+  /** Convert an upload/paste to a §5.3 preview: presign → PUT to quarantine → api convert Job (PRB.20). */
+  previewImport(session: SessionHeaders, input: ImportInput): Promise<ImportPreviewResult>;
+  /** Create the imported draft from a preview's quarantine key; returns the new draft id. */
   createImport(session: SessionHeaders, input: ImportInput): Promise<{ draftId: string }>;
   /** The sheet's Run click → the api's only run creator (REQ-CHAT-25). Session forwarded. */
   createRun(session: SessionHeaders, projectId: string, req: CreateRunDto): Promise<CreatedRunDto>;
@@ -252,11 +264,33 @@ export interface DataSource {
 
 /** The production data source: the typed api client over the api base URL. */
 export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSource {
-  const notWired = (): never => {
-    // The live import path (browser → presigned PUT to quarantine → api → convert service) is the deploy leg
-    // (D-PRB.02): the upload/convert wiring needs GCS + the convert Cloud Run Job. The import UI + the api/
-    // convert pipeline are proven deterministically; this binding lands with the live deploy.
-    throw new Error("import is not wired live yet (D-PRB.02)");
+  const f = fetchImpl ?? fetch;
+  const client = (session: SessionHeaders) =>
+    createApiClient({ baseUrl, fetch: f, headers: session });
+  const projectIdFor = async (session: SessionHeaders, slug: string): Promise<string> => {
+    const row = (await client(session).listProjects()).find((r) => r.slug === slug);
+    if (!row) throw new ApiError(404, `project ${slug}`);
+    return row.id;
+  };
+  // PRB.20 — the quarantine leg (D-PRB.02-1): presign a workspace-scoped key, then PUT the bytes straight
+  // to GCS on the signed URL with the signed headers echoed verbatim. The session cookie rides ONLY the
+  // api calls — it never leaves for a third-party origin. A replayed `quarantineKey` (the preview form's
+  // hidden field) skips the upload entirely.
+  const uploadKey = async (session: SessionHeaders, input: ImportInput): Promise<string> => {
+    if (input.quarantineKey) return input.quarantineKey;
+    const bytes =
+      input.bytes ?? (typeof input.text === "string" ? new TextEncoder().encode(input.text) : undefined);
+    if (!bytes || bytes.byteLength === 0) throw new ApiError(400, "import", "import source required");
+    const pre = await client(session).presignImportUpload();
+    if (bytes.byteLength > pre.maxBytes)
+      throw new ApiError(413, pre.key, `upload exceeds ${pre.maxBytes} bytes`);
+    const put = await f(pre.url, {
+      method: "PUT",
+      headers: { ...pre.requiredHeaders },
+      body: bytes as unknown as NonNullable<RequestInit["body"]>,
+    });
+    if (!put.ok) throw new ApiError(put.status, pre.url);
+    return pre.key;
   };
   return {
     listProjects: (session) =>
@@ -273,8 +307,20 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl }).checkInvite(code, email),
     // PRB.13 — the api's account-creation path (pre-auth; the api throttles per source IP + email).
     signup: (req) => createApiClient({ baseUrl, fetch: fetchImpl }).signup(req),
-    previewImport: notWired,
-    createImport: notWired,
+    // PRB.20 — the import golden path (D-PRB.02-1): preview = presign→PUT→convert Job→§5.3 payload;
+    // create replays the same quarantine key into import/create (no second upload).
+    previewImport: async (session, input) => {
+      const projectId = await projectIdFor(session, input.projectSlug);
+      const quarantineKey = await uploadKey(session, input);
+      const preview = await client(session).previewImport(projectId, { quarantineKey });
+      return { preview, quarantineKey };
+    },
+    createImport: async (session, input) => {
+      const projectId = await projectIdFor(session, input.projectSlug);
+      const quarantineKey = await uploadKey(session, input);
+      const draft = await client(session).createImport(projectId, { quarantineKey });
+      return { draftId: draft.draftId };
+    },
     // The estimate service is stateless + pure (no GCS/DB-write infra), so the Run click is a real api call:
     // the api's run-creation lifecycle needs a live worker to EXECUTE (D-P0.08-1), but creating the row +
     // hold is the deployed api's job. Session forwarded so the api resolves the principal.

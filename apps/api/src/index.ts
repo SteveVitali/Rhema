@@ -22,7 +22,7 @@ import { createBillingRoutes } from "./billing-routes.js";
 import { createNotificationRoutes } from "./notification-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
 import { createSignupRoutes, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
-import { createImportRoutes, type Converter } from "./import.js";
+import { createImportRoutes, type Converter, type ImportUploadDeps } from "./import.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
@@ -78,6 +78,7 @@ export {
   createImportedDraft,
   type Converter,
   type ImportApiDeps,
+  type ImportUploadDeps,
   type CreatedDraft,
 } from "./import.js";
 export { createTriageRoutes, loadPretriage } from "./triage-routes.js";
@@ -108,6 +109,8 @@ export type ApiDeps = RunApiDeps & SseApiDeps & Omit<EstimateApiDeps, "principal
 export interface BetaApiDeps {
   db?: SqlClient;
   importConverter?: Converter;
+  /** PRB.20 — the live presign binding (GCS v4 over the user-content bucket); mounts POST /import/presign. */
+  importUploads?: ImportUploadDeps;
   contentStore?: ContentStore;
   ids?: () => string;
   /**
@@ -326,6 +329,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
             contentStore: deps.contentStore,
             converter: deps.importConverter,
             ids: deps.ids ?? (() => `id_${randomUUID()}`),
+            ...(deps.importUploads ? { uploads: deps.importUploads } : {}),
           }),
         );
       }

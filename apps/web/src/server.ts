@@ -448,8 +448,12 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return c.redirect("/login");
     const slug = c.req.param("project");
     const input = await parseImportInput(c, slug);
-    const result = await deps.dataSource.previewImport(session, input);
-    return c.html(renderDocument(c.req.path, importPreviewElement, { conversion: toConversionData(slug, input, result) }));
+    const { preview, quarantineKey } = await deps.dataSource.previewImport(session, input);
+    return c.html(
+      renderDocument(c.req.path, importPreviewElement, {
+        conversion: toConversionData(slug, input, preview, quarantineKey),
+      }),
+    );
   });
 
   app.post("/p/:project/import/create", async (c) => {
@@ -1254,16 +1258,23 @@ function countLine(c: ConversionResult["counts"]): string {
 
 async function parseImportInput(c: Context, slug: string): Promise<ImportInput> {
   const form = await c.req.parseBody();
+  // PRB.20 — the preview form replays the minted quarantine key in `qk` so Create does not re-upload.
+  const qk = typeof form.qk === "string" && form.qk ? form.qk : undefined;
   const paste = typeof form.paste === "string" ? form.paste : "";
   const file = form.file;
   if (file && typeof file === "object" && "arrayBuffer" in file) {
     const f = file as File;
-    return { projectSlug: slug, fileName: f.name, bytes: new Uint8Array(await f.arrayBuffer()) };
+    return {
+      projectSlug: slug,
+      fileName: f.name,
+      bytes: new Uint8Array(await f.arrayBuffer()),
+      ...(qk ? { quarantineKey: qk } : {}),
+    };
   }
-  return { projectSlug: slug, text: paste };
+  return { projectSlug: slug, text: paste, ...(qk ? { quarantineKey: qk } : {}) };
 }
 
-function toConversionData(slug: string, input: ImportInput, result: ConversionResult) {
+function toConversionData(slug: string, input: ImportInput, result: ConversionResult, quarantineKey: string) {
   return {
     projectSlug: slug,
     sourceLabel: input.fileName ?? "pasted text",
@@ -1271,5 +1282,7 @@ function toConversionData(slug: string, input: ImportInput, result: ConversionRe
     convertedMarkdown: result.markdown,
     countLine: countLine(result.counts),
     warnings: result.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+    // the create form replays this verbatim — no second upload, no second convert run.
+    quarantineKey,
   };
 }

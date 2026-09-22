@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { servingHeadersFor, USERCONTENT_ORIGIN, RENDERED_ALLOWLIST } from "./serving.js";
-import { presignQuarantinePut, quarantineKey, MAX_UPLOAD_BYTES, type SignedUrlProvider } from "./upload.js";
+import { presignQuarantinePut, quarantineKey, MAX_UPLOAD_BYTES, type SignedUrlProvider } from "@rhema/contracts";
 
 // AC3 (REQ-ARCH-24): uploaded HTML is served from the cookieless usercontent origin as attachment/octet-stream.
 

@@ -115,6 +115,30 @@ export function createIam(args: IamArgs): Iam {
     serviceAccounts["convert"],
     "roles/storage.objectViewer",
   );
+  // PRB.20 — the convert Job's ONLY write grant: the `converted/` prefix it drops the ConversionResult JSON
+  // into through its mounted bucket volume (the api reads the object back — stdout is not the transport).
+  // `objectUser` (create+delete+get, prefix-conditioned) rather than bare objectCreator because the gcsfuse
+  // write path needs more than a single create call (mkdir placeholders, close/rename).
+  new gcp.storage.BucketIAMMember(`rhema-${stack}-convert-converted-writer`, {
+    bucket: buckets["user-content"].name,
+    role: "roles/storage.objectUser",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["convert"].email}`,
+    condition: {
+      title: "converted-prefix-only",
+      description:
+        "The convert Job writes only under converted/ — its read stays bucket-wide, its write is the one prefix (§13.3).",
+      expression: pulumi.interpolate`resource.name.startsWith("projects/_/buckets/${buckets["user-content"].name}/objects/converted/")`,
+    },
+  });
+
+  // PRB.20 — the api mints GCS v4 signed PUTs for `quarantine/`; on Cloud Run the storage client signs via
+  // IAM Credentials `signBlob`, which needs `serviceAccountTokenCreator` on the CALLING service account.
+  // The self-grant is the minimum surface (no key material on the service — REQ-ARCH-30).
+  new gcp.serviceaccount.IAMMember(`rhema-${stack}-api-signs-own-blobs`, {
+    serviceAccountId: serviceAccounts["api"].name,
+    role: "roles/iam.serviceAccountTokenCreator",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["api"].email}`,
+  });
 
   // The egress-proxy MIG VM pulls its digest-pinned image from Artifact Registry with its instance SA (the COS
   // startup-script `docker pull`). Without this the pull is denied ("Unauthenticated request") — surfaced live
