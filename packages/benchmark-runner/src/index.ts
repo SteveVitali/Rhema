@@ -16,3 +16,5 @@ export * from "./cadence.js";
 export * from "./wave-runner.js";
 export * from "./report.js";
 export * from "./checks.js";
+// Phase-0 pilot-wave power estimate (P0.15; REQ-EVAL-5) — σ_d + fixed n from the report's per-draft recalls.
+export * from "./pilot.js";

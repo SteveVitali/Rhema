@@ -337,6 +337,12 @@ export interface WaveReport {
   readonly public: Record<string, unknown>;
   readonly private: Record<string, unknown>;
   readonly lift: LiftReadout;
+  /**
+   * Per-arm metrics incl. `recallByDraft` — the paired per-draft input the Phase-0 pilot power estimate reads
+   * (REQ-EVAL-5; `estimatePilotPower`). Carries private per-draft data (never surfaced publicly); it mirrors what is
+   * already in `private.perDraft`, exposed structurally so the pilot glue need not re-query.
+   */
+  readonly arms: readonly ArmMetrics[];
 }
 
 /**
@@ -479,7 +485,7 @@ export async function generateWaveReport(
     [waveId, JSON.stringify(publicReport), JSON.stringify(privateReport), JSON.stringify(lift), deps.clock.now()],
   );
 
-  return { public: publicReport, private: privateReport, lift };
+  return { public: publicReport, private: privateReport, lift, arms: armMetrics };
 }
 
 // ---- consequence log (REQ-EVAL-16, go/no-go) ----

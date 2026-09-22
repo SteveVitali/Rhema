@@ -39,3 +39,6 @@ export * from "./gate-overlay.js";
 export * from "./gate-resolution.js";
 export * from "./gate-expiry.js";
 export * from "./guidance.js";
+
+// §12.7 cross-check 1 — proxy-metered vs SDK-reported cost divergence (P0.15; REQ-SPEC-11)
+export * from "./usage-crosscheck.js";

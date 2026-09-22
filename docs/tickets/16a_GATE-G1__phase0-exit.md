@@ -13,4 +13,16 @@ on the dev set with σ_d estimated and benchmark n fixed (REQ-EVAL-5).
 Also read here: the §16.3 #24 scope re-estimate; the §16.4 rule that the §1.4/§15.1 marketing
 claims do not ship until this criterion holds.
 
+**Exit readout (produced by P0.15):** [`docs/phase0-exit-readout.md`](../phase0-exit-readout.md) — each
+criterion mapped to its measured/deferred result. Its current verdict: the composition is proven
+deterministically and the pilot wave is met; the live `dev` half (three-project Reviews, instrumented
+cost runs, live gate round-trip) is **blocked pending the `dev` deploy** (DEFERRALS D-P0.15-1..5, and
+the deploy chain D-P0.01-7 / D-P0.06-1 / D-P0.07-1 / D-P0.08-1 / D-P0.09-1). **G1 is not passable while
+those Phase-0-scoped rows are OPEN** (DEFERRALS rule 4).
+
+**The ticket that closes them:** `16_P0.15b__phase0-live-bringup-and-g1.md` — the live bring-up (deploy
+`dev`, run the live exit criteria + instrumented cost + live pilot wave, close every G1-scoped deferral,
+rewrite the readout with measured values). It runs after ticket 16 and before this gate; read G1 only
+once it reports G1 ready.
+
 - [ ] Operator disposition recorded in the ledger (`.agents/scratch/rhema-build-ledger.md`).

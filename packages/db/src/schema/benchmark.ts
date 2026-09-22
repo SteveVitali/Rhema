@@ -53,6 +53,10 @@ export const benchmarkWaves = pgTable("benchmark_waves", {
   agreementFloor: numeric("agreement_floor").notNull(),
   preregistrationHash: text("preregistration_hash"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Phase-0 pilot power record (0015; REQ-EVAL-5): σ_d + the fixed n the pilot wave estimated for the scored waves.
+  pilotSigmaD: numeric("pilot_sigma_d"),
+  pilotFixedN: integer("pilot_fixed_n"),
+  pilotRecordedAt: timestamp("pilot_recorded_at"),
 });
 
 export const benchmarkWaveDrafts = pgTable(

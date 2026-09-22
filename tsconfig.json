@@ -34,6 +34,7 @@
     { "path": "apps/export" },
     { "path": "apps/mobile" },
     { "path": "infra" },
-    { "path": "evals-stub" }
+    { "path": "evals-stub" },
+    { "path": "integration" }
   ]
 }

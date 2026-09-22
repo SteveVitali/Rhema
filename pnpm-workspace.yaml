@@ -6,6 +6,7 @@ packages:
   - "packages/*"
   - "infra"
   - "evals-stub"
+  - "integration"
   - "tools/*"
   # `packages/protocols` is a COMMITTED member (name `@rhema/protocols`); the renamed public fallback
   # `@rhema/protocols-stub` (dir `packages/protocols-stub`) is swapped in only at open-source export.
