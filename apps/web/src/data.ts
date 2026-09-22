@@ -102,6 +102,11 @@ export interface DossierData {
 }
 
 export interface DataSource {
+  /**
+   * true when the forwarded session resolves to a live principal (the api's `GET /session`). Used by the
+   * public landing/login routes to skip the sign-in page for an already-authenticated viewer.
+   */
+  checkSession(session: SessionHeaders): Promise<boolean>;
   /** The signed-in principal's projects with derived §6.3 state (session forwarded to the api). */
   listProjects(session: SessionHeaders): Promise<ProjectRow[]>;
   /** The delivered-review dossier for a run (PRB.04 reading surface; live-bound in PRB.16, D-PRB.04-1). */
@@ -293,6 +298,10 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     return pre.key;
   };
   return {
+    checkSession: async (session) => {
+      const res = await (fetchImpl ?? fetch)(`${baseUrl}/session`, { headers: session });
+      return res.ok;
+    },
     listProjects: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProjects(),
     // PRB.16 — the delivered-review dossier read IS wired now (PRB.04's deferred live binding): the api's

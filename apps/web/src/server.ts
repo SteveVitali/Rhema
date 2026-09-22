@@ -165,17 +165,29 @@ export function createWebApp(deps: WebDeps): Hono {
     app.all("/api/auth/*", (c) => proxy(c.req.raw));
   }
 
+  // A viewer with a live session never needs the public pages — send them straight to the app.
+  // Without this check `/` renders the sign-in affordance unconditionally, so a returning signed-in
+  // user "has to log in again" (each sign-in mints a redundant session row).
+  const signedIn = async (c: Context): Promise<boolean> => {
+    const s = deps.session(c);
+    return s ? await deps.dataSource.checkSession(s).catch(() => false) : false;
+  };
+
   // Public: the invite page (+ read-only sample dossier). In `open` mode the access note drops the
   // invitation requirement — still no marketing page, still factual.
-  const invite = (c: Context) =>
-    c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
+  const invite = async (c: Context) =>
+    (await signedIn(c))
+      ? c.redirect("/app")
+      : c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
   app.get("/", invite);
   app.get("/invite", invite);
 
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).
-  app.get("/login", (c) =>
-    c.html(renderDocument(c.req.path, loginElement, { login: { signupOpen } })));
+  app.get("/login", async (c) =>
+    (await signedIn(c))
+      ? c.redirect("/app")
+      : c.html(renderDocument(c.req.path, loginElement, { login: { signupOpen } })));
 
   app.post("/login", async (c) => {
     const form = await c.req.parseBody();
