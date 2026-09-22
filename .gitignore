@@ -18,6 +18,9 @@ infra/pulumi/bin/
 # The proprietary Agent SDK is vendored into the run-task image at build (REQ-ARCH-4); the tree stays
 # untracked (only vendor/README.md is committed, to keep the guarded `COPY vendor/` source present).
 apps/run-task/vendor/claude-agent-sdk/
+# the platform native `claude` binary (~216 MB) the wrapper spawns (F1) — vendored the same way, untracked.
+apps/run-task/vendor/claude-agent-sdk-linux-x64/
+apps/run-task/vendor/claude-agent-sdk-*/
 # Private checkout (REQ-ARCH-37): `evals/` holds eval IP and stays untracked — the tracked `evals-stub`
 # is its public fallback, resolved by path via RHEMA_EVALS_PATH. NOTE: `packages/protocols` is now a
 # COMMITTED workspace member (operator decision, 2026-09-01; spec amendment to REQ-ARCH-37/§13.2) — the

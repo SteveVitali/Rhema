@@ -82,6 +82,22 @@ RUN if [ -d /app/vendor/claude-agent-sdk ]; then \
       echo "WARNING: @anthropic-ai/claude-agent-sdk NOT vendored — placeholder build (no live run)"; \
     fi
 
+# The vendored SDK's `query()` spawns a SEPARATE native `claude` CLI binary (~216 MB) resolved from the
+# platform optionalDependency `@anthropic-ai/claude-agent-sdk-linux-x64` — the wrapper alone cannot run the
+# model (preflight audit F1). The operator drops that binary under
+# `apps/run-task/vendor/claude-agent-sdk-linux-x64/claude` (see vendor/README.md); the harness pins it via
+# `options.pathToClaudeCodeExecutable` (sdk-adapter.VENDORED_CLAUDE_BINARY = /app/vendor/claude-agent-sdk-linux-x64/claude).
+# Make it executable by uid `agent` and ASSERT that at build time — a live image with a missing/non-exec binary
+# fails HERE, deterministically, instead of the SDK throwing "Native CLI binary … not found" mid-phase live.
+RUN CLAUDE_BIN=/app/vendor/claude-agent-sdk-linux-x64/claude; \
+    if [ -f "$CLAUDE_BIN" ]; then \
+      chmod 0755 "$CLAUDE_BIN" && chown agent:agent "$CLAUDE_BIN" \
+      && setpriv --reuid agent --regid agent --clear-groups -- test -x "$CLAUDE_BIN" \
+      && echo "vendored native claude binary at $CLAUDE_BIN (executable by uid agent)"; \
+    else \
+      echo "WARNING: native claude binary NOT vendored at $CLAUDE_BIN — placeholder build (no live run)"; \
+    fi
+
 # The container starts as root under tini ONLY so the entrypoint can drop the supervisor to `harness` and
 # later launch `agent` (agent-entry) via setpriv; root does nothing else. Root filesystem is read-only at run time.
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]

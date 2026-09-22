@@ -16,7 +16,8 @@
 // `/work` outputs, and calls the token-authed internal routes to harvest/commit/deliver — advancing the run
 // phase-by-phase until a gate, a pinned-phase stop, delivery, or a failure.
 
-import { compileSeatPolicy, newDenialState, type CompileInput } from "@rhema/hooks";
+import { compileSeatPolicy, newDenialState, resolveSeatRoots, type CompileInput } from "@rhema/hooks";
+import { stageSkills } from "./skills-staging.js";
 import type { AgentTypeKey } from "@rhema/contracts";
 import type { OutboundEvent, EventTransport } from "./event-buffer.js";
 import { EventBufferClient, FileBufferStore } from "./event-buffer.js";
@@ -99,49 +100,75 @@ export async function fetchRunSpec(args: { apiBaseUrl: string; runId: string; ru
 }
 
 export async function main(): Promise<void> {
-  const { readFile, writeFile, mkdir } = await import("node:fs/promises");
+  const { readFile, writeFile, mkdir, chmod } = await import("node:fs/promises");
   const { spawn } = await import("node:child_process");
   const { createFetchEventTransport } = await import("./event-transport.js");
   const { createHookDaemon } = await import("./hook-daemon.js");
   const { createGcsContentStore } = await import("@rhema/mirror");
   const { materializeWork, nodeWorkFs } = await import("./materialize-work.js");
   const { readWorkDir } = await import("./work-reader.js");
+  const { startCredentialInjector } = await import("./credential-injector.js");
 
   const runId = reqEnv("RUN_ID");
   const workspaceId = reqEnv("WORKSPACE_ID");
   const apiBaseUrl = reqEnv("API_INTERNAL_URL");
-  const proxyBaseUrl = reqEnv("ANTHROPIC_BASE_URL");
+  const egressProxyBaseUrl = reqEnv("ANTHROPIC_BASE_URL");
   const objectsBucket = reqEnv("OBJECTS_BUCKET");
   const configDir = reqEnv("CLAUDE_CONFIG_DIR");
-  const workDir = process.env.WORK_DIR ?? "/work";
-  // The agent's cwd is the materialized work root: `materializeWork` writes the manifest's paths at `<workDir>/…`
-  // (e.g. /work/drafts/v1.md, /work/manifest.md) — there is NO `project` subdir, so the old `<workDir>/project`
-  // default did not exist and `spawn` failed ENOENT (Node reports a missing cwd as an ENOENT on the command —
-  // the D-P0.15e-2 blocker surfaced live in P0.15f). The loop harvests the agent's output from this same cwd.
-  const cwd = process.env.AGENT_CWD ?? workDir;
   const hookSocketPath = process.env.HOOK_SOCKET_PATH ?? `${configDir}/hook.sock`;
   const agentUid = Number(process.env.AGENT_UID ?? 10002);
   const agentGid = Number(process.env.AGENT_GID ?? 10002);
 
-  // the token (harness-only 0400 file) — the ONLY holder of it is this uid `harness` process (the api client
-  // below + the event transport). It never crosses into the agent process (REQ-SPEC-10/11).
+  // the token + the proxy credential (harness-only 0400/0440 files) — the ONLY holder of them is this uid
+  // `harness` process. Neither ever crosses into the agent process (REQ-SPEC-10/11): the token authenticates
+  // the internal-API client + event transport; the credential is stamped by the injector below.
   const runToken = (await readFile(reqEnv("RUN_TOKEN_FILE"), "utf8")).trim();
+  const proxyCredential = (await readFile(reqEnv("PROXY_CREDENTIAL_FILE"), "utf8")).trim();
   const contentStore = await createGcsContentStore({ bucketName: objectsBucket, workspaceId });
   const client = createHarnessApiClient({ apiBaseUrl, runId, runToken });
+
+  // D-P0.15f-2: start the harness-side credential injector on loopback and point the AGENT at IT (not the
+  // egress-proxy). The injector — running in THIS uid `harness` process — stamps `x-rhema-proxy-credential`
+  // on every request and forwards to the egress-proxy; the agent's scrubbed env carries only this loopback URL
+  // and never the credential, so a credential-less shell-escape request straight to the egress-proxy 403s.
+  const injector = await startCredentialInjector({ credential: proxyCredential, upstreamBaseUrl: egressProxyBaseUrl });
+  const agentProxyBaseUrl = injector.url;
+  console.log(`[harness] credential injector listening at ${agentProxyBaseUrl} → ${egressProxyBaseUrl} for run ${runId}`);
 
   /**
    * Run ONE phase in the pod (the loop's `runPhase` seam): materialize `/work` from the spec's manifest, write
    * the agent's phase spec (folding any guided-retry guidance into its inputs), start the hook daemon, launch
    * the SDK as uid `agent` (forwarding its fd-3 events to the api with the token), wait for it to exit, then
-   * read `/work` into the `PhaseRunOutputs` the loop judges + commits. The workDir/cwd/manifest path convention
-   * is reconciled against real agent output in the live re-run (Stage B).
+   * read `/work` into the `PhaseRunOutputs` the loop judges + commits. The `/work` layout is reconciled (F3):
+   * entries materialize under their mount root and the agent runs in `request.cwd` = `roots.project`.
    */
   const runOnePhaseInPod = async (spec: HarnessRunSpec, opts: { guidance?: string }): Promise<PhaseRunOutputs> => {
     const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
-    await materializeWork({ workDir, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
+    // Reconciled /work layout (F3): materialize each manifest entry under its mount root, using the SAME roots
+    // the §12.6 hook compiles against (`resolveSeatRoots`) — so a `project` entry lands at `/work/project/…`
+    // where the hook expects to find it (the draft read is ALLOWed, not denied) and where the SDK cwd points.
+    const roots = resolveSeatRoots({ roots: spec.hookPolicyInput.roots, personaId: spec.hookPolicyInput.personaId });
+    await materializeWork({ roots, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
 
-    await mkdir(cwd, { recursive: true }); // the agent's cwd must exist or `spawn` fails ENOENT (see cwd note above)
+    // The agent runs (and the SDK CLI is spawned) in `request.cwd` = `roots.project` (`/work/project`): the
+    // project files now live there, the agent writes its outputs + `.rhema/agent-result.json` there, and the
+    // loop harvests from the same dir. It MUST exist or `spawn` fails ENOENT (the D-P0.15e-2 symptom).
+    const cwd = spec.request.cwd;
+    await mkdir(cwd, { recursive: true });
+    // The agent (uid `agent`, 10002) runs in `cwd` and must create its OUTPUT tree there — `.rhema/agent-result.json`
+    // + `.rhema/phase-result.json` + the seat's writable namespaces (`agents/<seat>/**`). `cwd` and its parents were
+    // created by the harness (uid `harness`, 10001) during materialize, so they are harness-owned and the agent
+    // cannot write into them (live: `EACCES mkdir /work/project/.rhema` AFTER a successful model phase). The harness
+    // is non-root (no CAP_CHOWN) so it cannot chown to the agent uid; instead make the writable roots world-writable
+    // (0777). The mounted INPUT files stay 0444 (materializeWork), so this widens only the dirs, not the read set —
+    // the boundary remains the proxy + uid split + the §12.6 hook, never the /work perms.
+    await chmod(cwd, 0o777);
+    const workRoot = roots.project.replace(/\/[^/]+\/?$/, "") || "/work"; // e.g. /work (parent of /work/project)
+    await chmod(workRoot, 0o777).catch(() => undefined); // best-effort: the agent must traverse+write scratch here too
     await mkdir(configDir, { recursive: true });
+    // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
+    // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
+    await stageSkills({ skillsDir: spec.skillsDir, configDir });
     const request = opts.guidance
       ? { ...spec.request, inputs: { ...spec.request.inputs, guidance: opts.guidance } }
       : spec.request;
@@ -162,7 +189,7 @@ export async function main(): Promise<void> {
     try {
       // ABSOLUTE node path (process.execPath) — the scrubbed agent env has no PATH, so setpriv cannot resolve a
       // bare `node` after the uid drop (bare `node`/`setpriv` → `spawn … ENOENT`, the D-P0.15e-2 root cause).
-      const launch = buildAgentLaunch({ runId, proxyBaseUrl, configDir, agentUid, agentGid, cwd, command: [process.execPath, "/app/dist/agent-entry.js"] });
+      const launch = buildAgentLaunch({ runId, proxyBaseUrl: agentProxyBaseUrl, configDir, agentUid, agentGid, cwd, command: [process.execPath, "/app/dist/agent-entry.js"] });
       const child = spawn(launch.argv[0]!, launch.argv.slice(1), {
         cwd: launch.cwd,
         env: launch.env,
@@ -181,11 +208,21 @@ export async function main(): Promise<void> {
     }
 
     const files = await readWorkDir(cwd);
-    return buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+    const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+    // DIAGNOSTIC (K5 / D-P0.06-1, the first live SDK exercise): dump what the agent actually produced in /work vs
+    // what the completion oracle judged, so the intake predicate can be reconciled against real skill output.
+    console.log(`[harness] phase ${spec.request.phase.key} /work files: ${[...files.keys()].sort().join(", ") || "(none)"}`);
+    console.log(`[harness] phase ${spec.request.phase.key} outputs: subtype=${outputs.subtype} versions=${outputs.versions.length} facts=${JSON.stringify(outputs.facts)} phaseResult=${JSON.stringify(outputs.phaseResult)}`);
+    return outputs;
   };
 
-  // drive the run phase-by-phase to a terminal outcome (§12.4 steps 6–8).
-  const result = await runCommitLoop({ client, runPhase: runOnePhaseInPod, workspaceId });
+  // drive the run phase-by-phase to a terminal outcome (§12.4 steps 6–8); always tear the injector down after.
+  let result;
+  try {
+    result = await runCommitLoop({ client, runPhase: runOnePhaseInPod, workspaceId });
+  } finally {
+    await injector.close();
+  }
   console.log(`[harness] run ${runId} loop finished: ${result.kind} (${result.phasesCommitted} phase(s) committed)`);
   process.exit(result.kind === "failed" ? 1 : 0);
 }

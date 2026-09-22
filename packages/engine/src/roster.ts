@@ -20,18 +20,33 @@ export interface AgentDef {
 
 type Tier = "base" | "balanced" | "frontier";
 
+// Model ids MUST be the exact strings the proxy allowlist enumerates (`@rhema/orchestrator` MODELS_BY_TIER,
+// an exact-match `.includes`) AND priceable in the rate table (`@rhema/contracts` isModelPriceable). A dated id
+// like `claude-haiku-4-5-20251001` is NOT on the (bare-id) allowlist, so it 403s at the proxy (F4). Use the
+// bare family ids the allowlist + rate table carry; the roster-allowlist alignment test guards this.
 /** Main-context model per tier (§12.3 judge/generate row). */
 const MAIN_MODEL: Record<Tier, string> = {
   base: "claude-sonnet-5",
   balanced: "claude-opus-5",
-  frontier: "claude-fable-5-1",
+  frontier: "claude-fable-5",
 };
 /** Research fan-out subagent model per tier (§12.3 research row). */
 const RESEARCH_SUB_MODEL: Record<Tier, string> = {
-  base: "claude-haiku-4-5-20251001",
+  base: "claude-haiku-4-5",
   balanced: "claude-sonnet-5",
   frontier: "claude-opus-5",
 };
+
+/** The main-context model for a tier (§12.3). The engine sets it as the top-level `model` (F4) so the CLI does
+ *  not fall back to a default that may be off the run's allowlist. */
+export function mainModelForTier(tier: Tier): string {
+  return MAIN_MODEL[tier];
+}
+
+/** Every model id the roster can request for a tier (main + subagents) — the set the allowlist must cover. */
+export function rosterModelIds(tier: Tier): string[] {
+  return [...new Set(Object.values(buildAgentRoster({ tier })).map((a) => a.model))];
+}
 
 export interface RosterInput {
   readonly tier: Tier;
