@@ -76,8 +76,8 @@ describe("worker run-lifecycle handlers", () => {
     expect(base.ledger.opsOf("release")).toHaveLength(1);
   });
 
-  it("gateExpiryJob names the gate:<id> type (registered here; handled by P0.10)", () => {
-    expect(gateExpiryJob("g1")).toBe("gate:g1");
+  it("gateExpiryJob names the shared gate.expiry queue (F25 — gate:<id> is an illegal pg-boss name)", () => {
+    expect(gateExpiryJob("g1")).toBe("gate.expiry");
   });
 
   it("handleGateExpiryJob runs the due gate's onExpiry (auto-proceed → run.resume)", async () => {
