@@ -15,10 +15,23 @@ import type { SqlClient } from "./invite.js";
 // `origin=human_upload`, storing the normalized bytes in the content store. Conversion NEVER runs in `api`
 // (the F41 split): the api calls the convert service through the injected `Converter` seam.
 
-/** The convert-service seam: quarantine key → ConversionResult. Real impl POSTs to `convert`; tests fake it. */
+/** The convert-service seam: quarantine key → ConversionResult. Real impl runs the convert Cloud Run Job;
+ *  tests fake it. */
 export interface Converter {
-  preview(quarantineKey: string): Promise<ConversionResult>;
+  /**
+   * Convert the quarantined upload → its ConversionResult, or `null` while still converting. `waitMs`
+   * bounds how long the call waits on a cold conversion (a live cold Job runs ~2.5–4 min — PRB.21: a
+   * bounded call returns `null` = pending and the caller retries; unset ⇒ wait to the runner's full bound).
+   */
+  preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null>;
 }
+
+/**
+ * The per-request preview wait bound (PRB.21). The prod HTTPS LB's backend timeout bounds a single
+ * request well under a cold Job's ~2.5–4 min — the api holds at most this long, then answers 202 and the
+ * caller retries (read-back cache / the in-flight marker make a retry ~190 ms and never re-run the Job).
+ */
+const IMPORT_PREVIEW_WAIT_MS = 25_000;
 
 export interface ImportActor {
   readonly kind: "user";
@@ -167,7 +180,13 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     const body = await c.req.json().catch(() => ({}));
     const key = tenantKey(c, body, principal.workspaceId);
     if (key instanceof Response) return key;
-    const result = await deps.converter.preview(key);
+    // PRB.21 — `waitMs` is the caller's request budget (clamped): the call returns 202 `pending` instead
+    // of holding open for a cold Job. The web polls this same route — read-back-first + the in-flight
+    // marker make a retry cheap and idempotent (never a second `jobs:run`).
+    const want = (body as { waitMs?: unknown }).waitMs;
+    const waitMs = typeof want === "number" && Number.isFinite(want) ? Math.min(Math.max(want, 0), IMPORT_PREVIEW_WAIT_MS) : undefined;
+    const result = await deps.converter.preview(key, waitMs != null ? { waitMs } : undefined);
+    if (result == null) return c.json({ pending: true, quarantineKey: key }, 202);
     return c.json({ preview: result });
   });
 
@@ -182,7 +201,10 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     // (the scoped db returns no row for another workspace's project id) BEFORE paying a convert run.
     const project = await deps.db.query("select id from projects where id = $1", [projectId]);
     if (project.rows.length === 0) return c.json({ error: "not_found" }, 404);
-    const result = await deps.converter.preview(key);
+    // Bounded like the preview route (PRB.21): create only proceeds once the converted object exists —
+    // a still-converting key answers 409 `conversion_pending` rather than a multi-minute hang.
+    const result = await deps.converter.preview(key, { waitMs: IMPORT_PREVIEW_WAIT_MS });
+    if (result == null) return c.json({ error: "conversion_pending", quarantineKey: key }, 409);
     const created = await createImportedDraft(
       { db: deps.db, contentStore: deps.contentStore, ids: deps.ids },
       { projectId, workspaceId: principal.workspaceId, actor: { kind: "user", userId: principal.userId }, result },

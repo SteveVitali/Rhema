@@ -61,7 +61,19 @@ export const ALLOWED_TRANSITIONS: Readonly<Record<RunState, readonly RunState[]>
   cancelled: [],
 };
 
-const TERMINAL: ReadonlySet<RunState> = new Set(["completed", "completed_partial", "failed", "cancelled"]);
+/**
+ * The §12.4 terminal states (absorbing). The complement — NON_TERMINAL_RUN_STATES — is the beta's
+ * "run in progress" set (D-PRB.20-1 / PRB.21: at most ONE non-terminal run per project). `orphaned`
+ * is deliberately non-terminal here: the reaper re-enqueues it (it still holds its lock set + hold).
+ */
+export const TERMINAL_RUN_STATES = ["completed", "completed_partial", "failed", "cancelled"] as const;
+
+/** Every run state that still occupies the project (the one-active-run guard's blocking set). */
+export const NON_TERMINAL_RUN_STATES: readonly RunState[] = RUN_STATES.filter(
+  (s) => !(TERMINAL_RUN_STATES as readonly string[]).includes(s),
+);
+
+const TERMINAL: ReadonlySet<RunState> = new Set(TERMINAL_RUN_STATES);
 
 /** A parked run (`waiting_gate`) or a queued run consumes no compute; waiting is free (Q-7). */
 const PARKED: ReadonlySet<RunState> = new Set(["queued", "awaiting_consent", "waiting_gate"]);

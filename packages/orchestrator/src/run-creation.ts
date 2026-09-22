@@ -17,6 +17,7 @@ import type { HoldLedger } from "./ledger.js";
 import { InsufficientBalanceError, AccountSuspendedError } from "./ledger.js";
 import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition } from "./transition.js";
+import { NON_TERMINAL_RUN_STATES } from "./state-machine.js";
 import { validateModelProfile, ModelProfileRejectedError, type ModelProfile, type PhaseClass } from "./capabilities.js";
 import { computeLockSet, type LockSetSpec } from "./locks.js";
 import { openGate } from "./internal-api.js";
@@ -69,6 +70,9 @@ export type CreateRunResult =
   | { readonly ok: true; readonly runId: string; readonly state: "queued" | "awaiting_consent"; readonly deduped: boolean }
   | { readonly ok: false; readonly reason: "insufficient_balance"; readonly required: number }
   | { readonly ok: false; readonly reason: "account_suspended" }
+  // PRB.21 / D-PRB.20-1 — the beta concurrency ruling: at most ONE non-terminal run per project; a
+  // second create 409s carrying the active run's id (the sheet re-renders its in-progress state).
+  | { readonly ok: false; readonly reason: "run_in_progress"; readonly activeRunId: string }
   | { readonly ok: false; readonly reason: "model_profile_rejected"; readonly error: ModelProfileRejectedError };
 
 /**
@@ -92,6 +96,33 @@ export async function createRun(
     const now = deps.clock.now();
     const runId = deps.ids("run");
     const lockSet = computeLockSet({ workflow: input.workflow, seat: input.seat, ...input.lockSetSpec });
+
+    // PRB.21 / D-PRB.20-1 — the beta concurrency ruling: at most ONE non-terminal run per project.
+    // `select … for update` on the projects row serializes same-project creates: a second creator
+    // blocks on the lock until this transaction commits, then sees the new run under READ COMMITTED —
+    // the check-then-insert below cannot race. (P1.06 scoped runs may legitimately parallelize; the
+    // relaxation point is THIS guard — per-scope instead of per-project — recorded in the ledger, not
+    // built.) A project-less run skips the guard entirely.
+    if (input.projectId) {
+      await tx.query("select id from projects where id = $1 for update", [input.projectId]);
+      // A retry of THIS submission dedupes to its live run — the memo check precedes the guard so an
+      // idempotent replay of an in-flight run returns it (200) instead of 409ing.
+      const memoRun = await findFreshMemo(tx, input.billingAccountId, input.idempotencyKey, now);
+      if (memoRun) {
+        const state = (await runStateOf(tx, memoRun)) as "queued" | "awaiting_consent";
+        throw new CreationRollback({ ok: true, runId: memoRun, state, deduped: true });
+      }
+      const active = await tx.query(
+        `select id from runs where project_id = $1 and state = any($2::text[])
+           order by created_at desc limit 1`,
+        [input.projectId, [...NON_TERMINAL_RUN_STATES]],
+      );
+      const activeRow = active.rows[0] as { id: string } | undefined;
+      if (activeRow) {
+        // roll the whole creation back — no run row, no memo, and never a second hold.
+        throw new CreationRollback({ ok: false, reason: "run_in_progress", activeRunId: activeRow.id });
+      }
+    }
 
     // Insert the frozen run row in `created`; transitions below pair state with events.
     await tx.query(

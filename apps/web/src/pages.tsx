@@ -373,7 +373,18 @@ export function ImportPreviewPage(): ReactNode {
           {COPY.import.created}
         </p>
       ) : null}
-      {conversion ? (
+      {conversion?.pending === true ? (
+        // PRB.21 — the converting state: a cold convert Job can run ~2.5–4 min; the page's meta-refresh
+        // re-polls the preview GET on the quarantine key until the converted object lands. Honest copy —
+        // never a spinner masquerading as a hung request.
+        <section style={{ maxWidth: "68ch" }}>
+          <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
+            {fmt(COPY.import.convertingFmt, { name: conversion.sourceLabel })}
+          </p>
+          <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px" }}>{COPY.import.convertingNote}</p>
+        </section>
+      ) : null}
+      {conversion && conversion.pending !== true ? (
         <ConversionPreview
           sourceLabel={conversion.sourceLabel}
           sourceText={conversion.sourceText}
@@ -449,7 +460,21 @@ export function RunSheetPage(): ReactNode {
           {runSheet.notice}
         </p>
       ) : null}
-      {runSheet ? (
+      {runSheet?.activeRun ? (
+        // PRB.21 / D-PRB.20-1 — a non-terminal run exists ⇒ the in-progress state REPLACES the Run
+        // affordance (the api 409s a second create; this is the honest first screen + its link).
+        <section style={{ maxWidth: "68ch" }}>
+          <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
+            {COPY.runSheet.inProgress}
+          </p>
+          {runSheet.activeRun.runId !== "" ? (
+            <p style={{ marginTop: "12px" }}>
+              <a href={`/p/${slug}/review/${runSheet.activeRun.runId}`}>{COPY.runSheet.openRun}</a>
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+      {runSheet && !runSheet.activeRun ? (
         <RunSheet
           view={runSheet.view}
           labels={{

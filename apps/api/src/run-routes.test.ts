@@ -62,6 +62,29 @@ describe("POST /projects/:id/runs", () => {
     expect(b2.deduped).toBe(true);
   });
 
+  it("PRB.21 / D-PRB.20-1 — a second create on a project with a non-terminal run → 409 run_in_progress + the active id", async () => {
+    const r1 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody()),
+    });
+    expect(r1.status).toBe(201);
+    const { runId } = (await r1.json()) as { runId: string };
+
+    const r2 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-http-2" })),
+    });
+    expect(r2.status).toBe(409);
+    const b2 = (await r2.json()) as { error: string; runId: string };
+    expect(b2.error).toBe("run_in_progress");
+    expect(b2.runId).toBe(runId);
+    // exactly one run row + one hold (the in-memory ledger records the coupling point).
+    expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 1 });
+    expect(deps.ledger.opsOf("hold")).toHaveLength(1);
+  });
+
   it("rejects a model-profile override lacking capabilities (422)", async () => {
     const res = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
@@ -99,6 +122,10 @@ describe("POST /projects/:id/runs", () => {
     expect(blocked.status).toBe(403);
     expect(await blocked.json()).toEqual({ error: "email_unverified" });
     expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 1 }); // only the unbound one
+
+    // PRB.21 — the gate-0 run is still `queued` (non-terminal); land it terminal so this create passes
+    // the one-active-run guard and exercises the verified branch alone.
+    await db.client.query("update runs set state = 'completed'", []);
 
     const ok = await gated(true).request(`/projects/${seed.projectId}/runs`, {
       method: "POST",

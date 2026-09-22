@@ -438,6 +438,9 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     if (!res.ok) {
       if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
       if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403); // REQ-SPEC-24.7
+      // PRB.21 — a non-terminal run already occupies the project (e.g. the writer lock's run); the
+      // editor surfaces the conflict, never a second run.
+      if (res.reason === "run_in_progress") return c.json({ error: res.reason, runId: res.activeRunId }, 409);
       return c.json({ error: res.reason, detail: res.error.message }, 422);
     }
     if (res.state === "queued" && !res.deduped) {

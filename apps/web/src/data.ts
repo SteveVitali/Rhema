@@ -65,11 +65,21 @@ export interface ImportInput {
   readonly quarantineKey?: string;
 }
 
-/** The preview leg's result: the §5.3 conversion payload + the quarantine key the create form replays. */
-export interface ImportPreviewResult {
-  readonly preview: ConversionResult;
-  readonly quarantineKey: string;
-}
+/**
+ * The preview leg's outcome (PRB.21): `ready` carries the §5.3 conversion payload + the quarantine key
+ * the create form replays; `pending` means the cold convert Job is still running — the shell re-polls on
+ * the same quarantine key (the api joins the in-flight execution, never re-runs it, never re-uploads).
+ */
+export type ImportPreviewOutcome =
+  | { readonly status: "ready"; readonly preview: ConversionResult; readonly quarantineKey: string }
+  | { readonly status: "pending"; readonly quarantineKey: string };
+
+/**
+ * The per-request preview wait budget handed to the api (PRB.21). A cold convert Job runs ~2.5–4 min;
+ * each call waits at most this long (well inside the prod LB's backend timeout) before the shell renders
+ * the converting state and the page re-polls.
+ */
+export const IMPORT_PREVIEW_WAIT_MS = 20_000;
 
 /**
  * The delivered-review dossier the reading surfaces render (PRB.04). Semi-raw domain data + the proxy fetch
@@ -123,8 +133,10 @@ export interface DataSource {
     | { readonly ok: true; readonly created: boolean }
     | { readonly ok: false; readonly status: number; readonly error: string }
   >;
-  /** Convert an upload/paste to a §5.3 preview: presign → PUT to quarantine → api convert Job (PRB.20). */
-  previewImport(session: SessionHeaders, input: ImportInput): Promise<ImportPreviewResult>;
+  /** Convert an upload/paste to a §5.3 preview: presign → PUT to quarantine → api convert Job (PRB.20).
+   *  PRB.21: resolves `pending` while a cold Job still converts — the caller re-invokes with the same
+   *  `quarantineKey` to poll (no re-upload, no duplicate execution). */
+  previewImport(session: SessionHeaders, input: ImportInput): Promise<ImportPreviewOutcome>;
   /** Create the imported draft from a preview's quarantine key; returns the new draft id. */
   createImport(session: SessionHeaders, input: ImportInput): Promise<{ draftId: string }>;
   /** The sheet's Run click → the api's only run creator (REQ-CHAT-25). Session forwarded. */
@@ -321,8 +333,12 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     previewImport: async (session, input) => {
       const projectId = await projectIdFor(session, input.projectSlug);
       const quarantineKey = await uploadKey(session, input);
-      const preview = await client(session).previewImport(projectId, { quarantineKey });
-      return { preview, quarantineKey };
+      const out = await client(session).previewImport(projectId, {
+        quarantineKey,
+        waitMs: IMPORT_PREVIEW_WAIT_MS,
+      });
+      if (out.status === "pending") return { status: "pending", quarantineKey };
+      return { status: "ready", preview: out.preview, quarantineKey };
     },
     createImport: async (session, input) => {
       const projectId = await projectIdFor(session, input.projectSlug);

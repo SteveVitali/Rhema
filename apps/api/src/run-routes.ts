@@ -310,6 +310,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       }
       return c.json({ runId: res.runId, state: res.state, deduped: res.deduped }, res.deduped ? 200 : 201);
     }
+    // PRB.21 / D-PRB.20-1 — one non-terminal run per project: the second click 409s carrying the active
+    // run's id; the web sheet re-renders its in-progress state (a link to the run's surface), never an error.
+    if (res.reason === "run_in_progress") return c.json({ error: res.reason, runId: res.activeRunId }, 409);
     if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
     // REQ-SPEC-24.7 (PRB.08): a chargeback-suspended account takes no new runs — 403, never a silent queue.
     if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403);
