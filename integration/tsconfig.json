@@ -8,6 +8,7 @@
   "references": [
     { "path": "../apps/api" },
     { "path": "../apps/worker" },
+    { "path": "../apps/run-task" },
     { "path": "../packages/orchestrator" },
     { "path": "../packages/engine" },
     { "path": "../packages/mirror" },

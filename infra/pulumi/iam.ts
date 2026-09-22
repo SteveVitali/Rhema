@@ -58,6 +58,9 @@ export function createIam(args: IamArgs): Iam {
   // one secret and let the proxy read it (it uses only the JWK public component); the api signs with it.
   grantSecret("proxy-reads-runtoken", secrets.runTokenSigningKey, serviceAccounts["egress-proxy"]);
   grantSecret("api-signs-runtoken", secrets.runTokenSigningKey, serviceAccounts["api"]);
+  // The worker MINTS run tokens at provision (Rs256RunTokenService over the signing key) — it needs the
+  // same keypair the api verifies with (D-P0.08-1).
+  grantSecret("worker-signs-runtoken", secrets.runTokenSigningKey, serviceAccounts["worker"]);
   // api reads the auth secrets; web/collab read NONE (no binding = no access under uniform IAM).
   grantSecret("api-reads-betterauth", secrets.betterAuthSecret, serviceAccounts["api"]);
   grantSecret("api-reads-google-oauth", secrets.googleOauthClientSecret, serviceAccounts["api"]);
@@ -79,6 +82,15 @@ export function createIam(args: IamArgs): Iam {
   // run-task's harness uid materializes /work from artifact bytes — read-only.
   grantBucket("runtask-ro-artifacts", buckets["artifacts"], serviceAccounts["run-task"], "roles/storage.objectViewer");
 
+  // The egress-proxy MIG VM pulls its digest-pinned image from Artifact Registry with its instance SA (the COS
+  // startup-script `docker pull`). Without this the pull is denied ("Unauthenticated request") — surfaced live
+  // P0.15e. Project-level reader is the minimum (mirrors the run-task node grant below).
+  new gcp.projects.IAMMember(`rhema-${stack}-proxy-artifactregistry-reader`, {
+    project,
+    role: "roles/artifactregistry.reader",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["egress-proxy"].email}`,
+  });
+
   // The run-task GKE nodes pull the digest-pinned image from Artifact Registry over Private Google Access
   // (the sandbox subnet has no NAT / no internet). Without this the nodes fail to pull and never register
   // (P0.15c symptom: 0/1 nodes). A project-level reader on the node/pod GSA is the minimum (D-P0.15c-8).
@@ -86,6 +98,15 @@ export function createIam(args: IamArgs): Iam {
     project,
     role: "roles/artifactregistry.reader",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["run-task"].email}`,
+  });
+
+  // The worker launches the two-uid run-task Jobs on the GKE cluster (createGkeJobLauncher → k8s Job create).
+  // `container.developer` grants the k8s-API access to create/read Jobs in the cluster (D-P0.08-1); a tighter
+  // per-namespace RBAC role is a later hardening (P1.22 / ops).
+  new gcp.projects.IAMMember(`rhema-${stack}-worker-gke-job-launcher`, {
+    project,
+    role: "roles/container.developer",
+    member: pulumi.interpolate`serviceAccount:${serviceAccounts["worker"].email}`,
   });
 
   return { serviceAccounts };

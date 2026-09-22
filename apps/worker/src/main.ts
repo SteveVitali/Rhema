@@ -3,6 +3,7 @@
 // run.start/resume/cancel/reap"). This is deploy wiring only — the handlers + every seam are unit-tested
 // in-process; this file is not exercised offline (it needs a live deploy).
 
+import http from "node:http";
 import pg from "pg";
 import { Redis } from "ioredis";
 import { PgBoss } from "pg-boss";
@@ -43,6 +44,16 @@ export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
 /** Start the live worker: construct deps, register consumers + crons. */
 export async function startWorker(): Promise<void> {
   const env = readWorkerEnv();
+
+  // Cloud Run runs this worker as an always-on service (min-instances=1) and health-probes $PORT at startup;
+  // a pg-boss consumer otherwise opens no port and the deploy's startup probe fails. A tiny always-200 server
+  // answers the probe (the worker serves no HTTP of its own). Opened before the slower secret/DB/pg-boss init
+  // so the port is listening well within the probe window.
+  const health = http.createServer((_req, res) => {
+    res.writeHead(200, { "content-type": "text/plain" });
+    res.end("ok");
+  });
+  health.listen(Number(process.env.PORT ?? 8080));
 
   const pool = new pg.Pool({ connectionString: env.databaseUrl });
   const redis = new Redis(env.redisUrl);

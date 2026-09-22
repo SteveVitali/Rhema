@@ -11,10 +11,14 @@ import {
   postEvents,
   commitStep,
   failStep,
+  harvestStep,
   audit,
   hydration,
   buildHarnessRunSpec,
   deliverRun,
+  finalizeRun,
+  rateTableCreditRenderer,
+  type CreditRenderer,
   type DeliverRunDeps,
   resolveGate,
   recordGateActivity,
@@ -33,7 +37,9 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
-import type { DeliveryArgs, ObligationHook } from "@rhema/mirror";
+import type { DeliveryArgs, NewVersion, ObligationHook } from "@rhema/mirror";
+import type { AgentTypeKey } from "@rhema/contracts";
+import type { UsageSnapshot } from "@rhema/engine";
 
 /** Auth principal for run creation — the session's user + billing scope (Better Auth wiring is P0.01/PRB). */
 export interface Principal {
@@ -70,6 +76,11 @@ export interface RunApiDeps extends OrchestratorDeps {
    * (`/app/skills`, dev `max_usd` $10). The deploy binds these from the image + stage config.
    */
   readonly runSpecConfig?: { readonly skillsDir?: string; readonly maxUsdPerRun?: number };
+  /**
+   * Provisional-credit renderer for the harvest route's running `usage.tick`/`sdk_stream` row (D-P0.15d-3).
+   * Unset ⇒ the shared versioned rate-table renderer. Injected so tests can force a deterministic figure.
+   */
+  readonly renderCredits?: CreditRenderer;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -287,6 +298,45 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     });
   });
 
+  // Harvest → persist produced versions (P0.15e; §12.2 commit step 2). The pod harness reports the phase's
+  // produced writable versions (base64 bytes — it cannot write GCS/DB itself, REQ-SPEC-10/11); the api persists
+  // them content-addressed inside the run's workspace store and returns the version ids for the commit. Also
+  // records the provisional running `usage.tick`/`sdk_stream` row (D-P0.15d-3). Token-authed + attempt-fenced.
+  internal.post("/runs/:id/steps/:key/harvest", (c) => {
+    const run = c.get("run");
+    return guard(c, async () => {
+      const body = (await c.req.json()) as HarvestBody;
+      const store = deps.contentStoreFor ? await deps.contentStoreFor(run.workspaceId) : deps.store;
+      if (!store) return c.json({ error: "harvest requires a content store" }, 500);
+      const versions: NewVersion[] = (body.versions ?? []).map((v) => ({
+        path: v.path,
+        root: v.root,
+        kind: v.kind,
+        namespace: v.namespace,
+        sha256: v.sha256,
+        bytes: Buffer.from(v.bytesB64, "base64"),
+        wordCount: v.wordCount,
+        ...(v.producerQueryId !== undefined ? { producerQueryId: v.producerQueryId } : {}),
+      }));
+      const res = await harvestStep(
+        { ...deps, store, renderCredits: deps.renderCredits ?? rateTableCreditRenderer },
+        {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+          stepKey: c.req.param("key"),
+          ordinal: body.ordinal,
+          seat: body.seat,
+          ...(body.projectId !== undefined ? { projectId: body.projectId } : {}),
+          ...(body.personaId !== undefined ? { personaId: body.personaId } : {}),
+          versions,
+          usage: body.usage,
+        },
+      );
+      return c.json(res, res.ok ? 200 : 409);
+    });
+  });
+
   // Finalize → deliver (§12.4 step 8; D-P0.09-1/D-P0.12-1). The run-task posts the delivering dossier at the
   // final commit; the api runs the @rhema/mirror delivery transaction (validation → correspondence + freeze +
   // the obligation hook → attestation) atomically with `finalizing → completed`. The content store is bound to
@@ -302,16 +352,44 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         store,
         ...(deps.obligationHook ? { obligationHook: deps.obligationHook } : {}),
       };
+      // The pod harness reports only the /work dossier; the MONEY facts (billing account, accrued spend/cap, the
+      // hold) are server-side truth, so resolve them from the run row when the body omits them (a harness POST).
+      // Existing callers that pass them explicitly (tests) are honored unchanged.
+      const money =
+        body.billingAccountId && body.spentCredits != null && body.capCredits != null
+          ? { billingAccountId: body.billingAccountId, spentCredits: body.spentCredits, capCredits: body.capCredits, holdLedgerId: body.holdLedgerId }
+          : await resolveRunMoney(deps, run.workspaceId, run.runId);
       const res = await deliverRun(deliverDeps, {
-        billingAccountId: body.billingAccountId,
-        spentCredits: body.spentCredits,
-        capCredits: body.capCredits,
-        ...(body.holdLedgerId ? { holdLedgerId: body.holdLedgerId } : {}),
+        billingAccountId: money.billingAccountId,
+        spentCredits: money.spentCredits,
+        capCredits: money.capCredits,
+        ...(money.holdLedgerId ? { holdLedgerId: money.holdLedgerId } : {}),
         ...(body.refundCredits != null ? { refundCredits: body.refundCredits } : {}),
         ...(body.byPhase ? { byPhase: body.byPhase } : {}),
-        delivery: body.delivery,
+        // the run/attempt/workspace of record come from the token, not the pod's dossier (§12.6 attestation).
+        delivery: { ...body.delivery, runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId },
       });
       return c.json(res, res.ok ? 200 : 409);
+    });
+  });
+
+  // Bare finalize (§12.4 step 8) — `finalizing → completed` with NO delivery dossier: a pinned `phase:N` run,
+  // or a workflow that produces no correspondence. Token-authed; money facts resolved from the run row.
+  internal.post("/runs/:id/finalize", (c) => {
+    const run = c.get("run");
+    return guard(c, async () => {
+      const body = (await c.req.json().catch(() => ({}))) as { byPhase?: Record<string, number> };
+      const money = await resolveRunMoney(deps, run.workspaceId, run.runId);
+      const res = await finalizeRun(deps, {
+        runId: run.runId,
+        workspaceId: run.workspaceId,
+        billingAccountId: money.billingAccountId,
+        spentCredits: money.spentCredits,
+        capCredits: money.capCredits,
+        ...(money.holdLedgerId ? { holdLedgerId: money.holdLedgerId } : {}),
+        ...(body.byPhase ? { byPhase: body.byPhase } : {}),
+      });
+      return c.json(res);
     });
   });
 
@@ -379,15 +457,62 @@ interface CommitBody {
   result: { status: "done"; sdkSubtype: string; predicatesPassed: boolean; compactions: number };
   next: CommitNext;
 }
-/** The finalizing run's delivery payload the run-task posts to `POST /internal/runs/:id/deliver`. */
+/** One harvested writable version the pod reports (bytes base64-encoded for JSON transport). */
+interface HarvestVersionBody {
+  path: string;
+  root: NewVersion["root"];
+  kind: string;
+  namespace: string;
+  sha256: string;
+  bytesB64: string;
+  wordCount: number;
+  producerQueryId?: string;
+}
+/** The harvest payload the run-task posts to `POST /internal/runs/:id/steps/:key/harvest`. */
+interface HarvestBody {
+  ordinal: number;
+  seat: AgentTypeKey;
+  projectId?: string | null;
+  personaId?: string | null;
+  versions: HarvestVersionBody[];
+  usage: UsageSnapshot;
+}
+/** The finalizing run's delivery payload the run-task posts to `POST /internal/runs/:id/deliver`. The money
+ *  fields are optional — a harness POST omits them and the route resolves them from the run row (server truth). */
 interface DeliverBody {
-  billingAccountId: string;
-  spentCredits: number;
-  capCredits: number;
+  billingAccountId?: string;
+  spentCredits?: number;
+  capCredits?: number;
   holdLedgerId?: string;
   refundCredits?: number;
   byPhase?: Record<string, number>;
   delivery: DeliveryArgs;
+}
+
+/** Resolve a run's delivery money facts from server truth (the run row + its workspace's billing account). */
+async function resolveRunMoney(
+  deps: RunApiDeps,
+  workspaceId: string,
+  runId: string,
+): Promise<{ billingAccountId: string; spentCredits: number; capCredits: number; holdLedgerId?: string }> {
+  return deps.txRunner.run(workspaceId, async (tx) => {
+    const row = (
+      await tx.query(
+        `select r.spent_credits, r.cap_credits, r.hold_ledger_id, w.billing_account_id
+           from runs r join workspaces w on w.id = r.workspace_id where r.id = $1`,
+        [runId],
+      )
+    ).rows[0] as
+      | { spent_credits: number; cap_credits: number; hold_ledger_id: string | null; billing_account_id: string }
+      | undefined;
+    if (!row) throw new Error(`deliver: run ${runId} not found`);
+    return {
+      billingAccountId: row.billing_account_id,
+      spentCredits: row.spent_credits,
+      capCredits: row.cap_credits,
+      ...(row.hold_ledger_id ? { holdLedgerId: row.hold_ledger_id } : {}),
+    };
+  });
 }
 interface GateDecisionBody {
   action: DecisionAction;

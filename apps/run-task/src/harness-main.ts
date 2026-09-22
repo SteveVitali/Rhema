@@ -11,13 +11,21 @@
 //      + EventBufferClient — batch/spill/back-pressure). The token NEVER crosses into the agent process.
 //
 // The event-forwarding parse (`parseAgentEventLine`) + the forward loop (`forwardAgentEvents`) are pure and
-// unit-tested; `main()` is the deploy wiring (needs the live image + api/proxy).
+// unit-tested; `main()` is the deploy wiring (needs the live image + api/proxy). It drives the pod→server
+// commit/deliver loop (`runCommitLoop`, P0.15e): per phase it materializes `/work`, runs the agent, reads the
+// `/work` outputs, and calls the token-authed internal routes to harvest/commit/deliver — advancing the run
+// phase-by-phase until a gate, a pinned-phase stop, delivery, or a failure.
 
 import { compileSeatPolicy, newDenialState, type CompileInput } from "@rhema/hooks";
+import type { AgentTypeKey } from "@rhema/contracts";
 import type { OutboundEvent, EventTransport } from "./event-buffer.js";
 import { EventBufferClient, FileBufferStore } from "./event-buffer.js";
 import { buildAgentLaunch } from "./bootstrap.js";
 import { PHASE_SPEC_FILENAME, type AgentPhaseSpec } from "./agent-entry.js";
+import { runCommitLoop, type PhaseRunOutputs } from "./harness-loop.js";
+import { createHarnessApiClient } from "./internal-client.js";
+import { buildPhaseOutputs } from "./work-reader.js";
+import type { HarnessRunSpec as ServerRunSpec } from "@rhema/orchestrator";
 
 /** Parse one NDJSON line the agent wrote to fd 3 (a serialized `OutboundEvent[]`), or null when it is not one. */
 export function parseAgentEventLine(line: string): OutboundEvent[] | null {
@@ -62,23 +70,14 @@ export async function* toLines(stream: AsyncIterable<Buffer | string>): AsyncIte
 // -------------------------------------------------------------------- the deploy entrypoint (main) -----------
 
 /**
- * The server-authored run spec the harness executes (D-P0.15c-6). Structurally the api's `@rhema/orchestrator`
+ * The server-authored run spec the harness executes (D-P0.15c-6). It IS the api's `@rhema/orchestrator`
  * `HarnessRunSpec` — the harness fetches it as JSON and NEVER constructs it (§12.6 "attestation derives only
- * from server-side facts"). It carries the §12.6 boundary policy as JSON-safe `hookPolicyInput` (a `CompileInput`
- * with `tools` as an array): the compiled `SeatPolicy` holds a `Set` and the `DenialState` a `Map`, neither of
- * which survives JSON, so the harness compiles the live policy locally with the same `@rhema/hooks` code + a
- * fresh `newDenialState()`. No secret is ever in the spec (REQ-SPEC-10/11).
+ * from server-side facts"). It carries the §12.6 boundary policy as JSON-safe `hookPolicyInput`: the compiled
+ * `SeatPolicy` holds a `Set` and the `DenialState` a `Map`, neither of which survives JSON, so the harness
+ * compiles the live policy locally with the same `@rhema/hooks` code + a fresh `newDenialState()`. No secret is
+ * ever in the spec (REQ-SPEC-10/11).
  */
-interface HarnessRunSpec {
-  readonly request: AgentPhaseSpec["request"];
-  readonly skillsDir: string;
-  readonly tier?: AgentPhaseSpec["tier"];
-  /** the server-generated hydration manifest + any derived server files (obligations.json, manifest.md). */
-  readonly manifest: import("@rhema/mirror").MirrorManifest;
-  readonly serverFiles?: Record<string, string>; // path -> utf8 bytes
-  /** the §12.6 boundary policy inputs (JSON-safe); the harness compiles the live `SeatPolicy` from these. */
-  readonly hookPolicyInput: CompileInput;
-}
+export type HarnessRunSpec = ServerRunSpec;
 
 function reqEnv(name: string): string {
   const v = process.env[name];
@@ -106,6 +105,7 @@ export async function main(): Promise<void> {
   const { createHookDaemon } = await import("./hook-daemon.js");
   const { createGcsContentStore } = await import("@rhema/mirror");
   const { materializeWork, nodeWorkFs } = await import("./materialize-work.js");
+  const { readWorkDir } = await import("./work-reader.js");
 
   const runId = reqEnv("RUN_ID");
   const workspaceId = reqEnv("WORKSPACE_ID");
@@ -119,62 +119,68 @@ export async function main(): Promise<void> {
   const agentUid = Number(process.env.AGENT_UID ?? 10002);
   const agentGid = Number(process.env.AGENT_GID ?? 10002);
 
-  // 1. the token (harness-only 0400 file) + the run spec. The spec is server-authored: fetch it token-authed
-  //    from the api (the live path), or read a mounted RUN_SPEC_FILE if one was provided (offline/fallback).
+  // the token (harness-only 0400 file) — the ONLY holder of it is this uid `harness` process (the api client
+  // below + the event transport). It never crosses into the agent process (REQ-SPEC-10/11).
   const runToken = (await readFile(reqEnv("RUN_TOKEN_FILE"), "utf8")).trim();
-  const specFile = process.env.RUN_SPEC_FILE;
-  const runSpec = specFile
-    ? (JSON.parse(await readFile(specFile, "utf8")) as HarnessRunSpec)
-    : await fetchRunSpec({ apiBaseUrl, runId, runToken });
-
-  // 2. materialize /work from the server-generated manifest (read-only paths chmod 0444).
   const contentStore = await createGcsContentStore({ bucketName: objectsBucket, workspaceId });
-  const serverFiles = new Map(Object.entries(runSpec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
-  await materializeWork({ workDir, manifest: runSpec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
+  const client = createHarnessApiClient({ apiBaseUrl, runId, runToken });
 
-  // 3. write the agent's phase spec (no secrets) + start the hook daemon.
-  await mkdir(configDir, { recursive: true });
-  const agentSpec: AgentPhaseSpec = {
-    request: runSpec.request,
-    skillsDir: runSpec.skillsDir,
-    hookSocketPath,
-    ...(runSpec.tier ? { tier: runSpec.tier } : {}),
+  /**
+   * Run ONE phase in the pod (the loop's `runPhase` seam): materialize `/work` from the spec's manifest, write
+   * the agent's phase spec (folding any guided-retry guidance into its inputs), start the hook daemon, launch
+   * the SDK as uid `agent` (forwarding its fd-3 events to the api with the token), wait for it to exit, then
+   * read `/work` into the `PhaseRunOutputs` the loop judges + commits. The workDir/cwd/manifest path convention
+   * is reconciled against real agent output in the live re-run (Stage B).
+   */
+  const runOnePhaseInPod = async (spec: HarnessRunSpec, opts: { guidance?: string }): Promise<PhaseRunOutputs> => {
+    const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
+    await materializeWork({ workDir, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
+
+    await mkdir(configDir, { recursive: true });
+    const request = opts.guidance
+      ? { ...spec.request, inputs: { ...spec.request.inputs, guidance: opts.guidance } }
+      : spec.request;
+    const agentSpec: AgentPhaseSpec = {
+      request,
+      skillsDir: spec.skillsDir,
+      hookSocketPath,
+      ...(spec.tier ? { tier: spec.tier } : {}),
+    };
+    await writeFile(`${configDir}/${PHASE_SPEC_FILENAME}`, JSON.stringify(agentSpec), "utf8");
+
+    // the daemon holds the audit writer; the agent asks it for allow/deny and learns nothing else (§12.6). The
+    // policy is server-authored (REQ-ARCH-17): the api ships JSON-safe compile inputs; the harness compiles the
+    // live SeatPolicy here with the SAME @rhema/hooks code + a fresh per-phase DenialState.
+    const policy = compileSeatPolicy(spec.hookPolicyInput as unknown as CompileInput);
+    const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy, state: newDenialState() });
+
+    try {
+      const launch = buildAgentLaunch({ runId, proxyBaseUrl, configDir, agentUid, agentGid, cwd, command: ["node", "/app/dist/agent-entry.js"] });
+      const child = spawn(launch.argv[0]!, launch.argv.slice(1), {
+        cwd: launch.cwd,
+        env: launch.env,
+        stdio: ["ignore", "inherit", "inherit", "pipe"], // fd 3 = the agent's event channel
+      });
+      // forward the agent's events to the api WITH the token (the agent never held it).
+      const transport: EventTransport = createFetchEventTransport({ baseUrl: apiBaseUrl, runId, runToken });
+      const events = new EventBufferClient(transport, new FileBufferStore(`${configDir}/events.spool`));
+      const eventFd = child.stdio[3] as AsyncIterable<Buffer> | null;
+      const forwarding = eventFd ? forwardAgentEvents(toLines(eventFd), events) : Promise.resolve();
+      const code: number = await new Promise((resolve) => child.on("exit", (c) => resolve(c ?? 0)));
+      await forwarding;
+      console.log(`[harness] phase ${spec.request.phase.key} agent exited ${code} for run ${runId}`);
+    } finally {
+      await hookDaemon.close();
+    }
+
+    const files = await readWorkDir(cwd);
+    return buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
   };
-  await writeFile(`${configDir}/${PHASE_SPEC_FILENAME}`, JSON.stringify(agentSpec), "utf8");
-  // the daemon holds the token + audit writer; the agent asks it for allow/deny and learns nothing else (§12.6).
-  // Policy is server-authored per-run data (REQ-ARCH-17): the api ships JSON-safe compile inputs; the harness
-  // compiles the live SeatPolicy here with the SAME @rhema/hooks code + a fresh per-phase DenialState.
-  const policy = compileSeatPolicy(runSpec.hookPolicyInput);
-  const state = newDenialState();
-  const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy, state });
 
-  // 4. launch the SDK as uid `agent` (setpriv, scrubbed env). fd 3 is the event pipe back to the harness.
-  const launch = buildAgentLaunch({
-    runId,
-    proxyBaseUrl,
-    configDir,
-    agentUid,
-    agentGid,
-    cwd,
-    command: ["node", "/app/dist/agent-entry.js"],
-  });
-  const child = spawn(launch.argv[0]!, launch.argv.slice(1), {
-    cwd: launch.cwd,
-    env: launch.env,
-    stdio: ["ignore", "inherit", "inherit", "pipe"], // fd 3 = the agent's event channel
-  });
-
-  // 5. forward the agent's events to the api WITH the token (the agent never held it).
-  const transport: EventTransport = createFetchEventTransport({ baseUrl: apiBaseUrl, runId, runToken });
-  const events = new EventBufferClient(transport, new FileBufferStore(`${configDir}/events.spool`));
-  const eventFd = child.stdio[3] as AsyncIterable<Buffer> | null;
-  const forwarding = eventFd ? forwardAgentEvents(toLines(eventFd), events) : Promise.resolve();
-
-  const code: number = await new Promise((resolve) => child.on("exit", (c) => resolve(c ?? 0)));
-  await forwarding;
-  await hookDaemon.close();
-  console.log(`[harness] agent exited ${code} for run ${runId}`);
-  process.exit(code === 0 ? 0 : 1);
+  // drive the run phase-by-phase to a terminal outcome (§12.4 steps 6–8).
+  const result = await runCommitLoop({ client, runPhase: runOnePhaseInPod, workspaceId });
+  console.log(`[harness] run ${runId} loop finished: ${result.kind} (${result.phasesCommitted} phase(s) committed)`);
+  process.exit(result.kind === "failed" ? 1 : 0);
 }
 
 // Run when invoked as the image entrypoint's harness supervisor (`node dist/harness-main.js`), not on import.

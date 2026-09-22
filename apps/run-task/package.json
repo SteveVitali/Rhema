@@ -20,10 +20,12 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@rhema/contracts": "workspace:*",
     "@rhema/engine": "workspace:*",
     "@rhema/protocols": "workspace:*",
     "@rhema/harness": "workspace:*",
     "@rhema/hooks": "workspace:*",
-    "@rhema/mirror": "workspace:*"
+    "@rhema/mirror": "workspace:*",
+    "@rhema/orchestrator": "workspace:*"
   }
 }
