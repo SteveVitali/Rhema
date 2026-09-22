@@ -47,6 +47,12 @@ export interface PhaseRunOutputs {
   readonly facts: PredicateFacts;
   /** the `/work`-derived dossier content — read on the FINAL phase (absent otherwise). */
   readonly delivery?: WorkDeliveryContent;
+  /**
+   * A thrown SDK/engine error the agent captured into `.rhema/agent-result.json` (D-P0.15e-4 observability
+   * sink). Present only when the agent's phase crashed; folded into the `failStep` reason so the error CLASS +
+   * message reaches `run_events`/`steps` without pod exec. Never carries a secret or user content.
+   */
+  readonly agentError?: { readonly class: string; readonly message: string };
 }
 
 /** The dossier content the harness reads from `/work` for the final delivery (the server supplies the facts). */
@@ -170,7 +176,12 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
     // a non-complete verdict fails the step and stops the pod (the caller/reaper decides escalation vs quarantine).
     if (verdict.outcome !== "complete") {
       const errorClass = verdict.outcome === "incomplete" ? verdict.errorClass : verdict.outcome;
-      const reason = verdict.outcome === "incomplete" ? verdict.reason : `phase-result ${verdict.outcome}`;
+      const baseReason = verdict.outcome === "incomplete" ? verdict.reason : `phase-result ${verdict.outcome}`;
+      // fold the agent-reported error (if any) into the reason so its CLASS + message reaches run_events/steps
+      // via failStep — the observability sink (D-P0.15e-4) makes an agent crash diagnosable without pod exec.
+      const reason = outputs.agentError
+        ? `${baseReason} — agent error [${outputs.agentError.class}]: ${outputs.agentError.message}`
+        : baseReason;
       await deps.client.failStep({ stepKey: phase.key, ordinal: phase.index, errorClass, reason });
       return { kind: "failed", phasesCommitted, errorClass, reason };
     }

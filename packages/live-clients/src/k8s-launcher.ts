@@ -49,6 +49,16 @@ export interface GkeLauncherConfig {
   readonly ttlSecondsAfterFinished?: number;
   /** hard wall-clock ceiling for a run pod (defaults to 6 h). */
   readonly activeDeadlineSeconds?: number;
+  /**
+   * Cloud Run → GKE auth (D-P0.15e-3). The always-on worker runs on Cloud Run, which has no in-cluster
+   * kubeconfig — so `loadFromDefault()` finds nothing and the launcher cannot create Jobs. When BOTH of these
+   * are set the launcher instead builds its KubeConfig from the GKE public endpoint + the cluster CA, and
+   * authenticates with a FRESH GCE metadata OAuth token fetched per launch (the worker SA has
+   * `roles/container.developer`). Left unset (an in-cluster Deployment or a local kubeconfig) → `loadFromDefault`.
+   */
+  readonly gkeEndpoint?: string;
+  /** the cluster CA certificate, base64-encoded (GKE `masterAuth.clusterCaCertificate`). */
+  readonly gkeCaData?: string;
 }
 
 /** A k8s name: lowercase alphanumeric + `-`, ≤63 chars, starting/ending alphanumeric (RFC 1123 label). */
@@ -231,13 +241,102 @@ export class GkeJobLauncher implements JobLauncher {
   }
 }
 
+// --------------------------------------------------------- Cloud Run → GKE auth (metadata token, D-P0.15e-3)
+
+/** The `KubeConfig.loadFromOptions` shape naming one cluster/user/context (built from the GKE endpoint + CA). */
+export interface KubeConfigOptions {
+  readonly clusters: Array<{ name: string; server: string; caData: string }>;
+  readonly users: Array<{ name: string; token: string }>;
+  readonly contexts: Array<{ name: string; cluster: string; user: string }>;
+  readonly currentContext: string;
+}
+
+/** GCE/Cloud Run metadata token endpoint (the worker SA's OAuth access token; header `Metadata-Flavor: Google`). */
+export const GCE_METADATA_TOKEN_URL =
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token";
+
 /**
- * Construct a live `GkeJobLauncher` from the ambient kubeconfig (in-cluster SA in the worker pod, or a local
- * kubeconfig for a dev deploy). Dynamically imports `@kubernetes/client-node` so this package's pure tests never
- * load the heavy client. Called once at worker deploy.
+ * Build the `loadFromOptions` config for the GKE cluster: the endpoint (https-prefixed if bare), the base64 CA,
+ * and the bearer token. PURE — unit-tested without the k8s client. The token is short-lived, so the launcher
+ * rebuilds this per launch with a fresh metadata token (below).
  */
-export async function createGkeJobLauncher(config: GkeLauncherConfig): Promise<GkeJobLauncher> {
+export function buildGkeKubeConfigOptions(input: { endpoint: string; caData: string; token: string }): KubeConfigOptions {
+  const server = /^https?:\/\//.test(input.endpoint) ? input.endpoint : `https://${input.endpoint}`;
+  const name = "rhema-gke";
+  return {
+    clusters: [{ name, server, caData: input.caData }],
+    users: [{ name, token: input.token }],
+    contexts: [{ name, cluster: name, user: name }],
+    currentContext: name,
+  };
+}
+
+/** The minimal `fetch` the metadata-token call needs (global `fetch` satisfies it; injected for tests). */
+export type FetchLike = (url: string, init?: { headers?: Record<string, string> }) => Promise<{
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}>;
+
+/**
+ * Fetch a fresh OAuth access token for the runtime service account from the GCE/Cloud Run metadata server.
+ * Called per launch so an expired token never breaks a long-lived worker. `fetchImpl` is injected for tests.
+ */
+export async function fetchGceMetadataAccessToken(fetchImpl: FetchLike = fetch as unknown as FetchLike): Promise<string> {
+  const res = await fetchImpl(GCE_METADATA_TOKEN_URL, { headers: { "Metadata-Flavor": "Google" } });
+  if (!res.ok) throw new Error(`k8s-launcher: GCE metadata token fetch failed ${res.status}`);
+  const body = (await res.json()) as { access_token?: string };
+  if (!body.access_token) throw new Error("k8s-launcher: GCE metadata token response had no access_token");
+  return body.access_token;
+}
+
+/** The minimal `@kubernetes/client-node` surface the metadata launcher uses (the real module satisfies it). */
+export interface KubeClientModule {
+  KubeConfig: new () => {
+    loadFromOptions(opts: KubeConfigOptions): void;
+    makeApiClient(api: unknown): unknown;
+  };
+  BatchV1Api: unknown;
+  CoreV1Api: unknown;
+}
+
+/**
+ * A `JobLauncher` for the Cloud Run worker (D-P0.15e-3): per launch it fetches a FRESH metadata OAuth token,
+ * builds a KubeConfig from the GKE endpoint + CA, and delegates to `GkeJobLauncher`. Rebuilding per launch (a
+ * launch is once per run) sidesteps token expiry with no refresh machinery. The k8s module + the token fetcher
+ * are injected so this is unit-testable with fakes.
+ */
+export class MetadataTokenGkeJobLauncher implements JobLauncher {
+  constructor(
+    private readonly config: GkeLauncherConfig & { gkeEndpoint: string; gkeCaData: string },
+    private readonly k8s: KubeClientModule,
+    private readonly fetchToken: () => Promise<string> = () => fetchGceMetadataAccessToken(),
+  ) {}
+
+  async launch(spec: JobSpec): Promise<{ jobId: string }> {
+    const token = await this.fetchToken();
+    const kc = new this.k8s.KubeConfig();
+    kc.loadFromOptions(buildGkeKubeConfigOptions({ endpoint: this.config.gkeEndpoint, caData: this.config.gkeCaData, token }));
+    const batch = kc.makeApiClient(this.k8s.BatchV1Api) as KubeBatchApi;
+    const core = kc.makeApiClient(this.k8s.CoreV1Api) as KubeCoreApi;
+    return new GkeJobLauncher(this.config, batch, core).launch(spec);
+  }
+}
+
+/**
+ * Construct a live `JobLauncher`. On Cloud Run (both `gkeEndpoint` + `gkeCaData` set — the worker's topology,
+ * D-P0.15e-3) it uses `MetadataTokenGkeJobLauncher` (endpoint + CA + a per-launch metadata token). Otherwise
+ * (an in-cluster Deployment or a local kubeconfig) it loads the ambient kubeconfig via `loadFromDefault`.
+ * Dynamically imports `@kubernetes/client-node` so this package's pure tests never load the heavy client.
+ */
+export async function createGkeJobLauncher(config: GkeLauncherConfig): Promise<JobLauncher> {
   const k8s = await import("@kubernetes/client-node");
+  if (config.gkeEndpoint && config.gkeCaData) {
+    return new MetadataTokenGkeJobLauncher(
+      { ...config, gkeEndpoint: config.gkeEndpoint, gkeCaData: config.gkeCaData },
+      k8s as unknown as KubeClientModule,
+    );
+  }
   const kc = new k8s.KubeConfig();
   kc.loadFromDefault();
   const batch = kc.makeApiClient(k8s.BatchV1Api) as unknown as KubeBatchApi;

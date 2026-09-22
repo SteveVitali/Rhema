@@ -66,6 +66,9 @@ export function createCompute(args: ComputeArgs): Compute {
   // --- GKE Standard cluster for run-task (needs CAP_SYS_ADMIN — REQ-ARCH-2/36). ------------------
   const gke = new gcp.container.Cluster(name("run-task-gke"), {
     location: region,
+    // Non-prod pins node zones to avoid a single-zone GCE stockout wedging the whole regional create (a live
+    // us-central1-f e2 stockout ERROR'd the cluster in P0.15f Stage B). prod stays fully multi-zone (regional HA).
+    ...(cfg.kind !== "prod" ? { nodeLocations: [`${region}-a`, `${region}-c`] } : {}),
     network: network.network.id,
     subnetwork: network.subnets["sandbox"].id,
     removeDefaultNodePool: true,
@@ -151,6 +154,9 @@ export function createCompute(args: ComputeArgs): Compute {
       targetSize: cfg.kind === "prod" ? 2 : 1,
       namedPorts: [{ name: "https", port: Number(proxyPort) }],
       autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
+      // Non-prod pins the proxy VM to zones with capacity (a us-central1-f e2 stockout blocked the MIG instance
+      // in P0.15f Stage B). prod stays fully regional (multi-zone HA).
+      ...(cfg.kind !== "prod" ? { distributionPolicyZones: [`${region}-a`, `${region}-c`] } : {}),
     });
   }
 
@@ -164,6 +170,10 @@ export function createCompute(args: ComputeArgs): Compute {
     { name: "KUBE_SERVICE_ACCOUNT", value: "run-task-ksa" },
     { name: "RUN_SERVICE_ACCOUNT", value: iam.serviceAccounts["run-task"].email },
     { name: "SANDBOX_NODE_POOL", value: runTaskPool.name },
+    // Cloud Run → GKE auth (D-P0.15e-3): the worker has no in-cluster kubeconfig, so it builds one from the GKE
+    // public endpoint + cluster CA + a per-launch metadata OAuth token (its SA has roles/container.developer).
+    { name: "GKE_ENDPOINT", value: gke.endpoint },
+    { name: "GKE_CA_DATA", value: gke.masterAuth.clusterCaCertificate },
     ...(args.workerDatabaseUrl ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }] : []),
     ...(args.workerSystemDatabaseUrl ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }] : []),
     ...(args.workerRedisUrl ? [{ name: "REDIS_URL", value: args.workerRedisUrl }] : []),

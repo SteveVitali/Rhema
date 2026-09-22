@@ -107,12 +107,41 @@ function jsonError(type: string, message: string): string {
   return JSON.stringify({ error: { type, message } });
 }
 
+/** The deps the pre-forward pipeline needs — everything except the (buffered) forwarder, which the caller runs. */
+export type PrepareDeps = Omit<HandlerDeps, "forward">;
+
+/** A prepared forward: the rewritten upstream request + a `meter` closure that runs steps 8–9 over the response. */
+export interface PreparedForward {
+  readonly kind: "forward";
+  readonly forwardReq: { method: string; host: string; path: string; headers: Record<string, string>; body: string };
+  /**
+   * Meter + fetch-log the served response (§12.7; steps 8–9). Takes the FULL response body (buffered by the
+   * caller, or accumulated while streaming) — metering is the meter of record, so it always reads the complete
+   * response, never a partial frame. Call exactly once per response.
+   */
+  meter(upstream: UpstreamResponse): Promise<void>;
+}
+
+/** The outcome of the pre-forward pipeline: an early refusal to return as-is, or a prepared forward. */
+export type PreparedResult = { readonly kind: "response"; readonly response: ProxyResponse } | PreparedForward;
+
+/** Response framing headers the proxy must not pass back verbatim (the transport re-derives them). */
+const RESPONSE_FRAMING_HEADERS = new Set(["transfer-encoding", "connection", "keep-alive", "content-length"]);
+
+/** Strip the framing headers the transport re-derives (a streamed response is chunked; no content-length). */
+export function stripResponseFramingHeaders(headers: Readonly<Record<string, string>>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) if (!RESPONSE_FRAMING_HEADERS.has(k.toLowerCase())) out[k] = v;
+  return out;
+}
+
 /**
- * Handle one proxied request end-to-end. Returns the response to send back to the sandbox. Never throws for a
- * policy refusal (it returns 402/403); it throws only on an internal invariant breach (e.g. an unpriceable
- * model that slipped the up-front guard) rather than serving unmetered.
+ * Run the pre-forward pipeline (steps 1–6): credential gate → endpoint/model allowlist → cap → outbound-channel
+ * limits + URL-policy rewrite. Returns EITHER an early refusal response (402/403 — never throws for policy) OR
+ * a prepared forward carrying the rewritten upstream request + a `meter` closure (steps 8–9). Shared by the
+ * buffered `handleProxyRequest` and the streaming `streamProxyRequest` so both paths meter identically.
  */
-export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): Promise<ProxyResponse> {
+export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps): Promise<PreparedResult> {
   const newId: IdFactory = deps.newId ?? ulid;
   const nowIso = (): string => (deps.now ? deps.now() : new Date()).toISOString();
   const denialSpikes = deps.denialSpikes ?? new DenialSpikeTracker();
@@ -124,7 +153,7 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
   if (!ctx) {
     const reason = credential ? "invalid proxy credential" : "missing proxy credential";
     await deps.events.emitEgressDenied({ host: req.host, url: req.url, status: 403, reason });
-    return { status: 403, headers: { "content-type": "application/json" }, body: jsonError("egress.denied", reason) };
+    return { kind: "response", response: { status: 403, headers: { "content-type": "application/json" }, body: jsonError("egress.denied", reason) } };
   }
 
   const agentId = presentedAgentId(req.headers) ?? ctx.agentId;
@@ -133,8 +162,9 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
     await deps.fetchLogWriter.write(row);
   };
 
-  // A refusal that is attributable to a run: log it, emit egress.denied, and pause on a denial spike.
-  const denyEgress = async (status: number, reason: string): Promise<ProxyResponse> => {
+  // A refusal that is attributable to a run: log it, emit egress.denied, and pause on a denial spike. Returns a
+  // prepared `response` (there is no upstream to forward for a refusal).
+  const denyEgress = async (status: number, reason: string): Promise<PreparedResult> => {
     await writeFetch(
       buildRequestFetchLogRow({ ...logBase, ts: nowIso() }, { url: req.url, status, decision: "deny", denyReason: reason }),
     );
@@ -155,7 +185,7 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
         detail: { count: spike.count },
       });
     }
-    return { status, headers: { "content-type": "application/json" }, body: jsonError("egress.denied", reason) };
+    return { kind: "response", response: { status, headers: { "content-type": "application/json" }, body: jsonError("egress.denied", reason) } };
   };
 
   // --- 2. Endpoint allowlist ---
@@ -185,9 +215,12 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
       ),
     );
     return {
-      status: 402,
-      headers: { "content-type": "application/json" },
-      body: jsonError("budget", `run ${ctx.runId} has reached its cap of ${ctx.capCredits} credits`),
+      kind: "response",
+      response: {
+        status: 402,
+        headers: { "content-type": "application/json" },
+        body: jsonError("budget", `run ${ctx.runId} has reached its cap of ${ctx.capCredits} credits`),
+      },
     };
   }
 
@@ -215,9 +248,12 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
         });
         // Close the channel immediately; the orchestrator (P0.08) reacts to the pause signal.
         return {
-          status: 403,
-          headers: { "content-type": "application/json" },
-          body: jsonError("suspicious_query", `search query shares ${check.matchLength} consecutive draft words`),
+          kind: "response",
+          response: {
+            status: 403,
+            headers: { "content-type": "application/json" },
+            body: jsonError("suspicious_query", `search query shares ${check.matchLength} consecutive draft words`),
+          },
         };
       }
     } else {
@@ -245,53 +281,129 @@ export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): 
   const finalBody =
     injected.rewritten || outboundBody !== body ? JSON.stringify(injected.body) : req.body;
 
-  // --- 7. Forward with the provider key; the sandbox's own auth is stripped (AC5) ---
-  const upstream = await deps.forward({
+  // --- 7. Prepare the forward with the provider key; the sandbox's own auth is stripped (AC5). The caller runs
+  //        it (buffered or streaming); the `meter` closure below folds steps 8–9 over the COMPLETE response. ---
+  const forwardReq = {
     method: req.method,
     host: req.host,
     path: req.path,
     headers: buildUpstreamHeaders(req.headers, deps.secrets.anthropicApiKey()),
     body: finalBody,
-  });
+  };
 
-  // --- 8. Meter every served response's usage into the rows of record (§12.7) ---
-  if (upstream.status >= 200 && upstream.status < 300) {
-    const contentType = headerValue(upstream.headers, "content-type");
-    const usage = extractUsage(upstream.body, contentType);
-    if (usage) {
-      // The response's model is authoritative (what was billed); fall back to the request's. Never a silent
-      // default — an un-nameable model throws in meterResponse rather than mis-metering (I2).
-      const meterModel = extractModel(upstream.body, contentType) ?? model;
-      if (!meterModel) {
-        throw new Error(
-          `metered response for run ${ctx.runId} carries usage but no model — refusing to meter silently (REQ-SPEC-11)`,
+  const meter = async (upstream: UpstreamResponse): Promise<void> => {
+    // --- 8. Meter every served response's usage into the rows of record (§12.7) ---
+    if (upstream.status >= 200 && upstream.status < 300) {
+      const contentType = headerValue(upstream.headers, "content-type");
+      const usage = extractUsage(upstream.body, contentType);
+      if (usage) {
+        // The response's model is authoritative (what was billed); fall back to the request's. Never a silent
+        // default — an un-nameable model throws rather than mis-metering (I2).
+        const meterModel = extractModel(upstream.body, contentType) ?? model;
+        if (!meterModel) {
+          throw new Error(
+            `metered response for run ${ctx.runId} carries usage but no model — refusing to meter silently (REQ-SPEC-11)`,
+          );
+        }
+        const metered = meterResponse({ ctx, usage, model: meterModel, agentId, id: newId(), ts: nowIso() });
+        await deps.usageWriter.write(metered.row);
+        await deps.capAccountant.record(ctx.runId, metered.platformCredits);
+      }
+      // The fetch log of record's per-fetch/search rows: THIS turn's real server-tool activity, from the
+      // response (logged once — the source for source cards and cited ⇒ fetched, REQ-DATA-16). The SSE path
+      // reads the accumulated stream body (D-P0.07-5), so streaming + buffered fold identical rows.
+      const serverTools = isSseBody(upstream.body, contentType)
+        ? extractResponseServerToolsSse(upstream.body) // streaming response (D-P0.07-5)
+        : extractResponseServerTools(upstream.body); // buffered JSON response
+      for (const act of serverTools) {
+        await writeFetch(
+          act.kind === "search"
+            ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: act.query, decision: "allow" })
+            : buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "fetch", url: act.url, decision: "allow" }),
         );
       }
-      const metered = meterResponse({ ctx, usage, model: meterModel, agentId, id: newId(), ts: nowIso() });
-      await deps.usageWriter.write(metered.row);
-      await deps.capAccountant.record(ctx.runId, metered.platformCredits);
     }
-    // The fetch log of record's per-fetch/search rows: THIS turn's real server-tool activity, from the
-    // response (logged once — the source for source cards and cited ⇒ fetched, REQ-DATA-16).
-    const serverTools = isSseBody(upstream.body, contentType)
-      ? extractResponseServerToolsSse(upstream.body) // streaming response (D-P0.07-5)
-      : extractResponseServerTools(upstream.body); // buffered JSON response
-    for (const act of serverTools) {
-      await writeFetch(
-        act.kind === "search"
-          ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: act.query, decision: "allow" })
-          : buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "fetch", url: act.url, decision: "allow" }),
-      );
-    }
+    // --- 9. Log the served request (never the body) ---
+    await writeFetch(
+      buildRequestFetchLogRow(
+        { ...logBase, ts: nowIso() },
+        { url: req.url, status: upstream.status, bytes: Buffer.byteLength(upstream.body), decision: "allow" },
+      ),
+    );
+  };
+
+  return { kind: "forward", forwardReq, meter };
+}
+
+/**
+ * Handle one proxied request end-to-end (the BUFFERED path). Runs the pre-forward pipeline, forwards (the
+ * injected `forward` buffers the whole response), meters, and returns the response to send back to the sandbox.
+ * Never throws for a policy refusal (it returns 402/403); it throws only on an internal invariant breach.
+ */
+export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): Promise<ProxyResponse> {
+  const prep = await prepareProxyRequest(req, deps);
+  if (prep.kind === "response") return prep.response;
+  const upstream = await deps.forward(prep.forwardReq);
+  await prep.meter(upstream);
+  return { status: upstream.status, headers: { ...upstream.headers }, body: upstream.body };
+}
+
+// ---------------------------------------------------------------- streaming path (D-P0.07-5) ----------------
+
+/** An upstream response whose body is delivered incrementally (undici's Readable satisfies `AsyncIterable`). */
+export interface StreamingUpstreamResponse {
+  readonly status: number;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly body: AsyncIterable<Uint8Array>;
+}
+
+/** Forwards a prepared request and returns the upstream response as a byte stream (injected; network-free tests). */
+export type StreamingForwarder = (req: {
+  method: string;
+  host: string;
+  path: string;
+  headers: Record<string, string>;
+  body: string;
+}) => Promise<StreamingUpstreamResponse>;
+
+/** A minimal streamed-response sink the handler writes to incrementally (a Node `ServerResponse` satisfies it). */
+export interface ResponseSink {
+  writeHead(status: number, headers: Record<string, string>): void;
+  write(chunk: Uint8Array): void;
+  end(): void;
+}
+
+export interface StreamingHandlerDeps extends PrepareDeps {
+  readonly streamForward: StreamingForwarder;
+}
+
+/**
+ * Handle one proxied request the STREAMING way (D-P0.07-5): run the pre-forward pipeline, then forward and pipe
+ * the upstream bytes to `sink` AS THEY ARRIVE — so the Agent SDK sees each SSE frame incrementally instead of
+ * waiting for the whole buffered response (the P0.15e suspect for the agent→proxy hang). The full response is
+ * accumulated in parallel and metered ONCE after the stream ends (metering never blocks delivery; the proxy
+ * stays the meter of record). An early policy refusal (there is no upstream to stream) is written whole.
+ */
+export async function streamProxyRequest(req: ProxyRequest, deps: StreamingHandlerDeps, sink: ResponseSink): Promise<void> {
+  const prep = await prepareProxyRequest(req, deps);
+  if (prep.kind === "response") {
+    sink.writeHead(prep.response.status, prep.response.headers);
+    if (prep.response.body) sink.write(Buffer.from(prep.response.body, "utf8"));
+    sink.end();
+    return;
   }
 
-  // --- 9. Log the served request (never the body) ---
-  await writeFetch(
-    buildRequestFetchLogRow(
-      { ...logBase, ts: nowIso() },
-      { url: req.url, status: upstream.status, bytes: Buffer.byteLength(upstream.body), decision: "allow" },
-    ),
-  );
+  const upstream = await deps.streamForward(prep.forwardReq);
+  sink.writeHead(upstream.status, stripResponseFramingHeaders(upstream.headers));
 
-  return { status: upstream.status, headers: { ...upstream.headers }, body: upstream.body };
+  const chunks: Buffer[] = [];
+  for await (const chunk of upstream.body) {
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    chunks.push(buf);
+    sink.write(buf); // incremental delivery — the SDK gets each frame as it streams in
+  }
+  sink.end();
+
+  // meter over the COMPLETE accumulated body, after the client already has the stream (§12.7; I2).
+  await prep.meter({ status: upstream.status, headers: upstream.headers, body: Buffer.concat(chunks).toString("utf8") });
 }

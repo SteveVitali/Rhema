@@ -4,6 +4,7 @@ import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
   audit,
   commitStep,
+  failStep,
   finalizeRun,
   heartbeat,
   hydration,
@@ -222,5 +223,48 @@ describe("finalize, fail, hydration, audit", () => {
       attempt: number;
     };
     expect(row).toMatchObject({ run_id: "run1", attempt: 1 });
+  });
+});
+
+describe("failStep — records the failure AND surfaces it (D-P0.15e-4 observability sink)", () => {
+  it("writes the steps row with {errorClass, reason} AND emits an engine.error event carrying the reason", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    const reason = "SDK result subtype error_during_execution (not success) — agent error [Error]: proxy connect ETIMEDOUT";
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "intake",
+      ordinal: 0,
+      errorClass: "infra",
+      reason,
+    });
+    expect(res).toEqual({ ok: true });
+
+    // the step row is queryable with the error class + the folded agent message.
+    const step = (await db.client.query("select state, result from steps where run_id='run1' and ordinal=0", []))
+      .rows[0] as { state: string; result: { errorClass: string; reason: string } };
+    expect(step.state).toBe("failed");
+    expect(step.result).toMatchObject({ errorClass: "infra", reason });
+
+    // and an engine.error run event (INTERNAL) is paired in the same tx, carrying the class/phase/reason.
+    expect(deps.eventWriter.typesForRun("run1")).toContain("engine.error");
+    const ev = deps.eventWriter.forRun("run1").find((e) => e.type === "engine.error")!;
+    expect(ev.visibility).toBe("internal"); // never streamed to the user SSE
+    expect(ev.payload).toMatchObject({ errorClass: "infra", phase: "intake", ordinal: 0, reason });
+  });
+
+  it("a superseded attempt fails with stale_task and writes nothing", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running", currentAttempt: 2 });
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "intake",
+      ordinal: 0,
+      errorClass: "infra",
+    });
+    expect(res).toEqual({ ok: false, code: "stale_task", currentAttempt: 2 });
+    expect(deps.eventWriter.typesForRun("run1")).not.toContain("engine.error");
   });
 });

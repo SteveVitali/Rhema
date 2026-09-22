@@ -82,6 +82,40 @@ export const AGENT_RESULT_FILENAME = ".rhema/agent-result.json";
 export interface AgentResultFile {
   readonly subtype: ResultSubtype;
   readonly usage: UsageSnapshot;
+  /**
+   * A thrown SDK/engine error captured as a FACT (D-P0.15e-4 observability sink): when the agent's phase run
+   * throws (the SDK failed to bring up, hung then errored, or the engine crashed), the process writes this so
+   * the HARNESS can surface it (an `engine.error` run event + the `failStep` reason) even when the pod's logs
+   * are unreachable (konnectivity down). It carries the error CLASS + a bounded message ONLY — never leaked
+   * user content or the run token/key (the agent has none in scope; §12.6 / REQ-SPEC-10/11).
+   */
+  readonly error?: AgentErrorFact;
+}
+
+/** The error class + bounded message the agent reports when its phase throws (no secret, no user content). */
+export interface AgentErrorFact {
+  readonly class: string;
+  readonly message: string;
+}
+
+/**
+ * Reduce an unknown thrown value to a `{class, message}` fact safe to persist + surface. The agent process runs
+ * with a SCRUBBED env (no run token / provider key in scope — REQ-SPEC-10/11), so the only leak risk is user
+ * content embedded in a message; we keep the class + a single-line, length-bounded message and drop the stack /
+ * cause chain (where prompt text could otherwise ride along).
+ */
+export function sanitizeAgentError(err: unknown): AgentErrorFact {
+  const cls = err instanceof Error && err.name ? err.name : typeof err;
+  const raw = err instanceof Error ? err.message : String(err);
+  // Defense-in-depth for the "never leak the run token/key" invariant: the agent's env is scrubbed (no run
+  // token / provider key), but redact auth-token-like substrings an SDK error might echo before bounding.
+  const message = raw
+    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\bsk-[A-Za-z0-9_-]+/g, "sk-[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 500);
+  return { class: String(cls).slice(0, 100), message };
 }
 
 /** The phase spec the harness writes for the agent process. No secrets — the agent has none in scope. */
@@ -117,43 +151,64 @@ async function readAgentSpec(): Promise<{ spec: AgentPhaseSpec; proxyBaseUrl: st
   return { spec, proxyBaseUrl, configDir };
 }
 
-/** Run the phase as uid `agent`: load the vendored SDK, build the engine, stream events to fd 3, exit by subtype. */
-export async function main(): Promise<void> {
-  const { loadSdkQuery } = await import("./sdk-adapter.js");
-  const { AgentSdkEngine } = await import("@rhema/engine");
-  const { InMemoryBufferStore } = await import("./event-buffer.js");
-
-  const { spec, proxyBaseUrl, configDir } = await readAgentSpec();
-  const query = await loadSdkQuery(); // fails fast if the SDK was not vendored into the image
-  const sessionStore: SessionStore = { kind: "gcs" };
-  const engine = new AgentSdkEngine({
-    query,
-    proxyBaseUrl,
-    configDir,
-    skillsDir: spec.skillsDir,
-    hook: buildPreToolUseHook(spec.hookSocketPath),
-    sessionStore,
-    ...(spec.tier ? { tier: spec.tier } : {}),
-  });
-
-  // events go to the harness over fd 3; if the harness stops reading, the pipe fills and this write blocks —
-  // natural back-pressure, no token on this side. A memory buffer is enough (the fd write never "fails").
-  const events = new EventBufferClient(createFdEventTransport(), new InMemoryBufferStore());
-  const result = await runAgentPhase(engine, spec.request, events);
-  console.log(`[agent-entry] phase ${spec.request.phase.key} → ${result.subtype} (${result.eventsPosted} events)`);
-
-  // report the SDK result (subtype + usage) to the harness by writing `<cwd>/.rhema/agent-result.json`. The
-  // harness (uid harness) reads it after this process exits to run the completion oracle (leg a) + price the
-  // provisional credits. No secret / token is written — the agent has none in scope (REQ-SPEC-10/11).
+/** Write `<cwd>/.rhema/agent-result.json` — the agent→harness fact file (no secret / token — REQ-SPEC-10/11). */
+async function writeAgentResult(resultPath: string, agentResult: AgentResultFile): Promise<void> {
   const { writeFile, mkdir } = await import("node:fs/promises");
   const path = await import("node:path");
-  const resultPath = path.join(process.cwd(), AGENT_RESULT_FILENAME);
   await mkdir(path.dirname(resultPath), { recursive: true });
-  const agentResult: AgentResultFile = { subtype: result.subtype, usage: result.usage };
   await writeFile(resultPath, JSON.stringify(agentResult), "utf8");
+}
 
-  // a non-success SDK subtype is a phase-level outcome the oracle judges server-side; exit 0 either way (the
-  // agent ran) — the harness reads .rhema/phase-result.json + this result file to decide.
+/** Run the phase as uid `agent`: load the vendored SDK, build the engine, stream events to fd 3, exit by subtype. */
+export async function main(): Promise<void> {
+  const { InMemoryBufferStore } = await import("./event-buffer.js");
+  const path = await import("node:path");
+
+  const { spec, proxyBaseUrl, configDir } = await readAgentSpec();
+  // resolve the result path once so the error sink can write it even if SDK bring-up throws before the engine.
+  const resultPath = path.join(process.cwd(), AGENT_RESULT_FILENAME);
+  let engineUsage: () => UsageSnapshot = () => emptyUsage();
+
+  try {
+    const { loadSdkQuery } = await import("./sdk-adapter.js");
+    const { AgentSdkEngine } = await import("@rhema/engine");
+    const query = await loadSdkQuery(); // fails fast if the SDK was not vendored into the image
+    const sessionStore: SessionStore = { kind: "gcs" };
+    const engine = new AgentSdkEngine({
+      query,
+      proxyBaseUrl,
+      configDir,
+      skillsDir: spec.skillsDir,
+      hook: buildPreToolUseHook(spec.hookSocketPath),
+      sessionStore,
+      ...(spec.tier ? { tier: spec.tier } : {}),
+    });
+    engineUsage = () => engine.usage(); // partial usage to report if the run throws mid-phase
+
+    // events go to the harness over fd 3; if the harness stops reading, the pipe fills and this write blocks —
+    // natural back-pressure, no token on this side. A memory buffer is enough (the fd write never "fails").
+    const events = new EventBufferClient(createFdEventTransport(), new InMemoryBufferStore());
+    const result = await runAgentPhase(engine, spec.request, events);
+    console.log(`[agent-entry] phase ${spec.request.phase.key} → ${result.subtype} (${result.eventsPosted} events)`);
+
+    // report the SDK result (subtype + usage) to the harness by writing `<cwd>/.rhema/agent-result.json`. The
+    // harness (uid harness) reads it after this process exits to run the completion oracle (leg a) + price the
+    // provisional credits. No secret / token is written — the agent has none in scope (REQ-SPEC-10/11).
+    await writeAgentResult(resultPath, { subtype: result.subtype, usage: result.usage });
+    // a non-success SDK subtype is a phase-level outcome the oracle judges server-side; exit 0 either way (the
+    // agent ran) — the harness reads .rhema/phase-result.json + this result file to decide.
+  } catch (err) {
+    // OBSERVABILITY SINK (D-P0.15e-4): the SDK failed to bring up / hung then errored / the engine crashed.
+    // Persist the error as a FACT so the harness surfaces it (an `engine.error` run event + the failStep
+    // reason) even when the pod's logs are unreachable (konnectivity down) — the P0.15e blind spot. Then
+    // re-throw so the process exits non-zero. A best-effort write: never mask the original error.
+    await writeAgentResult(resultPath, {
+      subtype: "error_during_execution",
+      usage: engineUsage(),
+      error: sanitizeAgentError(err),
+    }).catch(() => undefined);
+    throw err;
+  }
 }
 
 // Run when invoked as the container's agent command (`node dist/agent-entry.js`), not when imported.

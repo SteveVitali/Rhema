@@ -75,5 +75,31 @@ describe("buildPhaseOutputs — reading a phase's /work outputs (P0.15e)", () =>
     expect(out.phaseResult).toBeNull();
     expect(out.facts.letterSectionsComplete).toBe(false); // empty file → not complete
     expect(out.facts.sidecarValidates?.["findings.json"]).toBe(false); // absent sidecar → invalid
+    expect(out.agentError).toBeUndefined(); // no error captured → no agentError
+  });
+
+  it("threads a captured agent error fact out of the result file (D-P0.15e-4 observability sink)", () => {
+    const files = new Map<string, Uint8Array>([
+      [
+        AGENT_RESULT_FILENAME,
+        enc({
+          subtype: "error_during_execution",
+          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 },
+          error: { class: "Error", message: "vendored @anthropic-ai/claude-agent-sdk is not present in this image" },
+        }),
+      ],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(letter), "editor");
+    expect(out.subtype).toBe("error_during_execution");
+    expect(out.agentError).toEqual({ class: "Error", message: "vendored @anthropic-ai/claude-agent-sdk is not present in this image" });
+  });
+
+  it("a totally missing agent-result → error_during_execution subtype, no agentError (the killed/hung path)", () => {
+    // the agent was killed before writing any result (e.g. OOM / activeDeadline). The oracle's leg (a) then
+    // treats the phase incomplete; there is no captured message, but the step still fails (queryable).
+    const files = new Map<string, Uint8Array>([["editors-letter.md", enc("some content")]]);
+    const out = buildPhaseOutputs(files, makeSpec(letter), "editor");
+    expect(out.subtype).toBe("error_during_execution");
+    expect(out.agentError).toBeUndefined();
   });
 });

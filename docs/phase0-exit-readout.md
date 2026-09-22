@@ -307,6 +307,79 @@ re-run that reaches a green Review.
 
 ---
 
+## Stage A complete (2026-09-04, P0.15f) — the diagnosis + fix enablers for the last live blocker
+
+**P0.15f (this PR) is diagnosis-first and offline: it builds the three enablers P0.15e's live run needed to turn
+its one remaining green-Review blocker (the agent never reaches the proxy, `$0` metered) from *undiagnosable*
+into *diagnosable-and-likely-fixed* — without any spend.** The paid live re-run that confirms the fix + runs the
+§17 exit criterion is **Stage B, still [OPERATOR GATE]d** (a stated budget + ADC/Pulumi/Docker; none authorized
+this session — surfaced, not guessed past).
+
+1. **Readable agent-error observability sink (D-P0.15e-4 / D-P0.06-1).** The run-task pod is now debuggable even
+   with konnectivity down: `agent-entry` captures a thrown SDK/engine error into `.rhema/agent-result.json`
+   (`sanitizeAgentError` — error class + a bounded, redacted, single-line message; no secret/user content),
+   `work-reader` threads it out, the commit loop folds it into the `failStep` reason, and `@rhema/orchestrator`
+   `failStep` emits an INTERNAL `engine.error` run event **in the same tx as the step-fail row**. So an agent
+   hang/crash surfaces in `run_events`/`steps` (queryable from the DB) with no `kubectl logs`/`exec`.
+2. **Worker GKE-Job launcher without an out-of-band step (D-P0.15e-3).** Chose **option (b)** to keep the proven
+   Cloud Run worker topology: `MetadataTokenGkeJobLauncher` builds the `KubeConfig` from the GKE endpoint + CA
+   (`buildGkeKubeConfigOptions`) + a FRESH GCE metadata OAuth token fetched per launch
+   (`fetchGceMetadataAccessToken`) — sidestepping token expiry with no refresh machinery — and delegates to the
+   existing `GkeJobLauncher`. Wired through `apps/worker` env/main + `infra/pulumi/compute.ts`
+   (`GKE_ENDPOINT`/`GKE_CA_DATA` from `gke.endpoint` + `masterAuth.clusterCaCertificate`; the worker SA already
+   has `roles/container.developer`). `pulumi tsc --noEmit` clean.
+3. **Proxy SSE/streaming pass (D-P0.07-5).** The proxy now STREAMS the upstream response through incrementally
+   (`streamProxyRequest` + `undiciStreamForwarder`; the live server uses them) instead of buffering the whole
+   body — the P0.15e agent→proxy-hang suspect — while metering the ACCUMULATED body ONCE. The pipeline split
+   (`prepareProxyRequest` → forward → `meter`) keeps the buffered `handleProxyRequest` byte-identical (all 63
+   existing proxy tests green). This defensively closes the *buffering* branch of the D-P0.15e-2 hypothesis;
+   **whether pre-SDK-hang (D-P0.06-1/4) or buffering is THE cause is confirmed live in Stage B** with the sink's
+   error in hand.
+
+**Konnectivity (item 4) is NOT an offline IaC gap.** `infra/pulumi/network.ts` `sandbox-allow-gke-master`
+already allows sandbox→master `443`+`10250` (konnectivity/kubelet), pri 900 > deny-all 1000. So restoring
+`kubectl logs` is a cluster-config/ops matter to diagnose live; the item-1 sink is the mechanism the run relies
+on meanwhile (the ticket permits this). **All Stage-A work is unit + integration-tested; typecheck/lint/pulumi-tsc
+green.** See `DEFERRALS.md § P0.15f`.
+
+> **CORRECTION (Stage B, below): konnectivity WAS an IaC gap after all** — the sandbox→master firewall was
+> missing the konnectivity port 8132 (+ node→node kubelet 10250). Fixed live + in `network.ts`; pod logs restored.
+
+---
+
+## Stage B — live execution (2026-09-04, P0.15f; operator-authorized $50 / $10-per-run; pilot SKIPPED)
+
+The full `dev` stack was re-deployed and a Review run driven to the agent-execution boundary — this time **WITH
+POD LOGS in hand** (the P0.15e blind spot is gone). **$0 inference** (no run reached the model; spend was idle
+infra only). Deploy churn: transient GCP failures (an http2 wait-drop, then a `us-central1-f` e2 STOCKOUT on the
+cluster + proxy MIG) — dodged by pinning dev `nodeLocations`/`distributionPolicyZones` to `a`+`c` and recovering
+with `pulumi refresh` + `--continue-on-error`.
+
+**What the live run proved (and corrected):**
+- **D-P0.15e-3 CLOSED LIVE** — the Cloud Run worker launched the two-uid GKE Job via the metadata-token
+  `KubeConfig` launcher, NO out-of-band step.
+- **D-P0.15e-4 pod logs RESTORED** — two real IaC gaps found + fixed: the konnectivity-agent dials
+  `<master>:8132` (firewall was missing 8132 → "No agent available"), and `kubectl logs` needs node→node kubelet
+  `10250` egress (blocked by the deny-all). Both baked into `network.ts` + applied live; `kubectl logs`/`exec`
+  now work on `dev`.
+- **D-P0.15e-2 TRUE ROOT CAUSE — a CHAIN, not a single hang, overturning the P0.15e "SDK hang / proxy-buffering"
+  hypothesis.** With logs, the pod fails `spawn … ENOENT`: **the agent was never spawned.** (1) bare
+  `setpriv`/`node` are unresolvable in the PATH-less scrubbed env → FIXED (absolute `/usr/bin/setpriv` +
+  `process.execPath`); (2) the agent cwd `/work/project` was never created (`materializeWork` writes `/work`
+  root) → FIXED (cwd = workDir + mkdir). The agent process then SPAWNS live, revealing the next links:
+  `setpriv: setresgid failed: Operation not permitted` (the non-root harness lacks ambient CAP_SETUID/SETGID to
+  drop to the agent uid — **D-P0.15f-1**), and behind it the per-run proxy credential is never injected into the
+  agent's request (**D-P0.15f-2**). Also fixed: the pod NetworkPolicy blocked the WI metadata server
+  (169.254.169.254) the harness needs for GCS auth.
+
+**Net:** the agent→proxy hang is now precisely understood — three fixes landed (spawn/cwd/konnectivity + the
+NetworkPolicy), two new construction blockers (D-P0.15f-1 harness ambient caps, D-P0.15f-2 credential injector)
++ the untested first live SDK exercise (D-P0.06-1) remain before a green phase. The billable stack was torn down
+after the run (cost mandate). **G1 stays blocked**, now with a precise remaining checklist rather than an
+undiagnosable hang.
+
+---
+
 ## Pointers
 
 - **Stage-A deploy artifacts (P0.15b):** Pulumi/GCP IaC `infra/pulumi/` (+ `README.md` runbook); live SDK
