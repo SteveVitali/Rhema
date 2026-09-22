@@ -48,6 +48,10 @@ export function startWebServer(): void {
     const headers = new Headers(init.headers);
     if (cookie) headers.set("cookie", cookie);
     if (clientIp) headers.set("x-forwarded-for", clientIp);
+    // Server-side fetches carry no browser Origin; better-auth's CSRF/origin check 403s those on
+    // auth mutations (surfaced live 2026-09-22: beginAuth → sign-in/social → 403). Declare the app
+    // origin explicitly — it's a trusted origin on the api.
+    if (appBaseUrl && !headers.has("origin")) headers.set("origin", appBaseUrl);
     return fetch(`${apiBaseUrl}${path}`, { ...init, headers, redirect: "manual" });
   };
 

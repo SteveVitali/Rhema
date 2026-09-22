@@ -147,6 +147,11 @@ export function createAuth(
       // the __Host- contract. Disabled explicitly so the intent is reviewable, not just defaulted.
       crossSubDomainCookies: { enabled: false },
       defaultCookieAttributes: { secure, sameSite: "lax", path: "/", httpOnly: true },
+      // Resolve the real client IP for rate limiting — every request arrives via the web service's
+      // server-side proxy or the LB, both of which forward the original client in x-forwarded-for.
+      // Without this the limiter falls back to ONE shared per-path bucket (warned live 2026-09-22:
+      // "could not determine a client IP") and a handful of retries 403/429s sign-in for everyone.
+      ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
     },
   }) as unknown as ReturnType<typeof betterAuth>;
 }
