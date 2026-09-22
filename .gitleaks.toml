@@ -12,3 +12,11 @@ paths = [
   '''.*\.example$''',
   '''pnpm-lock\.yaml''',
 ]
+# Non-secret literals that trip the default high-entropy rules (e.g. generic-api-key). Real secrets
+# never live in the repo (REQ-ARCH-30 — Secrets Manager/SSM only); these are scoped to specific
+# known-safe shapes so genuine credentials are still caught everywhere else.
+regexes = [
+  # `quarantine/ws<n>/up<n>` is an object-storage KEY (workspace-id/upload-id path), not a
+  # credential — used across the web import/quarantine tests (apps/web/src/*.test.ts).
+  '''quarantine/ws[0-9]+/up[0-9]+''',
+]
