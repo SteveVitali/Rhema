@@ -100,13 +100,36 @@ export interface RestFetchLike {
     readonly method?: string;
     readonly headers?: Record<string, string>;
     readonly body?: string;
-  }): Promise<{ readonly ok: boolean; readonly status: number; json(): Promise<unknown> }>;
+  }): Promise<{
+    readonly ok: boolean;
+    readonly status: number;
+    json(): Promise<unknown>;
+    text(): Promise<string>;
+  }>;
 }
 
 interface RunOperation {
   readonly name: string;
+  /** `metadata.name` is the EXECUTION resource (`.../jobs/<job>/executions/<exec>`) — poll that, not the
+   *  LRO: executions are child resources covered by the Job-scoped IAM grant, while
+   *  `projects/-/locations/-/operations/<id>` needs a project-level `run.operations.get` (surfaced live
+   *  2026-09-22: job-scoped `roles/run.viewer` 403s the operations poll). */
+  readonly metadata?: { readonly name?: string };
   readonly done?: boolean;
   readonly error?: { readonly message?: string };
+}
+
+/** The slice of the v2 Execution resource the poll needs. */
+interface ExecutionStatus {
+  readonly name?: string;
+  readonly completionTime?: string;
+  readonly failedCount?: number;
+  readonly conditions?: ReadonlyArray<{
+    readonly type?: string;
+    readonly status?: string;
+    readonly reason?: string;
+    readonly message?: string;
+  }>;
 }
 
 export interface ConvertJobArgs {
@@ -121,7 +144,8 @@ export interface ConvertJobArgs {
    * default `/usercontent`). Container args are `<mount>/<quarantineKey>` → `<mount>/<convertedKey>`.
    */
   readonly mountPath?: string;
-  /** Bound the wait for the Job run (default 120s — the dev gate measures ~20s for an 8k docx). */
+  /** Bound the wait for the Job run (default 300s — cold-start executions measure ~2.5–3min live:
+   *  image import + gcsfuse mount + convert; surfaced 2026-09-22 with the 120s bound). */
   readonly timeoutMs?: number;
   /** Operation poll cadence (default 1s). */
   readonly pollIntervalMs?: number;
@@ -132,7 +156,7 @@ export interface ConvertJobArgs {
 }
 
 const DEFAULT_MOUNT = "/usercontent";
-const DEFAULT_TIMEOUT_MS = 120_000;
+const DEFAULT_TIMEOUT_MS = 300_000;
 const DEFAULT_POLL_MS = 1_000;
 const RUN_API = "https://run.googleapis.com/v2";
 
@@ -144,7 +168,9 @@ const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 /**
  * The live Converter (apps/api/src/import.ts `Converter.preview`). Validates the quarantine key shape,
  * serves a cached converted object if the Job already ran for this upload, otherwise runs the Job
- * (`jobs:run` + container-arg override → mounted paths), polls the LRO, then reads the result object.
+ * (`jobs:run` + container-arg override → mounted paths — needs `run.jobs.runWithOverrides`, granted via
+ * `roles/run.jobsExecutorWithOverrides` on the Job), polls the Execution resource (a Job child the
+ * Job-scoped grant covers), then reads the result object.
  */
 export function createConvertJobPreview(args: ConvertJobArgs): {
   preview(quarantineKey: string): Promise<ConversionResult>;
@@ -193,22 +219,41 @@ export function createConvertJobPreview(args: ConvertJobArgs): {
           },
         }),
       });
-      if (!run.ok) throw new Error(`convert job run failed (${run.status})`);
+      if (!run.ok) {
+        // Surface the API's error body — a bare status hides IAM vs quota vs API-disabled failures.
+        const detail = (await run.text().catch(() => "")).slice(0, 500);
+        throw new Error(`convert job run failed (${run.status}): ${detail}`);
+      }
       const op = (await run.json()) as RunOperation;
-      if (!op.name) throw new Error("convert job run returned no operation name");
+      const execName = op.metadata?.name;
+      if (!execName) throw new Error("convert job run returned no execution name");
 
-      // Poll the LRO until done/error/timeout. The converted OBJECT is the durable result — the
-      // operation only gates when to read it.
+      // Poll the Execution until its `Completed` condition lands. The converted OBJECT is the durable
+      // result — the execution only gates when to read it.
       const deadline = Date.now() + timeoutMs;
-      let cur: RunOperation = op;
-      while (!cur.done) {
+      let failed: string | null = null;
+      for (;;) {
         if (Date.now() > deadline) throw new Error("convert job timed out");
         await sleep(pollMs);
-        const got = await fetchImpl(`${RUN_API}/${cur.name}`, { headers: auth });
-        if (!got.ok) throw new Error(`convert operation poll failed (${got.status})`);
-        cur = (await got.json()) as RunOperation;
+        const got = await fetchImpl(`${RUN_API}/${execName}`, { headers: auth });
+        if (!got.ok) {
+          const detail = (await got.text().catch(() => "")).slice(0, 500);
+          throw new Error(`convert execution poll failed (${got.status}): ${detail}`);
+        }
+        const ex = (await got.json()) as ExecutionStatus;
+        // The `Completed` condition exists from creation with status unset/"Unknown" ("Waiting for
+        // execution to start") — only True/False is terminal (surfaced live 2026-09-22).
+        const completed = ex.conditions?.find(
+          (c) => c.type === "Completed" && (c.status === "True" || c.status === "False"),
+        );
+        if (completed || ex.completionTime) {
+          if (completed?.status === "False" || (ex.failedCount ?? 0) > 0) {
+            failed = completed?.message ?? completed?.reason ?? "execution failed";
+          }
+          break;
+        }
       }
-      if (cur.error) throw new Error(`convert job failed: ${cur.error.message ?? "unknown"}`);
+      if (failed) throw new Error(`convert job failed: ${failed}`);
 
       const result = await readResult(quarantineKey);
       if (!result) throw new Error("convert_output_missing"); // job done but no converted object — fail loud

@@ -1,5 +1,6 @@
 .agents/
 agent-scratch/
+integration/.scratch/
 node_modules/
 .DS_Store
 .sst/

@@ -11,8 +11,9 @@ import type { ConversionResult } from "@rhema/contracts";
 
 // PRB.20 (D-PRB.02-1) — the live ingestion bindings, deterministic:
 //  - the v4 presigner binds a content-length-range extension header and the workspace-scoped key,
-//  - the convert-Job binding posts jobs:run with mounted-path container args, polls the LRO, and reads
-//    the converted/<ws>/<id>.json object back — with an idempotent read-back-first path.
+//  - the convert-Job binding posts jobs:run with mounted-path container args, polls the Execution
+//    (a Job-child resource the job-scoped IAM grant covers), and reads the converted/<ws>/<id>.json
+//    object back — with an idempotent read-back-first path.
 
 const RESULT: ConversionResult = {
   sourceFormat: "md",
@@ -48,7 +49,12 @@ function fakeFetch(
   const f = (async (url: string, init?: { method?: string; body?: string }) => {
     calls.push({ url, method: init?.method, body: init?.body });
     const r = handler(url, init ?? {});
-    return { ok: r.status >= 200 && r.status < 300, status: r.status, json: async () => r.body };
+    return {
+      ok: r.status >= 200 && r.status < 300,
+      status: r.status,
+      json: async () => r.body,
+      text: async () => (typeof r.body === "string" ? r.body : JSON.stringify(r.body)),
+    };
   }) as RestFetchLike & { calls: typeof calls };
   f.calls = calls;
   return f;
@@ -97,19 +103,29 @@ describe("createGcsV4SignedUrlProvider", () => {
 });
 
 describe("createConvertJobPreview", () => {
-  it("runs the job with mounted-path container args, polls the LRO, and reads the converted object", async () => {
+  const EXEC = `${JOB}/executions/ex1`;
+
+  it("runs the job with mounted-path container args, polls the Execution, and reads the converted object", async () => {
     const seed: Record<string, string> = {};
     const objects = fakeObjects(seed);
     let polled = 0;
     const f = fakeFetch((url) => {
       if (url.endsWith(":run")) {
-        return { status: 200, body: { name: "projects/rhema/locations/us-central1/operations/op1", done: false } };
+        // jobs:run returns an Operation whose metadata.name is the EXECUTION resource (child of the
+        // job — covered by the Job-scoped IAM grant; the operations/ resource is not).
+        return { status: 200, body: { name: "projects/rhema/locations/us-central1/operations/op1", metadata: { name: EXEC } } };
       }
-      // poll: first not-done, then done + the job "wrote" the object
+      // poll: first in-flight — the Completed condition exists from creation with status "Unknown"
+      // ("Waiting for execution to start"); only True/False is terminal (surfaced live 2026-09-22).
       polled += 1;
-      if (polled === 1) return { status: 200, body: { name: url.split("/v2/")[1], done: false } };
+      if (polled === 1) {
+        return {
+          status: 200,
+          body: { name: EXEC, conditions: [{ type: "Completed", status: "Unknown", message: "Waiting for execution to start." }] },
+        };
+      }
       seed["converted/ws1/u1.json"] = JSON.stringify(RESULT);
-      return { status: 200, body: { name: url.split("/v2/")[1], done: true } };
+      return { status: 200, body: { name: EXEC, completionTime: "t", succeededCount: 1, conditions: [{ type: "Completed", status: "True" }] } };
     });
     const conv = createConvertJobPreview(baseArgs({ objects, fetchImpl: f, mountPath: "/usercontent" }));
     const result = await conv.preview(KEY);
@@ -125,7 +141,7 @@ describe("createConvertJobPreview", () => {
         ],
       },
     });
-    // the operation polls carry the bearer token — never to GCS, only to run.googleapis.com.
+    // the execution polls carry the bearer token — never to GCS, only to run.googleapis.com.
     expect(f.calls.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -145,21 +161,28 @@ describe("createConvertJobPreview", () => {
     expect(f.calls).toHaveLength(0);
   });
 
-  it("surfaces a failed operation", async () => {
+  it("surfaces a failed execution", async () => {
     const f = fakeFetch((url) =>
       url.endsWith(":run")
-        ? { status: 200, body: { name: "op2", done: false } }
-        : { status: 200, body: { name: "op2", done: true, error: { message: "task failed" } } },
+        ? { status: 200, body: { name: "op2", metadata: { name: EXEC } } }
+        : {
+            status: 200,
+            body: {
+              name: EXEC,
+              failedCount: 1,
+              conditions: [{ type: "Completed", status: "False", reason: "task_failed", message: "task failed" }],
+            },
+          },
     );
     const conv = createConvertJobPreview(baseArgs({ fetchImpl: f }));
     await expect(conv.preview(KEY)).rejects.toThrow("convert job failed: task failed");
   });
 
-  it("times out when the LRO never completes", async () => {
+  it("times out when the execution never completes", async () => {
     const f = fakeFetch((url) =>
       url.endsWith(":run")
-        ? { status: 200, body: { name: "op3", done: false } }
-        : { status: 200, body: { name: "op3", done: false } },
+        ? { status: 200, body: { name: "op3", metadata: { name: EXEC } } }
+        : { status: 200, body: { name: EXEC, conditions: [] } },
     );
     const conv = createConvertJobPreview(
       baseArgs({
@@ -175,8 +198,8 @@ describe("createConvertJobPreview", () => {
   it("fails loud when the job completes but no converted object appears", async () => {
     const f = fakeFetch((url) =>
       url.endsWith(":run")
-        ? { status: 200, body: { name: "op4", done: true } }
-        : { status: 200, body: { name: "op4", done: true } },
+        ? { status: 200, body: { name: "op4", metadata: { name: EXEC } } }
+        : { status: 200, body: { name: EXEC, completionTime: "t", conditions: [{ type: "Completed", status: "True" }] } },
     );
     const conv = createConvertJobPreview(baseArgs({ fetchImpl: f }));
     await expect(conv.preview(KEY)).rejects.toThrow("convert_output_missing");
