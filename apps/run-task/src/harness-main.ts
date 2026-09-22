@@ -13,7 +13,7 @@
 // The event-forwarding parse (`parseAgentEventLine`) + the forward loop (`forwardAgentEvents`) are pure and
 // unit-tested; `main()` is the deploy wiring (needs the live image + api/proxy).
 
-import type { SeatPolicy, DenialState } from "@rhema/hooks";
+import { compileSeatPolicy, newDenialState, type CompileInput } from "@rhema/hooks";
 import type { OutboundEvent, EventTransport } from "./event-buffer.js";
 import { EventBufferClient, FileBufferStore } from "./event-buffer.js";
 import { buildAgentLaunch } from "./bootstrap.js";
@@ -61,7 +61,14 @@ export async function* toLines(stream: AsyncIterable<Buffer | string>): AsyncIte
 
 // -------------------------------------------------------------------- the deploy entrypoint (main) -----------
 
-/** The run spec the server provides to the harness (mounted / fetched): the phase + the hydration manifest. */
+/**
+ * The server-authored run spec the harness executes (D-P0.15c-6). Structurally the api's `@rhema/orchestrator`
+ * `HarnessRunSpec` — the harness fetches it as JSON and NEVER constructs it (§12.6 "attestation derives only
+ * from server-side facts"). It carries the §12.6 boundary policy as JSON-safe `hookPolicyInput` (a `CompileInput`
+ * with `tools` as an array): the compiled `SeatPolicy` holds a `Set` and the `DenialState` a `Map`, neither of
+ * which survives JSON, so the harness compiles the live policy locally with the same `@rhema/hooks` code + a
+ * fresh `newDenialState()`. No secret is ever in the spec (REQ-SPEC-10/11).
+ */
 interface HarnessRunSpec {
   readonly request: AgentPhaseSpec["request"];
   readonly skillsDir: string;
@@ -69,15 +76,27 @@ interface HarnessRunSpec {
   /** the server-generated hydration manifest + any derived server files (obligations.json, manifest.md). */
   readonly manifest: import("@rhema/mirror").MirrorManifest;
   readonly serverFiles?: Record<string, string>; // path -> utf8 bytes
-  /** the server-authored §12.6 boundary policy + its initial per-phase denial state (REQ-ARCH-17). */
-  readonly hookPolicy: SeatPolicy;
-  readonly hookState: DenialState;
+  /** the §12.6 boundary policy inputs (JSON-safe); the harness compiles the live `SeatPolicy` from these. */
+  readonly hookPolicyInput: CompileInput;
 }
 
 function reqEnv(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`harness: missing required env ${name}`);
   return v;
+}
+
+/**
+ * Obtain the run spec (D-P0.15c-6). Preferred: a token-authed fetch of `GET /internal/runs/:id/runspec` (the
+ * api authors it from server-side facts — the harness already holds `API_INTERNAL_URL` + the run token, and no
+ * large spec is mounted as a Secret). A `RUN_SPEC_FILE` env, if set, is the offline/fallback path (a mounted
+ * file). Exactly one applies; the fetch is the live path.
+ */
+export async function fetchRunSpec(args: { apiBaseUrl: string; runId: string; runToken: string }): Promise<HarnessRunSpec> {
+  const url = `${args.apiBaseUrl.replace(/\/$/, "")}/internal/runs/${args.runId}/runspec`;
+  const res = await fetch(url, { headers: { authorization: `Bearer ${args.runToken}` } });
+  if (!res.ok) throw new Error(`harness: run spec fetch failed ${res.status} for run ${args.runId}`);
+  return (await res.json()) as HarnessRunSpec;
 }
 
 export async function main(): Promise<void> {
@@ -100,9 +119,13 @@ export async function main(): Promise<void> {
   const agentUid = Number(process.env.AGENT_UID ?? 10002);
   const agentGid = Number(process.env.AGENT_GID ?? 10002);
 
-  // 1. the token (harness-only 0400 file) + the run spec (phase + manifest).
+  // 1. the token (harness-only 0400 file) + the run spec. The spec is server-authored: fetch it token-authed
+  //    from the api (the live path), or read a mounted RUN_SPEC_FILE if one was provided (offline/fallback).
   const runToken = (await readFile(reqEnv("RUN_TOKEN_FILE"), "utf8")).trim();
-  const runSpec = JSON.parse(await readFile(reqEnv("RUN_SPEC_FILE"), "utf8")) as HarnessRunSpec;
+  const specFile = process.env.RUN_SPEC_FILE;
+  const runSpec = specFile
+    ? (JSON.parse(await readFile(specFile, "utf8")) as HarnessRunSpec)
+    : await fetchRunSpec({ apiBaseUrl, runId, runToken });
 
   // 2. materialize /work from the server-generated manifest (read-only paths chmod 0444).
   const contentStore = await createGcsContentStore({ bucketName: objectsBucket, workspaceId });
@@ -119,9 +142,11 @@ export async function main(): Promise<void> {
   };
   await writeFile(`${configDir}/${PHASE_SPEC_FILENAME}`, JSON.stringify(agentSpec), "utf8");
   // the daemon holds the token + audit writer; the agent asks it for allow/deny and learns nothing else (§12.6).
-  // policy + state are server-authored per-run data; the audit sink (ships rows to the api with the token) is
-  // wired here at deploy.
-  const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy: runSpec.hookPolicy, state: runSpec.hookState });
+  // Policy is server-authored per-run data (REQ-ARCH-17): the api ships JSON-safe compile inputs; the harness
+  // compiles the live SeatPolicy here with the SAME @rhema/hooks code + a fresh per-phase DenialState.
+  const policy = compileSeatPolicy(runSpec.hookPolicyInput);
+  const state = newDenialState();
+  const hookDaemon = await createHookDaemon({ socketPath: hookSocketPath, policy, state });
 
   // 4. launch the SDK as uid `agent` (setpriv, scrubbed env). fd 3 is the event pipe back to the harness.
   const launch = buildAgentLaunch({

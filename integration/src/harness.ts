@@ -11,6 +11,7 @@ import {
 } from "@rhema/orchestrator/testing";
 import {
   runPhase,
+  rateTableCreditRenderer,
   type PhaseOutcome,
   type OracleInputs,
   type SqlClient,
@@ -108,7 +109,9 @@ const OK_ORACLE: OracleInputs = { phaseResult: { status: "done" }, facts: { thes
 
 export async function createG21Harness(): Promise<G21Harness> {
   const db = await createOrchestratorTestDb();
-  const deps = makeDeps(db);
+  // Bind the provisional-credit renderer the deploy wires into PhaseLoopDeps.renderCredits (D-P0.11-1), so the
+  // FakeEngine composition prices running-phase usage exactly as production does (the 0-default is never live).
+  const deps = makeDeps(db, { renderCredits: rateTableCreditRenderer });
   const seed = await seedProject(db, { draftN: 1 });
   const launches: string[] = [];
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, seedRun, seedGate, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
+import { agentTypesSeed } from "@rhema/db";
 import { createApp, type Principal } from "./index.js";
 
 // The HTTP adapter wires correctly onto the orchestrator: run creation, token-authenticated internal routes,
@@ -130,6 +131,29 @@ describe("internal run API — token auth + fencing", () => {
     });
     expect(res.status).toBe(413);
     expect((await res.json()) as { code: string }).toMatchObject({ code: "event_batch_too_large" });
+  });
+
+  it("GET /runspec returns the server-authored spec token-authed (D-P0.15c-6), 401 without a token", async () => {
+    // the seat's tool set comes from agent_types (the run spec reads it for the hook policy).
+    await agentTypesSeed({ exec: (sql) => db.pg.exec(sql), query: (sql, params) => db.pg.query(sql, params as unknown[]) });
+    await db.pg.query(
+      `insert into agent_instances(id, project_id, type_key, namespace) values ('ai_e',$1,'editor','agent:editor')
+         on conflict (project_id, type_key) do nothing`,
+      [seed.projectId],
+    );
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "review", state: "running", agentInstanceId: "ai_e" });
+
+    const noAuth = await app.request("/internal/runs/run1/runspec");
+    expect(noAuth.status).toBe(401);
+
+    const token = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
+    const res = await app.request("/internal/runs/run1/runspec", { headers: { authorization: `Bearer ${token}` } });
+    expect(res.status).toBe(200);
+    const spec = (await res.json()) as { request: { skill: string; phase: { skillPhase: string } }; skillsDir: string; hookPolicyInput: { seat: string } };
+    expect(spec.request.skill).toBe("editorial-review");
+    expect(spec.request.phase.skillPhase).toBe("0");
+    expect(spec.hookPolicyInput.seat).toBe("editor");
+    expect(JSON.stringify(spec)).not.toContain(token); // no secret leaks over the wire
   });
 });
 

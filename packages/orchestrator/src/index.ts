@@ -28,6 +28,7 @@ export * from "./allowlist.js";
 export * from "./provision.js";
 export * from "./resolver.js";
 export * from "./internal-api.js";
+export * from "./runspec.js";
 export * from "./delivery.js";
 export * from "./reaper.js";
 export * from "./phase-loop.js";

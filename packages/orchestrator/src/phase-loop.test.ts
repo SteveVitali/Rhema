@@ -4,6 +4,7 @@ import { WORKFLOW_MANIFESTS, type PhaseManifest } from "@rhema/protocols";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "./testing/pg.js";
 import { makeDeps, type TestDeps } from "./testing/deps.js";
 import { runPhase, type OracleInputs } from "./phase-loop.js";
+import { rateTableCreditRenderer } from "./credit-renderer.js";
 import { createRun, type CreateRunInput } from "./run-creation.js";
 import { provisionRun, type JobLauncher, type ProvisionArgs } from "./provision.js";
 import { commitStep, heartbeat, finalizeRun, failStep } from "./internal-api.js";
@@ -111,6 +112,43 @@ describe("phase loop — completion oracle + guided retry (AC8; REQ-SPEC-13)", (
     expect(calls).toBe(1);
     // a provisional usage.tick was emitted for the running phase.
     expect(deps.eventWriter.typesForRun("run1")).toContain("usage.tick");
+  });
+
+  it("wires an injected CreditRenderer into the provisional sdk_stream row + usage.tick (D-P0.11-1 call-site)", async () => {
+    // the phase-loop's `renderCredits` seam is what apps bind to `rateTableCreditRenderer` at deploy; inject a
+    // sentinel renderer and prove the running phase's provisional credits flow from it (not the 0 default).
+    const withRenderer = makeDeps(db, { renderCredits: () => 777 });
+    await runPhase(withRenderer, new FakeEngine(happyFixture), {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      modelTier: "balanced",
+      rateTableVersion: 1,
+      ordinal: 0,
+      of: 7,
+      phase: intake,
+      request: makeReq(intake, 1, 0, 7),
+      readOracleInputs: () => Promise.resolve({ phaseResult: { status: "done" }, facts: { thesisPresent: true, inventoryPresent: true } }),
+    });
+    const row = (
+      await db.txRunner.run(seed.workspaceId, (tx) =>
+        tx.query("select credits from usage_records where run_id='run1' and source='sdk_stream'", []),
+      )
+    ).rows[0] as { credits: number };
+    expect(Number(row.credits)).toBe(777);
+    const tick = withRenderer.eventWriter.forRun("run1").find((e) => e.type === "usage.tick");
+    expect((tick?.payload as { spentCredits: number }).spentCredits).toBe(777);
+  });
+
+  it("rateTableCreditRenderer (the deploy default) prices a token snapshot into non-zero credits", () => {
+    // the exact rate math is covered in credit-renderer.test.ts; here we assert the exported default renderer
+    // apps wire is non-trivial (a real running-phase snapshot yields > 0 provisional credits).
+    const credits = rateTableCreditRenderer(
+      { inputTokens: 50_000, outputTokens: 4_000, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 },
+      "balanced",
+      1,
+    );
+    expect(credits).toBeGreaterThan(0);
   });
 });
 

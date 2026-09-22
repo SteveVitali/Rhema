@@ -10,8 +10,9 @@ import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 import { type StageConfig } from "../config/stages";
 import type { Network } from "./network";
-import { EGRESS_PROXY_TAG, SANDBOX_TAG } from "./network";
+import { EGRESS_PROXY_TAG, SANDBOX_TAG, GKE_MASTER_CIDR } from "./network";
 import { SERVICES, type Iam, type ServiceName } from "./iam";
+import { buildProxyStartupScript } from "./proxy";
 
 export interface ComputeArgs {
   stack: string;
@@ -22,6 +23,12 @@ export interface ComputeArgs {
   iam: Iam;
   /** A placeholder image ref until each service ships real logic (overridden per-deploy). */
   placeholderImage: string;
+  /** The digest-pinned egress-proxy image the MIG runs (defaults to `placeholderImage` for a preview). */
+  proxyImage?: pulumi.Input<string>;
+  /** The Secret Manager secret NAME the proxy reads the provider key from (never the value). */
+  anthropicKeySecret?: pulumi.Input<string>;
+  /** The proxy's DATABASE_URL (a Pulumi secret config, not committed) for the RunContextResolver. */
+  proxyDatabaseUrl?: pulumi.Input<string>;
 }
 
 export interface Compute {
@@ -48,12 +55,21 @@ export function createCompute(args: ComputeArgs): Compute {
     initialNodeCount: 1,
     // Workload Identity: pods assume the run-task SA without a node-level key (REQ-ARCH-30).
     workloadIdentityConfig: { workloadPool: pulumi.interpolate`${args.project}.svc.id.goog` },
+    // VPC-native (alias IPs) is a hard prerequisite of both private nodes AND Dataplane V2 below. An empty
+    // policy tells GKE to auto-allocate the pod/service secondary ranges — making the requirement EXPLICIT
+    // and preview-stable rather than relying on the API's implicit default (independent-review follow-up).
+    ipAllocationPolicy: {},
     // Private nodes with no public IPs; the sandbox subnet gives them no egress but the proxy.
     privateClusterConfig: {
       enablePrivateNodes: true,
       enablePrivateEndpoint: false,
-      masterIpv4CidrBlock: "172.16.0.0/28",
+      masterIpv4CidrBlock: GKE_MASTER_CIDR,
     },
+    // Dataplane V2 (eBPF/Cilium) — the NetworkPolicy dataplane. It ENFORCES the `runs`-namespace NetworkPolicy
+    // that locks pod egress to the proxy + kube-dns (infra/k8s; D-P0.15c-8), so the "sandbox egresses only to
+    // the proxy" guarantee holds at the POD layer (the subnet firewall now also permits node→Google-API egress,
+    // which is the wrong layer to enforce the pod guarantee). Includes NetworkPolicy natively — no addon.
+    datapathProvider: "ADVANCED_DATAPATH",
     deletionProtection: cfg.kind === "prod",
   });
 
@@ -73,15 +89,14 @@ export function createCompute(args: ComputeArgs): Compute {
   });
 
   // --- egress-proxy: a regional MIG on the private-app tier, the sandbox's only egress route. --------
-  // GATED OFF by default (opt in with `rhema:deployProxyMig=true`). GCP has DISCONTINUED deploying a
-  // container onto a VM via the COS `gce-container-declaration` metadata (the startup-agent path) — the
-  // InstanceTemplate create now 400s ("The option to deploy a container during VM instance creation … is
-  // discontinued"). Until the proxy is re-platformed (a MIG with a startup-script that runs `docker run`,
-  // or Cloud Run behind an internal LB), the proxy is deployed out-of-band on the private-app tier (the
-  // Phase-0 dev bring-up runs the egress-proxy container on a private-app host in the sandbox-reachable
-  // 443/8443 range — identical wire guarantees). The firewall's allow-to-proxy-tier rule (network.ts) is
-  // independent of this MIG, so the sandbox isolation posture is unchanged whether or not the MIG exists.
-  const deployProxyMig = new pulumi.Config("rhema").getBoolean("deployProxyMig") ?? false;
+  // GCP discontinued the COS `gce-container-declaration` container-on-VM path (the InstanceTemplate create
+  // 400s). This is the SUPPORTED re-platform (D-P0.15c-7): a COS MIG whose instance runs the digest-pinned
+  // proxy image via a startup-script `docker run`, pulling the image from Artifact Registry with the instance
+  // SA and taking DATABASE_URL / ANTHROPIC_KEY_SECRET / PORT from instance metadata. Enabled by default now
+  // (`rhema:deployProxyMig` defaults true) so a plain `pulumi up` stands the proxy up; set it false to run the
+  // proxy out-of-band. The firewall's allow-to-proxy-tier rule (network.ts) is independent of this MIG.
+  const deployProxyMig = new pulumi.Config("rhema").getBoolean("deployProxyMig") ?? true;
+  const proxyPort = "8443";
   let proxyGroup: gcp.compute.RegionInstanceGroupManager | undefined;
   if (deployProxyMig) {
     const proxyTemplate = new gcp.compute.InstanceTemplate(name("proxy-tmpl"), {
@@ -97,12 +112,18 @@ export function createCompute(args: ComputeArgs): Compute {
         scopes: ["https://www.googleapis.com/auth/cloud-platform"],
       },
       metadata: {
-        // The COS image runs the egress-proxy container (real image pinned per-deploy).
-        "gce-container-declaration": pulumi.interpolate`spec:\n  containers:\n  - image: ${placeholderImage}\n    name: egress-proxy\n`,
+        // A supported startup-script runs the container (the discontinued container-declaration is gone). The
+        // script reads the image + config from these metadata attributes at boot — no secret is baked into the
+        // template (DATABASE_URL comes from a Pulumi secret config; the key is fetched by the proxy from SM).
+        "startup-script": buildProxyStartupScript(),
+        "proxy-image": args.proxyImage ?? placeholderImage,
+        "anthropic-key-secret": args.anthropicKeySecret ?? "",
+        "database-url": args.proxyDatabaseUrl ?? "",
+        "proxy-port": proxyPort,
       },
     });
     const proxyHealth = new gcp.compute.HealthCheck(name("proxy-health"), {
-      tcpHealthCheck: { port: 8443 },
+      tcpHealthCheck: { port: Number(proxyPort) },
       checkIntervalSec: 10,
       timeoutSec: 5,
     });
@@ -111,7 +132,7 @@ export function createCompute(args: ComputeArgs): Compute {
       baseInstanceName: name("proxy"),
       versions: [{ instanceTemplate: proxyTemplate.id }],
       targetSize: cfg.kind === "prod" ? 2 : 1,
-      namedPorts: [{ name: "https", port: 8443 }],
+      namedPorts: [{ name: "https", port: Number(proxyPort) }],
       autoHealingPolicies: { healthCheck: proxyHealth.id, initialDelaySec: 60 },
     });
   }
@@ -121,6 +142,10 @@ export function createCompute(args: ComputeArgs): Compute {
   for (const svc of CLOUD_RUN_SERVICES) {
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
+      // Cloud Run v2 defaults deletionProtection=true, which BLOCKS a `pulumi destroy` of a dev/preview stack
+      // (surfaced live 2026-09-04 — the teardown errored on all 7 services). Match the AlloyDB/GKE policy: only
+      // prod is protected, so a dev/preview stack tears down cleanly to honor the cost-conscious mandate.
+      deletionProtection: cfg.kind === "prod",
       // `web` is internet-facing; everything else is reachable only via the internal/LB path.
       ingress: svc === "web" ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
       template: {

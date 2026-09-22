@@ -6,7 +6,7 @@
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
 import type { AgentTypeKey, GateKind } from "@rhema/contracts";
-import { buildSeatManifest, recordMounts, type MirrorManifest, type Overlay, type ServerFile } from "@rhema/mirror";
+import { buildSeatHydration, recordMounts, type MirrorManifest, type Overlay, type ServerFile } from "@rhema/mirror";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -302,6 +302,9 @@ export interface HydrationResponse {
   /** the server-generated hydration manifest (§12.6 attestation) — persisted to `run_mounts` and returned so
    *  the harness fetches bytes per entry to write `/work` (P0.09). */
   readonly manifest: MirrorManifest;
+  /** derived (non-artifact) mount-file bytes by path, utf8 — the manifest entries the harness cannot fetch from
+   *  GCS because they are server-generated (`manifest.md`, the re-review `obligations.json`). D-P0.15c-6. */
+  readonly serverFiles: Record<string, string>;
 }
 
 export interface HydrationArgs {
@@ -355,7 +358,7 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       if (oblFile) serverFiles.push(oblFile);
     }
 
-    const manifest = await buildSeatManifest(tx, {
+    const { manifest, derived } = await buildSeatHydration(tx, {
       seat,
       projectId: row.project_id,
       personaId: row.persona_id,
@@ -363,6 +366,9 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       serverFiles,
     });
     await recordMounts(tx, { runId: args.runId, attempt: args.attempt, manifest });
+
+    const derivedFiles: Record<string, string> = {};
+    for (const d of derived) derivedFiles[d.path] = Buffer.from(d.bytes).toString("utf8");
 
     return {
       runId: args.runId,
@@ -374,6 +380,7 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       inputs,
       overlays: overlays.map((o) => o.artifactVersionId),
       manifest,
+      serverFiles: derivedFiles,
     };
   });
 }

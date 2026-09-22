@@ -1,0 +1,50 @@
+# Pod-layer egress lockdown for run-task pods (D-P0.15c-8; REQ-ARCH-2). Enforced by the cluster's dataplane-v2
+# (compute.ts `datapathProvider: ADVANCED_DATAPATH`). This is the POD-layer defense-in-depth that makes the
+# sandbox one-way street hold even if the node firewall were mis-scoped: a run-task pod may egress ONLY to
+#   • kube-dns (name resolution),
+#   • the egress-proxy tier (the private-app subnet 10.8.16.0/20, the SANCTIONED path to Anthropic), and
+#   • the Private-Google-APIs VIP (199.36.153.8/30) — the HARNESS uid alone uses this to materialize /work
+#     from GCS and reach the internal api/Secret Manager; the AGENT uid has none of those endpoints in its
+#     scrubbed env, so it can reach only the proxy (the two-uid boundary + this policy, both).
+# Everything else — the open internet — is denied. (The node keeps its own Google-API egress to bootstrap;
+# that is a strictly looser layer and does not weaken this one.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: run-task-egress
+  namespace: runs
+spec:
+  podSelector: {} # every pod in the `runs` namespace
+  policyTypes:
+    - Egress
+  egress:
+    # kube-dns (name resolution) — to the kube-system DNS pods on 53/udp + 53/tcp.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # the egress-proxy tier (private-app subnet): the sanctioned Anthropic path (8443) + the internal
+    # HTTPS LB / api-on-private-app (443). No other subnet is reachable.
+    # NB: this CIDR MUST equal infra/pulumi/network.ts SUBNET_CIDRS["private-app"] — keep them in lockstep if
+    # the subnet is ever re-CIDR'd (a mismatch silently breaks pod → proxy reachability).
+    - to:
+        - ipBlock:
+            cidr: 10.8.16.0/20
+      ports:
+        - protocol: TCP
+          port: 8443
+        - protocol: TCP
+          port: 443
+    # the Private-Google-APIs VIP: GCS (/work bytes), Secret Manager, and api-via-googleapis for the HARNESS
+    # uid only. Not arbitrary internet — a fixed /30 that Google intercepts on its backbone.
+    - to:
+        - ipBlock:
+            cidr: 199.36.153.8/30
+      ports:
+        - protocol: TCP
+          port: 443

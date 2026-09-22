@@ -13,6 +13,7 @@ import {
   failStep,
   audit,
   hydration,
+  buildHarnessRunSpec,
   deliverRun,
   type DeliverRunDeps,
   resolveGate,
@@ -63,6 +64,12 @@ export interface RunApiDeps extends OrchestratorDeps {
    * Unset ⇒ 1× (no scaling).
    */
   circuitBreaker?(now: Date): Promise<{ capMultiplier: 1 | 2 }>;
+  /**
+   * Static config for the server-authored harness run spec (D-P0.15c-6): the image path the ported skills are
+   * baked at, and the per-run USD ceiling the phase budget share is taken against. Unset ⇒ the runspec defaults
+   * (`/app/skills`, dev `max_usd` $10). The deploy binds these from the image + stage config.
+   */
+  readonly runSpecConfig?: { readonly skillsDir?: string; readonly maxUsdPerRun?: number };
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -218,6 +225,25 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
   internal.get("/runs/:id/hydration", (c) => {
     const run = c.get("run");
     return guard(c, async () => c.json(await hydration(deps, { runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId })));
+  });
+
+  // The server-authored harness run spec (D-P0.15c-6): the phase request + hydration manifest + derived server
+  // files + §12.6 hook-policy inputs the two-uid harness executes. Token-authed + attempt-fenced like every
+  // internal route; the harness fetches it instead of reading a mounted file (§12.6 "attestation derives only
+  // from server-side facts"). No secret is in the payload (REQ-SPEC-10/11).
+  internal.get("/runs/:id/runspec", (c) => {
+    const run = c.get("run");
+    return guard(c, async () =>
+      c.json(
+        await buildHarnessRunSpec(deps, {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+          ...(deps.runSpecConfig?.skillsDir ? { skillsDir: deps.runSpecConfig.skillsDir } : {}),
+          ...(deps.runSpecConfig?.maxUsdPerRun != null ? { maxUsdPerRun: deps.runSpecConfig.maxUsdPerRun } : {}),
+        }),
+      ),
+    );
   });
 
   internal.put("/runs/:id/heartbeat", (c) => {

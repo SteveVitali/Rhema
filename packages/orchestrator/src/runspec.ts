@@ -1,0 +1,187 @@
+// The server-authored harness run spec (D-P0.15c-6; §12.2/§12.6; REQ-SPEC-10/11/13; REQ-ARCH-17). The load-
+// bearing orchestration piece the P0.15c live run was missing: the harness (`apps/run-task/harness-main.ts`)
+// executes a `HarnessRunSpec` — the agent's phase `request`, the `skillsDir`, the hydration `manifest` + its
+// derived `serverFiles`, and the §12.6 hook policy — but NOTHING assembled it. This builds it from SERVER-SIDE
+// facts only (the attestation rests on server facts, §12.6) so the api can serve it token-authed and the
+// harness fetches it (never constructs it): the manifest is already the server attestation fact, and a fetch
+// avoids mounting a large spec as a Secret. NO secret is ever in the spec (REQ-SPEC-10/11) — the run token and
+// the proxy credential reach only the harness uid via the 0400 Secret mount, never this JSON.
+
+import type { AgentTypeKey, ModelTier, WorkflowKey } from "@rhema/contracts";
+import { MODEL_TIERS } from "@rhema/contracts";
+import type { PhaseRequest } from "@rhema/engine";
+import type { MirrorManifest } from "@rhema/mirror";
+import { EMPTY_URL_POLICY, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
+import type { OrchestratorDeps } from "./internal-api.js";
+import { hydration } from "./internal-api.js";
+
+/** Where the ported skills are baked in the run-task image (`apps/run-task/Dockerfile` COPYs them here). */
+export const DEFAULT_SKILLS_DIR = "/app/skills";
+/** The per-run USD ceiling the phase's `budgetShare` is taken against for the SDK inner brake (dev `max_usd`). */
+export const DEFAULT_MAX_USD_PER_RUN = 10;
+/** The SDK `maxTurns` ceiling for one phase (the outer wall-clock/reaper brakes are the orchestrator's). */
+export const DEFAULT_MAX_TURNS = 40;
+
+/**
+ * JSON-safe seat-policy inputs (a `@rhema/hooks` `CompileInput` with `tools` as an array). The compiled
+ * `SeatPolicy` carries a `Set` (tools) and the paired `DenialState` a `Map`, neither of which survives JSON —
+ * so the SERVER authors these inputs (from server-side facts) and the HARNESS compiles the live policy locally
+ * with the SAME `@rhema/hooks` code + a fresh `newDenialState()`. That keeps policy server-authored (REQ-ARCH-17)
+ * without shipping an unserializable object over the wire.
+ */
+export interface HookPolicyInput {
+  readonly seat: AgentTypeKey;
+  readonly personaId?: string;
+  readonly roots?: { readonly project?: string; readonly persona?: string };
+  /** the seat's permitted tool tokens (from the `agent_types` row); `web_fetch` gating is in `urlPolicy`. */
+  readonly tools: readonly string[];
+  readonly urlPolicy: UrlPolicy;
+  readonly phase: PhasePolicy;
+  readonly runId: string;
+  readonly agentLabel?: string;
+}
+
+/**
+ * The spec the harness executes for one phase (fetched token-authed from `GET /internal/runs/:id/runspec`). It
+ * is entirely server-authored data: no secret, no client construction. `manifest` + `serverFiles` materialize
+ * `/work`; `request` drives the engine's one phase; `hookPolicyInput` compiles the §12.6 boundary policy.
+ */
+export interface HarnessRunSpec {
+  readonly request: PhaseRequest;
+  readonly skillsDir: string;
+  readonly tier?: ModelTier;
+  /** the server-generated hydration manifest (§12.6 attestation) — the harness fetches bytes per entry. */
+  readonly manifest: MirrorManifest;
+  /** derived (non-artifact) mount-file bytes by path, utf8 (`manifest.md`, `obligations.json`). */
+  readonly serverFiles: Record<string, string>;
+  /** the §12.6 boundary policy inputs (the harness compiles the live `SeatPolicy` + fresh `DenialState`). */
+  readonly hookPolicyInput: HookPolicyInput;
+}
+
+export interface BuildRunSpecArgs {
+  readonly runId: string;
+  readonly attempt: number;
+  readonly workspaceId: string;
+  /** the image path the ported skills are baked at (defaults to `/app/skills`). */
+  readonly skillsDir?: string;
+  /** the per-run USD ceiling the phase budget share is taken against (defaults to the dev `max_usd`, $10). */
+  readonly maxUsdPerRun?: number;
+}
+
+/** Run-level facts read alongside the hydration manifest to assemble the phase request + hook policy. */
+interface RunSpecFacts {
+  readonly modelTier: string;
+  readonly tools: string[];
+  /** distinct committed (`done`) phases so far → the index of the phase to run next (0 on a fresh run). */
+  readonly committedPhases: number;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+// The hook's URL policy (§12.6: persona hold-outs, user exclusions, the calibrator allow-after-prediction) is a
+// DIFFERENT concern from the proxy's domain allowlist (`proxy_allowlists.url_policy`, a `ProxyUrlPolicyData` of
+// blocked/known domains — the proxy is the enforcer of record, defense-in-depth). Deriving the real hook URL
+// policy (a run's persona hold-out URLs + user exclusions) is a §12.6 concern the first green phase-0 Review does
+// not exercise (intake is judge-class — no fetch). Use the empty policy here; wiring the real hold-out policy is
+// a follow-on (it belongs with the persona-holdout / calibrator subagent path, not this assembler).
+const HOOK_URL_POLICY: UrlPolicy = EMPTY_URL_POLICY;
+
+/**
+ * Assemble the run spec the harness executes for its current phase (D-P0.15c-6). Uses `hydration()` for the
+ * server-generated manifest + derived server files + frozen inputs + seat (it also persists `run_mounts` and
+ * applies resume overlays), then reads the run's model tier, the seat's tool set, the committed-phase count
+ * (which phase to run), and the run's URL policy — and builds the `PhaseRequest` from the workflow manifest.
+ * Everything here is a server-side fact; no secret is read or emitted (REQ-SPEC-10/11).
+ */
+export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRunSpecArgs): Promise<HarnessRunSpec> {
+  // 1) hydration: manifest + derived serverFiles + frozen inputs + seat + workflow + persona (persists run_mounts).
+  const hyd = await hydration(deps, { runId: args.runId, attempt: args.attempt, workspaceId: args.workspaceId });
+  const workflow = hyd.workflow as WorkflowKey;
+  const manifest = WORKFLOW_MANIFESTS[workflow];
+  if (!manifest) throw new Error(`buildHarnessRunSpec: no workflow manifest for '${hyd.workflow}'`);
+  const seat = hyd.seat as AgentTypeKey;
+
+  // 2) run-level facts: model tier, the seat's tool set, the committed-phase count, the run's URL policy.
+  const facts = await deps.txRunner.run(args.workspaceId, async (tx): Promise<RunSpecFacts> => {
+    const runRow = (await tx.query("select model_tier from runs where id = $1", [args.runId])).rows[0] as
+      | { model_tier: string }
+      | undefined;
+    if (!runRow) throw new Error(`buildHarnessRunSpec: run ${args.runId} not found`);
+    const at = (await tx.query("select tools from agent_types where key = $1", [seat])).rows[0] as
+      | { tools: string[] }
+      | undefined;
+    const done = (
+      await tx.query("select count(distinct ordinal)::int as n from steps where run_id = $1 and state = 'done'", [args.runId])
+    ).rows[0] as { n: number };
+    return { modelTier: runRow.model_tier, tools: at?.tools ?? [], committedPhases: done.n };
+  });
+
+  // 3) the phase to run. An explicit `phase` pin in the run's FROZEN inputs wins (REQ-SPEC-13: a run created
+  //    to "run exactly phase N then stop" — the `phase:"N"` path); the pin names the skill's native phase
+  //    number (`skillPhase`). Otherwise the next uncommitted phase by index (0 on a fresh run; index ===
+  //    committed-phase count on resume). LIMITATION: for a REDUCED-rigor run (phases opted out via a manifest
+  //    `optional` notch) the default derivation over the FULL manifest can select an opted-out phase — deriving
+  //    a run's ACTIVE phase set from its rigor is owned by §6.5/P0.06 and not available here; the default
+  //    full-rigor run (the first-green milestone) is correct, and a `phase` pin is always honored. Tracked as a
+  //    DEFERRALS limitation (D-P0.15d-1).
+  const pin = hyd.inputs.phase;
+  const pinnedSkillPhase = typeof pin === "string" || typeof pin === "number" ? String(pin) : undefined;
+  const phase = pinnedSkillPhase
+    ? manifest.phases.find((p) => p.skillPhase === pinnedSkillPhase)
+    : manifest.phases.find((p) => p.index === facts.committedPhases);
+  if (!phase) {
+    throw new Error(
+      pinnedSkillPhase
+        ? `buildHarnessRunSpec: run ${args.runId} pins phase '${pinnedSkillPhase}', absent from workflow '${hyd.workflow}'`
+        : `buildHarnessRunSpec: run ${args.runId} has committed ${facts.committedPhases} of ${manifest.phases.length} phases — no phase to run`,
+    );
+  }
+
+  const tier = (MODEL_TIERS as readonly string[]).includes(facts.modelTier) ? (facts.modelTier as ModelTier) : undefined;
+  const maxUsdPerRun = args.maxUsdPerRun ?? DEFAULT_MAX_USD_PER_RUN;
+  const maxBudgetUsd = Math.max(0.5, round2(phase.budgetShare * maxUsdPerRun));
+
+  // frozen run inputs win over the manifest defaults; `phase` pins the one skill phase to run (REQ-SPEC-13).
+  const inputs: Record<string, unknown> = {
+    ...(manifest.defaultInputs ?? {}),
+    ...hyd.inputs,
+    phase: phase.skillPhase,
+  };
+
+  const request: PhaseRequest = {
+    runId: args.runId,
+    attempt: args.attempt,
+    cwd: "/work/project",
+    phase,
+    ordinal: phase.index,
+    of: manifest.phases.length,
+    skill: manifest.skill,
+    inputs,
+    seat,
+    maxBudgetUsd,
+    maxTurns: DEFAULT_MAX_TURNS,
+    urlPolicy: HOOK_URL_POLICY,
+  };
+
+  const hookPolicyInput: HookPolicyInput = {
+    seat,
+    ...(hyd.personaId ? { personaId: hyd.personaId } : {}),
+    tools: facts.tools,
+    urlPolicy: HOOK_URL_POLICY,
+    phase: { key: phase.key, phaseClass: phase.phaseClass, allowsSubagents: phase.allowsSubagents },
+    runId: args.runId,
+    agentLabel: seat,
+  };
+
+  return {
+    request,
+    skillsDir: args.skillsDir ?? DEFAULT_SKILLS_DIR,
+    ...(tier ? { tier } : {}),
+    manifest: hyd.manifest,
+    serverFiles: hyd.serverFiles,
+    hookPolicyInput,
+  };
+}

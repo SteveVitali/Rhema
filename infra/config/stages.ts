@@ -38,8 +38,19 @@ export interface VpcSubnet {
    * way out is the egress-proxy (which itself sits on a NATed subnet). (REQ-ARCH-2)
    */
   hasCloudNat: boolean;
-  /** Egress-firewall targets this subnet may reach. Sandbox: the egress-proxy only. */
+  /**
+   * The POD-level egress guarantee for this subnet. For the sandbox this stays the egress-proxy ONLY
+   * (REQ-ARCH-2) — enforced at the pod layer by the `runs`-namespace NetworkPolicy (dataplane-v2), which is
+   * strictly tighter than the node firewall. This is the security-critical fact the boundary rests on.
+   */
   egressTargets: string[];
+  /**
+   * The NODE-level egress the subnet's firewall permits, which is broader than `egressTargets` by design: a
+   * private GKE node with no NAT still must reach the Private-Google-APIs VIP (image pull, GCS, Secret Manager)
+   * and the GKE control plane to bootstrap (D-P0.15c-8). This is NOT arbitrary-internet egress and does NOT
+   * loosen the pod guarantee above — the NetworkPolicy still confines the pods to the proxy + kube-dns.
+   */
+  nodeEgressTargets?: string[];
 }
 
 export interface VpcConfig {
@@ -71,7 +82,10 @@ function sandboxSubnet(): VpcSubnet {
     cidrMask: 20, // /20 per §13.2
     hasDefaultInternetRoute: false, // REQ-ARCH-2 — no 0.0.0.0/0 default route
     hasCloudNat: false, // REQ-ARCH-2 — no NATed egress either
-    egressTargets: ["fw:egress-proxy"], // the only egress target (the proxy's firewall tag)
+    egressTargets: ["fw:egress-proxy"], // POD egress (NetworkPolicy): the proxy only — the security invariant
+    // NODE egress (firewall): the proxy PLUS the PGA VIP + GKE master, so a no-NAT node can bootstrap +
+    // pull images (D-P0.15c-8). Broader than the pod guarantee, never arbitrary-internet.
+    nodeEgressTargets: ["fw:egress-proxy", "pga:private-googleapis", "fw:gke-master"],
   };
 }
 
