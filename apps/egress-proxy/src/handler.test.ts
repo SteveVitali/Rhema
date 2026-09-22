@@ -3,7 +3,7 @@ import { InMemoryCapAccountant } from "./cap.js";
 import type { RunContext, RunContextResolver } from "./context.js";
 import { PROXY_CREDENTIAL_HEADER, AGENT_ID_HEADER } from "./credential.js";
 import { handleProxyRequest, type Forwarder, type HandlerDeps, type ProxyRequest, type UpstreamResponse } from "./handler.js";
-import { NovelDomainTracker } from "./outbound-limits.js";
+import { NovelDomainTracker, ResearchUsageTracker } from "./outbound-limits.js";
 import {
   InMemoryFetchLogWriter,
   InMemoryUsageWriter,
@@ -84,6 +84,7 @@ function harness(opts: {
     events: new InMemoryEventSink(),
     denialSpikes: new DenialSpikeTracker(),
     novelDomains: new NovelDomainTracker(),
+    researchUsage: new ResearchUsageTracker(), // per-test isolation — the prod default is a shared instance
     newId: () => `id_${++counter}`,
     now: () => new Date("2026-09-02T00:00:00.000Z"),
     forwarded,
@@ -408,6 +409,65 @@ describe("handleProxyRequest — server web tools guaranteed + logged end-to-end
     const fetchedUrls = h.fetchLogWriter.rows.filter((r) => r.kind === "fetch").map((r) => r.url);
     expect(fetchedUrls).toContain("https://reuters.com/article/x");
     expect(fetchedUrls).toContain("https://nature.com/y");
+  });
+});
+
+describe("handleProxyRequest — per-run research budget (PRB.22; D-PRB.21-1)", () => {
+  /** A request body whose assistant history already contains `n` web_fetch invocations. */
+  function historyWithFetches(n: number): string {
+    return JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        { role: "user", content: "verify" },
+        {
+          role: "assistant",
+          content: Array.from({ length: n }, (_, i) => ({
+            type: "server_tool_use",
+            name: "web_fetch",
+            input: { url: `https://src.example/${i}` },
+          })),
+        },
+      ],
+    });
+  }
+
+  it("drops web_fetch once the run's fetch budget is already consumed by history", async () => {
+    const context = ctx({ webTools: { fetchBudget: 2, searchBudget: 10 } });
+    const h = harness({ context });
+    await handleProxyRequest(request({ body: historyWithFetches(2) }), h);
+    const tools = (JSON.parse(h.forwarded.req!.body) as { tools?: { name?: string }[] }).tools ?? [];
+    expect(tools.some((t) => t.name === "web_fetch")).toBe(false); // exhausted — tool removed
+    expect(tools.some((t) => t.name === "web_search")).toBe(true); // still budgeted
+  });
+
+  it("shrinks max_uses to the remaining budget (partial remainder)", async () => {
+    const context = ctx({ webTools: { fetchBudget: 5 } });
+    const h = harness({ context });
+    await handleProxyRequest(request({ body: historyWithFetches(3) }), h);
+    const tools = (JSON.parse(h.forwarded.req!.body) as { tools?: { name?: string; max_uses?: number }[] }).tools ?? [];
+    expect(tools.find((t) => t.name === "web_fetch")?.max_uses).toBe(2);
+  });
+
+  it("accumulates METERED server_tool_use counts across requests (subagent histories)", async () => {
+    const context = ctx({ webTools: { searchBudget: 2 } });
+    const response: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1, server_tool_use: { web_search_requests: 2 } },
+      }),
+    };
+    const shared = new ResearchUsageTracker();
+    const h1 = harness({ context, response });
+    await handleProxyRequest(request(), { ...h1, researchUsage: shared });
+    expect(shared.usage("run_1")).toEqual({ fetches: 0, searches: 2 });
+
+    // next request (any history — a subagent's own context would carry none): budget spent → no web_search.
+    const h2 = harness({ context });
+    await handleProxyRequest(request(), { ...h2, researchUsage: shared });
+    const tools = (JSON.parse(h2.forwarded.req!.body) as { tools?: { name?: string }[] }).tools ?? [];
+    expect(tools.some((t) => t.name === "web_search")).toBe(false);
   });
 });
 

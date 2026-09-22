@@ -31,6 +31,7 @@ import {
   extractServerToolInvocations,
   guardWebFetchUrl,
   NovelDomainTracker,
+  ResearchUsageTracker,
   rewriteFetchUrl,
 } from "./outbound-limits.js";
 import { isSseBody } from "./usage-block.js";
@@ -82,6 +83,11 @@ export interface HandlerDeps {
   readonly capAccountant: CapAccountant;
   readonly events: EventSink;
   readonly novelDomains?: NovelDomainTracker;
+  /**
+   * Per-run cumulative research-use counter (PRB.22). Shared per-process state — the default is a
+   * module-level instance so the bound holds across requests even when the dep isn't threaded.
+   */
+  readonly researchUsage?: ResearchUsageTracker;
   readonly denialSpikes?: DenialSpikeTracker;
   readonly newId?: IdFactory;
   readonly now?: () => Date;
@@ -108,6 +114,13 @@ function jsonError(type: string, message: string): string {
 }
 
 /** The deps the pre-forward pipeline needs — everything except the (buffered) forwarder, which the caller runs. */
+/**
+ * The process-wide default `ResearchUsageTracker` (PRB.22). Unlike a per-request `new`, a shared default
+ * preserves the cross-request bound when a host doesn't thread the dep — the proxy is the run's single
+ * meter of record for its lifetime, so this state is legitimately process-scoped.
+ */
+const sharedResearchUsage = new ResearchUsageTracker();
+
 export type PrepareDeps = Omit<HandlerDeps, "forward">;
 
 /** A prepared forward: the rewritten upstream request + a `meter` closure that runs steps 8–9 over the response. */
@@ -146,6 +159,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   const nowIso = (): string => (deps.now ? deps.now() : new Date()).toISOString();
   const denialSpikes = deps.denialSpikes ?? new DenialSpikeTracker();
   const novelDomains = deps.novelDomains ?? new NovelDomainTracker();
+  const researchUsage = deps.researchUsage ?? sharedResearchUsage;
 
   // --- 1. Credential gate: resolve the per-run context, or refuse (no run_id ⇒ no fetch_log attribution) ---
   const credential = presentedCredential(req.headers);
@@ -276,14 +290,28 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
     }
   }
 
-  // --- 6. Server web tools + URL policy (§12.6; P0.15i). GUARANTEE the run's server web_search tool is in the
-  //        request (the vendored CLI does not reliably add it — P0.15h `searches=0`; web_fetch is off by default,
-  //        see `WebToolPolicy.fetch`), then scope every server web tool to the run's allowed/blocked domains.
-  //        Injection is limited to a Messages create request; a run tunes it via `ctx.webTools`. The search
-  //        RESULT urls land in the fetch log at step 9, so `cited⇒fetched` has real provenance. ---
+  // --- 6. Server web tools + URL policy (§12.6; P0.15i; PRB.22 research bound). GUARANTEE the run's server
+  //        web_search tool is in the request (the vendored CLI does not reliably add it — P0.15h
+  //        `searches=0`), then scope every server web tool to the run's allowed/blocked domains. The
+  //        research bound rides here too: `used` is the run's cumulative search/fetch invocations — the
+  //        max of THIS request's history (server-tool calls persist in `messages[]`) and the tracker's
+  //        metered-response totals (covers input-scoped subagents whose history the main request never
+  //        carries) — so `ensureServerWebTools` can shrink `max_uses` to the remainder and drop the tool
+  //        at zero. The search RESULT urls land in the fetch log at step 9, so `cited⇒fetched` has real
+  //        provenance. ---
   const isMessagesCreate = req.method.toUpperCase() === "POST" && req.path.replace(/\?.*$/, "").endsWith("/v1/messages");
+  const historyUse = { searches: 0, fetches: 0 };
+  for (const inv of invocations) {
+    if (inv.kind === "search") historyUse.searches++;
+    else historyUse.fetches++;
+  }
+  const meteredUse = researchUsage.usage(ctx.runId);
+  const used = {
+    searches: Math.max(historyUse.searches, meteredUse.searches),
+    fetches: Math.max(historyUse.fetches, meteredUse.fetches),
+  };
   const ensured = isMessagesCreate
-    ? ensureServerWebTools(outboundBody, resolveServerWebToolConfig(ctx.webTools))
+    ? ensureServerWebTools(outboundBody, resolveServerWebToolConfig(ctx.webTools), used)
     : { body: outboundBody, added: false };
   const injected = injectUrlPolicyIntoBody(ensured.body, ctx.urlPolicy);
   const finalBody =
@@ -332,6 +360,13 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
       const serverTools = isSseBody(upstream.body, contentType)
         ? extractResponseServerToolsSse(upstream.body) // streaming response (D-P0.07-5)
         : extractResponseServerTools(upstream.body); // buffered JSON response
+      // PRB.22: feed the per-run research bound. The metered `server_tool_use` counts are authoritative
+      // (they're what the provider billed); block-level fetch activity also counts search-result urls,
+      // so it is not a per-invocation count — usage only.
+      researchUsage.record(ctx.runId, {
+        fetches: usage?.webFetchRequests ?? 0,
+        searches: usage?.webSearchRequests ?? 0,
+      });
       for (const act of serverTools) {
         await writeFetch(
           act.kind === "search"

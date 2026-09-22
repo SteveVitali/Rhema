@@ -13,7 +13,7 @@ import { firstConflict, isWriterWorkflow, lockKeys, HOLDING_STATES, type LockKey
 import { revokeRunCredentials } from "./credentials.js";
 import { reconcileRunSpend } from "./spend.js";
 import type { SqlClient } from "./tx.js";
-import type { RunAllowlistData, RunContextData } from "./resolver.js";
+import type { RunAllowlistData, RunContextData, WebToolPolicyData } from "./resolver.js";
 
 /** GKE Job launch (§12.4 step 4). Live k8s client is the deploy's; this is the seam. */
 export interface JobLauncher {
@@ -136,6 +136,8 @@ export interface ProvisionArgs extends AdmitArgs {
   readonly rateTableVersion: number;
   readonly capCredits: number;
   readonly allowlist: RunAllowlistData;
+  /** the run's server web-research policy (PRB.22); the proxy applies its bounded defaults when absent. */
+  readonly webTools?: WebToolPolicyData;
   readonly agentId?: string;
   readonly role?: string;
 }
@@ -187,6 +189,7 @@ export async function provisionRun(
     rateTableVersion: args.rateTableVersion,
     capCredits: args.capCredits,
     allowlist: args.allowlist,
+    ...(args.webTools ? { webTools: args.webTools } : {}),
   });
 
   // launch the GKE Job with backoff.
@@ -240,6 +243,7 @@ export interface MintCredentialArgs {
   readonly rateTableVersion: number;
   readonly capCredits: number;
   readonly allowlist: RunAllowlistData;
+  readonly webTools?: WebToolPolicyData;
 }
 
 /** The credential secret is hashed for storage; the resolver looks it up by hash. */
@@ -272,6 +276,7 @@ export async function mintProxyCredential(deps: OrchestratorDeps, args: MintCred
     modelTier: args.modelTier,
     rateTableVersion: args.rateTableVersion,
     capCredits: args.capCredits,
+    ...(args.webTools ? { webTools: args.webTools } : {}),
   };
 
   // one tenant-scoped transaction: the non-RLS proxy rows + the RLS `runs` link commit together.

@@ -5,6 +5,7 @@ import { admitRun, provisionRun, mintProxyCredential, type JobLauncher, type Pro
 import { lockKeys } from "./locks.js";
 import { createDbRunContextResolver } from "./resolver.js";
 import type { RunAllowlistData } from "./resolver.js";
+import { authorWebToolPolicy } from "./allowlist.js";
 
 let db: OrchestratorTestDb;
 let deps: TestDeps;
@@ -282,6 +283,28 @@ describe("DB-backed RunContextResolver (D-P0.07-3)", () => {
     // revoke → the resolver no longer resolves it.
     await db.client.query("update proxy_credentials set revoked_at = now() where run_id='run1'", []);
     expect(await resolver.resolve(secret)).toBeNull();
+  });
+
+  it("persists the run's webTools research policy into the credential context (PRB.22)", async () => {
+    await seedRun(db, { runId: "run2", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "provisioning" });
+    const webTools = authorWebToolPolicy({ claims: 3 });
+    const secret = await mintProxyCredential(deps, {
+      runId: "run2",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      billingAccountId: seed.billingAccountId,
+      role: "editor",
+      agentId: "editor",
+      provider: "anthropic",
+      modelTier: "base",
+      rateTableVersion: 1,
+      capCredits: 207,
+      allowlist,
+      webTools,
+    });
+    const resolver = createDbRunContextResolver(db.client, { now: () => deps.clock.now() });
+    const ctx = await resolver.resolve(secret);
+    expect(ctx?.webTools).toEqual(webTools); // the proxy's bound rides the credential context
   });
 });
 

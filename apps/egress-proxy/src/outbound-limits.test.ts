@@ -5,6 +5,7 @@ import {
   guardWebFetchUrl,
   MAX_WEB_FETCH_QUERY_CHARS,
   NovelDomainTracker,
+  ResearchUsageTracker,
   rewriteFetchUrl,
 } from "./outbound-limits.js";
 
@@ -86,5 +87,18 @@ describe("novel-domain cap (§12.8d)", () => {
     expect(t.admit("run1", "c.example", known, 2)).toMatchObject({ admitted: false, novelCount: 2 });
     // uncapped run admits freely.
     expect(t.admit("run2", "z.example", known, undefined)).toMatchObject({ admitted: true });
+  });
+});
+
+describe("ResearchUsageTracker — per-run research bound (PRB.22; D-PRB.21-1)", () => {
+  it("accumulates metered fetch/search counts per run across responses", () => {
+    const t = new ResearchUsageTracker();
+    expect(t.usage("run1")).toEqual({ fetches: 0, searches: 0 });
+    t.record("run1", { fetches: 3, searches: 1 });
+    t.record("run1", { fetches: 2 }); // a fetch-only response
+    t.record("run1", { searches: 4 }); // a search-only response
+    expect(t.usage("run1")).toEqual({ fetches: 5, searches: 5 });
+    // run-keyed: another run is unaffected.
+    expect(t.usage("run2")).toEqual({ fetches: 0, searches: 0 });
   });
 });

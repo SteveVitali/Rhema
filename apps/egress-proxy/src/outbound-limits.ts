@@ -294,3 +294,30 @@ export class NovelDomainTracker {
     return this.novelByRun.get(runId)?.size ?? 0;
   }
 }
+
+/**
+ * Per-run cumulative web_search / web_fetch use (PRB.22 — D-PRB.21-1). `max_uses` on a server web tool
+ * bounds ONE API call, so a run's research volume needs a cross-request bound: the proxy records every
+ * response's metered `server_tool_use` counts (the same data the fetch log of record writes) and the
+ * handler subtracts the running totals from the run's `WebToolPolicy` budgets — shrinking `max_uses` to
+ * the remainder and dropping the tool entirely at zero. Run-keyed in-memory state, like the cap
+ * accountant: the proxy is the run's one meter of record for its lifetime, and the request-history count
+ * (the handler's other input) covers any gap a restart would leave.
+ */
+export class ResearchUsageTracker {
+  private readonly byRun = new Map<string, { fetches: number; searches: number }>();
+
+  /** Record one served response's server-tool use for the run (from `usage.server_tool_use` / parsed blocks). */
+  record(runId: string, delta: { readonly fetches?: number; readonly searches?: number }): void {
+    const cur = this.byRun.get(runId) ?? { fetches: 0, searches: 0 };
+    cur.fetches += delta.fetches ?? 0;
+    cur.searches += delta.searches ?? 0;
+    this.byRun.set(runId, cur);
+  }
+
+  /** The run's cumulative server-tool use so far. */
+  usage(runId: string): { fetches: number; searches: number } {
+    const cur = this.byRun.get(runId);
+    return { fetches: cur?.fetches ?? 0, searches: cur?.searches ?? 0 };
+  }
+}

@@ -77,15 +77,29 @@ export function rigorMultiplier(workflow: string, rigor: Rigor): number {
   return RIGOR_MULTIPLIERS[workflow]?.[rigor] ?? 1;
 }
 
+// PRB.22 — the verification/discourse phases do REAL web research per claim (Anthropic server web_search /
+// web_fetch), and that burn was UNMODELED: five live `review` runs died `cap_reached` on 2026-09-22 because
+// metered spend outran every `ceil(1.5×estimate)` cap (D-PRB.21-1). The research channel is now BOUNDED at the
+// egress proxy (per-run fetch/search budgets + `max_content_tokens` page truncation — see `authorWebToolPolicy`
+// in @rhema/orchestrator and `WebToolPolicy` in apps/egress-proxy), and these constants price the BOUNDED
+// residual: a fetched page is truncated to ≤8k tokens, held in context ~10 subsequent turns ≈ $0.036 list ≈
+// ~5 credits per fetch (Sonnet-rate). `RESEARCH_PER_CLAIM` ≈ 3 fetches + 1 search per claim (~16 cr);
+// `RESEARCH_FLOOR` ≈ ~10 baseline fetches + ~7 searches a verification phase does regardless of count (~60 cr).
+export const RESEARCH_PER_CLAIM_CREDITS = 16 as const;
+export const RESEARCH_FLOOR_CREDITS = 60 as const;
+
 export const ESTIMATORS: Record<string, EstimatorSpec> = {
   review: {
     workflow: "review",
     base: { intercept: 40, perWord: 0.012, perClaim: 24 },
     addends: [
+      // The verification phase's web-research burn (PRB.22). Bound to the `fact_check` sheet toggle —
+      // when verification is toggled off, no claim research runs and no research is priced.
+      { phase: "verification", terms: { intercept: RESEARCH_FLOOR_CREDITS, perClaim: RESEARCH_PER_CLAIM_CREDITS } },
       { phase: "discourse", terms: { intercept: 90, perWord: 0.006 } },
       { phase: "second_read", terms: { intercept: 0, perWord: 0.005 } },
     ],
-    costPerVerifiedClaimBase: 24,
+    costPerVerifiedClaimBase: 24 + RESEARCH_PER_CLAIM_CREDITS,
     provisional: true,
     source: "modeled",
     version: "modeled-1",
@@ -99,8 +113,11 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
   },
   fact_check: {
     workflow: "fact_check",
-    base: { intercept: 20, perClaim: 11 },
-    costPerVerifiedClaimBase: 11,
+    // Fact-check IS the verification phase — the same bounded research constants fold into its base
+    // (PRB.22: the floor is the claim-independent research the phase does; perClaim adds the per-claim
+    // fetch/search cost on top of the 11-cr verification work).
+    base: { intercept: 20 + RESEARCH_FLOOR_CREDITS, perClaim: 11 + RESEARCH_PER_CLAIM_CREDITS },
+    costPerVerifiedClaimBase: 11 + RESEARCH_PER_CLAIM_CREDITS,
     provisional: true,
     source: "modeled",
     version: "modeled-1",

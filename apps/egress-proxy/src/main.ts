@@ -10,6 +10,7 @@ import { createProxyServer, undiciStreamForwarder } from "./server.js";
 import { createDbRunContextResolver } from "./resolver.js";
 import { ReloadableAnthropicSecretProvider, createSecretAccessor } from "./secret-manager.js";
 import { SqlUsageWriter, SqlFetchLogWriter, SqlCapAccountant, type SqlExecutor } from "./sinks.js";
+import { NovelDomainTracker, ResearchUsageTracker } from "./outbound-limits.js";
 import { InMemoryEventSink } from "./signals.js";
 import { ulid } from "./ids.js";
 
@@ -62,6 +63,8 @@ export async function startProxy(): Promise<void> {
     fetchLogWriter: new SqlFetchLogWriter(db),
     capAccountant: new SqlCapAccountant(db),
     events: new InMemoryEventSink(), // pause/denial signal delivery to the run is P0.08b's transport
+    novelDomains: new NovelDomainTracker(), // cross-request novel-domain state (§12.8d)
+    researchUsage: new ResearchUsageTracker(), // cross-request research budgets (PRB.22)
     newId: () => ulid(),
   });
   server.listen(env.port, () => {

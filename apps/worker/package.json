@@ -28,6 +28,7 @@
     "@rhema/obligations": "workspace:*",
     "@rhema/orchestrator": "workspace:*",
     "@rhema/protocols": "workspace:*",
+    "@rhema/run-sheet": "workspace:*",
     "ioredis": "6.0.0",
     "pg": "8.23.0",
     "pg-boss": "12.30.0",
