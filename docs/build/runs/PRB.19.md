@@ -245,3 +245,13 @@ single-use race). Two follow-on defects fixed + deployed (`08ec8c0`, update 62):
 `Origin` (better-auth can 403 server-side auth calls), and `advanced.ipAddress.ipAddressHeaders=
 ["x-forwarded-for"]` so rate limiting buckets per real client instead of one shared bucket — the
 shared-bucket fallback is what briefly 403/429'd all sign-ins during the retry burst.
+
+**Stripe-originated purchase VERIFIED (2026-09-22T16:05Z):** the operator's live $25 checkout
+(`buy.stripe.com/14AaEQbU030E61k5D7a7C00` + `client_reference_id`) flowed through the live endpoint →
+`credit_ledger grant(topup, 2500cr, source=stripe, stripe_ref=pi_3UIWBo2MLe3ETP9S18uvOm9f)` on the
+operator billing account. D-PRB.17-1 closed.
+
+**Fresh-account UX gap (live finding, → P1):** a new account has no reachable add-credits affordance
+(the exhaustion panel needs an existing project) and NO project-create path at all — that's P.1.04
+by design, but for real-world beta usage an operator-created project (`01M34YDZ3SK525JYF74EEH44QR`,
+"my-first-project") was inserted into the operator workspace to unblock the import → review loop.
