@@ -225,3 +225,10 @@ Deployed via Cloud Build `e0a42238` (api+web subset) → `pulumi up` update **60
 `client_reference_id` itself; the manual `?client_reference_id=…` checkout workaround is retired).
 Google sign-in click-through + magic-link legs still await the operator's browser retry; Resend domain
 `pending` (CNAME verified; DKIM/SPF/MX pending at last check — MX priority corrected to 10).
+
+**Follow-up (same leg):** the link still refused — better-auth 1.7.x's `requireLocalEmailVerified`
+(default `true`) blocks linking when the local user row is `email_verified=false` (the operator
+account was fixture-created, never a real magic-link click-through). Set
+`accountLinking.requireLocalEmailVerified: false` (commit `0a21358`) — Google only asserts verified
+emails so the trust boundary holds, and the local row self-heals to `email_verified=true` on link.
+Api rebuilt `4ed76540…` → `pulumi up` update **61** → revision `…-00027`.
