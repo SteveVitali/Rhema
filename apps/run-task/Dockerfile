@@ -54,6 +54,21 @@ COPY apps/run-task/docker/entrypoint.sh /app/entrypoint.sh
 COPY apps/run-task/docker/scoped-runner.sh /app/scoped-runner.sh
 RUN chmod 0755 /app/entrypoint.sh /app/scoped-runner.sh
 
+# Vendor the proprietary Agent SDK (REQ-ARCH-4 / D-P0.06-4). The operator drops the built package under
+# apps/run-task/vendor/claude-agent-sdk/ (see vendor/README.md); it is copied into node_modules here, NEVER
+# fetched at run time. If absent (the Phase-0 stand-in / CI placeholder build) the image still builds and
+# the run loop fails fast at loadSdkQuery() (sdk-adapter.ts) with a clear error — never a silent no-engine
+# run. The agent uid consumes it; the harness uid never touches the model process.
+COPY apps/run-task/vendor/ /app/vendor/
+RUN if [ -d /app/vendor/claude-agent-sdk ]; then \
+      mkdir -p /app/node_modules/@anthropic-ai \
+      && cp -r /app/vendor/claude-agent-sdk /app/node_modules/@anthropic-ai/claude-agent-sdk \
+      && chown -R agent:agent /app/node_modules/@anthropic-ai \
+      && echo "vendored @anthropic-ai/claude-agent-sdk into the image"; \
+    else \
+      echo "WARNING: @anthropic-ai/claude-agent-sdk NOT vendored — Phase-0 stand-in build (no live run)"; \
+    fi
+
 # The container starts as root under tini ONLY so the entrypoint can drop the supervisor to `harness` and
 # later launch `agent` via setpriv; root does nothing else. Root filesystem is read-only at run time.
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]

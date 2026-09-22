@@ -36,8 +36,10 @@ export default tseslint.config(
       "docs/**",
       ".agents/**",
       "**/.sst/**",
-      // SST config is executed/bundled by the SST CLI (its own globals + triple-slash ref), not linted here.
-      "**/sst.config.ts",
+      // The Pulumi program (infra/pulumi) is operator-run IaC executed by the Pulumi CLI's own ts-node
+      // runtime with its own deps (@pulumi/*), not part of the monorepo build/lint graph — same posture
+      // the superseded SST config had.
+      "infra/pulumi/**",
     ],
   },
   js.configs.recommended,

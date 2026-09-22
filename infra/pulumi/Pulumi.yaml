@@ -1,0 +1,14 @@
+name: rhema
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: >-
+  Rhema GCP infrastructure (spec §13.1/§13.2). Cloud Run (web/api/worker/collab/fetcher/convert/export),
+  a GKE Standard cluster for run-task (needs CAP_SYS_ADMIN), AlloyDB, GCS, Memorystore Redis, Cloud CDN +
+  external HTTPS LB, Secret Manager, Workload-Identity service accounts, and the no-egress sandbox subnet
+  (no Cloud NAT / no default route; egress firewall targets only the proxy — REQ-ARCH-2).
+main: index.ts
+# Provider config (gcp:project / gcp:region) is set per-stack in Pulumi.<stack>.yaml, not here — Pulumi
+# rejects provider-namespaced defaults in the project file. index.ts also falls back to rhema-507501 /
+# us-central1 when a stack does not set them.

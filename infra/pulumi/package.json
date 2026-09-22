@@ -1,0 +1,13 @@
+{
+  "name": "rhema-infra-pulumi",
+  "private": true,
+  "description": "Pulumi (TypeScript) GCP program for Rhema (spec §13.2). Operator-run IaC — NOT a pnpm-workspace member; the Pulumi CLI installs these deps at `pulumi up` time, mirroring how the old SST config was CLI-run. Imports the pure, dependency-free stage facts directly from ../config/*.ts.",
+  "main": "index.ts",
+  "//versions": "Pinned to the versions the program was typechecked clean against (offline validation of the IaC).",
+  "devDependencies": {
+    "@pulumi/gcp": "8.41.1",
+    "@pulumi/pulumi": "3.261.0",
+    "@types/node": "^22.7.0",
+    "typescript": "^5.5.0"
+  }
+}

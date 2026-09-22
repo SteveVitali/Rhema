@@ -24,7 +24,9 @@ function requireEnv(name) {
 const record = buildDeploymentProvenance({
   gitSha: requireEnv("GIT_SHA"),
   imageDigests: JSON.parse(requireEnv("IMAGE_DIGESTS")),
-  protocolsVersion: process.env.PROTOCOLS_VERSION ?? "stub-0.0.0",
+  // An empty/whitespace PROTOCOLS_VERSION (e.g. `--bare` with no protocols checkout) falls back to the
+  // stub, so provenance never records a blank version (which the contract would reject).
+  protocolsVersion: process.env.PROTOCOLS_VERSION?.trim() || "stub-0.0.0",
   rateTableVersion: process.env.RATE_TABLE_VERSION ?? new Date().toISOString().slice(0, 10),
   stage: requireEnv("STAGE"),
 });
