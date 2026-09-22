@@ -232,3 +232,8 @@ account was fixture-created, never a real magic-link click-through). Set
 `accountLinking.requireLocalEmailVerified: false` (commit `0a21358`) — Google only asserts verified
 emails so the trust boundary holds, and the local row self-heals to `email_verified=true` on link.
 Api rebuilt `4ed76540…` → `pulumi up` update **61** → revision `…-00027`.
+
+**VERIFIED (operator browser, 2026-09-22T15:24Z):** Google sign-in completes end-to-end — callback
+links to the EXISTING user `01M2V3PM0W…` (no duplicate), `account(provider_id=google,
+account_id=110577562545223887695)` created, `session` row live, `email_verified` healed false→true.
+Google half of D-P0.01-3 done; magic-link half still awaits Resend verification + click-through.
