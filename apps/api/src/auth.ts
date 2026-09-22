@@ -93,7 +93,16 @@ export function createAuth(
       // linking gated to `trustedProviders` (Google verifies its emails; the existing account's
       // email is already verified via the magic link), so same-email social + magic-link converge
       // on one account without opening a takeover surface.
-      accountLinking: { enabled: true, trustedProviders: ["google"] },
+      //
+      // `requireLocalEmailVerified: false` (v1.7.x default is true) — a same-email Google sign-in
+      // must link even when the local row's email_verified is false (e.g. a magic-link request whose
+      // delivery never completed). Google only asserts emails it has verified, so trusting it here
+      // can't cross accounts; on link, better-auth promotes the local row to email_verified=true.
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["google"],
+        requireLocalEmailVerified: false,
+      },
     },
     verification: {
       fields: { expiresAt: "expires_at", createdAt: "created_at", updatedAt: "updated_at" },
