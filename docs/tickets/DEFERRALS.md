@@ -480,6 +480,14 @@ cell is free-form evidence prose).
 
 ---
 
+## PRB.21 — post-launch live-use findings (day one cont.)
+
+| id | obligation | why deferred | closes when | verification | evidence | status |
+|----|------------|--------------|-------------|--------------|----------|--------|
+| D-PRB.21-1 | **Estimator cap model cannot complete a real `review` run — verification-phase research burn is unmodeled.** The cap is enforced on proxy-metered burn (all SDK requests incl. research fetches' context), while the estimate tracks committed-debit rates. Live result (operator, 2026-09-22): FIVE consecutive `cap_reached` deaths across three rigor levels on two docs — `01M3508M` quick est 364/cap 546 → died 622; `01M35CEQ…` standard est 1657/cap 2486 → died 2629; `01M35FR9…` quick est 73/cap 110 → died 119; `01M35HHJ6…` quick est 73/cap 400 → died 407; `01M35KCFA…` quick est 73/cap 400 → died 466 on a 701-word draft with **zero fetchable URLs** (`fetch_log`: 128 fetches + 13 searches — verification does its own web research per claim regardless of in-doc citations; `usage_records`: 6.65M cache-read tokens / 41 calls). Meanwhile committed debits stayed modest (intake ~102, craft ~87–122). The one completed quick review (`01M2TZ8E`, cap 390, spent 146) predates the fetch-heavy verification profile — and quick's honest floor (est ~57–73 → cap ~86–110) sits BELOW minimum viable burn (~146+), so quick rigor is structurally uncompletable at derived caps. | The fix is a design ruling with real product/economic consequences: bound the research (per-claim/per-run fetch+search budget, fetched-page truncation/context discipline), model the burn (research addend in the estimator driven by claim count), and/or re-scope what the cap meters. Not a drive-by patch. | A ticket that picks the fix shape and lands it (candidate `28m_PRB.22`), then proves a real review DELIVERS within its derived cap on prod. | One bounded live `review` run on a small doc: assert `state=delivered`, `spent_credits ≤ cap_credits`, committed debits ≈ estimate, and fetch/search counts within the chosen budget. | Run ids above + ledger rows (holds 110/400/546/2486 → releases after debits 58/190/224/~158/536); `fetch_log`/`usage_records` counts from `rhema` prod DB 2026-09-22; ~$11.7 committed across the day's attempts. | **OPEN** |
+
+---
+
 ## Reconciliation — G1 clear (2026-09-15, after P0.15k Stage B, PR #28)
 
 The live P0.15 Stage B (P0.15c–i + P0.15k: the full `dev` deploy + the three real-project Reviews delivering
