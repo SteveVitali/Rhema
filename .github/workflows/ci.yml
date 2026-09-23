@@ -169,6 +169,12 @@ jobs:
     name: public-safe (gitleaks / markers / licence policy)
     needs: typecheck-lint-unit
     runs-on: ubuntu-latest
+    # gitleaks-action v2 reads the PR commit list (GET /pulls/<n>/commits) on pull_request
+    # events; the default job token is contents:read only, so that call 403s ("Resource not
+    # accessible by integration"). Grant the minimal read scopes it needs (as on #45–50).
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
