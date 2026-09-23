@@ -247,3 +247,32 @@ at the derived cap only (expected ~978 — server-derived, no raise). Success = 
 carried forward — it is not reopened).
 
 **Spend this run: $0.** No deploy, no live run; prod DB access was read-only SELECTs.
+
+## Stage B — live verify (operator run, 2026-09-23)
+
+Deployed via Pulumi update 73 (api `b889b52b`, web `ad6661e3`, worker `f4e0fb87`,
+run-task `0f22f9e2`). Verify run `01M37GSGXCQ9ACSS8G670VVQBY` — `review`/`quick` on draft 6,
+**derived cap only** (est 652 / cap 978, no operator raise).
+
+**Result: `failed` / `cap_reached` at 16:55Z in `letter` — 985 metered vs cap 978.**
+
+| Phase | Committed | Delivered run `01M36663…` |
+|---|---|---|
+| intake | 81 | 79 |
+| craft | 65 | 70 |
+| verification | **389** | 233 |
+| argument | 96 | 84 |
+| letter | failed | 120 |
+
+Committed 631; metered 985; 3 compactions; usage: verification top-level 2 reqs / 3.2M
+cache-read / ~1072cr + 72 unattributed editor reqs / 4.47M cache-read; 32 fetches / 33
+searches total.
+
+**Reading — variance is the unmodeled term:** same draft + config produced verification
+committed 233 vs 389 (+67%) across two runs; whole-run metered 720 vs ~985+. The 1.25×
+`meteredCoverage` was calibrated on the delivered run; this run needed ≈1.35× through
+verification alone plus synthesis headroom. No static multiplier prices this workload
+tightly — honest quick pricing is ~$7–10 with ±30% run variance. **Conclusion for G3:**
+engineering bounds landed and work (verification completes consistently now); what remains
+is a pricing-model/product ruling — per-run headroom policy or honest advertised floors —
+not another estimator notch. Stop-on-failure honored; no retry.
