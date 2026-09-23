@@ -317,6 +317,36 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
   });
 
+  // PRB.24 — the intra-phase transcript bound's shape layer: a research-class phase that fans
+  // out (`allowsSubagents: true`) gets the `research_fanout` contract instructing bounded-batch
+  // researcher delegation + compact verdict returns, so no session transcript accumulates past
+  // one batch. Judge/generate phases (allowsSubagents: false) never receive it.
+  it("PRB.24 — an allowsSubagents phase carries the `research_fanout` context contract", async () => {
+    const runId = await seedWorkflowRun("run_fanout", "review");
+    const review = WORKFLOW_MANIFESTS.review!;
+    const verification = review.phases.find((p) => p.key === "verification")!;
+    expect(verification.allowsSubagents).toBe(true);
+    // pin the run to the verification phase so the spec selects it.
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ phase: verification.skillPhase })]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    const contract = String(spec.request.inputs.research_fanout);
+    expect(contract).toContain("researcher");
+    expect(contract).toContain("at most 5");
+    expect(contract).toContain("compact verdict");
+    expect(contract).toContain("resends the full session transcript");
+  });
+
+  it("PRB.24 — a judge phase (allowsSubagents: false) carries NO research_fanout input", async () => {
+    const runId = await seedWorkflowRun("run_no_fanout", "review");
+    const review = WORKFLOW_MANIFESTS.review!;
+    expect(review.phases[0]!.allowsSubagents).toBe(false); // intake — judge class
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("intake");
+    expect(spec.request.inputs.research_fanout).toBeUndefined();
+  });
+
   it("F15 — a phase with NO declared sidecars carries no sidecar_contract input", async () => {
     const runId = await seedWorkflowRun("run_no_sc", "revise");
     const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });

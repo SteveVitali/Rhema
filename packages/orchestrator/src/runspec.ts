@@ -283,6 +283,23 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
             `.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports). Write it under your writable seat directory as agents/${seat}/.rhema/phase-result.json (likewise agents/${seat}/.rhema/<sidecar>.json for sidecars) — the project root is read-only for your seat.`,
         }
       : {}),
+    // PRB.24 — the intra-phase transcript bound, shape layer. A research-class phase that fans out
+    // (`allowsSubagents` — verification, discourse) otherwise runs the WHOLE per-claim loop inside ONE
+    // session context: every Messages request resends the accumulated transcript, so cost is
+    // super-linear in the number of items (the verify run measured ~40 requests averaging ~60K
+    // cache-read tokens each — ~347 uncommitted credits — before `cap_reached`). Each Agent-tool
+    // invocation IS a fresh isolated session, so this contract steers the seat to delegate research to
+    // `researcher` subagents in bounded batches: each subagent verifies ONLY its assigned items, keeps
+    // its own (bounded) context, and returns a COMPACT verdict list — the seat assembles the ledger
+    // from returned verdicts and writes the dossier incrementally, so neither the seat's nor any
+    // subagent's transcript can grow past one batch. `TRANSCRIPT_COMPACTION_WINDOW_TOKENS`
+    // (`options.settings.autoCompactWindow`) is the hard ceiling underneath this instruction.
+    ...(phase.allowsSubagents
+      ? {
+          research_fanout:
+            "Context contract (PRB.24): do NOT run one long research session over the whole claim/topic inventory — every request resends the full session transcript. Fan research out to `researcher` subagents in bounded batches of at most 5 items each. A researcher verifies ONLY its assigned items and returns a compact verdict list (item → verdict → retrieved source URLs) — never pasted page text. Assemble the ledger/report rows yourself from the returned verdicts and write the dossier file incrementally as each batch returns; if a subagent's batch stalls, re-delegate the remaining items in a fresh batch rather than continuing in your own context.",
+        }
+      : {}),
   };
 
   const request: PhaseRequest = {

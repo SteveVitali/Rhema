@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import type { PhaseManifest } from "@rhema/protocols";
-import { buildQueryOptions, buildPrompt, COSMETIC_DISALLOWED_TOOLS, MAX_CONCURRENT_SUBAGENTS } from "./options.js";
+import {
+  buildQueryOptions,
+  buildPrompt,
+  COSMETIC_DISALLOWED_TOOLS,
+  MAX_CONCURRENT_SUBAGENTS,
+  TRANSCRIPT_COMPACTION_WINDOW_TOKENS,
+} from "./options.js";
 import { OTEL_CONTENT_FLAGS } from "./otel.js";
 import { FORBIDDEN_AGENT_ENV_KEYS } from "./scrubbed-env.js";
 import type { PhaseRequest } from "./engine.js";
@@ -75,6 +81,21 @@ describe("buildQueryOptions (§12.2)", () => {
     expect(o.tools).not.toContain("WebFetch");
     expect(o.tools).not.toContain("WebSearch");
     expect(o.tools).not.toContain("Skill"); // the slash command is expanded client-side
+  });
+
+  it("PRB.24 — sets `settings.autoCompactWindow`, the hard intra-phase transcript bound", () => {
+    // Every phase is already a fresh `query()` session (no `resume`), so accumulation is
+    // INTRA-phase: the verification loop metered ~40 requests averaging ~60K cache-read tokens
+    // each before `cap_reached` (run 01M35Y9BH…). The flag-tier settings object's
+    // `autoCompactWindow` forces the CLI's own auto-compaction (live-exercised: 2 compactions in
+    // that run) at ~80K instead of the default ~200K model window — a per-request ceiling on
+    // transcript resend for the session AND its subagents.
+    expect(o.settings).toEqual({ autoCompactWindow: TRANSCRIPT_COMPACTION_WINDOW_TOKENS });
+    expect(TRANSCRIPT_COMPACTION_WINDOW_TOKENS).toBe(80_000);
+    // sized above one bounded claim-batch working set (~16K envelope + ≤5×8K pages + ~15K notes)
+    // and far below the default window that let the verify run reach ~200K twice.
+    expect(TRANSCRIPT_COMPACTION_WINDOW_TOKENS).toBeGreaterThan(70_000);
+    expect(TRANSCRIPT_COMPACTION_WINDOW_TOKENS).toBeLessThan(150_000);
   });
 
   it("passes the per-phase budget and turn ceilings", () => {

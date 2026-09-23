@@ -98,27 +98,42 @@ export function rigorMultiplier(workflow: string, rigor: Rigor): number {
 export const RESEARCH_PER_CLAIM_CREDITS = 16 as const;
 export const RESEARCH_FLOOR_CREDITS = 60 as const;
 
-// PRB.23 — the context-churn floor. The proxy bills every request's FULL context each turn
-// (cache-read at 0.1× input). Measured: run `01M35Q8M…` (quick/base, 701-word doc, ZERO
+// PRB.23/PRB.24 — the context-churn floor. The proxy bills every request's FULL context each turn
+// (cache-read at 0.1× input). First measured: run `01M35Q8M…` (quick/base, 701-word doc, ZERO
 // research calls) metered 34 requests × ~151K-token avg context ≈ 5.14M cache-read tokens ≈
-// ~144 platform credits — and died at cap without finishing. Decomposition (zero-credit SDK
-// probe, real request bodies): fresh-session envelope ≈ 119 KB (~30K tokens; ~16K after the
-// `tools` restriction lands) + the accumulated transcript resent every turn (8 Reads of a
-// ~560 KB corpus → the next request carried 525 KB). A completing phase session runs ~10–15
-// metered requests including subagent fan-out ⇒ ~40–65 cr of churn per phase at Sonnet
-// cache-read rates; 50 is the mid-band. Provisional like every constant here — the first
-// instrumented run that delivers recalibrates it via `foldInstrumentedRun`.
-export const CONTEXT_CHURN_PER_PHASE_CREDITS = 50 as const;
+// ~144 platform credits — and died at cap without finishing. PRB.24's measured calibration (run
+// `01M35Y9BH…`, review/quick, same 701-word draft): intake committed 96cr, craft committed 63cr —
+// the flat per-PHASE churn term is therefore set at the LOW end of the measured ordinary-phase
+// band (~100–140): the term multiplies EVERY active phase, so mid-band would compound over-price
+// the judge/generate phases. Provisional like every constant here — the first instrumented run
+// that delivers recalibrates it via `foldInstrumentedRun`.
+export const CONTEXT_CHURN_PER_PHASE_CREDITS = 100 as const;
+
+// PRB.24 — the RESEARCH-LOOP churn premium. Ordinary phases churn ~100cr; a research-class phase
+// (verification, discourse) ran its whole per-claim loop inside ONE session context, so every
+// request resent an unboundedly growing transcript on top of the envelope: run `01M35Y9BH…`
+// metered ~40 verification requests averaging ~60K cache-read tokens each ≈ 2.4M tokens ≈ 347cr
+// of UNCOMMITTED burn in that one phase — minus its ~100cr perPhase share and ~60cr research
+// floor + ~48cr per-claim fetch/search, the TRANSCRIPT-ACCUMULATION residual is ~140cr. Folded
+// into the `verification`/`discourse` addend intercepts and the `fact_check` base (whose 2-phase
+// workflow IS intake + verification). The PRB.24 bound (bounded-batch researcher fan-out +
+// `autoCompactWindow`) attacks exactly this term; `foldInstrumentedRun` re-derives it from the
+// first post-bound delivered run.
+export const RESEARCH_LOOP_CHURN_CREDITS = 140 as const;
 
 export const ESTIMATORS: Record<string, EstimatorSpec> = {
   review: {
     workflow: "review",
     base: { intercept: 40, perWord: 0.012, perClaim: 24, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
     addends: [
-      // The verification phase's web-research burn (PRB.22). Bound to the `fact_check` sheet toggle —
+      // The verification phase's web-research burn (PRB.22) PLUS the research-loop transcript
+      // churn (PRB.24 — verification metered ~347cr in run `01M35Y9BH…`; priced here ≈ 100 perPhase
+      // share + 200 intercept + 16/claim ≈ 350 at ~3 claims). Bound to the `fact_check` sheet toggle —
       // when verification is toggled off, no claim research runs and no research is priced.
-      { phase: "verification", terms: { intercept: RESEARCH_FLOOR_CREDITS, perClaim: RESEARCH_PER_CLAIM_CREDITS } },
-      { phase: "discourse", terms: { intercept: 90, perWord: 0.006 } },
+      { phase: "verification", terms: { intercept: RESEARCH_FLOOR_CREDITS + RESEARCH_LOOP_CHURN_CREDITS, perClaim: RESEARCH_PER_CLAIM_CREDITS } },
+      // PRB.24 — discourse runs the SAME unbounded research-loop shape (per-topic search/fetch in
+      // one session); the loop-churn premium is folded in pending its own instrumented run.
+      { phase: "discourse", terms: { intercept: 90 + RESEARCH_LOOP_CHURN_CREDITS, perWord: 0.006 } },
       { phase: "second_read", terms: { intercept: 0, perWord: 0.005 } },
     ],
     costPerVerifiedClaimBase: 24 + RESEARCH_PER_CLAIM_CREDITS,
@@ -142,8 +157,10 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     // (PRB.22: the floor is the claim-independent research the phase does; perClaim adds the per-claim
     // fetch/search cost on top of the 11-cr verification work). PRB.23: its 2-phase session churns
     // the same way — the only "completed" comparable run metered 41 reqs / 5.8M cache-read / ~430cr.
+    // PRB.24: the research-loop transcript churn folds in too — fact_check's whole workflow IS
+    // intake + verification.
     base: {
-      intercept: 20 + RESEARCH_FLOOR_CREDITS,
+      intercept: 20 + RESEARCH_FLOOR_CREDITS + RESEARCH_LOOP_CHURN_CREDITS,
       perClaim: 11 + RESEARCH_PER_CLAIM_CREDITS,
       perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS,
     },

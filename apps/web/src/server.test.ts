@@ -536,8 +536,10 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
 
   it("renders the Fact-check verb from the query (Run label when no consent is needed)", async () => {
     const app = createWebApp(authed());
-    // low-cost config (Base tier, few words) so the estimate stays under the consent threshold.
-    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=fact_check&rigor=quick&modelTier=base&words=800")).text();
+    // low-cost config (Base tier, few words) so the estimate stays under the 500-credit consent
+    // threshold — post-PRB.24 the fact_check floor is 220 intercept + 2×100 churn + 27/claim,
+    // so 600 words (⇒ 2 provisional claims ⇒ 474cr) stays under while 800 (3 claims ⇒ 501) crosses.
+    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=fact_check&rigor=quick&modelTier=base&words=600")).text();
     expect(html).toContain("Fact-check v1");
     expect(html).toContain(">Run fact-check</button>"); // the visible button label (not the confirm label)
     expect(html).toContain('data-needs-consent="false"');

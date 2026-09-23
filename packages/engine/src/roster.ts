@@ -86,7 +86,11 @@ export function buildAgentRoster(input: RosterInput): Record<string, AgentDef> {
       inputScoped: true,
     },
     researcher: {
-      description: "Research fan-out: search + fetch + read (§12.3 research row); inherits the seat's mounts.",
+      // PRB.24 — the description is synthesized into the subagent's system `prompt` (`toSdkAgents`), so it
+      // carries the bounded-scope contract into the subagent's OWN context: verify only the assigned batch,
+      // return compact verdicts — never pasted page text (which would re-inflate the seat's transcript).
+      description:
+        "Research fan-out: search + fetch + read (§12.3 research row); inherits the seat's mounts. Bounded scope (PRB.24): verify ONLY the items your invoking prompt assigns; return a compact verdict list (item → verdict → retrieved source URLs), never raw page text.",
       // NO client web tools (P0.15i AC1, confirmed live): both client `WebFetch` and `WebSearch` are dropped —
       // they cannot function under the sandbox's proxy-only egress, and a client `WebSearch` pre-empts the
       // proxy-injected SERVER `web_search` (so no server search executes / meters). Research is the

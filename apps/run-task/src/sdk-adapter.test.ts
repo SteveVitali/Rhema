@@ -17,6 +17,7 @@ const OPTIONS = {
   allowedTools: ["Read"],
   disallowedTools: ["Bash(curl *)"],
   tools: ["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"],
+  settings: { autoCompactWindow: 80_000 },
   maxBudgetUsd: 4.2,
   maxTurns: 10,
   env: { RUN_ID: "run_1" },
@@ -69,6 +70,9 @@ describe("adaptSdkQuery (D-P0.06-4 — the QueryFn↔SDK bridge)", () => {
     // PRB.23 — `tools` is a REAL SDK field (the advertised built-in schema set, distinct from
     // the `allowedTools` permission gate): it must forward verbatim.
     expect(mapped.tools).toEqual(["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"]);
+    // PRB.24 — `settings` is a REAL SDK field (flag-tier `Settings`; `autoCompactWindow` is the
+    // intra-phase transcript bound): it must forward verbatim to the vendored Options.
+    expect(mapped.settings).toEqual({ autoCompactWindow: 80_000 });
     // fields the vendored SDK does NOT read are dropped (they were silently ignored — the audit's F5):
     for (const dropped of ["skillsDir", "cacheControlTtl", "maxSubagentDepth", "maxConcurrentSubagents", "sessionStore"]) {
       expect(dropped in mapped).toBe(false);
