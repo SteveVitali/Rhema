@@ -20,6 +20,9 @@ export const provenanceSourceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("pasted") }),
   z.object({ kind: z.literal("chat"), threadId: idSchema }),
   z.object({ kind: z.literal("suggestion_applied"), runId: idSchema, findingId: idSchema }),
+  // REQ-POS-9: a human edit inside a span captured at an agent-origin transaction degrades the block
+  // to `mixed` — the block was touched by both. `of` lists the contributing kinds when known.
+  z.object({ kind: z.literal("mixed"), of: z.array(z.string()).optional() }),
 ]);
 export type ProvenanceSource = z.infer<typeof provenanceSourceSchema>;
 // Guard: the discriminated union covers exactly the PROVENANCE_SOURCE_KINDS enum.

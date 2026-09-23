@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -23,6 +23,8 @@ export const runSheetElement = <RunSheetPage />;
 export const dossierElement = <DossierPage />;
 export const revisionElement = <RevisionPage />;
 export const editorElement = <EditorPage />;
+// P1.02 — the Page (the schema-first editor surface; /p/:project/v/:v, /v/working).
+export const pageElement = <PagePage />;
 export const exportElement = <ExportPage />;
 export const voicesElement = <VoicesPage />;
 export const voiceNewElement = <VoiceNewPage />;
@@ -43,6 +45,10 @@ export const routes: readonly AppRoute[] = [
   { path: "/p/:project/review/:runId", public: false, element: dossierElement },
   { path: "/p/:project/revisions/:cid", public: false, element: revisionElement },
   { path: "/p/:project/edit/:draftId", public: false, element: editorElement },
+  // P1.02 — the Page routes: /v/working (the editable head), /v/:n (a versioned draft), and
+  // /a/:artifactId (a non-draft artifact rendered read-only).
+  { path: "/p/:project/v/:v", public: false, element: pageElement },
+  { path: "/p/:project/a/:artifactId", public: false, element: pageElement },
   // PRB.11 — the export dialog (format choice, the never-blocking obligation line, the AI-use attach
   // toggle + statement preview; §13.4, §8.4, §11.7).
   { path: "/p/:project/export", public: false, element: exportElement },

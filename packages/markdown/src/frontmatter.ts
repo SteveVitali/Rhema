@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { sha256Hex } from "@rhema/contracts";
 import type { QualityVerdict } from "@rhema/contracts";
 import { normalizeMarkdown } from "./normalize.js";
 import { detectCounts } from "./counts.js";
@@ -75,7 +75,7 @@ export interface ImportedDocument {
  */
 export function assembleImportedDoc(rawBody: string, meta: FrontMatterInput): ImportedDocument {
   const body = normalizeMarkdown(rawBody);
-  const contentSha256 = createHash("sha256").update(body, "utf8").digest("hex");
+  const contentSha256 = sha256Hex(body);
   const wordCount = detectCounts(body).words;
   const fm = emitFrontMatter(meta, contentSha256, wordCount);
   const document = `---\n${fm}\n---\n\n${body}`;

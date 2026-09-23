@@ -1,4 +1,4 @@
-// Bundle the browser clients: src/client/editor.ts + src/client/ide.ts (P1.01) → public/*.js (iife,
+// Bundle the browser clients: src/client/editor.ts + ide.ts (P1.01) + page.ts (P1.02) → public/*.js (iife,
 // minified), served at /assets/*.js. Also copies the self-hosted variable fonts (the @fontsource-variable
 // OFL packages — Literata / Inter / JetBrains Mono, latin woff2) to public/fonts/ so themeCss()'s
 // @font-face /assets/fonts/ URLs resolve. `pnpm build` runs this after `tsc -b`; outputs are generated
@@ -13,7 +13,7 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 
 await mkdir(new URL("public", import.meta.url), { recursive: true });
 
-for (const entry of ["editor", "ide"]) {
+for (const entry of ["editor", "ide", "page"]) {
   await build({
     entryPoints: [`${root}src/client/${entry}.ts`],
     bundle: true,

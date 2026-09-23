@@ -142,5 +142,40 @@ export function ideCss(): string {
     // util
     ".sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }",
     ".ide-count { font-variant-numeric: tabular-nums; }",
+
+    // ---- P1.02 — the Page's own styles (the ProseMirror surface + the sidecar decorations). The doc
+    // typesets in the paper font; PM's editable root keeps the same measure and never shows a chrome
+    // outline. Findings tint the anchored span (severity color, never document content); the Authorship
+    // overlay tints block left-edges (read-only decorations — the markdown bytes never change).
+    ".rm-page-host .rm-page, .rm-page-host .ProseMirror { font-family: var(--font-paper, var(--font-shell)); font-size: var(--paper-size, 17px); line-height: 1.6; outline: none; white-space: pre-wrap; word-wrap: break-word; }",
+    ".rm-page-host .ProseMirror p { margin: 0 0 0.8em; }",
+    ".rm-page-host .ProseMirror h1, .rm-page-host .ProseMirror h2, .rm-page-host .ProseMirror h3 { line-height: 1.25; margin: 1.2em 0 0.5em; }",
+    ".rm-page-host .ProseMirror blockquote { border-left: 3px solid var(--paper-rule, var(--shell-border)); margin: 0 0 0.8em; padding-left: 1em; color: inherit; opacity: 0.92; }",
+    ".rm-page-host .ProseMirror pre { background: var(--shell-raised); border-radius: var(--radius-1); padding: var(--s2) var(--s3); font-size: 0.88em; overflow-x: auto; }",
+    ".rm-page-host .ProseMirror table { border-collapse: collapse; margin: 0 0 0.8em; }",
+    ".rm-page-host .ProseMirror td, .rm-page-host .ProseMirror th { border: 1px solid var(--paper-rule, var(--shell-border)); padding: 4px 10px; }",
+    ".rm-page-host .rm-math-block, .rm-page-preview .rm-math-block { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; text-align: center; padding: var(--s2) 0; color: var(--shell-fg-muted); }",
+    ".rm-page-host .rm-math-inline, .rm-page-preview .rm-math-inline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; color: var(--shell-fg-muted); }",
+    ".rm-page-host .rm-cite, .rm-page-preview .rm-cite { color: var(--accent); font-size: 0.92em; }",
+    ".rm-page-host .rm-frontmatter, .rm-page-preview .rm-frontmatter, .rm-page-host .rm-link-def, .rm-page-preview .rm-link-def, .rm-page-host .rm-html-block, .rm-page-preview .rm-html-block { color: var(--shell-fg-faint); font-size: 0.85em; border-left: 2px solid var(--shell-border); padding-left: var(--s2); margin: 0 0 0.8em; white-space: pre-wrap; }",
+    ".rm-page-host .rm-footnote-def, .rm-page-preview .rm-footnote-def { font-size: 0.88em; color: var(--shell-fg-muted); border-top: 1px solid var(--paper-rule, var(--shell-border)); padding-top: var(--s1); }",
+    ".rm-page-host .rm-footnote-def::before, .rm-page-preview .rm-footnote-def::before { content: '[' attr(data-fn) '] '; color: var(--shell-fg-faint); }",
+    ".rm-page .rm-finding { border-bottom: 2px solid var(--sev-minor); }",
+    ".rm-page .rm-finding-major { border-bottom-color: var(--sev-major); }",
+    ".rm-page .rm-finding-blocking, .rm-page .rm-finding-critical { border-bottom-color: var(--sev-blocking, var(--sev-major)); }",
+    ".rm-page .rm-finding-block { box-shadow: inset 3px 0 0 var(--sev-minor); }",
+    ".rm-page .rm-finding-block.rm-finding-major { box-shadow: inset 3px 0 0 var(--sev-major); }",
+    ".rm-page .rm-finding-block.rm-finding-blocking, .rm-page .rm-finding-block.rm-finding-critical { box-shadow: inset 3px 0 0 var(--sev-blocking, var(--sev-major)); }",
+    ".rm-page .rm-proposal-target { box-shadow: inset 3px 0 0 var(--accent); }",
+    // the Authorship overlay (View menu; REQ-POS-8): a left-edge tint per block — read-only decorations.
+    ".rm-page .rm-author-agent { box-shadow: inset 3px 0 0 var(--accent); }",
+    ".rm-page .rm-author-assistant { box-shadow: inset 3px 0 0 var(--sev-note); }",
+    ".rm-page .rm-author-mixed { box-shadow: inset 3px 0 0 var(--sev-major); }",
+    ".rm-page .rm-author-human { box-shadow: none; }",
+    ".rm-page-host[data-readonly='1'] .ProseMirror { caret-color: transparent; }",
+    // gapcursor / dropcursor / selection chrome PM needs
+    ".rm-page-host .ProseMirror-gapcursor { position: relative; }",
+    ".rm-page-host .ProseMirror-selectednode { outline: 2px solid var(--accent); }",
+    ".rm-page-host .ProseMirror-hideselection *::selection { background: transparent; }",
   ].join("\n");
 }

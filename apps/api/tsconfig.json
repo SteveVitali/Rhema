@@ -46,6 +46,12 @@
     },
     {
       "path": "../../packages/findings-core"
+    },
+    {
+      "path": "../../packages/editor"
+    },
+    {
+      "path": "../../packages/markdown"
     }
   ],
   "exclude": [

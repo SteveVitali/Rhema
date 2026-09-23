@@ -21,10 +21,12 @@ import {
   WhatChangedView,
   RubricDelta,
   SourceEditor,
+  PageEditor,
   IdeShell,
   EmptyProject,
   type WhatChangedLabels,
   type SourceEditorLabels,
+  type PageEditorLabels,
   type DispositionControlsLabels,
   type GateCardLabels,
   type TriageLedgerLabels,
@@ -261,13 +263,14 @@ export function ProjectsPage(): ReactNode {
 /** Auth-gated: the flat project view (the studio editing surface is P1.01) + the Needs-you gate cards
  *  and the Decisions list (PRB.05 — the beta Inbox stand-in, §5.7/§6.4). */
 export function ProjectPage(): ReactNode {
-  const { project, gates = [], decisions = [], approvalOverrides = {}, compact, triage, projectVoice } = usePageData();
+  const { project, gates = [], decisions = [], approvalOverrides = {}, compact, triage, projectVoice, page } = usePageData();
   const slug = project?.slug ?? "";
   const triageOptedIn = typeof approvalOverrides.approve_triage === "number";
   return (
     <IdeFrame>
       {/* P1.01 — the project overview IS the IDE's Page surface. An empty project (no draft head) renders
-          the §5.9 empty-project state: three entry cards + the quiet serif title field. */}
+          the §5.9 empty-project state: three entry cards + the quiet serif title field. P1.02 item 12 —
+          a project WITH a working head opens the Page on it; the overview affordances stay below. */}
       {project && !project.headDraftId ? (
         <EmptyProject
           labels={{
@@ -285,11 +288,16 @@ export function ProjectPage(): ReactNode {
           <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
           <a href={`/p/${slug}/export`}>{COPY.project.exportCta}</a>
           {project.headDraftId ? (
-            <a data-edit-source="true" href={`/p/${slug}/edit/${project.headDraftId}`}>
+            <a data-edit-source="true" href={`/p/${slug}/v/working`}>
               {COPY.project.editCta}
             </a>
           ) : null}
         </p>
+      ) : null}
+      {page ? (
+        <div data-page-mount="working" style={{ marginTop: "12px" }}>
+          <PageSurface />
+        </div>
       ) : null}
       {gates.length > 0 ? (
         <section data-needs-you="true" style={{ marginTop: "20px" }}>
@@ -1044,6 +1052,122 @@ function anchorQuote(f: EditorDocDto["findings"][number]): string | null {
   const a = f.anchor as { quote?: string; unanchored?: true } | null | undefined;
   if (!a || a.unanchored || !a.quote) return null;
   return a.quote;
+}
+
+// =========================================================================================================
+// P1.02 — the Page (schema-first ProseMirror/Tiptap surface; §5.4; REQ-DATA-28/29 amended). The SSR render
+// carries the full chrome + a static typeset preview + the embedded doc/provenance/findings JSON; the
+// page.js island mounts the live PM view over them. The transport URLs point at the SAME `/edit/:draftId/*`
+// same-origin endpoints the beta editor used (the transport seam, not a fork — P1.03 swaps it).
+// =========================================================================================================
+
+const pageLabels: PageEditorLabels = {
+  versionLabel: (n, baseN) =>
+    baseN != null ? fmt(E.versionForkFmt, { n, base: baseN }) : fmt(E.versionFmt, { n }),
+  frozenBanner: (n) => fmt(E.frozenBannerFmt, { n }),
+  writerLockText: (workflow) => fmt(E.writerLockFmt, { workflow }),
+  readerLockText: (workflow) => fmt(E.readerLockFmt, { workflow }),
+  cancelRun: E.cancelRun,
+  findingsHeading: E.findingsHeading,
+  wholePiece: E.wholePiece,
+  lostNote: E.lostNote,
+  proposalsHeading: E.proposalsHeading,
+  accept: E.accept,
+  reject: E.reject,
+  noteLabel: E.noteLabel,
+  notePlaceholder: E.notePlaceholder,
+  noteSubmit: E.noteSubmit,
+  noteSaved: E.noteSaved,
+  revise: E.revise,
+  readOnlyNote: E.readOnlyNote,
+  danglingCiteNote: E.danglingCiteNote,
+  authorshipHint: E.authorshipHint,
+  sync: { synced: E.sync.synced, syncing: E.sync.syncing, queued: E.sync.queued, locked: E.sync.locked },
+};
+
+/** The cite keys in the doc that resolve to no bibliography item — rendered visibly (never dropped). */
+function danglingCites(doc: EditorDocDto): string[] {
+  const keys = citeKeysInMarkdown(doc.markdown);
+  const have = new Set((doc.bibliography ?? []).map((b) => b.citeKey));
+  return [...keys].filter((k) => !have.has(k));
+}
+
+/** Scan the canonical markdown for `[@key]` / `[@a; @b]` cite refs (server-side parity with cite.ts). */
+function citeKeysInMarkdown(markdown: string): Set<string> {
+  const out = new Set<string>();
+  const re = /\[@([^\]]+)\]/g;
+  for (const m of markdown.matchAll(re)) {
+    for (const part of (m[1] ?? "").split(";")) {
+      const key = part.trim().replace(/^@/, "").split(/\s/)[0];
+      if (key) out.add(key);
+    }
+  }
+  return out;
+}
+
+/** The PageEditor element for `data.page` — shared by the /v/:v routes and the project overview's
+ *  working-head mount (P1.02 item 12: `/p/:project` opens the Page on the working head). */
+function PageSurface(): ReactNode {
+  const { page } = usePageData();
+  if (!page) return null;
+  const { slug, doc } = page;
+  const base = `/p/${slug}/edit/${doc.draftId}`;
+  return (
+    <PageEditor
+        docJson={page.docJson}
+        draftId={doc.draftId}
+        draftN={doc.draftN}
+        baseDraftN={doc.baseDraftN}
+        origin={doc.origin}
+        state={doc.state}
+        lock={doc.lock}
+        findings={doc.findings.map((f) => ({
+          findingId: f.findingId,
+          title: f.title,
+          severity: f.severity,
+          sourceLabel: f.sourceLabel,
+          quote: anchorQuote(f),
+          lost: f.lost,
+          anchor: f.anchor,
+        }))}
+        proposals={(doc.proposals ?? []).map((p) => ({
+          id: p.id,
+          label: p.label ?? p.id,
+          markdown: p.markdown,
+          kind: p.kind,
+          from: p.from,
+          to: p.to,
+          origin: p.origin,
+        }))}
+        provenance={doc.provenance ?? null}
+        danglingCites={danglingCites(doc)}
+        readOnly={page.readOnly === true}
+        saveUrl={`${base}/save`}
+        docUrl={`${base}/doc`}
+        noteUrl={`${base}/note`}
+        cancelUrl={`${base}/cancel-run`}
+        reviseUrl={`${base}/revise`}
+        noteSaved={page.noteSaved}
+        {...(page.focusFindingId ? { focusFindingId: page.focusFindingId } : {})}
+        labels={pageLabels}
+      />
+  );
+}
+
+export function PagePage(): ReactNode {
+  const { page } = usePageData();
+  if (!page) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{E.notFound}</SectionTitle>
+      </Shell>
+    );
+  }
+  return (
+    <IdeFrame>
+      <PageSurface />
+    </IdeFrame>
+  );
 }
 
 // =========================================================================================================

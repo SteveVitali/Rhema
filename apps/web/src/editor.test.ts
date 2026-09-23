@@ -75,7 +75,7 @@ function form(fields: Record<string, string>) {
   };
 }
 
-describe("editor page — SSR (PRB.07)", () => {
+describe("editor page — the /edit/ route is superseded (P1.02)", () => {
   it("redirects to /login unauthenticated", async () => {
     const app = createWebApp({ ...makeDeps(), session: () => null });
     const res = await app.request("/p/the-piece/edit/d_2");
@@ -83,65 +83,17 @@ describe("editor page — SSR (PRB.07)", () => {
     expect(res.headers.get("location")).toBe("/login");
   });
 
-  it("renders the markdown in the read-only textarea + the client-bundle script tag", async () => {
+  it("redirects to the Page's /v/:n route (the CodeMirror surface is dormant)", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-piece/edit/d_2");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-editor-root="true"');
-    expect(html).toContain('data-editor-source="true"');
-    expect(html).toContain("A paragraph with the quote inside.");
-    expect(html).toContain('src="/assets/editor.js"');
-    expect(html).toContain('data-save-url="/p/the-piece/edit/d_2/save"');
-    expect(html).toContain('data-doc-url="/p/the-piece/edit/d_2/doc"');
-    // the forked-head version line: "v2 — your revision of v1"
-    expect(html).toContain("v2 — your revision of v1");
+    const res = await app.request("/p/the-piece/edit/d_2", { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-piece/v/2");
   });
 
-  it("has NO Save button and no unsaved-changes dialog (ticket AC)", async () => {
+  it("the redirect preserves the ?noted=1 marker", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/edit/d_2")).text();
-    expect(html).not.toContain('action="/p/the-piece/edit/d_2/save"'); // no form saves
-    expect(html).not.toMatch(/>\s*Save\s*</);
-    expect(html).not.toContain("beforeunload");
-    expect(html).not.toContain("unsaved");
-  });
-
-  it("renders the projected findings rail with source labels + the lost-anchor note", async () => {
-    const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/edit/d_2")).text();
-    expect(html).toContain("from Review of v1");
-    expect(html).toContain("The quote drifted.");
-    expect(html).toContain("passage changed — still applies?");
-    expect(html).toContain("Whole piece");
-  });
-
-  it("an unlocked page hides the banner (hidden attr AND display:none — the inline style wins the UA rule)", async () => {
-    const app = createWebApp(makeDeps());
-    const html = await (await app.request("/p/the-piece/edit/d_2")).text();
-    expect(html).toContain('data-locked="0"');
-    expect(html).toMatch(/data-editor-banner="true"[^>]*hidden/);
-    expect(html).toMatch(/data-editor-banner="true"[^>]*display:\s*none/);
-  });
-
-  it("a held lock shows the banner with the Cancel-run form and marks the root locked", async () => {
-    const locked: EditorDocDto = {
-      ...DOC,
-      lock: { runId: "run_5", kind: "writer", workflow: "revise" },
-    };
-    const app = createWebApp(makeDeps({ getEditorDoc: async () => locked }));
-    const html = await (await app.request("/p/the-piece/edit/d_2")).text();
-    expect(html).toContain('data-locked="1"');
-    expect(html).toContain("A revise run is writing this draft");
-    expect(html).toContain("Cancel run to edit");
-    expect(html).toContain('action="/p/the-piece/edit/d_2/cancel-run"');
-  });
-
-  it("hides the Revise action on a non-human-revision head", async () => {
-    const imported: EditorDocDto = { ...DOC, origin: "human_upload", baseDraftId: null, baseDraftN: null };
-    const app = createWebApp(makeDeps({ getEditorDoc: async () => imported }));
-    const html = await (await app.request("/p/the-piece/edit/d_2")).text();
-    expect(html).not.toContain("Revise using your edits");
+    const res = await app.request("/p/the-piece/edit/d_2?noted=1", { redirect: "manual" });
+    expect(res.headers.get("location")).toBe("/p/the-piece/v/2?noted=1");
   });
 
   it("404s when the api reports the draft not_found", async () => {

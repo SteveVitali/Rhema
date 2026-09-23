@@ -177,13 +177,14 @@ describe("theme policy (REQ-IDE-38 amended)", () => {
 });
 
 describe("the View menu (§5.1 — exact contents; Source absent)", () => {
-  it("is exactly Write/Read/Focus + finding cards + inline suggestions + Advanced", () => {
+  it("is Write/Read/Focus + finding cards + inline suggestions + Authorship (P1.02) + Advanced", () => {
     expect(viewMenuIds("write")).toEqual([
       "view.write",
       "view.read",
       "view.focus",
       "findingCards",
       "suggestionsInline",
+      "authorship",
       "advanced",
     ]);
   });
@@ -196,6 +197,9 @@ describe("the View menu (§5.1 — exact contents; Source absent)", () => {
   it("inline-suggestions hides in Focus (it's a Write/Read toggle)", () => {
     expect(viewMenuModel("focus").map((t) => t.id)).not.toContain("suggestionsInline");
     expect(viewMenuModel("write").map((t) => t.id)).toContain("suggestionsInline");
+    // P1.02 — the Authorship overlay is also a Write/Read toggle (Focus is the clean read).
+    expect(viewMenuModel("focus").map((t) => t.id)).not.toContain("authorship");
+    expect(viewMenuModel("read").map((t) => t.id)).toContain("authorship");
   });
 });
 

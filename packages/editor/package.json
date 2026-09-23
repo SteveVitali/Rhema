@@ -1,0 +1,48 @@
+{
+  "name": "@rhema/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "P1.02 — the schema-first Page editor core: the Rhema Markdown profile as a ProseMirror schema, md↔PM canonical conversion, the block-id sidecar, findings/provenance/proposal decorations, the EditorTransport seam, and citation importers. DOM-free (the view mounts in the web client island).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/findings-core": "workspace:*",
+    "@rhema/markdown": "workspace:*",
+    "@types/mdast": "^4.0.4",
+    "mdast-util-math": "^3.0.0",
+    "mdast-util-to-string": "^4.0.0",
+    "prosemirror-commands": "^1.7.0",
+    "prosemirror-dropcursor": "^1.8.3",
+    "prosemirror-gapcursor": "^1.4.1",
+    "prosemirror-history": "^1.4.1",
+    "prosemirror-inputrules": "^1.5.1",
+    "prosemirror-keymap": "^1.2.2",
+    "prosemirror-model": "^1.24.1",
+    "prosemirror-schema-list": "^1.5.1",
+    "prosemirror-state": "^1.4.3",
+    "prosemirror-transform": "^1.10.2",
+    "prosemirror-view": "^1.37.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0"
+  }
+}
