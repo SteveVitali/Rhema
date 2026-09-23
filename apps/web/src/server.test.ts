@@ -534,14 +534,24 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     expect(html).not.toMatch(/token/i); // AC6
   });
 
-  it("renders the Fact-check verb from the query (Run label when no consent is needed)", async () => {
+  it("renders the Fact-check verb from the query (consent label — the floor now always crosses)", async () => {
     const app = createWebApp(authed());
-    // low-cost config (Base tier, few words) so the estimate stays under the 500-credit consent
-    // threshold — post-PRB.24 the fact_check floor is 220 intercept + 2×100 churn + 27/claim,
-    // so 600 words (⇒ 2 provisional claims ⇒ 474cr) stays under while 800 (3 claims ⇒ 501) crosses.
+    // PRB.25: the fact_check floor is (220 intercept + 2×100 churn + 27/claim) ×1.5 metered
+    // coverage — even 0 claims prices 630 > the 500-credit consent threshold, so the verb now
+    // always renders with the confirm label (the no-consent path is covered by the next test).
     const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=fact_check&rigor=quick&modelTier=base&words=600")).text();
     expect(html).toContain("Fact-check v1");
-    expect(html).toContain(">Run fact-check</button>"); // the visible button label (not the confirm label)
+    expect(html).toContain('data-run-label="Run fact-check"'); // the verb from the query
+    expect(html).toContain(">Confirm and run</button>");
+    expect(html).toContain('data-needs-consent="true"');
+  });
+
+  it("renders the plain Run label when the estimate stays under the consent threshold", async () => {
+    const app = createWebApp(authed());
+    // review/quick/base with fact_check off: (40 + 0.012×600 + 4×100 churn) ×1.25 ×0.6 ≈ 336 —
+    // under 500 absolute and under 25% of the spendable balance ⇒ no second click.
+    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=quick&modelTier=base&words=600&toggle.fact_check=off")).text();
+    expect(html).toContain(">Run review</button>"); // the visible button label (not the confirm label)
     expect(html).toContain('data-needs-consent="false"');
   });
 

@@ -65,6 +65,19 @@ export interface EstimatorSpec {
   runsBehind?: readonly string[];
   /** a multiplier applied on top of the modeled shape to match the measured anchor (1 while purely modeled). */
   calibrationScale?: number;
+  /**
+   * PRB.25 — the metered-vs-committed coverage multiplier. The cap is enforced on
+   * PROXY-metered burn (the meter of record), while the committed-debit channel
+   * (`sdk_stream` step rollups) under-reports the research loop: the PRB.24 fan-out's
+   * subagent sessions' token usage (+277K cache-write in one verification phase) and the
+   * web-search request fees never reach the committed rollup — prod run `01M36663…`
+   * committed 586 but metered 720, and `01M364236…` died `cap_reached` at exactly its
+   * 783 derived cap. Absent ⇒ 1 (no uplift — e.g. specs already calibrated to
+   * proxy-metered figures, like `profile_voice`'s PRB.16b quick variant). After a fold,
+   * `calibrationScale` absorbs any residual error (`predicted` already includes this
+   * multiplier), so the field composes cleanly with instrumented anchors.
+   */
+  meteredCoverage?: number;
   /** measured phase-aware cache economics (review 13 F8), recorded when instrumented. */
   cacheEconomics?: CacheEconomics;
 }
@@ -121,6 +134,19 @@ export const CONTEXT_CHURN_PER_PHASE_CREDITS = 100 as const;
 // first post-bound delivered run.
 export const RESEARCH_LOOP_CHURN_CREDITS = 140 as const;
 
+// PRB.25 — the metered-vs-committed coverage multiplier. The cap accountant (the egress
+// proxy, meter of record) bills burn the committed-debit channel never sees: subagent-session
+// token usage from the research fan-out and web-search request fees escape the `sdk_stream`
+// step rollup. Measured on prod run `01M36663…` (delivered review/quick): committed 586 vs
+// metered 720 → whole-run ratio 1.23; non-research phases reconcile to ±1 while verification
+// ran +112 (and +196 on `01M364236…`'s less-fanned-out loop). `METERED_VS_COMMITTED_COVERAGE`
+// = 1.25 — the measured ratio plus headroom. `RESEARCH_WORKFLOW_METERED_COVERAGE` = 1.5 for
+// `fact_check`, whose whole shape IS the research loop (intake + verification): measured
+// verification-phase ratios were 345/233 = 1.48 and 419/223 = 1.88. Provisional like every
+// constant here — `foldInstrumentedRun` re-derives the residual post-Stage-B.
+export const METERED_VS_COMMITTED_COVERAGE = 1.25 as const;
+export const RESEARCH_WORKFLOW_METERED_COVERAGE = 1.5 as const;
+
 export const ESTIMATORS: Record<string, EstimatorSpec> = {
   review: {
     workflow: "review",
@@ -137,6 +163,9 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
       { phase: "second_read", terms: { intercept: 0, perWord: 0.005 } },
     ],
     costPerVerifiedClaimBase: 24 + RESEARCH_PER_CLAIM_CREDITS,
+    // PRB.25 — the cap meters proxy burn; the committed channel under-reports the research
+    // loop (subagent sessions + search fees). Measured 720/586 ≈ 1.23 → 1.25.
+    meteredCoverage: METERED_VS_COMMITTED_COVERAGE,
     provisional: true,
     source: "modeled",
     version: "modeled-1",
@@ -147,6 +176,9 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     // every turn) — the constant is measured on review, applied here pending a revise
     // instrumented run (provisional like everything else).
     base: { intercept: 50, perWord: 0.03, perFinding: 4, perMoveWithResearch: 20, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
+    // PRB.25 — same metered-vs-committed mechanism wherever research runs
+    // (`perMoveWithResearch`); derived-by-similarity pending a revise instrumented run.
+    meteredCoverage: METERED_VS_COMMITTED_COVERAGE,
     provisional: true,
     source: "modeled",
     version: "modeled-1",
@@ -165,6 +197,9 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
       perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS,
     },
     costPerVerifiedClaimBase: 11 + RESEARCH_PER_CLAIM_CREDITS,
+    // PRB.25 — fact_check's whole shape IS intake + verification, where the delta
+    // concentrates: measured verification-phase metered/committed ratios 1.48 / 1.88.
+    meteredCoverage: RESEARCH_WORKFLOW_METERED_COVERAGE,
     provisional: true,
     source: "modeled",
     version: "modeled-1",
@@ -248,8 +283,10 @@ function evalTerms(t: EstimatorTerms, inp: EstimatorInputs): number {
 
 /**
  * Compute an estimate in credits (§12.2). Evaluates the base (or a named variant) parametric form over `inputs`, adds
- * the per-phase addend terms (unless `includeAddends: false`), then applies the calibration scale, the model-tier
- * multiplier and the §6.1 rigor multiplier, rounding UP once (the sheet's estimate line; the cap is sized from it).
+ * the per-phase addend terms (unless `includeAddends: false`), then applies the calibration scale, the
+ * metered-vs-committed coverage (PRB.25 — the estimate predicts the proxy-metered platform cost the cap
+ * is enforced on, matching `InstrumentedMeasurement.measuredCredits`), the model-tier multiplier and the
+ * §6.1 rigor multiplier, rounding UP once (the sheet's estimate line; the cap is sized from it).
  * This is the single consumer of the versioned estimator data — the same function the run sheet and cap sizing use.
  */
 export function estimateCredits(spec: EstimatorSpec, inputs: EstimatorInputs, opts: EstimateOptions): number {
@@ -267,7 +304,7 @@ export function estimateCredits(spec: EstimatorSpec, inputs: EstimatorInputs, op
       if (include) base += evalTerms(a.terms, inputs);
     }
   }
-  const scaled = base * (spec.calibrationScale ?? 1);
+  const scaled = base * (spec.calibrationScale ?? 1) * (spec.meteredCoverage ?? 1);
   return Math.ceil(scaled * MODEL_TIER_MULTIPLIERS[opts.tier] * rigorMultiplier(spec.workflow, opts.rigor));
 }
 

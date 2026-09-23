@@ -158,9 +158,9 @@ describe("POST /projects/:id/runs", () => {
     expect(row.inputs.second_read).toBe(false);
     // the estimate was re-derived from the SAME resolved set (quick review, 5 active phases):
     // (40 + 0.012×5180 + 24×21 + 5×100 churn) + (200 + 16×21 research incl. PRB.24 loop churn)
-    // = 1642.16, ×0.6 → 986; cap 1479.
-    expect(row.estimate_credits).toBe(986);
-    expect(row.cap_credits).toBe(1479);
+    // = 1642.16, ×1.25 PRB.25 coverage ×0.6 → 1232; cap 1848.
+    expect(row.estimate_credits).toBe(1232);
+    expect(row.cap_credits).toBe(1848);
   });
 
   it("PRB.23 — submitted toggle overrides win over rigor defaults (explicit off survives)", async () => {
@@ -339,10 +339,10 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       cap_credits: number;
     };
     // review/standard/base on 8k words + 45 claims = 3154 credits (base 1916 + 920 research incl.
-    // PRB.24 loop churn + 278 discourse + 40 second read — the 7×100 PRB.24 churn is inside base);
-    // cap = ceil(1.5 × 3154) = 4731.
-    expect(row.estimate_credits).toBe(3154);
-    expect(row.cap_credits).toBe(4731);
+    // PRB.24 loop churn + 278 discourse + 40 second read — the 7×100 PRB.24 churn is inside base)
+    // ×1.25 PRB.25 metered coverage = 3943; cap = ceil(1.5 × 3943) = 5915.
+    expect(row.estimate_credits).toBe(3943);
+    expect(row.cap_credits).toBe(5915);
   });
 
   // D-P0.11-1 / REQ-SPEC-24.5 — a tripped circuit breaker scales the NEW run's server-derived cap by the
@@ -363,9 +363,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       estimate_credits: number;
       cap_credits: number;
     };
-    // same levers as the re-derive test above: estimate 3154, base cap 4731 — the tripped breaker doubles it.
-    expect(row.estimate_credits).toBe(3154);
-    expect(row.cap_credits).toBe(9462);
+    // same levers as the re-derive test above: estimate 3943, base cap 5915 — the tripped breaker doubles it.
+    expect(row.estimate_credits).toBe(3943);
+    expect(row.cap_credits).toBe(11830);
   });
 
   // AC4 (run path) — insufficient balance returns 402 and creates NO run row (never billed; §5.6 item 6, §14.6).
