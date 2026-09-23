@@ -152,3 +152,29 @@ trigger could not be exercised deterministically in the mock — deferred, not c
 - **Stage B NOT run** (operator-paused): no `pulumi up`, no live run, D-PRB.21-1 stays OPEN.
   The first instrumented run that delivers recalibrates `CONTEXT_CHURN_PER_PHASE_CREDITS` via
   `foldInstrumentedRun`.
+
+## Stage B — live verify (operator run, 2026-09-23)
+
+Deployed to prod via Pulumi update 71 (api `46e36e6f`, web `6b2e3688`, worker `4a510df2`,
+run-task `87b6da36`, tag `prb23`). Verify run `01M35Y9BH41HFFFD6VNWN14FEH` — `review`/`quick`
+on the 701-word zero-URL draft 6 (`01M35KC9K…`).
+
+**Result: `failed` / `cap_reached` at 01:53Z in `verification`.**
+
+| Metric | Value |
+|---|---|
+| Derived estimate / cap | 288 / 432 (churn term + research addend; no operator raise) |
+| Proxy-metered burn at death | **506** |
+| Committed debits | 159 (intake 96 + craft 63) |
+| Verification uncommitted burn | ~347cr in one phase; 2 `context.compacted` events |
+| fetches / searches (usage_records) | 13 / 3 (fetch_log: 123 rows) |
+| cache_read tokens | 5.03M over 44 rows (~60K/request to the editor subagent loop) |
+
+**Reading:** the envelope cut (−45%/request) and the honest cap are real — this run reached
+`verification` with 159 committed and the cap actually modeled churn for the first time. But
+verification's subagent loop still re-reads ~60K of accumulated transcript per request across
+~40 requests; per-request shrinkage does not bound transcript growth, and 2 compactions added
+their own burn. The fix direction is confirmed but insufficient: the residual is **per-phase
+transcript accumulation**, which needs context resets/isolation, not smaller envelopes.
+`CONTEXT_CHURN_PER_PHASE_CREDITS = 50` underpriced verification (measured ≈ 347 burn for that
+phase alone). D-PRB.21-1 stays OPEN with this evidence appended; no rerun per stop-on-failure.
