@@ -56,5 +56,8 @@ export * from "./upload.js";
 // phone-width-shared read models (§5.7, §10.5)
 export * from "./views.js";
 
+// the M17 block-patch contract (REQ-MOBILE-6; §10.2) — schema + service in P1.03, mobile client 1.x
+export * from "./block-patch.js";
+
 // deploy provenance (REQ-ARCH-39) — kept from P0.01
 export * from "./provenance.js";

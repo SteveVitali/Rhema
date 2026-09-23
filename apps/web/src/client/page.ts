@@ -1,16 +1,19 @@
-// The Page client island (P1.02; §5.4; REQ-DATA-28/29 amended, REQ-POS-8/9, REQ-PROD-14). Mounts the
-// schema-first ProseMirror view over the SSR'd doc JSON (the SSR preview stays as the no-JS read view
-// and is replaced on mount), then drives the SAME persistence contract the beta editor established:
-// debounced autosave through the same-origin web routes (EditorTransport — P1.03 swaps the transport,
-// not the editor), a 10-s §6.3 lock poll that read-onlys the view, the findings/provenance/Authorship
-// sidecar decorations, proposal-card accept/reject (agent-origin, undo-excluded transactions), live
-// status-bar meters, and the pagehide beacon flush. The bundle never sees a credential and must never
-// carry protocol/eval text (REQ-ARCH-33).
+// The Page client island (P1.03; §5.4/§5.10; REQ-DATA-28/29 amended, REQ-POS-8/9, REQ-PROD-14,
+// REQ-IDE-43/45/46). Mounts the schema-first ProseMirror view over the collab session's shared
+// fragment (the SSR preview stays as the no-JS read view and is replaced on mount), then drives the
+// four-layer autosave: keystrokes enter the bound Y.Doc → y-indexeddb (offline survival) → the
+// Hocuspocus socket to apps/collab → the server's debounced materialization into canonical markdown.
+//
+// There is NO markdown POST, NO sendBeacon, and NO beforeunload prompt — a pagehide sends the `blur`
+// restore trigger + the provider's own flush, and y-indexeddb already holds every offline change.
+// ⌘S mints a named restore point (the ONLY manual save verb). The §6.3 lock poll + findings rail +
+// note/cancel forms keep their same-origin HTTP routes — the transport swap covers persistence only.
+// The bundle never sees a credential and must never carry protocol/eval text (REQ-ARCH-33).
 
 import { EditorView } from "prosemirror-view";
 import {
+  createCollabPageState,
   createPageState,
-  docToMarkdown,
   setDecorationInputs,
   provenanceKey,
   provenanceForSave,
@@ -23,10 +26,10 @@ import {
   type FindingForDecoration,
   type Proposal,
 } from "@rhema/editor";
-import { createSyncMachine, type SaveOutcome, type SyncState } from "./sync-machine";
+import { createCollabSession, type CollabSyncEvent } from "./collab";
 
-const DEBOUNCE_MS = 800; // the documented exposure window for a mid-edit refresh
 const LOCK_POLL_MS = 10_000;
+const PROV_FLUSH_MS = 600; // the provenance capture's piggyback cadence onto the stateless channel
 
 interface PageDocResponse {
   draftId?: string;
@@ -51,18 +54,26 @@ function readJson<T>(sel: string, fallback: T): T {
 const pill = document.querySelector<HTMLElement>("[data-sync-pill]");
 const lockBanner = document.querySelector<HTMLElement>('[data-page-banner="lock"]');
 const lockBannerText = lockBanner?.querySelector<HTMLElement>("[data-page-banner-text]");
+const versionBanner = document.querySelector<HTMLElement>('[data-page-banner="version"]');
+const versionBannerText = versionBanner?.querySelector<HTMLElement>("span");
 
-function setPill(state: SyncState): void {
+let lockedOverride = false; // the poll's §6.3 read — beats the session's optimistic pill
+
+function setPill(ev: CollabSyncEvent): void {
   if (!pill) return;
+  const state = lockedOverride ? "readonly" : ev.state;
   const label =
     state === "synced"
       ? pill.dataset["labelSynced"]
       : state === "syncing"
         ? pill.dataset["labelSyncing"]
-        : state === "locked"
-          ? pill.dataset["labelLocked"] ?? pill.dataset["labelQueued"]
-          : pill.dataset["labelQueued"];
-  pill.textContent = label ?? state;
+        : state === "readonly"
+          ? pill.dataset["labelReadonly"] ?? pill.dataset["labelLocked"]
+          : (pill.dataset["labelOffline"] ?? pill.dataset["labelQueued"] ?? "").replace(
+              "{n}",
+              String(ev.queued),
+            );
+  pill.textContent = label || state;
   pill.dataset["syncState"] = state;
 }
 
@@ -72,6 +83,14 @@ function setLockBanner(lock: { kind: "writer" | "reader"; workflow: string } | n
   const template =
     lock == null ? "" : (lockBanner.dataset[lock.kind === "writer" ? "writerText" : "readerText"] ?? "");
   if (lockBannerText) lockBannerText.textContent = template.replace("{workflow}", lock?.workflow ?? "");
+}
+
+/** After a frozen_head fork the version banner reads "v{n} — your revision of v{base}". */
+function showForkBanner(root: HTMLElement, draftN: number, baseN: number): void {
+  if (!versionBanner || !versionBannerText) return;
+  const fmt = root.dataset["forkFmt"] ?? "v{n} — your revision of v{base}";
+  versionBannerText.textContent = fmt.replace("{n}", String(draftN)).replace("{base}", String(baseN));
+  versionBanner.style.display = "flex";
 }
 
 /** A provenance row from `provenance_maps` → the plugin's BlockSource (shape-preserving, kind-guarded). */
@@ -96,35 +115,61 @@ async function main(): Promise<void> {
   const preview = host?.querySelector<HTMLElement>("[data-page-preview]");
   if (!root || !host) return;
 
-  let saveUrl = root.dataset["saveUrl"] ?? "";
+  const collabUrl = root.dataset["collabUrl"] ?? "";
   let docUrl = root.dataset["docUrl"] ?? "";
   let draftId = root.dataset["draftId"] ?? "";
-  if (!saveUrl || !docUrl || !draftId) return;
+  let draftN = Number(root.dataset["draftN"] ?? 0);
+  if (!docUrl || !draftId) return;
 
   const docJson = readJson<unknown>("script[data-page-doc]", null);
   const provMap = readJson<Record<string, unknown>>("script[data-page-prov]", {});
   const findings = readJson<FindingForDecoration[]>("script[data-page-findings]", []);
   if (docJson == null) return;
 
-  // The first autosave against a FROZEN head forks v(N+1) server-side and returns the new draft id —
-  // rebase every subsequent request onto the forked head (the same contract the beta editor had).
+  let locked = root.dataset["locked"] === "1";
+  const readonly = root.dataset["readonly"] === "1" && !collabUrl;
+
+  // ---- the collab session (the four-layer autosave) -----------------------------
+  // Frozen heads connect with write intent — the server's auth performs the REQ-IDE-46 fork and
+  // refuses with the child's id; `rebind` points the SAME Y.Doc (offline updates intact) at it.
+  const session = collabUrl
+    ? createCollabSession({
+        wsUrl: collabUrl,
+        draftId,
+        onSync: (ev) => setPill(ev),
+        onFork: (fork) => {
+          const baseN = draftN;
+          rebase(fork.draftId); // rebase owns the session rebind (URL + dataset + provider)
+          draftN = fork.draftN;
+          showForkBanner(root, fork.draftN, baseN);
+        },
+        onReadOnly: () => {
+          // the server attached us read-only (a run lock or a non-editable head) — no local edits
+          locked = true;
+          root.dataset["locked"] = "1";
+          view.dispatch(view.state.tr);
+        },
+        onRestorePoint: () => setPill({ state: "synced", queued: 0 }),
+      })
+    : null;
+
+  // The rebase every head-switch shares (the fork's auth refusal AND the doc poll both route here).
   const rebase = (newDraftId: string | undefined) => {
     if (!newDraftId || newDraftId === draftId) return;
-    saveUrl = saveUrl.replace(`/${draftId}/`, `/${newDraftId}/`);
     docUrl = docUrl.replace(`/${draftId}/`, `/${newDraftId}/`);
     root.dataset["draftId"] = newDraftId;
     draftId = newDraftId;
+    session?.rebind(newDraftId);
   };
-
-  let locked = root.dataset["locked"] === "1";
-  const readonly = root.dataset["readonly"] === "1";
 
   // ---- the view -------------------------------------------------------------
   const initSources = new Map<string, BlockSource>();
   for (const [blockId, src] of Object.entries(provMap)) initSources.set(blockId, toBlockSource(src));
 
   const view = new EditorView(host, {
-    state: createPageState(docJson, initSources),
+    state: session
+      ? createCollabPageState(session.fragment, initSources)
+      : createPageState(docJson, initSources),
     editable: () => !locked && !readonly,
   });
   preview?.remove(); // the SSR read view yields to the live PM surface
@@ -182,32 +227,18 @@ async function main(): Promise<void> {
   };
   updateMeters();
 
-  // ---- autosave through the transport seam -----------------------------------
-  const save = async (markdown: string): Promise<SaveOutcome> => {
-    try {
-      const prov = provenanceForSave(view.state);
-      const agentSpans = provenanceKey.getState(view.state)?.agentSpans ?? [];
-      const res = await fetch(saveUrl, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          markdown,
-          provenanceSpans: prov,
-          agentSpans: agentSpans.map((s) => ({ blockId: "", from: s.from, to: s.to })),
-        }),
-        credentials: "same-origin",
-      });
-      if (res.status === 409) return "locked";
-      if (!res.ok) return "error";
-      const body = (await res.json().catch(() => null)) as { draftId?: string; forked?: boolean } | null;
-      rebase(body?.draftId);
-      return "ok";
-    } catch {
-      return "error";
-    }
+  // ---- keystrokes → the Y.Doc (the ySyncPlugin persists them) ----------------
+  // The live provenance capture piggybacks the stateless channel so the server's next
+  // materialization writes the block-level map (REQ-DATA-29's capture half over the CRDT).
+  let provTimer: number | null = null;
+  const flushProvenance = () => {
+    provTimer = null;
+    const agentSpans = provenanceKey.getState(view.state)?.agentSpans ?? [];
+    session?.sendProvenance({
+      spans: provenanceForSave(view.state),
+      agentSpans: agentSpans.map((s) => ({ blockId: "", from: s.from, to: s.to })),
+    });
   };
-
-  const machine = createSyncMachine({ debounceMs: DEBOUNCE_MS, save, onState: setPill });
 
   const origDispatch = view.dispatch.bind(view);
   view.setProps({
@@ -217,23 +248,32 @@ async function main(): Promise<void> {
       }
       origDispatch(tr);
       if (tr.docChanged) {
-        machine.changed(docToMarkdown(view.state.doc));
         updateMeters();
+        if (provTimer == null) provTimer = window.setTimeout(flushProvenance, PROV_FLUSH_MS);
       }
     },
   });
 
+  // ⌘S — the named restore point (the ONLY manual save verb; never a Save button).
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      session?.markRestorePoint();
+      setPill({ state: "syncing", queued: session?.provider.unsyncedChanges ?? 0 });
+    }
+  });
+
   const applyLock = (isLocked: boolean) => {
     locked = isLocked;
+    lockedOverride = isLocked;
     root.dataset["locked"] = isLocked ? "1" : "0";
     view.dispatch(view.state.tr); // re-reads `editable` + remaps decorations
-    if (!isLocked) machine.unlock();
+    if (session) setPill(session.sync);
   };
+  lockedOverride = locked;
+  if (session) setPill(session.sync);
 
-  // Offline recovery: retry the queued save when the browser comes back.
-  window.addEventListener("online", () => machine.retry());
-
-  // §6.3 lock poll — a run grabbing/releasing the draft while the page sits open.
+  // §6.3 lock poll — a run grabbing/releasing the draft while the page sits open (unchanged route).
   const poll = async () => {
     if (document.visibilityState !== "visible") return;
     try {
@@ -283,7 +323,10 @@ async function main(): Promise<void> {
   };
 
   const pollTimer = window.setInterval(() => void poll(), LOCK_POLL_MS);
-  document.addEventListener("visibilitychange", () => void poll());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") session?.flushOnHide();
+    else void poll();
+  });
 
   // a deep-linked finding (/f/:id → the Page) scrolls to its card
   const focusId = root.dataset["focusFinding"];
@@ -291,15 +334,13 @@ async function main(): Promise<void> {
     document.querySelector<HTMLElement>(`[data-finding-id="${focusId}"]`)?.scrollIntoView({ block: "center" });
   }
 
-  // no Save button, no unsaved-changes dialog — the pagehide beacon flushes the pending doc.
+  // No Save button, no unsaved-changes dialog, NO beforeunload — pagehide flushes the `blur`
+  // restore point + the provider's pending updates; y-indexeddb holds whatever never left.
   window.addEventListener("pagehide", () => {
-    const pending = machine.pendingFlush();
-    if (pending != null && navigator.sendBeacon) {
-      navigator.sendBeacon(saveUrl, new Blob([pending], { type: "text/plain" }));
-    }
+    if (provTimer != null) flushProvenance();
+    session?.flushOnHide();
+    window.clearInterval(pollTimer);
   });
-  window.addEventListener("beforeunload", () => machine.dispose());
-  window.addEventListener("unload", () => window.clearInterval(pollTimer));
 }
 
 if (document.readyState === "loading") {

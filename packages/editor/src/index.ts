@@ -30,4 +30,4 @@ export {
   parseBibtex, parseCslJson, parseZoteroExport, importBibliography, detectBibliographyFormat,
   citeKeysIn, resolveCites, citeLabel,
 } from "./bibliography.js";
-export { pagePlugins, createPageState, humanTr } from "./plugins.js";
+export { pagePlugins, createPageState, createCollabPageState, humanTr } from "./plugins.js";

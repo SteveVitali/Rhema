@@ -48,6 +48,8 @@ export interface PageEditorLabels {
   readonly versionLabel: (draftN: number, baseDraftN: number | null) => string;
   /** the frozen-draft banner: typing forks v(N+1). */
   readonly frozenBanner: (n: number) => string;
+  /** raw "v{n} — your revision of v{base}" template — the island rewrites the banner after a fork. */
+  readonly forkFmt: string;
   readonly writerLockText: (workflow: string) => string;
   readonly readerLockText: (workflow: string) => string;
   readonly cancelRun: string;
@@ -66,7 +68,8 @@ export interface PageEditorLabels {
   readonly readOnlyNote: string;
   readonly danglingCiteNote: string;
   readonly authorshipHint: string;
-  readonly sync: { synced: string; syncing: string; queued: string; locked: string };
+  /** §5.10's verbatim pill vocabulary — `offline` carries `{n}` (the queued-change count). */
+  readonly sync: { synced: string; syncing: string; queued: string; locked: string; offline: string; readOnly: string };
 }
 
 export interface PageEditorProps {
@@ -86,6 +89,11 @@ export interface PageEditorProps {
   /** cite keys with no bibliography item — rendered visibly in the rail. */
   readonly danglingCites: readonly string[];
   readonly readOnly?: boolean;
+  /**
+   * P1.03 — the collab WSS base (`wss://<host>/collab`); absent ⇒ the island mounts the read-only
+   * static view (artifact reads) instead of a live session.
+   */
+  readonly collabWsUrl?: string;
   /** transport URLs the island wires (the same-origin web routes forward the session). */
   readonly saveUrl: string;
   readonly docUrl: string;
@@ -282,6 +290,8 @@ export function PageEditor(props: PageEditorProps): ReactNode {
       data-draft-n={props.draftN}
       data-save-url={props.saveUrl}
       data-doc-url={props.docUrl}
+      data-collab-url={props.collabWsUrl ?? ""}
+      data-fork-fmt={L.forkFmt}
       data-locked={locked ? "1" : "0"}
       data-readonly={readOnly ? "1" : "0"}
       {...(props.focusFindingId ? { "data-focus-finding": props.focusFindingId } : {})}
@@ -396,8 +406,10 @@ export function PageEditor(props: PageEditorProps): ReactNode {
         </form>
       ) : null}
 
-      {/* the sync pill the island drives (SSR'd so the pill exists before JS) */}
+      {/* the sync pill the island drives (SSR'd so the pill exists before JS) — §5.10's vocabulary:
+          synced ✓ / syncing… / offline · n changes queued / read-only. No Save button, ever. */}
       <div data-sync-pill data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
+           data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
            data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
            style={{ position: "fixed", bottom: "28px", right: "24px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
         {L.sync.synced}

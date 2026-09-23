@@ -92,6 +92,9 @@ export function createIam(args: IamArgs): Iam {
   grantBucket("api-rw-artifacts", buckets["artifacts"], serviceAccounts["api"], "roles/storage.objectAdmin");
   grantBucket("api-rw-usercontent", buckets["user-content"], serviceAccounts["api"], "roles/storage.objectAdmin");
   grantBucket("worker-rw-artifacts", buckets["artifacts"], serviceAccounts["worker"], "roles/storage.objectAdmin");
+  // P1.03 — collab writes the materialized markdown's content-addressed bytes + the `restore/<ydoc>/<ts>`
+  // point blobs into artifacts (and reads the seeded version's bytes on first load).
+  grantBucket("collab-rw-artifacts", buckets["artifacts"], serviceAccounts["collab"], "roles/storage.objectAdmin");
   // run-task's harness uid materializes /work from artifact bytes — read-only.
   grantBucket("runtask-ro-artifacts", buckets["artifacts"], serviceAccounts["run-task"], "roles/storage.objectViewer");
 

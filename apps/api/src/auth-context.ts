@@ -23,6 +23,11 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { withTenant } from "@rhema/db";
+import {
+  SESSION_COOKIE_NAMES,
+  resolveSessionPrincipal as resolveSessionPrincipalShared,
+  sessionTokenFromCookieHeader,
+} from "@rhema/db";
 import type { SqlClient } from "./invite.js";
 import type { Principal } from "./run-routes.js";
 
@@ -51,60 +56,18 @@ export function currentTenant(): string | null {
 
 // ---- session cookie → principal ---------------------------------------------------------------------------
 
-/** The session-cookie names this deploy can emit (prod `__Host-` name; dev http fallback name). */
-export const SESSION_COOKIE_NAMES = [
-  "__Host-rhema.session_token",
-  "rhema-dev.session_token",
-] as const;
+// P1.03 — the cookie-name list, token parse, and session→principal join moved to @rhema/db so the
+// collab service's WebSocket auth hook resolves the SAME session verbatim (REQ-DATA-44). Re-exported
+// here so every existing import keeps working; `resolveSessionPrincipal` keeps this module's
+// `Principal` return type (structurally identical to SessionPrincipal).
+export { SESSION_COOKIE_NAMES, sessionTokenFromCookieHeader };
 
-/** Extract the raw session token from a `Cookie` header value (strips the `token.signature` suffix). */
-export function sessionTokenFromCookieHeader(cookieHeader: string | undefined): string | null {
-  if (!cookieHeader) return null;
-  for (const part of cookieHeader.split(";")) {
-    const eq = part.indexOf("=");
-    if (eq < 0) continue;
-    const name = part.slice(0, eq).trim();
-    if (!(SESSION_COOKIE_NAMES as readonly string[]).includes(name)) continue;
-    const value = part.slice(eq + 1).trim();
-    const token = value.split(".")[0] ?? "";
-    return token || null;
-  }
-  return null;
-}
-
-interface SessionRow {
-  user_id: string;
-  workspace_id: string;
-  billing_account_id: string;
-}
-
-/**
- * Resolve a session token to the app principal (user + personal workspace + billing account). The session
- * row must be unexpired; the principal is the user's PERSONAL workspace (the beta's single-workspace model).
- * Returns null for an unknown/expired token or an unprovisioned user (no membership).
- */
+/** Resolve a session token to the app principal (delegates to @rhema/db — see session.ts). */
 export async function resolveSessionPrincipal(
   db: SqlClient,
   token: string,
 ): Promise<Principal | null> {
-  const row = (
-    await db.query(
-      `select s.user_id, m.workspace_id, w.billing_account_id
-         from session s
-         join workspace_members m on m.user_id = s.user_id
-         join workspaces w on w.id = m.workspace_id and w.kind = 'personal'
-        where s.token = $1 and s.expires_at > now()
-        order by s.created_at desc
-        limit 1`,
-      [token],
-    )
-  ).rows[0] as SessionRow | undefined;
-  if (!row) return null;
-  return {
-    userId: row.user_id,
-    workspaceId: row.workspace_id,
-    billingAccountId: row.billing_account_id,
-  };
+  return resolveSessionPrincipalShared(db, token);
 }
 
 // ---- middleware ---------------------------------------------------------------------------------------------

@@ -49,6 +49,9 @@ const apiRedisUrl = rhemaConfig.getSecret("apiRedisUrl") ?? redisUrl;
 // 2026-09-17); `apiDatabaseUrl` stays readable as a fallback for stacks seeded under the old name.
 const apiDatabaseUrl = rhemaConfig.getSecret("appDatabaseUrl") ?? rhemaConfig.getSecret("apiDatabaseUrl");
 const apiSystemDatabaseUrl = rhemaConfig.getSecret("apiSystemDatabaseUrl");
+// P1.03 — the collab service's DATABASE_URL connects as the limited `rhema_collab` role (migration
+// 0028's grants). Its own secret config — never the api/worker strings.
+const collabDatabaseUrl = rhemaConfig.getSecret("collabDatabaseUrl");
 // The postgres bootstrap password binding the engine's `postgres` user (HUMAN-H6 — the operator
 // builds every DATABASE_URL from it). Engine-agnostic despite the name: AlloyDB initialUser on dev,
 // Cloud SQL built-in user on prod.
@@ -96,6 +99,7 @@ const compute = createCompute({
   ...(apiDatabaseUrl ? { apiDatabaseUrl } : {}),
   ...(apiSystemDatabaseUrl ? { apiSystemDatabaseUrl } : {}),
   ...(apiRedisUrl ? { apiRedisUrl } : {}),
+  ...(collabDatabaseUrl ? { collabDatabaseUrl } : {}),
   ...(emailFrom ? { emailFrom } : {}),
   ...(runTaskImageDigest ? { runTaskImageDigest } : {}),
   ...(internalApiUrl ? { internalApiUrl } : {}),

@@ -54,6 +54,14 @@ export interface SaveManualRevisionArgs {
     readonly spans?: readonly ProvenanceSpan[];
     readonly agentSpans?: readonly { readonly blockId: string; readonly from: number; readonly to: number }[];
   };
+  /**
+   * P1.03 — the restore-point write this save performs. `'content-addressed'` (default — the HTTP save
+   * path's beta behavior) inserts the `snapshot`/`auto` row pointing at the artifact's s3_key.
+   * `'ydoc'` SKIPS it: the collab service owns restore points as Yjs update-deltas chained from daily
+   * snapshots at `restore/<liveDoc>/<ts>` (§11.4; REQ-IDE-34's storage half), so the materialization
+   * path must not double-write a content-addressed row beside them.
+   */
+  readonly restorePoint?: "content-addressed" | "ydoc";
 }
 
 export type SaveManualRevisionResult =
@@ -333,11 +341,13 @@ export async function saveManualRevision(
         now,
       ]);
     }
-    restorePointId = deps.ids("rp");
-    await exec.query(
-      `insert into restore_points(id, live_doc_id, s3_key, kind, cause) values ($1,$2,$3,'snapshot','auto')`,
-      [restorePointId, liveDocId, s3KeyFor(args.workspaceId, sha256)],
-    );
+    if ((args.restorePoint ?? "content-addressed") === "content-addressed") {
+      restorePointId = deps.ids("rp");
+      await exec.query(
+        `insert into restore_points(id, live_doc_id, s3_key, kind, cause) values ($1,$2,$3,'snapshot','auto')`,
+        [restorePointId, liveDocId, s3KeyFor(args.workspaceId, sha256)],
+      );
+    }
 
     // 8. Findings follow the text (§5.4): every finding filed on the reviewed base projects onto the
     //    edited head; a lost quote lands on Whole piece ("passage changed — still applies?") as a

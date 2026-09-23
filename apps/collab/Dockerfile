@@ -1,9 +1,6 @@
-# collab — the Hocuspocus WSS collab service (skeleton; PRB.15). The real Yjs surface lands with its own
-# ticket; what prod deploys must still be a REAL image, not a sleeper — the image runs the honest
-# minimum (a `/healthz` listener that keeps the Cloud Run service healthy and serving) until the collab
-# ticket builds the real endpoint.
-#
-# (Replaces the P0.01 placeholder sleeper — the collab image now runs a real server for prod.)
+# collab — the Hocuspocus WSS collab service (P1.03): the four-layer autosave's server half —
+# `draft:<id>` documents, session-cookie auth, debounced materialization to canonical markdown,
+# restore-point snapshots/deltas, and the M17 block-patch routes under /collab.
 
 # ---- builder: install the workspace, build the collab slice, ship a pruned prod bundle ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS builder

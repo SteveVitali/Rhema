@@ -61,6 +61,8 @@ export function startWebServer(): void {
     ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
     // PRB.13 — signup.mode (REQ-BETA-19 amended): the flag fails closed — unset/unparseable ⇒ `invite`.
     signupMode: parseSignupMode(process.env.SIGNUP_MODE),
+    // P1.03 — the Page's collab transport (the LB path-routes /collab to the collab service).
+    ...(process.env.COLLAB_WS_URL ? { collabWsUrl: process.env.COLLAB_WS_URL } : {}),
     session(c) {
       const forwarded: Record<string, string> = {};
       const cookie = c.req.header("cookie");

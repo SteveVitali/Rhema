@@ -382,10 +382,14 @@ export const COPY = {
     readerLockFmt: "A {workflow} run is reading the frozen draft — editing is locked until it finishes.",
     cancelRun: "Cancel run to edit",
     sync: {
-      synced: "Synced",
-      syncing: "Syncing…",
-      queued: "Offline — queued",
-      locked: "Locked",
+      // §5.10's verbatim vocabulary (lowercase, as the status-bar mock renders) — `offline`
+      // interpolates {n} (the queued-change count).
+      synced: "synced ✓",
+      syncing: "syncing…",
+      queued: "offline — queued",
+      locked: "read-only",
+      offline: "offline · {n} changes queued",
+      readOnly: "read-only",
     },
     findingsHeading: "Findings on this draft",
     wholePiece: "Whole piece",
@@ -397,6 +401,7 @@ export const COPY = {
     revise: "Revise using your edits",
     // P1.02 — the Page (schema-first editor): the strings the Source stopgap never had.
     frozenBannerFmt: "v{n} is frozen — your edits here open a new revision.",
+    forkFmt: "v{n} — your revision of v{base}",
     readOnlyNote: "This version is read-only.",
     proposalsHeading: "Proposed changes",
     accept: "Accept",
