@@ -240,3 +240,32 @@ protocol-text edits (drift gate closed by construction — `SANCTIONED_CATEGORIE
 editor-loop cache-read materially below ~60K, then D-PRB.21-1 closes. No new deferral opened.
 
 **Spend this run: $0.** No deploy, no live run, no production interaction.
+
+## Stage B — live verify (operator run, 2026-09-23)
+
+Deployed via Pulumi update 72 (api `64e33432`, worker `00fa33ad`, run-task `8dd606f9`;
+web unchanged at prb23). Verify run `01M364236C8856Y5DJV28ZDSQT` — `review`/`quick` on the
+701-word zero-URL draft 6 (`01M35KC9K…`). **No operator cap raise** — the recalibrated
+estimator derived est **522 / cap 783** server-side.
+
+**Result: `failed` / `cap_reached` at 03:43Z — in `letter` (ordinal 6, the FINAL phase).**
+
+| Phase | State | Committed |
+|---|---|---|
+| intake | done | 83 |
+| craft | done | 83 |
+| verification | **done** | 223 |
+| argument | done | 90 |
+| letter | failed | 0 |
+
+Committed debits 479 ($4.79); proxy-metered 783; release 304. `usage_records`: editor loop
+71 reqs / 4.26M cache-read (~60K/req), 22 fetches / 25 searches, 1 `context.compacted`.
+
+**Reading:** the bound landed where aimed — verification **completed** at 223 committed
+(was: died mid-phase at ~347+ uncommitted churn). The run cleared all non-terminal phases
+for the first time. The residual gap is `letter`-phase burn (~304cr uncommitted): the
+estimate tracked committed work (479 vs 522) but the cap meters total burn, so the last
+phase's transcript/fetch overhead pushed past the line. Options recorded for the ruling:
+(a) one more churn-term notch covering synthesis phases, (b) cap-on-committed metering
+(D-PRB.16-5 question), (c) accept ~900-cap ≈ $9 as the honest quick floor. D-PRB.21-1 stays
+OPEN; no rerun per stop-on-failure (operator may elect one more bounded run).
