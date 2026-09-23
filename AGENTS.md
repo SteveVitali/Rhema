@@ -13,6 +13,18 @@ prerequisite it depends on — unblocks any `OPEN` row, **closing that row (veri
 run. Phase-exit gates (`docs/tickets/*GATE*`) must not pass while an `OPEN` row scoped to that phase
 remains.
 
+## Build memory (build-memory v2, ADR-004)
+`docs/build/` is the **committed** memory root (opted in by the `<!-- build-memory: v2 -->` marker in its
+README): `docs/build/LEDGER.md` holds the machine state (`nextTicket`, `chainTip`, CURRENT STATE / OPEN
+FINDINGS / GATE DECISIONS / RETURN PASS / PHASE LOG); `docs/build/BUILD_INDEX.md` is one row per landed PR;
+`docs/build/runs/<ID>.md` are the per-ticket run ledgers, `docs/build/pr/<ID>.md` the PR bodies,
+`docs/build/readouts/` the gate readouts; `docs/build/logs/` is the one gitignored subtree. `.agents/scratch/`
+is retired (MAINT.1). `docs/tickets/00_MANIFEST.md § The chain` is the authoritative order; a human can drive
+the stacked chain from it alone. `docs/adr/` holds decision records; its `README.md` is **generated** by
+`build-memory adr-index` — never hand-edit it. Contracts + history are **append-only** (amend by a dated note
+or a new ADR, never by rewriting a landed file); PRs **stack**; a **gate is a pause, not a block**; **secrets
+never** enter any ledger. Validate with `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .`.
+
 ## Stack (Q-3, §13.1)
 TypeScript **end-to-end; no Python anywhere**. pnpm + Turborepo; Pulumi (TypeScript) stacks; **GCP-first**
 (amended 2026-09-02 from AWS-first; inference from the direct Anthropic API — see 00_MANIFEST § Spec

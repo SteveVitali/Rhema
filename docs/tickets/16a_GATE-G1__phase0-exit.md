@@ -29,4 +29,13 @@ the live 3-project Reviews + instrumented cost + gate round-trip + cap-402 + sta
 G1-scoped deferral, rewrite the readout with measured values). Both run after ticket 16 and before this
 gate; read G1 only once P0.15c reports G1 ready.
 
-- [ ] Operator disposition recorded in the ledger (`.agents/scratch/rhema-build-ledger.md`).
+- [ ] Operator disposition recorded in `docs/build/LEDGER.md` GATE DECISIONS and the readout `docs/build/readouts/GATE-G1.md`.
+
+> **Updated 2026-09-10 (MAINT.1 / build-memory v2).** The disposition now lives in `docs/build/LEDGER.md`
+> GATE DECISIONS and the append-only readout `docs/build/readouts/GATE-G1.md` (replacing the retired gitignored scratch pointer).
+> The live Phase-0 work ran through **P0.15d–P0.15i** (not just P0.15b/c as the original text above says): the
+> pipeline is proven live end-to-end (agent launch → all 6 required phases → harvest → deliver path, with real
+> proxy-logged web research). G1 is **not yet passable** — the fact-check still trips `cited_not_fetched`
+> (citation discipline, `D-P0.15i-2` → `16_P0.15j`) and the three-project Reviews + instrumented-cost runs
+> remain (`D-P0.15-1/-2` → `16_P0.15k`). **Read G1 only once `16_P0.15k` reports G1 ready** (chain: 16z_MAINT.1
+> → 16_P0.15j → 16_P0.15k → this gate). The `16_P0.15d` note above is superseded.
