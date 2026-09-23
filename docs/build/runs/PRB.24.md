@@ -269,3 +269,28 @@ phase's transcript/fetch overhead pushed past the line. Options recorded for the
 (a) one more churn-term notch covering synthesis phases, (b) cap-on-committed metering
 (D-PRB.16-5 question), (c) accept ~900-cap ≈ $9 as the honest quick floor. D-PRB.21-1 stays
 OPEN; no rerun per stop-on-failure (operator may elect one more bounded run).
+
+## Stage B run 2 — DELIVERED (operator run, 2026-09-23)
+
+Second authorized run `01M36663QG1ZJ7VEZ036Y54NSG` — same draft/config, cap operator-raised
+to **1100** at creation (+hold) to cover the synthesis-phase residual found in run 1.
+
+**Result: `completed` at 04:25Z — first-ever prod `review` delivered within cap.**
+
+| Phase | Committed |
+|---|---|
+| intake | 79 |
+| craft | 70 |
+| verification | 233 |
+| argument | 84 |
+| letter | 120 |
+
+Committed debits **586 ($5.86)** vs estimate 522; proxy-metered **720 ≤ cap 1100**; hold
+released 514. Usage: 104 reqs / 13.3M cache-read, 26 fetches / 27 searches, 1 compaction.
+Dossier: `https://rhema.tools/p/my-first-project/review/01M36663QG1ZJ7VEZ036Y54NSG`.
+
+**D-PRB.21-1 → DONE** (delivery proven; the residual pricing-model gap is recorded on the
+row for G3 — honest delivered cost ~720cr metered vs derived cap 783 needed the operator
+raise, and committed-vs-metered delta 586/720 remains unpriced). Verification's bound held
+again (233 committed, second consecutive completion); `letter` needed ~241 metered vs 120
+committed — synthesis-phase churn is the remaining under-modeled term.
