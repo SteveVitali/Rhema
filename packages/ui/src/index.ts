@@ -63,3 +63,21 @@ export type {
   EditorLockView,
   EditorFindingView,
 } from "./source-editor.js";
+
+// P1.01 — the §5.1 IDE shell (seven regions) + the §5.9 state catalogue. SSR-static markup; the
+// apps/web ide.js island enhances it (panes/theme/menus/keyboard). All copy arrives via labels.
+export { IdeShell } from "./ide-shell.js";
+export type { IdeShellProps, IdeLabels } from "./ide-shell.js";
+export {
+  EmptyProject,
+  EmptyFindings,
+  ShellSkeleton,
+  StreamingBlock,
+  SyncPill2,
+  RunFailed,
+  ConflictBanner,
+  OfflineQueued,
+  InsufficientBalanceSwap,
+  FrozenBanner,
+  CancelRunModal,
+} from "./ide-states.js";

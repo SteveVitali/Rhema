@@ -26,6 +26,7 @@ import { createImportRoutes, type Converter, type ImportUploadDeps } from "./imp
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
+import { createThemeRoutes } from "./theme-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore } from "@rhema/mirror";
 
@@ -99,6 +100,7 @@ export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
 export { createDossierRoutes, parseLetterSections } from "./dossier-routes.js";
 export type { DossierApiDeps } from "./dossier-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
+export { createThemeRoutes } from "./theme-routes.js";
 export type { AnalyticsApiDeps } from "./analytics-routes.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
@@ -261,6 +263,15 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         txRunner: deps.txRunner,
         clock: deps.clock,
         ids: deps.ids,
+      }),
+    );
+    // P1.01 — the theme endpoints (REQ-IDE-38 amended): the per-user app theme + the per-project paper pin.
+    app.route(
+      "/",
+      createThemeRoutes({
+        principal: deps.principal,
+        txRunner: deps.txRunner,
+        clock: deps.clock,
       }),
     );
     // PRB.09 — notification prefs (session-authed) + the signed one-click action consume (unauthenticated;

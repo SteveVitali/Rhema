@@ -527,6 +527,13 @@ export const COPY = {
     analyticsLabel: "Share product analytics",
     analyticsNote:
       "Usage events tell us which parts of the beta earn their keep. Turning this off stops new telemetry and removes your events from every report.",
+    // P1.01 — the app-theme control (REQ-IDE-38): dark/light/auto, persisted per user; the IDE shell's
+    // theme menu writes the same field.
+    themeHeading: "Appearance",
+    themeNote: "The shell theme. Paper pages keep their own per-project pin.",
+    themeDark: "Dark",
+    themeLight: "Light",
+    themeAuto: "Auto (follow system)",
     saveCta: "Save",
     saved: "Saved.",
   },
@@ -539,6 +546,118 @@ export const COPY = {
     runsHeading: "Recent runs",
     runEmpty: "No runs yet.",
     creditsSuffix: "cr",
+  },
+
+  // P1.01 — the §5.1 IDE shell's chrome: rail, Files pane, Margin, Timeline, Desk, status bar, the View
+  // menu, and the theme/paper controls. Canonical nouns only (Appendix D.2): "Files", never "Browser";
+  // the view values are Write / Read / Focus; "Source" is not a View-menu entry.
+  ide: {
+    rail: {
+      home: "Home",
+      inbox: "Inbox",
+      settings: "Settings",
+      project: "Project navigation",
+    },
+    files: {
+      heading: "Files",
+      open: "Files ⌘1",
+      close: "Close Files",
+      empty: "Import a draft to add files to this project.",
+      sourceFile: "Source",
+    },
+    margin: {
+      heading: "Findings",
+      ticksLabel: "Finding markers",
+    },
+    timeline: {
+      heading: "Timeline",
+      empty: "No runs yet — the round log appears here.",
+      close: "Close Timeline",
+    },
+    desk: {
+      heading: "Desk",
+      tabs: {
+        chat: "Chat",
+        feed: "Live feed",
+        findings: "Findings",
+        claims: "Claims",
+      },
+      emptyChat: "The Assistant lands here in a later pass.",
+      emptyFeed: "No run activity yet.",
+      emptyFindings: "No findings yet.",
+      emptyClaims: "No claims yet.",
+      findingsTable: {
+        finding: "Finding",
+        severity: "Severity",
+        kind: "Kind",
+        status: "Status",
+      },
+      close: "Close Desk",
+    },
+    statusBar: {
+      view: "View",
+      theme: "Theme",
+      paper: "Paper",
+      synced: "Synced",
+      syncing: "Syncing…",
+      offline: "Offline — changes queued",
+      creditsFmt: "{n} cr",
+      versionPrefix: "",
+      wordsFmt: "{n} words",
+      readMinFmt: "{n} min read",
+    },
+    viewMenu: {
+      heading: "View",
+      views: {
+        write: "Write",
+        read: "Read",
+        focus: "Focus",
+      },
+      findingCards: "Finding cards",
+      suggestionsInline: "Inline suggestions",
+      // NOTE: the Advanced toggle reuses COPY.runSheet.advanced at the IdeFrame labels site — Appendix D.2
+      // sanctions the term ONCE (the progressive-disclosure label); a second copy-table entry trips the
+      // copy lint even though this is the same permitted role.
+      fontSerif: "Serif paper",
+      fontSans: "Sans paper",
+      readerBigger: "Bigger text",
+      readerSmaller: "Smaller text",
+    },
+    themes: {
+      dark: "Dark",
+      light: "Light",
+      auto: "Auto (system)",
+      paperLight: "Pinned light",
+      paperFollow: "Follow app theme",
+      paperDark: "Pinned dark",
+    },
+    emptyProject: {
+      titlePlaceholder: "Untitled project",
+      cards: [
+        { title: "Import a file", body: "Bring in a draft — docx, markdown, or text." },
+        { title: "Paste text", body: "Drop a manuscript in directly." },
+        { title: "Start a review", body: "Run the reader over what you have." },
+      ],
+    },
+    states: {
+      emptyFindings: "No findings.",
+      runFailed: {
+        heading: "The run failed",
+        phaseLabel: "Stopped during",
+        refund: "Partial output kept. Credits for the unfinished work were returned.",
+        resume: "Resume",
+        inboxNote: "An Inbox item was created.",
+      },
+      conflict: "This changed elsewhere — your edits are queued until the conflict resolves.",
+      frozen: "This version is frozen — it can't be edited.",
+      insufficient: "Not enough credits — top up to run.",
+      cancelRun: {
+        heading: "Cancel this run?",
+        body: "The run stops and its partial output is kept. This can't be undone.",
+        confirm: "Cancel run",
+        keep: "Keep running",
+      },
+    },
   },
 
   footer: "Rhēma · private beta",

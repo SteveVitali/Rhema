@@ -1,16 +1,19 @@
-// @rhema/tokens — the §5.9 design tokens (values + the SSR theme stylesheet). Consumed by @rhema/ui and
-// apps/web for the beta shell, and (later) by the full IDE design system (P1.01).
-
-export const PACKAGE_NAME = "@rhema/tokens" as const;
-
 export {
   DARK_VARS,
   LIGHT_VARS,
+  PAPER_KEYS,
   SPACING,
   RADIUS,
   TYPOGRAPHY,
+  LAYOUT,
+  MOTION,
+  paperVars,
+  paperScopeVars,
+  motionMs,
   cssVar,
-  darkHexValues,
+  hexValues,
 } from "./tokens.js";
 export type { VarMap } from "./tokens.js";
-export { themeCss } from "./theme-css.js";
+export { relativeLuminance, contrastRatio } from "./contrast.js";
+export { themeCss, FONT_FACES } from "./theme-css.js";
+export { ideCss } from "./ide-css.js";

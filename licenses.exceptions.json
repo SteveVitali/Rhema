@@ -30,6 +30,21 @@
       "type": "npm",
       "license": "(MIT AND Zlib)",
       "rationale": "Transitive dep of mammoth via jszip (docx conversion). The declared SPDX expression is a conjunction of two permissive licences — MIT is allowlisted and Zlib is a permissive zlib licence. Server-side only."
+    },
+    "@fontsource-variable/inter": {
+      "type": "npm",
+      "license": "OFL-1.1",
+      "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
+    },
+    "@fontsource-variable/jetbrains-mono": {
+      "type": "npm",
+      "license": "OFL-1.1",
+      "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
+    },
+    "@fontsource-variable/literata": {
+      "type": "npm",
+      "license": "OFL-1.1",
+      "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
     }
   }
 }

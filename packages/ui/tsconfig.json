@@ -13,6 +13,9 @@
       "path": "../tokens"
     },
     {
+      "path": "../ide"
+    },
+    {
       "path": "../run-sheet"
     },
     {
