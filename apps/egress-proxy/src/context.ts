@@ -36,6 +36,39 @@ export interface ProxyUrlPolicy {
 }
 
 /**
+ * Whether — and how much — server-side web research is enabled for this run (§12.6; P0.15i). The vendored
+ * `claude` CLI does NOT reliably add Anthropic's server-side web_search tool to the `/v1/messages` request
+ * (proven live at P0.15h: `usage_records.searches = 0`), so the proxy — the run's single meter of record and
+ * its only network path — GUARANTEES the tool is present. Absent ⇒ BOTH web_search and web_fetch default ON (both
+ * GA, no beta header); their RESULT urls give `cited⇒fetched` its provenance (the fact-check must fetch the
+ * specific sources it cites, not only see them in a search result — see `fetch`).
+ *
+ * SCOPED SUBAGENTS: the run's credential — and thus this policy — is shared by the harness and every §12.6
+ * input-scoped subagent (second-reader / fidelity-auditor / gap-analyst / holdout-calibrator), which are
+ * `tools:["Read"]`, draft-only, and must NOT do web research. Because server web tools bypass the client
+ * `allowedTools` list, whoever mints those scoped contexts (the orchestrator, when the phase-level scoped-query
+ * machinery lands — [[D-P0.15h-5]]) MUST set `{search:false, fetch:false}` on them. Today those scoped roles
+ * are not launched live, so the default-ON search only reaches the main research phases.
+ */
+export interface WebToolPolicy {
+  /** Inject the server web_search tool when the request lacks one (default true — GA, no beta header). */
+  readonly search?: boolean;
+  /**
+   * Inject the server web_fetch tool when the request lacks one (default TRUE). `web_fetch_20250910` is GA and
+   * needs no beta header (verified live 2026-09-10). It is required for `cited⇒fetched`: the fact-check must
+   * FETCH the specific sources it cites (search results, the draft's own citations) so their URLs land in the
+   * proxy fetch log — search alone leaves search-adjacent citations un-fetched and delivery fails
+   * `cited_not_fetched`. web_fetch only reaches URLs already in the conversation, and the outbound guards
+   * (query-strip + novel-domain cap) bound the channel.
+   */
+  readonly fetch?: boolean;
+  /** `max_uses` for the injected web_search tool (default `DEFAULT_WEB_SEARCH_MAX_USES`). */
+  readonly searchMaxUses?: number;
+  /** `max_uses` for the injected web_fetch tool (default `DEFAULT_WEB_FETCH_MAX_USES`). */
+  readonly fetchMaxUses?: number;
+}
+
+/**
  * Everything the proxy needs to serve, meter, cap, rewrite and log one run's requests. Resolved from the
  * per-run credential; all fields are server-side truth (§12.7). The metering/attribution fields mirror the
  * NOT-NULL columns of `usage_records`.
@@ -61,6 +94,11 @@ export interface RunContext {
   readonly capCredits: number;
   readonly allowlist: RunAllowlist;
   readonly urlPolicy: ProxyUrlPolicy;
+  /**
+   * Server-side web-research policy (§12.6; P0.15i). Absent ⇒ both server web tools default ON (see
+   * `WebToolPolicy`) so the fact-check does real, proxy-logged research and `cited⇒fetched` has provenance.
+   */
+  readonly webTools?: WebToolPolicy;
   /**
    * The draft text the run's `search.performed` queries are n-gram-diffed against (§12.8d). Supplied by the
    * orchestrator from committed draft state; the proxy never receives it from the sandbox. Absent ⇒ the

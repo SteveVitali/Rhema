@@ -34,6 +34,15 @@ const NEVER_FORWARD = new Set<string>([
   "te",
   "trailer",
   "content-length",
+  // The proxy is the METER OF RECORD (§12.7) and the fetch log of record (§12.6): it must be able to READ the
+  // provider response it forwards — to meter usage and to log the `web_search_tool_result` source URLs that
+  // back `cited⇒fetched`. If the sandbox's `accept-encoding: gzip` reaches the provider, the response comes
+  // back gzip-compressed; the proxy streams those bytes straight through (the SDK decompresses fine) but
+  // accumulates the COMPRESSED body for metering, so its SSE/JSON parsers silently see garbage — no usage rows,
+  // no fetch rows, and delivery fails `cited_not_fetched` even though the search ran (diagnosed live P0.15i,
+  // 2026-09-09: `searches` present only as `sdk_stream`, zero `fetch_log` result rows). Stripping it forces an
+  // uncompressed response the proxy can parse; the proxy holds no decompression path today.
+  "accept-encoding",
 ]);
 
 /** Lowercase every header key (node already does this for incoming requests; belt for constructed inputs). */

@@ -13,9 +13,11 @@ describe("buildAgentRoster (§12.2/§12.3)", () => {
     }
   });
 
-  it("gives the researcher search + fetch and marks it in-query fan-out", () => {
+  it("gives the researcher no client web tools (server-side, proxy-guaranteed) and marks it in-query fan-out", () => {
     const r = buildAgentRoster({ tier: "base" });
-    expect(r.researcher.tools).toEqual(["Read", "WebSearch", "WebFetch"]);
+    // both client web tools dropped (P0.15i AC1): server-side search/fetch is proxy-guaranteed, and a client
+    // WebSearch would pre-empt the injected server tool (no server search executes). Research = server tools.
+    expect(r.researcher.tools).toEqual(["Read"]);
     expect(r.researcher.inputScoped).toBe(false);
   });
 
