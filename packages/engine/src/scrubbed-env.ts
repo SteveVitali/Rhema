@@ -43,11 +43,22 @@ export interface AgentEnvInput {
   proxyBaseUrl: string;
   /** the per-run config dir (writable tmpfs), isolating SDK state (§12.4 step 4). */
   configDir: string;
+  /** the §12.2 ≤5 concurrent-subagents cap, enforced through the CLI env (PRB.23 — see below). */
+  maxConcurrentSubagents: number;
 }
 
 /**
  * Build the scrubbed env for the model's process. Total by construction — starts from an empty object and
- * adds only the four allowed keys — so no ambient secret can ride in. The result is asserted secret-free.
+ * adds only the allowed keys — so no ambient secret can ride in. The result is asserted secret-free.
+ *
+ * PRB.23 — two §12.2 contract fields the SDK does NOT read as options (`cacheControlTtl`, the
+ * subagent caps — see `AgentSdkQueryOptions`) are realized through real CLI env vars instead
+ * (both are in the vendored CLI's env allowlist; `options.env` REPLACES the subprocess env, so
+ * they reach the CLI verbatim):
+ *   · `ENABLE_PROMPT_CACHING_1H` — the §12.2 1-hour cache TTL intent (`cacheControlTtl:"1h"`).
+ *   · `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` — the §12.2 ≤5 concurrent-subagents cap
+ *     (`maxConcurrentSubagents`, which the SDK drops as advisory).
+ * Both are non-secret configuration keys — safe inside the scrubbed boundary.
  */
 export function buildAgentEnv(input: AgentEnvInput): Record<string, string> {
   const env: Record<string, string> = {
@@ -57,6 +68,8 @@ export function buildAgentEnv(input: AgentEnvInput): Record<string, string> {
     ANTHROPIC_API_KEY: PROXY_PLACEHOLDER_ANTHROPIC_API_KEY,
     CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
     CLAUDE_CONFIG_DIR: input.configDir,
+    ENABLE_PROMPT_CACHING_1H: "1", // §12.2's 1-h cache TTL — realized via env (PRB.23)
+    CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION: String(input.maxConcurrentSubagents),
   };
   assertScrubbed(env);
   return env;
@@ -69,6 +82,8 @@ export const ALLOWED_AGENT_ENV_KEYS = [
   "ANTHROPIC_API_KEY",
   "CLAUDE_CODE_DISABLE_AUTO_MEMORY",
   "CLAUDE_CONFIG_DIR",
+  "ENABLE_PROMPT_CACHING_1H",
+  "CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION",
 ] as const;
 
 /**

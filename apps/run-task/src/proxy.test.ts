@@ -60,7 +60,12 @@ function listen(server: Server): Promise<string> {
 
 /** Simulate a `node -e` shell escape: it can use only the scrubbed agent env (no secrets). */
 function escapedAgentEnv(): Record<string, string> {
-  return buildAgentEnv({ runId: "run_1", proxyBaseUrl: "http://proxy.internal", configDir: "/work/.config" });
+  return buildAgentEnv({
+    runId: "run_1",
+    proxyBaseUrl: "http://proxy.internal",
+    configDir: "/work/.config",
+    maxConcurrentSubagents: 5,
+  });
 }
 
 describe("AC2 — shell escape reaches neither the provider nor the internal API", () => {

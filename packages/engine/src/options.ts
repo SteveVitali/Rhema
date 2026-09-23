@@ -44,6 +44,23 @@ export const ALLOWED_TOOLS = [
 ] as const;
 
 /**
+ * The BASE tool set the CLI advertises to the provider (PRB.23). A REAL SDK field
+ * (`Options.tools` — "the base set of available built-in tools"), distinct from
+ * `allowedTools`: the allowlist is only a PERMISSION gate — every built-in tool's schema is
+ * still serialized into every Messages request. Measured on the vendored CLI against a
+ * loopback mock (zero-credit probe): the default set sends 24 tool schemas ≈ 77.8 KB
+ * (~19K tokens) per request — Cron*, DesignSync, EnterWorktree/ExitWorktree, ListAgents,
+ * NotebookEdit, ReportFindings, ScheduleWakeup, SendMessage, Skill, TaskOutput, TaskStop,
+ * WebFetch, WebSearch, Workflow — none of which a phase seat can or should call. This list is
+ * the seven real built-ins the seats use (subagent fan-out is `Agent`; `Task`/`MultiEdit` in
+ * ALLOWED_TOOLS are legacy/alias names that are not standalone tools in this CLI build).
+ * Measured effect: the whole fixed request envelope drops 119.3 KB → 65.1 KB (~45%), and the
+ * WebFetch/WebSearch schemas stop shipping entirely (P0.15i AC1 enforced at the payload layer,
+ * not just the permission layer).
+ */
+export const BASE_TOOLS = ["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"] as const;
+
+/**
  * Cosmetic `disallowedTools` (§12.2, review 13 F18): they cut accidental attempts and audit noise, NOTHING
  * more — the VPC (no route), the per-run proxy credential (REQ-SPEC-11) and the uid split (REQ-SPEC-10) are
  * the enforcement. Verbatim from the spec.
@@ -80,6 +97,9 @@ export interface AgentSdkQueryOptions {
   allowedTools: string[];
   /** cosmetic only (§12.2). */
   disallowedTools: string[];
+  /** REAL SDK field (PRB.23): the base set of built-in tools the CLI advertises — the request's
+   *  tool-schema payload is built from THIS list, not from `allowedTools`. */
+  tools: string[];
   /** the per-phase inner budget brake (§12.4). */
   maxBudgetUsd: number;
   maxTurns: number;
@@ -118,7 +138,12 @@ export interface BuildOptionsDeps {
 /** Build the §12.2 options object for one phase. */
 export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): AgentSdkQueryOptions {
   const env = {
-    ...buildAgentEnv({ runId: req.runId, proxyBaseUrl: deps.proxyBaseUrl, configDir: deps.configDir }),
+    ...buildAgentEnv({
+      runId: req.runId,
+      proxyBaseUrl: deps.proxyBaseUrl,
+      configDir: deps.configDir,
+      maxConcurrentSubagents: MAX_CONCURRENT_SUBAGENTS,
+    }),
     ...buildOtelConfig(),
   };
   const tier = deps.tier ?? "base";
@@ -133,6 +158,7 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
     permissionMode: "dontAsk",
     allowedTools: [...ALLOWED_TOOLS],
     disallowedTools: [...COSMETIC_DISALLOWED_TOOLS],
+    tools: [...BASE_TOOLS], // the advertised schema set — PRB.23 measured −54 KB/request
     maxBudgetUsd: req.maxBudgetUsd,
     maxTurns: req.maxTurns,
     env,

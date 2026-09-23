@@ -22,6 +22,16 @@ export interface EstimatorTerms {
   perWordRead?: number;
   perPieceRead?: number;
   perHoldout?: number;
+  /**
+   * PRB.23 — per-ACTIVE-PHASE fixed overhead (`inputs.phases`): the context-churn floor the
+   * proxy meters but the parametric form never modeled — every Messages request re-reads the
+   * fixed request envelope (tool schemas + skill corpus + roster ≈ 30K tokens; ~16K after the
+   * `tools` restriction) PLUS the session's accumulated transcript. Measured on prod run
+   * `01M35Q8M…`: 34 requests × ~151K-token avg context = 5.14M cache-read tokens ≈ ~144
+   * platform credits of pure churn on a run that died mid-flight. Multiply by the number of
+   * phase sessions the run executes.
+   */
+  perPhase?: number;
 }
 
 /** The per-phase cache economics (review 13 F8): the phase split writes a fresh cache per phase, so the 75% cache-read
@@ -88,10 +98,22 @@ export function rigorMultiplier(workflow: string, rigor: Rigor): number {
 export const RESEARCH_PER_CLAIM_CREDITS = 16 as const;
 export const RESEARCH_FLOOR_CREDITS = 60 as const;
 
+// PRB.23 — the context-churn floor. The proxy bills every request's FULL context each turn
+// (cache-read at 0.1× input). Measured: run `01M35Q8M…` (quick/base, 701-word doc, ZERO
+// research calls) metered 34 requests × ~151K-token avg context ≈ 5.14M cache-read tokens ≈
+// ~144 platform credits — and died at cap without finishing. Decomposition (zero-credit SDK
+// probe, real request bodies): fresh-session envelope ≈ 119 KB (~30K tokens; ~16K after the
+// `tools` restriction lands) + the accumulated transcript resent every turn (8 Reads of a
+// ~560 KB corpus → the next request carried 525 KB). A completing phase session runs ~10–15
+// metered requests including subagent fan-out ⇒ ~40–65 cr of churn per phase at Sonnet
+// cache-read rates; 50 is the mid-band. Provisional like every constant here — the first
+// instrumented run that delivers recalibrates it via `foldInstrumentedRun`.
+export const CONTEXT_CHURN_PER_PHASE_CREDITS = 50 as const;
+
 export const ESTIMATORS: Record<string, EstimatorSpec> = {
   review: {
     workflow: "review",
-    base: { intercept: 40, perWord: 0.012, perClaim: 24 },
+    base: { intercept: 40, perWord: 0.012, perClaim: 24, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
     addends: [
       // The verification phase's web-research burn (PRB.22). Bound to the `fact_check` sheet toggle —
       // when verification is toggled off, no claim research runs and no research is priced.
@@ -106,7 +128,10 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
   },
   revise: {
     workflow: "revise",
-    base: { intercept: 50, perWord: 0.03, perFinding: 4, perMoveWithResearch: 20 },
+    // Same SDK-session churn physics as review (7 manifest phases, per-phase transcripts resent
+    // every turn) — the constant is measured on review, applied here pending a revise
+    // instrumented run (provisional like everything else).
+    base: { intercept: 50, perWord: 0.03, perFinding: 4, perMoveWithResearch: 20, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
     provisional: true,
     source: "modeled",
     version: "modeled-1",
@@ -115,8 +140,13 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     workflow: "fact_check",
     // Fact-check IS the verification phase — the same bounded research constants fold into its base
     // (PRB.22: the floor is the claim-independent research the phase does; perClaim adds the per-claim
-    // fetch/search cost on top of the 11-cr verification work).
-    base: { intercept: 20 + RESEARCH_FLOOR_CREDITS, perClaim: 11 + RESEARCH_PER_CLAIM_CREDITS },
+    // fetch/search cost on top of the 11-cr verification work). PRB.23: its 2-phase session churns
+    // the same way — the only "completed" comparable run metered 41 reqs / 5.8M cache-read / ~430cr.
+    base: {
+      intercept: 20 + RESEARCH_FLOOR_CREDITS,
+      perClaim: 11 + RESEARCH_PER_CLAIM_CREDITS,
+      perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS,
+    },
     costPerVerifiedClaimBase: 11 + RESEARCH_PER_CLAIM_CREDITS,
     provisional: true,
     source: "modeled",
@@ -164,6 +194,10 @@ export interface EstimatorInputs {
   wordsRead?: number;
   piecesRead?: number;
   holdouts?: number;
+  /** PRB.23 — the count of ACTIVE manifest phases under the resolved toggle set (computed by the
+   *  sheet from the manifest's opt-out flags — the same phases the pod executes). Feeds the
+   *  `perPhase` fixed-overhead term; absent ⇒ that term contributes 0. */
+  phases?: number;
 }
 
 export interface EstimateOptions {
@@ -190,7 +224,8 @@ function evalTerms(t: EstimatorTerms, inp: EstimatorInputs): number {
     (t.perMoveWithResearch ?? 0) * (inp.movesWithResearch ?? 0) +
     (t.perWordRead ?? 0) * (inp.wordsRead ?? 0) +
     (t.perPieceRead ?? 0) * (inp.piecesRead ?? 0) +
-    (t.perHoldout ?? 0) * (inp.holdouts ?? 0)
+    (t.perHoldout ?? 0) * (inp.holdouts ?? 0) +
+    (t.perPhase ?? 0) * (inp.phases ?? 0)
   );
 }
 

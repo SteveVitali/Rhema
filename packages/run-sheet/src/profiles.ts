@@ -6,6 +6,7 @@
 
 import type { ModelTier, Rigor, WorkflowKey } from "@rhema/contracts";
 import type { EstimatorInputs } from "@rhema/protocols";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 
 /** The Advanced per-phase toggles a sheet may expose (§6.5: fact-check / discourse / second read / …). */
 export type ToggleKey =
@@ -46,6 +47,55 @@ export interface WorkflowSheetProfile {
 /** Merge a rigor's default toggles with any user overrides (override wins where present). */
 export function resolveToggles(profile: WorkflowSheetProfile, rigor: Rigor, overrides?: ToggleState): ToggleState {
   return { ...profile.rigorDefaults[rigor].toggles, ...(overrides ?? {}) };
+}
+
+/**
+ * PRB.23 — the bridge from a sheet toggle to the workflow manifest's `optOutFlag` (the flag the
+ * orchestrator's `isOptedOut` reads from the run's FROZEN inputs). The toggle names and the flag
+ * names diverged (`fact_check` gates the `verification` phase; `repair_research` gates `research`;
+ * `gap_check` gates `gap_analysis`) — this is the single mapping both sides read.
+ */
+export const TOGGLE_OPT_OUT_FLAG: Record<ToggleKey, string> = {
+  fact_check: "verification",
+  discourse: "discourse",
+  second_read: "second_read",
+  repair_research: "research",
+  gap_check: "gap_analysis",
+};
+
+/**
+ * PRB.23 — resolve a workflow's phase-run flags from a resolved toggle set, driven by the
+ * MANIFEST's declared `optOutFlag`s (server-authored: a flag the manifest does not declare is
+ * never emitted, a flag with no governing toggle is left unset). Returns `{optOutFlag: bool}`
+ * where `false` opts the phase out at runtime (`runspec.isOptedOut` reads exactly this). The
+ * estimator and the runtime MUST consume the same output — a quick review's estimate prices five
+ * phases only if the frozen inputs also omit discourse + second_read (the D-PRB.21-1 divergence:
+ * the web run POST used to freeze `inputs: {}`, so nothing was ever opted out).
+ */
+export function phaseFlagsForToggles(workflow: WorkflowKey, toggles: ToggleState): Record<string, boolean> {
+  const manifest = WORKFLOW_MANIFESTS[workflow];
+  const flags: Record<string, boolean> = {};
+  for (const phase of manifest?.phases ?? []) {
+    if (phase.optOutFlag == null) continue;
+    const toggle = (Object.entries(TOGGLE_OPT_OUT_FLAG) as [ToggleKey, string][]).find(
+      ([, flag]) => flag === phase.optOutFlag,
+    )?.[0];
+    if (toggle != null) flags[phase.optOutFlag] = toggles[toggle] ?? true;
+  }
+  return flags;
+}
+
+/**
+ * PRB.23 — the number of manifest phases that will actually run under a resolved toggle set
+ * (mirrors `runspec`'s opt-out filter: an `optOutFlag`d phase whose frozen flag is `false` does
+ * not run). Feeds the estimator's per-phase fixed-overhead term (`inputs.phases`), so the churn
+ * floor is priced against the same phase set the pod executes.
+ */
+export function activePhaseCount(workflow: WorkflowKey, toggles: ToggleState): number | undefined {
+  const manifest = WORKFLOW_MANIFESTS[workflow];
+  if (!manifest) return undefined;
+  const flags = phaseFlagsForToggles(workflow, toggles);
+  return manifest.phases.filter((p) => p.optOutFlag == null || flags[p.optOutFlag] !== false).length;
 }
 
 // ---- Review (§6.5): fact-check / discourse / second read. fact-check off drops the claim-verification cost

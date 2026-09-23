@@ -51,17 +51,19 @@ describe("buildEstimate — provisional then refined (REQ-SPEC-16; §5.6 item 1)
     expect(provisional.capCredits).toBeLessThan(refined.capCredits);
   });
 
-  it("prices the verification-phase research addend, bound to the fact_check toggle (PRB.22)", () => {
-    // D-PRB.21-1: verification's web research was unmodeled burn. Now the estimate carries a claim-scaled
-    // research addend — a 701-word doc (≈3 claims) estimates (40 + 8.412 + 72) + (60 + 48) = 228.412 at
-    // Base/Standard, and Quick (0.6×) lands ~138 → a cap above the bounded-burn floor.
+  it("prices the verification research addend + the context-churn floor, bound to the toggles (PRB.22/PRB.23)", () => {
+    // D-PRB.21-1: verification's web research was unmodeled (PRB.22 addend); the per-turn transcript
+    // resend the proxy meters was ALSO unmodeled — PRB.23's `perPhase` term prices it against the
+    // ACTIVE phase count. Quick's defaults (discourse/second_read off) ⇒ 5 of 7 phases active:
+    // base 40 + 8.412 + 72 + 5×50 churn = 370.412, + verification addend 108 = 478.412 at
+    // Base/Standard, ×0.6 rigor = 288 (the measured failed run burned 211 and did NOT finish).
     const quick = buildEstimate({ workflow: "review", rigor: "quick", modelTier: "base", inputs: { words: 701 } });
     expect(quick.claimCount).toBe(3);
-    expect(quick.estimateCredits).toBe(Math.ceil(228.412 * 0.6)); // 138
-    // the old modeled quick floor (≈73) sat below minimum viable burn — the bound+addend pair fixes that.
-    expect(quick.capCredits).toBeGreaterThan(146);
+    expect(quick.estimateCredits).toBe(Math.ceil(478.412 * 0.6)); // 288
+    expect(quick.capCredits).toBe(Math.ceil(quick.estimateCredits * 1.5)); // 432
 
-    // fact_check OFF ⇒ no verification phase ⇒ the research addend leaves with the per-claim term.
+    // fact_check OFF ⇒ no verification phase ⇒ the research addend AND that phase's churn term
+    // leave with the per-claim term: 3×24 claims + (60+3×16) research + 50 churn = 230.
     const off = buildEstimate({
       workflow: "review", rigor: "standard", modelTier: "base",
       inputs: { words: 701 }, toggles: { fact_check: false },
@@ -70,7 +72,20 @@ describe("buildEstimate — provisional then refined (REQ-SPEC-16; §5.6 item 1)
       workflow: "review", rigor: "standard", modelTier: "base",
       inputs: { words: 701 }, toggles: { fact_check: true },
     });
-    expect(on.estimateCredits - off.estimateCredits).toBe(3 * 24 + 60 + 3 * 16);
+    expect(on.estimateCredits - off.estimateCredits).toBe(3 * 24 + 60 + 3 * 16 + 50);
+  });
+
+  it("PRB.23 — the phase count follows the resolved toggles (priced set == executed set)", () => {
+    // Standard defaults all three toggles on → 7 active phases; turning discourse + second_read
+    // off drops the figure by BOTH their addends AND their per-phase churn (2 × 50).
+    const all = buildEstimate({ workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 701 } });
+    const twoOff = buildEstimate({
+      workflow: "review", rigor: "standard", modelTier: "base",
+      inputs: { words: 701 }, toggles: { discourse: false, second_read: false },
+    });
+    // discourse addend (90 + 0.006×701) + second_read addend (0.005×701) + 2 phases of churn,
+    // under the shared ceil: 676.123→677 vs 478.412→479.
+    expect(all.estimateCredits - twoOff.estimateCredits).toBe(198);
   });
 
   it("reflects a folded instrumented spec (override-first) without a code change", () => {
