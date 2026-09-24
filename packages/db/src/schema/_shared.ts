@@ -8,3 +8,10 @@ export const bytea = customType<{ data: Uint8Array; notNull: false; default: fal
     return "bytea";
   },
 });
+
+/** Postgres `tsvector` (the generated full-text column on project_search_docs — read-only). */
+export const tsvector = customType<{ data: string; notNull: false; default: false }>({
+  dataType() {
+    return "tsvector";
+  },
+});

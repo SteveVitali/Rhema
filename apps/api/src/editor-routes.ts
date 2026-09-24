@@ -26,6 +26,7 @@ import { saveManualRevision, sha256Hex, type ContentStore, type SqlExecutor } fr
 import type { Actor, Anchor } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import type { RunApiDeps } from "./run-routes.js";
+import { upsertProjectSearchDoc } from "./search.js";
 
 export type EditorApiDeps = RunApiDeps & {
   /** the raw SQL client for project-scoped reads (the shell's `db`; same seam the triage routes take). */
@@ -381,6 +382,18 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
         { error: res.reason },
         res.reason === "draft_not_found" || res.reason === "not_found" ? 404 : 409,
       );
+    }
+    // P1.04 — keep the search index current on the save path (the materialized markdown the body match
+    // reads). Non-fatal by contract: an index write never fails a save.
+    if (res.changed) {
+      await upsertProjectSearchDoc(deps.db, {
+        projectId: c.req.param("id"),
+        workspaceId: principal.workspaceId,
+        kind: "draft",
+        refId: res.draftId,
+        body: body.markdown,
+        id: deps.ids,
+      }).catch(() => undefined);
     }
     return c.json({
       draftId: res.draftId,

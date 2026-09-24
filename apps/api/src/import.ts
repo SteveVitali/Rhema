@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { sha256Hex, type ContentStore } from "@rhema/mirror";
 import {
   presignQuarantinePut,
@@ -9,6 +9,7 @@ import {
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
+import { upsertProjectSearchDoc } from "./search.js";
 
 // Draft import (PRB.02, deliverable 5). The user uploads a manuscript → `convert` turns it into a
 // ConversionResult (canonical markdown + the §5.3 preview) → this creates `v1 (imported)` with
@@ -54,9 +55,49 @@ export interface CreatedDraft {
 }
 
 /**
+ * Write markdown bytes as a content-addressed artifact + its immutable head version (P1.04: extracted so
+ * the draft-import AND the outline-upload paths share it). Order is the portable safeguard: artifact row
+ * with a NULL head first, then the version, then the head pointer.
+ */
+export async function writeMarkdownArtifact(
+  deps: CreateImportedDraftDeps,
+  args: {
+    readonly projectId: string;
+    readonly workspaceId: string;
+    readonly actor: ImportActor;
+    readonly markdown: string;
+    readonly wordCount: number;
+    readonly kind: "draft" | "outline";
+    readonly mirrorPath: string;
+  },
+): Promise<{ artifactId: string; versionId: string; contentSha256: string }> {
+  const bytes = new TextEncoder().encode(args.markdown);
+  const contentSha256 = sha256Hex(bytes);
+  const { key } = await deps.contentStore.put(args.workspaceId, contentSha256, bytes);
+
+  const artifactId = deps.ids();
+  const versionId = deps.ids();
+  const actorJson = JSON.stringify(args.actor);
+  await deps.db.query(
+    `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path)
+       values ($1,$2,$3,$4,'shared',$5)`,
+    [artifactId, args.workspaceId, args.projectId, args.kind, args.mirrorPath],
+  );
+  await deps.db.query(
+    `insert into artifact_versions
+       (id, artifact_id, ordinal, content_sha256, s3_key, bytes, word_count, media_type, created_by, immutable)
+       values ($1,$2,1,$3,$4,$5,$6,'text/markdown',$7::jsonb,true)`,
+    [versionId, artifactId, contentSha256, key, bytes.byteLength, args.wordCount, actorJson],
+  );
+  await deps.db.query(`update artifacts set head_version_id = $2 where id = $1`, [artifactId, versionId]);
+  return { artifactId, versionId, contentSha256 };
+}
+
+/**
  * Create an imported draft from a ConversionResult: store the normalized markdown bytes (content-addressed),
  * insert the immutable `artifact_versions` row, and create the `drafts` v1 (`origin=human_upload`, frozen to
  * its imported version). The stored markdown is already canonical, so a re-normalize is a no-op (REQ-DATA-9d).
+ * `declaredN` (REQ-PROD-8, P1.04) lets a project start at v3 — it wins when ≥ the next free ordinal.
  */
 export async function createImportedDraft(
   deps: CreateImportedDraftDeps,
@@ -65,33 +106,21 @@ export async function createImportedDraft(
     readonly workspaceId: string;
     readonly actor: ImportActor;
     readonly result: ConversionResult;
+    /** the declared version label (a project may start at v3); never renumbers existing drafts. */
+    readonly declaredN?: number;
   },
 ): Promise<CreatedDraft> {
-  const bytes = new TextEncoder().encode(args.result.markdown);
-  const contentSha256 = sha256Hex(bytes);
-  const { key } = await deps.contentStore.put(args.workspaceId, contentSha256, bytes);
+  const { artifactId, versionId, contentSha256 } = await writeMarkdownArtifact(deps, {
+    projectId: args.projectId,
+    workspaceId: args.workspaceId,
+    actor: args.actor,
+    markdown: args.result.markdown,
+    wordCount: args.result.counts.words,
+    kind: "draft",
+    mirrorPath: "drafts/pending.md",
+  });
   const wordCount = args.result.counts.words;
-
-  const artifactId = deps.ids();
-  const versionId = deps.ids();
   const draftId = deps.ids();
-  const actorJson = JSON.stringify(args.actor);
-
-  // Order the writes so a mid-way failure never leaves a dangling reference: the artifact is created with a
-  // NULL head first, then the version, then the head is pointed at it. (A cross-pool transaction needs the
-  // orchestrator's tx wrapper — the live api binding, D-P0.08-1 — so the ordering is the portable safeguard.)
-  await deps.db.query(
-    `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path)
-       values ($1,$2,$3,'draft','shared',$4)`,
-    [artifactId, args.workspaceId, args.projectId, "drafts/pending.md"],
-  );
-  await deps.db.query(
-    `insert into artifact_versions
-       (id, artifact_id, ordinal, content_sha256, s3_key, bytes, word_count, media_type, created_by, immutable)
-       values ($1,$2,1,$3,$4,$5,$6,'text/markdown',$7::jsonb,true)`,
-    [versionId, artifactId, contentSha256, key, bytes.byteLength, wordCount, actorJson],
-  );
-  await deps.db.query(`update artifacts set head_version_id = $2 where id = $1`, [artifactId, versionId]);
 
   // Compute the next draft ordinal and insert; on a concurrent (project_id, n) collision, recompute + retry.
   let n = 0;
@@ -100,7 +129,9 @@ export async function createImportedDraft(
       `select coalesce(max(n), 0) + 1 as n from drafts where project_id = $1`,
       [args.projectId],
     );
-    n = Number((nRes.rows[0] as { n: number | string }).n);
+    const next = Number((nRes.rows[0] as { n: number | string }).n);
+    // REQ-PROD-8 — the declared label wins when it does not collide (importable version labels).
+    n = args.declaredN != null && args.declaredN >= next ? args.declaredN : next;
     try {
       await deps.db.query(
         `insert into drafts (id, project_id, n, origin, state, promoted_version_id)
@@ -117,6 +148,31 @@ export async function createImportedDraft(
   await deps.db.query(`update artifacts set mirror_path = $2 where id = $1`, [artifactId, `drafts/v${n}.md`]);
 
   return { draftId, versionId, artifactId, n, wordCount, contentSha256 };
+}
+
+/**
+ * P1.04 — write the uploaded-and-converted outline as the project's `outline` artifact (the Upload-an-
+ * outline entry of §5.3). Feeds `outlinePresent` on the §6.3 state input → the project lands `outlined`
+ * with the "Draft v1" next-step card.
+ */
+export async function createOutlineArtifact(
+  deps: CreateImportedDraftDeps,
+  args: {
+    readonly projectId: string;
+    readonly workspaceId: string;
+    readonly actor: ImportActor;
+    readonly result: ConversionResult;
+  },
+): Promise<{ artifactId: string; versionId: string; contentSha256: string }> {
+  return writeMarkdownArtifact(deps, {
+    projectId: args.projectId,
+    workspaceId: args.workspaceId,
+    actor: args.actor,
+    markdown: args.result.markdown,
+    wordCount: args.result.counts.words,
+    kind: "outline",
+    mirrorPath: "outline.md",
+  });
 }
 
 /** The upload-presign binding (PRB.20): the signer + the user-content bucket the quarantine keys land in. */
@@ -174,7 +230,11 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     });
   }
 
-  app.post("/projects/:id/import/preview", async (c) => {
+  // P1.04 — the shared preview handler. Workspace-scoped (`POST /import/preview`, the new-project
+  // flow — no project exists yet) and project-scoped (`POST /projects/:id/import/preview`, the
+  // in-project import). Both validate the quarantine key's workspace prefix against the session
+  // tenant; the project-scoped variant never used its `:id` for anything else.
+  const preview = async (c: Context) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const body = await c.req.json().catch(() => ({}));
@@ -188,7 +248,9 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     const result = await deps.converter.preview(key, waitMs != null ? { waitMs } : undefined);
     if (result == null) return c.json({ pending: true, quarantineKey: key }, 202);
     return c.json({ preview: result });
-  });
+  };
+  app.post("/import/preview", preview);
+  app.post("/projects/:id/import/preview", preview);
 
   app.post("/projects/:id/import/create", async (c) => {
     const principal = deps.principal(c);
@@ -205,9 +267,19 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     // a still-converting key answers 409 `conversion_pending` rather than a multi-minute hang.
     const result = await deps.converter.preview(key, { waitMs: IMPORT_PREVIEW_WAIT_MS });
     if (result == null) return c.json({ error: "conversion_pending", quarantineKey: key }, 409);
+    // REQ-PROD-8 (P1.04) — the caller may declare the imported draft's version label (start at v3).
+    const declaredRaw = (body as { startVersion?: unknown }).startVersion;
+    const declaredN =
+      typeof declaredRaw === "number" && Number.isInteger(declaredRaw) && declaredRaw >= 1 ? declaredRaw : undefined;
     const created = await createImportedDraft(
       { db: deps.db, contentStore: deps.contentStore, ids: deps.ids },
-      { projectId, workspaceId: principal.workspaceId, actor: { kind: "user", userId: principal.userId }, result },
+      {
+        projectId,
+        workspaceId: principal.workspaceId,
+        actor: { kind: "user", userId: principal.userId },
+        result,
+        ...(declaredN != null ? { declaredN } : {}),
+      },
     );
     // draft.imported (PRB.12 emission audit — this route owns it): `origin` is the converted source
     // format; `is_new_manuscript` = the import opened the project (its first draft); `venue_set`
@@ -229,6 +301,15 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     }).catch((err: unknown) =>
       console.error("[api] draft.imported analytics failed:", err instanceof Error ? err.message : err),
     );
+    // P1.04 — index the draft body for the §5.2 search (materialized markdown). Non-fatal by contract.
+    await upsertProjectSearchDoc(deps.db, {
+      projectId,
+      workspaceId: principal.workspaceId,
+      kind: "draft",
+      refId: created.draftId,
+      body: result.markdown,
+      id: deps.ids,
+    }).catch(() => undefined);
     return c.json({ draft: created }, 201);
   });
 

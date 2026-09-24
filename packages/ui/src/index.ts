@@ -7,8 +7,17 @@ export const PACKAGE_NAME = "@rhema/ui" as const;
 export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor } from "./primitives.js";
 export type { Tone, Severity } from "./primitives.js";
 export { Shell, SectionTitle } from "./shell.js";
-export { ProjectList, ProjectRow } from "./project-list.js";
-export type { ProjectRowView } from "./project-list.js";
+export { ProjectList, ProjectRow, ProjectGroupList, VoiceGroupList } from "./project-list.js";
+export type {
+  ProjectRowView,
+  ProjectGroupView,
+  ProjectGroupKey,
+  VoiceGroupView,
+  RowActionView,
+  SecondaryChipView,
+  VoiceOptionView,
+  RowIndicator,
+} from "./project-list.js";
 export { ConversionPreview, ConversionNotesCard } from "./conversion.js";
 export type { ConversionPreviewProps, PreviewWarning } from "./conversion.js";
 export { RunSheet, RunButton, AskButton, Paywall } from "./run-sheet.js";

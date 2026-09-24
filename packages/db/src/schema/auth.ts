@@ -15,6 +15,8 @@ export const user = pgTable("user", {
   analyticsOptOut: boolean("analytics_opt_out").notNull().default(false),
   // P1.01 (0027; REQ-IDE-38): the app theme preference — 'dark' | 'light' | 'auto', dark default.
   appTheme: text("app_theme").notNull().default("dark"),
+  // P1.04 (0029; §5.2): the /app grouping preference — 'attention' (default) | 'voice'.
+  projectGroupBy: text("project_group_by").notNull().default("attention"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

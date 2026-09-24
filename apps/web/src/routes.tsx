@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -17,6 +17,8 @@ export const inviteElement = <InvitePage />;
 export const loginElement = <LoginPage />;
 export const projectsElement = <ProjectsPage />;
 export const projectElement = <ProjectPage />;
+// P1.04 — the §5.3 new-project sheet (three entries: scratch / outline / draft).
+export const newProjectElement = <NewProjectPage />;
 export const importElement = <ImportPage />;
 export const importPreviewElement = <ImportPreviewPage />;
 export const runSheetElement = <RunSheetPage />;
@@ -39,6 +41,8 @@ export const routes: readonly AppRoute[] = [
   { path: "/invite", public: true, element: inviteElement },
   { path: "/login", public: true, element: loginElement },
   { path: "/app", public: false, element: projectsElement },
+  // P1.04 — the new-project sheet (§5.3): ?entry=scratch|outline|draft picks the entry.
+  { path: "/app/new", public: false, element: newProjectElement },
   { path: "/p/:project", public: false, element: projectElement },
   { path: "/p/:project/import", public: false, element: importElement },
   { path: "/p/:project/run", public: false, element: runSheetElement },

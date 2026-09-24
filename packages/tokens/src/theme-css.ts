@@ -134,6 +134,10 @@ export function themeCss(): string {
     `.paper code, .paper .cite-key, .diff-hunk { font-family: var(--font-mono); font-size: ${TYPOGRAPHY.monoPx}px; }`,
     ".paper a { color: var(--accent); }",
     ".paper .muted, .muted-paper { color: var(--paper-fg-muted); }",
+    // P1.04 — the §5.2 "animated = running" list indicator: a soft pulse on the running dot. The
+    // prefers-reduced-motion rule below collapses it to instant like every catalogued motion.
+    "@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }",
+    ".rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }",
     // REQ-IDE-40 — `prefers-reduced-motion` collapses every catalogued motion to instant. The 1ms floor
     // keeps transitionend listeners firing; visually it is instant.
     "@media (prefers-reduced-motion: reduce) {",

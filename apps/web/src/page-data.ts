@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { ProjectRowView } from "@rhema/ui";
+import type { ProjectGroupView, ProjectRowView, VoiceGroupView } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
 import type {
   ApprovalOverridesDto,
@@ -7,7 +7,10 @@ import type {
   EditorDocDto,
   ExportDialogDto,
   GateCardDto,
+  ProjectGroupByDto,
+  ProjectSearchHitDto,
   ProjectVoiceDto,
+  ProtocolCardDto,
   UsageDto,
   VoiceDetailDto,
   VoiceEstimateDto,
@@ -21,6 +24,63 @@ import type { DossierData } from "./data.js";
 
 export interface PageData {
   readonly projects?: readonly ProjectRowView[];
+  /**
+   * P1.04 — the §5.2 workspace home (`/app`): the attention groups (or the voice grouping when the
+   * user's pref says so), the Voice filter chips, the search box + its hits, and the archived affordance.
+   */
+  readonly home?: {
+    readonly groupBy: ProjectGroupByDto;
+    readonly attentionGroups: readonly ProjectGroupView[];
+    readonly voiceGroups: readonly VoiceGroupView[];
+    /** the filter chips' voices (Your voices + House styles upstream). */
+    readonly voices: readonly VoiceListRowDto[];
+    /** the selected Voice filter — a personaId or 'unfiled'; null ⇒ all. */
+    readonly voiceFilter: string | null;
+    /** the selected Protocol filter — a protocol id; null ⇒ all (§5.2's protocol organisation). */
+    readonly protocolFilter: string | null;
+    /** the Protocol filter dropdown's options (the four seeded cards). */
+    readonly protocols: readonly ProtocolCardDto[];
+    /** the row order — `recent` (default; newest first) or `title` (A–Z within each group). */
+    readonly sort: "recent" | "title";
+    /** `?archived=1` — archived rows render under the checkbox affordance. */
+    readonly showArchived: boolean;
+    readonly archivedRows: readonly ProjectRowView[];
+    /** `?deleted=1` — the soft-deleted rows render under the restore affordance (30-day window). */
+    readonly showDeleted: boolean;
+    readonly deletedRows: readonly ProjectRowView[];
+    /** set when `?q=` ran — the server-side search hits replace the groups. */
+    readonly search?: { readonly q: string; readonly results: readonly ProjectSearchHitDto[] };
+  };
+  /** P1.04 — the §5.3 new-project sheet's per-request state (entry + picks + preview/pending). */
+  readonly newProject?: {
+    readonly entry: "scratch" | "outline" | "draft";
+    readonly protocols: readonly ProtocolCardDto[];
+    readonly voices: readonly VoiceListRowDto[];
+    /** the resolved REQ-GENRE-4 default for the submitted Voice pick; null ⇒ the sheet asks once. */
+    readonly defaultProtocolId: string | null;
+    readonly askProtocol: boolean;
+    /** the submitted form values (re-rendered on error/preview). */
+    readonly form: {
+      readonly title: string;
+      readonly protocolId: string | null;
+      readonly venue: string | null;
+      readonly personaId: string | null;
+      readonly startVersion: number | null;
+    };
+    /** a validation error from the last POST. */
+    readonly error?: string;
+    /** the conversion is still running — the page meta-refreshes on this quarantine key. */
+    readonly pending?: { readonly quarantineKey: string; readonly sourceLabel: string };
+    /** the ready conversion preview (source/converted/warnings/counts + the key to replay). */
+    readonly preview?: {
+      readonly quarantineKey: string;
+      readonly sourceLabel: string;
+      readonly sourceText: string;
+      readonly convertedMarkdown: string;
+      readonly countLine: string;
+      readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+    };
+  };
   readonly login?: {
     readonly error?: string;
     readonly sent?: boolean;
@@ -39,6 +99,18 @@ export interface PageData {
     readonly slug: string;
     /** the highest-n draft head — the "Edit source" link's target (PRB.07). */
     readonly headDraftId?: string | null;
+    /** P1.04 — `?rename=1` renders the row-action's inline title form. */
+    readonly rename?: boolean;
+    /**
+     * P1.04 — the create landing (`?created=<entry>`): the §5.3 next-step card renders at the top —
+     * scratch → the Chat note, outline → Draft v1, draft → Review vN. `notes` carries the conversion's
+     * warning/unconverted counts for the Conversion-notes line.
+     */
+    readonly created?: {
+      readonly entry: "scratch" | "outline" | "draft";
+      readonly draftN?: number | null;
+      readonly notes?: { readonly warnings: number; readonly unconverted: number };
+    };
   };
   /**
    * P1.01 — theme stamping (REQ-IDE-38 amended): the account's stored app-theme pref (dark|light|auto),
