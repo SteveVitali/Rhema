@@ -119,6 +119,23 @@ export interface RunSheetLabels {
     /** "Update voice first (≈{n} cr)" — `{n}` interpolates the priced estimate. */
     readonly updateFirstFmt: string;
   };
+  /** P1.06 — the collapsed-row fields' chrome labels (COPY-owned; §5.6). */
+  readonly approvalsLabel?: string;
+  readonly approvalsDisplay?: Readonly<Record<string, string>>;
+  readonly capLabel?: string;
+  readonly dontAskLabel?: string;
+  readonly guidanceLabel?: string;
+  readonly guidancePlaceholder?: string;
+  /** "{n} standing notes apply" — beside the guidance box. */
+  readonly standingNotesFmt?: string;
+  /** P1.06 — the editable scope fields' labels (Protocol · Venue · Stage). */
+  readonly protocolLabel?: string;
+  readonly venueLabel?: string;
+  readonly stageLabel?: string;
+  /** the whole-draft comparison line's prefix ("Whole draft:") — scoped sheets only. */
+  readonly wholeDraftPrefix?: string;
+  /** the §14.3 trial badge text when the entitlement covers the run. */
+  readonly includedLabel?: string;
 }
 
 export interface RunSheetProps {
@@ -149,8 +166,10 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
       <input type="hidden" name="workflow" value={view.workflow} />
       <input type="hidden" name="idempotencyKey" value={view.idempotencyKey} />
       <input type="hidden" name="estimateCredits" value={est.estimateCredits} />
-      <input type="hidden" name="capCredits" value={est.capCredits} />
       <input type="hidden" name="modelTier" value={view.modelTier} />
+      {/* P1.06 (§7.2) — the command scope round-trips verbatim (canonical serialized form); the cap's
+          editable field lives in the collapsed row (upward-only), so NO hidden capCredits here. */}
+      {view.commandScope ? <input type="hidden" name="scope" value={view.commandScope.serialized} /> : null}
       {/* REQ-BILL-6: the run record freezes rate-table version + the word/claim counts the estimate was for. */}
       <input type="hidden" name="rateTableVersion" value={est.rateTableVersion} />
       <input type="hidden" name="words" value={view.title.words} />
@@ -160,11 +179,38 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
           from "not on this sheet": the server resolves each listed key as on/off. */}
       <input type="hidden" name="toggleKeys" value={view.toggleDeltas.map((d) => d.toggle).join(",")} />
 
-      {/* title line: "Review v2 · 5,180 words · 21 claims" */}
+      {/* title line: "Review v2 · 5,180 words · 21 claims" + the §7.2 scope pills (P1.06 — the typed
+          @scope renders as human labels; the grammar syntax never reaches the surface). */}
       <h2 style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>
         {view.title.verbLabel} {view.title.targetVersion} · {view.title.words.toLocaleString("en-US")} words
         {view.title.claims != null ? ` · ${view.title.claims.toLocaleString("en-US")} claims` : ""}
       </h2>
+      {view.commandScope ? (
+        <div data-command-scope style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
+          {view.commandScope.labels.map((label) => (
+            <span
+              key={label}
+              data-scope-pill
+              style={{
+                fontSize: "12px",
+                padding: "2px 8px",
+                borderRadius: "10px",
+                border: "1px solid var(--shell-border)",
+                background: "var(--shell-raised)",
+                color: "var(--shell-fg-muted)",
+              }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {/* P1.06 (§5.6 item 7) — the promote-on-launch line: a working head freezes to vN with the run. */}
+      {view.promoteLine ? (
+        <p data-promote-line style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>
+          {view.promoteLine}
+        </p>
+      ) : null}
 
       {/* Rigor — the one first-class lever (§5.6 item 2). */}
       <fieldset style={{ border: "none", padding: 0, margin: "14px 0 0" }}>
@@ -213,6 +259,20 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
               </p>
             ) : null}
           </div>
+        ) : view.included ? (
+          /* P1.06 (§14.3; REQ-BILL-4) — the trial entitlement renders `Included`: no dollar/cap
+             arithmetic, no consent click, no cap line. The entitlement covers the run. */
+          <div style={boxStyle} data-estimate-box data-included="true">
+            <div style={{ fontSize: "16px", fontWeight: 600 }}>
+              {labels.includedLabel ?? "Included"}
+              <span style={{ float: "right", color: "var(--shell-fg-muted)", fontWeight: 400 }} data-time-line>
+                ~{est.time.lowMinutes}–{est.time.highMinutes} min
+              </span>
+            </div>
+            <div style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "4px" }} data-entitlement-line>
+              {view.entitlementLine}
+            </div>
+          </div>
         ) : (
           <div style={boxStyle} data-estimate-box>
             <div style={{ fontSize: "16px", fontWeight: 600 }} data-dollars-line>
@@ -225,6 +285,15 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
             <div style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "4px" }} data-credits-line>
               {est.creditsLine}
             </div>
+            {/* P1.06 (§5.6) — the scoped sheet shows the whole-draft figure beside the scoped price. */}
+            {view.commandScope?.wholeEstimateCredits != null ? (
+              <div style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }} data-whole-line>
+                {labels.wholeDraftPrefix ?? "Whole draft:"} ≈ ${(view.commandScope.wholeEstimateCredits / 100).toFixed(2)}
+                {view.commandScope.wholeCapCredits != null
+                  ? ` · cap $${(view.commandScope.wholeCapCredits / 100).toFixed(2)}`
+                  : ""}
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -255,6 +324,12 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
           {view.scopeLine}
         </p>
       ) : null}
+
+      {/* P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence at launch: informational /
+          blocking-2h / waits-for-you, from the same gate-policy facts the run freezes. */}
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-scope-approval>
+        {view.scopeApprovalLine}
+      </p>
 
       {/* PRB.10 — the voice line (§9.6): the linked persona's name + the shared pill, or the ad-hoc
           default. A stale/untested/never-built voice NEVER blocks the run; when the pill's action is
@@ -293,11 +368,78 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
         </p>
       ) : null}
 
-      {/* the collapsed row → expands to the scope summary + Advanced per-phase toggles with signed deltas. */}
+      {/* the collapsed row → expands to the scope summary + the editable rows (Approvals · budget cap ·
+          don't-ask pref · Guidance) + Advanced per-phase toggles with signed deltas (§5.6). */}
       <details style={{ marginTop: "10px" }}>
         <summary style={{ fontSize: "13px", color: "var(--shell-fg-muted)", cursor: "pointer" }}>
           {view.collapsedSummary} · {labels.changeLabel}
         </summary>
+        <div style={{ fontSize: "13px", marginTop: "8px", display: "grid", gap: "10px" }} data-sheet-fields>
+          {/* the editable scope facts (§5.6 collapsed row): Protocol · Venue · Stage ride the form and
+              freeze into the run's inputs — a changed protocol/venue also flips REQ-SPEC-17's
+              scope gate to blocking (the api re-derives the flag server-side, never client-trusted). */}
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.protocolLabel ?? "Protocol"}</span>
+            <input type="text" name="protocol" defaultValue={view.scope.protocol} style={{ width: "180px" }} />
+          </label>
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.venueLabel ?? "Venue"}</span>
+            <input type="text" name="venue" defaultValue={view.scope.venue ?? ""} style={{ width: "180px" }} />
+          </label>
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.stageLabel ?? "Stage"}</span>
+            <input type="text" name="stage" defaultValue={view.scope.stage ?? ""} style={{ width: "180px" }} />
+          </label>
+          {/* Approvals — the project's policy, edited here (§5.6 collapsed row; the run POST persists it). */}
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.approvalsLabel ?? "Approvals"}</span>
+            <select name="approval" defaultValue={view.approvalPolicy}>
+              {(["named", "wait_each", "run_to_completion"] as const).map((p) => (
+                <option key={p} value={p}>
+                  {labels.approvalsDisplay?.[p] ??
+                    (p === "named" ? "Named approvals" : p === "wait_each" ? "Wait for me at each gate" : "Run to completion")}
+                </option>
+              ))}
+            </select>
+          </label>
+          {/* Budget cap — editable UPWARD only (§5.6): the input's floor is the computed cap; a lower
+              value can never submit (min=, and the server floors it again). */}
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.capLabel ?? "Budget cap (credits)"}</span>
+            <input
+              type="number"
+              name="capCredits"
+              min={view.capFloorCredits}
+              defaultValue={est.capCredits}
+              data-cap-input
+              style={{ width: "90px" }}
+            />
+          </label>
+          {/* "Don't ask me to confirm runs under N credits" — the per-user pref (REQ-BILL-4; ≤1,000). */}
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.dontAskLabel ?? "Confirm runs under (credits)"}</span>
+            <input type="number" name="dontAskUnder" min={0} max={1000} defaultValue={view.dontAskUnder} style={{ width: "90px" }} />
+          </label>
+          {/* Guidance — the grammar's free-text tail, run-scope (§6.5; delivered at phase boundaries). */}
+          <label style={{ display: "block" }}>
+            <span style={{ color: "var(--shell-fg-muted)" }}>{labels.guidanceLabel ?? "Guidance"}</span>
+            <textarea
+              name="guidance"
+              rows={2}
+              defaultValue={view.guidance ?? ""}
+              placeholder={labels.guidancePlaceholder ?? "Anything this run should know?"}
+              style={{ display: "block", width: "100%", marginTop: "4px", font: "inherit", background: "var(--shell-bg)", color: "var(--shell-fg)", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 8px" }}
+            />
+          </label>
+          {/* §5.6 — "N standing notes apply" beside the guidance box (standing guidance is server-scoped). */}
+          {view.standingNotes != null && view.standingNotes > 0 ? (
+            <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: 0 }} data-standing-notes>
+              {labels.standingNotesFmt
+                ? labels.standingNotesFmt.replace("{n}", String(view.standingNotes))
+                : `${view.standingNotes} standing notes apply`}
+            </p>
+          ) : null}
+        </div>
         {view.toggleDeltas.length > 0 ? (
           <fieldset style={{ border: "none", padding: "8px 0 0", margin: 0 }}>
             <legend style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{labels.advancedLegend}</legend>
@@ -337,13 +479,15 @@ function recomputeScript(recompute: RunSheetView["recompute"]): string {
   return `(function(){var R=${R};var f=document.currentScript.closest('form');if(!f)return;
 function usd(c){return '$'+(c/100).toFixed(2);}function cr(c){return Math.round(c).toLocaleString('en-US');}
 function consent(e){if(R.entitlement)return false;if(e<R.dontAskUnder)return false;if(e>500)return true;return e>200&&e>0.25*R.spendableCredits;}
+var ci=f.querySelector('[data-cap-input]');if(ci)ci.addEventListener('change',function(){if(Number(ci.value)<Number(ci.min))ci.value=ci.min;else ci.setAttribute('data-touched','1');});
 function upd(){var sel=f.querySelector('input[name=rigor]:checked');if(!sel)return;var s=R.byRigor[sel.value];if(!s)return;
 var cap=s.capCredits,est=s.estimateCredits,ba=R.spendableCredits-cap,insuf=cap>R.spendableCredits;
-var d=f.querySelector('[data-dollars-line]');if(d)d.firstChild.nodeValue='\\u2248 '+usd(est)+' \\u00b7 never more than '+usd(cap);
-var cl=f.querySelector('[data-credits-line]');if(cl)cl.textContent=cr(est)+' credits \\u00b7 cap '+cr(cap)+' \\u00b7 '+cr(ba)+' left after the cap';
+var d=f.querySelector('[data-dollars-line]');if(d&&!R.entitlement)d.firstChild.nodeValue='\\u2248 '+usd(est)+' \\u00b7 never more than '+usd(cap);
+var cl=f.querySelector('[data-credits-line]');if(cl&&!R.entitlement)cl.textContent=cr(est)+' credits \\u00b7 cap '+cr(cap)+' \\u00b7 '+cr(ba)+' left after the cap';
 var t=f.querySelector('[data-time-line]');if(t)t.textContent='~'+s.lowMinutes+'\\u2013'+s.highMinutes+' min';
 var b=f.querySelector('[data-run-button]');if(b){var need=consent(est);b.textContent=need?b.getAttribute('data-confirm-label'):b.getAttribute('data-run-label');b.setAttribute('data-needs-consent',need?'true':'false');b.setAttribute('data-estimate-credits',String(est));b.disabled=insuf;}
-var eh=f.querySelector('input[name=estimateCredits]');if(eh)eh.value=String(est);var ch=f.querySelector('input[name=capCredits]');if(ch)ch.value=String(cap);
+var eh=f.querySelector('input[name=estimateCredits]');if(eh)eh.value=String(est);
+var ch=f.querySelector('input[name=capCredits]');if(ch){ch.min=String(cap);if(!ch.getAttribute('data-touched'))ch.value=String(cap);else if(Number(ch.value)<cap)ch.value=String(cap);}
 var mt=f.querySelector('input[name=modelTier]');if(mt&&s.modelTier)mt.value=s.modelTier;}
 f.querySelectorAll('input[name=rigor]').forEach(function(r){r.addEventListener('change',upd);});})();`;
 }

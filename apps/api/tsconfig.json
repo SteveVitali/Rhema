@@ -12,6 +12,9 @@
       "path": "../../packages/ai-use"
     },
     {
+      "path": "../../packages/commands"
+    },
+    {
       "path": "../../packages/contracts"
     },
     {

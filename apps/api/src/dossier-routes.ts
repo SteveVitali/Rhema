@@ -20,6 +20,7 @@ import {
 } from "@rhema/findings-core";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { Actor, Claim, ClaimSource, Finding, ObligationState } from "@rhema/contracts";
+import { scopeChip, type ScopeRef } from "@rhema/commands";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import type { TxRunner } from "@rhema/orchestrator";
@@ -262,7 +263,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       const run = (
         await tx.query(
           `select id, workflow, state, cap_credits, current_attempt, estimate_credits,
-                  spent_credits, paused_at, walkthrough
+                  spent_credits, paused_at, walkthrough, scope
              from runs where id = $1`,
           [runId],
         )
@@ -277,9 +278,16 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
             spent_credits: number;
             paused_at: string | Date | null;
             walkthrough: { status?: string; text?: string } | null;
+            scope: unknown;
           }
         | undefined;
       if (!run) return null;
+
+      // P1.06 (§7.2; REQ-CHAT-23) — a scoped run's dossier is keyed (version, run) and LABELLED with
+      // its scope: the stored ref list renders as the same chips the sheet showed (§III · v2/17…).
+      const scopeLabels = Array.isArray(run.scope)
+        ? (run.scope as ScopeRef[]).map(scopeChip)
+        : [];
 
       // ---- run card: only whitelisted orchestrator event types feed the card (REQ-IDE-11) ----
       const events = (
@@ -472,6 +480,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         runId,
         projectTitle: corr.project_title,
         versionLabel: `Review of v${corr.draft_n ?? 1}`,
+        ...(scopeLabels.length > 0 ? { scopeLabels } : {}),
         openObligations,
         addressedObligations,
         runCard,

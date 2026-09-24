@@ -53,6 +53,7 @@ import type {
   ProtocolCardDto,
   TimelineDto,
   RunReportDto,
+  RunSheetContextDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -114,6 +115,8 @@ export interface DossierData {
   readonly runId: string;
   readonly projectTitle: string;
   readonly versionLabel: string;
+  /** P1.06 — a scoped run's dossier label (§7.2 scope chips, e.g. "§III"); absent on whole-draft runs. */
+  readonly scopeLabels?: readonly string[];
   readonly openObligations: number;
   readonly addressedObligations: number;
   readonly runCard: RunCardInput;
@@ -162,6 +165,20 @@ export interface DataSource {
   createImport(session: SessionHeaders, input: ImportInput): Promise<{ draftId: string }>;
   /** The sheet's Run click → the api's only run creator (REQ-CHAT-25). Session forwarded. */
   createRun(session: SessionHeaders, projectId: string, req: CreateRunDto): Promise<CreatedRunDto>;
+  /**
+   * P1.06 — the run sheet's single context read (`GET /projects/:id/run-sheet-context`, §5.6): head
+   * draft, sections, obligations, entitlement, consent pref, `blockedBy` under the P1.06 lock ruling.
+   * Optional like the other live-read seams: a fixture without it renders the sheet's bare defaults.
+   */
+  getRunSheetContext?(
+    session: SessionHeaders,
+    projectId: string,
+    args?: { workflow?: string; scope?: string },
+  ): Promise<RunSheetContextDto>;
+  /** P1.06 (REQ-BILL-4) — the "don't ask under N credits" pref (`PUT /settings/consent`). */
+  setConsentPref?(session: SessionHeaders, dontAskUnder: number): Promise<{ ok: true; dontAskUnder: number }>;
+  /** P1.06 — the palette's free-text search over the project index (`GET /projects/search?q=`). */
+  searchPalette?(session: SessionHeaders, q: string, projectId?: string): Promise<ProjectSearchHitDto[]>;
   /** PRB.05 — write the user's disposition on a finding (§5.7; reversible until freeze). */
   recordDisposition(
     session: SessionHeaders,
@@ -482,6 +499,15 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     // hold is the deployed api's job. Session forwarded so the api resolves the principal.
     createRun: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createRun(projectId, req),
+    // P1.06 — the run sheet's single context read + the consent-pref write + the palette's search.
+    getRunSheetContext: (session, projectId, args) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).runSheetContext(projectId, args),
+    setConsentPref: (session, dontAskUnder) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setConsentPref(dontAskUnder),
+    searchPalette: (session, q, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).searchProjects(q, undefined, {
+        ...(projectId ? { projectId } : {}),
+      }),
     recordDisposition: (session, projectId, findingId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordDisposition(projectId, findingId, req),
     listGates: (session, projectId) =>

@@ -77,6 +77,8 @@ export interface ProjectSearchHit {
   readonly title: string;
   readonly kind: "project" | "draft" | "letter";
   readonly snippet: string;
+  /** P1.06 — the doc's ref ('' project · draft id · correspondence id) so a palette hit deep-links. */
+  readonly refId?: string;
 }
 
 /**
@@ -93,6 +95,9 @@ export function createSearchRoutes(deps: SearchApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const q = (c.req.query("q") ?? "").trim();
     if (q.length === 0) return c.json({ results: [] });
+    // P1.06 — the ⌘K palette's "Go to" section narrows hits to the open project (`?project=<id>`);
+    // unset keeps the workspace-wide §5.2 behavior unchanged.
+    const projectFilter = c.req.query("project") ?? null;
     // Self-heal the per-project docs: one INSERT … SELECT … ON CONFLICT refresh keeps title/voice/venue
     // current even for projects that predate the index or changed outside a write path.
     await deps.db.query(
@@ -106,24 +111,26 @@ export function createSearchRoutes(deps: SearchApiDeps): Hono {
       [principal.workspaceId],
     );
     const res = await deps.db.query(
-      `select d.project_id, p.slug, p.title, d.kind,
+      `select d.project_id, p.slug, p.title, d.kind, d.ref_id,
               ts_headline('english', d.body, websearch_to_tsquery('english', $2),
                           'MaxWords=24, MinWords=8, ShortWord=2, MaxFragments=1') as snippet
          from project_search_docs d join projects p on p.id = d.project_id
         where d.workspace_id = $1 and p.deleted_at is null and p.archived_at is null
           and d.fts @@ websearch_to_tsquery('english', $2)
+          and ($3::text is null or d.project_id = $3)
         order by ts_rank(d.fts, websearch_to_tsquery('english', $2)) desc, d.updated_at desc
         limit 50`,
-      [principal.workspaceId, q],
+      [principal.workspaceId, q, projectFilter],
     );
     const results: ProjectSearchHit[] = (
-      res.rows as { project_id: string; slug: string; title: string; kind: ProjectSearchHit["kind"]; snippet: string }[]
+      res.rows as { project_id: string; slug: string; title: string; kind: ProjectSearchHit["kind"]; ref_id: string; snippet: string }[]
     ).map((r) => ({
       projectId: r.project_id,
       slug: r.slug,
       title: r.title,
       kind: r.kind,
       snippet: r.snippet,
+      ...(r.ref_id ? { refId: r.ref_id } : {}),
     }));
     return c.json({ results });
   });

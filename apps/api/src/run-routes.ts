@@ -42,6 +42,7 @@ import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
 import { capFromEstimate } from "@rhema/contracts";
+import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
 import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
 import type { AgentTypeKey } from "@rhema/contracts";
@@ -187,7 +188,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         ...(resolvedToggles ? { toggles: resolvedToggles } : {}),
       });
       estimateCredits = derived.estimateCredits;
-      capCredits = derived.capCredits;
+      // P1.06 (§5.6) — the cap is editable UPWARD only: a user-raised cap (body > computed) stands;
+      // anything below the computed cap is floored back up (the 1.5× guarantee).
+      capCredits = Math.max(body.capCredits ?? 0, derived.capCredits);
     } catch {
       // not a beta sheet workflow — keep the client estimate but floor the cap at the 1.5× guarantee.
       if (estimateCredits != null) capCredits = Math.max(capCredits ?? 0, capFromEstimate(estimateCredits));
@@ -290,6 +293,45 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // stamped with the persona it writes against.
     const frozenPersonaId = voiceFacts.mode === "linked" ? voiceFacts.personaId : body.personaId;
 
+    // P1.06 — scope (§7.2): parse the canonical serialized form into the structured ref list stored on
+    // `runs.scope`; the same string discriminates the corr lock so scoped readers parallelize (the
+    // recorded concurrency ruling). Guidance rides as a run-scope Guidance row post-create (same
+    // channel as pre-triage). The sheet's Approvals choice persists to the project policy (§5.6).
+    const scopeRefs = body.scope ? parseScopes(body.scope) : [];
+    const guidanceText = body.guidance?.trim();
+    if (body.approvalPolicy && ["named", "wait_each", "run_to_completion"].includes(body.approvalPolicy)) {
+      await deps.txRunner
+        .run(principal.workspaceId, (tx) =>
+          tx.query(`update projects set approval_policy = $2 where id = $1`, [projectId, body.approvalPolicy]),
+        )
+        .catch(() => undefined); // a settings write never blocks a run create
+    }
+
+    // P1.06 (REQ-SPEC-17) — freeze the scope facts + the scope-gate blocking flag into the run inputs:
+    // Full board, or a protocol/venue change vs the project's pinned scope, makes `approve_scope` a
+    // blocking 2-hour proceed-as-proposed gate (`resolveGatePolicy`'s `scopeBlocking`). Wait-for-me-each
+    // needs no flag — the policy branch already blocks. Server-derived, never client-trusted.
+    const projectScope = await deps.txRunner
+      .run(
+        principal.workspaceId,
+        async (tx) =>
+          (await tx.query(`select protocol_id, venue from projects where id = $1`, [projectId])).rows[0] as
+            | { protocol_id: string | null; venue: string | null }
+            | undefined,
+      )
+      .catch(() => undefined);
+    const scopeBlocking =
+      body.rigor === "full_board" ||
+      (typeof body.protocol === "string" && body.protocol !== "" && body.protocol !== (projectScope?.protocol_id ?? null)) ||
+      (typeof body.venue === "string" && body.venue !== "" && body.venue !== (projectScope?.venue ?? ""));
+    inputs = {
+      ...inputs,
+      scopeBlocking,
+      ...(typeof body.protocol === "string" && body.protocol ? { protocol: body.protocol } : {}),
+      ...(typeof body.venue === "string" && body.venue ? { venue: body.venue } : {}),
+      ...(typeof body.stage === "string" && body.stage ? { stage: body.stage } : {}),
+    };
+
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey,
       workflow,
@@ -323,7 +365,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         nextDraftId: typeof inputs.nextDraftId === "string" ? inputs.nextDraftId : body.nextDraftId,
         corrKind: body.corrKind,
         corrK: body.corrK,
+        scopeKey: body.scope || undefined,
       },
+      ...(scopeRefs.length > 0 ? { scope: scopeRefs } : {}),
     });
 
     if (res.ok) {
@@ -340,6 +384,20 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           runId: res.runId,
           workflows: ["revise"],
         });
+      }
+      // P1.06 (§5.6/§7.2) — the sheet's free-text guidance lands as a run-scope Guidance row delivered at
+      // the next phase boundary (same channel as pre-triage). A guidance write never fails the launch.
+      if (guidanceText && !res.deduped) {
+        await captureGuidance(deps, {
+          workspaceId: principal.workspaceId,
+          projectId,
+          userId: principal.userId,
+          source: "run_sheet",
+          text: guidanceText,
+          scope: "run",
+          runId: res.runId,
+          workflows: [body.workflow],
+        }).catch(() => undefined);
       }
       // §12.4 step 3: a sheet-launched run lands in `queued`; enqueue the provision job so the worker
       // admits + provisions it (mints the token/credential, launches the run-task Job). pg-boss send is
@@ -674,6 +732,23 @@ interface CreateRunBody {
   nextDraftId?: string;
   corrKind?: string;
   corrK?: number;
+  /**
+   * P1.06 (§7.2; REQ-CHAT-23; ledger G22) — the run's scope in the canonical serialized form
+   * (`"section:III"`, `"v3,section:II"` — @rhema/commands `serializeScopes`). The api parses it to the
+   * structured ref list stored on `runs.scope` and uses it to discriminate the corr lock (scoped
+   * readers of one draft parallelize under the per-write-lock ruling).
+   */
+  scope?: string;
+  /** the sheet's free-text guidance (the grammar's free-text tail) → a run-scope Guidance row. */
+  guidance?: string;
+  /** P1.06 (§5.6 collapsed row) — the sheet's editable scope facts; a protocol/venue change vs the
+   *  project's pinned values flips REQ-SPEC-17's scope gate to blocking (frozen as inputs.scopeBlocking). */
+  protocol?: string;
+  venue?: string;
+  stage?: string;
+  /** the sheet's Approvals choice — persists as the project's `approval_policy` (§5.6: Approvals is a
+   *  project default the sheet edits; per-run gate behavior follows the project policy). */
+  approvalPolicy?: "named" | "wait_each" | "run_to_completion";
 }
 interface EventBody {
   type: Parameters<typeof postEvents>[1]["events"][number]["type"];

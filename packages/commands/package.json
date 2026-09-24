@@ -1,0 +1,25 @@
+{
+  "name": "@rhema/commands",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "P1.06 — the one §7.2 command grammar: /<verb> [@scope …] [--lever value …] [free text → guidance]. A LEAF package — browser client, web server, api and the future composer all consume it; no React, no server, no @rhema/protocols (nothing protocol-adjacent may reach a client bundle, REQ-ARCH-33).",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*"
+  }
+}

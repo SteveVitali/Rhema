@@ -26,7 +26,9 @@ import {
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto } from "@rhema/api-client";
+import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
+import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
@@ -200,6 +202,52 @@ export function createWebApp(deps: WebDeps): Hono {
         .then(() => deps.dataSource.getTheme?.(session))
         .catch(() => null),
     ]);
+    // P1.06 (§5.12; REQ-CHAT-28) — the ⌘K palette's embedded PaletteData: the state function's next
+    // step pinned first in Run (with its estimate), Go-to = the timeline's versions + the Margin's
+    // findings, Recent runs from the rounds, Settings = the settings links. Threads need no seed —
+    // the section hides when empty. Every row is a navigation; the palette never launches a run.
+    const next = opts.timelineView?.nextStep;
+    const nextVerb = next?.verb ? (VERB_TABLE.find((v) => v.workflow === next.verb)?.verb ?? null) : null;
+    const paletteData: PaletteData = {
+      projectSlug: row.slug,
+      ...(next && nextVerb
+        ? {
+            nextStep: {
+              command: `/${nextVerb}`,
+              label: next.label ?? `/${nextVerb}`,
+              ...(next.estimateCredits != null ? { estimateCredits: next.estimateCredits } : {}),
+            },
+          }
+        : {}),
+      goto: [
+        // versions — the Page's `/v/:n` routes.
+        ...(opts.timelineView?.rounds ?? []).map((r) => ({
+          label: `v${r.n}`,
+          path: `/p/${row.slug}/v/${r.n}`,
+          keywords: [`v${r.n}`, "version"],
+        })),
+        // findings — the Margin's rows (in-page anchors).
+        ...(opts.findings ?? []).map((f) => ({
+          label: f.excerpt.length > 60 ? `${f.excerpt.slice(0, 57)}…` : f.excerpt,
+          path: `#finding-${f.id}`,
+          keywords: [f.id, f.severity, f.kind],
+        })),
+      ],
+      recentRuns: (opts.timelineView?.rounds ?? [])
+        .flatMap((r) => r.runs)
+        .slice(-8)
+        .reverse()
+        .map((run) => ({
+          label: `${run.workflow} · ${run.state}`,
+          path: `/p/${row.slug}/r/${run.runId}`,
+          keywords: [run.workflow, run.state],
+        })),
+      settings: [
+        { label: "Project settings", path: `/p/${row.slug}` },
+        { label: "Account settings", path: "/settings" },
+        { label: "Usage", path: "/usage" },
+      ],
+    };
     return {
       ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
       paperTheme: row.paperTheme ?? "light",
@@ -216,11 +264,42 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(opts.feed ? { feed: opts.feed } : {}),
         ...(opts.runNextHref ? { runNextHref: opts.runNextHref } : {}),
         ...(opts.status ? { status: opts.status } : {}),
+        palette: JSON.stringify(paletteData),
+        paletteSearchUrl: `/p/${row.slug}/palette-search`,
         themeUrl: "/ide/theme",
         paperThemeUrl: `/p/${row.slug}/paper-theme`,
       },
     };
   };
+
+  // P1.06 — the ⌘K palette's free-text search proxy (§5.12): same-origin, session-forwarded to the
+  // api's project search narrowed to THIS project; hits map to deep links (drafts → the editor,
+  // letters → the revision page). Navigation only — this route never creates anything.
+  app.get("/p/:project/palette-search", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ results: [] }, 401);
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.json({ results: [] }, 404);
+    const q = (c.req.query("q") ?? "").trim();
+    if (!q) return c.json({ results: [] });
+    const hits =
+      (await Promise.resolve()
+        .then(() => deps.dataSource.searchPalette?.(session, q, row.id))
+        .catch(() => undefined)) ?? [];
+    const results = hits.map((h) => ({
+      label: h.title,
+      path:
+        h.kind === "draft" && h.refId
+          ? `/p/${slug}/edit/${h.refId}`
+          : h.kind === "letter" && h.refId
+            ? `/p/${slug}/revisions/${h.refId}`
+            : `/p/${h.slug}`,
+      keywords: [h.kind],
+      snippet: h.snippet,
+    }));
+    return c.json({ results });
+  });
 
   // The island's same-origin theme writes — the web server forwards the session to the api (the bundle
   // never holds a credential; REQ-ARCH-33). Fire-and-forget from the client; the localStorage mirror is
@@ -1157,10 +1236,20 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // PRB.21 / D-PRB.20-1 — the project already has a non-terminal run ⇒ the sheet renders its
-    // in-progress state (a link to the run's surface) instead of the Run affordance; a second Run click
-    // can never spawn a duplicate (the api also 409s — this is the honest first screen).
-    if (row.activeRun) {
+    // P1.06 — the sheet's ONE context read (§5.6; REQ-IDE-13): head draft, sections, obligations, the
+    // trial entitlement, the consent pref, and `blockedBy` — the run THIS sheet's workflow+scope would
+    // collide with under the P1.06 per-write-lock ruling. `row.activeRun` is only the fallback when the
+    // context read fails (fail-conservative — never a surprise duplicate).
+    const sheetCtx = await Promise.resolve()
+      .then(() =>
+        deps.dataSource.getRunSheetContext?.(session, row.id, {
+          workflow: normalizeWorkflow(c.req.query("workflow") ?? "review"),
+          ...(c.req.query("scope") ? { scope: c.req.query("scope")! } : {}),
+        }),
+      )
+      .catch(() => null);
+    const blocking = sheetCtx?.blockedBy ?? (sheetCtx == null ? row.activeRun : null);
+    if (blocking) {
       return c.html(
         renderDocument(c.req.path, runSheetElement, {
           ...(await ideContext(c, session, row)),
@@ -1168,8 +1257,8 @@ export function createWebApp(deps: WebDeps): Hono {
           runSheet: {
             slug,
             projectTitle: row.title,
-            view: buildSheet(c.req.query(), undefined, deps.betaPlanOfferUrl),
-            activeRun: row.activeRun,
+            view: buildSheet(c.req.query(), undefined, deps.betaPlanOfferUrl, sheetCtx),
+            activeRun: { runId: blocking.runId, state: blocking.state },
           },
           compact: isPhoneRequest(c),
         }),
@@ -1196,7 +1285,7 @@ export function createWebApp(deps: WebDeps): Hono {
       emit(session, "voice.staleness_shown", { state: pv.status.state }, { projectId: row.id });
     }
     const view = {
-      ...buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl),
+      ...buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl, sheetCtx),
       ...(pv
         ? {
             voice:
@@ -1271,6 +1360,12 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
     const view = buildSheet({ workflow, rigor, ...toggleQuery }, billing, deps.betaPlanOfferUrl);
+    // P1.06 (§5.6; REQ-BILL-4) — the "don't ask under N" pref rides the same form; persist it via the
+    // settings write before the run create (a pref write never blocks a run — failures swallow).
+    const dontAskUnder = Number(str("dontAskUnder"));
+    if (Number.isInteger(dontAskUnder) && dontAskUnder >= 0 && str("dontAskUnder") !== "") {
+      await deps.dataSource.setConsentPref?.(session, Math.min(dontAskUnder, 1000)).catch(() => undefined);
+    }
     try {
       await deps.dataSource.createRun(session, row.id, {
         idempotencyKey: str("idempotencyKey") || randomUUID(),
@@ -1287,6 +1382,19 @@ export function createWebApp(deps: WebDeps): Hono {
         toggles,
         // REQ-BILL-6: freeze the word/claim counts the estimate was computed for on the run record.
         inputSnapshot: { wordCount: words, ...(claims != null ? { claimCount: claims } : {}) },
+        // P1.06 (§7.2) — the sheet's full state: scope (canonical serialized), free-text guidance, the
+        // Approvals pick, and the head draft + corr slot the lock set needs (scoped readers parallelize).
+        ...(str("scope") ? { scope: str("scope") } : {}),
+        ...(str("guidance") ? { guidance: str("guidance") } : {}),
+        // P1.06 (§5.6 collapsed row; REQ-SPEC-17) — the editable scope facts; the api freezes them and
+        // re-derives the scope-gate blocking flag (a protocol/venue change is never client-trusted).
+        ...(str("protocol") ? { protocol: str("protocol") } : {}),
+        ...(str("venue") ? { venue: str("venue") } : {}),
+        ...(str("stage") ? { stage: str("stage") } : {}),
+        ...(str("approval") ? { approvalPolicy: str("approval") as "named" | "wait_each" | "run_to_completion" } : {}),
+        ...(row.headDraftId ? { draftId: row.headDraftId } : {}),
+        corrKind: workflow === "review" || workflow === "fact_check" ? workflow : undefined,
+        corrK: 1,
       });
     } catch (e) {
       // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
@@ -2213,32 +2321,103 @@ function buildSheet(
   query: Record<string, string>,
   billing?: { spendableCredits: number; suspended: boolean; paymentLinkUrl?: string },
   planOfferUrl?: string,
+  // P1.06 — the api's run-sheet context (head draft, sections, obligations, entitlement, consent pref,
+  // the project scope defaults). Unset ⇒ the sheet renders its bare defaults (context fetch failed open).
+  ctx?: RunSheetContextDto | null,
 ) {
   const workflow = normalizeWorkflow(query.workflow ?? "review");
   const rigor = normalizeRigor(query.rigor ?? "standard");
   // §6.5: model tier follows rigor in the beta (no tier selector) — always the rigor's default.
   const modelTier = normalizeTier("", workflow, rigor);
-  const words = Number(query.words) > 0 ? Number(query.words) : 5180;
+  const words =
+    (Number(query.words) > 0 ? Number(query.words) : 0) || (ctx?.headDraft?.words ?? 0) || 5180;
   const toggles: ToggleState = {};
   for (const key of ["fact_check", "discourse", "second_read", "repair_research", "gap_check"] as const) {
     if (query[`toggle.${key}`] === "on") toggles[key] = true;
     else if (query[`toggle.${key}`] === "off") toggles[key] = false;
   }
+
+  // P1.06 (§7.2; REQ-CHAT-23) — the command scope: `?scope=` is the canonical serialized form
+  // (`section:III`); parse → pill labels + the scope's estimator inputs (the scoped price).
+  const scopeRefs = parseScopes(query.scope);
+  const scoped = scopeRefs.length > 0 ? scopedInputs(scopeRefs, ctx?.sections ?? []) : null;
+  // §14.3 — a trial entitlement whose word cap the draft exceeds covers the FIRST wordCap words: the
+  // sheet's scope becomes the covered slice (a "first N words" pill) so the Included line stays honest.
+  const entitlement = ctx?.entitlement ?? null;
+  const effectiveScopes: ScopeRef[] =
+    scopeRefs.length === 0 && entitlement && words > entitlement.wordCap
+      ? [{ kind: "words", upto: entitlement.wordCap }]
+      : scopeRefs;
+
+  const headN = ctx?.headDraft?.n ?? null;
+  const targetVersion = headN != null ? `v${headN}` : "v1";
+  // P1.06 (REQ-SPEC-17's sheet half) — the scope-gate blocking condition the sheet surfaces: Full
+  // board, or a `--protocol`/`--venue` lever (or edited field) that departs the project's pinned scope.
+  const approvalPick =
+    query.approvals === "named" || query.approvals === "wait_each" || query.approvals === "run_to_completion"
+      ? query.approvals
+      : ctx?.project?.approvalPolicy;
+  const scopeBlocking =
+    rigor === "full_board" ||
+    (!!query.protocol && query.protocol !== (ctx?.project?.protocol ?? null)) ||
+    (!!query.venue && query.venue !== (ctx?.project?.venue ?? ""));
   return buildRunSheetView({
     workflow,
-    targetVersion: "v1",
+    targetVersion,
     rigor,
     modelTier,
     inputs: { words },
     ...(Object.keys(toggles).length ? { toggles } : {}),
     scope: {
-      protocol: "Essay",
-      ...(query.venue ? { venue: query.venue } : {}),
+      // §7.2 — a typed `--protocol`/`--venue`/`--stage` lever presets the row; the project default fills
+      // whatever the command left unset.
+      protocol: query.protocol || ctx?.project?.protocol || "Essay",
+      ...(query.venue || ctx?.project?.venue ? { venue: query.venue || ctx?.project?.venue || "" } : {}),
       ...(query.stage ? { stage: query.stage } : {}),
     },
     spendableCredits: billing?.spendableCredits ?? BETA_HOUSE_CREDITS,
     idempotencyKey: randomUUID(),
     insufficientMode: "beta",
+    // P1.06 — the §7.2 scope pills + the scoped price beside the whole-draft figure.
+    ...(effectiveScopes.length > 0
+      ? {
+          commandScope: {
+            serialized: serializeScopes(effectiveScopes),
+            labels: effectiveScopes.map(scopeChip),
+            ...(scoped ? { scopedInputs: scoped } : {}),
+          },
+        }
+      : {}),
+    // P1.06 — the collapsed-row rows: the project's approval policy + the user's consent pref.
+    // §7.2's `--wait`/`--auto` preset the Approvals pick; `--budget N` presets the editable cap.
+    ...(approvalPick ? { approvalPolicy: approvalPick as "named" | "wait_each" | "run_to_completion" } : {}),
+    scopeBlocking,
+    ...(ctx?.dontAskUnder != null ? { dontAskUnder: ctx.dontAskUnder } : {}),
+    ...(ctx?.standingNotes != null ? { standingNotes: ctx.standingNotes } : {}),
+    ...(Number(query.budget) > 0 ? { capOverrideCredits: Math.round(Number(query.budget)) } : {}),
+    ...(typeof query.guidance === "string" && query.guidance ? { guidance: query.guidance } : {}),
+    // P1.06 — the promote-on-launch line: a WORKING head freezes to its vN on launch (§5.6 item 7).
+    ...(ctx?.headDraft ? { headState: ctx.headDraft.state, promoteToVersion: `v${ctx.headDraft.n}` } : {}),
+    // §14.3 — the unused trial entitlement → the `Included` rendering (+ its word-cap detail).
+    ...(entitlement
+      ? {
+          entitlement: true,
+          entitlementDetails: {
+            wordCap: entitlement.wordCap,
+            rigor: entitlement.rigor,
+            modelTier: entitlement.modelTier,
+            kind: entitlement.kind,
+          },
+        }
+      : {}),
+    // REQ-OBJ-6 — the obligation scope line ("N open obligations will be checked / addressed").
+    ...(ctx
+      ? {
+          scopeLine:
+            (workflow === "review" ? ctx.reviewScopeLine : workflow === "revise" ? ctx.reviseScopeLine : null) ??
+            undefined,
+        }
+      : {}),
     ...(billing?.paymentLinkUrl ? { paymentLinkUrl: billing.paymentLinkUrl } : {}),
     ...(billing?.suspended ? { suspended: true } : {}),
     ...(planOfferUrl ? { planOfferUrl } : {}),

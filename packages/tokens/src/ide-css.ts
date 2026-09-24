@@ -135,6 +135,43 @@ export function ideCss(): string {
     ".ide-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; }",
     ".ide-modal { background: var(--shell-surface); border: 1px solid var(--shell-border); border-radius: var(--radius-3); padding: var(--s4); width: min(420px, 90vw); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }",
 
+    // ---- P1.06 — the ⌘K palette + the `?` cheat sheet (§5.12): top-anchored overlays, never blocking;
+    // Esc/⌘K toggles, and every palette row navigates or opens the sheet — nothing POSTs. ----
+    ".ide-palette { position: fixed; top: 12vh; left: 50%; transform: translateX(-50%); z-index: 70; width: min(560px, 92vw); background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-3); box-shadow: 0 16px 48px rgba(0,0,0,0.5); padding: var(--s2); }",
+    ".ide-palette[hidden] { display: none; }",
+    ".ide-palette input[data-palette-input] { width: 100%; box-sizing: border-box; padding: 10px 12px; font: inherit; font-size: 15px; background: var(--shell-bg); color: var(--shell-fg); border: 1px solid var(--shell-border); border-radius: var(--radius-2); outline: none; }",
+    ".ide-palette input[data-palette-input]:focus { border-color: var(--accent); }",
+    ".ide-palette [data-palette-results] { max-height: 50vh; overflow-y: auto; margin-top: var(--s2); }",
+    ".ide-palette .ide-pal-section { font-size: 11px; color: var(--shell-fg-faint); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px 2px; }",
+    ".ide-palette .ide-pal-row { display: flex; align-items: baseline; gap: var(--s2); width: 100%; padding: 7px 10px; border: none; background: none; color: var(--shell-fg); font-size: 14px; text-align: left; border-radius: var(--radius-1); cursor: pointer; }",
+    ".ide-palette .ide-pal-row[data-active] { background: var(--shell-bg); }",
+    ".ide-palette .ide-pal-row[data-disabled] { color: var(--shell-fg-faint); cursor: default; }",
+    ".ide-palette .ide-pal-hint { margin-left: auto; font-size: 12px; color: var(--shell-fg-faint); }",
+    ".ide-palette .ide-pal-pinned { color: var(--accent); font-size: 11px; margin-left: auto; }",
+    ".ide-palette .ide-pal-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; }",
+    ".ide-palette .ide-pal-chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--shell-border); background: var(--shell-bg); color: var(--shell-fg-muted); }",
+    ".ide-palette .ide-pal-error { padding: 8px 10px; font-size: 13px; color: var(--sev-major); }",
+    ".ide-palette .ide-pal-action { padding: 8px 10px; font-size: 13px; color: var(--shell-fg-muted); }",
+    ".ide-palette [data-palette-empty] { padding: 12px 10px; font-size: 13px; color: var(--shell-fg-faint); }",
+
+    // the other two §7.2 surfaces (REQ-CHAT-22): the selection popover on the Page and the Timeline
+    // context menu share one container + the palette's row styling — every row resolves through the
+    // same parseCommand → resolveCommand path, so the sheet GET is byte-identical.
+    ".ide-cmdmenu { position: fixed; z-index: 72; min-width: 210px; max-width: 320px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: var(--s2); }",
+    ".ide-cmdmenu .ide-pal-row { display: flex; align-items: baseline; gap: var(--s2); width: 100%; padding: 7px 10px; border: none; background: none; color: var(--shell-fg); font-size: 13px; text-align: left; border-radius: var(--radius-1); cursor: pointer; }",
+    ".ide-cmdmenu .ide-pal-row:hover, .ide-cmdmenu .ide-pal-row:focus-visible { background: var(--shell-bg); outline: none; }",
+    ".ide-cmdmenu .ide-pal-row[data-disabled] { color: var(--shell-fg-faint); cursor: default; }",
+    ".ide-cmdmenu .ide-pal-row[data-disabled]:hover { background: none; }",
+    ".ide-cmdmenu .ide-pal-hint { margin-left: auto; font-size: 12px; color: var(--shell-fg-faint); }",
+    ".ide-cmdmenu .ide-cmdmenu-sep { border-top: 1px solid var(--shell-border); margin: var(--s2) 0; }",
+
+    ".ide-cheatsheet { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-start; justify-content: center; z-index: 70; padding-top: 14vh; }",
+    ".ide-cheatsheet[hidden] { display: none; }",
+    ".ide-cheatsheet-card { background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-3); padding: var(--s3) var(--s4); width: min(520px, 92vw); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }",
+    ".ide-cheatsheet-card ul { list-style: none; margin: var(--s2) 0 0; padding: 0; }",
+    ".ide-cheatsheet-row { display: flex; gap: var(--s3); padding: 4px 0; font-size: 13px; align-items: baseline; }",
+    ".ide-cheatsheet-row kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--shell-fg-muted); min-width: 150px; }",
+
     // progressive disclosure (§5.1): Advanced-tier chrome exists in the DOM but stays hidden until the
     // persisted ⌘⇧M toggle sets data-advanced="1" on the shell.
     ".ide:not([data-advanced='1']) [data-tier='advanced'] { display: none !important; }",

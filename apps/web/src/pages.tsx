@@ -141,6 +141,8 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
           }
         : {})}
       {...(ide.runNextHref ? { runNextHref: ide.runNextHref } : {})}
+      {...(ide.palette ? { palette: ide.palette } : {})}
+      {...(ide.paletteSearchUrl ? { paletteSearchUrl: ide.paletteSearchUrl } : {})}
       {...(ide.activeRun ? { activeRun: ide.activeRun } : {})}
       {...(ide.inboxCount != null ? { inboxCount: ide.inboxCount } : {})}
       {...(ide.status ? { status: ide.status } : {})}
@@ -970,6 +972,19 @@ const runSheetLabels: RunSheetLabels = {
   buyCreditsLabel: COPY.runSheet.buyCredits,
   suspendedNotice: COPY.runSheet.suspended,
   planOffer: { text: COPY.runSheet.planOffer, linkLabel: COPY.runSheet.planOfferLink },
+  // P1.06 — the §5.6 collapsed-row fields + the §14.3 trial badge + the §7.2 scope comparison line.
+  approvalsLabel: COPY.runSheet.approvals,
+  approvalsDisplay: COPY.runSheet.approvalDisplay,
+  capLabel: COPY.runSheet.capLabel,
+  dontAskLabel: COPY.runSheet.dontAskLabel,
+  guidanceLabel: COPY.runSheet.guidanceLabel,
+  guidancePlaceholder: COPY.runSheet.guidancePlaceholder,
+  standingNotesFmt: COPY.runSheet.standingNotesFmt,
+  protocolLabel: COPY.runSheet.protocolLabel,
+  venueLabel: COPY.runSheet.venueLabel,
+  stageLabel: COPY.runSheet.stageLabel,
+  wholeDraftPrefix: COPY.runSheet.wholeDraftPrefix,
+  includedLabel: COPY.runSheet.includedLabel,
 };
 
 /** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
@@ -1405,6 +1420,12 @@ export function DossierPage(): ReactNode {
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <SectionTitle>{dossier.projectTitle}</SectionTitle>
         <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>
+        {/* P1.06 — a scoped run's dossier carries its scope pills (the same chips the sheet showed). */}
+        {(dossier.scopeLabels ?? []).map((s) => (
+          <span key={s} className="ide-pill" data-scope-pill>
+            {s}
+          </span>
+        ))}
         <VersionObligationChip
           open={dossier.openObligations}
           addressed={dossier.addressedObligations}

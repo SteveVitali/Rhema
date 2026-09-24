@@ -133,8 +133,12 @@ describe("POST /projects/:id/estimates (REQ-SPEC-16)", () => {
     expect(r.status).toBe(400);
   });
 
-  it("cacheKey encodes (draft sha, workflow, rigor, tier, variant)", () => {
-    expect(estimateCacheKey({ draftSha: "s", workflow: "review", rigor: "quick", modelTier: "base" })).toBe("s|review|quick|base|");
-    expect(estimateCacheKey({ workflow: "review", rigor: "quick", modelTier: "base", variant: "v" })).toBe("nosha|review|quick|base|v");
+  it("cacheKey encodes (draft sha, workflow, rigor, tier, variant[, scope])", () => {
+    expect(estimateCacheKey({ draftSha: "s", workflow: "review", rigor: "quick", modelTier: "base" })).toBe("s|review|quick|base||");
+    expect(estimateCacheKey({ workflow: "review", rigor: "quick", modelTier: "base", variant: "v" })).toBe("nosha|review|quick|base|v|");
+    // P1.06 — the scope is part of the key: a section-scoped estimate never reuses the whole-draft figure.
+    expect(estimateCacheKey({ draftSha: "s", workflow: "review", rigor: "quick", modelTier: "base", scope: "section:III" })).toBe(
+      "s|review|quick|base||section:III",
+    );
   });
 });

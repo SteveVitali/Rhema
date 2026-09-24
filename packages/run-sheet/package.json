@@ -20,6 +20,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@rhema/commands": "workspace:*",
     "@rhema/contracts": "workspace:*",
     "@rhema/protocols": "workspace:*"
   }

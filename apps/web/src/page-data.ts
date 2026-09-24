@@ -156,6 +156,13 @@ export interface PageData {
     };
     /** the ⌘⇧R "run next step" target (the run sheet for the next-step verb). */
     readonly runNextHref?: string;
+    /**
+     * P1.06 (§5.12) — the ⌘K palette's embedded `PaletteData` JSON (@rhema/ide) + the same-origin
+     * palette search URL the island calls for free-text hits. Every palette row navigates or opens the
+     * run sheet's GET — the palette never launches a run.
+     */
+    readonly palette?: string;
+    readonly paletteSearchUrl?: string;
     readonly status?: {
       readonly version?: string;
       readonly words?: number;

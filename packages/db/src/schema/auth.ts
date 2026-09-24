@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 // Better Auth tables, self-hosted in our Postgres (§13.1; R4). Google OAuth + email magic link +
 // sessions at launch; the device list is a schema stub for step-up/biometric on mobile (§10.5).
@@ -17,6 +17,9 @@ export const user = pgTable("user", {
   appTheme: text("app_theme").notNull().default("dark"),
   // P1.04 (0029; §5.2): the /app grouping preference — 'attention' (default) | 'voice'.
   projectGroupBy: text("project_group_by").notNull().default("attention"),
+  // P1.06 (0031; §5.6; REQ-BILL-4): "don't ask me to confirm runs under N credits" — the per-user consent
+  // threshold, 0 = always ask per the base rule; capped at 1,000 by the API write so >500 consent still bites.
+  consentDontAskUnder: integer("consent_dont_ask_under").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -16,6 +16,9 @@
       "path": "../../packages/api-client"
     },
     {
+      "path": "../../packages/commands"
+    },
+    {
       "path": "../../packages/tokens"
     },
     {

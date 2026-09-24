@@ -2,6 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "outDir": "dist", "rootDir": "src" },
   "include": ["src"],
-  "references": [{ "path": "../contracts" }, { "path": "../protocols" }],
+  "references": [{ "path": "../commands" }, { "path": "../contracts" }, { "path": "../protocols" }],
   "exclude": ["dist", "**/*.test.ts"]
 }
