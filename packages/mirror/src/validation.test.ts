@@ -137,6 +137,18 @@ describe("verdict source check (§12.8(c))", () => {
     const applied = applyVerdictSourceChecks(claims, ctx({ reputableDomains: new Set(["ok.example"]) }));
     expect(applied.filter((a) => a.downgraded).map((a) => a.claim.ordinal)).toEqual([2]);
   });
+
+  it("tolerates a JSON-degraded context (Set→{} / arrays) without throwing (wire-boundary guard)", () => {
+    const claims = [claim({ ordinal: 1, tier: 1, verdict: "verified", url: "https://ok.example/a", sources: [{ url: "https://ok.example/a", normalizedUrl: normalizeUrl("https://ok.example/a"), accessedAt: "2026-09-03T00:00:00.000Z", stance: "supports" }] })];
+    // a Set that crossed JSON.stringify arrives as {} (no `.has`); an array-shaped domain list also works.
+    const degraded = { citationDomains: {}, reputableDomains: ["ok.example"], searchResultDomains: {} } as unknown as Parameters<typeof applyVerdictSourceChecks>[1];
+    const applied = applyVerdictSourceChecks(claims, degraded);
+    // no throw; the array reputable domain is honored (ok.example → not downgraded).
+    expect(applied[0]!.downgraded).toBe(false);
+    // an empty citation context degrades to a conservative downgrade rather than crashing.
+    const allEmpty = { citationDomains: {}, reputableDomains: {}, searchResultDomains: {} } as unknown as Parameters<typeof applyVerdictSourceChecks>[1];
+    expect(applyVerdictSourceChecks(claims, allEmpty)[0]!.downgraded).toBe(true);
+  });
 });
 
 describe("sidecar validation", () => {

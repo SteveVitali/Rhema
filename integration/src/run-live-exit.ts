@@ -18,6 +18,7 @@ import pg from "pg";
 import type { SqlClient } from "@rhema/orchestrator";
 import { driveLiveExit, formatLiveExitReadout, type LiveExitDeps } from "./live-exit-driver.js";
 import { LiveWorkflowLauncher, type LivePrincipal } from "./live-launcher.js";
+import { createDbInstrumentedFolder } from "./instrumented-folder.js";
 
 export interface RunLiveExitConfig {
   readonly apiBaseUrl: string;
@@ -34,12 +35,22 @@ export async function runLiveExit(config: RunLiveExitConfig, log: (msg: string) 
     query: (text, params) => pool.query(text, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
   try {
-    const launcher = new LiveWorkflowLauncher({ apiBaseUrl: config.apiBaseUrl, principal: config.principal, sql });
+    const launcher = new LiveWorkflowLauncher({
+      apiBaseUrl: config.apiBaseUrl,
+      principal: config.principal,
+      sql,
+      // Each real project reviews its seeded frozen draft `<proj>_d1` (whose `<proj>_av1` head the fixture
+      // repoints to real bytes — live-prepare-fixture.ts); without this the run has no draft to materialize.
+      draftIdFor: (projectId) => `${projectId}_d1`,
+    });
     const deps: LiveExitDeps = {
       exec: sql,
       launcher,
       projectIds: config.projectIds,
       devTargetAuthorized: true,
+      // Fold each instrumented run's measured proxy cost into the estimator (§16.3 #1 / D-P0.15-2) so
+      // `estimatorsAreProvisional()` flips false for the ported workflows after one metered run each.
+      foldInstrumented: createDbInstrumentedFolder(),
     };
     const readout = await driveLiveExit(deps);
     log(formatLiveExitReadout(readout));

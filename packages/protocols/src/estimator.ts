@@ -229,7 +229,43 @@ export function foldInstrumentedRun(spec: EstimatorSpec, m: InstrumentedMeasurem
   };
 }
 
-/** Are the ported-workflow estimator figures still provisional? (the price card / marketing precondition — §16.4). */
+// --- Instrumented-fold registry (§16.3 #1 live call-site — P0.15k) ---------------------------------------
+// `foldInstrumentedRun` is PURE (it returns a new spec and never touches `ESTIMATORS`), so on its own it can
+// never flip `estimatorsAreProvisional()` — nothing reads its result. That is the missing call-site the live
+// exit needs: for AC2 / the price-card precondition (§16.4), a live instrumented run must make
+// `estimatorsAreProvisional()` false. This registry is where a folded spec is RECORDED so the provisional
+// check (and any estimate consumer via `estimatorSpec`) reflects it: a process-local, override-first,
+// test-resettable map. It is the in-process reflection the live-exit driver asserts against; the DURABLE
+// persistence — writing the measured constants into the shipped estimator source / a price-card table — is the
+// follow-up the operator lands from the driver's emitted folds (ADR-005).
+const INSTRUMENTED_OVERRIDES = new Map<string, EstimatorSpec>();
+
+/** The current spec for a workflow: the recorded instrumented override if one exists, else the shipped modeled base. */
+export function estimatorSpec(workflow: string): EstimatorSpec | undefined {
+  return INSTRUMENTED_OVERRIDES.get(workflow) ?? ESTIMATORS[workflow];
+}
+
+/**
+ * Fold an instrumented measurement into the workflow's CURRENT spec (an existing override if present, else the
+ * shipped modeled base) and RECORD the result so `estimatorSpec`/`estimatorsAreProvisional` reflect it (§16.3 #1).
+ * Returns the folded spec — the caller also EMITS it so the measured constants can be persisted durably. Composes:
+ * a second call for the same workflow folds toward its own measured anchor on top of the first.
+ */
+export function recordInstrumentedFold(workflow: string, m: InstrumentedMeasurement): EstimatorSpec {
+  const current = estimatorSpec(workflow);
+  if (!current) throw new Error(`recordInstrumentedFold: unknown workflow "${workflow}"`);
+  const folded = foldInstrumentedRun(current, m);
+  INSTRUMENTED_OVERRIDES.set(workflow, folded);
+  return folded;
+}
+
+/** Clear all recorded instrumented overrides (a fresh driver process; test isolation). */
+export function resetInstrumentedOverrides(): void {
+  INSTRUMENTED_OVERRIDES.clear();
+}
+
+/** Are the ported-workflow estimator figures still provisional? (the price card / marketing precondition — §16.4).
+ *  Reads the recorded instrumented override first (so a folded live run flips this to false), else the shipped base. */
 export function estimatorsAreProvisional(workflows: readonly string[] = ["review", "revise", "fact_check", "profile_voice"]): boolean {
-  return workflows.some((w) => ESTIMATORS[w]?.provisional !== false);
+  return workflows.some((w) => estimatorSpec(w)?.provisional !== false);
 }

@@ -143,6 +143,8 @@ export interface DeliveryArgs {
 export interface DeliveryResult {
   readonly correspondenceId: string;
   readonly downgradedClaimOrdinals: readonly number[];
+  /** Path B (ADR-006): count of unfetched cited urls stripped from the persisted ledger at delivery. */
+  readonly strippedCitations: number;
   readonly accessReport: AccessReport;
   readonly accessReportVersionId: string;
 }
@@ -179,20 +181,33 @@ export async function runDeliveryTransaction(
   if (!sidecarResult.ok) throw new DeliveryValidationError("sidecar", sidecarResult.failures);
 
   const claims = args.claimLedger?.claims ?? [];
-  if (claims.length > 0) {
-    const fetched = await fetchedNormalizedUrls(exec, args.runId);
-    const cited = validateCitedFetched(claims, fetched);
-    if (!cited.ok) throw new DeliveryValidationError("cited_not_fetched", cited.misses);
-  }
+  // The proxy fetch log of record — used by both the cited⇒fetched policy below and the strip in step 3.
+  const fetched = claims.length > 0 ? await fetchedNormalizedUrls(exec, args.runId) : new Set<string>();
+  const isFetched = (url: string): boolean => fetched.has(normalizeUrl(url));
 
   if (args.secondReadProducerQueryId !== undefined) {
     const producer = await checkSecondReadProducer(exec, { runId: args.runId, producerQueryId: args.secondReadProducerQueryId });
     if (!producer.ok) throw new DeliveryValidationError("producer", producer.reason);
   }
 
-  // verdict source check — a DOWNGRADE at commit, not a hard failure (§12.8(c)).
-  const applied = applyVerdictSourceChecks(claims, args.verdictContext);
+  // cited⇒fetched (REQ-VIS-9) — a per-claim DOWNGRADE at commit, NOT a run-fatal reject (Path B; ADR-006;
+  // operator ruling 2026-09-11). `validateCitedFetched` is unchanged (still computes the misses — this call and
+  // the exit assessor both read it). An unfetched cited url is STRIPPED from the persisted ledger (step 3) and
+  // its claim's verdict downgraded to `unverifiable`/`suspicious_source` — the SAME treatment §12.8(c) already
+  // gives a suspicious verdict source — so the delivered dossier cites ONLY fetch-verified sources (cited⇒fetched
+  // stays TRUE for what ships; the exit assessor re-reads the persisted rows and sees no miss).
+  const citedMisses = claims.length > 0 ? validateCitedFetched(claims, fetched).misses : [];
+  const unfetchedOrdinals = new Set(citedMisses.map((m) => m.claimOrdinal));
+
+  // verdict source check — a DOWNGRADE at commit, not a hard failure (§12.8(c)) — composed with the cited⇒fetched
+  // downgrade above (a claim with an unfetched citation is likewise downgraded).
+  const applied = applyVerdictSourceChecks(claims, args.verdictContext).map((a) =>
+    unfetchedOrdinals.has(a.claim.ordinal) && a.verdict !== "unverifiable"
+      ? { claim: a.claim, verdict: "unverifiable" as const, sourceCheck: "suspicious_source" as const, downgraded: true }
+      : a,
+  );
   const downgradedClaimOrdinals = applied.filter((a) => a.downgraded).map((a) => a.claim.ordinal);
+  let strippedCitations = 0;
 
   // ---- 2. correspondence_item ----------------------------------------------------------------------
   const ordRes = await exec.query(
@@ -226,6 +241,14 @@ export async function runDeliveryTransaction(
   for (const a of applied) {
     const c = a.claim;
     const claimId = deps.ids("clm");
+    // Path B strip (ADR-006): a cited url absent from the proxy fetch log is unverifiable provenance — drop it
+    // from the persisted ledger so the delivered dossier cites only fetch-verified sources. A claim's own url is
+    // nulled; an unfetched source row is skipped. The claim's verdict was already downgraded in `applied`.
+    const claimUrlUnfetched = !!c.url && !isFetched(c.url);
+    if (claimUrlUnfetched) strippedCitations += 1;
+    const keptSources = (c.sources ?? []).filter((s) => isFetched(s.url));
+    strippedCitations += (c.sources ?? []).length - keptSources.length;
+    const claimUrl = claimUrlUnfetched ? null : (c.url ?? null);
     await exec.query(
       `insert into claims(id, correspondence_id, draft_id, ordinal, text, tier, verdict, kind, url,
          normalized_url, accessed_at, note, source_check, anchor, human_added)
@@ -239,8 +262,8 @@ export async function runDeliveryTransaction(
         c.tier,
         a.verdict,
         c.kind ?? null,
-        c.url ?? null,
-        c.normalizedUrl ?? (c.url ? normalizeUrl(c.url) : null),
+        claimUrl,
+        claimUrl ? (c.normalizedUrl ?? normalizeUrl(claimUrl)) : null,
         c.accessedAt ?? null,
         c.note ?? null,
         a.sourceCheck ?? c.sourceCheck ?? null,
@@ -248,7 +271,7 @@ export async function runDeliveryTransaction(
         c.humanAdded ?? false,
       ],
     );
-    for (const [i, s] of (c.sources ?? []).entries()) {
+    for (const [i, s] of keptSources.entries()) {
       await exec.query(
         `insert into claim_sources(claim_id, ordinal, url, normalized_url, accessed_at, stance, note)
          values ($1,$2,$3,$4,$5,$6,$7)`,
@@ -258,7 +281,7 @@ export async function runDeliveryTransaction(
     persistedClaims.push({
       claimId,
       ordinal: c.ordinal,
-      normalizedUrl: c.normalizedUrl ?? (c.url ? normalizeUrl(c.url) : null),
+      normalizedUrl: claimUrl ? (c.normalizedUrl ?? normalizeUrl(claimUrl)) : null,
       anchor: c.anchor ?? null,
     });
   }
@@ -365,5 +388,5 @@ export async function runDeliveryTransaction(
   const written = parseRunEvent("artifact.written", { kind: "access_report", mirrorPath: reportPath, versionId: persistedReport.versionId });
   await deps.eventWriter.append(exec, { runId: args.runId, type: written.type, payload: written.payload, at: now });
 
-  return { correspondenceId, downgradedClaimOrdinals, accessReport, accessReportVersionId: persistedReport.versionId };
+  return { correspondenceId, downgradedClaimOrdinals, strippedCitations, accessReport, accessReportVersionId: persistedReport.versionId };
 }

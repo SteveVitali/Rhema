@@ -17,11 +17,11 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      P0.15k            # 16_P0.15k__live-three-project-reviews-and-instrumented-cost.md (RUN 3 of 3 post-P0.15i follow-ups), then GATE G1
-lastCompleted:   P0.15j            # fact-check citation-fetch eval + skill discipline (Stage A), PR #27
+nextTicket:      PRB.01            # G1 PASSED + G2 DEFERRED (operator decision 2026-09-15, readouts/GATE-G2.md): proceed to Phase-B implementation. Next code ticket = 17_PRB.01__beta-shell-and-invites.md (implement-spec). H2 corpus + G2 wave-1 eval deferred (still HARD-gate public launch + §16.4 marketing claims).
+lastCompleted:   GATE-G1           # Phase-0 exit dispositioned PASSED (with accepted exceptions) 2026-09-15; see readouts/GATE-G1.md. Last code ticket: P0.15k (PR #28).
 blockedOn:       (nothing)         # a REAL block only (red verification, missing dependency/infra). Human gates + pending G1 are NOT blocks
 pauseRequested:  false
-returnPass:      P0.15j            # AC3 (live second_read=false deliver) is Stage B [OPERATOR GATE]; re-run after the operator releases budget
+returnPass:      (none)            # P0.15j AC3 + P0.15k AC1 DONE live (2026-09-11, PR #28); the remaining narrow legs (D-P0.15-2/-3, D-P0.15k-1/-2, D-P0.08-2) are gate-pending DEFERRALS, not full-ticket re-runs
 manifest:        docs/tickets/00_MANIFEST.md
 canonicalSpec:   docs/rhema-design-spec.md
 memoryRoot:      docs/build
@@ -29,23 +29,34 @@ dispatchTarget:  manual
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, stevevitali/p0-01-monorepo-and-infra) — P0.01's fork point
-chainTip:        stevevitali/p0-15j-fact-check-citation-discipline
+chainTip:        stevevitali/p0-15k-live-three-project-reviews-cost
 benchmarkSet:    PENDING_CREATE     # §18 corpus is HUMAN row H2; dev set = the three real projects
 autonomy:        checkpoint
 mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up at the end
 round:           1
-updatedAt:       2026-09-11
+updatedAt:       2026-09-15         # GATE G1 PASSED (with accepted exceptions); Phase 0 exited
 ```
 
 ## OPEN FINDINGS
 
-- **G1 blocker (cited⇒fetched delivery, [[D-P0.15i-2]]).** Phase-0 exit (G1) is not yet passable: a complete
-  `second_read=false` Review runs all six required phases with real proxy-logged web research, but delivery still
-  throws `cited_not_fetched` because the fact-check cites authoritative URLs from training knowledge it did not
-  retrieve this session. Owned by `16_P0.15j` (citation-discipline eval / skill-tuning, or a cited⇒fetched
-  spec-semantics decision). See `docs/phase0-exit-readout.md` and DEFERRALS `D-P0.15i-2`.
-- **Live G1 legs remaining ([[D-P0.15-1]], [[D-P0.15-2]]).** The three-project Reviews + instrumented-cost runs +
-  the readout rewrite are owned by `16_P0.15k` (operator-gated, paid inference).
+- **G1 CORE criterion MET live (2026-09-11, P0.15k Stage B, PR #28).** The `cited⇒fetched` wall ([[D-P0.15i-2]])
+  was confirmed unconverged live (a proj_pv review fetched 224 URLs but still cited 18 from training knowledge);
+  the **operator ruled Path B** ([[ADR-006]]: delivery strips unfetched citations + downgrades the claim, rather
+  than hard-failing — `validateCitedFetched` unchanged), and **all three real Reviews then DELIVERED green** on
+  `dev` (`assessPhase0ExitForRun` PASSED: violations=0, sidecars ok, cited⇒fetched 0-miss). Closes **D-P0.15-1**
+  and **D-P0.15i-2**. See `docs/phase0-exit-readout.md` § "P0.15k Stage B".
+- **GATE G1 dispositioned PASSED (2026-09-15, with accepted exceptions) — Phase 0 EXITED.** The Phase-0
+  deferrals were reconciled against the P0.15k live evidence (`DEFERRALS.md` § "Reconciliation — G1 clear"):
+  the live deploy/agent/proxy/mirror/orchestrator rows are DONE; the §18-eval rows belong to GATE G2; the
+  beta/IDE/CI/ops rows to later phases. Accepted-exception follow-ups (tracked, not blocking): the ±2% cost
+  cross-check ([[D-P0.08-2]]/[[D-P0.15-2]]), the live structured gate-EDIT ([[D-P0.15-3]]/[[D-P0.15k-2]]), the
+  estimator fold for revise/profile_voice ([[D-P0.15k-1]]). See `readouts/GATE-G1.md`.
+- **G2 DEFERRED (operator decision 2026-09-15) — Phase-B implementation proceeds.** The spec gates Phase-B UI on
+  **G2** (wave-1 LIFT) + **H2** (corpus); the operator deliberately overrode this for velocity (`readouts/GATE-G2.md`).
+  `nextTicket → PRB.01`. **Standing (deferred, not waived):** §16.4 marketing/efficacy claims do NOT ship until
+  LIFT is met; REQ-EVAL-16 consequences apply retroactively to UI built if the eval later fails — UI spend past
+  here is at risk. The Path-B citation-quality caveat (ADR-006: many `unverifiable` verdicts) compounds it. G2 +
+  H2 stay a HARD gate before public launch.
 - **REQ coverage (informational).** With `req_id_pattern` now set, `check-build-memory.sh` runs REQ→ticket
   coverage against `docs/rhema-design-spec.md`; any warning it emits is recorded here, not fixed by this ticket
   (RH.1 scope). None were violations (warnings only) at MAINT.1 close.
@@ -56,7 +67,8 @@ _(append-only: `| date | ticket | gate | item | answer | consequence |`)_
 
 | date | ticket | gate | item | answer | consequence |
 |---|---|---|---|---|---|
-| — | — | — | (none recorded; G1 has not been read out — its disposition, when taken, lands here and in `docs/build/readouts/GATE-G1.md`) | — | — |
+| 2026-09-15 | 16c_GATE-G2 | G2 | benchmark wave-1 LIFT — proceed to Phase-B without the eval? | **DEFERRED (operator decision) — proceed to Phase-B implementation now.** The wave-1 eval + its H2 corpus prerequisite are deferred for build velocity; G2 is NOT passed. | **Deliberate override of §17/REQ-EVAL-15 "no UI spend beyond Phase 0 until G2".** §16.4 marketing/efficacy claims do NOT ship until LIFT is met; REQ-EVAL-16 failure consequences apply retroactively to any UI built if the eval later fails — UI spend past here is at risk. G2 stays a HARD gate before public launch. `nextTicket → PRB.01`. See `readouts/GATE-G2.md`. |
+| 2026-09-15 | 16a_GATE-G1 | G1 | Phase-0 exit — reconciled disposition after P0.15k Stage B (PR #28) | **PASSED, with accepted exceptions.** §17 criterion met — three real-project Reviews deliver green live (`boundary=0`, cited⇒fetched green, sidecars ok), start-latency p95 < 45 s, pilot-wave clause met deterministically. Phase-0 deferrals reconciled (`DEFERRALS.md` § "Reconciliation — G1 clear"): live rows closed; §18-eval rows → G2; beta/IDE/CI/ops rows → later phases. | Phase 0 EXITED. Accepted exceptions (tracked follow-ups): the ±2% cost cross-check (D-P0.15-2/D-P0.08-2) + the live structured gate-EDIT (D-P0.15-3/D-P0.15k-2) + the estimator-fold for revise/profile_voice (D-P0.15k-1). §16.4: marketing claims await the citation-completeness follow-up (ADR-006). Forward chain: **H2 corpus → G2 wave-1 LIFT** (gates all Phase-B UI). See `readouts/GATE-G1.md` (2026-09-15 PASSED). |
 
 ## RETURN PASS
 
@@ -64,7 +76,8 @@ _(tickets run with a gate skipped; re-run after the operator acts. `returnPass:`
 
 | ticket | gates | what the operator must do | re-run line |
 |---|---|---|---|
-| P0.15j | AC3 (live `second_read=false` deliver, [OPERATOR GATE]) | release `dev` Anthropic budget; bake the hardened skill into a new run-task image + roll `RUN_TASK_IMAGE_DIGEST` | launch a `second_read=false` Review of `proj_pv` on `dev`, score its claim ledger vs fetch_log with `citationFetchCompliance`, confirm DELIVERS (no `cited_not_fetched`, `assessPhase0ExitForRun` green) → closes D-P0.15i-2 |
+| P0.15j | ~~AC3 (live deliver)~~ **DONE 2026-09-11 (PR #28) via Path B** — the proj_pv Review DELIVERS on `dev`; D-P0.15i-2 closed. No re-run owed. | — | — |
+| P0.15k | ~~AC1~~ **DONE** (3/3 reviews green live). Remaining are gate-pending DEFERRALS, not a ticket re-run: D-P0.15-2 (fold revise/profile_voice — needs richer fixtures, D-P0.15k-1), D-P0.08-2 (±2% cross-check — sdk_estimate not live), D-P0.15-3/D-P0.15k-2 (live gate-EDIT). | for the narrow legs: seed a revise-target + author corpus; populate `sdk_estimate`; drive a structured gate-edit | (optional) run revise/profile_voice instrumented + fold; drive a gate-edit → close D-P0.15-2/-3, D-P0.15k-1/-2 |
 
 ## PHASE LOG (append-only, newest last)
 
@@ -102,3 +115,7 @@ run-time `P0.15b…P0.15i` inserts are `inserted` events. Reconstructed by MAINT
 - 2026-09-03…09 — P0.15b…P0.15i inserted — the eight live-bring-up sub-tickets were inserted at run time under the `16_` prefix (ID-suffixed), each synthesized from the prior ticket's live blockers; see manifest § Plan extensions and **ADR-003**.
 - 2026-09-10 — MAINT.1 done — branch `stevevitali/maint-1-build-memory-v2` · PR #26 · base `stevevitali/p0-15i-agent-web-research-sandbox` · build-memory v2 migration: committed `docs/build/` root, 23 run ledgers moved (byte-identical), LEDGER + BUILD_INDEX reconstructed from 25 PRs, ADR-001..004 retro-fitted, chain-table + docs reconciled · **Verify:** `check-build-memory.sh .` exit 0; `pnpm turbo build lint typecheck` + `pnpm test` unchanged (no code) · **Deferrals:** opened none · closed none · **Deviations:** patched the shared build-memory validator (ID-keyed dup check + status-prose tolerance; separate agent-skills PR); 3 DEFERRALS rows given a canonical status prefix; BM-COMPAT-05 (SHOULD) honored — no ticket renamed · chainTip → `stevevitali/maint-1-build-memory-v2` · next → P0.15j
 - 2026-09-11 — P0.15j done — branch `stevevitali/p0-15j-fact-check-citation-discipline` · PR #27 · base `stevevitali/maint-1-build-memory-v2` · citation-fetch-compliance eval (`@rhema/benchmark` §18 scorer, guard-parity) + editorial-review fetch-then-cite skill discipline (Path A; Path B not taken — no operator ruling); `validateCitedFetched` unchanged · **Verify:** eval 8; guard 12 (still rejects un-retrieved); benchmark+protocols+mirror 294; `pnpm turbo build lint typecheck` 102/102; drift gate OK; `PROTOCOLS_VERSION` → `0.4.0+5b08d37da59aad92`; `check-build-memory.sh .` 0 violations · **Deferrals:** opened none · closed none (D-P0.15i-2 Stage-A construction done; live AC3 gate-pending) · **Deviations:** Path A(b) model-routing left unchanged offline (Stage-B lever, no offline proof) · chainTip → `stevevitali/p0-15j-fact-check-citation-discipline` · next → P0.15k (RETURN PASS: P0.15j AC3)
+- 2026-09-11 — P0.15k done — branch `stevevitali/p0-15k-live-three-project-reviews-cost` · PR #28 · base `stevevitali/p0-15j-fact-check-citation-discipline` · Stage A of the last live G1 leg: multi-project fixture (all 3 real drafts) + the previously-missing instrumented-fold call-site (estimator override registry + driver fold seam + `createDbInstrumentedFolder`, ADR-005) + `run-live-exit.ts` `draftIdFor`/`second_read=false` + exit-readout Stage-A section · **Verify:** `pnpm turbo build lint typecheck` 102/102; protocols+integration+mirror+orchestrator 394 pass / 1 skip; new estimator-registry/driver-fold/folder/launcher tests green; upstream-diff OK; `PROTOCOLS_VERSION` unchanged `0.4.0+5b08d37da59aad92` · chainTip → `stevevitali/p0-15k-live-three-project-reviews-cost`
+- 2026-09-11 — P0.15k Stage B executed live — branch `stevevitali/p0-15k-live-three-project-reviews-cost` · PR #28 · operator-authorized (~$300 ceiling; ~$207 list / 12 runs spent; dev stack left UP) · **AC1 MET:** all 3 real projects' Reviews DELIVERED green on `dev` (`assessPhase0ExitForRun` PASSED: violations=0, sidecars ok, cited⇒fetched 0-miss on 22/36/26 URLs); provision ~20-23 s (< 45 s SLO) · **Path B (operator ruling, ADR-006, commit `eae46ba`):** cited⇒fetched wall confirmed live (224 fetched, still 18 cited-from-memory) → delivery strips unfetched citations + downgrades the claim, not a hard-fail; unblocked all 3 deliveries · **verdictContext Set-loss fix (commit `db455dc`):** Path B exposed a latent §12.8(c) crash (pod's JSON POST drops the Sets) → api rebuilds verdictContext server-side · **AC2 PARTIAL:** fold proven live — review (cal 1.949) + fact_check (1.793) → instrumented; revise/profile_voice blocked on fixtures (D-P0.15k-1); ±2% not comparable (D-P0.08-2) · **AC3 PARTIAL:** gate resolution live; structured-edit leg gate-pending (D-P0.15k-2) · **AC4 DONE:** readout rewritten with measured values · **Deferrals:** closed **D-P0.15-1, D-P0.15i-2**; opened D-P0.15k-1/-2; D-P0.15-2/-3 → PARTIAL · **G1:** CORE criterion (3-project reviews green) MET; narrow legs gate-pending; operator dispositions at `16a_GATE-G1` · next → GATE G1
+- 2026-09-15 — GATE G1 dispositioned — **PASSED, with accepted exceptions** (operator, after P0.15k Stage B / PR #28). §17 Phase-0 exit met: three real-project Reviews deliver green live (boundary=0, cited⇒fetched green via Path B/ADR-006, sidecars ok), start-latency p95 ~20–23 s (< 45 s), pilot-wave clause met deterministically. Phase-0 deferrals reconciled (`DEFERRALS.md` § "Reconciliation — G1 clear"): live rows DONE; §18-eval → G2; beta/IDE/CI/ops → later phases. **Accepted exceptions** (tracked): ±2% cross-check (D-P0.08-2/D-P0.15-2), live structured gate-EDIT (D-P0.15-3/D-P0.15k-2), revise/profile_voice fold (D-P0.15k-1). §16.4 caveat: marketing claims await the citation-completeness follow-up. **Phase 0 EXITED.** next → HUMAN-H2 (benchmark corpus) → GATE G2 (wave-1 LIFT, gates all Phase-B UI). See `readouts/GATE-G1.md`.
+- 2026-09-15 — GATE G2 deferred — **DEFERRED (operator decision): proceed to Phase-B implementation without the wave-1 eval.** Deliberate override of §17/REQ-EVAL-15 ("no UI spend beyond Phase 0 until G2") for build velocity; G2 NOT passed. H2 corpus + wave-1 eval deferred. Standing: §16.4 marketing/efficacy claims do NOT ship until LIFT met; REQ-EVAL-16 consequences apply retroactively to UI built if the eval later fails (UI spend at risk); G2 stays a HARD gate before public launch. next → **PRB.01** (`17_PRB.01__beta-shell-and-invites.md`, implement-spec). See `readouts/GATE-G2.md`.

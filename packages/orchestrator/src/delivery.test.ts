@@ -102,7 +102,9 @@ describe("deliverRun (orchestrator wiring)", () => {
     expect(deps.eventWriter.events.some((e) => e.type === "boundary.attested")).toBe(true);
   });
 
-  it("a cited⇒fetched failure ends the run failed(validation), nothing committed", async () => {
+  // NB: an unfetched citation no longer hard-fails delivery (Path B / ADR-006) — it is stripped + downgraded.
+  // A genuine validation failure (a sidecar that fails its schema) still ends the run failed(validation).
+  it("a delivery-validation (sidecar) failure ends the run failed(validation), nothing committed", async () => {
     const result = await deliverRun(
       { ...deps, store },
       {
@@ -112,11 +114,8 @@ describe("deliverRun (orchestrator wiring)", () => {
         spentCredits: 42,
         capCredits: 100,
         delivery: delivery({
-          claimLedger: {
-            sidecar: "claim_ledger",
-            version: 1,
-            claims: [{ ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: "https://missing.example/x", normalizedUrl: normalizeUrl("https://missing.example/x"), humanAdded: false }],
-          } as ClaimLedgerSidecar,
+          // a claim_ledger sidecar whose claim is schema-invalid (ordinal not a number) → parseSidecar fails.
+          sidecars: [{ filename: "01-claim-ledger.json", json: { sidecar: "claim_ledger", version: 1, claims: [{ ordinal: "one", text: "c1" }] } }],
         }),
       },
     );

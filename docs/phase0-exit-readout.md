@@ -1,13 +1,70 @@
 # Phase-0 exit readout — the input to milestone gate G1
 
-> **Status: composition proven deterministically; Stage B was executed LIVE on `dev` (2026-09-03) and the
-> deploy + orchestration pipeline is proven end-to-end up to the agent-execution boundary — but NO live
-> Review completed, so G1 is NOT passable.** This document is produced by **P0.15** and updated by
-> **P0.15c** (Stage B live execution); it is the operator's input to **GATE G1**
-> (`docs/tickets/16a_GATE-G1__phase0-exit.md`). See **"Stage B — live execution (2026-09-03)"** below for
-> what was proven live, the ~16 deploy-surfaced bugs fixed, and the one core gap that blocks the live Review.
+> **Status (updated 2026-09-11, P0.15k Stage B — EXECUTED LIVE): the CORE §17 criterion is MET — a Review of
+> each of the THREE real projects delivered green on `dev` with real inference.** All three (`proj_pv`, `proj_sd`,
+> `proj_cr`) ran end-to-end and DELIVERED (`assessPhase0ExitForRun` PASSED: `boundary.violations=0`, every
+> sidecar validated at delivery, `cited⇒fetched` green with 0 misses on 22/36/26 cited URLs, one
+> `correspondence_items` row each). This closes **D-P0.15-1** and was unblocked by the operator's **Path B ruling**
+> (ADR-006: `cited⇒fetched` is a delivery downgrade+strip, not a run-fatal reject — the fetch-then-cite discipline
+> did not converge live, so unfetched citations are stripped and their claims downgraded). **G1 is substantially
+> ready; a few NARROW legs remain gate-pending** (not the core blocker): AC2's full 4-workflow estimator flip +
+> the ±2% proxy-vs-SDK cross-check, and AC3's live structured gate-EDIT. See **"P0.15k Stage B (2026-09-11) —
+> measured live results"** immediately below for the numbers; the older dated sections are superseded history.
+>
+> This document is produced by **P0.15** and updated by **P0.15c/e/f** and **P0.15k** (Stage B live execution);
+> it is the operator's input to **GATE G1** (`docs/tickets/16a_GATE-G1__phase0-exit.md`).
+>
+> ⚠️ The dated Stage-B sections further below (2026-09-03 … 09-04) are append-only live-execution HISTORY and
+> predate this milestone — read them as history, not the current state (the banner above + the P0.15k Stage B
+> section are current).
 
 Generated at commit on branch `stevevitali/p0-15-phase0-integration-and-exit` (stacked on the P0.14 tip).
+
+---
+
+## P0.15k Stage B (2026-09-11) — measured live results on `dev` (operator-authorized, ~$300 ceiling)
+
+Executed live on `rhema-507501` with real inference. Rebuilt + rolled the run-task image (P0.15j hardened skill)
+and, after the wall below, the api (Path B + a verdictContext fix). **Total spend: ~$207 list (~$290 platform)
+across 12 runs.** The billable stack was left UP for follow-up and should be torn down when done (see the ledger).
+
+### The `cited⇒fetched` wall (confirmed live) → the operator's Path B ruling
+
+A full `second_read=false` Review of `proj_pv` ran all six phases and reached delivery having **fetched 224
+distinct URLs**, yet delivery still rejected **18** cited URLs the model emitted from *training knowledge*
+(snopes, forbes, brookings, scientificamerican, statista, deadline, epic.org, …) and never retrieved — the
+D-P0.15i-2 wall, **unconverged** despite P0.15j's fetch-then-cite hardening + a raised per-phase budget. The
+operator **ruled Path B** (relax `cited⇒fetched`): unfetched citations are now a per-claim **downgrade + strip**
+at delivery (ADR-006), not a run-fatal reject — `validateCitedFetched` is unchanged; the delivered dossier cites
+only fetch-verified sources.
+
+### Criterion-by-criterion — MEASURED
+
+| # | §17 criterion | Live result on `dev` | Verdict |
+|---|---|---|---|
+| 1 | Review of each of the 3 real projects delivers, `boundary.attested violations = 0` | `proj_pv` / `proj_sd` / `proj_cr` all `completed` + delivered; `assessPhase0ExitForRun` PASSED, `boundaryViolations=0` on each; one `correspondence_items` row each | **MET ✓ (D-P0.15-1)** |
+| 2 | `cited ⇒ fetched` against the proxy log | 0 misses / 22 (pv), 36 (sd), 26 (cr) cited URLs on the persisted ledger (Path B strips the unfetched, ADR-006); the proxy logged 224+ fetched URLs/run | **MET ✓** (via Path B) |
+| 3 | every sidecar validates (`parseStatus = ok`) | delivery ran `validateSidecars` — a failed sidecar hard-fails delivery, and all three delivered, so sidecars parsed ok at commit | **MET ✓** (at delivery; the post-hoc assessor counts 0 sidecars linked via `correspondence.artifact_ids` — a measurement nuance, not a failure) |
+| 4 | a gate edit round-trips through the serializer into the next phase's file | gate **resolution** proven live (approve→resume→next phase, on every review's `approve_scope`); the structured **edit→overlay→next-phase-file** leg (overlay serializer proven offline: `gate-overlay.test.ts`) was **not driven live** | **PARTIAL — gate-pending (D-P0.15-3)** |
+| 5 | proxy-metered cost = SDK-reported cost ± 2% | `proxyVsSdkCrossCheck` reports **not comparable** — no `sdk_estimate` rows are populated live (**D-P0.08-2**); proxy metered ~$21–34/review | **gate-pending (D-P0.08-2)** |
+| 7 | estimators no longer provisional for the ported workflows | instrumented runs folded LIVE: **review** (calibrationScale **1.949**) + **fact_check** (**1.793**) → `provisional=false, source=instrumented` from real metered cost. `revise`/`profile_voice` BLOCKED at phase 1 on fixture inputs (revise needs its dossier/working-draft wiring; profile_voice needs an author body-of-work the dev seed lacks) | **PARTIAL — machinery proven; full 4-workflow flip gate-pending (fixtures)** |
+| 9 | start-latency p95 (queued→running) ≤ 45 s | measured **~20–23 s** provision (queued→running) across the live runs — **under the 45 s SLO** | **MET ✓ (D-P0.15-5 data point)** |
+
+### Path B consequence (honest)
+
+Path B delivered the reviews but stripped many citations: of the persisted claims, most were downgraded to
+`unverifiable` (pv 12/13, sd 13/16, cr 10/13) because the model cited unfetched sources; the fetched sources
+(22/36/26) survived. cited⇒fetched is green *for what ships*, but the fetch-then-cite skill discipline (P0.15j)
+still needs work — a real delivery-time backfill (fetch the cited urls) is ADR-006's revisit trigger.
+
+### G1 readiness (honest)
+
+**The core §17 criterion — a Review of each of the three real projects delivering green — is MET live.** This
+was the blocker that held G1 across ~10 sessions. Remaining, all NARROW + gate-pending (none is the core
+review-pipeline): the live gate-EDIT round-trip (D-P0.15-3; resolution is proven live), the full 4-workflow
+estimator flip (revise/profile_voice need richer fixtures), and the ±2% cross-check (D-P0.08-2 — `sdk_estimate`
+not populated live). **G1 is substantially ready; the operator dispositions it at `16a_GATE-G1` with these legs
+noted.**
 
 ---
 
@@ -399,6 +456,49 @@ after the run (cost mandate). **G1 stays blocked**, now with a precise remaining
 undiagnosable hang.
 
 ---
+
+## P0.15k Stage A (2026-09-11) — the three-project + instrumented-cost machinery is wired; the live matrix is gate-pending
+
+**P0.15k is the LAST live G1 leg (three-project Reviews + instrumented cost → rewrite this readout → flag G1
+ready).** It is mostly a live-execution ticket → **[OPERATOR GATE]d** (real infra + paid inference), and its
+Stage B additionally depends on **16_P0.15j**'s own live AC3 (a Review must DELIVER `cited⇒fetched`-green
+first — still a RETURN PASS). This session had **no operator authorization, no stated spend budget, and no
+confirmed deployed `dev`**, so Stage B was **not** run and no pass was fabricated (BM-DEFER-02). What Stage A
+built + verified offline, no spend:
+
+- **Multi-project fixture (AC1).** `integration/src/live-prepare-fixture.ts` now repoints **all three** real
+  drafts (`proj_pv` / `proj_sd` / `proj_cr`) to real ~800–900-word prose (was `proj_pv`-only). The seed writes
+  each `<proj>_av1` head with a placeholder sha + no GCS bytes; the fixup uploads real bytes + repoints each so
+  `/work` materialization does not dangle for any of the three. `run-live-exit.ts` wires `draftIdFor` so each
+  project reviews its seeded `<proj>_d1`, and the launcher opts `second_read` **out** for review runs (the G1
+  delivery mode, D-P0.15h-5).
+- **The instrumented-fold call-site (AC2 / D-P0.15-2), previously missing.** `foldInstrumentedRun` is pure and
+  was never applied in the live path, and `estimatorsAreProvisional()` read a hardcoded const — so nothing could
+  ever flip it, and AC2 could not pass even on a perfect live run. Now: a process-local **instrumented-override
+  registry** (`@rhema/protocols` `recordInstrumentedFold` / `estimatorSpec` / `resetInstrumentedOverrides`;
+  `estimatorsAreProvisional()` reads override-first), the driver **folds each instrumented run** through an
+  injectable `InstrumentedFolder` and surfaces the folds (`estimatorFolds`), and the live binding
+  (`integration/src/instrumented-folder.ts` `createDbInstrumentedFolder`) reads the run's measured proxy cost
+  (`proxyVsSdkCrossCheck`) → `platformCredits` and records the fold. Design + the process-local-vs-durable
+  tradeoff: **ADR-005**. `proxyVsSdkCrossCheck` (±2%, AC2) and `assessPhase0ExitForRun` (AC1) already read the
+  live rows and handle all three projects.
+- **Credit renderer (D-P0.15d-3) verified wired live.** The pod harvest route already defaults its
+  `renderCredits` to `rateTableCreditRenderer` (`apps/api/src/run-routes.ts`), so a live phase emits a
+  provisional `usage.tick` / `sdk_stream` row; the "emits live" leg rides Stage B.
+
+**Verify (offline):** `pnpm turbo build lint typecheck` 102/102; the affected suites (protocols + integration +
+mirror + orchestrator) 394 pass / 1 skip (server-postgres, needs `DATABASE_URL`); the new estimator-registry,
+driver-fold, folder, and launcher tests green; upstream-diff OK; `protocols_version` unchanged
+(`0.4.0+5b08d37da59aad92` — the estimator is outside the hashed trio). **No spend.**
+
+**The exact remaining live checklist (Stage B, operator-gated):** on a deployed `dev` (redeploy via the
+P0.15f/g runbook; populate the workspace-scoped `anthropic-api-key`), after 16_P0.15j's live AC3 delivers:
+`node scripts/live/prepare-fixture.mjs` (funds `bill_seed` + repoints all three drafts) → `RHEMA_LIVE_EXIT=1
+PROJECT_IDS=proj_pv,proj_sd,proj_cr … tsx integration/src/run-live-exit.ts` — it drives the three Reviews +
+Revise/Fact-check/Quick-Voice + the instrumented cost runs (folding each), a gate round-trip, and runs
+`assessPhase0ExitForRun` over the live rows, then prints the readout. **Then** the criterion-by-criterion table
+above gets rewritten with the MEASURED values, D-P0.15-1/-2/-3 close with evidence, and G1 is flagged ready.
+**G1 remains the operator's gate** (this ticket does not run or disposition it).
 
 ## Pointers
 

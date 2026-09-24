@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   ESTIMATORS,
   MODEL_TIER_MULTIPLIERS,
@@ -7,6 +7,9 @@ import {
   estimateCredits,
   foldInstrumentedRun,
   estimatorsAreProvisional,
+  estimatorSpec,
+  recordInstrumentedFold,
+  resetInstrumentedOverrides,
   type EstimatorSpec,
 } from "./estimator.js";
 
@@ -126,5 +129,58 @@ describe("foldInstrumentedRun (§16.3 #1 — measured replaces provisional)", ()
     const twice = foldInstrumentedRun(once, { runId: "r2", tier: "base", rigor: "standard", inputs, measuredCredits: 200, measuredAt: "2026-09-04" });
     expect(twice.runsBehind).toEqual(["r1", "r2"]);
     expect(estimateCredits(twice, inputs, { tier: "base", rigor: "standard" })).toBe(200);
+  });
+});
+
+describe("instrumented-fold registry (§16.3 #1 live call-site — P0.15k)", () => {
+  afterEach(() => resetInstrumentedOverrides());
+
+  it("estimatorSpec returns the shipped modeled base until an override is recorded", () => {
+    expect(estimatorSpec("fact_check")).toBe(ESTIMATORS.fact_check);
+    expect(estimatorSpec("nonexistent")).toBeUndefined();
+    expect(estimatorsAreProvisional()).toBe(true);
+  });
+
+  it("recordInstrumentedFold flips estimatorsAreProvisional() to false for the ported workflows (AC2 mechanism)", () => {
+    // one instrumented run per ported workflow — the shape driveLiveExit records live.
+    recordInstrumentedFold("review", { runId: "r_rev", tier: "base", rigor: "standard", inputs: { words: 3000, claims: 10 }, measuredCredits: 500, measuredAt: "2026-09-11" });
+    recordInstrumentedFold("revise", { runId: "r_revise", tier: "base", rigor: "standard", inputs: { words: 3000, findings: 5 }, measuredCredits: 300, measuredAt: "2026-09-11" });
+    recordInstrumentedFold("fact_check", { runId: "r_fc", tier: "base", rigor: "standard", inputs: { claims: 10 }, measuredCredits: 156, measuredAt: "2026-09-11" });
+    recordInstrumentedFold("profile_voice", { runId: "r_pv", tier: "base", rigor: "standard", variant: "full", inputs: { wordsRead: 5000, piecesRead: 3, holdouts: 1 }, measuredCredits: 400, measuredAt: "2026-09-11" });
+
+    expect(estimatorsAreProvisional()).toBe(false);
+    const folded = estimatorSpec("fact_check")!;
+    expect(folded.provisional).toBe(false);
+    expect(folded.source).toBe("instrumented");
+    // the override reproduces the measured anchor
+    expect(estimateCredits(folded, { claims: 10 }, { tier: "base", rigor: "standard" })).toBe(156);
+  });
+
+  it("records the measured phase-aware cache economics on the override (review 13 F8)", () => {
+    recordInstrumentedFold("review", {
+      runId: "r_rev", tier: "base", rigor: "standard", inputs: { words: 3000, claims: 10 },
+      measuredCredits: 500, measuredAt: "2026-09-11",
+      cacheEconomics: { cacheWritePerPhase: 14, cacheReadFraction: 0.4 },
+    });
+    expect(estimatorSpec("review")!.cacheEconomics).toEqual({ cacheWritePerPhase: 14, cacheReadFraction: 0.4 });
+  });
+
+  it("composes across recorded folds (a second run further calibrates) and does not mutate ESTIMATORS", () => {
+    recordInstrumentedFold("fact_check", { runId: "r1", tier: "base", rigor: "standard", inputs: { claims: 10 }, measuredCredits: 150, measuredAt: "2026-09-11" });
+    recordInstrumentedFold("fact_check", { runId: "r2", tier: "base", rigor: "standard", inputs: { claims: 10 }, measuredCredits: 200, measuredAt: "2026-09-12" });
+    const spec = estimatorSpec("fact_check")!;
+    expect(spec.runsBehind).toEqual(["r1", "r2"]);
+    expect(estimateCredits(spec, { claims: 10 }, { tier: "base", rigor: "standard" })).toBe(200);
+    // the shipped module const is untouched
+    expect(ESTIMATORS.fact_check!.provisional).toBe(true);
+    expect(ESTIMATORS.fact_check!.source).toBe("modeled");
+  });
+
+  it("resetInstrumentedOverrides restores the provisional baseline", () => {
+    recordInstrumentedFold("review", { runId: "r", tier: "base", rigor: "standard", inputs: { words: 3000, claims: 10 }, measuredCredits: 500, measuredAt: "2026-09-11" });
+    expect(estimatorsAreProvisional(["review"])).toBe(false);
+    resetInstrumentedOverrides();
+    expect(estimatorsAreProvisional(["review"])).toBe(true);
+    expect(estimatorSpec("review")).toBe(ESTIMATORS.review);
   });
 });

@@ -3,7 +3,6 @@ import type { FindingsSidecar } from "@rhema/contracts";
 import {
   DeliveryValidationError,
   materializeSeat,
-  normalizeUrl,
   recordMounts,
   runDeliveryTransaction,
   type DeliveryArgs,
@@ -109,9 +108,10 @@ describe("obligation hook inside the delivery transaction (REQ-OBJ-2, REQ-DATA-7
   });
 
   it("a delivery-validation failure commits no obligations (validation precedes the hook)", async () => {
-    // a claim citing a URL absent from the proxy fetch log fails cited⇒fetched → nothing commits.
+    // A sidecar that fails its schema hard-fails delivery → nothing commits. (An unfetched citation no longer
+    // hard-fails — Path B / ADR-006 strips + downgrades it — so a sidecar failure is the validation trigger.)
     const failing = args({
-      claimLedger: { sidecar: "claim_ledger", version: 1, claims: [{ ordinal: 1, text: "c", tier: 2, verdict: "verified", url: "https://nope.example/x", normalizedUrl: normalizeUrl("https://nope.example/x"), humanAdded: false }] } as DeliveryArgs["claimLedger"],
+      sidecars: [{ filename: "findings.json", json: { sidecar: "findings", version: 1, findings: [{ ordinal: "one" }] } }],
     });
     await expect(runDeliveryTransaction(db.exec, deps, failing)).rejects.toBeInstanceOf(DeliveryValidationError);
     expect((await loadProjectObligations(db.exec, projectId)).length).toBe(0);

@@ -5,6 +5,12 @@
 > **dispositioned by the operator** before any Review-beta ticket (17+) starts — §17: "the lift
 > gate read before any UI spend beyond Phase 0."
 
+
+> **DEFERRED (operator decision 2026-09-15).** The operator chose to proceed to Phase-B implementation
+> (`17_PRB.01`+) WITHOUT running this eval — a deliberate override of "no UI spend beyond Phase 0 until G2".
+> G2 is NOT passed; it remains a HARD gate before public launch + §16.4 marketing claims. See
+> `docs/build/readouts/GATE-G2.md` + `docs/build/LEDGER.md` GATE DECISIONS.
+
 LIFT (REQ-EVAL-15; numbers operator-confirmed 2026-09-01): Rhema Full board over A1 on
 major-or-blocking material-issue recall by **≥ 15 percentage points absolute**, at an
 invalid-finding rate no worse than A1 (sustained across two consecutive waves for the
