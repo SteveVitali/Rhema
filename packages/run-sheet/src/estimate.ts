@@ -23,6 +23,9 @@ import { activePhaseCount, resolveToggles, sheetProfile, type ToggleState } from
 export const CLAIMS_PER_WORD: Partial<Record<WorkflowKey, number>> = {
   review: 0.004,
   fact_check: 0.004,
+  // P1.10 — Draft prices `c·inherited_claims`; absent a real outline-claim count the provisional figure
+  // derives from the same ~1-claim/250-word density against the target word count.
+  draft: 0.004,
 };
 
 export interface BuildEstimateArgs {

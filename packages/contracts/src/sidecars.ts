@@ -225,6 +225,10 @@ export type CutListSidecar = z.infer<typeof cutListSidecarSchema>;
 export const SIDECAR_REGISTRY = {
   "findings.json": { schema: findingsSidecarSchema, anchorBearing: true },
   "01-claim-ledger.json": { schema: claimLedgerSidecarSchema, anchorBearing: true },
+  // The Drafter's grounding ledger (P1.10) — the same `claim_ledger` envelope as the Editor's
+  // `01-claim-ledger.json`, at the upstream `draft-from-outline` filename so the dossier path
+  // names its provenance (grounding phase 3, `agents/author/drafting/v<N>/03-claim-ledger.md`).
+  "03-claim-ledger.json": { schema: claimLedgerSidecarSchema, anchorBearing: true },
   "rubric.json": { schema: rubricSidecarSchema, anchorBearing: false },
   "structure-plan.json": { schema: structurePlanSidecarSchema, anchorBearing: true },
   "response-ledger.json": { schema: responseLedgerSidecarSchema, anchorBearing: true },
@@ -248,6 +252,8 @@ export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
     '{"sidecar":"findings","version":1,"findings":[{"ordinal":<int>,"kind","severity","origin","anchor"|<null>,"title","body","evidence"?{"verdict"?,"urls"?[{url,accessed}]},"suggestion"?{replacement},"rubricDims"?[],"letterSection"?,"carriesObligationId"?}]} — the array field is "findings".',
   "01-claim-ledger.json":
     '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?}]} — the array field is "claims".',
+  "03-claim-ledger.json":
+    '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?}]} — the array field is "claims"; the "note" carries the drafting instruction (use as-is / rescoped / with attribution / do not use).',
   "rubric.json":
     '{"sidecar":"rubric","version":1,"dimensions":[{"dimension","score":<1-5>,"cap"?{"at":<1-4>,"reason","entailedByFindingOrdinal"?}}],"swaps"?[{from,to}]} — the array field is "dimensions"; NEVER an aggregate score.',
   "structure-plan.json":

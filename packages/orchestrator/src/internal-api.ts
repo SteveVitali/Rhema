@@ -17,8 +17,10 @@ import {
   type NewVersion,
   type Overlay,
   type ServerFile,
+  ITERATION_CAPS,
 } from "@rhema/mirror";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
+import { DRAFTED_STATUSES, parseDraftLedgerSections } from "@rhema/protocols";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -37,6 +39,7 @@ import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { seatForWorkflow } from "./run-shape.js";
+import { preApproveGateByTrial } from "./gate-resolution.js";
 import { resolveDeliveryBase, type DeliveryBaseDraft } from "./delivery-base.js";
 import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
@@ -414,7 +417,9 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
     const writablePaths =
       row.project_id && workflowManifest
         ? declaredWritableArtifacts(seat, workflowManifest, {
-            baseDraftN: deliveryBase?.n ?? null,
+            // P1.10 — a Draft run has no base draft; its `v(N+1)` placeholders resolve to the reserved
+            // `nextDraftN` (the same value `expandDeclaredPath` derives as baseDraftN + 1).
+            baseDraftN: deliveryBase?.n ?? (deliveryResolution.newDraftN != null ? deliveryResolution.newDraftN - 1 : null),
             reviewedDraftN: deliveryResolution.reviewedDraftN,
           })
         : [];
@@ -536,6 +541,43 @@ export async function harvestStep(deps: HarvestStepDeps, args: HarvestStepArgs):
         { workspaceId: args.workspaceId, projectId, personaId },
         args.versions,
       );
+
+      // P1.10 / REQ-WF-4/7 — the Draft phase's `04-draft-ledger.md` `## Sections` rows become
+      // machine-generated `section.drafted` events in plan order (the per-section stream +
+      // budget bar the Page renders; §5.5). Emitted HERE, from the committed artifact bytes —
+      // never from pod-supplied event text — and deduped on `sectionRef` so a ledger re-harvest
+      // (a retried phase, a re-plan attempt) cannot double-emit a section.
+      const draftLedger = args.versions.find((v) => /(^|\/)04-draft-ledger\.md$/.test(v.path));
+      if (draftLedger) {
+        const rows = parseDraftLedgerSections(Buffer.from(draftLedger.bytes).toString("utf8")).filter(
+          (s) => DRAFTED_STATUSES.has(s.status),
+        );
+        if (rows.length > 0) {
+          const emitted = new Set(
+            (
+              await tx.query(
+                `select payload->>'sectionRef' as ref from run_events where run_id = $1 and type = 'section.drafted'`,
+                [args.runId],
+              )
+            ).rows.map((r) => (r as { ref: string }).ref),
+          );
+          for (const s of rows) {
+            const sectionRef = s.title || `§${s.ordinal}`;
+            if (emitted.has(sectionRef)) continue;
+            emitted.add(sectionRef);
+            await deps.eventWriter.append(tx, {
+              runId: args.runId,
+              type: "section.drafted",
+              payload: {
+                sectionRef,
+                words: s.actualWords ?? 0,
+                ...(s.budgetWords != null ? { budget: s.budgetWords } : {}),
+              },
+              at: deps.clock.now(),
+            });
+          }
+        }
+      }
 
       // provisional running usage (D-P0.15d-3): the run's model tier + rate-table version price the reported SDK
       // usage; the `sdk_stream` row + `usage.tick` reflect the just-run phase (the commit reconciles against the
@@ -679,7 +721,10 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
     const parsed = new Date(raw);
     return { ...args.next, deadlineAt: Number.isNaN(parsed.getTime()) ? null : parsed };
   })();
-  const box: { debitedBillingAccountId: string | null } = { debitedBillingAccountId: null };
+  const box: { debitedBillingAccountId: string | null; trialGateId: string | null } = {
+    debitedBillingAccountId: null,
+    trialGateId: null,
+  };
   try {
     const res = await deps.txRunner.run(args.workspaceId, async (tx): Promise<CommitStepResult & { ok: true }> => {
       await fence(tx, args.runId, args.attempt);
@@ -812,11 +857,36 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         artifactVersionId: next.artifactVersionId,
         deadlineAt: next.deadlineAt,
       });
+      // P1.10 — a trial first-section preview pre-resolves Approve plan only (§6.4 item 3;
+      // REQ-SPEC-1's trial mechanism): the frozen `inputs.preview` marks the run; the actual
+      // `Decision{by:'trial', action:'proceed_as_proposed'}` + `waiting_gate → queued` resume land
+      // post-commit (autoResolveGate opens its own tx — never nested inside this one).
+      if (next.gateKind === "approve_plan") {
+        const ins = (
+          await tx.query("select inputs from runs where id = $1", [args.runId])
+        ).rows[0] as { inputs: unknown } | undefined;
+        const inputs =
+          typeof ins?.inputs === "string"
+            ? (JSON.parse(ins.inputs) as { preview?: unknown })
+            : (ins?.inputs as { preview?: unknown } | undefined);
+        if (inputs?.preview != null) box.trialGateId = gateId;
+      }
       return { ok: true, idempotent: false, state: "waiting_gate", gateId };
     });
+    // P1.10 — the trial preview's Approve plan resolves immediately post-commit (the gate row +
+    // `gate.opened` stand for the record; the decision + resume proceed it). A resolved gate needs
+    // no expiry/reminder jobs.
+    if (box.trialGateId) {
+      await preApproveGateByTrial(deps, {
+        runId: args.runId,
+        gateId: box.trialGateId,
+        workspaceId: args.workspaceId,
+      });
+    }
     // Schedule the `gate:<id>` expiry job AFTER commit (§6.4 item 6; the queue send is not transactional with
-    // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing.
-    if (res.ok && !res.idempotent && res.gateId && next.kind === "gate") {
+    // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing. A
+    // trial-pre-resolved Approve plan schedules none — it was resolved above.
+    if (res.ok && !res.idempotent && res.gateId && next.kind === "gate" && !box.trialGateId) {
       const now = deps.clock.now();
       if (next.deadlineAt) {
         await scheduleGateExpiry(deps, {
@@ -886,8 +956,12 @@ function terminalPhaseFailure(errorClass: string, reason: string | undefined): {
 export async function failStep(
   deps: OrchestratorDeps,
   args: { runId: string; attempt: number; workspaceId: string; stepKey: string; ordinal: number; errorClass: string; reason?: string },
-): Promise<{ ok: true; terminal?: string } | { ok: false; code: "stale_task"; currentAttempt: number }> {
+): Promise<
+  | { ok: true; terminal?: string; backEdge?: { to: string[]; replans: number }; gateId?: string }
+  | { ok: false; code: "stale_task"; currentAttempt: number }
+> {
   let terminalCode: string | undefined;
+  let refusalGateId: string | undefined;
   try {
     const res = await deps.txRunner.run(args.workspaceId, async (tx) => {
       const fenceRow = await fence(tx, args.runId, args.attempt);
@@ -910,6 +984,56 @@ export async function failStep(
         payload: { errorClass: args.errorClass, phase: args.stepKey, ordinal: args.ordinal, ...(args.reason ? { reason: args.reason } : {}) },
         at: now,
       });
+
+      // P1.10 / REQ-WF-5 — a `replan` self-report on a phase whose manifest declares `backEdges` is a
+      // bounded re-plan, NOT a terminal failure: reset the back-edge target's committed step row(s) (state
+      // 'reset' + a result marker the runspec reads into the phase's `replan` input — the re-plan gets the
+      // grounding failure as context, not a blind retry) so the committed-phase count serves it again, and
+      // count `runs.replans`. The (cap+1)-th failure — `ITERATION_CAPS.replan` replans already consumed —
+      // escalates to a `refusal` Approval on the run (parked `waiting_gate`; never a silent continue).
+      if (args.errorClass === "replan" && fenceRow.state === "running") {
+        const runFacts = (
+          await tx.query("select workflow, replans from runs where id = $1", [args.runId])
+        ).rows[0] as { workflow: string; replans: number } | undefined;
+        const wf = runFacts ? WORKFLOW_MANIFESTS[runFacts.workflow as WorkflowKey] : undefined;
+        const phase = wf?.phases.find((p) => p.key === args.stepKey);
+        const targets = (phase?.backEdges ?? [])
+          .map((k) => wf!.phases.find((p) => p.key === k))
+          .filter((p): p is NonNullable<typeof p> => p != null);
+        if (runFacts && targets.length > 0) {
+          if (runFacts.replans < ITERATION_CAPS.replan) {
+            const minOrdinal = Math.min(...targets.map((t) => t.index));
+            await tx.query(
+              `update steps set state = 'reset',
+                 result = jsonb_build_object('reset','replan','fromPhase',$3::text,'reason',coalesce($4::text,''))
+               where run_id = $1 and ordinal >= $2 and state = 'done'`,
+              [args.runId, minOrdinal, args.stepKey, args.reason ?? null],
+            );
+            await tx.query("update runs set replans = replans + 1 where id = $1", [args.runId]);
+            return { ok: true as const, backEdge: { to: targets.map((t) => t.key), replans: runFacts.replans + 1 } };
+          }
+          // Re-plan cap consumed → the third grounding failure opens the refusal Approval (REQ-WF-5:
+          // proceed-with-[unverified] / cut the claim / stop — resolved through resolveGate). The run
+          // parks `waiting_gate`; the pod exits and the user decides — never a silent continue.
+          const failedStep = (
+            await tx.query("select id from steps where run_id = $1 and ordinal = $2", [args.runId, args.ordinal])
+          ).rows[0] as { id: string } | undefined;
+          await applyTransition(tx, deps, {
+            runId: args.runId,
+            from: "running",
+            to: "waiting_gate",
+            reason: "replan_cap",
+          });
+          refusalGateId = await openGate(tx, deps, {
+            runId: args.runId,
+            kind: "refusal",
+            blocking: true,
+            onExpiry: "cancel",
+            ...(failedStep ? { stepId: failedStep.id } : {}),
+          });
+          return { ok: true as const, gateId: refusalGateId };
+        }
+      }
 
       // F13 (PRB.16b): a terminal phase failure finalizes the run HERE, inside the step-fail tx —
       // transition + spend reconcile + hold release + credential revocation are one commit, and the
@@ -959,6 +1083,18 @@ export async function failStep(
         runId: args.runId,
         workspaceId: args.workspaceId,
         outcome: "failed",
+      });
+    }
+    // P1.10 — a re-plan-cap refusal gate gets the same waiting notice as any refusal card
+    // (onExpiry `cancel`, no deadline ⇒ no reminders; PRB.09's notification seam).
+    if (refusalGateId) {
+      await scheduleGateNotifications(deps, {
+        gateId: refusalGateId,
+        workspaceId: args.workspaceId,
+        kind: "refusal",
+        onExpiry: "cancel",
+        deadlineAt: null,
+        now: deps.clock.now(),
       });
     }
     return res;

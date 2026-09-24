@@ -163,6 +163,16 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     } catch {
       // not a beta-sheet workflow — no toggle semantics; the 1.5× floor below still applies.
     }
+    // P1.10 — a Draft trial preview runs no grounding/audit regardless of rigor (§7.6's ≈60-cr shape):
+    // force those toggles off BEFORE the estimate is derived and the phase flags freeze.
+    if (workflow === "draft" && body.preview) {
+      resolvedToggles = { ...(resolvedToggles ?? {}), grounding: false, audit: false };
+      try {
+        phaseFlags = phaseFlagsForToggles(workflow, resolvedToggles);
+      } catch {
+        /* no sheet profile ⇒ no flags; the preview input below still marks the run. */
+      }
+    }
 
     // Estimator cap sizing (PRB.3; REQ-BILL-3/6, §5.6 item 4). The cap is the hard proxy budget, so the
     // estimate + cap the run is CREATED with must be re-derived server-side from the levers, never trusted
@@ -186,6 +196,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         ...(typeof snap.claimCount === "number" ? { claimCount: snap.claimCount } : {}),
         // PRB.23 — the SAME resolved toggle set that freezes the phase flags below.
         ...(resolvedToggles ? { toggles: resolvedToggles } : {}),
+        // P1.10 — a Draft preview prices its `preview` estimator variant (≈60 cr; §7.6).
+        ...(workflow === "draft" && body.preview ? { variant: "preview" } : {}),
       });
       estimateCredits = derived.estimateCredits;
       // P1.06 (§5.6) — the cap is editable UPWARD only: a user-raised cap (body > computed) stands;
@@ -236,6 +248,45 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           },
         };
         pretriage = { triaged: pre.triaged, total: pre.total };
+      }
+    } else if (workflow === "draft") {
+      // P1.10 — a Draft run reads an OUTLINE draft (body.draftId — the §7.6 next-step card's
+      // "Draft the first section" / the outline's Draft affordance supply it) and AUTHORS a new
+      // born-frozen `drafts/v(N+1).md`. Server-resolved facts, never client-trusted:
+      //   · `inputs.draftId` — the outline the intake phase reads;
+      //   · `inputs.nextDraftId`/`nextDraftN` — the reserved row + ordinal the delivery tx creates;
+      //   · `inputs.preview` — the trial first-section preview ({sections:1}; its Approve plan is
+      //     pre-resolved `by:'trial'` in commitStep, §6.4 item 3 / REQ-CHAT-30).
+      if (typeof body.draftId !== "string" || body.draftId === "") {
+        return c.json({ error: "draft_outline_required" }, 400);
+      }
+      const outline = (
+        await deps.txRunner.run(principal.workspaceId, (tx) =>
+          tx.query(`select id from drafts where id = $1 and project_id = $2`, [body.draftId, projectId]),
+        )
+      ).rows[0] as { id: string } | undefined;
+      if (!outline) return c.json({ error: "draft_outline_required" }, 400);
+      const nextN = (
+        await deps.txRunner.run(principal.workspaceId, (tx) =>
+          tx.query(`select coalesce(max(n),0)+1 as n from drafts where project_id = $1`, [projectId]),
+        )
+      ).rows[0] as { n: number };
+      inputs = {
+        ...inputs,
+        draftId: outline.id,
+        nextDraftId: deps.ids("dft"),
+        nextDraftN: nextN.n,
+      };
+      const preview = body.preview === true ? { sections: 1 } : body.preview;
+      if (preview && typeof preview === "object") {
+        // the preview skips grounding + audit entirely (§7.6: intake → plan → first section → note) —
+        // force the opt-out flags so a preview launched at a fuller rigor stays at its ≈60-cr shape.
+        inputs = {
+          ...inputs,
+          preview: { sections: preview.sections ?? 1 },
+          grounding: false,
+          audit: false,
+        };
       }
     } else if (workflow === "review") {
       const store = deps.contentStoreFor ? await deps.contentStoreFor(principal.workspaceId) : deps.store;
@@ -658,6 +709,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             verdictContext: verdictContextFromLedger(body.delivery.claimLedger),
             ...(typeof ins.priorReviewId === "string" ? { priorReviewId: ins.priorReviewId } : {}),
             ...(typeof ins.nextDraftId === "string" ? { newDraftId: ins.nextDraftId } : {}),
+            // P1.10 — a Draft delivery's born-frozen row takes the reserved draft ordinal (server truth).
+            ...(typeof ins.nextDraftN === "number" ? { newDraftN: ins.nextDraftN } : {}),
             ...(typeof voice?.profileSnapshotId === "string"
               ? { personaProfileSnapshotId: voice.profileSnapshotId }
               : {}),
@@ -765,6 +818,12 @@ interface CreateRunBody {
    * skip by policy for this run; spend/refusal/continue_rounds gates still open (REQ-SPEC-1).
    */
   autoProceedRun?: boolean;
+  /**
+   * P1.10 (§7.6; REQ-CHAT-30) — the trial first-section preview for a Draft run: `true` (or
+   * `{sections:N}`) freezes `inputs.preview`, which prices the preview estimate variant and
+   * pre-resolves Approve plan `by:'trial'`.
+   */
+  preview?: boolean | { sections?: number };
 }
 interface EventBody {
   type: Parameters<typeof postEvents>[1]["events"][number]["type"];

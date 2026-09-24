@@ -94,14 +94,17 @@ export interface DeliveryFacts {
   readonly projectId: string;
   readonly draftId: string;
   readonly correspondenceKind: CorrespondenceKind;
-  /** the reviewed draft's promoted head version to freeze at (a frozen draft requires a promoted version). */
-  readonly draftPromotedVersionId: string;
+  /** the reviewed draft's promoted head version to freeze at (a frozen draft requires a promoted version).
+   *  Absent on a Draft delivery: the run's own `drafts/v(N+1).md` is born frozen — there is no base. */
+  readonly draftPromotedVersionId?: string;
   readonly protocolId?: string;
   readonly protocolVersion?: number;
   /** PRB.06: the review a `response`/re-review answers (`prior_review_id`) — from the run's frozen inputs. */
   readonly priorReviewId?: string;
   /** PRB.06: the v(N+1) draft row a `response` delivery creates (the run's reserved `nextDraftId`). */
   readonly newDraftId?: string;
+  /** P1.10: the draft ordinal (`v(N+1)`) a Draft run's born-frozen row + `drafts/vN.md` path resolve to. */
+  readonly newDraftN?: number;
 }
 
 /** The correspondence kind each workflow delivers (drives `correspondence_items.kind`); default `review`. */
@@ -109,6 +112,8 @@ const CORRESPONDENCE_KIND_BY_WORKFLOW: Partial<Record<WorkflowKey, Correspondenc
   review: "review",
   fact_check: "review",
   revise: "response",
+  // P1.10 — a Draft run delivers `correspondence/v(N+1)-drafting-note.md` (kind 'drafting_note').
+  draft: "drafting_note",
 };
 
 export interface BuildRunSpecArgs {
@@ -128,6 +133,8 @@ interface RunSpecFacts {
   /** distinct committed (`done`) phases so far → the index of the phase to run next (0 on a fresh run). */
   readonly committedPhases: number;
   readonly projectId: string | null;
+  /** `runs.replans` — the back-edge count (REQ-WF-5), folded into a re-run plan phase's `replan` input. */
+  readonly replans: number;
 }
 
 function round2(n: number): number {
@@ -159,8 +166,8 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
 
   // 2) run-level facts: model tier, the seat's tool set, the committed-phase count, the run's URL policy.
   const facts = await deps.txRunner.run(args.workspaceId, async (tx): Promise<RunSpecFacts> => {
-    const runRow = (await tx.query("select model_tier, project_id from runs where id = $1", [args.runId])).rows[0] as
-      | { model_tier: string; project_id: string | null }
+    const runRow = (await tx.query("select model_tier, project_id, replans from runs where id = $1", [args.runId])).rows[0] as
+      | { model_tier: string; project_id: string | null; replans: number }
       | undefined;
     if (!runRow) throw new Error(`buildHarnessRunSpec: run ${args.runId} not found`);
     const at = (await tx.query("select tools from agent_types where key = $1", [seat])).rows[0] as
@@ -174,6 +181,7 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       tools: at?.tools ?? [],
       committedPhases: done.n,
       projectId: runRow.project_id,
+      replans: runRow.replans,
     };
   });
 
@@ -218,6 +226,29 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   const maxUsdPerRun = args.maxUsdPerRun ?? DEFAULT_MAX_USD_PER_RUN;
   const maxBudgetUsd = Math.max(0.5, round2(phase.budgetShare * maxUsdPerRun));
 
+  // P1.10 / REQ-WF-5 — when this phase's step row was RESET by a back-edge (failStep marked it
+  // `state='reset'` with `{reset:'replan', fromPhase, reason}`), the re-run gets the failing phase's
+  // report as the `replan` input — the plan re-runs WITH the grounding failure as context, never a
+  // blind retry. The marker clears on commit (the upsert overwrites the row).
+  const resetStep = await deps.txRunner.run(args.workspaceId, async (tx) =>
+    (
+      await tx.query("select state, result from steps where run_id = $1 and ordinal = $2", [
+        args.runId,
+        phase.index,
+      ])
+    ).rows[0] as { state: string; result: { reset?: string; fromPhase?: string; reason?: string } | null } | undefined,
+  );
+  const replanInput =
+    resetStep?.state === "reset" && resetStep.result?.reset === "replan"
+      ? {
+          replan: {
+            fromPhase: resetStep.result.fromPhase ?? "",
+            reason: resetStep.result.reason ?? "",
+            count: facts.replans,
+          },
+        }
+      : {};
+
   // Guidance delivery at the phase boundary (§6.5; REQ-GATE-9/10/11; REQ-RUN-7/18 — PRB.16b F16):
   // `consumeGuidance` renders the dated/sourced list AND marks `consumed_by` + emits
   // `guidance.delivered` — but it had NO caller, so standing/run-scope guidance (e.g. the pretriage
@@ -250,6 +281,7 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   const inputs: Record<string, unknown> = {
     ...(manifest.defaultInputs ?? {}),
     ...hyd.inputs,
+    ...replanInput,
     phase: phase.skillPhase,
     // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
     // frontmatter); the frozen inputs only carried `personaId`, and `conventions/personas.md` — the
@@ -347,8 +379,23 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   // is server-resolved in `hydration` (PRB.19 / F26a): a Review's `inputs.draftId`, a Revise's
   // `manualRevision.baseDraftId` → working head → `priorReviewId`'s reviewed draft. A run with no draft (or an
   // un-promoted draft) delivers nothing here; the loop finalizes without a dossier POST.
-  const delivery: DeliveryFacts | undefined =
-    facts.projectId && hyd.deliveryBase?.promotedVersionId
+  // P1.10 — a Draft run is the exception: it has no base to freeze (it AUTHORS the draft), so the gate is the
+  // frozen `nextDraftId`/`nextDraftN` the creation route reserved; the delivery transaction creates the
+  // born-frozen `drafted_from_outline` row at `drafts/v{nextDraftN}.md`.
+  const isDraftDelivery =
+    workflow === "draft" &&
+    facts.projectId != null &&
+    typeof hyd.inputs.nextDraftId === "string" &&
+    typeof hyd.inputs.nextDraftN === "number";
+  const delivery: DeliveryFacts | undefined = isDraftDelivery
+    ? {
+        projectId: facts.projectId!,
+        draftId: hyd.inputs.nextDraftId as string,
+        correspondenceKind: "drafting_note",
+        newDraftId: hyd.inputs.nextDraftId as string,
+        newDraftN: hyd.inputs.nextDraftN as number,
+      }
+    : facts.projectId && hyd.deliveryBase?.promotedVersionId
       ? {
           projectId: facts.projectId,
           draftId: hyd.deliveryBase.id,

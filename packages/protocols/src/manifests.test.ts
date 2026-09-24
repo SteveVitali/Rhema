@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AGENT_TYPE_KEYS, WORKFLOW_KEYS, SIDECAR_REGISTRY } from "@rhema/contracts";
-import { WORKFLOW_MANIFESTS, review, revise } from "./index.js";
+import { WORKFLOW_MANIFESTS, review, revise, draft } from "./index.js";
 import type { PhaseManifest, WorkflowManifest } from "./manifest-types.js";
 
 // P0.03 AC2 (index order = the skill's own fallback order) and AC3 (judge-class allowsSubagents:false;
@@ -13,6 +13,10 @@ const KNOWN_SIDECARS = new Set(Object.keys(SIDECAR_REGISTRY));
 // The expected phase order per workflow — the skill's OWN fallback order (AC2). Review's fallback is
 // 0,4,1,2,5,3,6; the others are linear; the two subsets keep their relative order.
 const EXPECTED: Record<string, { keys: string[]; skillPhases: string[] }> = {
+  draft: {
+    keys: ["intake", "voice", "plan", "grounding", "draft", "consolidation", "audit", "delivery"],
+    skillPhases: ["0", "1", "2", "3", "4", "5", "6", "7"],
+  },
   review: {
     keys: ["intake", "craft", "verification", "discourse", "second_read", "argument", "letter"],
     skillPhases: ["0", "4", "1", "2", "5", "3", "6"],
@@ -34,9 +38,9 @@ const EXPECTED: Record<string, { keys: string[]; skillPhases: string[] }> = {
 };
 
 describe("phase manifests (§12.2)", () => {
-  it("ships exactly the six Phase-0 workflows", () => {
+  it("ships exactly the seven Phase-1 workflows", () => {
     expect(Object.keys(WORKFLOW_MANIFESTS).sort()).toEqual(
-      ["calibrate_voice", "fact_check", "profile_voice", "refresh_voice", "review", "revise"].sort(),
+      ["calibrate_voice", "draft", "fact_check", "profile_voice", "refresh_voice", "review", "revise"].sort(),
     );
   });
 
@@ -44,7 +48,7 @@ describe("phase manifests (§12.2)", () => {
     describe(m.workflow, () => {
       it("is a valid workflow key with a real skill and valid seats/classes", () => {
         expect(WORKFLOW_KEYS).toContain(m.workflow);
-        expect(m.skill).toMatch(/^(editorial-review|respond-to-review|bootstrap-persona)$/);
+        expect(m.skill).toMatch(/^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline)$/);
         for (const p of m.phases) {
           expect(JUDGE_SEATS.has(p.seat)).toBe(true);
           expect(["research", "judge", "generate", "package"]).toContain(p.phaseClass);
@@ -88,20 +92,28 @@ describe("phase manifests (§12.2)", () => {
     });
   }
 
-  it("AC3 — the ONLY declared back-edge is revise → triage (§12.2)", () => {
+  it("AC3 — the ONLY declared back-edges are revise → triage and draft grounding → plan (§12.2)", () => {
     const withBackEdges: { workflow: string; phase: PhaseManifest }[] = [];
     for (const m of all) for (const p of m.phases) if (p.backEdges?.length) withBackEdges.push({ workflow: m.workflow, phase: p });
-    expect(withBackEdges).toHaveLength(1);
-    expect(withBackEdges[0]!.workflow).toBe("revise");
-    expect(withBackEdges[0]!.phase.key).toBe("revise");
-    expect(withBackEdges[0]!.phase.backEdges).toEqual(["triage"]);
-    // and it is present exactly on the revise manifest's revise phase
+    expect(withBackEdges).toHaveLength(2);
+    const edge = (w: string) => withBackEdges.find((x) => x.workflow === w)!;
+    expect(edge("revise").phase.key).toBe("revise");
+    expect(edge("revise").phase.backEdges).toEqual(["triage"]);
+    // REQ-WF-5: a grounding failure re-runs the structure plan with the failure as input.
+    expect(edge("draft").phase.key).toBe("grounding");
+    expect(edge("draft").phase.backEdges).toEqual(["plan"]);
+    // and they are present exactly on the manifests' phases
     expect(revise.phases.find((p) => p.key === "revise")!.backEdges).toEqual(["triage"]);
+    expect(draft.phases.find((p) => p.key === "grounding")!.backEdges).toEqual(["plan"]);
   });
 
-  it("gates land where §6.4 says: review→approve_scope, revise→approve_triage, profile→approve_sample", () => {
+  it("gates land where §6.4 says: review→approve_scope, revise→approve_triage, profile→approve_sample, draft→approve_plan", () => {
     expect(review.phases.find((p) => p.key === "intake")!.gateAfter).toBe("approve_scope");
     expect(revise.phases.find((p) => p.key === "triage")!.gateAfter).toBe("approve_triage");
     expect(WORKFLOW_MANIFESTS.profile_voice!.phases.find((p) => p.key === "census")!.gateAfter).toBe("approve_sample");
+    // REQ-GATE-5/6 plan half: Approve plan binds + edits the real 02-structure-plan artifact.
+    const plan = draft.phases.find((p) => p.key === "plan")!;
+    expect(plan.gateAfter).toBe("approve_plan");
+    expect(plan.gateArtifact).toBe("agents/author/drafting/v(N+1)/02-structure-plan.md");
   });
 });

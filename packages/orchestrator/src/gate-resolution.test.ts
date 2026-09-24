@@ -145,3 +145,87 @@ it("GATE_KINDS covers twelve kinds", () => {
   expect(GATE_KINDS).toHaveLength(12);
   expect(GATE_DEFAULTS[GATE_KINDS[0] as GateKind]).toBeDefined();
 });
+
+// P1.10 / REQ-GATE-6 — Approve plan's **Keep planning** re-runs the plan step EXACTLY ONCE: the first
+// request resets the gate's step row (the committed-phase count serves plan again on resume) and counts
+// `runs.replans`; a second keep_planning — on the gate re-opened after the re-run — resolves WITHOUT a
+// reset, so the run proceeds to the next phase instead of looping.
+describe("keep_planning — the bounded one-shot re-plan (REQ-GATE-6)", () => {
+  let db: OrchestratorTestDb;
+  let deps: TestDeps;
+  let ws: string;
+
+  beforeEach(async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedProject(db);
+    ws = seed.workspaceId;
+    deps = makeDeps(db);
+  });
+  afterEach(() => db.close());
+
+  async function seedCommittedPlan(runId: string): Promise<string> {
+    const stepId = `step_${runId}`;
+    await db.client.query(
+      `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at)
+       values ($1,$2,'plan',2,'done',1,now(),now())`,
+      [stepId, runId],
+    );
+    return stepId;
+  }
+  const stepState = (stepId: string) =>
+    db.client
+      .query("select state from steps where id = $1", [stepId])
+      .then((r) => (r.rows[0] as { state: string }).state);
+  const replans = (runId: string) =>
+    db.client
+      .query("select replans from runs where id = $1", [runId])
+      .then((r) => (r.rows[0] as { replans: number }).replans);
+
+  it("the first keep_planning resets the plan step + counts a replan; the run re-queues", async () => {
+    await seedRun(db, { runId: "run_k", workspaceId: ws, projectId: "prj_seed", workflow: "draft", state: "waiting_gate" });
+    const stepId = await seedCommittedPlan("run_k");
+    await seedGate(db, { gateId: "g_k", runId: "run_k", kind: "approve_plan", onExpiry: "proceed_conservative", stepId });
+
+    const r = await resolveGate(deps, { runId: "run_k", gateId: "g_k", workspaceId: ws, userId: "usr_seed", action: "keep_planning" });
+    expect(r).toMatchObject({ ok: true, resolved: true, state: "queued" });
+    expect(await stepState(stepId)).toBe("reset");
+    expect(await replans("run_k")).toBe(1);
+    expect(await readDecision(db, "g_k")).toMatchObject({ by_actor: "user", action: "keep_planning" });
+    // the resume job re-runs the CURRENT (reset) step, not the next phase.
+    expect(deps.queue.sent.some((j) => j.name === "run.resume" && (j.payload as { fromStep?: string }).fromStep === "current")).toBe(true);
+  });
+
+  it("a SECOND keep_planning does not reset again — the run proceeds to the next phase (≤1)", async () => {
+    await seedRun(db, { runId: "run_k2", workspaceId: ws, projectId: "prj_seed", workflow: "draft", state: "waiting_gate" });
+    const stepId = await seedCommittedPlan("run_k2");
+    // the FIRST keep_planning already landed (on the gate the re-plan re-opened's predecessor).
+    await seedGate(db, { gateId: "g_k1", runId: "run_k2", kind: "approve_plan", onExpiry: "proceed_conservative", stepId });
+    await resolveGate(deps, { runId: "run_k2", gateId: "g_k1", workspaceId: ws, userId: "usr_seed", action: "keep_planning" });
+    // the plan re-ran + recommitted; the gate re-opened on the new plan version.
+    await db.client.query("update steps set state='done' where id = $1", [stepId]);
+    await db.client.query("update runs set state='waiting_gate' where id='run_k2'", []);
+    await seedGate(db, { gateId: "g_k2", runId: "run_k2", kind: "approve_plan", onExpiry: "proceed_conservative", stepId });
+
+    const r = await resolveGate(deps, { runId: "run_k2", gateId: "g_k2", workspaceId: ws, userId: "usr_seed", action: "keep_planning" });
+    expect(r).toMatchObject({ ok: true, resolved: true, state: "queued" });
+    expect(await stepState(stepId)).toBe("done"); // NOT reset a second time
+    expect(await replans("run_k2")).toBe(1); // still one re-plan
+    // (the second resume job shares the first's singletonKey — the InMemoryQueue dedupes it, as pg-boss
+    // would in prod; the `state:"queued"` above is the proceed-past-plan assertion.)
+  });
+
+  it("resolving a re-plan-cap refusal proceeds past the failed grounding step (REQ-WF-5)", async () => {
+    await seedRun(db, { runId: "run_r", workspaceId: ws, projectId: "prj_seed", workflow: "draft", state: "waiting_gate" });
+    // the failed grounding step the refusal gate is bound to.
+    await db.client.query(
+      `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at)
+       values ('step_g3','run_r','grounding',3,'failed',1,now(),now())`,
+      [],
+    );
+    await seedGate(db, { gateId: "g_r", runId: "run_r", kind: "refusal", onExpiry: "cancel", stepId: "step_g3" });
+    const r = await resolveGate(deps, { runId: "run_r", gateId: "g_r", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: true, resolved: true, state: "queued" });
+    expect(await stepState("step_g3")).toBe("done"); // completed-with-marks; the run advances past it
+    expect(deps.queue.sent.some((j) => j.name === "run.resume" && (j.payload as { fromStep?: string }).fromStep === "next")).toBe(true);
+  });
+});

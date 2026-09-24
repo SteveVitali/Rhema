@@ -4,7 +4,7 @@
 // over the `@rhema/api` internal routes; it is deploy wiring (exercised against the live api in Stage B), so it
 // is not unit-tested offline — the loop it feeds is tested with an in-process client (harness-loop.test.ts).
 
-import type { CommitCall, FailCall, HarnessApiClient, HarvestCall } from "./harness-loop.js";
+import type { CommitCall, FailCall, FailStepResult, HarnessApiClient, HarvestCall } from "./harness-loop.js";
 import type { DeliveryArgs, NewVersion } from "@rhema/mirror";
 import type { HarnessRunSpec } from "@rhema/orchestrator";
 
@@ -95,12 +95,13 @@ export function createHarnessApiClient(cfg: HarnessApiClientConfig): HarnessApiC
       return { ok: json.ok === true, ...(json.state ? { state: json.state } : {}), ...(json.code ? { code: json.code } : {}) };
     },
 
-    async failStep(args: FailCall): Promise<void> {
-      await postJson(`/steps/${encodeURIComponent(args.stepKey)}/fail`, {
+    async failStep(args: FailCall): Promise<FailStepResult> {
+      const { json } = await postJson<FailStepResult>(`/steps/${encodeURIComponent(args.stepKey)}/fail`, {
         ordinal: args.ordinal,
         errorClass: args.errorClass,
         ...(args.reason ? { reason: args.reason } : {}),
       });
+      return json;
     },
 
     async deliver(args: { delivery: DeliveryArgs }) {

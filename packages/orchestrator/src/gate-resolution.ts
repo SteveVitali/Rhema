@@ -211,6 +211,24 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
         await tx.query("update runs set gates_off = true where id = $1", [args.runId]);
       }
 
+      // P1.10 / REQ-GATE-6 — **Keep planning** re-runs the plan step ONCE (a bounded re-plan ≤1,
+      // counted on `runs.replans`). Resetting the gate's step row out of 'done' makes the
+      // committed-phase count serve that phase again on resume; a SECOND keep_planning (the gate
+      // re-opened after the re-run) finds a prior decision and resolves without a reset — the run
+      // proceeds from the next phase. Counted BEFORE this decision lands so the row being written
+      // below never counts itself.
+      const priorKeepPlanning =
+        args.action === "keep_planning"
+          ? ((
+              await tx.query(
+                `select count(*)::int as n
+                   from decisions d join gates g on g.id = d.gate_id
+                  where g.run_id = $1 and d.action = 'keep_planning'`,
+                [args.runId],
+              )
+            ).rows[0] as { n: number }).n
+          : 0;
+
       await writeDecision(tx, now, {
         gateId: args.gateId,
         by: "user",
@@ -247,9 +265,30 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
         return { ok: true, resolved: true, state: "queued", overlayVersionIds, guidanceId };
       }
 
-      // waiting_gate → queued as a FRESH attempt (§12.4 step 7); keep_planning re-runs the plan step.
+      // waiting_gate → queued as a FRESH attempt (§12.4 step 7). A first keep_planning resets the
+      // gate's step so the resume re-runs it; a refusal gate opened on the re-plan cap marks its
+      // FAILED step done so any non-stop resolution proceeds past it (proceed-with-[unverified] /
+      // cut-the-claim both advance the run — grounding's ledger may legitimately carry unverified rows).
       const nextAttempt = gr.current_attempt + 1;
-      const fromStep = args.action === "keep_planning" ? "current" : "next";
+      let fromStep: "current" | "next" = "next";
+      if (args.action === "keep_planning" && priorKeepPlanning === 0 && gr.step_id) {
+        await tx.query(
+          `update steps set state = 'reset', result = $2 where id = $1`,
+          [gr.step_id, JSON.stringify({ reset: "keep_planning" })],
+        );
+        await tx.query("update runs set replans = replans + 1 where id = $1", [args.runId]);
+        fromStep = "current";
+      } else if (gr.kind === "refusal" && gr.step_id) {
+        // REQ-WF-5 — resolving the re-plan-cap refusal (any non-stop action) lets the run advance:
+        // the failed grounding step is completed-with-marks so the committed-phase count serves the
+        // NEXT phase, not a fourth grounding attempt.
+        await tx.query(
+          `update steps set state = 'done',
+             result = coalesce(result, '{}'::jsonb) || '{"refusalResolved":true}'::jsonb
+           where id = $1 and state = 'failed'`,
+          [gr.step_id],
+        );
+      }
       await applyTransition(tx, deps, {
         runId: args.runId,
         from: "waiting_gate",

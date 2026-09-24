@@ -134,14 +134,18 @@ export interface DeliveryArgs {
   readonly protocolVersion?: number;
   /** artifact version ids of the delivered dossier — recorded on the item and marked immutable. */
   readonly deliveredVersionIds: readonly string[];
-  /** the reviewed draft's head version to freeze it at (a frozen draft requires a promoted version). */
-  readonly draftPromotedVersionId: string;
+  /** the reviewed draft's head version to freeze it at (a frozen draft requires a promoted version).
+   *  Absent on a `drafting_note` delivery — the run's own `drafts/vN.md` is born frozen (P1.10). */
+  readonly draftPromotedVersionId?: string;
   /** the prior review this correspondence answers (a `response`) or re-reviews (a re-review `review`) —
    *  server-resolved from the run's inputs, never pod-trusted (PRB.06). Sets `prior_review_id`. */
   readonly priorReviewId?: string;
   /** the v(N+1) draft row id a `response` delivery creates (the run's reserved `nextDraftId`); generated
-   *  when unset. */
+   *  when unset. For a `drafting_note` delivery it is the reserved id of the run's NEW draft row (P1.10). */
   readonly newDraftId?: string;
+  /** P1.10 — a `drafting_note` delivery's draft ordinal: the run produced `drafts/v{newDraftN}.md` and the
+   *  born-frozen `drafted_from_outline` row takes `n = newDraftN` (server-resolved from frozen inputs). */
+  readonly newDraftN?: number;
   readonly sidecars: readonly SidecarInput[];
   readonly claimLedger?: ClaimLedgerSidecar;
   readonly findings?: FindingsSidecar;
@@ -259,15 +263,61 @@ export async function runDeliveryTransaction(
   );
   const downgradedClaimOrdinals = applied.filter((a) => a.downgraded).map((a) => a.claim.ordinal);
   let strippedCitations = 0;
+  const now = deps.clock.now();
+
+  // ---- 1b. P1.10 — a `drafting_note` delivery creates the run's NEW draft row (born frozen, origin
+  //      `drafted_from_outline`) BEFORE the correspondence item that references it (the FK). The produced
+  //      `drafts/v{newDraftN}.md` version — committed by the Writing step, not the final phase — becomes its
+  //      promoted head. The run reserved `nextDraftId`/`nextDraftN` at creation (frozen inputs, server-side).
+  let newDraftId: string | undefined;
+  let moveTraces: MoveTrace[] | undefined;
+  if (args.correspondenceKind === "drafting_note") {
+    if (args.newDraftN == null) {
+      throw new DeliveryValidationError("drafting_note", "newDraftN (the reserved draft ordinal) is required");
+    }
+    const newId = args.newDraftId ?? deps.ids("dft");
+    const producedDraft = (
+      await exec.query(
+        `select av.id from artifact_versions av join artifacts a on a.id = av.artifact_id
+          where a.project_id = $1 and a.kind = 'draft' and a.mirror_path = $2
+            and av.id in (select unnest(s.produced_version_ids) from steps s
+                          where s.run_id = $3 and s.state = 'done')
+          order by av.ordinal desc limit 1`,
+        [args.projectId, `drafts/v${args.newDraftN}.md`, args.runId],
+      )
+    ).rows[0] as { id: string } | undefined;
+    if (!producedDraft) {
+      throw new DeliveryValidationError(
+        "drafting_note",
+        `no committed drafts/v${args.newDraftN}.md version — the Writing phase's output is the draft row's head`,
+      );
+    }
+    await exec.query(`update artifact_versions set immutable = true where id = $1`, [producedDraft.id]);
+    await exec.query(
+      `insert into drafts(id, project_id, n, origin, state, base_draft_id, promoted_version_id, frozen_at, frozen_by, created_at)
+       values ($1,$2,$3,'drafted_from_outline','frozen',null,$4,$5,$6,$7)`,
+      [
+        newId,
+        args.projectId,
+        args.newDraftN,
+        producedDraft.id,
+        now,
+        JSON.stringify(args.frozenBy ?? { kind: "system", runId: args.runId }),
+        now,
+      ],
+    );
+    newDraftId = newId;
+  }
+  // the draft id every later row references: the born-frozen new draft for a drafting note, else the input.
+  const draftId = newDraftId ?? args.draftId;
 
   // ---- 2. correspondence_item ----------------------------------------------------------------------
   const ordRes = await exec.query(
     "select coalesce(max(ordinal),0)+1 as n from correspondence_items where draft_id = $1 and kind = $2",
-    [args.draftId, args.correspondenceKind],
+    [draftId, args.correspondenceKind],
   );
   const ordinal = (ordRes.rows[0] as { n: number }).n;
   const correspondenceId = deps.ids("corr");
-  const now = deps.clock.now();
   await exec.query(
     `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at,
        artifact_ids, rubric, protocol_id, protocol_version, prior_review_id,
@@ -277,7 +327,7 @@ export async function runDeliveryTransaction(
       correspondenceId,
       args.projectId,
       args.correspondenceKind,
-      args.draftId,
+      draftId,
       args.runId,
       ordinal,
       now,
@@ -315,7 +365,7 @@ export async function runDeliveryTransaction(
       [
         claimId,
         correspondenceId,
-        args.draftId,
+        draftId,
         c.ordinal,
         c.text,
         c.tier,
@@ -356,7 +406,7 @@ export async function runDeliveryTransaction(
       [
         findingId,
         correspondenceId,
-        args.draftId,
+        draftId,
         f.ordinal,
         f.kind,
         f.severity,
@@ -515,13 +565,17 @@ export async function runDeliveryTransaction(
   }
 
   // ---- 6. freeze the input draft (the dossier-reference trigger — REQ-DATA-21) ---------------------
-  await freezeDraft(exec, {
-    draftId: args.draftId,
-    promotedVersionId: args.draftPromotedVersionId,
-    cause: "dossier_ref",
-    frozenBy: args.frozenBy ?? { kind: "system", runId: args.runId },
-    at: now,
-  });
+  // A `drafting_note` delivery skips this: its draft row was born frozen in step 1b (P1.10 — the run
+  // authored the draft; there is no pre-existing working head to seal).
+  if (args.correspondenceKind !== "drafting_note") {
+    await freezeDraft(exec, {
+      draftId: draftId,
+      promotedVersionId: args.draftPromotedVersionId!,
+      cause: "dossier_ref",
+      frozenBy: args.frozenBy ?? { kind: "system", runId: args.runId },
+      at: now,
+    });
+  }
 
   // ---- 6b. the response-ledger fold (§5.7/§5.8; PRB.05 freeze + PRB.06 move rows) ---------------------
   // A delivered `response` correspondence answers the review it responds to: the frozen response-ledger's
@@ -529,8 +583,6 @@ export async function runDeliveryTransaction(
   // every open row on the answered review locks (`frozen_at`) + links forward (`response_id`), and each row
   // carries its `move_ordinal` — the forward link the What-changed join + obligation routing read.
   let responseLedger: ResponseLedgerSidecar | undefined;
-  let newDraftId: string | undefined;
-  let moveTraces: MoveTrace[] | undefined;
   const findingIdByOrdinal = new Map<number, string>();
   if (args.correspondenceKind === "response") {
     const ledgerInput = args.sidecars.find((s) => s.filename === "response-ledger.json");
@@ -623,7 +675,7 @@ export async function runDeliveryTransaction(
     // phase, NOT the final `deliver` phase, so `deliveredVersionIds` alone (which name only the final phase's
     // artifacts) never contained it and the reserved `nextDraftId` row + `revision.move_traced` never landed.
     const base = (
-      await exec.query(`select n from drafts where id = $1`, [args.draftId])
+      await exec.query(`select n from drafts where id = $1`, [draftId])
     ).rows[0] as { n: number } | undefined;
     const deliveredDraft = base
       ? ((
@@ -656,7 +708,7 @@ export async function runDeliveryTransaction(
           newDraftId,
           args.projectId,
           base.n + 1,
-          args.draftId,
+          draftId,
           deliveredDraft.id,
           now,
           JSON.stringify(args.frozenBy ?? { kind: "system", runId: args.runId }),
@@ -672,7 +724,7 @@ export async function runDeliveryTransaction(
       await exec.query(
         `select av.content_sha256 from drafts d join artifact_versions av on av.id = d.promoted_version_id
           where d.id = $1`,
-        [args.draftId],
+        [draftId],
       )
     ).rows[0] as { content_sha256: string } | undefined;
     if (deliveredDraft && baseVersion) {
@@ -698,7 +750,7 @@ export async function runDeliveryTransaction(
           const ev = parseRunEvent("revision.move_traced", {
             correspondenceId,
             ...(newDraftId != null ? { draftId: newDraftId } : {}),
-            baseDraftId: args.draftId,
+            baseDraftId: draftId,
             ...(t.findingId != null ? { findingId: t.findingId } : {}),
             ...(t.moveId != null ? { moveId: t.moveId } : {}),
             hunkCount: t.hunkCount,
@@ -716,7 +768,7 @@ export async function runDeliveryTransaction(
     exec,
     runId: args.runId,
     projectId: args.projectId,
-    draftId: args.draftId,
+    draftId: draftId,
     correspondenceId,
     correspondenceKind: args.correspondenceKind,
     findings: persistedFindings,

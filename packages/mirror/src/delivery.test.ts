@@ -590,3 +590,158 @@ describe("delivery transaction", () => {
     expect(leaked.n).toBe(0);
   });
 });
+
+// P1.10 — a `drafting_note` delivery (the Draft verb): the run AUTHORS the draft, so there is no base
+// head to freeze — the delivery creates the reserved `drafts/v(N+1)` row BORN FROZEN
+// (origin `drafted_from_outline`) with the Writing phase's committed version as its promoted head.
+describe("delivery — drafting_note (the Draft run's born-frozen draft; REQ-WF-4)", () => {
+  let db: MirrorTestDb;
+  let store: InMemoryContentStore;
+  let workspaceId: string;
+  const runId = "run_draft_note";
+  const projectId = "proj_dn";
+
+  let events: { type: string; payload: unknown }[];
+  let deps: DeliveryDeps;
+
+  beforeEach(async () => {
+    db = await createMirrorTestDb();
+    store = new InMemoryContentStore();
+    ({ workspaceId } = await seedBase(db.exec));
+    await seedMirrorProject(db.exec, store, workspaceId, { id: projectId, personaId: "prs_dn", tag: "DN" });
+    await seedRun(db.exec, { runId, workspaceId, projectId, state: "finalizing" });
+
+    // the outline draft the run read — stays WORKING (a Draft delivery never freezes its outline).
+    const outlineV = await store.putText(workspaceId, "# outline\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_outline',$1,$2,'outline','project','outline/the-piece.md','av_outline')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_outline','art_outline',1,$1,'k',9,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [outlineV.sha256],
+    );
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state) values ('dft_outline',$1,2,'outline','working')`,
+      [projectId],
+    );
+
+    // the Writing phase's committed `drafts/v3.md` — the born-frozen row's promoted head.
+    const draftV = await store.putText(workspaceId, "# v3 — the drafted piece\n\nFirst section.\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_v3',$1,$2,'draft','shared','drafts/v3.md','av_v3')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_v3','art_v3',1,$1,'k',44,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [draftV.sha256],
+    );
+    await db.exec.query(
+      `insert into steps(id, run_id, phase, ordinal, state, produced_version_ids, started_at, ended_at)
+       values ('st_draft',$1,'draft',4,'done','{av_v3}',now(),now())`,
+      [runId],
+    );
+
+    // the delivered drafting note itself (committed by the delivery phase's harvest).
+    const noteV = await store.putText(workspaceId, "# Drafting note\n\n## Choices\n…\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_note',$1,$2,'drafting_note','shared','correspondence/v3-drafting-note.md','av_note')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_note','art_note',1,$1,'k',36,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [noteV.sha256],
+    );
+
+    const tree = await materializeSeat(db.exec, store, { seat: "author", projectId, personaId: "prs_dn" });
+    await recordMounts(db.exec, { runId, attempt: 1, manifest: tree.manifest });
+    await seedFetchLog(db.exec, { runId, url: FETCHED_URL, normalizedUrl: normalizeUrl(FETCHED_URL) });
+
+    events = [];
+    deps = {
+      ...testDeps(),
+      store,
+      eventWriter: { async append(_exec: SqlExecutor, ev) { events.push({ type: ev.type, payload: ev.payload }); } },
+    };
+  });
+  afterEach(() => db.close());
+
+  it("creates the born-frozen drafted_from_outline row + the drafting_note correspondence item", async () => {
+    const result = await runDeliveryTransaction(db.exec, deps, {
+      runId,
+      attempt: 1,
+      workspaceId,
+      projectId,
+      draftId: "dft_v3",
+      correspondenceKind: "drafting_note",
+      deliveredVersionIds: ["av_note"],
+      newDraftId: "dft_v3",
+      newDraftN: 3,
+      sidecars: [],
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "a grounded claim", tier: 2, verdict: "verified", url: FETCHED_URL, normalizedUrl: normalizeUrl(FETCHED_URL), humanAdded: false },
+        { ordinal: 2, text: "an unverified claim", tier: 3, verdict: "unverifiable", humanAdded: false },
+      ]),
+      verdictContext: EMPTY_VERDICT_CTX,
+    });
+    expect(result.correspondenceId).toBeTruthy();
+    expect(result.newDraftId).toBe("dft_v3");
+
+    // the born-frozen row: n=3, promoted head = the Writing step's committed version, already sealed.
+    const draft = (
+      await db.exec.query(
+        "select n, origin, state, promoted_version_id, frozen_at from drafts where id='dft_v3'",
+      )
+    ).rows[0] as { n: number; origin: string; state: string; promoted_version_id: string; frozen_at: unknown };
+    expect(draft).toMatchObject({ n: 3, origin: "drafted_from_outline", state: "frozen", promoted_version_id: "av_v3" });
+    expect(draft.frozen_at).not.toBeNull();
+    const av = (await db.exec.query("select immutable from artifact_versions where id='av_v3'")).rows[0] as { immutable: boolean };
+    expect(av.immutable).toBe(true);
+
+    // the correspondence item is the drafting note kind, on the NEW draft, carrying the delivered note.
+    const corr = (
+      await db.exec.query("select kind, draft_id, artifact_ids from correspondence_items where id=$1", [result.correspondenceId])
+    ).rows[0] as { kind: string; draft_id: string; artifact_ids: string[] };
+    expect(corr).toMatchObject({ kind: "drafting_note", draft_id: "dft_v3" });
+    expect(corr.artifact_ids).toContain("av_note");
+
+    // the grounding ledger's claims persist against the new draft (incl. the [unverified] row).
+    const claims = (
+      await db.exec.query("select ordinal, verdict, draft_id from claims where correspondence_id=$1 order by ordinal", [result.correspondenceId])
+    ).rows as { ordinal: number; verdict: string; draft_id: string }[];
+    expect(claims.map((c) => c.ordinal)).toEqual([1, 2]);
+    expect(claims.every((c) => c.draft_id === "dft_v3")).toBe(true);
+    expect(claims[1]!.verdict).toBe("unverifiable");
+
+    // the outline draft is untouched — a Draft delivery freezes nothing it read.
+    const outline = (await db.exec.query("select state from drafts where id='dft_outline'")).rows[0] as { state: string };
+    expect(outline.state).toBe("working");
+
+    // attestation still lands (access report + boundary.attested).
+    expect(events.map((e) => e.type)).toContain("boundary.attested");
+  });
+
+  it("fails closed when no committed drafts/v<N>.md exists for the reserved ordinal", async () => {
+    await expect(
+      runDeliveryTransaction(db.exec, deps, {
+        runId,
+        attempt: 1,
+        workspaceId,
+        projectId,
+        draftId: "dft_v7",
+        correspondenceKind: "drafting_note",
+        deliveredVersionIds: ["av_note"],
+        newDraftId: "dft_v7",
+        newDraftN: 7,
+        sidecars: [],
+        verdictContext: EMPTY_VERDICT_CTX,
+      }),
+    ).rejects.toBeInstanceOf(DeliveryValidationError);
+  });
+});

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { InMemoryContentStore } from "@rhema/mirror";
-import { listCostUsd, platformCredits, RATE_TABLE_V1, type MeteredUsage } from "@rhema/contracts";
+import { InMemoryContentStore, type NewVersion } from "@rhema/mirror";
+import { listCostUsd, platformCredits, sha256Hex, RATE_TABLE_V1, type MeteredUsage } from "@rhema/contracts";
 import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "./testing/pg.js";
 import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
@@ -15,6 +15,7 @@ import {
   StaleTaskError,
 } from "./internal-api.js";
 import { rateTableCreditRenderer, TIER_MODEL } from "./credit-renderer.js";
+import { SqlEventWriter } from "./event-store.js";
 
 let db: OrchestratorTestDb;
 let deps: TestDeps;
@@ -626,5 +627,276 @@ describe("harvest — provisional sdk_stream usage priced by the rate table (D-P
     expect(Number(estimate!.credits)).toBe(Math.round(platformCredits(usage.costUsd)));
     const tick = deps.eventWriter.forRun("run1").find((e) => e.type === "usage.tick");
     expect(tick?.payload).toMatchObject({ spentCredits: 200 + Number(stream!.credits), capCredits: 2091 });
+  });
+});
+
+describe("P1.10 — Draft grounding back-edge: bounded re-plan, then a refusal Approval (REQ-WF-5)", () => {
+  const commitPhase = (stepKey: string, ordinal: number) =>
+    commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey,
+      ordinal,
+      of: 8,
+      credits: 1,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "advance" },
+    });
+
+  const stepRows = () =>
+    db.client
+      .query("select ordinal, state, result from steps where run_id='run1' order by ordinal", [])
+      .then((r) => r.rows as { ordinal: number; state: string; result: { reset?: string; fromPhase?: string; reason?: string } | null }[]);
+  const replans = () =>
+    db.client
+      .query("select replans from runs where id='run1'", [])
+      .then((r) => (r.rows[0] as { replans: number }).replans);
+
+  it("a 'replan' self-report on grounding resets the committed plan step (failure rides as context) + counts runs.replans", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "running",
+    });
+    await commitPhase("intake", 0);
+    await commitPhase("voice", 1);
+    await commitPhase("plan", 2);
+
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "grounding",
+      ordinal: 3,
+      errorClass: "replan",
+      reason: "claims C2,C5 could not be verified",
+    });
+    expect(res).toMatchObject({ ok: true, backEdge: { to: ["plan"], replans: 1 } });
+    expect(await stateOf("run1")).toBe("running"); // never parks, never finalizes
+    expect(await replans()).toBe(1);
+    const steps = await stepRows();
+    // the back-edge target's committed row resets (the runspec reads the marker into the re-plan's input);
+    // the failing grounding row stays 'failed' (a re-run upserts it).
+    expect(steps.find((s) => s.ordinal === 2)).toMatchObject({
+      state: "reset",
+      result: { reset: "replan", fromPhase: "grounding", reason: "claims C2,C5 could not be verified" },
+    });
+    expect(steps.find((s) => s.ordinal === 3)?.state).toBe("failed");
+    // intake + voice stay committed — the back-edge re-runs from plan only.
+    expect(steps.find((s) => s.ordinal === 0)?.state).toBe("done");
+    expect(steps.find((s) => s.ordinal === 1)?.state).toBe("done");
+  });
+
+  it("the (cap+1)-th grounding failure opens a blocking refusal Approval and parks waiting_gate — never a silent continue", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "running",
+    });
+    await db.client.query("update runs set replans = 2 where id = 'run1'", []); // ITERATION_CAPS.replan consumed
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "grounding",
+      ordinal: 3,
+      errorClass: "replan",
+      reason: "claim C9 still unverifiable",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(typeof res.gateId).toBe("string");
+    expect(await stateOf("run1")).toBe("waiting_gate");
+    const gate = (
+      await db.client.query("select kind, blocking, on_expiry, resolved_at from gates where run_id='run1'", [])
+    ).rows[0] as { kind: string; blocking: boolean; on_expiry: string; resolved_at: unknown } | undefined;
+    expect(gate).toMatchObject({ kind: "refusal", blocking: true, on_expiry: "cancel", resolved_at: null });
+    expect(await replans()).toBe(2); // the refusal does NOT consume a fourth re-plan
+    expect(deps.eventWriter.typesForRun("run1")).toContain("gate.opened");
+  });
+
+  it("a 'replan' self-report on a workflow WITHOUT backEdges stays terminal (phase_replan — regression)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "verification",
+      ordinal: 2,
+      errorClass: "replan",
+      reason: "replan",
+    });
+    expect(res).toMatchObject({ ok: true });
+    expect(await stateOf("run1")).toBe("failed");
+  });
+});
+
+describe("P1.10 — trial preview pre-resolves Approve plan by:'trial' (§6.4 item 3; REQ-CHAT-30)", () => {
+  it("commitStep's approve_plan gate on a preview run resolves immediately + re-queues", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "running",
+    });
+    await db.client.query("update runs set inputs = $2::jsonb where id = $1", [
+      "run1",
+      JSON.stringify({ preview: { sections: 1 }, grounding: false, audit: false }),
+    ]);
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "plan",
+      ordinal: 2,
+      of: 8,
+      credits: 4,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "gate", gateKind: "approve_plan", blocking: true, onExpiry: "proceed_conservative" },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gateId = res.ok ? res.gateId : undefined;
+    expect(gateId).toBeTruthy();
+    // the gate resolved post-commit with the trial mechanism's decision, and the run re-queued.
+    const dec = (
+      await db.client.query("select by_actor, action from decisions where gate_id = $1", [gateId])
+    ).rows[0] as { by_actor: string; action: string } | undefined;
+    expect(dec).toMatchObject({ by_actor: "trial", action: "proceed_as_proposed" });
+    expect(await stateOf("run1")).toBe("queued");
+    expect(deps.queue.sent.some((j) => j.name === "run.resume")).toBe(true);
+    // the plan step committed (the gate resolved, it did not reset).
+    const step = (
+      await db.client.query("select state from steps where run_id='run1' and ordinal=2", [])
+    ).rows[0] as { state: string };
+    expect(step.state).toBe("done");
+  });
+
+  it("a non-preview draft run's Approve plan stays open (no trial pre-resolution)", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "running",
+    });
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "plan",
+      ordinal: 2,
+      of: 8,
+      credits: 4,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "gate", gateKind: "approve_plan", blocking: true, onExpiry: "proceed_conservative" },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select resolved_at from gates where run_id='run1'", [])
+    ).rows[0] as { resolved_at: unknown };
+    expect(gate.resolved_at).toBeNull();
+  });
+});
+
+describe("P1.10 — harvest emits section.drafted from the committed 04-draft-ledger (REQ-WF-4/7)", () => {
+  const LEDGER = [
+    "# Draft ledger — piece v3",
+    "",
+    "## Sections",
+    "",
+    "| # | Section | Function | Budget | Actual | Status | Claim rows | Deviation |",
+    "|---|---|---|---|---|---|---|---|",
+    "| 1 | Opening | intro | 700 | 720 | verified | C1 | — |",
+    "| 2 | Middle | develop | 900 | 880 | drafted | C2 | — |",
+    "| 3 | Close | land it | 400 | — | planned | — | — |",
+    "",
+  ].join("\n");
+  const USAGE = {
+    inputTokens: 10,
+    outputTokens: 5,
+    cacheReadTokens: 0,
+    cacheCreationTokens: 0,
+    webSearchRequests: 0,
+    webFetchRequests: 0,
+    costUsd: 0.01,
+  };
+  function ledgerVersion(): NewVersion {
+    const bytes = Buffer.from(LEDGER, "utf8");
+    return {
+      path: "agents/author/drafting/v3/04-draft-ledger.md",
+      root: "project",
+      kind: "draft_ledger",
+      namespace: "agent:author",
+      sha256: sha256Hex(bytes),
+      bytes,
+      wordCount: 24,
+    };
+  }
+  async function sectionRows(): Promise<{ sectionRef: string; words: number; budget?: number }[]> {
+    return (
+      await db.client.query(
+        "select payload from run_events where run_id='run1' and type='section.drafted' order by seq",
+        [],
+      )
+    ).rows.map((r) => (r as { payload: { sectionRef: string; words: number; budget?: number } }).payload);
+  }
+
+  it("emits drafted rows in plan order with words + budget — 'planned' rows are NOT emitted", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "running",
+    });
+    // The DURABLE writer — the dedupe query reads `run_events`, which only SqlEventWriter populates.
+    const res = await harvestStep(
+      { ...deps, store: new InMemoryContentStore(), eventWriter: new SqlEventWriter() },
+      {
+        runId: "run1",
+        attempt: 1,
+        workspaceId: seed.workspaceId,
+        stepKey: "draft",
+        ordinal: 4,
+        seat: "author",
+        versions: [ledgerVersion()],
+        usage: USAGE,
+      },
+    );
+    expect(res.ok).toBe(true);
+    expect(await sectionRows()).toEqual([
+      { sectionRef: "Opening", words: 720, budget: 700 },
+      { sectionRef: "Middle", words: 880, budget: 900 },
+    ]);
+  });
+
+  it("a re-harvest of the same ledger does NOT double-emit a sectionRef (dedupe on the durable row)", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "running",
+    });
+    const writerDeps = { ...deps, store: new InMemoryContentStore(), eventWriter: new SqlEventWriter() };
+    const args = {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "draft",
+      ordinal: 4,
+      seat: "author" as const,
+      versions: [ledgerVersion()],
+      usage: USAGE,
+    };
+    expect((await harvestStep(writerDeps, args)).ok).toBe(true);
+    // a retried phase / ledger re-harvest commits the same rows again — the dedupe must hold.
+    expect((await harvestStep(writerDeps, args)).ok).toBe(true);
+    expect(await sectionRows()).toHaveLength(2);
   });
 });

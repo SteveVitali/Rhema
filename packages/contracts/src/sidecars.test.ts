@@ -21,6 +21,7 @@ const FIXTURES: Array<[string, SidecarFilename]> = [
   ["the-politics-of-visibility", "cut-list.json"],
   ["structure-of-political-difference", "01-claim-ledger.json"],
   ["constitution-of-reason", "01-claim-ledger.json"],
+  ["constitution-of-reason", "03-claim-ledger.json"],
   ["constitution-of-reason", "structure-plan.json"],
 ];
 
@@ -31,7 +32,7 @@ describe("sidecar schemas validate the three real projects' fixtures (AC6, REQ-S
     expect(() => schema.parse(doc)).not.toThrow();
   });
 
-  it("covers all six sidecar kinds across the fixtures", () => {
+  it("covers all seven sidecar kinds across the fixtures", () => {
     const covered = new Set(FIXTURES.map(([, f]) => f));
     expect(covered).toEqual(new Set(Object.keys(SIDECAR_REGISTRY)));
   });
@@ -182,11 +183,12 @@ describe("every anchor-bearing sidecar uses §11.3 Anchor verbatim (AC8, REQ-OBJ
     (f) => SIDECAR_REGISTRY[f].anchorBearing,
   );
 
-  it("the registry marks the five anchor-bearing sidecars", () => {
+  it("the registry marks the six anchor-bearing sidecars", () => {
     expect(new Set(anchorBearing)).toEqual(
       new Set([
         "findings.json",
         "01-claim-ledger.json",
+        "03-claim-ledger.json",
         "structure-plan.json",
         "response-ledger.json",
         "cut-list.json",

@@ -14,7 +14,9 @@ export type ToggleKey =
   | "discourse"
   | "second_read"
   | "repair_research"
-  | "gap_check";
+  | "gap_check"
+  | "grounding"
+  | "audit";
 
 export type ToggleState = Partial<Record<ToggleKey, boolean>>;
 
@@ -61,6 +63,8 @@ export const TOGGLE_OPT_OUT_FLAG: Record<ToggleKey, string> = {
   second_read: "second_read",
   repair_research: "research",
   gap_check: "gap_analysis",
+  grounding: "grounding",
+  audit: "audit",
 };
 
 /**
@@ -175,13 +179,34 @@ const PROFILE_VOICE: WorkflowSheetProfile = {
   },
 };
 
-/** The beta's three verbs + the persona build (REQ-WF-3; §9.2 Quick Voice — PRB.10). Other workflows
- *  fall through to a caller error. */
+// ---- Draft (§6.2/§12.2; P1.10): grounding / audit are the two rigor-gated phases. Quick drops BOTH
+// ([unverified] marks replace verification, no audit) — the manifest's `optional:"quick"` rows; Standard+
+// runs both with fresh-only sources. The grounding toggle prices the research-loop churn addend. ----
+const DRAFT: WorkflowSheetProfile = {
+  workflow: "draft",
+  toggles: ["grounding", "audit"],
+  rigorDefaults: {
+    quick: { modelTier: "base", toggles: { grounding: false, audit: false } },
+    standard: { modelTier: "balanced", toggles: { grounding: true, audit: true } },
+    full_board: { modelTier: "frontier", toggles: { grounding: true, audit: true } },
+  },
+  applyToggles(baseInputs, toggles) {
+    // grounding off ⇒ the claim-inventory research loop never runs: drop the grounding addend AND the
+    // per-claim term (the ledger inherits the outline's unverified claims — nothing is priced per claim).
+    const enabledAddends: string[] = toggles.grounding ? ["grounding"] : [];
+    const inputs: EstimatorInputs = { ...baseInputs, claims: toggles.grounding ? baseInputs.claims : 0 };
+    return { inputs, enabledAddends };
+  },
+};
+
+/** The beta's three verbs + the persona build (REQ-WF-3; §9.2 Quick Voice — PRB.10) + the Draft verb
+ *  (P1.10). Other workflows fall through to a caller error. */
 export const WORKFLOW_SHEET_PROFILES: Partial<Record<WorkflowKey, WorkflowSheetProfile>> = {
   review: REVIEW,
   revise: REVISE,
   fact_check: FACT_CHECK,
   profile_voice: PROFILE_VOICE,
+  draft: DRAFT,
 };
 
 /** Resolve a workflow's sheet profile; throws for a workflow the beta sheet does not launch. */

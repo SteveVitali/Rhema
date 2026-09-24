@@ -16,6 +16,7 @@ import { emptyUsage, type ResultSubtype, type UsageSnapshot } from "@rhema/engin
 import type { PhaseManifest } from "@rhema/protocols";
 import { pathToNamespace } from "@rhema/protocols";
 import { harvest, manifestByPath, sha256Hex, type HarvestFile, type MirrorManifest, type NewVersion, type SidecarInput } from "@rhema/mirror";
+import { draftedSectionCount } from "@rhema/protocols";
 import type { MountRoot } from "@rhema/hooks";
 import type { PhaseResultFile, PredicateFacts } from "@rhema/orchestrator";
 import type { HarnessRunSpec } from "@rhema/orchestrator";
@@ -175,8 +176,13 @@ function harvestFiles(files: ReadonlyMap<string, Uint8Array>, manifest: MirrorMa
   return out;
 }
 
-/** The predicate facts each of the phase's completion predicates reads (oracle leg c). */
-function factsForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManifest): PredicateFacts {
+/** The predicate facts each of the phase's completion predicates reads (oracle leg c). `inputs` are the
+ *  run's frozen inputs (a trial preview's `{preview:{sections:N}}` clamps the plan-section count). */
+function factsForPhase(
+  files: ReadonlyMap<string, Uint8Array>,
+  phase: PhaseManifest,
+  inputs?: Record<string, unknown>,
+): PredicateFacts {
   const present: Record<string, boolean> = {};
   const nonempty: Record<string, boolean> = {};
   const sidecarValid: Record<string, boolean> = {};
@@ -232,8 +238,30 @@ function factsForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManif
         facts.expectedProducerQueryId = marker?.expectedProducerQueryId ?? null;
         break;
       }
+      // P1.10 (Draft) — `spine_min` reads the structure-plan sidecar's `spine` array; the plan's
+      // sidecar lands at `.rhema/structure-plan.json` or its `NN-structure-plan.json` gate twin.
+      case "spine_min": {
+        const plan = readStructurePlan(files);
+        facts.spineCount = plan?.spine?.length ?? 0;
+        break;
+      }
+      // `draft_sections_eq_plan` — the plan's `sections[]` count vs the ledger rows past `planned`
+      // (the 04-draft-ledger `## Sections` table is the machine-readable truth; REQ-WF-4). A trial
+      // preview (`inputs.preview.sections`) drafts only the FIRST N plan sections — the expected count
+      // clamps to it so the preview's ledger can satisfy the predicate.
+      case "draft_sections_eq_plan": {
+        const plan = readStructurePlan(files);
+        const pv = (inputs?.preview as { sections?: unknown } | undefined)?.sections;
+        const previewN = typeof pv === "number" && Number.isInteger(pv) && pv > 0 ? pv : null;
+        facts.planSectionCount =
+          previewN != null && plan?.sections != null
+            ? Math.min(plan.sections.length, previewN)
+            : plan?.sections?.length;
+        const ledger = textOf(files, "04-draft-ledger.md");
+        facts.draftSectionCount = ledger != null ? draftedSectionCount(ledger) : undefined;
+        break;
+      }
       default:
-        // predicates the review workflow does not use (draft_sections_eq_plan, spine_min, response_ledger…).
         break;
     }
   }
@@ -269,6 +297,24 @@ function responseLedgerRowPerFinding(
   return findings.every((f) => typeof f.ordinal === "number" && rowOrdinals.has(f.ordinal));
 }
 
+/**
+ * The structure-plan sidecar wherever the skill wrote it: `.rhema/structure-plan.json` (the declared
+ * sidecar path), or its numbered gate-artifact twin (`<dir>/NN-structure-plan.json` — the same file
+ * `serializeGateOverlay` writes for `02-structure-plan.md`). Basename-suffix match on top of
+ * `resolveKey` so the plan phase's `spine_min` and the draft phase's `draft_sections_eq_plan` read
+ * one source (P1.10).
+ */
+function readStructurePlan(
+  files: ReadonlyMap<string, Uint8Array>,
+): { spine?: unknown[]; sections?: unknown[] } | null {
+  const direct = readJson<{ spine?: unknown[]; sections?: unknown[] }>(files, "structure-plan.json");
+  if (direct) return direct;
+  const key = [...files.keys()]
+    .filter((k) => /(^|\/)\d*-?structure-plan\.json$/.test(k))
+    .sort((a, b) => a.length - b.length)[0];
+  return key ? readJson<{ spine?: unknown[]; sections?: unknown[] }>(files, key) : null;
+}
+
 /** The dossier content for the final delivery — read the phase's declared sidecars + artifacts from `/work`. */
 function dossierForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseManifest): WorkDeliveryContent {
   const sidecars: SidecarInput[] = [];
@@ -284,7 +330,13 @@ function dossierForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseMan
     .filter((a) => a.endsWith(".md"))
     .map((a) => resolveKey(files, a))
     .filter((k) => files.has(k));
-  const claimLedger = readJson<WorkDeliveryContent["claimLedger"]>(files, "01-claim-ledger.json") ?? undefined;
+  // the claim ledger filename differs per workflow: review/revise ship `01-claim-ledger.json`, a Draft
+  // run's grounding phase ships `03-claim-ledger.json` (P1.10 — the delivery dossier folds it into the
+  // drafting note's `claims` rows).
+  const claimLedger =
+    readJson<WorkDeliveryContent["claimLedger"]>(files, "01-claim-ledger.json") ??
+    readJson<WorkDeliveryContent["claimLedger"]>(files, "03-claim-ledger.json") ??
+    undefined;
   const findings = readJson<WorkDeliveryContent["findings"]>(files, "findings.json") ?? undefined;
   const rubric = readJson<WorkDeliveryContent["rubric"]>(files, "rubric.json") ?? undefined;
   const secondRead = readJson<{ producerQueryId?: string }>(files, ".rhema/second-read.json");
@@ -354,7 +406,7 @@ export function buildPhaseOutputs(files: ReadonlyMap<string, Uint8Array>, spec: 
       break; // one twin per gate artifact — the first declared sidecar wins
     }
   }
-  const facts = factsForPhase(files, phase);
+  const facts = factsForPhase(files, phase, spec.request.inputs as Record<string, unknown> | undefined);
   const isFinal = spec.stopAfterPhase === true || phase.index === spec.request.of - 1;
 
   return {
