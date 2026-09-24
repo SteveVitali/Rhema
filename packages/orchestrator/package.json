@@ -27,6 +27,7 @@
     "@rhema/contracts": "workspace:*",
     "@rhema/db": "workspace:*",
     "@rhema/engine": "workspace:*",
+    "@rhema/figures": "workspace:*",
     "@rhema/hooks": "workspace:*",
     "@rhema/mirror": "workspace:*",
     "@rhema/protocols": "workspace:*"

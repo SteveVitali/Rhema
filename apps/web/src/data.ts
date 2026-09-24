@@ -79,6 +79,12 @@ import type {
   OutlinePromoteRequestDto,
   OutlineDto,
   OutlinePatchDto,
+  FigureListItemDto,
+  FigureCardDto,
+  FigureProposeDto,
+  FigureProposedDto,
+  FigureAcceptedDto,
+  FigureSpecEditDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -628,6 +634,38 @@ export interface DataSource {
     gapId: string,
     req: { text: string; slug?: string },
   ): Promise<{ ok: true; versionIds: string[] }>;
+  // ---- P1.13 — the Figures pane + card (§7.5; every method session-forwards) ----
+  /** `GET /projects/:id/figures` — the pane list (badge + insert/render state per card). */
+  listFigures?(session: SessionHeaders, projectId: string): Promise<FigureListItemDto[]>;
+  /** `GET /projects/:id/figures/:figureId` — the card (preview + disclosures + readiness). */
+  getFigure?(session: SessionHeaders, projectId: string, figureId: string): Promise<FigureCardDto>;
+  /** `PATCH …/figures/:figureId` — the card's field edits (title/caption/alt ≤250/sourceLine). */
+  patchFigure?(
+    session: SessionHeaders,
+    projectId: string,
+    figureId: string,
+    req: { title?: string; caption?: string; alt?: string; sourceLine?: string },
+  ): Promise<FigureCardDto>;
+  /** `POST …/proposals` — the insert-as-proposal card (409 `figure_not_ready` while alt/source is missing). */
+  proposeFigure?(
+    session: SessionHeaders,
+    projectId: string,
+    figureId: string,
+    req: FigureProposeDto,
+  ): Promise<FigureProposedDto>;
+  /** `POST …/proposals/accept` — the one-tx splice (frozen draft ⇒ forked v(N+1)). */
+  acceptFigureProposal?(session: SessionHeaders, projectId: string, figureId: string): Promise<FigureAcceptedDto>;
+  /** `POST …/proposals/reject` — clear the card; the asset stays in working figures. */
+  rejectFigureProposal?(session: SessionHeaders, projectId: string, figureId: string): Promise<{ ok: true }>;
+  /** `POST …/spec-edit` — the 0-cr type-chip mark edit → new version + re-render. */
+  editFigureSpec?(
+    session: SessionHeaders,
+    projectId: string,
+    figureId: string,
+    req: FigureSpecEditDto,
+  ): Promise<{ ok: true; n: number; specVersionId: string | null }>;
+  /** `POST …/versions/:n/restore` — copy the version's spec/data/provenance to head + re-render. */
+  restoreFigureVersion?(session: SessionHeaders, projectId: string, figureId: string, n: number): Promise<{ ok: true }>;
 }
 
 /** A user-visible run event as the feed consumes it (the SSE `data:` payload). */
@@ -985,5 +1023,21 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     deleteOutline: (session, projectId, opts) => client(session).deleteOutline(projectId, opts),
     answerOutlineGap: (session, projectId, gapId, req) =>
       client(session).answerOutlineGap(projectId, gapId, req),
+
+    // ---- P1.13 — the Figures pane + card (§7.5) ----
+    listFigures: (session, projectId) => client(session).listFigures(projectId),
+    getFigure: (session, projectId, figureId) => client(session).getFigure(projectId, figureId),
+    patchFigure: (session, projectId, figureId, req) =>
+      client(session).patchFigure(projectId, figureId, req),
+    proposeFigure: (session, projectId, figureId, req) =>
+      client(session).proposeFigure(projectId, figureId, req),
+    acceptFigureProposal: (session, projectId, figureId) =>
+      client(session).acceptFigureProposal(projectId, figureId),
+    rejectFigureProposal: (session, projectId, figureId) =>
+      client(session).rejectFigureProposal(projectId, figureId),
+    editFigureSpec: (session, projectId, figureId, req) =>
+      client(session).editFigureSpec(projectId, figureId, req),
+    restoreFigureVersion: (session, projectId, figureId, n) =>
+      client(session).restoreFigureVersion(projectId, figureId, n),
   };
 }

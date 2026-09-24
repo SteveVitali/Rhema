@@ -1,0 +1,13 @@
+{
+  "sidecar": "figure",
+  "version": 1,
+  "figureId": "01JFIGURE00000000000000000A",
+  "specKind": "vega_lite",
+  "kind": "chart",
+  "title": "Visibility index by decade",
+  "caption": "Mean visibility scores across the three corpus decades.",
+  "alt": "Bar chart of mean visibility scores rising from 0.31 in the 1970s to 0.58 in the 1990s.",
+  "sourceLine": "Source: the project's 01-claim-ledger.json, claim 4 (CHES 2019).",
+  "provenanceKind": "claim_ledger",
+  "request": "make a chart of the visibility scores by decade"
+}

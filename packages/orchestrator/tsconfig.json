@@ -9,6 +9,7 @@
     { "path": "../contracts" },
     { "path": "../db" },
     { "path": "../engine" },
+    { "path": "../figures" },
     { "path": "../hooks" },
     { "path": "../mirror" },
     { "path": "../protocols" }

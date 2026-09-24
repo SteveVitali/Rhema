@@ -54,6 +54,9 @@
       "path": "../../packages/findings-core"
     },
     {
+      "path": "../../packages/figures"
+    },
+    {
       "path": "../../packages/editor"
     },
     {

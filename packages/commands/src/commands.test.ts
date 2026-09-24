@@ -196,4 +196,29 @@ describe("resolution — four surfaces, one identical sheet (REQ-CHAT-22/25)", (
       if (res.kind === "sheet") expect(res.path).not.toMatch(/\/runs|method.*post/i);
     }
   });
+
+  it("P1.13 — /visualize resolves to its OWN §7.5 sheet with the scopes mapped to provenance seeds", () => {
+    // a claim scope rides the request text (the POST classifies it into the claim_ledger seed)
+    const claim = resolveCommand(parsed("/visualize @claim:v2/41 a chart of scores"), ctx);
+    expect(claim.kind).toBe("sheet");
+    if (claim.kind === "sheet") {
+      expect(claim.path.startsWith("/p/the-politics-of-visibility/visualize?")).toBe(true);
+      const q = new URLSearchParams(claim.path.split("?")[1]);
+      expect(q.get("request")).toContain("@claim:v2/41");
+      expect(q.get("request")).toContain("a chart of scores");
+    }
+    // the selection popover's Visualize carries entry=selection
+    const sel = resolveCommand(parsed("/visualize @selection"), ctx);
+    if (sel.kind === "sheet") {
+      const q = new URLSearchParams(sel.path.split("?")[1]);
+      expect(q.get("entry")).toBe("selection");
+    }
+    // @figure: names the iterate target (the fig_ marker prefix rides through — the sheet strips it)
+    const iter = resolveCommand(parsed("/fig @figure:fig_01ARZ3NDEKTSV4RRFFQ69G5FBF make it a line chart"), ctx);
+    if (iter.kind === "sheet") {
+      const q = new URLSearchParams(iter.path.split("?")[1]);
+      expect(q.get("figure")).toBe("fig_01ARZ3NDEKTSV4RRFFQ69G5FBF");
+      expect(q.get("request")).toBe("make it a line chart");
+    }
+  });
 });

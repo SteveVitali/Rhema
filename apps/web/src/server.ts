@@ -25,6 +25,9 @@ import {
   runReportElement,
   outlineElement,
   outlinePromoteElement,
+  figuresElement,
+  figureCardElement,
+  visualizeElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -46,6 +49,7 @@ import {
   type SignupMode,
   type IpEmailThrottle,
   type WorkflowKey,
+  figureIdFromRef,
 } from "@rhema/contracts";
 import { buildRunSheetView, buildEstimate, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
@@ -399,6 +403,17 @@ export function createWebApp(deps: WebDeps): Hono {
       const turn = outlineCmd[1];
       return c.redirect(
         `/p/${row.slug}/outline/promote?scope=${turn ? "turn" : "thread"}&threadId=${encodeURIComponent(threadId)}${turn ? `&turnId=${encodeURIComponent(turn)}` : ""}`,
+      );
+    }
+    // P1.13 — the `/visualize` verb never runs inline either (the same REQ-CHAT-25 consent rule):
+    // it resolves to the visualize SHEET with the typed request prefilled — the sheet's Visualize
+    // click is the only figure-run creator. `/visualize <text>` seeds the request verbatim
+    // (@claim:/@asset:/URL refs ride the text; the POST classifies them into provenance seeds).
+    const vizCmd = /^\/visualize(?:\s+(.*))?$/s.exec(message.trim());
+    if (vizCmd) {
+      const request = vizCmd[1]?.trim() ?? "";
+      return c.redirect(
+        `/p/${row.slug}/visualize${request ? `?request=${encodeURIComponent(request)}` : ""}`,
       );
     }
     const out = await deps.dataSource
@@ -831,6 +846,300 @@ export function createWebApp(deps: WebDeps): Hono {
       .answerOutlineGap?.(session, row.id, c.req.param("gapId"), { text })
       .catch(() => null);
     return c.redirect(`/p/${slug}/outline?saved=1`);
+  });
+
+  // ---- P1.13 — the Figures surface (§7.5): the pane, the card, the /visualize sheet, and the
+  //      insert-as-proposal actions. Every entry point (chat /visualize, a selection's Visualize,
+  //      Edit figure, a craft finding's Visualize) opens the SAME sheet; the sheet's click is the
+  //      only run creator (REQ-CHAT-25's consent rule, like /outline's Promote). ----
+
+  /** The estimate for the sheet + the run create — one derivation, server-side (the api re-derives
+   *  it too; these figures only pre-fill the card). */
+  const figureEstimate = (iterate: boolean) =>
+    buildEstimate({
+      workflow: "figure",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { iterations: iterate ? 1 : 0, dataRows: 0 },
+    });
+
+  /** Classify the request text's provenance seeds (@claim:/@asset:/a URL/typed insist) into the
+   *  sourceRefs shape the api's honesty seed reads. */
+  const figureSourceRefs = (args: { request: string; insist: boolean; selectionText?: string }) => {
+    const refs: Record<string, unknown> = {};
+    const claimIds = [...args.request.matchAll(/@claim:([^\s]+)/g)].map((m) => m[1]!);
+    if (claimIds.length > 0) refs.claimIds = claimIds;
+    const asset = /@asset:([^\s]+)/.exec(args.request);
+    if (asset) refs.assetId = asset[1];
+    const url = /(https?:\/\/[^\s]+)/.exec(args.request);
+    if (url) refs.url = url[1];
+    if (args.selectionText) refs.selection = { quote: args.selectionText };
+    if (args.insist) refs.insisted = true;
+    return Object.keys(refs).length > 0 ? refs : undefined;
+  };
+
+  // The /visualize sheet (GET): the request (prefilled by the entry point), the spec-kind pick, the
+  // honesty note, and the estimate. Iterate mode (`?figure=` + `?prior=`) replays the figure id.
+  app.get("/p/:project/visualize", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // the @figure: scope ref carries the marker's `fig_` prefix — the row id is the bare ULID.
+    const figureId = c.req.query("figure") ? figureIdFromRef(c.req.query("figure")!) : undefined;
+    const priorVersion = Number(c.req.query("prior"));
+    const est = figureEstimate(figureId != null);
+    return c.html(
+      renderDocument(c.req.path, visualizeElement, {
+        visualize: {
+          slug,
+          request: c.req.query("request") ?? "",
+          specKind: c.req.query("kind") ?? "",
+          ...(figureId ? { figureId } : {}),
+          ...(Number.isInteger(priorVersion) && priorVersion > 0 ? { priorVersion } : {}),
+          entryPoint: c.req.query("entry") ?? "chat",
+          estimateCredits: est.estimateCredits,
+          capCredits: est.capCredits,
+        },
+        compact: isPhoneRequest(c),
+      }),
+    );
+  });
+
+  // The Visualize click — the ONLY figure-run creator (the sheet IS the consent). Creates the
+  // `figure` run via the same POST /runs path the run sheet uses, with the figure facts block.
+  app.post("/p/:project/visualize", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const request = str("request").trim();
+    const figureId = str("figureId") || undefined;
+    const priorVersion = Number(str("priorVersion"));
+    const specKind = (["vega_lite", "mermaid", "table"] as const).find((k) => k === str("specKind"));
+    const est = figureEstimate(figureId != null);
+    if (!request) {
+      return c.html(
+        renderDocument(c.req.path, visualizeElement, {
+          visualize: {
+            slug,
+            request,
+            specKind: str("specKind"),
+            ...(figureId ? { figureId } : {}),
+            entryPoint: str("entryPoint") || "chat",
+            estimateCredits: est.estimateCredits,
+            capCredits: est.capCredits,
+            notice: COPY.visualize.requestRequired,
+          },
+          compact: isPhoneRequest(c),
+        }),
+        422,
+      );
+    }
+    const sourceRefs = figureSourceRefs({
+      request,
+      insist: str("insist") === "1" || form.insist === "on",
+      ...(str("selectionText") ? { selectionText: str("selectionText") } : {}),
+    });
+    try {
+      await deps.dataSource.createRun(session, row.id, {
+        idempotencyKey: str("idempotencyKey") || randomUUID(),
+        workflow: "figure",
+        modelProfile: { tier: "balanced" },
+        modelTier: "balanced",
+        rigor: "standard",
+        estimateCredits: est.estimateCredits,
+        capCredits: est.capCredits,
+        rateTableVersion: est.rateTableVersion,
+        inputs: {},
+        figure: {
+          ...(figureId ? { figureId } : {}),
+          entryPoint: str("entryPoint") || "chat",
+          request,
+          ...(specKind ? { specKind } : {}),
+          ...(sourceRefs ? { sourceRefs } : {}),
+          ...(Number.isInteger(priorVersion) && priorVersion > 0 ? { priorVersion } : {}),
+        },
+      });
+      return c.redirect(`/p/${slug}/figures`);
+    } catch (e) {
+      return c.html(
+        renderDocument(c.req.path, visualizeElement, {
+          visualize: {
+            slug,
+            request,
+            specKind: str("specKind"),
+            ...(figureId ? { figureId } : {}),
+            entryPoint: str("entryPoint") || "chat",
+            estimateCredits: est.estimateCredits,
+            capCredits: est.capCredits,
+            notice:
+              e instanceof ApiError && e.status === 404
+                ? COPY.visualize.notFound
+                : e instanceof ApiError
+                  ? String(e.code ?? e.message)
+                  : COPY.visualize.notFound,
+          },
+          compact: isPhoneRequest(c),
+        }),
+        e instanceof ApiError ? (e.status as 400) : 502,
+      );
+    }
+  });
+
+  // The Figures pane (GET): every figure card with its badge + version + insert/render state.
+  app.get("/p/:project/figures", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const items = (await deps.dataSource.listFigures?.(session, row.id).catch(() => null)) ?? [];
+    return c.html(
+      renderDocument(c.req.path, figuresElement, {
+        figures: { slug, items },
+        compact: isPhoneRequest(c),
+      }),
+    );
+  });
+
+  // The figure card (GET): preview + type chips + fields + disclosures + the insert surface.
+  app.get("/p/:project/figures/:figureId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const card = await deps.dataSource
+      .getFigure?.(session, row.id, c.req.param("figureId"))
+      .catch(() => null);
+    if (!card) return c.html(renderDocument(c.req.path, figureCardElement, { compact: isPhoneRequest(c) }), 404);
+    return c.html(
+      renderDocument(c.req.path, figureCardElement, {
+        figure: {
+          slug,
+          card,
+          headDraftId: row.headDraftId ?? null,
+          ...(c.req.query("saved") === "1" ? { saved: true } : {}),
+          ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
+        },
+        compact: isPhoneRequest(c),
+      }),
+    );
+  });
+
+  // The card's field edits (caption/alt/sourceLine) → the api's PATCH (alt ≤250 enforced there).
+  app.post("/p/:project/figures/:figureId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const figureId = c.req.param("figureId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    try {
+      await deps.dataSource.patchFigure?.(session, row.id, figureId, {
+        caption: str("caption"),
+        alt: str("alt"),
+        sourceLine: str("sourceLine"),
+      });
+      return c.redirect(`/p/${slug}/figures/${figureId}?saved=1`);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 422) {
+        return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent("alt text is limited to 250 characters")}`);
+      }
+      throw e;
+    }
+  });
+
+  // The type-chip iterate — a 0-cr mark edit (no run, no model call) → new version + re-render.
+  app.post("/p/:project/figures/:figureId/spec-edit", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const figureId = c.req.param("figureId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const mark = typeof form.mark === "string" ? form.mark : "";
+    try {
+      await deps.dataSource.editFigureSpec?.(session, row.id, figureId, { mark: mark as never });
+      return c.redirect(`/p/${slug}/figures/${figureId}`);
+    } catch (e) {
+      const notice = e instanceof ApiError ? String(e.code ?? "chip_not_supported") : "chip_not_supported";
+      return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`);
+    }
+  });
+
+  // Restore v<n> — the version's spec/data/provenance copy back to head as a NEW version + re-render.
+  app.post("/p/:project/figures/:figureId/versions/:n/restore", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const figureId = c.req.param("figureId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const n = Number(c.req.param("n"));
+    await deps.dataSource.restoreFigureVersion?.(session, row.id, figureId, n).catch(() => null);
+    return c.redirect(`/p/${slug}/figures/${figureId}`);
+  });
+
+  // Insert… — the proposal card (alt + source line gate it server-side; nothing touches the draft).
+  app.post("/p/:project/figures/:figureId/propose", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const figureId = c.req.param("figureId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const afterBlockId = typeof form.afterBlockId === "string" && form.afterBlockId !== "" ? form.afterBlockId : undefined;
+    try {
+      await deps.dataSource.proposeFigure?.(session, row.id, figureId, {
+        draftId: row.headDraftId ?? "",
+        ...(afterBlockId ? { afterBlockId } : {}),
+      });
+      return c.redirect(`/p/${slug}/figures/${figureId}`);
+    } catch (e) {
+      const notice =
+        e instanceof ApiError && e.status === 409 ? "figure_not_ready" : e instanceof ApiError ? String(e.code ?? "propose_failed") : "propose_failed";
+      return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`);
+    }
+  });
+
+  // Accept — ONE tx: the block splices through the draft save path (a frozen draft forks v(N+1)).
+  app.post("/p/:project/figures/:figureId/proposals/accept", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const figureId = c.req.param("figureId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    try {
+      const out = await deps.dataSource.acceptFigureProposal?.(session, row.id, figureId);
+      if (out?.inserted?.draftN != null) return c.redirect(`/p/${slug}/v/${out.inserted.draftN}`);
+      return c.redirect(`/p/${slug}/figures/${figureId}`);
+    } catch (e) {
+      const notice = e instanceof ApiError ? String(e.code ?? "accept_failed") : "accept_failed";
+      return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`);
+    }
+  });
+
+  // Reject — clear the card; the figure asset stays in working figures.
+  app.post("/p/:project/figures/:figureId/proposals/reject", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const figureId = c.req.param("figureId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    await deps.dataSource.rejectFigureProposal?.(session, row.id, figureId).catch(() => null);
+    return c.redirect(`/p/${slug}/figures/${figureId}`);
   });
 
 

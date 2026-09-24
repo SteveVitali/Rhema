@@ -42,6 +42,8 @@ import { seatForWorkflow } from "./run-shape.js";
 import { preApproveGateByTrial } from "./gate-resolution.js";
 import { resolveDeliveryBase, type DeliveryBaseDraft } from "./delivery-base.js";
 import { applyOutlineApproval } from "./outline-delivery.js";
+import { applyFigureDelivery, enqueueFigureRender } from "./figure-delivery.js";
+import type { FigureClaimsMountProvider } from "./figure-claims.js";
 import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
@@ -67,6 +69,13 @@ export interface OrchestratorDeps {
    * jobs are enqueued but the `notify` handler no-ops (`unconfigured`) — a deploy without mail stays green.
    */
   readonly notifications?: EmailActionConfig;
+  /**
+   * P1.13 — the figure-claims inventory mount (§7.5; REQ-VIZ-13). A review/fact_check run's Editor
+   * hydration mounts `.rhema/figure-claims.json` — the deterministic claim rows for figures
+   * inserted into the reviewed draft — when the api binds this provider (closed over the workspace
+   * content store). Unset ⇒ no file mounts (the pre-P1.13 shape).
+   */
+  readonly figureClaimsMount?: FigureClaimsMountProvider;
 }
 
 /** Builds the re-review `obligations.json` mount file for a seat's hydration, or null when none applies. */
@@ -414,6 +423,24 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       ? await resolveDeliveryBase(tx, { projectId: row.project_id, workflow: row.workflow, inputs })
       : { base: null, reviewedDraftN: null };
     const deliveryBase = deliveryResolution.base;
+    // P1.13 — the figure-claims inventory mount (§7.5; REQ-VIZ-13/14): a review/fact_check run's
+    // Editor hydration gains `.rhema/figure-claims.json` — the deterministic Tier-1 claim rows for
+    // figures inserted into the reviewed draft (the draft's `<!-- rhema:figure -->` markers, read
+    // server-side). The api binds the provider over the workspace store; unset ⇒ no file mounts.
+    if (
+      deps.figureClaimsMount &&
+      (row.workflow === "review" || row.workflow === "fact_check") &&
+      row.project_id &&
+      deliveryBase
+    ) {
+      const claimsFile = await deps.figureClaimsMount.forHydration(tx, {
+        runId: args.runId,
+        projectId: row.project_id,
+        draftN: deliveryBase.n,
+        workflow: row.workflow,
+      });
+      if (claimsFile) serverFiles.push(claimsFile);
+    }
     const workflowManifest = WORKFLOW_MANIFESTS[row.workflow as WorkflowKey];
     const writablePaths =
       row.project_id && workflowManifest
@@ -425,6 +452,9 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
             // P1.12 — `<slug>` resolves to the frozen outline slug (the conduit grant into
             // `agents/author/outline/`); the runspec's `phase_output` uses the same value.
             slug: typeof inputs["outlineSlug"] === "string" ? (inputs["outlineSlug"] as string) : null,
+            // P1.13 — `<fig>` resolves to the server-minted figure id (the conduit grant into
+            // `assets/figures/<fig>/` — the run's spec/data/provenance writes).
+            fig: typeof inputs["figureId"] === "string" ? (inputs["figureId"] as string) : null,
           })
         : [];
 
@@ -725,9 +755,10 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
     const parsed = new Date(raw);
     return { ...args.next, deadlineAt: Number.isNaN(parsed.getTime()) ? null : parsed };
   })();
-  const box: { debitedBillingAccountId: string | null; trialGateId: string | null } = {
+  const box: { debitedBillingAccountId: string | null; trialGateId: string | null; figureId: string | null } = {
     debitedBillingAccountId: null,
     trialGateId: null,
+    figureId: null,
   };
   try {
     const res = await deps.txRunner.run(args.workspaceId, async (tx): Promise<CommitStepResult & { ok: true }> => {
@@ -792,6 +823,22 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         "update runs set spent_credits = spent_credits + $2, current_step_id = $3, resume_count = 0 where id = $1",
         [args.runId, args.credits, stepId],
       );
+
+      // P1.13 — a `figure` run's `render` step committing means its spec/data/provenance just landed
+      // content-addressed; the deterministic server render (§12.1; REQ-VIZ-6) is the post-commit
+      // queue consequence, so the figure id rides the box out of the tx (never enqueued inside it).
+      if (args.stepKey === "render") {
+        const figRun = (
+          await tx.query("select workflow, inputs from runs where id = $1", [args.runId])
+        ).rows[0] as { workflow: string; inputs: unknown } | undefined;
+        if (figRun?.workflow === "figure") {
+          const ins =
+            typeof figRun.inputs === "string"
+              ? (JSON.parse(figRun.inputs) as Record<string, unknown>)
+              : (figRun.inputs as Record<string, unknown> | null);
+          if (typeof ins?.["figureId"] === "string") box.figureId = ins["figureId"] as string;
+        }
+      }
 
       // debit per committed step (REQ-DATA-34), coupling into the ledger inside the commit tx. `args.credits`
       // is the step's reconciled cost (from the proxy's metered rows); P0.11's `debit` enforces min(actual,
@@ -916,6 +963,17 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       await scheduleCreditsCheck(deps, {
         billingAccountId: box.debitedBillingAccountId,
         workspaceId: args.workspaceId,
+      });
+    }
+    // P1.13 — the committed render step's consequence: the worker-side deterministic render. The
+    // queue send is post-commit (not transactional with the step row); the job's singleton key on
+    // (figure, run, attempt) dedupes a retried commit, and the job re-renders idempotently.
+    if (res.ok && !res.idempotent && box.figureId) {
+      await enqueueFigureRender(deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        figureId: box.figureId,
+        attempt: args.attempt,
       });
     }
     return res;
@@ -1173,6 +1231,19 @@ export async function finalizeRun(
     if (runRow?.workflow === "outline" && runRow.project_id) {
       if (!args.store) throw new Error("finalizeRun: outline consequences require a ContentStore");
       await applyOutlineApproval(tx, { ...deps, store: args.store }, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        projectId: runRow.project_id,
+        inputs: runInputs,
+      });
+    }
+    // P1.13 — the Figure run's delivery consequences (§7.5; REQ-VIZ-1/9): fold `figure.json` +
+    // `provenance.json` into the `figures` row, pin the produced spec/data versions, append the
+    // `figure_versions` ordinal, and snapshot the prior version's files under `versions/<n>/` —
+    // all inside the finalize transaction.
+    if (runRow?.workflow === "figure" && runRow.project_id) {
+      if (!args.store) throw new Error("finalizeRun: figure consequences require a ContentStore");
+      await applyFigureDelivery(tx, { ...deps, store: args.store }, {
         runId: args.runId,
         workspaceId: args.workspaceId,
         projectId: runRow.project_id,

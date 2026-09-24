@@ -21,6 +21,10 @@ export interface ClaimTableRow {
   readonly note?: string;
   /** the per-URL views (from findings-core `claimUrlViews`) — each stamped `fetched` from the proxy log. */
   readonly urls: readonly ClaimUrlView[];
+  /** P1.13 — a figure-linked Tier-1 claim (§7.5; REQ-VIZ-13): the figure card href the claim verifies. */
+  readonly figureHref?: string;
+  /** the figure chip's label (e.g. "Figure 2" — document order, resolved upstream). */
+  readonly figureLabel?: string;
 }
 
 export interface ClaimsTableLabels {
@@ -97,6 +101,15 @@ function ClaimRow({ row, labels }: { row: ClaimTableRow; labels: ClaimsTableLabe
           <span style={{ fontSize: "11px", fontWeight: 600, padding: "1px 6px", borderRadius: "4px", background: "var(--sev-blocking)", color: "var(--shell-bg)" }}>
             {labels.contradictedTierOneLabel}
           </span>
+        ) : null}
+        {row.figureHref && row.figureLabel ? (
+          <a
+            data-figure-claim="true"
+            href={row.figureHref}
+            style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "4px", background: "var(--shell-raised)", color: "var(--accent)", textDecoration: "none" }}
+          >
+            {row.figureLabel}
+          </a>
         ) : null}
       </div>
       <div style={{ color: "var(--paper-fg)", fontSize: "14px", lineHeight: 1.5 }}>{row.text}</div>

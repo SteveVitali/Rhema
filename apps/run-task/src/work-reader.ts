@@ -77,8 +77,8 @@ export function resolveProducedPath(paths: readonly string[], target: string): s
 }
 
 /** true when a manifest target carries a placeholder (`vN`, `v(N+1)`, `(N+1)`, P1.11's `<run>`,
- *  or P1.12's `<slug>` — the outline artifact's per-thread filename segment). */
-const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)|<run>|<slug>/;
+ *  P1.12's `<slug>` — the outline artifact's per-thread filename segment — or P1.13's `<fig>`). */
+const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)|<run>|<slug>|<fig>/;
 
 /**
  * Compile a version-template target (`drafts/v(N+1).md`) into a path-suffix regex
@@ -94,9 +94,10 @@ function versionTemplateRegex(target: string): RegExp | null {
     .split("v\\(N\\+1\\)").join("v\\d+")
     .split("vN").join("v\\d+")
     .split("\\(N\\+1\\)").join("\\d+")
-    // `<run>`/`<slug>`: `<`/`>` are regex-safe literals; the escape pass leaves them untouched.
+    // `<run>`/`<slug>`/`<fig>`: `<`/`>` are regex-safe literals; the escape pass leaves them untouched.
     .split("<run>").join("[^/]+")
-    .split("<slug>").join("[^/]+");
+    .split("<slug>").join("[^/]+")
+    .split("<fig>").join("[^/]+");
   return new RegExp(`(^|/)${pattern}$`);
 }
 
@@ -204,6 +205,10 @@ function factsForPhase(
         break;
       case "artifact_nonempty":
         nonempty[p.artifact] = (textOf(files, p.artifact)?.trim().length ?? 0) > 0;
+        break;
+      case "any_artifact_nonempty":
+        // P1.13 — populate each candidate's fact; the evaluator passes on the first hit.
+        for (const a of p.artifacts) nonempty[a] = (textOf(files, a)?.trim().length ?? 0) > 0;
         break;
       case "sidecar_validates": {
         const v = validateSidecar(files, p.sidecar);

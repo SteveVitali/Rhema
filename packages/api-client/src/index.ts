@@ -236,6 +236,12 @@ export interface CreateRunDto {
   /** the reader's correspondence kind + variant slot (the corr lock discriminator). */
   readonly corrKind?: string;
   readonly corrK?: number;
+  /**
+   * P1.13 — the `figure` workflow's facts (§7.5): the verbatim visualize request, the entry point's
+   * provenance seeds, and (iterate) the existing figure id. The api mints/verifies the row — a
+   * client-invented figureId 404s.
+   */
+  readonly figure?: FigureRunFactsDto;
 }
 
 export interface CreatedRunDto {
@@ -1560,6 +1566,141 @@ export interface OutlinePatchDto {
   readonly edit?: Record<string, unknown>;
 }
 
+// ---- P1.13 — the Figures pane + card DTOs (§7.5; GET /projects/:id/figures[/:figureId]) ----
+
+/** The figure's provenance object (the row's `provenance` jsonb, verbatim §7.5). */
+export interface FigureProvenanceDto {
+  readonly kind: "selection" | "claim_ledger" | "asset_upload" | "fetched" | "user_typed" | "none";
+  readonly refs: readonly {
+    readonly url?: string;
+    readonly accessedAt?: string;
+    readonly claimId?: string;
+    readonly assetId?: string;
+    readonly transform?: string;
+  }[];
+  readonly computedBy: "assistant" | "drafter" | "user";
+  readonly verification: "unverified" | "verified" | "contradicted" | "unverifiable";
+}
+
+/** One Figures-pane row (GET /projects/:id/figures). */
+export interface FigureListItemDto {
+  readonly id: string;
+  readonly assetUri: string;
+  readonly title: string;
+  readonly caption: string;
+  readonly specKind: "vega_lite" | "mermaid" | "table";
+  readonly kind: "chart" | "diagram" | "table";
+  /** `unverified_data` | `author_supplied` | `verified` | `contradicted` | `unverifiable` | null. */
+  readonly badge: string | null;
+  readonly badgeText: string | null;
+  readonly n: number;
+  readonly renderStatus: string;
+  readonly hasRender: boolean;
+  readonly insertedInDraftId: string | null;
+  readonly pendingProposal: boolean;
+  readonly latestRunId: string | null;
+}
+
+/** One figure_versions row on the card's Versions strip. */
+export interface FigureVersionDto {
+  readonly n: number;
+  readonly request: string | null;
+  readonly renderStatus: string;
+  readonly renderError: string | null;
+  readonly createdAt: string;
+}
+
+/** The open insert-proposal's state (the card's anchor + pinned block markdown). */
+export interface FigurePendingProposalDto {
+  readonly draftId: string;
+  readonly afterBlockId: string | null;
+  readonly version: number;
+  readonly markdown: string;
+  readonly at: string;
+}
+
+/** The figure card (GET /projects/:id/figures/:figureId) — preview + disclosures + readiness. */
+export interface FigureCardDto {
+  readonly id: string;
+  readonly assetUri: string;
+  readonly title: string;
+  readonly caption: string;
+  readonly alt: string;
+  readonly sourceLine: string;
+  readonly specKind: "vega_lite" | "mermaid" | "table";
+  readonly kind: "chart" | "diagram" | "table";
+  readonly provenance: FigureProvenanceDto;
+  readonly badge: string | null;
+  readonly badgeText: string | null;
+  readonly latestRunId: string | null;
+  readonly insertedInDraftId: string | null;
+  readonly insertedAtVersionId: string | null;
+  readonly pendingProposal: FigurePendingProposalDto | null;
+  readonly versions: readonly FigureVersionDto[];
+  readonly files: {
+    readonly spec: string | null;
+    readonly dataCsv: string | null;
+    readonly svgLight: string | null;
+    readonly svgDark: string | null;
+    readonly tableSource: string | null;
+  };
+  readonly render: { readonly lightAvailable: boolean; readonly darkAvailable: boolean; readonly pngAvailable: boolean };
+  readonly readiness: { readonly ok: boolean; readonly missing: readonly ("alt" | "sourceLine")[] };
+}
+
+/** The figure-run facts the `/visualize` sheet + run creation carry (§7.5 entry points). */
+export interface FigureRunFactsDto {
+  /** iterate runs name the existing figure; absent ⇒ the api mints the row. */
+  readonly figureId?: string;
+  /** the §7.5 entry point (chat / selection / command / edit_block / craft_finding). */
+  readonly entryPoint?: string;
+  /** the verbatim visualize request ("make a chart of the visibility scores"). */
+  readonly request: string;
+  readonly specKind?: "vega_lite" | "mermaid" | "table";
+  /** the provenance seeds the entry point implies (all optional — the honesty step classifies). */
+  readonly sourceRefs?: {
+    readonly selection?: { readonly draftId?: string; readonly quote?: string };
+    readonly claimIds?: readonly string[];
+    readonly assetId?: string;
+    readonly url?: string;
+    readonly typedRows?: readonly Record<string, unknown>[];
+    /** the user insisted on unsourced numbers (the refuse→insist path → kind:"none"). */
+    readonly insisted?: boolean;
+  };
+  /** iterate runs name the version they continue from (Versions-strip "iterate from here"). */
+  readonly priorVersion?: number;
+}
+
+/** A type-chip edit (POST …/spec-edit): the 0-cr mark change. */
+export interface FigureSpecEditDto {
+  readonly mark: "bar" | "line" | "point" | "area" | "rect" | "tick" | "arc" | "rule" | "circle" | "square";
+}
+
+/** A propose request (POST …/proposals): the draft + the optional after-block anchor. */
+export interface FigureProposeDto {
+  readonly draftId: string;
+  readonly afterBlockId?: string;
+}
+
+/** The propose response — the pending card + the exact block markdown accept will splice. */
+export interface FigureProposedDto {
+  readonly ok: true;
+  readonly pendingProposal: FigurePendingProposalDto;
+  readonly block: string;
+}
+
+/** The accept response — the forked/updated draft version the splice produced. */
+export interface FigureAcceptedDto {
+  readonly ok: true;
+  readonly inserted: {
+    readonly figureId: string;
+    readonly draftId: string;
+    readonly draftN: number;
+    readonly draftVersionId: string;
+    readonly forked: boolean;
+  };
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -2009,6 +2150,38 @@ export interface ApiClient {
     req: { text: string; slug?: string },
     init?: RequestInitLite,
   ): Promise<{ ok: true; versionIds: string[] }>;
+  // ---- P1.13 — the Figures pane + card (§7.5) ----
+  /** GET /projects/:id/figures — the pane list (badge + insert/render state per card). */
+  listFigures(projectId: string, init?: RequestInitLite): Promise<FigureListItemDto[]>;
+  /** GET /projects/:id/figures/:figureId — the card (preview + disclosures + readiness). */
+  getFigure(projectId: string, figureId: string, init?: RequestInitLite): Promise<FigureCardDto>;
+  /** PATCH …/figures/:figureId — the card's field edits (title/caption/alt ≤250/sourceLine). */
+  patchFigure(
+    projectId: string,
+    figureId: string,
+    req: { title?: string; caption?: string; alt?: string; sourceLine?: string },
+    init?: RequestInitLite,
+  ): Promise<FigureCardDto>;
+  /** POST …/proposals — the insert-as-proposal card (gated on alt + sourceLine). */
+  proposeFigure(
+    projectId: string,
+    figureId: string,
+    req: FigureProposeDto,
+    init?: RequestInitLite,
+  ): Promise<FigureProposedDto>;
+  /** POST …/proposals/accept — ONE tx: the block splices through the draft save path (frozen ⇒ fork). */
+  acceptFigureProposal(projectId: string, figureId: string, init?: RequestInitLite): Promise<FigureAcceptedDto>;
+  /** POST …/proposals/reject — clear the pending card; the asset stays in working figures. */
+  rejectFigureProposal(projectId: string, figureId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** POST …/spec-edit — the 0-cr type-chip (a Vega-Lite mark edit → new version + re-render). */
+  editFigureSpec(
+    projectId: string,
+    figureId: string,
+    req: FigureSpecEditDto,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; n: number; specVersionId: string | null }>;
+  /** POST …/versions/:n/restore — copy version n's spec/data/provenance to head + re-render. */
+  restoreFigureVersion(projectId: string, figureId: string, n: number, init?: RequestInitLite): Promise<{ ok: true }>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -2976,6 +3149,77 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
           method: "POST",
           headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
           body: JSON.stringify(req),
+        },
+      );
+    },
+    // ---- P1.13 — the Figures pane + card (§7.5) ----
+    async listFigures(projectId, init): Promise<FigureListItemDto[]> {
+      const body = await json<{ figures: FigureListItemDto[] }>(
+        `/projects/${encodeURIComponent(projectId)}/figures`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+      return body.figures;
+    },
+    async getFigure(projectId, figureId, init): Promise<FigureCardDto> {
+      return json<FigureCardDto>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async patchFigure(projectId, figureId, req, init): Promise<FigureCardDto> {
+      return json<FigureCardDto>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async proposeFigure(projectId, figureId, req, init): Promise<FigureProposedDto> {
+      return json<FigureProposedDto>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/proposals`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async acceptFigureProposal(projectId, figureId, init): Promise<FigureAcceptedDto> {
+      return json<FigureAcceptedDto>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/proposals/accept`,
+        {
+          method: "POST",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
+    },
+    async rejectFigureProposal(projectId, figureId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/proposals/reject`,
+        {
+          method: "POST",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
+    },
+    async editFigureSpec(projectId, figureId, req, init): Promise<{ ok: true; n: number; specVersionId: string | null }> {
+      return json<{ ok: true; n: number; specVersionId: string | null }>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/spec-edit`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async restoreFigureVersion(projectId, figureId, n, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/projects/${encodeURIComponent(projectId)}/figures/${encodeURIComponent(figureId)}/versions/${n}/restore`,
+        {
+          method: "POST",
+          headers: init?.headers as Record<string, string> | undefined,
         },
       );
     },

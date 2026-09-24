@@ -9,6 +9,7 @@
 import {
   claimLedgerSidecarSchema,
   cutListSidecarSchema,
+  figureSidecarSchema,
   findingsSidecarSchema,
   outlineSidecarSchema,
   researchResultSidecarSchema,
@@ -21,6 +22,7 @@ import {
   type ClaimSourceStance,
   type ClaimVerdict,
   type CutListSidecar,
+  type FigureSidecar,
   type FindingsSidecar,
   type OutlineSidecar,
   type ResearchResultSidecar,
@@ -215,6 +217,13 @@ export function parseOutline(json: unknown, markdown?: string): ParseResult<Outl
   return parseWithSchema(outlineSidecarSchema, json, markdown, parseOutlineMd);
 }
 
+// ---- P1.13 — the figure card's structured twin (json only; the caption phase emits it and the
+//      figure delivery folds it into the figures row — never anchor-bearing). ----
+
+export function parseFigure(json: unknown): ParseResult<FigureSidecar> {
+  return parseWithSchema(figureSidecarSchema, json, undefined, undefined);
+}
+
 /** Every sidecar filename that has a parser — the contract test asserts this covers SIDECAR_REGISTRY. */
 export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string) => ParseResult<unknown>> = {
   "findings.json": (j) => parseFindings(j),
@@ -227,6 +236,7 @@ export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string)
   "turn-result.json": (j) => parseTurnResult(j),
   "research-result.json": (j) => parseResearchResult(j),
   "outline.json": (j, m) => parseOutline(j, m),
+  "figure.json": (j) => parseFigure(j),
 };
 
 // P1.10 — the draft-ledger `## Sections` table parser (the `section.drafted` / `draft_sections_eq_plan`

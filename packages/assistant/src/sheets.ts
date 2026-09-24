@@ -34,12 +34,16 @@ export function runSheetResult(args: {
   workflow: WorkflowKey;
   inputs?: Record<string, string | number | boolean>;
 }): RunSheetResult {
-  const params = new URLSearchParams({ workflow: args.workflow });
+  // P1.13 — the Figure run's sheet is its own §7.5 surface (`/p/:slug/visualize`), not the generic
+  // run sheet: the request/provenance-seed fields exist only there.
+  const base = args.workflow === "figure" ? `/p/${args.projectSlug}/visualize` : `/p/${args.projectSlug}/sheet`;
+  const params = new URLSearchParams(args.workflow === "figure" ? {} : { workflow: args.workflow });
   for (const [k, v] of Object.entries(args.inputs ?? {})) params.set(k, String(v));
+  const qs = params.toString();
   return {
     kind: "run_sheet",
     workflow: args.workflow,
-    href: `/p/${args.projectSlug}/sheet?${params.toString()}`,
+    href: qs ? `${base}?${qs}` : base,
     inputs: args.inputs ?? {},
   };
 }

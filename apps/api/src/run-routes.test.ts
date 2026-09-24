@@ -449,3 +449,96 @@ describe("POST /projects/:id/runs — Draft (P1.10; REQ-WF-4)", () => {
     expect(ins.audit).toBe(false);
   });
 });
+
+// P1.13 — the `figure` run's creation branch (§7.5; REQ-VIZ-1/4): the api mints/verifies the figure
+// id (a client-invented id 404s), seeds `figures.provenance` from the entry point's sourceRefs
+// (insist ⇒ kind:"none"; @claim: ⇒ claim_ledger; …), and freezes the figure facts into run inputs.
+describe("POST /projects/:id/runs — Figure (P1.13; §7.5)", () => {
+  function figureBody(over: Record<string, unknown> = {}, figure: Record<string, unknown> = {}) {
+    return runBody({
+      idempotencyKey: "idem-fig-1",
+      workflow: "figure",
+      figure: { request: "a chart of the visibility scores", ...figure },
+      ...over,
+    });
+  }
+
+  it("a first visualize mints the figures row with the entry-point provenance seed + freezes the facts", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(figureBody({}, { entryPoint: "chat", sourceRefs: { claimIds: ["v2/41"] } })),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const run = (
+      await db.pg.query("select workflow, inputs from runs where id = $1", [runId])
+    ).rows[0] as { workflow: string; inputs: Record<string, unknown> };
+    expect(run.workflow).toBe("figure");
+    expect(typeof run.inputs.figureId).toBe("string"); // server-minted
+    expect(run.inputs.entryPoint).toBe("chat");
+    expect(run.inputs.request).toBe("a chart of the visibility scores");
+    // the minted row carries the claim_ledger seed (the honesty step re-classifies at finalize)
+    const fig = (
+      await db.pg.query("select spec_kind, provenance from figures where id = $1", [run.inputs.figureId])
+    ).rows[0] as { spec_kind: string; provenance: { kind: string; refs: { claimId: string }[] } };
+    expect(fig.provenance.kind).toBe("claim_ledger");
+    expect(fig.provenance.refs[0]!.claimId).toBe("v2/41");
+  });
+
+  it("the insist path seeds kind:\"none\" — the REFUSE-default, never an approval", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(figureBody({ idempotencyKey: "idem-fig-insist" }, { sourceRefs: { insisted: true } })),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as { inputs: { figureId: string } }).inputs;
+    const fig = (
+      await db.pg.query("select provenance from figures where id = $1", [ins.figureId])
+    ).rows[0] as { provenance: { kind: string; verification: string } };
+    expect(fig.provenance.kind).toBe("none");
+    expect(fig.provenance.verification).toBe("unverified");
+  });
+
+  it("a missing figure.request is 400; a client-invented figureId is 404 figure_not_found", async () => {
+    const noReq = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(figureBody({ idempotencyKey: "idem-fig-noreq" }, { request: "  " })),
+    });
+    expect(noReq.status).toBe(400);
+    const invented = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(figureBody({ idempotencyKey: "idem-fig-inv" }, { figureId: "01ARZ3NDEKTSV4RRFFQ69G5FFF" })),
+    });
+    expect(invented.status).toBe(404);
+    expect(((await invented.json()) as { error: string }).error).toBe("figure_not_found");
+  });
+
+  it("an iterate run reuses the named row and freezes figureId + priorVersion", async () => {
+    await db.pg.query(
+      `insert into figures(id, project_id, spec_kind, provenance) values ($1,$2,'vega_lite','{}'::jsonb)`,
+      ["01ARZ3NDEKTSV4RRFFQ69G5FBF", seed.projectId],
+    );
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        figureBody({ idempotencyKey: "idem-fig-iter" }, { figureId: "01ARZ3NDEKTSV4RRFFQ69G5FBF", priorVersion: 1 }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+      inputs: { figureId: string; priorVersion: number };
+    }).inputs;
+    expect(ins.figureId).toBe("01ARZ3NDEKTSV4RRFFQ69G5FBF");
+    expect(ins.priorVersion).toBe(1);
+    // no new figures row was minted
+    const count = await db.pg.query("select count(*)::int n from figures where project_id = $1", [seed.projectId]);
+    expect((count.rows[0] as { n: number }).n).toBe(1);
+  });
+});

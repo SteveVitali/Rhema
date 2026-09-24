@@ -36,6 +36,7 @@ import { createTimelineRoutes } from "./timeline-routes.js";
 import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js";
 import { createChatRoutes, type ChatApiDeps } from "./chat-routes.js";
 import { createOutlineRoutes, type OutlineApiDeps } from "./outline-routes.js";
+import { createFigureRoutes, type FigureApiDeps } from "./figure-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
@@ -380,6 +381,19 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       app.route("/", createEditorRoutes({ ...(deps as EditorApiDeps), db }));
       // P1.08 — the version rail, the §5.13 Files pane, and the restore-point browse/preview/apply.
       app.route("/", createVersionRoutes({ ...(deps as unknown as VersionApiDeps), db }));
+      // P1.13 — the Figures surface (§7.5): pane list + card DTO, the propose/accept/reject
+      // insert-as-proposal lifecycle, the 0-cr type-chip + restore iterate verbs, and the lazy
+      // render.png endpoint. Session-authed like the editor routes; the content store binds when
+      // present (card preview + saves + renders all need it).
+      app.route(
+        "/",
+        createFigureRoutes({
+          ...(deps as unknown as FigureApiDeps),
+          db,
+          ...(deps.contentStore ? { store: deps.contentStore } : {}),
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
+        }),
+      );
       // PRB.11 — export (md/txt/docx via the ExportRunner seam — pandoc stays in the export image) + the
       // AI-use statement read/standalone-download/append-only-addition routes.
       app.route(

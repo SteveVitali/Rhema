@@ -26,6 +26,8 @@ import type {
   FilesDto,
   ChatPanelDto,
   OutlinePromotionDto,
+  FigureListItemDto,
+  FigureCardDto,
 } from "@rhema/api-client";
 import type { GateOutlineView } from "@rhema/findings-core";
 import type { DossierData } from "./data.js";
@@ -403,6 +405,45 @@ export interface PageData {
     readonly notice?: string;
     /** set after a successful Promote click — the run started. */
     readonly started?: { readonly runId: string; readonly slug: string };
+  };
+  // ---- P1.13 — the Figures pane + card + /visualize sheet (§7.5) ----
+  /** the Figures pane (`/p/:slug/figures`): every figure card's row (badge + insert/render state). */
+  readonly figures?: {
+    readonly slug: string;
+    readonly items: readonly FigureListItemDto[];
+  };
+  /**
+   * The figure card (`/p/:slug/figures/:figureId`): the api's full card DTO (preview SVG + files +
+   * provenance + versions + readiness), the head draft the insert proposal targets, and the
+   * per-request notice/saved flags a bounced POST re-renders with.
+   */
+  readonly figure?: {
+    readonly slug: string;
+    readonly card: FigureCardDto;
+    /** the project's head draft — the insert proposal's target (null ⇒ insert disabled). */
+    readonly headDraftId: string | null;
+    readonly notice?: string;
+    readonly saved?: boolean;
+  };
+  /**
+   * The `/visualize` sheet (`/p/:slug/visualize`): the verbatim request + the spec-kind pick + the
+   * estimator figure, with iterate fields when the entry point names an existing figure. The
+   * Visualize click is the consent — it creates the `figure` run (REQ-CHAT-25's sheet rule).
+   */
+  readonly visualize?: {
+    readonly slug: string;
+    readonly request: string;
+    readonly specKind: string;
+    /** iterate mode — the existing figure id + the version it continues from. */
+    readonly figureId?: string;
+    readonly priorVersion?: number;
+    /** the honesty path the entry point seeded (provenance is the run's to classify). */
+    readonly entryPoint?: string;
+    readonly estimateCredits: number;
+    readonly capCredits: number;
+    /** set after a successful Visualize click — the run started. */
+    readonly started?: boolean;
+    readonly notice?: string;
   };
   /** the page's dwell-heartbeat surface label — set ⇒ renderDocument emits the beacon script (REQ-BETA-10). */
   readonly dwellSurface?: string;

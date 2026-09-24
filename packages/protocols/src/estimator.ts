@@ -52,6 +52,16 @@ export interface EstimatorTerms {
    * phase sessions the run executes.
    */
   perPhase?: number;
+  /**
+   * P1.13 — per-ITERATE-TURN credits (the Figure row's `3·iterations` term): each iterate
+   * turn re-runs spec generation with the prior spec as context (REQ-VIZ-9's 2–8 cr band).
+   */
+  perIteration?: number;
+  /**
+   * P1.13 — per-DATA-ROW credits (the Figure row's `2·data_rows/100` term): the honesty
+   * step's per-row provenance classification + the table the card shows before render.
+   */
+  perDataRow?: number;
 }
 
 /** The per-phase cache economics (review 13 F8): the phase split writes a fresh cache per phase, so the 75% cache-read
@@ -318,6 +328,23 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     source: "modeled",
     version: "modeled-1",
   },
+  // ---- P1.13 — the Figure run (§7.5; §12.2 Figure row) ----
+  figure: {
+    workflow: "figure",
+    // §12.2 Figure row, verbatim: `5 + 3·iterations + 2·data_rows/100` (Base/Standard). The
+    // REQ-VIZ-16 honesty bands — first render 5–15 cr, iterations 2–8 cr, chip edits 0 — fall out
+    // of the shape: a first run is intercept + data_rows; an iterate run is intercept + 1 iteration
+    // (+ data_rows when the honesty step re-runs); chip edits run no model call at all. NO perPhase
+    // churn term — the ticket pins the estimator to the spec band (5–15/2–8); the small-context
+    // phases (a packaged render request, a caption) are not the ~100-cr review-phase shape, and
+    // the first instrumented run re-derives the residual either way. A `fetched` provenance path
+    // runs bounded metered egress, so the run carries the research coverage multiplier.
+    base: { intercept: 5, perIteration: 3, perDataRow: 0.02 },
+    meteredCoverage: METERED_VS_COMMITTED_COVERAGE,
+    provisional: true,
+    source: "modeled",
+    version: "modeled-1",
+  },
 };
 
 /** The parametric inputs an estimate reads (§12.2). All optional — a term absent from a spec ignores its input. */
@@ -341,6 +368,10 @@ export interface EstimatorInputs {
    *  sheet from the manifest's opt-out flags — the same phases the pod executes). Feeds the
    *  `perPhase` fixed-overhead term; absent ⇒ that term contributes 0. */
   phases?: number;
+  /** P1.13 — iterate turns the figure run covers (the `3·iterations` term; 1 for an iterate run). */
+  iterations?: number;
+  /** P1.13 — rows in the figure's data.csv (the `2·data_rows/100` term). */
+  dataRows?: number;
 }
 
 export interface EstimateOptions {
@@ -372,7 +403,9 @@ function evalTerms(t: EstimatorTerms, inp: EstimatorInputs): number {
     (t.perFetchedToken ?? 0) * (inp.fetchedTokens ?? 0) +
     (t.perThreadToken ?? 0) * (inp.threadTokens ?? 0) +
     (t.perUrlRefetched ?? 0) * (inp.urlsRefetched ?? 0) +
-    (t.perPhase ?? 0) * (inp.phases ?? 0)
+    (t.perPhase ?? 0) * (inp.phases ?? 0) +
+    (t.perIteration ?? 0) * (inp.iterations ?? 0) +
+    (t.perDataRow ?? 0) * (inp.dataRows ?? 0)
   );
 }
 

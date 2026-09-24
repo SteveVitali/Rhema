@@ -41,16 +41,19 @@ const EXPECTED: Record<string, { keys: string[]; skillPhases: string[] }> = {
   chat_turn: { keys: ["answer"], skillPhases: ["0"] },
   // P1.12 — the promotion run (§7.3): harvest → classify → spine → gaps, gated on approve_outline.
   outline: { keys: ["harvest", "classify", "spine", "gaps"], skillPhases: ["0", "1", "2", "3"] },
+  // P1.13 — the Figure run (§7.5/§6.2): data(honesty) → spec → render(request) → caption.
+  figure: { keys: ["data", "spec", "render", "caption"], skillPhases: ["0", "1", "2", "3"] },
 };
 
 describe("phase manifests (§12.2)", () => {
-  it("ships exactly the ten Phase-1 workflows", () => {
+  it("ships exactly the eleven Phase-1 workflows", () => {
     expect(Object.keys(WORKFLOW_MANIFESTS).sort()).toEqual(
       [
         "calibrate_voice",
         "chat_turn",
         "draft",
         "fact_check",
+        "figure",
         "outline",
         "profile_voice",
         "refresh_voice",
@@ -66,7 +69,7 @@ describe("phase manifests (§12.2)", () => {
       it("is a valid workflow key with a real skill and valid seats/classes", () => {
         expect(WORKFLOW_KEYS).toContain(m.workflow);
         expect(m.skill).toMatch(
-          /^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline|research-burst|chat-turn|outline-from-research)$/,
+          /^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline|research-burst|chat-turn|outline-from-research|figure)$/,
         );
         for (const p of m.phases) {
           expect(JUDGE_SEATS.has(p.seat)).toBe(true);

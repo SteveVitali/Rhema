@@ -297,6 +297,8 @@ export const COPY = {
     } as Record<string, string>,
     notCheckableFmt: "{kind} — not a matter of verification",
     contradictedTierOneLabel: "Contradicted · Tier 1",
+    // P1.13 — the figure-linked Tier-1 claim chip (§7.5; REQ-VIZ-13): links the row to its card.
+    figureClaimLabel: "Figure",
     rubricHeading: "Rubric",
     dimensionLabel: {
       thesis_contribution: "Thesis and contribution",
@@ -357,6 +359,9 @@ export const COPY = {
     applyTitle: "Splice the suggestion into the draft — free, no run",
     appliedToast: "Applied — the suggestion is in the draft",
     addObligationLabel: "Add to obligations",
+    // P1.13 — the craft finding's Visualize action (§7.5's fifth entry point): opens the visualize
+    // sheet seeded `entry=craft_finding` with the finding's own text as the request.
+    visualizeLabel: "Visualize",
     obligatedToast: "Added to obligations",
     promotedToast: "Promoted to the findings list",
     fromReviewFmt: "from Review of v{n}",
@@ -1000,6 +1005,66 @@ export const COPY = {
     slugHint: "lowercase letters, digits, dashes",
     startedFmt: "The outline run started — its approval lands in Needs you.",
     notFound: "That thread or turn wasn't found.",
+  },
+
+  // P1.13 — the Figures pane, the figure card, and the /visualize sheet (§7.5). The
+  // `[unverified data]` badge text comes from the api verbatim (FIGURE_BADGE_TEXT) — never retyped.
+  figuresPage: {
+    heading: "Figures",
+    backToProject: "Back to the project",
+    empty: "No figures yet — /visualize in Chat, or Visualize on a selection, starts one.",
+    newLabel: "New figure",
+    insertedChip: "inserted",
+    proposalChip: "proposal open",
+    renderingChip: "rendering…",
+    versionFmt: "v{n}",
+  },
+  figureCard: {
+    backToFigures: "Back to figures",
+    untitled: "Untitled figure",
+    captionLabel: "Caption",
+    altLabel: "Alt text",
+    sourceLabel: "Source line",
+    provenanceHeading: "Where the numbers came from",
+    dataHeading: "Data",
+    specHeading: "Spec",
+    versionsHeading: "Versions",
+    chipsHeading: "Chart type",
+    chipsNote: "Type chips are local spec edits — 0 credits, no model call.",
+    insertHeading: "Insert into the draft",
+    insertNote: "Insert is a proposal — Accept writes the figure block; a frozen draft forks v(N+1).",
+    anchorLabel: "Insert after block (optional — e.g. b7; empty = end of the draft)",
+    proposeLabel: "Insert…",
+    acceptLabel: "Accept",
+    rejectLabel: "Reject",
+    restoreLabel: "Restore",
+    notReadyFmt: "Insert needs {missing} first.",
+    missingAlt: "alt text",
+    missingSource: "a source line",
+    pendingNote: "A proposal is open — Accept writes the block, Reject keeps the figure.",
+    insertedNote: "Inserted into the draft.",
+    // the "Edit figure" affordance an inserted figure block renders on the Page (§7.5's fourth
+    // entry point) — opens this card at the current version.
+    editFigureLabel: "Edit figure",
+    declinedFmt: "This figure type isn't supported — {suggestion}",
+    requestLabel: "request",
+    emptyField: "—",
+  },
+  visualize: {
+    heading: "Visualize",
+    backToProject: "Back to the project",
+    requestLabel: "What should the figure show?",
+    requestHint: "Describe the figure. @claim:<id>, @asset:<id>, or a URL binds the numbers to a source; numbers with no source are refused.",
+    kindLabel: "Figure kind",
+    kindAuto: "let the run decide",
+    insistLabel: "Create it anyway with unsourced numbers — carries a persistent [unverified data] badge",
+    iterateLabel: "Iterating figure",
+    estimateFmt: "Estimate {estimate} credits · cap {cap}",
+    chipNote: "Type-chip edits on the card are 0 credits.",
+    startLabel: "Visualize",
+    startedFmt: "The figure run started — the card lands in Figures.",
+    notFound: "That figure wasn't found.",
+    requestRequired: "Describe the figure first.",
   },
 
   // P1.01 — the §5.1 IDE shell's chrome: rail, Files pane, Margin, Timeline, Desk, status bar, the View
