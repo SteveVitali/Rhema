@@ -157,6 +157,49 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     expect(card.waitingGate).toMatchObject({ kind: "approve_plan" });
   });
 
+  it("P1.09 — the waiting run carries the FULL gate DTO + its permanent decision records (§6.4)", async () => {
+    await seedRun(db, {
+      runId: "run_w",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "draft",
+      state: "waiting_gate",
+    });
+    // the open gate (the card the Timeline mounts — the same DTO the Needs-you list reads)
+    await seedGate(db, {
+      gateId: "g_open",
+      runId: "run_w",
+      kind: "approve_plan",
+      onExpiry: "proceed_conservative",
+      deadlineAt: new Date("2026-09-18T12:00:00Z"),
+    });
+    // a resolved gate → the run's permanent decision row (§6.4 item 8; REQ-RUN-5/6)
+    await seedGate(db, { gateId: "g_done", runId: "run_w", kind: "approve_scope", onExpiry: "proceed_as_proposed" });
+    await db.client.query(
+      `update gates set resolved_at = now() where id = 'g_done'`,
+    );
+    await db.client.query(
+      `insert into decisions(gate_id, by_actor, action, changes, overlay_version_ids, at)
+       values ('g_done','user','approve',3,'{}',now())`,
+    );
+
+    const res = await app.request(`/projects/${seed.projectId}/timeline`);
+    const body = (await res.json()) as {
+      ungrouped: {
+        runId: string;
+        gate?: { id: string; kind: string; deadlineAt?: string; onExpiry: string };
+        card: { decisions?: { gateId: string; action: string; changes?: number }[] };
+      }[];
+    };
+    const run = body.ungrouped.find((r) => r.runId === "run_w")!;
+    // the open gate DTO rides the run — identical fields to the Needs-you read (one loader).
+    expect(run.gate).toMatchObject({ id: "g_open", kind: "approve_plan", onExpiry: "proceed_conservative" });
+    expect(run.gate!.deadlineAt).toBeTruthy();
+    // the permanent decision record is on the card (resolved gate, never re-created).
+    expect(run.card.decisions).toHaveLength(1);
+    expect(run.card.decisions![0]).toMatchObject({ gateId: "g_done", action: "approve", changes: 3 });
+  });
+
   it("lazily enqueues the walkthrough for a delivered run with no record (§5.5 D20), once", async () => {
     await seedRun(db, {
       runId: "run_done",

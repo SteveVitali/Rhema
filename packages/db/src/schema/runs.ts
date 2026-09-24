@@ -38,6 +38,9 @@ export const runs = pgTable("runs", {
   replans: integer("replans").notNull().default(0),
   resumeCount: integer("resume_count").notNull().default(0), // reaper re-enqueue budget per step (0007)
   gatesOff: boolean("gates_off").notNull().default(false), // "Approve and run autonomously" (0010; REQ-GATE-3)
+  // P1.09 (0032; §6.4): the per-run deadline override — same validated shape as projects.approval_overrides;
+  // layered over it at gate-open time ("this run only").
+  gateOverrides: jsonb("gate_overrides"),
   failure: jsonb("failure"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   startedAt: timestamp("started_at"),

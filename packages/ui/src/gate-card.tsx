@@ -6,6 +6,11 @@ import {
   type DoNothingOutcome,
   type GateCardAction,
   type GateCardModel,
+  type GateCutListView,
+  type GateDecisionView,
+  type GatePlanView,
+  type GateScopeView,
+  type GateStructuredView,
 } from "@rhema/findings-core";
 
 // The §6.4 gate card — ONE generic component for every beta gate kind (REQ-BETA-1). Cards, never modals:
@@ -47,6 +52,51 @@ export interface GateCardLabels {
   readonly informationalNote: string;
   /** the escalation flag on approve_triage ("This ledger has escalations — they are decided only by you."). */
   readonly escalationNote: string;
+  // ---- P1.09 — the structured-edit + decision-record + explainer labels (§6.4 items 4/8, §5.11) ----
+  /** generic read-only fact lines' heading ("The facts") — continue_rounds/cost/refusal bodies. */
+  readonly factsHeading?: string;
+  /** one fact line's wording — `factLine("estimateCredits", 1240)` → "Estimate: 1,240 credits". */
+  readonly factLine?: (key: string, value: string | number | boolean | null) => string;
+  /** the "re-priced estimate exceeds the cap — this approval waits" line on the spend-scope variant. */
+  readonly exceedsCapLine?: string;
+  /** the scope card's labeled correction fields (stage/venue/audience/concerns/narrow/…). */
+  readonly scopeFieldLabel?: (field: string) => string;
+  /** the scope card's correction-field heading ("Corrections — applied as guidance"). */
+  readonly scopeFieldsHeading?: string;
+  /** plan editor labels (§6.4 item 4: spine claims, section rows, the apparatus budget). */
+  readonly plan?: {
+    readonly spineHeading: string;
+    readonly sectionsHeading: string;
+    readonly alternativesHeading: string;
+    readonly gapsHeading: string;
+    readonly orderLabel: string;
+    readonly strikeLabel: string;
+    readonly notePlaceholder: string;
+    readonly addClaimLabel: string;
+    readonly addClaimPlaceholder: string;
+    readonly addNotePlaceholder: string;
+    readonly targetWordsLabel: string;
+    readonly purposeLabel: string;
+    readonly apparatusLabel: string;
+  };
+  /** the thesis pick field on choose_thesis ("Thesis — name your pick"). */
+  readonly thesisLabel?: string;
+  /** cut-list toggle labels ("Protect" keeps the text; "target N words" is the sidecar's target). */
+  readonly cutList?: {
+    readonly heading: string;
+    readonly targetLine: (targetWords: number) => string;
+    readonly protectLabel: string;
+    readonly wordsLabel: (words: number) => string;
+  };
+  /** the permanent decision lines under the card (§6.4 item 8 — one per recorded decision). */
+  readonly decisionsHeading?: string;
+  readonly decisionLabel?: (decision: GateDecisionView) => string;
+  /** the first-run inline explainer (§5.11/§6.4 — one-time, inline, dismissible; never a modal). */
+  readonly explainer?: {
+    readonly title: string;
+    readonly body: string;
+    readonly dismissLabel: string;
+  };
 }
 
 const actionButton: CSSProperties = {
@@ -87,6 +137,27 @@ export interface GateCardProps {
   readonly labels: GateCardLabels;
   /** the artifact slot — the Approve-triage card mounts its ledger rows here. */
   readonly children?: ReactNode;
+  /**
+   * P1.09 — the kind's structured parts (§6.4 item 4). Editable slots post `ed.*` fields the server
+   * applies to the artifact's sidecar; `facts` are read-only lines. Absent ⇒ nothing renders.
+   */
+  readonly structured?: GateStructuredView;
+  /** the run's permanent decision records rendered under the card (§6.4 item 8; REQ-RUN-5/6). */
+  readonly decisions?: readonly GateDecisionView[];
+  /**
+   * P1.09 — the first-run inline explainer (§6.4/§5.11): rendered ONCE per user on the first approval
+   * card; dismiss POSTs to this URL (a plain form — never a modal). Omit ⇒ no explainer.
+   */
+  readonly explainerDismissAction?: string;
+  /**
+   * P1.09 (§6.4) — the per-run deadline override ("this run only"): a select posting `ed.runOverride`
+   * — `""` = project default, `"wait"` = remove the deadline, an ms number = set/lengthen. The app
+   * supplies only options legal for this kind (REQ-SPEC-1); absent ⇒ no control.
+   */
+  readonly runOverride?: {
+    readonly label: string;
+    readonly options: readonly { readonly value: string; readonly label: string }[];
+  };
 }
 
 function actionLabel(action: GateCardAction, kind: GateKind, labels: GateCardLabels): string {
@@ -131,6 +202,205 @@ var a=s&&s.querySelector('[data-gate-artifact]');if(a)a.addEventListener('click'
 vis();})();`;
 }
 
+// ---- P1.09 — the per-kind structured bodies (§6.4 item 4). The card chrome stays generic; each kind's
+// structured rows render through these slots. Every editable control is a named form field (`ed.*`
+// grammar — findings-core `decodeGateEditFields` decodes it; the api applies it to the sidecar).
+// Prose stays read-only — an edit is a field, never free mutation of the artifact text. ----
+
+const fieldInput: CSSProperties = {
+  padding: "5px 8px",
+  borderRadius: "6px",
+  border: "1px solid var(--shell-border)",
+  background: "var(--shell-bg)",
+  color: "var(--shell-fg)",
+  fontSize: "12px",
+};
+
+const fieldLabel: CSSProperties = {
+  fontSize: "12px",
+  color: "var(--shell-fg-muted)",
+};
+
+/** Approve-plan: spine claims (reorder/strike/add-with-note), section rows, the apparatus budget. */
+function PlanEditor({ plan, labels }: { plan: GatePlanView; labels: NonNullable<GateCardLabels["plan"]> }): ReactNode {
+  return (
+    <div data-gate-plan="true" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
+        <legend style={fieldLabel}>{labels.spineHeading}</legend>
+        <ol data-spine="true" style={{ margin: "6px 0 0", paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          {plan.spine.map((claim, i) => (
+            <li key={i} data-spine-claim={i} data-struck={claim.struck ? "true" : "false"}>
+              <span style={{ fontSize: "13px", color: "var(--shell-fg)", textDecoration: claim.struck ? "line-through" : "none" }}>
+                {claim.text}
+              </span>
+              {claim.note ? (
+                <span data-claim-note="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}> — {claim.note}</span>
+              ) : null}
+              <span style={{ marginLeft: "8px", display: "inline-flex", gap: "8px", alignItems: "baseline" }}>
+                <label style={fieldLabel}>
+                  {labels.orderLabel}
+                  <input type="number" name={`ed.spine.${i}.ord`} min={1} defaultValue={i + 1} style={{ ...fieldInput, width: "48px", marginLeft: "4px" }} />
+                </label>
+                <label style={fieldLabel}>
+                  <input type="checkbox" name={`ed.spine.${i}.strike`} value="1" defaultChecked={claim.struck === true} /> {labels.strikeLabel}
+                </label>
+                <input type="text" name={`ed.spine.${i}.note`} placeholder={labels.notePlaceholder} defaultValue={claim.note ?? ""} style={fieldInput} />
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div data-add-claim="true" style={{ marginTop: "6px", display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
+          <span style={fieldLabel}>{labels.addClaimLabel}</span>
+          <input type="text" name="ed.spine.new.text" placeholder={labels.addClaimPlaceholder} style={{ ...fieldInput, flex: "1 1 200px" }} />
+          <input type="text" name="ed.spine.new.note" placeholder={labels.addNotePlaceholder} style={{ ...fieldInput, flex: "1 1 160px" }} />
+        </div>
+      </fieldset>
+      {plan.sections.length > 0 ? (
+        <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
+          <legend style={fieldLabel}>{labels.sectionsHeading}</legend>
+          <table data-plan-sections="true" style={{ marginTop: "6px", borderCollapse: "collapse", fontSize: "12px" }}>
+            <tbody>
+              {plan.sections.map((sec, i) => (
+                <tr key={i} data-plan-section={sec.ref}>
+                  <td style={{ padding: "3px 8px 3px 0", color: "var(--shell-fg)" }}>{sec.ref}</td>
+                  <td style={{ padding: "3px 8px 3px 0", color: "var(--shell-fg-muted)" }}>{sec.title}</td>
+                  <td style={{ padding: "3px 8px 3px 0" }}>
+                    <input type="number" name={`ed.sec.${i}.ord`} min={1} defaultValue={i + 1} aria-label={labels.orderLabel} style={{ ...fieldInput, width: "44px" }} />
+                  </td>
+                  <td style={{ padding: "3px 8px 3px 0" }}>
+                    <input type="number" name={`ed.sec.${i}.targetWords`} min={0} defaultValue={sec.targetWords ?? ""} aria-label={labels.targetWordsLabel} style={{ ...fieldInput, width: "72px" }} />
+                  </td>
+                  <td style={{ padding: "3px 0" }}>
+                    <input type="text" name={`ed.sec.${i}.purpose`} defaultValue={sec.purpose ?? ""} aria-label={labels.purposeLabel} style={{ ...fieldInput, width: "180px" }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </fieldset>
+      ) : null}
+      {plan.alternativesConsidered && plan.alternativesConsidered.length > 0 ? (
+        <div data-alternatives="true">
+          <span style={fieldLabel}>{labels.alternativesHeading}</span>
+          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {plan.alternativesConsidered.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {plan.gaps && plan.gaps.length > 0 ? (
+        <div data-gaps="true">
+          <span style={fieldLabel}>{labels.gapsHeading}</span>
+          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {plan.gaps.map((g, i) => (
+              <li key={i}>{g}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <label style={fieldLabel}>
+        {labels.apparatusLabel}
+        <input type="number" name="ed.values.apparatusBudget" min={0} defaultValue={plan.apparatusBudget ?? ""} style={{ ...fieldInput, width: "88px", marginLeft: "6px" }} />
+      </label>
+    </div>
+  );
+}
+
+/** Approve-scope: the labeled correction fields (post as `ed.values.*` → recorded + composed). */
+function ScopeFields({ scope, labels }: { scope: GateScopeView; labels: GateCardLabels }): ReactNode {
+  const field = (name: string): ReactNode => (
+    <label key={name} style={{ ...fieldLabel, display: "flex", flexDirection: "column", gap: "3px" }}>
+      {labels.scopeFieldLabel?.(name) ?? name}
+      <input type="text" name={`ed.values.${name}`} style={fieldInput} />
+    </label>
+  );
+  return (
+    <div data-gate-scope="true" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {scope.exceedsCap && labels.exceedsCapLine ? (
+        <p data-exceeds-cap="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>{labels.exceedsCapLine}</p>
+      ) : null}
+      {labels.scopeFieldsHeading ? <span style={fieldLabel}>{labels.scopeFieldsHeading}</span> : null}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
+        {["stage", "venue", "audience", "concerns", "narrow"].map(field)}
+      </div>
+    </div>
+  );
+}
+
+/** Approve-cutlist: the protect/restore toggles (§6.4 item 4). */
+function CutListToggles({ cutList, labels }: { cutList: GateCutListView; labels: NonNullable<GateCardLabels["cutList"]> }): ReactNode {
+  return (
+    <div data-gate-cutlist="true">
+      <span style={fieldLabel}>{labels.heading}</span>
+      {cutList.targetWords != null ? (
+        <span data-cut-target="true" style={{ marginLeft: "8px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+          {labels.targetLine(cutList.targetWords)}
+        </span>
+      ) : null}
+      <ul style={{ margin: "6px 0 0", paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+        {cutList.cuts.map((cut, i) => (
+          <li key={i} data-cut={cut.ordinal} style={{ fontSize: "12px", color: "var(--shell-fg)" }}>
+            <label style={{ display: "inline-flex", gap: "6px", alignItems: "baseline" }}>
+              <input type="checkbox" name={`ed.cut.${i}.protect`} value="1" defaultChecked={cut.protect} />
+              {labels.protectLabel}
+            </label>
+            <span style={{ marginLeft: "6px", color: "var(--shell-fg-muted)" }}>
+              {labels.wordsLabel(cut.words)} — {cut.reason}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Choose-thesis: the pick field posts `ed.values.thesis` (recorded + composed into guidance). */
+function ThesisPick({ label }: { label: string }): ReactNode {
+  return (
+    <label data-gate-thesis="true" style={{ ...fieldLabel, display: "block" }}>
+      {label}
+      <input type="text" name="ed.values.thesis" style={{ ...fieldInput, display: "block", width: "100%", boxSizing: "border-box", marginTop: "3px" }} />
+    </label>
+  );
+}
+
+/** The kind's structured body — the registry maps kind → its slot; `facts` lines render for any kind. */
+function GateStructuredFields({
+  kind,
+  structured,
+  labels,
+}: {
+  kind: GateKind;
+  structured: GateStructuredView;
+  labels: GateCardLabels;
+}): ReactNode {
+  return (
+    <div data-gate-structured={kind} style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      {kind === "approve_plan" && structured.plan && labels.plan ? (
+        <PlanEditor plan={structured.plan} labels={labels.plan} />
+      ) : null}
+      {kind === "approve_scope" && structured.scope ? (
+        <ScopeFields scope={structured.scope} labels={labels} />
+      ) : null}
+      {kind === "approve_cutlist" && structured.cutList && labels.cutList ? (
+        <CutListToggles cutList={structured.cutList} labels={labels.cutList} />
+      ) : null}
+      {kind === "choose_thesis" && labels.thesisLabel ? <ThesisPick label={labels.thesisLabel} /> : null}
+      {structured.facts && Object.keys(structured.facts).length > 0 ? (
+        <div data-gate-facts="true">
+          {labels.factsHeading ? <span style={fieldLabel}>{labels.factsHeading}</span> : null}
+          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+            {Object.entries(structured.facts).map(([key, value]) => (
+              <li key={key} data-fact={key}>{labels.factLine?.(key, value) ?? `${key}: ${String(value)}`}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function GateCard({
   model,
   artifact,
@@ -140,6 +410,10 @@ export function GateCard({
   hasEscalations,
   labels,
   children,
+  structured,
+  decisions,
+  explainerDismissAction,
+  runOverride,
 }: GateCardProps): ReactNode {
   return (
     <section
@@ -179,6 +453,31 @@ export function GateCard({
           </span>
         ) : null}
       </div>
+
+      {/* P1.09 — the first-run inline explainer (§6.4/§5.11): shown once per user, dismissible via a
+          plain form post — inline coaching, never a modal (§14.2). */}
+      {labels.explainer && explainerDismissAction ? (
+        <aside
+          data-gate-explainer="true"
+          style={{
+            marginTop: "10px",
+            padding: "10px 12px",
+            border: "1px solid var(--shell-border)",
+            borderRadius: "8px",
+            background: "var(--shell-bg)",
+            fontSize: "12px",
+            color: "var(--shell-fg-muted)",
+          }}
+        >
+          <strong style={{ color: "var(--shell-fg)" }}>{labels.explainer.title}</strong>
+          <p style={{ margin: "4px 0 0" }}>{labels.explainer.body}</p>
+          <form method="post" action={explainerDismissAction} style={{ marginTop: "6px" }}>
+            <button type="submit" style={{ ...actionButton, padding: "3px 10px", fontSize: "12px" }}>
+              {labels.explainer.dismissLabel}
+            </button>
+          </form>
+        </aside>
+      ) : null}
 
       {/* the artifact slot — the approve_triage card mounts its ledger rows here (§6.4 item 1). */}
       {children}
@@ -232,6 +531,9 @@ export function GateCard({
       ) : null}
 
       <form method="post" action={formAction} data-gate-form="true" style={{ marginTop: "12px" }}>
+        {/* P1.09 — the kind's structured editable parts (§6.4 item 4): `ed.*` fields post WITH the
+            decision button, the server applies them to the artifact's sidecar + records the edit. */}
+        {structured ? <GateStructuredFields kind={model.kind} structured={structured} labels={labels} /> : null}
         <div
           data-gate-actions="true"
           style={{ display: "flex", flexDirection: compact ? "column" : "row", gap: "8px", flexWrap: "wrap" }}
@@ -260,6 +562,16 @@ export function GateCard({
 
         {!compact ? (
           <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {runOverride ? (
+              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "inline-flex", gap: "6px", alignItems: "baseline" }}>
+                {runOverride.label}
+                <select name="ed.runOverride" data-run-override="true" style={{ ...fieldInput }}>
+                  {runOverride.options.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
               {labels.guidanceLabel}
               <input
@@ -287,6 +599,24 @@ export function GateCard({
           </div>
         ) : null}
       </form>
+
+      {/* P1.09 — the permanent decision record (§6.4 item 8; REQ-RUN-5/6): every resolved approval on
+          this run renders one line — user-approved (with its change count), auto-continued, expired,
+          or policy-skipped. Never editable, never removed. */}
+      {decisions && decisions.length > 0 && labels.decisionLabel ? (
+        <div data-gate-decisions="true" style={{ marginTop: "12px", borderTop: "1px solid var(--shell-border)", paddingTop: "8px" }}>
+          {labels.decisionsHeading ? (
+            <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{labels.decisionsHeading}</span>
+          ) : null}
+          <ul style={{ margin: "4px 0 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+            {decisions.map((d) => (
+              <li key={d.id} data-decision={d.id} data-action={d.action} data-by={d.byActor}>
+                {labels.decisionLabel!(d)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {/* presence pings — only an auto-proceed card carries them; a wait-default card can never arm the
           timer even if the URL were provided (the server rejects it there too). */}

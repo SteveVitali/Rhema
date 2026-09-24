@@ -12,12 +12,12 @@ import {
   type Actor,
   type DispositionKind,
   type GateKind,
-  type GateOnExpiry,
   type ReasonCode,
   type ResponseLedgerEntry,
   type Severity,
 } from "@rhema/contracts";
 import {
+  applyGateEdits,
   buildDecisionsList,
   buildPretriageLedger,
   dispositionToLedgerEntry,
@@ -27,6 +27,7 @@ import {
   DISPOSITION_VERBS,
   SEVERITY_ORDER,
   type DispositionState,
+  type GateStructuredEdits,
 } from "@rhema/findings-core";
 import {
   findingObligationState,
@@ -43,6 +44,14 @@ import {
   type GateEdit,
 } from "@rhema/orchestrator";
 import type { RunApiDeps } from "./run-routes.js";
+import {
+  attachStructuredBody,
+  gateDtoBase,
+  loadArtifactSidecar,
+  OPEN_GATE_SELECT,
+  type GateDtoDeps,
+  type OpenGateRow,
+} from "./gate-dto.js";
 
 /** The disposition write + decision-surface deps: the orchestrator deps (txRunner/ids/clock) + the shell's
  *  raw SqlClient for reads + a content store for approve_triage's ledger read/write-back. */
@@ -84,6 +93,11 @@ interface GateDecisionBody {
   action: "approve" | "approve_autonomous" | "keep_planning" | "edit" | "wait" | "stop" | "hold";
   guidance?: string;
   standingRule?: boolean;
+  /** P1.09 (§6.4 item 4; REQ-SPEC-9) — the card's structured edits (`ed.*` deltas the web encodes;
+   *  applied to the SERVER-side sidecar — the client never supplies the base document). */
+  edits?: GateStructuredEdits;
+  /** P1.09 (§6.4) — the per-run deadline override the card's "this run only" fields carry. */
+  overrides?: unknown;
 }
 
 /** The actions a gate card may POST (§6.4 item 1 + hold). Anything else is a 422 — never resolved. */
@@ -110,28 +124,8 @@ export interface FindingRow {
   workspace_id: string;
 }
 
-interface GateRow {
-  id: string;
-  run_id: string;
-  kind: GateKind;
-  artifact_version_id: string | null;
-  opened_at: string;
-  deadline_at: string | null;
-  presence_deadline_at: string | null;
-  paused_while_reading: boolean;
-  held: boolean;
-  blocking: boolean;
-  on_expiry: GateOnExpiry;
-  resolved_at: string | null;
-  workflow: string;
-  spent_credits: number;
-  cap_credits: number;
-  estimate_credits: number;
-  project_id: string;
-  workspace_id: string;
-  inputs: Record<string, unknown> | null;
-  artifact_path: string | null;
-}
+/** P1.09 — the open-gate row shape is shared with the Timeline (`gate-dto.ts`). */
+type GateRow = OpenGateRow;
 
 function deferHorizonOf(body: RecordDispositionBody): DeferHorizon | undefined {
   if (body.kind !== "defer") return undefined;
@@ -435,44 +429,24 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
     if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const projectId = c.req.param("id");
     const res = await deps.db.query(
-      `select g.id, g.run_id, g.kind, g.artifact_version_id, g.opened_at, g.deadline_at,
-              g.presence_deadline_at, g.paused_while_reading, g.held, g.blocking, g.on_expiry, g.resolved_at,
-              r.workflow, r.spent_credits, r.cap_credits, r.estimate_credits, r.inputs, r.project_id,
-              r.workspace_id, a.mirror_path as artifact_path
-         from gates g join runs r on r.id = g.run_id
-         left join artifact_versions av on av.id = g.artifact_version_id
-         left join artifacts a on a.id = av.artifact_id
+      `${OPEN_GATE_SELECT}
         where r.project_id = $1 and g.resolved_at is null
         order by g.opened_at, g.id`,
       [projectId],
     );
     const gates = [];
     for (const g of res.rows as GateRow[]) {
-      const dto: Record<string, unknown> = {
-        id: g.id,
-        runId: g.run_id,
-        kind: g.kind,
-        workflow: g.workflow,
-        ...(g.artifact_version_id != null ? { artifactVersionId: g.artifact_version_id } : {}),
-        // the artifact under decision (§6.4 item 1) — its mirror filename ("response-ledger.md").
-        ...(g.artifact_path != null
-          ? { artifactTitle: (g.artifact_path.split("/").pop() ?? g.artifact_path).replace(/\.md$/, "") }
-          : {}),
-        openedAt: g.opened_at,
-        ...(g.deadline_at != null ? { deadlineAt: g.deadline_at } : {}),
-        ...(g.presence_deadline_at != null ? { presenceDeadlineAt: g.presence_deadline_at } : {}),
-        pausedWhileReading: g.paused_while_reading,
-        held: g.held,
-        blocking: g.blocking,
-        onExpiry: g.on_expiry,
-        spentCredits: g.spent_credits,
-        capCredits: g.cap_credits,
+      // P1.09 — the shared DTO (gate-dto.ts): identical fields on Needs-you AND the Timeline card.
+      const dto = {
+        ...gateDtoBase(g),
         remainingEstimateCredits:
-          g.estimate_credits != null ? Math.max(0, g.estimate_credits - g.spent_credits) : undefined,
+          g.estimate_credits != null ? Math.max(0, g.estimate_credits - g.spent_credits) : null,
       };
+      // P1.09 — the kind's structured parts (§6.4 item 4; REQ-SPEC-9) from the artifact's sidecar.
+      await attachStructuredBody(deps.db, deps as GateDtoDeps, g, dto);
       if (g.kind === "approve_triage") {
         const triage = await loadTriageRows(deps, g, projectId);
-        if (triage) dto.triage = { rows: triage };
+        if (triage) (dto as { triage?: unknown }).triage = { rows: triage };
       }
       gates.push(dto);
     }
@@ -522,6 +496,19 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
     if (!gate || gate.project_id !== projectId) return c.json({ error: "not_found" }, 404);
     if (gate.resolved_at != null) return c.json({ error: "already_resolved" }, 409);
 
+    // P1.09 (§6.4) — the card's per-run deadline override ("this run only") persists to
+    // `runs.gate_overrides` BEFORE the resolve (schema-validated; an illegal override 422s).
+    if (body.overrides != null) {
+      const parsed = approvalOverridesSchema.safeParse(body.overrides);
+      if (!parsed.success) {
+        return c.json({ error: "invalid_overrides", detail: parsed.error.issues[0]?.message }, 422);
+      }
+      await deps.db.query(`update runs set gate_overrides = $2::jsonb where id = $1`, [
+        gate.run_id,
+        JSON.stringify(parsed.data),
+      ]);
+    }
+
     // For approve_triage approvals: merge the human's recorded dispositions (actor: user) over the
     // artifact's proposed rows and serialize the merged ledger as the write-back overlay (REQ-SPEC-9).
     let edits: GateEdit | undefined;
@@ -542,13 +529,43 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
       }
     }
 
+    // P1.09 (§6.4 item 4; REQ-SPEC-9) — the OTHER editable kinds' structured edits: apply the card's
+    // `edits` deltas to the SERVER-side sidecar (the client never supplies the base document) and let
+    // the resolver serialize the result into the write-back overlay. Value edits (scope fields, the
+    // thesis pick, the apparatus budget) and the change summary compose into the decision's guidance.
+    let guidance = body.guidance;
+    if (
+      body.edits != null &&
+      gate.kind !== "approve_triage" &&
+      (body.action === "approve" || body.action === "approve_autonomous" || body.action === "edit")
+    ) {
+      const doc =
+        gate.artifact_version_id != null
+          ? await loadArtifactSidecar(deps.db, deps as GateDtoDeps, principal.workspaceId, gate.artifact_version_id)
+          : null;
+      const applied = applyGateEdits(gate.kind, doc, body.edits);
+      if (applied.rows !== undefined && gate.artifact_version_id != null) {
+        edits = {
+          artifactVersionId: gate.artifact_version_id,
+          rows: applied.rows,
+          changes: applied.changes,
+        };
+      }
+      // the edit note + the applied-change summary ride the decision's guidance record (the standing
+      // rule checkbox still scopes it project-wide).
+      const lines = [...(body.edits.note ? [body.edits.note] : []), ...applied.summary];
+      if (lines.length > 0) {
+        guidance = guidance ? `${guidance} — ${lines.join("; ")}` : lines.join("; ");
+      }
+    }
+
     const res = await resolveGate(deps, {
       runId: gate.run_id,
       gateId,
       workspaceId: principal.workspaceId,
       userId: principal.userId,
       action: body.action as "approve" | "approve_autonomous" | "keep_planning" | "edit" | "stop",
-      ...(body.guidance != null ? { guidance: body.guidance } : {}),
+      ...(guidance != null ? { guidance } : {}),
       ...(body.standingRule != null ? { standingRule: body.standingRule } : {}),
       ...(edits != null ? { edits } : {}),
     });

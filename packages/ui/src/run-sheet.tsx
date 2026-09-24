@@ -122,6 +122,9 @@ export interface RunSheetLabels {
   /** P1.06 — the collapsed-row fields' chrome labels (COPY-owned; §5.6). */
   readonly approvalsLabel?: string;
   readonly approvalsDisplay?: Readonly<Record<string, string>>;
+  /** P1.09 (§5.6) — the "this run only, autonomously" check's label (posts `autoRun`; the api freezes
+   *  gates_off on THIS run — the project policy above is untouched). */
+  readonly autoRunLabel?: string;
   readonly capLabel?: string;
   readonly dontAskLabel?: string;
   readonly guidanceLabel?: string;
@@ -397,10 +400,17 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
               {(["named", "wait_each", "run_to_completion"] as const).map((p) => (
                 <option key={p} value={p}>
                   {labels.approvalsDisplay?.[p] ??
-                    (p === "named" ? "Named approvals" : p === "wait_each" ? "Wait for me at each gate" : "Run to completion")}
+                    (p === "named" ? "Named approvals" : p === "wait_each" ? "Wait for me at each approval" : "Run to completion")}
                 </option>
               ))}
             </select>
+          </label>
+          {/* P1.09 — the per-run override ("this run only, autonomously"): freezes gates_off on THIS
+              run — named approvals skip by policy; spend/refusal cards still wait (REQ-SPEC-1). */}
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }} data-auto-run="true">
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}></span>
+            <input type="checkbox" name="autoRun" />
+            <span style={{ fontSize: "13px" }}>{labels.autoRunLabel ?? "This run only — run it to completion"}</span>
           </label>
           {/* Budget cap — editable UPWARD only (§5.6): the input's floor is the computed cap; a lower
               value can never submit (min=, and the server floors it again). */}

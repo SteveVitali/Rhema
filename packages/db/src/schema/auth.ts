@@ -20,6 +20,9 @@ export const user = pgTable("user", {
   // P1.06 (0031; §5.6; REQ-BILL-4): "don't ask me to confirm runs under N credits" — the per-user consent
   // threshold, 0 = always ask per the base rule; capped at 1,000 by the API write so >500 consent still bites.
   consentDontAskUnder: integer("consent_dont_ask_under").notNull().default(0),
+  // P1.09 (0032; §6.4/§5.11): the dismissed one-time inline explainers (e.g. 'approval' on the first
+  // gate card) — once per user, never a modal tour.
+  dismissedExplainers: text("dismissed_explainers").array().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -16,6 +16,7 @@ import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
 import { consumeGuidance } from "./guidance.js";
+import { loadGatePolicyFacts, type GatePolicyFacts } from "./gate-policy.js";
 
 /** Where the ported skills are baked in the run-task image (`apps/run-task/Dockerfile` COPYs them here). */
 export const DEFAULT_SKILLS_DIR = "/app/skills";
@@ -78,6 +79,14 @@ export interface HarnessRunSpec {
    * shared path (e.g. `drafts/v(N+1).md`) persists instead of dropping as `out_of_allowlist`.
    */
   readonly writablePaths: readonly string[];
+  /**
+   * P1.09 (§6.4 item 3; REQ-SPEC-1) — the run's resolved gate-policy facts: the project's approval
+   * policy + per-kind overrides, the per-run override (`runs.gate_overrides`, "this run only"), the
+   * autonomous flag, and the scope/rounds context. The commit loop turns this into the
+   * `GatePolicyContext` `decideCommitNext` consults — server-authored, so the pod can never mint a
+   * weaker policy than the project/run carries.
+   */
+  readonly gatePolicy?: GatePolicyFacts;
 }
 
 /** The server-side delivery facts the harness folds into the final `DeliveryArgs` (P0.15e). */
@@ -167,6 +176,12 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       projectId: runRow.project_id,
     };
   });
+
+  // P1.09 — the gate-policy facts (project policy + overrides, the per-run override, the autonomous
+  // flag, scope/rounds context) ride the spec so `decideCommitNext` resolves from server truth.
+  const gatePolicy =
+    (await deps.txRunner.run(args.workspaceId, (tx) => loadGatePolicyFacts(tx, args.runId))) ??
+    undefined;
 
   // 3) the phase to run. An explicit `phase` pin in the run's FROZEN inputs wins (REQ-SPEC-13: a run created
   //    to "run exactly phase N then stop" — the `phase:"N"` path); the pin names the skill's native phase
@@ -358,5 +373,6 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     // committing (REQ-SPEC-13); a normal run has no pin and advances/gates/finalizes through the loop.
     ...(pinnedSkillPhase ? { stopAfterPhase: true } : {}),
     ...(delivery ? { delivery } : {}),
+    ...(gatePolicy ? { gatePolicy } : {}),
   };
 }

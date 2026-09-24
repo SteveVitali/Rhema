@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { GATE_KINDS, NEVER_AUTOPROCEED_GATES, GATE_DEFAULTS, type GateOnExpiry } from "@rhema/contracts";
 import {
   buildGateCard,
   gateViewFromRow,
@@ -6,6 +7,7 @@ import {
   GATE_CARD_ACTIONS,
   GATE_CARD_ACTIONS_PHONE,
   doNothingOutcome,
+  needsYouOrder,
   presenceCountdown,
   type GateCardFacts,
 } from "./gate-card.js";
@@ -124,6 +126,95 @@ describe("buildGateCard — presence timer rules (REQ-SPEC-18; AC4)", () => {
     const m = buildGateCard(facts({ kind: "approve_scope", onExpiry: "wait", blocking: false }), NOW);
     expect(m.informational).toBe(true);
     expect(m.doNothing).toBe("wait");
+  });
+});
+
+// -------------------------------------------------------------------------------------------------------------------
+// P1.09 — the full-surface property tests: every kind renders the same anatomy (AC1), the presence
+// matrix holds over kind × state (AC4), and Needs-you ordering is deterministic (§5.11).
+
+describe("P1.09 — all twelve kinds build the same anatomy (§6.4; REQ-GATE-2)", () => {
+  it("every GateKind produces a card model with the §6.4 fields + the action set", () => {
+    for (const kind of GATE_KINDS) {
+      const m = buildGateCard(
+        facts({ kind, onExpiry: GATE_DEFAULTS[kind].onExpiry as GateOnExpiry, blocking: GATE_DEFAULTS[kind].blocking }),
+        NOW,
+      );
+      expect(m.kind).toBe(kind);
+      expect(m.actions).toEqual(GATE_CARD_ACTIONS);
+      expect(m.doNothing).toBe(doNothingOutcome(GATE_DEFAULTS[kind].onExpiry as GateOnExpiry));
+      expect(typeof m.spentCredits).toBe("number");
+      expect(typeof m.capCredits).toBe("number");
+      expect(m.informational).toBe(!m.blocking);
+    }
+  });
+
+  it("presence-timer property matrix (kind × onExpiry × presenceDeadlineAt): only auto-proceed shows", () => {
+    for (const kind of GATE_KINDS) {
+      for (const onExpiry of ["wait", "proceed_as_proposed", "proceed_conservative", "cancel", "accept_partial"] as const) {
+        const m = buildGateCard(
+          facts({ kind, onExpiry, presenceDeadlineAt: "2026-09-16T12:10:00Z" }),
+          NOW,
+        );
+        // only a proceed_* expiry AND a non-spend/refusal kind may show the countdown — a spend kind
+        // never auto-proceeds under ANY display, even a poisoned row (REQ-SPEC-1, defense in depth).
+        const expectTimer =
+          (onExpiry === "proceed_as_proposed" || onExpiry === "proceed_conservative") &&
+          !NEVER_AUTOPROCEED_GATES.includes(kind);
+        expect(m.presence.active, `${kind}/${onExpiry}`).toBe(expectTimer);
+        expect(m.autoProceed, `${kind}/${onExpiry}`).toBe(expectTimer);
+      }
+    }
+  });
+
+  it("NEVER_AUTOPROCEED_GATES never auto-proceed under any display — view-model level (AC4)", () => {
+    for (const kind of NEVER_AUTOPROCEED_GATES) {
+      for (const onExpiry of ["proceed_as_proposed", "proceed_conservative"] as const) {
+        // even a poisoned row (auto-proceed expiry on a spend kind) renders non-autoProceed — no
+        // countdown, no ping script, ever.
+        const m = buildGateCard(facts({ kind, onExpiry }), NOW);
+        expect(m.autoProceed).toBe(false);
+        expect(m.presence.active).toBe(false);
+      }
+    }
+  });
+});
+
+describe("needsYouOrder — the §5.11 Inbox ordering (P1.09)", () => {
+  const gate = (id: string, over: { blocking?: boolean; deadlineAt?: string | null; openedAt?: string }) => ({
+    id,
+    blocking: true,
+    openedAt: "2026-09-16T10:00:00Z",
+    deadlineAt: null,
+    ...over,
+  });
+
+  it("blocking with deadlines first (soonest), then waiting, then informational; openedAt breaks ties", () => {
+    const cards = [
+      gate("info", { blocking: false, openedAt: "2026-09-16T08:00:00Z" }),
+      gate("wait2", { openedAt: "2026-09-16T11:00:00Z" }),
+      gate("soon", { deadlineAt: "2026-09-16T13:00:00Z", openedAt: "2026-09-16T11:30:00Z" }),
+      gate("wait1", { openedAt: "2026-09-16T09:00:00Z" }),
+      gate("late", { deadlineAt: "2026-09-17T13:00:00Z" }),
+      gate("same", { deadlineAt: "2026-09-16T13:00:00Z", openedAt: "2026-09-16T10:00:00Z" }),
+    ];
+    expect(needsYouOrder(cards).map((c) => c.id)).toEqual([
+      "same", // deadline 13:00, opened earlier — the deterministic tie-breaker
+      "soon",
+      "late",
+      "wait1", // waiting, oldest first
+      "wait2",
+      "info", // informational last
+    ]);
+  });
+
+  it("is deterministic — shuffled input yields the same order", () => {
+    const cards = [
+      gate("a", { deadlineAt: "2026-09-16T13:00:00Z" }),
+      gate("b", { deadlineAt: "2026-09-16T12:00:00Z" }),
+      gate("c", { blocking: false }),
+    ];
+    expect(needsYouOrder([...cards].reverse()).map((c) => c.id)).toEqual(["b", "a", "c"]);
   });
 });
 

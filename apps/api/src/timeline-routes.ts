@@ -44,9 +44,22 @@ import {
 } from "@rhema/orchestrator";
 import { buildEstimate } from "@rhema/run-sheet";
 import type { Principal } from "./run-routes.js";
+import type { ContentStore } from "@rhema/mirror";
+import type { GateCardWire } from "@rhema/findings-core";
+import {
+  attachStructuredBody,
+  gateDtoBase,
+  loadRunDecisions,
+  OPEN_GATE_SELECT,
+  type OpenGateRow,
+} from "./gate-dto.js";
 
 export interface TimelineApiDeps extends OrchestratorDeps {
   principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
+  /** P1.09 — content store seams for the gate card's structured sidecar reads (same shape as
+   *  RunApiDeps; unset ⇒ cards render without the editable slots). */
+  readonly store?: ContentStore;
+  contentStoreFor?(workspaceId: string): Promise<ContentStore>;
 }
 
 // ---- row shapes (server facts only) ----
@@ -195,20 +208,36 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         stepsByRun.set(s.run_id, l);
       }
 
-      // unresolved blocking gate per waiting run (the approval the card links to)
+      // unresolved blocking gate per waiting run — the FULL card row set (P1.09: the Timeline mounts
+      // the identical approve-with-deadline card the Needs-you surface renders, §6.4).
       const waitingIds = runs.filter((r) => r.state === "waiting_gate" && r.paused_at == null).map((r) => r.id);
       const gates =
         waitingIds.length === 0
           ? []
           : ((
               await tx.query(
-                `select run_id, kind, deadline_at from gates
-                  where run_id = any($1::text[]) and resolved_at is null and blocking
-                  order by opened_at`,
+                `${OPEN_GATE_SELECT}
+                  where g.run_id = any($1::text[]) and g.resolved_at is null
+                  order by g.opened_at`,
                 [waitingIds],
               )
-            ).rows as { run_id: string; kind: string; deadline_at: string | Date | null }[]);
-      const gateByRun = new Map(gates.map((g) => [g.run_id, g]));
+            ).rows as OpenGateRow[]);
+      const gateByRun = new Map<string, { row: OpenGateRow; dto: GateCardWire }>();
+      for (const g of gates) {
+        if (gateByRun.has(g.run_id)) continue; // one open gate per run (earliest wins)
+        const dto = {
+          ...gateDtoBase(g),
+          remainingEstimateCredits:
+            g.estimate_credits != null ? Math.max(0, g.estimate_credits - g.spent_credits) : null,
+        };
+        // P1.09 — the kind's structured parts (same loader the Needs-you feed uses).
+        await attachStructuredBody(tx, deps, g, dto);
+        gateByRun.set(g.run_id, { row: g, dto });
+      }
+
+      // P1.09 (§6.4 item 8; REQ-RUN-5) — every run's permanent decision records (resolved gates:
+      // approved/auto/expired/skipped) ride the card view so the surfaces render them identically.
+      const decisionsByRun = await loadRunDecisions(tx, runIds);
 
       // undelivered queued-note counts (steer.queued acknowledges the write; only guidance rows know delivery)
       const noteCounts =
@@ -384,13 +413,15 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           paused: r.paused_at != null,
           waitingGate: gateByRun.has(r.id)
             ? {
-                kind: gateByRun.get(r.id)!.kind,
+                kind: gateByRun.get(r.id)!.row.kind,
                 deadlineAt:
-                  gateByRun.get(r.id)!.deadline_at != null
-                    ? new Date(gateByRun.get(r.id)!.deadline_at as string | Date).toISOString()
+                  gateByRun.get(r.id)!.row.deadline_at != null
+                    ? new Date(gateByRun.get(r.id)!.row.deadline_at as string | Date).toISOString()
                     : null,
               }
             : null,
+          // P1.09 — the run's permanent approval-decision records (§6.4 item 8).
+          ...(decisionsByRun.has(r.id) ? { decisions: decisionsByRun.get(r.id) } : {}),
           deliverables,
           walkthrough: walkthroughState(r.walkthrough, delivered),
           failureCode: r.failure?.code ?? null,
@@ -405,6 +436,8 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           subjectN,
           producedN,
           card,
+          // P1.09 — the identical approval-card DTO the Timeline mounts under the run card (§6.4).
+          ...(gateByRun.has(r.id) ? { gate: gateByRun.get(r.id)!.dto } : {}),
         };
       });
 

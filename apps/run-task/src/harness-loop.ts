@@ -29,6 +29,7 @@ import {
   type DeliveryFacts,
   type ErrorClass,
   type EvaluatedPredicate,
+  gatePolicyContextFromFacts,
   type GatePolicyContext,
   type HarnessRunSpec,
   type PhaseResultFile,
@@ -285,9 +286,14 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       });
 
       const isLastPhase = phase.index === spec.request.of - 1;
+      // P1.09 — the server-authored gate-policy facts on the spec are the default context (project
+      // policy + per-kind overrides + the per-run override + gatesOff). `deps.gateContext` still wins
+      // when bound (tests/one-off drivers); the bare "named" default is the last resort only.
       const gateCtx = deps.gateContext
         ? deps.gateContext(now())
-        : { policy: "named" as const, now: now() };
+        : spec.gatePolicy
+          ? gatePolicyContextFromFacts(spec.gatePolicy, now())
+          : { policy: "named" as const, now: now() };
       // a pinned phase:N run finalizes after this one phase; otherwise the manifest decides advance/gate/finalize.
       let next: CommitNext = spec.stopAfterPhase
         ? { kind: "finalize" }

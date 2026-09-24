@@ -80,3 +80,90 @@ describe("resolveGatePolicy (§6.4; REQ-GATE-3; REQ-SPEC-1)", () => {
     if (r.action === "open") expect(r.deadlineAt).toEqual(new Date(NOW.getTime() + 2 * 3600_000));
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------------
+// P1.09 — the layered policy facts (project → run). loadGatePolicyFacts reads the run+project rows,
+// re-validates both override JSONs against REQ-SPEC-1's schema (a malformed row is dropped, never
+// trusted), and gatePolicyContextFromFacts turns them into the context the commit loop resolves on.
+
+import { loadGatePolicyFacts, gatePolicyContextFromFacts } from "./gate-policy.js";
+
+describe("loadGatePolicyFacts + gatePolicyContextFromFacts — the layered override (P1.09; AC5)", () => {
+  const exec = (row: Record<string, unknown> | undefined) => ({
+    query: async () => ({ rows: row ? [row] : [] }),
+  });
+
+  it("the run's gate_overrides layer OVER the project's; gates_off + context ride the row", async () => {
+    const facts = await loadGatePolicyFacts(
+      exec({
+        gates_off: true,
+        gate_overrides: { approve_triage: 6 * 3600_000, approve_plan: null }, // "this run only"
+        inputs: { scopeBlocking: true, runAllRounds: true },
+        estimate_credits: 560,
+        cap_credits: 840,
+        approval_policy: "wait_each",
+        approval_overrides: { approve_triage: 24 * 3600_000 },
+      }),
+      "run_1",
+    );
+    expect(facts).not.toBeNull();
+    expect(facts!.policy).toBe("wait_each");
+    expect(facts!.gatesOff).toBe(true);
+    expect(facts!.scopeBlocking).toBe(true);
+    expect(facts!.runAllRounds).toBe(true);
+    expect(facts!.overrides).toEqual({ approve_triage: 24 * 3600_000 });
+    expect(facts!.runOverrides).toEqual({ approve_triage: 6 * 3600_000, approve_plan: null });
+
+    const ctx = gatePolicyContextFromFacts(facts!, NOW);
+    expect(ctx.policy).toBe("wait_each");
+    expect(ctx.gatesOff).toBe(true);
+    // gates_off skips named gates outright (the autonomous flag) — approve_scope included.
+    expect(resolveGatePolicy("approve_scope", ctx)).toMatchObject({ action: "skip", reason: "autonomous" });
+    // a spend kind still opens (never skipped), and the run's `null` override layers over the project's.
+    const noFlag = { ...ctx, gatesOff: false };
+    expect(resolveGatePolicy("confirm_cost", noFlag).action).toBe("open");
+    const plan = resolveGatePolicy("approve_plan", { ...noFlag, policy: "named" });
+    expect(plan).toMatchObject({ action: "open", onExpiry: "wait" }); // run-level null removed the deadline
+    if (plan.action === "open") expect(plan.deadlineAt).toBeNull();
+  });
+
+  it("a malformed override row is dropped (the schema fails closed — defaults apply)", async () => {
+    const facts = await loadGatePolicyFacts(
+      exec({
+        gates_off: false,
+        gate_overrides: { confirm_cost: 4 * 3600_000 }, // illegal — spend kind
+        inputs: {},
+        estimate_credits: 100,
+        cap_credits: 840,
+        approval_policy: "bogus", // unknown → named
+        approval_overrides: "not-an-object",
+      }),
+      "run_1",
+    );
+    expect(facts!.policy).toBe("named");
+    expect(facts!.overrides).toBeNull();
+    expect(facts!.runOverrides).toBeNull();
+  });
+
+  it("returns null for a missing run", async () => {
+    expect(await loadGatePolicyFacts(exec(undefined), "run_none")).toBeNull();
+  });
+
+  it("scopeExceedsCap derives from the frozen estimate vs cap (the spend-gate variant)", async () => {
+    const facts = await loadGatePolicyFacts(
+      exec({
+        gates_off: false,
+        gate_overrides: null,
+        inputs: {},
+        estimate_credits: 1400,
+        cap_credits: 840,
+        approval_policy: "named",
+        approval_overrides: null,
+      }),
+      "run_1",
+    );
+    expect(facts!.scopeExceedsCap).toBe(true);
+    const r = resolveGatePolicy("approve_scope", gatePolicyContextFromFacts(facts!, NOW));
+    expect(r).toMatchObject({ action: "open", blocking: true, onExpiry: "wait" });
+  });
+});

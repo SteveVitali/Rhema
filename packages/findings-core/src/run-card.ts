@@ -1,4 +1,5 @@
 import type { RunState } from "@rhema/contracts";
+import type { GateDecisionView } from "./gate-card.js";
 
 // The run card + its state (§5.5; REQ-IDE-11/12). The card renders ORCHESTRATOR-EMITTED state, counters,
 // elapsed, credits-vs-cap and an ETA band — and NOTHING derived from agent-authored text. This builder reads
@@ -97,6 +98,12 @@ export interface RunCardInput {
   readonly resumable?: boolean;
   /** P1.05 — the count of undelivered queued notes on this run (the "1 note queued" line). */
   readonly queuedNotes?: number;
+  /**
+   * P1.09 (§6.4 item 8; REQ-RUN-5/6) — the run's PERMANENT approval-decision records (every resolved
+   * gate: user-approved with its edits count, auto-continued on the deadline, expired, or
+   * policy-skipped). SQL-side rows — the card renders one line each, never agent text.
+   */
+  readonly decisions?: readonly GateDecisionView[];
 }
 
 export interface RunCardView {
@@ -125,6 +132,8 @@ export interface RunCardView {
   readonly failureCode: string | null;
   readonly resumable: boolean;
   readonly queuedNotes: number;
+  /** P1.09 — the permanent approval-decision lines (§6.4 item 8; REQ-RUN-5). */
+  readonly decisions: readonly GateDecisionView[];
   /** the state-specific primary actions (§5.5), derived — the UI renders each as a labelled affordance. */
   readonly actions: readonly RunCardAction[];
 }
@@ -209,6 +218,7 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
     failureCode: input.failureCode ?? null,
     resumable,
     queuedNotes: input.queuedNotes ?? 0,
+    decisions: input.decisions ?? [],
     actions: runCardActions({
       state: input.state,
       paused,
@@ -269,6 +279,8 @@ interface DeriveOptions {
   readonly failureCode?: string | null;
   readonly resumable?: boolean;
   readonly queuedNotes?: number;
+  /** P1.09 — SQL-side decision rows (the event stream carries only gate ids/enums). */
+  readonly decisions?: readonly GateDecisionView[];
 }
 
 function asRecord(v: unknown): Record<string, unknown> {
@@ -429,6 +441,7 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
     ...(opts.failureCode !== undefined ? { failureCode: opts.failureCode } : {}),
     ...(opts.resumable != null ? { resumable: opts.resumable } : {}),
     queuedNotes: opts.queuedNotes ?? 0,
+    ...(opts.decisions ? { decisions: opts.decisions } : {}),
   };
 }
 

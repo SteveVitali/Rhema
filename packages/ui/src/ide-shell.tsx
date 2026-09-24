@@ -10,6 +10,7 @@ import { viewMenuModel, VIEW_MODES, CHEAT_SHEET } from "@rhema/ide";
 import { EmptyFindings } from "./ide-states.js";
 import { LiveFeed, type FeedRow, type LiveFeedLabels, type RunCardLabels } from "./run-card.js";
 import { TimelinePane, type TimelineViewWire, type TimelineLabels, type TimelineHrefs } from "./timeline.js";
+import type { TimelineRun } from "@rhema/findings-core";
 
 export interface IdeLabels {
   rail: { home: string; inbox: string; settings: string; project: string };
@@ -97,6 +98,12 @@ export interface IdeShellProps {
   readonly timelineLabels?: TimelineLabels;
   readonly timelineCardLabels?: RunCardLabels;
   readonly timelineHrefs?: TimelineHrefs;
+  /**
+   * P1.09 (§6.4) — renders the waiting run's identical approve-with-deadline card inside its run card
+   * (the app builds it from `run.gate`, the same DTO the Needs-you rows consume). Absent ⇒ the run
+   * card keeps its waiting label + link.
+   */
+  readonly renderGateCard?: (run: TimelineRun) => ReactNode;
   /** a non-terminal run (the Desk auto-opens on Live feed — §5.1). */
   readonly activeRun?: { readonly runId: string; readonly state: string } | null;
   /**
@@ -260,6 +267,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
                 labels={props.timelineLabels}
                 cardLabels={props.timelineCardLabels}
                 {...(props.timelineHrefs ? { hrefs: props.timelineHrefs } : {})}
+                {...(props.renderGateCard ? { renderGateCard: props.renderGateCard } : {})}
               />
             ) : (props.timeline ?? []).length === 0 ? (
               <p style={{ color: "var(--shell-fg-muted)", fontSize: 13 }}>{L.timeline.empty}</p>

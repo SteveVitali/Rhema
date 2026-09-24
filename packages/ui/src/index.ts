@@ -66,6 +66,9 @@ export { GateCard, TriageLedger, remainingLabel } from "./gate-card.js";
 export type { GateCardProps, GateCardLabels, TriageLedgerRow, TriageLedgerLabels } from "./gate-card.js";
 export { DecisionsList } from "./decisions.js";
 export type { DecisionsListProps, DecisionsListLabels } from "./decisions.js";
+// P1.09 — the §5.11 approval row (Needs-you/Inbox): read-before-approve side sheet over the same card.
+export { ApprovalRow } from "./approval-row.js";
+export type { ApprovalRowProps, ApprovalRowLabels } from "./approval-row.js";
 
 // The revision surfaces (PRB.06, §5.8): What-changed move cards + the Inline hunk list + the rubric delta
 // (per-dimension before/after, never an aggregate — REQ-IDE-30).
