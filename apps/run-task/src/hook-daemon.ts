@@ -14,6 +14,7 @@ import { chmodSync } from "node:fs";
 import {
   evaluateToolUse,
   toPreToolUseResult,
+  CALIBRATION_PREDICTION_PATH,
   type AuditSink,
   type DenialState,
   type RealpathResolver,
@@ -102,6 +103,20 @@ export function createHookDaemon(opts: HookDaemonOptions): Promise<HookDaemon> {
       ...(opts.audit ? { sink: opts.audit } : {}),
       ...(opts.resolveRealpath ? { resolveRealpath: opts.resolveRealpath } : {}),
     });
+    // P1.14 — the calibrator's allow-after-prediction ordering (§12.6): the moment an ALLOWED write to
+    // the prediction file lands, the run's URL policy flips `predictionFileWritten` — every later
+    // `evaluateUrl` sees the calibrator's hold-out allow-list open. Frozen false at spec time, so the
+    // ordering is enforced by the boundary, not by the agent's good behavior.
+    if (
+      decision.decision === "allow" &&
+      !opts.policy.urlPolicy.predictionFileWritten &&
+      /^(Write|Edit|MultiEdit|NotebookEdit)$/.test(req.use.tool) &&
+      typeof req.use.input.file_path === "string" &&
+      req.use.input.file_path.endsWith(CALIBRATION_PREDICTION_PATH)
+    ) {
+      (opts.policy.urlPolicy as { predictionFileWritten: boolean }).predictionFileWritten = true;
+      console.log(`[hook] prediction file written — calibrator hold-out allow-list open`);
+    }
     // Diagnostic (harness-side, no secret): log each tool decision with its classified path(s) to stdout so a
     // phase's write targets + any denials are visible in the pod log even when the DB access-log sink is not
     // wired. Paths are not secrets; this is the boundary observability the §12.6 attestation wants.

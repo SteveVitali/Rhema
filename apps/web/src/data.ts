@@ -23,11 +23,25 @@ import type {
   EditorReviseDto,
   BillingBalanceDto,
   VoiceListRowDto,
+  VoiceListDto,
   CreateVoiceDto,
   CreatedVoiceDto,
   VoiceDetailDto,
   AddVoiceSampleDto,
   AddedVoiceSampleDto,
+  AddVoiceSampleUrlDto,
+  AddedVoiceSampleUrlDto,
+  VoiceUpdatePlanDto,
+  UpdateVoiceDto,
+  UpdatedVoiceDto,
+  AddVoiceCorrectionDto,
+  AddedVoiceCorrectionDto,
+  ForkedVoiceDto,
+  AdoptProjectVoiceDto,
+  AdoptedProjectVoiceDto,
+  ForkProjectVoiceDto,
+  ForkedProjectVoiceDto,
+  ReseedPreviewDto,
   SaveVoiceSeedDto,
   SavedVoiceSeedDto,
   VoiceEstimateDto,
@@ -428,8 +442,50 @@ export interface DataSource {
   setProjectVoice(
     session: SessionHeaders,
     projectId: string,
-    req: { personaId: string | null; profileSnapshotId?: string | null },
+    req: { personaId: string | null; profileSnapshotId?: string | null; register?: string | null },
   ): Promise<ProjectVoiceDto>;
+  // ---- P1.14 — the full Voices workspace (§9.1–§9.6) ----
+  /** the /app/voices three-group destination (§9.1) — the flat list plus the server split. */
+  listVoiceGroups(session: SessionHeaders): Promise<VoiceListDto>;
+  /** the fetcher-only URL ingestion path (REQ-INGEST-13). */
+  addVoiceSampleUrl(
+    session: SessionHeaders,
+    personaId: string,
+    req: AddVoiceSampleUrlDto,
+  ): Promise<AddedVoiceSampleUrlDto>;
+  /** the diff-of-inputs sheet's pre-computed route + estimate (§9.3). */
+  getVoiceUpdatePlan(session: SessionHeaders, personaId: string): Promise<VoiceUpdatePlanDto>;
+  /** the ONE Update-voice verb (§9.3; REQ-SPEC-27's scope routing). */
+  updateVoice(session: SessionHeaders, personaId: string, req: UpdateVoiceDto): Promise<UpdatedVoiceDto>;
+  /** "Correct this in your description" — blockquote + consume-once row (§9.4; REQ-PERSONA-7). */
+  addVoiceCorrection(
+    session: SessionHeaders,
+    personaId: string,
+    req: AddVoiceCorrectionDto,
+  ): Promise<AddedVoiceCorrectionDto>;
+  /** the read-only (house/shared) card's copy becomes your editable persona (§9.1). */
+  forkVoice(session: SessionHeaders, personaId: string): Promise<ForkedVoiceDto>;
+  /** adopt hatch — pin the refreshed snapshot (+ optional charter reseed) (§9.6; REQ-DATA-30). */
+  adoptProjectVoice(
+    session: SessionHeaders,
+    projectId: string,
+    req: AdoptProjectVoiceDto,
+  ): Promise<AdoptedProjectVoiceDto>;
+  /** fork hatch — a NEW project at `outlined`, outline copied, drafts not (§9.6). */
+  forkProjectVoice(
+    session: SessionHeaders,
+    projectId: string,
+    req: ForkProjectVoiceDto,
+  ): Promise<ForkedProjectVoiceDto>;
+  /** the adopt dialog's charter diff — guidance lines never appear (§9.6). */
+  getVoiceReseedPreview(session: SessionHeaders, projectId: string): Promise<ReseedPreviewDto>;
+  /** resolve a persona run's gate — the approve_sample card (§9.2/§6.4). */
+  decideRunGate(
+    session: SessionHeaders,
+    runId: string,
+    gateId: string,
+    req: { action: "approve" | "wait" | "stop" | "edit" | "hold"; guidance?: string },
+  ): Promise<void>;
   // ---- PRB.11 — export + the AI-use statement (§13.4, §8.4 REQ-VIS-10) ----
   /** the export dialog read — formats, the never-blocking obligation line + links, the statement preview.
    *  Opening it sweeps `pre_export` deferral horizons (REQ-OBJ-3). */
@@ -887,6 +943,27 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getProjectVoice(projectId),
     setProjectVoice: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setProjectVoice(projectId, req),
+    // ---- P1.14 — the full Voices workspace ----
+    listVoiceGroups: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoiceGroups(),
+    addVoiceSampleUrl: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceSampleUrl(personaId, req),
+    getVoiceUpdatePlan: (session, personaId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoiceUpdatePlan(personaId),
+    updateVoice: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).updateVoice(personaId, req),
+    addVoiceCorrection: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceCorrection(personaId, req),
+    forkVoice: (session, personaId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).forkVoice(personaId),
+    adoptProjectVoice: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).adoptProjectVoice(projectId, req),
+    forkProjectVoice: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).forkProjectVoice(projectId, req),
+    getVoiceReseedPreview: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoiceReseedPreview(projectId),
+    decideRunGate: (session, runId, gateId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).decideRunGate(runId, gateId, req),
     // ---- PRB.11 — export + the AI-use statement ----
     getExportDialog: (session, projectId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getExportDialog(projectId),

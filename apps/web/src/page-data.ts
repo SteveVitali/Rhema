@@ -16,7 +16,10 @@ import type {
   UsageDto,
   VoiceDetailDto,
   VoiceEstimateDto,
+  VoiceListDto,
   VoiceListRowDto,
+  VoiceUpdatePlanDto,
+  ReseedPreviewDto,
   WhatChangedDto,
   TimelineDto,
   RunReportDto,
@@ -324,9 +327,9 @@ export interface PageData {
     readonly data: VersionDiffDto;
     readonly commentedHunkId?: string;
   };
-  // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
-  /** the library list (GET /voices): every persona + its shared pill + sample count. */
-  readonly voices?: readonly VoiceListRowDto[];
+  // ---- PRB.10 — Quick Voice / P1.14 — the full Voices workspace (§9.1–§9.6) ----
+  /** the /app/voices destination (GET /voices): the flat list + the §9.1 three-group split. */
+  readonly voices?: VoiceListDto;
   /** the §9.2 creation sheet's per-request state (a validation error re-renders with the error). */
   readonly voiceNew?: { readonly error?: string };
   /** P1.07 — the palette's free-form obligation form (REQ-OBJ-10): `back` is where POST/Cancel returns. */
@@ -336,16 +339,31 @@ export interface PageData {
     readonly back: string;
     readonly error?: string;
   };
-  /** the voice detail page's full read + any post-action notice. */
+  /** the voice detail page's full read + the active tab + any post-action notice. */
   readonly voice?: {
     readonly detail: VoiceDetailDto;
     readonly estimate?: VoiceEstimateDto;
     readonly notice?: string;
+    /** the §9.5 tab the page renders (overview | description | samples | profile | runs). */
+    readonly tab?: string;
+    /** the diff-of-inputs sheet's pre-computed route + estimate (§9.3; null-safe — a missing
+     *  update seam degrades to the pill alone, never a failed page). */
+    readonly updatePlan?: VoiceUpdatePlanDto;
   };
-  /** the project's voice picker facts (the linked voice + the selectable personas; §9.6). */
+  /** the project's voice picker facts (the linked voice + the selectable personas + the §9.6
+   *  adopt/fork hatches when the pin trails a refreshed profile). */
   readonly projectVoice?: {
     readonly current: ProjectVoiceDto;
     readonly options: readonly VoiceListRowDto[];
+    /** P1.14 — a direct voice change just hit the §9.6 soft lock (the hatches show). */
+    readonly locked?: boolean;
+  };
+  /** P1.14 — the adopt dialog's charter-diff preview (§9.6 "shows the diff before commit"). */
+  readonly voiceReseed?: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly preview: ReseedPreviewDto;
+    readonly error?: string;
   };
   /** PRB.11 — the export dialog (§13.4, §8.4): the format list, the never-blocking obligation line +
    *  linkable items (incl. `pre_export` horizons just returned to open), and the statement preview. */

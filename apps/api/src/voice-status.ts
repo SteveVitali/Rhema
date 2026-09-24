@@ -26,6 +26,10 @@ export interface PersonaRow {
   slug: string | null;
   byline: string | null;
   mode: string;
+  /** 'leaf' | 'composite' (§9.6; persona_members renders "Composed from A, B"). */
+  kind: string;
+  /** 'user' | 'house' | 'shared' | null — drives the library's three groups (§9.1). */
+  provenance: string | null;
   registers: string[] | null;
   seed_artifact_id: string | null;
   seed_sha256: string | null;
@@ -93,12 +97,27 @@ export function personaPhaseCount(tier: string | null | undefined): number {
 /** Load the persona row (tenant-scoped by the caller's tx). */
 export async function loadPersona(tx: SqlExecutor, personaId: string): Promise<PersonaRow | null> {
   const res = await tx.query(
-    `select id, display_name, slug, byline, mode, registers, seed_artifact_id, seed_sha256,
+    `select id, display_name, slug, byline, mode, kind, provenance, registers, seed_artifact_id, seed_sha256,
             seed_authored_by, seed_updated_at, current_profile_id, active_run_id
        from personas where id = $1`,
     [personaId],
   );
   return (res.rows[0] as PersonaRow | undefined) ?? null;
+}
+
+/** The status bundle every surface reads (P1.14 added the corpus words, the latest profile's
+ *  build-note — which carries the hold-out spec — and the in-flight build run's id/inputs so the
+ *  approve_sample gate card and the popover assemble from the SAME facts). */
+export interface VoiceStatusBundle {
+  readonly persona: PersonaRow;
+  readonly status: VoiceStatus;
+  readonly snapshot: VoiceSnapshotFacts | null;
+  /** Σ words over the current included corpus (the popover's right side). */
+  readonly currentCorpusWords: number;
+  /** the latest profile row's id + build note (hold-outs / correction ledger live there). */
+  readonly profile: { readonly id: string; readonly buildNote: Record<string, unknown> | null } | null;
+  /** the in-flight build/refresh/calibrate run (the gate card reads its frozen inputs). */
+  readonly activeRun: { readonly id: string; readonly workflow: string; readonly inputs: Record<string, unknown> } | null;
 }
 
 /**
@@ -108,21 +127,21 @@ export async function loadPersona(tx: SqlExecutor, personaId: string): Promise<P
 export async function loadVoiceStatus(
   tx: SqlExecutor,
   args: { personaId: string; now?: Date },
-): Promise<{ persona: PersonaRow; status: VoiceStatus; snapshot: VoiceSnapshotFacts | null } | null> {
+): Promise<VoiceStatusBundle | null> {
   const persona = await loadPersona(tx, args.personaId);
   if (!persona) return null;
 
   // Latest snapshot = the persona's current_profile_id when set, else the newest persona_profiles row.
   const profRes = await tx.query(
     `select id, built_at, tier, seed_sha256, sample_set_hash, sample_set, corpus_size_at_build,
-            calibration_status, built_by_run_id
+            calibration_status, built_by_run_id, build_note
        from persona_profiles
       where persona_id = $1
       order by (id = $2) desc, built_at desc, id desc
       limit 1`,
     [args.personaId, persona.current_profile_id ?? ""],
   );
-  const profile = profRes.rows[0] as ProfileDb | undefined;
+  const profile = profRes.rows[0] as (ProfileDb & { build_note: unknown }) | undefined;
   const snapshot: VoiceSnapshotFacts | null = profile
     ? {
         builtAt: profile.built_at,
@@ -157,9 +176,10 @@ export async function loadVoiceStatus(
   };
 
   // An in-flight build/refresh/calibrate run → "Building · phase N of M" (committed steps + 1 of the
-  // tier's active phase count; a Quick Voice runs 4 phases).
+  // tier's active phase count; a Quick Voice runs 4 phases). Its frozen inputs ride along so the
+  // approve_sample card + the URL policy can read what the census froze.
   const runRes = await tx.query(
-    `select r.id, r.state, r.inputs->>'tier' as tier,
+    `select r.id, r.state, r.workflow, r.inputs, r.inputs->>'tier' as tier,
             (select count(*) from steps s where s.run_id = r.id and s.state = 'done') as committed
        from runs r
       where r.persona_id = $1 and r.workflow in ('profile_voice','refresh_voice','calibrate_voice')
@@ -167,7 +187,7 @@ export async function loadVoiceStatus(
       order by r.created_at desc limit 1`,
     [args.personaId, PRETERMINAL],
   );
-  const buildRun = runRes.rows[0] as BuildRunDb | undefined;
+  const buildRun = runRes.rows[0] as (BuildRunDb & { workflow: string; inputs: unknown }) | undefined;
   const runInProgress: VoiceRunInProgress | null = buildRun
     ? {
         ordinal: Math.min(Number(buildRun.committed) + 1, personaPhaseCount(buildRun.tier)),
@@ -181,5 +201,24 @@ export async function loadVoiceStatus(
     runInProgress,
     ...(args.now ? { now: args.now } : {}),
   });
-  return { persona, status, snapshot };
+  const buildNote =
+    profile?.build_note == null
+      ? null
+      : typeof profile.build_note === "string"
+        ? (JSON.parse(profile.build_note) as Record<string, unknown>)
+        : (profile.build_note as Record<string, unknown>);
+  const runInputs =
+    buildRun?.inputs == null
+      ? null
+      : typeof buildRun.inputs === "string"
+        ? (JSON.parse(buildRun.inputs) as Record<string, unknown>)
+        : (buildRun.inputs as Record<string, unknown>);
+  return {
+    persona,
+    status,
+    snapshot,
+    currentCorpusWords: corpusWords,
+    profile: profile ? { id: profile.id, buildNote } : null,
+    activeRun: buildRun ? { id: buildRun.id, workflow: buildRun.workflow, inputs: runInputs ?? {} } : null,
+  };
 }

@@ -64,6 +64,11 @@ export const EMPTY_URL_POLICY: UrlPolicy = {
   serverFetchDisabled: false,
 };
 
+/** The calibrator's prediction file (§12.6): the input-scoped holdout-calibrator writes this BEFORE
+ *  it may fetch the hold-out URL — the hook daemon flips `urlPolicy.predictionFileWritten` the moment
+ *  it observes this write land (P1.14). Persona-rooted path. */
+export const CALIBRATION_PREDICTION_PATH = "profile/calibration-prediction.md";
+
 /** The four phase classes (§12.2). Judge-class phases reject `Agent` (the parent may not spawn its own second read). */
 export type PhaseClass = "research" | "judge" | "generate" | "package";
 

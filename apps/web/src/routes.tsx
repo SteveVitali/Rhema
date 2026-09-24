@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -33,6 +33,8 @@ export const exportElement = <ExportPage />;
 export const voicesElement = <VoicesPage />;
 export const voiceNewElement = <VoiceNewPage />;
 export const voiceDetailElement = <VoiceDetailPage />;
+// P1.14 — the adopt dialog's charter-diff preview (§9.6 "shows the diff before commit").
+export const voiceReseedElement = <VoiceReseedPage />;
 // P1.07 — the palette's free-form obligation form (REQ-OBJ-10).
 export const obligationNewElement = <ObligationNewPage />;
 // PRB.12 — the Settings privacy toggle + the §14.5 usage glance.
@@ -88,6 +90,8 @@ export const routes: readonly AppRoute[] = [
   { path: "/voices", public: false, element: voicesElement },
   { path: "/voices/new", public: false, element: voiceNewElement },
   { path: "/v/:persona", public: false, element: voiceDetailElement },
+  // P1.14 — the project voice hatches: the reseed-diff preview the adopt dialog shows (§9.6).
+  { path: "/p/:project/voice/reseed", public: false, element: voiceReseedElement },
   // PRB.12 — the privacy toggle (REQ-PROD-15) + the usage glance (§14.5 level 1).
   { path: "/settings", public: false, element: settingsElement },
   { path: "/usage", public: false, element: usageElement },

@@ -2,10 +2,23 @@
 // text; REQ-ARCH-33). The DTOs mirror the api's wire shapes; `createApiClient` takes an injectable `fetch` so
 // SSR loaders (which forward the viewer's session) and tests bind their own transport.
 
-import type { Claim, ConversionResult, FindingView, ObligationState, RunState } from "@rhema/contracts";
+import type {
+  CalibrationStatus,
+  Claim,
+  ConversionResult,
+  CorpusMeasures,
+  FindingView,
+  ObligationState,
+  RunState,
+  VoiceMeasureRow,
+} from "@rhema/contracts";
 import type {
   AccessReportFacts,
+  ApproveSampleCard,
+  ProfileSection,
   RubricRowInput,
+  VoiceFactsPanel,
+  VoiceUpdateRoute,
   RunCardInput,
   RunCardView,
   RoundSummaryPart,
@@ -14,6 +27,7 @@ import type {
   TimelineDraft,
   GateCardWire,
   GateStructuredEdits,
+  VoiceUpdateScope,
 } from "@rhema/findings-core";
 
 export const PACKAGE_NAME = "@rhema/api-client" as const;
@@ -986,14 +1000,36 @@ export interface VoiceSnapshotDto {
   readonly tier: string | null;
 }
 
+/** The /app/voices three-group destination (§9.1). */
+export type VoiceGroupKey = "your_voices" | "house_styles" | "shared_with_you";
+
 /** A library card (GET /voices). */
 export interface VoiceListRowDto {
   readonly personaId: string;
   readonly name: string | null;
   readonly byline: string | null;
   readonly mode: string;
+  readonly kind: string;
+  /** the §9.1 destination group the card renders under. */
+  readonly group: VoiceGroupKey;
+  /** House styles + shared personas are forkable, not editable on this surface. */
+  readonly readOnly: boolean;
   readonly sampleCount: number;
+  /** the distinct providers feeding the corpus (the card's source chips). */
+  readonly sources: string[];
+  readonly projectCount: number;
+  readonly lastBuiltAt: string | null;
+  readonly tier: string | null;
+  /** composite members ("Composed from A, B"; empty for leaf personas). */
+  readonly members: readonly { readonly personaId: string; readonly name: string | null }[];
+  readonly registers: readonly string[];
   readonly status: VoiceStatusDto;
+}
+
+/** GET /voices — the flat list plus the §9.1 three-group split the page renders. */
+export interface VoiceListDto {
+  readonly voices: readonly VoiceListRowDto[];
+  readonly groups: Record<VoiceGroupKey, readonly VoiceListRowDto[]>;
 }
 
 export interface CreateVoiceDto {
@@ -1056,6 +1092,66 @@ export interface VoiceArtifactRowDto {
   readonly created_at: string;
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// P1.14 — the full Voices workspace wire shapes (§9.2–§9.6). The detail read carries the diff-of-inputs
+// panel, the routed Update-voice verb, the hold-out (identity hidden pre-calibration), the deterministic
+// measure set + calibration table, the corrections ledger, the approve-sample gate card, composite
+// members, build notes, and the Profile tab's fixed section order — all server-computed so the page
+// can't drift from the run's frozen inputs.
+// ---------------------------------------------------------------------------------------------------------
+
+/** The hold-out as the wire may name it — pre-calibration ONLY the fact that one exists (§9.4). */
+export interface VoiceHoldoutDto {
+  readonly held: boolean;
+  readonly revealed: boolean;
+  readonly itemId?: string;
+  readonly title?: string;
+  readonly revealedAt?: string;
+}
+
+/** The calibration comparison table (§9.4): target vs prediction vs real, one band wide. */
+export interface VoiceCalibrationDto {
+  readonly verdict: CalibrationStatus | string | null;
+  readonly rows: readonly VoiceMeasureRow[];
+  readonly withinCount: number;
+  readonly totalCount: number;
+}
+
+/** A profile-correction ledger row (§9.4 "Correct this in your description"). */
+export interface VoiceCorrectionDto {
+  readonly id: string;
+  readonly profile_id: string | null;
+  readonly target_artifact_id: string | null;
+  readonly statement_ref: string | null;
+  readonly text: string;
+  readonly source: string;
+  readonly consumed_by_profile_id: string | null;
+  readonly at: string;
+}
+
+/** The approve_sample gate card the detail page renders while a build waits on it (§9.2/§6.4). */
+export interface VoiceGateCardDto {
+  readonly gateId: string;
+  readonly runId: string;
+  readonly workflow: string;
+  readonly card: ApproveSampleCard;
+}
+
+/** A composite persona's member (the "Composed from A, B" line; §9.6). */
+export interface VoiceMemberDto {
+  readonly id: string;
+  readonly display_name: string | null;
+  readonly byline: string | null;
+}
+
+/** A build note row — the Description tab's "Notes from the last build" (§9.4). */
+export interface VoiceBuildNoteDto {
+  readonly id: string;
+  readonly profile_id: string | null;
+  readonly body: unknown;
+  readonly created_at: string;
+}
+
 /** GET /voices/:id — the detail page's full read. */
 export interface VoiceDetailDto {
   readonly persona: {
@@ -1080,6 +1176,28 @@ export interface VoiceDetailDto {
   readonly runs: VoiceRunRowDto[];
   readonly artifacts: VoiceArtifactRowDto[];
   readonly projects: { readonly id: string; readonly slug: string; readonly title: string }[];
+  // ---- P1.14 surfaces (all server-computed; absent only from stale fixtures). ----
+  /** the diff-of-inputs popover's four facts + the one verb (§9.3). */
+  readonly factsPanel?: VoiceFactsPanel;
+  /** the routed Update-voice verb (§9.3; scope `none` ⇒ the pill is resting). */
+  readonly updateRoute?: VoiceUpdateRoute;
+  /** the "Upgrade to Full Profile" offer on a Quick snapshot (§9.2; null otherwise). */
+  readonly upgradeRoute?: VoiceUpdateRoute | null;
+  readonly holdout?: VoiceHoldoutDto;
+  /** the deterministic corpus measures (the Profile tab's Advanced table; §9.4). */
+  readonly measures?: CorpusMeasures | null;
+  /** the calibration comparison table — present only post-reveal. */
+  readonly calibration?: VoiceCalibrationDto | null;
+  readonly corrections?: readonly VoiceCorrectionDto[];
+  /** the open approve_sample gate card (null unless a build waits on it). */
+  readonly gate?: VoiceGateCardDto | null;
+  readonly members?: readonly VoiceMemberDto[];
+  readonly buildNotes?: readonly VoiceBuildNoteDto[];
+  /** profile/index.md's head text — the Overview tab's hub paragraph. */
+  readonly hubMarkdown?: string | null;
+  /** the Profile tab's fixed §9.4 section order. */
+  readonly profileSections?: readonly ProfileSection[];
+  readonly tier?: string | null;
 }
 
 export interface AddVoiceSampleDto {
@@ -1137,6 +1255,106 @@ export interface ProjectVoiceDto {
   readonly profileSnapshotId?: string | null;
   readonly status: VoiceStatusDto | null;
   readonly snapshot?: VoiceSnapshotDto | null;
+  /** P1.14 — the project pins an older profile snapshot; true ⇒ the adopt/fork hatches show (§9.6). */
+  readonly pinnedStale?: boolean;
+}
+
+/** POST /voices/:id/samples/url — the fetcher-only URL ingestion path (REQ-INGEST-13). */
+export interface AddVoiceSampleUrlDto {
+  readonly url: string;
+  readonly title?: string;
+}
+
+export interface AddedVoiceSampleUrlDto {
+  readonly itemId: string;
+  readonly deduped?: boolean;
+  readonly sampleVersionId?: string;
+  readonly words?: number;
+  readonly status: VoiceStatusDto | null;
+}
+
+/** GET /voices/:id/update — the diff-of-inputs sheet's pre-computed route + estimate (§9.3). */
+export interface VoiceUpdatePlanDto {
+  readonly route: VoiceUpdateRoute;
+  readonly estimate: EstimateDto | null;
+  /** the "Upgrade to Full Profile" offer (a Quick snapshot only; §9.2). */
+  readonly upgrade: VoiceUpdateRoute | null;
+  readonly upgradeEstimate: EstimateDto | null;
+}
+
+/** POST /voices/:id/update — the ONE Update-voice verb; absent `scope` ⇒ the routed one (§9.3). */
+export interface UpdateVoiceDto {
+  readonly scope?: VoiceUpdateScope;
+  readonly register?: string;
+  readonly modelTier?: "base" | "balanced" | "frontier";
+  readonly idempotencyKey?: string;
+}
+
+export interface UpdatedVoiceDto {
+  readonly runId: string;
+  readonly state: string;
+  readonly deduped?: boolean;
+  readonly route: VoiceUpdateRoute;
+  readonly estimate: EstimateDto;
+}
+
+/** POST /voices/:id/corrections — "Correct this in your description" (§9.4; REQ-PERSONA-7). */
+export interface AddVoiceCorrectionDto {
+  readonly text: string;
+  readonly statementRef?: string;
+  readonly artifactId?: string;
+  readonly source?: string;
+}
+
+export interface AddedVoiceCorrectionDto {
+  readonly correctionId: string;
+  readonly seedSha256: string;
+  readonly status: VoiceStatusDto | null;
+}
+
+/** POST /voices/:id/fork — the read-only card's copy becomes your editable persona (§9.1). */
+export interface ForkedVoiceDto {
+  readonly personaId: string;
+  readonly status: VoiceStatusDto | null;
+}
+
+/** POST /projects/:id/voice/adopt — hatch 1: pin the refreshed snapshot (§9.6; REQ-DATA-30). */
+export interface AdoptProjectVoiceDto {
+  /** launch a reseed_charter run over the adopted snapshot (the charter's guidance never rewrites). */
+  readonly reseed?: boolean;
+  readonly modelTier?: string;
+  readonly idempotencyKey?: string;
+}
+
+export interface AdoptedProjectVoiceDto {
+  readonly adopted: true;
+  readonly personaId: string;
+  readonly profileSnapshotId: string;
+  readonly status: VoiceStatusDto | null;
+  readonly reseedRun: { readonly runId: string; readonly state: string } | null;
+}
+
+/** POST /projects/:id/voice/fork — hatch 2: a NEW project at `outlined`, outline copied, drafts not. */
+export interface ForkProjectVoiceDto {
+  readonly personaId: string;
+  readonly title?: string;
+}
+
+export interface ForkedProjectVoiceDto {
+  readonly projectId: string;
+  readonly slug: string;
+  readonly personaId: string;
+  readonly profileSnapshotId: string | null;
+}
+
+/** GET /projects/:id/voice/reseed-preview — the adopt dialog's charter diff (§9.6). */
+export interface ReseedPreviewDto {
+  readonly charterFound: boolean;
+  readonly current: string;
+  readonly next: string;
+  readonly diff: readonly { readonly kind: "same" | "removed" | "added"; readonly line: string }[];
+  /** the server guarantees guidance bytes carry verbatim — the diff never shows a guidance line. */
+  readonly guidancePreserved: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -1978,8 +2196,10 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<PaperThemeDto>;
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
-  /** The library's "Your voices" group — every persona + its shared pill. */
+  /** The library's flat persona list — every persona + its shared pill. */
   listVoices(init?: RequestInitLite): Promise<VoiceListRowDto[]>;
+  /** P1.14 — the /app/voices three-group destination (§9.1): your voices, house styles, shared. */
+  listVoiceGroups(init?: RequestInitLite): Promise<VoiceListDto>;
   /** The §9.2 creation sheet — name + byline + optional description + Mode metadata. */
   createVoice(req: CreateVoiceDto, init?: RequestInitLite): Promise<CreatedVoiceDto>;
   /** The voice detail read: status + samples + build history + profile artifacts. */
@@ -2001,14 +2221,41 @@ export interface ApiClient {
   buildVoice(personaId: string, req: BuildVoiceDto, init?: RequestInitLite): Promise<BuiltVoiceDto>;
   /** Cancel an open build run. */
   cancelVoiceRun(runId: string, init?: RequestInitLite): Promise<{ runId: string; state: string }>;
+  /** P1.14 — resolve a persona run's gate (the approve_sample card; §9.2/§6.4). Run-scoped — the
+   *  voice build is a persona run, not a project run. */
+  decideRunGate(runId: string, gateId: string, req: GateDecisionDto, init?: RequestInitLite): Promise<void>;
+  /** P1.14 — the fetcher-only URL ingestion path: the URL is fetched server-side, never by the
+   *  sample's reader (REQ-INGEST-13). */
+  addVoiceSampleUrl(personaId: string, req: AddVoiceSampleUrlDto, init?: RequestInitLite): Promise<AddedVoiceSampleUrlDto>;
+  /** P1.14 — the diff-of-inputs sheet's pre-computed route + estimate (§9.3). */
+  getVoiceUpdatePlan(personaId: string, init?: RequestInitLite): Promise<VoiceUpdatePlanDto>;
+  /** P1.14 — the ONE Update-voice verb: absent `scope` ⇒ the routed scope (§9.3; REQ-SPEC-27). */
+  updateVoice(personaId: string, req: UpdateVoiceDto, init?: RequestInitLite): Promise<UpdatedVoiceDto>;
+  /** P1.14 — "Correct this in your description": a blockquote on PERSONA.md + a consume-once
+   *  corrections row (§9.4; REQ-PERSONA-7). */
+  addVoiceCorrection(
+    personaId: string,
+    req: AddVoiceCorrectionDto,
+    init?: RequestInitLite,
+  ): Promise<AddedVoiceCorrectionDto>;
+  /** P1.14 — the read-only (house/shared) card's copy becomes your editable persona (§9.1). */
+  forkVoice(personaId: string, init?: RequestInitLite): Promise<ForkedVoiceDto>;
   /** The project's linked-voice facts (the run-sheet line / picker chip; §9.6). */
   getProjectVoice(projectId: string, init?: RequestInitLite): Promise<ProjectVoiceDto>;
-  /** REQ-DATA-32 — pin the project's voice (personaId null ⇒ "No voice" / ad-hoc). */
+  /** REQ-DATA-32 — pin the project's voice (personaId null ⇒ "No voice" / ad-hoc). P1.14: `register`
+   *  is a run input, never a pin — a register-only patch stays open even under the soft lock. */
   setProjectVoice(
     projectId: string,
-    req: { personaId: string | null; profileSnapshotId?: string | null },
+    req: { personaId: string | null; profileSnapshotId?: string | null; register?: string | null },
     init?: RequestInitLite,
   ): Promise<ProjectVoiceDto>;
+  /** P1.14 — adopt hatch: pin the refreshed snapshot (§9.6; REQ-DATA-30); `reseed` launches a
+   *  reseed_charter run that rewrites the charter's seeded lines only. */
+  adoptProjectVoice(projectId: string, req: AdoptProjectVoiceDto, init?: RequestInitLite): Promise<AdoptedProjectVoiceDto>;
+  /** P1.14 — fork hatch: a NEW project at `outlined` with the outline copied, drafts not (§9.6). */
+  forkProjectVoice(projectId: string, req: ForkProjectVoiceDto, init?: RequestInitLite): Promise<ForkedProjectVoiceDto>;
+  /** P1.14 — the adopt dialog's charter diff; guidance lines never appear in it (§9.6). */
+  getVoiceReseedPreview(projectId: string, init?: RequestInitLite): Promise<ReseedPreviewDto>;
   // ---- PRB.11 — export + the AI-use statement ----
   /** The export dialog read (formats, the never-blocking obligation line + links, the statement preview).
    *  Opening the dialog sweeps `pre_export` deferral horizons (REQ-OBJ-3). */
@@ -2684,13 +2931,19 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         body: JSON.stringify({ paperTheme }),
       });
     },
-    // ---- PRB.10 — Quick Voice ----
+    // ---- PRB.10 — Quick Voice / P1.14 — the full Voices workspace ----
     async listVoices(init): Promise<VoiceListRowDto[]> {
-      const body = await json<{ voices: VoiceListRowDto[] }>("/voices", {
+      const body = await json<VoiceListDto>("/voices", {
         method: "GET",
         headers: init?.headers as Record<string, string> | undefined,
       });
-      return body.voices;
+      return [...body.voices];
+    },
+    async listVoiceGroups(init): Promise<VoiceListDto> {
+      return json<VoiceListDto>("/voices", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async createVoice(req, init): Promise<CreatedVoiceDto> {
       return json<CreatedVoiceDto>("/voices", {
@@ -2758,6 +3011,67 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async setProjectVoice(projectId, req, init): Promise<ProjectVoiceDto> {
       return json<ProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice`, {
         method: "PATCH",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async addVoiceSampleUrl(personaId, req, init): Promise<AddedVoiceSampleUrlDto> {
+      return json<AddedVoiceSampleUrlDto>(`/voices/${encodeURIComponent(personaId)}/samples/url`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getVoiceUpdatePlan(personaId, init): Promise<VoiceUpdatePlanDto> {
+      return json<VoiceUpdatePlanDto>(`/voices/${encodeURIComponent(personaId)}/update`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async updateVoice(personaId, req, init): Promise<UpdatedVoiceDto> {
+      return json<UpdatedVoiceDto>(`/voices/${encodeURIComponent(personaId)}/update`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async addVoiceCorrection(personaId, req, init): Promise<AddedVoiceCorrectionDto> {
+      return json<AddedVoiceCorrectionDto>(`/voices/${encodeURIComponent(personaId)}/corrections`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async forkVoice(personaId, init): Promise<ForkedVoiceDto> {
+      return json<ForkedVoiceDto>(`/voices/${encodeURIComponent(personaId)}/fork`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({}),
+      });
+    },
+    async adoptProjectVoice(projectId, req, init): Promise<AdoptedProjectVoiceDto> {
+      return json<AdoptedProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice/adopt`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async forkProjectVoice(projectId, req, init): Promise<ForkedProjectVoiceDto> {
+      return json<ForkedProjectVoiceDto>(`/projects/${encodeURIComponent(projectId)}/voice/fork`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getVoiceReseedPreview(projectId, init): Promise<ReseedPreviewDto> {
+      return json<ReseedPreviewDto>(`/projects/${encodeURIComponent(projectId)}/voice/reseed-preview`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async decideRunGate(runId, gateId, req, init): Promise<void> {
+      await json(`/runs/${encodeURIComponent(runId)}/gates/${encodeURIComponent(gateId)}`, {
+        method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify(req),
       });
