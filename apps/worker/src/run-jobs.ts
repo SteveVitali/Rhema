@@ -9,6 +9,8 @@ import {
   reap,
   authorRunAllowlist,
   authorWebToolPolicy,
+  authorAssistantWebToolPolicy,
+  urlPolicyFromInputs,
   seatForWorkflow,
   applyTransition,
   revokeRunCredentials,
@@ -69,13 +71,15 @@ interface RunRow {
   billing_account_id: string;
   /** the frozen input snapshot ({wordCount, claimCount?, …}) — drives the research bound (PRB.22). */
   input_snapshot: { wordCount?: number; claimCount?: number } | null;
+  /** the run's FROZEN inputs — the assistant workflows' consented budget/sources + URL policy (P1.11). */
+  inputs: Record<string, unknown> | null;
 }
 
 async function loadRun(deps: WorkerRunDeps, workspaceId: string, runId: string): Promise<RunRow> {
   return deps.txRunner.run(workspaceId, async (tx: SqlClient) => {
     const res = await tx.query(
       `select r.workflow, r.project_id, r.persona_id, r.model_tier, r.rate_table_version, r.cap_credits,
-              r.hold_ledger_id, r.state, r.input_snapshot, ai.type_key as seat, w.billing_account_id
+              r.hold_ledger_id, r.state, r.input_snapshot, r.inputs, ai.type_key as seat, w.billing_account_id
          from runs r
          join workspaces w on w.id = r.workspace_id
          left join agent_instances ai on ai.id = r.agent_instance_id
@@ -92,13 +96,23 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   const run = await loadRun(deps, job.workspaceId, job.runId);
   const workflow = run.workflow as WorkflowKey;
   const seat = run.seat ?? seatForWorkflow(workflow);
-  const allowlist = authorRunAllowlist({ modelTier: run.model_tier as ModelTier });
+  // P1.11 — the run's URL policy rides its FROZEN inputs (the plan card's consented policy, frozen at
+  // creation); provision maps it into the proxy allowlist so every fetch honors it (§7.1/§12.8d).
+  const allowlist = authorRunAllowlist({
+    modelTier: run.model_tier as ModelTier,
+    ...urlPolicyFromInputs(run.inputs),
+  });
   // PRB.22 — the run's web-research bound: the snapshot's refined claimCount, else the same
   // density-derived provisional count the estimate used, so the bound and the price agree.
+  // P1.11 — the Assistant workflows bound on their own contract instead: chat_turn carries the §7.1
+  // per-turn caps (consented-shrunk via inputs.budget); research_burst caps fetches at the plan card's
+  // source count. Neither has a claim count to scale on.
   const snap = run.input_snapshot ?? {};
   const claims =
     typeof snap.claimCount === "number" ? snap.claimCount : provisionalClaimCount(workflow, snap.wordCount);
-  const webTools = authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
+  const webTools =
+    authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
+    authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
   return provisionRun(deps, deps.launcher, {
     runId: job.runId,
     workspaceId: job.workspaceId,

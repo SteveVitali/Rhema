@@ -14,6 +14,8 @@ import { profileVoice } from "../manifests/profile_voice.js";
 import { refreshVoice } from "../manifests/refresh_voice.js";
 import { calibrateVoice } from "../manifests/calibrate_voice.js";
 import { draft } from "../manifests/draft.js";
+import { researchBurst } from "../manifests/research_burst.js";
+import { chatTurn } from "../manifests/chat_turn.js";
 
 export * from "./manifest-types.js";
 export * from "./estimator.js";
@@ -24,7 +26,7 @@ export * from "./version.js";
 export * from "../parsers/index.js";
 export * from "../serializers/index.js";
 
-export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft };
+export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft, researchBurst, chatTurn };
 
 /** Every workflow manifest this phase ships, keyed by WorkflowKey (§12.2; adding a workflow is a manifest — REQ-ARCH-6). */
 export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> = {
@@ -35,4 +37,7 @@ export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> 
   profile_voice: profileVoice,
   refresh_voice: refreshVoice,
   calibrate_voice: calibrateVoice,
+  // P1.11 — the Assistant seat's Rhema-owned workflows (authored here, no upstream pin).
+  research_burst: researchBurst,
+  chat_turn: chatTurn,
 };

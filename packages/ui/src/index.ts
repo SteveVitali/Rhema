@@ -49,6 +49,21 @@ export { MarginSurface, MarginTicks } from "./margin.js";
 export type { MarginSurfaceProps, MarginLabels } from "./margin.js";
 export { FindingsDesk } from "./findings-desk.js";
 export type { FindingsDeskProps, FindingsDeskLabels } from "./findings-desk.js";
+export { ChatDesk } from "./chat-panel.js";
+export type {
+  ChatDeskProps,
+  ChatDeskLabels,
+  ChatDeskEndpoints,
+  ChatThreadWire,
+  ChatTurnWire,
+  ChatMessageWire,
+  ChatPinWire,
+  ChatSourceWire,
+  ChatStripWire,
+  ChatPlanCardWire,
+  ChatEmptyStateWire,
+  ChatAskAboutWire,
+} from "./chat-panel.js";
 export { ClaimsTable } from "./claims.js";
 export type { ClaimsTableLabels, ClaimTableRow } from "./claims.js";
 export { RubricView } from "./rubric.js";

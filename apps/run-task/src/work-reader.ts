@@ -76,13 +76,15 @@ export function resolveProducedPath(paths: readonly string[], target: string): s
   return set.has(k) ? k : undefined;
 }
 
-/** true when a manifest target carries a draft-version placeholder (`vN`, `v(N+1)`, `(N+1)`). */
-const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)/;
+/** true when a manifest target carries a placeholder (`vN`, `v(N+1)`, `(N+1)`, or P1.11's `<run>`). */
+const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)|<run>/;
 
 /**
  * Compile a version-template target (`drafts/v(N+1).md`) into a path-suffix regex
  * (`(^|/)drafts/v\d+\.md$`) — matching the suffix-resolution convention above (the artifact may sit
  * under a seat/output_dir subtree, so the pattern anchors at a path boundary, never mid-segment).
+ * P1.11: `<run>` is the per-run burst id (`burst-<runId>`) — one path segment, so a burst's declared
+ * `agents/assistant/research/burst-<run>/note.md` never basename-collides with a prior burst's note.
  */
 function versionTemplateRegex(target: string): RegExp | null {
   if (!VERSION_PLACEHOLDER.test(target)) return null;
@@ -90,7 +92,9 @@ function versionTemplateRegex(target: string): RegExp | null {
   const pattern = escaped
     .split("v\\(N\\+1\\)").join("v\\d+")
     .split("vN").join("v\\d+")
-    .split("\\(N\\+1\\)").join("\\d+");
+    .split("\\(N\\+1\\)").join("\\d+")
+    // `<run>`: `<`/`>` are regex-safe literals; the escape pass leaves them untouched.
+    .split("<run>").join("[^/]+");
   return new RegExp(`(^|/)${pattern}$`);
 }
 

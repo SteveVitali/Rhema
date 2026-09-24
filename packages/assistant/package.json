@@ -1,0 +1,28 @@
+{
+  "name": "@rhema/assistant",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "P1.11 — the Assistant seat's chat domain (§7.1/§7.4/§7.6): threads, pins, compaction brief, per-turn plan card + budgets, typed read_artifact refs, source notes, the two-conduit rule, and Ask-about-this-draft suggestion shaping. Server-side only — never a client bundle.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/commands": "workspace:*",
+    "@rhema/contracts": "workspace:*",
+    "@rhema/hooks": "workspace:*",
+    "@rhema/protocols": "workspace:*"
+  }
+}

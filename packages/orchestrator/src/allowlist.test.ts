@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_TIERS, isModelPriceable, CURRENT_RATE_TABLE_VERSION, type ModelTier } from "@rhema/contracts";
 import { rosterModelIds, mainModelForTier } from "@rhema/engine";
-import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT } from "./allowlist.js";
+import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, RESEARCH_BURST_MAX_SOURCES } from "./allowlist.js";
 
 // F4 — the model-allowlist trap. The proxy admits a request only when `body.model` is EXACTLY on the run's
 // allowlist (`MODELS_BY_TIER`, an exact-match includes) AND priceable in the rate table; otherwise it 403s the
@@ -50,5 +50,78 @@ describe("authorWebToolPolicy (PRB.22 — the per-run research bound)", () => {
     const p = authorWebToolPolicy({ claims: 3 });
     expect(p.fetchBudget).toBe(24); // 12 + 4×3
     expect(p.searchBudget).toBe(11); // 8 + 3
+  });
+});
+
+// P1.11 — the Assistant seat's web bound (§7.1: ≤5 searches / ≤10 fetches per turn; §12.2 Research row:
+// the burst's fetch fan-out is the plan card's ≤N). Enforced at the proxy via webTools budgets.
+describe("authorAssistantWebToolPolicy (P1.11 — the §7.1/§12.2 bound)", () => {
+  it("chat_turn enforces the §7.1 per-turn caps at the proxy", () => {
+    const p = authorAssistantWebToolPolicy({ workflow: "chat_turn" });
+    expect(p).not.toBeNull();
+    expect(p!.searchBudget).toBe(5);
+    expect(p!.fetchBudget).toBe(10);
+    expect(p!.fetchMaxContentTokens).toBe(FETCH_MAX_CONTENT_TOKENS);
+  });
+
+  it("a consented (edited) plan can only shrink the chat bound — never exceed §7.1", () => {
+    const p = authorAssistantWebToolPolicy({
+      workflow: "chat_turn",
+      inputs: { budget: { searches: 2, fetches: 3 } },
+    });
+    expect(p!.searchBudget).toBe(2);
+    expect(p!.fetchBudget).toBe(3);
+    const raised = authorAssistantWebToolPolicy({
+      workflow: "chat_turn",
+      inputs: { budget: { searches: 99, fetches: 99 } },
+    });
+    expect(raised!.searchBudget).toBe(5); // clamped to the §7.1 ceiling
+    expect(raised!.fetchBudget).toBe(10);
+  });
+
+  it("research_burst bounds fetches to the planned source count (≤N, plan-card consented)", () => {
+    const p = authorAssistantWebToolPolicy({ workflow: "research_burst", inputs: { sources: 4 } });
+    expect(p!.fetchBudget).toBe(4);
+    expect(p!.searchBudget).toBe(4);
+    const def = authorAssistantWebToolPolicy({ workflow: "research_burst" });
+    expect(def!.fetchBudget).toBe(5); // the default source count
+    const over = authorAssistantWebToolPolicy({ workflow: "research_burst", inputs: { sources: 999 } });
+    expect(over!.fetchBudget).toBe(RESEARCH_BURST_MAX_SOURCES); // hard-clamped
+  });
+
+  it("non-assistant workflows fall back (null) to the claim-scaled bound", () => {
+    expect(authorAssistantWebToolPolicy({ workflow: "review" })).toBeNull();
+  });
+});
+
+describe("urlPolicyFromInputs (P1.11 — the run's frozen URL policy → the proxy allowlist)", () => {
+  it("absent inputs yield the empty denylist default", () => {
+    expect(urlPolicyFromInputs(null)).toEqual({ blockedDomains: [] });
+    expect(urlPolicyFromInputs({})).toEqual({ blockedDomains: [] });
+  });
+
+  it("a frozen policy maps blocked/allowed/known domains + the novel-domain cap", () => {
+    const p = urlPolicyFromInputs({
+      urlPolicy: {
+        blockedDomains: ["evil.example"],
+        allowedDomains: ["arxiv.org"],
+        knownDomains: ["nyt.com"],
+        novelDomainCap: 7,
+      },
+    });
+    expect(p.blockedDomains).toEqual(["evil.example"]);
+    expect(p.allowedDomains).toEqual(["arxiv.org"]);
+    expect(p.knownDomains).toEqual(["nyt.com"]);
+    expect(p.novelDomainCap).toBe(7);
+    // and it lands on the authored allowlist the proxy persists
+    const a = authorRunAllowlist({ modelTier: "base", ...p });
+    expect(a.urlPolicy.blockedDomains).toEqual(["evil.example"]);
+    expect(a.urlPolicy.allowedDomains).toEqual(["arxiv.org"]);
+  });
+
+  it("malformed policy fields sanitize to the deny-all-by-default shape, never throw", () => {
+    const p = urlPolicyFromInputs({ urlPolicy: { blockedDomains: "oops", novelDomainCap: "x" } });
+    expect(p.blockedDomains).toEqual([]);
+    expect(p.novelDomainCap).toBeUndefined();
   });
 });

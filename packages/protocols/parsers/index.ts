@@ -10,19 +10,23 @@ import {
   claimLedgerSidecarSchema,
   cutListSidecarSchema,
   findingsSidecarSchema,
+  researchResultSidecarSchema,
   responseLedgerSidecarSchema,
   rubricSidecarSchema,
   structurePlanSidecarSchema,
+  turnResultSidecarSchema,
   SIDECAR_REGISTRY,
   type ClaimLedgerSidecar,
   type ClaimSourceStance,
   type ClaimVerdict,
   type CutListSidecar,
   type FindingsSidecar,
+  type ResearchResultSidecar,
   type ResponseLedgerSidecar,
   type RubricSidecar,
   type SidecarFilename,
   type StructurePlanSidecar,
+  type TurnResultSidecar,
 } from "@rhema/contracts";
 import { z } from "zod";
 import {
@@ -191,6 +195,17 @@ export function parseCutList(json: unknown, markdown?: string): ParseResult<CutL
   return parseWithSchema(cutListSidecarSchema, json, markdown, parseCutListMd);
 }
 
+// ---- P1.11 — the Assistant's outcome sidecars (json only; their prose deliverable is the reply /
+// the research note — no structured markdown twin). ----
+
+export function parseTurnResult(json: unknown): ParseResult<TurnResultSidecar> {
+  return parseWithSchema(turnResultSidecarSchema, json, undefined, undefined);
+}
+
+export function parseResearchResult(json: unknown): ParseResult<ResearchResultSidecar> {
+  return parseWithSchema(researchResultSidecarSchema, json, undefined, undefined);
+}
+
 /** Every sidecar filename that has a parser — the contract test asserts this covers SIDECAR_REGISTRY. */
 export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string) => ParseResult<unknown>> = {
   "findings.json": (j) => parseFindings(j),
@@ -200,6 +215,8 @@ export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string)
   "response-ledger.json": (j, m) => parseResponseLedger(j, m),
   "structure-plan.json": (j, m) => parseStructurePlan(j, m),
   "cut-list.json": (j, m) => parseCutList(j, m),
+  "turn-result.json": (j) => parseTurnResult(j),
+  "research-result.json": (j) => parseResearchResult(j),
 };
 
 // P1.10 — the draft-ledger `## Sections` table parser (the `section.drafted` / `draft_sections_eq_plan`

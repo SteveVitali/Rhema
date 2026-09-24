@@ -88,6 +88,11 @@ export interface IdeShellProps {
    * queue), superseding the flat `findings` table when set.
    */
   readonly deskFindingsBody?: ReactNode;
+  /**
+   * P1.11 — the Desk's Chat tab body (ChatDesk: threads, transcript, composer, cost strip, plan
+   * card, pins, sources — §7.1). Absent ⇒ the tab keeps its placeholder copy.
+   */
+  readonly chatBody?: ReactNode;
   /** the Timeline's run rows (the round log; P1.09 owns the full log — this renders what it's given). */
   readonly timeline?: readonly { id: string; label: string; state: string; href?: string }[];
   /**
@@ -299,7 +304,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <div className="ide-desk-body" role="tabpanel">
           {/* All four tab bodies render; data-desk-tab on .ide picks the visible one in CSS. */}
           <div data-desk-panel="chat">
-            <p>{L.desk.emptyChat}</p>
+            {props.chatBody ?? <p>{L.desk.emptyChat}</p>}
           </div>
           <div
             data-desk-panel="feed"

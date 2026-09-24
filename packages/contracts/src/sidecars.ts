@@ -218,6 +218,42 @@ export const cutListSidecarSchema = envelope("cut_list").extend({
 });
 export type CutListSidecar = z.infer<typeof cutListSidecarSchema>;
 
+// ---- turn-result.json (P1.11 — a chat_turn's structured outcome; the phase-result's typed twin) ----
+export const turnResultSidecarSchema = envelope("turn_result").extend({
+  status: z.enum(["done", "blocked", "replan"]),
+  /** a ≤600-char abstract of the reply (the reply TEXT itself is never a sidecar field — REQ-DATA-37). */
+  replySummary: z.string().max(600).optional(),
+  /** the metered-shape counters the turn reports (the strip's truth is metered rows; this is the agent's own count). */
+  searches: z.number().int().nonnegative().optional(),
+  fetches: z.number().int().nonnegative().optional(),
+  artifactReads: z.number().int().nonnegative().optional(),
+  /** refs the reply relied on (typed read_artifact refs + source-note paths). */
+  refs: z.array(z.string().max(280)).optional(),
+});
+export type TurnResultSidecar = z.infer<typeof turnResultSidecarSchema>;
+
+// ---- research-result.json (P1.11 — a research_burst's distilled output contract) ----
+export const researchResultSidecarSchema = envelope("research_result").extend({
+  status: z.enum(["done", "blocked", "replan"]),
+  /** the distilled research note's mirror path under agents/assistant/research/. */
+  notePath: z.string().max(280),
+  /** the source cards written this run (each is its own agents/assistant/research/ note). */
+  sources: z
+    .array(
+      z.object({
+        url: urlSchema,
+        title: z.string().max(280).optional(),
+        notePath: z.string().max(280).optional(),
+        /** true when the fetch failed and the card carries the [unverified] mark (§7.1). */
+        unverified: z.boolean().optional(),
+      }),
+    )
+    .default([]),
+  /** fetched tokens the estimator's `0.002·fetched_tokens` term priced (the run's own count). */
+  fetchedTokens: z.number().int().nonnegative().optional(),
+});
+export type ResearchResultSidecar = z.infer<typeof researchResultSidecarSchema>;
+
 /**
  * The sidecar registry: canonical filename → schema, and whether the sidecar is anchor-bearing (REQ-OBJ-16).
  * P0.04's parsers dispatch on this; the structural-sidecar contract test iterates the anchor-bearing set.
@@ -233,6 +269,10 @@ export const SIDECAR_REGISTRY = {
   "structure-plan.json": { schema: structurePlanSidecarSchema, anchorBearing: true },
   "response-ledger.json": { schema: responseLedgerSidecarSchema, anchorBearing: true },
   "cut-list.json": { schema: cutListSidecarSchema, anchorBearing: true },
+  // P1.11 — the Assistant's structured outcomes (never anchor-bearing: a chat turn / research burst
+  // cites refs but authors no draft anchors).
+  "turn-result.json": { schema: turnResultSidecarSchema, anchorBearing: false },
+  "research-result.json": { schema: researchResultSidecarSchema, anchorBearing: false },
 } as const;
 
 export type SidecarFilename = keyof typeof SIDECAR_REGISTRY;
@@ -262,4 +302,8 @@ export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
     '{"sidecar":"response_ledger","version":1,"entries":[{"findingOrdinal":<int — the findings.json ordinal this row answers>,"disposition":{"kind":"accept"|"adapt"|"rebut"|"defer"|"escalate","status":"proposed"|"open"|"done"|"verified"|"mooted"|"deferred"|"escalated"|"honored","rationale"?,"adaptedText"?,"moveOrdinal"?,"applied"?,"actor"?},"anchor"?}],"moves"?[{"ordinal","title","type"?,"status"?,"discharges"?[],"moots"?[]}]} — the array field is "entries" (NOT "rows"); exactly one entry per finding in the review\'s findings.json.',
   "cut-list.json":
     '{"sidecar":"cut_list","version":1,"targetWords"?<int>,"cuts":[{"ordinal":<int>,"anchor","words":<int>,"reason","protect"?}]} — the array field is "cuts".',
+  "turn-result.json":
+    '{"sidecar":"turn_result","version":1,"status":"done"|"blocked"|"replan","replySummary"?,"searches"?<int>,"fetches"?<int>,"artifactReads"?<int>,"refs"?<string[]>} — no reply TEXT, only the abstract + counters.',
+  "research-result.json":
+    '{"sidecar":"research_result","version":1,"status":"done"|"blocked"|"replan","notePath","sources":[{url,"title"?,"notePath"?,"unverified"?}],"fetchedTokens"?<int>} — the array field is "sources".',
 };

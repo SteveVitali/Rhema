@@ -49,6 +49,9 @@ importers:
       '@rhema/ai-use':
         specifier: workspace:*
         version: link:../../packages/ai-use
+      '@rhema/assistant':
+        specifier: workspace:*
+        version: link:../../packages/assistant
       '@rhema/commands':
         specifier: workspace:*
         version: link:../../packages/commands
@@ -525,6 +528,21 @@ importers:
       '@rhema/findings-core':
         specifier: workspace:*
         version: link:../findings-core
+
+  packages/assistant:
+    dependencies:
+      '@rhema/commands':
+        specifier: workspace:*
+        version: link:../commands
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/hooks':
+        specifier: workspace:*
+        version: link:../hooks
+      '@rhema/protocols':
+        specifier: workspace:*
+        version: link:../protocols
 
   packages/benchmark:
     dependencies:

@@ -35,12 +35,26 @@ const EXPECTED: Record<string, { keys: string[]; skillPhases: string[] }> = {
     skillPhases: ["0", "1", "2", "3", "4", "5"],
   },
   calibrate_voice: { keys: ["calibration", "package"], skillPhases: ["4", "5"] },
+  // P1.11 — the Rhema-owned Assistant workflows (authored, not ported): burst = plan→fetch→distill
+  // (§12.2 Research row); a chat turn is one answer phase.
+  research_burst: { keys: ["plan", "fetch", "distill"], skillPhases: ["0", "1", "2"] },
+  chat_turn: { keys: ["answer"], skillPhases: ["0"] },
 };
 
 describe("phase manifests (§12.2)", () => {
-  it("ships exactly the seven Phase-1 workflows", () => {
+  it("ships exactly the nine Phase-1 workflows", () => {
     expect(Object.keys(WORKFLOW_MANIFESTS).sort()).toEqual(
-      ["calibrate_voice", "draft", "fact_check", "profile_voice", "refresh_voice", "review", "revise"].sort(),
+      [
+        "calibrate_voice",
+        "chat_turn",
+        "draft",
+        "fact_check",
+        "profile_voice",
+        "refresh_voice",
+        "research_burst",
+        "review",
+        "revise",
+      ].sort(),
     );
   });
 
@@ -48,7 +62,9 @@ describe("phase manifests (§12.2)", () => {
     describe(m.workflow, () => {
       it("is a valid workflow key with a real skill and valid seats/classes", () => {
         expect(WORKFLOW_KEYS).toContain(m.workflow);
-        expect(m.skill).toMatch(/^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline)$/);
+        expect(m.skill).toMatch(
+          /^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline|research-burst|chat-turn)$/,
+        );
         for (const p of m.phases) {
           expect(JUDGE_SEATS.has(p.seat)).toBe(true);
           expect(["research", "judge", "generate", "package"]).toContain(p.phaseClass);

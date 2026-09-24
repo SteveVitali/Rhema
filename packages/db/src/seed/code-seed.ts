@@ -56,14 +56,22 @@ const SEAT_DEFAULTS: Record<
     readable: ["shared", "agent:assistant"],
     writable: ["agent:assistant"],
     personaView: [],
+    // §7.1 (P1.11): the Assistant tool list — search/fetch (web_search/web_fetch), read_artifact,
+    // start_workflow, propose_outline, visualize, elicit, measure, attach — plus read/write inside
+    // the assistant namespace (threads, source notes, pins, briefs). The preparatory subset
+    // (start_workflow/propose_outline/visualize/elicit/measure) returns run SHEETS, never runs.
     tools: [
       "read",
+      "write",
       "web_search",
       "web_fetch",
-      "measure",
-      "propose_outline",
       "read_artifact",
       "start_workflow",
+      "propose_outline",
+      "visualize",
+      "elicit",
+      "measure",
+      "attach",
     ],
     modelProfile: "balanced",
   },
@@ -103,6 +111,18 @@ export async function agentTypesSeed(db: MigrationDb): Promise<void> {
       ],
     );
   }
+  // P1.11 (§7.1) — the assistant row's per-turn budgets + read-deny globs + thread default tier.
+  // The 0033 migration stamps the same values on an already-seeded row; this keeps a fresh seed
+  // and the migration-derived row identical.
+  await db.query(
+    `update agent_types set
+       denies = array['agents/author/**','!agents/author/ledgers/**','agents/editor/**','agents/persona_builder/**','HOLDOUT-*'],
+       default_thread_tier = 'base',
+       per_turn_credits = 40,
+       per_turn_searches = 5,
+       per_turn_fetches = 10
+     where key = 'assistant'`,
+  );
 }
 
 /**

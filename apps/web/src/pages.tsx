@@ -34,6 +34,8 @@ import {
   VersionRail,
   CompareView,
   FilesPane,
+  ChatDesk,
+  type ChatDeskLabels,
   type VersionRailLabels,
   type CompareLabels,
   type FilesPaneLabels,
@@ -94,7 +96,7 @@ import {
   type GateDecisionView,
   type GateCardModel,
 } from "@rhema/findings-core";
-import type { EditorDocDto, GateCardDto, ApprovalSettingsDto, VoiceStatusDto } from "@rhema/api-client";
+import type { EditorDocDto, GateCardDto, ApprovalSettingsDto, VoiceStatusDto, ChatPanelDto } from "@rhema/api-client";
 import { CHECKABLE_CLAIM_KINDS, GATE_DEFAULTS, type ClaimKind, type FindingView, type GateKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
@@ -198,6 +200,7 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
             ),
           }
         : {})}
+      {...(ide.chat ? { chatBody: chatPanel(ide.chat, slug, ide) } : {})}
       {...dossierSurfaces(data)}
       labels={{
         ...COPY.ide,
@@ -1685,6 +1688,62 @@ function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: Re
       />
     ),
   };
+}
+
+// ---- P1.11 — the Desk Chat panel (§7.1/§7.4/§7.6) ------------------------------------------------
+
+const chatDeskLabels: ChatDeskLabels = COPY.ide.chatDesk;
+
+/**
+ * The ChatDesk body from the api's `GET /projects/:id/chat` DTO. Every write endpoint is same-origin
+ * (the web routes forward to the api); the §7.4 anchored composer prefills when the Page offered
+ * "Ask about this draft" (`ide.chatAskAbout`).
+ */
+function chatPanel(
+  chat: ChatPanelDto,
+  slug: string,
+  ide: NonNullable<ReturnType<typeof usePageData>["ide"]>,
+): ReactNode {
+  return (
+    <ChatDesk
+      model={{
+        threads: chat.threads.map((t) => ({
+          id: t.id,
+          name: t.name,
+          isDefault: t.isDefault,
+          archived: t.archived ?? false,
+        })),
+        activeThreadId: chat.activeThreadId,
+        turns: chat.turns.map((t) => ({
+          id: t.id,
+          state: t.state,
+          createdAt: t.created_at,
+          spentCredits: t.spent_credits,
+          capCredits: t.cap_credits,
+          modelTier: t.model_tier,
+        })),
+        messages: chat.messages.map((msg) => ({ path: msg.mirror_path, wordCount: msg.word_count })),
+        pins: chat.pins,
+        sources: chat.sources,
+        liveRun: chat.liveRun,
+        emptyState: chat.emptyState,
+        budgets: chat.budgets,
+        tier: chat.defaultTier,
+        ...(ide.chatAskAbout ? { askAbout: ide.chatAskAbout } : {}),
+      }}
+      endpoints={{
+        turn: `/p/${slug}/chat/turns`,
+        planDecision: `/p/${slug}/chat/plan-decision`,
+        pin: `/p/${slug}/chat/pins`,
+        pinRemove: (pinId) => `/p/${slug}/chat/pins/${encodeURIComponent(pinId)}/remove`,
+        correction: `/p/${slug}/chat/corrections`,
+        suggestion: `/p/${slug}/chat/suggestions`,
+        notes: `/p/${slug}/chat/notes`,
+        threadHref: (threadId) => `/p/${slug}?thread=${encodeURIComponent(threadId)}#chat`,
+      }}
+      labels={chatDeskLabels}
+    />
+  );
 }
 
 /** The §6.4 card model from a GateCardDto — shared by the Needs-you row and the Timeline card. */

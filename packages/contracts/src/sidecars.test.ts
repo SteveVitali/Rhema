@@ -19,6 +19,9 @@ const FIXTURES: Array<[string, SidecarFilename]> = [
   ["the-politics-of-visibility", "rubric.json"],
   ["the-politics-of-visibility", "response-ledger.json"],
   ["the-politics-of-visibility", "cut-list.json"],
+  // P1.11 — the Assistant's sidecars (chat_turn's turn-result + research_burst's research-result).
+  ["the-politics-of-visibility", "turn-result.json"],
+  ["the-politics-of-visibility", "research-result.json"],
   ["structure-of-political-difference", "01-claim-ledger.json"],
   ["constitution-of-reason", "01-claim-ledger.json"],
   ["constitution-of-reason", "03-claim-ledger.json"],
@@ -32,7 +35,7 @@ describe("sidecar schemas validate the three real projects' fixtures (AC6, REQ-S
     expect(() => schema.parse(doc)).not.toThrow();
   });
 
-  it("covers all seven sidecar kinds across the fixtures", () => {
+  it("covers every registered sidecar kind across the fixtures", () => {
     const covered = new Set(FIXTURES.map(([, f]) => f));
     expect(covered).toEqual(new Set(Object.keys(SIDECAR_REGISTRY)));
   });

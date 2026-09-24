@@ -45,7 +45,7 @@ async function main() {
   if (!existsSync(PIN_ROOT)) fail(`no vendored upstream pin at ${PIN_ROOT}`);
   const manifestPath = join(PORTED_ROOT, "skills/upstream-port.manifest.mjs");
   if (!existsSync(manifestPath)) fail(`no port manifest at ${manifestPath}`);
-  const { upstreamCommit, files } = await import(pathToFileURL(manifestPath).href);
+  const { upstreamCommit, files, rhemaOwned } = await import(pathToFileURL(manifestPath).href);
 
   // The pin's COMMIT marker must match the manifest's declared commit — otherwise the baseline is stale.
   const pinCommit = readFileSync(join(PIN_ROOT, "COMMIT"), "utf8").trim();
@@ -87,6 +87,17 @@ async function main() {
   // 3) A manifest entry for a file the pin does not have is a mistake.
   for (const rel of Object.keys(files))
     if (!pinRels.has(rel)) problems.push(`manifest names ${rel}, absent from the pin`);
+
+  // 3b) Rhema-owned declarations (P1.11 — REQ-ARCH-5's ownership half): each declared file must exist
+  // in the port and must NOT exist in the pin (a file that ships upstream later moves to `files` with
+  // transforms — it may not sit silently in both). Undeclared non-pin files under skills/ are fine by
+  // design (walk is pin-side), but a declared entry that vanished is a stale manifest.
+  for (const rel of rhemaOwned ?? []) {
+    if (!existsSync(join(PORTED_ROOT, rel)))
+      problems.push(`rhemaOwned names ${rel}, absent from packages/protocols`);
+    if (pinRels.has(rel))
+      problems.push(`rhemaOwned names ${rel}, but it exists in the pin — it needs transforms in \`files\`, not an ownership claim`);
+  }
 
   if (problems.length) fail(`\n  - ${problems.join("\n  - ")}`);
   const cats = [

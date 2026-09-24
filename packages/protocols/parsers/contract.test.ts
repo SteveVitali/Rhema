@@ -23,6 +23,10 @@ const PRIMARY: Record<string, string> = {
   "respond-to-review": "revise",
   "bootstrap-persona": "profile_voice",
   "draft-from-outline": "draft",
+  // P1.11 — the Rhema-authored skills (no upstream pin; declared rhema-owned in
+  // skills/upstream-port.manifest.mjs, exempt from pin-diffing).
+  "research-burst": "research_burst",
+  "chat-turn": "chat_turn",
 };
 
 const manifests = Object.values(WORKFLOW_MANIFESTS) as WorkflowManifest[];

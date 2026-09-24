@@ -1,0 +1,18 @@
+{
+  "sidecar": "research_result",
+  "version": 1,
+  "status": "done",
+  "notePath": "agents/assistant/research/notes/01JEXAMPLE0000000000000B.md",
+  "sources": [
+    {
+      "url": "https://example.org/visibility-paper",
+      "title": "The politics of visibility — a survey",
+      "notePath": "agents/assistant/research/sources/01JEXAMPLE0000000000000C.md"
+    },
+    {
+      "url": "https://example.org/missing-page",
+      "unverified": true
+    }
+  ],
+  "fetchedTokens": 4200
+}
