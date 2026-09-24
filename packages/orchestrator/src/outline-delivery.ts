@@ -169,16 +169,20 @@ export async function applyOutlineApproval(
             }
           }
           const bytes = Buffer.from(JSON.stringify({ version: 1, entries: merged }, null, 2) + "\n", "utf8");
-          newVersions.push({
-            path: "agents/author/research/index.json",
-            root: "project",
-            kind: "research",
-            namespace: "agent:author",
-            sha256: sha256Hex(bytes),
-            bytes,
-            wordCount: 0,
-          });
-          copiedPaths.push("agents/author/research/index.json");
+          // The same idempotence rule as the notes: a merged index byte-identical to the current
+          // head writes nothing (a re-driven finalize never doubles versions).
+          if (sha256Hex(bytes) !== dstIndex?.sha256) {
+            newVersions.push({
+              path: "agents/author/research/index.json",
+              root: "project",
+              kind: "research",
+              namespace: "agent:author",
+              sha256: sha256Hex(bytes),
+              bytes,
+              wordCount: 0,
+            });
+            copiedPaths.push("agents/author/research/index.json");
+          }
         }
       } catch {
         /* an unparseable assistant index copies nothing — the note copies still land */

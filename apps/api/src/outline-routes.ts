@@ -173,12 +173,16 @@ async function promotionFacts(
     }
   }
 
+  // The token estimate's word sum — scoped to the thread/turn's session files when there are any;
+  // bind `$2` only when the SQL references it (an unused bind param is a protocol error).
   const wordRows = (
     await deps.db.query(
-      `select coalesce(sum(av.word_count),0)::int as words from artifacts a
-         join artifact_versions av on av.id = a.head_version_id
-        where a.project_id = $1 and (${messagePaths.length > 0 ? "a.mirror_path like any($2::text[])" : "false"})`,
-      [projectId, messagePaths],
+      messagePaths.length > 0
+        ? `select coalesce(sum(av.word_count),0)::int as words from artifacts a
+             join artifact_versions av on av.id = a.head_version_id
+            where a.project_id = $1 and a.mirror_path like any($2::text[])`
+        : `select 0::int as words`,
+      messagePaths.length > 0 ? [projectId, messagePaths] : [],
     )
   ).rows[0] as { words: number };
   const noteWords = entries.reduce((a, e) => a + (e.words ?? 0), 0);
