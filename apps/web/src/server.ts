@@ -20,10 +20,14 @@ import {
   voiceDetailElement,
   settingsElement,
   usageElement,
+  runReportElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
+import { feedRowsFor } from "./feed-labels.js";
+import type { TimelineDto } from "@rhema/api-client";
+import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
@@ -179,6 +183,12 @@ export function createWebApp(deps: WebDeps): Hono {
       inboxCount?: number;
       findings?: { id: string; severity: string; kind: string; excerpt: string }[];
       timeline?: { id: string; label: string; state: string; href?: string }[];
+      /** P1.05 — the structured Timeline pane read (supersedes `timeline` rows). */
+      timelineView?: TimelineDto;
+      /** P1.05 — the Desk's Live feed tab (replayed rows + the same-origin events URL). */
+      feed?: { runId: string; eventsUrl: string; density: "summary" | "details" | "verbose"; rows: FeedRow[]; lastSeq?: number };
+      /** the ⌘⇧R "run next step" target. */
+      runNextHref?: string;
       status?: { version?: string; words?: number; readMin?: number; venueCap?: string; credits?: number; sync?: "synced" | "syncing" | "offline" };
     } = {},
   ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide">> => {
@@ -202,6 +212,9 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(opts.inboxCount != null ? { inboxCount: opts.inboxCount } : {}),
         ...(opts.findings ? { findings: opts.findings } : {}),
         ...(opts.timeline ? { timeline: opts.timeline } : {}),
+        ...(opts.timelineView ? { timelineView: opts.timelineView } : {}),
+        ...(opts.feed ? { feed: opts.feed } : {}),
+        ...(opts.runNextHref ? { runNextHref: opts.runNextHref } : {}),
         ...(opts.status ? { status: opts.status } : {}),
         themeUrl: "/ide/theme",
         paperThemeUrl: `/p/${row.slug}/paper-theme`,
@@ -840,11 +853,41 @@ export function createWebApp(deps: WebDeps): Hono {
     const pageLoad = row.headDraftId
       ? await loadEditorPage(deps.dataSource, session, row.id, row.headDraftId).catch(() => null)
       : null;
+    // P1.05 — the Timeline pane's round log (§5.5) + the live feed's replayed rows for a non-terminal
+    // run (§5.5's Desk auto-open). Both best-effort: a failed read degrades to the empty timeline/feed,
+    // never a failed page.
+    const [timeline, feedData] = await Promise.all([
+      Promise.resolve()
+        .then(() => deps.dataSource.getTimeline?.(session, slug))
+        .catch(() => null),
+      row.activeRun
+        ? Promise.resolve()
+            .then(() => deps.dataSource.getRunEvents?.(session, row.activeRun!.runId))
+            .then((events) =>
+              events
+                ? { rows: feedRowsFor(events, "details"), lastSeq: events.reduce((m, e) => Math.max(m, e.seq), 0) }
+                : null,
+            )
+            .catch(() => null)
+        : Promise.resolve(null),
+    ]);
     return c.html(
       renderDocument(c.req.path, projectElement, {
         // P1.01 — the project overview mounts inside the IDE frame; ?focus=1 seeds the Focus view.
         ...(await ideContext(c, session, { ...row, slug }, {
           inboxCount: gates.length + decisions.length,
+          ...(timeline ? { timelineView: timeline, runNextHref: `/p/${slug}/run` } : {}),
+          ...(row.activeRun && feedData
+            ? {
+                feed: {
+                  runId: row.activeRun.runId,
+                  eventsUrl: `/p/${slug}/r/${row.activeRun.runId}/events`,
+                  density: "details" as const,
+                  rows: feedData.rows,
+                  lastSeq: feedData.lastSeq,
+                },
+              }
+            : {}),
           ...(pageLoad
             ? {
                 status: {
@@ -1336,6 +1379,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
+    // P1.05 — the dossier carries the same Timeline pane (the card's own run resolves into its round).
+    const timeline = await Promise.resolve()
+      .then(() => deps.dataSource.getTimeline?.(session, slug))
+      .catch(() => null);
     const savedFindingId = c.req.query("disposed") || undefined;
     // PRB.12 — the reading surface's view emissions (the intake whitelist's whole reason to exist):
     // the report view itself, each rendered finding, and the second-read section when it has content.
@@ -1351,7 +1398,9 @@ export function createWebApp(deps: WebDeps): Hono {
       // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
       ...(await ideContext(c, session, row, {
         findings: dossier.findings.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
-        timeline: [{ id: runId, label: dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }],
+        ...(timeline
+          ? { timelineView: timeline, runNextHref: `/p/${slug}/run` }
+          : { timeline: [{ id: runId, label: dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
         status: { version: dossier.versionLabel },
       })),
       project: { title: dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
@@ -1361,6 +1410,111 @@ export function createWebApp(deps: WebDeps): Hono {
       ...(savedFindingId ? { triage: { savedFindingId } } : {}),
     }));
   });
+
+  // ---- P1.05 — the run report + §6.5 steering + the live-feed SSE proxy (§5.5/§14.5) ----
+
+  // The run report page (the Timeline card's "Run report" link; §14.5). `?advanced=1` lazy-loads the
+  // Level-4 drill-down into the Advanced disclosure — the report read model is already split, so the
+  // plain page never carries token-level rows (tokens appear ONLY inside the disclosure's copy).
+  app.get("/p/:project/r/:runId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const runId = c.req.param("runId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const advanced = c.req.query("advanced") === "1";
+    const [report, timeline] = await Promise.all([
+      deps.dataSource.getRunReport(session, runId, { advanced }).catch(() => null),
+      Promise.resolve()
+        .then(() => deps.dataSource.getTimeline(session, slug))
+        .catch(() => null),
+    ]);
+    if (!report) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(
+      renderDocument(c.req.path, runReportElement, {
+        ...(await ideContext(c, session, row, {
+          ...(timeline ? { timelineView: timeline, runNextHref: `/p/${slug}/run` } : {}),
+        })),
+        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        runReport: { slug, runId, report },
+        dwellSurface: "report",
+      }),
+    );
+  });
+
+  // §4.2 — the usage deep-link's canonical redirect: /app/usage/r/:run → /p/<slug>/r/<run>#report.
+  app.get("/app/usage/r/:runId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const runId = c.req.param("runId");
+    const report = await deps.dataSource.getRunReport(session, runId).catch(() => null);
+    if (!report?.projectSlug) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.redirect(`/p/${report.projectSlug}/r/${runId}#report`);
+  });
+
+  // The live feed's same-origin SSE proxy — the browser's EventSource never leaves this host (the
+  // session forwards server-side; REQ-ARCH-33). `after`/`Last-Event-ID` ride through for resume.
+  app.get("/p/:project/r/:runId/events", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const slug = c.req.param("project");
+    const runId = c.req.param("runId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const upstream = await deps.dataSource
+      .streamRunEvents(session, runId, {
+        ...(c.req.query("after") ? { after: c.req.query("after")! } : {}),
+        ...(c.req.header("last-event-id") ? { lastEventId: c.req.header("last-event-id")! } : {}),
+      })
+      .catch(() => null);
+    if (!upstream || upstream.body == null) {
+      return c.json({ error: "upstream_unavailable" }, upstream?.status === 404 ? 404 : 502);
+    }
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache, no-transform",
+        connection: "keep-alive",
+        "x-accel-buffering": "no",
+      },
+    });
+  });
+
+  // The §6.5 steering POSTs — plain form posts (no-JS), each forwarding to the api's thin adapter over
+  // the orchestrator seam, then redirecting back to the project (the Timeline re-reads the new state).
+  const steerHandler =
+    (act: (session: SessionHeaders, runId: string, text?: string) => Promise<unknown>) =>
+    async (c: Context) => {
+      const session = deps.session(c);
+      if (!session) return c.redirect("/login");
+      const slug = c.req.param("project");
+      const runId = c.req.param("runId");
+      const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+      if (!row || runId == null || runId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      const form = await c.req.parseBody().catch(() => ({} as Record<string, unknown>));
+      const text = typeof form["text"] === "string" ? (form["text"] as string) : undefined;
+      const note = typeof form["note"] === "string" ? (form["note"] as string) : undefined;
+      try {
+        await act(session, runId, text ?? note);
+      } catch (e) {
+        // a stale card (the run moved past the state) re-renders the page rather than erroring out —
+        // the Timeline's fresh read shows the current state.
+        if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 400))) throw e;
+      }
+      return c.redirect(`/p/${slug}`);
+    };
+
+  app.post("/p/:project/r/:runId/pause", steerHandler((s, runId) => deps.dataSource.pauseRun(s, runId)));
+  app.post("/p/:project/r/:runId/resume", steerHandler((s, runId, note) => deps.dataSource.resumeRun(s, runId, note)));
+  app.post("/p/:project/r/:runId/stop", steerHandler((s, runId) => deps.dataSource.stopRun(s, runId)));
+  app.post("/p/:project/r/:runId/cancel", steerHandler((s, runId) => deps.dataSource.stopRun(s, runId)));
+  app.post("/p/:project/r/:runId/note", steerHandler(async (s, runId, text) => {
+    if (text == null || text.trim() === "") return; // an empty note is a no-op, never a write
+    return deps.dataSource.postRunNote(s, runId, text);
+  }));
+  app.post("/p/:project/r/:runId/walkthrough", steerHandler((s, runId) => deps.dataSource.retryWalkthrough(s, runId)));
 
   // PRB.05 — the disposition write (§5.7): the five verbs + note + optional reason chip. Progressive
   // enhancement: a plain form POST; a validation error re-renders the dossier with the error under the

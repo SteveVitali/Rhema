@@ -36,10 +36,12 @@ import {
   handleRunReap,
   handleStrandedSweep,
   handleGateExpiryJob,
+  handleRunWalkthrough,
   type WorkerRunDeps,
   type WorkerRunConfig,
   type RunJobPayload,
 } from "./run-jobs.js";
+import { AnthropicWalkthroughGenerator } from "./walkthrough-generator.js";
 import { handleRunEventsRetention, handleRunEventsPartition, RUN_EVENT_JOBS } from "./run-events-jobs.js";
 import { handleParkedSweep, reDebitOnResume, type WorkerLedgerDeps } from "./ledger-jobs.js";
 import {
@@ -231,7 +233,15 @@ export async function startWorker(): Promise<void> {
       ? { actionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
       : undefined;
 
-  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerBillingDeps & WorkerNotificationDeps = {
+  // P1.05 — the walkthrough's package-class call. Unconfigured (no key secret) ⇒ a stub that fails the
+  // attempt cleanly (recorded `failed`; the card's Retry covers it once the secret lands).
+  const walkthroughKeySecret = env.walkthroughModelKeySecret ? await access(env.walkthroughModelKeySecret) : undefined;
+  const walkthroughKey = walkthroughKeySecret && !/placeholder/i.test(walkthroughKeySecret) ? walkthroughKeySecret : undefined;
+  const walkthrough = walkthroughKey
+    ? new AnthropicWalkthroughGenerator({ apiKey: walkthroughKey })
+    : { generate: () => Promise.reject(new Error("walkthrough unconfigured")) };
+
+  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerBillingDeps & WorkerNotificationDeps & { walkthrough: typeof walkthrough } = {
     txRunner: new PgPoolTxRunner(pool),
     eventWriter: new SqlEventWriter(bus),
     clock,
@@ -258,6 +268,7 @@ export async function startWorker(): Promise<void> {
     ...(notificationConfig ? { notifications: notificationConfig } : {}),
     ...(resendKey && env.emailFrom ? { mailer: new ResendMailSender(resendKey, env.emailFrom) } : {}),
     ...(env.emailFrom ? { emailFrom: env.emailFrom } : {}),
+    walkthrough,
   };
 
   // The pg-boss connection BURST at startup (start + createQueue×N) can hit a transient AlloyDB connect timeout
@@ -317,6 +328,16 @@ export async function startWorker(): Promise<void> {
   });
   await boss.work<RunJobPayload>(RUN_JOBS.cancel, async (jobs) => {
     for (const job of jobs) await handleRunCancel(deps, job.data);
+  });
+
+  // P1.05 — the lazy walkthrough generator (one package-class call per job; failures land as
+  // {status:'failed'} on runs.walkthrough and never throw — a throw would burn pg-boss retries for a
+  // terminal-state nicety).
+  await boss.work<RunJobPayload>(RUN_JOBS.walkthrough, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleRunWalkthrough(deps, job.data);
+      console.log(`[worker] run.walkthrough ${job.data.runId} → ${JSON.stringify(r)}`);
+    }
   });
 
   // PRB.16b F25 — the gate-expiry consumer: P0.10's `gate:<id>` design was never registered here AND was an

@@ -62,6 +62,12 @@ export interface WorkerEnv {
   readonly apiPublicUrl?: string;
   /** PRB.09 — the web app origin for email deep links (`<appBaseUrl>/p/<project>/review/<run>`). */
   readonly appBaseUrl?: string;
+  /**
+   * P1.05 — the provider API key's secret-version NAME for the `run.walkthrough` package-class call (a
+   * deploy may point it at the same `anthropic-api-key` version the proxy holds). Unset ⇒ the consumer
+   * marks attempts `failed` and the card's Retry stays live.
+   */
+  readonly walkthroughModelKeySecret?: string;
 }
 
 function required(name: string): string {
@@ -103,6 +109,9 @@ export function readWorkerEnv(): WorkerEnv {
       : {}),
     ...(process.env.API_PUBLIC_URL ? { apiPublicUrl: process.env.API_PUBLIC_URL } : {}),
     ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),
+    ...(process.env.WALKTHROUGH_MODEL_KEY_SECRET
+      ? { walkthroughModelKeySecret: process.env.WALKTHROUGH_MODEL_KEY_SECRET }
+      : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

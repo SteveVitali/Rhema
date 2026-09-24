@@ -24,3 +24,6 @@ export { VIEW_MODES, VIEW_MENU_TOGGLES, viewMenuModel, viewMenuIds } from "./vie
 export type { ViewMenuItem } from "./view-menu.js";
 export { CONTROL_DISCLOSURE, controlVisible } from "./disclosure.js";
 export type { DisclosureTier } from "./disclosure.js";
+// P1.05 — the live feed's row formatter (SSR + island share it; REQ-IDE-14).
+export { feedTabForContractDensity, feedRowVisible, formatFeedRow } from "./feed-row.js";
+export type { FeedDensityTab, FeedLabelMaps } from "./feed-row.js";

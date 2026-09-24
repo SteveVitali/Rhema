@@ -47,6 +47,14 @@ export const runs = pgTable("runs", {
   // stashed deliver payload until the balance is non-negative (the run.deliver job re-drives it).
   deliveryWithheldAt: timestamp("delivery_withheld_at"),
   pendingDelivery: jsonb("pending_delivery"),
+  // P1.05 (0030; §6.5): the steering park — `pause_requested_at` is set by "Pause after this phase" and
+  // honored at the next committed phase boundary; `paused_at` marks a waiting_gate steering pause (no gate
+  // row — the card shows Resume/Stop, not an approval).
+  pauseRequestedAt: timestamp("pause_requested_at"),
+  pausedAt: timestamp("paused_at"),
+  // P1.05 (0030; §5.5 D20): the lazily-generated ≤200-word walkthrough {status,text?,model?,inputDigest?,
+  // attempts,generatedAt?,lastAttemptAt?,lastError?} — one package-class call over delivered artifacts.
+  walkthrough: jsonb("walkthrough"),
 });
 
 export const steps = pgTable("steps", {

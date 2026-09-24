@@ -52,3 +52,7 @@ export * from "./usage-crosscheck.js";
 // email notifications (PRB.09; §5.11; REQ-IDE-47/REQ-ACCT-1/REQ-SPEC-20/REQ-GATE-8; closes D-P0.10-1)
 export * from "./notifications.js";
 export * from "./email-actions.js";
+
+// user steering + the run walkthrough (P1.05; §5.5/§6.5)
+export * from "./steering.js";
+export * from "./walkthrough.js";

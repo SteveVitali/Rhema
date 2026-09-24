@@ -8,6 +8,8 @@ import type { ReactNode } from "react";
 import type { DeskTab, ViewMode } from "@rhema/ide";
 import { viewMenuModel, VIEW_MODES } from "@rhema/ide";
 import { EmptyFindings } from "./ide-states.js";
+import { LiveFeed, type FeedRow, type LiveFeedLabels, type RunCardLabels } from "./run-card.js";
+import { TimelinePane, type TimelineViewWire, type TimelineLabels, type TimelineHrefs } from "./timeline.js";
 
 export interface IdeLabels {
   rail: { home: string; inbox: string; settings: string; project: string };
@@ -69,8 +71,33 @@ export interface IdeShellProps {
   readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
   /** the Timeline's run rows (the round log; P1.09 owns the full log — this renders what it's given). */
   readonly timeline?: readonly { id: string; label: string; state: string; href?: string }[];
+  /**
+   * P1.05 — the structured Timeline pane (§5.5): rounds, the next-step card, run cards. Set WITH
+   * `timelineLabels`/`timelineCardLabels`; supersedes the flat `timeline` rows when present.
+   */
+  readonly timelineView?: TimelineViewWire;
+  readonly timelineLabels?: TimelineLabels;
+  readonly timelineCardLabels?: RunCardLabels;
+  readonly timelineHrefs?: TimelineHrefs;
   /** a non-terminal run (the Desk auto-opens on Live feed — §5.1). */
   readonly activeRun?: { readonly runId: string; readonly state: string } | null;
+  /**
+   * P1.05 — the Desk's Live feed tab (§5.5; REQ-IDE-14): SSR renders the replayed rows at `density`;
+   * the island tails `eventsUrl` (same-origin SSE) and re-filters on the density tabs. `labelMaps`
+   * is the app copy's `FeedLabelMaps` JSON (embedded, so the island's rows stay controlled copy).
+   */
+  readonly feed?: {
+    readonly runId: string;
+    readonly eventsUrl: string;
+    readonly density: "summary" | "details" | "verbose";
+    readonly rows: readonly FeedRow[];
+    /** the highest replayed seq — the island's EventSource resumes at `?after=<lastSeq>`. */
+    readonly lastSeq?: number;
+    readonly labels: LiveFeedLabels;
+    readonly labelMaps: string;
+  };
+  /** the ⌘⇧R "run next step" target — the run sheet for the next-step card's verb (§5.5/§6.3). */
+  readonly runNextHref?: string;
   readonly inboxCount?: number;
   readonly status?: {
     readonly version?: string;
@@ -122,6 +149,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.themeUrl ? { "data-theme-url": props.themeUrl } : {})}
       {...(props.paperThemeUrl ? { "data-paper-url": props.paperThemeUrl } : {})}
       {...(props.activeRun ? { "data-run-state": props.activeRun.state } : {})}
+      {...(props.runNextHref ? { "data-run-next": props.runNextHref } : {})}
     >
       {/* the phone-width fallback bar (visible <768 only — the reader-only Page layout) */}
       <div className="ide-phonebar">
@@ -195,7 +223,15 @@ export function IdeShell(props: IdeShellProps): ReactNode {
             <button type="button" data-ide-timeline-toggle aria-label={L.timeline.close} style={{ marginLeft: "auto" }}>×</button>
           </div>
           <div className="ide-tl-body">
-            {(props.timeline ?? []).length === 0 ? (
+            {props.timelineView && props.timelineLabels && props.timelineCardLabels ? (
+              // P1.05 — the round log: next-step card, round cards (vN → runs → v(N+1)), origin chip.
+              <TimelinePane
+                view={props.timelineView}
+                labels={props.timelineLabels}
+                cardLabels={props.timelineCardLabels}
+                {...(props.timelineHrefs ? { hrefs: props.timelineHrefs } : {})}
+              />
+            ) : (props.timeline ?? []).length === 0 ? (
               <p style={{ color: "var(--shell-fg-muted)", fontSize: 13 }}>{L.timeline.empty}</p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -227,8 +263,23 @@ export function IdeShell(props: IdeShellProps): ReactNode {
           <div data-desk-panel="chat">
             <p>{L.desk.emptyChat}</p>
           </div>
-          <div data-desk-panel="feed" aria-live="polite">
-            <p>{props.activeRun ? props.activeRun.state : L.desk.emptyFeed}</p>
+          <div
+            data-desk-panel="feed"
+            aria-live="polite"
+            {...(props.feed
+              ? {
+                  "data-feed-run": props.feed.runId,
+                  "data-feed-events": props.feed.eventsUrl,
+                  "data-feed-labels": props.feed.labelMaps,
+                  ...(props.feed.lastSeq != null ? { "data-feed-last-seq": String(props.feed.lastSeq) } : {}),
+                }
+              : {})}
+          >
+            {props.feed ? (
+              <LiveFeed density={props.feed.density} rows={props.feed.rows} labels={props.feed.labels} />
+            ) : (
+              <p>{props.activeRun ? props.activeRun.state : L.desk.emptyFeed}</p>
+            )}
           </div>
           {/* The Desk findings table IS the screen-reader surface (§5.9 a11y) — a real <table>. */}
           <div data-desk-panel="findings">

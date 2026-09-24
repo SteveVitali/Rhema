@@ -16,6 +16,9 @@ import {
   gateExpiryJob,
   handleGateExpiry,
   sweepStrandedRuns,
+  generateWalkthrough,
+  type GenerateWalkthroughResult,
+  type WalkthroughGenerator,
   type OrchestratorDeps,
   type JobLauncher,
   type ProvisionResult,
@@ -229,6 +232,18 @@ export async function completeCancellation(deps: WorkerRunDeps, job: RunJobPaylo
   });
   if (state === "cancelled") await deps.heartbeats.clear(job.runId);
   return { runId: job.runId, state };
+}
+
+/**
+ * `run.walkthrough` (P1.05; §5.5 D20) — the lazy one-call walkthrough generator. `deps.walkthrough` is the
+ * deploy-bound model seam (a preview stage without the key marks attempts `failed`; the card's Retry and
+ * the self-healing next-render enqueue cover it).
+ */
+export function handleRunWalkthrough(
+  deps: OrchestratorDeps & { readonly walkthrough: WalkthroughGenerator },
+  job: RunJobPayload,
+): Promise<GenerateWalkthroughResult> {
+  return generateWalkthrough(deps, job);
 }
 
 /**

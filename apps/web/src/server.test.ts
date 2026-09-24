@@ -1359,3 +1359,263 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(html).toContain("qk=quarantine%2Fws1%2Fup_cold");
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------------
+// P1.05 — the Timeline pane, the run page (/p/:slug/r/:run), the live-feed proxy, and the §6.5 steering
+// posts (§5.5/§6.5/§14.5). In-memory DataSource fakes; the reads are best-effort so failures degrade.
+describe("P1.05 — timeline, run page, steering", () => {
+  const SESSION = { cookie: "tok" };
+
+  const CARD = {
+    runId: "run_tl",
+    state: "completed" as const,
+    phases: [{ key: "reading_the_piece", ordinal: 1, status: "done" as const }],
+    spentCredits: 520,
+    capCredits: 840,
+    creditFraction: 0.62,
+    refundedCredits: 0,
+    elapsedMs: 60000,
+    etaBand: null,
+    done: 1,
+    running: 0,
+    total: 6,
+    estimateCredits: 840,
+    queuePosition: null,
+    paused: false,
+    waitingGate: null,
+    deliverables: [{ key: "letter" }, { key: "findings", count: 49 }],
+    walkthrough: { status: "ready" as const, text: "A letter and a claims ledger were delivered." },
+    failureCode: null,
+    resumable: false,
+    queuedNotes: 0,
+    actions: ["open_deliverable" as const, "report" as const],
+  };
+
+  const TIMELINE = {
+    project: { id: "proj_pv", slug: "the-politics-of-visibility", title: "The Politics of Visibility" },
+    state: PROJECTS[0]!.state,
+    nextStep: { verb: "revise", label: "Revise using your edits", estimateCredits: 1240, headDraftN: 2 },
+    rounds: [
+      {
+        n: 1,
+        anchor: { draftId: "d_v1", n: 1, origin: "imported" },
+        producedN: 2,
+        parts: [
+          { kind: "version" as const, n: 1 },
+          { kind: "run" as const, workflow: "review", count: 49 },
+          { kind: "version" as const, n: 2 },
+        ],
+        runs: [
+          {
+            runId: "run_tl",
+            workflow: "review",
+            state: "completed" as const,
+            createdAt: "2026-09-01T12:00:00Z",
+            subjectN: 1,
+            producedN: null,
+            card: CARD,
+          },
+        ],
+      },
+    ],
+    ungrouped: [],
+    originChip: { kind: "imported_draft" as const },
+  };
+
+  const REPORT = {
+    kind: "ok" as const,
+    report: {
+      runId: "run_tl",
+      workflow: "review",
+      state: "completed" as const,
+      estimateCredits: 840,
+      spentCredits: 520,
+      capCredits: 840,
+      refundedCredits: 0,
+      estimateRatio: 0.62,
+      phases: [
+        { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 120000, searches: 12, fetches: 40, subagentLabels: [] },
+      ],
+      seatSplit: [{ seat: "verifier", credits: 300, share: 1 }],
+      flags: ["fact_check_dominated" as const],
+      claims: { checked: 56, verified: 50, creditsPerVerified: 10.4 },
+      drivers: [{ key: "phase_share" as const, phase: "checking_claims", share: 0.58 }],
+      suggestedGuidance: ["guidance.fact_check_dominated"],
+    },
+    projectSlug: "the-politics-of-visibility",
+  };
+
+  const p105Deps = (over: Partial<DataSource> = {}): WebDeps =>
+    makeDeps({
+      session: () => SESSION,
+      dataSource: {
+        ...makeDeps().dataSource,
+        listGates: async () => [],
+        listDecisions: async () => [],
+        getApprovalOverrides: async () => ({}),
+        getProjectVoice: async () => {
+          throw new ApiError(404, "none");
+        },
+        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getTimeline: async () => TIMELINE as never,
+        getRunReport: async (_s: unknown, _r: unknown, opts?: { advanced?: boolean }) =>
+          ({
+            ...REPORT,
+            ...(opts?.advanced
+              ? {
+                  advancedView: {
+                    runId: "run_tl",
+                    rows: [
+                      {
+                        phase: "checking_claims",
+                        seat: "verifier",
+                        subagentLabel: null,
+                        model: "claude-sonnet-4-6",
+                        modelTier: "balanced",
+                        credits: 300,
+                        durationMs: null,
+                        searches: 12,
+                        fetches: 40,
+                        inputTokens: 4000,
+                        outputTokens: 900,
+                        cacheReadTokens: 0,
+                        cacheWriteTokens: 0,
+                        providerRequestIds: ["req_1"],
+                      },
+                    ],
+                  },
+                }
+              : {}),
+          }) as never,
+        getRunEvents: async () => [
+          { seq: 1, type: "run.state_changed", payload: { to: "running" }, density: "summary", at: "2026-09-01T12:00:00Z" },
+          { seq: 2, type: "claim.checked", payload: { claimOrdinal: 3, verdict: "verified" }, density: "normal", at: "2026-09-01T12:01:00Z" },
+        ] as never,
+        pauseRun: vi.fn(async () => ({ ok: true as const, state: "running" })),
+        resumeRun: vi.fn(async () => ({ ok: true as const, state: "queued" })),
+        stopRun: vi.fn(async () => ({ ok: true as const, state: "cancelled" })),
+        postRunNote: vi.fn(async () => ({ ok: true as const, guidanceId: "gdn_1" })),
+        retryWalkthrough: vi.fn(async () => ({ status: "requeued" })),
+        ...over,
+      },
+    });
+
+  it("/p/:slug renders the Timeline pane — next-step card, round parts, the run card", async () => {
+    const html = await (await createWebApp(p105Deps()).request("/p/the-politics-of-visibility")).text();
+    expect(html).toContain('data-timeline-pane');
+    // §5.5's three verbs row — each opens the run sheet for that workflow
+    expect(html).toContain('data-timeline-verbs');
+    expect(html).toContain('href="/p/the-politics-of-visibility/run?workflow=draft" data-verb="draft"');
+    expect(html).toContain('data-verb="review"');
+    expect(html).toContain('data-verb="revise"');
+    expect(html).toContain('data-next-step="revise"');
+    expect(html).toContain('data-run-card="run_tl"');
+    // the card's report href lands on the run page
+    expect(html).toContain('/p/the-politics-of-visibility/r/run_tl');
+  });
+
+  it("an active run opens the Desk on the live feed with replayed rows + the same-origin events URL", async () => {
+    const live: ProjectRow[] = [
+      { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },
+      PROJECTS[1]!,
+    ];
+    const deps = p105Deps({ listProjects: async () => live });
+    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility")).text();
+    expect(html).toContain('data-feed-events="/p/the-politics-of-visibility/r/run_live/events"');
+    expect(html).toContain('data-feed-last-seq="2"');
+    expect(html).toContain('data-feed-labels='); // the island's embedded label maps
+  });
+
+  it("/p/:slug/r/:runId renders the Level-3 report; the Advanced disclosure lazy-loads Level 4", async () => {
+    const app = createWebApp(p105Deps());
+    const l3 = await (await app.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(l3).toContain("Run report");
+    expect(l3).not.toContain("inputTokens");
+    expect(l3).not.toContain('data-usage-row');
+    // Level 4 loads ONLY on the disclosure — the affordance is a ?advanced=1 read (§14.5)
+    expect(l3).toContain('/p/the-politics-of-visibility/r/run_tl?advanced=1');
+    const adv = await (await app.request("/p/the-politics-of-visibility/r/run_tl?advanced=1")).text();
+    expect(adv).toContain("Run report");
+    expect(adv).toContain('data-usage-row');
+    expect(adv).toContain("4,000");
+    // 404 when the api has no report for the run
+    const missing = createWebApp(
+      p105Deps({ getRunReport: async () => { throw new ApiError(404, "no"); } }),
+    );
+    expect((await missing.request("/p/the-politics-of-visibility/r/run_x")).status).toBe(404);
+  });
+
+  it("/app/usage/r/:run redirects to the canonical /p/ path with #report", async () => {
+    const res = await createWebApp(p105Deps()).request("/app/usage/r/run_tl");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
+  });
+
+  it("the §6.5 steering posts forward through the data seam and redirect back to the project", async () => {
+    const pauseRun = vi.fn(async () => ({ ok: true as const, state: "running" }));
+    const resumeRun = vi.fn(async () => ({ ok: true as const, state: "queued" }));
+    const postRunNote = vi.fn(async () => ({ ok: true as const, guidanceId: "g" }));
+    const stopRun = vi.fn(async () => ({ ok: true as const, state: "cancelled" }));
+    const app = createWebApp(p105Deps({ pauseRun, resumeRun, postRunNote, stopRun }));
+
+    const pause = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", { method: "POST", ...form({}) });
+    expect(pause.status).toBe(302);
+    expect(pause.headers.get("location")).toBe("/p/the-politics-of-visibility");
+    expect(pauseRun).toHaveBeenCalledWith(SESSION, "run_tl");
+
+    const resume = await app.request("/p/the-politics-of-visibility/r/run_tl/resume", {
+      method: "POST",
+      ...form({ note: "go easy" }),
+    });
+    expect(resume.headers.get("location")).toBe("/p/the-politics-of-visibility");
+    expect(resumeRun).toHaveBeenCalledWith(SESSION, "run_tl", "go easy");
+
+    const note = await app.request("/p/the-politics-of-visibility/r/run_tl/note", {
+      method: "POST",
+      ...form({ text: "check §2" }),
+    });
+    expect(postRunNote).toHaveBeenCalledWith(SESSION, "run_tl", "check §2");
+    expect(note.status).toBe(302);
+
+    const stop = await app.request("/p/the-politics-of-visibility/r/run_tl/stop", { method: "POST", ...form({}) });
+    expect(stopRun).toHaveBeenCalledWith(SESSION, "run_tl");
+    expect(stop.status).toBe(302);
+  });
+
+  it("a stale-state ApiError (409/404/400) on a steering post still redirects — the Timeline re-reads", async () => {
+    const pauseRun = vi.fn(async () => {
+      throw new ApiError(409, "http://api/runs/run_tl/pause", undefined, "not_running");
+    });
+    const app = createWebApp(p105Deps({ pauseRun }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", { method: "POST", ...form({}) });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility");
+  });
+
+  it("an empty note post is a no-op (never a write)", async () => {
+    const postRunNote = vi.fn(async () => ({ ok: true as const, guidanceId: "g" }));
+    const app = createWebApp(p105Deps({ postRunNote }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/note", {
+      method: "POST",
+      ...form({ text: "   " }),
+    });
+    expect(res.status).toBe(302);
+    expect(postRunNote).not.toHaveBeenCalled();
+  });
+
+  it("the events proxy pipes the upstream SSE body through same-origin (session forwarded)", async () => {
+    const sse = "id: 1\nevent: run.state_changed\ndata: {\"seq\":1,\"type\":\"run.state_changed\"}\n\n";
+    const streamRunEvents = vi.fn(async () => new Response(sse, { status: 200 }));
+    const app = createWebApp(p105Deps({ streamRunEvents: streamRunEvents as never }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_live/events?after=0");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(await res.text()).toBe(sse);
+    expect(streamRunEvents).toHaveBeenCalledWith(SESSION, "run_live", { after: "0" });
+    // upstream down → 502, never an empty page
+    const down = createWebApp(
+      p105Deps({ streamRunEvents: async () => { throw new ApiError(502, "down"); } }),
+    );
+    expect((await down.request("/p/the-politics-of-visibility/r/run_live/events")).status).toBe(502);
+  });
+});

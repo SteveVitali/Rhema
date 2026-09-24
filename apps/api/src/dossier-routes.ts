@@ -261,7 +261,9 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
 
       const run = (
         await tx.query(
-          `select id, workflow, state, cap_credits, current_attempt from runs where id = $1`,
+          `select id, workflow, state, cap_credits, current_attempt, estimate_credits,
+                  spent_credits, paused_at, walkthrough
+             from runs where id = $1`,
           [runId],
         )
       ).rows[0] as
@@ -271,6 +273,10 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
             state: string;
             cap_credits: number;
             current_attempt: number;
+            estimate_credits: number;
+            spent_credits: number;
+            paused_at: string | Date | null;
+            walkthrough: { status?: string; text?: string } | null;
           }
         | undefined;
       if (!run) return null;
@@ -293,6 +299,15 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         phaseKeys,
         offPhases,
         capCredits: run.cap_credits,
+        // P1.05 — the dossier card carries the same SQL-side facts the Timeline's card does: the
+        // estimate (actual-vs-estimate line), the walkthrough state, and the steering park flag.
+        estimateCredits: run.estimate_credits,
+        paused: run.paused_at != null,
+        ...(run.walkthrough?.status === "ready" && typeof run.walkthrough.text === "string"
+          ? { walkthrough: { status: "ready" as const, text: run.walkthrough.text } }
+          : run.walkthrough?.status === "failed"
+            ? { walkthrough: { status: "failed" as const } }
+            : { walkthrough: { status: "pending" as const } }),
       });
 
       // ---- letter: the delivered artifact's markdown → sections; finding refs join via letter_section ----

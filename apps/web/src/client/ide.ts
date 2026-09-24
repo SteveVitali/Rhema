@@ -9,6 +9,8 @@
 import {
   DEFAULT_PANE_STATE,
   cyclePaperTheme,
+  feedRowVisible,
+  formatFeedRow,
   paneDrag,
   paneStorageKey,
   parseAppTheme,
@@ -17,6 +19,8 @@ import {
   resolveAppTheme,
   serializePaneState,
   THEME_STORAGE_KEY,
+  type FeedDensityTab,
+  type FeedLabelMaps,
   type PaneState,
   type PaperTheme,
 } from "@rhema/ide";
@@ -110,6 +114,15 @@ function main(): void {
     el.addEventListener("click", () => {
       const tab = el.dataset["ideDeskTab"] as PaneState["deskTab"];
       setState({ deskTab: tab, deskOpen: true });
+    }),
+  );
+
+  // P1.05 — a run card's "Live feed" action opens the Desk on the feed tab (the same affordance the
+  // desk's own tab buttons use).
+  ide.querySelectorAll<HTMLElement>("[data-ide-open-feed]").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      setState({ deskTab: "feed", deskOpen: true });
     }),
   );
 
@@ -334,10 +347,98 @@ function main(): void {
       const next = cyclePaperTheme(cur);
       applyPaper(next);
       post(ide.dataset["paperUrl"], { paperTheme: next });
+    } else if (mod && e.shiftKey && e.key.toLowerCase() === "r") {
+      // ⌘⇧R — run the next step (§5.5): navigate to the run sheet the next-step card points at.
+      const href = ide.dataset["runNext"];
+      if (href) {
+        e.preventDefault();
+        window.location.assign(href);
+      }
     } else if (e.key === "Escape") {
       closeMenus();
     }
   });
+
+  // ---- P1.05 — the Desk's Live feed (§5.5; REQ-IDE-14): density tabs + the same-origin SSE tail ----
+  // SSR rendered the replayed rows at the default density; the island re-shows/hides rows on the tabs
+  // and appends live events through the SAME label maps (data-feed-labels — copy stays server-owned).
+  const feedPanel = ide.querySelector<HTMLElement>("[data-feed-run]");
+  if (feedPanel) {
+    const feedSection = feedPanel.querySelector<HTMLElement>("[data-live-feed]");
+    const rowsUl = feedPanel.querySelector<HTMLElement>("[data-feed-rows]");
+    let feedDensity: FeedDensityTab =
+      (feedSection?.dataset["density"] as FeedDensityTab | undefined) ?? "details";
+    let feedMaps: FeedLabelMaps = { t: {}, enums: {} };
+    try {
+      feedMaps = JSON.parse(feedPanel.dataset["feedLabels"] ?? "{}") as FeedLabelMaps;
+    } catch {
+      /* a malformed map drops live rows — SSR rows still stand */
+    }
+    let lastSeq = Number.parseInt(feedPanel.dataset["feedLastSeq"] ?? "0", 10) || 0;
+
+    const setFeedDensity = (d: FeedDensityTab): void => {
+      feedDensity = d;
+      if (feedSection) feedSection.dataset["density"] = d;
+      feedPanel.querySelectorAll<HTMLElement>("[data-feed-density]").forEach((b) =>
+        b.setAttribute("aria-pressed", String(b.dataset["feedDensity"] === d)),
+      );
+      // contract densities summary|normal|verbose map onto the tabs; hidden rows re-show on widen.
+      feedPanel.querySelectorAll<HTMLElement>("[data-feed-density-row]").forEach((row) => {
+        row.hidden = !feedRowVisible(row.dataset["feedDensityRow"] ?? "summary", d);
+      });
+    };
+    feedPanel.querySelectorAll<HTMLElement>("[data-feed-density]").forEach((el) =>
+      el.addEventListener("click", () => setFeedDensity((el.dataset["feedDensity"] as FeedDensityTab) ?? "details")),
+    );
+    // re-filter once at boot so the SSR rows obey the stored/selected density.
+    setFeedDensity(feedDensity);
+
+    const appendRow = (ev: { seq?: number; type?: string; payload?: unknown; density?: string }): void => {
+      if (!rowsUl || typeof ev.type !== "string") return;
+      if (typeof ev.seq === "number") lastSeq = Math.max(lastSeq, ev.seq);
+      const density = typeof ev.density === "string" ? ev.density : "summary";
+      if (!feedRowVisible(density, feedDensity)) return;
+      const text = formatFeedRow(ev.type, ev.payload, feedMaps);
+      if (!text) return; // fail-closed: no template ⇒ no row
+      const li = document.createElement("li");
+      li.dataset["feedEvent"] = ev.type;
+      li.dataset["feedDensityRow"] = density;
+      li.style.display = "flex";
+      li.style.gap = "10px";
+      li.style.padding = "4px 0";
+      li.style.fontSize = "13px";
+      const label = document.createElement("span");
+      label.textContent = text.label;
+      li.appendChild(label);
+      if (text.detail) {
+        const d = document.createElement("span");
+        d.textContent = text.detail;
+        li.appendChild(d);
+      }
+      rowsUl.appendChild(li);
+      while (rowsUl.childElementCount > 400) rowsUl.firstElementChild?.remove(); // bound the DOM
+    };
+
+    // The SSE tail — the same-origin web route proxies the api's stream (the browser never holds a
+    // credential; REQ-ARCH-33). `?after` resumes past the SSR replay; reconnects carry Last-Event-ID.
+    const eventsUrl = feedPanel.dataset["feedEvents"];
+    if (eventsUrl && typeof EventSource !== "undefined") {
+      const src = new EventSource(`${eventsUrl}${eventsUrl.includes("?") ? "&" : "?"}after=${lastSeq}`);
+      // The stream's events are NAMED (event: <type>) — EventSource dispatches each to a per-type
+      // listener; the label maps' keys are exactly the types worth listening for (fail-closed).
+      const onEvent = (m: Event): void => {
+        try {
+          appendRow(JSON.parse((m as MessageEvent).data as string));
+        } catch {
+          /* a malformed frame is dropped */
+        }
+      };
+      for (const type of Object.keys(feedMaps.t)) src.addEventListener(type, onEvent);
+      src.onerror = () => {
+        /* EventSource auto-reconnects; Last-Event-ID resumes exactly-once (§12.5) */
+      };
+    }
+  }
 
   // The app theme menu's "auto" also needs a live OS-change listener — the boot script installs it when
   // the boot pref is auto; when the user switches to auto mid-session we subscribe here.

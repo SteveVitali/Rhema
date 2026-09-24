@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, RunReportPage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -34,6 +34,8 @@ export const voiceDetailElement = <VoiceDetailPage />;
 // PRB.12 — the Settings privacy toggle + the §14.5 usage glance.
 export const settingsElement = <SettingsPage />;
 export const usageElement = <UsagePage />;
+// P1.05 — the run report (§14.5 levels 3–4; the Timeline card's "Run report" link lands here).
+export const runReportElement = <RunReportPage />;
 export const notFoundElement = <NotFoundPage />;
 
 export const routes: readonly AppRoute[] = [
@@ -47,6 +49,8 @@ export const routes: readonly AppRoute[] = [
   { path: "/p/:project/import", public: false, element: importElement },
   { path: "/p/:project/run", public: false, element: runSheetElement },
   { path: "/p/:project/review/:runId", public: false, element: dossierElement },
+  // P1.05 — the canonical run surface (§4.2): the §14.5 report at #report.
+  { path: "/p/:project/r/:runId", public: false, element: runReportElement },
   { path: "/p/:project/revisions/:cid", public: false, element: revisionElement },
   { path: "/p/:project/edit/:draftId", public: false, element: editorElement },
   // P1.02 — the Page routes: /v/working (the editable head), /v/:n (a versioned draft), and

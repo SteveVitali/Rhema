@@ -51,6 +51,8 @@ import type {
   ProjectSearchHitDto,
   ProjectGroupByDto,
   ProtocolCardDto,
+  TimelineDto,
+  RunReportDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -354,6 +356,58 @@ export interface DataSource {
   setProjectGrouping(session: SessionHeaders, groupBy: ProjectGroupByDto): Promise<void>;
   /** The four §5.3 protocol cards (+ venue tables + the estimator's cost band). */
   listProtocolCards(session: SessionHeaders): Promise<ProtocolCardDto[]>;
+  // ---- P1.05 — the Timeline round log, the run report, and §6.5 steering ----
+  /** `GET /projects/:id/timeline` — the round log (project resolved from its slug). */
+  getTimeline(session: SessionHeaders, projectSlug: string): Promise<TimelineDto>;
+  /** `GET /runs/:id/report` — Level 3; `advanced` adds the Level-4 drill-down. */
+  getRunReport(session: SessionHeaders, runId: string, opts?: { advanced?: boolean }): Promise<RunReportDto>;
+  /** `POST /runs/:id/pause` — "Pause after this phase" (honored at the next committed boundary). */
+  pauseRun(session: SessionHeaders, runId: string): Promise<{ ok: true; state: string }>;
+  /** `POST /runs/:id/resume` — resume a steering-parked run; `note` is Resume-with-note. */
+  resumeRun(session: SessionHeaders, runId: string, note?: string): Promise<{ ok: true; state: string }>;
+  /** `POST /runs/:id/notes` — a note for the next phase → Guidance{queued_message}. */
+  postRunNote(session: SessionHeaders, runId: string, text: string): Promise<{ ok: true; guidanceId: string }>;
+  /** `POST /runs/:id/stop` — Stop, keep partials. */
+  stopRun(session: SessionHeaders, runId: string): Promise<{ ok: true; state: string }>;
+  /** `POST /runs/:id/walkthrough/retry` — re-enqueue the one package-class walkthrough call. */
+  retryWalkthrough(session: SessionHeaders, runId: string): Promise<{ status: string }>;
+  /**
+   * The run's user-visible events — the `GET /runs/:id/events?poll=1` finite replay parsed to rows
+   * (the SSR feed's initial rows; the island tails the live stream afterwards).
+   */
+  getRunEvents(session: SessionHeaders, runId: string): Promise<FeedEventRow[]>;
+  /** The live SSE response for a run (the web route pipes it through — the session forwards). */
+  streamRunEvents(
+    session: SessionHeaders,
+    runId: string,
+    opts?: { after?: string; lastEventId?: string },
+  ): Promise<Response>;
+}
+
+/** A user-visible run event as the feed consumes it (the SSE `data:` payload). */
+export interface FeedEventRow {
+  readonly seq: number;
+  readonly type: string;
+  readonly payload: unknown;
+  readonly density: string;
+  readonly agentLabel?: string;
+  readonly at: string;
+}
+
+/** Parse a `?poll=1` SSE replay body into event rows (id:/event:/data: triplets, one record per block). */
+export function parseSseReplay(text: string): FeedEventRow[] {
+  const out: FeedEventRow[] = [];
+  for (const block of text.split("\n\n")) {
+    const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
+    if (!dataLine) continue;
+    try {
+      const ev = JSON.parse(dataLine.slice(5).trim()) as FeedEventRow;
+      if (typeof ev.seq === "number" && typeof ev.type === "string") out.push(ev);
+    } catch {
+      /* a malformed record is skipped, never fatal */
+    }
+  }
+  return out;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -568,5 +622,36 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     },
     listProtocolCards: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProtocolCards(),
+    // ---- P1.05 — the Timeline round log, the run report, §6.5 steering ----
+    getTimeline: async (session, projectSlug) => {
+      const projectId = await projectIdFor(session, projectSlug);
+      return client(session).getTimeline(projectId);
+    },
+    getRunReport: (session, runId, opts) => client(session).getRunReport(runId, opts),
+    pauseRun: (session, runId) => client(session).pauseRun(runId),
+    resumeRun: (session, runId, note) =>
+      client(session).resumeRun(runId, note != null ? { note } : undefined),
+    postRunNote: (session, runId, text) => client(session).postRunNote(runId, text),
+    stopRun: (session, runId) => client(session).stopRun(runId),
+    retryWalkthrough: (session, runId) => client(session).retryWalkthrough(runId),
+    getRunEvents: async (session, runId) => {
+      const res = await f(
+        `${baseUrl}/runs/${encodeURIComponent(runId)}/events?poll=1`,
+        { headers: session },
+      );
+      if (!res.ok) throw new ApiError(res.status, `run ${runId} events`);
+      return parseSseReplay(await res.text());
+    },
+    streamRunEvents: (session, runId, opts) =>
+      f(
+        `${baseUrl}/runs/${encodeURIComponent(runId)}/events${opts?.after ? `?after=${encodeURIComponent(opts.after)}` : ""}`,
+        {
+          headers: {
+            ...session,
+            accept: "text/event-stream",
+            ...(opts?.lastEventId ? { "last-event-id": opts.lastEventId } : {}),
+          },
+        },
+      ),
   };
 }
