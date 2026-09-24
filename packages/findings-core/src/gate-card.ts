@@ -239,6 +239,55 @@ export interface GateCutListView {
   readonly cuts: readonly GateCutItemView[];
 }
 
+// ---- P1.12 — the Approve-outline structured body (§7.3): the same spine-and-sections rows the
+// unlocked outline editor autosaves, with provenance + `[unverified]` as DATA (never styled-away). ----
+
+/** A claim row on the Approve-outline card / outline editor: provenance is a badge, `unverified` a flag. */
+export interface GateOutlineClaimView {
+  readonly id: string;
+  readonly text: string;
+  readonly provenanceKind: "thread" | "source" | "user_typed" | "generated";
+  /** the provenance detail the badge tooltips/labels from (turn, url, or note path). */
+  readonly provenance?: { readonly turnId?: string; readonly url?: string; readonly notePath?: string };
+  /** true ⇒ the row renders its `[unverified]` badge — data, not styling (REQ-DATA-23). */
+  readonly unverified: boolean;
+}
+
+/** An outline section row: order / target words / function / entry / exit — each an editable field. */
+export interface GateOutlineSectionView {
+  readonly ref: string;
+  readonly title: string;
+  readonly targetWords?: number;
+  readonly function?: string;
+  readonly entry?: string;
+  readonly exit?: string;
+  readonly claims: readonly GateOutlineClaimView[];
+}
+
+/** An open gap the card's Answer affordance turns into a `user_typed` claim. */
+export interface GateOutlineGapView {
+  readonly id: string;
+  readonly needed: string;
+  readonly relatedClaimId?: string;
+  readonly sectionRef?: string;
+}
+
+/** The Approve-outline structured body — the outline sidecar rows as an editable view. */
+export interface GateOutlineView {
+  readonly thesis?: string;
+  readonly venue?: string;
+  readonly targetLength?: number;
+  readonly protocol?: string;
+  readonly voice?: string;
+  /** claim ids in reading order (the sidecar's spine, recomputed on edits). */
+  readonly spine: readonly string[];
+  readonly sections: readonly GateOutlineSectionView[];
+  readonly alternativesConsidered?: readonly string[];
+  readonly gaps: readonly GateOutlineGapView[];
+  /** the provenance header's url ledger (fetched + failed, each flagged). */
+  readonly urls?: readonly { readonly url: string; readonly unverified: boolean }[];
+}
+
 /**
  * The per-kind structured body on the card DTO (§6.4 item 4 — "the kind's structured parts"). Each
  * kind fills at most one slot plus optional generic `facts` lines (the sample census, the round
@@ -248,6 +297,8 @@ export interface GateStructuredView {
   readonly plan?: GatePlanView;
   readonly scope?: GateScopeView;
   readonly cutList?: GateCutListView;
+  /** P1.12 — the Approve-outline spine-and-sections body (the editor's shared row shape). */
+  readonly outline?: GateOutlineView;
   /**
    * Kind-generic read-only FACTS keyed by name (confirm_cost's estimate/cap, continue_rounds'
    * spend-vs-budget, the refusal's reason, the sample census…) — values only; the app composes the

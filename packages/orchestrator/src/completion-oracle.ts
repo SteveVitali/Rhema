@@ -113,6 +113,8 @@ export interface PredicateFacts {
   readonly draftSectionCount?: number;
   readonly planSectionCount?: number;
   readonly spineCount?: number;
+  /** P1.12 — the outline sidecar's spine (claim-id) count for `outline_spine_bound`. */
+  readonly outlineSpineCount?: number;
   readonly thesisPresent?: boolean;
   readonly inventoryPresent?: boolean;
   /** sidecar filename → validates against its P0.02 zod schema. */
@@ -173,6 +175,12 @@ export function createFactsEvaluator(facts: PredicateFacts): PredicateEvaluator 
         );
       case "spine_min":
         return pass(p, facts.spineCount != null && facts.spineCount >= p.min, `${facts.spineCount} ≥ ${p.min}`);
+      case "outline_spine_bound":
+        return pass(
+          p,
+          facts.outlineSpineCount != null && facts.outlineSpineCount >= p.min && facts.outlineSpineCount <= p.max,
+          `${facts.outlineSpineCount} in [${p.min}, ${p.max}]`,
+        );
       case "thesis_and_inventory_present":
         return pass(p, facts.thesisPresent === true && facts.inventoryPresent === true);
       case "sidecar_validates":

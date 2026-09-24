@@ -27,6 +27,8 @@ const PRIMARY: Record<string, string> = {
   // skills/upstream-port.manifest.mjs, exempt from pin-diffing).
   "research-burst": "research_burst",
   "chat-turn": "chat_turn",
+  // P1.12 — the outline workflow's Rhema-authored skill.
+  "outline-from-research": "outline",
 };
 
 const manifests = Object.values(WORKFLOW_MANIFESTS) as WorkflowManifest[];

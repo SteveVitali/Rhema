@@ -5,7 +5,8 @@
 // (REQ-SPEC-9), guidance is captured, the run leaves `waiting_gate` for `queued`, and `run.resume` is enqueued
 // as a fresh attempt. A `confirm_cost` consent resolves from `awaiting_consent`, placing the hold + `run.start`.
 
-import type { DecisionAction, GateResolutionBy } from "@rhema/contracts";
+import type { DecisionAction, GateResolutionBy, WorkflowKey } from "@rhema/contracts";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { ContentStore } from "@rhema/mirror";
 export type { ContentStore } from "@rhema/mirror"; // re-exported so adapters can type `deps.store` without a direct mirror dep
 import type { OrchestratorDeps } from "./internal-api.js";
@@ -58,6 +59,40 @@ export async function writeDecision(tx: SqlClient, now: Date, d: DecisionRecord)
       now,
     ],
   );
+}
+
+/**
+ * P1.12 — has the run committed every ACTIVE manifest phase? A `gateAfter` on the run's LAST phase
+ * (the Outline manifest's `gaps`) resolves into nothing to resume: the pod would fetch a run spec
+ * with no uncommitted phase and die. Such a gate resolves `waiting_gate → finalizing` and the
+ * `run.finalize` worker job completes the run server-side (delivery consequences + `completed`),
+ * never `run.resume`. Opt-outs follow the runspec's rule exactly (frozen `inputs[optOutFlag] ===
+ * false`, or `inputs.tier === phase.optional`), so the count here is the same `committedPhases`
+ * position the spec builder uses.
+ */
+async function allActivePhasesCommitted(
+  tx: SqlClient,
+  runId: string,
+  workflow: string,
+  inputs: Record<string, unknown> | null,
+): Promise<boolean> {
+  const manifest = WORKFLOW_MANIFESTS[workflow as WorkflowKey];
+  if (!manifest) return false;
+  const ordinals = manifest.phases
+    .filter(
+      (p) =>
+        !(p.optOutFlag != null && inputs?.[p.optOutFlag] === false) &&
+        !(p.optional != null && inputs?.["tier"] === p.optional),
+    )
+    .map((p) => p.index);
+  const n = (
+    await tx.query(
+      `select count(distinct ordinal)::int as n from steps
+        where run_id = $1 and state in ('done','skipped') and ordinal = any($2::int[])`,
+      [runId, ordinals],
+    )
+  ).rows[0] as { n: number };
+  return n.n >= ordinals.length;
 }
 
 export async function emitGateResolved(
@@ -122,6 +157,7 @@ interface GateRunRow {
   entitlement_id: string | null;
   hold_ledger_id: string | null;
   billing_account_id: string;
+  inputs: Record<string, unknown> | null;
 }
 
 /** Thrown to roll a failed consent back inside the tx while still returning a typed result (like run-creation). */
@@ -149,7 +185,7 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
         await tx.query(
           `select g.kind, g.resolved_at, g.artifact_version_id, g.step_id,
                   r.state, r.workflow, r.project_id, r.current_attempt, r.current_step_id, r.cap_credits,
-                  r.entitlement_id, r.hold_ledger_id, w.billing_account_id
+                  r.entitlement_id, r.hold_ledger_id, r.inputs, w.billing_account_id
              from gates g join runs r on r.id = g.run_id join workspaces w on w.id = r.workspace_id
             where g.id = $1 and g.run_id = $2 for update`,
           [args.gateId, args.runId],
@@ -289,15 +325,23 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
           [gr.step_id],
         );
       }
+      // P1.12 — a gate that follows the run's LAST active phase (Outline's approve_outline) has no
+      // next phase to resume into: resolve `waiting_gate → finalizing` and let the `run.finalize`
+      // worker job complete the run (outline approval consequences + `completed`), never a pod
+      // resume that would find no uncommitted phase.
+      const allCommitted = await allActivePhasesCommitted(tx, args.runId, gr.workflow, gr.inputs);
+      const to: RunState = allCommitted ? "finalizing" : "queued";
       await applyTransition(tx, deps, {
         runId: args.runId,
         from: "waiting_gate",
-        to: "queued",
+        to,
         reason: args.action,
         fields: { currentAttempt: nextAttempt },
       });
-      box.job = { name: RUN_JOBS.resume, payload: { runId: args.runId, workspaceId: args.workspaceId, attempt: nextAttempt, fromStep } };
-      return { ok: true, resolved: true, state: "queued", overlayVersionIds, guidanceId };
+      box.job = allCommitted
+        ? { name: RUN_JOBS.finalize, payload: { runId: args.runId, workspaceId: args.workspaceId } }
+        : { name: RUN_JOBS.resume, payload: { runId: args.runId, workspaceId: args.workspaceId, attempt: nextAttempt, fromStep } };
+      return { ok: true, resolved: true, state: to, overlayVersionIds, guidanceId };
     })
     .catch((e: unknown) => {
       if (e instanceof ConsentRollback) return e.result;
@@ -328,15 +372,17 @@ async function autoResolveGate(
   args: { runId: string; gateId: string; workspaceId: string; by: "policy" | "trial"; action: DecisionAction; reason: string },
 ): Promise<AutoResolveResult> {
   const now = deps.clock.now();
-  const box: { job: Record<string, unknown> | null } = { job: null };
+  const box: { job: Record<string, unknown> | null; name?: string } = { job: null };
 
   const result = await deps.txRunner.run(args.workspaceId, async (tx): Promise<AutoResolveResult> => {
     const gr = (
-      await tx.query("select g.resolved_at, r.state, r.current_attempt from gates g join runs r on r.id = g.run_id where g.id = $1 and g.run_id = $2 for update", [
-        args.gateId,
-        args.runId,
-      ])
-    ).rows[0] as { resolved_at: Date | null; state: RunState; current_attempt: number } | undefined;
+      await tx.query(
+        "select g.resolved_at, r.state, r.current_attempt, r.workflow, r.inputs from gates g join runs r on r.id = g.run_id where g.id = $1 and g.run_id = $2 for update",
+        [args.gateId, args.runId],
+      )
+    ).rows[0] as
+      | { resolved_at: Date | null; state: RunState; current_attempt: number; workflow: string; inputs: Record<string, unknown> | null }
+      | undefined;
     if (!gr) return { ok: true, resolved: false, reason: "not_found" };
     if (gr.resolved_at != null) return { ok: true, resolved: false, reason: "already_resolved" };
     if (!(await conditionalResolve(tx, args.gateId, now))) return { ok: true, resolved: false, reason: "already_resolved" };
@@ -346,15 +392,25 @@ async function autoResolveGate(
 
     if (gr.state === "waiting_gate") {
       const nextAttempt = gr.current_attempt + 1;
-      await applyTransition(tx, deps, { runId: args.runId, from: "waiting_gate", to: "queued", reason: args.reason, fields: { currentAttempt: nextAttempt } });
-      box.job = { runId: args.runId, workspaceId: args.workspaceId, attempt: nextAttempt, fromStep: "next" };
-      return { ok: true, resolved: true, state: "queued" };
+      // P1.12 — same last-phase rule as the user-resolution path: a policy-skip on the final
+      // phase's gate finalizes the run rather than resuming into no uncommitted phase.
+      const allCommitted = await allActivePhasesCommitted(tx, args.runId, gr.workflow, gr.inputs);
+      const to: RunState = allCommitted ? "finalizing" : "queued";
+      await applyTransition(tx, deps, { runId: args.runId, from: "waiting_gate", to, reason: args.reason, fields: { currentAttempt: nextAttempt } });
+      if (allCommitted) {
+        box.name = RUN_JOBS.finalize;
+        box.job = { runId: args.runId, workspaceId: args.workspaceId };
+      } else {
+        box.name = RUN_JOBS.resume;
+        box.job = { runId: args.runId, workspaceId: args.workspaceId, attempt: nextAttempt, fromStep: "next" };
+      }
+      return { ok: true, resolved: true, state: to };
     }
     return { ok: true, resolved: true, state: gr.state };
   });
 
-  if (result.ok && result.resolved && box.job) {
-    await deps.queue.send(RUN_JOBS.resume, box.job, { singletonKey: args.runId });
+  if (result.ok && result.resolved && box.job && box.name) {
+    await deps.queue.send(box.name, box.job, { singletonKey: args.runId });
   }
   return result;
 }

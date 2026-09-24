@@ -33,6 +33,16 @@ export interface EstimatorTerms {
    */
   perFetchedToken?: number;
   /**
+   * P1.12 — per-THREAD-TOKEN credits (the Outline row's `0.004·thread_tokens` term): the promoted
+   * thread the harvest phase reads + classifies.
+   */
+  perThreadToken?: number;
+  /**
+   * P1.12 — per-URL-REFETCHED credits (the Outline row's `6·urls_refetched` term): the re-fetch of
+   * exactly the thread's URL set through the metered path.
+   */
+  perUrlRefetched?: number;
+  /**
    * PRB.23 — per-ACTIVE-PHASE fixed overhead (`inputs.phases`): the context-churn floor the
    * proxy meters but the parametric form never modeled — every Messages request re-reads the
    * fixed request envelope (tool schemas + skill corpus + roster ≈ 30K tokens; ~16K after the
@@ -296,6 +306,18 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     source: "modeled",
     version: "modeled-1",
   },
+  // ---- P1.12 — the Outline promotion run (§7.3; §12.2 Outline row) ----
+  outline: {
+    workflow: "outline",
+    // §12.2 Outline row, verbatim: `20 + 0.004·thread_tokens + 6·urls_refetched` (Base/Standard).
+    // The re-fetch leg is the same metered-egress shape research_burst prices (PRB.25 coverage), so
+    // the workflow carries the research coverage multiplier pending its instrumented run.
+    base: { intercept: 20, perThreadToken: 0.004, perUrlRefetched: 6, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
+    meteredCoverage: RESEARCH_WORKFLOW_METERED_COVERAGE,
+    provisional: true,
+    source: "modeled",
+    version: "modeled-1",
+  },
 };
 
 /** The parametric inputs an estimate reads (§12.2). All optional — a term absent from a spec ignores its input. */
@@ -311,6 +333,10 @@ export interface EstimatorInputs {
   sources?: number;
   /** P1.11 — tokens the metered fetches page into context (the `0.002·fetched_tokens` term). */
   fetchedTokens?: number;
+  /** P1.12 — tokens in the promoted thread (the `0.004·thread_tokens` term). */
+  threadTokens?: number;
+  /** P1.12 — URLs the outline run re-fetches (the `6·urls_refetched` term; exactly the thread's set). */
+  urlsRefetched?: number;
   /** PRB.23 — the count of ACTIVE manifest phases under the resolved toggle set (computed by the
    *  sheet from the manifest's opt-out flags — the same phases the pod executes). Feeds the
    *  `perPhase` fixed-overhead term; absent ⇒ that term contributes 0. */
@@ -344,6 +370,8 @@ function evalTerms(t: EstimatorTerms, inp: EstimatorInputs): number {
     (t.perHoldout ?? 0) * (inp.holdouts ?? 0) +
     (t.perSource ?? 0) * (inp.sources ?? 0) +
     (t.perFetchedToken ?? 0) * (inp.fetchedTokens ?? 0) +
+    (t.perThreadToken ?? 0) * (inp.threadTokens ?? 0) +
+    (t.perUrlRefetched ?? 0) * (inp.urlsRefetched ?? 0) +
     (t.perPhase ?? 0) * (inp.phases ?? 0)
   );
 }

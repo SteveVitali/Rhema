@@ -257,15 +257,44 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       //   · `inputs.nextDraftId`/`nextDraftN` — the reserved row + ordinal the delivery tx creates;
       //   · `inputs.preview` — the trial first-section preview ({sections:1}; its Approve plan is
       //     pre-resolved `by:'trial'` in commitStep, §6.4 item 3 / REQ-CHAT-30).
-      if (typeof body.draftId !== "string" || body.draftId === "") {
+      // P1.12 — the outline a Draft reads is EITHER a drafts row (the uploaded-outline shape,
+      // `body.draftId`) or a P1.12 outline artifact (`body.outlineArtifactId` — the promoted
+      // `agents/author/outline/<slug>.md`). One is required; both are server-resolved.
+      const hasDraftRow = typeof body.draftId === "string" && body.draftId !== "";
+      const hasOutlineArtifact = typeof body.outlineArtifactId === "string" && body.outlineArtifactId !== "";
+      if (!hasDraftRow && !hasOutlineArtifact) {
         return c.json({ error: "draft_outline_required" }, 400);
       }
-      const outline = (
-        await deps.txRunner.run(principal.workspaceId, (tx) =>
-          tx.query(`select id from drafts where id = $1 and project_id = $2`, [body.draftId, projectId]),
-        )
-      ).rows[0] as { id: string } | undefined;
-      if (!outline) return c.json({ error: "draft_outline_required" }, 400);
+      if (hasDraftRow) {
+        const outline = (
+          await deps.txRunner.run(principal.workspaceId, (tx) =>
+            tx.query(`select id from drafts where id = $1 and project_id = $2`, [body.draftId, projectId]),
+          )
+        ).rows[0] as { id: string } | undefined;
+        if (!outline) return c.json({ error: "draft_outline_required" }, 400);
+        inputs = { ...inputs, draftId: outline.id };
+      }
+      if (hasOutlineArtifact) {
+        // The artifact + its head version freeze as the draft's outline — `inputs.outline` names the
+        // mounted path the skill's `outline` arg reads; `outlineArtifactId`/`outlineVersionId` are the
+        // citation facts (a draft run citing the outline makes it undeletable, §7.3).
+        const outline = (
+          await deps.txRunner.run(principal.workspaceId, (tx) =>
+            tx.query(
+              `select id, mirror_path, head_version_id from artifacts
+                where id = $1 and project_id = $2 and kind = 'outline'`,
+              [body.outlineArtifactId, projectId],
+            ),
+          )
+        ).rows[0] as { id: string; mirror_path: string; head_version_id: string | null } | undefined;
+        if (!outline) return c.json({ error: "draft_outline_required" }, 400);
+        inputs = {
+          ...inputs,
+          outline: outline.mirror_path,
+          outlineArtifactId: outline.id,
+          ...(outline.head_version_id ? { outlineVersionId: outline.head_version_id } : {}),
+        };
+      }
       const nextN = (
         await deps.txRunner.run(principal.workspaceId, (tx) =>
           tx.query(`select coalesce(max(n),0)+1 as n from drafts where project_id = $1`, [projectId]),
@@ -273,7 +302,6 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       ).rows[0] as { n: number };
       inputs = {
         ...inputs,
-        draftId: outline.id,
         nextDraftId: deps.ids("dft"),
         nextDraftN: nextN.n,
       };
@@ -730,6 +758,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     return guard(c, async () => {
       const body = (await c.req.json().catch(() => ({}))) as { byPhase?: Record<string, number> };
       const money = await resolveRunMoney(deps, run.workspaceId, run.runId);
+      // P1.12 — bind the workspace store like harvest/deliver do: an `outline` run's finalize applies
+      // the Approve-outline consequences, which read the assistant notes' version bytes.
+      const store = deps.contentStoreFor ? await deps.contentStoreFor(run.workspaceId) : deps.store;
       const res = await finalizeRun(deps, {
         runId: run.runId,
         workspaceId: run.workspaceId,
@@ -738,6 +769,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         capCredits: money.capCredits,
         ...(money.holdLedgerId ? { holdLedgerId: money.holdLedgerId } : {}),
         ...(body.byPhase ? { byPhase: body.byPhase } : {}),
+        ...(store ? { store } : {}),
       });
       return c.json(res);
     });
@@ -792,6 +824,9 @@ interface CreateRunBody {
   imageDigest?: string;
   protocolsVersion?: string;
   draftId?: string;
+  /** P1.12 — the promoted outline artifact a Draft run reads (`agents/author/outline/<slug>.md`);
+   *  an alternative to `draftId` (the uploaded-outline drafts-row shape). */
+  outlineArtifactId?: string;
   nextDraftId?: string;
   corrKind?: string;
   corrK?: number;

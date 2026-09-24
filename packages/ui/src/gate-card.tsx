@@ -12,6 +12,7 @@ import {
   type GateScopeView,
   type GateStructuredView,
 } from "@rhema/findings-core";
+import { OutlineSections, type OutlineSectionsLabels } from "./outline-sections.js";
 
 // The §6.4 gate card — ONE generic component for every beta gate kind (REQ-BETA-1). Cards, never modals:
 // each card is a plain <form> whose action buttons POST the decision; the model comes from
@@ -88,6 +89,8 @@ export interface GateCardLabels {
     readonly protectLabel: string;
     readonly wordsLabel: (words: number) => string;
   };
+  /** P1.12 — the Approve-outline spine-and-sections labels (the shared editor component's copy). */
+  readonly outline?: OutlineSectionsLabels;
   /** the permanent decision lines under the card (§6.4 item 8 — one per recorded decision). */
   readonly decisionsHeading?: string;
   readonly decisionLabel?: (decision: GateDecisionView) => string;
@@ -370,15 +373,22 @@ function GateStructuredFields({
   kind,
   structured,
   labels,
+  compact,
 }: {
   kind: GateKind;
   structured: GateStructuredView;
   labels: GateCardLabels;
+  compact?: boolean;
 }): ReactNode {
   return (
     <div data-gate-structured={kind} style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
       {kind === "approve_plan" && structured.plan && labels.plan ? (
         <PlanEditor plan={structured.plan} labels={labels.plan} />
+      ) : null}
+      {kind === "approve_outline" && structured.outline && labels.outline ? (
+        // P1.12 — the shared spine-and-sections editor (the unlocked outline editor renders the same
+        // component); phone-width renders it read-only (§10.1's reduced input set).
+        <OutlineSections outline={structured.outline} editable={compact !== true} labels={labels.outline} />
       ) : null}
       {kind === "approve_scope" && structured.scope ? (
         <ScopeFields scope={structured.scope} labels={labels} />
@@ -533,7 +543,7 @@ export function GateCard({
       <form method="post" action={formAction} data-gate-form="true" style={{ marginTop: "12px" }}>
         {/* P1.09 — the kind's structured editable parts (§6.4 item 4): `ed.*` fields post WITH the
             decision button, the server applies them to the artifact's sidecar + records the edit. */}
-        {structured ? <GateStructuredFields kind={model.kind} structured={structured} labels={labels} /> : null}
+        {structured ? <GateStructuredFields kind={model.kind} structured={structured} labels={labels} compact={compact} /> : null}
         <div
           data-gate-actions="true"
           style={{ display: "flex", flexDirection: compact ? "column" : "row", gap: "8px", flexWrap: "wrap" }}

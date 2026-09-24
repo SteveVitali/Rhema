@@ -316,6 +316,21 @@ export const RUN_EVENTS = {
     density: "normal",
     payload: z.object({ threadId: idSchema.optional(), notePath: boundedText }),
   },
+  // P1.12 (§7.3/REQ-CHAT-18) — the Approve-outline gate resolved + its consequences landed inside the
+  // finalize: the outline artifact (id + head version) and the count of source notes copied to
+  // agents/author/research/. Ids + counts only — never outline text.
+  "outline.approved": {
+    visibility: "user",
+    density: "normal",
+    payload: z.object({
+      slug: boundedText,
+      artifactId: idSchema,
+      versionId: idSchema.optional(),
+      copiedNotes: z.number().int(),
+      threadId: idSchema.optional(),
+      scope: boundedText.optional(),
+    }),
+  },
   "guidance.captured": {
     visibility: "user",
     density: "normal",

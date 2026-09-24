@@ -76,8 +76,9 @@ export function resolveProducedPath(paths: readonly string[], target: string): s
   return set.has(k) ? k : undefined;
 }
 
-/** true when a manifest target carries a placeholder (`vN`, `v(N+1)`, `(N+1)`, or P1.11's `<run>`). */
-const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)|<run>/;
+/** true when a manifest target carries a placeholder (`vN`, `v(N+1)`, `(N+1)`, P1.11's `<run>`,
+ *  or P1.12's `<slug>` — the outline artifact's per-thread filename segment). */
+const VERSION_PLACEHOLDER = /v\(N\+1\)|vN|\(N\+1\)|<run>|<slug>/;
 
 /**
  * Compile a version-template target (`drafts/v(N+1).md`) into a path-suffix regex
@@ -93,8 +94,9 @@ function versionTemplateRegex(target: string): RegExp | null {
     .split("v\\(N\\+1\\)").join("v\\d+")
     .split("vN").join("v\\d+")
     .split("\\(N\\+1\\)").join("\\d+")
-    // `<run>`: `<`/`>` are regex-safe literals; the escape pass leaves them untouched.
-    .split("<run>").join("[^/]+");
+    // `<run>`/`<slug>`: `<`/`>` are regex-safe literals; the escape pass leaves them untouched.
+    .split("<run>").join("[^/]+")
+    .split("<slug>").join("[^/]+");
   return new RegExp(`(^|/)${pattern}$`);
 }
 
@@ -247,6 +249,13 @@ function factsForPhase(
       case "spine_min": {
         const plan = readStructurePlan(files);
         facts.spineCount = plan?.spine?.length ?? 0;
+        break;
+      }
+      // P1.12 — `outline_spine_bound` reads the outline sidecar's `spine` (claim-id list) length;
+      // `p.artifact` names the sidecar (`outline.json`), resolved by the same cascade.
+      case "outline_spine_bound": {
+        const doc = readJson<{ spine?: unknown[] }>(files, p.artifact);
+        facts.outlineSpineCount = doc?.spine?.length ?? 0;
         break;
       }
       // `draft_sections_eq_plan` — the plan's `sections[]` count vs the ledger rows past `planned`

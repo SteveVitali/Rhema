@@ -33,6 +33,7 @@ import {
   handleRunStart,
   handleRunResume,
   handleRunCancel,
+  handleRunFinalize,
   handleRunReap,
   handleStrandedSweep,
   handleGateExpiryJob,
@@ -328,6 +329,11 @@ export async function startWorker(): Promise<void> {
   });
   await boss.work<RunJobPayload>(RUN_JOBS.cancel, async (jobs) => {
     for (const job of jobs) await handleRunCancel(deps, job.data);
+  });
+  // P1.12 — the last-phase-gate finalize (`approve_outline` resolves → `finalizing` → this job
+  // settles the run + applies the Approve-outline consequences; no pod resumes).
+  await boss.work<RunJobPayload>(RUN_JOBS.finalize, async (jobs) => {
+    for (const job of jobs) await handleRunFinalize(deps, job.data);
   });
 
   // P1.05 — the lazy walkthrough generator (one package-class call per job; failures land as

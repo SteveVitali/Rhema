@@ -16,11 +16,14 @@ import {
 } from "@rhema/mirror";
 import type { SqlClient } from "./tx.js";
 
-/** The three structured artifact kinds that have a write-back serializer → their canonical sidecar filename. */
+/** The structured artifact kinds that have a write-back serializer → their canonical sidecar filename. */
 const KIND_TO_SIDECAR = {
   structure_plan: "structure-plan.json",
   response_ledger: "response-ledger.json",
   cut_list: "cut-list.json",
+  // P1.12 — Approve-outline edits serialize through the `outline` sidecar (provenance + [unverified]
+  // rows ride the rows untouched — the serializer re-validates the whole document).
+  outline: "outline.json",
 } as const satisfies Record<string, SerializableSidecar>;
 
 /** True when a gate's structured artifact has a serializer (approve_plan/triage/cutlist write-backs). */

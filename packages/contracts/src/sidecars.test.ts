@@ -22,6 +22,8 @@ const FIXTURES: Array<[string, SidecarFilename]> = [
   // P1.11 — the Assistant's sidecars (chat_turn's turn-result + research_burst's research-result).
   ["the-politics-of-visibility", "turn-result.json"],
   ["the-politics-of-visibility", "research-result.json"],
+  // P1.12 — the outline's structured twin (spine ids + provenance rows + [unverified]).
+  ["the-politics-of-visibility", "outline.json"],
   ["structure-of-political-difference", "01-claim-ledger.json"],
   ["constitution-of-reason", "01-claim-ledger.json"],
   ["constitution-of-reason", "03-claim-ledger.json"],

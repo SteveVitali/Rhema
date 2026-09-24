@@ -276,3 +276,138 @@ export function parseCutListMd(md: string): unknown {
   }
   return omitUndefined({ sidecar: "cut_list", version: 1, targetWords, cuts });
 }
+
+// ---------------- outline (P1.12 — REQ-SPEC-9 write-back for Approve-outline + the editor) ----------------
+
+/**
+ * The outline artifact's human-readable twin. The §7.3 anatomy is the scaffold — provenance header,
+ * thesis/levers, spine, sections with claim bullets, alternatives, gaps, sources — with every row's
+ * data carried on labelled field lines so the provenance markers + `[unverified]` badges survive
+ * every edit as DATA (REQ-DATA-23), never prose the editor can strip.
+ */
+export function renderOutlineMd(v: {
+  version: number;
+  thesis: string;
+  venue?: string;
+  targetLength?: number;
+  protocol?: string;
+  voice?: string;
+  provenance?: unknown;
+  spine: string[];
+  sections: {
+    ref: string;
+    title: string;
+    targetWords?: number;
+    function?: string;
+    entry?: string;
+    exit?: string;
+    claims?: unknown[];
+  }[];
+  alternativesConsidered?: string[];
+  gaps?: unknown[];
+}): string {
+  const out: string[] = ["# Outline", "", `<!-- rhema:outline v1 -->`, ""];
+  out.push(fieldLine("thesis", v.thesis));
+  if (v.venue !== undefined) out.push(fieldLine("venue", v.venue));
+  if (v.targetLength !== undefined) out.push(fieldLine("targetLength", v.targetLength));
+  if (v.protocol !== undefined) out.push(fieldLine("protocol", v.protocol));
+  if (v.voice !== undefined) out.push(fieldLine("voice", v.voice));
+  if (v.provenance !== undefined) out.push(fieldLine("provenance", v.provenance));
+  out.push("", "## Spine", "");
+  v.spine.forEach((id, i) => out.push(`${i + 1}. ${JSON.stringify(id)}`));
+  out.push("", "## Sections", "");
+  for (const s of v.sections) {
+    out.push(`### Section ${s.ref}`);
+    out.push(fieldLine("ref", s.ref));
+    out.push(fieldLine("title", s.title));
+    if (s.targetWords !== undefined) out.push(fieldLine("targetWords", s.targetWords));
+    if (s.function !== undefined) out.push(fieldLine("function", s.function));
+    if (s.entry !== undefined) out.push(fieldLine("entry", s.entry));
+    if (s.exit !== undefined) out.push(fieldLine("exit", s.exit));
+    for (const c of s.claims ?? []) out.push(`- claim ${JSON.stringify(c)}`);
+    out.push("");
+  }
+  if (v.alternativesConsidered !== undefined) {
+    out.push("## Alternatives considered", "");
+    for (const a of v.alternativesConsidered) out.push(`- ${JSON.stringify(a)}`);
+    out.push("");
+  }
+  if (v.gaps !== undefined && v.gaps.length > 0) {
+    out.push("## Gaps only the author can fill", "");
+    for (const g of v.gaps) out.push(`- gap ${JSON.stringify(g)}`);
+    out.push("");
+  }
+  // §7.3 — a human-readable Sources block rendered from the provenance header (the DATA lives on the
+  // `provenance` field line above; this block is display-only, so the parser ignores it).
+  const urls = (v.provenance as { urls?: { url: string; fetchedAt?: string; unverified?: boolean }[] } | undefined)?.urls;
+  if (urls && urls.length > 0) {
+    out.push("## Sources", "");
+    for (const u of urls) {
+      out.push(
+        u.unverified === true
+          ? `- ${u.url} — FAILED re-fetch — [unverified]`
+          : `- ${u.url}${u.fetchedAt ? ` — fetched ${u.fetchedAt}` : ""}`,
+      );
+    }
+    out.push("");
+  }
+  return out.join("\n");
+}
+
+export function parseOutlineMd(md: string): unknown {
+  requireMarker(md, "outline");
+  const l2 = splitSections(md, 2);
+  const spineSec = l2.find((s) => /^Spine\b/.test(s.heading));
+  const altSec = l2.find((s) => /^Alternatives considered\b/.test(s.heading));
+  const gapsSec = l2.find((s) => /^Gaps\b/.test(s.heading));
+
+  // lever + provenance fields live in the preamble before `## Spine`.
+  const preamble = md.slice(0, md.indexOf("## Spine") >= 0 ? md.indexOf("## Spine") : md.length);
+  const f = readFields(preamble);
+
+  const sections: unknown[] = [];
+  for (const sec of splitSections(md, 3)) {
+    if (!/^Section\b/.test(sec.heading)) continue;
+    const sf = readFields(sec.body);
+    const claims: unknown[] = [];
+    for (const raw of sec.body.split("\n")) {
+      const m = /^- claim (.*)$/.exec(raw.trim());
+      if (m) claims.push(JSON.parse(m[1]!));
+    }
+    sections.push(
+      omitUndefined({
+        ref: sf.get("ref"),
+        title: sf.get("title"),
+        targetWords: sf.get("targetWords"),
+        function: sf.get("function"),
+        entry: sf.get("entry"),
+        exit: sf.get("exit"),
+        claims,
+      }),
+    );
+  }
+
+  const gaps: unknown[] = [];
+  if (gapsSec) {
+    for (const raw of gapsSec.body.split("\n")) {
+      const m = /^- gap (.*)$/.exec(raw.trim());
+      if (m) gaps.push(JSON.parse(m[1]!));
+    }
+  }
+
+  const out: Record<string, unknown> = {
+    sidecar: "outline",
+    version: 1,
+    thesis: f.get("thesis"),
+    spine: spineSec ? readItems(spineSec.body) : [],
+    sections,
+    gaps,
+  };
+  if (f.get("venue") !== undefined) out.venue = f.get("venue");
+  if (f.get("targetLength") !== undefined) out.targetLength = f.get("targetLength");
+  if (f.get("protocol") !== undefined) out.protocol = f.get("protocol");
+  if (f.get("voice") !== undefined) out.voice = f.get("voice");
+  if (f.get("provenance") !== undefined) out.provenance = f.get("provenance");
+  if (altSec) out.alternativesConsidered = readItems(altSec.body);
+  return out;
+}

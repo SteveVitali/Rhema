@@ -1454,6 +1454,112 @@ export interface ChatSuggestionDto {
   };
 }
 
+// ---- P1.12 — the Outline surface (§7.3): promotion sheet facts, the durable outline DTO, and the
+// editor's save/answer payloads. Provenance + `unverified` are DATA on every row (REQ-DATA-23). ----
+
+/** The promotion sheet's facts (GET /projects/:id/outline/promotion) — rendered verbatim; the sheet's
+ *  Promote click posts the same scope/slug to /outline/promotions. */
+export interface OutlinePromotionDto {
+  readonly slug: string;
+  readonly scope: "thread" | "turn" | "research";
+  readonly threadId?: string;
+  readonly turnId?: string;
+  readonly sources: number;
+  readonly sourceCopies: readonly { readonly src: string; readonly dst: string }[];
+  readonly urls: readonly string[];
+  readonly threadTokens: number;
+  readonly urlsRefetched: number;
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+  readonly modelTier: string;
+  readonly rigor: string;
+  /** an outline already exists at this slug (the promote lands as a new version). */
+  readonly existing: boolean;
+}
+
+/** The request body for POST /projects/:id/outline/promotions. */
+export interface OutlinePromoteRequestDto {
+  readonly threadId?: string;
+  readonly scope?: "thread" | "turn" | "research";
+  readonly turnId?: string;
+  readonly modelTier?: string;
+  readonly rigor?: string;
+  readonly slug?: string;
+  readonly thesis?: string;
+  readonly venue?: string;
+  readonly targetLength?: number;
+  readonly protocol?: string;
+  readonly voice?: string;
+  readonly idempotencyKey?: string;
+}
+
+/** One outline claim row (the shared spine-and-sections row; provenance rides the DATA). */
+export interface OutlineClaimDto {
+  readonly id: string;
+  readonly text: string;
+  readonly provenance: {
+    readonly kind: "thread" | "source" | "user_typed" | "generated";
+    readonly turnId?: string;
+    readonly url?: string;
+    readonly notePath?: string;
+  };
+  readonly unverified?: boolean;
+}
+
+/** The editor DTO (GET /projects/:id/outline): the artifact's head + its parsed outline.json twin. */
+export interface OutlineDto {
+  readonly artifactId: string;
+  readonly slug: string;
+  readonly mirrorPath: string;
+  readonly versionId: string | null;
+  readonly ordinal: number | null;
+  readonly words: number | null;
+  readonly markdown: string;
+  readonly outline: {
+    readonly sidecar: "outline";
+    readonly version: 1;
+    readonly thesis: string;
+    readonly venue?: string;
+    readonly targetLength?: number;
+    readonly protocol?: string;
+    readonly voice?: string;
+    readonly provenance?: {
+      readonly threadId?: string;
+      readonly scope?: string;
+      readonly runId?: string;
+      readonly generatedAt?: string;
+      readonly urls?: readonly { readonly url: string; readonly fetchedAt?: string; readonly unverified?: boolean }[];
+    };
+    readonly spine: readonly string[];
+    readonly sections: readonly {
+      readonly ref: string;
+      readonly title: string;
+      readonly targetWords?: number;
+      readonly function?: string;
+      readonly entry?: string;
+      readonly exit?: string;
+      readonly claims: readonly OutlineClaimDto[];
+    }[];
+    readonly alternativesConsidered?: readonly string[];
+    readonly gaps: readonly {
+      readonly id: string;
+      readonly needed: string;
+      readonly relatedClaimId?: string;
+      readonly sectionRef?: string;
+    }[];
+  } | null;
+  /** the drafts that cite this outline (their existence makes DELETE answer 409 `outline_cited`). */
+  readonly citedBy: { readonly runs: readonly string[]; readonly draftIds: readonly string[] };
+  readonly editable: boolean;
+}
+
+/** The editor's structured save body (PATCH /projects/:id/outline): a full document OR a delta. */
+export interface OutlinePatchDto {
+  readonly slug?: string;
+  readonly outline?: Record<string, unknown>;
+  readonly edit?: Record<string, unknown>;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -1872,6 +1978,37 @@ export interface ApiClient {
   ): Promise<ChatSuggestionDto>;
   /** POST /projects/:id/chat/notes — "Paste my notes" → agents/author/notes.md (the scratch path). */
   postChatNote(projectId: string, req: { text: string }, init?: RequestInitLite): Promise<{ ok: true; path: string }>;
+
+  // ---- P1.12 — the Outline surface (§7.3) ----
+  /** GET /projects/:id/outline/promotion — the promotion sheet's facts (scope: thread|turn|research). */
+  getOutlinePromotion(
+    projectId: string,
+    opts: { scope?: "thread" | "turn" | "research"; threadId?: string; turnId?: string; tier?: string; rigor?: string; slug?: string },
+    init?: RequestInitLite,
+  ): Promise<OutlinePromotionDto>;
+  /** POST /projects/:id/outline/promotions — create the `outline` run (the sheet's Promote = consent). */
+  promoteOutline(
+    projectId: string,
+    req: OutlinePromoteRequestDto,
+    init?: RequestInitLite,
+  ): Promise<{ runId: string; state: string; deduped: boolean; slug: string }>;
+  /** GET /projects/:id/outline — the editor DTO (head artifact + parsed twin + citations). */
+  getOutline(projectId: string, opts?: { slug?: string }, init?: RequestInitLite): Promise<OutlineDto>;
+  /** PATCH /projects/:id/outline — the autosave: full document or a structured delta → new versions. */
+  patchOutline(
+    projectId: string,
+    req: OutlinePatchDto,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }>;
+  /** DELETE /projects/:id/outline — refused 409 `outline_cited` while a draft cites the outline. */
+  deleteOutline(projectId: string, opts?: { slug?: string }, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** POST /projects/:id/outline/gaps/:gapId/answer — a gap's Answer → a `user_typed` claim row. */
+  answerOutlineGap(
+    projectId: string,
+    gapId: string,
+    req: { text: string; slug?: string },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; versionIds: string[] }>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -2781,6 +2918,66 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify(req),
       });
+    },
+
+    // ---- P1.12 — the Outline surface (§7.3) ----
+    async getOutlinePromotion(projectId, opts, init): Promise<OutlinePromotionDto> {
+      const qs = new URLSearchParams();
+      if (opts.scope) qs.set("scope", opts.scope);
+      if (opts.threadId) qs.set("threadId", opts.threadId);
+      if (opts.turnId) qs.set("turnId", opts.turnId);
+      if (opts.tier) qs.set("tier", opts.tier);
+      if (opts.rigor) qs.set("rigor", opts.rigor);
+      if (opts.slug) qs.set("slug", opts.slug);
+      const q = qs.toString();
+      return json<OutlinePromotionDto>(
+        `/projects/${encodeURIComponent(projectId)}/outline/promotion${q ? `?${q}` : ""}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async promoteOutline(projectId, req, init): Promise<{ runId: string; state: string; deduped: boolean; slug: string }> {
+      return json<{ runId: string; state: string; deduped: boolean; slug: string }>(
+        `/projects/${encodeURIComponent(projectId)}/outline/promotions`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async getOutline(projectId, opts, init): Promise<OutlineDto> {
+      const q = opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : "";
+      return json<OutlineDto>(`/projects/${encodeURIComponent(projectId)}/outline${q}`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async patchOutline(projectId, req, init): Promise<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }> {
+      return json<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }>(
+        `/projects/${encodeURIComponent(projectId)}/outline`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async deleteOutline(projectId, opts, init): Promise<{ ok: true }> {
+      const q = opts?.slug ? `?slug=${encodeURIComponent(opts.slug)}` : "";
+      return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/outline${q}`, {
+        method: "DELETE",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async answerOutlineGap(projectId, gapId, req, init): Promise<{ ok: true; versionIds: string[] }> {
+      return json<{ ok: true; versionIds: string[] }>(
+        `/projects/${encodeURIComponent(projectId)}/outline/gaps/${encodeURIComponent(gapId)}/answer`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
     },
   };
 }

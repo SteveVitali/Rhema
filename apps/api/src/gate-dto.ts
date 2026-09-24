@@ -6,6 +6,7 @@
 
 import {
   cutListSidecarSchema,
+  outlineSidecarSchema,
   structurePlanSidecarSchema,
   type GateKind,
   type GateOnExpiry,
@@ -14,6 +15,7 @@ import type {
   GateCardWire,
   GateCutListView,
   GateDecisionView,
+  GateOutlineView,
   GatePlanView,
   GateStructuredView,
   GateTriageRowView,
@@ -159,6 +161,50 @@ function cutListViewFromSidecar(doc: unknown): GateCutListView | null {
   };
 }
 
+/** P1.12 — the outline sidecar → the Approve-outline card's editable view (provenance rides every row). */
+function outlineViewFromSidecar(doc: unknown): GateOutlineView | null {
+  const parsed = outlineSidecarSchema.safeParse(doc);
+  if (!parsed.success) return null;
+  const d = parsed.data;
+  return {
+    ...(d.thesis != null ? { thesis: d.thesis } : {}),
+    ...(d.venue != null ? { venue: d.venue } : {}),
+    ...(d.targetLength != null ? { targetLength: d.targetLength } : {}),
+    ...(d.protocol != null ? { protocol: d.protocol } : {}),
+    ...(d.voice != null ? { voice: d.voice } : {}),
+    spine: d.spine,
+    sections: d.sections.map((s) => ({
+      ref: s.ref,
+      title: s.title,
+      ...(s.targetWords != null ? { targetWords: s.targetWords } : {}),
+      ...(s.function != null ? { function: s.function } : {}),
+      ...(s.entry != null ? { entry: s.entry } : {}),
+      ...(s.exit != null ? { exit: s.exit } : {}),
+      claims: s.claims.map((cl) => ({
+        id: cl.id,
+        text: cl.text,
+        provenanceKind: cl.provenance.kind,
+        provenance: {
+          ...(cl.provenance.turnId != null ? { turnId: cl.provenance.turnId } : {}),
+          ...(cl.provenance.url != null ? { url: cl.provenance.url } : {}),
+          ...(cl.provenance.notePath != null ? { notePath: cl.provenance.notePath } : {}),
+        },
+        unverified: cl.unverified === true,
+      })),
+    })),
+    ...(d.alternativesConsidered != null ? { alternativesConsidered: d.alternativesConsidered } : {}),
+    gaps: (d.gaps ?? []).map((g) => ({
+      id: g.id,
+      needed: g.needed,
+      ...(g.relatedClaimId != null ? { relatedClaimId: g.relatedClaimId } : {}),
+      ...(g.sectionRef != null ? { sectionRef: g.sectionRef } : {}),
+    })),
+    ...(d.provenance?.urls != null
+      ? { urls: d.provenance.urls.map((u) => ({ url: u.url, unverified: u.unverified === true })) }
+      : {}),
+  };
+}
+
 /**
  * Compose the kind's structured body (§6.4 item 4). Reads the artifact's sidecar for the editable
  * kinds (plan/cutlist); the scope card's fields + every kind's read-only `facts` come from the
@@ -176,6 +222,7 @@ export async function attachStructuredBody(
     plan?: GatePlanView;
     scope?: GateStructuredView["scope"];
     cutList?: GateCutListView;
+    outline?: GateOutlineView;
     facts?: Record<string, string | number | boolean | null>;
   } = {};
 
@@ -222,6 +269,16 @@ export async function attachStructuredBody(
     const doc = await loadArtifactSidecar(exec, deps, g.workspace_id, g.artifact_version_id);
     const cutList = cutListViewFromSidecar(doc);
     if (cutList) structured.cutList = cutList;
+  }
+  // P1.12 — the Approve-outline card edits the outline's `.json` twin (the shared spine-and-sections
+  // rows); the promotion facts (thread/scope) ride `facts` so the card can name what was promoted.
+  if (g.artifact_version_id != null && g.kind === "approve_outline") {
+    const doc = await loadArtifactSidecar(exec, deps, g.workspace_id, g.artifact_version_id);
+    const outline = outlineViewFromSidecar(doc);
+    if (outline) structured.outline = outline;
+    if (typeof inputs["threadId"] === "string") facts.threadId = inputs["threadId"] as string;
+    if (typeof inputs["scope"] === "string") facts.scope = inputs["scope"] as string;
+    if (typeof inputs["outlineSlug"] === "string") facts.slug = inputs["outlineSlug"] as string;
   }
   if (typeof inputs["apparatusBudget"] === "number" && structured.plan) {
     structured.plan = { ...structured.plan, apparatusBudget: inputs["apparatusBudget"] as number };

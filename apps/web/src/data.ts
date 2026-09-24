@@ -75,6 +75,10 @@ import type {
   ChatPinsDto,
   ChatSuggestionDto,
   ChatAttachmentDto,
+  OutlinePromotionDto,
+  OutlinePromoteRequestDto,
+  OutlineDto,
+  OutlinePatchDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -594,6 +598,36 @@ export interface DataSource {
     projectId: string,
     req: { quarantineKey: string; filename: string; mediaType: string; threadId?: string; waitMs?: number },
   ): Promise<ChatAttachmentDto>;
+  // ---- P1.12 — the Outline surface (§7.3; every method session-forwards) ----
+  /** `GET /projects/:id/outline/promotion` — the promotion sheet's facts. */
+  getOutlinePromotion?(
+    session: SessionHeaders,
+    projectId: string,
+    opts: { scope?: "thread" | "turn" | "research"; threadId?: string; turnId?: string; tier?: string; rigor?: string; slug?: string },
+  ): Promise<OutlinePromotionDto>;
+  /** `POST /projects/:id/outline/promotions` — create the `outline` run (Promote = consent). */
+  promoteOutline?(
+    session: SessionHeaders,
+    projectId: string,
+    req: OutlinePromoteRequestDto,
+  ): Promise<{ runId: string; state: string; deduped: boolean; slug: string }>;
+  /** `GET /projects/:id/outline` — the editor DTO (head artifact + parsed twin + citations). */
+  getOutline?(session: SessionHeaders, projectId: string, opts?: { slug?: string }): Promise<OutlineDto>;
+  /** `PATCH /projects/:id/outline` — the autosave: a structured `ed.*` delta → a new version pair. */
+  patchOutline?(
+    session: SessionHeaders,
+    projectId: string,
+    req: OutlinePatchDto,
+  ): Promise<{ ok: true; versionIds: string[]; versionId: string | null; ordinal: number | null }>;
+  /** `DELETE /projects/:id/outline` — refused 409 `outline_cited` while a draft cites the outline. */
+  deleteOutline?(session: SessionHeaders, projectId: string, opts?: { slug?: string }): Promise<{ ok: true }>;
+  /** `POST /projects/:id/outline/gaps/:gapId/answer` — a gap's Answer → a `user_typed` claim row. */
+  answerOutlineGap?(
+    session: SessionHeaders,
+    projectId: string,
+    gapId: string,
+    req: { text: string; slug?: string },
+  ): Promise<{ ok: true; versionIds: string[] }>;
 }
 
 /** A user-visible run event as the feed consumes it (the SSE `data:` payload). */
@@ -940,5 +974,16 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     postChatNote: (session, projectId, req) => client(session).postChatNote(projectId, req),
     postChatAttachment: (session, projectId, req) =>
       client(session).postChatAttachment(projectId, req),
+
+    // ---- P1.12 — the Outline surface ----
+    getOutlinePromotion: (session, projectId, opts) =>
+      client(session).getOutlinePromotion(projectId, opts),
+    promoteOutline: (session, projectId, req) =>
+      client(session).promoteOutline(projectId, req),
+    getOutline: (session, projectId, opts) => client(session).getOutline(projectId, opts),
+    patchOutline: (session, projectId, req) => client(session).patchOutline(projectId, req),
+    deleteOutline: (session, projectId, opts) => client(session).deleteOutline(projectId, opts),
+    answerOutlineGap: (session, projectId, gapId, req) =>
+      client(session).answerOutlineGap(projectId, gapId, req),
   };
 }

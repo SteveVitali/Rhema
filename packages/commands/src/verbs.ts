@@ -93,7 +93,10 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     aliases: [],
     label: "Outline",
     workflow: "outline",
-    seat: "author",
+    // P1.12 — the Outline RUN sits on the Assistant seat (it reads agents/assistant/* and writes the
+    // outline only through the sanctioned agents/author/outline/ conduit); the artifact it produces
+    // is author-owned. seatForWorkflow("outline") agrees.
+    seat: "assistant",
     phase: "mvp",
     scopes: ["thread"],
     levers: ["rigor", "tier", "protocol", "venue", "target"],

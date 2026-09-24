@@ -310,8 +310,16 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       ? {
           // P1.11 — the `<run>` placeholder in a declared artifact (the assistant's per-run burst
           // directory `agents/assistant/research/burst-<runId>/`) resolves to THIS run's id so the
-          // prompt names concrete paths, never a template the agent must guess.
-          phase_output: phase.artifacts.map((a) => a.replaceAll("<run>", args.runId)).join(", "),
+          // prompt names concrete paths, never a template the agent must guess. P1.12 — `<slug>`
+          // resolves to the frozen `inputs.outlineSlug` (the same value `declaredWritableArtifacts`
+          // expanded at hydration, so grant and prompt name the same concrete path).
+          phase_output: phase.artifacts
+            .map((a) =>
+              a
+                .replaceAll("<run>", args.runId)
+                .replaceAll("<slug>", typeof hyd.inputs.outlineSlug === "string" ? hyd.inputs.outlineSlug : "outline"),
+            )
+            .join(", "),
         }
       : {}),
     ...(phase.sidecars.length > 0

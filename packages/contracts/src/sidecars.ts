@@ -218,6 +218,99 @@ export const cutListSidecarSchema = envelope("cut_list").extend({
 });
 export type CutListSidecar = z.infer<typeof cutListSidecarSchema>;
 
+// ---- outline.json (P1.12 — the structured outline the Approve-outline card + the outline editor
+// edit as rows; REQ-CHAT-15/16/18, REQ-DATA-23's preservation rule) ----
+/**
+ * A claim's provenance — DATA, never editable free text (REQ-DATA-23). `thread` = the claim came out
+ * of the promoted Assistant thread; `source` = it cites a fetched source note (its `url`/`notePath`);
+ * `user_typed` = the human authored it (a gate/card addition or a gap's Answer); `generated` = the
+ * outline run authored it while constructing the spine.
+ */
+export const OUTLINE_CLAIM_PROVENANCE_KINDS = ["thread", "source", "user_typed", "generated"] as const;
+export const outlineClaimSchema = z.object({
+  /** stable row id (skill-authored `c1`…; user rows `u1`…) — the spine references ids, never text. */
+  id: z.string(),
+  text: z.string(),
+  provenance: z.object({
+    kind: z.enum(OUTLINE_CLAIM_PROVENANCE_KINDS),
+    /** the Assistant turn the claim was promoted from (thread scope = the scoped turn set). */
+    turnId: z.string().optional(),
+    /** the fetched URL a `source` claim cites. */
+    url: z.string().optional(),
+    /** the source-note mirror path the claim was read from. */
+    notePath: z.string().optional(),
+  }),
+  /**
+   * The `[unverified]` badge — set when the run's re-fetch of this claim's URL failed (§7.3: a
+   * failed re-fetch is NEVER silently dropped). Data, not text: the editor cannot strip it; only a
+   * successful re-fetch clears it.
+   */
+  unverified: z.boolean().default(false),
+});
+export type OutlineClaim = z.infer<typeof outlineClaimSchema>;
+
+/** A spine-and-sections row — the same editable shape the Approve-plan card's fields share (P1.09),
+ *  plus the outline-only `entry`/`exit` states and the claim rows each section carries. */
+export const outlineSectionSchema = z.object({
+  ref: z.string(),
+  title: z.string(),
+  targetWords: z.number().int().nonnegative().optional(),
+  /** the function the section performs in the spine (the plan's `purpose` field, renamed per §7.3). */
+  function: z.string().optional(),
+  /** what the reader knows/believes on arrival. */
+  entry: z.string().optional(),
+  /** what the section must leave the reader holding. */
+  exit: z.string().optional(),
+  claims: z.array(outlineClaimSchema).default([]),
+});
+export type OutlineSection = z.infer<typeof outlineSectionSchema>;
+
+/** A gap only the author can fill (§7.3) — each carries an Answer affordance in the editor/card. */
+export const outlineGapSchema = z.object({
+  id: z.string(),
+  /** what only the author can supply (the elicit question's prompt). */
+  needed: z.string(),
+  relatedClaimId: z.string().optional(),
+  sectionRef: z.string().optional(),
+});
+export type OutlineGap = z.infer<typeof outlineGapSchema>;
+
+export const outlineSidecarSchema = envelope("outline").extend({
+  thesis: z.string(),
+  venue: z.string().optional(),
+  targetLength: z.number().int().positive().optional(),
+  protocol: z.string().optional(),
+  voice: z.string().optional(),
+  /** the artifact's provenance header — thread/run/source metadata + fetched-at facts (§7.3). */
+  provenance: z
+    .object({
+      threadId: z.string().optional(),
+      /** `turn` scopes the promotion to one turn + its ancestors; `thread` the whole thread;
+       *  `research` the project's whole assistant research index (no single thread). */
+      scope: z.enum(["thread", "turn", "research"]).optional(),
+      turnId: z.string().optional(),
+      runId: z.string().optional(),
+      generatedAt: isoSchema.optional(),
+      /** the exact URL set the run re-fetched — a failed fetch carries `unverified: true`. */
+      urls: z
+        .array(
+          z.object({
+            url: z.string(),
+            fetchedAt: isoSchema.optional(),
+            unverified: z.boolean().optional(),
+          }),
+        )
+        .default([]),
+    })
+    .optional(),
+  /** the argument order across sections — claim ids, recomputed whenever rows move (never text). */
+  spine: z.array(z.string()).default([]),
+  sections: z.array(outlineSectionSchema),
+  alternativesConsidered: z.array(z.string()).optional(),
+  gaps: z.array(outlineGapSchema).default([]),
+});
+export type OutlineSidecar = z.infer<typeof outlineSidecarSchema>;
+
 // ---- turn-result.json (P1.11 — a chat_turn's structured outcome; the phase-result's typed twin) ----
 export const turnResultSidecarSchema = envelope("turn_result").extend({
   status: z.enum(["done", "blocked", "replan"]),
@@ -273,6 +366,8 @@ export const SIDECAR_REGISTRY = {
   // cites refs but authors no draft anchors).
   "turn-result.json": { schema: turnResultSidecarSchema, anchorBearing: false },
   "research-result.json": { schema: researchResultSidecarSchema, anchorBearing: false },
+  // P1.12 — the outline's structured twin (the Approve-outline card + the editor's row base).
+  "outline.json": { schema: outlineSidecarSchema, anchorBearing: false },
 } as const;
 
 export type SidecarFilename = keyof typeof SIDECAR_REGISTRY;
@@ -306,4 +401,6 @@ export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
     '{"sidecar":"turn_result","version":1,"status":"done"|"blocked"|"replan","replySummary"?,"searches"?<int>,"fetches"?<int>,"artifactReads"?<int>,"refs"?<string[]>} — no reply TEXT, only the abstract + counters.',
   "research-result.json":
     '{"sidecar":"research_result","version":1,"status":"done"|"blocked"|"replan","notePath","sources":[{url,"title"?,"notePath"?,"unverified"?}],"fetchedTokens"?<int>} — the array field is "sources".',
+  "outline.json":
+    '{"sidecar":"outline","version":1,"thesis","venue"?,"targetLength"?<int>,"protocol"?,"voice"?,"provenance"?{"threadId"?,"scope"?,"runId"?,"generatedAt"?,"urls"?[{url,"fetchedAt"?,"unverified"?}]},"spine":<claim-id string[]>,"sections":[{"ref","title","targetWords"?,"function"?,"entry"?,"exit"?,"claims":[{"id","text","provenance":{"kind":"thread"|"source"|"user_typed"|"generated","turnId"?,"url"?,"notePath"?},"unverified"?}]}],"alternativesConsidered"?<string[]>,"gaps"?[{"id","needed","relatedClaimId"?,"sectionRef"?}]} — the array fields are "spine" + "sections".',
 };

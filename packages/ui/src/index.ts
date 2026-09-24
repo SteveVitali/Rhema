@@ -112,6 +112,11 @@ export type {
   EditorFindingView,
 } from "./source-editor.js";
 
+// P1.12 — the shared spine-and-sections structured editor (§7.3): the Approve-outline gate card and
+// the unlocked outline editor render the SAME rows; `editable:false` is the phone/read-only surface.
+export { OutlineSections } from "./outline-sections.js";
+export type { OutlineSectionsLabels } from "./outline-sections.js";
+
 // P1.01 — the §5.1 IDE shell (seven regions) + the §5.9 state catalogue. SSR-static markup; the
 // apps/web ide.js island enhances it (panes/theme/menus/keyboard). All copy arrives via labels.
 export { IdeShell } from "./ide-shell.js";

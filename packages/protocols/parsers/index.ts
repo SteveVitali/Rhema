@@ -10,6 +10,7 @@ import {
   claimLedgerSidecarSchema,
   cutListSidecarSchema,
   findingsSidecarSchema,
+  outlineSidecarSchema,
   researchResultSidecarSchema,
   responseLedgerSidecarSchema,
   rubricSidecarSchema,
@@ -21,6 +22,7 @@ import {
   type ClaimVerdict,
   type CutListSidecar,
   type FindingsSidecar,
+  type OutlineSidecar,
   type ResearchResultSidecar,
   type ResponseLedgerSidecar,
   type RubricSidecar,
@@ -31,6 +33,7 @@ import {
 import { z } from "zod";
 import {
   parseCutListMd,
+  parseOutlineMd,
   parseResponseLedgerMd,
   parseStructurePlanMd,
 } from "../src/md-twins.js";
@@ -206,6 +209,12 @@ export function parseResearchResult(json: unknown): ParseResult<ResearchResultSi
   return parseWithSchema(researchResultSidecarSchema, json, undefined, undefined);
 }
 
+// ---- P1.12 — the outline's structured twin (markdown + sidecar cross-checked like the write-backs) ----
+
+export function parseOutline(json: unknown, markdown?: string): ParseResult<OutlineSidecar> {
+  return parseWithSchema(outlineSidecarSchema, json, markdown, parseOutlineMd);
+}
+
 /** Every sidecar filename that has a parser — the contract test asserts this covers SIDECAR_REGISTRY. */
 export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string) => ParseResult<unknown>> = {
   "findings.json": (j) => parseFindings(j),
@@ -217,6 +226,7 @@ export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string)
   "cut-list.json": (j, m) => parseCutList(j, m),
   "turn-result.json": (j) => parseTurnResult(j),
   "research-result.json": (j) => parseResearchResult(j),
+  "outline.json": (j, m) => parseOutline(j, m),
 };
 
 // P1.10 — the draft-ledger `## Sections` table parser (the `section.drafted` / `draft_sections_eq_plan`

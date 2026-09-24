@@ -35,6 +35,7 @@ import { createThemeRoutes } from "./theme-routes.js";
 import { createTimelineRoutes } from "./timeline-routes.js";
 import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js";
 import { createChatRoutes, type ChatApiDeps } from "./chat-routes.js";
+import { createOutlineRoutes, type OutlineApiDeps } from "./outline-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
@@ -126,6 +127,8 @@ export type { TimelineApiDeps } from "./timeline-routes.js";
 export { createApprovalRoutes } from "./approval-routes.js";
 export { createChatRoutes } from "./chat-routes.js";
 export type { ChatApiDeps } from "./chat-routes.js";
+export { createOutlineRoutes } from "./outline-routes.js";
+export type { OutlineApiDeps } from "./outline-routes.js";
 export type { ApprovalApiDeps } from "./approval-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
 export { createThemeRoutes } from "./theme-routes.js";
@@ -357,6 +360,17 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           ids: deps.ids ?? (() => `id_${randomUUID()}`),
           ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
           ...(deps.importConverter ? { converter: deps.importConverter } : {}),
+        }),
+      );
+      // P1.12 — the Outline surface (§7.3): the promotion sheet's facts, the `outline` run create,
+      // the editor DTO + autosave PATCH, deletion protection, and the gap-answer write. Session-authed
+      // like the chat routes; the content store binds when present (reads + saves need it).
+      app.route(
+        "/",
+        createOutlineRoutes({
+          ...(deps as unknown as OutlineApiDeps),
+          db,
+          ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
         }),
       );
       // P1.07 — the findings surface (§5.7): Apply (REQ-SPEC-6), promote, "Add to obligations" (REQ-OBJ-9),

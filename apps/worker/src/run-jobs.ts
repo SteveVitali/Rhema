@@ -19,6 +19,7 @@ import {
   handleGateExpiry,
   sweepStrandedRuns,
   generateWalkthrough,
+  finalizeRun,
   type GenerateWalkthroughResult,
   type WalkthroughGenerator,
   type OrchestratorDeps,
@@ -31,6 +32,7 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import type { WorkflowKey } from "@rhema/contracts";
+import type { ContentStore } from "@rhema/mirror";
 import { provisionalClaimCount } from "@rhema/run-sheet";
 
 /** Static config a deploy supplies (the pinned image, the run service account, the provider). */
@@ -51,6 +53,12 @@ export interface WorkerRunDeps extends OrchestratorDeps {
    * pool — see main.ts).
    */
   readonly systemExec: SqlClient;
+  /**
+   * P1.12 — the workspace-bound content store `run.finalize` needs for the Approve-outline
+   * consequences (the assistant→author research-note copies read version bytes). Same seam shape
+   * as `WorkerBillingDeps.contentStoreFor`.
+   */
+  readonly contentStoreFor?: (workspaceId: string) => Promise<ContentStore>;
 }
 
 export interface RunJobPayload {
@@ -258,6 +266,49 @@ export function handleRunWalkthrough(
   job: RunJobPayload,
 ): Promise<GenerateWalkthroughResult> {
   return generateWalkthrough(deps, job);
+}
+
+/**
+ * `run.finalize` (P1.12) — the last-phase-gate finalize: `approve_outline` resolves on the Outline
+ * workflow's LAST phase, which enters `finalizing` and enqueues this job (no pod ever resumes). The
+ * handler settles the run exactly like the pod's bare `/finalize` call — money facts from the run row,
+ * then `finalizeRun` — with the workspace content store bound so the Approve-outline consequences
+ * (assistant→author research-note copies + `outline.approved`) apply inside the same transaction.
+ * Idempotent: a run no longer `finalizing` (a retried delivery after a completed settle) no-ops.
+ */
+export async function handleRunFinalize(
+  deps: WorkerRunDeps,
+  job: RunJobPayload,
+): Promise<{ ok: boolean; state?: string; reason?: string }> {
+  const row = await deps.txRunner.run(job.workspaceId, async (tx) => {
+    const res = await tx.query(
+      `select r.state, r.spent_credits, r.cap_credits, r.hold_ledger_id, w.billing_account_id
+         from runs r join workspaces w on w.id = r.workspace_id where r.id = $1`,
+      [job.runId],
+    );
+    return res.rows[0] as
+      | {
+          state: string;
+          spent_credits: number;
+          cap_credits: number;
+          hold_ledger_id: string | null;
+          billing_account_id: string;
+        }
+      | undefined;
+  });
+  if (!row) return { ok: false, reason: "run not found" };
+  if (row.state !== "finalizing") return { ok: true, state: row.state, reason: "not_finalizing" };
+  const store = deps.contentStoreFor ? await deps.contentStoreFor(job.workspaceId) : undefined;
+  const res = await finalizeRun(deps, {
+    runId: job.runId,
+    workspaceId: job.workspaceId,
+    billingAccountId: row.billing_account_id,
+    spentCredits: row.spent_credits,
+    capCredits: row.cap_credits,
+    ...(row.hold_ledger_id ? { holdLedgerId: row.hold_ledger_id } : {}),
+    ...(store ? { store } : {}),
+  });
+  return { ok: true, state: res.state };
 }
 
 /**

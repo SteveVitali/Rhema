@@ -33,6 +33,8 @@ export type CompletionPredicate =
   | { kind: "draft_sections_eq_plan"; artifact: string }
   /** the structure plan's spine has at least `min` claims. */
   | { kind: "spine_min"; artifact: string; min: number }
+  /** P1.12 — the outline sidecar's spine holds `min`–`max` claim ids (§12.2's 5–12 bound). */
+  | { kind: "outline_spine_bound"; artifact: string; min: number; max: number }
   /** the thesis and the claim inventory are both present (Phase-0 piece brief). */
   | { kind: "thesis_and_inventory_present"; artifact: string }
   /** the sidecar validates against its P0.02 zod schema (`sidecar: true` runs). */

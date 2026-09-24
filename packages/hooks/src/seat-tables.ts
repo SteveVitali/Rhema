@@ -90,6 +90,11 @@ export const SEAT_MOUNTS: Record<AgentTypeKey, readonly MountSpec[]> = {
     { glob: "agents/assistant/**", root: "project", mode: "readwrite", namespace: "agent:assistant" },
     // The declared Assistant↔Drafter departure, narrowed to frozen ledgers (§7.1; F19/C12): read-only.
     { glob: "agents/author/ledgers/**", root: "project", mode: "read", namespace: "agent:author" },
+    // P1.12 — the outline conduit (§7.3; REQ-SPEC-15): the Assistant seat's `outline` run declares
+    // `agents/author/outline/<slug>.{md,json}` outputs; this READ mount is what
+    // `declaredWritableArtifacts` upgrades to readwrite for exactly the declared paths — the two-
+    // conduit rule stays structural (every other agents/author/ path remains unmounted = absent).
+    { glob: "agents/author/outline/**", root: "project", mode: "read", namespace: "agent:author" },
     PERSONA_SEED,
     profileRead("index"),
     profileRead("structure-repertoire"),

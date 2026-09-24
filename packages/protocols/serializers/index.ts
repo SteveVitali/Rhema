@@ -9,14 +9,17 @@
 
 import {
   cutListSidecarSchema,
+  outlineSidecarSchema,
   responseLedgerSidecarSchema,
   structurePlanSidecarSchema,
   type CutListSidecar,
+  type OutlineSidecar,
   type ResponseLedgerSidecar,
   type StructurePlanSidecar,
 } from "@rhema/contracts";
 import {
   renderCutListMd,
+  renderOutlineMd,
   renderResponseLedgerMd,
   renderStructurePlanMd,
 } from "../src/md-twins.js";
@@ -47,11 +50,18 @@ export function serializeCutList(rows: CutListSidecar): SerializedArtifact {
   return { markdown: renderCutListMd(value), json: toJson(value) };
 }
 
+/** P1.12 — the outline's write-back pair (Approve-outline edits + the editor's autosave versions). */
+export function serializeOutline(rows: OutlineSidecar): SerializedArtifact {
+  const value = outlineSidecarSchema.parse(rows);
+  return { markdown: renderOutlineMd(value), json: toJson(value) };
+}
+
 /** The write-back sidecar filenames that have a serializer (the inverse subset of the parsers). */
 export const SERIALIZABLE_SIDECARS = [
   "response-ledger.json",
   "structure-plan.json",
   "cut-list.json",
+  "outline.json",
 ] as const;
 export type SerializableSidecar = (typeof SERIALIZABLE_SIDECARS)[number];
 
@@ -64,5 +74,7 @@ export function serializeSidecar(filename: SerializableSidecar, rows: unknown): 
       return serializeStructurePlan(rows as StructurePlanSidecar);
     case "cut-list.json":
       return serializeCutList(rows as CutListSidecar);
+    case "outline.json":
+      return serializeOutline(rows as OutlineSidecar);
   }
 }

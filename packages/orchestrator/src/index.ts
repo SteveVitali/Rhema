@@ -56,3 +56,6 @@ export * from "./email-actions.js";
 // user steering + the run walkthrough (P1.05; §5.5/§6.5)
 export * from "./steering.js";
 export * from "./walkthrough.js";
+
+// P1.12 — the Approve-outline delivery consequences (§7.3: research-note copies + outline.approved)
+export * from "./outline-delivery.js";

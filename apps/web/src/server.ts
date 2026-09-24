@@ -23,6 +23,8 @@ import {
   settingsElement,
   usageElement,
   runReportElement,
+  outlineElement,
+  outlinePromoteElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -45,7 +47,7 @@ import {
   type IpEmailThrottle,
   type WorkflowKey,
 } from "@rhema/contracts";
-import { buildRunSheetView, sheetProfile, type ToggleState } from "@rhema/run-sheet";
+import { buildRunSheetView, buildEstimate, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
 import {
   applySeverityBudget,
@@ -389,6 +391,16 @@ export function createWebApp(deps: WebDeps): Hono {
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const message = typeof body.message === "string" ? body.message : "";
     if (!threadId || !message.trim()) return c.json({ error: "threadId + message required" }, 422);
+    // P1.12 — the `/outline` verb never runs inline (REQ-CHAT-25's consent rule): it resolves to the
+    // promotion SHEET — the sheet's Promote click is the only outline-run creator. `/outline @turn:id`
+    // scopes to one turn; bare `/outline` promotes the whole thread.
+    const outlineCmd = /^\/outline(?:\s+@turn:([^\s]+))?\s*$/.exec(message.trim());
+    if (outlineCmd) {
+      const turn = outlineCmd[1];
+      return c.redirect(
+        `/p/${row.slug}/outline/promote?scope=${turn ? "turn" : "thread"}&threadId=${encodeURIComponent(threadId)}${turn ? `&turnId=${encodeURIComponent(turn)}` : ""}`,
+      );
+    }
     const out = await deps.dataSource
       .postChatTurn?.(session, row.id, threadId, {
         message,
@@ -574,6 +586,251 @@ export function createWebApp(deps: WebDeps): Hono {
       .catch(() => null);
     if (!out) return c.json({ error: "chat unavailable" }, 502);
     return c.json(out);
+  });
+
+  // ---- P1.12 — the Outline surface (§7.3): the promotion sheet, the durable editor, deletion ----
+
+  // The promotion sheet (GET): the api's verbatim facts (scope, source-copy roster, the URL set the
+  // run re-fetches, the estimate + cap). The Promote click is the consent — it creates the run.
+  app.get("/p/:project/outline/promote", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const scope = (c.req.query("scope") ?? "thread") as "thread" | "turn" | "research";
+    const threadId = c.req.query("threadId") ?? c.req.query("thread");
+    const turnId = c.req.query("turnId") ?? c.req.query("turn");
+    const promotion = await deps.dataSource
+      .getOutlinePromotion?.(session, row.id, {
+        scope,
+        ...(threadId ? { threadId } : {}),
+        ...(turnId ? { turnId } : {}),
+        ...(c.req.query("slug") ? { slug: c.req.query("slug")! } : {}),
+      })
+      .catch(() => null);
+    return c.html(
+      renderDocument(c.req.path, outlinePromoteElement, {
+        ...(promotion
+          ? {
+              outlinePromotion: {
+                slug,
+                projectTitle: row.title,
+                promotion,
+                scope,
+                ...(threadId ? { threadId } : {}),
+                ...(turnId ? { turnId } : {}),
+              },
+            }
+          : {}),
+        compact: isPhoneRequest(c),
+      }),
+      promotion ? 200 : 404,
+    );
+  });
+
+  // The Promote click — the ONLY outline-run creator (the sheet is the consent, like the run sheet's
+  // Run click). Re-renders the sheet with the started line on success.
+  app.post("/p/:project/outline/promote", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const scope = (str("scope") || "thread") as "thread" | "turn" | "research";
+    try {
+      const out = await deps.dataSource.promoteOutline?.(session, row.id, {
+        ...(str("threadId") ? { threadId: str("threadId") } : {}),
+        scope,
+        ...(str("turnId") ? { turnId: str("turnId") } : {}),
+        ...(str("slug") ? { slug: str("slug") } : {}),
+        idempotencyKey: str("idempotencyKey") || randomUUID(),
+      });
+      if (!out) return c.html(renderDocument(c.req.path, notFoundElement), 502);
+      return c.redirect(`/p/${slug}`);
+    } catch (e) {
+      // a missing thread/turn or a live-run conflict re-renders the sheet with the honest notice —
+      // never a silent failure.
+      const notice =
+        e instanceof ApiError && e.status === 404
+          ? COPY.promote.notFound
+          : e instanceof ApiError && e.status === 409
+            ? COPY.promote.notFound
+            : COPY.promote.notFound;
+      const promotion = await deps.dataSource
+        .getOutlinePromotion?.(session, row.id, {
+          scope,
+          ...(str("threadId") ? { threadId: str("threadId") } : {}),
+          ...(str("turnId") ? { turnId: str("turnId") } : {}),
+        })
+        .catch(() => null);
+      return c.html(
+        renderDocument(c.req.path, outlinePromoteElement, {
+          ...(promotion
+            ? {
+                outlinePromotion: {
+                  slug,
+                  projectTitle: row.title,
+                  promotion,
+                  scope,
+                  ...(str("threadId") ? { threadId: str("threadId") } : {}),
+                  ...(str("turnId") ? { turnId: str("turnId") } : {}),
+                  notice,
+                },
+              }
+            : {}),
+          compact: isPhoneRequest(c),
+        }),
+        e instanceof ApiError ? (e.status as 400) : 502,
+      );
+    }
+  });
+
+  // The durable outline editor (GET): the artifact's head + its parsed outline.json twin as the shared
+  // spine-and-sections rows. Phone-width is read-only (§10.1). The Draft estimate line is the run-sheet
+  // estimator over the outline's own words — recomputed on every render/save (the "live" estimate).
+  app.get("/p/:project/outline", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const dto = await deps.dataSource
+      .getOutline?.(session, row.id, c.req.query("slug") ? { slug: c.req.query("slug")! } : undefined)
+      .catch(() => null);
+    if (!dto || !dto.outline) {
+      return c.html(
+        renderDocument(c.req.path, outlineElement, { compact: isPhoneRequest(c) }),
+        404,
+      );
+    }
+    const o = dto.outline;
+    const view = {
+      thesis: o.thesis,
+      ...(o.venue != null ? { venue: o.venue } : {}),
+      ...(o.targetLength != null ? { targetLength: o.targetLength } : {}),
+      ...(o.protocol != null ? { protocol: o.protocol } : {}),
+      ...(o.voice != null ? { voice: o.voice } : {}),
+      spine: o.spine,
+      sections: o.sections.map((s) => ({
+        ref: s.ref,
+        title: s.title,
+        ...(s.targetWords != null ? { targetWords: s.targetWords } : {}),
+        ...(s.function != null ? { function: s.function } : {}),
+        ...(s.entry != null ? { entry: s.entry } : {}),
+        ...(s.exit != null ? { exit: s.exit } : {}),
+        claims: s.claims.map((cl) => ({
+          id: cl.id,
+          text: cl.text,
+          provenanceKind: cl.provenance.kind,
+          provenance: {
+            ...(cl.provenance.turnId != null ? { turnId: cl.provenance.turnId } : {}),
+            ...(cl.provenance.url != null ? { url: cl.provenance.url } : {}),
+            ...(cl.provenance.notePath != null ? { notePath: cl.provenance.notePath } : {}),
+          },
+          unverified: cl.unverified === true,
+        })),
+      })),
+      ...(o.alternativesConsidered != null ? { alternativesConsidered: o.alternativesConsidered } : {}),
+      gaps: o.gaps.map((g) => ({
+        id: g.id,
+        needed: g.needed,
+        ...(g.relatedClaimId != null ? { relatedClaimId: g.relatedClaimId } : {}),
+        ...(g.sectionRef != null ? { sectionRef: g.sectionRef } : {}),
+      })),
+      ...(o.provenance?.urls != null
+        ? { urls: o.provenance.urls.map((u) => ({ url: u.url, unverified: u.unverified === true })) }
+        : {}),
+    };
+    let draftEstimateCredits: number | undefined;
+    try {
+      draftEstimateCredits = buildEstimate({
+        workflow: "draft",
+        rigor: "standard",
+        modelTier: "base",
+        inputs: { words: dto.words ?? o.targetLength ?? 0 },
+      }).estimateCredits;
+    } catch {
+      draftEstimateCredits = undefined;
+    }
+    const cited = dto.citedBy.runs.length > 0 || dto.citedBy.draftIds.length > 0;
+    return c.html(
+      renderDocument(c.req.path, outlineElement, {
+        outline: {
+          slug,
+          editable: dto.editable && !isPhoneRequest(c),
+          saveAction: `/p/${slug}/outline`,
+          deleteAction: `/p/${slug}/outline/delete`,
+          ...(draftEstimateCredits != null ? { draftEstimateCredits } : {}),
+          outline: view,
+          cited,
+          ...(c.req.query("saved") === "1" ? { saved: true } : {}),
+          ...(c.req.query("notice") === "cited" ? { notice: COPY.outlinePage.citedNote } : {}),
+        },
+        compact: isPhoneRequest(c),
+      }),
+    );
+  });
+
+  // The autosave: the form's `ed.*` fields decode through the SAME grammar the gate card posts → the
+  // api's PATCH `edit` → one new version pair. A no-JS Save and the island's debounced submit land here.
+  app.post("/p/:project/outline", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const form = await c.req.parseBody();
+    const edits = decodeGateEditFields(form as Record<string, unknown>);
+    const hasEdits = Object.values(edits).some(
+      (v) => (Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0),
+    );
+    if (!hasEdits) return c.redirect(`/p/${slug}/outline`);
+    const out = await deps.dataSource
+      .patchOutline?.(session, row.id, { edit: edits as Record<string, unknown> })
+      .catch((e: unknown) => e);
+    if (out == null || out instanceof Error) {
+      return wantsJson(c) ? c.json({ error: "save_failed" }, 422) : c.redirect(`/p/${slug}/outline`);
+    }
+    return wantsJson(c) ? c.json(out) : c.redirect(`/p/${slug}/outline?saved=1`);
+  });
+
+  // Deletion protection (§7.3): a cited outline's DELETE answers 409 `outline_cited` — the page's
+  // notice names the rule instead of the artifact disappearing under a draft.
+  app.post("/p/:project/outline/delete", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    try {
+      await deps.dataSource.deleteOutline?.(session, row.id, undefined);
+      return c.redirect(`/p/${slug}`);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        return c.redirect(`/p/${slug}/outline?notice=cited`);
+      }
+      throw e;
+    }
+  });
+
+  // A gap's Answer — a standalone form (one input + button per gap row) → a `user_typed` claim lands in
+  // the gap's section and the gap resolves. The gate card's `ed.gap.<id>` fields hit the same apply.
+  app.post("/p/:project/outline/gaps/:gapId/answer", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const text = typeof form.text === "string" ? form.text.trim() : "";
+    if (!text) return c.redirect(`/p/${slug}/outline`);
+    await deps.dataSource
+      .answerOutlineGap?.(session, row.id, c.req.param("gapId"), { text })
+      .catch(() => null);
+    return c.redirect(`/p/${slug}/outline?saved=1`);
   });
 
 
@@ -2948,6 +3205,16 @@ export function createWebApp(deps: WebDeps): Hono {
   const ideBundlePath = new URL("../public/ide.js", import.meta.url);
   app.get("/assets/ide.js", async (c) => {
     const body = await readFile(ideBundlePath).catch(() => null);
+    if (!body) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": "text/javascript; charset=utf-8",
+      "cache-control": "no-cache",
+    });
+  });
+  // P1.12 — the outline editor island (debounced `ed.*` autosave; missing bundle → the no-JS Save).
+  const outlineBundlePath = new URL("../public/outline.js", import.meta.url);
+  app.get("/assets/outline.js", async (c) => {
+    const body = await readFile(outlineBundlePath).catch(() => null);
     if (!body) return c.body(null, 404);
     return c.body(body, 200, {
       "content-type": "text/javascript; charset=utf-8",

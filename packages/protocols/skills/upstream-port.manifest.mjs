@@ -7,10 +7,12 @@
 // a fork, not a diff). Every op's `category` must be in SANCTIONED_CATEGORIES.
 //
 // Ported skills: editorial-review, respond-to-review, bootstrap-persona, draft-from-outline.
-// outline-from-research is still deferred to the full-IDE phase (§17). research_burst landed in
-// P1.11 as a RHEMA-AUTHORED skill — it has no upstream pin, so it is declared in `rhemaOwned`
-// below instead of receiving a transform list; the drift checker exempts declared files from
-// pin-diffing and fails if a declared file is also present in the pin (it would need transforms).
+// research_burst landed in P1.11 as a RHEMA-AUTHORED skill — it has no upstream pin, so it is
+// declared in `rhemaOwned` below instead of receiving a transform list; the drift checker exempts
+// declared files from pin-diffing and fails if a declared file is also present in the pin (it would
+// need transforms). P1.12 (2026-09-2x): `outline-from-research` is likewise RHEMA-AUTHORED — the
+// P1.12 ticket scheduled its port at this pin, but the pin carries no such skill (the vendored tree
+// has exactly the four skills above), so it lands in `rhemaOwned` with the same declaration rule.
 
 export const upstreamRepo = "agent-discourse";
 export const upstreamCommit = "5fef4165042b080c1d4c6becc281dc5ce8860cb3";
@@ -24,6 +26,9 @@ export const upstreamCommit = "5fef4165042b080c1d4c6becc281dc5ce8860cb3";
 export const rhemaOwned = [
   "skills/research-burst/SKILL.md",
   "skills/chat-turn/SKILL.md",
+  // P1.12 — scheduled for an upstream port by the ticket, but the vendored pin has no
+  // outline-from-research (see the header note); authored here, same declaration rule.
+  "skills/outline-from-research/SKILL.md",
 ];
 
 // The six harness-neutral inputs, shared verbatim across the three skills (REQ-ARCH-5). `sidecar`'s
