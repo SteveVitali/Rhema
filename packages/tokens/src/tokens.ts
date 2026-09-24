@@ -36,6 +36,10 @@ export const DARK_VARS: VarMap = {
   "--kind-argument": "#8ab4f8",
   "--kind-craft": "#5fd1c8",
   "--kind-voice": "#f28ea8",
+  // §5.7 names five hues for the seven kinds: voice/continuity share rose; structure gets the
+  // remaining legible hue (green — distinct from craft's teal).
+  "--kind-continuity": "#f28ea8",
+  "--kind-structure": "#8fc78f",
   // project / run state
   "--state-running": "#8ab4f8",
   "--state-needs-you": "#f0b24a",
@@ -75,6 +79,8 @@ export const LIGHT_VARS: VarMap = {
   "--kind-argument": "#2b63c9",
   "--kind-craft": "#0c6e64",
   "--kind-voice": "#ad3f78",
+  "--kind-continuity": "#ad3f78",
+  "--kind-structure": "#2f7a3d",
   // project / run state
   "--state-running": "#2b63c9",
   "--state-needs-you": "#8a5d0b",
@@ -126,6 +132,8 @@ export function paperScopeVars(mode: "light" | "dark"): VarMap {
     "--kind-argument": src["--kind-argument"]!,
     "--kind-craft": src["--kind-craft"]!,
     "--kind-voice": src["--kind-voice"]!,
+    "--kind-continuity": src["--kind-continuity"]!,
+    "--kind-structure": src["--kind-structure"]!,
     "--state-running": src["--state-running"]!,
     "--state-needs-you": src["--state-needs-you"]!,
     "--state-ready": src["--state-ready"]!,

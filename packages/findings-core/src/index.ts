@@ -25,3 +25,5 @@ export * from "./decisions.js";
 export * from "./what-changed.js";
 export * from "./manual-revision.js";
 export * from "./voice-status.js";
+export * from "./surface.js";
+export * from "./apply.js";

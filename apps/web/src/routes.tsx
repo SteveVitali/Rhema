@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, SettingsPage, UsagePage, RunReportPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -31,6 +31,8 @@ export const exportElement = <ExportPage />;
 export const voicesElement = <VoicesPage />;
 export const voiceNewElement = <VoiceNewPage />;
 export const voiceDetailElement = <VoiceDetailPage />;
+// P1.07 — the palette's free-form obligation form (REQ-OBJ-10).
+export const obligationNewElement = <ObligationNewPage />;
 // PRB.12 — the Settings privacy toggle + the §14.5 usage glance.
 export const settingsElement = <SettingsPage />;
 export const usageElement = <UsagePage />;
@@ -57,6 +59,8 @@ export const routes: readonly AppRoute[] = [
   // /a/:artifactId (a non-draft artifact rendered read-only).
   { path: "/p/:project/v/:v", public: false, element: pageElement },
   { path: "/p/:project/a/:artifactId", public: false, element: pageElement },
+  // P1.07 — the palette's free-form obligation (REQ-OBJ-10): the row-creation path.
+  { path: "/p/:project/obligations/new", public: false, element: obligationNewElement },
   // PRB.11 — the export dialog (format choice, the never-blocking obligation line, the AI-use attach
   // toggle + statement preview; §13.4, §8.4, §11.7).
   { path: "/p/:project/export", public: false, element: exportElement },

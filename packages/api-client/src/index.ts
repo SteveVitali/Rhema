@@ -306,6 +306,46 @@ export interface DispositionDto {
   readonly frozenAt?: string;
 }
 
+/** P1.07 — Apply's result (REQ-SPEC-6): the working head the splice landed on + the accept·applied row. */
+export interface ApplyResultDto {
+  readonly ok: true;
+  readonly draftId: string;
+  readonly draftN: number;
+  readonly versionId: string;
+  readonly disposition: DispositionDto;
+}
+
+/** P1.07 — the deep-link resolve: finding → its dossier anchor (§5.7). */
+export interface FindingResolveDto {
+  readonly findingId: string;
+  readonly runId: string;
+  readonly anchor: string;
+}
+
+/** P1.07 — one row of the consolidated bulk preview (§5.7). */
+export interface BulkPreviewRowDto {
+  readonly findingId: string;
+  readonly title: string;
+  readonly severity: string;
+  readonly disposition: "accept" | "defer";
+  readonly obligation: "none" | "revision";
+  readonly appliedMarkdown?: string;
+}
+
+export interface BulkPreviewDto {
+  readonly action: "apply_notes" | "defer_minor" | "accept_section";
+  readonly rows: readonly BulkPreviewRowDto[];
+  readonly skipped: readonly { readonly findingId: string; readonly title: string; readonly reason: string }[];
+  readonly total: number;
+}
+
+export interface BulkResultDto {
+  readonly ok: true;
+  readonly applied: readonly string[];
+  readonly skipped: readonly { readonly findingId: string; readonly reason: string }[];
+  readonly count: number;
+}
+
 /** A Decisions-inbox row (a `decision_requests` open row). */
 export interface DecisionItemDto {
   readonly id: string;
@@ -498,6 +538,10 @@ export interface DossierDto {
   readonly runId: string;
   readonly projectTitle: string;
   readonly versionLabel: string;
+  /** P1.07 — the run's rigor drives the §5.7 severity budget (Quick's 40-finding rendered cap). */
+  readonly rigor: string;
+  /** P1.07 — the reviewed draft the Apply path splices (its working head when forked). */
+  readonly reviewedDraftId: string;
   /** P1.06 (§7.2) — a scoped run's scope as chip labels ("§III"); absent on whole-draft runs. */
   readonly scopeLabels?: readonly string[];
   readonly openObligations: number;
@@ -537,6 +581,9 @@ export interface EditorFindingDto {
   readonly findingId: string;
   readonly title: string;
   readonly severity: string;
+  /** P1.07 — the kind hue + the suggestion the "suggestions inline" toggle previews (§5.7). */
+  readonly kind?: string;
+  readonly suggestion?: { replacement: string } | null;
   /** e.g. "from Review of v2" — the finding is a projection of the source review, not a re-file. */
   readonly sourceLabel: string;
   readonly anchor: unknown;
@@ -1159,6 +1206,44 @@ export interface ApiClient {
     req: RecordDispositionDto,
     init?: RequestInitLite,
   ): Promise<DispositionDto>;
+  /** P1.07 — Apply (REQ-SPEC-6): splice the finding's suggestion into the working head + accept·applied.
+   *  `ApiError(422)` carries `reason` (no_suggestion/already_applied/unanchored/anchor_lost); 409 = frozen. */
+  applyFinding(projectId: string, findingId: string, init?: RequestInitLite): Promise<ApplyResultDto>;
+  /** P1.07 — promote a reconciliation-rejected second-read finding to the main list (REQ-IDE-26). */
+  promoteFinding(
+    projectId: string,
+    findingId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; findingId: string; obligationId?: string }>;
+  /** P1.07 — "Add to obligations" on any finding (REQ-OBJ-9); idempotent per root finding. */
+  addFindingToObligations(
+    projectId: string,
+    findingId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; obligationId: string }>;
+  /** P1.07 — the palette's free-form obligation (REQ-OBJ-10; `source: 'user'`, standing). */
+  createObligation(
+    projectId: string,
+    req: { title: string; severity?: "blocking" | "major" | "minor" | "note" },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; obligationId: string }>;
+  /** P1.07 — the shared deep link: resolve a finding to its dossier's run + anchor. */
+  resolveFinding(projectId: string, findingId: string, init?: RequestInitLite): Promise<FindingResolveDto>;
+  /** P1.07 — the consolidated bulk preview (§5.7): checklist + spliced diffs + obligations, before writes. */
+  previewBulkFindings(
+    projectId: string,
+    runId: string,
+    req: { action: BulkPreviewDto["action"]; section?: string },
+    init?: RequestInitLite,
+  ): Promise<BulkPreviewDto>;
+  /** P1.07 — dispatch a previewed bulk action (§5.7). `only` = the checklist's checked subset —
+   *  unchecked rows are never written (no blind accept-all). */
+  applyBulkFindings(
+    projectId: string,
+    runId: string,
+    req: { action: BulkPreviewDto["action"]; section?: string; only?: string[] },
+    init?: RequestInitLite,
+  ): Promise<BulkResultDto>;
   /** The Decisions list — open `decision_requests` for the project (§5.7; beta Inbox stand-in). */
   listDecisions(projectId: string, init?: RequestInitLite): Promise<DecisionItemDto[]>;
   /** Answer a Decisions row (the row's option, or "dismiss"). */
@@ -1441,6 +1526,60 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     async recordDisposition(projectId, findingId, req, init): Promise<DispositionDto> {
       return json<DispositionDto>(
         `/projects/${encodeURIComponent(projectId)}/findings/${encodeURIComponent(findingId)}/disposition`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async applyFinding(projectId, findingId, init): Promise<ApplyResultDto> {
+      return json<ApplyResultDto>(
+        `/projects/${encodeURIComponent(projectId)}/findings/${encodeURIComponent(findingId)}/apply`,
+        { method: "POST", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async promoteFinding(projectId, findingId, init) {
+      return json<{ ok: true; findingId: string; obligationId?: string }>(
+        `/projects/${encodeURIComponent(projectId)}/findings/${encodeURIComponent(findingId)}/promote`,
+        { method: "POST", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async addFindingToObligations(projectId, findingId, init) {
+      return json<{ ok: true; obligationId: string }>(
+        `/projects/${encodeURIComponent(projectId)}/findings/${encodeURIComponent(findingId)}/obligations`,
+        { method: "POST", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async createObligation(projectId, req, init) {
+      return json<{ ok: true; obligationId: string }>(
+        `/projects/${encodeURIComponent(projectId)}/obligations`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async resolveFinding(projectId, findingId, init): Promise<FindingResolveDto> {
+      return json<FindingResolveDto>(
+        `/projects/${encodeURIComponent(projectId)}/findings/${encodeURIComponent(findingId)}/resolve`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async previewBulkFindings(projectId, runId, req, init): Promise<BulkPreviewDto> {
+      return json<BulkPreviewDto>(
+        `/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(runId)}/findings/bulk-preview`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async applyBulkFindings(projectId, runId, req, init): Promise<BulkResultDto> {
+      return json<BulkResultDto>(
+        `/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(runId)}/findings/bulk`,
         {
           method: "POST",
           headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },

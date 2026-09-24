@@ -17,13 +17,30 @@ export interface FindingForDecoration {
   readonly findingId: string;
   readonly anchor: Anchor | null;
   readonly severity: string;
+  /**
+   * P1.07 — the finding kind (claim/argument/…): emitted as `data-finding-kind` so the severity-weight
+   * × kind-hue system can distinguish the mark's hue; optional for callers without a full finding.
+   */
+  readonly kind?: string;
   /** a projection that already cleared no rung — renders the lost note on the card, no span. */
   readonly lost?: boolean;
+  /**
+   * P1.07 — the finding's suggested replacement text. Carried on the span as `data-suggestion-replacement`
+   * so the island can preview the fix inline (the suggestion toggle — a Decoration-only preview; the
+   * document bytes never change until Apply).
+   */
+  readonly suggestion?: string | null;
+  /**
+   * suggestion preview mode for this finding: when true the span additionally carries
+   * `rm-suggestion-preview` + `data-suggestion-replacement` (the Margin's preview-the-fix affordance).
+   */
+  readonly showSuggestion?: boolean;
 }
 
 export interface ResolvedFinding {
   readonly findingId: string;
   readonly severity: string;
+  readonly kind?: string;
   readonly method: AnchorMethod;
   /** PM range the decoration covers — null for unanchored/unresolved (Whole piece). */
   readonly from: number | null;
@@ -50,15 +67,17 @@ export function resolveFindings(
   markdown?: string,
 ): ResolvedFinding[] {
   const { blocks, map, markdown: md } = docBlocks(doc, markdown);
+  const carry = (f: FindingForDecoration) => (f.kind != null ? { kind: f.kind } : {});
   return findings.map((f) => {
     if (f.lost) {
-      return { findingId: f.findingId, severity: f.severity, method: "unresolved" as const, from: null, to: null, blockId: f.anchor?.blockId ?? null, lost: true };
+      return { findingId: f.findingId, severity: f.severity, ...carry(f), method: "unresolved" as const, from: null, to: null, blockId: f.anchor?.blockId ?? null, lost: true };
     }
     const res = resolveAnchor(f.anchor, blocks);
     if (res.method === "unanchored" || res.method === "unresolved" || res.blockId == null) {
       return {
         findingId: f.findingId,
         severity: f.severity,
+        ...carry(f),
         method: res.method,
         from: null,
         to: null,
@@ -67,19 +86,41 @@ export function resolveFindings(
       };
     }
     const entry = map.byBlockId.get(res.blockId);
-    if (!entry) return { findingId: f.findingId, severity: f.severity, method: res.method, from: null, to: null, blockId: res.blockId, lost: false };
+    if (!entry) return { findingId: f.findingId, severity: f.severity, ...carry(f), method: res.method, from: null, to: null, blockId: res.blockId, lost: false };
     if (res.startOffset == null || res.endOffset == null) {
       // fuzzy resolved to a BLOCK — decorate the whole block.
-      return { findingId: f.findingId, severity: f.severity, method: res.method, from: entry.pmFrom, to: entry.pmTo, blockId: res.blockId, lost: false };
+      return { findingId: f.findingId, severity: f.severity, ...carry(f), method: res.method, from: entry.pmFrom, to: entry.pmTo, blockId: res.blockId, lost: false };
     }
     const from = map.pmPosForOffset(res.blockId, res.startOffset);
     const to = map.pmPosForOffset(res.blockId, res.endOffset);
     if (from == null || to == null || to <= from) {
-      return { findingId: f.findingId, severity: f.severity, method: res.method, from: entry.pmFrom, to: entry.pmTo, blockId: res.blockId, lost: false };
+      return { findingId: f.findingId, severity: f.severity, ...carry(f), method: res.method, from: entry.pmFrom, to: entry.pmTo, blockId: res.blockId, lost: false };
     }
     void md;
-    return { findingId: f.findingId, severity: f.severity, method: res.method, from, to, blockId: res.blockId, lost: false };
+    return { findingId: f.findingId, severity: f.severity, ...carry(f), method: res.method, from, to, blockId: res.blockId, lost: false };
   });
+}
+
+/**
+ * The span attributes for one finding decoration (P1.07): severity class + `data-finding-kind` for the
+ * kind hue + `data-suggestion-replacement` when the finding carries a fix (emitted unconditionally so
+ * the island can preview the suggestion client-side; `rm-suggestion-preview` only marks the preview-ON
+ * state). The document bytes are never touched.
+ */
+function spanAttrs(f: FindingForDecoration, method: AnchorMethod): Record<string, string> {
+  let cls = `rm-finding rm-finding-${f.severity}`;
+  if (f.showSuggestion && f.suggestion != null) cls += " rm-suggestion-preview";
+  const attrs: Record<string, string> = {
+    class: cls,
+    "data-finding-id": f.findingId,
+    "data-anchor-method": method,
+  };
+  if (f.kind != null) {
+    attrs["data-finding-kind"] = f.kind;
+    attrs["class"] = `${cls} rm-kind-${f.kind}`;
+  }
+  if (f.suggestion != null) attrs["data-suggestion-replacement"] = f.suggestion;
+  return attrs;
 }
 
 /** Findings → a DecorationSet: inline span decorations, block decorations for fuzzy-resolved
@@ -88,16 +129,11 @@ export function resolveFindings(
 export function findingDecorationSet(doc: PMNode, findings: readonly FindingForDecoration[], markdown?: string): DecorationSet {
   const resolved = resolveFindings(doc, findings, markdown);
   const decos: Decoration[] = [];
-  for (const r of resolved) {
-    if (r.from == null || r.to == null) continue;
-    decos.push(
-      Decoration.inline(r.from, r.to, {
-        class: `rm-finding rm-finding-${r.severity}`,
-        "data-finding-id": r.findingId,
-        "data-anchor-method": r.method,
-      }),
-    );
-  }
+  resolved.forEach((r, i) => {
+    const f = findings[i];
+    if (r.from == null || r.to == null || f == null) return;
+    decos.push(Decoration.inline(r.from, r.to, spanAttrs(f, r.method)));
+  });
   return DecorationSet.create(doc, decos);
 }
 
@@ -139,18 +175,13 @@ function buildSet(state: EditorState, inputs: DecorationInputs): DecorationSet {
       const from = map.pmPosForOffset(res.blockId, res.startOffset);
       const to = map.pmPosForOffset(res.blockId, res.endOffset);
       if (from != null && to != null && to > from) {
-        decos.push(Decoration.inline(from, to, {
-          class: `rm-finding rm-finding-${f.severity}`,
-          "data-finding-id": f.findingId,
-          "data-anchor-method": res.method,
-        }));
+        decos.push(Decoration.inline(from, to, spanAttrs(f, res.method)));
         continue;
       }
     }
     decos.push(Decoration.node(entry.pmFrom, entry.pmTo, {
-      class: `rm-finding-block rm-finding-${f.severity}`,
-      "data-finding-id": f.findingId,
-      "data-anchor-method": res.method,
+      ...spanAttrs(f, res.method),
+      class: `rm-finding-block rm-finding-${f.severity}${f.kind != null ? ` rm-kind-${f.kind}` : ""}`,
     }));
   }
 

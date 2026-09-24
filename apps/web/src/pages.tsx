@@ -28,6 +28,10 @@ import {
   IdeShell,
   EmptyProject,
   RunReport,
+  MarginSurface,
+  FindingsDesk,
+  type MarginLabels,
+  type FindingsDeskLabels,
   type WhatChangedLabels,
   type SourceEditorLabels,
   type PageEditorLabels,
@@ -62,13 +66,24 @@ import {
   collapsedRejected,
   summarizeReconciliation,
   claimUrlViews,
+  evidenceUrlViews,
   fetchLogFromRows,
   buildRubricDelta,
+  // P1.07 — the findings-surface derivations (§5.7): margin clustering, the shared filters, the
+  // sectioned triage queue, the Quick severity budget, and the Apply gate.
+  marginItems,
+  filterFindings,
+  parseFindingFilters,
+  sectionedTriageQueue,
+  severityBudget,
+  applySeverityBudget,
+  applyGate,
+  LIVE_OBLIGATION_STATES,
   type TrustChipLabels,
   type DoNothingOutcome,
 } from "@rhema/findings-core";
 import type { EditorDocDto, GateCardDto, VoiceStatusDto } from "@rhema/api-client";
-import { CHECKABLE_CLAIM_KINDS, type ClaimKind } from "@rhema/contracts";
+import { CHECKABLE_CLAIM_KINDS, type ClaimKind, type FindingView } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { feedLabelMapsJson } from "./feed-labels.js";
@@ -148,6 +163,7 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(ide.status ? { status: ide.status } : {})}
       {...(ide.themeUrl ? { themeUrl: ide.themeUrl } : {})}
       {...(ide.paperThemeUrl ? { paperThemeUrl: ide.paperThemeUrl } : {})}
+      {...dossierSurfaces(data)}
       labels={{
         ...COPY.ide,
         viewMenu: { ...COPY.ide.viewMenu, advanced: COPY.runSheet.advanced },
@@ -1214,6 +1230,49 @@ const findingsLabels: FindingsListLabels = {
   conflictsHeading: R.conflictsHeading,
   rejectedHeading: R.rejectedHeading,
   promoteLabel: R.promoteLabel,
+  // P1.07 — the evidence block's labels (claim findings show the verdict chip + fetched ✓, REQ-IDE-25).
+  fetchedLabel: `${R.fetchedLabel} ✓`,
+  accessedLabel: (a) => a.slice(0, 10),
+};
+
+// ---- P1.07 — the §5.7 findings surfaces: Margin cards/chips + the Desk's findings table, powered by
+// the SAME FindingView[] as the dossier list (one model, three surfaces). ----
+
+const marginLabels: MarginLabels = {
+  kindLabel: findingsLabels.kindLabel,
+  severityLabel: findingsLabels.severityLabel,
+  provisionalLabel: findingsLabels.provisionalLabel,
+  dispositionLabel: findingsLabels.dispositionLabel,
+  fetchedLabel: findingsLabels.fetchedLabel,
+  accessedLabel: findingsLabels.accessedLabel,
+  chipLabel: (count, topSeverityLabel, topCount) =>
+    fmt(R.marginChipFmt, { count, top: topCount, severity: topSeverityLabel }),
+  chipAria: (count) => fmt(R.marginChipAriaFmt, { count }),
+};
+
+const deskFindingsLabels: FindingsDeskLabels = {
+  table: {
+    finding: R.deskTable.finding,
+    severity: R.deskTable.severity,
+    kind: R.deskTable.kind,
+    status: R.deskTable.status,
+    actions: "",
+  },
+  empty: R.findingsEmpty,
+  filters: {
+    severity: R.filters.severity,
+    kind: R.filters.kind,
+    status: R.filters.status,
+    apply: R.filters.apply,
+    clear: R.filters.clear,
+    allLabel: R.filters.all,
+  },
+  severityLabel: (s) => R.severityLabel[s] ?? s,
+  kindLabel: (k) => R.findingKindLabel[k] ?? k,
+  statusLabel: (v) =>
+    v.disposition ? (R.dispositionPast[v.disposition.kind] ?? v.disposition.kind) : R.filters.undecided,
+  progressFmt: (decided, total) => fmt(R.triageProgressFmt, { decided, total }),
+  triageExit: R.triageExit,
 };
 
 function checkable(kind: string | undefined): boolean {
@@ -1304,6 +1363,162 @@ function dispositionControlsFor(
   );
 }
 
+// ---- P1.07 — the findings surface's per-card actions (§5.7): Apply (the free verb — the primary
+// button whenever the card carries an applyable suggestion), the five disposition verbs, and
+// "Add to obligations". Every control is a plain form POST — no client JS required. ----
+
+/** The shared filters applied server-side: budget first (Quick's 40-cap), then the GET-param filters. */
+function visibleDossierFindings(
+  dossier: { findings: readonly FindingView[]; rigor?: string; findingObligations?: Readonly<Record<string, string>> },
+  filters: Record<string, string | undefined> | undefined,
+): FindingView[] {
+  const parsed = parseFindingFilters(filters ?? {});
+  const openObligationIds = new Set(
+    Object.entries(dossier.findingObligations ?? {})
+      .filter(([, s]) => LIVE_OBLIGATION_STATES.includes(s))
+      .map(([id]) => id),
+  );
+  return filterFindings(applySeverityBudget([...dossier.findings], dossier.rigor), parsed, { openObligationIds });
+}
+
+/** A finding card's full control set — Apply (when applyGate allows) + the verbs + Add-to-obligations. */
+function findingControlsFor(
+  view: FindingView,
+  slug: string,
+  runId: string,
+  compact: boolean,
+  error: { findingId: string; message: string } | undefined,
+  opts: { readonly hasObligation: boolean },
+): ReactNode {
+  const gate = applyGate(view);
+  return (
+    <>
+      {view.suggestion != null && gate.ok ? (
+        <form method="post" action={`/p/${slug}/review/${runId}/findings/${view.id}/apply`} style={{ display: "inline" }}>
+          <button
+            type="submit"
+            data-apply="true"
+            title={R.applyTitle}
+            style={{ fontSize: "12px", fontWeight: 600, padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--shell-bg)", cursor: "pointer" }}
+          >
+            {R.applyLabel}
+          </button>
+        </form>
+      ) : null}
+      {dispositionControlsFor(view, slug, runId, compact, error)}
+      {!opts.hasObligation && !view.provisional ? (
+        <form method="post" action={`/p/${slug}/findings/${view.id}/obligations`} style={{ display: "inline" }}>
+          <input type="hidden" name="next" value={`/p/${slug}/review/${runId}`} />
+          <button
+            type="submit"
+            data-add-obligation="true"
+            style={{ fontSize: "12px", background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+          >
+            {R.addObligationLabel}
+          </button>
+        </form>
+      ) : null}
+    </>
+  );
+}
+
+/** The Desk's bulk affordances (§5.7): each posts to the ONE consolidated preview — nothing blind. */
+function dossierBulkActions(slug: string, runId: string, visible: readonly FindingView[]): ReactNode {
+  const btn = { fontSize: "12px", padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" } as const;
+  const sections = [...new Set(visible.map((v) => v.letterSection).filter((s): s is NonNullable<typeof s> => s != null))];
+  const action = `/p/${slug}/review/${runId}/findings/bulk-preview`;
+  return (
+    <div data-bulk-controls="true" style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+      <form method="post" action={action} style={{ display: "inline" }}>
+        <input type="hidden" name="action" value="apply_notes" />
+        <button type="submit" style={btn}>{R.bulk.applyNotes}</button>
+      </form>
+      <form method="post" action={action} style={{ display: "inline" }}>
+        <input type="hidden" name="action" value="defer_minor" />
+        <button type="submit" style={btn}>{R.bulk.deferMinor}</button>
+      </form>
+      {sections.length > 0 ? (
+        <form method="post" action={action} style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
+          <input type="hidden" name="action" value="accept_section" />
+          <select name="section" defaultValue={sections[0] ?? ""} style={{ fontSize: "12px" }}>
+            {sections.map((s) => (
+              <option key={s} value={s}>{fmt(R.sectionLabelFmt, { key: s })}</option>
+            ))}
+          </select>
+          <button type="submit" style={btn}>{R.bulk.acceptSection}</button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * P1.07 — the dossier's Margin + Desk bodies (§5.7 "three surfaces, one list"): MarginSurface renders
+ * `marginItems` (cards beside passages, stacked chips for crowds), FindingsDesk renders the grouped
+ * screen-reader table + the shared filter bar + the sectioned queue when `?triage=1` + the bulk
+ * affordances. Everything derives from `visibleDossierFindings` — the same list the body list shows.
+ */
+function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: ReactNode; deskFindingsBody: ReactNode } | Record<string, never> {
+  const dossier = data.dossier;
+  if (!dossier) return {};
+  const dv = data.dossierView;
+  const visible = visibleDossierFindings(dossier, dv?.filters);
+  const err = data.triage?.dispositionError;
+  const compact = data.compact ?? false;
+  const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
+  const obligationFor = (view: FindingView) => {
+    const state = dossier.findingObligations?.[view.id];
+    return state ? { state, label: R.obligationStateLabel[state] ?? state } : undefined;
+  };
+  const evidenceFor = (view: FindingView) =>
+    view.evidence
+      ? {
+          ...(view.evidence.verdict != null ? { verdictLabel: R.verdictLabel[view.evidence.verdict] ?? view.evidence.verdict } : {}),
+          urls: evidenceUrlViews(view.evidence, fetchLog),
+        }
+      : undefined;
+  const controlsFor = (view: FindingView) =>
+    findingControlsFor(view, dossier.slug, dossier.runId, compact, err, {
+      hasObligation: dossier.findingObligations?.[view.id] != null,
+    });
+  const filterAction = `/p/${dossier.slug}/review/${dossier.runId}`;
+  return {
+    marginBody: (
+      <MarginSurface
+        items={marginItems(visible)}
+        labels={marginLabels}
+        obligationFor={obligationFor}
+        controlsFor={controlsFor}
+        evidenceFor={evidenceFor}
+      />
+    ),
+    // §10.1 — the phone-width input set is "the same five verbs + a note; never a bulk action":
+    // compact renders omit the bulk affordances entirely.
+    deskFindingsBody: (
+      <FindingsDesk
+        groups={groupFindingsForList(visible)}
+        labels={deskFindingsLabels}
+        filterAction={filterAction}
+        filters={{
+          ...(dv?.filters?.sev != null ? { severity: dv.filters.sev } : {}),
+          ...(dv?.filters?.kind != null ? { kind: dv.filters.kind } : {}),
+          ...(dv?.filters?.disp != null ? { status: dv.filters.disp } : {}),
+        }}
+        severityOptions={Object.entries(R.severityLabel).map(([value, label]) => ({ value, label }))}
+        kindOptions={Object.entries(R.findingKindLabel).map(([value, label]) => ({ value, label }))}
+        statusOptions={[
+          { value: "undecided", label: R.filters.undecided },
+          ...Object.entries(R.dispositionPast).map(([value, label]) => ({ value, label })),
+        ]}
+        obligationFor={obligationFor}
+        actionsFor={controlsFor}
+        {...(dv?.triage === true ? { triage: sectionedTriageQueue(visible, { wholePiece: R.wholePieceLabel }) } : {})}
+        {...(compact ? {} : { bulkActions: dossierBulkActions(dossier.slug, dossier.runId, visible) })}
+      />
+    ),
+  };
+}
+
 /** A gate card model for the Needs-you surface (§6.4) — built from the api's GateCardDto. */
 function gateCardFor(
   gate: GateCardDto,
@@ -1386,7 +1601,7 @@ function gateCardFor(
 /** Auth-gated: the delivered-review dossier (run card, letter, claims, second read, rubric, findings)
  *  with the §5.7 disposition controls on every finalized finding (PRB.05). */
 export function DossierPage(): ReactNode {
-  const { dossier, triage, compact } = usePageData();
+  const { dossier, triage, compact, dossierView } = usePageData();
   if (!dossier) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
@@ -1410,7 +1625,11 @@ export function DossierPage(): ReactNode {
   }));
 
   const trustChip = buildTrustChip(dossier.accessReport, trustLabels);
-  const groups = groupFindingsForList([...dossier.findings]);
+  // P1.07 — ONE list powers the body, the Margin, and the Desk: the Quick severity budget caps the
+  // rendered set first, then the shared GET-param filters narrow every surface together (§5.7).
+  const visible = visibleDossierFindings(dossier, dossierView?.filters);
+  const budget = severityBudget([...dossier.findings], dossier.rigor);
+  const groups = groupFindingsForList(visible);
   const conflicts = detectReconciliationConflicts([...dossier.findings]);
   const rejected = collapsedRejected([...dossier.findings]);
   const reconciliation = summarizeReconciliation([...dossier.findings]);
@@ -1448,7 +1667,19 @@ export function DossierPage(): ReactNode {
       </div>
 
       <div style={{ margin: "16px 0" }}>
-        <LetterView title={dossier.letterTitle} sections={dossier.letterSections} trustChip={trustChip} labels={letterLabels} />
+        {/* P1.07 — the letter's passage links resolve to the finding cards/rows (§5.7): each
+            section lists the findings filed under its `letterSection` key. */}
+        <LetterView
+          title={dossier.letterTitle}
+          sections={dossier.letterSections.map((s) => {
+            const refs = dossier.findings
+              .filter((f) => f.letterSection === s.id)
+              .map((f) => ({ findingId: f.id, label: f.title }));
+            return refs.length > 0 ? { ...s, findingRefs: refs } : s;
+          })}
+          trustChip={trustChip}
+          labels={letterLabels}
+        />
       </div>
 
       <div style={{ margin: "16px 0" }}>
@@ -1499,6 +1730,95 @@ export function DossierPage(): ReactNode {
             </>
           );
         })()}
+        {/* P1.07 — the one-preview bulk render (§5.7; REQ-IDE-29 amended): `?bulk=<action>` lands the
+            consolidated checklist here — checked rows ride `only[]` to the dispatch POST; the skipped
+            rows list their reasons. No blind accept-all exists. */}
+        {dossierView?.bulk ? (
+          <section
+            data-bulk-preview="true"
+            style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px 14px", margin: "0 0 14px", background: "var(--shell-surface)" }}
+          >
+            <h3 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 8px" }}>{R.bulk.previewHeading}</h3>
+            {dossierView.bulk.preview.rows.length === 0 ? (
+              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{R.bulk.emptyPreview}</p>
+            ) : (
+              <form method="post" action={`/p/${dossier.slug}/review/${dossier.runId}/findings/bulk`}>
+                <input type="hidden" name="action" value={dossierView.bulk.action} />
+                {dossierView.bulk.section != null ? (
+                  <input type="hidden" name="section" value={dossierView.bulk.section} />
+                ) : null}
+                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 8px" }}>
+                  {dossierView.bulk.preview.rows.map((row) => (
+                    <li key={row.findingId} style={{ fontSize: "13px", padding: "4px 0" }}>
+                      <label style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
+                        <input type="checkbox" name="only" value={row.findingId} defaultChecked />
+                        <span>
+                          {row.title}{" "}
+                          <span style={{ color: "var(--shell-fg-muted)" }}>
+                            — {R.severityLabel[row.severity] ?? row.severity} · {R.dispositionPast[row.disposition] ?? row.disposition}
+                          </span>
+                          {row.appliedMarkdown != null ? (
+                            <code style={{ display: "block", fontSize: "11px", color: "var(--shell-fg-muted)", marginTop: "2px", whiteSpace: "pre-wrap" }}>
+                              {row.appliedMarkdown.slice(0, 200)}
+                            </code>
+                          ) : null}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                {dossierView.bulk.preview.skipped.length > 0 ? (
+                  <div data-bulk-skipped="true" style={{ margin: "4px 0 8px" }}>
+                    <h4 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", margin: "0 0 4px" }}>
+                      {R.bulk.skippedHeading}
+                    </h4>
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                      {dossierView.bulk.preview.skipped.map((s) => (
+                        <li key={s.findingId}>{s.title} — {s.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                <button type="submit" data-bulk-confirm="true" style={{ fontSize: "13px", fontWeight: 600, padding: "6px 14px", borderRadius: "4px", border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--shell-bg)", cursor: "pointer" }}>
+                  {R.bulk.confirm}
+                </button>{" "}
+                <a href={`/p/${dossier.slug}/review/${dossier.runId}`} style={{ fontSize: "13px" }}>{R.bulk.cancel}</a>
+              </form>
+            )}
+          </section>
+        ) : null}
+        {dossierView?.bulkDone ? (
+          <p data-bulk-done="true" role="status" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "0 0 10px" }}>
+            {fmt(R.bulk.doneFmt, { n: dossierView.bulkDone.count })}
+          </p>
+        ) : null}
+        {dossierView?.notice ? (
+          <p
+            data-finding-notice={dossierView.notice.kind}
+            role={dossierView.notice.kind === "error" ? "alert" : "status"}
+            style={{ fontSize: "12px", color: dossierView.notice.kind === "error" ? "var(--sev-major)" : "var(--state-ready)", margin: "0 0 10px" }}
+          >
+            {dossierView.notice.message ??
+              (dossierView.notice.kind === "applied"
+                ? R.appliedToast
+                : dossierView.notice.kind === "promoted"
+                  ? R.promotedToast
+                  : R.obligatedToast)}
+          </p>
+        ) : null}
+        {/* the severity-budget line (§5.7): Quick's rendered cap is honest — the folded count names
+            what the roadmap absorbed. */}
+        {budget.folded > 0 ? (
+          <p data-severity-budget="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 10px" }}>
+            {fmt(R.severityBudgetFmt, { n: budget.folded })}
+          </p>
+        ) : null}
+        {/* the once-per-surface evidence explainer (§5.7) — shown when any finding carries URLs. */}
+        {visible.some((f) => (f.evidence?.urls.length ?? 0) > 0) ? (
+          <p data-evidence-explainer="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
+            {R.evidenceExplainer}
+          </p>
+        ) : null}
         {/* PRB.16 — the per-finding obligation-state chip (REQ-OBJ-6): the dossier payload carries
             finding id → obligation state, joined from the delivered revision_obligations rows. */}
         <FindingsList
@@ -1513,7 +1833,20 @@ export function DossierPage(): ReactNode {
               : undefined;
           }}
           controlsFor={(view) =>
-            dispositionControlsFor(view, dossier.slug, dossier.runId, compact ?? false, triage?.dispositionError)
+            findingControlsFor(view, dossier.slug, dossier.runId, compact ?? false, triage?.dispositionError, {
+              hasObligation: dossier.findingObligations?.[view.id] != null,
+            })
+          }
+          promoteActionFor={(view) => `/p/${dossier.slug}/findings/${view.id}/promote`}
+          evidenceFor={(view) =>
+            view.evidence
+              ? {
+                  ...(view.evidence.verdict != null
+                    ? { verdictLabel: R.verdictLabel[view.evidence.verdict] ?? view.evidence.verdict }
+                    : {}),
+                  urls: evidenceUrlViews(view.evidence, fetchLog),
+                }
+              : undefined
           }
         />
         {triage?.savedFindingId ? (
@@ -1677,6 +2010,8 @@ export function EditorPage(): ReactNode {
           sourceLabel: f.sourceLabel,
           quote: anchorQuote(f),
           lost: f.lost,
+          kind: f.kind,
+          suggestion: f.suggestion,
         }))}
         saveUrl={`${base}/save`}
         docUrl={`${base}/doc`}
@@ -1780,6 +2115,8 @@ function PageSurface(): ReactNode {
           quote: anchorQuote(f),
           lost: f.lost,
           anchor: f.anchor,
+          kind: f.kind,
+          suggestion: f.suggestion,
         }))}
         proposals={(doc.proposals ?? []).map((p) => ({
           id: p.id,
@@ -1934,6 +2271,48 @@ export function VoiceNewPage(): ReactNode {
           <button type="submit" name="intent" value="save" style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}>
             {VC.new.createOnly}
           </button>
+        </div>
+      </form>
+    </Shell>
+  );
+}
+
+/** P1.07 — the palette's free-form obligation form (REQ-OBJ-10): a plain POST that files a
+ *  `source: 'user'` standing obligation on the project's head draft. The palette row navigates here;
+ *  Cancel/`next` return to wherever the request came from. */
+export function ObligationNewPage(): ReactNode {
+  const { obligationNew } = usePageData();
+  const slug = obligationNew?.slug ?? "";
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{obligationNew?.projectTitle ?? "Project"}</a>} footer={footer()}>
+      <SectionTitle>{COPY.obligation.heading}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>{COPY.obligation.lede}</p>
+      {obligationNew?.error ? (
+        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{obligationNew.error}</p>
+      ) : null}
+      <form method="post" action={`/p/${slug}/obligations`} style={{ maxWidth: "68ch" }}>
+        <input type="hidden" name="next" value={obligationNew?.back ?? `/p/${slug}`} />
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
+          {COPY.obligation.titleLabel}
+          <input name="title" required placeholder={COPY.obligation.titlePlaceholder} style={fieldStyle} />
+        </label>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "12px" }}>
+          {COPY.obligation.severityLabel}{" "}
+          <select name="severity" defaultValue="minor" style={{ fontSize: "13px" }}>
+            <option value="blocking">blocking</option>
+            <option value="major">major</option>
+            <option value="minor">minor</option>
+            <option value="note">note</option>
+          </select>
+        </label>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{COPY.obligation.severityHint}</p>
+        <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+          <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+            {COPY.obligation.createCta}
+          </button>
+          <a href={obligationNew?.back ?? `/p/${slug}`} style={{ padding: "8px 16px", fontSize: "14px", color: "var(--shell-fg-muted)" }}>
+            {COPY.obligation.cancel}
+          </a>
         </div>
       </form>
     </Shell>

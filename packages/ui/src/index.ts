@@ -44,6 +44,11 @@ export { RunReport } from "./run-report.js";
 export type { RunReportLabels } from "./run-report.js";
 export { FindingCard, FindingsList, ConflictRow } from "./findings.js";
 export type { FindingCardProps, FindingCardLabels, FindingsListProps, FindingsListLabels, ConflictRowLabels } from "./findings.js";
+// P1.07 — the Margin surface + the Desk's findings table (§5.7's "three surfaces, one list").
+export { MarginSurface, MarginTicks } from "./margin.js";
+export type { MarginSurfaceProps, MarginLabels } from "./margin.js";
+export { FindingsDesk } from "./findings-desk.js";
+export type { FindingsDeskProps, FindingsDeskLabels } from "./findings-desk.js";
 export { ClaimsTable } from "./claims.js";
 export type { ClaimsTableLabels, ClaimTableRow } from "./claims.js";
 export { RubricView } from "./rubric.js";

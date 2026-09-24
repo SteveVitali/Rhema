@@ -95,6 +95,29 @@ function main(): void {
     for (const b of ide.querySelectorAll<HTMLElement>("[data-ide-desk-tab]")) {
       b.setAttribute("aria-selected", String(b.dataset["ideDeskTab"] === state.deskTab));
     }
+    applySuggestions(state.suggestionsInline === true);
+  }
+
+  // ---- P1.07 — View › Show suggestions inline (§5.7): a suggestion-bearing finding's replacement
+  // renders as a read-only preview beside the passage. The Page's finding spans carry
+  // `data-suggestion-replacement`; the preview is a DOM-only insert — the document bytes never change
+  // (Apply owns the write). ----
+  const suggestionNodes: HTMLElement[] = [];
+  function applySuggestions(on: boolean): void {
+    if (!ide) return;
+    for (const n of suggestionNodes) n.remove();
+    suggestionNodes.length = 0;
+    for (const span of ide.querySelectorAll<HTMLElement>(".rm-finding[data-suggestion-replacement]")) {
+      span.classList.toggle("rm-suggestion-preview", on);
+      if (on) {
+        const ins = document.createElement("span");
+        ins.className = "rm-suggestion-replacement";
+        ins.setAttribute("aria-hidden", "true");
+        ins.textContent = ` ${span.dataset["suggestionReplacement"] ?? ""}`;
+        span.insertAdjacentElement("afterend", ins);
+        suggestionNodes.push(ins);
+      }
+    }
   }
 
   function setState(next: Partial<PaneState>): void {
@@ -564,24 +587,75 @@ function main(): void {
   };
   const cheatOpen = (): boolean => cheatEl != null && !cheatEl.hidden;
 
-  // ---- findings focus (§5.12's inert-while-typing chords): the Margin's fcards take programmatic
-  // focus; j/k walk them, Enter jumps to the anchor, the letter chords dispatch a findings event the
-  // dossier surface binds (P1.07). Escape returns focus to the Page. ----
-  const fcards = (): HTMLElement[] => [...ide.querySelectorAll<HTMLElement>(".ide-fcard")];
+  // ---- findings focus (§5.12's inert-while-typing chords + §5.7's linked selection): the finding
+  // cursor walks the ONE finding list — Margin cards AND Desk rows dedupe by finding id (the Margin
+  // card wins the focus since it carries the controls). J/K walk, ⌥J/⌥K hop major-or-blocking, Enter
+  // opens, Esc releases, P applies, A D R F E write dispositions — all inert while the caret is in the
+  // Page (the dispatcher enforces the zone). ----
+  interface FindingEl { id: string; el: HTMLElement }
+  const findingEls = (): FindingEl[] => {
+    const seen = new Set<string>();
+    const out: FindingEl[] = [];
+    for (const el of ide.querySelectorAll<HTMLElement>("[data-margin-card], [data-desk-row], .ide-fcard")) {
+      const id = el.dataset["findingId"] ?? el.dataset["deskRow"] ?? "";
+      if (id === "" || seen.has(id)) continue;
+      seen.add(id);
+      out.push({ id, el });
+    }
+    return out;
+  };
+  const fcards = (): HTMLElement[] => findingEls().map((f) => f.el);
   let findingIx = -1;
-  function focusFinding(ix: number): void {
-    const cards = fcards();
-    if (cards.length === 0) return;
-    findingIx = Math.max(0, Math.min(cards.length - 1, ix));
-    const card = cards[findingIx];
-    if (!card) return;
-    card.tabIndex = -1;
-    card.focus();
+
+  /** §5.7 linked selection — one finding id lights up on every surface at once (Margin card, Desk
+   *  row, the Page's underline span) and its passage scrolls into view. */
+  function selectFinding(id: string): void {
+    if (!ide) return;
+    for (const other of ide.querySelectorAll<HTMLElement>("[data-selected='true']")) {
+      other.removeAttribute("data-selected");
+    }
+    if (id === "") return;
+    const esc = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(id) : id.replace(/"/g, "");
+    for (const sel of ide.querySelectorAll<HTMLElement>(`[data-finding-id="${esc}"], [data-desk-row="${esc}"]`)) {
+      sel.setAttribute("data-selected", "true");
+    }
+    ide
+      .querySelector<HTMLElement>(`.ide-page [data-finding-id="${esc}"], .rm-page-host [data-finding-id="${esc}"]`)
+      ?.scrollIntoView({ block: "center" });
   }
+
+  function focusFinding(ix: number): void {
+    const items = findingEls();
+    if (items.length === 0) return;
+    findingIx = Math.max(0, Math.min(items.length - 1, ix));
+    const item = items[findingIx];
+    if (!item) return;
+    // a card inside a crowded-paragraph chip expands the stack on focus (§5.7 clustering).
+    const det = item.el.closest("details");
+    if (det instanceof HTMLDetailsElement) det.open = true;
+    selectFinding(item.id);
+    item.el.tabIndex = -1;
+    item.el.focus();
+  }
+
   function findingAction(action: string): void {
-    const card = fcards()[findingIx];
-    if (!card) return;
-    card.dispatchEvent(new CustomEvent("rhema:finding-action", { bubbles: true, detail: { action, findingId: card.dataset["findingId"] } }));
+    const item = findingEls()[findingIx];
+    if (!item) return;
+    const card = item.el;
+    card.dispatchEvent(new CustomEvent("rhema:finding-action", { bubbles: true, detail: { action, findingId: item.id } }));
+    if (action === "apply") {
+      // P → the card's Apply form posts (the free verb writes accept·applied through the server).
+      card.querySelector<HTMLElement>("[data-apply]")?.click();
+      return;
+    }
+    // the five verbs → the card's disposition form. rebut/escalate need a rationale — focus the note
+    // field rather than posting a write the server would bounce (the card explains the rule).
+    if (action === "rebut" || action === "escalate") {
+      card.querySelector<HTMLElement>("textarea, input[type='text']")?.focus();
+      card.querySelector<HTMLElement>(`[data-verb="${action}"]`)?.setAttribute("data-armed", "true");
+      return;
+    }
+    card.querySelector<HTMLElement>(`[data-verb="${action}"]`)?.click();
   }
 
   function focusZone(): FocusZone {
@@ -589,9 +663,21 @@ function main(): void {
     if (!el || el === document.body) return "none";
     if (el.closest("[data-ide-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
     if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
-    if (el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
+    if (el.closest("[data-margin-card]") || el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
+    if (el.closest("[data-desk-row]") || el.closest("[data-findings-desk]")) return "findings";
     return "none";
   }
+
+  // clicking a finding on ANY surface joins the selection (§5.7) + syncs the cursor for J/K.
+  ide.addEventListener("click", (e) => {
+    const target = (e.target as HTMLElement | null)?.closest?.("[data-margin-card], [data-desk-row], .ide-fcard") as HTMLElement | null;
+    if (!target) return;
+    const id = target.dataset["findingId"] ?? target.dataset["deskRow"] ?? "";
+    if (id === "") return;
+    const ix = findingEls().findIndex((it) => it.id === id);
+    if (ix >= 0) findingIx = ix;
+    selectFinding(id);
+  });
 
   // ---- the §5.12 keymap dispatcher (⌘K palette · ⌘1/⌘2/⌘J panes · ⌘⇧F/M/L · ⌘⇧R next step ·
   //      ⌘G approval · ⌥[/⌥] versions · j/k + P A D R F E findings · ? cheat sheet · ⌘S restore) ----
@@ -693,11 +779,22 @@ function main(): void {
         e.preventDefault();
         openPalette("/compare ");
         break;
-      case "triage":
+      case "triage": {
         e.preventDefault();
-        if (!state.deskOpen) setState({ deskOpen: true });
-        focusFinding(0);
+        // §5.7 triage mode (⌘⇧T): on a dossier the sectioned queue is the server-rendered
+        // `?triage=1` view — decisions persist per-verb, so entering/exiting is a navigation.
+        // Elsewhere the chord opens the Desk's findings tab and starts the cursor.
+        if (/\/p\/[^/]+\/review\/[^/]+/.test(window.location.pathname)) {
+          const url = new URL(window.location.href);
+          if (url.searchParams.get("triage") === "1") url.searchParams.delete("triage");
+          else url.searchParams.set("triage", "1");
+          window.location.assign(url.toString());
+        } else {
+          if (!state.deskOpen) setState({ deskOpen: true, deskTab: "findings" });
+          focusFinding(0);
+        }
         break;
+      }
       case "finding-next":
         e.preventDefault();
         focusFinding(findingIx + 1);
@@ -709,10 +806,20 @@ function main(): void {
       case "finding-anchor-next":
       case "finding-anchor-prev": {
         e.preventDefault();
-        const ticks = [...ide.querySelectorAll<HTMLElement>(".ide-tick")];
-        const cur = ticks.findIndex((t) => t === document.activeElement || t.contains(document.activeElement));
-        const next = ticks[Math.max(0, Math.min(ticks.length - 1, cur + (action.kind === "finding-anchor-next" ? 1 : -1)))];
-        next?.click();
+        // ⌥J/⌥K — the §5.12 severity walk: hop the next/previous MAJOR-OR-BLOCKING finding
+        // (wrapping), not every row.
+        const items = findingEls();
+        const severe = items.filter((it) => {
+          const sev = it.el.dataset["severity"];
+          return sev === "blocking" || sev === "major";
+        });
+        if (severe.length === 0) break;
+        const curId = items[findingIx]?.id;
+        const cur = severe.findIndex((it) => it.id === curId);
+        const step = action.kind === "finding-anchor-next" ? 1 : -1;
+        const next = severe[(cur + step + severe.length) % severe.length];
+        const ix = items.findIndex((it) => it.id === next!.id);
+        focusFinding(ix);
         break;
       }
       case "finding-open": {
@@ -964,6 +1071,10 @@ function main(): void {
     if (q.addEventListener) q.addEventListener("change", onChange);
     else if (q.addListener) q.addListener(onChange);
   }
+
+  // P1.07 — a deep link (`#finding-<id>`) lands with the linked selection lit on every surface.
+  const initialHash = /^#finding-(.+)$/.exec(window.location.hash)?.[1];
+  if (initialHash) selectFinding(initialHash);
 
   apply();
 }

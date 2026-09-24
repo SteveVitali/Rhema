@@ -55,6 +55,19 @@ export interface SaveManualRevisionArgs {
     readonly agentSpans?: readonly { readonly blockId: string; readonly from: number; readonly to: number }[];
   };
   /**
+   * P1.07 — Apply (REQ-SPEC-6, §5.7): when this save carries finding-suggestion splices, each spliced
+   * block's source becomes `suggestion_applied {runId, findingId}` instead of `human` — the run that
+   * produced the finding stays in the provenance (a person applied the agent's own words, not the
+   * other way round). `blockId` is the splice target's block id in the NEW markdown (the caller got it
+   * from `applySuggestionToMarkdown`); a blockId the save doesn't cover is ignored rather than thrown.
+   * A bulk Apply passes one entry per finding.
+   */
+  readonly appliedSuggestions?: readonly {
+    readonly blockId: string;
+    readonly runId: string;
+    readonly findingId: string;
+  }[];
+  /**
    * P1.03 — the restore-point write this save performs. `'content-addressed'` (default — the HTTP save
    * path's beta behavior) inserts the `snapshot`/`auto` row pointing at the artifact's s3_key.
    * `'ydoc'` SKIPS it: the collab service owns restore points as Yjs update-deltas chained from daily
@@ -313,6 +326,25 @@ export async function saveManualRevision(
         const row = s as { blockId: string };
         const cap = byBlock.get(row.blockId);
         return cap ? { ...(s as object), capture: cap } : s;
+      });
+    }
+    // P1.07 — an Apply save: each spliced block's source is `suggestion_applied`, carrying the finding's
+    // run (REQ-SPEC-6's provenance mark; a person took the suggestion — the run that wrote it stays
+    // attributable). Overrides both the live-capture and diff-derived maps.
+    const appliedMarks = new Map(
+      (args.appliedSuggestions ?? []).map(
+        (m) =>
+          [
+            m.blockId,
+            { kind: "suggestion_applied", runId: m.runId, findingId: m.findingId } satisfies ProvenanceSource,
+          ] as const,
+      ),
+    );
+    if (appliedMarks.size > 0) {
+      spans = spans.map((s) => {
+        const row = s as { blockId: string };
+        const mark = appliedMarks.get(row.blockId);
+        return mark ? { blockId: row.blockId, source: mark } : s;
       });
     }
     await exec.query(

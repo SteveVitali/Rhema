@@ -62,8 +62,8 @@ export type TriageApiDeps = RunApiDeps & {
   }) => void;
 };
 
-/** A frozen (delivered) disposition cannot be changed (§5.7). */
-class DispositionFrozenError extends Error {
+/** A frozen (delivered) disposition cannot be changed (§5.7). Exported — the P1.07 Apply/bulk writes map it to 409. */
+export class DispositionFrozenError extends Error {
   constructor() {
     super("disposition is frozen (delivered): cards lock at delivery (§5.7)");
     this.name = "DispositionFrozenError";
@@ -97,7 +97,8 @@ const GATE_DECIDE_ACTIONS: readonly string[] = [
   "hold",
 ];
 
-interface FindingRow {
+/** The finding row the disposition write + P1.07 Apply/bulk paths share (exported for finding-routes). */
+export interface FindingRow {
   id: string;
   correspondence_id: string;
   draft_id: string;
@@ -162,6 +163,136 @@ function dispositionStateFromRow(r: {
   };
 }
 
+export interface DispositionWriteResult {
+  readonly id: string;
+  readonly findingId: string;
+  readonly kind: DispositionKind;
+  readonly status: "proposed";
+  readonly rationale?: string;
+  readonly adaptedText?: string;
+  readonly reasonCode?: ReasonCode;
+  readonly applied?: boolean;
+}
+
+/**
+ * The shared disposition write (§5.7): replace-or-insert the finding's live row (reversible until freeze —
+ * a frozen row throws `DispositionFrozenError`) then route the obligation (REQ-OBJ-3/5: accept/adapt hold
+ * `proposed`, rebut rebutted, defer parked with its horizon, escalate → a Decisions row; a minor's
+ * accept/adapt spawns its obligation on the spot — REQ-OBJ-2). The verb POST, P1.07's Apply, and the bulk
+ * dispatch all funnel through here so no second write path drifts.
+ */
+export async function recordDispositionInTx(
+  tx: { query(sql: string, params?: unknown[]): Promise<{ rows: unknown[] }> },
+  deps: { ids(prefix: string): string; clock: { now(): Date } },
+  oblDeps: ObligationDeps,
+  args: {
+    projectId: string;
+    finding: FindingRow;
+    normalized: { kind: DispositionKind; rationale?: string; adaptedText?: string; reasonCode?: ReasonCode; applied?: boolean };
+    byActor: Actor;
+    deferHorizon?: DeferHorizon;
+    decisionText?: string;
+  },
+): Promise<DispositionWriteResult> {
+  const { finding, normalized: n, byActor } = args;
+  const existing = (
+    await tx.query(
+      `select id, frozen_at from dispositions where finding_id = $1 and response_id is null`,
+      [finding.id],
+    )
+  ).rows[0] as { id: string; frozen_at: string | null } | undefined;
+  if (existing?.frozen_at != null) throw new DispositionFrozenError();
+
+  const byActorJson = JSON.stringify(byActor);
+  let dispositionId: string;
+  if (existing) {
+    dispositionId = existing.id;
+    // reversible until freeze: the row is REPLACED in place (§5.7).
+    await tx.query(
+      `update dispositions
+          set kind = $2, status = 'proposed', rationale = $3, adapted_text = $4,
+              reason_code = $5, applied = $6, by_actor = $7::jsonb
+        where id = $1`,
+      [
+        dispositionId,
+        n.kind,
+        n.rationale ?? null,
+        n.adaptedText ?? null,
+        n.reasonCode ?? null,
+        n.applied ?? null,
+        byActorJson,
+      ],
+    );
+  } else {
+    dispositionId = deps.ids("dsp");
+    await tx.query(
+      `insert into dispositions
+         (id, finding_id, kind, status, rationale, adapted_text, reason_code, applied, by_actor, created_at)
+       values ($1,$2,$3,'proposed',$4,$5,$6,$7,$8::jsonb,$9)`,
+      [
+        dispositionId,
+        finding.id,
+        n.kind,
+        n.rationale ?? null,
+        n.adaptedText ?? null,
+        n.reasonCode ?? null,
+        n.applied ?? null,
+        byActorJson,
+        deps.clock.now(),
+      ],
+    );
+  }
+
+  // Route the obligation (REQ-OBJ-3/5). accept/adapt stay 'proposed' until the move lands (a no-op
+  // transition — the debt stays open); rebut rebutted it; defer parks it with a horizon; escalate
+  // links (or creates) a Decisions-inbox request.
+  const obl = await findingObligationState(tx, finding.id);
+  if (obl) {
+    await routeDisposition(tx, oblDeps, {
+      obligationId: obl.obligationId,
+      kind: n.kind,
+      status: "proposed",
+      dispositionId,
+      findingId: finding.id,
+      ...(n.rationale != null ? { rationale: n.rationale } : {}),
+      draftId: finding.draft_id,
+      byActor,
+      ...(args.deferHorizon ? { deferHorizon: args.deferHorizon } : {}),
+      decisionText: args.decisionText ?? `Escalated finding: ${finding.title}`,
+    });
+  } else if (finding.severity === "minor" && (n.kind === "accept" || n.kind === "adapt")) {
+    // REQ-OBJ-2: a minor finding spawns its obligation only on accept/adapt.
+    await spawnAndRouteMinor(tx, oblDeps, {
+      projectId: args.projectId,
+      findingId: finding.id,
+      kind: finding.kind,
+      title: finding.title,
+      correspondenceId: finding.correspondence_id,
+      draftId: finding.draft_id,
+      disposition: { kind: n.kind, status: "proposed", id: dispositionId },
+      byActor,
+    });
+  } else if (n.kind === "escalate") {
+    // an escalation with no obligation still lands in the Decisions inbox (project-scoped row).
+    await tx.query(
+      `insert into decision_requests(id, project_id, obligation_id, text, options, state)
+       values ($1,$2,null,$3,$4,'open')`,
+      [deps.ids("dcr"), args.projectId, `Escalated finding: ${finding.title}`, ["decide", "dismiss"]],
+    );
+  }
+
+  return {
+    id: dispositionId,
+    findingId: finding.id,
+    kind: n.kind,
+    status: "proposed",
+    ...(n.rationale != null ? { rationale: n.rationale } : {}),
+    ...(n.adaptedText != null ? { adaptedText: n.adaptedText } : {}),
+    ...(n.reasonCode != null ? { reasonCode: n.reasonCode } : {}),
+    ...(n.applied != null ? { applied: n.applied } : {}),
+  };
+}
+
 export function createTriageRoutes(deps: TriageApiDeps): Hono {
   const app = new Hono();
   const oblDeps: ObligationDeps = { ids: deps.ids, clock: deps.clock };
@@ -213,105 +344,15 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
 
     const byActor: Actor = { kind: "user", userId: principal.userId };
     try {
-      const dto = await deps.txRunner.run(finding.workspace_id, async (tx) => {
-        const existing = (
-          await tx.query(
-            `select id, frozen_at from dispositions where finding_id = $1 and response_id is null`,
-            [findingId],
-          )
-        ).rows[0] as { id: string; frozen_at: string | null } | undefined;
-        if (existing?.frozen_at != null) throw new DispositionFrozenError();
-
-        const n = v.normalized;
-        const byActorJson = JSON.stringify(byActor);
-        let dispositionId: string;
-        if (existing) {
-          dispositionId = existing.id;
-          // reversible until freeze: the row is REPLACED in place (§5.7).
-          await tx.query(
-            `update dispositions
-                set kind = $2, status = 'proposed', rationale = $3, adapted_text = $4,
-                    reason_code = $5, applied = $6, by_actor = $7::jsonb
-              where id = $1`,
-            [
-              dispositionId,
-              n.kind,
-              n.rationale ?? null,
-              n.adaptedText ?? null,
-              n.reasonCode ?? null,
-              n.applied ?? null,
-              byActorJson,
-            ],
-          );
-        } else {
-          dispositionId = deps.ids("dsp");
-          await tx.query(
-            `insert into dispositions
-               (id, finding_id, kind, status, rationale, adapted_text, reason_code, applied, by_actor, created_at)
-             values ($1,$2,$3,'proposed',$4,$5,$6,$7,$8::jsonb,$9)`,
-            [
-              dispositionId,
-              findingId,
-              n.kind,
-              n.rationale ?? null,
-              n.adaptedText ?? null,
-              n.reasonCode ?? null,
-              n.applied ?? null,
-              byActorJson,
-              deps.clock.now(),
-            ],
-          );
-        }
-
-        // Route the obligation (REQ-OBJ-3/5). accept/adapt stay 'proposed' until the move lands (a no-op
-        // transition — the debt stays open); rebut rebutted it; defer parks it with a horizon; escalate
-        // links (or creates) a Decisions-inbox request.
-        const obl = await findingObligationState(tx, findingId);
-        if (obl) {
-          await routeDisposition(tx, oblDeps, {
-            obligationId: obl.obligationId,
-            kind: n.kind,
-            status: "proposed",
-            dispositionId,
-            findingId,
-            ...(n.rationale != null ? { rationale: n.rationale } : {}),
-            draftId: finding.draft_id,
-            byActor,
-            ...(deferHorizonOf(body) ? { deferHorizon: deferHorizonOf(body)! } : {}),
-            decisionText: `Escalated finding: ${finding.title}`,
-          });
-        } else if (finding.severity === "minor" && (n.kind === "accept" || n.kind === "adapt")) {
-          // REQ-OBJ-2: a minor finding spawns its obligation only on accept/adapt.
-          await spawnAndRouteMinor(tx, oblDeps, {
-            projectId,
-            findingId,
-            kind: finding.kind,
-            title: finding.title,
-            correspondenceId: finding.correspondence_id,
-            draftId: finding.draft_id,
-            disposition: { kind: n.kind, status: "proposed", id: dispositionId },
-            byActor,
-          });
-        } else if (n.kind === "escalate") {
-          // an escalation with no obligation still lands in the Decisions inbox (project-scoped row).
-          await tx.query(
-            `insert into decision_requests(id, project_id, obligation_id, text, options, state)
-             values ($1,$2,null,$3,$4,'open')`,
-            [deps.ids("dcr"), projectId, `Escalated finding: ${finding.title}`, ["decide", "dismiss"]],
-          );
-        }
-
-        return {
-          id: dispositionId,
-          findingId,
-          kind: n.kind,
-          status: "proposed",
-          ...(n.rationale != null ? { rationale: n.rationale } : {}),
-          ...(n.adaptedText != null ? { adaptedText: n.adaptedText } : {}),
-          ...(n.reasonCode != null ? { reasonCode: n.reasonCode } : {}),
-          ...(n.applied != null ? { applied: n.applied } : {}),
-        };
-      });
+      const dto = await deps.txRunner.run(finding.workspace_id, async (tx) =>
+        recordDispositionInTx(tx, deps, oblDeps, {
+          projectId,
+          finding,
+          normalized: v.normalized,
+          byActor,
+          ...(deferHorizonOf(body) ? { deferHorizon: deferHorizonOf(body)! } : {}),
+        }),
+      );
       deps.emitDisposed?.({
         userId: principal.userId,
         workspaceId: finding.workspace_id,
