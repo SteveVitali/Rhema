@@ -4,7 +4,7 @@ export const PACKAGE_NAME = "@rhema/collab" as const;
 
 export * from "./sql.js";
 export * from "./env.js";
-export * from "./ydoc.js";
+export { PAGE_FRAGMENT, pageFragment, markdownToUpdate, docToCanonicalMarkdown } from "@rhema/editor";
 export * from "./auth.js";
 export * from "./doc-state.js";
 export * from "./restore.js";

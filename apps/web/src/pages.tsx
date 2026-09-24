@@ -30,6 +30,12 @@ import {
   RunReport,
   MarginSurface,
   FindingsDesk,
+  VersionRail,
+  CompareView,
+  FilesPane,
+  type VersionRailLabels,
+  type CompareLabels,
+  type FilesPaneLabels,
   type MarginLabels,
   type FindingsDeskLabels,
   type WhatChangedLabels,
@@ -163,6 +169,21 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(ide.status ? { status: ide.status } : {})}
       {...(ide.themeUrl ? { themeUrl: ide.themeUrl } : {})}
       {...(ide.paperThemeUrl ? { paperThemeUrl: ide.paperThemeUrl } : {})}
+      {...(ide.files
+        ? {
+            filesBody: (
+              <FilesPane
+                sections={ide.files.sections}
+                hrefs={{
+                  artifact: (id) => `/p/${slug}/a/${id}`,
+                  draft: (n) => `/p/${slug}/v/${n}`,
+                  run: (id) => `/p/${slug}/r/${id}`,
+                }}
+                labels={filesLabels}
+              />
+            ),
+          }
+        : {})}
       {...dossierSurfaces(data)}
       labels={{
         ...COPY.ide,
@@ -1959,6 +1980,117 @@ export function RevisionPage(): ReactNode {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// P1.08 — the version rail (§5.8; REQ-IDE-32/34) + the generalized compare page (REQ-IDE-33) + the
+// §5.13 Files pane (REQ-IDE-35/36/37). All server-rendered; the only writes are the hunk-comment POSTs
+// (→ Guidance) and the restore-point apply (undoable — a pre-restore point is written first).
+// ---------------------------------------------------------------------------------------------------------------------
+
+const VR = COPY.versions;
+const CP = COPY.compare;
+const FP = COPY.files;
+
+const railLabels: VersionRailLabels = {
+  outline: VR.outline,
+  originLabel: (origin) => VR.originLabel[origin] ?? origin,
+  workingLabel: VR.workingLabel,
+  frozenTitle: VR.frozenTitle,
+  reviewedFlag: VR.reviewedFlag,
+  answeredFlag: VR.answeredFlag,
+  claimsPending: VR.claimsPending,
+  obligationsFmt: (open, addressed) => fmt(VR.obligationsFmt, { open, addressed }),
+  wordsFmt: (n) => fmt(VR.wordsFmt, { n }),
+  dateFmt: (iso) => iso.slice(0, 10),
+  compare: VR.compare,
+  comparePrevious: VR.comparePrevious,
+  restorePoints: VR.restorePoints,
+  restoreEmpty: VR.restoreEmpty,
+  restoreGroupLabel: (group, beforeReviewN) =>
+    group === "before_review" && beforeReviewN != null
+      ? fmt(VR.restoreGroup[group] ?? group, { n: beforeReviewN })
+      : (VR.restoreGroup[group] ?? group),
+  restorePointLabel: (p) => p.label ?? fmt(VR.restoreTimeFmt, { time: p.createdAt.slice(0, 16).replace("T", " "), cause: p.cause }),
+  restorePreviewHeading: VR.restorePreviewHeading,
+  restoreApply: VR.restoreApply,
+  restoreUndoHint: VR.restoreUndoHint,
+  restoredNotice: (draftN) => fmt(VR.restoredFmt, { n: draftN }),
+  compareWhatChanged: whatChangedLabels,
+};
+
+const compareLabels: CompareLabels = {
+  heading: CP.heading,
+  versionLabel: (beforeN, afterN) => fmt(CP.versionFmt, { before: beforeN, after: afterN ?? "…" }),
+  layouts: CP.layouts as CompareLabels["layouts"],
+  beforeCol: CP.beforeCol,
+  afterCol: CP.afterCol,
+  unchangedFmt: (n) => fmt(CP.unchangedFmt, { n }),
+  hunkKindLabel: (kind) => V.hunkKindLabel[kind] ?? kind,
+  unlinkedNote: CP.unlinkedNote,
+  noChanges: CP.noChanges,
+  commentLabel: V.commentLabel,
+  commentPlaceholder: V.commentPlaceholder,
+  commentSubmit: V.commentSubmit,
+  moves: whatChangedLabels,
+};
+
+const filesLabels: FilesPaneLabels = {
+  sectionLabel: (key) => FP.sectionLabel[key] ?? key,
+  provenanceLabel: (p) =>
+    p.actor === "you"
+      ? FP.provenanceYou
+      : p.runId
+        ? fmt(FP.provenanceRunFmt, {
+            seat: p.seat ?? FP.provenanceSystem,
+            workflow: p.workflow ?? "",
+            phase: p.phase ?? "",
+          })
+        : FP.provenanceSystem,
+  lockTitle: (lock) => FP.lockTitle[lock] ?? lock,
+  lockIcon: (lock) => FP.lockIcon[lock] ?? "🔒",
+  freshnessLabel: (n, stale) => fmt(stale ? FP.freshnessStaleFmt : FP.freshnessFmt, { n }),
+  sealedFmt: (n) => fmt(FP.sealedFmt, { n }),
+  advancedDisclosure: FP.advanced,
+  empty: FP.empty,
+  wordsFmt: (n) => fmt(FP.wordsFmt, { n }),
+  readOnlyNote: FP.readOnlyNote,
+};
+
+/** Auth-gated: the §5.8 compare page (`/p/:slug/v/:n/diff/:m`) — three read-only layouts over the ONE
+ *  server projection; the hunk comment form is the only interactive element (→ Guidance). */
+export function ComparePage(): ReactNode {
+  const { compare } = usePageData();
+  if (!compare) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{CP.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{CP.notFound}</p>
+      </Shell>
+    );
+  }
+  const { slug, n, m, layout, data } = compare;
+  return (
+    <IdeFrame>
+      <CompareView
+        beforeN={data.before.n}
+        afterN={data.after.n}
+        layout={layout}
+        diff={data.diff}
+        // the wire shape is the findings-core view model modulo `unlinked.entries` being unknown[].
+        view={data.view as unknown as Parameters<typeof CompareView>[0]["view"]}
+        linked={data.responseId != null}
+        layoutHref={(l) => `/p/${slug}/v/${n}/diff/${m}?layout=${l}`}
+        commentFormAction={(hunkId) => `/p/${slug}/v/${n}/diff/${m}/hunks/${hunkId}/comments`}
+        labels={compareLabels}
+      />
+      {compare.commentedHunkId ? (
+        <p data-comment-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)" }}>
+          {V.commentSavedLabel}
+        </p>
+      ) : null}
+    </IdeFrame>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21 stopgap #1 → 1.x Source mode). SSRs the CodeMirror host
 // + the §6.3 lock banner + the projected findings rail; the client bundle upgrades the textarea and runs the
 // debounced autosave. There is no Save button and no unsaved-changes dialog anywhere on this page.
@@ -2098,7 +2230,40 @@ function PageSurface(): ReactNode {
   if (!page) return null;
   const { slug, doc } = page;
   const base = `/p/${slug}/edit/${doc.draftId}`;
+  const rail = page.rail;
   return (
+    <>
+    {rail ? (
+      // P1.08 — the §5.8 chip strip over the Page (the compare-previous link + the restore-points
+      // dropdown live here; ⌘⇧C in the island follows the same link).
+      <VersionRail
+        versions={rail.data.drafts}
+        outline={rail.data.outline}
+        chip={rail.data.chip}
+        currentN={rail.currentN}
+        hrefs={{
+          version: (n) => `/p/${slug}/v/${n}`,
+          artifact: (id) => `/p/${slug}/a/${id}`,
+          diff: (b, a) => `/p/${slug}/v/${b}/diff/${a}`,
+          restorePreview: (pid) => `/p/${slug}/v/${rail.currentN}?restore=${pid}`,
+        }}
+        restore={{
+          points: rail.points,
+          restoreAction: (pid) => `/p/${slug}/v/${rail.currentN}/restore/${pid}`,
+          ...(rail.preview
+            ? {
+                preview: {
+                  point: rail.preview.point,
+                  // the wire shape is the findings-core view model modulo `unlinked.entries`.
+                  view: rail.preview.view as unknown as Parameters<typeof WhatChangedView>[0]["view"],
+                },
+              }
+            : {}),
+        }}
+        {...(rail.restoredN != null ? { restoredN: rail.restoredN } : {})}
+        labels={railLabels}
+      />
+    ) : null}
     <PageEditor
         docJson={page.docJson}
         draftId={doc.draftId}
@@ -2140,6 +2305,7 @@ function PageSurface(): ReactNode {
         {...(page.focusFindingId ? { focusFindingId: page.focusFindingId } : {})}
         labels={pageLabels}
       />
+    </>
   );
 }
 

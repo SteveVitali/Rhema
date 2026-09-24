@@ -31,3 +31,4 @@ export {
   citeKeysIn, resolveCites, citeLabel,
 } from "./bibliography.js";
 export { pagePlugins, createPageState, createCollabPageState, humanTr } from "./plugins.js";
+export { PAGE_FRAGMENT, pageFragment, markdownToUpdate, docToCanonicalMarkdown } from "./ydoc.js";

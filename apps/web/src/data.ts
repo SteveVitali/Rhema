@@ -58,6 +58,12 @@ import type {
   FindingResolveDto,
   BulkPreviewDto,
   BulkResultDto,
+  VersionRailDto,
+  VersionDiffDto,
+  FilesDto,
+  RestorePointsDto,
+  RestorePreviewDto,
+  RestoreApplyDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -285,6 +291,39 @@ export interface DataSource {
   ): Promise<BibliographyImportDto>;
   /** P1.02 — the read-only Page read for a non-draft artifact (`/a/:artifactId`). */
   getArtifactPage(session: SessionHeaders, projectId: string, artifactId: string): Promise<EditorDocDto>;
+  // ---- P1.08 — §5.8 versions/compare/restore + the §5.13 Files pane ----
+  /** the version rail read model (every origin, reviewed/answered flags, the ⚑ chip). */
+  getVersions(session: SessionHeaders, projectId: string): Promise<VersionRailDto>;
+  /** the generalized compare — any draft pair (`m` may be `working`), server-projected. */
+  getVersionDiff(session: SessionHeaders, projectId: string, n: string, m: string): Promise<VersionDiffDto>;
+  /** a compare-hunk comment → `Guidance{source:'inline_comment'}` (the next Revise consumes it). */
+  commentOnCompareHunk(
+    session: SessionHeaders,
+    projectId: string,
+    n: string,
+    m: string,
+    hunkId: string,
+    text: string,
+  ): Promise<HunkCommentDto>;
+  /** the §5.13 Files pane (typed sections; default rows carry no I/H kinds). Optional seam — a
+   *  fixture without it renders the Files strip unchanged. */
+  getFiles?(session: SessionHeaders, projectId: string): Promise<FilesDto>;
+  /** the §5.8-grouped restore points for a draft's live doc. */
+  listRestorePoints?(session: SessionHeaders, projectId: string, draftId: string): Promise<RestorePointsDto>;
+  /** a point's reconstructed content diffed against the current head. */
+  previewRestorePoint?(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+    pointId: string,
+  ): Promise<RestorePreviewDto>;
+  /** the undoable restore apply (writes the pre-restore snapshot, then saveManualRevision). */
+  applyRestorePoint?(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+    pointId: string,
+  ): Promise<RestoreApplyDto>;
   /** PRB.07 — the debounced autosave POST (no Save button — this IS the save; §5.4). */
   saveEditorDraft(
     session: SessionHeaders,
@@ -601,6 +640,22 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).importBibliography(projectId, req),
     getArtifactPage: (session, projectId, artifactId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getArtifactPage(projectId, artifactId),
+    // P1.08 — the version rail, the generalized compare + hunk comments, the Files pane, and the
+    // restore-point browse/preview/apply (§5.8, §5.13).
+    getVersions: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVersions(projectId),
+    getVersionDiff: (session, projectId, n, m) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVersionDiff(projectId, n, m),
+    commentOnCompareHunk: (session, projectId, n, m, hunkId, text) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).commentOnCompareHunk(projectId, n, m, hunkId, text),
+    getFiles: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getFiles(projectId),
+    listRestorePoints: (session, projectId, draftId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listRestorePoints(projectId, draftId),
+    previewRestorePoint: (session, projectId, draftId, pointId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).previewRestorePoint(projectId, draftId, pointId),
+    applyRestorePoint: (session, projectId, draftId, pointId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).applyRestorePoint(projectId, draftId, pointId),
     saveEditorDraft: (session, projectId, draftId, markdown, meta) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveEditorDraft(projectId, draftId, markdown, { meta }),
     postEditorNote: (session, projectId, draftId, text) =>

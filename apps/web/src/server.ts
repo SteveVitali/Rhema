@@ -14,6 +14,7 @@ import {
   dossierElement,
   revisionElement,
   pageElement,
+  compareElement,
   exportElement,
   voicesElement,
   voiceNewElement,
@@ -196,13 +197,17 @@ export function createWebApp(deps: WebDeps): Hono {
       status?: { version?: string; words?: number; readMin?: number; venueCap?: string; credits?: number; sync?: "synced" | "syncing" | "offline" };
     } = {},
   ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide">> => {
-    const [principal, theme] = await Promise.all([
+    const [principal, theme, files] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getSessionPrincipal?.(session))
         .catch(() => null),
       Promise.resolve()
         .then(() => deps.dataSource.getTheme?.(session))
         .catch(() => null),
+      // P1.08 — the §5.13 Files pane (best-effort: a missing read hides the pane's rows, not the page).
+      Promise.resolve()
+        .then(() => deps.dataSource.getFiles?.(session, row.id))
+        .catch(() => undefined),
     ]);
     // P1.06 (§5.12; REQ-CHAT-28) — the ⌘K palette's embedded PaletteData: the state function's next
     // step pinned first in Run (with its estimate), Go-to = the timeline's versions + the Margin's
@@ -273,6 +278,7 @@ export function createWebApp(deps: WebDeps): Hono {
         paletteSearchUrl: `/p/${row.slug}/palette-search`,
         themeUrl: "/ide/theme",
         paperThemeUrl: `/p/${row.slug}/paper-theme`,
+        ...(files ? { files } : {}),
       },
     };
   };
@@ -2006,6 +2012,25 @@ export function createWebApp(deps: WebDeps): Hono {
     });
     if (!pageLoad) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const { doc } = pageLoad;
+
+    // P1.08 — the §5.8 version rail over the Page (REQ-IDE-32): the chips read, the restore-point
+    // dropdown for THIS draft's live doc, the `?restore=<id>` preview card, and the `?restored=<n>`
+    // undoable-apply notice. Each read is best-effort — a missing piece hides its affordance.
+    const railData = await Promise.resolve()
+      .then(() => deps.dataSource.getVersions(session, row.id))
+      .catch(() => null);
+    const restorePoints = await Promise.resolve()
+      .then(() => deps.dataSource.listRestorePoints?.(session, row.id, resolved.draftId))
+      .catch(() => undefined);
+    const restorePick = c.req.query("restore") ?? null;
+    const restorePreview = restorePick
+      ? ((await Promise.resolve()
+          .then(() => deps.dataSource.previewRestorePoint?.(session, row.id, resolved.draftId, restorePick))
+          .catch(() => undefined)) ?? null)
+      : null;
+    const restoredQ = c.req.query("restored");
+    const restoredN = restoredQ != null ? Number(restoredQ) : null;
+
     return c.html(
       renderDocument(c.req.path, pageElement, {
         ...(await ideContext(c, session, row, {
@@ -2024,10 +2049,104 @@ export function createWebApp(deps: WebDeps): Hono {
           docJson: pageLoad.docJson,
           ...(deps.collabWsUrl ? { collabWsUrl: deps.collabWsUrl } : {}),
           ...(c.req.query("noted") ? { noteSaved: true } : {}),
+          ...(railData
+            ? {
+                rail: {
+                  data: railData,
+                  currentN: doc.draftN,
+                  points: restorePoints?.points ?? [],
+                  ...(restorePreview?.ok === true
+                    ? {
+                        preview: {
+                          // the preview's point re-uses the LISTED row when present (it carries
+                          // `group`/`advanced` — the bare point read doesn't).
+                          point:
+                            restorePoints?.points.find((p) => p.id === restorePreview.point.id) ??
+                            { ...restorePreview.point, group: "named" as const, advanced: false },
+                          view: restorePreview.view,
+                        },
+                      }
+                    : {}),
+                  ...(restoredN != null && Number.isFinite(restoredN) ? { restoredN } : {}),
+                },
+              }
+            : {}),
         },
         dwellSurface: "page",
       }),
     );
+  });
+
+  // P1.08 — the undoable restore-point apply (§5.8; REQ-IDE-34): the preview card's POST lands here;
+  // the api writes a "Before restore" point on the CURRENT state first, then applies through
+  // saveManualRevision (frozen ⇒ fork; agent/imported head ⇒ 409 → the page re-renders unchanged).
+  app.post("/p/:project/v/:v/restore/:rp", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const v = c.req.param("v") ?? "working";
+    const resolved = await deps.dataSource.resolveEditorDraft(session, row.id, v).catch(() => null);
+    if (!resolved) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const applied = await Promise.resolve()
+      .then(() => deps.dataSource.applyRestorePoint?.(session, row.id, resolved.draftId, c.req.param("rp") ?? ""))
+      .catch(() => undefined);
+    // A 409/404/503 (locked, unknown, unavailable) re-renders the page without the notice — the
+    // preview card simply re-appears; a success redirects with `?restored=<n>` on the new head.
+    return c.redirect(
+      applied?.ok === true
+        ? `/p/${slug}/v/${applied.draftN}?restored=${applied.draftN}`
+        : `/p/${slug}/v/${v}`,
+    );
+  });
+
+  // P1.08 — the §5.8 generalized compare (REQ-IDE-33): `/v/:n/diff/:m` over ANY draft pair (`m` may be
+  // `working`), `?layout=side|inline|moves` picks the read-only layout; the api projection is the SAME
+  // What-changed assembly the response page renders (unledgered pairs land every hunk Unlinked).
+  app.get("/p/:project/v/:n/diff/:m", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const n = c.req.param("n") ?? "";
+    const m = c.req.param("m") ?? "";
+    const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!data) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const layoutQ = c.req.query("layout");
+    const layout = layoutQ === "inline" || layoutQ === "moves" ? layoutQ : "side";
+    const commented = c.req.query("commented") || undefined;
+    return c.html(
+      renderDocument(c.req.path, compareElement, {
+        ...(await ideContext(c, session, row)),
+        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
+        dwellSurface: "page",
+      }),
+    );
+  });
+
+  // The compare page's hunk-comment POST — a Guidance row for the next Revise (`source:'inline_comment'`,
+  // anchored server-side on the resolved hunk). Progressive enhancement: plain form POST → redirect.
+  app.post("/p/:project/v/:n/diff/:m/hunks/:hunkId/comments", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const n = c.req.param("n") ?? "";
+    const m = c.req.param("m") ?? "";
+    const hunkId = c.req.param("hunkId") ?? "";
+    const form = await c.req.parseBody();
+    const text = typeof form.text === "string" ? form.text.trim() : "";
+    if (text !== "") {
+      await deps.dataSource.commentOnCompareHunk(session, row.id, n, m, hunkId, text).catch(() => undefined);
+    }
+    return c.redirect(`/p/${slug}/v/${n}/diff/${m}?commented=${encodeURIComponent(hunkId)}`);
   });
 
   // P1.02 item 4 — the Page renders ANY markdown artifact, read-only (non-draft kinds have no save

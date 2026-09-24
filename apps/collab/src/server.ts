@@ -15,7 +15,12 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { Storage } from "@google-cloud/storage";
 import pg from "pg";
 import { resolveSessionPrincipal, sessionTokenFromCookieHeader } from "@rhema/db";
-import { GcsContentStore, type ContentStore } from "@rhema/mirror";
+import {
+  GcsContentStore,
+  GcsRestoreBlobStore,
+  type ContentStore,
+  type GcsRestoreBucketLike,
+} from "@rhema/mirror";
 import { blockPatchRequestSchema } from "@rhema/contracts";
 import { createCollabDb, type CollabDb } from "./sql.js";
 import { createCollabExtension, type CollabExtensionDeps } from "./extension.js";
@@ -160,22 +165,9 @@ function liveDeps(env: ReturnType<typeof readCollabEnv>): CollabServiceDeps {
   const db = createCollabDb(pool);
   const storage = new Storage();
   const bucket = storage.bucket(env.objectsBucket);
-  const blobs: RestoreBlobStore = {
-    async put(key, bytes) {
-      await bucket.file(key).save(Buffer.from(bytes));
-    },
-    async get(key) {
-      try {
-        const [buf] = await bucket.file(key).download();
-        return new Uint8Array(buf);
-      } catch {
-        return null;
-      }
-    },
-    async delete(key) {
-      await bucket.file(key).delete({ ignoreNotFound: true });
-    },
-  };
+  const blobs: RestoreBlobStore = new GcsRestoreBlobStore(
+    bucket as unknown as GcsRestoreBucketLike,
+  );
   const storeFor = (workspaceId: string): ContentStore =>
     new GcsContentStore(bucket, workspaceId);
   return {

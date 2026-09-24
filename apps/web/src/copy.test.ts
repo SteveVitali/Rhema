@@ -19,7 +19,14 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
         expect(v.key.startsWith("report.advancedColumns.")).toBe(true);
       } else {
         expect(v.term).toBe("Advanced");
-        expect(["runSheet.advanced", "report.advancedHeading"]).toContain(v.key);
+        // the §5.13 Files pane's Advanced disclosure (section label + the per-section "Show working"
+        // disclosure) is the same sanctioned role as the run sheet's.
+        expect([
+          "runSheet.advanced",
+          "report.advancedHeading",
+          "files.sectionLabel.advanced",
+          "files.advanced",
+        ]).toContain(v.key);
       }
     }
   });

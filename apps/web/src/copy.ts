@@ -521,6 +521,100 @@ export const COPY = {
     rubricAfterLabel: "after",
   },
 
+  // P1.08 — the §5.8 version rail over the Page (REQ-IDE-32, REQ-OBJ-6, REQ-PROD-11): the chips,
+  // the restore-points dropdown (grouped "Earlier today / Yesterday / Before Review of vN / Named" —
+  // older points ride Advanced), the preview-diff card, and the undoable-apply notice.
+  versions: {
+    outline: "Outline",
+    workingLabel: "working draft",
+    frozenTitle: "frozen — read-only",
+    reviewedFlag: "review ✓",
+    answeredFlag: "answered",
+    claimsPending: "claims pending verification",
+    obligationsFmt: "⚑ {open} open · {addressed} addressed",
+    wordsFmt: "{n} words",
+    // every drafts.origin value — the caption under the chip.
+    originLabel: {
+      drafted_from_outline: "Drafter",
+      response_to_review: "Drafter",
+      human_revision: "edited by you",
+      human_upload: "you",
+      duplicate: "duplicated",
+      imported: "imported",
+      seeded: "seeded",
+      agent: "Drafter",
+    } as Record<string, string>,
+    compare: "Compare",
+    comparePrevious: "Compare with previous",
+    restorePoints: "Restore points",
+    restoreEmpty: "No restore points yet — ⌘S marks one.",
+    restoreGroup: {
+      earlier_today: "Earlier today",
+      yesterday: "Yesterday",
+      before_review: "Before Review of v{n}",
+      named: "Named",
+      earlier: "Earlier",
+    } as Record<string, string>,
+    restoreTimeFmt: "{time} · {cause}",
+    restorePreviewHeading: "Restore preview",
+    restoreApply: "Restore this point",
+    restoreUndoHint: "Undoable — restoring first marks a restore point on the current state.",
+    restoredFmt: "Restored — v{n} carries that point's text; the previous state is a restore point.",
+    notFound: "That version isn't here.",
+  },
+
+  // P1.08 — the §5.8 compare page (REQ-IDE-33): the three read-only layouts over ONE server-projected
+  // diff (/p/:project/v/:n/diff/:m — the shared projection serves both directions).
+  compare: {
+    heading: "Compare",
+    versionFmt: "v{before} → v{after}",
+    layouts: {
+      side: "Side-by-side",
+      inline: "Inline",
+      moves: "What changed and why",
+    } as Record<string, string>,
+    beforeCol: "Before",
+    afterCol: "After",
+    unchangedFmt: "{n} unchanged passages",
+    unlinkedNote: "No revision answers this pair — every change below is an unlinked edit (the coherence read).",
+    noChanges: "No differences.",
+    notFound: "That pair isn't here.",
+  },
+
+  // P1.08 — the §5.13 Files pane (REQ-IDE-35/36/37, REQ-VIS-3): the typed artifact Browser's chrome.
+  // Never a filesystem — sections are kinds, rows are artifacts, H kinds surface as a count only.
+  files: {
+    sectionLabel: {
+      outline: "Outline",
+      drafts: "Drafts",
+      rounds: "Rounds",
+      research: "Research",
+      voice: "Voice",
+      assets: "Assets",
+      advanced: "Advanced",
+    } as Record<string, string>,
+    provenanceYou: "You",
+    provenanceSystem: "System",
+    provenanceRunFmt: "{seat} · {workflow} run · {phase}",
+    lockTitle: {
+      editable: "Editable",
+      immutable: "Immutable",
+      inspect: "Inspect only",
+    } as Record<string, string>,
+    lockIcon: {
+      editable: "✎",
+      immutable: "🔒",
+      inspect: "👁",
+    } as Record<string, string>,
+    freshnessFmt: "describes v{n}",
+    freshnessStaleFmt: "describes v{n} — since edited",
+    sealedFmt: "{n} sealed",
+    advanced: "Advanced",
+    empty: "Nothing here yet.",
+    readOnlyNote: "Read-only — agent memory.",
+    wordsFmt: "{n} words",
+  },
+
   // PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21 stopgap #1): CodeMirror over the canonical markdown
   // with the debounced autosave, the §6.3 lock banner + Cancel-run release, the projected findings rail,
   // the note field (→ Guidance), and "Revise using your edits". No Save button exists — the sync pill tells

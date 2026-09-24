@@ -21,7 +21,7 @@ import {
   type DocumentBlock,
 } from "@rhema/contracts";
 import { resolveDraftBinding, type DraftBinding } from "./auth.js";
-import { docToCanonicalMarkdown, pageFragment } from "./ydoc.js";
+import { docToCanonicalMarkdown, pageFragment } from "@rhema/editor";
 import type { CollabDb } from "./sql.js";
 
 /** A Y.Doc accessor the route calls — the in-memory Document if connected, else load from y_state. */

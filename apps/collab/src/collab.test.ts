@@ -28,7 +28,7 @@ import {
   writeRestorePoint,
 } from "./restore.js";
 import { applyBlockPatchToDoc, blockPatchGuards } from "./blocks.js";
-import { docToCanonicalMarkdown, markdownToUpdate, pageFragment } from "./ydoc.js";
+import { docToCanonicalMarkdown, markdownToUpdate, pageFragment } from "@rhema/editor";
 import type { CollabDb } from "./sql.js";
 
 // ---------------------------------------------------------------------------------------------------------------------

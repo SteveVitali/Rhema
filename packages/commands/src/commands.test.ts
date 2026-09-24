@@ -186,7 +186,8 @@ describe("resolution — four surfaces, one identical sheet (REQ-CHAT-22/25)", (
     expect(one.kind).toBe("disabled");
     const two = resolveCommand(parsed("/compare @v2 @v3"), ctx);
     expect(two.kind).toBe("navigate");
-    if (two.kind === "navigate") expect(two.path).toBe("/p/the-politics-of-visibility/v/3?compare=2");
+    // P1.08 — the §5.8 compare surface owns the pair route now (no more ?compare= hint).
+    if (two.kind === "navigate") expect(two.path).toBe("/p/the-politics-of-visibility/v/2/diff/3");
   });
 
   it("no verb resolves to a run-creation call — every cost-bearing resolution is the sheet GET route", () => {

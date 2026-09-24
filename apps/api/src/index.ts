@@ -17,6 +17,7 @@ import { createShellRoutes } from "./project-list.js";
 import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
 import { createFindingRoutes, type FindingApiDeps } from "./finding-routes.js";
 import { createRevisionRoutes, type RevisionApiDeps } from "./revision-routes.js";
+import { createVersionRoutes, type VersionApiDeps } from "./version-routes.js";
 import { createDossierRoutes, type DossierApiDeps } from "./dossier-routes.js";
 import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
 import { createBillingRoutes } from "./billing-routes.js";
@@ -33,7 +34,7 @@ import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { createThemeRoutes } from "./theme-routes.js";
 import { createTimelineRoutes } from "./timeline-routes.js";
 import { randomUUID } from "node:crypto";
-import type { ContentStore } from "@rhema/mirror";
+import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
 // api — Hono REST + SSE. P0.08 adds run creation + the internal run API (run-routes.ts); P0.08b adds the
 // viewer-facing run-event SSE route (sse-routes.ts). Both mount when the orchestrator deps are supplied. The
@@ -105,8 +106,10 @@ export { createRevisionRoutes } from "./revision-routes.js";
 export type { RevisionApiDeps } from "./revision-routes.js";
 export { createEditorRoutes } from "./editor-routes.js";
 export type { EditorApiDeps, EditorFindingDto } from "./editor-routes.js";
-export { loadWhatChanged, computeReReviewSeed } from "./what-changed.js";
-export type { WhatChangedResult, WhatChangedOutcome, ReReviewSeed } from "./what-changed.js";
+export { loadWhatChanged, loadVersionDiff, computeReReviewSeed } from "./what-changed.js";
+export type { WhatChangedResult, WhatChangedOutcome, ReReviewSeed, VersionDiffOutcome, VersionDiffResult } from "./what-changed.js";
+export { createVersionRoutes } from "./version-routes.js";
+export type { VersionApiDeps } from "./version-routes.js";
 export { createNotificationRoutes } from "./notification-routes.js";
 export type { NotificationApiDeps } from "./notification-routes.js";
 export { createVoiceRoutes } from "./voice-routes.js";
@@ -187,6 +190,11 @@ export interface BetaApiDeps {
    * user-content host is same-site, so SameSite=Lax alone is insufficient). Unset ⇒ no guard.
    */
   allowedOrigins?: readonly string[];
+  /**
+   * P1.08 — the restore-blob store for `restore/`-keyed points (GCS live; in-memory in tests). Unset ⇒
+   * those points answer `restore_unavailable` on preview/restore; content-addressed points still work.
+   */
+  restoreBlobs?: RestoreBlobStore;
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -334,6 +342,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       app.route("/", createFindingRoutes({ ...(deps as FindingApiDeps), db }));
       // PRB.07 — the source editor (document read, autosave, note→Guidance, cancel-run, revise-with-edits).
       app.route("/", createEditorRoutes({ ...(deps as EditorApiDeps), db }));
+      // P1.08 — the version rail, the §5.13 Files pane, and the restore-point browse/preview/apply.
+      app.route("/", createVersionRoutes({ ...(deps as unknown as VersionApiDeps), db }));
       // PRB.11 — export (md/txt/docx via the ExportRunner seam — pandoc stays in the export image) + the
       // AI-use statement read/standalone-download/append-only-addition routes.
       app.route(

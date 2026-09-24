@@ -74,8 +74,9 @@ export function resolveCommand(command: ParsedCommand, ctx: ResolveContext): Com
       return { kind: "disabled", reason: "Compare needs two versions — e.g. /compare @v2 @v3." };
     }
     const [a, b] = versions;
-    // the version page is the MVP anchor; ?compare=<older> hints the diff surface that lands later.
-    return { kind: "navigate", path: `/p/${ctx.projectSlug}/v/${b!.version}?compare=${a!.version}` };
+    // P1.08 — the §5.8 compare surface is live: /v/:n/diff/:m (the api normalizes direction, so the
+    // pair order the user typed is preserved).
+    return { kind: "navigate", path: `/p/${ctx.projectSlug}/v/${a!.version}/diff/${b!.version}` };
   }
   return { kind: "disabled", reason: `${spec.label} has no surface yet.` };
 }

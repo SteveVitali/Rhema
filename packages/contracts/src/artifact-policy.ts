@@ -128,3 +128,117 @@ export function levelCounts(): Record<Visibility, number> {
   for (const kind of ARTIFACT_KINDS) counts[artifactPolicy[kind].level] += 1;
   return counts;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// §5.13 — the artifact Browser's typed sections (P1.08). The pane shows typed sections, never a
+// filesystem tree; the user-facing label is "Files". This table is the ONE authority for which section
+// a kind belongs to — the api's /files read groups by it and the ui renders it verbatim. A kind's
+// VISIBILITY stays `artifactPolicy[kind].level`: `H` kinds map to a nominal section so the pane can
+// render them as a sealed COUNT (never a row, never a link); `I` kinds render as rows only inside the
+// `advanced` disclosure section's tier. Kinds absent from the map (`null`) are unlisted entirely —
+// an unknown kind is hidden, never leaked.
+// ---------------------------------------------------------------------------------------------------------------------
+
+export const BROWSER_SECTIONS = [
+  "outline",
+  "drafts",
+  "rounds",
+  "research",
+  "voice",
+  "assets",
+  "advanced",
+] as const;
+export type BrowserSection = (typeof BROWSER_SECTIONS)[number];
+
+const BROWSER_SECTION_BY_KIND: Record<ArtifactKind, BrowserSection> = {
+  // Outline — the outline (versioned if edited after v1).
+  outline: "outline",
+  // Drafts — version-rail entries, the working head, companion docs.
+  draft: "drafts",
+  companion_doc: "drafts",
+  // Rounds — per round: drafting note · claim ledger · discourse report · second read · Editor's
+  // letter · response letter · response ledger · run reports · walkthrough (+ the 1.x workflow
+  // deliverables a round can produce).
+  drafting_note: "rounds",
+  editors_letter: "rounds",
+  claim_ledger: "rounds",
+  discourse_report: "rounds",
+  second_read: "rounds",
+  response_letter: "rounds",
+  response_ledger: "rounds",
+  run_report: "rounds",
+  walkthrough: "rounds",
+  access_report: "rounds",
+  ai_use_statement: "rounds",
+  guidance_record: "rounds",
+  field_map: "rounds",
+  open_ground: "rounds",
+  steelman_essay: "rounds",
+  convergence_report: "rounds",
+  title_candidates: "rounds",
+  abstract_keywords: "rounds",
+  reverse_outline: "rounds",
+  suggestion_set: "rounds",
+  pattern_note: "rounds",
+  // Research — the Drafter's source library, the Assistant's chat sources + research notes, and the
+  // Editor's fetched URLs (fetch_log: the URLs are SR; note BODIES stay H per §5.13's hidden list).
+  source_note: "research",
+  research_note: "research",
+  fetch_log: "research",
+  chat_session: "research",
+  // Voice — the linked voice summary card's artifacts + agent memory (read-only; "Add guidance").
+  persona_seed: "voice",
+  persona_builder_note: "voice",
+  sample: "voice",
+  profile_index: "voice",
+  voice_print: "voice",
+  structure_repertoire: "voice",
+  lexicon: "voice",
+  exemplars: "voice",
+  positions: "voice",
+  continuity: "voice",
+  audience_venue: "voice",
+  calibration_report: "voice",
+  profile_provenance: "voice",
+  register_map: "voice",
+  shared_lexicon: "voice",
+  voice_charter: "voice",
+  preference_profile: "voice",
+  corpus_note: "voice", // H — nominal section for the sealed count only
+  holdout_note: "voice", // H — nominal section for the sealed count only
+  // Assets — figures (incl. working figures), uploaded files, bibliography.
+  figure: "assets",
+  // Advanced (disclosure) — drafting dossiers per version + the 1.x mechanism artifacts.
+  commissioning_brief: "advanced",
+  voice_brief: "advanced",
+  structure_plan: "advanced",
+  draft_ledger: "advanced",
+  fidelity_audit: "advanced",
+  piece_brief: "advanced",
+  argument_notes: "advanced",
+  craft_notes: "advanced",
+  provenance_map: "advanced",
+  cut_list: "advanced",
+  vulnerability_map: "advanced",
+  adjudication: "advanced",
+  consolidation_notes: "advanced", // H — nominal section for the sealed count only
+  // Hidden entirely — Editor working notes / transcripts / parsed sidecars (§5.13's hidden list).
+  // Nominal sections only so the pane can render "N sealed"; they never produce a row or a route.
+  run_transcript: "rounds", // H — nominal section for the sealed count only
+  sidecar: "rounds", // H — nominal section for the sealed count only
+};
+
+/** Kinds that exist in storage but never joined the §8.2 enum (the bibliography the editor writes).
+ *  Mapped here so the pane can show them; NOT part of the REQ-SPEC-14 63-kind contract. */
+const BROWSER_SECTION_EXTRA: Record<string, BrowserSection> = {
+  bibliography: "assets",
+};
+
+/** The §5.13 section a kind belongs to (nominal — `H` kinds still return their section so the pane
+ *  can count them as sealed; the ROW never renders). Unknown kinds return null (unlisted). */
+export function browserSectionFor(kind: string): BrowserSection | null {
+  if (kind in BROWSER_SECTION_BY_KIND) {
+    return BROWSER_SECTION_BY_KIND[kind as ArtifactKind];
+  }
+  return BROWSER_SECTION_EXTRA[kind] ?? null;
+}

@@ -1,0 +1,43 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`REQ-VIS-3 — the default Files tree over the three seeded projects > contains no I- or H-kind row — snapshot per project 1`] = `
+[
+  {
+    "advancedRows": [],
+    "key": "drafts",
+    "rows": [
+      "draft:SE:immutable",
+      "draft:SE:editable",
+    ],
+    "sealedCount": 0,
+  },
+]
+`;
+
+exports[`REQ-VIS-3 — the default Files tree over the three seeded projects > contains no I- or H-kind row — snapshot per project 2`] = `
+[
+  {
+    "advancedRows": [],
+    "key": "drafts",
+    "rows": [
+      "draft:SE:immutable",
+      "draft:SE:editable",
+    ],
+    "sealedCount": 0,
+  },
+]
+`;
+
+exports[`REQ-VIS-3 — the default Files tree over the three seeded projects > contains no I- or H-kind row — snapshot per project 3`] = `
+[
+  {
+    "advancedRows": [],
+    "key": "drafts",
+    "rows": [
+      "draft:SE:immutable",
+      "draft:SE:editable",
+    ],
+    "sealedCount": 0,
+  },
+]
+`;

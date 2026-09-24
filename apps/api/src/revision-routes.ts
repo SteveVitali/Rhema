@@ -6,7 +6,7 @@
 import { Hono } from "hono";
 import { captureGuidance, type OrchestratorDeps } from "@rhema/orchestrator";
 import type { ContentStore } from "@rhema/mirror";
-import { loadWhatChanged, findHunk } from "./what-changed.js";
+import { loadWhatChanged, loadVersionDiff, findHunk } from "./what-changed.js";
 import type { Principal } from "./run-routes.js";
 
 export interface RevisionApiDeps extends OrchestratorDeps {
@@ -54,6 +54,71 @@ export function createRevisionRoutes(deps: RevisionApiDeps): Hono {
     if (!hunk) return c.json({ error: "hunk_not_found" }, 404);
     // the anchor names the hunk's first changed block (the after side when present — where the comment
     // lands in v(N+1)) in the verbatim §11.3 shape, so the consuming Revise can re-resolve it.
+    const b = hunk.after[0] ?? hunk.before[0];
+    const g = await captureGuidance(deps, {
+      workspaceId: principal.workspaceId,
+      projectId: c.req.param("id"),
+      userId: principal.userId,
+      source: "inline_comment",
+      text: body.text.trim(),
+      scope: "project",
+      workflows: ["revise"],
+      ...(b
+        ? {
+            anchors: [
+              {
+                blockId: b.blockId,
+                quote: b.text.slice(0, 200),
+                startOffset: b.startOffset,
+                endOffset: b.endOffset,
+                confidence: 1,
+              },
+            ],
+          }
+        : {}),
+    });
+    return c.json({ guidanceId: g.guidanceId, hunkId: hunk.id }, 201);
+  });
+
+  // ---- P1.08 — the generalized compare pair (§5.8): ANY two drafts (`m` may be `working`). The
+  //      response-scoped routes above remain — a review-answer pair IS the ledgered case; this route
+  //      projects the same view over arbitrary pairs (unledgered ⇒ every hunk Unlinked). ----
+  app.get("/projects/:id/v/:n/diff/:m", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const store = await storeFor(principal.workspaceId);
+    if (!store) return c.json({ error: "content store unavailable" }, 500);
+    const res = await deps.txRunner.run(principal.workspaceId, (tx) =>
+      loadVersionDiff(tx, store, {
+        projectId: c.req.param("id"),
+        beforeRef: c.req.param("n"),
+        afterRef: c.req.param("m"),
+      }),
+    );
+    if (!res.ok) return c.json({ error: res.reason }, 404);
+    return c.json(res);
+  });
+
+  // The generalized compare's hunk-comment POST — the same Guidance write as the response-scoped
+  // route (`source:'inline_comment'`, project scope, `workflows:['revise']`), resolved against the
+  // version-pair's hunks server-side.
+  app.post("/projects/:id/v/:n/diff/:m/hunks/:hunkId/comments", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const body = (await c.req.json().catch(() => ({}))) as { text?: string };
+    if (!body.text || !body.text.trim()) return c.json({ error: "text required" }, 400);
+    const store = await storeFor(principal.workspaceId);
+    if (!store) return c.json({ error: "content store unavailable" }, 500);
+    const res = await deps.txRunner.run(principal.workspaceId, (tx) =>
+      loadVersionDiff(tx, store, {
+        projectId: c.req.param("id"),
+        beforeRef: c.req.param("n"),
+        afterRef: c.req.param("m"),
+      }),
+    );
+    if (!res.ok) return c.json({ error: res.reason }, 404);
+    const hunk = findHunk(res.view, c.req.param("hunkId"));
+    if (!hunk) return c.json({ error: "hunk_not_found" }, 404);
     const b = hunk.after[0] ?? hunk.before[0];
     const g = await captureGuidance(deps, {
       workspaceId: principal.workspaceId,
