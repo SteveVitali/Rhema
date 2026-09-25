@@ -1,4 +1,5 @@
 import { AGENT_TYPE_KEYS, SEAT_DISPLAY } from "@rhema/contracts";
+import { seedProtocols } from "@rhema/protocols";
 import type { MigrationDb } from "../migrate.js";
 
 // Code seeds applied on deploy, versioned with the schema (REQ-DATA-3): the `agent_types` rows (the five
@@ -126,13 +127,11 @@ export async function agentTypesSeed(db: MigrationDb): Promise<void> {
 }
 
 /**
- * Seed the `protocols` scaffold. P0.02 seeds only the row placeholder for the Essay protocol (the one Phase-0
- * protocol, §17 Q-22); P0.03 fills the body. Idempotent on (id, version).
+ * Seed the `protocols` table. P0.02 seeded only the Essay scaffold; P1.21 (REQ-GENRE-1/3) seeds all four
+ * §6.7 rows — Essay, Academic, Op-ed, Memo — as versioned `Protocol` bodies via `@rhema/protocols`
+ * (`seedProtocols` is idempotent on (id, version); the `venue_table_verified_at` marker stays NULL while
+ * H4's venue verification is outstanding — the rows read as stale, never fabricated-verified).
  */
 export async function protocolsSeed(db: MigrationDb): Promise<void> {
-  await db.query(
-    `insert into protocols (id, version, body, seeded_at)
-     values ($1,$2,$3, now()) on conflict (id, version) do nothing`,
-    ["essay", 1, JSON.stringify({ scaffold: true, note: "body seeded by P0.03" })],
-  );
+  await seedProtocols(db);
 }

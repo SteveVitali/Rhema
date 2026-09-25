@@ -1123,6 +1123,21 @@ export function NewProjectPage(): ReactNode {
                 <option key={v.venue} value={v.venue} />
               ))}
             </datalist>
+            {/* §16.4 — a stale venue row shows its authored date, never a fabricated verification. */}
+            {(() => {
+              const staleDates = [
+                ...new Set(
+                  venueRows
+                    .filter((v) => v.verified_at == null && v.as_of != null)
+                    .map((v) => v.as_of as string),
+                ),
+              ].sort();
+              return staleDates.length > 0 ? (
+                <span data-venue-stale style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>
+                  {fmt(COPY.newProject.venueStaleFmt, { dates: staleDates.join(", ") })}
+                </span>
+              ) : null;
+            })()}
           </label>
           {pickedCard?.lengthNorms.default != null ? (
             <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }} className="tnum">

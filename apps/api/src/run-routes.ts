@@ -646,6 +646,44 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       ...(typeof body.stage === "string" && body.stage ? { stage: body.stage } : {}),
     };
 
+    // P1.21 (§6.7/REQ-WF-8/REQ-GENRE-6; §16.4's Memo-confidentiality row) — the run's user_sources[]:
+    // confidential source material a Memo run's verification may emit `verified_against_user_source`
+    // verdicts against. The sources' url hosts freeze into `inputs.urlPolicy.userSourceDomains` with the
+    // `fetchUserDataForbidden` marker → provisioning maps both into the proxy allowlist AND the hook's
+    // URL policy, so a web fetch of user-supplied data is denied at two enforcement layers (never prompt
+    // discipline). The source text also feeds the proxy's n-gram query guard, so the figures can't leave
+    // inside a search query either.
+    const userSources = normalizeUserSources(body.userSources);
+    if (userSources === "invalid") return c.json({ error: "invalid_user_sources" }, 422);
+    const effectiveProtocol =
+      (typeof body.protocol === "string" && body.protocol) || projectScope?.protocol_id || null;
+    if (userSources.length > 0 && effectiveProtocol !== "memo") {
+      // user_sources is a memo-protocol input only (REQ-GENRE-6) — refuse rather than silently drop.
+      return c.json({ error: "user_sources_memo_only" }, 422);
+    }
+    if (userSources.length > 0 || effectiveProtocol === "memo") {
+      const existingPolicy =
+        inputs.urlPolicy != null && typeof inputs.urlPolicy === "object" && !Array.isArray(inputs.urlPolicy)
+          ? (inputs.urlPolicy as Record<string, unknown>)
+          : {};
+      const userSourceDomains = [
+        ...new Set(
+          userSources
+            .map((s) => userSourceDomain(s.url))
+            .filter((d): d is string => d != null),
+        ),
+      ];
+      inputs = {
+        ...inputs,
+        urlPolicy: {
+          ...existingPolicy,
+          fetchUserDataForbidden: true,
+          ...(userSourceDomains.length > 0 ? { userSourceDomains } : {}),
+        },
+        ...(userSources.length > 0 ? { user_sources: userSources } : {}),
+      };
+    }
+
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey,
       workflow,
@@ -1130,6 +1168,13 @@ interface CreateRunBody {
   protocol?: string;
   venue?: string;
   stage?: string;
+  /**
+   * P1.21 (§6.7/REQ-WF-8/REQ-GENRE-6) — a Memo run's `user_sources[]`: confidential source material the
+   * verification phase may emit `verified_against_user_source` verdicts against. Accepted only under the
+   * memo protocol; each source's url host lands in the run's URL policy as a user-source domain
+   * (`web_fetch_of_user_data: 'forbidden'` — the hook + the proxy deny the fetch, never advise it).
+   */
+  userSources?: { name: string; text?: string; url?: string }[];
   /** the sheet's Approvals choice — persists as the project's `approval_policy` (§5.6: Approvals is a
    *  project default the sheet edits; per-run gate behavior follows the project policy). */
   approvalPolicy?: "named" | "wait_each" | "run_to_completion";
@@ -1169,6 +1214,54 @@ interface CreateRunBody {
     };
   };
 }
+/**
+ * P1.21 — validate + normalize a memo run's `userSources` body field (REQ-GENRE-6). A source needs a
+ * name plus text and/or a url; bounds keep the frozen inputs small (≤8 sources, ≤64 kB of text each).
+ * Returns the normalized list, or `"invalid"` for a malformed shape — the route 422s, never coerces.
+ */
+function normalizeUserSources(
+  raw: unknown,
+): { name: string; text?: string; url?: string }[] | "invalid" {
+  if (raw == null) return [];
+  if (!Array.isArray(raw) || raw.length > 8) return "invalid";
+  const out: { name: string; text?: string; url?: string }[] = [];
+  for (const s of raw) {
+    if (s == null || typeof s !== "object") return "invalid";
+    const name = (s as Record<string, unknown>).name;
+    const text = (s as Record<string, unknown>).text;
+    const url = (s as Record<string, unknown>).url;
+    if (typeof name !== "string" || name.trim() === "" || name.length > 200) return "invalid";
+    if (text != null && (typeof text !== "string" || text.length > 64_000)) return "invalid";
+    if (url != null) {
+      if (typeof url !== "string" || url.length > 2000) return "invalid";
+      try {
+        const u = new URL(url);
+        if (u.protocol !== "http:" && u.protocol !== "https:") return "invalid";
+      } catch {
+        return "invalid";
+      }
+    }
+    if (text == null && url == null) return "invalid"; // a source must carry content or a reference
+    out.push({
+      name: name.trim(),
+      ...(typeof text === "string" && text !== "" ? { text } : {}),
+      ...(typeof url === "string" && url !== "" ? { url } : {}),
+    });
+  }
+  return out;
+}
+
+/** The hostname of a user-supplied source URL — the domain the URL policy blocks (§16.4). */
+function userSourceDomain(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "" ? null : host;
+  } catch {
+    return null;
+  }
+}
+
 interface EventBody {
   type: Parameters<typeof postEvents>[1]["events"][number]["type"];
   payload: unknown;

@@ -98,6 +98,17 @@ export function evaluateUrl(
     return { decision: "deny", denyReason: "paywall", reason: "blocked domain (robots/paywall)", normalizedUrl };
   }
 
+  // P1.21 — Memo's `web_fetch_of_user_data: 'forbidden'` (REQ-WF-8): a fetch to a `user_sources[]`
+  // domain is denied BEFORE the hold-out/exclusion checks; the proxy carries the same deny set.
+  if (host && policy.userSourceDomains?.some((d) => host === d || host.endsWith("." + d))) {
+    return {
+      decision: "deny",
+      denyReason: "user_source",
+      reason: "user-supplied source — fetching it over the web is forbidden (memo confidentiality)",
+      normalizedUrl,
+    };
+  }
+
   if (matchesUrl(normalizedUrl, policy.holdouts)) {
     const calibratorMayFetch =
       opts.isCalibrator && policy.predictionFileWritten && matchesUrl(normalizedUrl, policy.calibratorAllow);

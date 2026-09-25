@@ -135,6 +135,10 @@ export interface RunSheetLabels {
   readonly protocolLabel?: string;
   readonly venueLabel?: string;
   readonly stageLabel?: string;
+  /** P1.21 — the memo sheet's `user_sources` field chrome (§6.7/REQ-WF-8). */
+  readonly userSourcesLabel?: string;
+  readonly userSourcesHint?: string;
+  readonly userSourcesPlaceholder?: string;
   /** the whole-draft comparison line's prefix ("Whole draft:") — scoped sheets only. */
   readonly wholeDraftPrefix?: string;
   /** the §14.3 trial badge text when the entitlement covers the run. */
@@ -335,6 +339,14 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
         </p>
       ) : null}
 
+      {/* P1.21 (§6.7/REQ-WF-8) — the Memo confidentiality statement: user-supplied sources mount
+          read-only and are never fetched over the web (enforced at the proxy, not just advised). */}
+      {view.memoConfidentialityLine ? (
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-memo-confidentiality>
+          {view.memoConfidentialityLine}
+        </p>
+      ) : null}
+
       {/* P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence at launch: informational /
           blocking-2h / waits-for-you, from the same gate-policy facts the run freezes. */}
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-scope-approval>
@@ -390,7 +402,20 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
               scope gate to blocking (the api re-derives the flag server-side, never client-trusted). */}
           <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.protocolLabel ?? "Protocol"}</span>
-            <input type="text" name="protocol" defaultValue={view.scope.protocol} style={{ width: "180px" }} />
+            {/* P1.21 — the four §6.7 protocols render as a select when the context supplied the card
+                list; a free-text input remains the no-context fallback (a typed value still works —
+                the api validates the id server-side either way). */}
+            {view.scope.protocolOptions && view.scope.protocolOptions.length > 0 ? (
+              <select name="protocol" defaultValue={view.scope.protocol} data-protocol-select>
+                {view.scope.protocolOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="text" name="protocol" defaultValue={view.scope.protocol} style={{ width: "180px" }} />
+            )}
           </label>
           <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.venueLabel ?? "Venue"}</span>
@@ -400,6 +425,23 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
             <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.stageLabel ?? "Stage"}</span>
             <input type="text" name="stage" defaultValue={view.scope.stage ?? ""} style={{ width: "180px" }} />
           </label>
+          {/* P1.21 (§6.7/REQ-GENRE-6) — the memo run's user_sources field: one `name :: url-or-text`
+              per line; the api validates + freezes them and denies web fetches to their domains. */}
+          {view.userSourcesField ? (
+            <label style={{ display: "block" }} data-user-sources-field>
+              <span style={{ color: "var(--shell-fg-muted)" }}>{labels.userSourcesLabel ?? "User sources"}</span>
+              <textarea
+                name="userSources"
+                rows={3}
+                defaultValue={view.userSourcesText ?? ""}
+                placeholder={labels.userSourcesPlaceholder ?? "Q3 forecast :: https://internal.example/q3"}
+                style={{ display: "block", width: "100%", marginTop: "4px", font: "inherit", background: "var(--shell-bg)", color: "var(--shell-fg)", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 8px" }}
+              />
+              <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                {labels.userSourcesHint ?? "One per line — name :: url or name :: pasted text (up to 8). Never fetched over the web."}
+              </span>
+            </label>
+          ) : null}
           {/* Approvals — the project's policy, edited here (§5.6 collapsed row; the run POST persists it). */}
           <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.approvalsLabel ?? "Approvals"}</span>

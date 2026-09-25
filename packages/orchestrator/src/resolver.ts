@@ -15,6 +15,13 @@ export interface AllowedEndpointData {
 export interface ProxyUrlPolicyData {
   readonly blockedDomains: readonly string[];
   readonly allowedDomains?: readonly string[];
+  /**
+   * P1.21 (REQ-WF-8) — the `user_sources[]` domains of a Memo run: a fetch to one is a
+   * `web_fetch_of_user_data` violation — denied at the proxy (and logged `user_source`), never advised.
+   */
+  readonly userSourceDomains?: readonly string[];
+  /** the §6.7 `web_fetch_of_user_data: 'forbidden'` marker — set on every Memo-protocol run. */
+  readonly fetchUserDataForbidden?: boolean;
   /** the known-domain set + novel-domain cap live in the persisted URL policy; the resolver lifts them out. */
   readonly knownDomains?: readonly string[];
   readonly novelDomainCap?: number;
@@ -60,12 +67,24 @@ export interface RunContextData {
   readonly capCredits: number;
   /** The run's server web-research policy (PRB.22); absent ⇒ the proxy's bounded defaults apply. */
   readonly webTools?: WebToolPolicyData;
+  /**
+   * P1.21 — the text the proxy n-gram-diffs search queries against (§12.8d). For a Memo run the
+   * orchestrator supplies the concatenated `user_sources[]` text here, so a search query quoting
+   * internal figures is `suspicious_query`-denied — internal data can never ride a query out.
+   */
+  readonly draftText?: string;
 }
 
 /** The resolved context the proxy consumes — structurally the egress-proxy `RunContext`. */
 export interface ResolvedRunContext extends RunContextData {
   readonly allowlist: { readonly endpoints: readonly AllowedEndpointData[]; readonly models: readonly string[] };
-  readonly urlPolicy: { readonly blockedDomains: readonly string[]; readonly allowedDomains?: readonly string[] };
+  readonly urlPolicy: {
+    readonly blockedDomains: readonly string[];
+    readonly allowedDomains?: readonly string[];
+    /** P1.21 — the Memo run's `user_sources[]` domains (a fetch to one is denied `user_source`). */
+    readonly userSourceDomains?: readonly string[];
+    readonly fetchUserDataForbidden?: boolean;
+  };
   readonly draftText?: string;
   readonly knownDomains?: readonly string[];
   readonly novelDomainCap?: number;
@@ -126,6 +145,8 @@ export function createDbRunContextResolver(
         urlPolicy: {
           blockedDomains: urlPolicy.blockedDomains ?? [],
           ...(urlPolicy.allowedDomains ? { allowedDomains: urlPolicy.allowedDomains } : {}),
+          ...(urlPolicy.userSourceDomains ? { userSourceDomains: urlPolicy.userSourceDomains } : {}),
+          ...(urlPolicy.fetchUserDataForbidden === true ? { fetchUserDataForbidden: true } : {}),
         },
         ...(urlPolicy.knownDomains ? { knownDomains: urlPolicy.knownDomains } : {}),
         ...(urlPolicy.novelDomainCap != null ? { novelDomainCap: urlPolicy.novelDomainCap } : {}),

@@ -5,7 +5,7 @@ import {
   dispositionKindSchema,
   findingKindSchema,
   gateKindSchema,
-  rubricDimensionSchema,
+  rubricDimensionExtendedSchema,
   severitySchema,
 } from "./enums.js";
 import { anchorSchema } from "./domain/anchor.js";
@@ -38,7 +38,7 @@ export const findingViewSchema = z.object({
     })
     .optional(),
   suggestion: z.object({ replacement: z.string() }).optional(),
-  rubricDims: z.array(rubricDimensionSchema),
+  rubricDims: z.array(rubricDimensionExtendedSchema),
   letterSection: LETTER_SECTIONS.optional(),
   provisional: z.boolean(),
   disposition: z

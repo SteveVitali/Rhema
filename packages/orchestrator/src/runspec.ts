@@ -17,6 +17,7 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
 import { consumeGuidance } from "./guidance.js";
 import { loadGatePolicyFacts, type GatePolicyFacts } from "./gate-policy.js";
+import { userSourceMounts } from "./user-sources.js";
 
 /** Where the ported skills are baked in the run-task image (`apps/run-task/Dockerfile` COPYs them here). */
 export const DEFAULT_SKILLS_DIR = "/app/skills";
@@ -135,6 +136,9 @@ interface RunSpecFacts {
   readonly projectId: string | null;
   /** `runs.replans` — the back-edge count (REQ-WF-5), folded into a re-run plan phase's `replan` input. */
   readonly replans: number;
+  /** P1.21 (REQ-GENRE-3) — the run's resolved `protocol@version` for the delivery stamp. */
+  readonly protocolId?: string;
+  readonly protocolVersion?: number;
 }
 
 function round2(n: number): number {
@@ -165,6 +169,9 @@ function urlPolicyForRun(inputs: Record<string, unknown>): UrlPolicy {
     predictionFileWritten: false,
     serverFetchDisabled: p.serverFetchDisabled === true,
     blockedDomains: list(p.blockedDomains),
+    // P1.21 — the memo run's user-source domains (REQ-WF-8): the pod-side hook denies every fetch to
+    // them the same way the proxy does.
+    userSourceDomains: list(p.userSourceDomains),
   };
 }
 
@@ -195,12 +202,30 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     const done = (
       await tx.query("select count(distinct ordinal)::int as n from steps where run_id = $1 and state = 'done'", [args.runId])
     ).rows[0] as { n: number };
+    // P1.21 (REQ-GENRE-3) — resolve the run's `protocol@version` for the delivered dossier's stamp.
+    // The project's pinned `(protocol_id, protocol_version)` is the base; a frozen `inputs.protocol`
+    // override names a DIFFERENT protocol id and resolves to its current seed version.
+    const project = runRow.project_id
+      ? ((await tx.query("select protocol_id, protocol_version from projects where id = $1", [runRow.project_id]))
+          .rows[0] as { protocol_id: string | null; protocol_version: number | null } | undefined)
+      : undefined;
+    const override = typeof hyd.inputs.protocol === "string" && hyd.inputs.protocol !== "" ? hyd.inputs.protocol : null;
+    const protocolId = override ?? project?.protocol_id ?? undefined;
+    let protocolVersion = project?.protocol_version ?? undefined;
+    if (override != null && override !== project?.protocol_id) {
+      const v = (
+        await tx.query("select max(version)::int as v from protocols where id = $1", [override])
+      ).rows[0] as { v: number | null } | undefined;
+      if (v?.v != null) protocolVersion = v.v;
+    }
     return {
       modelTier: runRow.model_tier,
       tools: at?.tools ?? [],
       committedPhases: done.n,
       projectId: runRow.project_id,
       replans: runRow.replans,
+      ...(protocolId != null ? { protocolId } : {}),
+      ...(protocolVersion != null ? { protocolVersion } : {}),
     };
   });
 
@@ -404,6 +429,15 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       : {}),
   };
 
+  // P1.21 (REQ-WF-8/REQ-GENRE-6) — a Memo run's `user_sources[]` reach the prompt as a name→path index
+  // ONLY: the text mounts as read-only `user_sources/NN-name.md` files at hydration; the bytes (and the
+  // source URLs) never ride a prompt input line. Verdicts cite the source by NAME
+  // (`verified_against_user_source`); fetches to the source domains are denied by the frozen URL policy.
+  const mountedSources = userSourceMounts(hyd.inputs.user_sources);
+  if (mountedSources.length > 0) {
+    inputs.user_sources = mountedSources.map((s) => ({ name: s.name, path: s.path }));
+  }
+
   // P1.14 — the run's REAL URL policy: persona builds carry hold-outs + the calibrator allow-list +
   // fetcher-only egress; everything else keeps the empty policy (§12.6).
   const runUrlPolicy = urlPolicyForRun(hyd.inputs);
@@ -453,12 +487,16 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
         correspondenceKind: "drafting_note",
         newDraftId: hyd.inputs.nextDraftId as string,
         newDraftN: hyd.inputs.nextDraftN as number,
+        ...(facts.protocolId != null ? { protocolId: facts.protocolId } : {}),
+        ...(facts.protocolVersion != null ? { protocolVersion: facts.protocolVersion } : {}),
       }
     : facts.projectId && hyd.deliveryBase?.promotedVersionId
       ? {
           projectId: facts.projectId,
           draftId: hyd.deliveryBase.id,
           correspondenceKind: CORRESPONDENCE_KIND_BY_WORKFLOW[workflow] ?? "review",
+          ...(facts.protocolId != null ? { protocolId: facts.protocolId } : {}),
+          ...(facts.protocolVersion != null ? { protocolVersion: facts.protocolVersion } : {}),
           draftPromotedVersionId: hyd.deliveryBase.promotedVersionId,
           // PRB.06: the re-review/response links are frozen inputs the server seeded at creation — the
           // harness folds them verbatim; the api's deliver route re-resolves them as the attestation fact.

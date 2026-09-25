@@ -33,8 +33,13 @@ export const WORKFLOW_VERB_LABEL: Partial<Record<WorkflowKey, string>> = {
 };
 
 export interface SheetScope {
-  /** Essay only at beta (§5.6). */
+  /** P1.21 — the four §6.7 protocols (was Essay-only at beta). */
   readonly protocol: string;
+  /**
+   * P1.21 — the selectable protocol ids+names (the §5.3 cards, supplied server-side). Absent ⇒ the
+   * field falls back to a free-text input (never fabricate options).
+   */
+  readonly protocolOptions?: readonly { readonly id: string; readonly name: string }[];
   readonly venue?: string;
   readonly stage?: string;
   readonly voice?: string;
@@ -138,10 +143,23 @@ export interface RunSheetView {
   /** the obligation scope line (REQ-OBJ-6), when the caller supplied obligation data. */
   readonly scopeLine?: string;
   /**
-   * P1.20 (§6.7) — the "Protocol changed since the last Review" marker line on the Review's scope card;
-   * set when the settings page's protocol change is still unconsumed.
+   * P1.20/P1.21 (§6.7) — the "Protocol changed since vN was reviewed" marker line on the Review's
+   * scope card; set when the settings page's protocol change is still unconsumed (`vN` is the
+   * reviewed head the next Review opens on).
    */
   readonly protocolChangedLine?: string;
+  /**
+   * P1.21 (§6.7/REQ-WF-8; §16.4) — the Memo sheet's confidentiality line, rendered when the sheet's
+   * protocol is `memo`: user-supplied sources mount read-only and are never fetched over the web
+   * (enforced by the run's URL policy, never just advised).
+   */
+  readonly memoConfidentialityLine?: string;
+  /**
+   * P1.21 (§6.7/REQ-GENRE-6) — true ⇒ the sheet renders the memo `user_sources` field (one
+   * `name :: url-or-text` per line; ≤8). `userSourcesText` round-trips the typed value on re-render.
+   */
+  readonly userSourcesField?: boolean;
+  readonly userSourcesText?: string;
   /** P1.06 (§7.2) — the run's command scope pills + the whole-draft comparison figure. */
   readonly commandScope?: CommandScopeView;
   /**
@@ -244,6 +262,11 @@ export interface BuildRunSheetViewArgs {
    * lever-changed scope (the api re-derives the freeze server-side, never client-trusted).
    */
   readonly protocolChanged?: boolean;
+  /**
+   * P1.21 (REQ-GENRE-6) — the memo sheet's typed `user_sources` text (round-trips on re-render);
+   * presence also enables the field (`scope.protocol === "memo"` is the gate, this carries the text).
+   */
+  readonly userSourcesText?: string;
   /** the sheet's free-text guidance (a typed command's tail) — re-rendered into the field. */
   readonly guidance?: string;
   /** P1.06 (§5.6) — the project's standing guidance count rendered beside the guidance box. */
@@ -385,9 +408,20 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
         ? "Scope approval — a blocking gate opens at launch; proceeds as proposed after 2 hours."
         : "Scope approval — informational; the run proceeds.";
 
-  // P1.20 (§6.7) — the settings-page protocol change marker on the Review's scope card (a fact line,
-  // not a gate of its own — the blocking consequence rides scopeApprovalLine above).
-  const protocolChangedLine = args.protocolChanged === true ? "Protocol changed since the last Review." : undefined;
+  // P1.20/P1.21 (§6.7) — the settings-page protocol-change marker on the Review's scope card (a fact
+  // line, not a gate of its own — the blocking consequence rides scopeApprovalLine above). `vN` is the
+  // reviewed head the next Review opens on.
+  const protocolChangedLine =
+    args.protocolChanged === true
+      ? `Protocol changed since ${args.targetVersion} was reviewed.`
+      : undefined;
+
+  // P1.21 (§6.7; §16.4's memo-confidentiality row) — a Memo sheet carries the confidentiality
+  // statement and the `user_sources` field: sources mount read-only; fetches to them are denied.
+  const isMemoSheet = args.scope.protocol === "memo";
+  const memoConfidentialityLine = isMemoSheet
+    ? "Memo — user-supplied sources mount read-only for this run and are never fetched over the web."
+    : undefined;
 
   // per-rigor DEFAULT state at THAT rigor's default model tier (§6.5: tier is a consequence of rigor) —
   // the inline enhancement's recompute table. Switching rigor moves the tier with it.
@@ -433,6 +467,10 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     whyLine: whyLine(args, pricedInputs, claims),
     ...(args.scopeLine ? { scopeLine: args.scopeLine } : {}),
     ...(protocolChangedLine ? { protocolChangedLine } : {}),
+    ...(memoConfidentialityLine ? { memoConfidentialityLine } : {}),
+    ...(isMemoSheet
+      ? { userSourcesField: true, ...(args.userSourcesText ? { userSourcesText: args.userSourcesText } : {}) }
+      : {}),
     // P1.06 — the command-scope pills + the whole-draft comparison figure (§5.6: scoped beside whole).
     ...(args.commandScope
       ? {

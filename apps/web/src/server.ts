@@ -3383,6 +3383,12 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(str("protocol") ? { protocol: str("protocol") } : {}),
         ...(str("venue") ? { venue: str("venue") } : {}),
         ...(str("stage") ? { stage: str("stage") } : {}),
+        // P1.21 (§6.7/REQ-GENRE-6) — the memo sheet's user_sources field (`name :: url-or-text` per
+        // line) parses into the api's validated array; the api refuses it off the memo protocol and
+        // freezes the source domains into the run's URL policy (fetches are denied, not advised).
+        ...(parseUserSourcesField(str("userSources")).length > 0
+          ? { userSources: parseUserSourcesField(str("userSources")) }
+          : {}),
         ...(str("approval") ? { approvalPolicy: str("approval") as "named" | "wait_each" | "run_to_completion" } : {}),
         // P1.09 (§5.6/§6.4) — the sheet's "this run only, autonomously" check posts `autoProceedRun`;
         // the api freezes runs.gates_off on THIS run only (the project policy is untouched).
@@ -5012,6 +5018,27 @@ function normalizeTier(v: string, workflow: WorkflowKey, rigor: Rigor): ModelTie
   return sheetProfile(workflow).rigorDefaults[rigor].modelTier;
 }
 
+/**
+ * P1.21 — parse the memo sheet's `user_sources` field: one `name :: url-or-text` per line (an
+ * http(s) tail is the source's url; anything else is pasted text). Blank/malformed lines drop —
+ * the api's own validation is the authority; this is just the form's wire shape.
+ */
+function parseUserSourcesField(raw: string): { name: string; url?: string; text?: string }[] {
+  const out: { name: string; url?: string; text?: string }[] = [];
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const sep = trimmed.indexOf("::");
+    const name = (sep >= 0 ? trimmed.slice(0, sep) : trimmed).trim();
+    const tail = sep >= 0 ? trimmed.slice(sep + 2).trim() : "";
+    if (!name) continue;
+    if (/^https?:\/\//i.test(tail)) out.push({ name, url: tail });
+    else if (tail) out.push({ name, text: tail });
+    else out.push({ name });
+  }
+  return out.slice(0, 8);
+}
+
 /** Build the RunSheetView from the query (beta launcher). Word count is query-driven; the live per-draft
  *  metadata binding is the deploy leg (like the import pipeline). PRB.08: the spendable balance is the
  *  account's REAL ledger balance when the billing read resolves — the flat beta house-credit figure is only
@@ -5074,6 +5101,8 @@ function buildSheet(
       // §7.2 — a typed `--protocol`/`--venue`/`--stage` lever presets the row; the project default fills
       // whatever the command left unset.
       protocol: query.protocol || ctx?.project?.protocol || "Essay",
+      // P1.21 — the four §6.7 protocol options (id+name) the selector renders, from the api context.
+      ...(ctx?.protocols ? { protocolOptions: ctx.protocols } : {}),
       ...(query.venue || ctx?.project?.venue ? { venue: query.venue || ctx?.project?.venue || "" } : {}),
       ...(query.stage ? { stage: query.stage } : {}),
     },
@@ -5099,6 +5128,8 @@ function buildSheet(
     ...(ctx?.standingNotes != null ? { standingNotes: ctx.standingNotes } : {}),
     ...(Number(query.budget) > 0 ? { capOverrideCredits: Math.round(Number(query.budget)) } : {}),
     ...(typeof query.guidance === "string" && query.guidance ? { guidance: query.guidance } : {}),
+    // P1.21 — the memo sheet's typed user_sources text round-trips on re-render.
+    ...(typeof query.userSources === "string" && query.userSources ? { userSourcesText: query.userSources } : {}),
     // P1.06 — the promote-on-launch line: a WORKING head freezes to its vN on launch (§5.6 item 7).
     ...(ctx?.headDraft ? { headState: ctx.headDraft.state, promoteToVersion: `v${ctx.headDraft.n}` } : {}),
     // §14.3 — the unused trial entitlement → the `Included` rendering (+ its word-cap detail).

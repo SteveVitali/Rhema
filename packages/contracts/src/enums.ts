@@ -246,8 +246,29 @@ export const RUBRIC_DIMENSIONS = [
   "voice_audience_fit",
   "intellectual_honesty",
 ] as const;
-export type RubricDimension = (typeof RUBRIC_DIMENSIONS)[number];
+/** The shared core's eight dimensions — what the §6.7 Essay/Academic rows declare as-is. */
+export type BaseRubricDimension = (typeof RUBRIC_DIMENSIONS)[number];
 export const rubricDimensionSchema = z.enum(RUBRIC_DIMENSIONS);
+
+/**
+ * The dimensions only a protocol-declared swap/add can introduce (§6.7 rubric row, P1.21): protocols
+ * may swap at most one dimension and add at most one, so a rubric row scores the protocol's declared
+ * set — never the base eight alone. Op-ed adds `timeliness`; Memo swaps Originality →
+ * `decision_readiness` and adds `scope_discipline`.
+ */
+export const PROTOCOL_RUBRIC_DIMENSIONS = [
+  "timeliness",
+  "decision_readiness",
+  "scope_discipline",
+] as const;
+export type ProtocolRubricDimension = (typeof PROTOCOL_RUBRIC_DIMENSIONS)[number];
+
+/** Every rubric dimension a seeded protocol may score — the eight + the protocol swap/adds (§6.7). */
+export const RUBRIC_DIMENSIONS_ALL = [...RUBRIC_DIMENSIONS, ...PROTOCOL_RUBRIC_DIMENSIONS] as const;
+export type RubricDimension = (typeof RUBRIC_DIMENSIONS_ALL)[number];
+/** Sidecar/view schema over the protocol-extended dimension set (a memo row's `decision_readiness`
+ *  is a legal dimension; a drifted name still fails). */
+export const rubricDimensionExtendedSchema = z.enum(RUBRIC_DIMENSIONS_ALL);
 
 // ---------- revision obligations (§11.7) ----------
 export const OBLIGATION_STATES = [

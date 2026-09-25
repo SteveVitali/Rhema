@@ -847,6 +847,14 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
       if (patch.protocolId !== undefined && patch.protocolId !== cur.protocol_id) {
         push("protocol_id = ?", patch.protocolId);
         push("protocol_changed_at = ?", deps.clock.now());
+        // P1.21 (REQ-GENRE-3) — pin the switch to the protocol's CURRENT seed version so delivered
+        // dossiers stamp `protocol@version` against the body that was live at the change, never a
+        // re-resolved later one. A card with no seeded row falls back to v1 (the seeds land with the
+        // migrations; a missing row means a hand-registered id).
+        const v = (
+          await tx.query(`select max(version)::int as v from protocols where id = $1`, [patch.protocolId])
+        ).rows[0] as { v: number | null } | undefined;
+        push("protocol_version = ?", v?.v ?? 1);
       }
       if (patch.rigorDefault !== undefined) push("rigor_default = ?", patch.rigorDefault);
       if (patch.modelTierDefault !== undefined) push("model_tier_default = ?", patch.modelTierDefault);

@@ -6,7 +6,7 @@ import {
   dispositionKindSchema,
   dispositionStatusSchema,
   findingKindSchema,
-  rubricDimensionSchema,
+  rubricDimensionExtendedSchema,
   severitySchema,
 } from "../enums.js";
 import { anchorSchema } from "./anchor.js";
@@ -53,7 +53,7 @@ export const findingSchema = z.object({
   body: z.string().max(4096, "finding body ≤ 4 kB (§11.1)"),
   evidence: findingEvidenceSchema.optional(),
   suggestion: z.object({ replacement: z.string() }).optional(),
-  rubricDims: z.array(rubricDimensionSchema),
+  rubricDims: z.array(rubricDimensionExtendedSchema),
   letterSection: LETTER_SECTIONS.optional(),
   projections: z.array(findingProjectionSchema).default([]),
   /** a re-review's finding may declare the open obligation it carries (lineage matcher 2 — REQ-OBJ-4/§11.7). */

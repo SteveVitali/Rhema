@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@rhema/contracts": "workspace:*",
+    "@rhema/protocols": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "better-auth": "^1.7.2"
   },
