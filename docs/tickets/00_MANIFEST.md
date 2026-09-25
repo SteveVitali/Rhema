@@ -194,6 +194,11 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 49 | `49_P1.21__protocols-2-4.md` | 1 | [skeleton] Academic/Op-ed/Memo protocols + venue tables (HUMAN H4 first) |
 | 50 | `50_P1.22__security-hardening-and-launch-checks.md` | 1 | [skeleton] injection controls verified, pen test, launch readout |
 | — | **CAPSTONE** (ledger) | — | whole-chain gap analysis vs the entire spec + composed end-to-end verification |
+| 51 | `51_RCN.1__deferral-reconciliation.md` | post-P1 | audit all OPEN deferral rows vs existing evidence; close the provable; sharpen the rest |
+| 52 | `52_STB.1__merge-deploy-smoke.md` | post-P1 | **gated on operator merge** — full-chain `dev` deploy + migrations 0029–0041 + smoke |
+| 53 | `53_STB.2__read-only-live-verifies.md` | post-P1 | all $0 read-only Stage-B legs + small live-binding fixes |
+| 54 | `54_STB.3__bounded-live-run-legs.md` | post-P1 | the inference-capped live legs, cheapest-first, combined ≤$120 |
+| 55 | `55_STB.4__real-money-and-external-legs.md` | post-P1 | live Stripe ≤$50 + pen-test facilitation + admin-key reconciliation — operator hard gates |
 
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
