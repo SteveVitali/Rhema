@@ -57,13 +57,16 @@ config:
     secure: AAABAC6YMHHH5eT/zHnfGdqzfZFXw9L+EsEOMfWmVeXc5DFhWYtI2prkLsiWgTu3gZ7DCs7rE0uS6pVkrUrbG81QuzQx3jJ76BG4LlAuA8TwSIuKCsFHqosmlUXdIsPIIfuYnNa6xr2HDjI8Ia+JvkHU8g==
   rhema:redisUrl:
     secure: AAABAJUM34u/xy00JC36/XGUbeppQFXmiVUwMn36aV/Zw5uRZ0FCgObXVhXyfeLXGbUHbzEQiqn1iA==
-  # PRB.25 Stage-B refresh (build rhema:prb25): api/web/worker/run-task rebuilt —
-  # meteredCoverage estimator multiplier (1.25 review/revise, 1.5 fact_check) prices the
-  # committed-vs-metered delta; derived cap covers a full run without operator raise.
-  # egress-proxy/fetcher/convert/export/collab stay at PRB.22-era pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:b889b52bf712d8044475ef76116e562c078e78b4a1544b199241a7ecbeb482fd","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:ad6661e3c415277fc339dd506a431082891dfb1b0232af10648b79741b9f1a0d","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:f4e0fb87963d6ffdd755d32f28c22c4a70c67e2715b4ea8d1fb79013bc2ab9e1","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:4fb6bb7b07b2d0e797d4c0ca1f1dde128de20e96a880da62ff1bde4133556a06","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:4f764617622f6e268860f7e7e7eaed19abba9b2a0ad61f92e04e2731856fc775","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:e6d3bc60396115bdd42b5d5b9454689d94d9a254443972534313df29e1ce6d67","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:5072732dbeb535202a5425342ee5567d01547c9907c589c3b4bf58b6b96169e9"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:0f22f9e26b36eb6ad1bab747ce8b67d45eea32e5e3887713f143281686c30089
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:4938ae233036030454a3b04c8b03239f96f5097908d978f517473f18f67d4d3b
+  # STB.1 full-chain refresh (build rhema:p1final, Cloud Build 30d48852, 2026-09-25): ALL NINE
+  # images rebuilt on chain-tip 4fcf03e (stevevitali/p1-22-launch-checks — the pre-merge deploy the
+  # operator authorized; carries the whole P1.01–P1.22 tree). New wiring this set lands: collab
+  # DATABASE_URL (rhema_collab role) + WSS /collab LB routing, P1.15 fetcher/convert grants,
+  # P1.16 STRIPE_SECRET_KEY_NAME, P1.22 monitoring stack + custom GKE-access IAM role (D-P0.01-5).
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:0088346f564d82cb5caad4924fadab540c8604f77d2e6e28788d2f8512a09baf","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:cde31f1a2657702682a3068cbbef66fc3e0103807d40f5eae5a3b8ce48eecba9","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:a324228bb77c21d0c09f66a85595f846d9a1d45b8177317a9ab5c82412bb63c6","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:3c96ecef81334eef4c5824932e8e964fb3f3571e9fc51626ed9eb7d895a97ffc
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cf779cd54857aaf4040cb1cf20a823276ec9d2adfb9c4847e7955b5d0f5e794c
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
+  rhema:collabDatabaseUrl:
+    secure: AAABAJ1t1HjBSbMzJCZnCQPpD4e0hd6T8+8fIfLvvGjIMoBG/Kxm+aorm0D0aAmdMQBuh8rk5L4a7kzhwXwNI4ABPmiXHJiOd0aT71z2be2GoJPc/uPLC3BYeSS7vBJ8ITkokx86TlS4DOU46n/wkvQ4AuMTUW7+RU8B

@@ -80,7 +80,7 @@ export function createMonitoring(args: MonitoringArgs): {
     },
     labelExtractors: {
       // textPayload shape: `[slo] violation {"signal":"key",...}` — extract the signal value.
-      signal: 'REGEXP_EXTRACT(textPayload, "\\\\"signal\\\\":\\\\"([a-z0-9_]+)\\\\"")',
+      signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
     },
   });
 
@@ -88,7 +88,7 @@ export function createMonitoring(args: MonitoringArgs): {
   // fires on count > 0 over the alignment window.
   const alertPolicies = SLO_ALERT_SIGNALS.map(
     (sig) =>
-      new gcp.monitoring.AlertPolicy(`rhema-${stack}-slo-${sig.replaceAll("_", "-")}`, {
+      new gcp.monitoring.AlertPolicy(`rhema-${stack}-slo-${sig.replace(/_/g, "-")}`, {
         displayName: `SLO breach — ${sig} (${stack})`,
         project,
         combiner: "OR",
@@ -151,86 +151,90 @@ export function createMonitoring(args: MonitoringArgs): {
   // the Slo exists). dashboardJson is the Cloud Monitoring grid layout.
   const dashboard = new gcp.monitoring.Dashboard(`rhema-${stack}-slo-dashboard`, {
     project,
-    dashboardJson: pulumi.interpolate`{
-      "displayName": ${JSON.stringify(`rhema-${stack} — §13.5 SLOs`)},
-      "gridLayout": {
-        "columns": "2",
-        "widgets": [
-          {
-            "title": "SLO breach events by signal (probe-logged)",
-            "xyChart": {
-              "dataSets": [
-                {
-                  "timeSeriesQuery": {
-                    "timeSeriesFilter": {
-                      "filter": "metric.type=\"logging.googleapis.com/user/rhema_slo_violations\" resource.type=\"cloud_run_revision\"",
-                      "aggregation": {
-                        "alignmentPeriod": "300s",
-                        "perSeriesAligner": "ALIGN_COUNT",
-                        "groupByFields": ["metric.label.signal"]
-                      }
-                    }
+    // Built via pulumi.all + JSON.stringify (not a hand-escaped interpolate template): the provider
+    // validates dashboard_json at plan time, and a serialized Output inside a raw string literal
+    // produced invalid JSON live (update 75 preview: "invalid character 'l' after object key:value").
+    dashboardJson: pulumi.all([apiAvailabilitySlo.name]).apply(([sloName]) =>
+      JSON.stringify({
+        displayName: `rhema-${stack} — §13.5 SLOs`,
+        gridLayout: {
+          columns: "2",
+          widgets: [
+            {
+              title: "SLO breach events by signal (probe-logged)",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_slo_violations" resource.type="cloud_run_revision"',
+                        aggregation: {
+                          alignmentPeriod: "300s",
+                          perSeriesAligner: "ALIGN_COUNT",
+                          groupByFields: ["metric.label.signal"],
+                        },
+                      },
+                    },
+                    plotType: "STACKED_BAR",
                   },
-                  "plotType": "STACKED_BAR"
-                }
-              ],
-              "yAxis": { "label": "breaches", "scale": "LINEAR" }
-            }
-          },
-          {
-            "title": "api request count by response class",
-            "xyChart": {
-              "dataSets": [
-                {
-                  "timeSeriesQuery": {
-                    "timeSeriesFilter": {
-                      "filter": "metric.type=\"run.googleapis.com/request_count\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"rhema-${stack}-api\"",
-                      "aggregation": {
-                        "alignmentPeriod": "60s",
-                        "perSeriesAligner": "ALIGN_RATE",
-                        "groupByFields": ["metric.label.response_code_class"]
-                      }
-                    }
+                ],
+                yAxis: { label: "breaches", scale: "LINEAR" },
+              },
+            },
+            {
+              title: "api request count by response class",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter: `metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.labels.service_name="rhema-${stack}-api"`,
+                        aggregation: {
+                          alignmentPeriod: "60s",
+                          perSeriesAligner: "ALIGN_RATE",
+                          groupByFields: ["metric.label.response_code_class"],
+                        },
+                      },
+                    },
+                    plotType: "STACKED_AREA",
                   },
-                  "plotType": "STACKED_AREA"
-                }
-              ],
-              "yAxis": { "label": "req/s", "scale": "LINEAR" }
-            }
-          },
-          {
-            "title": "api request latencies (p95)",
-            "xyChart": {
-              "dataSets": [
-                {
-                  "timeSeriesQuery": {
-                    "timeSeriesFilter": {
-                      "filter": "metric.type=\"run.googleapis.com/request_latencies\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"rhema-${stack}-api\"",
-                      "aggregation": {
-                        "alignmentPeriod": "60s",
-                        "perSeriesAligner": "ALIGN_PERCENTILE_95"
-                      }
-                    }
+                ],
+                yAxis: { label: "req/s", scale: "LINEAR" },
+              },
+            },
+            {
+              title: "api request latencies (p95)",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter: `metric.type="run.googleapis.com/request_latencies" resource.type="cloud_run_revision" resource.labels.service_name="rhema-${stack}-api"`,
+                        aggregation: {
+                          alignmentPeriod: "60s",
+                          perSeriesAligner: "ALIGN_PERCENTILE_95",
+                        },
+                      },
+                    },
+                    plotType: "LINE",
                   },
-                  "plotType": "LINE"
-                }
-              ],
-              "yAxis": { "label": "ms", "scale": "LINEAR" }
-            }
-          },
-          {
-            "title": "API availability SLO health (99.9% monthly)",
-            "scorecard": {
-              "timeSeriesQuery": {
-                "timeSeriesFilter": {
-                  "filter": "select_slo_health(\"${apiAvailabilitySlo.name}\")"
-                }
-              }
-            }
-          }
-        ]
-      }
-    }`,
+                ],
+                yAxis: { label: "ms", scale: "LINEAR" },
+              },
+            },
+            {
+              title: "API availability SLO health (99.9% monthly)",
+              scorecard: {
+                timeSeriesQuery: {
+                  timeSeriesFilter: { filter: `select_slo_health("${sloName}")` },
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ),
   });
 
   return { sloViolationsMetric, dashboard, alertPolicies, apiAvailabilitySlo, ...(notificationChannel ? { notificationChannel } : {}) };
