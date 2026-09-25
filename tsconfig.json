@@ -33,6 +33,7 @@
     { "path": "packages/ai-use" },
     { "path": "packages/archive" },
     { "path": "packages/ingest" },
+    { "path": "packages/security-checks" },
     { "path": "apps/web" },
     { "path": "apps/api" },
     { "path": "apps/collab" },

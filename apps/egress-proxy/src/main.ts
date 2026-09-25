@@ -10,8 +10,8 @@ import { createProxyServer, undiciStreamForwarder } from "./server.js";
 import { createDbRunContextResolver } from "./resolver.js";
 import { ReloadableAnthropicSecretProvider, createSecretAccessor } from "./secret-manager.js";
 import { SqlUsageWriter, SqlFetchLogWriter, SqlCapAccountant, type SqlExecutor } from "./sinks.js";
+import { SqlSignalSink } from "./signal-sink.js";
 import { NovelDomainTracker, ResearchUsageTracker } from "./outbound-limits.js";
-import { InMemoryEventSink } from "./signals.js";
 import { ulid } from "./ids.js";
 
 interface ProxyEnv {
@@ -62,7 +62,10 @@ export async function startProxy(): Promise<void> {
     usageWriter: new SqlUsageWriter(db),
     fetchLogWriter: new SqlFetchLogWriter(db),
     capAccountant: new SqlCapAccountant(db),
-    events: new InMemoryEventSink(), // pause/denial signal delivery to the run is P0.08b's transport
+    // P1.22 (REQ-ARCH-32) — the DURABLE sink: `egress.denied` → run_events_internal; a PauseSignal →
+    // pause_signals, which the worker's drainPauseSignals sweep applies `pauseRun` to (the run parks
+    // at a refusal-class card within the sweep interval). The old InMemoryEventSink dropped them.
+    events: new SqlSignalSink(db),
     novelDomains: new NovelDomainTracker(), // cross-request novel-domain state (§12.8d)
     researchUsage: new ResearchUsageTracker(), // cross-request research budgets (PRB.22)
     newId: () => ulid(),

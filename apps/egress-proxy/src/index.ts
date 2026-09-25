@@ -26,6 +26,7 @@ export * from "./fetch-log.js";
 export * from "./cap.js";
 export * from "./sinks.js";
 export * from "./signals.js";
+export * from "./signal-sink.js";
 export * from "./ids.js";
 export * from "./handler.js";
 export * from "./server.js";

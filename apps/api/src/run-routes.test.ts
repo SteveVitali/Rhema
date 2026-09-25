@@ -192,6 +192,132 @@ describe("POST /projects/:id/runs", () => {
     // standard defaults keep verification on — the crafted input was overridden.
     expect(row.inputs.verification).toBe(true);
   });
+
+  // P1.22 W10 (REQ-GENRE-2's consumption half) — the stored `projects.protocol_overrides` resolve at
+  // launch: phaseDefaults between rigor defaults and sheet levers; stage/length fill unset fields.
+
+  it("P1.22 — stored protocol_overrides.phaseDefaults resolve into the launched run's phase flags", async () => {
+    // The settings page stored verification off (§6.7 safe-field edit); a launch that omits toggles
+    // must honor it — the refusal half was already enforced; this is the consumption half.
+    await db.client.query(
+      `update projects set protocol_overrides = $1 where id = $2`,
+      [JSON.stringify({ phaseDefaults: { verification: false, secondRead: false } }), seed.projectId],
+    );
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-1" })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    // stored verification:false + secondRead:false → verification/second_read flags off; discourse
+    // keeps the standard rigor default (untouched by the stored blob).
+    expect(row.inputs.verification).toBe(false);
+    expect(row.inputs.second_read).toBe(false);
+    expect(row.inputs.discourse).toBe(true);
+  });
+
+  it("P1.22 — a sheet toggle lever still wins over the stored override", async () => {
+    await db.client.query(
+      `update projects set protocol_overrides = $1 where id = $2`,
+      [JSON.stringify({ phaseDefaults: { verification: false } }), seed.projectId],
+    );
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-2", toggles: { fact_check: true } })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.verification).toBe(true); // the explicit lever beat the stored default
+  });
+
+  it("P1.22 — stored stage + length freeze into inputs; body stage wins over stored", async () => {
+    await db.client.query(
+      `update projects set protocol_overrides = $1 where id = $2`,
+      [JSON.stringify({ stage: "near_final", length: 7000 }), seed.projectId],
+    );
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-3" })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.stage).toBe("near_final");
+    expect(row.inputs.lengthTarget).toBe(7000);
+  });
+
+  it("P1.22 — a malformed stored overrides blob is ignored, never a launch failure", async () => {
+    await db.client.query(
+      `update projects set protocol_overrides = $1 where id = $2`,
+      [JSON.stringify({ stage: "bogus", phaseDefaults: "not-an-object", length: -1 }), seed.projectId],
+    );
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-4" })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.stage).toBeUndefined();
+    expect(row.inputs.lengthTarget).toBeUndefined();
+    expect(row.inputs.verification).toBe(true); // untouched — standard defaults
+  });
+
+  it("P1.22 — the seeded protocol's own phase_defaults layer below the project overrides (Memo discourse off)", async () => {
+    // No stored overrides at all — the memo protocol's `discourse:false` (§6.7) must reach the frozen
+    // phase flags on its own: the launch resolves the project's pinned protocol, not just its overrides.
+    await db.client.query(`update projects set protocol_id = 'memo' where id = $1`, [seed.projectId]);
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-5" })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.discourse).toBe(false); // the protocol default — never a stored override
+    expect(row.inputs.verification).toBe(true); // untouched rigor default
+  });
+
+  it("P1.22 — a project override beats the protocol default; a sheet lever beats both", async () => {
+    await db.client.query(
+      `update projects set protocol_id = 'memo', protocol_overrides = $1 where id = $2`,
+      [JSON.stringify({ phaseDefaults: { discourse: true } }), seed.projectId],
+    );
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-6" })),
+    });
+    expect(r.status).toBe(201);
+    let row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.discourse).toBe(true); // the stored override lifted the memo default
+
+    await db.client.query("update runs set state = 'completed'", []); // free the run_in_progress gate
+    const r2 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-7", toggles: { discourse: false } })),
+    });
+    expect(r2.status).toBe(201);
+    row = (await db.client.query("select inputs from runs where id <> (select min(id) from runs)")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    expect(row.inputs.discourse).toBe(false); // the explicit lever beat project + protocol
+  });
+
+  it("P1.22 — the protocol's own stage default freezes when nothing overrides it (Op-ed near_final)", async () => {
+    await db.client.query(`update projects set protocol_id = 'op-ed' where id = $1`, [seed.projectId]);
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-8" })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.stage).toBe("near_final"); // §6.7 op-ed row — normalized spelling, `infer` never freezes
+  });
 });
 
 describe("internal run API — token auth + fencing", () => {

@@ -103,13 +103,20 @@ export async function reopenApprovePlan(
   });
 }
 
-export type PauseReason = "suspicious_query" | "egress_denied_spike";
+/**
+ * The egress-proxy `PauseReason` set (P1.22 — mirrors `apps/egress-proxy/src/signals.ts` and the
+ * `pause_signals.reason` CHECK constraint, 0041): `suspicious_query` (a search query matching ≥12 draft
+ * n-grams — §12.8d), `egress_denied_spike` (REQ-ARCH-32), and `user_source_fetch` — a Memo run
+ * web-fetching one of its own `user_sources[]` domains (P1.21; REQ-WF-8; §16.4's confidentiality row).
+ */
+export type PauseReason = "suspicious_query" | "egress_denied_spike" | "user_source_fetch";
 
 /**
- * Pause a run in reaction to an egress signal (REQ-ARCH-32): a `suspicious_query` (a search query matching ≥12
- * draft n-grams — §12.8d) or an `egress.denied` spike. The run parks at a refusal-class card (`running →
- * waiting_gate` + a `refusal` gate); the sandbox exits, so a paused run consumes no compute. P0.07 EMITS the
- * signal (the proxy's `PauseSignal`); this is P0.08's reaction.
+ * Pause a run in reaction to an egress signal (REQ-ARCH-32): a `suspicious_query`, an `egress.denied`
+ * spike, or a `user_source_fetch` boundary violation. The run parks at a refusal-class card (`running →
+ * waiting_gate` + a `refusal` gate); the sandbox exits, so a paused run consumes no compute. The proxy
+ * EMITS the signal (`SqlSignalSink` → `pause_signals`); the worker's `drainPauseSignals` sweep applies
+ * this reaction (P1.22's end-to-end wiring).
  */
 export async function pauseRun(
   deps: MinDeps & { ids: OrchestratorDeps["ids"] },

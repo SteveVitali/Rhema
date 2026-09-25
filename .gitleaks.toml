@@ -11,4 +11,14 @@ paths = [
   '''docs/.*''',
   '''.*\.example$''',
   '''pnpm-lock\.yaml''',
+  # the vendored Agent SDK bridge is upstream code, not secret-bearing source (P1.22 sweep)
+  '''vendor/.*''',
+]
+
+# P1.22 sweep — the only committed-tree hits are these three pinned TEST fixtures (a Better-Auth test
+# secret and a quarantine object key, both literals, both valueless outside a test). Narrowly scoped:
+# a real credential still fails CI.
+regexes = [
+  '''test-secret-0123456789abcdef0123456789abcdef''',
+  '''quarantine/ws1/up1''',
 ]

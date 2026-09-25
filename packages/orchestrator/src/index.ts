@@ -39,6 +39,9 @@ export * from "./phase-loop.js";
 export * from "./commit-decision.js";
 export * from "./credit-renderer.js";
 export * from "./reactions.js";
+export * from "./pause-signals.js";
+// P1.22 W9 — the §13.5 SLO probe (REQ-ARCH-34): signal registry + probeSlos over the system executor.
+export * from "./slo.js";
 
 // gates, decisions, guidance, write-back overlays (P0.10; §6.4/§6.5/§11.5)
 export * from "./gate-policy.js";

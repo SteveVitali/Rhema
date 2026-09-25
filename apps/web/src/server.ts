@@ -60,7 +60,7 @@ import {
   type WorkflowKey,
   figureIdFromRef,
 } from "@rhema/contracts";
-import { buildRunSheetView, buildEstimate, sheetProfile, type ToggleState } from "@rhema/run-sheet";
+import { buildRunSheetView, buildEstimate, sheetProfile, type ToggleKey, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
 import {
   applySeverityBudget,
@@ -70,7 +70,7 @@ import {
   decodeGateEditFields,
 } from "@rhema/findings-core";
 import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, type GateKind } from "@rhema/contracts";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
@@ -169,6 +169,35 @@ function signupErrorFor(error: string, open: boolean): string {
 export function createWebApp(deps: WebDeps): Hono {
   const app = new Hono();
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
+
+  // P1.22 (§13.3 audit; REQ-ARCH-24) — the web shell's Content-Security-Policy, stamped per response.
+  // SSR-only app: a per-request nonce is injected into every `<script>` tag of HTML responses and the
+  // policy runs scripts only with that nonce or from 'self' — an injected `<script>` in any rendered
+  // surface (user titles, draft text shown on cards) cannot execute. `style-src 'unsafe-inline'` stays
+  // because hand-authored `style=` attributes are pervasive (scoped to styles, which cannot exfiltrate);
+  // images may come from the cookieless usercontent origin (the only non-self source). Non-HTML
+  // responses (SSE, downloads, JSON) pass through untouched.
+  const cspFor = (nonce: string) =>
+    `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; ` +
+    `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'; font-src 'self'; ` +
+    `object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`;
+  app.use("*", async (c, next) => {
+    await next();
+    const res = c.res;
+    if (!(res.headers.get("content-type") ?? "").includes("text/html")) return;
+    const nonce = randomBytes(16).toString("base64");
+    const stamped = (await res.text()).replace(/<script(?=[\s>])/gi, `<script nonce="${nonce}"`);
+    const headers = new Headers(res.headers);
+    // `new Headers(h)` can collapse multi-valued Set-Cookie in some runtimes — re-append them verbatim.
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    headers.delete("set-cookie");
+    for (const v of setCookies) headers.append("set-cookie", v);
+    headers.set("Content-Security-Policy", cspFor(nonce));
+    headers.set("X-Content-Type-Options", "nosniff");
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    c.res = new Response(stamped, { status: res.status, statusText: res.statusText, headers });
+  });
+
   const signupOpen = deps.signupMode === "open";
   const magicLinkThrottle = deps.magicLinkThrottle ?? createIpEmailThrottle({ ...MAGIC_LINK_THROTTLE_DEFAULTS });
 
@@ -5056,8 +5085,32 @@ function buildSheet(
   // §6.5: model tier follows rigor in the beta (no tier selector) — always the rigor's default.
   const modelTier = normalizeTier("", workflow, rigor);
   const words =
-    (Number(query.words) > 0 ? Number(query.words) : 0) || (ctx?.headDraft?.words ?? 0) || 5180;
+    (Number(query.words) > 0 ? Number(query.words) : 0) ||
+    (ctx?.headDraft?.words ?? 0) ||
+    // P1.22 W10 — a stored length override prefills the target when the draft has no measured count.
+    (ctx?.project?.protocolOverrides?.length ?? 0) ||
+    5180;
+  // P1.22 W10 — toggle prefill mirrors the launch's layering exactly: the seeded protocol's own
+  // `phase_defaults` (e.g. Memo's `discourse:false`) at the bottom, then the project's stored
+  // overrides, then the `toggle.*` query levers on top — what the sheet shows is what the run freezes.
+  const STORED_TO_TOGGLE: Record<string, ToggleKey> = {
+    verification: "fact_check",
+    discourse: "discourse",
+    secondRead: "second_read",
+    grounding: "grounding",
+    audit: "audit",
+  };
   const toggles: ToggleState = {};
+  const selectedProtocolId = (query.protocol || ctx?.project?.protocol || null)?.toLowerCase() ?? null;
+  const protoDefaults = selectedProtocolId
+    ? ctx?.project?.protocolDefaults?.[selectedProtocolId]?.phaseDefaults
+    : undefined;
+  for (const [stored, toggleKey] of Object.entries(STORED_TO_TOGGLE)) {
+    const pv = protoDefaults?.[stored];
+    if (typeof pv === "boolean") toggles[toggleKey] = pv;
+    const v = ctx?.project?.protocolOverrides?.phaseDefaults?.[stored];
+    if (typeof v === "boolean") toggles[toggleKey] = v;
+  }
   for (const key of ["fact_check", "discourse", "second_read", "repair_research", "gap_check"] as const) {
     if (query[`toggle.${key}`] === "on") toggles[key] = true;
     else if (query[`toggle.${key}`] === "off") toggles[key] = false;
@@ -5104,7 +5157,15 @@ function buildSheet(
       // P1.21 — the four §6.7 protocol options (id+name) the selector renders, from the api context.
       ...(ctx?.protocols ? { protocolOptions: ctx.protocols } : {}),
       ...(query.venue || ctx?.project?.venue ? { venue: query.venue || ctx?.project?.venue || "" } : {}),
-      ...(query.stage ? { stage: query.stage } : {}),
+      // P1.22 W10 — `--stage` lever > stored override > the selected protocol's own stage default
+      // (Op-ed's `near_final`) > unset.
+      ...(() => {
+        const s =
+          query.stage ||
+          ctx?.project?.protocolOverrides?.stage ||
+          (selectedProtocolId ? ctx?.project?.protocolDefaults?.[selectedProtocolId]?.stage : null);
+        return s ? { stage: s } : {};
+      })(),
     },
     spendableCredits: billing?.spendableCredits ?? BETA_HOUSE_CREDITS,
     idempotencyKey: randomUUID(),

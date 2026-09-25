@@ -1,0 +1,39 @@
+{
+  "name": "@rhema/security-checks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "P1.22 — the launch-verification suite: executable checks for the §12.8 injection controls, the full-surface tenancy/RLS catalog, the usercontent/CSP posture, secrets+harness-uid assertions, retention/backup parity, and the REQ-EVAL-19 launch-surface claims lint.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@rhema/api": "workspace:*",
+    "@rhema/contracts": "workspace:*",
+    "@rhema/convert": "workspace:*",
+    "@rhema/db": "workspace:*",
+    "@rhema/egress-proxy": "workspace:*",
+    "@rhema/engine": "workspace:*",
+    "@rhema/fetcher": "workspace:*",
+    "@rhema/hooks": "workspace:*",
+    "@rhema/infra": "workspace:*",
+    "@rhema/live-clients": "workspace:*",
+    "@rhema/mirror": "workspace:*",
+    "@rhema/orchestrator": "workspace:*",
+    "@rhema/run-task": "workspace:*",
+    "@rhema/web": "workspace:*"
+  }
+}
