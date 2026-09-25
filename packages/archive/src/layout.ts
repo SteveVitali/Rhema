@@ -141,6 +141,9 @@ export interface ArchivePreferencesRow {
   readonly analyticsOptOut: boolean;
   readonly consentDontAskUnder: number;
   readonly dismissedExplainers: readonly string[];
+  /** P1.20 (§11.7/Q-26) — the "user".prefs blob: the account defaults + the preference-profile
+   *  opt-out flag ride the account zip; the profile dies with the account. */
+  readonly prefs?: Record<string, unknown>;
 }
 
 export interface ArchiveState {

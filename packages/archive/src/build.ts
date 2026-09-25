@@ -242,14 +242,14 @@ export async function buildAccountZip(args: {
     : ((
         await exec.query(
           `select id, app_theme, project_group_by, analytics_opt_out, consent_dont_ask_under,
-                  dismissed_explainers from "user" where id = $1`,
+                  dismissed_explainers, prefs from "user" where id = $1`,
           [args.userId],
         )
       ).rows[0] as
         | {
             id: string; app_theme: string | null; project_group_by: string | null;
             analytics_opt_out: boolean; consent_dont_ask_under: number;
-            dismissed_explainers: string[] | null;
+            dismissed_explainers: string[] | null; prefs: unknown;
           }
         | undefined) ?? null;
 
@@ -438,6 +438,12 @@ export async function buildAccountZip(args: {
             analyticsOptOut: preferences.analytics_opt_out,
             consentDontAskUnder: preferences.consent_dont_ask_under,
             dismissedExplainers: preferences.dismissed_explainers ?? [],
+            // P1.20 (§11.7) — the account defaults blob (Q-26's opt-out flag included) travels
+            // with the zip; the importer still leaves the fresh account's own prefs alone.
+            prefs:
+              preferences.prefs && typeof preferences.prefs === "object"
+                ? (preferences.prefs as Record<string, unknown>)
+                : {},
           },
         }
       : {}),

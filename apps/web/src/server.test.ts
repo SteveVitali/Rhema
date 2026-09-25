@@ -1064,19 +1064,22 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
 
 describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the shell menu)", () => {
   const SESSION = { cookie: "tok" };
-  it("GET /settings renders the select with the stored pref; POST /settings/theme persists + redirects", async () => {
+  it("P1.20 — the control lives in Preferences: GET /app/settings/preferences renders the select with the stored pref; POST /settings/theme (legacy) persists + redirects to the new section", async () => {
     const setTheme = vi.fn(async () => ({ appTheme: "auto" as const }));
     const deps = makeDeps({
       session: () => SESSION,
       dataSource: {
         ...makeDeps().dataSource,
-        getPrivacySettings: async () => ({ analyticsOptOut: false }),
-        getTheme: async () => ({ appTheme: "auto" as const }),
+        getPreferencesSettings: async () => ({
+          prefs: {},
+          consentDontAskUnder: 0,
+          appTheme: "auto",
+        }),
         setTheme,
       },
     });
     const app = createWebApp(deps);
-    const html = await (await app.request("/settings")).text();
+    const html = await (await app.request("/app/settings/preferences")).text();
     expect(html).toContain('name="appTheme"');
     expect(html).toContain('option value="auto" selected');
     const res = await app.request("/settings/theme", {
@@ -1084,7 +1087,7 @@ describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the
       ...form({ appTheme: "auto" }),
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/settings?saved=1");
+    expect(res.headers.get("location")).toBe("/app/settings/preferences?saved=1");
     expect(setTheme).toHaveBeenCalledWith(SESSION, "auto");
   });
 

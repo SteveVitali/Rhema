@@ -80,3 +80,7 @@ export * from "./block-patch.js";
 
 // deploy provenance (REQ-ARCH-39) — kept from P0.01
 export * from "./provenance.js";
+
+// P1.20 — the §14.7 settings tree's shared contracts (account prefs blob, project safe fields,
+// support-access grant, deletion confirmation)
+export * from "./settings.js";

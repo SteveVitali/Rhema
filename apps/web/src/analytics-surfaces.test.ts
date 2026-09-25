@@ -4,8 +4,10 @@ import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
 
 // PRB.12 — the beta's instrumentation surfaces (REQ-BETA-6/10/14; REQ-PROD-15):
-//  • GET /settings renders the analytics toggle bound to analytics_opt_out; POST /settings/privacy
-//    flips it (the checkbox posts "on" when sharing is ON — the flag is the inverse).
+//  • P1.20 — the toggle migrated into the §14.7 tree: GET /app/settings/data renders the
+//    "Exclude my usage from product analytics" checkbox bound to analytics_opt_out (checked = the
+//    opt-OUT is on, matching the verbatim §14.7 label); POST /app/settings/data/privacy flips it.
+//    The legacy /settings/privacy post still works and lands on the new page.
 //  • GET /usage renders the §14.5 level-1 glance (balance + recent runs' spend) and carries the
 //    dwell heartbeat script.
 //  • POST /a/dwell is the beacon's sink — {surface, ms} wraps into the whitelisted surface.dwell
@@ -52,44 +54,67 @@ const form = (fields: Record<string, string>) => ({
   headers: { "content-type": "application/x-www-form-urlencoded" },
 });
 
-describe("GET|POST /settings — the REQ-PROD-15 opt-out toggle", () => {
-  it("renders the bound toggle (checked while sharing is on)", async () => {
-    const res = await createWebApp(makeDeps()).request("/settings");
+describe("P1.20 — the REQ-PROD-15 opt-out toggle in the §14.7 Data section", () => {
+  const toggleInput = (html: string) =>
+    html.match(/<input[^>]*data-analytics-toggle="true"[^>]*>/)?.[0] ?? "";
+
+  it("GET /app/settings/data renders the bound toggle (unchecked while sharing is on — the flag is the opt-OUT)", async () => {
+    const res = await createWebApp(makeDeps()).request("/app/settings/data");
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-privacy-form="true"');
     expect(html).toContain('data-analytics-toggle="true"');
-    expect(html).toContain("checked"); // analyticsOptOut false ⇒ sharing ON ⇒ box checked
+    expect(html).toContain("Exclude my usage from product analytics"); // §14.7 verbatim
+    expect(toggleInput(html)).not.toContain("checked"); // analyticsOptOut false ⇒ box unchecked
   });
 
-  it("reflects the opted-out state (box unchecked) and the saved banner", async () => {
+  it("reflects the opted-out state (box checked) and the saved banner", async () => {
     const res = await createWebApp(
       makeDeps({}, { getPrivacySettings: async () => ({ analyticsOptOut: true }) }),
-    ).request("/settings?saved=1");
+    ).request("/app/settings/data?saved=1");
     const html = await res.text();
-    expect(html).not.toContain("checked");
+    expect(toggleInput(html)).toContain("checked");
     expect(html).toContain('data-privacy-saved="true"');
   });
 
-  it("POST flips the flag — checked box ⇒ optOut false; absent box ⇒ optOut true", async () => {
+  it("POST flips the flag — checked box ⇒ optOut true; absent box ⇒ optOut false", async () => {
     const set = vi.fn<DataSource["setAnalyticsOptOut"]>(async () => undefined);
     const app = createWebApp(makeDeps({}, { setAnalyticsOptOut: set }));
 
+    const off = await app.request("/app/settings/data/privacy", {
+      method: "POST",
+      ...form({ analyticsOptOut: "on" }),
+    });
+    expect(off.status).toBe(302);
+    expect(off.headers.get("location")).toBe("/app/settings/data?saved=1");
+    expect(set).toHaveBeenLastCalledWith(expect.anything(), true);
+
+    const on = await app.request("/app/settings/data/privacy", { method: "POST", ...form({}) });
+    expect(set).toHaveBeenLastCalledWith(expect.anything(), false);
+    expect(on.status).toBe(302);
+  });
+
+  it("the legacy /settings surface migrates: GET 302s to the tree; the old POST still flips the flag", async () => {
+    const set = vi.fn<DataSource["setAnalyticsOptOut"]>(async () => undefined);
+    const app = createWebApp(makeDeps({}, { setAnalyticsOptOut: set }));
+    const res = await app.request("/settings");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app/settings/account");
+
+    // the old checkbox posted "on" when sharing was ON — the inverse flag.
     const on = await app.request("/settings/privacy", { method: "POST", ...form({ analytics: "on" }) });
     expect(on.status).toBe(302);
-    expect(on.headers.get("location")).toBe("/settings?saved=1");
     expect(set).toHaveBeenLastCalledWith(expect.anything(), false);
-
-    const off = await app.request("/settings/privacy", { method: "POST", ...form({}) });
+    await app.request("/settings/privacy", { method: "POST", ...form({}) });
     expect(set).toHaveBeenLastCalledWith(expect.anything(), true);
-    expect(off.status).toBe(302);
   });
 
   it("redirects to /login unauthenticated", async () => {
     const app = createWebApp(makeDeps({ session: () => null }));
     expect((await app.request("/settings")).headers.get("location")).toBe("/login");
+    expect((await app.request("/app/settings/data")).headers.get("location")).toBe("/login");
     expect(
-      (await app.request("/settings/privacy", { method: "POST", ...form({}) })).headers.get("location"),
+      (await app.request("/app/settings/data/privacy", { method: "POST", ...form({}) })).headers.get("location"),
     ).toBe("/login");
   });
 });

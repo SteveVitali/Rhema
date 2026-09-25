@@ -125,6 +125,14 @@ import type {
   ReconstructVoiceSampleDto,
   ReconstructVoiceSampleResponseDto,
   DeletedVoiceDto,
+  AccountSettingsDto,
+  PreferencesSettingsDto,
+  DataSettingsDto,
+  IntegrationsSettingsDto,
+  ProjectSettingsDto,
+  ProjectSettingsPatch,
+  UserPrefs,
+  NotificationPrefsDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -919,6 +927,75 @@ export interface DataSource {
   ): Promise<{ ok: true; n: number; specVersionId: string | null }>;
   /** `POST …/versions/:n/restore` — copy the version's spec/data/provenance to head + re-render. */
   restoreFigureVersion?(session: SessionHeaders, projectId: string, figureId: string, n: number): Promise<{ ok: true }>;
+  // ---- P1.20 — the §14.7 settings tree. All optional like the other live seams: a fixture without
+  // them renders the section's lede + a "not available" note rather than failing the page. ----
+  /** `GET /settings/account` — profile + sign-in methods + sessions + the deletion banner state. */
+  getAccountSettings?(session: SessionHeaders): Promise<AccountSettingsDto>;
+  /** `PUT /settings/account` — name / byline (default voice byline) / avatar url. */
+  updateAccountSettings?(
+    session: SessionHeaders,
+    req: { name?: string; byline?: string | null; image?: string | null },
+  ): Promise<{ ok: true }>;
+  /** `POST /settings/account/email` — start the magic-link email change. */
+  requestEmailChange?(session: SessionHeaders, email: string): Promise<{ ok: true; pendingEmail: string } | { error: string }>;
+  /** `POST /settings/account/email/confirm` — consume the emailed token. */
+  confirmEmailChange?(session: SessionHeaders, token: string): Promise<{ ok: true; email: string } | { error: string }>;
+  /** `POST /settings/sessions/revoke` — kill one active session server-side. */
+  revokeSession?(session: SessionHeaders, sessionId: string): Promise<{ ok: true } | { error: string }>;
+  /** `GET /settings/preferences` — the account-defaults blob + consent threshold + app theme. */
+  getPreferencesSettings?(session: SessionHeaders): Promise<PreferencesSettingsDto>;
+  /** `PUT /settings/preferences` — merge a validated UserPrefs patch (unknown keys 422). */
+  updatePreferences?(session: SessionHeaders, patch: UserPrefs): Promise<{ ok: true; prefs: UserPrefs }>;
+  /** `GET /settings/data` — privacy toggles, support grant + visible log, pending deletion. */
+  getDataSettings?(session: SessionHeaders): Promise<DataSettingsDto>;
+  /** `POST /settings/support-access` — grant/revoke the 72-h support grant (REQ-VIS-11). */
+  setSupportAccess?(
+    session: SessionHeaders,
+    enabled: boolean,
+  ): Promise<{ ok: true; grant?: { grantedAt: string; expiresAt: string } }>;
+  /** `PUT /settings/preference-profile` — the Q-26 capture opt-out (default-on; REQ-OBJ-14). */
+  setPreferenceOptOut?(session: SessionHeaders, optOut: boolean): Promise<{ ok: true; preferenceOptOut: boolean }>;
+  /** `POST /settings/account/delete` — typed confirmation starts the 14-day grace (REQ-ACCT-4). */
+  requestAccountDeletion?(
+    session: SessionHeaders,
+    confirmation: string,
+  ): Promise<{ ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }>;
+  /** `POST /settings/account/delete/cancel` — cancel inside the grace window. */
+  cancelAccountDeletion?(session: SessionHeaders): Promise<{ ok: true } | { error: string }>;
+  /** `GET /settings/integrations` — the uniform provider cards (P1.15's connections). */
+  getIntegrationsSettings?(session: SessionHeaders): Promise<IntegrationsSettingsDto>;
+  /** `POST /settings/integrations/:id/disconnect` — drops the credential now; samples stay. */
+  disconnectIntegration?(session: SessionHeaders, connectionId: string): Promise<{ ok: true } | { error: string }>;
+  /** `GET /projects/:id/settings` — the §4.2 project-settings read (approval policy + safe protocol). */
+  getProjectSettings?(session: SessionHeaders, projectId: string): Promise<ProjectSettingsDto>;
+  /** `PUT /projects/:id/settings` — the REQ-GENRE-2 safe-field patch; a protocol change marks the
+   *  next Review's scope card (`protocol_changed_at`). */
+  updateProjectSettings?(
+    session: SessionHeaders,
+    projectId: string,
+    patch: ProjectSettingsPatch,
+  ): Promise<{ ok: true } | { error: string }>;
+  /** `PUT /projects/:id/guidance/:gid` — edit an active standing rule (REQ-GATE-10 management). */
+  updateGuidance?(
+    session: SessionHeaders,
+    projectId: string,
+    guidanceId: string,
+    req: { body: string; workflows?: string[] | null },
+  ): Promise<{ ok: true } | { error: string }>;
+  /** `GET /notifications/prefs` — effective email matrix + raw prefs + quiet hours (P1.19 storage). */
+  getNotificationPrefs?(session: SessionHeaders): Promise<NotificationPrefsDto>;
+  /** `PUT /notifications/prefs` — per-channel toggles / digest / project opt-in / quiet hours. The
+   *  server rejects writes to the non-configurable rows (spend_gate, trial_payment). */
+  updateNotificationPrefs?(
+    session: SessionHeaders,
+    patch: {
+      email?: Partial<Record<string, boolean>>;
+      inApp?: Partial<Record<string, boolean>>;
+      digest?: { run_finished?: "hourly" | "off" };
+      project?: Record<string, { run_progress?: boolean }>;
+      quietHours?: { startMinutesUtc: number; endMinutesUtc: number } | null;
+    },
+  ): Promise<{ ok: true; prefs: unknown } | { error: string }>;
 }
 
 /** A user-visible run event as the feed consumes it (the SSE `data:` payload). */
@@ -1404,5 +1481,27 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       client(session).editFigureSpec(projectId, figureId, req),
     restoreFigureVersion: (session, projectId, figureId, n) =>
       client(session).restoreFigureVersion(projectId, figureId, n),
+    // ---- P1.20 — the §14.7 settings tree ----
+    getAccountSettings: (session) => client(session).getAccountSettings(),
+    updateAccountSettings: (session, req) => client(session).updateAccountSettings(req),
+    requestEmailChange: (session, email) => client(session).requestEmailChange(email),
+    confirmEmailChange: (session, token) => client(session).confirmEmailChange(token),
+    revokeSession: (session, sessionId) => client(session).revokeSession(sessionId),
+    getPreferencesSettings: (session) => client(session).getPreferencesSettings(),
+    updatePreferences: (session, patch) => client(session).updatePreferences(patch),
+    getDataSettings: (session) => client(session).getDataSettings(),
+    setSupportAccess: (session, enabled) => client(session).setSupportAccess(enabled),
+    setPreferenceOptOut: (session, optOut) => client(session).setPreferenceOptOut(optOut),
+    requestAccountDeletion: (session, confirmation) => client(session).requestAccountDeletion(confirmation),
+    cancelAccountDeletion: (session) => client(session).cancelAccountDeletion(),
+    getIntegrationsSettings: (session) => client(session).getIntegrationsSettings(),
+    disconnectIntegration: (session, connectionId) => client(session).disconnectIntegration(connectionId),
+    getProjectSettings: (session, projectId) => client(session).getProjectSettings(projectId),
+    updateProjectSettings: (session, projectId, patch) =>
+      client(session).updateProjectSettings(projectId, patch),
+    updateGuidance: (session, projectId, guidanceId, req) =>
+      client(session).updateGuidance(projectId, guidanceId, req),
+    getNotificationPrefs: (session) => client(session).getNotificationPrefs(),
+    updateNotificationPrefs: (session, patch) => client(session).updateNotificationPrefs(patch),
   };
 }

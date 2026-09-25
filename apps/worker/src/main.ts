@@ -93,6 +93,13 @@ import {
   type AccountExportJobPayload,
   type WorkerAccountExportDeps,
 } from "./export-jobs.js";
+import {
+  handleAccountHardDelete,
+  type AccountHardDeleteJob,
+} from "./jobs.js";
+
+/** P1.20 — the `account.hard-delete` queue name (the api enqueues at the grace end). */
+const ACCOUNT_HARD_DELETE_JOB = "account.hard-delete";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
@@ -607,6 +614,16 @@ export async function startWorker(): Promise<void> {
     for (const job of jobs) {
       const r = await handleAccountExport(accountExportDeps, job.data);
       console.log(`[worker] account.export ${job.data.exportId} → ${JSON.stringify(r)}`);
+    }
+  });
+
+  // P1.20 — the account hard-delete (REQ-ACCT-4; §13.3): the api enqueues it at the grace end when
+  // the user confirms; the handler re-checks the marker (a cancel inside grace no-ops), then past
+  // grace destroys content + PII while retaining anonymized ledger/usage rows + the billing account.
+  await boss.work<AccountHardDeleteJob>(ACCOUNT_HARD_DELETE_JOB, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleAccountHardDelete(job.data, { systemExec });
+      console.log(`[worker] account.hard-delete ${job.data.userId} → ${JSON.stringify(r)}`);
     }
   });
 

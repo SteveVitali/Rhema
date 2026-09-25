@@ -14,7 +14,44 @@ import type {
   ObligationState,
   RunState,
   VoiceMeasureRow,
+  // P1.20 — the §14.7 settings DTOs + the prefs patch schema's type (declared + validated in
+  // @rhema/contracts; re-exported below for the web shell).
+  AccountSettingsDto,
+  DataSettingsDto,
+  IntegrationConnectionDto,
+  IntegrationsSettingsDto,
+  PreferencesSettingsDto,
+  ProjectSettingsDto,
+  ProjectSettingsPatch,
+  SessionInfoDto,
+  SignInMethodDto,
+  SupportAccessLogDto,
+  UserPrefs,
+  NotificationPrefs,
+  QuietHours,
 } from "@rhema/contracts";
+export type {
+  AccountSettingsDto,
+  DataSettingsDto,
+  IntegrationConnectionDto,
+  IntegrationsSettingsDto,
+  PreferencesSettingsDto,
+  ProjectSettingsDto,
+  ProjectSettingsPatch,
+  SessionInfoDto,
+  SignInMethodDto,
+  SupportAccessLogDto,
+  UserPrefs,
+  NotificationPrefs,
+  QuietHours,
+};
+
+/** P1.20 — `GET /notifications/prefs` (P1.19 storage): effective email matrix + raw prefs + quiet hours. */
+export interface NotificationPrefsDto {
+  readonly matrix: Partial<Record<string, boolean>>;
+  readonly quietHours: QuietHours | null;
+  readonly prefs: NotificationPrefs;
+}
 import type {
   AccessReportFacts,
   ApproveSampleCard,
@@ -288,6 +325,15 @@ export interface RunSheetContextDto {
     readonly protocol: string | null;
     readonly venue: string | null;
     readonly approvalPolicy: string;
+    /**
+     * P1.20 (§14.7) — the resolved rigor/tier defaults the sheet opens on: the project's explicit
+     * override wins over the account defaults (project → per-workflow pref → account default →
+     * 'standard'); `modelTier` of null falls to the rigor's own default.
+     */
+    readonly rigor: string;
+    readonly modelTier: string | null;
+    /** §6.7 — set ⇒ a settings-page protocol change marks the next Review's scope card. */
+    readonly protocolChanged: boolean;
   };
   readonly headDraft: {
     readonly id: string;
@@ -2741,6 +2787,76 @@ export interface ApiClient {
     paperTheme: PaperThemeDto["paperTheme"],
     init?: RequestInitLite,
   ): Promise<PaperThemeDto>;
+  // ---- P1.20 — the §14.7 settings tree ----
+  /** GET /settings/account — profile + sign-in methods + sessions + the deletion banner state. */
+  getAccountSettings(init?: RequestInitLite): Promise<AccountSettingsDto>;
+  /** PUT /settings/account — name / byline (default voice byline) / avatar url. */
+  updateAccountSettings(
+    req: { name?: string; byline?: string | null; image?: string | null },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
+  /** POST /settings/account/email — start the magic-link email change (link rides `auth.mail`). */
+  requestEmailChange(email: string, init?: RequestInitLite): Promise<{ ok: true; pendingEmail: string } | { error: string }>;
+  /** POST /settings/account/email/confirm — consume the emailed token (proves the new mailbox). */
+  confirmEmailChange(token: string, init?: RequestInitLite): Promise<{ ok: true; email: string } | { error: string }>;
+  /** POST /settings/sessions/revoke — kill one active session server-side. */
+  revokeSession(sessionId: string, init?: RequestInitLite): Promise<{ ok: true } | { error: string }>;
+  /** GET /settings/preferences — the account-defaults blob + consent threshold + app theme. */
+  getPreferencesSettings(init?: RequestInitLite): Promise<PreferencesSettingsDto>;
+  /** PUT /settings/preferences — merge a validated UserPrefs patch (unknown keys 422). */
+  updatePreferences(patch: UserPrefs, init?: RequestInitLite): Promise<{ ok: true; prefs: UserPrefs }>;
+  /** GET /settings/data — privacy toggles, the support-access grant + visible log, pending deletion. */
+  getDataSettings(init?: RequestInitLite): Promise<DataSettingsDto>;
+  /** POST /settings/support-access — grant/revoke the 72-h support grant (REQ-VIS-11). */
+  setSupportAccess(
+    enabled: boolean,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; grant?: { grantedAt: string; expiresAt: string } }>;
+  /** PUT /settings/preference-profile — the Q-26 capture opt-out (default-on; REQ-OBJ-14). */
+  setPreferenceOptOut(
+    optOut: boolean,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; preferenceOptOut: boolean }>;
+  /** POST /settings/account/delete — typed confirmation starts the 14-day grace (REQ-ACCT-4). */
+  requestAccountDeletion(
+    confirmation: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }>;
+  /** POST /settings/account/delete/cancel — cancel inside the grace window. */
+  cancelAccountDeletion(init?: RequestInitLite): Promise<{ ok: true } | { error: string }>;
+  /** GET /settings/integrations — the uniform provider cards (P1.15's connections). */
+  getIntegrationsSettings(init?: RequestInitLite): Promise<IntegrationsSettingsDto>;
+  /** POST /settings/integrations/:id/disconnect — drops the credential now; samples stay. */
+  disconnectIntegration(connectionId: string, init?: RequestInitLite): Promise<{ ok: true } | { error: string }>;
+  /** GET /projects/:id/settings — the §4.2 project-settings read. */
+  getProjectSettings(projectId: string, init?: RequestInitLite): Promise<ProjectSettingsDto>;
+  /** PUT /projects/:id/settings — the REQ-GENRE-2 safe-field patch. */
+  updateProjectSettings(
+    projectId: string,
+    patch: ProjectSettingsPatch,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true } | { error: string }>;
+  /** PUT /projects/:id/guidance/:gid — edit an active standing rule (REQ-GATE-10 management). */
+  updateGuidance(
+    projectId: string,
+    guidanceId: string,
+    req: { body: string; workflows?: string[] | null },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true } | { error: string }>;
+  /** P1.20 — `GET /notifications/prefs`: effective email matrix + raw prefs + quiet hours (P1.19). */
+  getNotificationPrefs(init?: RequestInitLite): Promise<NotificationPrefsDto>;
+  /** P1.20 — `PUT /notifications/prefs`: per-channel toggles / digest / project opt-in / quiet hours.
+   *  The server rejects writes to the non-configurable rows (spend_gate, trial_payment). */
+  updateNotificationPrefs(
+    patch: {
+      email?: Partial<Record<string, boolean>>;
+      inApp?: Partial<Record<string, boolean>>;
+      digest?: { run_finished?: "hourly" | "off" };
+      project?: Record<string, { run_progress?: boolean }>;
+      quietHours?: QuietHours | null;
+    },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; prefs: NotificationPrefs } | { error: string }>;
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
   /** The library's flat persona list — every persona + its shared pill. */
   listVoices(init?: RequestInitLite): Promise<VoiceListRowDto[]>;
@@ -3693,6 +3809,131 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "PUT",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ paperTheme }),
+      });
+    },
+    // ---- P1.20 — the §14.7 settings tree ----
+    async getAccountSettings(init): Promise<AccountSettingsDto> {
+      return json<AccountSettingsDto>("/settings/account", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+    },
+    async updateAccountSettings(req, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>("/settings/account", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async requestEmailChange(email, init) {
+      return json<{ ok: true; pendingEmail: string } | { error: string }>("/settings/account/email", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ email }),
+      });
+    },
+    async confirmEmailChange(token, init) {
+      return json<{ ok: true; email: string } | { error: string }>("/settings/account/email/confirm", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ token }),
+      });
+    },
+    async revokeSession(sessionId, init) {
+      return json<{ ok: true } | { error: string }>("/settings/sessions/revoke", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ sessionId }),
+      });
+    },
+    async getPreferencesSettings(init): Promise<PreferencesSettingsDto> {
+      return json<PreferencesSettingsDto>("/settings/preferences", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+    },
+    async updatePreferences(patch, init) {
+      return json<{ ok: true; prefs: UserPrefs }>("/settings/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(patch),
+      });
+    },
+    async getDataSettings(init): Promise<DataSettingsDto> {
+      return json<DataSettingsDto>("/settings/data", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+    },
+    async setSupportAccess(enabled, init) {
+      return json<{ ok: true; grant?: { grantedAt: string; expiresAt: string } }>("/settings/support-access", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ enabled }),
+      });
+    },
+    async setPreferenceOptOut(optOut, init) {
+      return json<{ ok: true; preferenceOptOut: boolean }>("/settings/preference-profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ optOut }),
+      });
+    },
+    async requestAccountDeletion(confirmation, init) {
+      return json<{ ok: true; deletion: { requestedAt: string; graceEndsAt: string } } | { error: string }>(
+        "/settings/account/delete",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({ confirmation }),
+        },
+      );
+    },
+    async cancelAccountDeletion(init) {
+      return json<{ ok: true } | { error: string }>("/settings/account/delete/cancel", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({}),
+      });
+    },
+    async getIntegrationsSettings(init): Promise<IntegrationsSettingsDto> {
+      return json<IntegrationsSettingsDto>("/settings/integrations", { method: "GET", headers: init?.headers as Record<string, string> | undefined });
+    },
+    async disconnectIntegration(connectionId, init) {
+      return json<{ ok: true } | { error: string }>(
+        `/settings/integrations/${encodeURIComponent(connectionId)}/disconnect`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({}),
+        },
+      );
+    },
+    async getProjectSettings(projectId, init): Promise<ProjectSettingsDto> {
+      return json<ProjectSettingsDto>(`/projects/${encodeURIComponent(projectId)}/settings`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async updateProjectSettings(projectId, patch, init) {
+      return json<{ ok: true } | { error: string }>(`/projects/${encodeURIComponent(projectId)}/settings`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(patch),
+      });
+    },
+    async updateGuidance(projectId, guidanceId, req, init) {
+      return json<{ ok: true } | { error: string }>(
+        `/projects/${encodeURIComponent(projectId)}/guidance/${encodeURIComponent(guidanceId)}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async getNotificationPrefs(init): Promise<NotificationPrefsDto> {
+      return json<NotificationPrefsDto>("/notifications/prefs", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async updateNotificationPrefs(patch, init) {
+      return json<{ ok: true; prefs: NotificationPrefs } | { error: string }>("/notifications/prefs", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(patch),
       });
     },
     // ---- PRB.10 — Quick Voice / P1.14 — the full Voices workspace ----

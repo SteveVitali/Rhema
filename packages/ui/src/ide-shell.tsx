@@ -207,7 +207,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
              title={L.rail.inbox} aria-label={L.rail.inbox}>◎</a>
           <span className="ide-rail-spacer" />
           <button type="button" data-ide-view-menu title={L.statusBar.view} aria-haspopup="menu" aria-expanded="false">▤</button>
-          <a href="/settings" title={L.rail.settings} aria-label={L.rail.settings}>⚙</a>
+          <a href="/app/settings" title={L.rail.settings} aria-label={L.rail.settings}>⚙</a>
         </nav>
 
         {/* Files — 36-px strip default; ⌘1 opens the pane (§5.1). Strip/body swap is CSS on

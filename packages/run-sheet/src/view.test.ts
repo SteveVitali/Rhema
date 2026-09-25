@@ -121,4 +121,44 @@ describe("buildRunSheetView — the launcher shape (§5.6)", () => {
     expect(v.rigorOptions.find((o) => o.selected)!.rigor).toBe("standard");
     expect(v.whyLine).toContain("claims");
   });
+
+  // P1.20 (§6.7) — a settings-page protocol change marks the next Review's scope card: the marker line
+  // renders and the scope gate carries the same blocking consequence as a lever-changed scope.
+  it("surfaces the settings-page protocol-change marker as scope-blocking (§6.7)", () => {
+    const v = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { words: 5180 },
+      spendableCredits: 100000,
+      protocolChanged: true,
+    });
+    expect(v.protocolChangedLine).toBe("Protocol changed since the last Review.");
+    expect(v.scopeApprovalLine).toContain("blocking gate opens at launch");
+    // Wait-for-me-at-each already blocks — the marker line still shows but the policy line wins.
+    const w = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { words: 5180 },
+      spendableCredits: 100000,
+      protocolChanged: true,
+      approvalPolicy: "wait_each",
+    });
+    expect(w.protocolChangedLine).toBe("Protocol changed since the last Review.");
+    expect(w.scopeApprovalLine).toContain("waits for you");
+    // no marker → no line, informational approval.
+    const u = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { words: 5180 },
+      spendableCredits: 100000,
+    });
+    expect(u.protocolChangedLine).toBeUndefined();
+    expect(u.scopeApprovalLine).toContain("informational");
+  });
 });

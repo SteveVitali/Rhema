@@ -10,7 +10,7 @@ import { NON_TERMINAL_RUN_STATES, computeLockSet, firstConflict, seatForWorkflow
 import type { ContentStore } from "@rhema/mirror";
 import { runSheetObligations } from "@rhema/obligations";
 import { deriveSections } from "@rhema/commands";
-import type { WorkflowKey } from "@rhema/contracts";
+import { parseUserPrefs, type WorkflowKey } from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import { versionText } from "./editor-routes.js";
@@ -42,12 +42,23 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
 
     const project = (
       await deps.db.query(
-        `select id, title, protocol_id, venue, approval_policy, persona_id
+        `select id, title, protocol_id, venue, approval_policy, persona_id,
+                rigor_default, model_tier_default, protocol_changed_at
            from projects where id = $1 and workspace_id = $2 and deleted_at is null`,
         [projectId, principal.workspaceId],
       )
     ).rows[0] as
-      | { id: string; title: string; protocol_id: string | null; venue: string | null; approval_policy: string; persona_id: string | null }
+      | {
+          id: string;
+          title: string;
+          protocol_id: string | null;
+          venue: string | null;
+          approval_policy: string;
+          persona_id: string | null;
+          rigor_default: string | null;
+          model_tier_default: string | null;
+          protocol_changed_at: string | Date | null;
+        }
       | undefined;
     if (!project) return c.json({ error: "not_found" }, 404);
 
@@ -92,8 +103,19 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
       | undefined;
 
     const user = (
-      await deps.db.query(`select consent_dont_ask_under from "user" where id = $1`, [principal.userId]).catch(() => ({ rows: [] }))
-    ).rows[0] as { consent_dont_ask_under: number } | undefined;
+      await deps.db.query(`select consent_dont_ask_under, prefs from "user" where id = $1`, [principal.userId]).catch(() => ({ rows: [] }))
+    ).rows[0] as { consent_dont_ask_under: number; prefs: unknown } | undefined;
+
+    // P1.20 (§14.7) — the account/project default chain: a project's explicit rigor/tier wins over
+    // the account defaults (project override → per-workflow pref → account default → 'standard');
+    // a `model_tier_default` of NULL inherits the account's `defaultModelTier`.
+    const userPrefs = parseUserPrefs(user?.prefs);
+    const resolvedRigor =
+      project.rigor_default ??
+      (workflow ? userPrefs.rigorByWorkflow?.[workflow] : undefined) ??
+      userPrefs.defaultRigor ??
+      "standard";
+    const resolvedModelTier = project.model_tier_default ?? userPrefs.defaultModelTier ?? null;
 
     const activeRuns = (
       await deps.db.query(
@@ -129,6 +151,11 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
         protocol: project.protocol_id,
         venue: project.venue,
         approvalPolicy: project.approval_policy,
+        // P1.20 (§14.7) — the resolved rigor/tier defaults the sheet opens on (a `?rigor=`/`?tier=`
+        // query lever still overrides) + the §6.7 "protocol changed" marker for the scope card.
+        rigor: resolvedRigor,
+        modelTier: resolvedModelTier,
+        protocolChanged: project.protocol_changed_at != null,
       },
       headDraft: head
         ? {

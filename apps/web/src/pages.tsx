@@ -110,7 +110,24 @@ import type {
   VoiceSampleDto,
   VoiceSampleDetailDto,
 } from "@rhema/api-client";
-import { CHECKABLE_CLAIM_KINDS, GATE_DEFAULTS, type ClaimKind, type FindingView, type GateKind } from "@rhema/contracts";
+import {
+  CHECKABLE_CLAIM_KINDS,
+  GATE_DEFAULTS,
+  MODEL_TIERS,
+  MODEL_TIER_DISPLAY,
+  RIGORS,
+  RIGOR_DISPLAY,
+  APPROVAL_POLICIES,
+  WORKFLOW_KEYS,
+  NOTIFICATION_EVENT_TYPES,
+  NOTIFICATION_MATRIX,
+  ACCOUNT_DELETION_CONFIRMATION,
+  emailEnabled,
+  isNonConfigurableEvent,
+  type ClaimKind,
+  type FindingView,
+  type GateKind,
+} from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { feedLabelMapsJson } from "./feed-labels.js";
@@ -403,7 +420,7 @@ export function ProjectsPage(): ReactNode {
             />
           ) : null}
           <a href="/voices" style={{ fontSize: "13px" }}>{COPY.voice.nav}</a>
-          <a href="/settings" style={{ fontSize: "13px" }}>{COPY.settings.nav}</a>
+          <a href="/app/settings/account" style={{ fontSize: "13px" }}>{COPY.settings.nav}</a>
           <form method="post" action="/logout" style={{ margin: 0 }}>
             <button type="submit" style={{ background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", fontSize: "13px" }}>
               {COPY.projects.signOut}
@@ -1972,16 +1989,30 @@ function overrideOptions(def: { deadlineMs: number | null; overridable: boolean 
  * kinds show "always waits for you" — no control), and standing-guidance management (list / retire /
  * replace / add — retired never deleted).
  */
-function ApprovalSettingsSection({ slug, settings }: { slug: string; settings: ApprovalSettingsDto }): ReactNode {
+function ApprovalSettingsSection({
+  slug,
+  settings,
+  returnTo,
+  editable,
+}: {
+  slug: string;
+  settings: ApprovalSettingsDto;
+  /** P1.20 — set ⇒ POSTs land back on the given path (the /p/:slug/settings page) instead of /p/:slug. */
+  returnTo?: string;
+  /** P1.20 (REQ-GATE-10's management half) — an inline edit form per active guidance row. */
+  editable?: boolean;
+}): ReactNode {
   const kindLabel = (kind: string) => G.kindLabel[kind] ?? kind;
   const defaultText = (deadlineMs: number | null): string =>
     deadlineMs == null ? AP.overrideWaitOpt : `${fmt(AP.overrideHoursFmt, { n: Math.round(deadlineMs / HOUR_MS) })}`;
+  const returnField = returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null;
   return (
     <section data-approval-settings="true" style={{ marginTop: "20px", maxWidth: "68ch" }}>
       <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 10px" }}>
         {AP.heading}
       </h2>
       <form method="post" action={`/p/${slug}/settings/approvals`} style={{ padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px" }}>
+        {returnField}
         <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
           <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{AP.policyLegend}</legend>
           {(["named", "wait_each", "run_to_completion"] as const).map((p) => (
@@ -2047,13 +2078,26 @@ function ApprovalSettingsSection({ slug, settings }: { slug: string; settings: A
                   {g.workflows.length > 0 ? g.workflows.join(", ") : AP.standingAllWorkflows} · {g.createdAt.slice(0, 10)}
                 </span>
                 <form method="post" action={`/p/${slug}/guidance/${g.id}/retire`} style={{ display: "inline", marginLeft: "8px" }}>
+                  {returnField}
                   <button type="submit" data-retire="true" style={{ fontSize: "11px" }}>{AP.standingRetireLabel}</button>
                 </form>
+                {editable ? (
+                  <details data-guidance-edit="true" style={{ marginTop: "4px" }}>
+                    <summary style={{ fontSize: "11px", color: "var(--accent)", cursor: "pointer", display: "inline" }}>Edit</summary>
+                    <form method="post" action={`/p/${slug}/settings/guidance/${g.id}`} style={{ marginTop: "6px", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "baseline" }}>
+                      {returnField}
+                      <input type="text" name="body" required defaultValue={g.body} style={{ flex: "1 1 240px", fontSize: "13px", padding: "6px 10px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
+                      <input type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} defaultValue={g.workflows.join(", ")} placeholder={AP.standingAllWorkflows} style={{ fontSize: "12px", padding: "5px 8px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", width: "140px" }} />
+                      <button type="submit" data-guidance-save="true" style={{ fontSize: "12px" }}>{AP.saveLabel}</button>
+                    </form>
+                  </details>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
         <form method="post" action={`/p/${slug}/guidance`} style={{ marginTop: "8px", display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
+          {returnField}
           <input type="text" name="body" required placeholder={AP.standingAddPlaceholder} style={{ flex: "1 1 240px", fontSize: "13px", padding: "6px 10px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
           <input type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} placeholder={AP.standingAllWorkflows} style={{ fontSize: "12px", padding: "5px 8px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", width: "140px" }} />
           <button type="submit" style={{ fontSize: "12px" }}>{AP.standingAddLabel}</button>
@@ -4175,87 +4219,633 @@ export function ExportPage(): ReactNode {
   );
 }
 
-/** PRB.12 — Settings (level-0 minimal): the one control REQ-PROD-15 requires to exist and bind — the
- *  analytics opt-out. A plain form POST; the flag also hides existing events from every read. */
-export function SettingsPage(): ReactNode {
-  const { privacy, theme, accountExport } = usePageData();
-  const pref = theme?.pref ?? "dark";
-  const acct = accountExport?.export ?? null;
+// ---------------------------------------------------------------------------------------------------------------------
+// P1.20 — the §14.7 settings tree: Account · Preferences · Notifications · Integrations · Billing · Data
+// (Team hidden until roles ship). Full-page, single 640-px column, ⌘, lands here. The beta's REQ-PROD-15
+// toggle migrates into Data — there is no second settings home.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** The §14.7 section strip — Team stays hidden until roles ship. */
+function SettingsNav({ active }: { active: string }): ReactNode {
+  const S = COPY.settings;
   return (
-    <Shell brand={COPY.brand} nav={
-      <>
-        <a href="/app">{COPY.project.backToList}</a>
-        {/* P1.16 — the plan card lives beside Settings (§14.6 — the only place plan names appear). */}
-        <a href="/settings/billing" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.billing.nav}</a>
-      </>
-    } footer={footer()}>
-      <SectionTitle>{COPY.settings.heading}</SectionTitle>
-      {/* P1.01 — the app theme (dark/light/auto), a plain form POST: works with no JS; the IDE shell's
-          theme menu writes the same user field through /ide/theme. */}
-      <section aria-label={COPY.settings.themeHeading} style={{ marginTop: "16px", maxWidth: "68ch" }}>
-        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.settings.themeHeading}</h3>
-        <form method="post" action="/settings/theme">
-          <label style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)" }}>
-            <select name="appTheme" defaultValue={pref} style={{ fontSize: "13px" }}>
-              <option value="dark">{COPY.settings.themeDark}</option>
-              <option value="light">{COPY.settings.themeLight}</option>
-              <option value="auto">{COPY.settings.themeAuto}</option>
-            </select>
+    <nav
+      aria-label={S.sectionsAria}
+      data-settings-nav="true"
+      style={{ display: "flex", gap: "14px", flexWrap: "wrap", margin: "10px 0 20px", fontSize: "13px" }}
+    >
+      {(["account", "preferences", "notifications", "integrations", "billing", "data"] as const).map((s) => (
+        <a
+          key={s}
+          href={`/app/settings/${s}`}
+          data-section={s}
+          aria-current={active === s ? "page" : undefined}
+          style={{
+            color: active === s ? "var(--shell-fg)" : "var(--shell-fg-muted)",
+            fontWeight: active === s ? 600 : 400,
+          }}
+        >
+          {S.sectionLabels[s]}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+/** Shared micro-styles for the settings forms (plain SSR — no client JS required). */
+const settingsRowStyle = { display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)", margin: "8px 0" } as const;
+const settingsNoteStyle = { fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" } as const;
+const settingsInputStyle = {
+  fontSize: "13px",
+  padding: "6px 10px",
+  borderRadius: "7px",
+  border: "1px solid var(--shell-border)",
+  background: "var(--shell-bg)",
+  color: "var(--shell-fg)",
+} as const;
+const settingsSectionStyle = { marginTop: "22px" } as const;
+const settingsH3 = { fontSize: "14px", margin: "0 0 8px" } as const;
+const settingsCardStyle = {
+  padding: "10px 14px",
+  border: "1px solid var(--shell-border)",
+  borderRadius: "8px",
+  margin: "8px 0",
+} as const;
+
+function humanizeKey(key: string): string {
+  const s = key.replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** P1.20 — the §14.7 page: one shell, the section strip, then the active section. Billing is its own
+ *  page (P1.16 owns the content) and renders the same strip. */
+export function SettingsPage(): ReactNode {
+  const { settings } = usePageData();
+  const S = COPY.settings;
+  const section = settings?.section ?? "account";
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{S.heading}</SectionTitle>
+      <SettingsNav active={section} />
+      <div style={{ maxWidth: "640px" }}>
+        {settings?.saved ? (
+          <p data-settings-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "4px 0 10px" }}>{S.saved}</p>
+        ) : null}
+        {section === "account" ? <AccountSection /> : null}
+        {section === "preferences" ? <PreferencesSection /> : null}
+        {section === "notifications" ? <NotificationsSection /> : null}
+        {section === "integrations" ? <IntegrationsSection /> : null}
+        {section === "data" ? <DataSection /> : null}
+      </div>
+    </Shell>
+  );
+}
+
+/** §14.7 Account — name/byline/avatar, the magic-link email change, sign-in methods, sessions with
+ *  revoke, and the delete-account pointer (the control itself lives in Data). */
+function AccountSection(): ReactNode {
+  const { settings } = usePageData();
+  const S = COPY.settings;
+  const acct = settings?.account;
+  if (!acct) {
+    return <p data-settings-unavailable="account" style={settingsNoteStyle}>{COPY.billing.stripeDownNote}</p>;
+  }
+  return (
+    <>
+      {/* the deletion grace banner — the 14-day clock shows on every section's top surface. */}
+      {acct.deletion ? <DeletionBanner deletion={acct.deletion} /> : null}
+      <section aria-label={S.profileHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.profileHeading}</h3>
+        <form method="post" action="/app/settings/account">
+          <label style={settingsRowStyle}>
+            {S.nameLabel}:{" "}
+            <input type="text" name="name" defaultValue={acct.user.name ?? ""} required style={settingsInputStyle} />
           </label>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 10px" }}>
-            {COPY.settings.themeNote}
-          </p>
-          <button type="submit" style={{ fontSize: "13px" }}>{COPY.settings.saveCta}</button>
+          <label style={settingsRowStyle}>
+            {S.bylineLabel}:{" "}
+            <input type="text" name="byline" defaultValue={acct.user.byline ?? ""} style={settingsInputStyle} />
+          </label>
+          <p style={settingsNoteStyle}>{S.bylineNote}</p>
+          <label style={settingsRowStyle}>
+            {S.avatarLabel}:{" "}
+            <input type="url" name="image" defaultValue={acct.user.image ?? ""} style={settingsInputStyle} />
+          </label>
+          <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
         </form>
       </section>
-      <section aria-label={COPY.settings.privacyHeading} style={{ marginTop: "24px", maxWidth: "68ch" }}>
-        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.settings.privacyHeading}</h3>
-        <form method="post" action="/settings/privacy" data-privacy-form="true">
-          <label style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)" }}>
+      <section aria-label={S.emailLabel} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.emailLabel}</h3>
+        <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>
+          {acct.user.email}{" "}
+          <span style={{ fontSize: "11px", color: acct.user.emailVerified ? "var(--state-ready)" : "var(--shell-fg-faint)" }}>
+            {acct.user.emailVerified ? S.emailVerified : S.emailUnverified}
+          </span>
+        </p>
+        {acct.user.pendingEmail ? (
+          <p data-email-pending="true" style={settingsNoteStyle}>
+            {fmt(S.emailPendingFmt, { email: acct.user.pendingEmail })}
+          </p>
+        ) : null}
+        <form method="post" action="/app/settings/account/email">
+          <label style={settingsRowStyle}>
+            {S.emailChangeLabel}:{" "}
+            <input type="email" name="email" required style={settingsInputStyle} />
+          </label>
+          <p style={settingsNoteStyle}>{S.emailChangeNote}</p>
+          <button type="submit" style={{ fontSize: "13px" }}>{S.emailChangeCta}</button>
+        </form>
+      </section>
+      <section aria-label={S.signInHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.signInHeading}</h3>
+        <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "13px", color: "var(--shell-fg)" }}>
+          {acct.signInMethods.map((m) => (
+            <li key={m.kind} data-signin-method={m.kind}>
+              {m.label}
+              {m.detail ? <span style={{ color: "var(--shell-fg-faint)" }}> — {m.detail}</span> : null}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section aria-label={S.sessionsHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.sessionsHeading}</h3>
+        <p style={settingsNoteStyle}>{S.sessionsNote}</p>
+        <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "13px", color: "var(--shell-fg)", display: "flex", flexDirection: "column", gap: "6px" }}>
+          {acct.sessions.map((s) => (
+            <li key={s.id} data-session={s.id}>
+              {s.userAgent ?? s.ipAddress ?? s.id}
+              {s.current ? (
+                <span style={{ marginLeft: "8px", fontSize: "11px", color: "var(--state-ready)" }}>{S.sessionThisDevice}</span>
+              ) : null}
+              <span style={{ marginLeft: "8px", fontSize: "11px", color: "var(--shell-fg-faint)" }}>
+                {fmt(S.sessionExpiresFmt, { at: s.expiresAt.slice(0, 10) })}
+              </span>
+              {!s.current ? (
+                <form method="post" action="/app/settings/sessions/revoke" style={{ display: "inline", marginLeft: "8px" }}>
+                  <input type="hidden" name="sessionId" value={s.id} />
+                  <button type="submit" data-revoke-session="true" style={{ fontSize: "11px" }}>{S.sessionRevokeCta}</button>
+                </form>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </section>
+      {/* §14.7 lists "delete account" under Account; the typed-confirmation control lives in Data —
+          the link keeps the section's contents honest without two destructive forms. */}
+      <section aria-label={S.deletionHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.deletionHeading}</h3>
+        <p style={{ fontSize: "13px", margin: "4px 0" }}>
+          <a href="/app/settings/data#delete" style={{ color: "var(--sev-major)" }}>{S.deletionHeading} →</a>
+        </p>
+      </section>
+    </>
+  );
+}
+
+/** §14.7 Preferences — account defaults (a project's own settings always win); no raw model names. */
+function PreferencesSection(): ReactNode {
+  const { settings } = usePageData();
+  const S = COPY.settings;
+  const prefs = settings?.preferences;
+  if (!prefs) {
+    return <p data-settings-unavailable="preferences" style={settingsNoteStyle}>{COPY.billing.stripeDownNote}</p>;
+  }
+  const p = prefs.prefs;
+  return (
+    <form method="post" action="/app/settings/preferences" style={{ marginTop: "8px" }}>
+      <section aria-label={S.tierHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.tierHeading}</h3>
+        <label style={settingsRowStyle}>
+          <input type="radio" name="defaultModelTier" value="" defaultChecked={p.defaultModelTier == null} />{" "}
+          {S.tierAutoLabel}
+        </label>
+        <p style={settingsNoteStyle}>{S.tierAutoNote}</p>
+        {MODEL_TIERS.map((t) => (
+          <label key={t} style={settingsRowStyle} data-tier={t}>
+            <input type="radio" name="defaultModelTier" value={t} defaultChecked={p.defaultModelTier === t} />{" "}
+            {S.tierWhen[t] ?? MODEL_TIER_DISPLAY[t]}
+          </label>
+        ))}
+      </section>
+      <section aria-label={S.rigorHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.rigorHeading}</h3>
+        <label style={settingsRowStyle}>
+          <select name="defaultRigor" defaultValue={p.defaultRigor ?? ""} style={{ fontSize: "13px" }}>
+            <option value="">{RIGOR_DISPLAY.standard} ({S.rigorDefaultOpt.toLowerCase()})</option>
+            {RIGORS.map((r) => (
+              <option key={r} value={r}>{RIGOR_DISPLAY[r]}</option>
+            ))}
+          </select>
+        </label>
+        <p style={settingsNoteStyle}>{S.rigorNote}</p>
+        <fieldset style={{ border: "none", margin: "10px 0 0", padding: 0 }}>
+          <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{S.rigorByWorkflowHeading}</legend>
+          <p style={settingsNoteStyle}>{S.rigorByWorkflowNote}</p>
+          <div data-rigor-by-workflow="true" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {WORKFLOW_KEYS.map((w) => (
+              <label key={w} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
+                <span>{humanizeKey(w)}</span>
+                <select name={`rigor_${w}`} defaultValue={p.rigorByWorkflow?.[w] ?? ""} style={{ fontSize: "12px" }}>
+                  <option value="">{S.rigorDefaultOpt}</option>
+                  {RIGORS.map((r) => (
+                    <option key={r} value={r}>{RIGOR_DISPLAY[r]}</option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </section>
+      <section aria-label={S.approvalHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.approvalHeading}</h3>
+        <p style={settingsNoteStyle}>{S.approvalNote}</p>
+        {/* an absent account pref means Named approvals (§5.6's default) — picking it stores the
+            explicit value, which is equivalent. */}
+        {APPROVAL_POLICIES.map((a) => (
+          <label key={a} style={settingsRowStyle} data-approval-policy={a}>
+            <input type="radio" name="approvalPolicy" value={a} defaultChecked={(p.approvalPolicy ?? "named") === a} />{" "}
+            {S.approvalPolicies[a]}
+          </label>
+        ))}
+      </section>
+      <section aria-label={S.consentHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.consentHeading}</h3>
+        <label style={settingsRowStyle}>
+          {S.consentLabel}:{" "}
+          <input
+            type="number"
+            name="consentUnder"
+            min={0}
+            max={1000}
+            defaultValue={prefs.consentDontAskUnder}
+            style={{ ...settingsInputStyle, width: "110px" }}
+          />
+        </label>
+        <p style={settingsNoteStyle}>{S.consentNote}</p>
+      </section>
+      <section aria-label={S.editorHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.editorHeading}</h3>
+        <label style={settingsRowStyle}>
+          {S.paperThemeLabel}:{" "}
+          <select name="paperTheme" defaultValue={p.editor?.paperTheme ?? ""} style={{ fontSize: "13px" }}>
+            <option value="">{S.rigorDefaultOpt}</option>
+            <option value="light">{S.paperThemeLight}</option>
+            <option value="dark">{S.paperThemeDark}</option>
+            <option value="follow">{S.paperThemeFollow}</option>
+          </select>
+        </label>
+        <label style={settingsRowStyle}>
+          {S.fontPresetLabel}:{" "}
+          <select name="fontPreset" defaultValue={p.editor?.fontPreset ?? ""} style={{ fontSize: "13px" }}>
+            <option value="">{S.rigorDefaultOpt}</option>
+            <option value="serif">{S.fontSerif}</option>
+            <option value="sans">{S.fontSans}</option>
+            <option value="mono">{S.fontMono}</option>
+          </select>
+        </label>
+        <label style={settingsRowStyle}>
+          {S.fontSizeLabel}:{" "}
+          <select name="fontSizeStep" defaultValue={p.editor?.fontSizeStep != null ? String(p.editor.fontSizeStep) : ""} style={{ fontSize: "13px" }}>
+            <option value="">{S.rigorDefaultOpt}</option>
+            {[-2, -1, 0, 1, 2].map((n) => (
+              <option key={n} value={String(n)}>{n > 0 ? `+${n}` : String(n)}</option>
+            ))}
+          </select>
+        </label>
+        <p style={settingsNoteStyle}>{S.fontSizeNote}</p>
+        <label style={settingsRowStyle}>
+          {S.themeHeading}:{" "}
+          <select name="appTheme" defaultValue={prefs.appTheme} style={{ fontSize: "13px" }}>
+            <option value="dark">{S.themeDark}</option>
+            <option value="light">{S.themeLight}</option>
+            <option value="auto">{S.themeAuto}</option>
+          </select>
+        </label>
+        <p style={settingsNoteStyle}>{S.themeNote}</p>
+      </section>
+      <p style={settingsNoteStyle}>{S.perProjectNote}</p>
+      <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+    </form>
+  );
+}
+
+/** §14.7 Notifications — the §5.11 matrix against P1.19's server-side store; the two
+ *  non-configurable rows render locked (the api rejects writes to them too — REQ-ACCT-1). */
+function NotificationsSection(): ReactNode {
+  const { settings } = usePageData();
+  const S = COPY.settings;
+  const data = settings?.notifications;
+  if (!data) {
+    return <p data-settings-unavailable="notifications" style={settingsNoteStyle}>{COPY.billing.stripeDownNote}</p>;
+  }
+  const prefs = data.prefs;
+  const qh = data.quietHours;
+  const toHHMM = (mins: number) =>
+    `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+  return (
+    <form method="post" action="/app/settings/notifications" style={{ marginTop: "8px" }}>
+      <table data-notification-matrix="true" style={{ borderCollapse: "collapse", fontSize: "13px", width: "100%" }}>
+        <thead>
+          <tr>
+            <th style={{ textAlign: "left", padding: "4px 14px 4px 0", color: "var(--shell-fg-faint)", fontWeight: 500 }}>{S.matrixEventCol}</th>
+            <th style={{ textAlign: "left", padding: "4px 14px 4px 0", color: "var(--shell-fg-faint)", fontWeight: 500 }}>{S.matrixEmailCol}</th>
+            <th style={{ textAlign: "left", padding: "4px 0", color: "var(--shell-fg-faint)", fontWeight: 500 }}>{S.matrixInAppCol}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {NOTIFICATION_EVENT_TYPES.map((t) => {
+            const row = NOTIFICATION_MATRIX[t];
+            const locked = isNonConfigurableEvent(t);
+            const emailArm = row.email as string;
+            const inAppArm = row.inApp as string;
+            return (
+              <tr key={t} data-notification-row={t}>
+                <td style={{ padding: "5px 14px 5px 0", color: "var(--shell-fg)" }}>
+                  {S.notificationEvents[t] ?? humanizeKey(t)}
+                  {locked ? (
+                    <span style={{ display: "block", fontSize: "11px", color: "var(--shell-fg-faint)" }}>{S.lockedNote}</span>
+                  ) : null}
+                </td>
+                <td style={{ padding: "5px 14px 5px 0" }}>
+                  {emailArm === "none" ? (
+                    <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{S.emailNoneNote}</span>
+                  ) : locked ? (
+                    <span data-locked="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>On</span>
+                  ) : (
+                    <select name={`email_${t}`} defaultValue={emailEnabled(prefs, t) ? "on" : "off"} style={{ fontSize: "12px" }}>
+                      <option value="on">On</option>
+                      <option value="off">Off</option>
+                      {emailArm === "digest" ? <option value="digest">Digest</option> : null}
+                    </select>
+                  )}
+                </td>
+                <td style={{ padding: "5px 0" }}>
+                  {inAppArm === "none" ? (
+                    <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>{S.emailNoneNote}</span>
+                  ) : locked ? (
+                    <span data-locked="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>On</span>
+                  ) : t === "run_progress" ? (
+                    <span data-per-project="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                      {S.runProgressNote}
+                    </span>
+                  ) : (
+                    <select name={`inapp_${t}`} defaultValue={(prefs.inApp?.[t] ?? row.defaultOn) ? "on" : "off"} style={{ fontSize: "12px" }}>
+                      <option value="on">On</option>
+                      <option value="off">Off</option>
+                    </select>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <section aria-label={S.digestHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.digestHeading}</h3>
+        <label style={settingsRowStyle}>
+          <select name="digest_run_finished" defaultValue={prefs.digest?.run_finished === "hourly" ? "hourly" : "off"} style={{ fontSize: "13px" }}>
+            <option value="off">Off</option>
+            <option value="hourly">Hourly</option>
+          </select>{" "}
+          {S.digestRunFinishedLabel}
+        </label>
+      </section>
+      <section aria-label={S.quietHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.quietHeading}</h3>
+        <p style={settingsNoteStyle}>{S.quietNote}</p>
+        <label style={settingsRowStyle}>
+          <select name="qh_enabled" defaultValue={qh ? "on" : "off"} style={{ fontSize: "13px" }}>
+            <option value="off">Off</option>
+            <option value="on">{S.quietEnable}</option>
+          </select>
+        </label>
+        <label style={settingsRowStyle}>
+          {S.quietStartLabel}:{" "}
+          <input type="time" name="qh_start" defaultValue={qh ? toHHMM(qh.startMinutesUtc) : "21:00"} style={settingsInputStyle} />
+          {S.quietEndLabel}:{" "}
+          <input type="time" name="qh_end" defaultValue={qh ? toHHMM(qh.endMinutesUtc) : "07:00"} style={settingsInputStyle} />
+        </label>
+      </section>
+      {data.projects && data.projects.length > 0 ? (
+        <section aria-label={S.runProgressHeading} style={settingsSectionStyle}>
+          <h3 style={settingsH3}>{S.runProgressHeading}</h3>
+          <p style={settingsNoteStyle}>{S.runProgressNote}</p>
+          {data.projects.map((proj) => (
+            <label key={proj.id} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
+              <span>{fmt(S.runProgressProjectFmt, { title: proj.title })}</span>
+              <select
+                name={`rp_${proj.id}`}
+                defaultValue={prefs.project?.[proj.id]?.run_progress === true ? "on" : "off"}
+                style={{ fontSize: "12px" }}
+              >
+                <option value="off">Off</option>
+                <option value="on">On</option>
+              </select>
+            </label>
+          ))}
+        </section>
+      ) : null}
+      <button type="submit" style={{ marginTop: "14px", fontSize: "13px" }}>{S.saveCta}</button>
+    </form>
+  );
+}
+
+/** §14.7 Integrations (REQ-ACCT-2) — one card component per provider: connect / status / items /
+ *  disconnect; disconnect removes the credential now and keeps samples. Each card carries its
+ *  "what we read" + "never does" lines verbatim. */
+function IntegrationsSection(): ReactNode {
+  const { settings } = usePageData();
+  const S = COPY.settings;
+  const data = settings?.integrations;
+  if (!data) {
+    return <p data-settings-unavailable="integrations" style={settingsNoteStyle}>{COPY.billing.stripeDownNote}</p>;
+  }
+  const providers = ["substack", "medium", "gdrive"] as const;
+  return (
+    <>
+      <p style={{ ...settingsNoteStyle, marginTop: "8px" }}>{S.integrationsNote}</p>
+      {providers.map((provider) => {
+        const prov = S.integrationProviders[provider] ?? { title: provider, reads: "", never: "" };
+        const conns = data.connections.filter((conn) => conn.provider === provider);
+        return (
+          <div key={provider} data-integration-card={provider} style={settingsCardStyle}>
+            <h3 style={{ fontSize: "13px", fontWeight: 600, margin: "0 0 4px", color: "var(--shell-fg)" }}>{prov.title}</h3>
+            <p style={settingsNoteStyle}>{prov.reads}</p>
+            <p data-integration-never="true" style={{ ...settingsNoteStyle, color: "var(--shell-fg-muted)" }}>{prov.never}</p>
+            {conns.length === 0 ? (
+              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0" }}>
+                {data.voices.length > 0 ? (
+                  <a href={`/v/${data.voices[0]!.slug ?? data.voices[0]!.id}?tab=samples`} style={{ color: "var(--accent)" }}>
+                    {S.integrationConnectCta}
+                  </a>
+                ) : (
+                  S.integrationsEmpty
+                )}
+              </p>
+            ) : (
+              <ul style={{ margin: "6px 0", paddingLeft: "0", listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {conns.map((conn) => (
+                  <li key={conn.id} data-connection={conn.id} style={{ fontSize: "12px", color: "var(--shell-fg)" }}>
+                    <span data-conn-status={conn.status} style={{ fontWeight: 600 }}>
+                      {S.integrationStatusLabels[conn.status] ?? conn.status}
+                    </span>
+                    {conn.handle ? <span style={{ color: "var(--shell-fg-muted)" }}> · {conn.handle}</span> : null}
+                    {conn.persona.name ? (
+                      <span style={{ color: "var(--shell-fg-faint)" }}>
+                        {" "}· {fmt(S.integrationPersonaFmt, { name: conn.persona.name })}
+                      </span>
+                    ) : null}
+                    <span style={{ color: "var(--shell-fg-faint)" }}>
+                      {" "}· {fmt(S.integrationItemsFmt, { items: conn.items, included: conn.includedItems })}
+                    </span>
+                    {conn.lastSyncAt ? (
+                      <span style={{ color: "var(--shell-fg-faint)" }}>
+                        {" "}· {fmt(S.integrationLastSyncFmt, { at: conn.lastSyncAt.slice(0, 10) })}
+                      </span>
+                    ) : null}
+                    {conn.error ? (
+                      <span data-conn-error="true" style={{ color: "var(--sev-major)" }}> · {conn.error}</span>
+                    ) : null}
+                    <form method="post" action={`/app/settings/integrations/${conn.id}/disconnect`} style={{ display: "inline", marginLeft: "10px" }}>
+                      <button type="submit" data-disconnect="true" style={{ fontSize: "11px" }}>{S.integrationDisconnectCta}</button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** REQ-ACCT-4 — the grace banner + the cancel form; shared by Account's pointer state and Data's
+ *  control. The typed-confirmation request form lives in Data only. */
+function DeletionBanner({ deletion }: { deletion: { requestedAt: string; graceEndsAt: string } }): ReactNode {
+  const S = COPY.settings;
+  return (
+    <div data-deletion-banner="true" style={{ ...settingsCardStyle, borderColor: "var(--sev-major)" }}>
+      <p style={{ fontSize: "13px", color: "var(--sev-major)", margin: "0 0 8px" }}>
+        {fmt(S.deletionScheduledFmt, { date: deletion.graceEndsAt.slice(0, 10) })}
+      </p>
+      <form method="post" action="/app/settings/account/delete/cancel">
+        <button type="submit" data-deletion-cancel="true" style={{ fontSize: "12px" }}>{S.deletionCancelCta}</button>
+      </form>
+    </div>
+  );
+}
+
+/** §14.7 Data (Q-12, minimal): the privacy toggles, the support-access grant + visible log, the
+ *  training-posture + residual-risk static text (verbatim), the Q-26 preference-learning toggle
+ *  (verbatim copy), "Export everything", and the delete-account control. */
+function DataSection(): ReactNode {
+  const { settings, privacy, accountExport } = usePageData();
+  const S = COPY.settings;
+  const data = settings?.data;
+  const acct = accountExport?.export ?? null;
+  return (
+    <>
+      {data?.deletion ? <DeletionBanner deletion={data.deletion} /> : null}
+      <section aria-label={S.privacyHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.privacyHeading}</h3>
+        <form method="post" action="/app/settings/data/privacy" data-privacy-form="true">
+          <label style={settingsRowStyle}>
             <input
               type="checkbox"
-              name="analytics"
-              defaultChecked={!(privacy?.analyticsOptOut ?? false)}
+              name="analyticsOptOut"
+              defaultChecked={privacy?.analyticsOptOut ?? data?.analyticsOptOut ?? false}
               data-analytics-toggle="true"
             />
-            {COPY.settings.analyticsLabel}
+            {S.analyticsLabel}
           </label>
-          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 10px" }}>
-            {COPY.settings.analyticsNote}
-          </p>
-          <button type="submit" style={{ fontSize: "13px" }}>{COPY.settings.saveCta}</button>
+          <p style={settingsNoteStyle}>{S.analyticsNote}</p>
+          <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
           {privacy?.saved ? (
-            <span data-privacy-saved="true" style={{ marginLeft: "10px", fontSize: "12px", color: "var(--state-ready)" }}>
-              {COPY.settings.saved}
-            </span>
+            <span data-privacy-saved="true" style={{ marginLeft: "10px", fontSize: "12px", color: "var(--state-ready)" }}>{S.saved}</span>
           ) : null}
+        </form>
+        {data ? (
+          <form method="post" action="/app/settings/data/support-access" data-support-access-form="true" style={{ marginTop: "14px" }}>
+            <label style={settingsRowStyle}>
+              <input
+                type="checkbox"
+                name="enabled"
+                defaultChecked={data.supportAccess.active}
+                data-support-access-toggle="true"
+              />
+              {S.supportAccessLabel}
+            </label>
+            <p style={settingsNoteStyle}>{S.supportAccessNote}</p>
+            {data.supportAccess.active && data.supportAccess.grant ? (
+              <p data-support-active="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "4px 0" }}>
+                {fmt(S.supportAccessActiveFmt, { at: data.supportAccess.grant.expiresAt.replace("T", " ").slice(0, 16) })}
+              </p>
+            ) : null}
+            <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
+          </form>
+        ) : null}
+        {data ? (
+          <div data-support-log="true" style={{ marginTop: "12px" }}>
+            <h4 style={{ fontSize: "13px", margin: "0 0 6px", color: "var(--shell-fg-muted)" }}>{S.supportAccessLogHeading}</h4>
+            {data.supportAccess.log.length === 0 ? (
+              <p style={settingsNoteStyle}>{S.supportAccessLogEmpty}</p>
+            ) : (
+              <ul style={{ margin: "4px 0", paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                {data.supportAccess.log.map((l) => (
+                  <li key={l.id} data-support-log-row={l.action}>
+                    {l.at.slice(0, 16).replace("T", " ")} UTC — {S.supportAccessActions[l.action] ?? l.action}
+                    {l.detail ? <span style={{ color: "var(--shell-fg-faint)" }}> · {l.detail}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </section>
+      <section aria-label={S.postureHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.postureHeading}</h3>
+        <p data-training-posture="true" style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0 8px", maxWidth: "68ch" }}>
+          {S.trainingPosture}
+        </p>
+        <p style={settingsNoteStyle}>{S.dpaLine}</p>
+      </section>
+      <section aria-label={S.preferenceHeading} style={settingsSectionStyle}>
+        <h3 style={settingsH3}>{S.preferenceHeading}</h3>
+        {/* §11.7's Q-26 copy verbatim — capture-only at MVP; the Editor never sees it. */}
+        <p data-preference-copy="true" style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0 8px", maxWidth: "68ch" }}>
+          {S.preferenceCopy}
+        </p>
+        <form method="post" action="/app/settings/data/preference-learning" data-preference-form="true">
+          <label style={settingsRowStyle}>
+            <input
+              type="checkbox"
+              name="learning"
+              defaultChecked={!(data?.preferenceOptOut ?? false)}
+              data-preference-toggle="true"
+            />
+            {S.preferenceToggleLabel}
+          </label>
+          <p style={settingsNoteStyle}>{S.preferenceOffNote}</p>
+          <button type="submit" style={{ fontSize: "13px" }}>{S.saveCta}</button>
         </form>
       </section>
       {/* P1.18 — the whole-account zip (REQ-ACCT-3): "Export everything" queues the build and the
           download link arrives by email (7-day expiry); the restore half replays an export zip
           into this account — a re-import is a no-op. */}
-      <section aria-label={COPY.accountExport.heading} style={{ marginTop: "24px", maxWidth: "68ch" }} data-account-export="true">
-        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.accountExport.heading}</h3>
-        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 10px" }}>
-          {COPY.accountExport.lede}
-        </p>
+      <section aria-label={S.exportHeading} style={settingsSectionStyle} data-account-export="true">
+        <h3 style={settingsH3}>{COPY.accountExport.heading}</h3>
+        <p style={settingsNoteStyle}>{COPY.accountExport.lede}</p>
         {acct?.status === "building" ? (
-          <p data-export-status="building" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
-            {COPY.accountExport.building}
-          </p>
+          <p data-export-status="building" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{COPY.accountExport.building}</p>
         ) : null}
         {acct?.status === "ready" && !acct.expired ? (
           <p data-export-status="ready" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
             {COPY.accountExport.readyFmt.replace("{date}", (acct.expiresAt ?? "").slice(0, 10))}{" "}
-            <a href={`/settings/account-export/download?id=${acct.id}`} data-export-download="true">
-              {COPY.accountExport.downloadCta}
-            </a>
+            <a href={`/app/settings/data/export/download?id=${acct.id}`} data-export-download="true">{COPY.accountExport.downloadCta}</a>
           </p>
         ) : null}
         {acct?.status === "ready" && acct.expired ? (
-          <p data-export-status="expired" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
-            {COPY.accountExport.expired}
-          </p>
+          <p data-export-status="expired" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{COPY.accountExport.expired}</p>
         ) : null}
         {acct?.status === "failed" ? (
           <p data-export-status="failed" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
@@ -4263,18 +4853,14 @@ export function SettingsPage(): ReactNode {
           </p>
         ) : null}
         {accountExport?.notice === "requested" ? (
-          <p data-export-notice="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 8px" }}>
-            {COPY.accountExport.building}
-          </p>
+          <p data-export-notice="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 8px" }}>{COPY.accountExport.building}</p>
         ) : null}
-        <form method="post" action="/settings/account-export">
+        <form method="post" action="/app/settings/data/export">
           <button type="submit" style={{ fontSize: "13px" }}>{COPY.accountExport.cta}</button>
         </form>
         <h4 style={{ fontSize: "13px", margin: "16px 0 6px" }}>{COPY.accountExport.importHeading}</h4>
-        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 8px" }}>
-          {COPY.accountExport.importNote}
-        </p>
-        <form method="post" action="/settings/account-import" encType="multipart/form-data" data-account-import="true">
+        <p style={settingsNoteStyle}>{COPY.accountExport.importNote}</p>
+        <form method="post" action="/app/settings/data/import" encType="multipart/form-data" data-account-import="true">
           <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg)" }}>
             {COPY.accountExport.importLabel}:{" "}
             <input type="file" name="archive" accept=".zip,application/zip" required style={{ fontSize: "12px" }} />
@@ -4290,16 +4876,185 @@ export function SettingsPage(): ReactNode {
           </p>
         ) : null}
         {accountExport?.notice === "deduped" ? (
-          <p data-import-notice="deduped" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>
-            {COPY.accountExport.importDeduped}
-          </p>
+          <p data-import-notice="deduped" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>{COPY.accountExport.importDeduped}</p>
         ) : null}
         {accountExport?.notice === "importFailed" ? (
-          <p data-import-notice="failed" style={{ fontSize: "12px", color: "var(--shell-fg)", marginTop: "8px" }}>
-            {COPY.accountExport.importFailed}
-          </p>
+          <p data-import-notice="failed" style={{ fontSize: "12px", color: "var(--shell-fg)", marginTop: "8px" }}>{COPY.accountExport.importFailed}</p>
         ) : null}
       </section>
+      {/* REQ-ACCT-4 — typed confirmation → the 14-day grace → the worker's hard-delete; cancel inside
+          the window. The banner at the section top mirrors the status while the grace runs. */}
+      <section aria-label={S.deletionHeading} style={settingsSectionStyle} id="delete">
+        <h3 style={settingsH3}>{S.deletionHeading}</h3>
+        <p style={{ ...settingsNoteStyle, maxWidth: "68ch" }}>{S.deletionLede}</p>
+        {data?.deletion ? null : (
+          <form method="post" action="/app/settings/account/delete" data-delete-account-form="true">
+            <label style={settingsRowStyle}>
+              {S.deletionConfirmLabel}:{" "}
+              <input
+                type="text"
+                name="confirmation"
+                required
+                pattern={ACCOUNT_DELETION_CONFIRMATION}
+                autoComplete="off"
+                style={settingsInputStyle}
+              />
+            </label>
+            <button type="submit" style={{ fontSize: "13px", color: "var(--sev-major)" }}>{S.deletionCta}</button>
+          </form>
+        )}
+      </section>
+    </>
+  );
+}
+
+/** P1.20 — `/p/:project/settings` (§4.2): the REQ-GENRE-2 safe protocol fields + venue + defaults
+ *  (per-project wins over the account defaults), the P1.09 approval-policy surface (REQ-GATE-3), and
+ *  the standing-guidance management half (REQ-GATE-10 — list/edit/retire). */
+export function ProjectSettingsPage(): ReactNode {
+  const { projectSettings: ps } = usePageData();
+  const S = COPY.settings.projectSettings;
+  if (!ps) {
+    return (
+      <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+        <SectionTitle>{S.heading}</SectionTitle>
+        <p style={settingsNoteStyle}>{COPY.billing.stripeDownNote}</p>
+      </Shell>
+    );
+  }
+  const p = ps.settings.project;
+  const slug = ps.slug;
+  const ov = p.protocolOverrides ?? {};
+  return (
+    <Shell
+      brand={COPY.brand}
+      nav={
+        <>
+          <a href={`/p/${slug}`}>{COPY.project.backToProject}</a>
+          <a href="/app/settings/account" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.settings.nav}</a>
+        </>
+      }
+      footer={footer()}
+    >
+      <SectionTitle>{p.title} — {S.heading}</SectionTitle>
+      {p.protocolChangedAt ? (
+        <p data-protocol-changed="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
+          {S.changedNote}
+        </p>
+      ) : null}
+      {ps.saved ? (
+        <p data-settings-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "4px 0" }}>{S.saved}</p>
+      ) : null}
+      {ps.notice ? (
+        <p data-settings-notice="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "4px 0" }}>{ps.notice}</p>
+      ) : null}
+      <div style={{ maxWidth: "640px" }}>
+        <section aria-label={S.voiceHeading} style={settingsSectionStyle}>
+          <h3 style={settingsH3}>{S.voiceHeading}</h3>
+          <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>
+            {p.persona ? (
+              <a href={`/v/${p.persona.slug ?? p.persona.id}`} style={{ color: "var(--accent)" }}>{p.persona.name ?? p.persona.id}</a>
+            ) : (
+              <span style={{ color: "var(--shell-fg-faint)" }}>{S.voiceNone}</span>
+            )}
+          </p>
+        </section>
+        <form method="post" action={`/p/${slug}/settings`} style={{ marginTop: "8px" }}>
+          <section aria-label={S.protocolHeading} style={settingsSectionStyle}>
+            <h3 style={settingsH3}>{S.protocolHeading}</h3>
+            <label style={settingsRowStyle}>
+              {S.venueLabel}:{" "}
+              <input type="text" name="venue" defaultValue={p.venue ?? ""} style={settingsInputStyle} />
+            </label>
+            {ps.settings.protocols.length > 0 ? (
+              <label style={settingsRowStyle}>
+                {S.protocolLabel}:{" "}
+                <select name="protocolId" defaultValue={p.protocolId ?? ""} style={{ fontSize: "13px" }}>
+                  {ps.settings.protocols.map((proto) => (
+                    <option key={proto.id} value={proto.id}>{proto.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label style={settingsRowStyle}>
+              {S.rigorLabel}:{" "}
+              <select name="rigorDefault" defaultValue={p.rigorDefault ?? ""} style={{ fontSize: "13px" }}>
+                <option value="">{S.rigorInherit}</option>
+                {RIGORS.map((r) => (
+                  <option key={r} value={r}>{RIGOR_DISPLAY[r]}</option>
+                ))}
+              </select>
+            </label>
+            <label style={settingsRowStyle}>
+              {S.tierLabel}:{" "}
+              <select name="modelTierDefault" defaultValue={p.modelTierDefault ?? ""} style={{ fontSize: "13px" }}>
+                <option value="">{S.rigorInherit}</option>
+                {MODEL_TIERS.map((t) => (
+                  <option key={t} value={t}>{MODEL_TIER_DISPLAY[t]}</option>
+                ))}
+              </select>
+            </label>
+            <label style={settingsRowStyle}>
+              {S.paperThemeLabel}:{" "}
+              <select name="paperTheme" defaultValue={p.paperTheme} style={{ fontSize: "13px" }}>
+                <option value="follow">{COPY.settings.paperThemeFollow}</option>
+                <option value="light">{COPY.settings.paperThemeLight}</option>
+                <option value="dark">{COPY.settings.paperThemeDark}</option>
+              </select>
+            </label>
+            <label style={settingsRowStyle}>
+              {S.stageLabel}:{" "}
+              <select name="stage" defaultValue={ov.stage ?? ""} style={{ fontSize: "13px" }}>
+                <option value="">{S.stages.infer}</option>
+                <option value="early">{S.stages.early}</option>
+                <option value="near_final">{S.stages.near_final}</option>
+              </select>
+            </label>
+            <p style={settingsNoteStyle}>{S.stageNote}</p>
+            <label style={settingsRowStyle}>
+              {S.lengthLabel}:{" "}
+              <input type="number" name="ov_length" min={1} defaultValue={ov.length ?? undefined} style={{ ...settingsInputStyle, width: "110px" }} />
+            </label>
+            <p style={settingsNoteStyle}>{S.lengthNote}</p>
+            <fieldset style={{ border: "none", margin: "10px 0 0", padding: 0 }}>
+              <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{S.phaseDefaultsHeading}</legend>
+              {(Object.keys(S.phaseDefaults) as Array<keyof typeof S.phaseDefaults>).map((phase) => {
+                const phaseDefault = (ov.phaseDefaults as Record<string, boolean | undefined> | undefined)?.[phase];
+                return (
+                <label key={phase} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
+                  <span>{S.phaseDefaults[phase]}</span>
+                  <select
+                    name={`pd_${phase}`}
+                    defaultValue={
+                      phaseDefault === true ? "on" : phaseDefault === false ? "off" : ""
+                    }
+                    style={{ fontSize: "12px" }}
+                  >
+                    <option value="">{S.phaseOptDefault}</option>
+                    <option value="on">{S.phaseOptOn}</option>
+                    <option value="off">{S.phaseOptOff}</option>
+                  </select>
+                </label>
+                );
+              })}
+            </fieldset>
+          </section>
+          <button type="submit" style={{ marginTop: "14px", fontSize: "13px" }}>{S.saveCta}</button>
+        </form>
+        {/* REQ-GATE-3/10 — P1.09's approval-policy + standing-guidance surface. Changing the policy
+            never alters an open card; guidance edits route through the settings POSTs. */}
+        {ps.approvalSettings ? (
+          <ApprovalSettingsSection slug={slug} settings={ps.approvalSettings} returnTo={`/p/${slug}/settings`} editable />
+        ) : null}
+        <section aria-label={S.tagsHeading} style={settingsSectionStyle}>
+          <h3 style={settingsH3}>{S.tagsHeading}</h3>
+          {p.tags.length > 0 ? (
+            <p style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "4px 0" }}>{p.tags.join(", ")}</p>
+          ) : (
+            <p style={settingsNoteStyle}>{S.tagsPlaceholder}</p>
+          )}
+        </section>
+      </div>
     </Shell>
   );
 }
@@ -4879,8 +5634,9 @@ export function BillingPage(): ReactNode {
   const B = COPY.billing;
   if (!billing) {
     return (
-      <Shell brand={COPY.brand} nav={<a href="/settings">{COPY.settings.nav}</a>} footer={footer()}>
+      <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
         <SectionTitle>{B.heading}</SectionTitle>
+        <SettingsNav active="billing" />
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }} data-billing-down="true">{B.stripeDownNote}</p>
       </Shell>
     );
@@ -4889,8 +5645,10 @@ export function BillingPage(): ReactNode {
   const planEntries = Object.entries(plans.plans);
   const current = sub.tier;
   return (
-    <Shell brand={COPY.brand} nav={<a href="/settings">{COPY.settings.nav}</a>} footer={footer()}>
+    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
       <SectionTitle>{B.heading}</SectionTitle>
+      <SettingsNav active="billing" />
+      <div style={{ maxWidth: "640px" }}>
 
       {sub.subscription?.pastDue ? (
         <p data-past-due="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
@@ -4957,7 +5715,7 @@ export function BillingPage(): ReactNode {
               </div>
               <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 8px" }}>{plan.whatItCovers}</p>
               {plan.waitlist ? (
-                <form method="post" action="/settings/billing/waitlist" data-waitlist-form="true" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                <form method="post" action="/app/settings/billing/waitlist" data-waitlist-form="true" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
                   <input type="email" name="email" required placeholder={B.teamEmailLabel}
                     style={{ padding: "5px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
                   <input type="number" name="seats" min={1} placeholder={B.teamSeatsLabel}
@@ -4967,13 +5725,13 @@ export function BillingPage(): ReactNode {
                 </form>
               ) : isCurrent ? (
                 sub.subscription && !sub.subscription.cancelAtPeriodEnd ? (
-                  <form method="post" action="/settings/billing/cancel" data-cancel-form="true">
+                  <form method="post" action="/app/settings/billing/cancel" data-cancel-form="true">
                     <button type="submit" style={{ fontSize: "12px" }}>{B.cancelCta}</button>
                     <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.cancelNote}</span>
                   </form>
                 ) : null
               ) : (
-                <form method="post" action="/settings/billing/subscribe" data-subscribe-form={tier} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <form method="post" action="/app/settings/billing/subscribe" data-subscribe-form={tier} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                   <input type="hidden" name="tier" value={tier} />
                   <select name="cycle" style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }}>
                     <option value="monthly">{B.monthlyLabel}</option>
@@ -4990,7 +5748,7 @@ export function BillingPage(): ReactNode {
       <section data-topups="true" style={{ margin: "0 0 20px" }}>
         <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.topupHeading}</h3>
         {plans.topUpPacks.map((p) => (
-          <form key={p.id} method="post" action="/settings/billing/topup" data-topup-form={p.id} style={{ display: "inline-block", margin: "0 8px 8px 0" }}>
+          <form key={p.id} method="post" action="/app/settings/billing/topup" data-topup-form={p.id} style={{ display: "inline-block", margin: "0 8px 8px 0" }}>
             <input type="hidden" name="packId" value={p.id} />
             <button type="submit" style={{ fontSize: "12px" }}>
               {B.topupCta.replace("{n}", p.credits.toLocaleString("en-US")).replace("{usd}", String(p.usd))}
@@ -5002,7 +5760,7 @@ export function BillingPage(): ReactNode {
       <section data-auto-reload="true" style={{ margin: "0 0 20px" }}>
         <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.autoReloadHeading}</h3>
         <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{B.autoReloadNote}</p>
-        <form method="post" action="/settings/billing/auto-reload" data-auto-reload-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", fontSize: "12px" }}>
+        <form method="post" action="/app/settings/billing/auto-reload" data-auto-reload-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", fontSize: "12px" }}>
           <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <input type="checkbox" name="enabled" value="1" defaultChecked={sub.autoReload.enabled} />
             {B.autoReloadEnable}
@@ -5031,13 +5789,14 @@ export function BillingPage(): ReactNode {
       </section>
 
       {sub.hasStripeCustomer ? (
-        <form method="post" action="/settings/billing/portal" data-portal-form="true" style={{ margin: "0 0 20px" }}>
+        <form method="post" action="/app/settings/billing/portal" data-portal-form="true" style={{ margin: "0 0 20px" }}>
           <button type="submit" style={{ fontSize: "12px" }}>{B.manageCta}</button>
           <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.manageNote}</span>
         </form>
       ) : null}
       </>
       )}
+      </div>
     </Shell>
   );
 }
@@ -5049,9 +5808,9 @@ export function BillingReturnPage(): ReactNode {
   const { checkoutReturn } = usePageData();
   const B = COPY.billing;
   const state = checkoutReturn?.state ?? "open";
-  const back = checkoutReturn?.returnTo ?? "/settings/billing";
+  const back = checkoutReturn?.returnTo ?? "/app/settings/billing";
   return (
-    <Shell brand={COPY.brand} nav={<a href="/settings/billing">{B.nav}</a>} footer={footer()}>
+    <Shell brand={COPY.brand} nav={<a href="/app/settings/billing">{B.nav}</a>} footer={footer()}>
       <SectionTitle>{B.returnHeading}</SectionTitle>
       <p data-checkout-state={state} style={{ fontSize: "14px", margin: "12px 0" }}>
         {state === "completed" ? B.returnDone : state === "expired" ? B.returnExpired : B.returnPending}
@@ -5155,7 +5914,7 @@ export function InboxPage(): ReactNode {
       nav={
         <>
           <a href="/app">{COPY.project.backToList}</a>
-          <a href="/settings/billing" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.billing.nav}</a>
+          <a href="/app/settings/billing" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.billing.nav}</a>
         </>
       }
       footer={footer()}

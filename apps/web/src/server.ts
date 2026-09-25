@@ -25,6 +25,7 @@ import {
   voiceReseedElement,
   obligationNewElement,
   settingsElement,
+  projectSettingsElement,
   usageElement,
   runReportElement,
   outlineElement,
@@ -41,7 +42,7 @@ import {
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto, GateCardDto } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto, GateCardDto, ProjectSettingsPatch } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
@@ -278,11 +279,12 @@ export function createWebApp(deps: WebDeps): Hono {
           keywords: [run.workflow, run.state],
         })),
       settings: [
-        { label: "Project settings", path: `/p/${row.slug}` },
-        { label: "Account settings", path: "/settings" },
+        // P1.20 — the §4.2 project-settings page + the §14.7 account tree.
+        { label: "Project settings", path: `/p/${row.slug}/settings` },
+        { label: "Account settings", path: "/app/settings/account" },
         { label: "Usage", path: "/usage" },
         // P1.16 — the plan card + the §14.5 level-2 rollup ride the IDE settings list too.
-        { label: "Billing", path: "/settings/billing" },
+        { label: "Billing", path: "/app/settings/billing" },
         { label: "Project usage", path: `/p/${row.slug}/usage` },
       ],
     };
@@ -1917,13 +1919,270 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect("/app/inbox");
   });
 
-  // ---- PRB.12 — Settings (the REQ-PROD-15 toggle) + the §14.5 usage glance + the dwell beacon sink ----
+  // ---- P1.20 — the §14.7 settings tree (`/app/settings/:section`; §4.2). The beta's `/settings`
+  // migrated — legacy paths 302 onto the tree; the REQ-PROD-15 toggle lives in Data now. ----
+
+  // Legacy path migrations — session first (an anonymous hit still bounces to /login), then the
+  // canonical section keeps the flash params.
   app.get("/settings", async (c) => {
+    if (!deps.session(c)) return c.redirect("/login");
+    return c.redirect("/app/settings/account", 302);
+  });
+  app.get("/app/settings", async (c) => {
+    if (!deps.session(c)) return c.redirect("/login");
+    return c.redirect("/app/settings/account", 302);
+  });
+
+  // ---- Account ----
+  app.get("/app/settings/account", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    const [privacy, theme, acct] = await Promise.all([
+    // A magic-link email-change lands here (?confirmEmail=<token>) — consume it server-side, then
+    // bounce to the section with the outcome flash.
+    const confirmToken = c.req.query("confirmEmail");
+    if (confirmToken) {
+      const out = await Promise.resolve()
+        .then(() => deps.dataSource.confirmEmailChange?.(session, confirmToken))
+        .catch(() => undefined);
+      const ok = out != null && "ok" in out && out.ok === true;
+      return c.redirect(`/app/settings/account?notice=${ok ? "email-confirmed" : "email-confirm-failed"}`);
+    }
+    const account = await Promise.resolve()
+      .then(() => deps.dataSource.getAccountSettings?.(session))
+      .catch(() => undefined);
+    return c.html(renderDocument(c.req.path, settingsElement, {
+      settings: {
+        section: "account",
+        ...(account ? { account } : {}),
+        saved: c.req.query("saved") === "1",
+        ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
+      },
+    }));
+  });
+  app.post("/app/settings/account", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const req: { name?: string; byline?: string | null; image?: string | null } = {};
+    if (typeof form.name === "string" && form.name.trim() !== "") req.name = form.name.trim();
+    if (typeof form.byline === "string") req.byline = form.byline.trim() === "" ? null : form.byline.trim();
+    if (typeof form.image === "string") req.image = form.image.trim() === "" ? null : form.image.trim();
+    await Promise.resolve()
+      .then(() => deps.dataSource.updateAccountSettings?.(session, req))
+      .catch(() => undefined);
+    return c.redirect("/app/settings/account?saved=1");
+  });
+  app.post("/app/settings/account/email", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const email = typeof form.email === "string" ? form.email : "";
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.requestEmailChange?.(session, email))
+      .catch(() => undefined);
+    const ok = out != null && "ok" in out && out.ok === true;
+    return c.redirect(`/app/settings/account?notice=${ok ? "email-pending" : "email-invalid"}`);
+  });
+  app.post("/app/settings/sessions/revoke", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const sessionId = typeof form.sessionId === "string" ? form.sessionId : "";
+    if (sessionId) {
+      await Promise.resolve()
+        .then(() => deps.dataSource.revokeSession?.(session, sessionId))
+        .catch(() => undefined);
+    }
+    return c.redirect("/app/settings/account?saved=1");
+  });
+
+  // ---- REQ-ACCT-4 — delete account: typed confirmation → the 14-day grace; cancel inside it. ----
+  app.post("/app/settings/account/delete", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const confirmation = typeof form.confirmation === "string" ? form.confirmation : "";
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.requestAccountDeletion?.(session, confirmation))
+      .catch(() => undefined);
+    const ok = out != null && "ok" in out && out.ok === true;
+    return c.redirect(`/app/settings/data?notice=${ok ? "deletion-scheduled" : "confirmation-required"}`);
+  });
+  app.post("/app/settings/account/delete/cancel", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.cancelAccountDeletion?.(session))
+      .catch(() => undefined);
+    const ok = out != null && "ok" in out && out.ok === true;
+    return c.redirect(`/app/settings/data?notice=${ok ? "deletion-cancelled" : "cancel-failed"}`);
+  });
+
+  // ---- Preferences ----
+  app.get("/app/settings/preferences", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const prefs = await Promise.resolve()
+      .then(() => deps.dataSource.getPreferencesSettings?.(session))
+      .catch(() => undefined);
+    return c.html(renderDocument(c.req.path, settingsElement, {
+      settings: {
+        section: "preferences",
+        ...(prefs ? { preferences: prefs } : {}),
+        saved: c.req.query("saved") === "1",
+      },
+    }));
+  });
+  // One form posts every account default — "" selects unset the key (the api treats null as delete),
+  // the consent threshold clamps at 1,000 (REQ-BILL-4), the theme write rides P1.01's endpoint.
+  app.post("/app/settings/preferences", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const prefs: Record<string, unknown> = {};
+    const tier = form.defaultModelTier;
+    prefs.defaultModelTier = tier === "base" || tier === "balanced" || tier === "frontier" ? tier : null;
+    const rigor = form.defaultRigor;
+    prefs.defaultRigor = rigor === "quick" || rigor === "standard" || rigor === "full_board" ? rigor : null;
+    const rigorByWorkflow: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(form)) {
+      if (!k.startsWith("rigor_") || k === "rigor_default") continue;
+      const wf = k.slice("rigor_".length);
+      rigorByWorkflow[wf] = v === "quick" || v === "standard" || v === "full_board" ? v : null;
+    }
+    prefs.rigorByWorkflow = rigorByWorkflow;
+    const policy = form.approvalPolicy;
+    prefs.approvalPolicy =
+      policy === "named" || policy === "wait_each" || policy === "run_to_completion" ? policy : null;
+    const editor: Record<string, unknown> = {};
+    const paperTheme = form.paperTheme;
+    editor.paperTheme = paperTheme === "light" || paperTheme === "follow" || paperTheme === "dark" ? paperTheme : null;
+    const fontPreset = form.fontPreset;
+    editor.fontPreset = fontPreset === "serif" || fontPreset === "sans" || fontPreset === "mono" ? fontPreset : null;
+    const step = Number(form.fontSizeStep);
+    editor.fontSizeStep = form.fontSizeStep !== "" && Number.isInteger(step) && step >= -2 && step <= 2 ? step : null;
+    prefs.editor = editor;
+    const consent = Math.max(0, Math.min(1000, Math.trunc(Number(form.consentUnder) || 0)));
+    const appTheme = form.appTheme;
+    await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.updatePreferences?.(session, prefs)),
+      Promise.resolve().then(() => deps.dataSource.setConsentPref?.(session, consent)),
+      appTheme === "dark" || appTheme === "light" || appTheme === "auto"
+        ? Promise.resolve().then(() => deps.dataSource.setTheme?.(session, appTheme))
+        : Promise.resolve(),
+    ]).catch(() => undefined);
+    return c.redirect("/app/settings/preferences?saved=1");
+  });
+
+  // ---- Notifications (P1.19's server-side store; the api rejects the non-configurable rows) ----
+  app.get("/app/settings/notifications", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const [notif, projects] = await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.getNotificationPrefs?.(session)).catch(() => undefined),
+      Promise.resolve()
+        .then(() => deps.dataSource.listProjects?.(session))
+        .then((rows) => (rows ?? []).map((r) => ({ id: r.id, title: r.title })))
+        .catch(() => [] as { id: string; title: string }[]),
+    ]);
+    return c.html(renderDocument(c.req.path, settingsElement, {
+      settings: {
+        section: "notifications",
+        ...(notif ? { notifications: { ...notif, projects } } : {}),
+        saved: c.req.query("saved") === "1",
+        ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
+      },
+    }));
+  });
+  app.post("/app/settings/notifications", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const email: Record<string, boolean> = {};
+    const inApp: Record<string, boolean> = {};
+    const project: Record<string, { run_progress?: boolean }> = {};
+    for (const [k, v] of Object.entries(form)) {
+      if (typeof v !== "string") continue;
+      if (k.startsWith("email_")) email[k.slice(6)] = v === "on" || v === "digest";
+      else if (k.startsWith("inapp_")) inApp[k.slice(6)] = v === "on";
+      else if (k.startsWith("rp_")) project[k.slice(3)] = { run_progress: v === "on" };
+    }
+    // quiet hours — HH:MM UTC inputs; off ⇒ null.
+    let quietHours: { startMinutesUtc: number; endMinutesUtc: number } | null | undefined;
+    if (form.qh_enabled === "on") {
+      const hm = (s: unknown) => {
+        const m = /^(\d{1,2}):(\d{2})$/.exec(typeof s === "string" ? s : "");
+        if (!m) return null;
+        const mins = Number(m[1]) * 60 + Number(m[2]);
+        return mins >= 0 && mins <= 1439 ? mins : null;
+      };
+      const start = hm(form.qh_start);
+      const end = hm(form.qh_end);
+      quietHours = start != null && end != null ? { startMinutesUtc: start, endMinutesUtc: end } : undefined;
+    } else if (form.qh_enabled === "off") {
+      quietHours = null;
+    }
+    // P1.19's api writes ONE per-project opt-in per call — the form posts every `rp_` select, so the
+    // account matrix + digest + quiet hours ride the first write and each extra project goes
+    // sequentially (concurrent read-modify-write merges could lose a row).
+    const accountPatch = {
+      email,
+      inApp,
+      digest: { run_finished: (form.digest_run_finished === "hourly" ? "hourly" : "off") as "hourly" | "off" },
+      ...(quietHours !== undefined ? { quietHours } : {}),
+    };
+    const projectIds = Object.keys(project);
+    const patches: Parameters<NonNullable<DataSource["updateNotificationPrefs"]>>[1][] =
+      projectIds.length === 0
+        ? [accountPatch]
+        : projectIds.map((pid, i) => ({
+            ...(i === 0 ? accountPatch : {}),
+            project: { [pid]: project[pid]! },
+          }));
+    let ok = true;
+    for (const patch of patches) {
+      const out = await Promise.resolve()
+        .then(() => deps.dataSource.updateNotificationPrefs?.(session, patch))
+        .catch(() => undefined);
+      if (!(out != null && "ok" in out && out.ok === true)) {
+        ok = false;
+        break;
+      }
+    }
+    return c.redirect(`/app/settings/notifications?${ok ? "saved=1" : "notice=rejected"}`);
+  });
+
+  // ---- Integrations (REQ-ACCT-2's uniform cards; disconnect drops the credential now) ----
+  app.get("/app/settings/integrations", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const integrations = await Promise.resolve()
+      .then(() => deps.dataSource.getIntegrationsSettings?.(session))
+      .catch(() => undefined);
+    return c.html(renderDocument(c.req.path, settingsElement, {
+      settings: {
+        section: "integrations",
+        ...(integrations ? { integrations } : {}),
+        saved: c.req.query("saved") === "1",
+      },
+    }));
+  });
+  app.post("/app/settings/integrations/:id/disconnect", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    await Promise.resolve()
+      .then(() => deps.dataSource.disconnectIntegration?.(session, c.req.param("id")))
+      .catch(() => undefined);
+    return c.redirect("/app/settings/integrations?saved=1");
+  });
+
+  // ---- Data (Q-12 minimal): privacy toggles + support access + posture copy + export + delete ----
+  app.get("/app/settings/data", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const [privacy, data, acct] = await Promise.all([
       deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false })),
-      Promise.resolve().then(() => deps.dataSource.getTheme?.(session)).catch(() => null),
+      Promise.resolve().then(() => deps.dataSource.getDataSettings?.(session)).catch(() => undefined),
       // P1.18 — the latest account-export build (best-effort: the section still renders without it).
       Promise.resolve()
         .then(() => deps.dataSource.getAccountExportState?.(session))
@@ -1933,7 +2192,6 @@ export function createWebApp(deps: WebDeps): Hono {
     const notice = c.req.query("notice");
     return c.html(renderDocument(c.req.path, settingsElement, {
       privacy: { analyticsOptOut: privacy.analyticsOptOut, saved: c.req.query("saved") === "1" },
-      ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
       accountExport: {
         export: acct?.export ?? null,
         ...(notice ? { notice } : {}),
@@ -1948,29 +2206,63 @@ export function createWebApp(deps: WebDeps): Hono {
             }
           : {}),
       },
+      settings: {
+        section: "data",
+        ...(data ? { data } : {}),
+        saved: c.req.query("saved") === "1",
+        ...(notice ? { notice } : {}),
+      },
     }));
+  });
+  // The REQ-PROD-15 toggle's new home — the checkbox posts "on" when EXCLUDE is checked.
+  app.post("/app/settings/data/privacy", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    await deps.dataSource.setAnalyticsOptOut(session, form.analyticsOptOut === "on");
+    return c.redirect("/app/settings/data?saved=1");
+  });
+  // REQ-VIS-11 — the 72-h support grant; revoke is a no-op-safe write either way.
+  app.post("/app/settings/data/support-access", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    await Promise.resolve()
+      .then(() => deps.dataSource.setSupportAccess?.(session, form.enabled === "on"))
+      .catch(() => undefined);
+    return c.redirect("/app/settings/data?saved=1");
+  });
+  // Q-26 — the preference-learning toggle stores the opt-OUT (default-on ⇒ unchecked box = optOut).
+  app.post("/app/settings/data/preference-learning", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    await Promise.resolve()
+      .then(() => deps.dataSource.setPreferenceOptOut?.(session, form.learning !== "on"))
+      .catch(() => undefined);
+    return c.redirect("/app/settings/data?saved=1");
   });
   // P1.18 — "Export everything" (REQ-ACCT-3): queue the account zip; the build + emailed link are
   // the worker's. A repeat click dedupes server-side (the same row answers).
-  app.post("/settings/account-export", async (c) => {
+  app.post("/app/settings/data/export", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     await deps.dataSource.requestAccountExport?.(session).catch(() => undefined);
-    return c.redirect("/settings?notice=requested");
+    return c.redirect("/app/settings/data?notice=requested");
   });
   // The in-app download of the ready zip — presigned through the api.
-  app.get("/settings/account-export/download", async (c) => {
+  app.get("/app/settings/data/export/download", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const id = c.req.query("id");
     const dl = await Promise.resolve()
       .then(() => deps.dataSource.getAccountExportDownloadUrl?.(session, id))
       .catch(() => null);
-    if (!dl) return c.redirect("/settings?notice=expired");
+    if (!dl) return c.redirect("/app/settings/data?notice=expired");
     return c.redirect(dl.downloadUrl, 302);
   });
   // The restore half — upload an export zip; the api replays it idempotently.
-  app.post("/settings/account-import", async (c) => {
+  app.post("/app/settings/data/import", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
@@ -1979,18 +2271,20 @@ export function createWebApp(deps: WebDeps): Hono {
       file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
         ? new Uint8Array(await (file as File).arrayBuffer())
         : null;
-    if (!bytes) return c.redirect("/settings?notice=importFailed");
+    if (!bytes) return c.redirect("/app/settings/data?notice=importFailed");
     try {
-      if (!deps.dataSource.importAccountExport) return c.redirect("/settings?notice=importFailed");
+      if (!deps.dataSource.importAccountExport) return c.redirect("/app/settings/data?notice=importFailed");
       const r = await deps.dataSource.importAccountExport(session, bytes);
-      if (r.deduped) return c.redirect("/settings?notice=deduped");
-      return c.redirect(`/settings?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}`);
+      if (r.deduped) return c.redirect("/app/settings/data?notice=deduped");
+      return c.redirect(`/app/settings/data?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}`);
     } catch {
-      return c.redirect("/settings?notice=importFailed");
+      return c.redirect("/app/settings/data?notice=importFailed");
     }
   });
+
+  // ---- legacy POSTs (the beta surface's old form targets) — keep working, land on the new tree ----
   // P1.01 — the app-theme control (the no-JS form counterpart of the IDE shell's theme menu; both write
-  // "user".app_theme through the api). The POST redirects back with the saved flash.
+  // "user".app_theme through the api). Now redirects to the Preferences section the control moved to.
   app.post("/settings/theme", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
@@ -1999,16 +2293,111 @@ export function createWebApp(deps: WebDeps): Hono {
     if (appTheme === "dark" || appTheme === "light" || appTheme === "auto") {
       await deps.dataSource.setTheme(session, appTheme).catch(() => undefined);
     }
-    return c.redirect("/settings?saved=1");
+    return c.redirect("/app/settings/preferences?saved=1");
   });
   app.post("/settings/privacy", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
-    // The checkbox posts "on" when sharing is on — the flag it binds is the inverse (opt-OUT).
+    // The old checkbox posted "on" when sharing was ON — the flag it binds is the inverse (opt-OUT).
+    // The canonical endpoint is /app/settings/data/privacy now; this legacy post keeps working.
     const optOut = form.analytics !== "on";
     await deps.dataSource.setAnalyticsOptOut(session, optOut);
-    return c.redirect("/settings?saved=1");
+    return c.redirect("/app/settings/data?saved=1");
+  });
+
+  // ---- P1.20 — `/p/:project/settings` (§4.2): the REQ-GENRE-2 safe fields + P1.09's approvals ----
+  app.get("/p/:project/settings", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const [projectSettings, approvalSettings] = await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.getProjectSettings?.(session, row.id)).catch(() => undefined),
+      Promise.resolve().then(() => deps.dataSource.getApprovalSettings?.(session, row.id)).catch(() => undefined),
+    ]);
+    if (!projectSettings) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(renderDocument(c.req.path, projectSettingsElement, {
+      projectSettings: {
+        slug,
+        settings: projectSettings,
+        ...(approvalSettings ? { approvalSettings } : {}),
+        saved: c.req.query("saved") === "1",
+        ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
+      },
+    }));
+  });
+  // The safe-field patch (REQ-GENRE-2): "" selects mean "inherit the account default" (rigor/tier) or
+  // "keep" (venue/protocol). A protocol change stamps the marker the next Review's scope card carries.
+  app.post("/p/:project/settings", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const patch: ProjectSettingsPatch = {};
+    if (typeof form.venue === "string") patch.venue = form.venue.trim() === "" ? null : form.venue.trim();
+    if (typeof form.protocolId === "string" && form.protocolId !== "") patch.protocolId = form.protocolId;
+    const rigor = form.rigorDefault;
+    if (rigor === "quick" || rigor === "standard" || rigor === "full_board" || rigor === "") {
+      patch.rigorDefault = rigor === "" ? null : rigor;
+    }
+    const tier = form.modelTierDefault;
+    if (tier === "base" || tier === "balanced" || tier === "frontier" || tier === "") {
+      patch.modelTierDefault = tier === "" ? null : tier;
+    }
+    const paperTheme = form.paperTheme;
+    if (paperTheme === "light" || paperTheme === "follow" || paperTheme === "dark") patch.paperTheme = paperTheme;
+    // protocol overrides — only when at least one override field arrived set/cleared.
+    const ovLength = Number(form.ov_length);
+    const stage = form.stage === "early" || form.stage === "near_final" ? form.stage : undefined;
+    const phaseDefaults: Record<string, boolean> = {};
+    let sawOverrideField = false;
+    for (const [k, v] of Object.entries(form)) {
+      if (!k.startsWith("pd_")) continue;
+      sawOverrideField = true;
+      const phase = k.slice(3);
+      if (v === "on") phaseDefaults[phase] = true;
+      else if (v === "off") phaseDefaults[phase] = false;
+    }
+    if (sawOverrideField || typeof form.ov_length === "string" || stage !== undefined) {
+      const overrides: NonNullable<ProjectSettingsPatch["protocolOverrides"]> = {};
+      if (typeof form.ov_length === "string" && form.ov_length !== "" && Number.isFinite(ovLength) && ovLength > 0) {
+        overrides.length = Math.trunc(ovLength);
+      }
+      if (Object.keys(phaseDefaults).length > 0) overrides.phaseDefaults = phaseDefaults;
+      if (stage !== undefined) overrides.stage = stage;
+      // the form IS the whole override state — an all-defaults submit stores null (cleared), not "{}".
+      patch.protocolOverrides = Object.keys(overrides).length > 0 ? overrides : null;
+    }
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.updateProjectSettings?.(session, row.id, patch))
+      .catch(() => undefined);
+    const ok = out != null && "ok" in out && out.ok === true;
+    return c.redirect(`/p/${slug}/settings?${ok ? "saved=1" : "notice=invalid"}`);
+  });
+  // REQ-GATE-10's edit half — a standing rule's body/workflows update in place (retire stays a
+  // separate row-level action; guidance never deletes).
+  app.post("/p/:project/settings/guidance/:gid", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const body = typeof form.body === "string" ? form.body.trim() : "";
+    if (body !== "") {
+      const workflows =
+        typeof form.workflows === "string" && form.workflows.trim() !== ""
+          ? form.workflows.split(",").map((w) => w.trim()).filter((w) => w !== "")
+          : null;
+      await Promise.resolve()
+        .then(() => deps.dataSource.updateGuidance?.(session, row.id, c.req.param("gid"), { body, workflows }))
+        .catch(() => undefined);
+    }
+    return c.redirect(`/p/${slug}/settings?saved=1`);
   });
   app.get("/usage", async (c) => {
     const session = deps.session(c);
@@ -2058,8 +2447,10 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // ---- P1.16 — billing, full (§14.2/14.3/14.6): the plan card, Checkout/portal/auto-reload POSTs,
-  // the Team waitlist, and the checkout-return poll (REQ-BILL-14 — the ≤30 s webhook-lag window). ----
-  app.get("/settings/billing", async (c) => {
+  // the Team waitlist, and the checkout-return poll (REQ-BILL-14 — the ≤30 s webhook-lag window).
+  // P1.20 — the section's canonical §4.2 path is /app/settings/billing; the beta's /settings/billing
+  // stays mounted as the legacy alias (existing form posts + deep links keep working). ----
+  const billingPageHandler = async (c: Context) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const [subscription, plans] = await Promise.all([
@@ -2079,11 +2470,20 @@ export function createWebApp(deps: WebDeps): Hono {
           }
         : {}),
     }));
-  });
+  };
+  app.get("/app/settings/billing", billingPageHandler);
+  app.get("/settings/billing", billingPageHandler);
+  // P1.20 — every billing POST mounts on the canonical path AND the beta alias; the redirect returns
+  // to whichever surface posted (the Stripe returnTo follows the same base).
+  const billingBase = (c: Context) => (c.req.path.startsWith("/app/") ? "/app/settings/billing" : "/settings/billing");
+  const billingPost = (path: string, handler: (c: Context, base: string) => Promise<Response>) => {
+    app.post(`/app/settings/billing/${path}`, (c) => handler(c, billingBase(c)));
+    app.post(`/settings/billing/${path}`, (c) => handler(c, billingBase(c)));
+  };
   // Subscribe / top-up — mint the Checkout session server-side and 302 to Stripe. A billing-config
   // miss (503) or any api error returns to the card with the "temporarily unavailable" notice —
   // never a half-minted state (the api's checkout insert is idempotent).
-  app.post("/settings/billing/subscribe", async (c) => {
+  billingPost("subscribe", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
@@ -2091,27 +2491,27 @@ export function createWebApp(deps: WebDeps): Hono {
     const cycle = form.cycle === "annual" ? "annual" : "monthly";
     const out = await Promise.resolve()
       .then(() => deps.dataSource.startCheckout?.(session, {
-        kind: "subscribe", plan: tier, cycle, returnTo: "/settings/billing",
+        kind: "subscribe", plan: tier, cycle, returnTo: base,
       }))
       .catch(() => undefined);
-    if (!out?.url) return c.redirect("/settings/billing?notice=checkout");
+    if (!out?.url) return c.redirect(`${base}?notice=checkout`);
     return c.redirect(out.url);
   });
-  app.post("/settings/billing/topup", async (c) => {
+  billingPost("topup", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
     const packId = typeof form.packId === "string" ? form.packId : "";
     const out = await Promise.resolve()
       .then(() => deps.dataSource.startCheckout?.(session, {
-        kind: "topup", packId, returnTo: "/settings/billing",
+        kind: "topup", packId, returnTo: base,
       }))
       .catch(() => undefined);
-    if (!out?.url) return c.redirect("/settings/billing?notice=checkout");
+    if (!out?.url) return c.redirect(`${base}?notice=checkout`);
     return c.redirect(out.url);
   });
   // Plan change — an upgrade applies now, a downgrade schedules to period end (§14.2/14.6).
-  app.post("/settings/billing/change-plan", async (c) => {
+  billingPost("change-plan", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
@@ -2120,21 +2520,21 @@ export function createWebApp(deps: WebDeps): Hono {
     const out = await Promise.resolve()
       .then(() => deps.dataSource.changePlan?.(session, tier, cycle))
       .catch(() => undefined);
-    if (!out || "error" in out) return c.redirect("/settings/billing?notice=change");
-    return c.redirect("/settings/billing?saved=1");
+    if (!out || "error" in out) return c.redirect(`${base}?notice=change`);
+    return c.redirect(`${base}?saved=1`);
   });
   // Cancel = cancel_at_period_end — access runs to the paid-through date (§14.6).
-  app.post("/settings/billing/cancel", async (c) => {
+  billingPost("cancel", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelSubscription?.(session))
       .catch(() => undefined);
-    if (!out?.applied) return c.redirect("/settings/billing?notice=cancel");
-    return c.redirect("/settings/billing?saved=1");
+    if (!out?.applied) return c.redirect(`${base}?notice=cancel`);
+    return c.redirect(`${base}?saved=1`);
   });
   // Auto-reload — the opt-in, user-capped, only unattended charge path (REQ-BILL-17).
-  app.post("/settings/billing/auto-reload", async (c) => {
+  billingPost("auto-reload", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
@@ -2148,21 +2548,21 @@ export function createWebApp(deps: WebDeps): Hono {
           ? { monthlyCapUsd: Number(form.monthlyCapUsd) } : {}),
       }))
       .catch(() => undefined);
-    if (!out?.ok) return c.redirect("/settings/billing?notice=autoreload");
-    return c.redirect("/settings/billing?saved=1");
+    if (!out?.ok) return c.redirect(`${base}?notice=autoreload`);
+    return c.redirect(`${base}?saved=1`);
   });
   // The Stripe Customer-Portal session — payment methods, invoices, receipts live Stripe-side.
-  app.post("/settings/billing/portal", async (c) => {
+  billingPost("portal", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const out = await Promise.resolve()
-      .then(() => deps.dataSource.createBillingPortalSession?.(session, "/settings/billing"))
+      .then(() => deps.dataSource.createBillingPortalSession?.(session, base))
       .catch(() => undefined);
-    if (!out?.url) return c.redirect("/settings/billing?notice=portal");
+    if (!out?.url) return c.redirect(`${base}?notice=portal`);
     return c.redirect(out.url);
   });
   // The Team tier's waitlist row (§14.2 — listed with its price; mechanics are 1.x).
-  app.post("/settings/billing/waitlist", async (c) => {
+  billingPost("waitlist", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
@@ -2172,8 +2572,8 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(typeof form.seats === "string" && Number(form.seats) > 0 ? { seats: Number(form.seats) } : {}),
       }))
       .catch(() => undefined);
-    if (!out?.ok) return c.redirect("/settings/billing?notice=waitlist");
-    return c.redirect("/settings/billing?saved=1");
+    if (!out?.ok) return c.redirect(`${base}?notice=waitlist`);
+    return c.redirect(`${base}?saved=1`);
   });
   // REQ-BILL-19 — the published rate tables, relayed verbatim so a run report's rate-table link
   // resolves on the app host (the api is internal; the upstream endpoint is public).
@@ -2560,10 +2960,21 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(policy ? { policy } : {}),
         overrides,
       });
-      return c.redirect(`/p/${slug}?approvals=saved`);
+      // P1.20 — the project-settings page's copy of the form carries `returnTo` and lands back there.
+      const back =
+        typeof form.returnTo === "string" && form.returnTo.startsWith("/p/")
+          ? form.returnTo
+          : `/p/${slug}`;
+      return c.redirect(`${back}?approvals=saved`);
     } catch (e) {
       // an illegal override (REQ-SPEC-1) re-renders with the notice, never a silent write.
-      if (e instanceof ApiError && e.status === 422) return c.redirect(`/p/${slug}?approvals=invalid`);
+      if (e instanceof ApiError && e.status === 422) {
+        const back =
+          typeof form.returnTo === "string" && form.returnTo.startsWith("/p/")
+            ? form.returnTo
+            : `/p/${slug}`;
+        return c.redirect(`${back}?approvals=invalid`);
+      }
       throw e;
     }
   });
@@ -2586,7 +2997,11 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(workflows && workflows.length > 0 ? { workflows } : {}),
       });
     }
-    return c.redirect(`/p/${slug}`);
+    const back =
+      typeof form.returnTo === "string" && form.returnTo.startsWith("/p/")
+        ? form.returnTo
+        : `/p/${slug}`;
+    return c.redirect(back);
   });
 
   // Retire (§6.5; REQ-GATE-10): active=false, never deleted. "Edit" = retire + the Add form posts the
@@ -2597,8 +3012,14 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody().catch(() => ({}));
     await deps.dataSource.retireGuidance?.(session, row.id, c.req.param("gid"));
-    return c.redirect(`/p/${slug}`);
+    const back =
+      typeof (form as Record<string, unknown>).returnTo === "string" &&
+        ((form as Record<string, unknown>).returnTo as string).startsWith("/p/")
+        ? ((form as Record<string, unknown>).returnTo as string)
+        : `/p/${slug}`;
+    return c.redirect(back);
   });
 
   // the one-time inline explainer's dismiss (§5.11/§6.4 — once per user, never a modal).
@@ -4639,6 +5060,9 @@ function buildSheet(
     rigor === "full_board" ||
     (!!query.protocol && query.protocol !== (ctx?.project?.protocol ?? null)) ||
     (!!query.venue && query.venue !== (ctx?.project?.venue ?? ""));
+  // P1.20 (§6.7) — a settings-page protocol change marks the next Review's scope card: the sheet
+  // surfaces the marker + the same blocking consequence (the api freezes `scopeBlocking` itself).
+  const protocolChanged = workflow === "review" && ctx?.project?.protocolChanged === true;
   return buildRunSheetView({
     workflow,
     targetVersion,
@@ -4670,6 +5094,7 @@ function buildSheet(
     // §7.2's `--wait`/`--auto` preset the Approvals pick; `--budget N` presets the editable cap.
     ...(approvalPick ? { approvalPolicy: approvalPick as "named" | "wait_each" | "run_to_completion" } : {}),
     scopeBlocking,
+    ...(protocolChanged ? { protocolChanged: true } : {}),
     ...(ctx?.dontAskUnder != null ? { dontAskUnder: ctx.dontAskUnder } : {}),
     ...(ctx?.standingNotes != null ? { standingNotes: ctx.standingNotes } : {}),
     ...(Number(query.budget) > 0 ? { capOverrideCredits: Math.round(Number(query.budget)) } : {}),

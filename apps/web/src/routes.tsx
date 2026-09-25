@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, InboxPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, ProjectSettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, InboxPage, NotFoundPage } from "./pages.js";
 import { LandingPage, PricingPage, SignupPage } from "./marketing.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
@@ -43,8 +43,10 @@ export const voiceDetailElement = <VoiceDetailPage />;
 export const voiceReseedElement = <VoiceReseedPage />;
 // P1.07 — the palette's free-form obligation form (REQ-OBJ-10).
 export const obligationNewElement = <ObligationNewPage />;
-// PRB.12 — the Settings privacy toggle + the §14.5 usage glance.
+// P1.20 — the §14.7 settings tree (one element; the active section comes from PageData).
 export const settingsElement = <SettingsPage />;
+/** P1.20 — `/p/:project/settings` (§4.2): the safe protocol fields + approvals + standing guidance. */
+export const projectSettingsElement = <ProjectSettingsPage />;
 export const usageElement = <UsagePage />;
 // P1.16 — billing, full: the plan card, the checkout-return poll, the level-2 project rollup.
 export const billingElement = <BillingPage />;
@@ -101,6 +103,8 @@ export const routes: readonly AppRoute[] = [
   { path: "/p/:project/visualize", public: false, element: visualizeElement },
   // P1.07 — the palette's free-form obligation (REQ-OBJ-10): the row-creation path.
   { path: "/p/:project/obligations/new", public: false, element: obligationNewElement },
+  // P1.20 — the §4.2 project-settings page (safe protocol fields + approval policy + guidance).
+  { path: "/p/:project/settings", public: false, element: projectSettingsElement },
   // PRB.11 — the export dialog (format choice, the never-blocking obligation line, the AI-use attach
   // toggle + statement preview; §13.4, §8.4, §11.7).
   { path: "/p/:project/export", public: false, element: exportElement },
@@ -110,11 +114,21 @@ export const routes: readonly AppRoute[] = [
   { path: "/v/:persona", public: false, element: voiceDetailElement },
   // P1.14 — the project voice hatches: the reseed-diff preview the adopt dialog shows (§9.6).
   { path: "/p/:project/voice/reseed", public: false, element: voiceReseedElement },
-  // PRB.12 — the privacy toggle (REQ-PROD-15) + the usage glance (§14.5 level 1).
+  // P1.20 — the §14.7 settings tree at the §4.2 paths (the beta's `/settings` migrated — the server
+  // 302s the legacy paths onto these). Team stays hidden until roles ship.
   { path: "/settings", public: false, element: settingsElement },
+  { path: "/app/settings", public: false, element: settingsElement },
+  { path: "/app/settings/account", public: false, element: settingsElement },
+  { path: "/app/settings/preferences", public: false, element: settingsElement },
+  { path: "/app/settings/notifications", public: false, element: settingsElement },
+  { path: "/app/settings/integrations", public: false, element: settingsElement },
+  { path: "/app/settings/data", public: false, element: settingsElement },
   { path: "/usage", public: false, element: usageElement },
   // P1.16 — billing, full (§14.2/14.3/14.5/14.6): the plan card + Checkout/portal/auto-reload forms,
   // the checkout-return poll (REQ-BILL-14), and the level-2 project usage rollup. All auth-gated.
+  // P1.20 — the Billing section's canonical path is /app/settings/billing; /settings/billing stays
+  // mounted as the legacy alias so existing form posts + deep links keep working.
+  { path: "/app/settings/billing", public: false, element: billingElement },
   { path: "/settings/billing", public: false, element: billingElement },
   { path: "/billing/return", public: false, element: billingReturnElement },
   { path: "/p/:project/usage", public: false, element: projectUsageElement },

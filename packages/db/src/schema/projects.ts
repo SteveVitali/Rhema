@@ -18,9 +18,18 @@ export const projects = pgTable("projects", {
   personaLockedAt: timestamp("persona_locked_at"),
   approvalPolicy: text("approval_policy").notNull().default("named"),
   approvalOverrides: jsonb("approval_overrides"),
-  rigorDefault: text("rigor_default").notNull().default("standard"),
+  // P1.20 (0040; §14.7): NULL rigor_default = inherit the account default (per-project overrides win
+  // only when the user actually picked one); the column's old 'standard' default was a phantom
+  // override, so it's dropped alongside the not-null.
+  rigorDefault: text("rigor_default"),
   modelTierDefault: text("model_tier_default"),
   paperTheme: text("paper_theme").notNull().default("light"),
+  // P1.20 (0040; §6.7): a settings-page protocol change marks the next Review's scope card; run
+  // creation clears the marker once a review carries it.
+  protocolChangedAt: timestamp("protocol_changed_at"),
+  // P1.20 (0040; REQ-GENRE-2): the safe-field protocol overrides (length norm / phase defaults /
+  // stage) — the protocol row stays the versioned truth.
+  protocolOverrides: jsonb("protocol_overrides"),
   tags: text("tags").array(),
   monthlyCreditCap: integer("monthly_credit_cap"),
   acceptedDraftId: text("accepted_draft_id"),

@@ -137,6 +137,11 @@ export interface RunSheetView {
   readonly whyLine: string;
   /** the obligation scope line (REQ-OBJ-6), when the caller supplied obligation data. */
   readonly scopeLine?: string;
+  /**
+   * P1.20 (§6.7) — the "Protocol changed since the last Review" marker line on the Review's scope card;
+   * set when the settings page's protocol change is still unconsumed.
+   */
+  readonly protocolChangedLine?: string;
   /** P1.06 (§7.2) — the run's command scope pills + the whole-draft comparison figure. */
   readonly commandScope?: CommandScopeView;
   /**
@@ -233,6 +238,12 @@ export interface BuildRunSheetViewArgs {
    * Wait-for-me-each needs no flag — the policy branch already blocks.
    */
   readonly scopeBlocking?: boolean;
+  /**
+   * P1.20 (§6.7) — `projects.protocol_changed_at` set: a settings-page protocol change since the last
+   * Review. The Review scope card carries the marker line and the same blocking consequence as a
+   * lever-changed scope (the api re-derives the freeze server-side, never client-trusted).
+   */
+  readonly protocolChanged?: boolean;
   /** the sheet's free-text guidance (a typed command's tail) — re-rendered into the field. */
   readonly guidance?: string;
   /** P1.06 (§5.6) — the project's standing guidance count rendered beside the guidance box. */
@@ -363,14 +374,20 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   const approvalPolicy = args.approvalPolicy ?? "named";
 
   // P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence surfaced at launch: informational
-  // by default; blocking (2 h, proceed-as-proposed) at Full board / on a protocol|venue change; "waits
-  // for you" under Wait-for-me-at-each. The gate mechanics are the landed resolveGatePolicy.
+  // by default; blocking (2 h, proceed-as-proposed) at Full board / on a protocol|venue change — which
+  // P1.20 (§6.7) extends to the settings page's `protocol_changed_at` marker; "waits for you" under
+  // Wait-for-me-at-each. The gate mechanics are the landed resolveGatePolicy.
+  const scopeBlocking = args.scopeBlocking === true || args.protocolChanged === true;
   const scopeApprovalLine =
     approvalPolicy === "wait_each"
       ? "Scope approval — the run waits for you at the scope gate."
-      : args.scopeBlocking
+      : scopeBlocking
         ? "Scope approval — a blocking gate opens at launch; proceeds as proposed after 2 hours."
         : "Scope approval — informational; the run proceeds.";
+
+  // P1.20 (§6.7) — the settings-page protocol change marker on the Review's scope card (a fact line,
+  // not a gate of its own — the blocking consequence rides scopeApprovalLine above).
+  const protocolChangedLine = args.protocolChanged === true ? "Protocol changed since the last Review." : undefined;
 
   // per-rigor DEFAULT state at THAT rigor's default model tier (§6.5: tier is a consequence of rigor) —
   // the inline enhancement's recompute table. Switching rigor moves the tier with it.
@@ -415,6 +432,7 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     scopeApprovalLine,
     whyLine: whyLine(args, pricedInputs, claims),
     ...(args.scopeLine ? { scopeLine: args.scopeLine } : {}),
+    ...(protocolChangedLine ? { protocolChangedLine } : {}),
     // P1.06 — the command-scope pills + the whole-draft comparison figure (§5.6: scoped beside whole).
     ...(args.commandScope
       ? {

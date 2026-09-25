@@ -30,6 +30,7 @@ import {
   type EntryDeps,
 } from "@rhema/ledger";
 import { systemClock, randomUlids, RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
+import { logSupportAccess } from "./settings-routes.js";
 
 export interface AdminCliDeps extends EntryDeps {
   /** tenant-scoped transactions (ledger + audit rows are tenant-keyed writes). */
@@ -75,6 +76,9 @@ const USAGE = `rhema admin — operator billing actions (every action is audited
                  (the §14.3 workspace kill switch — voids the entitlement + pocket; the ≤60 s bound is
                   enforced on the spend path: holds read trial_killed_at under the same lock)
   wtp          --workspace <id> --amount <usd> [--source interview]
+  support-access --user <id> [--workspace <id>] --note <what-was-accessed>
+                 (REQ-VIS-11: refuses without a live 72-h grant; writes the user-visible
+                  support_access_log row + the admin_actions audit row for the one access)
   beta-report  [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>]   (default: the trailing 7 days)
 `;
 
@@ -215,6 +219,38 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
           return id;
         });
         out(eventId ? `wtp.recorded {source:${source}, amount:$${amount}} → ${eventId}` : `wtp skipped — user opted out of analytics`);
+        return 0;
+      }
+      case "support-access": {
+        // REQ-VIS-11 (P1.20; §14.7) — one staff access against a live support grant. The grant IS
+        // the authorization: no active (unexpired, unrevoked) grant ⇒ refuse, nothing logged. Each
+        // access writes BOTH the user-visible support_access_log row and the admin_actions audit
+        // row ('support_access') — the user's access log mirrors the operator trail.
+        const userId = flag(rest, "user");
+        if (!userId || !note) return (out(USAGE), 2);
+        const now = deps.clock.now();
+        const grant = (
+          await deps.systemExec.query(
+            `select g.id, g.workspace_id from support_access_grants g
+              where g.user_id = $1 and g.revoked_at is null and g.expires_at > $2
+              order by g.granted_at desc limit 1`,
+            [userId, now],
+          )
+        ).rows[0] as { id: string; workspace_id: string } | undefined;
+        if (!grant) {
+          out(`refused: no active support grant for ${userId} (expired or never granted)`);
+          return 1;
+        }
+        const workspaceId = workspaceArg ?? grant.workspace_id;
+        await logSupportAccess(deps.systemExec, deps.ids, {
+          userId,
+          workspaceId,
+          grantId: grant.id,
+          actor: deps.operatorId,
+          detail: note,
+          at: now,
+        });
+        out(`support access recorded for ${userId} (grant ${grant.id}, expires logged)`);
         return 0;
       }
       case "beta-report": {
