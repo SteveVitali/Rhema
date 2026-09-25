@@ -58,6 +58,13 @@ export interface SeedProjectArgs {
    * mailbox via its sign-in link. Pass `false` to seed an unverified self-serve account.
    */
   readonly emailVerified?: boolean;
+  /**
+   * P1.16 — the account's plan tier (§14.2): the run-creation gate reads the live subscription row.
+   * Defaults `studio_max` — the fixture stands in for a paid account (every model tier, 8 concurrent,
+   * no daily ceiling) so seeded runs create cleanly. Pass `"free"` (or `null` — no subscription row)
+   * to exercise the free/trial gates.
+   */
+  readonly plan?: string | null;
 }
 
 export interface SeededProject {
@@ -83,6 +90,17 @@ export async function seedProject(db: OrchestratorTestDb, args: SeedProjectArgs 
   await db.pg.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
     billingAccountId,
   ]);
+  // P1.16 — the §14.2 plan gate reads the live subscription. The default is a paid account; "free"
+  // needs no row (the effective tier is 'free' when no non-ended subscription exists).
+  const plan = args.plan === undefined ? "studio_max" : args.plan;
+  if (plan != null && plan !== "free") {
+    await db.pg.query(
+      `insert into subscriptions(id, billing_account_id, tier, period_start, period_end, status)
+         values ($1,$2,$3, now() - interval '1 day', now() + interval '1 month', 'active')
+         on conflict (id) do nothing`,
+      [`sub_${billingAccountId}`, billingAccountId, plan],
+    );
+  }
   await db.pg.query(
     `insert into workspaces(id, kind, name, billing_account_id) values ($1,'personal','Seed',$2)
        on conflict (id) do nothing`,

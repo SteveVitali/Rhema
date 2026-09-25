@@ -1,0 +1,159 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { SqlClient } from "@rhema/orchestrator";
+import { planOf } from "@rhema/contracts";
+import { usageLevel0, usageLevel1, usageLevel2, usageCsv, usageCsvText } from "./usage.js";
+import { activateSubscription } from "./subscriptions.js";
+import { provisionTrial, gateTrialUnlock } from "./trial.js";
+import { grant } from "./entries.js";
+import {
+  createLedgerTestDb,
+  seedProject,
+  seedRun,
+  testEntryDeps,
+  type LedgerTestDb,
+} from "./testing/index.js";
+
+// §14.5 usage read models — L0 status strip, L1 account, L2 project, CSV export. Server-computed fields
+// only; PGlite-backed.
+
+let db: LedgerTestDb;
+const WS = "ws_seed";
+const BA = "ba_seed";
+const USR = "usr_seed";
+const PRJ = "prj_seed";
+const NOW = new Date("2026-09-03T12:00:00Z");
+const inTx = <T>(fn: (tx: SqlClient) => Promise<T>) => db.txRunner.run(WS, fn);
+const deps = () => testEntryDeps(NOW);
+
+beforeEach(async () => {
+  db = await createLedgerTestDb();
+  // plan:null — the read-model assertions name the exact plan (Free / an explicitly-activated
+  // subscription), so no seeded paid row.
+  await seedProject(db, { workspaceId: WS, billingAccountId: BA, userId: USR, projectId: PRJ, plan: null });
+});
+afterEach(() => db.close());
+
+describe("usageLevel0 — the status strip", () => {
+  it("reports spendable/held, the plan display, and trial days left", async () => {
+    await inTx((tx) =>
+      grant(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        bucket: "topup",
+        credits: 500,
+        idempotencyKey: "g:1",
+      }),
+    );
+    const l0 = await usageLevel0(db.client, BA, NOW);
+    expect(l0.spendableCredits).toBe(500);
+    expect(l0.plan).toBe("Free");
+    expect(l0.trialDaysLeft).toBeNull();
+  });
+
+  it("shows the trial countdown while trial_active", async () => {
+    await inTx((tx) => provisionTrial(tx, deps(), { billingAccountId: BA }));
+    await inTx((tx) =>
+      gateTrialUnlock(tx, deps(), {
+        billingAccountId: BA,
+        workspaceId: WS,
+        evidence: { billingAccountId: BA, disposableDomain: false },
+      }),
+    );
+    const l0 = await usageLevel0(db.client, BA, NOW);
+    expect(l0.trialState).toBe("trial_active");
+    expect(l0.trialDaysLeft).toBeGreaterThan(0);
+    expect(l0.spendableCredits).toBe(150); // the trial pocket
+  });
+});
+
+describe("usageLevel1 — account usage", () => {
+  it("reports per-bucket balances, MTD spend, and the period facts", async () => {
+    await inTx((tx) =>
+      activateSubscription(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        tier: "writer",
+        cycle: "monthly",
+        stripeSubscriptionId: "sub_1",
+        periodStart: new Date("2026-09-01T00:00:00Z"),
+        periodEnd: new Date("2026-10-01T00:00:00Z"),
+        idempotencyKey: "act:1",
+      }),
+    );
+    // a debit this month
+    await seedRun(db, { runId: "run_1", workspaceId: WS, projectId: PRJ });
+    await inTx((tx) =>
+      tx.query(
+        `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key)
+         values ('led_d1',$1,$2,'debit',120,'included','run_1','run','d:1')`,
+        [WS, BA],
+      ),
+    );
+    const l1 = await usageLevel1(db.client, BA, WS, NOW);
+    expect(l1.level0.plan).toBe("Writer");
+    expect(l1.monthToDateCredits).toBe(120);
+    expect(l1.includedRemaining).toBe(planOf("writer").includedCreditsMonthly);
+    expect(l1.includedRolloverCap).toBe(planOf("writer").includedCreditsMonthly * 2);
+    expect(l1.periodEnd).toBe("2026-10-01T00:00:00.000Z");
+    expect(l1.buckets.some((b) => b.bucket === "included" && b.available === 2000)).toBe(true);
+  });
+
+  it("renders the past-due renewal warning sentence while inside the grace window", async () => {
+    await inTx((tx) =>
+      activateSubscription(tx, deps(), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        tier: "writer",
+        cycle: "monthly",
+        stripeSubscriptionId: "sub_1",
+        periodStart: new Date("2026-09-01T00:00:00Z"),
+        periodEnd: new Date("2026-10-01T00:00:00Z"),
+        idempotencyKey: "act:1",
+      }),
+    );
+    await inTx((tx) =>
+      tx.query(
+        "update subscriptions set status='past_due', renewal_failed_at=$1 where stripe_subscription_id='sub_1'",
+        [new Date(NOW.getTime() - 5 * 24 * 60 * 60 * 1000)],
+      ),
+    );
+    const l1 = await usageLevel1(db.client, BA, WS, NOW);
+    expect(l1.warnings.some((w) => w.includes("payment didn't go through") && w.includes("9"))).toBe(true);
+  });
+});
+
+describe("usageLevel2 — project rollup", () => {
+  it("lists the project's runs newest-first with spend + cap", async () => {
+    await seedRun(db, { runId: "run_1", workspaceId: WS, projectId: PRJ });
+    await seedRun(db, { runId: "run_2", workspaceId: WS, projectId: PRJ });
+    await db.pg.query("update runs set spent_credits = 40, estimate_credits = 30, cap_credits = 45 where id = 'run_1'");
+    await db.pg.query("update runs set spent_credits = 80, estimate_credits = 60, cap_credits = 90, created_at = now() + interval '1 hour' where id = 'run_2'");
+    const l2 = await usageLevel2(db.client, WS, PRJ);
+    expect(l2.projectName).toBe("Seed project");
+    expect(l2.totalCredits).toBe(120);
+    expect(l2.runs[0]!.runId).toBe("run_2"); // newest first
+    expect(l2.runs.map((r) => r.capCredits)).toEqual([90, 45]);
+  });
+});
+
+describe("usageCsv — the §14.5 export", () => {
+  it("emits one flat row per debit and RFC-4180-quotes the text", async () => {
+    await seedRun(db, { runId: "run_1", workspaceId: WS, projectId: PRJ });
+    await inTx((tx) =>
+      tx.query(
+        `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key)
+         values ('led_d1',$1,$2,'debit',42,'included','run_1','run','d:1'),
+                ('led_d2',$1,$2,'debit',7,'topup','run_1','run','d:2')`,
+        [WS, BA],
+      ),
+    );
+    const rows = await usageCsv(db.client, BA, WS);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.project === "Seed project")).toBe(true);
+    const text = usageCsvText(rows);
+    expect(text.startsWith("date,project,run_id,workflow,state,credits,bucket\n")).toBe(true);
+    expect(text).toContain("run_1");
+    // quoting: a comma-bearing field is quoted
+    expect(usageCsvText([{ ...rows[0]!, project: 'A "quoted", project' }])).toContain('"A ""quoted"", project"');
+  });
+});

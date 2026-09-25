@@ -28,7 +28,7 @@ import type { Context } from "hono";
 import type { SignupMode, IpEmailThrottle } from "@rhema/contracts";
 import type { SqlClient, InviteGate, InviteRejectReason } from "./invite.js";
 import type { IdFactory, Clock } from "@rhema/orchestrator";
-import { recordAnalyticsEvent } from "@rhema/ledger";
+import { recordAnalyticsEvent, provisionTrial } from "@rhema/ledger";
 
 /** Why a signup was refused — stable codes; the web maps these to copy, the route maps them to statuses. */
 export type SignupRejectReason =
@@ -163,6 +163,14 @@ export async function provisionPersonalAccount(
   await db.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
     billingAccountId,
   ]);
+  // P1.16 (§14.3; REQ-GROWTH-10): every new account starts `trial_pending` with a LOCKED trial
+  // entitlement (one Review ≤6,000 words, Standard, Base). The pocket grants only at the unlock gate —
+  // identity-before-spend.
+  await provisionTrial(
+    db,
+    { ids: (prefix?: string) => ids(prefix ?? "id"), clock: { now: () => new Date() } },
+    { billingAccountId },
+  );
   await db.query(
     `insert into workspaces(id, kind, name, billing_account_id) values ($1, 'personal', $2, $3)
        on conflict (id) do nothing`,

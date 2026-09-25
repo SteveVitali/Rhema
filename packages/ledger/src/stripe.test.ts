@@ -8,6 +8,8 @@ import {
   type StripeEventDeps,
 } from "./stripe.js";
 import { SqlHoldLedger } from "./sql-ledger.js";
+import { activateSubscription } from "./subscriptions.js";
+import { provisionTrial, gateTrialUnlock } from "./trial.js";
 import {
   createLedgerTestDb,
   seedProject,
@@ -165,5 +167,219 @@ describe("processStripeEvent — checkout.session.completed → grant(topup) (AC
     const out = await processStripeEvent(db.client, deps(), "evt_ping");
     expect(out.kind).toBe("ignored");
     expect((await stripeEventRow("evt_ping"))!.processed_at).not.toBeNull();
+  });
+});
+
+// ---- P1.16 — the §14.6 full-billing arms ------------------------------------------------------------
+// checkout.session.completed's three kinds dispatch through our checkout_sessions row (subscribe →
+// activateSubscription + trial conversion; topup → the PACK's credits, never amount_total;
+// auto_reload_setup → the card on file). invoice.paid/payment_failed drive renewals + the Smart-Retries
+// grace; customer.subscription.* sync + end. All idempotent — a replayed event is a no-op.
+
+const P0 = new Date("2026-09-01T00:00:00Z");
+const P1 = new Date("2026-10-01T00:00:00Z");
+const unix = (d: Date) => Math.floor(d.getTime() / 1000);
+
+async function checkoutSessionRow(args: {
+  id: string;
+  kind: "subscribe" | "topup" | "auto_reload_setup";
+  plan?: string;
+  cycle?: string;
+  packId?: string;
+  stripeSessionId: string;
+}) {
+  await db.client.query(
+    `insert into checkout_sessions (id, workspace_id, billing_account_id, kind, plan, cycle, pack_id, state, created_at, stripe_session_id)
+     values ($1,$2,$3,$4,$5,$6,$7,'open',$8,$9)`,
+    [args.id, WS, BA, args.kind, args.plan ?? null, args.cycle ?? null, args.packId ?? null, NOW, args.stripeSessionId],
+  );
+}
+
+async function emit(id: string, type: string, object: Record<string, unknown>) {
+  await insertStripeEvent(db.client, { id, type, payload: { id, type, data: { object } }, receivedAt: NOW });
+  return processStripeEvent(db.client, deps(), id);
+}
+
+async function subRowByStripeId(stripeId: string) {
+  return (
+    await db.client.query("select * from subscriptions where stripe_subscription_id = $1", [stripeId])
+  ).rows[0] as Record<string, unknown> | undefined;
+}
+
+describe("processStripeEvent — the Checkout arms (P1.16; §14.6; REQ-BILL-14)", () => {
+  it("a topup-kind session grants the PACK's credits — never amount_total (bonus credits)", async () => {
+    await checkoutSessionRow({ id: "chk_topup", kind: "topup", packId: "topup_50", stripeSessionId: "cs_topup_1" });
+    const out = await emit("evt_topup_pack", "checkout.session.completed", {
+      id: "cs_topup_1",
+      amount_total: 5000, // $50 — the pack grants 5,250 (the bonus), not 5,000
+      payment_intent: "pi_pack_1",
+      metadata: { checkout_session_id: "chk_topup" },
+    });
+    expect(out).toMatchObject({ kind: "topup_granted", credits: 5250, billingAccountId: BA, applied: true });
+    expect((await readBalances(db, BA)).topup).toEqual({ available: 5250, held: 0 });
+    const [grant] = await topupGrants();
+    expect(grant).toMatchObject({ reason: "topup:topup_50", credits: 5250, stripe_ref: "pi_pack_1" });
+    // the session row closed — a webhook replay finds state≠open and is ignored (no double grant)
+    expect(
+      (await db.client.query("select state from checkout_sessions where id = 'chk_topup'")).rows[0],
+    ).toMatchObject({ state: "completed" });
+    const replay = await emit("evt_topup_pack_2", "checkout.session.completed", {
+      id: "cs_topup_1",
+      metadata: { checkout_session_id: "chk_topup" },
+    });
+    expect(replay.kind).toBe("ignored");
+    expect((await readBalances(db, BA)).topup.available).toBe(5250);
+  });
+
+  it("a subscribe-kind session activates the subscription + converts the trial to the 800-credit promo", async () => {
+    // a trial_active account (unlocked entitlement + the granted 150-credit pocket) upgrading inside
+    // the window — §14.3: the unused entitlement + unspent pocket convert to the promo grant.
+    const trialDeps = testEntryDeps(NOW);
+    await db.txRunner.run(WS, async (tx) => {
+      await provisionTrial(tx, trialDeps, { billingAccountId: BA });
+      const unlock = await gateTrialUnlock(tx, trialDeps, {
+        billingAccountId: BA,
+        workspaceId: WS,
+        userId: USER,
+        evidence: { billingAccountId: BA, userId: USER, disposableDomain: false },
+      });
+      expect(unlock.decision).toBe("allow");
+    });
+    expect((await readBalances(db, BA)).trial_pocket).toEqual({ available: 150, held: 0 });
+    await checkoutSessionRow({ id: "chk_sub", kind: "subscribe", plan: "writer", cycle: "monthly", stripeSessionId: "cs_sub_1" });
+    const out = await emit("evt_sub_1", "checkout.session.completed", {
+      id: "cs_sub_1",
+      subscription: "sub_live_1",
+      customer: "cus_live_1",
+      metadata: { checkout_session_id: "chk_sub" },
+    });
+    expect(out).toMatchObject({ kind: "subscription_activated", billingAccountId: BA, converted: true });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(s).toMatchObject({ tier: "writer", status: "active", stripe_customer_id: "cus_live_1" });
+    const bals = await readBalances(db, BA);
+    expect(bals.included!.available).toBe(2000); // Writer's monthly included grant
+    expect(bals.promo!.available).toBe(800); // the §14.3 upgrade promo
+    expect(bals.trial_pocket!.available).toBe(0); // the unspent pocket was voided on conversion
+    const acct = (
+      await db.client.query("select trial_state from billing_accounts where id = $1", [BA])
+    ).rows[0] as { trial_state: string };
+    expect(acct.trial_state).toBe("free");
+  });
+
+  it("an auto_reload_setup session puts the card on file — no credits move", async () => {
+    await checkoutSessionRow({ id: "chk_ar", kind: "auto_reload_setup", stripeSessionId: "cs_ar_1" });
+    const out = await emit("evt_ar_1", "checkout.session.completed", {
+      id: "cs_ar_1",
+      customer: "cus_ar_1",
+      metadata: { checkout_session_id: "chk_ar" },
+    });
+    expect(out).toMatchObject({ kind: "auto_reload_setup", billingAccountId: BA });
+    expect(
+      (await db.client.query("select stripe_customer_id from billing_accounts where id = $1", [BA])).rows[0],
+    ).toMatchObject({ stripe_customer_id: "cus_ar_1" });
+    expect(await topupGrants()).toHaveLength(0);
+  });
+});
+
+describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", () => {
+  async function activate(stripeId = "sub_live_1") {
+    await db.txRunner.run(WS, (tx) =>
+      activateSubscription(tx, testEntryDeps(NOW), {
+        workspaceId: WS,
+        billingAccountId: BA,
+        tier: "writer",
+        cycle: "monthly",
+        stripeSubscriptionId: stripeId,
+        stripeCustomerId: "cus_live",
+        periodStart: P0,
+        periodEnd: P1,
+        idempotencyKey: `evt:act:${stripeId}`,
+      }),
+    );
+  }
+
+  it("invoice.paid rolls the period and grants the new period's included credits (REQ-BILL-14)", async () => {
+    await activate();
+    const out = await emit("evt_inv_paid", "invoice.paid", {
+      id: "in_1",
+      subscription: "sub_live_1",
+      customer: "cus_live",
+      period_start: unix(P1),
+      period_end: unix(new Date("2026-11-01T00:00:00Z")),
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "renewal_paid", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(new Date(s!.period_start as string).toISOString()).toBe(P1.toISOString());
+    // 2000 activation + 2000 renewal = exactly the 2× rollover cap
+    expect((await readBalances(db, BA)).included!.available).toBe(4000);
+  });
+
+  it("invoice.payment_failed marks past_due + notifies — the plan stays up in the grace window", async () => {
+    await activate();
+    const sent: { reason: string }[] = [];
+    const d = { ...deps(), notify: async (p: { reason: string }) => { sent.push(p); } };
+    await insertStripeEvent(db.client, {
+      id: "evt_inv_fail",
+      type: "invoice.payment_failed",
+      payload: { id: "evt_inv_fail", type: "invoice.payment_failed", data: { object: { id: "in_2", subscription: "sub_live_1", customer: "cus_live", metadata: { billing_account_id: BA } } } },
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, d, "evt_inv_fail");
+    expect(out).toMatchObject({ kind: "renewal_failed", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_live_1");
+    expect(s!.status).toBe("past_due");
+    expect(s!.renewal_failed_at).not.toBeNull();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.reason).toContain("payment didn't go through");
+  });
+
+  it("customer.subscription.updated syncs the row (cancel_at_period_end from the Portal)", async () => {
+    await activate();
+    const out = await emit("evt_sub_upd", "customer.subscription.updated", {
+      id: "sub_live_1",
+      status: "active",
+      cancel_at_period_end: true,
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    expect((await subRowByStripeId("sub_live_1"))!.cancel_at_period_end).toBe(true);
+  });
+
+  it("customer.subscription.created for an unknown subscription activates it whole (the Checkout race arm)", async () => {
+    const out = await emit("evt_sub_new", "customer.subscription.created", {
+      id: "sub_race_1",
+      status: "active",
+      customer: "cus_race",
+      current_period_start: unix(P0),
+      current_period_end: unix(P1),
+      metadata: { billing_account_id: BA, plan: "studio", cycle: "monthly" },
+      items: { data: [{ plan: { interval: "month" } }] },
+    });
+    expect(out).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    const s = await subRowByStripeId("sub_race_1");
+    expect(s).toMatchObject({ tier: "studio", status: "active", stripe_customer_id: "cus_race" });
+    expect((await readBalances(db, BA)).included!.available).toBe(12000); // Studio's included grant
+  });
+
+  it("customer.subscription.deleted ends the plan", async () => {
+    await activate("sub_live_9");
+    const out = await emit("evt_sub_del", "customer.subscription.deleted", {
+      id: "sub_live_9",
+      customer: "cus_live",
+      metadata: { billing_account_id: BA },
+    });
+    expect(out).toMatchObject({ kind: "subscription_ended", billingAccountId: BA });
+    expect((await subRowByStripeId("sub_live_9"))!.status).toBe("ended");
+  });
+
+  it("an invoice for an unknown account stays unresolved (the retry stays live)", async () => {
+    const out = await emit("evt_inv_orphan", "invoice.payment_failed", {
+      id: "in_orphan",
+      subscription: "sub_nowhere",
+      customer: "cus_nobody",
+    });
+    expect(out.kind).toBe("unresolved");
+    expect((await stripeEventRow("evt_inv_orphan"))!.processed_at).toBeNull();
   });
 });

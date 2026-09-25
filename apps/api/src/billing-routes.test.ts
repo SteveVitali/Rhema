@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
-import { processStripeEvent, signStripePayload, SqlHoldLedger, STRIPE_EVENT_JOB } from "@rhema/ledger";
+import { processStripeEvent, signStripePayload, SqlHoldLedger, STRIPE_EVENT_JOB, StubStripePort, type CheckoutSessionRequest } from "@rhema/ledger";
+import { PRICING, priceCents } from "@rhema/contracts";
 import { createBillingRoutes } from "./billing-routes.js";
 import { createApp, type Principal } from "./index.js";
 
@@ -168,6 +169,263 @@ describe("POST /billing/exhausted-prompt (REQ-BETA-12)", () => {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action_taken: "shown" }),
     });
     expect(res2.status).toBe(401);
+  });
+});
+
+// P1.16 (§14.2/14.5/14.6) — the post-beta billing surface: the plan ladder read, the three Checkout
+// kinds (subscribe / top-up / auto-reload setup) with the §14.2 fraud bounds enforced in-route (paid
+// plan required, first-month $100 cap, >$200/day → 3DS), the Portal hand-off, the subscription read,
+// cancel/change-plan, the ≤30 s checkout-return poll, opt-in auto-reload validation, the Team
+// waitlist, and the usage/CSV reads. `StubStripePort` captures the port calls — no network.
+describe("GET /billing/plans — the pricing.json publication", () => {
+  it("serves the ladder + trial + packs verbatim", async () => {
+    const res = await app().request("/billing/plans");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      version: string;
+      plans: Record<string, { waitlist?: boolean }>;
+      trial: { windowDays: number; entitlement: { wordCap: number } };
+      topUpPacks: { id: string }[];
+    };
+    expect(body.version).toBe(PRICING.version);
+    expect(Object.keys(body.plans)).toEqual(["free", "writer", "studio", "studio_max", "team"]);
+    expect(body.plans["team"]?.waitlist).toBe(true);
+    expect(body.trial.entitlement.wordCap).toBe(6000);
+    expect(body.topUpPacks).toHaveLength(3);
+  });
+});
+
+describe("POST /billing/checkout — subscribe", () => {
+  const post = (a: ReturnType<typeof app>, body: unknown) =>
+    a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+
+  it("mints a Checkout session, persists the row first, and returns the hosted URL", async () => {
+    const stripe = new StubStripePort();
+    const res = await post(app({ stripe, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "writer", cycle: "annual", returnTo: "/settings/billing",
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { sessionId: string; url: string };
+    expect(body.url).toContain("checkout.stripe.test");
+    // the local row exists BEFORE Stripe is ever called back (the webhook resolves on it).
+    const row = (
+      await db.client.query(
+        "select kind, plan, cycle, state, return_to from checkout_sessions where id = $1",
+        [body.sessionId],
+      )
+    ).rows[0] as Record<string, unknown> | undefined;
+    expect(row).toMatchObject({
+      kind: "subscribe", plan: "writer", cycle: "annual",
+      state: "open", return_to: "/settings/billing",
+    });
+    const req = stripe.calls[0]!.args as CheckoutSessionRequest;
+    expect(req.kind).toBe("subscribe");
+    expect(req.plan?.tier).toBe("writer");
+    expect(req.plan?.unitAmountCents).toBe(priceCents("writer", "annual")); // −15% annual
+  });
+
+  it("Team is waitlisted (422); a missing/invalid plan is 400; no port is 503", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" });
+    expect((await post(a, { kind: "subscribe", plan: "team" })).status).toBe(422);
+    expect((await post(a, { kind: "subscribe", plan: "free" })).status).toBe(400);
+    expect((await post(a, { kind: "subscribe" })).status).toBe(400);
+    expect((await post(app({ appBaseUrl: "https://app.test" }), { kind: "subscribe", plan: "writer" })).status).toBe(503);
+    expect(stripe.calls).toHaveLength(0);
+  });
+});
+
+describe("POST /billing/checkout — top-up bounds (§14.2)", () => {
+  const post = (a: ReturnType<typeof app>, body: unknown) =>
+    a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+
+  it("Free can't top up (402 topups_require_plan); a paid account gets the pack's session + the attempt counters", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" });
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]); // → Free
+    const res = await post(a, { kind: "topup", packId: "topup_10" });
+    expect(res.status).toBe(402);
+    expect(await res.json()).toEqual({ error: "topups_require_plan" });
+    expect(stripe.calls).toHaveLength(0); // refused before the port
+
+    // restore the paid plan and buy — the row + counters land at session creation.
+    await db.pg.query(
+      `insert into subscriptions(id, billing_account_id, tier, period_start, period_end, status)
+         values ('sub_top', $1, 'writer', now() - interval '1 day', now() + interval '1 month', 'active')`,
+      [BA],
+    );
+    const ok = await post(a, { kind: "topup", packId: "topup_50" });
+    expect(ok.status).toBe(200);
+    const acct = (
+      await db.client.query(
+        "select first_month_topup_cents::int f, daily_topup_cents::int d from billing_accounts where id = $1",
+        [BA],
+      )
+    ).rows[0] as { f: number; d: number };
+    expect(acct).toEqual({ f: 5000, d: 5000 }); // $50 counted at attempt time (conservative)
+  });
+
+  it("the first-month $100 cap 402s; past it, >$200/day flags 3DS on the session", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" });
+    // the seeded account is fresh — two $50 attempts hit the first-month cap on the third.
+    await post(a, { kind: "topup", packId: "topup_50" });
+    await post(a, { kind: "topup", packId: "topup_50" });
+    const capped = await post(a, { kind: "topup", packId: "topup_10" });
+    expect(capped.status).toBe(402);
+    expect(await capped.json()).toEqual({ error: "first_month_cap" });
+
+    // an older account has no first-month cap — but crossing >$200/day marks the session 3DS.
+    await db.pg.query(
+      "update billing_accounts set created_at = now() - interval '60 days' where id = $1",
+      [BA],
+    );
+    const res = await post(a, { kind: "topup", packId: "topup_200" });
+    expect(res.status).toBe(200);
+    const req = stripe.calls.at(-1)!.args as CheckoutSessionRequest;
+    expect(req.require3ds).toBe(true); // $100 already attempted today + $200 > $200/day
+  });
+});
+
+describe("POST /billing/portal + the subscription read", () => {
+  it("404s without a Stripe customer; hands back the Portal URL with one", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" });
+    expect((await a.request("/billing/portal", { method: "POST" })).status).toBe(404);
+    await db.pg.query("update billing_accounts set stripe_customer_id = 'cus_1' where id = $1", [BA]);
+    const res = await a.request("/billing/portal", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ returnTo: "/settings/billing" }),
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { url: string }).url).toContain("billing.stripe.test");
+    expect((stripe.calls.at(-1)!.args as { customerId: string }).customerId).toBe("cus_1");
+  });
+
+  it("GET /billing/subscription returns the plan card + trial + auto-reload shape", async () => {
+    const res = await app().request("/billing/subscription");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      tier: string;
+      subscription: { tier: string; status: string; cancelAtPeriodEnd: boolean };
+      trial: { state: string | null };
+      autoReload: { enabled: boolean };
+      hasStripeCustomer: boolean;
+    };
+    expect(body.tier).toBe("studio_max"); // the seeded paid plan
+    expect(body.subscription.status).toBe("active");
+    expect(body.trial.state).toBeNull();
+    expect(body.autoReload.enabled).toBe(false);
+  });
+});
+
+describe("POST /billing/subscription/cancel + change-plan (§14.6)", () => {
+  it("cancel sets cancel_at_period_end — access runs to the paid-through date", async () => {
+    const res = await app().request("/billing/subscription/cancel", { method: "POST" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ applied: true });
+    const sub = (
+      await db.client.query(
+        "select cancel_at_period_end, status from subscriptions where billing_account_id = $1",
+        [BA],
+      )
+    ).rows[0] as { cancel_at_period_end: boolean; status: string };
+    expect(sub).toEqual({ cancel_at_period_end: true, status: "active" }); // still active to period end
+  });
+
+  it("change-plan downgrades schedule to period end; no subscription is 404; Team is 422", async () => {
+    const post = (body: unknown) =>
+      app().request("/billing/subscription/change-plan", {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+      });
+    const res = await post({ tier: "writer" }); // studio_max → writer is a downgrade
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ applied: "scheduled" });
+    const sub = (
+      await db.client.query(
+        "select tier, scheduled_tier from subscriptions where billing_account_id = $1",
+        [BA],
+      )
+    ).rows[0] as { tier: string; scheduled_tier: string };
+    expect(sub).toEqual({ tier: "studio_max", scheduled_tier: "writer" });
+    expect((await post({ tier: "team" })).status).toBe(422);
+
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]);
+    expect((await post({ tier: "writer" })).status).toBe(404);
+  });
+});
+
+describe("GET /billing/checkout-sessions/:id — the return-poll read (REQ-BILL-14)", () => {
+  it("returns the session row the return page polls; unknown id 404s", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" });
+    const created = await a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "subscribe", plan: "studio" }),
+    });
+    const { sessionId } = (await created.json()) as { sessionId: string };
+    const res = await a.request(`/billing/checkout-sessions/${sessionId}`);
+    expect(res.status).toBe(200);
+    const session = (await res.json()) as { state: string; kind: string; returnTo: string | null };
+    expect(session).toMatchObject({ state: "open", kind: "subscribe" });
+    expect((await a.request("/billing/checkout-sessions/cs_nope")).status).toBe(404);
+  });
+});
+
+describe("PUT /billing/auto-reload — opt-in, user-capped (REQ-BILL-17)", () => {
+  const put = (body: unknown) =>
+    app().request("/billing/auto-reload", {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+
+  it("a valid opt-in persists; a missing threshold/pack/cap is 422 — never silently enabled", async () => {
+    expect((await put({ enabled: true })).status).toBe(422); // nothing typed
+    const res = await put({ enabled: true, thresholdCredits: 100, packId: "topup_10", monthlyCapUsd: 50 });
+    expect(res.status).toBe(200);
+    const acct = (
+      await db.client.query(
+        `select auto_reload_enabled, auto_reload_threshold_credits::int t, auto_reload_pack_id,
+                auto_reload_month_cap_cents::int m from billing_accounts where id = $1`,
+        [BA],
+      )
+    ).rows[0] as Record<string, unknown>;
+    expect(acct).toMatchObject({
+      auto_reload_enabled: true, t: 100, auto_reload_pack_id: "topup_10", m: 5000,
+    });
+    expect((await put({ enabled: false })).status).toBe(200); // disabling needs nothing else
+  });
+});
+
+describe("POST /billing/team-waitlist + the usage reads", () => {
+  it("the waitlist row IS the product (201); a bad email 400s", async () => {
+    const res = await app().request("/billing/team-waitlist", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "team@x.test", seats: 6, note: "nyc" }),
+    });
+    expect(res.status).toBe(201);
+    const row = (
+      await db.client.query("select email, seats from team_waitlist where email = 'team@x.test'")
+    ).rows[0] as { email: string; seats: number };
+    expect(row.seats).toBe(6);
+    const bad = await app().request("/billing/team-waitlist", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "nope" }),
+    });
+    expect(bad.status).toBe(400);
+  });
+
+  it("GET /billing/usage/account + /billing/usage.csv serve the §14.5 reads", async () => {
+    const res = await app().request("/billing/usage/account");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { level0: { plan: string } };
+    expect(body.level0.plan).toBe("Studio Max");
+
+    const csv = await app().request("/billing/usage.csv");
+    expect(csv.status).toBe(200);
+    expect(csv.headers.get("content-type")).toContain("text/csv");
+    expect(await csv.text()).toContain("date,project,run_id");
   });
 });
 

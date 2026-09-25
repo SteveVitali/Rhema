@@ -5,9 +5,11 @@ import { routes, matchAppRoute } from "./routes.js";
 // and capped; the launch moment (landing, pricing) is reserved for the full IDE.
 
 describe("route manifest (§4.2 / REQ-BETA-19)", () => {
-  it("has no pricing / plans / signup / billing route", () => {
+  it("has no pricing / plans / signup route — P1.16's billing surfaces are authed, never public", () => {
     for (const r of routes) {
-      expect(r.path).not.toMatch(/pricing|plans|signup|billing/i);
+      expect(r.path).not.toMatch(/pricing|plans|signup/i);
+      // P1.16 — /settings/billing + /billing/return exist post-beta but stay auth-gated (§14.6).
+      if (/billing/i.test(r.path)) expect(r.public).toBe(false);
     }
   });
 

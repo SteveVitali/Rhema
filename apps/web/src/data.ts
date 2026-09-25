@@ -57,6 +57,16 @@ import type {
   AnalyticsEventRequestDto,
   PrivacySettingsDto,
   UsageDto,
+  BillingPlansDto,
+  CheckoutRequestDto,
+  CheckoutSessionDto,
+  CheckoutStatusDto,
+  BillingSubscriptionDto,
+  AutoReloadRequestDto,
+  UsageAccountDto,
+  UsageProjectDto,
+  UsageRunAdvancedDto,
+  RatesPublicationDto,
   ThemeSettingsDto,
   PaperThemeDto,
   PrincipalDto,
@@ -605,6 +615,42 @@ export interface DataSource {
   setAnalyticsOptOut(session: SessionHeaders, analyticsOptOut: boolean): Promise<PrivacySettingsDto>;
   /** the level-1 usage glance: balance + recent runs' spend (§14.5). */
   getUsage(session: SessionHeaders): Promise<UsageDto>;
+  // ---- P1.16 — billing, full (§14.2/14.3/14.5/14.6) ----
+  /** the published plan ladder + trial + top-up packs (the billing page's plan cards). */
+  getPlans(session: SessionHeaders): Promise<BillingPlansDto>;
+  /** mint a Checkout session (subscribe / top-up / auto-reload setup); the POST redirects to `url`. */
+  startCheckout(session: SessionHeaders, req: CheckoutRequestDto): Promise<CheckoutSessionDto>;
+  /** mint a Stripe Billing-Portal session (plan/card/invoice management lives Stripe-side). */
+  createBillingPortalSession(session: SessionHeaders, returnTo?: string): Promise<{ url: string }>;
+  /** the /settings/billing read: plan, subscription, trial state, auto-reload, Stripe link. */
+  getSubscription(session: SessionHeaders): Promise<BillingSubscriptionDto>;
+  /** cancel = cancel_at_period_end (§14.6 — access runs to the paid-through date). */
+  cancelSubscription(session: SessionHeaders): Promise<{ applied: boolean }>;
+  /** change plan — an upgrade applies now; a downgrade schedules to period end. */
+  changePlan(
+    session: SessionHeaders,
+    tier: string,
+    cycle?: "monthly" | "annual",
+  ): Promise<{ applied: "now" | "scheduled" } | { error: string }>;
+  /** the /billing/return poll (webhook lag ≤30 s, then the email fallback). */
+  getCheckoutSession(session: SessionHeaders, sessionId: string): Promise<CheckoutStatusDto>;
+  /** auto-reload — the opt-in, user-capped, only unattended charge path (REQ-BILL-17). */
+  setAutoReload(session: SessionHeaders, req: AutoReloadRequestDto): Promise<{ ok: true }>;
+  /** the Team tier's waitlist row (§14.2 — listed with its price; mechanics are 1.x). */
+  joinTeamWaitlist(
+    session: SessionHeaders,
+    req: { email: string; seats?: number; note?: string },
+  ): Promise<{ ok: true }>;
+  /** §14.5 level 1 — the account usage dashboard read (buckets, MTD, warnings, expiry). */
+  getUsageAccount(session: SessionHeaders): Promise<UsageAccountDto>;
+  /** §14.5 level 2 — one project's spend rollup (`/p/:project/usage`). */
+  getUsageProject(session: SessionHeaders, projectId: string): Promise<UsageProjectDto>;
+  /** §14.5 level 4 — the phase×seat×model drill-down (the run report's Advanced disclosure). */
+  getUsageRunAdvanced(session: SessionHeaders, runId: string): Promise<UsageRunAdvancedDto>;
+  /** §14.5 level-1 CSV export (REQ-BILL-11 — the RFC-4180 download, proxied with the session). */
+  downloadUsageCsv(session: SessionHeaders): Promise<ExportDownloadDto>;
+  /** the public rate-table publication (REQ-BILL-19) — the run report's rate-table link target. */
+  getRatesPublication(): Promise<RatesPublicationDto>;
   // ---- P1.01 — theme policy (REQ-IDE-38 amended) ----
   /** the resolved session principal (GET /session) — the IDE pane key's userId + SSR's theme stamping. */
   getSessionPrincipal(session: SessionHeaders): Promise<PrincipalDto>;
@@ -1100,6 +1146,35 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setAnalyticsOptOut(analyticsOptOut),
     getUsage: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsage(),
+    // ---- P1.16 — billing, full ----
+    getPlans: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPlans(),
+    startCheckout: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).startCheckout(req),
+    createBillingPortalSession: (session, returnTo) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createBillingPortalSession(returnTo),
+    getSubscription: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getSubscription(),
+    cancelSubscription: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelSubscription(),
+    changePlan: (session, tier, cycle) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).changePlan(tier, cycle),
+    getCheckoutSession: (session, sessionId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getCheckoutSession(sessionId),
+    setAutoReload: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setAutoReload(req),
+    joinTeamWaitlist: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).joinTeamWaitlist(req),
+    getUsageAccount: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsageAccount(),
+    getUsageProject: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsageProject(projectId),
+    getUsageRunAdvanced: (session, runId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsageRunAdvanced(runId),
+    downloadUsageCsv: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).downloadUsageCsv(),
+    getRatesPublication: () =>
+      createApiClient({ baseUrl, fetch: fetchImpl }).getRates(),
     // ---- P1.01 — theme policy ----
     getSessionPrincipal: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getSession(),

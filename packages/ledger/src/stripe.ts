@@ -1,13 +1,16 @@
-// Stripe boundary for the beta's ONE real-money channel: Payment Links (PRB.08; §14.6; REQ-BETA-15). There
-// is no Checkout/Portal/subscription machinery at beta — the exhaustion panel links out to a fixed Payment
-// Link and Stripe calls back here.
+// Stripe boundary — §14.6 (PRB.08 + P1.16). Two real-money channels: the beta's Payment Link
+// fallback (a `checkout.session.completed` with no `checkout_sessions` row ⇒ grant `amount_total`
+// at the 1¢ peg, unchanged) and the full P1.16 Checkout/Portal/subscription machinery — the same
+// event dispatches on our persisted `checkout_sessions` row's kind (subscribe / topup pack /
+// auto_reload_setup), `invoice.paid` ⇒ renewal + the included grant, `invoice.payment_failed` ⇒
+// past_due + notify, `customer.subscription.created|updated` ⇒ sync (an unknown `created`
+// activates whole — the Checkout race arm), `.deleted` ⇒ end.
 //
 // §14.6 webhook discipline, exactly: verify the `Stripe-Signature` HMAC → insert `stripe_events` keyed on the
 // UNIQUE event id → enqueue `stripe.event` → return 200. A replayed event id is a no-op. The queued worker
-// then `processStripeEvent`s the stored row: `checkout.session.completed` ⇒ `grant(topup)` (+12 months,
-// `stripe_ref` on the payment intent so a later dispute finds its account) + `topup.purchased` /
-// `wtp.recorded{source:"purchase"}` telemetry; `charge.dispute.created` ⇒ the REQ-SPEC-24.7 chargeback path;
-// `charge.dispute.closed` won ⇒ reversal + reinstate + the withheld-delivery re-drive.
+// then `processStripeEvent`s the stored row: the session/invoice/subscription arms above;
+// `charge.dispute.created` ⇒ the REQ-SPEC-24.7 chargeback path; `charge.dispute.closed` won ⇒
+// reversal + reinstate + the withheld-delivery re-drive.
 //
 // The signature check is implemented directly (HMAC-SHA256 over `${t}.${rawBody}`) — no `stripe` SDK dep —
 // so tests run against constructed fixtures and no network leg ever fires. The signing secret arrives
@@ -15,9 +18,22 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
+import { topUpPack, PLAN_TIERS, type PlanTier, type BillingCycle } from "@rhema/contracts";
 import { applyLedgerEntry } from "./entries.js";
 import { applyChargeback, applyDisputeWon, type ChargebackDeps } from "./chargeback.js";
 import { recordAnalyticsEvent } from "./analytics.js";
+import {
+  resolveCheckoutSession,
+  completeCheckoutSession,
+} from "./checkout.js";
+import {
+  activateSubscription,
+  applyRenewalPaid,
+  applyRenewalFailed,
+  syncSubscription,
+  endSubscription,
+} from "./subscriptions.js";
+import { convertTrialOnUpgrade } from "./trial.js";
 
 /** The pg-boss queue the webhook enqueues after inserting `stripe_events` (§14.6 step 3). */
 export const STRIPE_EVENT_JOB = "stripe.event" as const;
@@ -101,10 +117,24 @@ export async function insertStripeEvent(
 
 export interface StripeEventDeps extends ChargebackDeps {
   readonly queue: Queue;
+  /** billing emails through the notify queue (P1.16 — the renewal-failure banner etc.). */
+  readonly notify?: (payload: {
+    type: "trial_payment";
+    workspaceId: string;
+    userId?: string;
+    billingAccountId?: string;
+    reason: string;
+  }) => Promise<void>;
 }
 
 export type StripeEventOutcome =
   | { readonly kind: "topup_granted"; readonly ledgerId: string; readonly credits: number; readonly billingAccountId: string; readonly applied: boolean }
+  | { readonly kind: "subscription_activated"; readonly billingAccountId: string; readonly subscriptionId: string; readonly converted: boolean }
+  | { readonly kind: "auto_reload_setup"; readonly billingAccountId: string }
+  | { readonly kind: "renewal_paid"; readonly billingAccountId: string }
+  | { readonly kind: "renewal_failed"; readonly billingAccountId: string }
+  | { readonly kind: "subscription_synced"; readonly billingAccountId: string | null }
+  | { readonly kind: "subscription_ended"; readonly billingAccountId: string | null }
   | { readonly kind: "chargeback"; readonly billingAccountId: string; readonly cancelled: readonly string[]; readonly withheld: readonly string[]; readonly clawed: number; readonly debt: number }
   | { readonly kind: "dispute_won"; readonly billingAccountId: string; readonly restored: number; readonly redeliver: readonly string[] }
   | { readonly kind: "ignored" }
@@ -116,7 +146,37 @@ interface CheckoutSession {
   amount_total?: number;
   payment_intent?: string;
   client_reference_id?: string;
-  metadata?: { billing_account_id?: string; workspace_id?: string };
+  /** subscription-mode Checkout: the created Stripe subscription id. */
+  subscription?: string;
+  customer?: string;
+  metadata?: {
+    billing_account_id?: string;
+    workspace_id?: string;
+    checkout_session_id?: string;
+    kind?: string;
+    plan?: string;
+    cycle?: string;
+    pack_id?: string;
+  };
+}
+interface SubscriptionObject {
+  id?: string;
+  customer?: string;
+  status?: string;
+  cancel_at_period_end?: boolean;
+  current_period_start?: number; // unix seconds
+  current_period_end?: number;
+  metadata?: { billing_account_id?: string; plan?: string; cycle?: string };
+  items?: { data?: { plan?: { interval?: string } }[] };
+}
+interface InvoiceObject {
+  id?: string;
+  subscription?: string;
+  customer?: string;
+  billing_reason?: string;
+  period_start?: number;
+  period_end?: number;
+  metadata?: { billing_account_id?: string };
 }
 interface DisputeObject {
   id?: string;
@@ -143,12 +203,25 @@ export async function processStripeEvent(
   const payload = (typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload) as {
     data?: { object?: unknown };
   };
-  const object = (payload.data?.object ?? {}) as CheckoutSession & DisputeObject;
+  const object = (payload.data?.object ?? {}) as CheckoutSession & DisputeObject & SubscriptionObject & InvoiceObject;
 
   let outcome: StripeEventOutcome;
   switch (row.type) {
     case "checkout.session.completed":
-      outcome = await processTopUp(exec, deps, object);
+      outcome = await processCheckoutCompleted(exec, deps, object);
+      break;
+    case "invoice.paid":
+      outcome = await processInvoicePaid(exec, deps, object);
+      break;
+    case "invoice.payment_failed":
+      outcome = await processInvoiceFailed(exec, deps, object);
+      break;
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+      outcome = await processSubscriptionSync(exec, deps, object);
+      break;
+    case "customer.subscription.deleted":
+      outcome = await processSubscriptionDeleted(exec, deps, object);
       break;
     case "charge.dispute.created": {
       const billingAccountId = await resolveDisputeAccount(exec, object);
@@ -203,6 +276,285 @@ export async function processStripeEvent(
     await exec.query("update stripe_events set processed_at = $2 where id = $1", [eventId, deps.clock.now()]);
   }
   return outcome;
+}
+
+// ---- P1.16: Checkout arms (§14.2/14.6; REQ-BILL-14/16/17) ----------------------------------------------
+
+function unixToDate(s: number | undefined, fallback: Date): Date {
+  return s ? new Date(s * 1000) : fallback;
+}
+
+function planFrom(v: string | undefined): PlanTier | null {
+  return v && (PLAN_TIERS as readonly string[]).includes(v) ? (v as PlanTier) : null;
+}
+
+/** A workspace for account-scoped writes (the account's first workspace carries account-level effects). */
+async function homeWorkspace(exec: SqlClient, billingAccountId: string): Promise<string | null> {
+  return (
+    (
+      await exec.query("select id from workspaces where billing_account_id = $1 order by created_at, id limit 1", [
+        billingAccountId,
+      ])
+    ).rows[0] as { id: string } | undefined
+  )?.id ?? null;
+}
+
+/** Resolve the account a Stripe object belongs to: metadata → customer id → client_reference_id. */
+async function accountFor(
+  exec: SqlClient,
+  obj: { metadata?: { billing_account_id?: string }; customer?: string; client_reference_id?: string },
+): Promise<string | null> {
+  if (obj.metadata?.billing_account_id) return obj.metadata.billing_account_id;
+  if (obj.client_reference_id) return obj.client_reference_id;
+  if (obj.customer) {
+    const row = (
+      await exec.query("select id from billing_accounts where stripe_customer_id = $1", [obj.customer])
+    ).rows[0] as { id: string } | undefined;
+    if (row) return row.id;
+  }
+  return null;
+}
+
+/**
+ * `checkout.session.completed` (§14.6): resolve our `checkout_sessions` row → the kind-specific arm.
+ * `topup` grants the PACK's credits (never `amount_total` — packs carry bonus credits); `subscribe`
+ * activates the subscription + converts the trial; `auto_reload_setup` enables the saved payment method.
+ * A session with no row is the beta Payment-Link path — grant `amount_total` at the peg, unchanged.
+ */
+async function processCheckoutCompleted(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  session: CheckoutSession,
+): Promise<StripeEventOutcome> {
+  if (!session.id) return { kind: "unresolved", reason: "checkout session has no id" };
+  const ours = await resolveCheckoutSession(exec, session.metadata?.checkout_session_id ?? session.id);
+
+  if (!ours) {
+    // legacy beta Payment Link (no checkout_sessions row) — grant amount_total at the 1¢ peg.
+    return processTopUp(exec, deps, session);
+  }
+  if (ours.state !== "open") {
+    // already completed — the webhook replayed; the grant rows' idempotency keys make the arms safe.
+    return { kind: "ignored" };
+  }
+
+  if (ours.kind === "topup") {
+    const pack = ours.packId ? topUpPack(ours.packId) : undefined;
+    if (!pack) return { kind: "unresolved", reason: `checkout session ${ours.id} has no resolvable pack` };
+    let ledgerId = "";
+    let applied = false;
+    await deps.runTx(ours.workspaceId, async (tx) => {
+      const res = await applyLedgerEntry(tx, deps, {
+        workspaceId: ours.workspaceId,
+        billingAccountId: ours.billingAccountId,
+        kind: "grant",
+        credits: pack.credits,
+        bucket: "topup",
+        source: "stripe",
+        reason: `topup:${pack.id}`,
+        expiresAt: new Date(deps.clock.now().getTime() + TOPUP_EXPIRY_MS),
+        stripeRef: session.payment_intent ?? session.id ?? ours.id,
+        idempotencyKey: `stripe:checkout:${session.id}`,
+      });
+      ledgerId = res.ledgerId;
+      applied = res.applied;
+      await completeCheckoutSession(tx, ours.id, deps.clock.now());
+      if (applied) {
+        const member = (
+          await tx.query(
+            "select user_id from workspace_members where workspace_id = $1 order by case role when 'owner' then 0 else 1 end, user_id limit 1",
+            [ours.workspaceId],
+          )
+        ).rows[0] as { user_id: string } | undefined;
+        if (member) {
+          await recordAnalyticsEvent(tx, deps, {
+            userId: member.user_id,
+            workspaceId: ours.workspaceId,
+            event: "topup.purchased",
+            props: {},
+          });
+          await recordAnalyticsEvent(tx, deps, {
+            userId: member.user_id,
+            workspaceId: ours.workspaceId,
+            event: "wtp.recorded",
+            props: { source: "purchase", amount: pack.usd },
+          });
+        }
+      }
+    });
+    return { kind: "topup_granted", ledgerId, credits: pack.credits, billingAccountId: ours.billingAccountId, applied };
+  }
+
+  if (ours.kind === "subscribe") {
+    const tier = planFrom(ours.plan ?? session.metadata?.plan);
+    const cycle: BillingCycle = ours.cycle === "annual" || session.metadata?.cycle === "annual" ? "annual" : "monthly";
+    if (!tier || tier === "free" || !session.subscription) {
+      return { kind: "unresolved", reason: `subscribe session ${ours.id} lacks plan/subscription` };
+    }
+    const periodStart = deps.clock.now();
+    const periodEnd = new Date(periodStart.getTime());
+    periodEnd.setUTCMonth(periodEnd.getUTCMonth() + (cycle === "annual" ? 12 : 1));
+    let subscriptionId = "";
+    let converted = false;
+    await deps.runTx(ours.workspaceId, async (tx) => {
+      const act = await activateSubscription(tx, deps, {
+        workspaceId: ours.workspaceId,
+        billingAccountId: ours.billingAccountId,
+        tier,
+        cycle,
+        stripeSubscriptionId: session.subscription!,
+        ...(session.customer ? { stripeCustomerId: session.customer } : {}),
+        periodStart,
+        periodEnd,
+        idempotencyKey: `stripe:sub:${session.subscription}`,
+      });
+      subscriptionId = act.subscriptionId;
+      // §14.3: inside the trial window, upgrade converts the unused entitlement + pocket to 800 promo.
+      const conv = await convertTrialOnUpgrade(tx, deps, {
+        billingAccountId: ours.billingAccountId,
+        workspaceId: ours.workspaceId,
+      });
+      converted = conv.converted;
+      await completeCheckoutSession(tx, ours.id, deps.clock.now());
+    });
+    return {
+      kind: "subscription_activated",
+      billingAccountId: ours.billingAccountId,
+      subscriptionId,
+      converted,
+    };
+  }
+
+  // auto_reload_setup — the card is on file; the account's opt-in settings (already user-typed) take effect.
+  await deps.runTx(ours.workspaceId, async (tx) => {
+    if (session.customer) {
+      await tx.query(
+        "update billing_accounts set stripe_customer_id = $2 where id = $1 and stripe_customer_id is null",
+        [ours.billingAccountId, session.customer],
+      );
+    }
+    await completeCheckoutSession(tx, ours.id, deps.clock.now());
+  });
+  return { kind: "auto_reload_setup", billingAccountId: ours.billingAccountId };
+}
+
+/** `invoice.paid` — a subscription renewal: new period bounds + this period's included grant. */
+async function processInvoicePaid(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  invoice: InvoiceObject,
+): Promise<StripeEventOutcome> {
+  if (!invoice.subscription) return { kind: "ignored" };
+  const billingAccountId = await accountFor(exec, invoice);
+  if (!billingAccountId) return { kind: "unresolved", reason: "invoice has no resolvable billing account" };
+  const workspaceId = await homeWorkspace(exec, billingAccountId);
+  if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
+  const start = unixToDate(invoice.period_start, deps.clock.now());
+  const end = unixToDate(invoice.period_end, new Date(start.getTime() + 31 * 24 * 60 * 60 * 1000));
+  let applied = false;
+  await deps.runTx(workspaceId, async (tx) => {
+    applied = (
+      await applyRenewalPaid(tx, deps, {
+        stripeSubscriptionId: invoice.subscription!,
+        workspaceId,
+        periodStart: start,
+        periodEnd: end,
+      })
+    ).applied;
+  });
+  return applied ? { kind: "renewal_paid", billingAccountId } : { kind: "ignored" };
+}
+
+/** `invoice.payment_failed` — §14.6: past_due + the Smart-Retries window; NO new grant; banner via notify. */
+async function processInvoiceFailed(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  invoice: InvoiceObject,
+): Promise<StripeEventOutcome> {
+  if (!invoice.subscription) return { kind: "ignored" };
+  const billingAccountId = await accountFor(exec, invoice);
+  if (!billingAccountId) return { kind: "unresolved", reason: "invoice has no resolvable billing account" };
+  const workspaceId = await homeWorkspace(exec, billingAccountId);
+  if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
+  await deps.runTx(workspaceId, async (tx) => {
+    await applyRenewalFailed(tx, deps, {
+      stripeSubscriptionId: invoice.subscription!,
+      workspaceId,
+    });
+  });
+  return { kind: "renewal_failed", billingAccountId };
+}
+
+/** `customer.subscription.created|updated` — sync the row (Stripe is the subscription's system of record). */
+async function processSubscriptionSync(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  sub: SubscriptionObject,
+): Promise<StripeEventOutcome> {
+  if (!sub.id) return { kind: "unresolved", reason: "subscription object has no id" };
+  const billingAccountId = await accountFor(exec, sub);
+  if (!billingAccountId) return { kind: "unresolved", reason: "subscription has no resolvable account" };
+  const workspaceId = await homeWorkspace(exec, billingAccountId);
+  if (!workspaceId) return { kind: "unresolved", reason: `no workspace for ${billingAccountId}` };
+  const tier = planFrom(sub.metadata?.plan);
+  const interval = sub.items?.data?.[0]?.plan?.interval;
+  const status = sub.status === "active" || sub.status === "past_due" ? sub.status : undefined;
+  let synced = false;
+  await deps.runTx(workspaceId, async (tx) => {
+    // a `created` event for a subscription we don't know (the Checkout arm raced) — activate it whole.
+    const known = (
+      await tx.query("select id from subscriptions where stripe_subscription_id = $1", [sub.id])
+    ).rows[0];
+    if (!known && tier && status === "active") {
+      const periodStart = unixToDate(sub.current_period_start, deps.clock.now());
+      const periodEnd = unixToDate(
+        sub.current_period_end,
+        new Date(periodStart.getTime() + (interval === "year" ? 366 : 31) * 24 * 60 * 60 * 1000),
+      );
+      await activateSubscription(tx, deps, {
+        workspaceId,
+        billingAccountId,
+        tier,
+        cycle: interval === "year" ? "annual" : "monthly",
+        stripeSubscriptionId: sub.id!,
+        ...(sub.customer ? { stripeCustomerId: sub.customer } : {}),
+        periodStart,
+        periodEnd,
+        idempotencyKey: `stripe:sub:${sub.id}`,
+      });
+      await convertTrialOnUpgrade(tx, deps, { billingAccountId, workspaceId });
+      synced = true;
+      return;
+    }
+    synced = (
+      await syncSubscription(tx, deps, {
+        stripeSubscriptionId: sub.id!,
+        ...(tier ? { tier } : {}),
+        ...(interval ? { cycle: interval === "year" ? ("annual" as const) : ("monthly" as const) } : {}),
+        ...(sub.cancel_at_period_end !== undefined ? { cancelAtPeriodEnd: sub.cancel_at_period_end } : {}),
+        ...(sub.current_period_start ? { periodStart: unixToDate(sub.current_period_start, deps.clock.now()) } : {}),
+        ...(sub.current_period_end ? { periodEnd: unixToDate(sub.current_period_end, deps.clock.now()) } : {}),
+      })
+    ).applied;
+  });
+  return synced ? { kind: "subscription_synced", billingAccountId } : { kind: "ignored" };
+}
+
+/** `customer.subscription.deleted` — the plan ends (a cancel ran to term, or Stripe terminated it). */
+async function processSubscriptionDeleted(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  sub: SubscriptionObject,
+): Promise<StripeEventOutcome> {
+  if (!sub.id) return { kind: "unresolved", reason: "subscription object has no id" };
+  const billingAccountId = await accountFor(exec, sub);
+  const workspaceId = billingAccountId ? await homeWorkspace(exec, billingAccountId) : null;
+  if (workspaceId) {
+    await deps.runTx(workspaceId, async (tx) => {
+      await endSubscription(tx, deps, { stripeSubscriptionId: sub.id! });
+    });
+  }
+  return { kind: "subscription_ended", billingAccountId };
 }
 
 /** A Payment Link purchase → `grant(topup)` + purchase telemetry (§14.6; REQ-BETA-12/15). */

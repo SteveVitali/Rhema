@@ -160,6 +160,14 @@ export interface BetaApiDeps {
   /** the beta Payment Link the exhaustion panel links to (returned by GET /billing/balance). */
   paymentLinkUrl?: string;
   /**
+   * P1.16 — the Stripe Billing port (Checkout/Portal/off-session charge). Bound to `FetchStripePort` when
+   * `STRIPE_SECRET_KEY` is configured; unset ⇒ `/billing/checkout` + `/billing/portal` answer 503
+   * `stripe_unconfigured` (never a fake session that pretends a real charge exists).
+   */
+  stripe?: import("@rhema/ledger").StripePort;
+  /** P1.16 — the app origin Checkout success/cancel URLs bounce through (e.g. `https://rhema.tools`). */
+  appBaseUrl?: string;
+  /**
    * PRB.08 — the `finding.disposed` analytics emitter (REQ-BETA-6). Now that the beta has a real analytics
    * sink (`analytics_events`, 0020), the live deploy binds this to `recordAnalyticsEvent`; unset ⇒ no row.
    */
@@ -282,6 +290,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ids: deps.ids,
         ...(deps.stripeWebhookSecret ? { stripeWebhookSecret: deps.stripeWebhookSecret } : {}),
         ...(deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
+        ...(deps.stripe ? { stripe: deps.stripe } : {}),
+        ...(deps.appBaseUrl ? { appBaseUrl: deps.appBaseUrl } : {}),
       }),
     );
     // PRB.06 — What-changed + hunk-comment routes (session-authed; the readable store seam is optional).

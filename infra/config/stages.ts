@@ -58,7 +58,7 @@ export const ALL_SECRET_IDS = [
   //   Cloud SQL on prod); the operator builds DATABASE_URLs from it. Id kept for stack continuity.
   "better-auth-secret", // api — session/signing secret (PRB.12)
   "google-oauth-client-secret", // api — Google sign-in (PRB.12; the client id is deploy config)
-  "stripe-secret", // worker — Payment Link webhooks + checkout (PRB.08)
+  "stripe-secret", // api + worker — Checkout/Portal + auto-reload off-session charges (P1.16; was worker-only PRB.08)
   "stripe-webhook-secret", // api — the whsec_… verifying POST /stripe/webhook (PRB.08)
   "email-action-secret", // api verifies + worker mints the one-click HMAC (PRB.09)
   "resend-api-key", // worker — the mail.send transport (PRB.09)

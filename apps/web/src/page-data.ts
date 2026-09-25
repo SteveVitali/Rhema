@@ -14,6 +14,11 @@ import type {
   ProjectVoiceDto,
   ProtocolCardDto,
   UsageDto,
+  BillingPlansDto,
+  BillingSubscriptionDto,
+  CheckoutStatusDto,
+  UsageAccountDto,
+  UsageProjectDto,
   VoiceDetailDto,
   VoiceEstimateDto,
   VoiceListDto,
@@ -392,6 +397,23 @@ export interface PageData {
   readonly privacy?: { readonly analyticsOptOut: boolean; readonly saved?: boolean };
   /** the level-1 usage glance (balance + recent runs' spend). */
   readonly usage?: UsageDto;
+  // ---- P1.16 — billing, full (§14.2/14.3/14.5/14.6) ----
+  /** the /settings/billing read: the subscription + trial + auto-reload model beside the published
+   *  ladder (the plan cards' prices + "What it covers" lines render `pricing.json` verbatim). */
+  readonly billing?: {
+    readonly subscription: BillingSubscriptionDto;
+    readonly plans: BillingPlansDto;
+    readonly saved?: boolean;
+    readonly notice?: string;
+  };
+  /** the /billing/return poll (REQ-BILL-14/§14.6 webhook lag): `open` ⇒ the document auto-refreshes;
+   *  `completed` ⇒ the continue link carries `returnTo` (re-opening the sheet where they started). */
+  readonly checkoutReturn?: CheckoutStatusDto;
+  /** §14.5 level 1 — the /usage account read (buckets, MTD, period, warnings, next expiry). */
+  readonly usageAccount?: UsageAccountDto;
+  /** §14.5 level 2 — /p/:project/usage (the runs rollup + per-project total). `slug` is the route's
+   *  project slug — the read model carries the title + id, and the back link needs the slug. */
+  readonly usageProject?: UsageProjectDto & { readonly slug: string };
   /** P1.05 — the run report page (`/p/:project/r/:run`; §14.5 Level 3 + the Advanced Level-4 read). */
   readonly runReport?: {
     readonly slug: string;

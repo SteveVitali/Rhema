@@ -17,7 +17,7 @@ import {
   FIGURE_RENDER_QUEUE,
   type SqlClient,
 } from "@rhema/orchestrator";
-import { SqlHoldLedger, STRIPE_EVENT_JOB } from "@rhema/ledger";
+import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
 import { SqlObligationHook } from "@rhema/obligations";
 import { recordInstrumentedFold, type InstrumentedMeasurement } from "@rhema/protocols";
 import { createGcsContentStore } from "@rhema/mirror";
@@ -56,7 +56,13 @@ import {
   handleStripeEvent,
   handleUsageReconcile,
   handleRunDeliver,
-  type WorkerBillingDeps,
+  handleBillingPeriodTick,
+  handleAutoReloadSweep,
+  handleEstimatorRefit,
+  BILLING_PERIOD_TICK_JOB,
+  BILLING_AUTO_RELOAD_JOB,
+  BILLING_REFIT_JOB,
+  type WorkerFullBillingDeps,
   type StripeEventJobPayload,
   type RunDeliverJobPayload,
 } from "./billing-jobs.js";
@@ -254,6 +260,15 @@ export async function startWorker(): Promise<void> {
       ? { actionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
       : undefined;
 
+  // P1.16 — the Stripe Billing key (Secret-Manager NAME; placeholder counts as unconfigured — the
+  // PRB.17 pattern). Bound into `deps.stripe` for the auto-reload sweep's off-session charge — the ONLY
+  // unattended charge path (REQ-BILL-17). Unset ⇒ the sweep logs `no_stripe_port` and skips.
+  const stripeKeySecret = env.stripeSecretKeyName ? await access(env.stripeSecretKeyName) : undefined;
+  const stripeKey = stripeKeySecret && !/placeholder/i.test(stripeKeySecret) ? stripeKeySecret : undefined;
+  if (stripeKeySecret && !stripeKey) {
+    console.log("[worker] STRIPE key is a placeholder — auto-reload sweep stays no_stripe_port");
+  }
+
   // P1.05 — the walkthrough's package-class call. Unconfigured (no key secret) ⇒ a stub that fails the
   // attempt cleanly (recorded `failed`; the card's Retry covers it once the secret lands).
   const walkthroughKeySecret = env.walkthroughModelKeySecret ? await access(env.walkthroughModelKeySecret) : undefined;
@@ -262,7 +277,7 @@ export async function startWorker(): Promise<void> {
     ? new AnthropicWalkthroughGenerator({ apiKey: walkthroughKey })
     : { generate: () => Promise.reject(new Error("walkthrough unconfigured")) };
 
-  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerBillingDeps & WorkerNotificationDeps & { walkthrough: typeof walkthrough } = {
+  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerFullBillingDeps & WorkerNotificationDeps & { walkthrough: typeof walkthrough } = {
     txRunner: new PgPoolTxRunner(pool),
     eventWriter: new SqlEventWriter(bus),
     clock,
@@ -279,6 +294,8 @@ export async function startWorker(): Promise<void> {
     // re-driven response delivered with its obligations unrouted (prod run 01M2VDHN… routed post-hoc).
     obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),
     ...(adminKey ? { reportSource: new AnthropicAdminReportSource({ adminKey }) } : {}),
+    // P1.16 — the Stripe port for the auto-reload sweep (unset ⇒ logged no_stripe_port skip).
+    ...(stripeKey ? { stripe: new FetchStripePort(stripeKey) } : {}),
     ...(alertSink ? { alert: alertSink } : {}),
     // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override
     // flips the workflow's `provisional` once real reports land).
@@ -351,6 +368,9 @@ export async function startWorker(): Promise<void> {
     LEDGER_JOBS.sweepParked,
     STRIPE_EVENT_JOB,
     USAGE_RECONCILE_JOB,
+    BILLING_PERIOD_TICK_JOB, // P1.16 — period grants + renewal-failure grace + trial expiry + daily Free allowance
+    BILLING_AUTO_RELOAD_JOB, // P1.16 — the opt-in auto-reload sweep (REQ-BILL-17)
+    BILLING_REFIT_JOB, //       P1.16 — the weekly REQ-BILL-7 estimator re-fit
     FIGURE_RENDER_QUEUE, // P1.13 — the deterministic server-side figure render (§12.1)
     ...Object.values(INGEST_JOB_NAMES), // P1.15 — ingest.sync / reconstruct / sweep + voice.purge (§9.5)
     "notify",
@@ -452,6 +472,26 @@ export async function startWorker(): Promise<void> {
     );
   });
   await boss.schedule(USAGE_RECONCILE_JOB, "15 3 * * *");
+
+  // P1.16 — the billing crons (§14.2/14.3): hourly period tick (boundary grants, scheduled downgrades,
+  // renewal-failure 7d-warning → +14d downgrade, trial expiry, daily Free allowance), hourly auto-reload
+  // sweep (no `deps.stripe` ⇒ a logged `no_stripe_port` skip — never a fabricated charge), weekly
+  // estimator re-fit (Sunday 04:30 UTC).
+  await boss.work(BILLING_PERIOD_TICK_JOB, async () => {
+    const r = await handleBillingPeriodTick(deps);
+    console.log(`[worker] billing.period-tick → ${JSON.stringify(r)}`);
+  });
+  await boss.schedule(BILLING_PERIOD_TICK_JOB, "5 * * * *");
+  await boss.work(BILLING_AUTO_RELOAD_JOB, async () => {
+    const r = await handleAutoReloadSweep(deps);
+    console.log(`[worker] billing.auto-reload → ${JSON.stringify(r)}`);
+  });
+  await boss.schedule(BILLING_AUTO_RELOAD_JOB, "20 * * * *");
+  await boss.work(BILLING_REFIT_JOB, async () => {
+    const r = await handleEstimatorRefit(deps);
+    console.log(`[worker] billing.estimator-refit → ${JSON.stringify(r)}`);
+  });
+  await boss.schedule(BILLING_REFIT_JOB, "30 4 * * 0");
 
   // P1.15 — the ingestion consumers (§9.5). Provider faults land on the connection row verbatim
   // (handler never throws on a provider error); a thrown job is a transient infra fault → pg-boss

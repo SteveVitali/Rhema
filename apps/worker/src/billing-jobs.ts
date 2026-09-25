@@ -20,13 +20,20 @@ import {
   reconcileProviderReport,
   assertBalances,
   RUN_DELIVER_JOB,
+  runBillingPeriodTick,
+  sweepExpiredTrials,
+  sweepAutoReload,
+  weeklyEstimatorRefit,
   type ProviderUsageReport,
   type ReconcileAlert,
   type ReconcileMeasurement,
   type ReconcileResult,
   type StripeEventOutcome,
+  type StripePort,
+  type PeriodTickResult,
+  type SubDeps,
 } from "@rhema/ledger";
-import { deliverRun, type DeliverRunArgs, type DeliverRunDeps } from "@rhema/orchestrator";
+import { deliverRun, NOTIFY_QUEUE, type DeliverRunArgs, type DeliverRunDeps } from "@rhema/orchestrator";
 import type { WorkerLedgerDeps } from "./ledger-jobs.js";
 
 /** The `stripe.event` job payload (sent by the api's webhook intake). */
@@ -69,6 +76,12 @@ export function handleStripeEvent(
     runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
     eventWriter: deps.eventWriter,
     queue: deps.queue,
+    // P1.16 — billing emails ride the notify queue (`trial_payment` carries a free reason string).
+    notify: async (p) => {
+      await deps.queue.send(NOTIFY_QUEUE, p, {
+        singletonKey: `notify:billing:${p.billingAccountId ?? p.userId}:${p.reason.slice(0, 40)}`,
+      });
+    },
   }, payload.eventId);
 }
 
@@ -166,3 +179,62 @@ export async function handleRunDeliver(
 }
 
 export { RUN_DELIVER_JOB };
+
+// ---- P1.16 — the billing crons (§14.2/14.3/14.6) --------------------------------------------------------
+
+/** `billing.period-tick` — hourly: period-boundary grants, scheduled downgrades, the renewal-failure
+ *  grace window (7-day warning → Free at +14d), trial expiry, and the Free-tier daily chat allowance. */
+export const BILLING_PERIOD_TICK_JOB = "billing.period-tick" as const;
+/** `billing.auto-reload` — hourly: the opt-in auto-reload sweep (REQ-BILL-17). */
+export const BILLING_AUTO_RELOAD_JOB = "billing.auto-reload" as const;
+/** `billing.estimator-refit` — weekly: the REQ-BILL-7 cap-multiplier re-fit. */
+export const BILLING_REFIT_JOB = "billing.estimator-refit" as const;
+
+export interface WorkerFullBillingDeps extends WorkerBillingDeps {
+  /** the Stripe port auto-reload charges through (unset ⇒ the sweep is a logged skip — never a fake charge). */
+  readonly stripe?: StripePort;
+}
+
+export async function handleBillingPeriodTick(
+  deps: WorkerFullBillingDeps,
+): Promise<PeriodTickResult & { expiredTrials: number }> {
+  const now = deps.clock.now();
+  const subDeps: SubDeps = {
+    ids: deps.ids,
+    clock: deps.clock,
+    runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
+    notify: async (p: { type: "trial_payment"; workspaceId: string; userId?: string; billingAccountId?: string; reason: string }) => {
+      await deps.queue.send(NOTIFY_QUEUE, p, {
+        singletonKey: `notify:billing:${p.billingAccountId}:${p.reason.slice(0, 40)}`,
+      });
+    },
+  };
+  const tick = await runBillingPeriodTick(deps.systemExec, subDeps, now);
+  const trials = await sweepExpiredTrials(deps.systemExec, subDeps, now);
+  return { ...tick, expiredTrials: trials.expired };
+}
+
+export async function handleAutoReloadSweep(deps: WorkerFullBillingDeps): Promise<unknown> {
+  // The ONLY unattended charge path (§14.2): without a live Stripe port the sweep refuses to run — a
+  // no-port sweep must never fabricate a charge (HUMAN-H6; the live binding is the Stage-B leg).
+  if (!deps.stripe) {
+    console.error("[worker] billing.auto-reload: no Stripe port — skipping (live binding is Stage B)");
+    return { skipped: "no_stripe_port" };
+  }
+  const stripe = deps.stripe;
+  return sweepAutoReload(deps.systemExec, {
+    ids: deps.ids,
+    clock: deps.clock,
+    stripe,
+    runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
+    notify: async (p) => {
+      await deps.queue.send(NOTIFY_QUEUE, p, {
+        singletonKey: `notify:autoreload:${p.workspaceId}:${p.reason.slice(0, 40)}`,
+      });
+    },
+  }, deps.clock.now());
+}
+
+export function handleEstimatorRefit(deps: WorkerFullBillingDeps): Promise<unknown> {
+  return weeklyEstimatorRefit(deps.systemExec, { ids: deps.ids, clock: deps.clock }, deps.clock.now());
+}

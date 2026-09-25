@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
-// the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
-// private and capped (REQ-BETA-19); AC5 asserts this. `public` marks the routes reachable without a session;
+// the full IDE arrives. There is deliberately NO /pricing or /plans route yet — P1.17 renders
+// `pricing.json` — but P1.16 lands the authed billing surfaces (/settings/billing, /billing/return,
+// the §14.5 level-2 /p/:project/usage). `public` marks the routes reachable without a session;
 // everything else is auth-gated (redirects to /login).
 
 export interface AppRoute {
@@ -40,6 +41,10 @@ export const obligationNewElement = <ObligationNewPage />;
 // PRB.12 — the Settings privacy toggle + the §14.5 usage glance.
 export const settingsElement = <SettingsPage />;
 export const usageElement = <UsagePage />;
+// P1.16 — billing, full: the plan card, the checkout-return poll, the level-2 project rollup.
+export const billingElement = <BillingPage />;
+export const billingReturnElement = <BillingReturnPage />;
+export const projectUsageElement = <ProjectUsagePage />;
 // P1.05 — the run report (§14.5 levels 3–4; the Timeline card's "Run report" link lands here).
 export const runReportElement = <RunReportPage />;
 // P1.12 — the unlocked outline editor + the promotion sheet (§7.3).
@@ -95,6 +100,11 @@ export const routes: readonly AppRoute[] = [
   // PRB.12 — the privacy toggle (REQ-PROD-15) + the usage glance (§14.5 level 1).
   { path: "/settings", public: false, element: settingsElement },
   { path: "/usage", public: false, element: usageElement },
+  // P1.16 — billing, full (§14.2/14.3/14.5/14.6): the plan card + Checkout/portal/auto-reload forms,
+  // the checkout-return poll (REQ-BILL-14), and the level-2 project usage rollup. All auth-gated.
+  { path: "/settings/billing", public: false, element: billingElement },
+  { path: "/billing/return", public: false, element: billingReturnElement },
+  { path: "/p/:project/usage", public: false, element: projectUsageElement },
 ];
 
 /** Resolve a pathname to its route (React Router param matching). Undefined ⇒ 404. */

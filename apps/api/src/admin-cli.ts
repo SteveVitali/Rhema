@@ -26,6 +26,7 @@ import {
   materializeRunAnalytics,
   computeBetaDashboard,
   renderBetaDashboard,
+  killTrial,
   type EntryDeps,
 } from "@rhema/ledger";
 import { systemClock, randomUlids, RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
@@ -70,6 +71,9 @@ const USAGE = `rhema admin — operator billing actions (every action is audited
   house-void   --billing-account <id> [--credits <n>] [--workspace <id>] [--note <s>]
   suspend      --billing-account <id> [--workspace <id>] [--note <s>]
   reinstate    --billing-account <id> [--workspace <id>] [--note <s>]
+  trial-kill   --billing-account <id> [--workspace <id>] [--note <s>]
+                 (the §14.3 workspace kill switch — voids the entitlement + pocket; the ≤60 s bound is
+                  enforced on the spend path: holds read trial_killed_at under the same lock)
   wtp          --workspace <id> --amount <usd> [--source interview]
   beta-report  [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>]   (default: the trailing 7 days)
 `;
@@ -164,6 +168,22 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
             out(`  withheld delivery pending: ${r.runId} (no queue bound — enqueue run.deliver manually)`);
           }
         }
+        return 0;
+      }
+      case "trial-kill": {
+        // REQ-GROWTH-15 (P1.16; §14.3) — the abuse kill switch: revoke the account's un-consumed trial
+        // entitlement and void its pocket, audited. The ≤60 s void bound is enforced on the spend path
+        // itself (SqlHoldLedger.hold reads trial_killed_at under the hold's lock), not a sweeper cadence.
+        if (!billingAccountId) return (out(USAGE), 2);
+        const workspaceId = await resolveWorkspace(deps, billingAccountId, workspaceArg);
+        const res = await deps.txRunner.run(workspaceId, (tx) =>
+          killTrial(tx, deps, { ...acctArgs(workspaceId) }),
+        );
+        out(
+          res.killed
+            ? `trial killed → ${billingAccountId} (pocket voided ${res.voided} cr)`
+            : `already killed: ${billingAccountId}`,
+        );
         return 0;
       }
       case "wtp": {

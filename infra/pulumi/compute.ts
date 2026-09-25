@@ -304,6 +304,11 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(requires("email-action-secret")
       ? [{ name: "EMAIL_ACTION_SECRET_NAME", value: secretVersion(secrets.emailActionSecret) }]
       : []),
+    // P1.16 — the Stripe Billing key as a secret NAME for the auto-reload sweep's off-session charge
+    // (the ONLY unattended charge path, REQ-BILL-17); unset ⇒ the sweep logs `no_stripe_port` skips.
+    ...(requires("stripe-secret")
+      ? [{ name: "STRIPE_SECRET_KEY_NAME", value: secretVersion(secrets.stripeSecret) }]
+      : []),
     // The ops alert webhook is a value-bearing secret — Cloud Run mounts it via secretKeyRef (the
     // worker's SA holds secretAccessor on it — iam.ts), so it never sits in Pulumi config.
     ...(requires("ops-alert-webhook-url")
@@ -461,6 +466,16 @@ export function createCompute(args: ComputeArgs): Compute {
                           {
                             name: "STRIPE_WEBHOOK_SECRET_NAME",
                             value: secretVersion(secrets.stripeWebhookSecret),
+                          },
+                        ]
+                      : []),
+                    // P1.16 — the Stripe Billing key as a secret NAME for Checkout/Portal
+                    // (`FetchStripePort` at boot); unset ⇒ those routes 503 `stripe_unconfigured`.
+                    ...(requires("stripe-secret")
+                      ? [
+                          {
+                            name: "STRIPE_SECRET_KEY_NAME",
+                            value: secretVersion(secrets.stripeSecret),
                           },
                         ]
                       : []),

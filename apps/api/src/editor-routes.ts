@@ -598,6 +598,8 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       // PRB.21 — a non-terminal run already occupies the project (e.g. the writer lock's run); the
       // editor surfaces the conflict, never a second run.
       if (res.reason === "run_in_progress") return c.json({ error: res.reason, runId: res.activeRunId }, 409);
+      // P1.16 (§14.3): a trial-entitlement refusal — never proceed free (REQ-SPEC-24.2).
+      if (res.reason === "entitlement_unavailable") return c.json({ error: res.reason, detail: res.detail }, 403);
       return c.json({ error: res.reason, detail: res.error.message }, 422);
     }
     if (res.state === "queued" && !res.deduped) {

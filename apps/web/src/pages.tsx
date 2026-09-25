@@ -2376,6 +2376,13 @@ export function RunReportPage(): ReactNode {
           advancedHref={`/p/${runReport.slug}/r/${runReport.runId}?advanced=1`}
         />
       </div>
+      {/* REQ-BILL-19 (P1.16) — the report links its frozen rate-table version to the published tables. */}
+      {runReport.report.report.rateTableVersion != null ? (
+        <p data-rate-table-link="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 12px" }}>
+          {fmt(RP.rateTableFmt, { v: String(runReport.report.report.rateTableVersion) })}{" "}
+          <a href="/pricing/rates">{RP.rateTableLink}</a>
+        </p>
+      ) : null}
     </IdeFrame>
   );
 }
@@ -3926,7 +3933,13 @@ export function SettingsPage(): ReactNode {
   const { privacy, theme } = usePageData();
   const pref = theme?.pref ?? "dark";
   return (
-    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+    <Shell brand={COPY.brand} nav={
+      <>
+        <a href="/app">{COPY.project.backToList}</a>
+        {/* P1.16 — the plan card lives beside Settings (§14.6 — the only place plan names appear). */}
+        <a href="/settings/billing" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.billing.nav}</a>
+      </>
+    } footer={footer()}>
       <SectionTitle>{COPY.settings.heading}</SectionTitle>
       {/* P1.01 — the app theme (dark/light/auto), a plain form POST: works with no JS; the IDE shell's
           theme menu writes the same user field through /ide/theme. */}
@@ -3974,13 +3987,80 @@ export function SettingsPage(): ReactNode {
 }
 
 /** PRB.12 — the §14.5 level-1 usage glance: the balance (spendable + held) and the account's recent runs'
- *  credit spend (P0.11 data). Per-run cost on run rows — the whole contract. */
+ *  credit spend (P0.11 data). Per-run cost on run rows — the whole contract.
+ *  P1.16 — the level-1 dashboard proper (§14.5; REQ-BILL-8/9/11): the plan/period line, the bucket bars,
+ *  the server-computed warnings, the next-expiry line and the CSV export. `usageAccount` is the
+ *  authoritative model; `usage` keeps the recent-runs table. */
 export function UsagePage(): ReactNode {
-  const { usage } = usePageData();
+  const { usage, usageAccount } = usePageData();
   const credits = (n: number) => `${n.toLocaleString()} ${COPY.usage.creditsSuffix}`;
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
       <SectionTitle>{COPY.usage.heading}</SectionTitle>
+      {usageAccount ? (
+        <section data-usage-account="true">
+          <p style={{ fontSize: "14px", margin: "12px 0" }} data-usage-plan="true">
+            {COPY.usage.planLabel}: <strong>{usageAccount.level0.plan}</strong>
+            {usageAccount.level0.trialDaysLeft != null ? (
+              <>{" · "}{COPY.usage.trialFmt.replace("{n}", String(usageAccount.level0.trialDaysLeft))}</>
+            ) : null}
+            {usageAccount.periodStart && usageAccount.periodEnd ? (
+              <>{" · "}{COPY.usage.periodFmt
+                .replace("{start}", usageAccount.periodStart.slice(0, 10))
+                .replace("{end}", usageAccount.periodEnd.slice(0, 10))}</>
+            ) : null}
+          </p>
+          <p style={{ fontSize: "14px", margin: "4px 0" }} data-usage-mtd="true">
+            {COPY.usage.monthToDateFmt.replace("{n}", usageAccount.monthToDateCredits.toLocaleString())}
+            {usageAccount.includedMonthly > 0 ? (
+              <>{" · "}{COPY.usage.includedFmt
+                .replace("{remaining}", usageAccount.includedRemaining.toLocaleString())
+                .replace("{monthly}", usageAccount.includedMonthly.toLocaleString())}</>
+            ) : null}
+          </p>
+          <h3 style={{ fontSize: "14px", margin: "16px 0 8px" }}>{COPY.usage.bucketsHeading}</h3>
+          <table style={{ fontSize: "13px", borderCollapse: "collapse", width: "100%" }} data-usage-buckets="true">
+            <tbody>
+              {usageAccount.buckets.map((b) => (
+                <tr key={b.bucket} data-usage-bucket={b.bucket}>
+                  <td style={{ padding: "4px 8px 4px 0" }}>{COPY.usage.bucketLabels[b.bucket] ?? b.bucket}</td>
+                  <td style={{ padding: "4px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    {credits(b.available)}
+                  </td>
+                  <td style={{ padding: "4px 8px", color: "var(--shell-fg-muted)" }}>
+                    {b.held > 0 ? `${COPY.usage.heldLabel}: ${credits(b.held)}` : ""}
+                  </td>
+                  <td style={{ padding: "4px 0 4px 8px", color: "var(--shell-fg-muted)" }}>
+                    {b.expiresAt ? COPY.usage.expiresFmt.replace("{at}", b.expiresAt.slice(0, 10)) : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {usageAccount.warnings.length > 0 ? (
+            <section data-usage-warnings="true" style={{ margin: "16px 0" }}>
+              <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.usage.warningsHeading}</h3>
+              <ul style={{ fontSize: "13px", margin: 0, paddingLeft: "18px" }}>
+                {usageAccount.warnings.map((w, i) => (
+                  <li key={i} data-usage-warning="true">{w}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {usageAccount.nextExpiry ? (
+            <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }} data-usage-next-expiry="true">
+              {COPY.usage.nextExpiryFmt
+                .replace("{n}", usageAccount.nextExpiry.credits.toLocaleString())
+                .replace("{bucket}", COPY.usage.bucketLabels[usageAccount.nextExpiry.bucket] ?? usageAccount.nextExpiry.bucket)
+                .replace("{at}", usageAccount.nextExpiry.at.slice(0, 10))}
+            </p>
+          ) : null}
+          <p style={{ fontSize: "13px", margin: "12px 0" }}>
+            {/* REQ-BILL-11 — the level-1 CSV export (the web proxies the api's download). */}
+            <a href="/usage.csv" data-usage-csv="true">{COPY.usage.csvCta}</a>
+          </p>
+        </section>
+      ) : null}
       {usage ? (
         <>
           <p style={{ fontSize: "14px", margin: "12px 0" }} data-usage-balance="true">
@@ -4461,6 +4541,256 @@ export function VisualizePage(): ReactNode {
             </button>
           </div>
         </form>
+      )}
+    </Shell>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// P1.16 — billing, full (§14.2/14.3/14.5/14.6). The /settings/billing plan card (ladder, subscribe via
+// Checkout, change/cancel, auto-reload, portal link, Team waitlist), the /billing/return poll
+// (REQ-BILL-14 — the webhook-lag window), and the §14.5 level-2 project usage page.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** The billing settings page (`/settings/billing`): the current plan, the ladder's upgrade/downgrade
+ *  forms (POST → Checkout or a scheduled change), the opt-in auto-reload control, the portal link and
+ *  the Team waitlist. Every price + "What it covers" line renders `pricing.json` verbatim — the page
+ *  never hand-figures. */
+export function BillingPage(): ReactNode {
+  const { billing } = usePageData();
+  const B = COPY.billing;
+  if (!billing) {
+    return (
+      <Shell brand={COPY.brand} nav={<a href="/settings">{COPY.settings.nav}</a>} footer={footer()}>
+        <SectionTitle>{B.heading}</SectionTitle>
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }} data-billing-down="true">{B.stripeDownNote}</p>
+      </Shell>
+    );
+  }
+  const { subscription: sub, plans } = billing;
+  const planEntries = Object.entries(plans.plans);
+  const current = sub.tier;
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/settings">{COPY.settings.nav}</a>} footer={footer()}>
+      <SectionTitle>{B.heading}</SectionTitle>
+
+      {sub.subscription?.pastDue ? (
+        <p data-past-due="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
+          {B.pastDueBanner}
+        </p>
+      ) : null}
+      {billing.notice ? (
+        <p data-notice="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>{billing.notice}</p>
+      ) : null}
+      {billing.saved ? (
+        <p data-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "8px 0" }}>{B.saved}</p>
+      ) : null}
+
+      <section data-plan-card="true" style={{ margin: "12px 0 20px" }}>
+        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.planHeading}</h3>
+        {sub.trial.state === "trial_active" ? (
+          <p data-trial-state="active" style={{ fontSize: "13px", margin: "4px 0" }}>
+            <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "999px", border: "1px solid var(--accent)", color: "var(--accent)" }}>{B.includedBadge}</span>
+            {" "}{plans.trial.includedNote}
+          </p>
+        ) : sub.trial.state === "trial_denied" ? (
+          <p data-trial-state="denied" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0" }}>{B.trialDeniedNote}</p>
+        ) : sub.trial.state === "trial_used" ? (
+          <p data-trial-state="used" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0" }}>{B.trialUsedNote}</p>
+        ) : null}
+        {current === "free" ? (
+          <p data-current-plan="free" style={{ fontSize: "13px", margin: "4px 0" }}>{B.freeNote}</p>
+        ) : (
+          <p data-current-plan={current} style={{ fontSize: "13px", margin: "4px 0" }}>
+            <strong>{plans.plans[current]?.display ?? current}</strong>
+            {sub.subscription ? (
+              <>
+                {" · "}
+                {sub.subscription.cancelAtPeriodEnd
+                  ? B.cancelScheduledFmt.replace("{at}", sub.subscription.periodEnd.slice(0, 10))
+                  : sub.subscription.scheduledTier
+                    ? B.scheduledDowngradeFmt
+                        .replace("{tier}", plans.plans[sub.subscription.scheduledTier]?.display ?? sub.subscription.scheduledTier)
+                        .replace("{at}", sub.subscription.periodEnd.slice(0, 10))
+                    : B.periodEndFmt.replace("{at}", sub.subscription.periodEnd.slice(0, 10))}
+              </>
+            ) : null}
+          </p>
+        )}
+      </section>
+
+      <section data-plan-ladder="true" style={{ margin: "0 0 20px" }}>
+        {planEntries.map(([tier, plan]) => {
+          const isCurrent = tier === current;
+          return (
+            <div key={tier} data-plan={tier} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px 14px", margin: "0 0 10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
+                <strong style={{ fontSize: "14px" }}>{plan.display}</strong>
+                <span style={{ fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
+                  ${plan.monthlyUsd}/mo
+                  {plan.annualMonthlyUsd < plan.monthlyUsd ? (
+                    <span style={{ color: "var(--shell-fg-muted)" }}> · ${plan.annualMonthlyUsd}/mo {B.annualLabel}</span>
+                  ) : null}
+                </span>
+              </div>
+              <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 8px" }}>{plan.whatItCovers}</p>
+              {plan.waitlist ? (
+                <form method="post" action="/settings/billing/waitlist" data-waitlist-form="true" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="email" name="email" required placeholder={B.teamEmailLabel}
+                    style={{ padding: "5px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
+                  <input type="number" name="seats" min={1} placeholder={B.teamSeatsLabel}
+                    style={{ width: "70px", padding: "5px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
+                  <button type="submit" style={{ fontSize: "12px" }}>{B.teamCta}</button>
+                  <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)" }}>{B.waitlistBadge}</span>
+                </form>
+              ) : isCurrent ? (
+                sub.subscription && !sub.subscription.cancelAtPeriodEnd ? (
+                  <form method="post" action="/settings/billing/cancel" data-cancel-form="true">
+                    <button type="submit" style={{ fontSize: "12px" }}>{B.cancelCta}</button>
+                    <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.cancelNote}</span>
+                  </form>
+                ) : null
+              ) : (
+                <form method="post" action="/settings/billing/subscribe" data-subscribe-form={tier} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <input type="hidden" name="tier" value={tier} />
+                  <select name="cycle" style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }}>
+                    <option value="monthly">{B.monthlyLabel}</option>
+                    <option value="annual">{B.annualLabel}</option>
+                  </select>
+                  <button type="submit" style={{ fontSize: "12px" }}>{B.subscribeCta.replace("{tier}", plan.display)}</button>
+                </form>
+              )}
+            </div>
+          );
+        })}
+      </section>
+
+      <section data-topups="true" style={{ margin: "0 0 20px" }}>
+        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.topupHeading}</h3>
+        {plans.topUpPacks.map((p) => (
+          <form key={p.id} method="post" action="/settings/billing/topup" data-topup-form={p.id} style={{ display: "inline-block", margin: "0 8px 8px 0" }}>
+            <input type="hidden" name="packId" value={p.id} />
+            <button type="submit" style={{ fontSize: "12px" }}>
+              {B.topupCta.replace("{n}", p.credits.toLocaleString("en-US")).replace("{usd}", String(p.usd))}
+            </button>
+          </form>
+        ))}
+      </section>
+
+      <section data-auto-reload="true" style={{ margin: "0 0 20px" }}>
+        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.autoReloadHeading}</h3>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{B.autoReloadNote}</p>
+        <form method="post" action="/settings/billing/auto-reload" data-auto-reload-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", fontSize: "12px" }}>
+          <label style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <input type="checkbox" name="enabled" value="1" defaultChecked={sub.autoReload.enabled} />
+            {B.autoReloadEnable}
+          </label>
+          <label>
+            {B.autoReloadThresholdLabel}{" "}
+            <input type="number" name="thresholdCredits" min={1} defaultValue={sub.autoReload.thresholdCredits ?? 500}
+              style={{ width: "90px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "12px" }} />
+          </label>
+          <label>
+            {B.autoReloadPackLabel}{" "}
+            <select name="packId" defaultValue={sub.autoReload.packId ?? plans.topUpPacks[0]?.id}
+              style={{ padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "12px" }}>
+              {plans.topUpPacks.map((p) => (
+                <option key={p.id} value={p.id}>${p.usd} — {p.credits.toLocaleString("en-US")} cr</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {B.autoReloadCapLabel}{" "}
+            <input type="number" name="monthlyCapUsd" min={1} defaultValue={sub.autoReload.monthlyCapUsd ?? 50}
+              style={{ width: "70px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "12px" }} />
+          </label>
+          <button type="submit" style={{ fontSize: "12px" }}>{B.autoReloadSave}</button>
+        </form>
+      </section>
+
+      {sub.hasStripeCustomer ? (
+        <form method="post" action="/settings/billing/portal" data-portal-form="true" style={{ margin: "0 0 20px" }}>
+          <button type="submit" style={{ fontSize: "12px" }}>{B.manageCta}</button>
+          <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.manageNote}</span>
+        </form>
+      ) : null}
+    </Shell>
+  );
+}
+
+/** The Checkout return page (`/billing/return?session_id=`): the webhook-lag window (§14.6 — poll
+ *  ≤30 s, then the email fallback). `open` ⇒ renderDocument's autoRefresh re-polls; `completed`
+ *  ⇒ the continue link returns to where the user started (REQ-BILL-14). */
+export function BillingReturnPage(): ReactNode {
+  const { checkoutReturn } = usePageData();
+  const B = COPY.billing;
+  const state = checkoutReturn?.state ?? "open";
+  const back = checkoutReturn?.returnTo ?? "/settings/billing";
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/settings/billing">{B.nav}</a>} footer={footer()}>
+      <SectionTitle>{B.returnHeading}</SectionTitle>
+      <p data-checkout-state={state} style={{ fontSize: "14px", margin: "12px 0" }}>
+        {state === "completed" ? B.returnDone : state === "expired" ? B.returnExpired : B.returnPending}
+      </p>
+      <p style={{ fontSize: "13px" }}>
+        <a href={back} data-checkout-continue="true">
+          {state === "completed" ? B.returnContinue : B.returnBack}
+        </a>
+      </p>
+    </Shell>
+  );
+}
+
+/** §14.5 level 2 — `/p/:project/usage`: the project's runs with cost/duration/status and the
+ *  per-project total. Rows link to the run report (levels 3–4 mount there). */
+export function ProjectUsagePage(): ReactNode {
+  const { usageProject } = usePageData();
+  const P = COPY.projectUsage;
+  if (!usageProject) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{P.heading}</SectionTitle>
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.notFound.body}</p>
+      </Shell>
+    );
+  }
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${encodeURIComponent(usageProject.slug)}`}>{P.backToProject}</a>} footer={footer()}>
+      <SectionTitle>{P.heading} — {usageProject.projectName}</SectionTitle>
+      <p style={{ fontSize: "14px", margin: "12px 0" }} data-project-usage-total="true">
+        {P.totalFmt
+          .replace("{n}", usageProject.totalCredits.toLocaleString())
+          .replace("{runs}", String(usageProject.runs.length))}
+      </p>
+      {usageProject.runs.length === 0 ? (
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{P.runEmpty}</p>
+      ) : (
+        <table style={{ fontSize: "13px", borderCollapse: "collapse", width: "100%" }} data-project-usage-runs="true">
+          <thead>
+            <tr style={{ textAlign: "left", color: "var(--shell-fg-muted)" }}>
+              <th style={{ padding: "4px 8px 4px 0" }}>Run</th>
+              <th style={{ padding: "4px 8px" }}>Workflow</th>
+              <th style={{ padding: "4px 8px" }}>State</th>
+              <th style={{ padding: "4px 8px" }}></th>
+              <th style={{ padding: "4px 0 4px 8px", textAlign: "right" }}>Spent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {usageProject.runs.map((r) => (
+              <tr key={r.runId} data-project-usage-run={r.runId}>
+                <td style={{ padding: "4px 8px 4px 0", fontVariantNumeric: "tabular-nums" }}>{r.at.slice(0, 10)}</td>
+                <td style={{ padding: "4px 8px" }}>{r.workflow}</td>
+                <td style={{ padding: "4px 8px" }}>{r.state}</td>
+                <td style={{ padding: "4px 8px" }}>
+                  <a href={`/app/usage/r/${encodeURIComponent(r.runId)}`}>{P.runReportCta}</a>
+                </td>
+                <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                  {r.credits.toLocaleString()} cr
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </Shell>
   );

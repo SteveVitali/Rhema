@@ -961,6 +961,188 @@ export interface UsageDto {
 }
 
 // ---------------------------------------------------------------------------------------------------------
+// P1.16 — billing, full (§14.2/14.3/14.5/14.6). The plan ladder, checkout/portal, subscription reads,
+// auto-reload, the trial card, and the usage dashboard read models — all server-computed.
+// ---------------------------------------------------------------------------------------------------------
+
+/** One plan-tier card's wire shape (GET /billing/plans → plans[<tier>]). */
+export interface BillingPlanDto {
+  readonly display: string;
+  readonly monthlyUsd: number;
+  readonly annualMonthlyUsd: number;
+  readonly includedCreditsMonthly: number;
+  readonly dailyChatCredits: number | null;
+  readonly concurrency: number;
+  readonly modelTiers: readonly string[];
+  readonly chatOnly: boolean;
+  readonly researchTools: boolean;
+  readonly runWordCap: number | null;
+  readonly topUps: boolean;
+  readonly projects: number | "unlimited";
+  readonly voices: number | "unlimited";
+  readonly exportFormats: readonly string[] | "all";
+  readonly sharing: string;
+  readonly dailyRunCeiling?: number;
+  readonly priorityQueue?: boolean;
+  readonly waitlist?: boolean;
+  readonly seatsIncluded?: number;
+  readonly whatItCovers: string;
+}
+
+/** GET /billing/plans — the published pricing payload (REQ-GROWTH-4/7/8; §14.2). */
+export interface BillingPlansDto {
+  readonly version: string;
+  readonly issuedAt: string;
+  readonly usdPerCredit: number;
+  readonly platformRate: number;
+  readonly annualSavingsPct: number;
+  readonly plans: Record<string, BillingPlanDto>;
+  readonly trial: {
+    readonly windowDays: number;
+    readonly entitlement: { readonly kind: string; readonly wordCap: number; readonly rigor: string; readonly modelTier: string };
+    readonly pocketCredits: number;
+    readonly upgradePromoCredits: number;
+    readonly includedNote: string;
+    readonly postTrialNote: string;
+    readonly eligibilityLine: string;
+  };
+  readonly topUpPacks: readonly { readonly id: string; readonly usd: number; readonly credits: number }[];
+  readonly autoReloadDefaults: unknown;
+}
+
+/** POST /billing/checkout — mint a Checkout session; the client redirects to `url`. */
+export interface CheckoutRequestDto {
+  readonly kind: "subscribe" | "topup" | "auto_reload_setup";
+  readonly plan?: string;
+  readonly cycle?: "monthly" | "annual";
+  readonly packId?: string;
+  readonly returnTo?: string;
+  readonly email?: string;
+}
+export interface CheckoutSessionDto {
+  readonly sessionId: string;
+  readonly url: string;
+}
+/** GET /billing/checkout-sessions/:id — the checkout-return poll (webhook lag ≤30 s). */
+export interface CheckoutStatusDto {
+  readonly state: "open" | "completed" | "expired";
+  readonly kind: string;
+  readonly returnTo: string | null;
+}
+
+/** GET /billing/subscription — the plan card's read model (sub + trial + auto-reload + Stripe link). */
+export interface BillingSubscriptionDto {
+  readonly tier: string;
+  readonly subscription: {
+    readonly id: string;
+    readonly tier: string;
+    readonly cycle: string | null;
+    readonly status: string;
+    readonly periodStart: string;
+    readonly periodEnd: string;
+    readonly cancelAtPeriodEnd: boolean;
+    readonly scheduledTier: string | null;
+    readonly pastDue: boolean;
+  } | null;
+  readonly trial: {
+    readonly state: string | null;
+    readonly entitlement: { readonly id: string; readonly state: string; readonly wordCap: number; readonly expiresAt: string | null } | null;
+  };
+  readonly autoReload: {
+    readonly enabled: boolean;
+    readonly thresholdCredits: number | null;
+    readonly packId: string | null;
+    readonly monthlyCapUsd: number | null;
+  };
+  readonly hasStripeCustomer: boolean;
+}
+
+/** PUT /billing/auto-reload — the opt-in charge path's settings (REQ-BILL-17). */
+export interface AutoReloadRequestDto {
+  readonly enabled: boolean;
+  readonly thresholdCredits?: number;
+  readonly packId?: string;
+  readonly monthlyCapUsd?: number;
+}
+
+/** GET /billing/usage/account — the §14.5 level-1 account read (buckets, MTD, period, warnings). */
+export interface UsageAccountDto {
+  readonly level0: {
+    readonly spendableCredits: number;
+    readonly heldCredits: number;
+    readonly plan: string;
+    readonly trialState: string | null;
+    readonly trialDaysLeft: number | null;
+  };
+  readonly buckets: readonly {
+    readonly bucket: string;
+    readonly available: number;
+    readonly held: number;
+    readonly expiresAt: string | null;
+  }[];
+  readonly monthToDateCredits: number;
+  readonly includedRemaining: number;
+  readonly includedMonthly: number;
+  readonly includedRolloverCap: number;
+  readonly periodStart: string | null;
+  readonly periodEnd: string | null;
+  readonly warnings: readonly string[];
+  readonly nextExpiry: { readonly bucket: string; readonly credits: number; readonly at: string } | null;
+}
+
+/** GET /billing/usage/project/:id — the §14.5 level-2 project rollup. */
+export interface UsageProjectDto {
+  readonly projectId: string;
+  readonly projectName: string;
+  readonly totalCredits: number;
+  readonly runs: readonly {
+    readonly runId: string;
+    readonly at: string;
+    readonly workflow: string;
+    readonly state: string;
+    readonly credits: number;
+    readonly estimateCredits: number;
+    readonly capCredits: number;
+  }[];
+}
+
+/** GET /pricing/rates — the public rate-table publication (REQ-BILL-19): current + previous tables
+ *  with effective dates and the platform rate; every run report links its frozen version. */
+export interface RatesPublicationDto {
+  readonly platformRate: number;
+  readonly usdPerCredit: number;
+  readonly currentVersion: number;
+  readonly tables: readonly {
+    readonly version: number;
+    readonly effectiveDate: string;
+    readonly current: boolean;
+    readonly models: unknown;
+    readonly cacheReadMultiplier: number;
+    readonly cacheWriteMultiplier: number;
+    readonly webSearchUsdPerRequest: number;
+  }[];
+}
+
+/** GET /billing/usage/run/:id/advanced — the level-4 phase×seat×model rows (Advanced disclosure). */
+export interface UsageRunAdvancedDto {
+  readonly rows: readonly {
+    readonly runId: string;
+    readonly phase: string;
+    readonly seat: string;
+    readonly model: string;
+    readonly modelTier: string;
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+    readonly cacheReadTokens: number;
+    readonly cacheWriteTokens: number;
+    readonly searches: number;
+    readonly fetches: number;
+    readonly credits: number;
+    readonly providerRequestId: string | null;
+  }[];
+}
+
+// ---------------------------------------------------------------------------------------------------------
 // PRB.10 — Quick Voice (§9.2–§9.6). The shared pill/status DTO mirrors @rhema/findings-core's VoiceStatus
 // (kept structural to avoid a heavy dep); every surface renders this ONE shape byte-identically.
 // ---------------------------------------------------------------------------------------------------------
@@ -2334,6 +2516,38 @@ export interface ApiClient {
   setAnalyticsOptOut(analyticsOptOut: boolean, init?: RequestInitLite): Promise<PrivacySettingsDto>;
   /** The level-1 usage glance: the balance + the account's recent runs' spend (P0.11 data). */
   getUsage(init?: RequestInitLite): Promise<UsageDto>;
+  // ---- P1.16 — billing, full (§14.2/14.3/14.5/14.6) ----
+  /** The published plan ladder + trial + top-up packs (the pricing page's payload). */
+  getPlans(init?: RequestInitLite): Promise<BillingPlansDto>;
+  /** Mint a Stripe Checkout session (subscribe / top-up / auto-reload setup); redirect to `url`. */
+  startCheckout(req: CheckoutRequestDto, init?: RequestInitLite): Promise<CheckoutSessionDto>;
+  /** Mint a Stripe Billing-Portal session (plan/card management lives Stripe-side). */
+  createBillingPortalSession(returnTo?: string, init?: RequestInitLite): Promise<{ url: string }>;
+  /** The billing settings read: plan, subscription, trial state, auto-reload, Stripe link. */
+  getSubscription(init?: RequestInitLite): Promise<BillingSubscriptionDto>;
+  /** Cancel = cancel_at_period_end — the plan runs to the paid-through date (§14.6). */
+  cancelSubscription(init?: RequestInitLite): Promise<{ applied: boolean }>;
+  /** Change plan: an upgrade applies now; a downgrade schedules to period end. */
+  changePlan(tier: string, cycle?: "monthly" | "annual", init?: RequestInitLite): Promise<{ applied: "now" | "scheduled" } | { error: string }>;
+  /** The checkout-return poll (webhook lag ≤30 s, then the email fallback). */
+  getCheckoutSession(sessionId: string, init?: RequestInitLite): Promise<CheckoutStatusDto>;
+  /** Opt in/out of auto-reload — the only unattended charge path (REQ-BILL-17). */
+  setAutoReload(req: AutoReloadRequestDto, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** The Team tier's waitlist row (§14.2 — the tier is listed; mechanics out of scope). */
+  joinTeamWaitlist(
+    req: { email: string; seats?: number; note?: string },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
+  /** §14.5 level 1 — the account usage dashboard read. */
+  getUsageAccount(init?: RequestInitLite): Promise<UsageAccountDto>;
+  /** §14.5 level 2 — one project's spend rollup. */
+  getUsageProject(projectId: string, init?: RequestInitLite): Promise<UsageProjectDto>;
+  /** §14.5 level 4 — the phase×seat×model drill-down behind the run report's Advanced disclosure. */
+  getUsageRunAdvanced(runId: string, init?: RequestInitLite): Promise<UsageRunAdvancedDto>;
+  /** The §14.5 level-1 CSV export (REQ-BILL-11 — the RFC-4180 download). */
+  downloadUsageCsv(init?: RequestInitLite): Promise<ExportDownloadDto>;
+  /** The public rate-table publication (REQ-BILL-19) — the run report's rate-table link target. */
+  getRates(init?: RequestInitLite): Promise<RatesPublicationDto>;
   // ---- P1.01 — theme policy (REQ-IDE-38 amended) ----
   /** The resolved session principal — the pane-storage key's userId + the boot asserts' "am I signed in". */
   getSession(init?: RequestInitLite): Promise<PrincipalDto>;
@@ -3115,6 +3329,96 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     },
     async getUsage(init): Promise<UsageDto> {
       return json<UsageDto>("/billing/usage", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    // ---- P1.16 — billing, full ----
+    async downloadUsageCsv(init): Promise<ExportDownloadDto> {
+      return download("/billing/usage.csv", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async getRates(init): Promise<RatesPublicationDto> {
+      return json<RatesPublicationDto>("/pricing/rates", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async getPlans(init): Promise<BillingPlansDto> {
+      return json<BillingPlansDto>("/billing/plans", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async startCheckout(req, init): Promise<CheckoutSessionDto> {
+      return json<CheckoutSessionDto>("/billing/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async createBillingPortalSession(returnTo, init): Promise<{ url: string }> {
+      return json<{ url: string }>("/billing/portal", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(returnTo ? { returnTo } : {}),
+      });
+    },
+    async getSubscription(init): Promise<BillingSubscriptionDto> {
+      return json<BillingSubscriptionDto>("/billing/subscription", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async cancelSubscription(init): Promise<{ applied: boolean }> {
+      return json<{ applied: boolean }>("/billing/subscription/cancel", {
+        method: "POST",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async changePlan(tier, cycle, init) {
+      return json<{ applied: "now" | "scheduled" } | { error: string }>("/billing/subscription/change-plan", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ tier, ...(cycle ? { cycle } : {}) }),
+      });
+    },
+    async getCheckoutSession(sessionId, init): Promise<CheckoutStatusDto> {
+      return json<CheckoutStatusDto>(`/billing/checkout-sessions/${encodeURIComponent(sessionId)}`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async setAutoReload(req, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>("/billing/auto-reload", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async joinTeamWaitlist(req, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>("/billing/team-waitlist", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getUsageAccount(init): Promise<UsageAccountDto> {
+      return json<UsageAccountDto>("/billing/usage/account", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async getUsageProject(projectId, init): Promise<UsageProjectDto> {
+      return json<UsageProjectDto>(`/billing/usage/project/${encodeURIComponent(projectId)}`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async getUsageRunAdvanced(runId, init): Promise<UsageRunAdvancedDto> {
+      return json<UsageRunAdvancedDto>(`/billing/usage/run/${encodeURIComponent(runId)}/advanced`, {
         method: "GET",
         headers: init?.headers as Record<string, string> | undefined,
       });

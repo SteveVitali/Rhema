@@ -218,12 +218,20 @@ describe("verified-email run gate (AC3 — an unverified self-serve account cann
       signupThrottle: throttle(),
       paymentLinkUrl: "https://buy.stripe.com/test_beta",
     });
+    // P1.16 (§14.3): a fresh self-serve account is `trial_pending` with a locked entitlement — the
+    // first cost-bearing run is the included Review (Standard · Base · ≤6,000 words) claiming it.
+    const entitlement = (
+      await db.pg.query("select id from trial_entitlements where billing_account_id = $1", [
+        acct.billingAccountId,
+      ])
+    ).rows[0] as { id: string };
     const body = JSON.stringify({
       idempotencyKey: "idem-self-1",
       workflow: "review",
-      modelProfile: { tier: "balanced" },
-      modelTier: "balanced",
+      modelProfile: { tier: "base" },
+      modelTier: "base",
       rigor: "standard",
+      entitlementId: entitlement.id,
       estimateCredits: 560,
       capCredits: 840,
       rateTableVersion: 1,
