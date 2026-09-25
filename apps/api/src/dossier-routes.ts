@@ -234,6 +234,9 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
     if (!store) return c.json({ error: "content store unavailable" }, 500);
 
     const dto = await deps.txRunner.run(principal.workspaceId, async (tx: SqlClient) => {
+      // The `p.workspace_id` predicate is the tenancy boundary IN SQL, not just RLS: STB.2 found the
+      // deployed api connects as a BYPASSRLS role (postgres), so `withTenant`'s GUC never actually
+      // filters rows — a missing explicit predicate here was a live cross-tenant dossier read.
       const corr = (
         await tx.query(
           `select ci.id, ci.draft_id, ci.run_id, ci.ordinal, ci.rubric, ci.artifact_ids, ci.prior_review_id,
@@ -241,8 +244,9 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
              from correspondence_items ci
              join projects p on p.id = ci.project_id
              left join drafts d on d.id = ci.draft_id
-            where ci.project_id = $1 and ci.run_id = $2 and ci.kind = 'review'`,
-          [projectId, runId],
+            where ci.project_id = $1 and ci.run_id = $2 and ci.kind = 'review'
+              and p.workspace_id = $3`,
+          [projectId, runId, principal.workspaceId],
         )
       ).rows[0] as
         | {

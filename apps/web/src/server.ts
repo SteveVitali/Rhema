@@ -3519,7 +3519,13 @@ export function createWebApp(deps: WebDeps): Hono {
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
+    // STB.2 — the api's dossier 404 (a run that completed without a delivered review correspondence)
+    // must render the not-found page, not escape as a 500.
+    const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId }).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!dossier) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // P1.19 — landing on a run deep link collapses the run's Inbox rows read (REQ-MOBILE-16; the
     // api's mark is idempotent — opening the dossier from anywhere counts as "seen").
     await Promise.resolve()

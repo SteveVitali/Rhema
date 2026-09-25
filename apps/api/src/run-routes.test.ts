@@ -193,6 +193,52 @@ describe("POST /projects/:id/runs", () => {
     expect(row.inputs.verification).toBe(true);
   });
 
+  it("STB.2 — a Review run posted without inputs.draftId still freezes body.draftId (the delivery base)", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-dd-1", inputs: { sidecar: true } })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    // delivery-base.ts resolves the Review dossier target ONLY from inputs.draftId — the live run
+    // 01M36663… completed with no dossier because the sheet's draft id never froze into inputs.
+    expect(row.inputs.draftId).toBe(seed.draftId);
+  });
+
+  it("STB.2 — a body.draftId that is not a draft of THIS project is ignored (no smuggled target)", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-dd-2", inputs: { sidecar: true }, draftId: "dft_not_this_project" }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    // no promoted draft in the fixture ⇒ the fallback resolves nothing rather than trust the body.
+    expect(row.inputs.draftId).toBeUndefined();
+  });
+
+  it("STB.2 — fact_check freezes body.draftId the same way", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-dd-3", workflow: "fact_check", inputs: {} }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    expect(row.inputs.draftId).toBe(seed.draftId);
+  });
+
   // P1.22 W10 (REQ-GENRE-2's consumption half) — the stored `projects.protocol_overrides` resolve at
   // launch: phaseDefaults between rigor defaults and sheet levers; stage/length fill unset fields.
 

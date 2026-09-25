@@ -82,6 +82,7 @@ async function fkParents(): Promise<Map<string, Set<string>>> {
 const WS_EXEMPTIONS = new Map<string, string>([
   ["admin_actions", "operator audit — support/admin act cross-tenant by design (0020)"],
   ["pause_signals", "proxy→worker pause transport — system-scoped, never user-served (0041)"],
+  ["slo_samples", "platform SLO telemetry — api writes inside its tenant tx; worker probes cross-tenant percentiles; 7d retention (0042)"],
   ["run_events_default", "default partition of RLS-forced run_events; no direct app grant (0008)"],
   ["run_events_internal", "system-scoped internal events — never served on a tenant route; 30d retention (0008)"],
   ["support_access_grants", "support tooling — the grant's purpose IS cross-tenant staff access (0040)"],

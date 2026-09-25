@@ -97,11 +97,15 @@ import {
 } from "./export-jobs.js";
 import {
   handleAccountHardDelete,
+  handleProjectPurge,
   type AccountHardDeleteJob,
+  type ProjectPurgeJob,
 } from "./jobs.js";
 
 /** P1.20 — the `account.hard-delete` queue name (the api enqueues at the grace end). */
 const ACCOUNT_HARD_DELETE_JOB = "account.hard-delete";
+/** STB.2 / D-P1.04-2 — the `project.purge` queue name (the api enqueues at the tombstone's +30d). */
+const PROJECT_PURGE_JOB = "project.purge";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
@@ -397,6 +401,8 @@ export async function startWorker(): Promise<void> {
     "notify.sweep.hourly",
     "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
     ACCOUNT_EXPORT_QUEUE, // P1.18 — the whole-account zip build + emailed 7-day link (REQ-ACCT-3)
+    ACCOUNT_HARD_DELETE_JOB, // the api enqueues at the deletion grace end (P1.20)
+    PROJECT_PURGE_JOB, // the api enqueues at the tombstone's +30d (D-P1.04-2)
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
@@ -668,6 +674,18 @@ export async function startWorker(): Promise<void> {
     for (const job of jobs) {
       const r = await handleAccountHardDelete(job.data, { systemExec });
       console.log(`[worker] account.hard-delete ${job.data.userId} → ${JSON.stringify(r)}`);
+    }
+  });
+
+  // STB.2 / D-P1.04-2 — the project tombstone's purge sweep (REQ-ARCH-28): the api enqueues at
+  // delete + 30d; the handler re-reads `projects.deleted_at` (a restore no-ops; a re-delete
+  // re-schedules off the CURRENT tombstone) and past grace hard-deletes the project tree (the
+  // `projects` cascade) + the now-unreferenced content-addressed object keys.
+  const purgeBlobs = await createGcsBlobStore(env.objectsBucket);
+  await boss.work<ProjectPurgeJob>(PROJECT_PURGE_JOB, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleProjectPurge(job.data, { systemExec, queue: deps.queue, blobs: purgeBlobs });
+      console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
     }
   });
 

@@ -34,9 +34,15 @@ export interface RunEventsJobDeps {
 export async function handleRunEventsRetention(
   deps: RunEventsJobDeps,
   opts: { retentionDays?: number } = {},
-): Promise<{ deleted: number }> {
+): Promise<{ deleted: number; sloSamplesDeleted?: number }> {
   const deleted = await deleteExpiredInternalEvents(deps.db, deps.clock.now(), opts.retentionDays);
-  return { deleted };
+  // STB.2 / D-P1.22-1 — `slo_samples` (0042) expires at 7 days (the probes read 10-minute windows).
+  // A deploy before 0042 has no table — the delete just fails and is dropped.
+  const slo = await deps.db
+    .query(`delete from slo_samples where at < now() - interval '7 days'`, [])
+    .then((r) => ({ rows: r.rows }))
+    .catch(() => ({ rows: [] as unknown[] }));
+  return { deleted, sloSamplesDeleted: slo.rows.length };
 }
 
 /**

@@ -135,17 +135,22 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     target: "event delivery latency p95 ≤ 2 s — alert > 5 s",
     comparator: "gt",
     threshold: 5,
-    unmeasuredReason:
-      "needs a delivery timestamp the schema doesn't carry (event `at` is write time; the SSE replay has no " +
-      "client-ack). Instrumentation row D-P1.22-1; not fabricated here",
+    // STB.2 / D-P0.08b-3 — `slo_samples.event_delivery_ms`: the SSE tail writes one row per flush
+    // batch (max append→flush ms). The server-side half of delivery latency — the socket→render hop
+    // is unmeasurable without a client ack (D-P1.22-1 keeps that caveat honest in the target text).
+    probe: `select percentile_cont(0.95) within group (order by value_ms) / 1000.0
+             from slo_samples where signal = 'event_delivery_ms' and at > now() - ${MIN} * 10`,
   },
   {
     key: "autosave_roundtrip_p95_ms",
     target: "autosave round-trip p95 ≤ 500 ms — alert > 1 s",
     comparator: "gt",
     threshold: 1, // seconds
-    unmeasuredReason:
-      "client-side round-trip; no server-visible per-save timing today. Instrumentation row D-P1.22-1",
+    // STB.2 / D-P1.22-1 — `slo_samples.autosave_save_ms`: the api's SERVER-side save duration for the
+    // debounced autosave POST. The client leg of the round-trip (network + render) is not measured —
+    // the probe answers "server save p95", the honest measurable component.
+    probe: `select percentile_cont(0.95) within group (order by value_ms) / 1000.0
+             from slo_samples where signal = 'autosave_save_ms' and at > now() - ${MIN} * 10`,
   },
   {
     key: "api_availability_monthly_pct",
@@ -165,8 +170,10 @@ export interface SloReading {
   readonly value: number | null;
   readonly threshold: number;
   readonly comparator: "gt" | "lt";
-  readonly status: "ok" | "breach" | "empty" | "unmeasured";
+  readonly status: "ok" | "breach" | "empty" | "unmeasured" | "error";
   readonly unmeasuredReason?: string;
+  /** a probe that threw (e.g. its table isn't migrated yet on a partial deploy) — never fatal. */
+  readonly error?: string;
 }
 
 /**
@@ -188,7 +195,21 @@ export async function probeSlos(system: SqlClient): Promise<SloReading[]> {
       });
       continue;
     }
-    const res = await system.query(sig.probe, []);
+    // A throwing probe (a signal table not yet migrated on a partial deploy) degrades to `error` —
+    // it must never kill the sweep's remaining signals.
+    const res = await system.query(sig.probe, []).catch((e: unknown) => {
+      readings.push({
+        key: sig.key,
+        target: sig.target,
+        value: null,
+        threshold: sig.threshold,
+        comparator: sig.comparator,
+        status: "error",
+        error: e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200),
+      });
+      return null;
+    });
+    if (!res) continue;
     const raw = res.rows[0] ? Object.values(res.rows[0] as Record<string, unknown>)[0] : null;
     const value = raw === null || raw === undefined ? null : Number(raw);
     if (value === null || Number.isNaN(value)) {

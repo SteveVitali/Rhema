@@ -113,6 +113,21 @@ export function createSseRoutes(deps: SseApiDeps): Hono {
           signal,
           pingIntervalMs: deps.sseOptions?.pingIntervalMs,
           pollIntervalMs: deps.sseOptions?.pollIntervalMs,
+          // STB.2 / D-P0.08b-3 — the §13.5 event-delivery metric's data path: one `slo_samples`
+          // row per flush batch carrying the batch's max append→flush ms (0042; probed by the
+          // worker's `slo.probe` sweep as `event_delivery_latency_p95_s`). Fire-and-forget —
+          // telemetry never blocks or fails the stream, and a pre-0042 deploy simply drops it.
+          onFlush: (sample) => {
+            void deps.txRunner
+              .run(principal.workspaceId, (tx) =>
+                tx.query(
+                  `insert into slo_samples (signal, value_ms, workspace_id, run_id)
+                     values ('event_delivery_ms', $1, $2, $3)`,
+                  [sample.maxDeliveryMs, principal.workspaceId, runId],
+                ),
+              )
+              .catch(() => undefined);
+          },
         }).finally(() => {
           try {
             controller.close();

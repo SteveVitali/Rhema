@@ -269,6 +269,54 @@ describe("row actions (§5.2)", () => {
       (await app().request(`/projects/${seed.projectId}/rename`, post({ title: "X" }))).status,
     ).toBe(404);
   });
+
+  it("STB.2 / D-P1.04-2 — delete enqueues project.purge at the +30d grace end, keyed on the project", async () => {
+    const sent: { name: string; payload: Record<string, unknown>; opts?: { startAfterMs?: number; singletonKey?: string } }[] = [];
+    const queue = {
+      async send(name: string, payload: Record<string, unknown>, opts?: { startAfterMs?: number; singletonKey?: string }) {
+        sent.push({ name, payload, opts });
+      },
+    };
+    const appWithQueue = createProjectRoutes({
+      principal: () => principal(),
+      db: sql,
+      txRunner: db.txRunner,
+      ids,
+      clock: { now: () => new Date("2026-09-25T12:00:00Z") },
+      contentStore: store,
+      queue,
+    });
+    const res = await appWithQueue.request(`/projects/${seed.projectId}/delete`, post({}));
+    expect(res.status).toBe(200);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].name).toBe("project.purge");
+    expect(sent[0].payload.tenantId).toBe(seed.workspaceId);
+    expect(sent[0].payload.projectId).toBe(seed.projectId);
+    expect(sent[0].payload.tombstonedAt).toBe("2026-09-25T12:00:00.000Z");
+    expect(sent[0].opts?.startAfterMs).toBe(30 * 24 * 60 * 60 * 1000);
+    expect(sent[0].opts?.singletonKey).toBe(`project.purge:${seed.projectId}`);
+  });
+
+  it("STB.2 — a delete still lands the tombstone when the queue send fails", async () => {
+    const queue = {
+      async send() {
+        throw new Error("boss down");
+      },
+    };
+    const appWithQueue = createProjectRoutes({
+      principal: () => principal(),
+      db: sql,
+      txRunner: db.txRunner,
+      ids,
+      clock: { now: () => new Date() },
+      contentStore: store,
+      queue,
+    });
+    const res = await appWithQueue.request(`/projects/${seed.projectId}/delete`, post({}));
+    expect(res.status).toBe(200);
+    const rows = await listProjectStates(sql, principal());
+    expect(rows.find((r) => r.id === seed.projectId)).toBeUndefined();
+  });
 });
 
 describe("settings/project-grouping — the per-user /app grouping pref", () => {

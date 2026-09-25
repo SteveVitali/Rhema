@@ -39,6 +39,10 @@ export const SLO_ALERT_SIGNALS = [
   "provider_429_5xx_pct_5m",
   "proxy_vs_sdk_cost_runs_over5pct_1h",
   "absorbed_adjustments_pct_24h",
+  // STB.2 / D-P0.08b-3 + D-P1.22-1 — now probed off `slo_samples` (migration 0042): the SSE
+  // append→flush p95 and the server-side autosave p95. Both alert at the same breach line shape.
+  "event_delivery_latency_p95_s",
+  "autosave_roundtrip_p95_ms",
 ] as const;
 
 export function createMonitoring(args: MonitoringArgs): {

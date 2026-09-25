@@ -27,6 +27,7 @@ import {
   createSecretAccessor,
   fetchGceMetadataIdToken,
   createStorageV4SignedUrlProvider,
+  createGcsV4GetPresigner,
   createGcsObjects,
   createGcsBlobStore,
   createConvertJobPreview,
@@ -240,6 +241,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
         // audience = the service root). LIVE FINDING 11.
         { exportRunner: createServiceExportRunner(env.exportServiceUrl, fetch, fetchGceMetadataIdToken) }
       : {}),
+    // STB.2 — the account-zip download's presign (P1.18 seam was declared but never bound — the live
+    // `/account/export/download` answered 503 `download_unavailable`). v4 GET over the objects bucket
+    // (where `handleAccountExport` stores the zip), same signBlob path as the PUT presigner.
+    exportPresign: await createGcsV4GetPresigner(env.objectsBucket),
     // PRB.13 — `signup.mode` (REQ-BETA-19 amended): stage-config-driven; the routes it gates (POST
     // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
     // stays D-PRB.01-3's leg (PRB.16).
@@ -344,6 +349,7 @@ export async function startApiServer(): Promise<void> {
     "mail.send",
     "auth.mail",
     "account.export", // P1.18 — the account-zip build (the worker consumes; both sides createQueue).
+    "project.purge", // D-P1.04-2 — the tombstone +30d sweep (the worker consumes; both createQueue).
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }

@@ -4,6 +4,7 @@ import { parseQuarantineKey, parseUserPrefs } from "@rhema/contracts";
 import { PROTOCOL_CARDS, defaultProtocolId } from "@rhema/protocols";
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { ContentStore } from "@rhema/mirror";
+import type { Queue } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import type { Converter } from "./import.js";
@@ -30,7 +31,18 @@ export interface ProjectApiDeps {
   /** the convert seam + byte store — required for the upload entries + the apparatus probe. */
   readonly converter?: Converter;
   readonly contentStore?: ContentStore;
+  /**
+   * The pg-boss queue: a soft delete enqueues `project.purge` at the tombstone's grace end
+   * (startAfterMs = the 30-day window; the worker handler re-reads `deleted_at` so a restore inside
+   * the window no-ops). Unset ⇒ the tombstone still lands; the purge sweep leg is skipped.
+   */
+  readonly queue?: Queue;
 }
+
+/** The retention sweep queue the worker consumes (`apps/worker` `handleProjectPurge`). */
+export const PROJECT_PURGE_QUEUE = "project.purge";
+/** §5.2/REQ-ARCH-28 — the soft-delete grace window before the purge job fires. */
+const PROJECT_PURGE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** title → slug (lowercase, hyphenated, ≤60 chars) — matches the seed's slug shape. */
 export function slugify(title: string): string {
@@ -418,20 +430,43 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
   });
 
   // Delete is SOFT (§5.2 — the 30-day window): sets deleted_at; the row leaves every read. Restore
-  // clears it (and any archive flag) inside the window; the purge sweep is the ops leg's, not this ticket's.
+  // clears it (and any archive flag) inside the window. STB.2 (D-P1.04-2): the tombstone also
+  // enqueues `project.purge` at the grace end — the worker handler re-reads `deleted_at`, so a
+  // restore inside the window no-ops (same re-check shape as `account.hard-delete`).
   app.post("/projects/:id/delete", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const projectId = c.req.param("id");
     // P1.17 (§15.4) — the Showcase can be archived and restored but never deleted (a deleted showcase
     // would leave the account without its worked example; archive is the hide affordance).
-    if (await isShowcaseProject(deps.db, c.req.param("id"))) {
+    if (await isShowcaseProject(deps.db, projectId)) {
       return c.json({ error: "showcase_not_deletable" }, 409);
     }
+    const tombstonedAt = deps.clock.now();
     const res = await deps.db.query(
-      `update projects set deleted_at = now() where id = $1 and deleted_at is null returning id`,
-      [c.req.param("id")],
+      `update projects set deleted_at = $2 where id = $1 and deleted_at is null returning id`,
+      [projectId, tombstonedAt],
     );
     if (res.rows.length === 0) return c.json({ error: "not_found" }, 404);
+    if (deps.queue) {
+      // The enqueue never fails the delete (the tombstone is the state); singleton-keyed on the
+      // project so a delete → restore → delete re-drive refreshes the pending job's timing only
+      // through a NEW send once the first has run.
+      await deps.queue
+        .send(
+          PROJECT_PURGE_QUEUE,
+          {
+            tenantId: principal.workspaceId,
+            projectId,
+            tombstonedAt: tombstonedAt.toISOString(),
+          },
+          {
+            startAfterMs: PROJECT_PURGE_AFTER_MS,
+            singletonKey: `project.purge:${projectId}`,
+          },
+        )
+        .catch(() => undefined);
+    }
     return c.json({ ok: true });
   });
 

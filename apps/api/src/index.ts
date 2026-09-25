@@ -507,6 +507,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         createShellRoutes({
           principal: deps.principal,
           db,
+          txRunner: deps.txRunner,
           inviteGate,
         }),
       );
@@ -522,6 +523,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           clock: deps.clock,
           ...(deps.importConverter ? { converter: deps.importConverter } : {}),
           ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+          ...(deps.queue ? { queue: deps.queue } : {}),
         }),
       );
       app.route("/", createSearchRoutes({ principal: deps.principal, db, ids: deps.ids }));

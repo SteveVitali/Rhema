@@ -26,7 +26,7 @@ import { fetchGceMetadataAccessToken } from "./k8s-launcher.js";
 
 export interface SignedUrlRequest {
   readonly version: "v4";
-  readonly action: "write";
+  readonly action: "write" | "read";
   /** Epoch ms when the signature expires. */
   readonly expires: number;
   /** Headers the signature binds — the client MUST send them verbatim. */
@@ -70,6 +70,28 @@ export function createGcsV4SignedUrlProvider(
 export async function createStorageV4SignedUrlProvider(): Promise<SignedUrlProvider> {
   const { Storage } = (await import("@google-cloud/storage")) as typeof import("@google-cloud/storage");
   return createGcsV4SignedUrlProvider(new Storage() as unknown as GcsSignedUrlStorageLike);
+}
+
+/**
+ * STB.2 (P1.18 account-zip download) — a v4 GET presigner over one bucket: the api's
+ * `exportPresign` seam turns an `account_exports.s3_key` into the emailed/downloaded URL. Same
+ * signBlob path as the PUT provider — no key material on the service.
+ */
+export async function createGcsV4GetPresigner(
+  bucket: string,
+  expiresSeconds = 15 * 60,
+): Promise<(objectKey: string) => Promise<string>> {
+  const { Storage } = (await import("@google-cloud/storage")) as typeof import("@google-cloud/storage");
+  const file = (key: string) =>
+    (new Storage().bucket(bucket) as unknown as { file(k: string): GcsSignedUrlFileLike }).file(key);
+  return async (objectKey) => {
+    const res = await file(objectKey).getSignedUrl({
+      version: "v4",
+      action: "read",
+      expires: Date.now() + expiresSeconds * 1000,
+    });
+    return Array.isArray(res) ? String(res[0]) : String(res);
+  };
 }
 
 // ---------------------------------------------------------------------------

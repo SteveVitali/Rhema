@@ -605,7 +605,7 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
       status: 200,
       headers: {
         "content-type": result.mediaType,
-        "content-disposition": `attachment; filename="${exportFileName(owned.slug, format)}"`,
+        "content-disposition": `attachment; filename="${exportFileName(owned.slug, format, { profile })}"`,
       },
     });
   });

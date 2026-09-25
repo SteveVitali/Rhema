@@ -5,8 +5,13 @@
 // account (the Stripe customer mapping). `project.purge` stays policy-only (object-prefix lifecycle
 // is the storage leg's job).
 
-import type { SqlClient } from "@rhema/orchestrator";
-import { shouldPurgeProject, accountDeletionPlan, type AccountDeletionPlan } from "./deletion.js";
+import type { Queue, SqlClient } from "@rhema/orchestrator";
+import {
+  shouldPurgeProject,
+  accountDeletionPlan,
+  PROJECT_PURGE_AFTER_DAYS,
+  type AccountDeletionPlan,
+} from "./deletion.js";
 
 export interface ProjectPurgeJob {
   tenantId: string;
@@ -22,19 +27,138 @@ export interface AccountHardDeleteJob {
   deletionRequestedAt: string;
 }
 
+export interface ProjectPurgeDeps {
+  /**
+   * system-scoped client — the worker is untenanted; the re-read keys on the job's
+   * tenantId/projectId explicitly. Unset ⇒ pure-policy result over the job payload (tests).
+   */
+  readonly systemExec?: SqlClient;
+  /** re-enqueue when the CURRENT tombstone's grace has not yet elapsed (delete → restore → delete). */
+  readonly queue?: Queue;
+  /**
+   * The objects-bucket byte seam (GCS `file(key).delete`): past grace, the project's
+   * `artifact_versions.s3_key`s that no remaining workspace row still references are deleted.
+   * Unset ⇒ the row purge still runs; object cleanup is skipped.
+   */
+  readonly blobs?: { delete(key: string): Promise<void> };
+  readonly now?: Date;
+}
+
 export interface ProjectPurgeResult {
   projectId: string;
   purged: boolean;
+  /** the project was restored inside the window (deleted_at cleared) — the job no-ops. */
+  restored?: boolean;
+  /** the row is still inside a LATER grace (re-deleted after this job was enqueued) — re-scheduled. */
+  rescheduled?: boolean;
+  /** table → deleted-row counts when destruction ran. */
+  deleted?: Readonly<Record<string, number>>;
+  /** object keys removed from the workspace's object store. */
+  objectsDeleted?: number;
 }
 
-/** `project.purge` consumer: purge a tombstoned project once past the 30-day grace (REQ-ARCH-28). */
+/** `project.purge` consumer (REQ-ARCH-28; D-P1.04-2 — the api enqueues at the tombstone's +30d).
+ *  Re-reads `projects.deleted_at` like `account.hard-delete` re-reads its marker: a restore inside
+ *  the window no-ops; a delete → restore → delete lands a NEWER tombstone than the job carries, so
+ *  the remaining grace is re-scheduled rather than purging early. */
 export async function handleProjectPurge(
   job: ProjectPurgeJob,
-  now: Date = new Date(),
+  deps: ProjectPurgeDeps = {},
 ): Promise<ProjectPurgeResult> {
-  const purged = shouldPurgeProject(new Date(job.tombstonedAt), now);
-  // TODO(P1.20+): when `purged`, S3/GCS lifecycle-delete the project prefix (the objects leg).
-  return { projectId: job.projectId, purged };
+  const now = deps.now ?? new Date();
+  let tombstonedAt = new Date(job.tombstonedAt);
+  if (deps.systemExec) {
+    const row = (
+      await deps.systemExec.query(
+        `select deleted_at from projects where id = $1 and workspace_id = $2`,
+        [job.projectId, job.tenantId],
+      )
+    ).rows[0] as { deleted_at: string | Date | null } | undefined;
+    if (!row || row.deleted_at == null) return { projectId: job.projectId, purged: false, restored: true };
+    tombstonedAt = new Date(row.deleted_at);
+    if (!shouldPurgeProject(tombstonedAt, now)) {
+      // still inside grace — either the job fired early or the row was re-tombstoned after this
+      // job was enqueued (delete → restore → delete); re-arm at the CURRENT grace end.
+      const remaining = tombstonedAt.getTime() + PROJECT_PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000 - now.getTime();
+      if (deps.queue) {
+        await deps.queue
+          .send(
+            "project.purge",
+            { tenantId: job.tenantId, projectId: job.projectId, tombstonedAt: tombstonedAt.toISOString() },
+            { startAfterMs: Math.max(0, remaining), singletonKey: `project.purge:${job.projectId}` },
+          )
+          .catch(() => undefined);
+      }
+      return { projectId: job.projectId, purged: false, rescheduled: true };
+    }
+  }
+  const purged = shouldPurgeProject(tombstonedAt, now);
+  if (!purged || !deps.systemExec) return { projectId: job.projectId, purged };
+
+  // Past grace — destroy. `delete from projects` cascades the whole project tree (drafts →
+  // artifacts/versions, runs → steps/gates/events/findings/claims/obligations …) EXCEPT the
+  // NO-ACTION leaves that must die first: working_copies (drafts/live_docs), provenance_maps
+  // (artifact_versions), analytics_events (no project FK — hygiene).
+  const db = deps.systemExec;
+  const deleted: Record<string, number> = {};
+  const del = async (table: string, sql: string, params: unknown[]): Promise<void> => {
+    const res = await db.query(sql, params);
+    deleted[table] = (deleted[table] ?? 0) + res.rows.length;
+  };
+  const draftIds = `(select id from drafts where project_id = $1)`;
+  // The object keys BEFORE the cascade — after the row delete the refs are gone.
+  const keys = (
+    await db.query(
+      `select av.s3_key from artifact_versions av join artifacts a on a.id = av.artifact_id
+        where a.project_id = $1`,
+      [job.projectId],
+    )
+  ).rows as { s3_key: string | null }[];
+  await del(
+    "working_copies",
+    `delete from working_copies where base_draft_id in ${draftIds} or reconciled_into in ${draftIds} returning id`,
+    [job.projectId],
+  );
+  await del(
+    "provenance_maps",
+    `delete from provenance_maps where draft_version_id in
+       (select av.id from artifact_versions av join artifacts a on a.id = av.artifact_id
+         where a.project_id = $1) returning draft_version_id`,
+    [job.projectId],
+  );
+  await del("analytics_events", `delete from analytics_events where project_id = $1 returning id`, [
+    job.projectId,
+  ]);
+  // The keyed delete on BOTH columns — a hijacked/renamed id can never purge another tenant's row.
+  await del("projects", `delete from projects where id = $1 and workspace_id = $2 returning id`, [
+    job.projectId,
+    job.tenantId,
+  ]);
+
+  // Object cleanup: delete each collected key only when NO remaining artifact_version in the
+  // workspace still references it (content-addressed keys can be shared by a sibling project).
+  let objectsDeleted = 0;
+  if (deps.blobs) {
+    for (const { s3_key } of keys) {
+      if (!s3_key) continue;
+      const still = (
+        await db.query(
+          `select 1 from artifact_versions av join artifacts a on a.id = av.artifact_id
+            where a.workspace_id = $1 and av.s3_key = $2 limit 1`,
+          [job.tenantId, s3_key],
+        )
+      ).rows[0];
+      if (still) continue;
+      await deps.blobs.delete(s3_key).catch(() => undefined); // best-effort; logged via count
+      objectsDeleted++;
+    }
+  }
+  return {
+    projectId: job.projectId,
+    purged: true,
+    deleted,
+    ...(deps.blobs ? { objectsDeleted } : {}),
+  };
 }
 
 export interface AccountHardDeleteDeps {

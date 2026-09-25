@@ -364,6 +364,10 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     const store = await storeFor(principal.workspaceId);
     if (!store) return c.json({ error: "content store unavailable" }, 500);
 
+    // STB.2 / D-P1.22-1 — the server-side half of the §13.5 autosave round-trip: time the save
+    // transaction and sample it into `slo_samples` (0042; `autosave_save_ms` feeds the
+    // `autosave_roundtrip_p95_ms` probe — the client leg of the round-trip stays unmeasured).
+    const saveStartedAt = deps.clock.now().getTime();
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       // Lock is checked against the RESOLVED head: a stale save to a frozen base routes to its working
       // human_revision child, so a draft:read lock on the base alone must not block it (the run reads
@@ -389,6 +393,13 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       });
       return r;
     });
+    // Fire-and-forget: telemetry never fails or slows a save; a pre-0042 deploy just drops the row.
+    void deps.db
+      .query(`insert into slo_samples (signal, value_ms, workspace_id) values ('autosave_save_ms', $1, $2)`, [
+        deps.clock.now().getTime() - saveStartedAt,
+        principal.workspaceId,
+      ])
+      .catch(() => undefined);
     if (!res.ok) {
       if (res.reason === "locked") return c.json({ error: "locked", lock: res.lock }, 409);
       return c.json(

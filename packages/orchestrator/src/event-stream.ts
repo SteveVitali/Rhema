@@ -106,6 +106,13 @@ export type SseSink = (chunk: string) => void | Promise<void>;
  * writes it once; `lastSeq` only advances, so a re-read (a duplicate wakeup, a replay after reconnect) never
  * re-emits. Both replay and tail are the same `pump()`. Concurrency-safe: overlapping pumps coalesce.
  */
+/** One flush sample: the append→flush latency of the OLDEST emitted event in the batch (ms). */
+export interface FlushSample {
+  readonly emitted: number;
+  readonly maxDeliveryMs: number;
+  readonly throughSeq: number;
+}
+
 export class RunEventStreamer {
   private last: number;
   private pumping = false;
@@ -115,6 +122,8 @@ export class RunEventStreamer {
     private readonly read: EventReader,
     private readonly sink: SseSink,
     afterSeq = 0,
+    // STB.2 / D-P0.08b-3 — per-flush append→flush latency sample (the SLO metric's data path).
+    private readonly onFlush?: (sample: FlushSample) => void,
   ) {
     this.last = Number.isFinite(afterSeq) && afterSeq > 0 ? afterSeq : 0;
   }
@@ -136,6 +145,7 @@ export class RunEventStreamer {
     }
     this.pumping = true;
     let emitted = 0;
+    let maxDeliveryMs = 0;
     try {
       do {
         this.dirty = false;
@@ -145,10 +155,20 @@ export class RunEventStreamer {
           await this.sink(formatSse(ev));
           this.last = ev.seq;
           emitted++;
+          // append→flush latency per event (ev.at is the committed write timestamp).
+          const d = Date.now() - ev.at.getTime();
+          if (d > maxDeliveryMs) maxDeliveryMs = d;
         }
       } while (this.dirty);
     } finally {
       this.pumping = false;
+    }
+    if (emitted > 0 && this.onFlush) {
+      try {
+        this.onFlush({ emitted, maxDeliveryMs, throughSeq: this.last });
+      } catch {
+        /* telemetry never interrupts the stream */
+      }
     }
     return emitted;
   }
@@ -173,6 +193,8 @@ export interface StreamRunEventsOptions {
   readonly pingIntervalMs?: number;
   /** safety re-poll interval — recovers a lost/early wakeup without waiting for reconnect. */
   readonly pollIntervalMs?: number;
+  /** per-flush latency sample hook (STB.2 / D-P0.08b-3) — called once per pump pass that emitted rows. */
+  readonly onFlush?: (sample: FlushSample) => void;
 }
 
 /**
@@ -181,7 +203,7 @@ export interface StreamRunEventsOptions {
  * Postgres is the only source of rows; the bus and poll are just wakeups (Redis is never a source of truth).
  */
 export async function streamRunEvents(opts: StreamRunEventsOptions): Promise<void> {
-  const streamer = new RunEventStreamer(opts.read, opts.sink, opts.afterSeq ?? 0);
+  const streamer = new RunEventStreamer(opts.read, opts.sink, opts.afterSeq ?? 0, opts.onFlush);
   const pingMs = opts.pingIntervalMs ?? 25_000;
   const pollMs = opts.pollIntervalMs ?? 10_000;
 

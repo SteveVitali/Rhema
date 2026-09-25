@@ -29,11 +29,50 @@ describe("probeSlos — the §13.5 signal registry (REQ-ARCH-34)", () => {
       // every registry entry is either a probe or a named gap.
       expect(sig.probe !== undefined || sig.unmeasuredReason !== undefined, sig.key).toBe(true);
     }
-    // the named-unmeasured set is exactly the three Stage-A gaps the §17 readout records.
+    // the named-unmeasured set: api_availability + cost_drift stay gap-named (a Metrics-API read and a
+    // nightly job respectively); STB.2 instrumented the two samples-backed signals (0042 slo_samples).
     const unmeasured = readings.filter((r) => r.status === "unmeasured").map((r) => r.key);
     expect(unmeasured.sort()).toEqual(
-      ["api_availability_monthly_pct", "autosave_roundtrip_p95_ms", "cost_drift_pct_nightly", "event_delivery_latency_p95_s"].sort(),
+      ["api_availability_monthly_pct", "cost_drift_pct_nightly"].sort(),
     );
+  });
+
+  it("STB.2 — slo_samples rows drive event_delivery/autosave readings; a breach sample breaches", async () => {
+    // empty table ⇒ `empty` (never a fabricated value)
+    let readings = await probeSlos(db.client);
+    expect(reading(readings, "event_delivery_latency_p95_s").status).toBe("empty");
+    expect(reading(readings, "autosave_roundtrip_p95_ms").status).toBe("empty");
+    // 9 samples under threshold + 1 over ⇒ p95 interpolates under → ok
+    for (let i = 0; i < 9; i++) {
+      await db.client.query(
+        `insert into slo_samples (signal, value_ms, workspace_id) values ('event_delivery_ms', 100, $1)`,
+        [seed.workspaceId],
+      );
+    }
+    await db.client.query(
+      `insert into slo_samples (signal, value_ms, workspace_id) values ('event_delivery_ms', 9000, $1)`,
+      [seed.workspaceId],
+    );
+    readings = await probeSlos(db.client);
+    const r = reading(readings, "event_delivery_latency_p95_s");
+    expect(["ok", "empty"]).toContain(r.status);
+    // all-overs ⇒ p95 sits above the 5 s threshold → breach (value is seconds)
+    await db.client.query(`delete from slo_samples`, []);
+    for (let i = 0; i < 10; i++) {
+      await db.client.query(
+        `insert into slo_samples (signal, value_ms, workspace_id) values ('event_delivery_ms', 8000, $1)`,
+        [seed.workspaceId],
+      );
+    }
+    const r2 = reading(await probeSlos(db.client), "event_delivery_latency_p95_s");
+    expect(r2.status).toBe("breach");
+    expect(r2.value).toBe(8);
+    // an old sample (outside the 10-minute window) never counts
+    await db.client.query(
+      `update slo_samples set at = now() - interval '1 hour'`,
+      [],
+    );
+    expect(reading(await probeSlos(db.client), "event_delivery_latency_p95_s").status).toBe("empty");
   });
 
   it("an empty database reads every probed signal `empty` or `ok` — nothing fabricates a breach", async () => {

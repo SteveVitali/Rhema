@@ -626,6 +626,37 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       };
     }
 
+    // STB.2 — freeze the delivery-target draft into `inputs.draftId` for the workflows whose delivery
+    // resolves ONLY that explicit input (delivery-base.ts: a Review/fact_check "delivers only on its
+    // explicit draft"). The sheet posts the head draft as `body.draftId` — a lock-set fact, never an
+    // input — so without this freeze the run's delivery base resolves null, the pod calls bare
+    // `finalize`, and the run "completes" with NO correspondence/findings (dossier 404; observed live
+    // on run 01M36663…, 2026-09-23). Server-resolved, never client-trusted: a body id that does not
+    // name a draft of THIS project is ignored and the head draft (newest promoted) takes its place.
+    if (workflow === "review" || workflow === "fact_check") {
+      const deliveryDraftId = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+        if (typeof body.draftId === "string" && body.draftId !== "") {
+          const named = (
+            await tx.query(`select id from drafts where id = $1 and project_id = $2`, [
+              body.draftId,
+              projectId,
+            ])
+          ).rows[0] as { id: string } | undefined;
+          if (named) return named.id;
+        }
+        return (
+          (
+            await tx.query(
+              `select id from drafts where project_id = $1 and promoted_version_id is not null
+                order by n desc limit 1`,
+              [projectId],
+            )
+          ).rows[0] as { id: string } | undefined
+        )?.id;
+      });
+      if (deliveryDraftId) inputs = { ...inputs, draftId: deliveryDraftId };
+    }
+
     // PRB.10 — the linked voice freezes into the run's FROZEN inputs at creation (§9.6; REQ-PERSONA-17):
     // the project pins the exact profile snapshot the run writes against (the project's pin wins; an unpinned
     // project resolves the persona's CURRENT profile and persists the pin). A stale / untested / never-built
