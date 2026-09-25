@@ -58,3 +58,14 @@ The row's text (§17, "1 — Web MVP, the full IDE"):
   enforces exactly that.
 - `.env` holds ignored local dev secrets — flagged by the sweep, never committed, documented not
   allowlisted.
+
+---
+
+## Corrections (append-only)
+
+- **2026-09-26 (CAPSTONE):** Row 4's citation of **D-PRB.16-5** as "awaiting the operator's
+  authoritative-figure ruling" is stale — the ruling landed 2026-09-22 (cap-meter-only: uncommitted
+  burn does not debit; the ~18 % proxy-list-vs-committed gap is the platform rate card working as
+  designed). The still-open residue for row 4 is `sdk_estimate` rows unpopulated live (D-P0.08-2) and
+  the un-instrumented protocols 2–4 + `RIGOR_MULTIPLIERS` (D-P0.15-2 PARTIAL). The PARTIAL verdict
+  is unchanged; the citation was wrong, not the verdict. See `docs/build/readouts/CAPSTONE.md` §2.

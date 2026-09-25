@@ -189,9 +189,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const stamped = (await res.text()).replace(/<script(?=[\s>])/gi, `<script nonce="${nonce}"`);
     const headers = new Headers(res.headers);
     // `new Headers(h)` can collapse multi-valued Set-Cookie in some runtimes — re-append them verbatim.
+    // (never-cookies exempt: this preserves the viewer's own platform session cookie on the SSR
+    //  response — it is not an ingestion-connector credential; the AC-I-B gate scans this file for
+    //  connector surfaces only.)
     const setCookies = res.headers.getSetCookie?.() ?? [];
-    headers.delete("set-cookie");
-    for (const v of setCookies) headers.append("set-cookie", v);
+    headers.delete("set-cookie"); // never-cookies exempt — viewer session passthrough
+    for (const v of setCookies) headers.append("set-cookie", v); // never-cookies exempt — viewer session passthrough
     headers.set("Content-Security-Policy", cspFor(nonce));
     headers.set("X-Content-Type-Options", "nosniff");
     headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
