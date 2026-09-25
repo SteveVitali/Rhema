@@ -55,6 +55,7 @@ import type {
   AiUseStatementDto,
   AiUseAdditionDto,
   AnalyticsEventRequestDto,
+  ShowcaseEntryDto,
   PrivacySettingsDto,
   UsageDto,
   BillingPlansDto,
@@ -132,6 +133,15 @@ import type { LetterSection } from "@rhema/ui";
 
 export type SessionHeaders = Readonly<Record<string, string>>;
 
+/** P1.17 (§15.3) — the funnel intent POST /signup records: `entry` the chosen first step (a carried
+ *  drop-zone file reads `draft`), `src` the acquisition label, `held` the device-local file-hold flag
+ *  (a marker, never bytes). */
+export interface SignupIntent {
+  readonly entry?: "scratch" | "outline" | "draft";
+  readonly src?: string;
+  readonly held?: boolean;
+}
+
 /** P1.04 — the new-project flow's upload input (no project exists yet — the key is workspace-scoped). */
 export interface WorkspaceImportInput {
   readonly text?: string;
@@ -204,6 +214,11 @@ export interface DossierData {
   readonly accessReport: AccessReportFacts;
   /** PRB.16 — finding id → its revision obligation's state, for the per-finding state chip (REQ-OBJ-6). */
   readonly findingObligations?: Readonly<Record<string, ObligationState>>;
+  /** P1.17 (§15.4) — this dossier is the workspace's read-only Showcase (the banner + the
+   *  anchor-viewed beacon arm). */
+  readonly showcase?: boolean;
+  /** P1.17 — the welcome dossier's deep-link anchor (finding 1) for the <60 s funnel event. */
+  readonly firstFindingId?: string;
 }
 
 export interface DataSource {
@@ -224,7 +239,14 @@ export interface DataSource {
    * invite consume happens there at creation; a returning account resolves `created:false`. Pre-auth: no
    * session is forwarded.
    */
-  signup(req: { email: string; code?: string; method?: string }): Promise<
+  signup(req: {
+    email: string;
+    code?: string;
+    method?: string;
+    /** P1.17 — the §15.3 funnel intent (entry + src + the device-local hold flag) persisted at
+     *  account creation. */
+    intent?: SignupIntent;
+  }): Promise<
     | { readonly ok: true; readonly created: boolean }
     | { readonly ok: false; readonly status: number; readonly error: string }
   >;
@@ -609,6 +631,27 @@ export interface DataSource {
     session: SessionHeaders,
     req: AnalyticsEventRequestDto,
   ): Promise<{ ok: boolean; recorded: boolean }>;
+  /**
+   * P1.17 — the §3.5 acquisition funnel mint (session-authed): entry.chosen / showcase.* /
+   * email.verified / paywall.shown. Optional — a fixture source lacking it drops the event.
+   */
+  postAcquisitionEvent?(
+    session: SessionHeaders,
+    req: AnalyticsEventRequestDto,
+  ): Promise<{ ok: boolean; recorded: boolean }>;
+  /** P1.17 — the pre-auth landing beacon (acquisition_events; no session). `ip` forwards the
+   *  browser's source IP so the api's hash dedupes the real client, not the web box. */
+  recordLandingEvent?(req: {
+    event: "landing.viewed" | "landing.dropzone_used";
+    props?: Record<string, unknown>;
+    token?: string;
+    ip?: string;
+  }): Promise<{ ok: boolean }>;
+  /**
+   * P1.17 (§15.4) — the workspace's Showcase entry + signup intent (the `GET /app` precedence
+   * redirect's read; absent ⇒ no redirect, the list renders).
+   */
+  getShowcaseEntry?(session: SessionHeaders): Promise<ShowcaseEntryDto>;
   /** the account's analytics opt-out flag (the Settings toggle). */
   getPrivacySettings(session: SessionHeaders): Promise<PrivacySettingsDto>;
   /** flip `analytics_opt_out` — stops future writes AND hides existing rows from reads (REQ-PROD-15). */
@@ -1140,6 +1183,15 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     // ---- PRB.12 — analytics + privacy + usage ----
     postAnalyticsEvent: (session, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postAnalyticsEvent(req),
+    // ---- P1.17 — the acquisition funnel + the Showcase precedence read ----
+    postAcquisitionEvent: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postAcquisitionEvent(req),
+    recordLandingEvent: (req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl }).recordLandingEvent(req, {
+        headers: req.ip ? { "x-forwarded-for": req.ip } : {},
+      }),
+    getShowcaseEntry: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getShowcase(),
     getPrivacySettings: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPrivacySettings(),
     setAnalyticsOptOut: (session, analyticsOptOut) =>

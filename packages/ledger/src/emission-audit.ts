@@ -30,18 +30,28 @@ const WEB = "apps/web/src/server.ts";
  * reason the event cannot fire at beta (the absence is a finding, not a gap in this map).
  */
 export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry> = {
-  // ---- acquisition / onboarding: pre-auth surfaces — the session-authed intake cannot mint them, and
-  // the invite-only beta has no public landing funnel or auth-lifecycle hooks (the Better Auth mount is
-  // D-P0.01-3). The sample dossier on the invite page renders pre-auth by design.
-  "landing.viewed": { status: "beta_absent", reason: "pre-auth funnel; the invite-only beta has no public landing surface and the intake is session-authed" },
-  "landing.dropzone_used": { status: "beta_absent", reason: "pre-auth funnel; no public dropzone at beta" },
+  // ---- acquisition / onboarding (P1.17): the pre-auth pair lands in `acquisition_events` via
+  // `POST /analytics/landing` (no session; the IP hashes for dedupe); the session-authed funnel
+  // mints via `POST /analytics/acquisition` or the server-owned seams named below.
+  "landing.viewed": { status: "emitted", source: "apps/api/src/analytics-routes.ts" },
+  "landing.dropzone_used": { status: "emitted", source: "apps/api/src/analytics-routes.ts" },
   // PRB.13 (REQ-BETA-19 amended 2026-09-16): the signup surface exists now — `POST /signup` emits
   // `signup.completed{method}` on account creation (server-owned, opt-out-honoring).
   "signup.completed": { status: "emitted", source: "apps/api/src/signup.ts" },
-  "email.verified": { status: "beta_absent", reason: "the auth lifecycle (Better Auth mount) is D-P0.01-3; no verification hook exists at beta" },
-  "showcase.opened": { status: "beta_absent", reason: "the sample dossier renders on the pre-auth invite page; the intake is session-authed" },
-  "showcase.finding_anchor_viewed": { status: "beta_absent", reason: "pre-auth sample dossier; no session to mint the event" },
-  "entry.chosen": { status: "beta_absent", reason: "no scratch/outline/draft entry chooser at beta — projects are operator-seeded and the loop starts at import" },
+  // P1.17 — the magic-link verification return lands at `/app?verified=1`; the web shell triggers it,
+  // the durable mint is the api's session-bound acquisition channel (POST /analytics/acquisition —
+  // analytics-routes.ts holds the funnel allowlist).
+  "email.verified": { status: "emitted", source: "apps/api/src/analytics-routes.ts" },
+  // P1.17 — the workspace's Showcase dossier emits `showcase.opened` on its FIRST dossier read
+  // (the letter_opened_at stamp transition is the signal; dossier-routes.ts, server-owned).
+  "showcase.opened": { status: "emitted", source: "apps/api/src/dossier-routes.ts" },
+  // P1.17 — the <60 s funnel signal only the client observes: the dossier page's IntersectionObserver
+  // posts the beacon once when the first finding's card scrolls into view (pages.tsx → /a/acq → the
+  // api's acquisition mint; the event is ALSO on the client whitelist as a client-only signal).
+  "showcase.finding_anchor_viewed": { status: "emitted", source: "apps/web/src/pages.tsx" },
+  // P1.17 — the §5.3 three-entry project create emits `entry.chosen{entry}` server-side at
+  // `POST /projects` (project-routes.ts); the funnel's cohort key.
+  "entry.chosen": { status: "emitted", source: "apps/api/src/project-routes.ts" },
   // ---- projects
   "project.created": { status: "beta_absent", reason: "no project-creation surface at beta; projects are operator-seeded for invited partners" },
   "project.protocol_changed": { status: "beta_absent", reason: "no protocol picker at beta (the beta's protocol is fixed)" },
@@ -93,7 +103,9 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   "estimate.consent_shown": { status: "materialized", source: `${MAT}: gates kind='confirm_cost'` },
   "estimate.consent_accepted": { status: "materialized", source: `${MAT}: confirm_cost gate decisions` },
   "estimate.consent_declined": { status: "materialized", source: `${MAT}: confirm_cost gate decisions` },
-  "paywall.shown": { status: "beta_absent", reason: "the beta's only paywall is the exhaustion prompt — emitted as credits.exhausted_prompt{action_taken:'shown'}; no plan paywall exists" },
+  // P1.17 — the §14.2/14.3 plan paywall exists now: `paywall.shown{location}` emits at the run sheet's
+  // gate-denied seam (the 402/403/429 response the sheet renders the paywall from).
+  "paywall.shown": { status: "emitted", source: "apps/api/src/run-routes.ts" },
   "plan.upgraded": { status: "beta_absent", reason: "no plan tiers at beta (house credits; P1.16)" },
   "topup.purchased": { status: "emitted", source: "packages/ledger/src/stripe.ts" },
   "refund.issued": { status: "materialized", source: `${MAT}: credit_ledger kind='refund'` },
@@ -114,6 +126,9 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   "chat.plan_card_shown": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
   "chat.plan_card_decided": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
   "chat.empty_state_shown": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
+  // P1.17 — REQ-CHAT-30's instrumentation half: the scratch cohort's first gate decision emits
+  // `outline.approved` at the gate-decision seam (an approve_outline gate resolving approve).
+  "outline.approved": { status: "emitted", source: "apps/api/src/run-routes.ts" },
 };
 
 /** The audit grouped by status — the report/PR render this verbatim. */

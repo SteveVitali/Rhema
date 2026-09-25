@@ -14,6 +14,7 @@ import { Hono } from "hono";
 import { approvalOverridesSchema, GATE_DEFAULTS, GATE_KINDS } from "@rhema/contracts";
 import { captureGuidance, retireGuidance, type ApprovalPolicy } from "@rhema/orchestrator";
 import type { RunApiDeps } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 export type ApprovalApiDeps = RunApiDeps & {
   /** the raw SQL client for project/user-scoped reads (the shell's `db`). */
@@ -37,6 +38,8 @@ interface GuidanceRow {
 
 export function createApprovalRoutes(deps: ApprovalApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: approval policies, overrides + guidance 409.
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   const ownProject = async (projectId: string, workspaceId: string) => {
     const r = (

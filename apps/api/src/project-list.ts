@@ -65,6 +65,10 @@ export interface ProjectListRow {
   readonly statusLine: string;
   /** P1.04 — the row's §5.2 attention group (derived, never persisted). */
   readonly group: ProjectGroupKey;
+  /** P1.17 (§15.4) — the workspace's one read-only worked-example dossier ("Worked example" row). */
+  readonly showcase: boolean;
+  /** P1.17 — the latest review correspondence's delivering run (the dossier href) when known. */
+  readonly latestReviewRunId: string | null;
 }
 
 interface ProjectRowDb {
@@ -79,6 +83,8 @@ interface ProjectRowDb {
   paper_theme: "light" | "follow" | "dark";
   protocol_id: string | null;
   venue: string | null;
+  /** P1.17 — the showcase marker (0037). */
+  showcase: boolean;
 }
 
 interface DraftRowDb {
@@ -334,7 +340,7 @@ export async function listProjectStates(
   // the soft-deleted rows come back. The default list never sees them.
   const projRes = await db.query(
     `select id, slug, title, accepted_draft_id, archived_at, deleted_at, persona_id, persona_profile_snapshot_id,
-            paper_theme, protocol_id, venue
+            paper_theme, protocol_id, venue, showcase
        from projects where workspace_id = $1 and deleted_at is ${opts?.deletedOnly ? "not " : ""}null
        order by created_at desc, id`,
     [principal.workspaceId],
@@ -353,7 +359,8 @@ export async function listProjectStates(
   // reviews / responses: join to the reviewed draft's ordinal (`n`) — the state function keys on version N.
   // P1.04 — the review also carries letter_opened_at (the Ready-to-read clearing signal).
   const reviewsRes = await db.query(
-    `select ci.project_id, ci.id as correspondence_id, d.n as draft_n, ci.delivered_at, ci.letter_opened_at
+    `select ci.project_id, ci.id as correspondence_id, d.n as draft_n, ci.delivered_at, ci.letter_opened_at,
+            ci.run_id
        from correspondence_items ci join drafts d on d.id = ci.draft_id
       where ci.project_id = any($1::text[]) and ci.kind = 'review'`,
     [ids],
@@ -364,6 +371,7 @@ export async function listProjectStates(
     draft_n: number;
     delivered_at: string | Date;
     letter_opened_at: string | Date | null;
+    run_id: string;
   }[];
 
   const responsesRes = await db.query(
@@ -532,6 +540,8 @@ export async function listProjectStates(
       letterOpened,
       statusLine,
       group,
+      showcase: p.showcase === true,
+      latestReviewRunId: latestReview?.run_id ?? null,
     };
   });
 }
@@ -554,6 +564,57 @@ export function createShellRoutes(deps: ShellApiDeps): Hono {
       deletedOnly: c.req.query("scope") === "deleted",
     });
     return c.json({ projects: rows });
+  });
+
+  // P1.17 (§15.4) — the workspace's Showcase entry: slug + dossier run + first-finding anchor + the
+  // opened flag. The web `GET /app` precedence redirect reads this (the Showcase opens first only
+  // while it's the workspace's unopened only child — a user who arrived with a file wins).
+  app.get("/showcase", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const row = (
+      await deps.db.query(
+        `select p.id, p.slug, p.archived_at,
+                (select ci.run_id from correspondence_items ci
+                  where ci.project_id = p.id and ci.kind = 'review' order by ci.ordinal limit 1) as review_run_id,
+                (select ci.letter_opened_at from correspondence_items ci
+                  where ci.project_id = p.id and ci.kind = 'review' order by ci.ordinal limit 1) as letter_opened_at,
+                (select f.id from findings f
+                  join correspondence_items ci on ci.id = f.correspondence_id
+                  where ci.project_id = p.id and ci.kind = 'review' order by f.ordinal limit 1) as first_finding_id
+           from projects p
+          where p.workspace_id = $1 and p.showcase and p.deleted_at is null
+          order by p.created_at limit 1`,
+        [principal.workspaceId],
+      )
+    ).rows[0] as
+      | {
+          id: string;
+          slug: string;
+          archived_at: string | Date | null;
+          review_run_id: string | null;
+          letter_opened_at: string | Date | null;
+          first_finding_id: string | null;
+        }
+      | undefined;
+    // §15.3 — the signup intent rides the same read: `entry`/`src` recorded at POST /signup decide
+    // whether the carried-file path wins over the Showcase-first default.
+    const intentRow = (
+      await deps.db.query(`select signup_intent from "user" where id = $1`, [principal.userId])
+    ).rows[0] as { signup_intent: { entry?: string; src?: string } | null } | undefined;
+    const intent = intentRow?.signup_intent ?? null;
+    if (!row || !row.review_run_id) return c.json({ showcase: null, intent });
+    return c.json({
+      showcase: {
+        slug: row.slug,
+        projectId: row.id,
+        reviewRunId: row.review_run_id,
+        firstFindingId: row.first_finding_id,
+        opened: row.letter_opened_at != null,
+        archived: row.archived_at != null,
+      },
+      intent,
+    });
   });
   // Public: the web /login gate validates an invite BEFORE any auth request is made (no valid code ⇒ no
   // signup). This only reports validity for a code the caller supplies; it consumes nothing. NOTE: it is an

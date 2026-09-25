@@ -51,6 +51,8 @@ export interface SignupPolicyDeps {
   readonly mode: SignupMode;
   readonly inviteGate: InviteGate;
   readonly ids: IdFactory;
+  /** P1.17 — the Showcase seed seam (see ProvisionOptions). */
+  readonly showcaseSeed?: (workspaceId: string, ownerId: string) => Promise<unknown>;
 }
 
 interface ExistingMembership {
@@ -63,9 +65,24 @@ interface ExistingMembership {
  * `user.email` constraint is the concurrency key); a previously-provisioned email is an idempotent
  * `created:false`, never a second account and never a second invite consume.
  */
+/**
+ * P1.17 (§15.3) — the intent the signup funnel carried: `entry` is the chosen first step
+ * (scratch / outline / draft — a carried file reads `draft`), `src` the acquisition label.
+ * Persisted on the user row at creation (`signup_intent`); `GET /showcase` returns it so
+ * `GET /app`'s precedence redirect can honor "a user who arrived carrying a file gets their
+ * project path first, the Showcase second".
+ */
+export interface SignupIntent {
+  readonly entry?: "scratch" | "outline" | "draft";
+  readonly src?: string;
+  /** a landing drop-zone hold is parked on the signer's device (IndexedDB) — the marker persists
+   *  through the magic-link leg so /app can route to the claim form (`held` is a flag, never bytes). */
+  readonly held?: boolean;
+}
+
 export async function admitSignup(
   deps: SignupPolicyDeps,
-  args: { email: string; code?: string },
+  args: { email: string; code?: string; intent?: SignupIntent },
 ): Promise<SignupAdmission> {
   const email = args.email.trim().toLowerCase();
   if (!email) return { ok: false, reason: "email_required" };
@@ -132,7 +149,19 @@ export async function admitSignup(
     if (!consumed.ok) return { ok: false, reason: consumed.reason };
   }
 
-  const provisioned = await provisionPersonalAccount(deps.db, deps.ids, userId);
+  const provisioned = await provisionPersonalAccount(deps.db, deps.ids, userId, {
+    ...(deps.showcaseSeed ? { seedShowcase: deps.showcaseSeed } : {}),
+  });
+  // P1.17 — persist the signup intent on the new account only (a returning user's intent is theirs;
+  // a fresh record here would rewrite history the precedence redirect already consumed).
+  if (args.intent && (args.intent.entry || args.intent.src)) {
+    await deps.db
+      .query(`update "user" set signup_intent = $2 where id = $1`, [
+        userId,
+        JSON.stringify({ ...args.intent, at: new Date().toISOString() }),
+      ])
+      .catch(() => undefined); // a missing column on an unmigrated dev DB never fails admission
+  }
   return { ok: true, created: true, userId, ...provisioned };
 }
 
@@ -142,10 +171,22 @@ export async function admitSignup(
  * and the user's admin membership. Idempotent — called from `POST /signup` admission AND from Better
  * Auth's `user.create` hook (the OAuth/magic-link paths that never see the signup route; PRB.16).
  */
+export interface ProvisionOptions {
+  /**
+   * P1.17 (§15.4) — the Showcase seed seam: called with the workspace id once account rows exist so
+   * every provisioned workspace carries the one deterministic showcase dossier. Idempotent — a
+   * workspace that already has its showcase is left untouched (covers OAuth/magic-link paths that
+   * provisioned before this landed). The seed runs inside the caller's tenant-scoped transaction;
+   * a seed failure never fails provisioning (the workspace works, the walkthrough just isn't there).
+   */
+  readonly seedShowcase?: (workspaceId: string, ownerId: string) => Promise<unknown>;
+}
+
 export async function provisionPersonalAccount(
   db: SqlClient,
   ids: (prefix: string) => string,
   userId: string,
+  opts?: ProvisionOptions,
 ): Promise<{ workspaceId: string; billingAccountId: string }> {
   // already provisioned ⇒ return the existing personal workspace (a second personal workspace would fork
   // the session→principal resolution).
@@ -157,7 +198,12 @@ export async function provisionPersonalAccount(
       [userId],
     )
   ).rows[0] as { workspace_id: string; billing_account_id: string } | undefined;
-  if (existing) return { workspaceId: existing.workspace_id, billingAccountId: existing.billing_account_id };
+  if (existing) {
+    if (opts?.seedShowcase) {
+      await opts.seedShowcase(existing.workspace_id, userId).catch(() => undefined);
+    }
+    return { workspaceId: existing.workspace_id, billingAccountId: existing.billing_account_id };
+  }
   const billingAccountId = ids("ba");
   const workspaceId = ids("ws");
   await db.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
@@ -181,6 +227,9 @@ export async function provisionPersonalAccount(
        on conflict (workspace_id, user_id) do nothing`,
     [workspaceId, userId],
   );
+  if (opts?.seedShowcase) {
+    await opts.seedShowcase(workspaceId, userId).catch(() => undefined);
+  }
   return { workspaceId, billingAccountId };
 }
 
@@ -191,6 +240,8 @@ export interface SignupApiDeps extends SignupPolicyDeps {
   /** Tenant-scoped tx for the `signup.completed` analytics write (analytics_events is RLS'd to the
    *  new account's workspace). */
   readonly txRunner: { run<T>(workspaceId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> };
+  /** P1.17 — the Showcase seed bound to txRunner (+ the content store when the deploy has one). */
+  readonly showcaseSeed?: (workspaceId: string, ownerId: string) => Promise<unknown>;
 }
 
 /** The deploy's default account-creation throttle — beta-grade (D-PRB.13-1: per-instance, in-memory). */
@@ -215,10 +266,28 @@ export function createSignupRoutes(deps: SignupApiDeps): Hono {
       email?: unknown;
       code?: unknown;
       method?: unknown;
+      intent?: unknown;
     };
     const email = typeof body.email === "string" ? body.email : "";
     const code = typeof body.code === "string" && body.code.trim() !== "" ? body.code.trim() : undefined;
     const method = typeof body.method === "string" && body.method !== "" ? body.method : "magic_link";
+    // P1.17 — the §15.3 intent (entry + src), validated to the entry enum; malformed intent drops away
+    // rather than refusing the admission.
+    const rawIntent =
+      body.intent && typeof body.intent === "object" && !Array.isArray(body.intent)
+        ? (body.intent as { entry?: unknown; src?: unknown; held?: unknown })
+        : undefined;
+    const intent: SignupIntent | undefined = rawIntent
+      ? {
+          ...(rawIntent.entry === "scratch" || rawIntent.entry === "outline" || rawIntent.entry === "draft"
+            ? { entry: rawIntent.entry }
+            : {}),
+          ...(typeof rawIntent.src === "string" && rawIntent.src.length > 0 && rawIntent.src.length <= 80
+            ? { src: rawIntent.src }
+            : {}),
+          ...(rawIntent.held === true ? { held: true } : {}),
+        }
+      : undefined;
 
     const verdict = deps.throttle.attempt(clientIp(c), email || undefined);
     if (!verdict.allowed) {
@@ -226,7 +295,7 @@ export function createSignupRoutes(deps: SignupApiDeps): Hono {
       return c.json({ error: "rate_limited" }, 429);
     }
 
-    const admission = await admitSignup(deps, { email, ...(code ? { code } : {}) });
+    const admission = await admitSignup(deps, { email, ...(code ? { code } : {}), ...(intent ? { intent } : {}) });
     if (!admission.ok) {
       return c.json({ error: admission.reason }, statusForReason(admission.reason!));
     }

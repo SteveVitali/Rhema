@@ -185,6 +185,9 @@ export const ANALYTICS_EVENTS = {
     action: z.enum(["run", "first_step", "edit", "cancel"]),
   }),
   "chat.empty_state_shown": z.object({}),
+  // P1.17 — REQ-CHAT-30's scratch-cohort activation event: the outline-approval gate (the scratch
+  // onboarding path's first gate) resolved approve. Server-owned — emitted at the gate-decision seam.
+  "outline.approved": z.object({}),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;
@@ -221,6 +224,8 @@ export const CLIENT_ANALYTICS_EVENTS = [
   "run.report_viewed",
   "gate.presence_timer_shown",
   "voice.staleness_shown", // the staleness banner's render — a view signal only the client sees
+  // P1.17 — §3.5's "saw the Showcase anchor <60 s" signal: only the client observes the scroll.
+  "showcase.finding_anchor_viewed",
 ] as const satisfies readonly AnalyticsEventName[];
 export type ClientAnalyticsEventName = (typeof CLIENT_ANALYTICS_EVENTS)[number];
 export const CLIENT_ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set(CLIENT_ANALYTICS_EVENTS);

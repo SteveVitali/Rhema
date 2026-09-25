@@ -62,6 +62,7 @@ import type { OrchestratorDeps, SqlClient, RunState } from "@rhema/orchestrator"
 import { estimatorSpec, estimateCredits } from "@rhema/protocols";
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 import type { Converter } from "./import.js";
 
 /** The chat surface's deps: the orchestrator bundle (run creation, cancel, events, queue) + the
@@ -273,6 +274,9 @@ function parseUrlPolicy(v: unknown): Record<string, unknown> | undefined {
 
 export function createChatRoutes(deps: ChatApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: threads/turns/pins/remembers on it 409
+  // ("Duplicate it first" — Ask stays a verb on the user's own projects).
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   // ---- the Desk Chat read: threads (+ ensured default), the active thread's turns, pins, the
   // source-card list, the §7.6 empty-state model, and the live-run flag (REQ-CHAT-20's read filter).

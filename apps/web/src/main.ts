@@ -92,8 +92,10 @@ export function startWebServer(): void {
     async beginAuth(method, args, c) {
       const clientIp = c?.req.header("x-forwarded-for")?.split(",")[0]?.trim();
       const cookie = c?.req.header("cookie");
-      // the post-sign-in landing — always the app host's /app (a trusted origin on the api).
-      const callbackURL = `${appBaseUrl ?? new URL(c?.req.url ?? "http://localhost").origin}/app`;
+      // the post-sign-in landing — the app host's /app (a trusted origin on the api); P1.17 lets the
+      // caller carry a same-origin path (the funnel intent's ?entry&held&src fallback).
+      const next = args.next && args.next.startsWith("/") && !args.next.startsWith("//") ? args.next : "/app";
+      const callbackURL = `${appBaseUrl ?? new URL(c?.req.url ?? "http://localhost").origin}${next}`;
       if (method === "google") {
         const res = await apiFetch(
           "/api/auth/sign-in/social",

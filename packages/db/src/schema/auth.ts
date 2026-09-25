@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core";
 
 // Better Auth tables, self-hosted in our Postgres (§13.1; R4). Google OAuth + email magic link +
 // sessions at launch; the device list is a schema stub for step-up/biometric on mobile (§10.5).
@@ -23,6 +23,10 @@ export const user = pgTable("user", {
   // P1.09 (0032; §6.4/§5.11): the dismissed one-time inline explainers (e.g. 'approval' on the first
   // gate card) — once per user, never a modal tour.
   dismissedExplainers: text("dismissed_explainers").array().notNull().default([]),
+  // P1.17 (0037; §15.3): the /signup funnel's recorded intent {entry, src} — written once at account
+  // creation; `GET /app`'s precedence redirect reads it (a carried draft beats the Showcase-first
+  // default). Never overwritten for a returning account.
+  signupIntent: jsonb("signup_intent"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

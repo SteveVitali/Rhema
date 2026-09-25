@@ -9,6 +9,7 @@ import type { SqlClient } from "./invite.js";
 import type { Converter } from "./import.js";
 import { createImportedDraft, createOutlineArtifact } from "./import.js";
 import { indexProjectDoc, upsertProjectSearchDoc } from "./search.js";
+import { isShowcaseProject } from "./showcase.js";
 
 // P1.04 — the §5.2/§5.3 project-home routes: `POST /projects` (the three-entry create — scratch /
 // upload-an-outline / upload-a-draft — adopting the quarantined conversion the workspace-scoped preview
@@ -208,6 +209,14 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
     await indexProjectDoc(deps.db, { projectId, workspaceId: principal.workspaceId, id: deps.ids }).catch(
       () => undefined,
     );
+    // P1.17 (§3.5) — `entry.chosen` is the onboarding funnel's cohort key (scratch / outline / draft).
+    await recordAnalyticsEvent(deps.db, { ids: deps.ids, clock: deps.clock }, {
+      userId: principal.userId,
+      workspaceId: principal.workspaceId,
+      projectId,
+      event: "entry.chosen",
+      props: { entry: entry as "scratch" | "outline" | "draft" },
+    }).catch(() => undefined);
     if (result && draftId) {
       await upsertProjectSearchDoc(deps.db, {
         projectId,
@@ -385,6 +394,11 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
   app.post("/projects/:id/delete", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    // P1.17 (§15.4) — the Showcase can be archived and restored but never deleted (a deleted showcase
+    // would leave the account without its worked example; archive is the hide affordance).
+    if (await isShowcaseProject(deps.db, c.req.param("id"))) {
+      return c.json({ error: "showcase_not_deletable" }, 409);
+    }
     const res = await deps.db.query(
       `update projects set deleted_at = now() where id = $1 and deleted_at is null returning id`,
       [c.req.param("id")],

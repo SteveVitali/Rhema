@@ -77,6 +77,40 @@ export interface PricingPublication {
   };
   costCardShapes: readonly { key: string; label: string; words: number; claims: number }[];
   costPerVerifiedClaim: Record<string, Record<ModelTier, number>>;
+  /**
+   * P1.17 (§15.2) — the per-tier multipliers the marketing cost cards apply on top of the Base
+   * parametric terms (mirrors MODEL_TIER_MULTIPLIERS; kept here so the page derives from ONE file).
+   */
+  modelTierMultipliers: Record<ModelTier, number>;
+  /**
+   * P1.17 (§15.2) — the parametric terms the marketing cost cards + FAQ derive from (Base/Standard,
+   * §12.2 public forms). `costCardFigures` in pricing-page.ts consumes ONLY this + costPerVerifiedClaim
+   * — a hand-edited figure on the page fails the contract test.
+   */
+  costCardTerms: {
+    comment: string;
+    /** the non-claim reading overhead inside a Review (intake + discourse + second read). */
+    reading: { intercept: number; perWord: number };
+    /** credits a claim costs when fact-check is OFF (read, not verified). */
+    unverifiedClaimCredits: number;
+    draft: { intercept: number; perWord: number; perClaim: number };
+    revise: {
+      intercept: number;
+      perWord: number;
+      perClaim: number;
+      researchedMoveShare: number;
+      perResearchedMove: number;
+    };
+    voiceProfile: { intercept: number; perWord: number };
+    /** the corpus size the voice-profile card prices. */
+    voiceCorpusWords: number;
+    quickReview: {
+      wordCap: number;
+      /** the claim inventory the ≤-word-cap quick-review line prices. */
+      claims: number;
+      rigorMultipliers: { quick: number; standard: number; full_board: number };
+    };
+  };
 }
 
 const raw = pricingJson as unknown as PricingPublication;
@@ -112,6 +146,18 @@ function validate(p: PricingPublication): PricingPublication {
   assert(p.trial.entitlement.wordCap === 6000, "trial word cap 6,000");
   const packs = p.topUpPacks.map((t) => `${t.usd}:${t.credits}`).join(",");
   assert(packs === "10:1000,50:5250,200:22000", "top-up packs 1000/5250/22000");
+  // P1.17 — the cost-card derivation inputs must exist and be sane (the page derives from them).
+  for (const tier of ["base", "balanced", "frontier"] as const) {
+    assert(p.costPerVerifiedClaim.review![tier]! > 0, `costPerVerifiedClaim.review.${tier} required`);
+    assert(p.costPerVerifiedClaim.fact_check![tier]! > 0, `costPerVerifiedClaim.fact_check.${tier} required`);
+    assert(p.modelTierMultipliers[tier] > 0, `modelTierMultipliers.${tier} required`);
+  }
+  assert(p.modelTierMultipliers.base === 1, "modelTierMultipliers.base === 1");
+  assert(p.costCardTerms.reading.intercept >= 0 && p.costCardTerms.reading.perWord >= 0,
+    "costCardTerms.reading terms required");
+  assert(p.costCardTerms.unverifiedClaimCredits >= 0, "costCardTerms.unverifiedClaimCredits required");
+  assert(p.costCardTerms.voiceCorpusWords > 0, "costCardTerms.voiceCorpusWords required");
+  assert(p.costCardTerms.quickReview.wordCap > 0, "costCardTerms.quickReview.wordCap required");
   return p;
 }
 

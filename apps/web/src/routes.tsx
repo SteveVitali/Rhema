@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
 import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, NotFoundPage } from "./pages.js";
+import { LandingPage, PricingPage, SignupPage } from "./marketing.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
-// the full IDE arrives. There is deliberately NO /pricing or /plans route yet — P1.17 renders
-// `pricing.json` — but P1.16 lands the authed billing surfaces (/settings/billing, /billing/return,
-// the §14.5 level-2 /p/:project/usage). `public` marks the routes reachable without a session;
+// the full IDE arrives. P1.17 lands the public funnel: `/` is the §15.1 landing, `/pricing` renders
+// `pricing.json`, `/signup` carries the funnel intent, and the invite machinery keeps `/invite`
+// (partner cohorts still use it). `public` marks the routes reachable without a session;
 // everything else is auth-gated (redirects to /login).
 
 export interface AppRoute {
@@ -16,6 +17,10 @@ export interface AppRoute {
 
 export const inviteElement = <InvitePage />;
 export const loginElement = <LoginPage />;
+// P1.17 — the public funnel elements (§15.1 landing, §15.2 pricing, §15.3 signup-with-intent).
+export const landingElement = <LandingPage />;
+export const pricingElement = <PricingPage />;
+export const signupElement = <SignupPage />;
 export const projectsElement = <ProjectsPage />;
 export const projectElement = <ProjectPage />;
 // P1.04 — the §5.3 new-project sheet (three entries: scratch / outline / draft).
@@ -57,8 +62,12 @@ export const visualizeElement = <VisualizePage />;
 export const notFoundElement = <NotFoundPage />;
 
 export const routes: readonly AppRoute[] = [
-  { path: "/", public: true, element: inviteElement },
+  // P1.17 — `/` is the §15.1 landing now; the invite machinery keeps `/invite` (the Notes rule:
+  // the landing replaces the invite page at the apex, partner cohorts keep their route).
+  { path: "/", public: true, element: landingElement },
   { path: "/invite", public: true, element: inviteElement },
+  { path: "/pricing", public: true, element: pricingElement },
+  { path: "/signup", public: true, element: signupElement },
   { path: "/login", public: true, element: loginElement },
   { path: "/app", public: false, element: projectsElement },
   // P1.04 — the new-project sheet (§5.3): ?entry=scratch|outline|draft picks the entry.

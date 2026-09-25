@@ -21,3 +21,11 @@ export {
 } from "./migrate.js";
 export { agentTypesSeed, protocolsSeed } from "./seed/code-seed.js";
 export { seedRealProjects } from "./seed/real-projects.js";
+export {
+  seedShowcaseProject,
+  SHOWCASE_FIXTURE_CLAIMS,
+  SHOWCASE_FIXTURE_FINDINGS,
+  type ShowcaseSeedDeps,
+  type ShowcaseSeedResult,
+  type ShowcaseStore,
+} from "./seed/showcase.js";

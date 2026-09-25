@@ -23,13 +23,17 @@ import type { Actor, Claim, ClaimSource, Finding, ObligationState } from "@rhema
 import { scopeChip, type ScopeRef } from "@rhema/commands";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
-import type { TxRunner } from "@rhema/orchestrator";
+import type { TxRunner, IdFactory } from "@rhema/orchestrator";
+import { recordAnalyticsEvent } from "@rhema/ledger";
 
 export interface DossierApiDeps {
   readonly principal: (c: {
     req: { header(name: string): string | undefined };
   }) => Principal | null;
   readonly txRunner: TxRunner;
+  /** P1.17 — server-owned analytics (`showcase.opened` on the first dossier read) needs the id/clock seam. */
+  readonly ids: IdFactory;
+  readonly clock: { now(): Date };
   /** the workspace-bound readable store (same seam as the revision routes' `contentStoreFor`). */
   contentStoreFor?(workspaceId: string): Promise<ContentStore>;
   readonly store?: ContentStore;
@@ -233,7 +237,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       const corr = (
         await tx.query(
           `select ci.id, ci.draft_id, ci.run_id, ci.ordinal, ci.rubric, ci.artifact_ids, ci.prior_review_id,
-                  p.title project_title, p.slug project_slug, d.n draft_n
+                  ci.letter_opened_at, p.title project_title, p.slug project_slug, p.showcase, d.n draft_n
              from correspondence_items ci
              join projects p on p.id = ci.project_id
              left join drafts d on d.id = ci.draft_id
@@ -249,8 +253,10 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
             rubric: { dimensions?: RubricRowInput[] } | null;
             artifact_ids: string[];
             prior_review_id: string | null;
+            letter_opened_at: string | Date | null;
             project_title: string;
             project_slug: string;
+            showcase: boolean;
             draft_n: number | null;
           }
         | undefined;
@@ -263,6 +269,18 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         `update correspondence_items set letter_opened_at = coalesce(letter_opened_at, now()) where id = $1`,
         [corr.id],
       );
+      // P1.17 (§3.5) — `showcase.opened` fires on the FIRST dossier open of a showcase project (the
+      // stamp's transition is the signal: null→now). Server-owned, opt-out honored, non-fatal.
+      if (corr.showcase === true && corr.letter_opened_at == null) {
+        await recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
+          userId: principal.userId,
+          workspaceId: principal.workspaceId,
+          projectId,
+          runId,
+          event: "showcase.opened",
+          props: {},
+        }).catch(() => undefined);
+      }
 
       const run = (
         await tx.query(
@@ -492,6 +510,11 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         ...(scopeLabels.length > 0 ? { scopeLabels } : {}),
         openObligations,
         addressedObligations,
+        // P1.17 — the Showcase marker + first-finding anchor (the welcome dossier opens on finding 1).
+        showcase: corr.showcase === true,
+        ...(corr.showcase === true && findingRows.length > 0
+          ? { firstFindingId: findingRows[0]!.id }
+          : {}),
         runCard,
         letterTitle: corr.project_title,
         letterSections,

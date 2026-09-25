@@ -103,6 +103,9 @@ export interface PageData {
       readonly countLine: string;
       readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
     };
+    /** P1.17 (§15.3/REQ-GROWTH-1) — a landing drop-zone hold waits in localStorage; the page's script
+     *  hydrates it into the file input (the post-auth leg reuses the SAME upload path). */
+    readonly held?: boolean;
   };
   readonly login?: {
     readonly error?: string;
@@ -115,6 +118,24 @@ export interface PageData {
   /** PRB.13 — the public invite/landing page's mode flag (the access note + sign-in CTA copy). */
   readonly invite?: {
     readonly signupOpen?: boolean;
+  };
+  /** P1.17 (§15.3) — the /signup page's per-request state: the carried intent (entry/src/held),
+   *  error/sent echoes, and the mode flag (open ⇒ the code field is optional). */
+  readonly signup?: {
+    readonly error?: string;
+    readonly sent?: boolean;
+    readonly code?: string;
+    readonly email?: string;
+    readonly signupOpen?: boolean;
+    readonly entry?: "scratch" | "outline" | "draft";
+    readonly src?: string;
+    /** a landing drop-zone hold is claimed post-auth (the file re-uploads through the live path). */
+    readonly held?: boolean;
+  };
+  /** P1.17 — /pricing's billing-cycle toggle (`?cycle=annual` shows the annual per-month + the
+   *  15% saving in dollars — REQ-GROWTH-8). */
+  readonly pricing?: {
+    readonly annual?: boolean;
   };
   readonly project?: {
     readonly title: string;

@@ -142,5 +142,16 @@
   "costPerVerifiedClaim": {
     "review": { "base": 24, "balanced": 53, "frontier": 108 },
     "fact_check": { "base": 11, "balanced": 26, "frontier": 51 }
+  },
+  "modelTierMultipliers": { "base": 1.0, "balanced": 2.2, "frontier": 4.5 },
+  "costCardTerms": {
+    "comment": "P1.17 (§15.2) — the parametric terms the marketing cost cards + FAQ derive from, at Base tier / Standard rigor, mirroring the §12.2 public forms. Every figure the pricing page renders is computed from these + costPerVerifiedClaim — nothing is hand-typed. Modeled figures (like the estimator's); the run sheet's live estimate is authoritative for a real run.",
+    "reading": { "intercept": 40, "perWord": 0.015 },
+    "unverifiedClaimCredits": 3.8,
+    "draft": { "intercept": 60, "perWord": 0.05, "perClaim": 11 },
+    "revise": { "intercept": 50, "perWord": 0.03, "perClaim": 4, "researchedMoveShare": 0.4, "perResearchedMove": 20 },
+    "voiceProfile": { "intercept": 80, "perWord": 0.0046 },
+    "voiceCorpusWords": 50000,
+    "quickReview": { "wordCap": 3000, "claims": 8, "rigorMultipliers": { "quick": 0.6, "standard": 1.0, "full_board": 1.2 } }
   }
 }

@@ -1669,6 +1669,186 @@ export const COPY = {
     rateTableLink: "See the published rates",
   },
 
+  // ---- P1.17 (§15.1–§15.4) — the public funnel: landing (twelve sections, the v0.3 order), the
+  //      /pricing page, and /signup. `lintGrowthCopy` runs over these keys too — a generation promise
+  //      in a hero/proof zone, detection-evasion language, a placeholder logo, an unbuilt-asset claim,
+  //      or a comparative claim without the wave flag fails the copy test (REQ-POS-4/5/11/12/13,
+  //      REQ-GROWTH-5 amended, REQ-EVAL-19). ----
+  landing: {
+    nav: {
+      pricing: "Pricing",
+      faq: "FAQ",
+      signIn: "Sign in",
+    },
+    hero: {
+      // REQ-POS-4 — the locked §15.1 headline (the lint pins it verbatim).
+      headline: "An editorial board for everything you write.",
+      lede:
+        "Rhēma reads a finished draft the way a demanding editor would — checks every load-bearing " +
+        "claim against real sources, maps the argument, and hands back a dossier you can act on.",
+      // §14.3 — the trial note, verbatim in spirit (the landing and the mechanics are one sentence).
+      trialNote: "No card. Your first review is included.",
+      ctaPrimary: "Start with a draft",
+      ctaScratch: "Start from scratch",
+      ctaOutline: "Upload an outline",
+    },
+    dropzone: {
+      label: "Drop your draft here",
+      hint: ".md, .docx, or .pdf — held on this device until you sign in. We never see it first.",
+      hintHeld: "Your file is held on this device — it uploads after you sign in.",
+      paste: "Or paste your text",
+      pastePlaceholder: "Paste your draft…",
+      pasteCta: "Hold my text",
+    },
+    dossier: {
+      heading: "What the board hands back",
+      bullets: [
+        "Every finding quotes its passage",
+        "Every verdict carries a URL that was fetched and read",
+        "The second read never sees the first reader's notes",
+        "Independent second read, not a panel of personas",
+      ] as const,
+      sampleNote: "A read-only sample dossier — the fixture the Showcase ships.",
+    },
+    workflow: {
+      heading: "The workflow, in lifecycle order",
+      steps: [
+        { key: "outline", label: "Outline", note: "The argument's skeleton, checked before prose." },
+        { key: "draft", label: "Draft", note: "Your authorship — every suggestion waits for your approval." },
+        { key: "review", label: "Review", note: "The full board: claims, structure, discourse." },
+        { key: "fact_check", label: "Fact-check", note: "Every checkable claim against fetched sources." },
+        { key: "revise", label: "Revise", note: "Moves proposed as a response — you keep the pen." },
+      ] as const,
+      gateNote: "Draft's suggestions never apply themselves — every one waits for your approval.",
+    },
+    seat: {
+      heading: "The author's seat",
+      body:
+        "You read the dossier, pick the moves worth making, and watch the diff. Dispositions, " +
+        "apply-or-decline, a response letter when you revise — the instruments assume it's your book.",
+    },
+    voices: {
+      heading: "A register, not a person",
+      body:
+        "A Voice is a set of registers and tics extracted from your own corpus — it tunes the " +
+        "review to your room, and a staleness pill tells you when the profile has drifted.",
+    },
+    runs: {
+      heading: "Runs you can watch",
+      body:
+        "Every run carries its estimate-and-cap card live — the run never exceeds the cap you saw " +
+        "before it started, and the meter is on the page while it works.",
+    },
+    models: {
+      heading: "Stay on the frontier",
+      body:
+        "Powered by Claude — model tiers stay current as the frontier moves, and the rate card " +
+        "publishes what each tier costs before you spend it.",
+    },
+    proof: {
+      heading: "Show your work",
+      body:
+        "The dossier's claims ledger is the proof: every verdict links the source it fetched, every " +
+        "contradicted claim shows the passage and the page. Judge the board by its citations.",
+    },
+    pricing: {
+      heading: "Pricing",
+      body: "The same numbers the run sheet quotes — plans, credits, and the per-workflow cost cards.",
+      cta: "See pricing",
+    },
+    changelog: {
+      heading: "Changelog",
+      body: "Phase 1 — the full IDE, the public funnel, and the Showcase launch together.",
+    },
+    faq: {
+      heading: "Questions",
+      items: [
+        {
+          q: "Does Rhēma write my essay?",
+          a: "No. The board reviews and proposes; the approval gates keep the pen with you.",
+        },
+        {
+          q: "Do I pay to look?",
+          a: "No card is required to start — your first review is included in the trial window.",
+        },
+        {
+          q: "Is my text used to train models?",
+          a: "Never. Drafts, letters, and telemetry stay out of training, and providers are bound by the same terms.",
+        },
+      ] as const,
+    },
+    finalCta: {
+      heading: "Bring the draft.",
+      body: "The board reads first, quotes what it found, and shows its sources.",
+      cta: "Start with a draft",
+      signIn: "Have an invitation? Sign in",
+    },
+  },
+
+  // ---- §15.2 — /pricing. Every figure renders through `buildPricingPageData` (contracts) — this
+  //      table carries LABELS only; a price hand-typed here is a lint smell, not a shortcut. ----
+  pricing: {
+    heading: "Pricing",
+    lede: "Credits pay for runs; plans bundle them. Every number on this page is derived from the published rate card.",
+    monthlyLabel: "Monthly",
+    annualLabel: "Annual",
+    annualSaveFmt: "Save ${n}/yr",
+    annualSavingLine: "Annual billing saves {pct}% — shown in dollars on the card.",
+    freeHeading: "Free",
+    freeTrialNote: "The included first review runs inside the trial window.",
+    freePostNote: "After the window: keep your workspace, buy runs with top-ups.",
+    waitlistCta: "Join the waitlist",
+    startCta: "Start free",
+    signInCta: "Sign in",
+    includedCreditsLabel: "included credits / mo",
+    coversLabel: "What it covers",
+    costCardsHeading: "What a run costs",
+    costCardsNote: "Modeled figures at Standard rigor, across model tiers — the live estimate on the run sheet is authoritative for a real run.",
+    voiceCardHeading: "Voice profile",
+    voiceCardLine: "A profile built from a {words}-word corpus",
+    quickLineFmt: "A ≤{cap}-word piece on Base: Quick ≈ {quick} cr · Standard ≈ {standard} cr · Full board ≈ {fb} cr",
+    factCheckOffLabel: "fact-check off",
+    matrixHeading: "The ladder, compared",
+    faqHeading: "Questions",
+    trialRuleFmt: "One trial per person — {days} days, one included Review, no card.",
+    topUpHeading: "Top-up packs",
+    topUpNoteFmt: "Never expire for {months} months.",
+    creditsLabel: "credits",
+    perSeatLabel: "per seat",
+  },
+
+  // ---- §15.3 — /signup + the onboarding states ----
+  signup: {
+    heading: "Create your account",
+    lede: "Google or a magic link — no password, no questionnaire, no card.",
+    emailLabel: "Email",
+    emailPlaceholder: "you@example.com",
+    codeLabel: "Invitation code",
+    codeLabelOptional: "Invitation code (optional)",
+    continueEmail: "Email me a sign-in link",
+    continueGoogle: "Continue with Google",
+    orDivider: "or",
+    intentNoteDraft: "Your held file is ready — it becomes your first project after you sign in.",
+    intentNoteOutline: "Your outline becomes your first project after you sign in.",
+    sentHeading: "Check your email",
+    sentBody: "The link signs you in. While you wait — the dossier below is the worked example waiting in your workspace.",
+    sampleHeading: "The Showcase — a worked example",
+    chooseEntry: "Or choose your first step:",
+    entryScratch: "Start from scratch",
+    entryOutline: "Upload an outline",
+    entryDraft: "Upload a draft",
+  },
+
+  // ---- §15.4 — the Showcase row + dossier chrome ----
+  showcase: {
+    rowLabel: "Worked example",
+    bannerTitle: "Welcome — a worked example",
+    bannerBody: "This dossier is read-only: it shows what the board hands back before your own work is in. Duplicate it into a project of your own to play with the moves.",
+    duplicateCta: "Duplicate it",
+    openDossierCta: "Open the dossier",
+    heldFileReady: "Your held file is here — upload it to start.",
+  },
+
   footer: "Rhēma · private beta",
 } as const;
 

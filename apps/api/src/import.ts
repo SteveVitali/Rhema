@@ -8,6 +8,7 @@ import {
 } from "@rhema/contracts";
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 import type { SqlClient } from "./invite.js";
 import { upsertProjectSearchDoc } from "./search.js";
 
@@ -212,6 +213,9 @@ function tenantKey(
 /** The import routes: presign a quarantine PUT, preview a conversion, create the draft (session-authed). */
 export function createImportRoutes(deps: ImportApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: importing into it 409 (imports target a
+  // normal project — the funnel's carried file lands on /app/new, never the showcase).
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   // POST /import/presign — mint a workspace-scoped quarantine key + a v4-signed PUT bound to ≤25 MB.
   // The browser then PUTs bytes straight to GCS with the signed headers; no session cookie ever leaves
