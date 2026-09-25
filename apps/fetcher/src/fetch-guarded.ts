@@ -21,6 +21,11 @@ export const DEFAULT_CONTENT_TYPE_ALLOWLIST = [
   "application/rtf",
   "application/epub+zip",
   "application/json",
+  // P1.15 — the Substack `/feed` fallback (RSS/Atom are plain XML text; the providers parse them).
+  "application/rss+xml",
+  "application/atom+xml",
+  "application/xml",
+  "text/xml",
   "application/octet-stream",
 ];
 
@@ -65,6 +70,9 @@ export type FetchGuardResult =
       readonly contentType: string;
       readonly bytes: Uint8Array;
       readonly hops: number;
+      /** P1.15 — the final response's headers (lowercased). The url provider's change key rides
+       *  ETag/Last-Modified; only forwarder-reported names are exposed. */
+      readonly headers: Readonly<Record<string, string>>;
     }
   | {
       readonly ok: false;
@@ -168,7 +176,7 @@ export async function fetchGuarded(
       if (bytes == null) {
         return { ok: false, denyReason: "too_large", reason: `body exceeds ${maxBytes} bytes`, finalUrl: current };
       }
-      return { ok: true, finalUrl: current, status: res.status, contentType: ct, bytes, hops: hop };
+      return { ok: true, finalUrl: current, status: res.status, contentType: ct, bytes, hops: hop, headers: res.headers };
     } catch (e) {
       const aborted = e instanceof Error && (e.name === "AbortError" || controller.signal.aborted);
       return {

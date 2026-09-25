@@ -29,6 +29,11 @@ import {
   createGkeJobLauncher,
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
+  fetchGceMetadataIdToken,
+  createGcsObjects,
+  createGcsBlobStore,
+  createConvertJobPreview,
+  createFetcherServicePort,
 } from "@rhema/live-clients";
 import {
   handleRunStart,
@@ -63,6 +68,19 @@ import {
   type WorkerNotificationDeps,
 } from "./notification-jobs.js";
 import { readWorkerEnv } from "./env.js";
+import {
+  INGEST_JOB_NAMES,
+  handleIngestSync,
+  handleIngestReconstruct,
+  handleIngestSyncSweep,
+  handleVoicePurge,
+  sqlSampleMeter,
+  AnthropicReconstructor,
+  type WorkerIngestDeps,
+  type IngestSyncJobPayload,
+  type IngestReconstructJobPayload,
+  type VoicePurgeJobPayload,
+} from "./ingest-jobs.js";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
@@ -274,6 +292,36 @@ export async function startWorker(): Promise<void> {
     walkthrough,
   };
 
+  // P1.15 — the ingestion deps (§9.5): every seam is optional and fails closed with a named reason.
+  // The fetcher rides the invoker-gated fetcher service (OIDC per hop — LIVE FINDING 11); the
+  // reconstructor spends the same Secret-Manager anthropic key the walkthrough generator uses
+  // (operator-gated spend — D-P1.15-1 caps the first live visual pass at ≤$5).
+  const ingestKeySecret = env.ingestModelKeySecret ? await access(env.ingestModelKeySecret) : undefined;
+  const ingestKey = ingestKeySecret && !/placeholder/i.test(ingestKeySecret) ? ingestKeySecret : undefined;
+  const ingestDeps: WorkerIngestDeps = {
+    txRunner: deps.txRunner,
+    ids,
+    clock,
+    queue: deps.queue,
+    contentStoreFor: deps.contentStoreFor,
+    meter: sqlSampleMeter(ids),
+    ...(env.fetcherServiceUrl
+      ? { fetcher: createFetcherServicePort(env.fetcherServiceUrl, fetch, fetchGceMetadataIdToken) }
+      : {}),
+    ...(env.userContentBucket ? { ingestBlobs: await createGcsBlobStore(env.userContentBucket) } : {}),
+    ...(env.userContentBucket && env.convertJob
+      ? {
+          converter: createConvertJobPreview({
+            job: env.convertJob,
+            bucket: env.userContentBucket,
+            objects: await createGcsObjects(env.userContentBucket),
+            ...(env.convertJobRoot ? { mountPath: env.convertJobRoot } : {}),
+          }),
+        }
+      : {}),
+    ...(ingestKey ? { reconstructor: new AnthropicReconstructor({ apiKey: ingestKey }) } : {}),
+  };
+
   // The pg-boss connection BURST at startup (start + createQueue×N) can hit a transient AlloyDB connect timeout
   // over Cloud Run Direct-VPC egress — and unlike steady-state polling (covered by boss.on('error')), a throw
   // here escapes startWorker → exit(1) → a slow restart loop that can outlive the run.start job (live). Retry the
@@ -304,6 +352,7 @@ export async function startWorker(): Promise<void> {
     STRIPE_EVENT_JOB,
     USAGE_RECONCILE_JOB,
     FIGURE_RENDER_QUEUE, // P1.13 — the deterministic server-side figure render (§12.1)
+    ...Object.values(INGEST_JOB_NAMES), // P1.15 — ingest.sync / reconstruct / sweep + voice.purge (§9.5)
     "notify",
     "mail.send",
     "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
@@ -403,6 +452,33 @@ export async function startWorker(): Promise<void> {
     );
   });
   await boss.schedule(USAGE_RECONCILE_JOB, "15 3 * * *");
+
+  // P1.15 — the ingestion consumers (§9.5). Provider faults land on the connection row verbatim
+  // (handler never throws on a provider error); a thrown job is a transient infra fault → pg-boss
+  // retries. The daily sweep enqueues a `ingest.sync` per auto_schedule'd connection.
+  await boss.work<IngestSyncJobPayload>(INGEST_JOB_NAMES.sync, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleIngestSync(ingestDeps, job.data);
+      console.log(`[worker] ingest.sync ${job.data.connectionId} → ${JSON.stringify(r)}`);
+    }
+  });
+  await boss.work<IngestReconstructJobPayload>(INGEST_JOB_NAMES.reconstruct, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleIngestReconstruct(ingestDeps, job.data);
+      console.log(`[worker] ingest.reconstruct ${job.data.itemId} (${job.data.tier}) → ${JSON.stringify(r)}`);
+    }
+  });
+  await boss.work<VoicePurgeJobPayload>(INGEST_JOB_NAMES.voicePurge, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleVoicePurge({ ...ingestDeps, systemExec }, job.data);
+      console.log(`[worker] voice.purge ${job.data.personaId} → ${JSON.stringify(r)}`);
+    }
+  });
+  await boss.work(INGEST_JOB_NAMES.syncSweep, async () => {
+    const { queued } = await handleIngestSyncSweep({ ...ingestDeps, systemExec });
+    if (queued > 0) console.log(`[worker] ingest.sync.sweep enqueued ${queued}`);
+  });
+  await boss.schedule(INGEST_JOB_NAMES.syncSweep, "40 3 * * *"); // daily, offset from the reconcile/retention crons
 
   await boss.work(RUN_EVENT_JOBS.retention, async () => {
     await handleRunEventsRetention({ db: systemExec, clock });

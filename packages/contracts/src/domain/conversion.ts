@@ -8,8 +8,22 @@ import { qualityVerdictSchema } from "../enums.js";
 // "Create and fix later" the warnings become a Conversion-notes card and the unconverted spans carry
 // `[unconverted]` markers into the draft.
 
-/** The formats the beta convert pipeline accepts (§9.5 subset; ticket In-scope 2). */
-export const CONVERT_SOURCE_FORMATS = ["md", "txt", "html", "docx", "pdf"] as const;
+/** The formats the beta convert pipeline accepts (§9.5 subset; ticket In-scope 2). P1.15 widens the
+ *  sniff union to the full §9.5 upload matrix: `epub`/`rtf` get deterministic converters, `image`
+ *  (.png/.jpg/.tiff) and `binary` (.doc/.pages/.odt and unknown binaries) convert to `unreadable`
+ *  with an honest note — the item stays listed, auto-omitted, until a converter or the opt-in
+ *  visual tier covers it. */
+export const CONVERT_SOURCE_FORMATS = [
+  "md",
+  "txt",
+  "html",
+  "docx",
+  "pdf",
+  "epub",
+  "rtf",
+  "image",
+  "binary",
+] as const;
 export type ConvertSourceFormat = (typeof CONVERT_SOURCE_FORMATS)[number];
 export const convertSourceFormatSchema = z.enum(CONVERT_SOURCE_FORMATS);
 

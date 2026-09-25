@@ -259,7 +259,7 @@ async function loadVoiceChips(
          from connections cn
          join discovered_items di on di.connection_id = cn.id
          join sample_versions sv on sv.id = di.current_sample_id
-        where cn.persona_id = any($1::text[]) and di.state = 'included'`,
+        where cn.persona_id = any($1::text[]) and di.state in ('included','removed_remote')`,
       [personaIds],
     )
   ).rows as ItemDb[];

@@ -18,6 +18,7 @@
     "test:watch": "vitest",
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:protocol-markers": "node scripts/check-protocol-markers.mjs",
+    "check:no-cookies": "node scripts/check-no-cookies.mjs",
     "nightly:golden": "node scripts/nightly-golden.mjs",
     "format": "prettier --check ."
   },

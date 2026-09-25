@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createGcsV4SignedUrlProvider,
+  createFetcherServicePort,
   createConvertJobPreview,
   type ConvertJobArgs,
   type RestFetchLike,
@@ -332,5 +333,61 @@ describe("createConvertJobPreview", () => {
     expect(f.calls.filter((c) => c.url.endsWith(":run"))).toHaveLength(1);
     // the old execution is never polled — the takeover launches fresh.
     expect(f.calls.some((c) => c.url.endsWith("/executions/old"))).toBe(false);
+  });
+});
+
+describe("createFetcherServicePort", () => {
+  // P1.15 — the live FetchPort: POST {url, accept} to the invoker-gated fetcher service, an OIDC
+  // token per hop, raw base64 bytes + metadata back; denies/errors map to FetchError-shaped results.
+  it("POSTs {url, accept} with an OIDC bearer and returns decoded bytes + metadata", async () => {
+    const calls: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }[] = [];
+    const f = (async (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => {
+      calls.push({ url, init });
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          status: 200,
+          finalUrl: "https://pub.example/post",
+          contentType: "application/json",
+          headers: { etag: '"e1"' },
+          bytesBase64: Buffer.from("hello").toString("base64"),
+        }),
+        text: async () => "",
+      };
+    }) as unknown as RestFetchLike;
+    const port = createFetcherServicePort("https://fetcher.run.app/", f, async () => "idtok");
+    const res = await port.get("https://pub.example/post", { accept: ["application/json"] });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe("https://fetcher.run.app/fetch");
+    expect(calls[0]!.init!.method).toBe("POST");
+    expect(calls[0]!.init!.headers).toMatchObject({ authorization: "Bearer idtok" });
+    expect(JSON.parse(calls[0]!.init!.body!)).toEqual({
+      url: "https://pub.example/post",
+      accept: ["application/json"],
+    });
+    expect(res).toMatchObject({ ok: true, status: 200, finalUrl: "https://pub.example/post" });
+    if (res.ok) expect(new TextDecoder().decode(res.bytes)).toBe("hello");
+  });
+
+  it("maps a guarded deny to a FetchError-shaped result (denyReason preserved)", async () => {
+    const f = (async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: false, status: 403, denyReason: "robots", reason: "robots disallow" }),
+      text: async () => "",
+    })) as unknown as RestFetchLike;
+    const res = await createFetcherServicePort("https://f", f, async () => "t").get("https://x/");
+    expect(res).toMatchObject({ ok: false, status: 403, denyReason: "robots" });
+  });
+
+  it("an unreachable service fails closed with a reason (never throws)", async () => {
+    const f = (async () => {
+      throw new Error("connect ECONNREFUSED");
+    }) as unknown as RestFetchLike;
+    const res = await createFetcherServicePort("https://f", f).get("https://x/");
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toContain("unreachable");
   });
 });

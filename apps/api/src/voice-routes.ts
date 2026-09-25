@@ -51,6 +51,7 @@ import {
   type HoldoutSpec,
 } from "@rhema/findings-core";
 import { measureCorpus, measureProse, calibrationRows, type CorpusMeasures } from "@rhema/measure";
+import { checkBatchSize, checkWordCount, sampleCaps } from "@rhema/ingest";
 import { normalizeUrl } from "@rhema/hooks";
 import { sha256Hex, type ContentStore } from "@rhema/mirror";
 import type { Principal } from "./run-routes.js";
@@ -93,10 +94,12 @@ const wordCountOf = (text: string): number => text.trim().split(/\s+/).filter(Bo
 
 /** `{itemId → content_sha256}` over the included rows of the detail sample query — the same map
  *  shape the snapshot freezes, so the popover's deltas compare like with like. */
+/** Corpus membership (§9.5): `included` AND `removed_remote` (kept, badged, still included). */
+const CORPUS_STATES = new Set(["included", "removed_remote"]);
 const parseSampleRows = (rows: unknown[]): Record<string, string> => {
   const out: Record<string, string> = {};
   for (const r of rows as { id: string; state: string; content_sha256: string | null }[]) {
-    if (r.state === "included" && r.content_sha256) out[r.id] = r.content_sha256;
+    if (CORPUS_STATES.has(r.state) && r.content_sha256) out[r.id] = r.content_sha256;
   }
   return out;
 };
@@ -258,7 +261,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
          from discovered_items di
          join connections cn on cn.id = di.connection_id
          join sample_versions sv on sv.id = di.current_sample_id
-        where cn.persona_id = $1 and di.state = 'included'`,
+        where cn.persona_id = $1 and di.state in ('included','removed_remote')`,
       [personaId],
     );
     const sampleSet: Record<string, string> = {};
@@ -343,7 +346,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const rows = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const res = await tx.query(`select id from personas order by id`);
+      const res = await tx.query(`select id from personas where deleted_at is null order by id`);
       const out: {
         personaId: string;
         name: string | null;
@@ -368,7 +371,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
           `select count(*) as n, coalesce(array_agg(distinct cn.provider) filter (where cn.provider is not null), '{}') as providers
              from discovered_items di
              join connections cn on cn.id = di.connection_id
-            where cn.persona_id = $1 and di.state = 'included'`,
+            where cn.persona_id = $1 and di.state in ('included','removed_remote')`,
           [r.id],
         );
         const projN = await tx.query(`select count(*) as n from projects where persona_id = $1`, [r.id]);
@@ -430,7 +433,8 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       const v = await loadVoiceStatus(tx, { personaId });
       if (!v) return null;
       const samples = await tx.query(
-        `select di.id, di.title, di.state, di.access, di.date, sv.id as version_id, sv.content_sha256,
+        `select di.id, di.title, di.state, di.access, di.date, di.connection_id, di.url, di.external_id,
+                sv.id as version_id, sv.content_sha256,
                 sv.word_count, sv.quality, sv.n
            from discovered_items di
            join connections cn on cn.id = di.connection_id
@@ -534,7 +538,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       const sampleTexts: string[] = [];
       if (readStore) {
         for (const s of samples.rows as { content_sha256: string | null; state: string }[]) {
-          if (s.state !== "included" || !s.content_sha256) continue;
+          if (!CORPUS_STATES.has(s.state) || !s.content_sha256) continue;
           const bytes = await readStore.get(s.content_sha256).catch(() => null);
           if (bytes) sampleTexts.push(new TextDecoder().decode(bytes));
         }
@@ -615,9 +619,9 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
             card: approveSampleCard({
               census: {
                 total: all.length,
-                included: all.filter((r) => r.state === "included").length,
+                included: all.filter((r) => CORPUS_STATES.has(r.state)).length,
                 excluded: all
-                  .filter((r) => r.state !== "included")
+                  .filter((r) => !CORPUS_STATES.has(r.state))
                   .map((r) => ({
                     title: r.title ?? r.id,
                     reason:
@@ -715,69 +719,119 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const personaId = c.req.param("id");
     const body = (await c.req.json().catch(() => ({}))) as {
       quarantineKey?: string;
+      /** P1.15 — batch upload (§9.5: ≤50 files/batch). */
+      quarantineKeys?: string[];
       text?: string;
       title?: string;
     };
+    const keys = Array.isArray(body.quarantineKeys)
+      ? body.quarantineKeys
+      : body.quarantineKey
+        ? [body.quarantineKey]
+        : [];
+    if (keys.length > 0 && !checkBatchSize(keys.length).ok) {
+      return c.json({ error: "batch_too_large", limit: 50 }, 400);
+    }
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const persona = await tx.query(`select id, slug from personas where id = $1`, [personaId]);
+      const persona = await tx.query(`select id, slug from personas where id = $1 and deleted_at is null`, [personaId]);
       if (!persona.rows[0]) return null;
-      let markdown: string;
       const title = body.title?.trim() || "Sample";
-      let provider: "upload" | "paste" = "paste";
-      let quality: string | null = null;
-      let qualityNotes: string[] = [];
-      const qk = safeKey(body.quarantineKey, principal.workspaceId);
-      if (qk) {
+      // One item write per file — the REQ-INGEST-8 verdict lands on the row: over-cap/unreadable
+      // files still LIST, auto-omitted, counting against coverage.
+      const writeItem = async (args: {
+        markdown: string;
+        title: string;
+        provider: "upload" | "paste";
+        quality: string | null;
+        qualityNotes: string[];
+        /** non-null ⇒ caps rejected the file: list it auto-omitted, no sample version needed. */
+        rejectReason: string | null;
+      }) => {
+        const connectionId = await ensureConnection(tx, personaId, args.provider);
+        const itemId = deps.ids("di");
+        const words = wordCountOf(args.markdown);
+        const { versionId } = await writePersonaArtifact(tx, {
+          workspaceId: principal.workspaceId,
+          personaId,
+          kind: "sample",
+          // PRB.16b F18 — the persona_builder seat mounts `docs/**` only (§12.6 verbatim; conventions/
+          // personas.md: "docs/ is human-supplied and agent-read"). A `samples/` path was structurally
+          // invisible — census self-reported blocked with "no docs/ directory". Corpus files the operator
+          // supplies belong under `docs/`; the item id stays in the filename so the snapshot's sample_set
+          // (itemId → sha) still correlates to the mounted file.
+          mirrorPath: `docs/samples/${itemId}.md`,
+          markdown: args.markdown,
+          wordCount: words,
+          actor: { kind: "user", userId: principal.userId },
+        });
+        const sampleVersionId = deps.ids("sv");
+        const state = args.rejectReason ? "omitted" : "included";
+        const quality = args.rejectReason ? "unreadable" : args.quality;
+        const notes = args.rejectReason ? [args.rejectReason] : args.qualityNotes;
+        // The item lands first (the version FKs to it), then its v1, then the head pointer — one tx.
+        await tx.query(
+          `insert into discovered_items (id, connection_id, external_id, title, word_count, access, state)
+             values ($1,$2,$3,$4,$5,'free',$6)`,
+          [itemId, connectionId, itemId, args.title, words, state],
+        );
+        await tx.query(
+          `insert into sample_versions (id, discovered_item_id, n, content_sha256, artifact_version_id, quality, quality_notes, word_count)
+             values ($1,$2,1,$3,$4,$5,$6,$7)`,
+          [sampleVersionId, itemId, sha256Hex(new TextEncoder().encode(args.markdown)), versionId, quality, notes, words],
+        );
+        await tx.query(`update discovered_items set current_sample_id = $2 where id = $1`, [
+          itemId,
+          sampleVersionId,
+        ]);
+        return { itemId, sampleVersionId, rejected: args.rejectReason };
+      };
+
+      if (keys.length > 0) {
         if (!deps.converter) throw new Error("converter unavailable");
-        // PRB.21 — bound the wait (a cold convert Job runs ~2.5–4 min): still-converting ⇒
-        // conversion_pending, never a multi-minute hold inside this transaction.
-        const pv = await deps.converter.preview(qk, { waitMs: 25_000 });
-        if (pv == null) return { error: "conversion_pending" };
-        markdown = pv.markdown;
-        quality = pv.quality;
-        qualityNotes = pv.qualityNotes;
-        provider = "upload";
-      } else if (typeof body.text === "string" && body.text.trim()) {
-        markdown = body.text;
-      } else {
+        const results: { itemId: string; rejected: string | null }[] = [];
+        let pending = false;
+        for (const raw of keys) {
+          const qk = safeKey(raw, principal.workspaceId);
+          if (!qk) return { error: "bad quarantineKey" };
+          // PRB.21 — bound the wait (a cold convert Job runs ~2.5–4 min): still-converting ⇒
+          // conversion_pending, never a multi-minute hold inside this transaction.
+          const pv = await deps.converter.preview(qk, { waitMs: 25_000 });
+          if (pv == null) {
+            pending = true;
+            continue; // report the rest; the client retries the pending key
+          }
+          const caps = sampleCaps({ format: pv.sourceFormat, words: pv.counts.words });
+          results.push(
+            await writeItem({
+              markdown: pv.markdown,
+              title,
+              provider: "upload",
+              quality: pv.quality,
+              qualityNotes: [...pv.qualityNotes],
+              rejectReason: caps.ok ? null : caps.reason,
+            }),
+          );
+        }
+        const facts = await corpusFacts(tx, personaId);
+        const v = await loadVoiceStatus(tx, { personaId });
+        return { items: results, pending, words: facts.words, status: v?.status ?? null };
+      }
+
+      if (typeof body.text !== "string" || !body.text.trim()) {
         return { error: "text or quarantineKey required" };
       }
-      const connectionId = await ensureConnection(tx, personaId, provider);
-      const itemId = deps.ids("di");
-      const words = wordCountOf(markdown);
-      const { versionId } = await writePersonaArtifact(tx, {
-        workspaceId: principal.workspaceId,
-        personaId,
-        kind: "sample",
-        // PRB.16b F18 — the persona_builder seat mounts `docs/**` only (§12.6 verbatim; conventions/
-        // personas.md: "docs/ is human-supplied and agent-read"). A `samples/` path was structurally
-        // invisible — census self-reported blocked with "no docs/ directory". Corpus files the operator
-        // supplies belong under `docs/`; the item id stays in the filename so the snapshot's sample_set
-        // (itemId → sha) still correlates to the mounted file.
-        mirrorPath: `docs/samples/${itemId}.md`,
-        markdown,
-        wordCount: words,
-        actor: { kind: "user", userId: principal.userId },
+      const caps = checkWordCount(wordCountOf(body.text));
+      const out = await writeItem({
+        markdown: body.text,
+        title,
+        provider: "paste",
+        quality: null,
+        qualityNotes: [],
+        rejectReason: caps.ok ? null : caps.reason,
       });
-      const sampleVersionId = deps.ids("sv");
-      // The item lands first (the version FKs to it), then its v1, then the head pointer — one tx.
-      await tx.query(
-        `insert into discovered_items (id, connection_id, external_id, title, word_count, access, state)
-           values ($1,$2,$3,$4,$5,'free','included')`,
-        [itemId, connectionId, itemId, title, words],
-      );
-      await tx.query(
-        `insert into sample_versions (id, discovered_item_id, n, content_sha256, artifact_version_id, quality, quality_notes, word_count)
-           values ($1,$2,1,$3,$4,$5,$6,$7)`,
-        [sampleVersionId, itemId, sha256Hex(new TextEncoder().encode(markdown)), versionId, quality, qualityNotes, words],
-      );
-      await tx.query(`update discovered_items set current_sample_id = $2 where id = $1`, [
-        itemId,
-        sampleVersionId,
-      ]);
       const facts = await corpusFacts(tx, personaId);
       const v = await loadVoiceStatus(tx, { personaId });
-      return { itemId, sampleVersionId, words: facts.words, status: v?.status ?? null };
+      return { itemId: out.itemId, sampleVersionId: out.sampleVersionId, words: facts.words, status: v?.status ?? null };
     });
     if (res === null) return c.json({ error: "not_found" }, 404);
     // a still-converting upload is a retryable 409, not a 400 bad-request (PRB.21).
@@ -801,7 +855,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     if (!deps.urlFetcher) return c.json({ error: "url_fetch_unavailable" }, 501);
     const url = normalizeUrl(rawUrl);
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const persona = await tx.query(`select id from personas where id = $1`, [personaId]);
+      const persona = await tx.query(`select id from personas where id = $1 and deleted_at is null`, [personaId]);
       if (!persona.rows[0]) return null;
       // Dedupe on the canonical URL — re-adding a link returns the existing item (the include
       // toggle, not a second copy, is the "use it again" path).
@@ -823,7 +877,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const fetched = await deps.urlFetcher.fetch(url);
     if (!fetched.ok) return c.json({ error: "fetch_failed", reason: fetched.reason }, 422);
     const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const persona = await tx.query(`select id from personas where id = $1`, [personaId]);
+      const persona = await tx.query(`select id from personas where id = $1 and deleted_at is null`, [personaId]);
       if (!persona.rows[0]) return null;
       const connectionId = await ensureConnection(tx, personaId, "url");
       const itemId = deps.ids("di");
@@ -870,7 +924,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       // connections/discovered_items are NOT RLS tables — the tenant check goes through the RLS'd
       // `personas` row (invisible ⇒ no update), so a foreign persona/item id can never write here.
-      const owns = await tx.query(`select id from personas where id = $1`, [c.req.param("id")]);
+      const owns = await tx.query(`select id from personas where id = $1 and deleted_at is null`, [c.req.param("id")]);
       if (!owns.rows[0]) return null;
       const upd = await tx.query(
         `update discovered_items di set state = $3
@@ -902,7 +956,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     };
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const pres = await tx.query(
-        `select id, byline, registers, seed_artifact_id from personas where id = $1`,
+        `select id, byline, registers, seed_artifact_id from personas where id = $1 and deleted_at is null`,
         [personaId],
       );
       const persona = pres.rows[0] as
@@ -941,7 +995,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const personaId = c.req.param("id");
     const tier = c.req.query("tier") === "full" ? "full" : "quick";
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const persona = await tx.query(`select id from personas where id = $1`, [personaId]);
+      const persona = await tx.query(`select id from personas where id = $1 and deleted_at is null`, [personaId]);
       if (!persona.rows[0]) return null;
       return corpusFacts(tx, personaId);
     });
@@ -981,7 +1035,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       body.modelTier === "frontier" ? "frontier" : body.modelTier === "balanced" ? "balanced" : "base";
     const ctx = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const pres = await tx.query(
-        `select id, display_name, byline, registers, seed_sha256, seed_artifact_id from personas where id = $1`,
+        `select id, display_name, byline, registers, seed_sha256, seed_artifact_id from personas where id = $1 and deleted_at is null`,
         [personaId],
       );
       const persona = pres.rows[0] as
@@ -1021,7 +1075,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
           `select di.id, di.url, sv.word_count from discovered_items di
              join connections cn on cn.id = di.connection_id
              join sample_versions sv on sv.id = di.current_sample_id
-            where cn.persona_id = $1 and di.state = 'included'`,
+            where cn.persona_id = $1 and di.state in ('included','removed_remote')`,
           [personaId],
         )
       ).rows as { id: string; url: string | null; word_count: number | null }[];
@@ -1247,7 +1301,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
             `select di.id, di.url, sv.word_count from discovered_items di
                join connections cn on cn.id = di.connection_id
                join sample_versions sv on sv.id = di.current_sample_id
-              where cn.persona_id = $1 and di.state = 'included'`,
+              where cn.persona_id = $1 and di.state in ('included','removed_remote')`,
             [personaId],
           )
         ).rows as { id: string; url: string | null; word_count: number | null }[];
@@ -1480,7 +1534,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
                   sv.id as sv_id, sv.content_sha256, sv.artifact_version_id, sv.quality, sv.quality_notes, sv.word_count as sv_words
              from discovered_items di join connections cn on cn.id = di.connection_id
               join sample_versions sv on sv.id = di.current_sample_id
-            where cn.persona_id = $1 and di.state = 'included'`,
+            where cn.persona_id = $1 and di.state in ('included','removed_remote')`,
           [personaId],
         )
       ).rows as {
@@ -1640,7 +1694,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         );
         return { voiceMode: "ad_hoc" as const, personaId: null, profileSnapshotId: null, status: null };
       }
-      const persona = await tx.query(`select id from personas where id = $1`, [body.personaId]);
+      const persona = await tx.query(`select id from personas where id = $1 and deleted_at is null`, [body.personaId]);
       if (!persona.rows[0]) return { error: "persona_not_found" };
       let snapshotId = typeof body.profileSnapshotId === "string" ? body.profileSnapshotId : null;
       if (!snapshotId) {
@@ -1800,7 +1854,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
           }
         | undefined;
       if (!src) return null;
-      const persona = await tx.query(`select id from personas where id = $1`, [body.personaId]);
+      const persona = await tx.query(`select id from personas where id = $1 and deleted_at is null`, [body.personaId]);
       if (!persona.rows[0]) return { error: "persona_not_found" as const };
       const snapshot = (
         await tx.query(

@@ -76,6 +76,9 @@ importers:
       '@rhema/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
+      '@rhema/ingest':
+        specifier: workspace:*
+        version: link:../../packages/ingest
       '@rhema/ledger':
         specifier: workspace:*
         version: link:../../packages/ledger
@@ -409,6 +412,9 @@ importers:
       '@rhema/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@rhema/ingest':
+        specifier: workspace:*
+        version: link:../../packages/ingest
       '@rhema/ledger':
         specifier: workspace:*
         version: link:../../packages/ledger
@@ -764,6 +770,21 @@ importers:
       '@rhema/tokens':
         specifier: workspace:*
         version: link:../tokens
+
+  packages/ingest:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/markdown':
+        specifier: workspace:*
+        version: link:../markdown
+      fast-xml-parser:
+        specifier: ^5.11.1
+        version: 5.11.1
+      jszip:
+        specifier: ^3.10.2
+        version: 3.10.2
 
   packages/ledger:
     dependencies:
@@ -5624,14 +5645,6 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.20.1)
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@26.4.1))':
-    dependencies:
-      '@vitest/spy': 2.1.9
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 5.4.21(@types/node@26.4.1)
-
   '@vitest/pretty-format@2.1.9':
     dependencies:
       tinyrainbow: 1.2.0
@@ -8076,7 +8089,7 @@ snapshots:
   vitest@2.1.9(@types/node@26.4.1)(happy-dom@20.14.5):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.4.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

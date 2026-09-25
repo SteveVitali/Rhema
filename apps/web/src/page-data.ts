@@ -19,6 +19,8 @@ import type {
   VoiceListDto,
   VoiceListRowDto,
   VoiceUpdatePlanDto,
+  VoiceConnectionsDto,
+  VoiceSampleDetailDto,
   ReseedPreviewDto,
   WhatChangedDto,
   TimelineDto,
@@ -349,6 +351,11 @@ export interface PageData {
     /** the diff-of-inputs sheet's pre-computed route + estimate (§9.3; null-safe — a missing
      *  update seam degrades to the pill alone, never a failed page). */
     readonly updatePlan?: VoiceUpdatePlanDto;
+    /** P1.15 — the Samples tab's Sources pane (the linked providers + per-source counts). */
+    readonly connections?: VoiceConnectionsDto;
+    /** P1.15 — the open sample drawer (`?tab=samples&sample=<itemId>`): the canonical preview +
+     *  version history + quality notes the drawer renders. */
+    readonly sampleDetail?: VoiceSampleDetailDto;
   };
   /** the project's voice picker facts (the linked voice + the selectable personas + the §9.6
    *  adopt/fork hatches when the pin trails a refreshed profile). */

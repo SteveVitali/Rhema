@@ -98,6 +98,130 @@ export async function createGcsObjects(bucket: string): Promise<GcsObjectsLike> 
   return { file: (name) => b.file(name) as unknown as GcsObjectFileLike };
 }
 
+/**
+ * The bucket-bound byte store behind the ingestion `IngestBlobs`/`BlobPort` seams (P1.15): reads the
+ * quarantined export zip + fetched originals, writes fetched bodies for the convert Job, deletes
+ * retained bytes on `voice.purge`. Live impl over `createGcsObjects`; tests drive fakes.
+ */
+export async function createGcsBlobStore(bucket: string): Promise<{
+  read(key: string): Promise<Uint8Array | null>;
+  write(key: string, bytes: Uint8Array): Promise<void>;
+  delete(key: string): Promise<void>;
+}> {
+  const objects = await createGcsObjects(bucket);
+  return {
+    async read(key) {
+      try {
+        const [buf] = await objects.file(key).download();
+        return typeof buf === "string" ? new TextEncoder().encode(buf) : new Uint8Array(buf);
+      } catch (e) {
+        const code = (e as { code?: number | string }).code;
+        if (code === 404 || code === "404" || /not.?found|no such object/i.test(String((e as Error)?.message ?? e))) {
+          return null;
+        }
+        throw e;
+      }
+    },
+    async write(key, bytes) {
+      const f = objects.file(key);
+      if (!f.save) throw new Error("gcs write unsupported");
+      await f.save(bytes);
+    },
+    async delete(key) {
+      await objects.file(key).delete?.().catch(() => undefined); // best-effort byte cleanup
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The fetcher-service client (P1.15 — the FetchPort prod binding)
+// ---------------------------------------------------------------------------
+
+/** The wire shape of the fetcher service's POST /fetch (apps/fetcher/src/server.ts). */
+export interface FetcherServiceResponse {
+  readonly ok: boolean;
+  readonly status?: number;
+  readonly finalUrl?: string;
+  readonly contentType?: string;
+  readonly headers?: Readonly<Record<string, string>>;
+  readonly bytesBase64?: string;
+  readonly denyReason?: string;
+  readonly reason?: string;
+}
+
+/** The FetchPort shape @rhema/ingest consumes (duplicated here — live-clients has no ingest dep;
+ *  structurally identical to `FetchPort`). */
+export interface FetcherServicePort {
+  get(
+    url: string,
+    opts?: { readonly accept?: readonly string[] },
+  ): Promise<
+    | {
+        readonly ok: true;
+        readonly status: number;
+        readonly finalUrl: string;
+        readonly contentType: string;
+        readonly headers: Readonly<Record<string, string>>;
+        readonly bytes: Uint8Array;
+      }
+    | {
+        readonly ok: false;
+        readonly status?: number;
+        readonly denyReason?: string;
+        readonly reason: string;
+        readonly finalUrl?: string;
+      }
+  >;
+}
+
+/**
+ * The live FetchPort: POST {url, accept} to the invoker-gated fetcher Cloud Run service — the ONLY
+ * egress ingestion rides (§9.5 never-cookies: there is no credential parameter anywhere on this
+ * client; the only auth is the OIDC token for the service hop itself). The service applies its own
+ * content-type allowlist + SSRF/robots/rate guards; `accept` is advisory.
+ */
+export function createFetcherServicePort(
+  baseUrl: string,
+  fetchImpl: RestFetchLike = fetch as unknown as RestFetchLike,
+  tokenFor?: (audience: string) => Promise<string>,
+): FetcherServicePort {
+  const root = baseUrl.replace(/\/+$/, "");
+  return {
+    async get(url, opts) {
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      if (tokenFor) headers["authorization"] = `Bearer ${await tokenFor(root)}`;
+      let res: Awaited<ReturnType<RestFetchLike>>;
+      try {
+        res = await fetchImpl(`${root}/fetch`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ url, ...(opts?.accept ? { accept: [...opts.accept] } : {}) }),
+        });
+      } catch (e) {
+        return { ok: false, reason: `fetcher unreachable: ${String((e as Error)?.message ?? e).slice(0, 160)}` };
+      }
+      const body = (await res.json().catch(() => null)) as FetcherServiceResponse | null;
+      if (!res.ok || !body || body.ok !== true) {
+        return {
+          ok: false,
+          status: body?.status ?? res.status,
+          denyReason: body?.denyReason,
+          reason: body?.reason ?? `fetcher ${res.status}`,
+          finalUrl: body?.finalUrl,
+        };
+      }
+      return {
+        ok: true,
+        status: body.status ?? res.status,
+        finalUrl: body.finalUrl ?? url,
+        contentType: body.contentType ?? "application/octet-stream",
+        headers: body.headers ?? {},
+        bytes: new Uint8Array(Buffer.from(body.bytesBase64 ?? "", "base64")),
+      };
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // The convert Job runner (Cloud Run Admin API v2)
 // ---------------------------------------------------------------------------

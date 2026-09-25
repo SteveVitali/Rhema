@@ -15,6 +15,9 @@
       "path": "../../packages/db"
     },
     {
+      "path": "../../packages/ingest"
+    },
+    {
       "path": "../../packages/orchestrator"
     },
     {

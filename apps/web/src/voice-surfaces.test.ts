@@ -612,3 +612,269 @@ describe("the seed editor + sample posts", () => {
     expect(addVoiceSample).toHaveBeenCalledWith({}, "per_ada", { text: "a b c d", title: "New sample" });
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------
+// P1.15 — the §9.5 ingestion surface: the Sources pane (link/discover/confirm/re-sync/settings/remove),
+// the items list's state + quality badges, the sample drawer (preview + versions + the priced
+// reconstruction CTAs), and the voice delete.
+// -------------------------------------------------------------------------------------------------------------
+describe("the P1.15 ingestion surfaces (§9.5)", () => {
+  const CONNECTIONS = {
+    connections: [
+      {
+        id: "conn_1",
+        provider: "substack",
+        handle: "ada.substack.com",
+        status: "ok",
+        last_sync_at: "2026-09-01T00:00:00Z",
+        schedule: "daily",
+        auto_include_new: false,
+        error: null,
+        items: 2,
+        included: 1,
+      },
+      {
+        id: "conn_2",
+        provider: "url",
+        handle: "https://example.com/post",
+        status: "error",
+        last_sync_at: null,
+        schedule: null,
+        auto_include_new: true,
+        error: "Fetch failed: HTTP 403 — the host refused the request",
+        items: 1,
+        included: 0,
+      },
+    ],
+  };
+
+  const DETAIL_WITH_NEW = {
+    ...DETAIL,
+    samples: [
+      ...DETAIL.samples,
+      {
+        id: "di_2",
+        title: "Paywalled post",
+        state: "new",
+        access: "paywalled",
+        date: null,
+        connection_id: "conn_1",
+        url: "https://ada.substack.com/p/paywalled",
+        external_id: "ext_p1",
+        version_id: null,
+        content_sha256: null,
+        word_count: null,
+        quality: null,
+        n: null,
+      },
+    ],
+  };
+
+  it("GET /v/:id?tab=samples renders the Sources pane: linked providers, counts, the verbatim error, the three link flows", async () => {
+    const app = createWebApp(
+      makeDeps({
+        getVoice: async () => DETAIL_WITH_NEW,
+        listVoiceConnections: async () => CONNECTIONS,
+      } as Partial<DataSource>),
+    );
+    const res = await app.request("/v/per_ada?tab=samples");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-sources="true"');
+    expect(html).toContain('data-source="conn_1"');
+    expect(html).toContain("ada.substack.com");
+    expect(html).toContain("1 of 2 included");
+    expect(html).toContain("HTTP 403"); // the error line renders verbatim (REQ-INGEST-11)
+    // the three link flows — and NO credential field anywhere (AC-I-B)
+    expect(html).toContain('data-link-substack="true"');
+    expect(html).toContain('data-link-url="true"');
+    expect(html).toContain('data-link-export="true"');
+    expect(html).not.toMatch(/name="(cookie|token|password|credential)/i);
+    expect(html).toContain('data-resync-all="true"');
+  });
+
+  it("the review step: 'new' items render as the confirm checkbox list; paywalled rows carry the badge", async () => {
+    const app = createWebApp(
+      makeDeps({
+        getVoice: async () => DETAIL_WITH_NEW,
+        listVoiceConnections: async () => CONNECTIONS,
+      } as Partial<DataSource>),
+    );
+    const res = await app.request("/v/per_ada?tab=samples");
+    const html = await res.text();
+    expect(html).toContain('data-confirm="true"');
+    expect(html).toContain('data-review-item="ext_p1"');
+    expect(html).toContain('name="include"');
+    expect(html).toContain('name="known"');
+    expect(html).toContain("import your export"); // the paywall badge's remedy line
+  });
+
+  it("POST /v/:id/connections/:cid/confirm maps the checkbox post to per-item include flags", async () => {
+    const confirmVoiceConnection = vi.fn(async () => ({ queued: true }));
+    const app = createWebApp(makeDeps({ confirmVoiceConnection } as Partial<DataSource>));
+    const res = await app.request("/v/per_ada/connections/conn_1/confirm", {
+      method: "POST",
+      body: new URLSearchParams([
+        ["known", "ext_p1"],
+        ["known", "ext_p2"],
+        ["include", "ext_p1"],
+      ]).toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    expect(res.status).toBe(302);
+    expect(confirmVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1", {
+      items: [
+        { externalId: "ext_p1", include: true },
+        { externalId: "ext_p2", include: false },
+      ],
+    });
+  });
+
+  it("the per-source actions post through: discover, re-sync, re-sync all, settings, remove", async () => {
+    const discoverVoiceConnection = vi.fn(async () => ({ items: [] }));
+    const syncVoiceConnection = vi.fn(async () => ({ queued: true }));
+    const syncAllVoiceConnections = vi.fn(async () => ({ queued: true }));
+    const patchVoiceConnection = vi.fn(async () => ({ ok: true }));
+    const removeVoiceConnection = vi.fn(async () => ({ ok: true }));
+    const app = createWebApp(
+      makeDeps({
+        discoverVoiceConnection,
+        syncVoiceConnection,
+        syncAllVoiceConnections,
+        patchVoiceConnection,
+        removeVoiceConnection,
+      } as Partial<DataSource>),
+    );
+    await app.request("/v/per_ada/connections/conn_1/discover", { method: "POST" });
+    expect(discoverVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1");
+    await app.request("/v/per_ada/connections/conn_1/sync", { method: "POST" });
+    expect(syncVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1");
+    await app.request("/v/per_ada/sync", { method: "POST" });
+    expect(syncAllVoiceConnections).toHaveBeenCalledWith({}, "per_ada");
+    await app.request("/v/per_ada/connections/conn_1/settings", {
+      method: "POST",
+      ...form({ autoIncludeNew: "on" }),
+    });
+    expect(patchVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1", {
+      autoIncludeNew: true,
+      dailySync: false,
+    });
+    await app.request("/v/per_ada/connections/conn_1/remove", { method: "POST" });
+    expect(removeVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1");
+  });
+
+  it("POST /v/:id/connections links a Substack publication by address — no credential field", async () => {
+    const createVoiceConnection = vi.fn(async () => ({ connectionId: "conn_n", provider: "substack", handle: "ada.substack.com" }));
+    const app = createWebApp(makeDeps({ createVoiceConnection } as Partial<DataSource>));
+    const res = await app.request("/v/per_ada/connections", {
+      method: "POST",
+      ...form({ provider: "substack", handle: "ada.substack.com" }),
+    });
+    expect(res.status).toBe(302);
+    expect(createVoiceConnection).toHaveBeenCalledWith({}, "per_ada", {
+      provider: "substack",
+      handle: "ada.substack.com",
+    });
+  });
+
+  it("GET /v/:id?tab=samples&sample=:id renders the drawer: preview, versions, quality notes, the priced CTAs", async () => {
+    const getVoiceSample = vi.fn(async () => ({
+      item: {
+        id: "di_1",
+        external_id: "ext_1",
+        title: "Essay one",
+        url: "https://ada.substack.com/p/one",
+        date: null,
+        word_count: 900,
+        access: "free",
+        state: "included",
+        provider: "substack",
+        connection_id: "conn_1",
+      },
+      versions: [
+        {
+          id: "sv_2",
+          n: 2,
+          content_sha256: "sha2",
+          original_sha256: "osha2",
+          quality: "partial",
+          quality_notes: ["pages 3, 5 appear to be scanned images — the visual tier can rebuild them"],
+          word_count: 900,
+        },
+        { id: "sv_1", n: 1, content_sha256: "sha1", original_sha256: "osha1", quality: "clean", quality_notes: null, word_count: 900 },
+      ],
+      document: "# Essay one\n\nThe canonical body.",
+    }));
+    const app = createWebApp(
+      makeDeps({
+        getVoiceSample,
+        listVoiceConnections: async () => CONNECTIONS,
+      } as Partial<DataSource>),
+    );
+    const res = await app.request("/v/per_ada?tab=samples&sample=di_1");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-sample-drawer="true"');
+    expect(html).toContain("Essay one");
+    expect(html).toContain('data-quality-notes="true"');
+    expect(html).toContain("scanned images");
+    expect(html).toContain('data-sample-preview="true"');
+    expect(html).toContain("The canonical body.");
+    expect(html).toContain('data-sample-versions="true"');
+    expect(html).toContain('data-version="2"');
+    // the priced CTAs — text for a non-clean verdict; visual because the notes flag scanned pages
+    expect(html).toContain('data-reconstruct-text="true"');
+    expect(html).toContain('data-reconstruct-visual="true"');
+  });
+
+  it("the drawer's visual CTA stays hidden for a non-scanned partial — opt-in only when flagged", async () => {
+    const getVoiceSample = vi.fn(async () => ({
+      item: {
+        id: "di_1",
+        external_id: null,
+        title: "Essay one",
+        url: null,
+        date: null,
+        word_count: 900,
+        access: "free",
+        state: "included",
+        provider: "paste",
+        connection_id: "conn_p",
+      },
+      versions: [
+        { id: "sv_1", n: 1, content_sha256: "sha1", original_sha256: null, quality: "partial", quality_notes: ["some spans did not convert"], word_count: 900 },
+      ],
+      document: "# Essay one",
+    }));
+    const app = createWebApp(makeDeps({ getVoiceSample } as Partial<DataSource>));
+    const res = await app.request("/v/per_ada?tab=samples&sample=di_1");
+    const html = await res.text();
+    expect(html).toContain('data-reconstruct-text="true"');
+    expect(html).not.toContain('data-reconstruct-visual="true"');
+  });
+
+  it("POST /v/:id/samples/:itemId/reconstruct posts the opt-in confirm + tier, lands back on the drawer", async () => {
+    const reconstructVoiceSample = vi.fn(async () => ({ queued: true }));
+    const app = createWebApp(makeDeps({ reconstructVoiceSample } as Partial<DataSource>));
+    const res = await app.request("/v/per_ada/samples/di_1/reconstruct", {
+      method: "POST",
+      ...form({ tier: "visual" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/v/per_ada?tab=samples&sample=di_1&reconstruct=queued");
+    expect(reconstructVoiceSample).toHaveBeenCalledWith({}, "per_ada", "di_1", { tier: "visual", confirmed: true });
+  });
+
+  it("POST /v/:id/delete needs the typed 'delete' confirm; otherwise it bounces back", async () => {
+    const deleteVoice = vi.fn(async () => ({ deleted: true }));
+    const app = createWebApp(makeDeps({ deleteVoice } as Partial<DataSource>));
+    const refused = await app.request("/v/per_ada/delete", { method: "POST", ...form({ confirm: "nope" }) });
+    expect(refused.status).toBe(302);
+    expect(refused.headers.get("location")).toBe("/v/per_ada");
+    expect(deleteVoice).not.toHaveBeenCalled();
+    const ok = await app.request("/v/per_ada/delete", { method: "POST", ...form({ confirm: "delete" }) });
+    expect(ok.status).toBe(302);
+    expect(ok.headers.get("location")).toBe("/voices");
+    expect(deleteVoice).toHaveBeenCalledWith({}, "per_ada");
+  });
+});

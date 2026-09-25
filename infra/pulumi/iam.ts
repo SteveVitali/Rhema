@@ -78,6 +78,9 @@ export function createIam(args: IamArgs): Iam {
   grantSecret("worker-mints-email-action", secrets.emailActionSecret, serviceAccounts["worker"]);
   grantSecret("worker-reads-resend", secrets.resendApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-anthropic-admin", secrets.anthropicAdminKey, serviceAccounts["worker"]);
+  // P1.15 — `ingest.reconstruct` (and P1.05's walkthrough) resolve the provider key from Secret
+  // Manager at boot; the operator-gated reconstruction spend is metered per job (§9.5).
+  grantSecret("worker-reads-anthropic", secrets.anthropicApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-ops-webhook", secrets.opsAlertWebhookUrl, serviceAccounts["worker"]);
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
@@ -92,6 +95,9 @@ export function createIam(args: IamArgs): Iam {
   grantBucket("api-rw-artifacts", buckets["artifacts"], serviceAccounts["api"], "roles/storage.objectAdmin");
   grantBucket("api-rw-usercontent", buckets["user-content"], serviceAccounts["api"], "roles/storage.objectAdmin");
   grantBucket("worker-rw-artifacts", buckets["artifacts"], serviceAccounts["worker"], "roles/storage.objectAdmin");
+  // P1.15 — `ingest.sync` writes fetched bodies to quarantine + reads export zips, and `voice.purge`
+  // deletes retained bytes — all in user-content.
+  grantBucket("worker-rw-usercontent", buckets["user-content"], serviceAccounts["worker"], "roles/storage.objectAdmin");
   // P1.03 — collab writes the materialized markdown's content-addressed bytes + the `restore/<ydoc>/<ts>`
   // point blobs into artifacts (and reads the seeded version's bytes on first load).
   grantBucket("collab-rw-artifacts", buckets["artifacts"], serviceAccounts["collab"], "roles/storage.objectAdmin");

@@ -200,3 +200,5 @@ jobs:
         run: pnpm check:licenses
       - name: no protocol markers in public bundles (REQ-ARCH-33)
         run: pnpm check:protocol-markers
+      - name: never-cookies — no credential field/header/input on the ingestion surface (AC-I-B, REQ-INGEST-5)
+        run: pnpm check:no-cookies

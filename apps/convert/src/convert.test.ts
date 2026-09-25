@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { convertBytes, DecompressionLimitError } from "./convert.js";
 import { normalizeMarkdown } from "@rhema/markdown";
-import { make8kWordDocx, makeZipBombDocx, makePdf, htmlWithUnconvertible, makeDocx } from "../test/fixtures.js";
+import { make8kWordDocx, makeZipBombDocx, makePdf, makePdfPages, htmlWithUnconvertible, makeDocx } from "../test/fixtures.js";
 
 // AC2 (zip-bomb refused), AC4 (8k-word docx preview <20s + counts), AC5 (unconverted blocks + warnings),
 // AC6 (import → normalized markdown byte-stable on the 2nd pass).
@@ -75,5 +75,51 @@ describe("AC6 — import round-trip byte-stability", () => {
     // pdf.js text extraction (born-digital) — clean quality with the words present.
     expect(r.markdown).toContain("Hello World");
     expect(r.quality).toBe("clean");
+  });
+});
+
+// P1.15 — the §9.5 PDF quality-verdict matrix (REQ-INGEST-7/9): fixtures produce clean / partial /
+// unreadable / empty. `reconstructed` is never a convert verdict — it is the post-model verdict the
+// priced worker pass lands (asserted in packages/ingest), and convert stays no-network.
+describe("P1.15 — the §9.5 PDF quality verdicts (REQ-INGEST-7/9)", () => {
+  it("partial: a mixed PDF (text page + scanned page) names the scanned page with the visual-tier note", async () => {
+    const r = await convertBytes(makePdfPages(["A real text layer with enough words to count.", ""]));
+    expect(r.sourceFormat).toBe("pdf");
+    expect(r.quality).toBe("partial");
+    expect(r.markdown).toContain("A real text layer");
+    expect(r.qualityNotes.join(" ")).toContain("pages 2");
+    expect(r.qualityNotes.join(" ")).toContain("visual tier");
+    expect(r.warnings.some((w) => w.kind === "structure_lost")).toBe(true);
+  });
+
+  it("unreadable: an all-scanned PDF has no text layer and points at the visual tier", async () => {
+    const r = await convertBytes(makePdfPages(["", ""]));
+    expect(r.quality).toBe("unreadable");
+    expect(r.markdown.trim()).toBe("");
+    expect(r.qualityNotes.join(" ")).toContain("scanned images");
+  });
+
+  it("unreadable: unparseable bytes degrade, never crash", async () => {
+    const r = await convertBytes(new TextEncoder().encode("%PDF-1.4\n<broken garbage that is not a pdf>"));
+    expect(r.quality).toBe("unreadable");
+    expect(r.qualityNotes[0]).toContain("PDF parse failed");
+  });
+
+  it("empty: a zero-page PDF", async () => {
+    const r = await convertBytes(makePdfPages([]));
+    expect(r.quality).toBe("empty");
+    expect(r.qualityNotes.join(" ")).toContain("no pages");
+  });
+
+  it("reconstructed is never a convert verdict — the priced worker pass owns it (F41)", async () => {
+    for (const bytes of [
+      makePdf("clean text"),
+      makePdfPages(["text page one", ""]),
+      makePdfPages([""]),
+      makePdfPages([]),
+    ]) {
+      const r = await convertBytes(bytes);
+      expect(r.quality).not.toBe("reconstructed");
+    }
   });
 });
