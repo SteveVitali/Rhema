@@ -1,14 +1,35 @@
 import { Hono } from "hono";
 import {
+  CSL_STYLES,
+  CSL_STYLE_INFO,
   EXPORT_FORMAT_INFO,
   EXPORT_FORMATS,
+  figureExportPackage,
+  figureIdFromRef,
+  isCslStyle,
+  isExportFormat,
+  isMdExportProfile,
+  MD_EXPORT_PROFILE_INFO,
+  MD_EXPORT_PROFILES,
+  parseFigureMarker,
+  PROVENANCE_APPENDIX_FORMATS,
   aiUseFileName,
   exportFileName,
-  isExportFormat,
   type Actor,
+  type CslStyle,
+  type ExportFigure,
   type ExportFormat,
+  type FigureExportFormat,
+  type FigureProvenance,
+  type MdExportProfile,
+  type ProvenanceSpan,
+  SPEC_FILENAME,
 } from "@rhema/contracts";
-import type { ContentStore } from "@rhema/mirror";
+import {
+  renderProvenanceAppendix,
+  PROVENANCE_APPENDIX_LABEL,
+  type ContentStore,
+} from "@rhema/mirror";
 import {
   exportDialogObligations,
   liveObligations,
@@ -43,6 +64,14 @@ export interface ExportRunner {
   run(args: {
     markdown: string;
     format: ExportFormat;
+    /** `md`-only profile (`substack`) — the container rejects it on any other format. */
+    profile?: MdExportProfile | null;
+    /** CSL style for `--citeproc` (honored only when `bibliography` is present). */
+    cslStyle?: CslStyle | null;
+    /** CSL-JSON items text (`bibliography/csl.json` bytes) — enables citeproc. */
+    bibliography?: string | null;
+    /** api-resolved figure payloads (REQ-VIZ-15). */
+    figures?: readonly ExportFigure[] | null;
   }): Promise<{ bytes: Uint8Array; mediaType: string; extension: string }>;
 }
 
@@ -58,13 +87,13 @@ export function createServiceExportRunner(
 ): ExportRunner {
   const root = baseUrl.replace(/\/+$/, "");
   return {
-    async run({ markdown, format }) {
+    async run({ markdown, format, profile, cslStyle, bibliography, figures }) {
       const headers: Record<string, string> = { "content-type": "application/json" };
       if (tokenFor) headers["authorization"] = `Bearer ${await tokenFor(root)}`;
       const res = await fetchImpl(`${root}/export`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ markdown, format }),
+        body: JSON.stringify({ markdown, format, profile, cslStyle, bibliography, figures }),
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -128,6 +157,213 @@ function statementDto(s: AiUseStatement): StatementDto {
     blockingOpen: s.blockingOpen,
     generatedAt: s.generatedAt.toISOString(),
   };
+}
+
+// ----------------------------------------------------------------------------------------------------------------------
+// P1.18 — the protocol-conditioned export surfaces (§6.7/REQ-GENRE-5 export half), the bibliography +
+// figure resolution, and the §8.4 provenance appendix. Everything degrades rather than blocks: no
+// protocol row ⇒ the §6.7 fallback defaults; no provenance map ⇒ the toggle greys; a figure whose
+// assets are missing degrades to its alt/caption text.
+// ----------------------------------------------------------------------------------------------------------------------
+
+/** §6.7's op-ed exclusivity line, verbatim for the dialog (reminder, never a gate). */
+export const OP_ED_EXCLUSIVITY_REMINDER =
+  "Op-ed venues almost always require exclusive submission — confirm this piece is not under review anywhere else before you file.";
+
+export interface ExportSurfaces {
+  /** Academic ⇒ the disclosure statement surface (the ICMJE template registers at P1.21; until
+   *  then the generator's general template ships under it — a service, never a gate). */
+  readonly disclosure: boolean;
+  /** Op-ed ⇒ the exclusivity reminder line, or null. */
+  readonly exclusivityReminder: string | null;
+}
+
+/** Read the project's protocol integrity norms → its export surfaces (§6.7 degrade-safe). */
+async function exportSurfaces(tx: SqlClient, projectId: string): Promise<ExportSurfaces> {
+  const project = (
+    await tx.query(`select protocol_id, protocol_version from projects where id = $1`, [projectId])
+  ).rows[0] as { protocol_id: string | null; protocol_version: number } | undefined;
+  const protocolId = project?.protocol_id ?? null;
+  let norms: { disclosure_artifact?: string; exclusivity_reminder?: boolean } | null = null;
+  if (protocolId) {
+    const row = (
+      await tx.query(`select body->'integrity_norms' as norms from protocols where id = $1 and version = $2`, [
+        protocolId,
+        project!.protocol_version,
+      ])
+    ).rows[0] as { norms: { disclosure_artifact?: string; exclusivity_reminder?: boolean } | null } | undefined;
+    norms = row?.norms ?? null;
+  }
+  // §6.7 fallback: P1.21 hasn't registered the Academic/Op-ed bodies yet — the protocol id alone
+  // still earns the surface (the disclosure ships the general template; the reminder is a line).
+  const disclosure = norms?.disclosure_artifact === "icmje" || (norms == null && protocolId === "academic");
+  const exclusivity =
+    norms?.exclusivity_reminder === true || (norms == null && protocolId === "op-ed");
+  return { disclosure, exclusivityReminder: exclusivity ? OP_ED_EXCLUSIVITY_REMINDER : null };
+}
+
+/** The version's block-level provenance spans (null ⇒ no map — the toggle greys). */
+async function provenanceSpans(
+  tx: SqlClient,
+  versionId: string | null,
+): Promise<ProvenanceSpan[] | null> {
+  if (!versionId) return null;
+  const row = (
+    await tx.query(`select spans from provenance_maps where draft_version_id = $1`, [versionId])
+  ).rows[0] as { spans: ProvenanceSpan[] } | undefined;
+  return (row?.spans as ProvenanceSpan[] | undefined) ?? null;
+}
+
+/** The resolved head's provenance-map version id (same resolution the POST uses to read text). */
+async function headProvenanceVersionId(tx: SqlClient, projectId: string): Promise<string | null> {
+  const row = (
+    await tx.query(`select id from drafts where project_id = $1 order by n desc limit 1`, [projectId])
+  ).rows[0] as { id: string } | undefined;
+  if (!row) return null;
+  const head = await resolveEditorHead(tx, projectId, row.id);
+  if (!head) return null;
+  if (head.promoted_version_id) return head.promoted_version_id;
+  if (!head.base_draft_id) return null;
+  const base = (
+    await tx.query(`select promoted_version_id from drafts where id = $1`, [head.base_draft_id])
+  ).rows[0] as { promoted_version_id: string | null } | undefined;
+  return base?.promoted_version_id ?? null;
+}
+
+/** `bibliography/csl.json` head bytes (null ⇒ no bibliography artifact — citeproc stays off). */
+async function resolveBibliography(
+  tx: SqlClient,
+  store: ContentStore | null,
+  projectId: string,
+): Promise<string | null> {
+  if (!store) return null;
+  const row = (
+    await tx.query(
+      `select v.content_sha256 from artifacts a join artifact_versions v on v.id = a.head_version_id
+        where a.project_id = $1 and a.mirror_path = 'bibliography/csl.json'`,
+      [projectId],
+    )
+  ).rows[0] as { content_sha256: string } | undefined;
+  if (!row) return null;
+  const bytes = await store.get(row.content_sha256);
+  return bytes ? new TextDecoder().decode(bytes) : null;
+}
+
+interface FigureDbRow {
+  id: string;
+  spec_kind: keyof typeof SPEC_FILENAME;
+  title: string | null;
+  caption: string | null;
+  alt: string | null;
+  source_line: string | null;
+  provenance: FigureProvenance;
+}
+
+/**
+ * REQ-VIZ-15's resolver: markers in doc order → figures rows + the asset bytes the embed needs.
+ * The LIGHT render only — `render.dark.svg` is never read (dark renders never export). A figure
+ * with no row/payload still produces a `text` embed so its alt + caption survive.
+ */
+async function resolveExportFigures(
+  tx: SqlClient,
+  store: ContentStore | null,
+  projectId: string,
+  markdown: string,
+  format: ExportFormat,
+  profile: MdExportProfile | null,
+): Promise<readonly ExportFigure[]> {
+  const markers = parseFigureMarker(markdown);
+  if (markers.length === 0) return [];
+  // md-appendix needs spec+data+provenance; the substack profile renders figures as text.
+  const wireFormat: FigureExportFormat =
+    format === "md" ? "md" : (format as FigureExportFormat);
+  const embedFormat: FigureExportFormat = profile === "substack" ? "txt" : wireFormat;
+
+  // Pull every figure asset artifact for the project once (few files; lazy per-marker reads would
+  // still hit the store — one join is simpler + deterministic).
+  const assetRows = store
+    ? ((
+        await tx.query(
+          `select a.mirror_path, v.content_sha256 from artifacts a
+             join artifact_versions v on v.id = a.head_version_id
+            where a.project_id = $1 and a.mirror_path like 'assets/figures/%'`,
+          [projectId],
+        )
+      ).rows as { mirror_path: string; content_sha256: string }[])
+    : [];
+  const assetSha = new Map(assetRows.map((r) => [r.mirror_path, r.content_sha256] as const));
+  const assetBytes = async (path: string): Promise<Uint8Array | null> => {
+    if (!store) return null;
+    const sha = assetSha.get(path);
+    return sha ? store.get(sha) : null;
+  };
+  const assetText = async (path: string): Promise<string | null> => {
+    const b = await assetBytes(path);
+    return b ? new TextDecoder().decode(b) : null;
+  };
+
+  const out: ExportFigure[] = [];
+  for (const [i, m] of markers.entries()) {
+    const figureNumber = i + 1;
+    const figureId = figureIdFromRef(m.figureId);
+    const row = (
+      await tx.query(
+        `select id, spec_kind, title, caption, alt, source_line, provenance from figures
+          where id = $1 and project_id = $2`,
+        [figureId, projectId],
+      )
+    ).rows[0] as FigureDbRow | undefined;
+    if (!row) {
+      out.push({
+        figureId,
+        embed: "text",
+        title: "",
+        caption: "",
+        altText: "figure",
+        sourceFootnote: "",
+      });
+      continue;
+    }
+    const dir = `assets/figures/${figureId}`;
+    const specPath = `${dir}/${SPEC_FILENAME[row.spec_kind]}`;
+    const svg = await assetText(`${dir}/render.svg`); // the LIGHT render — dark never exports
+    const png2x = await assetBytes(`${dir}/render@2x.png`);
+    const tableSource = await assetText(`${dir}/table.md`);
+    // the embed the §7.5 map picks for this format + figure kind.
+    const pkg = figureExportPackage({
+      figure: {
+        id: row.id,
+        alt: row.alt ?? "figure",
+        sourceLine: row.source_line ?? "",
+        caption: row.caption ?? "",
+        specKind: row.spec_kind,
+        provenance: row.provenance,
+      },
+      format: embedFormat,
+      figureNumber,
+      ...(svg ? { svg } : {}),
+      ...(png2x ? { png2x } : {}),
+      ...(tableSource ? { tableSource } : {}),
+    });
+    out.push({
+      figureId: row.id,
+      embed: pkg.embed,
+      title: row.title ?? "",
+      caption: row.caption ?? "",
+      altText: pkg.altText,
+      sourceFootnote: pkg.sourceFootnote,
+      ...(pkg.captionNote ? { captionNote: pkg.captionNote } : {}),
+      ...(pkg.svg != null ? { svg: pkg.svg } : {}),
+      ...(pkg.png2x != null ? { png2xBase64: Buffer.from(pkg.png2x).toString("base64") } : {}),
+      ...(pkg.tableSource != null ? { tableSource: pkg.tableSource } : {}),
+      // the `.md` figure-sources appendix travels with every package; the container only uses it
+      // on the canonical-md path (spec + data + provenance, verbatim).
+      ...(format === "md" ? { specSource: (await assetText(specPath)) ?? undefined } : {}),
+      ...(format === "md" ? { dataCsv: (await assetText(`${dir}/data.csv`)) ?? undefined } : {}),
+      ...(format === "md" ? { provenanceJson: (await assetText(`${dir}/provenance.json`)) ?? undefined } : {}),
+    });
+  }
+  return out;
 }
 
 export function createExportRoutes(deps: ExportApiDeps): Hono {
@@ -200,6 +436,8 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
     const projectId = c.req.param("id");
     const owned = await ownProject(projectId, principal.workspaceId);
     if (!owned) return c.json({ error: "not_found" }, 404);
+    const store =
+      (deps.contentStoreFor ? await deps.contentStoreFor(principal.workspaceId) : deps.store) ?? null;
 
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const { counts, items, returnedIds } = await dialogState(tx, projectId, {
@@ -208,6 +446,11 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
       });
       const stmt = await statement(tx, projectId, counts);
       if (!stmt) return { ok: false as const };
+      const surfaces = await exportSurfaces(tx, projectId);
+      const hasBibliography = (await resolveBibliography(tx, store, projectId)) != null;
+      // the §8.4 appendix toggle greys when the head version carries no block-level map.
+      const headVersionId = await headProvenanceVersionId(tx, projectId);
+      const spans = await provenanceSpans(tx, headVersionId);
       return {
         ok: true as const,
         dto: {
@@ -216,7 +459,25 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
             id: f,
             label: EXPORT_FORMAT_INFO[f].label,
             extension: EXPORT_FORMAT_INFO[f].extension,
+            blurb: EXPORT_FORMAT_INFO[f].blurb,
+            provenanceAppendix: EXPORT_FORMAT_INFO[f].provenanceAppendix,
           })),
+          mdProfiles: MD_EXPORT_PROFILES.map((p) => ({
+            id: p,
+            label: MD_EXPORT_PROFILE_INFO[p].label,
+            blurb: MD_EXPORT_PROFILE_INFO[p].blurb,
+          })),
+          citations: {
+            hasBibliography,
+            styles: CSL_STYLES.map((s) => ({ id: s, label: CSL_STYLE_INFO[s].label })),
+          },
+          provenance: {
+            available: spans != null && spans.length > 0,
+            defaultOn: false,
+            label: PROVENANCE_APPENDIX_LABEL,
+            formats: [...PROVENANCE_APPENDIX_FORMATS],
+          },
+          surfaces,
           obligations: {
             blockingOpen: counts.blockingOpen,
             open: counts.open,
@@ -224,7 +485,7 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
             items,
             returnedIds,
           },
-          statement: statementDto(stmt),
+          statement: { ...statementDto(stmt), disclosure: surfaces.disclosure },
         },
       };
     });
@@ -246,11 +507,23 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
       format?: unknown;
       draftId?: unknown;
       attachAiUse?: unknown;
+      attachProvenance?: unknown;
+      profile?: unknown;
+      cslStyle?: unknown;
     };
     if (!isExportFormat(body.format)) {
       return c.json({ error: "unsupported_format", formats: [...EXPORT_FORMATS] }, 422);
     }
     const format = body.format;
+    // `substack` is a profile on `md`, never an eighth format — same rule the container enforces.
+    if (body.profile != null && (!isMdExportProfile(body.profile) || format !== "md")) {
+      return c.json({ error: "unsupported_profile", profiles: [...MD_EXPORT_PROFILES] }, 422);
+    }
+    const profile = isMdExportProfile(body.profile) ? body.profile : null;
+    if (body.cslStyle != null && !isCslStyle(body.cslStyle)) {
+      return c.json({ error: "unsupported_csl_style", styles: [...CSL_STYLES] }, 422);
+    }
+    const cslStyle = isCslStyle(body.cslStyle) ? body.cslStyle : null;
     const store =
       (deps.contentStoreFor ? await deps.contentStoreFor(principal.workspaceId) : deps.store) ?? null;
 
@@ -287,13 +560,31 @@ export function createExportRoutes(deps: ExportApiDeps): Hono {
       let markdown = text.text;
       if (body.attachAiUse === true) {
         const stmt = await statement(tx, projectId, counts);
-        if (stmt) markdown = `${text.text.trimEnd()}${attachmentSection(stmt)}`;
+        if (stmt) markdown = `${markdown.trimEnd()}${attachmentSection(stmt)}`;
       }
-      return { ok: true as const, markdown };
+      // §8.4 — the block-level appendix (off by default): rendered from the head version's
+      // provenance map and appended as a trailing section for every format (the container's pdf
+      // path carries it through the same typst pass — one document, one download).
+      if (body.attachProvenance === true && EXPORT_FORMAT_INFO[format].provenanceAppendix) {
+        const spans = await provenanceSpans(tx, versionId);
+        const appendix = renderProvenanceAppendix({ markdown: text.text, spans });
+        if (appendix) markdown = `${markdown.trimEnd()}\n\n${appendix}`;
+      }
+      const bibliography = await resolveBibliography(tx, store, projectId);
+      // Figures resolve against the DRAFT text — the statement/appendix appends carry no markers.
+      const figures = await resolveExportFigures(tx, store, projectId, text.text, format, profile);
+      return { ok: true as const, markdown, bibliography, figures };
     });
     if (!prepared.ok) return c.json({ error: prepared.reason }, prepared.reason === "empty_draft" ? 422 : 404);
 
-    const result = await deps.exportRunner.run({ markdown: prepared.markdown, format });
+    const result = await deps.exportRunner.run({
+      markdown: prepared.markdown,
+      format,
+      ...(profile ? { profile } : {}),
+      ...(cslStyle ? { cslStyle } : {}),
+      ...(prepared.bibliography ? { bibliography: prepared.bibliography } : {}),
+      ...(prepared.figures.length > 0 ? { figures: prepared.figures } : {}),
+    });
     // The export succeeded — this route owns `project.exported` (PRB.12; the audit scans this file for
     // the literal). Post-commit and non-fatal: a telemetry failure is logged, never a failed download;
     // opt-out is honored inside recordAnalyticsEvent (no row, no throw).

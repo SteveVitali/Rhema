@@ -5,8 +5,13 @@
 
 export { collectStatementFacts } from "./facts.js";
 export type { StatementFacts, RunFact, ApprovalFact } from "./facts.js";
-export { generatedSentences, templateForProtocol } from "./statement.js";
-export type { StatementTemplate } from "./statement.js";
+export {
+  generatedSentences,
+  registerStatementTemplate,
+  templateDef,
+  templateForProtocol,
+} from "./statement.js";
+export type { StatementTemplate, StatementTemplateDef } from "./statement.js";
 export { listAdditions, appendAddition, AdditionError } from "./additions.js";
 export type { AiUseAddition } from "./additions.js";
 export { loadStatement, statementMarkdown, attachmentSection } from "./compose.js";

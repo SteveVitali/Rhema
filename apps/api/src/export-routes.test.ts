@@ -6,6 +6,7 @@ import {
   type OrchestratorTestDb,
   type TestDeps,
 } from "@rhema/orchestrator/testing";
+import { EXPORT_FORMATS } from "@rhema/contracts";
 import { InMemoryContentStore } from "@rhema/mirror";
 import { SqlObligationHook, routeDisposition } from "@rhema/obligations";
 import { deliverReviewViaHook } from "@rhema/obligations/testing";
@@ -33,20 +34,27 @@ let store: InMemoryContentStore;
 let seed: Awaited<ReturnType<typeof seedProject>>;
 let draftId: string;
 
-/** The fake export runner — records the markdown it received and echoes it back (md passthrough). */
-const runnerCalls: { markdown: string; format: string }[] = [];
+/** The fake export runner — records every arg the api forwarded and echoes markdown back. */
+const runnerCalls: {
+  markdown: string;
+  format: string;
+  profile?: string | null;
+  cslStyle?: string | null;
+  bibliography?: string | null;
+  figures?: readonly unknown[] | null;
+}[] = [];
 const fakeRunner: ExportRunner = {
-  async run({ markdown, format }) {
-    runnerCalls.push({ markdown, format });
+  async run(args) {
+    runnerCalls.push(args);
     return {
-      bytes: new TextEncoder().encode(markdown),
+      bytes: new TextEncoder().encode(args.markdown),
       mediaType:
-        format === "docx"
+        args.format === "docx"
           ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          : format === "txt"
+          : args.format === "txt"
             ? "text/plain; charset=utf-8"
             : "text/markdown; charset=utf-8",
-      extension: format,
+      extension: args.format,
     };
   },
 };
@@ -146,7 +154,7 @@ describe("GET /projects/:id/export/dialog", () => {
       };
       statement: { generated: string[] };
     };
-    expect(dto.formats.map((f) => f.id)).toEqual(["md", "txt", "docx"]);
+    expect(dto.formats.map((f) => f.id)).toEqual([...EXPORT_FORMATS]);
     expect(dto.obligations.blockingOpen).toBe(1);
     expect(dto.obligations.open).toBe(2);
     expect(dto.obligations.line).toBe("1 blocking obligation open");
@@ -224,11 +232,11 @@ describe("POST /projects/:id/export", () => {
     expect(runnerCalls[0]!.format).toBe("docx");
   });
 
-  it("rejects a non-beta format and a cross-workspace project", async () => {
+  it("rejects a non-registry format and a cross-workspace project", async () => {
     const res = await app().request(`/projects/${seed.projectId}/export`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ format: "pdf" }),
+      body: JSON.stringify({ format: "epub" }),
     });
     expect(res.status).toBe(422);
     // a project in another workspace is not_found, never a leak.
@@ -237,6 +245,87 @@ describe("POST /projects/:id/export", () => {
     });
     const res2 = await app().request(`/projects/${other.projectId}/export/dialog`);
     expect(res2.status).toBe(404);
+  });
+
+  it("validates the substack profile (md-only) + the csl style, and forwards both (P1.18)", async () => {
+    // a profile on a non-md format is rejected before the runner is touched.
+    const bad = await app().request(`/projects/${seed.projectId}/export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ format: "docx", profile: "substack" }),
+    });
+    expect(bad.status).toBe(422);
+    expect(((await bad.json()) as { error: string }).error).toBe("unsupported_profile");
+    const badStyle = await app().request(`/projects/${seed.projectId}/export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ format: "md", cslStyle: "not-a-style" }),
+    });
+    expect(badStyle.status).toBe(422);
+    expect(((await badStyle.json()) as { error: string }).error).toBe("unsupported_csl_style");
+    expect(runnerCalls).toHaveLength(0);
+    // the legal pair rides through to the container verbatim.
+    const ok = await app().request(`/projects/${seed.projectId}/export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ format: "md", profile: "substack", cslStyle: "apa" }),
+    });
+    expect(ok.status).toBe(200);
+    expect(runnerCalls[0]!.profile).toBe("substack");
+    expect(runnerCalls[0]!.cslStyle).toBe("apa");
+  });
+
+  it("appends the §8.4 block-level provenance appendix only when toggled (P1.18)", async () => {
+    // seed a block-level map on the promoted head version (b0–b2 over the seeded markdown).
+    const verId = (
+      await db.pg.query(`select promoted_version_id from drafts where id = $1`, [draftId])
+    ).rows[0] as { promoted_version_id: string };
+    await db.pg.query(
+      `insert into provenance_maps(draft_version_id, granularity, spans) values ($1,'block',$2::jsonb)`,
+      [
+        verId.promoted_version_id,
+        JSON.stringify([
+          { blockId: "b1", source: { kind: "agent", runId: "run_x", draftN: 1 } },
+          { blockId: "b2", source: { kind: "mixed" } },
+        ]),
+      ],
+    );
+    const res = await app().request(`/projects/${seed.projectId}/export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ format: "md", attachProvenance: true }),
+    });
+    expect(res.status).toBe(200);
+    const sent = runnerCalls[0]!.markdown;
+    expect(sent).toContain("## Provenance");
+    expect(sent).toContain("agent-drafted");
+    expect(sent).toContain("mixed");
+    // off by default — a plain export carries no appendix.
+    const plain = await app().request(`/projects/${seed.projectId}/export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ format: "md" }),
+    });
+    expect(plain.status).toBe(200);
+    expect(runnerCalls[1]!.markdown).not.toContain("## Provenance");
+  });
+
+  it("the dialog carries the P1.18 surface (profiles, citations, provenance toggle, protocol surfaces)", async () => {
+    const res = await app().request(`/projects/${seed.projectId}/export/dialog`);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as {
+      mdProfiles: { id: string }[];
+      citations: { hasBibliography: boolean; styles: { id: string }[] };
+      provenance: { available: boolean; defaultOn: boolean; formats: string[] };
+      surfaces: { disclosure: boolean; exclusivityReminder: string | null };
+    };
+    expect(dto.mdProfiles.map((p) => p.id)).toEqual(["substack"]);
+    expect(dto.citations.hasBibliography).toBe(false);
+    expect(dto.citations.styles.map((s) => s.id)).toContain("apa");
+    expect(dto.provenance.defaultOn).toBe(false);
+    // the essay protocol carries no integrity_norms → neither surface lights (§6.7 fallback).
+    expect(dto.surfaces.disclosure).toBe(false);
+    expect(dto.surfaces.exclusivityReminder).toBeNull();
   });
 
   it("answers 503 when no export runner is wired (a deploy without the export service)", async () => {

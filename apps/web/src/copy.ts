@@ -1065,11 +1065,19 @@ export const COPY = {
   // framing only (REQ-POS-13): what ran, what you decided, what you added — never anything about detection.
   export: {
     heading: "Export",
-    lede: "Take the manuscript out as Markdown, plain text, or Word. Exports are never blocked — open obligations are listed, not enforced.",
+    lede: "Take the manuscript out as Markdown, plain text, Word, HTML, PDF, RTF, or LaTeX. Exports are never blocked — open obligations are listed, not enforced.",
     formatLegend: "Format",
+    profileLegend: "Markdown flavour",
+    profileCanonical: "Canonical (byte-faithful)",
+    profileNote: "Applies to the .md export only.",
+    citationLegend: "Citation style",
+    citationNote: "Rendered from the project's bibliography.",
+    provenanceLabel: "Include the provenance appendix",
+    provenanceUnavailable: "No provenance map yet — the appendix unlocks once the draft has one.",
     obligationsNote: "Listed for your records — export always proceeds.",
     attachLabel: "Attach the AI-use statement",
     attachNote: "A generated disclosure of how Rhēma was used on this manuscript — the workflows, model tiers, dates, and your decisions, straight from the run record.",
+    disclosureNote: "This venue asks for a formal disclosure — the export ships the AI-use statement (the venue template registers in a later release).",
     statementHeading: "AI-use statement",
     statementNote: "Recomputed from the run record every time. Add your own sentences below; the generated sentences stay.",
     additionLabel: "Add a sentence to the statement",
@@ -1078,6 +1086,26 @@ export const COPY = {
     standaloneHeading: "Statement on its own",
     exportCta: "Export",
     exportFailed: "The export did not complete — nothing was downloaded.",
+  },
+
+  // P1.18 — the whole-account zip (REQ-ACCT-3): "Export everything" → the worker builds the archive,
+  // emails the 7-day link, and the fresh-account import replays it (a re-import is a no-op).
+  accountExport: {
+    heading: "Your data",
+    lede: "Take your whole account out — every project, voice, draft, and figure — as one zip. The download link is emailed to you and lives for 7 days.",
+    cta: "Export everything",
+    building: "Building your export — the download link arrives by email when it's ready.",
+    readyFmt: "Ready — download before it expires ({date}).",
+    expired: "The last export's link expired — request a fresh one.",
+    failedFmt: "The export failed: {error}",
+    downloadCta: "Download now",
+    importHeading: "Restore from an export",
+    importNote: "Import a Rhema export zip into this account. Re-importing the same zip is a no-op — nothing duplicates.",
+    importLabel: "Export zip",
+    importCta: "Import",
+    importDoneFmt: "Imported {projects} project(s), {voices} voice(s), {files} file(s).",
+    importDeduped: "That archive was already imported — nothing new was added.",
+    importFailed: "That file wasn't a Rhema export zip.",
   },
 
   // PRB.12 — the §14.5 balance chip + usage glance, and the Settings privacy toggle (REQ-PROD-15).

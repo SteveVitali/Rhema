@@ -54,6 +54,8 @@ import type {
   ExportDownloadDto,
   AiUseStatementDto,
   AiUseAdditionDto,
+  AccountExportDto,
+  AccountImportResultDto,
   AnalyticsEventRequestDto,
   ShowcaseEntryDto,
   PrivacySettingsDto,
@@ -613,11 +615,11 @@ export interface DataSource {
   ): Promise<ExportDownloadDto>;
   /** the AI-use statement JSON (generated sentences recomputed from run rows + append-only additions). */
   getAiUseStatement(session: SessionHeaders, projectId: string): Promise<AiUseStatementDto>;
-  /** the standalone statement download (md/txt/docx). */
+  /** the standalone statement download (any registered format). */
   downloadAiUseStatement(
     session: SessionHeaders,
     projectId: string,
-    format: "md" | "txt" | "docx",
+    format: ExportRequestDto["format"],
   ): Promise<ExportDownloadDto>;
   /** append one of the viewer's own sentences to the statement (the ONLY statement write — append-only). */
   appendAiUseAddition(
@@ -625,6 +627,16 @@ export interface DataSource {
     projectId: string,
     sentence: string,
   ): Promise<AiUseAdditionDto>;
+  // ---- P1.18 — the whole-account zip (REQ-ACCT-3). Optional: a fixture source lacking it leaves
+  // the Settings section rendering its lede only. ----
+  /** the latest account-export build state (null when never requested). */
+  getAccountExportState?(session: SessionHeaders): Promise<{ export: AccountExportDto | null }>;
+  /** "Export everything" — enqueue the build (deduped while one runs or a link still lives). */
+  requestAccountExport?(session: SessionHeaders): Promise<{ export: AccountExportDto; deduped: boolean }>;
+  /** a presigned download URL for the ready zip (410 when the link expired). */
+  getAccountExportDownloadUrl?(session: SessionHeaders, exportId?: string): Promise<{ downloadUrl: string }>;
+  /** replay an export zip into this account — a re-import is a no-op (`deduped: true`). */
+  importAccountExport?(session: SessionHeaders, zipBytes: Uint8Array): Promise<AccountImportResultDto>;
   // ---- PRB.12 — beta analytics + the privacy toggle + the usage glance ----
   /** mint a client-whitelisted analytics event (the SSR surfaces' view/dwell/timer emissions). */
   postAnalyticsEvent(
@@ -1180,6 +1192,15 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).downloadAiUseStatement(projectId, format),
     appendAiUseAddition: (session, projectId, sentence) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).appendAiUseAddition(projectId, sentence),
+    // ---- P1.18 — the whole-account zip ----
+    getAccountExportState: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getAccountExportState(),
+    requestAccountExport: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).requestAccountExport(),
+    getAccountExportDownloadUrl: (session, exportId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getAccountExportDownloadUrl(exportId),
+    importAccountExport: (session, zipBytes) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).importAccountExport(zipBytes),
     // ---- PRB.12 — analytics + privacy + usage ----
     postAnalyticsEvent: (session, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postAnalyticsEvent(req),

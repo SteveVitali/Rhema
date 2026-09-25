@@ -6,14 +6,44 @@ import type { StatementFacts } from "./facts.js";
 // summarizes beyond the record. Authorship-legibility framing only (REQ-POS-13): it says what ran and what
 // the human did, never anything about "detection".
 
-/** The template the project renders under. Beta: 'general' for every protocol (Essay's template per
- *  REQ-POS-6); the Academic ICMJE template is a P1.21 deliverable. */
-export type StatementTemplate = "general";
+/** The template the project renders under. 'general' is the built-in REQ-POS-6 template; any
+ *  per-protocol template (the Academic ICMJE variant is P1.21's) registers through
+ *  `registerStatementTemplate` — until then the protocol DEGRADES to 'general' and the statement
+ *  still ships (a service, never a gate — REQ-GENRE-5). */
+export type StatementTemplate = string;
+
+/** One renderable template: a key + the document heading + an optional sentence generator
+ *  (defaults to the general generator — a template may reframe the heading only). */
+export interface StatementTemplateDef {
+  readonly key: string;
+  /** the `# …` / `## …` document heading the standalone/attached statement renders under. */
+  readonly heading: string;
+  /** per-template sentence generation (P1.21's ICMJE template supplies its own). */
+  readonly sentences?: (
+    facts: StatementFacts,
+    counts: { openObligations: number; blockingOpen: number },
+  ) => string[];
+}
+
+const TEMPLATES = new Map<StatementTemplate, StatementTemplateDef>([
+  ["general", { key: "general", heading: "AI-use statement" }],
+]);
+const PROTOCOL_TEMPLATES = new Map<string, StatementTemplate>();
+
+/** Register a protocol's statement template (P1.21 calls this for 'academic' with the ICMJE
+ *  variant). The registry is process-local and import-time — no DB rows, no per-request state. */
+export function registerStatementTemplate(protocolId: string, def: StatementTemplateDef): void {
+  TEMPLATES.set(def.key, def);
+  PROTOCOL_TEMPLATES.set(protocolId, def.key);
+}
 
 export function templateForProtocol(protocolId: string | null): StatementTemplate {
-  // 'academic' will select the ICMJE variant at P1.21; at beta every protocol renders the general template.
-  void protocolId;
-  return "general";
+  return (protocolId && PROTOCOL_TEMPLATES.get(protocolId)) || "general";
+}
+
+/** The template's render definition — an unregistered key degrades to 'general'. */
+export function templateDef(template: StatementTemplate): StatementTemplateDef {
+  return TEMPLATES.get(template) ?? TEMPLATES.get("general")!;
 }
 
 function day(d: Date): string {

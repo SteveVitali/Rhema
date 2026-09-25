@@ -31,6 +31,7 @@ import { createSheetContextRoutes } from "./sheet-context.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createIngestRoutes, type IngestApiDeps, type IngestBlobs } from "./ingest-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
+import { createAccountExportRoutes } from "./account-export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { createShowcaseSeeder } from "./showcase.js";
 import { createThemeRoutes } from "./theme-routes.js";
@@ -125,6 +126,12 @@ export type { IngestApiDeps, IngestBlobs } from "./ingest-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
 export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
+export {
+  createAccountExportRoutes,
+  ACCOUNT_EXPORT_QUEUE,
+  ACCOUNT_EXPORT_LINK_TTL_MS,
+} from "./account-export-routes.js";
+export type { AccountExportApiDeps, AccountExportRow } from "./account-export-routes.js";
 export { createDossierRoutes, parseLetterSections } from "./dossier-routes.js";
 export type { DossierApiDeps } from "./dossier-routes.js";
 export { createTimelineRoutes } from "./timeline-routes.js";
@@ -226,6 +233,12 @@ export interface BetaApiDeps {
   ingestBlobs?: IngestBlobs;
   /** Test/dev binding — run sync inline in the request rather than queueing `ingest.sync`. */
   inlineSync?: boolean;
+  /**
+   * P1.18 — presign a download URL for the account-export zip's `s3_key` (GCS v4 over the
+   * user-content bucket; the same presign seam /import/presign uses). Unset ⇒ the token and
+   * session download routes answer 503 `download_unavailable`.
+   */
+  exportPresign?: (objectKey: string) => Promise<string> | string;
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -457,6 +470,23 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           ...(deps.contentStore ? { store: deps.contentStore } : {}),
           ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
           ...(deps.exportRunner ? { exportRunner: deps.exportRunner } : {}),
+        }),
+      );
+      // P1.18 — the whole-account zip (REQ-ACCT-3): "Export everything" enqueues `account.export`
+      // (the worker builds the archive + emails the 7-day link), the token-gated download route
+      // resolves it, and /account/import replays a zip into a fresh account (idempotent).
+      app.route(
+        "/",
+        createAccountExportRoutes({
+          principal: deps.principal,
+          db,
+          txRunner: deps.txRunner,
+          ids: deps.ids,
+          clock: deps.clock,
+          ...(deps.queue ? { queue: deps.queue } : {}),
+          ...(deps.exportPresign ? { presignGet: deps.exportPresign } : {}),
+          ...(deps.contentStore ? { store: deps.contentStore } : {}),
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
         }),
       );
       app.route(

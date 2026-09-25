@@ -1,6 +1,11 @@
 import type { SqlExecutor } from "@rhema/mirror";
 import { collectStatementFacts, type StatementFacts } from "./facts.js";
-import { generatedSentences, templateForProtocol, type StatementTemplate } from "./statement.js";
+import {
+  generatedSentences,
+  templateDef,
+  templateForProtocol,
+  type StatementTemplate,
+} from "./statement.js";
 import { listAdditions, type AiUseAddition } from "./additions.js";
 
 // The composed AI-use statement (§8.4 REQ-VIS-10): generated sentences (recomputed from run rows on every
@@ -38,9 +43,11 @@ export async function loadStatement(
   const facts = await collectStatementFacts(exec, args.projectId);
   if (!facts) return null;
   const additions = await listAdditions(exec, args.projectId);
+  const template = templateForProtocol(facts.protocolId);
+  const generate = templateDef(template).sentences ?? generatedSentences;
   return {
-    template: templateForProtocol(facts.protocolId),
-    generated: generatedSentences(facts, {
+    template,
+    generated: generate(facts, {
       openObligations: args.openObligations,
       blockingOpen: args.blockingOpen,
     }),
@@ -58,7 +65,8 @@ export async function loadStatement(
  * Additions render under "The author adds:" — legible that these sentences are the human's own.
  */
 export function statementMarkdown(statement: AiUseStatement, opts: { standalone: boolean }): string {
-  const heading = opts.standalone ? "# AI-use statement" : "## AI-use statement";
+  const h = templateDef(statement.template).heading;
+  const heading = `${opts.standalone ? "#" : "##"} ${h}`;
   const parts: string[] = [heading, "", statement.generated.join(" ")];
   if (statement.additions.length > 0) {
     parts.push("", `The author adds: ${statement.additions.map((a) => a.sentence).join(" ")}`);

@@ -154,6 +154,19 @@ describe("generatedSentences — the general template (REQ-VIS-10, REQ-POS-6)", 
     expect(templateForProtocol("essay")).toBe("general");
     expect(templateForProtocol("academic")).toBe("general");
   });
+
+  it("a registered protocol template selects + renders its own heading; others keep general", async () => {
+    const { registerStatementTemplate, templateDef } = await import("./statement.js");
+    registerStatementTemplate("proto-test", {
+      key: "proto-disclosure",
+      heading: "Disclosure statement",
+    });
+    expect(templateForProtocol("proto-test")).toBe("proto-disclosure");
+    expect(templateForProtocol("essay")).toBe("general");
+    expect(templateDef("proto-disclosure").heading).toBe("Disclosure statement");
+    // an unregistered template key degrades to general rather than throwing (never a gate).
+    expect(templateDef("ghost")).toBe(templateDef("general"));
+  });
 });
 
 describe("append-only additions (REQ-VIS-10)", () => {

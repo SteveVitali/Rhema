@@ -8,6 +8,8 @@ import type {
   DecisionItemDto,
   EditorDocDto,
   ExportDialogDto,
+  AccountExportDto,
+  AccountImportResultDto,
   GateCardDto,
   ProjectGroupByDto,
   ProjectSearchHitDto,
@@ -416,6 +418,17 @@ export interface PageData {
   readonly balance?: { readonly spendableCredits: number; readonly heldCredits: number };
   /** the settings page's privacy toggle (REQ-PROD-15 — binds "user".analytics_opt_out). */
   readonly privacy?: { readonly analyticsOptOut: boolean; readonly saved?: boolean };
+  /**
+   * P1.18 — the Settings "Your data" section (REQ-ACCT-3): the latest account-export build state +
+   * a one-shot flash for the export-request / import-result round-trips.
+   */
+  readonly accountExport?: {
+    readonly export: AccountExportDto | null;
+    /** `requested` (build queued) | `imported` | `deduped` | `importFailed`. */
+    readonly notice?: string;
+    /** the import counts when notice is `imported`. */
+    readonly imported?: AccountImportResultDto;
+  };
   /** the level-1 usage glance (balance + recent runs' spend). */
   readonly usage?: UsageDto;
   // ---- P1.16 — billing, full (§14.2/14.3/14.5/14.6) ----
