@@ -2,8 +2,13 @@
 
 - **Sequence:** 52 · **Phase:** post-P1 closeout · **Tag:** ops
 - **base_branch:** `main` after the operator merges the stacked chain (PRs #50–#76, bottom-up).
-- **Depends on:** **OPERATOR MERGE of the entire stack** — this ticket is gated on it. RCN.1 may
-  run before the merge (it is audit-only); STB.1 must not.
+- **Depends on:** ~~**OPERATOR MERGE of the entire stack**~~ — **amended 2026-09-26 (operator
+  decision):** proceed WITHOUT the merge. Deploy the chain-tip SHA
+  (`stevevitali/p1-22-launch-checks`) directly — the tip carries the whole cumulative tree and, if
+  the operator's later merges resolve cleanly (all PRs MERGEABLE), `main` lands byte-identical.
+  Precedent: PRB.22–25 deployed branch SHAs to prod. Caveat recorded: the `deployments` row will
+  cite a non-`main` SHA; reconcile the deployed tree hash against the post-merge tree when the
+  merge happens — divergence ⇒ Stage B evidence gets a footnote, not a redo.
 - **Scope (one line):** deploy the merged tree to `dev` — every service image, all migrations
   `0029`–`0041`, `infra/k8s/apply.sh`, the new Pulumi IAM/monitoring wiring — then the smoke
   battery that proves the deploy is coherent.
