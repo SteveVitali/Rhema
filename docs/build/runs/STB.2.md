@@ -4,7 +4,8 @@
   verification + small binding fixes, **not** a feature build.
 - **Branch:** `stevevitali/p1-22-launch-checks` (deployed prod tree is still the STB.1 chain-tip
   `4fcf03e` — the fixes below are **committed, not yet deployed**; every "code-landed" claim below
-  is labeled as such).
+  is labeled as such). **2026-09-25 amendment:** they were deployed + verified later the same day —
+  see **§9** (prod now serves `f3c7e13`).
 - **Spend:** **$0 INFERENCE.** No run launched, no Anthropic call, no Stripe leg. The one write
   leg exercised live — file upload → convert preview → create — rides the free convert Job
   (PRB.20 path), no inference.
@@ -124,3 +125,73 @@
    surfaced by the account-zip download 503.
 4. `/app`'s attention-group vocabulary check needed the real labels (`Needs you`/`Running`/
    `Ready to read`/`Quiet` render only when populated — a 1-project workspace shows `Quiet · 1`).
+
+## 9. Continuation — follow-up deploy of `f3c7e13` + post-deploy verification (2026-09-25, ~22:15Z)
+
+The committed-but-not-deployed fixes above shipped to prod later the same day (follow-up deploy
+leg; `mergePolicy` unchanged — the pre-merge deploy authorization from the STB.1 amendment covers
+the same branch's tip). **Spend: $0 inference** (build/deploy/verification legs only).
+
+### 9.1 Build + deploy
+
+- `git diff 4fcf03e..f3c7e13 --stat`: touched `apps/api`, `apps/web`, `apps/worker` +
+  `packages/{db,orchestrator,live-clients,security-checks}` + `infra/pulumi`. Package consumers:
+  the changed packages land only in api/worker/web images for the behaviors shipped here —
+  fetcher/convert/export/collab/run-task/egress-proxy unchanged → **built api + web + worker only**
+  (scratch `cloudbuild-stb2.yaml`, tag `stb2`).
+- **Cloud Build `545b53c2-453f-4fc5-a6e5-6eca4f50976d` — SUCCESS** (E2_HIGHCPU_8). Digests:
+
+  | image | digest (`stb2`, f3c7e13) |
+  |---|---|
+  | api | `sha256:ef986d1334c276a54c52721693f2c033bb7b42d573f579baf90a0d03ece3cdca` |
+  | web | `sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e` |
+  | worker | `sha256:98e86c6855b1c226c8b3f23661882fb9560c84791f3c280f8fb4070cba35d80a` |
+
+- Pinned into `Pulumi.prod.yaml` `rhema:serviceImages` (the other six keep their `p1final` digests);
+  dated comment added.
+- `pulumi preview` (prod): **+2 create** (AlertPolicies `slo-event-delivery-latency-p95-s`,
+  `slo-autosave-roundtrip-p95-ms`), **~6 update** (api/web/worker image swaps + the known cosmetic
+  `-scaling` readback drift on fetcher/export/collab), **132 unchanged — no destroys, no stateful
+  replaces** (stop condition never fired).
+- `pulumi up` — **update 78 converged** (1m21s); Cloud Run verified serving the pinned digests
+  (`gcloud run services describe` on `rhema-prod-{api-e745ce0,web-72f1683,worker-cbdaf0f}` — image
+  strings match the three `stb2` digests exactly).
+- Migration **`0042_slo_samples` applied** via the IAP tunnel (bastion instance rotated to
+  `rhema-prod-proxy-fwps`; same `127.0.0.1:15433 → 10.46.0.3` pattern) — `slo_samples` +
+  `slo_samples_signal_at` exist; `_migrations` now 42 rows. Applied **before** the rollout finished
+  (additive; same ordering rule as STB.1's `0041`).
+- Provenance: `scripts/live/record-deployment.mjs` → **`prod:f3c7e135ae38548068a296efea9000665a65149f`**,
+  `protocols_version=0.4.0+619079b3ba004cf1`, all nine digests on the row.
+
+### 9.2 Post-deploy verification (live, $0)
+
+Session: same live `session`-row cookie pattern as §1 (token never logged). **Pre-deploy baseline
+captured minutes before the roll** for the exact before/after diff:
+
+| endpoint | pre-deploy (`4fcf03e`) | post-deploy (`f3c7e13`) |
+|---|---|---|
+| `api /projects/01M2S5YQ0AVNF55Y1CG0TYZ9WJ/review/01M2RGNK9PWKN5M34343GXZC16/dossier` (**foreign** workspace) | **200 — 56,378 B full dossier DTO (the leak)** | **404 `{"error":"not_found"}` — LEAK CLOSED** |
+| `api /projects/01M34YDZ3SK525JYF74EEH44QR/review/01M36663QG1ZJ7VEZ036Y54NSG/dossier` (own ws) | 404 (no `correspondence_items` row — the `inputs.draftId` bug §4) | 404 — unchanged, expected |
+| `web /p/quiet-cost-of-convenience/review/…` (foreign slug) | 404 | 404 — unchanged |
+| `web /p/my-first-project/review/01M36663…` | **500 `internal error`** | **404 not-found page** (the web half landed) |
+| `api /account/export/download` | **503 `download_unavailable`** | **200 `{"downloadUrl":"https://storage.googleapis.com/…"}`** — GCS v4 signed; fetched → **200, 24,777 B, `PK\x03\x04` valid zip** (matches the `ready` row's size) |
+| `web /p/my-first-project` | 200 | 200 (138 KB shell) |
+| `api /healthz` | 200 | 200 |
+| `api /projects` (authed) | — | 200 — own-workspace list only (txRunner binding live, no regression) |
+| Monitoring | 9 SLO alert policies | **11** — `event_delivery_latency_p95_s` + `autosave_roundtrip_p95_ms` created live |
+
+- `slo_samples` row count: **0** — honest: `event_delivery_ms` writes on an SSE flush carrying
+  events (needs a live run) and `autosave_save_ms` on the first editor save; neither has happened
+  since the roll. Instrumentation + probes + alerts are deployed; the live p95 read lands with first
+  traffic (residual carried on D-P0.08b-3/D-P1.22-1).
+- `project.purge`: enqueue is delete-triggered; no tombstone exists to observe — code deployed,
+  live evidence still gated on a real tombstone+30d (unchanged residual on D-P1.04-2).
+- D-P1.22-2(c) usercontent signed-URL headers: still gated — the usercontent backend signs via
+  **CDN signed-url keys** (`compute.ts`: operator adds the key out-of-band), not GCS v4; the
+  `exportPresign` fix does not unblock this leg. Stays open on the operator's CDN-key step.
+
+### 9.3 Verdict
+
+The cross-tenant dossier read is **closed on prod** (foreign 200→404 verified against the same
+project/run pair that leaked in §3). All code-landed STB.2 fixes are now **deployed and live**
+except where noted above. The §3 exposure window ended at update 78 (~22:14Z 2026-09-25).
