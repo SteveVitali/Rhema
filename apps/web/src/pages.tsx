@@ -138,6 +138,17 @@ function footer(): ReactNode {
   return <span>{COPY.footer}</span>;
 }
 
+/** P1.19 — §10.1's ✗ column (REQ-SPEC-20; REQ-MOBILE-3 amended): on phone width a suppressed surface
+ *  renders this note instead of its controls (run-start, ingestion, export, new project, diffs,
+ *  billing actions, voice building, approval-field editing). */
+export function PhoneBlockedNote(): ReactNode {
+  return (
+    <p data-phone-blocked="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+      {COPY.phoneBlocked.note}
+    </p>
+  );
+}
+
 /**
  * P1.01 — the §5.1 IDE frame every `/p/:project…` route renders inside (REQ-IDE-8): Rail / Files / Page /
  * Margin / Timeline / Desk / Status bar. The frame is SSR-static + attribute-driven; the ide.js island
@@ -213,7 +224,7 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
             ),
           }
         : {})}
-      {...(ide.chat ? { chatBody: chatPanel(ide.chat, slug, ide) } : {})}
+      {...(ide.chat ? { chatBody: chatPanel(ide.chat, slug, ide, data.compact === true) } : {})}
       {...dossierSurfaces(data)}
       labels={{
         ...COPY.ide,
@@ -221,6 +232,19 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       }}
     >
       {children}
+      {/* P1.19 — §10.1: below ~768 px the Desk is display:none, so the chat surface mounts INSIDE
+          the Page — text only (the compact ChatDesk drops the plan card's run-start/edit actions,
+          the anchored suggestion, and the tier pick; the estimate line still shows). */}
+      {data.compact === true && ide.chat ? (
+        <section
+          className="ide-phone-only"
+          data-phone-chat="true"
+          aria-label={COPY.ide.desk.heading}
+          style={{ marginTop: "24px", borderTop: "1px solid var(--paper-rule)", paddingTop: "12px" }}
+        >
+          {chatPanel(ide.chat, slug, ide, true)}
+        </section>
+      ) : null}
     </IdeShell>
   );
 }
@@ -330,7 +354,7 @@ export function LoginPage(): ReactNode {
  *  the Group-by select (persisted per user), the Archived affordance, and the search field. Every
  *  row's state arrives already derived (the api runs projectState over the row sets). */
 export function ProjectsPage(): ReactNode {
-  const { home, balance } = usePageData();
+  const { home, balance, compact } = usePageData();
   const groupBy = home?.groupBy ?? "attention";
   const voiceFilter = home?.voiceFilter ?? null;
   const protocolFilter = home?.protocolFilter ?? null;
@@ -393,6 +417,8 @@ export function ProjectsPage(): ReactNode {
       {/* the controls bar: search, Group-by (persisted), the Voice filter chips, the Archived
           affordance — every control is a plain link or form (no client JS). */}
       <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginBottom: "14px" }}>
+        {/* P1.19 — §10.1 ✗: new project is never offered on phone width. */}
+        {compact === true ? null : (
         <a
           href="/app/new"
           data-new-project="true"
@@ -400,6 +426,7 @@ export function ProjectsPage(): ReactNode {
         >
           {COPY.projectHome.newProject}
         </a>
+        )}
         <form method="get" action="/app" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }}>
           {voiceFilter ? <input type="hidden" name="voice" value={voiceFilter} /> : null}
           {protocolFilter ? <input type="hidden" name="protocol" value={protocolFilter} /> : null}
@@ -577,6 +604,11 @@ export function ProjectPage(): ReactNode {
           the §5.9 empty-project state: three entry cards + the quiet serif title field. P1.02 item 12 —
           a project WITH a working head opens the Page on it; the overview affordances stay below. */}
       {project && !project.headDraftId ? (
+        compact === true ? (
+          /* P1.19 — §10.1 ✗: the empty-project's entries are import/run — both suppressed on
+             phone width; the honest note replaces them. */
+          <PhoneBlockedNote />
+        ) : (
         <EmptyProject
           labels={{
             titlePlaceholder: COPY.ide.emptyProject.titlePlaceholder,
@@ -584,10 +616,12 @@ export function ProjectPage(): ReactNode {
           }}
           paths={[`/p/${slug}/import`, `/p/${slug}/import`, `/p/${slug}/run`]}
         />
+        )
       ) : null}
       <SectionTitle>{project?.title ?? ""}</SectionTitle>
-      {project?.rename ? (
+      {project?.rename && compact !== true ? (
         // P1.04 — the row action's Rename: an inline title form posting to /p/:slug/rename.
+        // P1.19 — §10.1 ✗: a configuration control — suppressed on phone width.
         <form method="post" action={`/p/${slug}/rename`} data-rename-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", margin: "8px 0" }}>
           <input
             type="text"
@@ -616,7 +650,8 @@ export function ProjectPage(): ReactNode {
                 ? fmt(COPY.newProject.nextStepOutlineFmt, { v: "v1" })
                 : fmt(COPY.newProject.nextStepDraftFmt, { v: `v${project.created.draftN ?? 1}` })}
           </p>
-          {project.created.entry === "draft" ? (
+          {project.created.entry === "draft" && compact !== true ? (
+            // P1.19 — §10.1 ✗: run start is never offered on phone width.
             <p style={{ margin: "8px 0 0" }}>
               <a href={`/p/${slug}/run`} style={{ fontSize: "13px" }}>{COPY.runSheet.runReview}</a>
             </p>
@@ -630,9 +665,15 @@ export function ProjectPage(): ReactNode {
       ) : null}
       {project ? (
         <p style={{ display: "flex", gap: "16px" }}>
-          <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
-          <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
-          <a href={`/p/${slug}/export`}>{COPY.project.exportCta}</a>
+          {/* P1.19 — §10.1 ✗: import / run start / export are never offered on phone width; the
+              reader link stays (the Page mounts read-only at that width). */}
+          {compact === true ? null : (
+            <>
+              <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
+              <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
+              <a href={`/p/${slug}/export`}>{COPY.project.exportCta}</a>
+            </>
+          )}
           {project.headDraftId ? (
             <a data-edit-source="true" href={`/p/${slug}/v/working`}>
               {COPY.project.editCta}
@@ -680,9 +721,11 @@ export function ProjectPage(): ReactNode {
       {/* P1.09 — the §6.4 item 3 approval settings: the policy pick + the per-kind deadline grid +
           the standing-guidance manager (§6.5; REQ-GATE-10). Falls back to the PRB.05 opt-in when the
           settings read is absent. */}
-      {project && approvalSettings ? (
+      {/* P1.19 — §10.1 ✗: approval policy is a configuration control — suppressed on phone width. */}
+      {project && compact !== true ? (
+        approvalSettings ? (
         <ApprovalSettingsSection slug={slug} settings={approvalSettings} />
-      ) : project ? (
+        ) : (
         <form
           method="post"
           action={`/p/${slug}/approval-overrides`}
@@ -699,11 +742,13 @@ export function ProjectPage(): ReactNode {
           <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" }}>{COPY.gates.optInNote}</p>
           <button type="submit" style={{ fontSize: "12px" }}>{COPY.gates.optInSave}</button>
         </form>
+        )
       ) : null}
       {/* PRB.10 — the project voice picker (§9.6; REQ-DATA-32): the linked persona + "No voice"
           (the ad-hoc default, REQ-PERSONA-20). Selecting a persona pins its current profile snapshot
-          server-side; the shared pill renders beside the name. */}
-      {project && projectVoice ? (
+          server-side; the shared pill renders beside the name.
+          P1.19 — §10.1 ✗: voice configuration is suppressed on phone width. */}
+      {project && projectVoice && compact !== true ? (
         <div
           data-voice-picker="true"
           style={{ marginTop: "20px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px", maxWidth: "68ch" }}
@@ -811,12 +856,15 @@ const textAreaStyle = {
 
 /** Auth-gated: the §5.3 upload → conversion-preview → create flow (step 1 of the beta loop). */
 export function ImportPage(): ReactNode {
-  const { project } = usePageData();
+  const { project, compact } = usePageData();
   const slug = project?.slug ?? "";
   return (
     <IdeFrame>
       <SectionTitle>{COPY.import.heading}</SectionTitle>
+      {/* P1.19 — §10.1 ✗: ingestion never renders on phone width. */}
+      {compact === true ? <PhoneBlockedNote /> : null}
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.import.lede}</p>
+      {compact === true ? null : (
       <form method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
         <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
           {COPY.import.fileLabel}
@@ -832,17 +880,20 @@ export function ImportPage(): ReactNode {
           </button>
         </div>
       </form>
+      )}
     </IdeFrame>
   );
 }
 
 /** Auth-gated: the conversion preview (source beside converted, count line, warnings, two actions). */
 export function ImportPreviewPage(): ReactNode {
-  const { conversion } = usePageData();
+  const { conversion, compact } = usePageData();
   const slug = conversion?.projectSlug ?? "";
   return (
     <IdeFrame>
       <SectionTitle>{COPY.import.previewHeading}</SectionTitle>
+      {/* P1.19 — §10.1 ✗: ingestion never renders on phone width. */}
+      {compact === true ? <PhoneBlockedNote /> : null}
       {conversion?.created ? (
         <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
           {COPY.import.created}
@@ -859,7 +910,7 @@ export function ImportPreviewPage(): ReactNode {
           <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px" }}>{COPY.import.convertingNote}</p>
         </section>
       ) : null}
-      {conversion && conversion.pending !== true ? (
+      {conversion && conversion.pending !== true && compact !== true ? (
         <ConversionPreview
           sourceLabel={conversion.sourceLabel}
           sourceText={conversion.sourceText}
@@ -891,7 +942,19 @@ export function ImportPreviewPage(): ReactNode {
  *  conversion preview (source beside converted, count line, anchored warnings, Create-and-fix-later /
  *  Fix-now) on the live PRB.20 quarantine path before anything is created. */
 export function NewProjectPage(): ReactNode {
-  const { newProject: np } = usePageData();
+  const { newProject: np, compact } = usePageData();
+  // P1.19 — §10.1 ✗: new project never renders its controls on phone width (REQ-SPEC-20).
+  if (compact === true) {
+    return (
+      <IdeFrame>
+        <p style={{ margin: "0 0 6px" }}>
+          <a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>
+        </p>
+        <SectionTitle>{COPY.newProject.heading}</SectionTitle>
+        <PhoneBlockedNote />
+      </IdeFrame>
+    );
+  }
   const entry = np?.entry ?? "scratch";
   const form = np?.form ?? { title: "", protocolId: null, venue: null, personaId: null, startVersion: null };
   const protocols = np?.protocols ?? [];
@@ -1163,7 +1226,7 @@ const runSheetLabels: RunSheetLabels = {
 
 /** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
 export function RunSheetPage(): ReactNode {
-  const { runSheet, pretriage } = usePageData();
+  const { runSheet, pretriage, compact } = usePageData();
   const slug = runSheet?.slug ?? "";
   return (
     <IdeFrame>
@@ -1198,7 +1261,11 @@ export function RunSheetPage(): ReactNode {
           ) : null}
         </section>
       ) : null}
-      {runSheet && !runSheet.activeRun ? (
+      {/* P1.19 — §10.1 ✗: run-start + run configuration never render at phone width — the compact
+          read keeps the in-progress note and drops the sheet. */}
+      {compact === true && runSheet && !runSheet.activeRun ? (
+        <PhoneBlockedNote />
+      ) : runSheet && !runSheet.activeRun ? (
         <RunSheet
           view={runSheet.view}
           labels={{
@@ -1814,9 +1881,10 @@ function chatPanel(
   chat: ChatPanelDto,
   slug: string,
   ide: NonNullable<ReturnType<typeof usePageData>["ide"]>,
+  compact: boolean,
 ): ReactNode {
   return (
-    <ChatDesk
+    <ChatDesk compact={compact}
       model={{
         threads: chat.threads.map((t) => ({
           id: t.id,
@@ -2188,6 +2256,15 @@ export function DossierPage(): ReactNode {
         />
       </div>
 
+      {/* P1.19 — `?gate=<id>` (the Inbox row's deep link) mounts the gate's real card at the head of
+          the artifact: the approve flow reads the artifact first — and on phone width (Timeline
+          hidden) this is the row's approve surface. */}
+      {dossierView?.focusedGate ? (
+        <section data-focused-gate={dossierView.focusedGate.id} style={{ margin: "16px 0" }}>
+          {gateCardFor(dossierView.focusedGate, dossier.slug, compact ?? false, triage?.dispositionError)}
+        </section>
+      ) : null}
+
       <div style={{ margin: "16px 0" }}>
         {/* P1.05 — the dossier card carries the same actions the Timeline's card does (report link,
             walkthrough block, retry) — same view model, same labels (re-skin, never a fork). */}
@@ -2269,7 +2346,9 @@ export function DossierPage(): ReactNode {
         {/* P1.07 — the one-preview bulk render (§5.7; REQ-IDE-29 amended): `?bulk=<action>` lands the
             consolidated checklist here — checked rows ride `only[]` to the dispatch POST; the skipped
             rows list their reasons. No blind accept-all exists. */}
-        {dossierView?.bulk ? (
+        {/* P1.19 — §10.1 ✗ ("bulk accept/apply"): a crafted ?bulk= URL renders no confirm form at
+            phone width — the preview affordance is desktop-only, like the controls that open it. */}
+        {dossierView?.bulk && compact !== true ? (
           <section
             data-bulk-preview="true"
             style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "12px 14px", margin: "0 0 14px", background: "var(--shell-surface)" }}
@@ -2579,7 +2658,16 @@ const filesLabels: FilesPaneLabels = {
 /** Auth-gated: the §5.8 compare page (`/p/:slug/v/:n/diff/:m`) — three read-only layouts over the ONE
  *  server projection; the hunk comment form is the only interactive element (→ Guidance). */
 export function ComparePage(): ReactNode {
-  const { compare } = usePageData();
+  const { compare, compact } = usePageData();
+  // P1.19 — §10.1 ✗: diffs never render on phone width (reader-only Page).
+  if (compact === true) {
+    return (
+      <IdeFrame>
+        <SectionTitle>{CP.heading}</SectionTitle>
+        <PhoneBlockedNote />
+      </IdeFrame>
+    );
+  }
   if (!compare) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
@@ -2638,7 +2726,16 @@ const editorLabels: SourceEditorLabels = {
 };
 
 export function EditorPage(): ReactNode {
-  const { editor } = usePageData();
+  const { editor, compact } = usePageData();
+  // P1.19 — §10.1 ✗: the source editor never renders on phone width (reader-only Page).
+  if (compact === true) {
+    return (
+      <IdeFrame>
+        <SectionTitle>{E.notFound}</SectionTitle>
+        <PhoneBlockedNote />
+      </IdeFrame>
+    );
+  }
   if (!editor) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
@@ -2748,7 +2845,7 @@ function citeKeysInMarkdown(markdown: string): Set<string> {
 /** The PageEditor element for `data.page` — shared by the /v/:v routes and the project overview's
  *  working-head mount (P1.02 item 12: `/p/:project` opens the Page on the working head). */
 function PageSurface(): ReactNode {
-  const { page } = usePageData();
+  const { page, compact } = usePageData();
   if (!page) return null;
   const { slug, doc } = page;
   const base = `/p/${slug}/edit/${doc.draftId}`;
@@ -2757,8 +2854,10 @@ function PageSurface(): ReactNode {
     <>
     {rail ? (
       // P1.08 — the §5.8 chip strip over the Page (the compare-previous link + the restore-points
-      // dropdown live here; ⌘⇧C in the island follows the same link).
+      // dropdown live here; ⌘⇧C in the island follows the same link). P1.19 — §10.1 ✗: at phone
+      // width the rail keeps only the version chips (diffs + restore are desktop surfaces).
       <VersionRail
+        compact={compact === true}
         versions={rail.data.drafts}
         outline={rail.data.outline}
         chip={rail.data.chip}
@@ -2816,7 +2915,9 @@ function PageSurface(): ReactNode {
         }))}
         provenance={doc.provenance ?? null}
         danglingCites={danglingCites(doc)}
-        readOnly={page.readOnly === true}
+        // P1.19 — §10.1: the Page is reader-only at phone width (editing is the ✗ column) — the
+        // island mounts read-only too (readOnly flows to the editor island verbatim).
+        readOnly={page.readOnly === true || compact === true}
         {...(page.collabWsUrl ? { collabWsUrl: page.collabWsUrl } : {})}
         saveUrl={`${base}/save`}
         docUrl={`${base}/doc`}
@@ -2915,7 +3016,7 @@ function VoiceCard({ v }: { v: VoiceListRowDto }): ReactNode {
  *  styles (read-only, forkable), Shared with you (read-only, forkable). Every card carries the
  *  shared pill; the server splits the groups — the page renders them verbatim. */
 export function VoicesPage(): ReactNode {
-  const { voices } = usePageData();
+  const { voices, compact } = usePageData();
   const groups = voices?.groups;
   const sections: { key: "your_voices" | "house_styles" | "shared_with_you"; heading: string; empty: string }[] = [
     { key: "your_voices", heading: VC.groups.yours, empty: VC.groups.yoursEmpty },
@@ -2926,9 +3027,12 @@ export function VoicesPage(): ReactNode {
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
       <SectionTitle>{VC.listHeading}</SectionTitle>
+      {/* P1.19 — §10.1 ✗: new voice is a building surface — never offered on phone width. */}
+      {compact === true ? null : (
       <p>
         <a href="/voices/new" data-new-voice="true">{VC.newCta}</a>
       </p>
+      )}
       {total === 0 ? (
         <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{VC.listEmpty}</p>
       ) : (
@@ -2959,7 +3063,16 @@ export function VoicesPage(): ReactNode {
 /** Auth-gated: the §9.2 creation sheet — name required; description, byline, one pasted sample, Mode
  *  (metadata only, Q-11) and the tier radio optional; the AUP one-liner sits above the actions. */
 export function VoiceNewPage(): ReactNode {
-  const { voiceNew } = usePageData();
+  const { voiceNew, compact } = usePageData();
+  // P1.19 — §10.1 ✗: voice building never renders its form on phone width (REQ-SPEC-20).
+  if (compact === true) {
+    return (
+      <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
+        <SectionTitle>{VC.new.heading}</SectionTitle>
+        <PhoneBlockedNote />
+      </Shell>
+    );
+  }
   return (
     <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
       <SectionTitle>{VC.new.heading}</SectionTitle>
@@ -3371,7 +3484,7 @@ function VoiceSourcesPane({ pid, connections, samples }: { pid: string; connecti
 /** The sample drawer (§9.5): state/access + quality verdict with its notes, the canonical preview,
  *  the version history, and the priced reconstruction CTAs — the estimate rides the button label,
  *  and the visual tier only appears when the notes flag a scanned/no-text-layer source. */
-function VoiceSampleDrawer({ pid, detail }: { pid: string; detail: VoiceSampleDetailDto }): ReactNode {
+function VoiceSampleDrawer({ pid, detail, compact = false }: { pid: string; detail: VoiceSampleDetailDto; compact?: boolean }): ReactNode {
   const head = detail.versions[0];
   const quality = head?.quality ?? null;
   const notes = [...(head?.quality_notes ?? [])];
@@ -3399,8 +3512,9 @@ function VoiceSampleDrawer({ pid, detail }: { pid: string; detail: VoiceSampleDe
         </div>
       ) : null}
       {/* the priced reconstruction — text tier always for non-clean; visual only when the notes
-          flag a scanned/no-text-layer source (the opt-in ~180-credit pass). */}
-      {quality && quality !== "clean" && quality !== "reconstructed" ? (
+          flag a scanned/no-text-layer source (the opt-in ~180-credit pass).
+          P1.19 — §10.1 ✗: a building control — suppressed on phone width. */}
+      {!compact && quality && quality !== "clean" && quality !== "reconstructed" ? (
         <div style={{ display: "flex", gap: "8px", margin: "8px 0", flexWrap: "wrap" }}>
           <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`} style={{ margin: 0 }}>
             <input type="hidden" name="tier" value="text" />
@@ -3448,7 +3562,7 @@ function VoiceSampleDrawer({ pid, detail }: { pid: string; detail: VoiceSampleDe
  *  (include/omit + the hold-out badge + paste/URL/file), Profile (fixed §9.4 order + calibration
  *  table + measures), Runs (build history). */
 export function VoiceDetailPage(): ReactNode {
-  const { voice } = usePageData();
+  const { voice, compact } = usePageData();
   const d = voice?.detail;
   const pid = d?.persona.id ?? "";
   const tab = VOICE_TABS.includes(voice?.tab as (typeof VOICE_TABS)[number]) ? (voice?.tab as (typeof VOICE_TABS)[number]) : "overview";
@@ -3479,7 +3593,9 @@ export function VoiceDetailPage(): ReactNode {
 
           {tab === "overview" ? (
             <>
-              {/* Build / update / cancel — the pill's ONE verb (§9.3; scope routes server-side). */}
+              {/* Build / update / cancel — the pill's ONE verb (§9.3; scope routes server-side).
+                  P1.19 — §10.1 ✗: voice-building controls never render on phone width. */}
+              {compact === true ? <PhoneBlockedNote /> : (
               <div style={{ display: "flex", gap: "10px", margin: "10px 0" }}>
                 {d.status.action === "build" ? (
                   <form method="post" action={`/v/${pid}/build`} style={{ margin: 0 }}>
@@ -3512,6 +3628,7 @@ export function VoiceDetailPage(): ReactNode {
                   </form>
                 ) : null}
               </div>
+              )}
 
               {d.gate ? <VoiceGateCardView pid={pid} gate={d.gate} /> : null}
               <VoiceFactsPanelView detail={d} plan={voice?.updatePlan} />
@@ -3540,7 +3657,9 @@ export function VoiceDetailPage(): ReactNode {
                 </section>
               ) : null}
               {/* P1.15 — the §9.5 delete: purge-eligible personas schedule voice.purge (the
-                  30-day window); the typed "delete" confirm guards the destructive POST. */}
+                  30-day window); the typed "delete" confirm guards the destructive POST.
+                  P1.19 — §10.1 ✗: never rendered on phone width. */}
+              {compact === true ? null : (
               <section data-voice-delete="true" style={{ marginTop: "24px", maxWidth: "68ch", borderTop: "1px solid var(--shell-border)", paddingTop: "12px" }}>
                 <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--sev-major)", margin: "0 0 4px" }}>{VC.detail.deleteVoiceHeading}</h2>
                 <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{VC.detail.deleteVoiceNote}</p>
@@ -3551,6 +3670,7 @@ export function VoiceDetailPage(): ReactNode {
                   </button>
                 </form>
               </section>
+              )}
             </>
           ) : null}
 
@@ -3563,6 +3683,8 @@ export function VoiceDetailPage(): ReactNode {
                     {VC.detail.agentDraftedMark}
                   </p>
                 ) : null}
+                {/* P1.19 — §10.1 ✗: seed edits are a voice-building control — suppressed on phone width. */}
+                {compact === true ? <PhoneBlockedNote /> : (
                 <form method="post" action={`/v/${pid}/seed`}>
                   <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
                     {VC.detail.bylineLabel}
@@ -3577,6 +3699,7 @@ export function VoiceDetailPage(): ReactNode {
                     {VC.detail.seedSave}
                   </button>
                 </form>
+                )}
               </section>
 
               {/* the corrections ledger (§9.4): a correction lands as a blockquote on the seed + a
@@ -3597,6 +3720,7 @@ export function VoiceDetailPage(): ReactNode {
                     ))}
                   </ul>
                 )}
+                {compact === true ? null : (
                 <form method="post" action={`/v/${pid}/corrections`}>
                   <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
                     {VC.detail.correctionLabel}
@@ -3606,6 +3730,7 @@ export function VoiceDetailPage(): ReactNode {
                     {VC.detail.correctionCta}
                   </button>
                 </form>
+                )}
               </section>
 
               {/* build notes — the last build's own notes (§9.4). */}
@@ -3627,10 +3752,12 @@ export function VoiceDetailPage(): ReactNode {
           {tab === "samples" ? (
             <section data-samples="true" style={{ maxWidth: "68ch" }}>
               {/* P1.15 — the Sources pane: linked providers + the review-confirm step + the three
-                  link flows + Re-sync all. */}
-              <VoiceSourcesPane pid={pid} connections={voice?.connections} samples={d.samples} />
+                  link flows + Re-sync all. P1.19 — §10.1 ✗: a building surface — hidden on phone. */}
+              {compact === true ? null : (
+                <VoiceSourcesPane pid={pid} connections={voice?.connections} samples={d.samples} />
+              )}
               {/* the open drawer — `?tab=samples&sample=<itemId>` (§9.5 preview/versions). */}
-              {voice?.sampleDetail ? <VoiceSampleDrawer pid={pid} detail={voice.sampleDetail} /> : null}
+              {voice?.sampleDetail ? <VoiceSampleDrawer pid={pid} detail={voice.sampleDetail} compact={compact === true} /> : null}
               {d.samples.length === 0 ? (
                 <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.samplesEmpty}</p>
               ) : (
@@ -3667,15 +3794,18 @@ export function VoiceDetailPage(): ReactNode {
                       <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} style={{ fontSize: "12px", color: "var(--accent)", textDecoration: "none" }}>
                         {VC.detail.viewLabel}
                       </a>
+                      {compact === true ? null : (
                       <form method="post" action={`/v/${pid}/samples/${s.id}`} style={{ margin: 0 }}>
                         <button type="submit" name="included" value={s.state === "included" ? "false" : "true"} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer" }}>
                           {s.state === "included" ? VC.detail.omitLabel : VC.detail.includeLabel}
                         </button>
                       </form>
+                      )}
                     </li>
                   ))}
                 </ul>
               )}
+              {compact === true ? null : (
               <form method="post" action={`/v/${pid}/samples`} encType="multipart/form-data" style={{ marginTop: "10px" }}>
                 <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
                   {VC.detail.addSampleTitleLabel}
@@ -3693,7 +3823,9 @@ export function VoiceDetailPage(): ReactNode {
                   {VC.detail.addSampleCta}
                 </button>
               </form>
+              )}
               {/* the fetcher-only URL path (REQ-INGEST-13) — the URL is fetched once, server-side. */}
+              {compact === true ? null : (
               <form method="post" action={`/v/${pid}/samples/url`} style={{ marginTop: "10px" }}>
                 <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
                   {VC.detail.addSampleUrlLabel}
@@ -3703,6 +3835,7 @@ export function VoiceDetailPage(): ReactNode {
                   {VC.detail.addUrlCta}
                 </button>
               </form>
+              )}
             </section>
           ) : null}
 
@@ -3715,7 +3848,7 @@ export function VoiceDetailPage(): ReactNode {
               ) : (
                 <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.profileEmpty}</p>
               )}
-              {d.upgradeRoute ? (
+              {d.upgradeRoute && compact !== true ? (
                 <form method="post" action={`/v/${pid}/update`} style={{ margin: "0 0 12px" }}>
                   <input type="hidden" name="scope" value="full_from_quick" />
                   <button type="submit" data-upgrade-voice="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
@@ -3823,16 +3956,18 @@ export function VoiceDetailPage(): ReactNode {
  *  reseeded lines the adopt would write, guidance carried verbatim (never in the diff). The
  *  confirm button posts the adopt with `reseed` set. */
 export function VoiceReseedPage(): ReactNode {
-  const { voiceReseed } = usePageData();
+  const { voiceReseed, compact } = usePageData();
   const slug = voiceReseed?.slug ?? "";
   const preview = voiceReseed?.preview;
   return (
     <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{VC.detail.backToList}</a>} footer={footer()}>
       <SectionTitle>{VC.detail.reseedPreviewCta}</SectionTitle>
+      {/* P1.19 — §10.1 ✗: diffs + voice-building actions never render on phone width. */}
+      {compact === true ? <PhoneBlockedNote /> : null}
       {voiceReseed?.error ? (
         <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{voiceReseed.error}</p>
       ) : null}
-      {preview ? (
+      {preview && compact !== true ? (
         <>
           {!preview.charterFound ? (
             <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>No charter yet — the reseed writes one.</p>
@@ -3870,7 +4005,7 @@ export function VoiceReseedPage(): ReactNode {
  *  toggle + statement preview, the append-only addition field, and the standalone-statement downloads.
  *  Pure SSR: the export form POSTs and the download links GET — no client JS. */
 export function ExportPage(): ReactNode {
-  const { export: ex } = usePageData();
+  const { export: ex, compact } = usePageData();
   const slug = ex?.slug ?? "";
   const dialog = ex?.dialog;
   const statement = dialog?.statement;
@@ -3880,10 +4015,12 @@ export function ExportPage(): ReactNode {
       <p style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
         {COPY.export.lede}
       </p>
+      {/* P1.19 — §10.1 ✗: export never renders its form on phone width. */}
+      {compact === true ? <PhoneBlockedNote /> : null}
       {ex?.error ? (
         <p data-export-error="true" style={{ color: "var(--shell-fg)", fontSize: "13px" }}>{ex.error}</p>
       ) : null}
-      {dialog ? (
+      {dialog && compact !== true ? (
         <>
           {/* the §11.7 obligation line — informational, with links; export never blocks on it. */}
           <p data-obligation-line="true" style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "12px 0 4px" }}>
@@ -4738,7 +4875,7 @@ export function VisualizePage(): ReactNode {
  *  the Team waitlist. Every price + "What it covers" line renders `pricing.json` verbatim — the page
  *  never hand-figures. */
 export function BillingPage(): ReactNode {
-  const { billing } = usePageData();
+  const { billing, compact } = usePageData();
   const B = COPY.billing;
   if (!billing) {
     return (
@@ -4800,6 +4937,10 @@ export function BillingPage(): ReactNode {
         )}
       </section>
 
+      {/* P1.19 — §10.1 ✗: billing/configuration controls (plan ladder forms, top-ups, auto-reload,
+          portal) never render on phone width; the read-only plan card above stays. */}
+      {compact === true ? <PhoneBlockedNote /> : (
+      <>
       <section data-plan-ladder="true" style={{ margin: "0 0 20px" }}>
         {planEntries.map(([tier, plan]) => {
           const isCurrent = tier === current;
@@ -4895,6 +5036,8 @@ export function BillingPage(): ReactNode {
           <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.manageNote}</span>
         </form>
       ) : null}
+      </>
+      )}
     </Shell>
   );
 }
@@ -4973,6 +5116,178 @@ export function ProjectUsagePage(): ReactNode {
           </tbody>
         </table>
       )}
+    </Shell>
+  );
+}
+
+// --------------------------------------------------------------------------------------------------
+// P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended, REQ-IDE-47/48, REQ-MOBILE-19).
+// The api owns the ordering — this page renders the SAME order in named sections:
+//   Needs you  — the badge-counted rows (open approvals + open decisions). A gate row's `<details>`
+//                is the MVP side sheet: it shows the card's facts and links to the focused surface —
+//                Approve itself happens on the card (no remote one-click approve anywhere, REQ-MOBILE-10).
+//   New/Earlier — the §5.11 event rows (unread newest-first, then read). Deep links land on the §4.2
+//                focused surface; a run_finished row's href IS the walkthrough landing.
+//   Voices     — stale-voice rows (§9.3 attention states; read-time derived).
+// --------------------------------------------------------------------------------------------------
+export function InboxPage(): ReactNode {
+  const { inbox, compact } = usePageData();
+  const items = inbox?.items ?? [];
+  const blocked = items.filter((i) => i.kind === "blocked");
+  const unread = items.filter((i) => i.kind === "event" && i.unread);
+  const read = items.filter((i) => i.kind === "event" && !i.unread);
+  const voices = items.filter((i) => i.kind === "voice");
+  const slugOf = (href: string): string | null => {
+    const m = /^\/p\/([^/#?]+)/.exec(href);
+    return m?.[1] ?? null;
+  };
+  const rowStyle = {
+    padding: "10px 14px",
+    border: "1px solid var(--shell-border)",
+    borderRadius: "10px",
+    background: "var(--shell-surface)",
+    marginBottom: "8px",
+  } as const;
+  const metaStyle = { fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" } as const;
+  return (
+    <Shell
+      brand={COPY.brand}
+      nav={
+        <>
+          <a href="/app">{COPY.project.backToList}</a>
+          <a href="/settings/billing" style={{ fontSize: "13px", marginLeft: "12px" }}>{COPY.billing.nav}</a>
+        </>
+      }
+      footer={footer()}
+    >
+      <SectionTitle>{COPY.inbox.heading}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 16px" }} data-inbox-badge="true">
+        {fmt(COPY.inbox.badgeLine, { n: inbox?.badge ?? blocked.length })}
+      </p>
+      {items.length === 0 ? (
+        <p data-inbox-empty="true" style={{ fontSize: "14px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+          {COPY.inbox.empty}
+        </p>
+      ) : null}
+      {unread.length > 0 || read.length > 0 ? (
+        <form method="post" action="/app/inbox/read-all" style={{ margin: "0 0 16px" }}>
+          <button type="submit" data-inbox-read-all="true" style={{ fontSize: "12px" }}>
+            {COPY.inbox.markAllRead}
+          </button>
+        </form>
+      ) : null}
+
+      {blocked.length > 0 ? (
+        <section data-inbox-section="blocked" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{COPY.inbox.needsYouHeading}</h2>
+          {blocked.map((it) => {
+            const slug = slugOf(it.href);
+            if (it.gate) {
+              // §5.11 — the expand IS the side-sheet: when the page joined the gate's real card the
+              // row mounts it (artifact read precedes the Approve); otherwise the row degrades to
+              // its deep link, which lands the card on the artifact page itself (?gate=<id>).
+              const card = inbox?.gateCards?.[it.id];
+              return (
+                <details key={it.id} data-inbox-row={it.id} data-inbox-kind="gate" style={rowStyle}>
+                  <summary style={{ fontSize: "14px", color: "var(--shell-fg)", cursor: "pointer" }}>
+                    {it.title}
+                  </summary>
+                  <div style={{ marginTop: "8px" }}>
+                    {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
+                    <p style={metaStyle}>
+                      {it.gate.kind.replace(/_/g, " ")} · {it.gate.workflow.replace(/_/g, " ")}
+                      {it.gate.deadlineAt ? ` · ${COPY.inbox.detailsCta} ${it.gate.deadlineAt.slice(0, 16).replace("T", " ")} UTC` : ""}
+                    </p>
+                    {card && slug ? (
+                      <div data-inbox-gate-card={it.gate.gateId} style={{ margin: "10px 0" }}>
+                        {gateCardFor(card, slug, compact ?? false)}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0" }}>{COPY.inbox.decideNote}</p>
+                    )}
+                    <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
+                  </div>
+                </details>
+              );
+            }
+            if (it.decision && slug) {
+              return (
+                <div key={it.id} data-inbox-row={it.id} data-inbox-kind="decision" style={rowStyle}>
+                  <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 6px" }}>{it.title}</p>
+                  <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{it.decision.text}</p>
+                  <DecisionsList
+                    items={[
+                      {
+                        id: it.decision.decisionId,
+                        projectId: it.projectId ?? null,
+                        obligationId: it.decision.obligationId,
+                        text: it.decision.text,
+                        options: [...it.decision.options],
+                        createdAt: it.createdAt,
+                      },
+                    ]}
+                    formActionFor={(id) => `/p/${slug}/decisions/${id}`}
+                    labels={decisionsLabels}
+                  />
+                </div>
+              );
+            }
+            return (
+              <div key={it.id} data-inbox-row={it.id} style={rowStyle}>
+                <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: 0 }}>{it.title}</p>
+                <a href={it.href} style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
+
+      {unread.length > 0 ? (
+        <section data-inbox-section="unread" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{COPY.inbox.unreadHeading}</h2>
+          {unread.map((it) => (
+            <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} style={{ ...rowStyle, borderLeft: "3px solid var(--accent)" }}>
+              <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
+              {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
+              <p style={{ display: "flex", gap: "14px", margin: 0 }}>
+                <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
+                <form method="post" action="/app/inbox/read" style={{ margin: 0 }}>
+                  <input type="hidden" name="item" value={it.id} />
+                  <button type="submit" data-inbox-mark-read="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                    {COPY.inbox.markReadCta}
+                  </button>
+                </form>
+              </p>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {read.length > 0 ? (
+        <section data-inbox-section="read" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{COPY.inbox.readHeading}</h2>
+          {read.map((it) => (
+            <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} style={{ ...rowStyle, opacity: 0.8 }}>
+              <p style={{ fontSize: "14px", color: "var(--shell-fg-muted)", margin: "0 0 4px" }}>{it.title}</p>
+              {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{it.body}</p> : null}
+              <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {voices.length > 0 ? (
+        <section data-inbox-section="voices" style={{ marginBottom: "20px", maxWidth: "72ch" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 8px" }}>{COPY.inbox.voicesHeading}</h2>
+          {voices.map((it) => (
+            <div key={it.id} data-inbox-row={it.id} data-inbox-type="voice_stale" style={rowStyle}>
+              <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
+              {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
+              <a href={it.href} style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
+            </div>
+          ))}
+        </section>
+      ) : null}
     </Shell>
   );
 }

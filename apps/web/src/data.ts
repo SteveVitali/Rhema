@@ -7,6 +7,7 @@ import type {
   RecordDispositionDto,
   DispositionDto,
   DecisionItemDto,
+  InboxItemDto,
   GateCardDto,
   GateDecisionDto,
   PretriageDto,
@@ -333,6 +334,18 @@ export interface DataSource {
   listDecisions(session: SessionHeaders, projectId: string): Promise<DecisionItemDto[]>;
   /** PRB.05 — answer a Decisions row. */
   answerDecision(session: SessionHeaders, projectId: string, decisionId: string, answer: string): Promise<void>;
+  // ---- P1.19 — the §5.11 Inbox (REQ-IDE-2 amended; REQ-MOBILE-19). Optional seams like the other
+  // live reads: a fixture without them renders the Inbox empty rather than failing the page. ----
+  /** The globally-ordered Inbox rows (blocked-on-you → unread events → stale voices). */
+  getInbox?(session: SessionHeaders): Promise<InboxItemDto[]>;
+  /** The rail badge — open approvals + decisions ONLY (§5.11); never finished runs or stale voices. */
+  getInboxBadge?(session: SessionHeaders): Promise<{ count: number }>;
+  /** Mark one event row read. */
+  markInboxItemRead?(session: SessionHeaders, itemId: string): Promise<{ ok: true }>;
+  /** Mark every visible event row read. */
+  markInboxAllRead?(session: SessionHeaders): Promise<{ ok: true; marked: number }>;
+  /** The §4.2 deep-link landing's read receipt — the run's collapsed row marks read on open. */
+  markInboxRunRead?(session: SessionHeaders, runId: string): Promise<{ ok: true; marked: number }>;
   /** PRB.05 — pre-triage facts for the Revise sheet ("you pre-triaged N of M"). */
   getPretriage(session: SessionHeaders, projectId: string): Promise<PretriageDto>;
   /** PRB.05 — the project's approval-deadline overrides (§6.4 R3; the approve_triage 24-h opt-in). */
@@ -1043,6 +1056,17 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listDecisions(projectId),
     answerDecision: (session, projectId, decisionId, answer) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).answerDecision(projectId, decisionId, answer),
+    // P1.19 — the Inbox reads/writes ride the api's session-authed routes (the api owns the ordering,
+    // the badge rule, and the read receipts — web never re-derives them).
+    getInbox: (session) => createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getInbox(),
+    getInboxBadge: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getInboxBadge(),
+    markInboxItemRead: (session, itemId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).markInboxItemRead(itemId),
+    markInboxAllRead: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).markInboxAllRead(),
+    markInboxRunRead: (session, runId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).markInboxRunRead(runId),
     getPretriage: (session, projectId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPretriage(projectId),
     getApprovalOverrides: (session, projectId) =>

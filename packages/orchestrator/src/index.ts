@@ -52,6 +52,9 @@ export * from "./usage-crosscheck.js";
 // email notifications (PRB.09; §5.11; REQ-IDE-47/REQ-ACCT-1/REQ-SPEC-20/REQ-GATE-8; closes D-P0.10-1)
 export * from "./notifications.js";
 export * from "./email-actions.js";
+export * from "./voice-status.js";
+// P1.19 — the Inbox read model + the in-app channel (§5.11; REQ-IDE-2 amended/48, REQ-MOBILE-19)
+export * from "./inbox.js";
 
 // user steering + the run walkthrough (P1.05; §5.5/§6.5)
 export * from "./steering.js";

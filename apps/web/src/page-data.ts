@@ -6,6 +6,7 @@ import type {
   ApprovalSettingsDto,
   BulkPreviewDto,
   DecisionItemDto,
+  InboxItemDto,
   EditorDocDto,
   ExportDialogDto,
   AccountExportDto,
@@ -279,6 +280,12 @@ export interface PageData {
     readonly bulk?: { readonly action: string; readonly section?: string; readonly preview: BulkPreviewDto };
     readonly bulkDone?: { readonly count: number; readonly skipped: number };
     readonly notice?: { readonly kind: "applied" | "promoted" | "obligated" | "error"; readonly findingId: string; readonly message?: string };
+    /**
+     * P1.19 — the Inbox gate row's deep link lands `?gate=<id>` here (REQ-IDE-2 amended): the dossier
+     * mounts that gate's real card at the head of the artifact — "approve reads the artifact first",
+     * and on phone width (where the Timeline is display:none) it's the row's approve surface.
+     */
+    readonly focusedGate?: GateCardDto;
   };
   /** PRB.05 — per-request shell state for the triage surfaces. */
   readonly triage?: {
@@ -286,6 +293,17 @@ export interface PageData {
     readonly dispositionError?: { readonly findingId: string; readonly message: string };
     /** a saved marker ("Saved") under the card the last POST wrote. */
     readonly savedFindingId?: string;
+  };
+  /** P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): the api-ordered rows + the rail badge
+   *  (approvals + decisions only). The rows carry ids + templated strings — never finding/draft text. */
+  readonly inbox?: {
+    readonly items: readonly InboxItemDto[];
+    readonly badge: number;
+    /**
+     * The gate rows' full §6.4 cards, keyed by inbox item id — a row's expand mounts the real
+     * card so the artifact read precedes the Approve (REQ-IDE-2 amended). Absent ⇒ deep link only.
+     */
+    readonly gateCards?: Readonly<Record<string, GateCardDto>>;
   };
   /** PRB.05 — the Needs-you surface feed: open gate cards for the project's runs. */
   readonly gates?: readonly GateCardDto[];

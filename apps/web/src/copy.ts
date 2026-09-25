@@ -640,7 +640,37 @@ export const COPY = {
     optionLabel: {
       decide: "Decide",
       dismiss: "Dismiss",
+      // P1.19 — the horizon/stall rows' real obligation options (§6.8/§11.7; REQ-OBJ-6).
+      "re-defer": "Re-defer",
+      drop: "Drop",
     } as Record<string, string>,
+  },
+
+  // P1.19 — §10.1's ✗ column (REQ-SPEC-20; REQ-MOBILE-3 amended): surfaces that never render their
+  // controls on phone width show this note instead. The app banner renders ONLY behind the flag —
+  // never at MVP.
+  phoneBlocked: {
+    note: "This surface needs a larger screen — the phone layout is read + decide + chat.",
+  },
+  appBanner: {
+    enabled: false, // the shipped-app flag — flips when the 1.x app exists (REQ-MOBILE-3 amended)
+    label: "Open in the Rhema app",
+  },
+
+  // P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): needs-you → unread → earlier → voices.
+  inbox: {
+    heading: "Inbox",
+    badgeLine: "Waiting on your call: {n}",
+    markAllRead: "Mark all read",
+    needsYouHeading: "Needs you",
+    unreadHeading: "New",
+    readHeading: "Earlier",
+    voicesHeading: "Voices to update",
+    empty: "Nothing here — quiet is good.",
+    openCta: "Open",
+    detailsCta: "Details",
+    markReadCta: "Mark read",
+    decideNote: "Approve happens on the card itself — open the artifact first.",
   },
 
   // PRB.06 — the What-changed surface (§5.8): what changed and why — the move cards, the obligation

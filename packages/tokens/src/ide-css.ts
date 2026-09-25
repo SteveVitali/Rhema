@@ -112,14 +112,21 @@ export function ideCss(): string {
     `  .ide[data-files='open'] .ide-files { position: absolute; left: ${B.railPx}px; top: 0; bottom: 0; width: min(var(--files-w, ${B.filesOpenPx}px), 80vw); z-index: 20; box-shadow: 8px 0 24px rgba(0,0,0,0.35); }`,
     `  .ide .ide-timeline[data-open] { position: absolute; left: ${B.railPx}px; right: 0; bottom: 0; top: auto; width: auto; height: 55%; z-index: 20; border-top: 1px solid var(--shell-border); box-shadow: 0 -8px 24px rgba(0,0,0,0.35); }`,
     "}",
-    // Below ~768: the phone layout — reader-only Page; the other regions hide (the §10.1 input set is P1.19).
+    // Below ~768: the phone layout — reader-only Page; the other regions hide. P1.19 (§10.1): the
+    // §10.1 input set the regions carried re-mounts INSIDE the Page — elements stamped
+    // `ide-phone-only` render only at this width (the compact chat surface is the one today).
     `@media (max-width: ${B.bpPhonePx - 1}px) {`,
     "  .ide .ide-rail, .ide .ide-files, .ide .ide-timeline, .ide .ide-desk, .ide .ide-margin, .ide .ide-statusbar { display: none !important; }",
     "  .ide .ide-page { padding: 0; }",
     "  .ide .ide-page .paper { flex: 1; width: auto; max-width: none; min-width: 0; border: none; border-radius: 0; box-shadow: none; padding: var(--s4) var(--s4); }",
     "  .ide-phonebar { display: flex !important; }",
+    "  .ide .ide-phone-only { display: block; }",
     "}",
     ".ide-phonebar { display: none; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--shell-border); background: var(--shell-surface); font-size: 13px; }",
+    // P1.19 — the badge dot the phonebar's Inbox link carries (the rail's rule is scoped to .ide-rail).
+    ".ide-phonebar .ide-badge { position: relative; margin-left: auto; color: var(--shell-fg-muted); text-decoration: none; }",
+    ".ide-phonebar .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }",
+    ".ide-phone-only { display: none; }",
 
     // ---- View menu + disclosure popovers ----
     ".ide-menu { position: absolute; z-index: 40; min-width: 220px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: var(--s2); }",

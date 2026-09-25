@@ -381,6 +381,11 @@ export async function startWorker(): Promise<void> {
     ...Object.values(INGEST_JOB_NAMES), // P1.15 — ingest.sync / reconstruct / sweep + voice.purge (§9.5)
     "notify",
     "mail.send",
+    // P1.19 — the sweep fan-outs (the §5.11 deferred rows): each enqueues a tenant-scoped `notify` job
+    // per workspace; the notify consumer's handlers own the per-workspace work.
+    "notify.sweep.weekly",
+    "notify.sweep.daily",
+    "notify.sweep.hourly",
     "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
     ACCOUNT_EXPORT_QUEUE, // P1.18 — the whole-account zip build + emailed 7-day link (REQ-ACCT-3)
   ]) {
@@ -544,6 +549,33 @@ export async function startWorker(): Promise<void> {
   await boss.work("mail.send", async (jobs) => {
     for (const job of jobs) await handleMailSendJobPayload(deps, job.data as Parameters<typeof handleMailSendJobPayload>[1]);
   });
+  // P1.19 — the deferred §5.11 rows' sweeps. Each fans out one `notify` job per WORKSPACE through the
+  // system client (cross-tenant enumeration must never ride the RLS-scoped tenant pool); the tenant-
+  // scoped notify handler does the per-workspace work with its own dedup claims, so a re-fired sweep
+  // is idempotent.
+  const sweepWorkspaces = async (type: "voice_digest" | "trial_ending" | "run_digest", grainKey: string) => {
+    const res = await systemExec.query(`select id from workspaces order by id`, []);
+    for (const w of res.rows as { id: string }[]) {
+      await deps.queue.send(
+        "notify",
+        { type, workspaceId: w.id },
+        { singletonKey: `notify:${type}:${w.id}:${grainKey}` },
+      );
+    }
+  };
+  await boss.work("notify.sweep.weekly", async () => {
+    await sweepWorkspaces("voice_digest", new Date().toISOString().slice(0, 10));
+  });
+  await boss.schedule("notify.sweep.weekly", "45 4 * * 1"); // Mondays 04:45 UTC — the voice-stale digest
+  await boss.work("notify.sweep.daily", async () => {
+    await sweepWorkspaces("trial_ending", new Date().toISOString().slice(0, 10));
+  });
+  await boss.schedule("notify.sweep.daily", "50 4 * * *"); // daily — the day-12 trial + payment-failed scan
+  await boss.work("notify.sweep.hourly", async () => {
+    await sweepWorkspaces("run_digest", new Date().toISOString().slice(0, 13));
+  });
+  await boss.schedule("notify.sweep.hourly", "55 * * * *"); // hourly — the optional run-finished digest
+
   // PRB.16 — the auth-mail transport (magic links). A plain `to/subject/text/html` send — no notification
   // delivery row (pre-auth mail has no workspace). Unconfigured mailer ⇒ drop (the api's enqueue remains
   // as a dead-letter-visible claim; Resend is PRB.16's deferred live leg).

@@ -40,21 +40,31 @@ function safeEq(a: string, b: string): boolean {
   return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
-/** The deep link an email's Open action / a reminder's link target (the project's live review surface). */
-export function gateDeepLink(appBaseUrl: string, args: { projectId: string | null; runId: string; gateId?: string }): string {
-  const base = args.projectId ? `${appBaseUrl}/p/${args.projectId}/review/${args.runId}` : `${appBaseUrl}/app`;
+/**
+ * The deep link an email's Open action / a reminder's link target (the project's live review surface).
+ * P1.19 amended the contract: web routes key on the project's SLUG (`/p/:slug/…`), so the link carries
+ * the slug; callers pass it (the api's consume route re-reads it server-side from the bound gate).
+ */
+export function gateDeepLink(appBaseUrl: string, args: { projectSlug: string | null; runId: string; gateId?: string }): string {
+  const base = args.projectSlug ? `${appBaseUrl}/p/${args.projectSlug}/review/${args.runId}` : `${appBaseUrl}/app/inbox`;
   return args.gateId ? `${base}?gate=${args.gateId}` : base;
 }
 
-/** The deep link for non-gate mail (a finished/failed run, the billing page). */
-export function runDeepLink(appBaseUrl: string, args: { projectId: string | null; runId?: string }): string {
-  if (args.projectId && args.runId) return `${appBaseUrl}/p/${args.projectId}/review/${args.runId}`;
-  if (args.projectId) return `${appBaseUrl}/p/${args.projectId}`;
-  return `${appBaseUrl}/app`;
+/**
+ * The deep link for non-gate mail. `landingPath` is the workflow-shaped app-relative path the
+ * orchestrator computes (`runLandingPath` in notifications.ts) — the email builder prefixes the app
+ * origin so the delivered link lands on the §4.2 surface, not a dead end.
+ */
+export function runDeepLink(appBaseUrl: string, args: { projectSlug: string | null; landingPath?: string; runId?: string }): string {
+  if (args.landingPath) return `${appBaseUrl}${args.landingPath}`;
+  if (args.projectSlug && args.runId) return `${appBaseUrl}/p/${args.projectSlug}/review/${args.runId}`;
+  if (args.projectSlug) return `${appBaseUrl}/p/${args.projectSlug}`;
+  return `${appBaseUrl}/app/inbox`;
 }
 
+/** The billing surface (the thresholds/trial mail Open link — §14.5 lives under settings). */
 export function billingDeepLink(appBaseUrl: string): string {
-  return `${appBaseUrl}/app`;
+  return `${appBaseUrl}/settings/billing`;
 }
 
 export interface MintedAction {

@@ -31,6 +31,7 @@ import {
 } from "@rhema/findings-core";
 import {
   findingObligationState,
+  mootObligation,
   routeDisposition,
   spawnAndRouteMinor,
   type DeferHorizon,
@@ -400,6 +401,10 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
   });
 
   // ---- answer a Decisions row (one of the row's own options, or "dismiss"). ----
+  // P1.19 — REQ-OBJ-6: a request that carries an obligation resolves through the REAL transition —
+  // "re-defer" re-parks it (the §11.7 defer edge, `next_review` horizon), "drop" moots it; "decide"
+  // and "dismiss" close the request only (the user picks the obligation up by hand). The transitions
+  // are P0.12's ops — never re-implemented here.
   app.post("/projects/:id/decisions/:dcr", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
@@ -408,15 +413,35 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
     if (!body.answer) return c.json({ error: "answer required" }, 400);
     const open = (
       await deps.db.query(
-        `select options from decision_requests
+        `select options, obligation_id from decision_requests
           where id = $1 and project_id = $2 and state = 'open'`,
         [c.req.param("dcr"), c.req.param("id")],
       )
-    ).rows[0] as { options: string[] } | undefined;
+    ).rows[0] as { options: string[]; obligation_id: string | null } | undefined;
     if (!open) return c.json({ error: "not_found" }, 404);
     const dismissed = body.answer === "dismiss";
     if (!dismissed && !open.options.includes(body.answer)) {
       return c.json({ error: "invalid_answer", detail: `not one of the row's options` }, 422);
+    }
+    // the obligation leg — best-effort against a row that may already be closed/mooted by another
+    // path (a live obligation transitions; a closed one just lets the request answer stand).
+    if (open.obligation_id && (body.answer === "re-defer" || body.answer === "drop")) {
+      const byActor: Actor = { kind: "user", userId: principal.userId };
+      const ob = (
+        await deps.db.query(`select state, opened_on_draft_id from revision_obligations where id = $1`, [open.obligation_id])
+      ).rows[0] as { state: string; opened_on_draft_id: string | null } | undefined;
+      const live = ob != null && (ob.state === "open" || ob.state === "reopened" || ob.state === "deferred");
+      if (live && body.answer === "re-defer") {
+        await routeDisposition(deps.db, oblDeps, {
+          obligationId: open.obligation_id,
+          kind: "defer",
+          deferHorizon: { until: "next_review" },
+          draftId: ob!.opened_on_draft_id ?? "",
+          byActor,
+        });
+      } else if (live) {
+        await mootObligation(deps.db, oblDeps, { obligationId: open.obligation_id, byActor });
+      }
     }
     await deps.db.query(
       `update decision_requests set state = $3, answer = $4

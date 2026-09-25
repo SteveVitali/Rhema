@@ -210,6 +210,53 @@ describe("GET/POST /projects/:id/decisions — the beta Inbox stand-in", () => {
     };
     expect(after.decisions).toHaveLength(0);
   });
+
+  // P1.19 — REQ-OBJ-6: a decision row that carries an obligation answers through the REAL transition —
+  // "re-defer" re-parks it (next_review horizon), "drop" moots it; "decide" closes only the request.
+  it("obligation-linked answers: re-defer re-parks the obligation, drop moots it", async () => {
+    await seedReview([{ id: "f_1", ordinal: 1 }]);
+    await db.pg.query(
+      `insert into revision_obligations(id, project_id, source, severity, title, state, opened_on_draft_id, created_by)
+       values ('obl_rd',$1,'finding','major','a horizon-expired deferral','open',$2,'{"kind":"system"}'::jsonb),
+              ('obl_dr',$1,'finding','major','a stalled debt','open',$2,'{"kind":"system"}'::jsonb)`,
+      [seed.projectId, seed.draftId],
+    );
+    await db.pg.query(
+      `insert into decision_requests(id, project_id, source_run_id, obligation_id, text, options, state)
+       values ('dcr_rd',$1,null,'obl_rd','Deferred previously, horizon reached: a horizon-expired deferral','{decide,re-defer,drop}','open'),
+              ('dcr_dr',$1,null,'obl_dr','Stalled for 2 rounds: a stalled debt','{decide,re-defer,drop}','open')`,
+      [seed.projectId],
+    );
+
+    const rd = await app.request(`/projects/${seed.projectId}/decisions/dcr_rd`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ answer: "re-defer" }),
+    });
+    expect(rd.status).toBe(200);
+    const parked = (
+      await db.pg.query("select state, defer_horizon from revision_obligations where id = 'obl_rd'")
+    ).rows[0] as { state: string; defer_horizon: { until?: string } | null };
+    expect(parked.state).toBe("deferred");
+    expect(parked.defer_horizon?.until).toBe("next_review");
+
+    const dr = await app.request(`/projects/${seed.projectId}/decisions/dcr_dr`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ answer: "drop" }),
+    });
+    expect(dr.status).toBe(200);
+    const mooted = (
+      await db.pg.query("select state from revision_obligations where id = 'obl_dr'")
+    ).rows[0] as { state: string };
+    expect(mooted.state).toBe("mooted");
+
+    // both requests answered — nothing open remains.
+    const after = (await (await app.request(`/projects/${seed.projectId}/decisions`)).json()) as {
+      decisions: unknown[];
+    };
+    expect(after.decisions).toHaveLength(0);
+  });
 });
 
 describe("GET /projects/:id/gates + POST .../decide — the §6.4 card's server side", () => {

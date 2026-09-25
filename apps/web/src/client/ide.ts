@@ -759,7 +759,7 @@ function main(): void {
         break;
       case "inbox":
         e.preventDefault();
-        window.location.assign("/app"); // the shelf is the inbox surface
+        window.location.assign("/app/inbox"); // P1.19 — the §5.11 Inbox is the rail's surface
         break;
       case "settings":
         e.preventDefault();

@@ -36,6 +36,7 @@ import { scheduleGateExpiry, type Queue } from "./queue.js";
 import {
   scheduleCreditsCheck,
   scheduleGateNotifications,
+  scheduleRunProgressNotification,
   scheduleRunTerminalNotification,
 } from "./notifications.js";
 import type { EmailActionConfig } from "./email-actions.js";
@@ -968,6 +969,18 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       await scheduleCreditsCheck(deps, {
         billingAccountId: box.debitedBillingAccountId,
         workspaceId: args.workspaceId,
+      });
+    }
+    // P1.19 — a committed phase boundary is the §5.11 Advanced `run_progress` opt-in's trigger; the
+    // handler short-circuits unless the project opted in (the queue send is cheap and unconditional;
+    // the idempotent-replay path above skips it).
+    if (res.ok && !res.idempotent) {
+      await scheduleRunProgressNotification(deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        phase: args.stepKey,
+        ordinal: args.ordinal,
+        of: args.of,
       });
     }
     // P1.13 — the committed render step's consequence: the worker-side deterministic render. The

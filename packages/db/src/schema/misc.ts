@@ -49,6 +49,10 @@ export const inboxItems = pgTable("inbox_items", {
   projectId: text("project_id"),
   kind: text("kind").notNull(),
   payload: jsonb("payload").notNull(),
+  // P1.19 — the §5.11 collapse key + quiet-hours visibility + the run link (0039).
+  collapseKey: text("collapse_key"),
+  runId: text("run_id"),
+  visibleAt: timestamp("visible_at").notNull().defaultNow(),
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
