@@ -41,6 +41,12 @@ export const ALLOWED_TRANSITIONS: Readonly<Record<RunState, readonly RunState[]>
   ],
   waiting_gate: [
     "queued", //            approved / expired-proceed → run.resume
+    "finalizing", //        DEF.1 (F-StageB-1): the gate follows the run's LAST active phase (P1.12's
+    //                      approve_outline) — allActivePhasesCommitted ⇒ nothing to resume into, so the
+    //                      gate resolves straight into run.finalize (gate-resolution.ts, both the user
+    //                      and policy-skip paths). Deployed prod 500'd every approve_outline decision
+    //                      with IllegalTransitionError waiting_gate → finalizing (run 01M3E2EC1TH8…);
+    //                      the edge was asserted in queue.ts's contract but never added to the table.
     "cancelled", //         stop / expired-cancel
     "completed_partial", // resume_partial accepted
   ],

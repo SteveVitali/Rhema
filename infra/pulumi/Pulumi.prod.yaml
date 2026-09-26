@@ -67,8 +67,20 @@ config:
   # inputs.draftId freeze, project.purge enqueue+consumer, exportPresign GCS binding, slo_samples
   # instrumentation, /projects+/showcase txRunner, web dossier 404→not-found. fetcher/convert/
   # export/collab/run-task/egress-proxy unchanged — keep their STB.1 digests.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:ef986d1334c276a54c52721693f2c033bb7b42d573f579baf90a0d03ece3cdca","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:98e86c6855b1c226c8b3f23661882fb9560c84791f3c280f8fb4070cba35d80a","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:3c96ecef81334eef4c5824932e8e964fb3f3571e9fc51626ed9eb7d895a97ffc
+  # DEF.1 deploy (build rhema:def1, Cloud Build 3d8e649e, 2026-09-26): api + run-task rebuilt on
+  # 61a71ca (stevevitali/def-1-run-pipeline-blockers — pre-merge deploy authorized; PR #77 open, DO
+  # NOT MERGE). Lands the F1/F2/F3 run-pipeline fixes: api mints the runspec scopedLaunch +
+  # unconditional phase_result_contract/sidecar inputs (F1-3/F2); run-task carries the rewritten
+  # scoped-runner.sh, runScopedPhase, scoped-query.js, persona-root writability, and the persona
+  # .rhema/** seat-table grant (F1-1/F1-2/F2). web/worker/fetcher/convert/export/collab/egress-proxy
+  # unchanged — keep their STB.1/STB.2 digests.
+  # DEF.1 Stage-B hotfix (build rhema:def1b, Cloud Build e7f5f591, 2026-09-26): api + worker rebuilt —
+  # live finding while re-running the outline leg: `waiting_gate → finalizing` was missing from the
+  # §12.4 transition table (gate-resolution's allCommitted path 500'd every last-phase-gate approve;
+  # latent since P1.12). Both gate-resolvers ride the table: api (resolveGate) + worker (stranded
+  # sweep auto-resolve). run-task unchanged (keeps the def1 digest).
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5d25a7905d5856652b0ab3fb546c1cbdc5dac135198f5c1211c5add754db286d","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:a9b6f0670ee07e421689527e9462d529cc28581f29782a7dd0e313e386f7c239","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:bb85f45a82683a3b94592cd1a06c083f1373d8ee54fe49da398fb495717cf3fb
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cf779cd54857aaf4040cb1cf20a823276ec9d2adfb9c4847e7955b5d0f5e794c
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
