@@ -3,7 +3,7 @@
 - **Ticket:** `docs/tickets/57_DEF.3__live-noise-and-polish.md` — the three smaller live-verified
   defects from STB.3: the SDK `/api/hello` probe tripping real SLOs (F7), the dead `/api/action`
   deep-link (F9), and the chat_turn 43>40 cap overshoot (F10).
-- **Branch:** `stevevitali/def-3-live-noise-and-polish` · **PR #NN** (stacks on
+- **Branch:** `stevevitali/def-3-live-noise-and-polish` · **PR #79** (stacks on
   `stevevitali/def-2-ledger-metering-integrity`, tip `649442e`; operator-held — DO NOT MERGE).
 - **Gate status:** **Stage A (code + tests) DONE** — all deterministic gates green, $0. **Stage B
   (one bounded live chat_turn re-verify, ≤$5) OWED — operator/deploy-gated** (needs the api +
