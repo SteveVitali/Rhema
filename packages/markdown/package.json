@@ -1,0 +1,35 @@
+{
+  "name": "@rhema/markdown",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Canonical Rhema Markdown profile: the idempotent import normalizer, front-matter, word/citation counts.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "unified": "^11.0.5",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-frontmatter": "^5.0.0",
+    "mdast-util-to-string": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "unist-util-visit": "^5.0.0"
+  }
+}

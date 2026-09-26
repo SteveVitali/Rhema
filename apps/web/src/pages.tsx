@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Shell, SectionTitle, ProjectList, DossierView, type DossierLabels } from "@rhema/ui";
+import { Shell, SectionTitle, ProjectList, DossierView, ConversionPreview, type DossierLabels } from "@rhema/ui";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { usePageData } from "./page-data.js";
@@ -145,6 +145,90 @@ export function ProjectPage(): ReactNode {
       <SectionTitle>{project?.title ?? ""}</SectionTitle>
       {project ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{project.pill}</p> : null}
       <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px", maxWidth: "68ch" }}>{COPY.project.betaNote}</p>
+      {project ? (
+        <p>
+          <a href={`/p/${project.slug}/import`}>{COPY.project.importCta}</a>
+        </p>
+      ) : null}
+    </Shell>
+  );
+}
+
+const textAreaStyle = {
+  display: "block",
+  width: "100%",
+  minHeight: "160px",
+  marginTop: "4px",
+  padding: "8px 10px",
+  borderRadius: "8px",
+  border: "1px solid var(--shell-border)",
+  background: "var(--shell-bg)",
+  color: "var(--shell-fg)",
+  fontSize: "13px",
+  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+  boxSizing: "border-box" as const,
+};
+
+/** Auth-gated: the §5.3 upload → conversion-preview → create flow (step 1 of the beta loop). */
+export function ImportPage(): ReactNode {
+  const { project } = usePageData();
+  const slug = project?.slug ?? "";
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{COPY.import.heading}</SectionTitle>
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.import.lede}</p>
+      <form method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
+          {COPY.import.fileLabel}
+          <input type="file" name="file" accept=".md,.txt,.html,.docx,.pdf" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
+        </label>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          {COPY.import.pasteLabel}
+          <textarea name="paste" style={textAreaStyle} />
+        </label>
+        <div style={{ marginTop: "16px" }}>
+          <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+            {COPY.import.convertCta}
+          </button>
+        </div>
+      </form>
+    </Shell>
+  );
+}
+
+/** Auth-gated: the conversion preview (source beside converted, count line, warnings, two actions). */
+export function ImportPreviewPage(): ReactNode {
+  const { conversion } = usePageData();
+  const slug = conversion?.projectSlug ?? "";
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{COPY.import.previewHeading}</SectionTitle>
+      {conversion?.created ? (
+        <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
+          {COPY.import.created}
+        </p>
+      ) : null}
+      {conversion ? (
+        <ConversionPreview
+          sourceLabel={conversion.sourceLabel}
+          sourceText={conversion.sourceText}
+          convertedMarkdown={conversion.convertedMarkdown}
+          countLine={conversion.countLine}
+          warnings={conversion.warnings}
+          actions={{
+            formAction: `/p/${slug}/import/create`,
+            createLabel: COPY.import.createLabel,
+            fixNowLabel: COPY.import.fixNowLabel,
+          }}
+          labels={{
+            sourceHeading: COPY.import.sourceHeading,
+            convertedHeading: COPY.import.convertedHeading,
+            warningsHeading: COPY.import.warningsHeading,
+            noWarnings: COPY.import.noWarnings,
+            fixNowNote: COPY.import.fixNowNote,
+          }}
+        />
+      ) : null}
     </Shell>
   );
 }

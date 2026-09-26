@@ -134,6 +134,13 @@ export const draftOriginSchema = z.enum(DRAFT_ORIGINS);
 export const DRAFT_STATES = ["working", "frozen"] as const;
 export type DraftState = (typeof DRAFT_STATES)[number];
 
+// ---------- ingestion / conversion quality (§9.5; REQ-INGEST-7/8) ----------
+// The import quality verdict for a converted document. PDF LLM-reconstruction tiers are P1.15; PRB.02 keeps
+// the plumbing (the enum + the conversion-preview surface it feeds).
+export const QUALITY_VERDICTS = ["clean", "reconstructed", "partial", "unreadable", "empty"] as const;
+export type QualityVerdict = (typeof QUALITY_VERDICTS)[number];
+export const qualityVerdictSchema = z.enum(QUALITY_VERDICTS);
+
 // ---------- correspondence, claims, findings, dispositions (§5.7, §11.3) ----------
 export const CORRESPONDENCE_KINDS = [
   "drafting_note",

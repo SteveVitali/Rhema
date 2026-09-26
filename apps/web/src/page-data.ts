@@ -12,7 +12,16 @@ export interface PageData {
     readonly code?: string;
     readonly email?: string;
   };
-  readonly project?: { readonly title: string; readonly pill: string };
+  readonly project?: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly conversion?: {
+    readonly projectSlug: string;
+    readonly sourceLabel: string;
+    readonly sourceText: string;
+    readonly convertedMarkdown: string;
+    readonly countLine: string;
+    readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+    readonly created?: boolean;
+  };
 }
 
 export const PageDataContext = createContext<PageData>({});

@@ -22,6 +22,7 @@
     { "path": "packages/tokens" },
     { "path": "packages/findings-core" },
     { "path": "packages/markdown-view" },
+    { "path": "packages/markdown" },
     { "path": "packages/benchmark" },
     { "path": "packages/benchmark-runner" },
     { "path": "apps/web" },
