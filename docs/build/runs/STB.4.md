@@ -134,9 +134,9 @@ cost for the window could not be pulled. Divergence: **not computable this leg.*
 ## G. Gates
 
 - `pnpm turbo build lint typecheck` — **132/132 green**.
-- `pnpm test` — **3600 pass / 380 files**; the single failure is `run-sheet` `lever-matrix`'s
-  timing-sensitive `<100ms` assertion (133ms under suite load — **flaky, unrelated to this diff; green
-  in isolation at 16ms**; run-sheet untouched).
+- `pnpm test` — **3600 pass / 380 files** (two full-suite runs); the single failure both times is
+  `run-sheet` `lever-matrix`'s timing-sensitive `<100ms` assertion (133ms / 159ms under suite load —
+  **flaky, unrelated to this diff; green in isolation at 16ms and 23ms**; run-sheet untouched).
 - `pnpm check:licenses` — 607 packages OK · `pnpm check:protocol-markers` — 45 files OK ·
   `check-upstream-diff.mjs` — 22 files reconcile · `check-build-memory.sh` — **0 violations**.
 

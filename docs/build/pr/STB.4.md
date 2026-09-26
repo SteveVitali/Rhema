@@ -62,9 +62,9 @@ the rest honestly.
 
 ## Gates
 
-`turbo build lint typecheck` 132/132 · `pnpm test` 380 files / 3,600 pass (one timing-flaky
-`run-sheet` lever-matrix `<100ms` assertion under suite load — 16ms in isolation, unrelated to
-this diff) · licenses 607 · protocol-markers 45 · upstream-diff 22 · build-memory 0.
+`turbo build lint typecheck` 132/132 · `pnpm test` 380 files / 3,600 pass (two full runs; the single failure both times is one
+timing-flaky `run-sheet` lever-matrix `<100ms` assertion under suite load — 133/159ms under load,
+16/23ms in isolation — unrelated to this diff, package untouched) · licenses 607 · protocol-markers 45 · upstream-diff 22 · build-memory 0.
 
 ## Deferrals
 
