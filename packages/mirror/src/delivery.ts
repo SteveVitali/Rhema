@@ -12,9 +12,11 @@ import type {
   ClaimLedgerSidecar,
   CorrespondenceKind,
   FindingsSidecar,
+  ResponseLedgerSidecar,
   RubricSidecar,
 } from "@rhema/contracts";
 import { parseRunEvent } from "@rhema/contracts";
+import { diffMarkdown, traceRevisionMoves, type MoveTrace } from "@rhema/findings-core";
 import type { SqlExecutor } from "./sql.js";
 import type { SidecarInput } from "./validation.js";
 import {
@@ -86,6 +88,12 @@ export interface ObligationDeliveryContext {
   readonly correspondenceKind: CorrespondenceKind;
   readonly findings: ReadonlyArray<ObligationDeliveryFinding>;
   readonly claims: ReadonlyArray<ObligationDeliveryClaim>;
+  /** the prior review this delivery answers/re-reviews (`prior_review_id`), when the run supplied one. */
+  readonly priorReviewId?: string;
+  /** the v(N+1) draft row id created on a response delivery (PRB.06). */
+  readonly newDraftId?: string;
+  /** the frozen response ledger on a `response` delivery (PRB.06 — the move/discharge join + routing input). */
+  readonly responseLedger?: ResponseLedgerSidecar;
   /** the Editor's own {carried, closed, new} from the findings sidecar (REQ-WF-7); absent on a first review. */
   readonly sidecarCounts?: { carried: number; closed: number; new: number } | null;
   /**
@@ -128,6 +136,12 @@ export interface DeliveryArgs {
   readonly deliveredVersionIds: readonly string[];
   /** the reviewed draft's head version to freeze it at (a frozen draft requires a promoted version). */
   readonly draftPromotedVersionId: string;
+  /** the prior review this correspondence answers (a `response`) or re-reviews (a re-review `review`) —
+   *  server-resolved from the run's inputs, never pod-trusted (PRB.06). Sets `prior_review_id`. */
+  readonly priorReviewId?: string;
+  /** the v(N+1) draft row id a `response` delivery creates (the run's reserved `nextDraftId`); generated
+   *  when unset. */
+  readonly newDraftId?: string;
   readonly sidecars: readonly SidecarInput[];
   readonly claimLedger?: ClaimLedgerSidecar;
   readonly findings?: FindingsSidecar;
@@ -147,6 +161,10 @@ export interface DeliveryResult {
   readonly strippedCitations: number;
   readonly accessReport: AccessReport;
   readonly accessReportVersionId: string;
+  /** the v(N+1) draft row a `response` delivery created (PRB.06); unset otherwise. */
+  readonly newDraftId?: string;
+  /** the per-move `revision.move_traced` payloads emitted (PRB.06; REQ-BETA-7). */
+  readonly moveTraces?: readonly MoveTrace[];
 }
 
 /** The set of normalized urls the proxy actually fetched for a run (the fetch log of record). */
@@ -219,8 +237,8 @@ export async function runDeliveryTransaction(
   const now = deps.clock.now();
   await exec.query(
     `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at,
-       artifact_ids, rubric, protocol_id, protocol_version)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+       artifact_ids, rubric, protocol_id, protocol_version, prior_review_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
     [
       correspondenceId,
       args.projectId,
@@ -233,6 +251,7 @@ export async function runDeliveryTransaction(
       args.rubric ? JSON.stringify(args.rubric) : null,
       args.protocolId ?? null,
       args.protocolVersion ?? null,
+      args.priorReviewId ?? null,
     ],
   );
 
@@ -342,28 +361,171 @@ export async function runDeliveryTransaction(
     at: now,
   });
 
-  // ---- 6b. freeze the triage ledger (§5.7; PRB.05) -------------------------------------------------
-  // A delivered `response` correspondence answers the review it responds to: every open disposition on
-  // the project's latest review correspondence locks (`frozen_at`) and links forward (`response_id` →
-  // this response item). `move_ordinal` stays null — the forward move link lands with PRB.06's move rows.
+  // ---- 6b. the response-ledger fold (§5.7/§5.8; PRB.05 freeze + PRB.06 move rows) ---------------------
+  // A delivered `response` correspondence answers the review it responds to: the frozen response-ledger's
+  // rows land as `dispositions` (agent-authored where no user row exists; a user's own row keeps its actor),
+  // every open row on the answered review locks (`frozen_at`) + links forward (`response_id`), and each row
+  // carries its `move_ordinal` — the forward link the What-changed join + obligation routing read.
+  let responseLedger: ResponseLedgerSidecar | undefined;
+  let newDraftId: string | undefined;
+  let moveTraces: MoveTrace[] | undefined;
+  const findingIdByOrdinal = new Map<number, string>();
   if (args.correspondenceKind === "response") {
-    await exec.query(
-      `update dispositions d
-          set response_id = $2, frozen_at = $3
-         from findings f
-        where d.finding_id = f.id
-          and d.response_id is null
-          and d.frozen_at is null
-          and f.correspondence_id = (
-            select ci.id from correspondence_items ci
-             where ci.project_id = $1 and ci.kind = 'review'
-             order by ci.delivered_at desc limit 1
-          )`,
-      [args.projectId, correspondenceId, now],
-    );
+    const ledgerInput = args.sidecars.find((s) => s.filename === "response-ledger.json");
+    responseLedger = ledgerInput?.json as ResponseLedgerSidecar | undefined;
+    // The review this response answers: the run-supplied prior_review, else the project's latest review.
+    const reviewCorrId =
+      args.priorReviewId ??
+      (((
+        await exec.query(
+          `select id from correspondence_items
+            where project_id = $1 and kind = 'review' order by delivered_at desc limit 1`,
+          [args.projectId],
+        )
+      ).rows[0] as { id: string } | undefined)?.id ?? null);
+    if (reviewCorrId != null) {
+      // persist the ledger's rows: update the open row in place (keeps a user row's actor) or insert the
+      // ledger-authored row; every persisted row gets the move link + the freeze.
+      for (const e of responseLedger?.entries ?? []) {
+        const finding = (
+          await exec.query(
+            `select id from findings where correspondence_id = $1 and ordinal = $2`,
+            [reviewCorrId, e.findingOrdinal],
+          )
+        ).rows[0] as { id: string } | undefined;
+        if (!finding) continue;
+        findingIdByOrdinal.set(e.findingOrdinal, finding.id);
+        const existing = (
+          await exec.query(
+            `select id from dispositions where finding_id = $1 and response_id is null order by created_at desc limit 1`,
+            [finding.id],
+          )
+        ).rows[0] as { id: string } | undefined;
+        if (existing) {
+          await exec.query(
+            `update dispositions
+                set kind = $2, status = $3, rationale = $4, adapted_text = $5, move_ordinal = $6,
+                    response_id = $7, frozen_at = $8
+              where id = $1`,
+            [
+              existing.id,
+              e.disposition.kind,
+              e.disposition.status,
+              e.disposition.rationale ?? null,
+              e.disposition.adaptedText ?? null,
+              e.disposition.moveOrdinal ?? null,
+              correspondenceId,
+              now,
+            ],
+          );
+        } else {
+          await exec.query(
+            `insert into dispositions
+               (id, finding_id, kind, status, rationale, adapted_text, move_ordinal, applied,
+                response_id, frozen_at, by_actor, created_at)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+            [
+              deps.ids("dsp"),
+              finding.id,
+              e.disposition.kind,
+              e.disposition.status,
+              e.disposition.rationale ?? null,
+              e.disposition.adaptedText ?? null,
+              e.disposition.moveOrdinal ?? null,
+              e.disposition.applied ?? null,
+              correspondenceId,
+              now,
+              JSON.stringify({ kind: e.disposition.actor === "user" ? "user" : "agent", runId: args.runId }),
+              now,
+            ],
+          );
+        }
+      }
+      // any remaining open row on the answered review still locks + links forward (§5.7).
+      await exec.query(
+        `update dispositions d
+            set response_id = $1, frozen_at = $2
+           from findings f
+          where d.finding_id = f.id
+            and d.response_id is null
+            and d.frozen_at is null
+            and f.correspondence_id = $3`,
+        [correspondenceId, now, reviewCorrId],
+      );
+    }
+
+    // The revision lands as a new draft row: v(N+1) origin `response_to_review`, based on the frozen head,
+    // promoted to the delivered `drafts/v(N+1).md` artifact version.
+    const deliveredDraft = (
+      await exec.query(
+        `select av.id, av.content_sha256
+           from artifact_versions av join artifacts a on a.id = av.artifact_id
+          where av.id = any($1::text[]) and a.kind = 'draft'
+          order by av.ordinal desc limit 1`,
+        [args.deliveredVersionIds as string[]],
+      )
+    ).rows[0] as { id: string; content_sha256: string } | undefined;
+    if (deliveredDraft) {
+      const base = (
+        await exec.query(`select n from drafts where id = $1`, [args.draftId])
+      ).rows[0] as { n: number } | undefined;
+      if (base) {
+        newDraftId = args.newDraftId ?? deps.ids("dft");
+        await exec.query(
+          `insert into drafts(id, project_id, n, origin, state, base_draft_id, promoted_version_id, created_at)
+           values ($1,$2,$3,'response_to_review','working',$4,$5,$6)`,
+          [newDraftId, args.projectId, base.n + 1, args.draftId, deliveredDraft.id, now],
+        );
+      }
+    }
+
+    // revision.move_traced (REQ-BETA-7): the server diff vN→v(N+1) joined to the ledger's moves. Both
+    // sides come from the content store (the frozen head's promoted version + the delivered draft
+    // version) — identical bytes in, identical trace out.
+    const baseVersion = (
+      await exec.query(
+        `select av.content_sha256 from drafts d join artifact_versions av on av.id = d.promoted_version_id
+          where d.id = $1`,
+        [args.draftId],
+      )
+    ).rows[0] as { content_sha256: string } | undefined;
+    if (deliveredDraft && baseVersion) {
+      const [beforeBytes, afterBytes] = await Promise.all([
+        deps.store.get(baseVersion.content_sha256),
+        deps.store.get(deliveredDraft.content_sha256),
+      ]);
+      if (beforeBytes && afterBytes) {
+        const diff = diffMarkdown(
+          Buffer.from(beforeBytes).toString("utf8"),
+          Buffer.from(afterBytes).toString("utf8"),
+        );
+        const entries = (responseLedger?.entries ?? []).map((e) => ({
+          findingOrdinal: e.findingOrdinal,
+          ...(findingIdByOrdinal.has(e.findingOrdinal) ? { findingId: findingIdByOrdinal.get(e.findingOrdinal)! } : {}),
+          kind: e.disposition.kind,
+          ...(e.disposition.status != null ? { status: e.disposition.status } : {}),
+          ...(e.disposition.moveOrdinal != null ? { moveOrdinal: e.disposition.moveOrdinal } : {}),
+          ...(e.anchor != null ? { anchor: e.anchor } : {}),
+        }));
+        moveTraces = traceRevisionMoves(diff, { entries, moves: responseLedger?.moves ?? [] });
+        for (const t of moveTraces) {
+          const ev = parseRunEvent("revision.move_traced", {
+            correspondenceId,
+            ...(newDraftId != null ? { draftId: newDraftId } : {}),
+            baseDraftId: args.draftId,
+            ...(t.findingId != null ? { findingId: t.findingId } : {}),
+            ...(t.moveId != null ? { moveId: t.moveId } : {}),
+            hunkCount: t.hunkCount,
+            charsChanged: t.charsChanged,
+          });
+          await deps.eventWriter.append(exec, { runId: args.runId, type: ev.type, payload: ev.payload, at: now });
+        }
+      }
+    }
   }
 
   // ---- 7. obligation spawn/join hook (logic is P0.12; the transactional seam is here — REQ-OBJ-2) --
+  //    On a `response` delivery the hook routes the frozen ledger's moves (PRB.06: D-P0.12-2's auto-path).
   await hook.onDelivery({
     exec,
     runId: args.runId,
@@ -373,6 +535,9 @@ export async function runDeliveryTransaction(
     correspondenceKind: args.correspondenceKind,
     findings: persistedFindings,
     claims: persistedClaims,
+    ...(args.priorReviewId != null ? { priorReviewId: args.priorReviewId } : {}),
+    ...(newDraftId != null ? { newDraftId } : {}),
+    ...(responseLedger != null ? { responseLedger } : {}),
     sidecarCounts: args.findings?.obligationCounts ?? null,
     coversAllObligations: args.coversAllObligations ?? true,
   });
@@ -409,5 +574,13 @@ export async function runDeliveryTransaction(
   const written = parseRunEvent("artifact.written", { kind: "access_report", mirrorPath: reportPath, versionId: persistedReport.versionId });
   await deps.eventWriter.append(exec, { runId: args.runId, type: written.type, payload: written.payload, at: now });
 
-  return { correspondenceId, downgradedClaimOrdinals, strippedCitations, accessReport, accessReportVersionId: persistedReport.versionId };
+  return {
+    correspondenceId,
+    downgradedClaimOrdinals,
+    strippedCitations,
+    accessReport,
+    accessReportVersionId: persistedReport.versionId,
+    ...(newDraftId != null ? { newDraftId } : {}),
+    ...(moveTraces != null ? { moveTraces } : {}),
+  };
 }

@@ -300,6 +300,32 @@ export const RUN_EVENTS = {
     density: "normal",
     payload: z.object({ figureId: idSchema }),
   },
+  // revision trace (PRB.06; REQ-BETA-7/8) — ids + counts only, never hunk text or ledger prose
+  "revision.move_traced": {
+    visibility: "user",
+    density: "normal",
+    payload: z.object({
+      correspondenceId: idSchema.optional(),
+      draftId: idSchema.optional(),
+      baseDraftId: idSchema.optional(),
+      findingId: idSchema.optional(),
+      moveId: boundedText.optional(),
+      hunkCount: z.number().int(),
+      charsChanged: z.number().int(),
+    }),
+  },
+  "rereview.lineage": {
+    visibility: "user",
+    density: "normal",
+    payload: z.object({
+      correspondenceId: idSchema,
+      priorReviewId: idSchema.optional(),
+      carried: z.number().int(),
+      closed: z.number().int(),
+      new: z.number().int(),
+      reopened: z.number().int(),
+    }),
+  },
   // INTERNAL — full detail, never streamed to the client
   "tool.audit": {
     visibility: "internal",

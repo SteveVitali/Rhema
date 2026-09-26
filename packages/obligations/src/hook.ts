@@ -4,10 +4,16 @@ import type { ObligationDeliveryContext, ObligationHook } from "@rhema/mirror";
 import type { ObligationCounts } from "./counts.js";
 import { computeDeliveryCounts, reconcileCounts } from "./counts.js";
 import type { ObligationDeps, SqlExecutor } from "./types.js";
-import { insertLineageEdge, loadLineageFindings, loadProjectObligations } from "./queries.js";
+import {
+  insertLineageEdge,
+  loadLineageFindings,
+  loadObligationByFinding,
+  loadProjectObligations,
+} from "./queries.js";
 import { matchFinding, quoteOf, type CandidateFinding, type LineageMatchOptions } from "./lineage.js";
 import { bumpSeverity, incrementRoundsOpen, spawnObligationFromFinding, spawnsAtDelivery } from "./spawn.js";
-import { dischargeByNoMatch, reopenObligation, sweepArrivedDeferrals } from "./discharge.js";
+import { dischargeByGapCheck, dischargeByNoMatch, mootObligation, reopenObligation, sweepArrivedDeferrals } from "./discharge.js";
+import { routeDisposition, spawnAndRouteMinor } from "./routing.js";
 import type { Severity } from "@rhema/contracts";
 
 // The delivery hook (REQ-OBJ-2/3/4; REQ-WF-7). This is the concrete implementation of `@rhema/mirror`'s
@@ -47,6 +53,8 @@ export interface ObligationDeliveryOutcome {
   readonly carried: readonly string[];
   readonly reopened: readonly string[];
   readonly discharged: readonly string[];
+  /** obligation ids a delivered `response`'s frozen ledger routed (PRB.06; empty on a review delivery). */
+  readonly routed: readonly string[];
   readonly counts: ObligationCounts;
   readonly countsMatch: boolean;
 }
@@ -65,7 +73,13 @@ export class SqlObligationHook implements ObligationHook {
   }
 
   async onDelivery(ctx: ObligationDeliveryContext): Promise<void> {
-    // Obligations are review-driven at delivery; a delivery with no findings (e.g. a Revise response) is a no-op.
+    // A `response` delivery writes no findings — but the frozen response ledger it folds in ROUTES the
+    // obligations its moves answer (PRB.06; the auto-path of D-P0.12-2). Route before returning.
+    if (ctx.correspondenceKind === "response") {
+      await this.routeResponseLedger(ctx);
+      return;
+    }
+    // Obligations are review-driven at delivery; a delivery with no findings is a no-op.
     if (ctx.correspondenceKind !== "review" || ctx.findings.length === 0) return;
     const { exec } = ctx;
     const actor: Actor = { kind: "system" };
@@ -171,6 +185,172 @@ export class SqlObligationHook implements ObligationHook {
       await this.appendEvent.append(exec, { runId: ctx.runId, type: ev.type, payload: ev.payload, at: now });
     }
 
-    this.lastOutcome = { spawned, carried, reopened, discharged, counts, countsMatch: reconciliation.match };
+    // 5. `rereview.lineage` (PRB.06; REQ-WF-7): on a re-review — `prior_review_id` set, or any carried /
+    //    closed / reopened lineage this round — emit the row-computed tally the run report's
+    //    "N carried, M closed, K new" line reads. The counts come from `computeDeliveryCounts` (obligation
+    //    rows), never from the sidecar's self-reported numbers.
+    if (
+      this.appendEvent &&
+      (ctx.priorReviewId != null || counts.carried > 0 || counts.closed > 0 || reopened.length > 0)
+    ) {
+      const ev = parseRunEvent("rereview.lineage", {
+        correspondenceId: ctx.correspondenceId,
+        ...(ctx.priorReviewId != null ? { priorReviewId: ctx.priorReviewId } : {}),
+        carried: counts.carried,
+        closed: counts.closed,
+        new: counts.new,
+        reopened: reopened.length,
+      });
+      await this.appendEvent.append(exec, { runId: ctx.runId, type: ev.type, payload: ev.payload, at: now });
+    }
+
+    this.lastOutcome = { spawned, carried, reopened, discharged, routed: [], counts, countsMatch: reconciliation.match };
+  }
+
+  /**
+   * Route a delivered `response`'s frozen ledger rows through the obligation transitions (PRB.06 —
+   * the auto-path of D-P0.12-2): an accept/adapt move `done` addresses the obligation, `verified`
+   * discharges it (gap_check evidence), `mooted` moots it; rebut/defer/escalate route the same way the
+   * Triage writes do. `proposed`/`open` rows are plans, not moves — they leave the obligation open.
+   */
+  private async routeResponseLedger(ctx: ObligationDeliveryContext): Promise<void> {
+    const entries = ctx.responseLedger?.entries ?? [];
+    if (entries.length === 0) return;
+    const { exec } = ctx;
+    const actor: Actor = { kind: "system" };
+    const now = this.deps.clock.now();
+    // the review this response answers — the run-supplied prior_review, else the project's latest review.
+    const reviewCorrId =
+      ctx.priorReviewId ??
+      ((
+        await exec.query(
+          `select id from correspondence_items where project_id = $1 and kind = 'review' order by delivered_at desc limit 1`,
+          [ctx.projectId],
+        )
+      ).rows[0] as { id: string } | undefined)?.id;
+    if (reviewCorrId == null) return;
+    const routed: string[] = [];
+    for (const entry of [...entries].sort((a, b) => a.findingOrdinal - b.findingOrdinal)) {
+      const finding = (
+        await exec.query(
+          `select id, severity, kind, title from findings where correspondence_id = $1 and ordinal = $2`,
+          [reviewCorrId, entry.findingOrdinal],
+        )
+      ).rows[0] as { id: string; severity: string; kind: string | null; title: string } | undefined;
+      if (!finding) continue;
+      const d = entry.disposition;
+      const obl = await loadObligationByFinding(exec, ctx.projectId, finding.id);
+      if (obl == null) {
+        // a minor finding carries no obligation until the author accepts/adapts it (REQ-OBJ-2) — a
+        // positive move spawns + routes it closed in one step.
+        if (d.kind === "accept" || d.kind === "adapt") {
+          const id = await spawnAndRouteMinor(exec, this.deps, {
+            projectId: ctx.projectId,
+            findingId: finding.id,
+            kind: finding.kind ?? "other",
+            title: finding.title,
+            correspondenceId: reviewCorrId,
+            draftId: ctx.draftId,
+            disposition: {
+              kind: d.kind,
+              ...(d.status != null ? { status: d.status } : {}),
+              ...(d.moveOrdinal != null ? { moveOrdinal: d.moveOrdinal } : {}),
+            },
+            byActor: actor,
+            runId: ctx.runId,
+            at: now,
+          });
+          routed.push(id);
+        }
+        continue;
+      }
+      switch (d.kind) {
+        case "rebut":
+          await routeDisposition(exec, this.deps, {
+            obligationId: obl.id,
+            kind: "rebut",
+            ...(d.rationale != null ? { rationale: d.rationale } : {}),
+            findingId: finding.id,
+            draftId: ctx.draftId,
+            byActor: actor,
+            runId: ctx.runId,
+            at: now,
+          });
+          routed.push(obl.id);
+          break;
+        case "defer":
+          await routeDisposition(exec, this.deps, {
+            obligationId: obl.id,
+            kind: "defer",
+            ...(d.rationale != null ? { rationale: d.rationale } : {}),
+            findingId: finding.id,
+            draftId: ctx.draftId,
+            byActor: actor,
+            runId: ctx.runId,
+            at: now,
+          });
+          routed.push(obl.id);
+          break;
+        case "escalate":
+          await routeDisposition(exec, this.deps, {
+            obligationId: obl.id,
+            kind: "escalate",
+            findingId: finding.id,
+            draftId: ctx.draftId,
+            byActor: actor,
+            runId: ctx.runId,
+            at: now,
+          });
+          routed.push(obl.id);
+          break;
+        case "accept":
+        case "adapt":
+          if (d.status === "verified") {
+            // the runner verified the move against its discharge evidence → straight to `discharged`.
+            await dischargeByGapCheck(exec, this.deps, {
+              obligationId: obl.id,
+              draftId: ctx.newDraftId ?? ctx.draftId,
+              byActor: actor,
+              ...(d.moveOrdinal != null ? { moveOrdinal: d.moveOrdinal } : {}),
+              runId: ctx.runId,
+              at: now,
+            });
+            routed.push(obl.id);
+          } else if (d.status === "mooted") {
+            await mootObligation(exec, this.deps, {
+              obligationId: obl.id,
+              byActor: actor,
+              runId: ctx.runId,
+              at: now,
+            });
+            routed.push(obl.id);
+          } else {
+            // 'done' addresses; 'proposed'/'open' are a deliberate no-op (the move is planned, not landed).
+            const res = await routeDisposition(exec, this.deps, {
+              obligationId: obl.id,
+              kind: d.kind,
+              ...(d.status != null ? { status: d.status } : {}),
+              ...(d.moveOrdinal != null ? { moveOrdinal: d.moveOrdinal } : {}),
+              ...(d.rationale != null ? { rationale: d.rationale } : {}),
+              findingId: finding.id,
+              draftId: ctx.draftId,
+              byActor: actor,
+              runId: ctx.runId,
+              at: now,
+            });
+            if (res.transitioned) routed.push(obl.id);
+          }
+          break;
+      }
+    }
+    this.lastOutcome = {
+      spawned: [],
+      carried: [],
+      reopened: [],
+      discharged: [],
+      routed,
+      counts: { carried: 0, closed: 0, new: 0 },
+      countsMatch: true,
+    };
   }
 }

@@ -550,6 +550,9 @@ importers:
       '@rhema/engine':
         specifier: workspace:*
         version: link:../engine
+      '@rhema/findings-core':
+        specifier: workspace:*
+        version: link:../findings-core
       '@rhema/hooks':
         specifier: workspace:*
         version: link:../hooks
@@ -4466,6 +4469,14 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.20.1)
 
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@26.4.1))':
+    dependencies:
+      '@vitest/spy': 2.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 5.4.21(@types/node@26.4.1)
+
   '@vitest/pretty-format@2.1.9':
     dependencies:
       tinyrainbow: 1.2.0
@@ -6374,7 +6385,7 @@ snapshots:
   vitest@2.1.9(@types/node@26.4.1):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.4.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

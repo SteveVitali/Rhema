@@ -75,6 +75,10 @@ export interface DeliveryFacts {
   readonly draftPromotedVersionId: string;
   readonly protocolId?: string;
   readonly protocolVersion?: number;
+  /** PRB.06: the review a `response`/re-review answers (`prior_review_id`) — from the run's frozen inputs. */
+  readonly priorReviewId?: string;
+  /** PRB.06: the v(N+1) draft row a `response` delivery creates (the run's reserved `nextDraftId`). */
+  readonly newDraftId?: string;
 }
 
 /** The correspondence kind each workflow delivers (drives `correspondence_items.kind`); default `review`. */
@@ -235,6 +239,10 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
           draftId,
           correspondenceKind: CORRESPONDENCE_KIND_BY_WORKFLOW[workflow] ?? "review",
           draftPromotedVersionId: facts.draftPromotedVersionId,
+          // PRB.06: the re-review/response links are frozen inputs the server seeded at creation — the
+          // harness folds them verbatim; the api's deliver route re-resolves them as the attestation fact.
+          ...(typeof hyd.inputs.priorReviewId === "string" ? { priorReviewId: hyd.inputs.priorReviewId } : {}),
+          ...(typeof hyd.inputs.nextDraftId === "string" ? { newDraftId: hyd.inputs.nextDraftId } : {}),
         }
       : undefined;
 

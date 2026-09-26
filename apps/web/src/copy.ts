@@ -305,6 +305,41 @@ export const COPY = {
     } as Record<string, string>,
   },
 
+  // PRB.06 — the What-changed surface (§5.8): what changed and why — the move cards, the obligation
+  // discharge lines, the summary strip, the Inline hunk list, and the rebutted findings.
+  revision: {
+    heading: "What changed",
+    notFound: "No delivered revision to show yet.",
+    versionFmt: "v{before} → v{after}",
+    stripFmt: "{addressed} obligations addressed · {rebutted} rebutted · {stillOpen} still open",
+    movesFmt: "{moves} moves · {hunks} changed passages",
+    moveHeadingFmt: "Move {ordinal} · {title}",
+    findingLineFmt: "F-{ordinal} · {kind}",
+    dischargeVerifiedFmt: "discharges {label} {lineage} — verified by {by}",
+    dischargePlainFmt: "discharges {label} {lineage} — {state}",
+    verifiedByLabel: {
+      gap_check: "gap check",
+      re_review: "re-review",
+      user: "you (unverified)",
+    } as Record<string, string>,
+    hunkKindLabel: {
+      edited: "Edited",
+      added: "Added",
+      removed: "Removed",
+      mixed: "Changed",
+    } as Record<string, string>,
+    unlinkedHeading: "Unlinked changes",
+    rebuttedHeading: "Rebutted",
+    rebutLabel: "Rebutted",
+    commentLabel: "Comment on this change",
+    commentPlaceholder: "A note for the next revision…",
+    commentSubmit: "Send",
+    commentSavedLabel: "Noted — the next revision will read it.",
+    rubricDeltaHeading: "Rubric across rounds",
+    rubricBeforeLabel: "before",
+    rubricAfterLabel: "after",
+  },
+
   notFound: {
     heading: "Not found",
     body: "That page doesn't exist.",

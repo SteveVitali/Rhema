@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { ProjectRowView } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
-import type { ApprovalOverridesDto, DecisionItemDto, GateCardDto } from "@rhema/api-client";
+import type { ApprovalOverridesDto, DecisionItemDto, GateCardDto, WhatChangedDto } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
@@ -51,6 +51,8 @@ export interface PageData {
   readonly pretriage?: { readonly triaged: number; readonly total: number };
   /** PRB.05 — the project's approval-deadline overrides (§6.4 R3; approve_triage 24-h opt-in). */
   readonly approvalOverrides?: ApprovalOverridesDto;
+  /** PRB.06 — the What-changed read for a delivered response (the revision page; §5.8). */
+  readonly revision?: { readonly slug: string; readonly data: WhatChangedDto; readonly commentedHunkId?: string };
   /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
   readonly compact?: boolean;
 }

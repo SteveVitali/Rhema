@@ -11,6 +11,7 @@ import {
   importPreviewElement,
   runSheetElement,
   dossierElement,
+  revisionElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -395,6 +396,45 @@ export function createWebApp(deps: WebDeps): Hono {
   };
   app.post("/p/:project/review/:runId/findings/:fid/disposition", dispositionHandler);
   app.post("/p/:project/findings/:fid/disposition", dispositionHandler);
+
+  // PRB.06 — the What-changed page (§5.8): what changed and why for a delivered response. GET renders the
+  // server-joined view; the hunk comment POST lands a Guidance row for the next Revise (§6.5).
+  app.get("/p/:project/revisions/:cid", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const cid = c.req.param("cid");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const data = await deps.dataSource.getWhatChanged(session, row.id, cid).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!data) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const commented = c.req.query("commented") || undefined;
+    return c.html(
+      renderDocument(c.req.path, revisionElement, {
+        revision: { slug, data, ...(commented ? { commentedHunkId: commented } : {}) },
+        compact: isPhoneRequest(c),
+      }),
+    );
+  });
+
+  app.post("/p/:project/revisions/:cid/hunks/:hunkId/comments", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const cid = c.req.param("cid");
+    const hunkId = c.req.param("hunkId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const text = typeof form.text === "string" ? form.text.trim() : "";
+    if (text !== "") {
+      await deps.dataSource.commentOnHunk(session, row.id, cid, hunkId, text).catch(() => undefined);
+    }
+    return c.redirect(`/p/${slug}/revisions/${cid}?commented=${encodeURIComponent(hunkId)}`);
+  });
 
   app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));
 
