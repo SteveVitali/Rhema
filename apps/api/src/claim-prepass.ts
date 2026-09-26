@@ -38,6 +38,13 @@ export interface ClaimPrePassDeps {
   readonly db: SqlExecutor;
   /** content-addressed draft bytes — `draftSha` IS the artifact version's `content_sha256`. */
   readonly contentStore: ContentStore;
+  /**
+   * Workspace-BOUND store resolver (DEF.2 Stage-B fix): `ContentStore.get(sha256)` carries no workspace,
+   * so the api's unbound write-only store THROWS on get — the live seam must resolve the store per call
+   * with the principal's workspace (`contentStoreFor`, the existing api seam). Falls back to
+   * `contentStore` when unset (tests bind a readable store directly).
+   */
+  readonly contentStoreFor?: (workspaceId: string) => Promise<ContentStore>;
   readonly ids: IdFactory;
   readonly clock: { now(): Date };
   /** injectable fetch (tests); the deploy uses global fetch. */
@@ -78,8 +85,10 @@ export function createProxyClaimPrePass(deps: ClaimPrePassDeps): ClaimPrePass {
   return {
     async count(args) {
       if (!args.draftSha) return null;
-      // The sha the sheet sends IS the content hash — the store read needs no version-row join.
-      const bytes = await deps.contentStore.get(args.draftSha).catch(() => null);
+      // The sha the sheet sends IS the content hash — the store read needs no version-row join. The
+      // store must be bound to the CALLER's workspace (an unbound store refuses get() outright).
+      const store = deps.contentStoreFor ? await deps.contentStoreFor(args.workspaceId) : deps.contentStore;
+      const bytes = await store.get(args.draftSha).catch(() => null);
       if (!bytes || bytes.byteLength === 0) return null;
       const draftText = Buffer.from(bytes).toString("utf8").slice(0, maxChars);
 
