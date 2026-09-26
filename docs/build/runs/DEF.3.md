@@ -141,3 +141,47 @@ live legs, all bounded:
   token>` returns 303 to the deep link; replay 410; tamper 400.
 
 Spend cap **$5** total; any leg that cannot fit honestly defers with a dated note.
+
+## 6. Stage B — bounded live re-verify on prod (2026-09-26, operator-driven, ≤$5)
+
+Ran against the deployed stack (api `sha256:67b7e509…`, egress-proxy
+`sha256:f3423b8c…` — the `def3c` images; the earlier `def3` deploy had already put
+the F10 ordering + F9 mount + authored-probe allowlist live). Pulumi updates showed
+updates only; the sole replace was the stateless proxy InstanceTemplate (standard
+image roll, reserved internal IP `10.8.16.4` unchanged).
+
+### F10 — meter-before-stream-end + §12.4 residual bound, proven live
+
+**Run `01M3EVPYKJ9W3KBGDCPBZEXDV7`** (cap 40 cr): completed; metered **27 cr**;
+ledger `hold 40 → debit 27 → release 13`. Every served request carried a
+`usage_records(source='proxy')` row; nothing unmetered.
+
+**Run `01M3EW0EQJ3ZSNCW3TQ140NGBE`** (deliberate cap-crossing, cap 5 cr): precise
+metered credits `1.736980 + 0.755720 + 0.631820 + 0.659820 + 0.753760` = **4.53804
+< 5** — five in-cap requests; the sixth (10.083640 cr) was legitimately admitted as
+the one in-flight request that crossed the cap. Every subsequent request → **402
+`deny_reason="cap"`**. Terminal state: `failure.code="cap_reached"`; ledger `hold 5
+→ release 5 → adjustment 16 (source=system, absorbed)` — committed debits stay
+clamped at cap (REQ-BILL-3); the residual is absorbed COGS. Total rounded metered:
+**16 cr**. This is the spec'd residual semantics, not a race.
+
+### F7 — probe endpoint admits, no egress_denied noise
+
+On the same prod run: `HEAD https://api.anthropic.com/api/hello` → **200**,
+`fetch_log.decision='allow'`, zero `egress_denied` rows for the probe. (A later
+`/api/hello` 402 was the run's *cap*, not allowlist noise.)
+
+### F9 — `/api/action/<token>` minted path on prod
+
+Fresh token `01M3EVPC1WA07YYZ1BJEDHVSRN` minted with the prod secret (never
+printed): first consume → **303** to
+`https://rhema.tools/p/stb-3-memo-fixture/review/01M3EAAZG2AQ289B6ZFEP5XYN2?gate=01M3EAJ1X880TS1A940KQ9ZCEZ`;
+replay → **410**; tampered signature → **400**. (An earlier malformed scratch mint
+that 400'd three ways was a helper bug — cleaned up `01M3EVNKRPJWSAZN6WXA26N7KD`.)
+
+### Spend
+
+DEF.3 legs: 27 cr + 16 cr = **43 cr ≈ $0.43** — under the ≤$5 bound.
+Combined Stage B (incl. DEF.2 F6 10 cr): ≈ **$0.53** — under the ≤$8 combined target.
+
+**D-DEF.3-1 → DONE.** All legs recorded above with live prod evidence.

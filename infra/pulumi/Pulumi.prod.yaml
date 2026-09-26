@@ -112,9 +112,27 @@ config:
   # REPLACES the Bun subprocess env (no HOME). The image now carries passwd entries for scoped uids
   # 10003–10006, and HOME is set to the scoped root in both env layers (runner env -i + query
   # options.env). Probe-verified: the CLI ran the full query path end to end.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f4e7806e75c2b0d68c591712f4f53adbc26199fcfd760f66329bcc0b4afdaa27","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e4dc868720ae8e89c24e65917274bfd513b20c2e43d0cf359698049165bbfba1","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:0833dfd61d29b3c2bed281c241111b3e6152e3873c86f1f0fcc001b40eab4a04
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cf779cd54857aaf4040cb1cf20a823276ec9d2adfb9c4847e7955b5d0f5e794c
+  # DEF.2+DEF.3 Stage-B (build rhema:def3, Cloud Build 29cf48d0, 2026-09-26, branch tip SHA fafab45 —
+  # stacks on the DEF.1 deploy): all nine images rebuilt on the stacked tip. Carries: F4 canonical
+  # ledger path (worker sqlSampleMeter) + reconcile/held>=0 (migration 0044 applied separately); F5
+  # metered-incremental debit + terminal semantics (api orchestrator); F6 estimate seams bound
+  # (api EGRESS_PROXY_URL env + private-app→proxy firewall in network.ts); F7 probe allowlist
+  # (worker provision); F9 /api/action mount (api); F10 meter-before-stream-end ordering
+  # (egress-proxy). Pre-merge deploy — PRs #77/#78/#79 stay open (operator-held).
+  # DEF.2 Stage-B hotfix (build rhema:def3b, Cloud Build ec2dcacb, 2026-09-26, SHA 4d06640): api only —
+  # the first live refine exposed a second F6 seam: claimPrePass bound the api's UNBOUND write-only
+  # artifactsStore, and GcsContentStore.get() refuses without a workspace binding (throw→null→provisional
+  # forever; estimate_cache still could not fill). claimPrePass now resolves contentStoreFor(workspaceId)
+  # per call with the principal's workspace.
+  # DEF.2 Stage-B hotfix 2 (build rhema:def3c, Cloud Build f2eba076, 2026-09-26, SHA 47d1ecc):
+  # egress-proxy only — the metered live pre-pass STILL truncated its body: est_<id> mints no `runs`
+  # row while fetch_log/run_events*/pause_signals all FK to runs(id), so the step-9 fetch_log write
+  # threw inside meter() AFTER the usage commit and the F10 stream ordering honestly truncated the
+  # tail (100-byte partial JSON → api res.json() throws → provisional forever). RunContext.meterOnly
+  # skips run-scoped writes for the synthetic context; usage_records still lands; I2 preserved.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:67b7e5098094124abd9cf7436f43b8c84c40a3f7c9076ee6210ed2cad1c03bbb","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:6b3204913fb2a4d17a6d30437c717c2748ec074522caec32eb718a2d2bae9f28","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:3e0511616c8335372ba74aed8b3f514b09ba5b5f458535f7bc8f8d8b930fddba","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:779eb1d08ebf36034fede02cda6b91155d56f57c5560bc8ddf6054e147a96e4c","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:df4a7215a2d343d47e86af78c8bd578179f4c9d8356353dfef68256173e0ead2","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:7845527fa5f6ac1b144d5a2bda51c927512f1b610a8538acdc48b6ae60028758","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:d263b9a096aa250e0e7c9b63b71a222845e00cb6f4c0b2f3a6dd390760bdc43a"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:344c9bbc09486a5ba9547a9f22dfd06a09e05a97dae8e8a61d662c8210a2a55b
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:f3423b8c934c62e357bbbc9afc5ec19476e1477a68b1dec7091df79ca0863737
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
