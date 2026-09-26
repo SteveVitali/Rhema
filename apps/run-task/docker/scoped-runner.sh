@@ -25,9 +25,11 @@
 #   • The spec file $1 lives under the harness config dir (gid harness — the scoped uid may not traverse it),
 #     so a COPY is staged inside the scoped root, which is chmod 0777 (the namespace's fresh tmpfs — the scoped
 #     uid's ONLY writable area, doubling as its CLAUDE_CONFIG_DIR for SDK scratch).
-#   • The model's process gets EXACTLY the scrubbed env allowlist (`env -i`, REQ-SPEC-10): PATH/HOME and every
+#   • The model's process gets EXACTLY the scrubbed env allowlist (`env -i`, REQ-SPEC-10): PATH and every
 #     other runner key are stripped at the uid drop; `node` is invoked by absolute path because there is no
-#     PATH in the scrubbed set (same convention as bootstrap.ts).
+#     PATH in the scrubbed set (same convention as bootstrap.ts). HOME is the ONE addition vs the seat
+#     allowlist: it points at the scoped root (the scoped uid's only writable dir) so os.homedir() resolves
+#     without a passwd entry read and SDK user-level writes land inside the jail — never a real home.
 set -eu
 
 SPEC="${1:?usage: scoped-runner.sh <spec.json>}"
@@ -60,9 +62,12 @@ cp "$SPEC" "$root_dir/.scoped-spec.json"               # 3b) the scoped uid read
 chmod 0644 "$root_dir/.scoped-spec.json"               # world-readable — the scoped uid is not the owner
 
 # 4) drop to the DISTINCT scoped uid and exec the scoped query, rooted at the scoped read tree, with EXACTLY
-#    the scrubbed env allowlist (REQ-SPEC-10) — `env -i` strips PATH/HOME and everything the runner needed.
+#    the scrubbed env allowlist (REQ-SPEC-10) — `env -i` strips PATH and everything the runner needed.
+#    HOME is scoped to the (writable) root — F-StageB-7: without it the SDK import crashes on
+#    `uv_os_homedir` for a uid with no home, and user-level writes would aim outside the jail.
 exec setpriv --reuid "$scoped_uid" --regid "$scoped_uid" --clear-groups --no-new-privs \
   -- env -i \
+     HOME="$root_dir" \
      RUN_ID="$RUN_ID" \
      ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL" \
      ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \

@@ -70,6 +70,10 @@ async function main(): Promise<void> {
       ANTHROPIC_API_KEY: env("ANTHROPIC_API_KEY"),
       CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
       CLAUDE_CONFIG_DIR: configDir,
+      // the options.env REPLACES the vendored CLI subprocess env — without HOME the Bun binary's
+      // uv_os_homedir() ENOENTs for the passwd-less scoped uid (F-StageB-7). Scoped to the writable
+      // root (the uid's only writable area), never a real home.
+      HOME: configDir,
       ENABLE_PROMPT_CACHING_1H: "1",
       CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION: "0",
     },
