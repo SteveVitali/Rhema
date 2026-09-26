@@ -149,6 +149,58 @@ describe("handleProxyRequest — credential gate (AC1)", () => {
   });
 });
 
+describe("handleProxyRequest — SDK connectivity probe (DEF.3 / STB.3 F7)", () => {
+  /** A run whose allowlist carries the probe endpoint the vendored SDK fires at CLI init. */
+  const probeCtx = (): RunContext =>
+    ctx({
+      allowlist: {
+        endpoints: [
+          { host: "api.anthropic.com", pathPrefix: "/v1/" },
+          { host: "api.anthropic.com", pathPrefix: "/api/hello" },
+        ],
+        models: ["claude-opus-5"],
+      },
+    });
+  const helloReq = (): ProxyRequest =>
+    request({
+      method: "HEAD",
+      path: "/api/hello",
+      url: "https://api.anthropic.com/api/hello",
+      body: "",
+      headers: { [PROXY_CREDENTIAL_HEADER]: CRED },
+    });
+
+  it("forwards an allowlisted HEAD /api/hello and logs an allow row — no egress.denied event", async () => {
+    const h = harness({
+      context: probeCtx(),
+      response: { status: 200, headers: {}, body: "" },
+    });
+    const res = await handleProxyRequest(helloReq(), h);
+    expect(res.status).toBe(200);
+    expect(h.forwarded.req).toBeDefined();
+    expect(h.forwarded.req!.method).toBe("HEAD");
+    expect(h.forwarded.req!.path).toBe("/api/hello");
+    // no model, no usage block → nothing metered; the honest allow row is the record.
+    expect(h.usageWriter.rows).toHaveLength(0);
+    expect(h.events.egressDenied).toHaveLength(0);
+    const rows = h.fetchLogWriter.rows;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ decision: "allow", url: "https://api.anthropic.com/api/hello", status: 200 });
+  });
+
+  it("still denies other off-allowlist provider paths — the probe fix widens nothing else", async () => {
+    const h = harness({ context: probeCtx() });
+    const res = await handleProxyRequest(
+      request({ method: "GET", path: "/api/other", url: "https://api.anthropic.com/api/other", body: "", headers: { [PROXY_CREDENTIAL_HEADER]: CRED } }),
+      h,
+    );
+    expect(res.status).toBe(403);
+    expect(h.forwarded.req).toBeUndefined();
+    expect(h.events.egressDenied).toHaveLength(1);
+    expect(h.fetchLogWriter.rows[0]).toMatchObject({ decision: "deny" });
+  });
+});
+
 describe("handleProxyRequest — serve, scrub, meter, log (AC3, AC5, AC6)", () => {
   it("forwards with the provider key, strips sandbox auth, meters the response, logs the request", async () => {
     const h = harness();

@@ -296,7 +296,7 @@ export async function mintProxyCredential(deps: OrchestratorDeps, args: MintCred
       [
         allowlistId,
         args.runId,
-        args.allowlist.endpoints.map((e) => e.host),
+        [...new Set(args.allowlist.endpoints.map((e) => e.host))], // probe + API share the provider host
         JSON.stringify(args.allowlist.endpoints),
         args.allowlist.models,
         JSON.stringify(args.allowlist.urlPolicy),

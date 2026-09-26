@@ -8,8 +8,9 @@
 //
 // The server STREAMS the upstream response through to the sandbox incrementally (`streamProxyRequest`,
 // D-P0.07-5): the Agent SDK's `stream:true` responses reach it frame-by-frame instead of waiting for the whole
-// buffered body (the P0.15e agent→proxy-hang suspect). Metering still folds the COMPLETE response once, after
-// delivery — the proxy stays the meter of record.
+// buffered body (the P0.15e agent→proxy-hang suspect). Metering still folds the COMPLETE response once — and
+// commits before the stream's terminal bytes leave (DEF.3 F10), so stream end always implies the meter of
+// record; a meter refusal truncates the stream rather than serving an unmetered success (I2).
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { request as undiciRequest } from "undici";
@@ -120,9 +121,10 @@ export function createProxyServer(opts: ServerOptions): Server {
           res.writeHead(502, { "content-type": "application/json" });
           res.end(JSON.stringify({ error: { type: "proxy_error", message: "upstream request failed" } }));
         } else if (!res.writableEnded) {
-          // the stream had begun but not finished (e.g. an upstream mid-stream error); close it — the client
-          // sees a truncated stream, never a wrong status. A post-`end()` throw (a metering anomaly) is already
-          // finished, so we do nothing (avoid ERR_STREAM_ALREADY_FINISHED).
+          // the stream had begun but not finished (e.g. an upstream mid-stream error, or a meter refusal
+          // with the terminal chunk still withheld — DEF.3 F10); close it — the client sees a truncated
+          // stream, never a wrong status. A post-`end()` throw is already finished, so we do nothing
+          // (avoid ERR_STREAM_ALREADY_FINISHED).
           res.end();
         }
       }

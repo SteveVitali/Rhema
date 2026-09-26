@@ -18,6 +18,17 @@ export const MODELS_BY_TIER: Readonly<Record<ModelTier, readonly string[]>> = {
 /** The direct Anthropic API is the only allowed provider endpoint at MVP (§12.3; no Vertex path). */
 export const ANTHROPIC_ENDPOINT = { host: "api.anthropic.com", pathPrefix: "/v1/" } as const;
 
+/**
+ * The agent SDK's connectivity preconnect — `HEAD ${ANTHROPIC_BASE_URL}/api/hello` fired at CLI
+ * init, before the first inference call (errors are swallowed SDK-side). The run's base URL points
+ * at the proxy, so the probe transits the credential path like every other Anthropic call. An
+ * allowlist without it 403s HEALTHY traffic once per run — counting `egress.denied` spikes against
+ * the §13.5 `egress_denied_10m` SLO (STB.3 F7). Explicitly admitted: same provider host, one fixed
+ * health path, no usage block → an `allow` fetch row only, nothing metered. Nothing else on the
+ * host is widened — `/v1/` plus this path only.
+ */
+export const ANTHROPIC_PROBE_ENDPOINT = { host: "api.anthropic.com", pathPrefix: "/api/hello" } as const;
+
 export interface AuthorAllowlistArgs {
   readonly modelTier: ModelTier;
   /** hold-out + user-excluded domains the URL policy blocks (anti-exfil; §12.6). */
@@ -43,7 +54,7 @@ export interface AuthorAllowlistArgs {
 /** Build the run's allowlist (endpoints + models + URL policy) that provisioning persists and the proxy reads. */
 export function authorRunAllowlist(args: AuthorAllowlistArgs): RunAllowlistData {
   return {
-    endpoints: [ANTHROPIC_ENDPOINT, ...(args.extraEndpoints ?? [])],
+    endpoints: [ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, ...(args.extraEndpoints ?? [])],
     models: MODELS_BY_TIER[args.modelTier],
     urlPolicy: {
       blockedDomains: args.blockedDomains ?? [],

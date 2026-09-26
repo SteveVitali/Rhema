@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_TIERS, isModelPriceable, CURRENT_RATE_TABLE_VERSION, type ModelTier } from "@rhema/contracts";
 import { rosterModelIds, mainModelForTier } from "@rhema/engine";
-import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, RESEARCH_BURST_MAX_SOURCES } from "./allowlist.js";
+import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES } from "./allowlist.js";
 
 // F4 — the model-allowlist trap. The proxy admits a request only when `body.model` is EXACTLY on the run's
 // allowlist (`MODELS_BY_TIER`, an exact-match includes) AND priceable in the rate table; otherwise it 403s the
@@ -26,6 +26,21 @@ describe("authorRunAllowlist", () => {
     const a = authorRunAllowlist({ modelTier: "balanced" });
     expect(a.endpoints).toContainEqual(ANTHROPIC_ENDPOINT);
     expect(a.models).toEqual(MODELS_BY_TIER.balanced);
+  });
+
+  // DEF.3 (F7 / STB.3) — the vendored SDK fires a connectivity preconnect (`HEAD
+  // api.anthropic.com/api/hello`) at CLI init, before the first inference call. It is provider
+  // traffic on the one host the run's credential already reaches, so the authored allowlist must
+  // admit it — a deny row per run was counting healthy traffic toward `egress_denied_10m`.
+  it("includes the SDK connectivity probe endpoint on every tier", () => {
+    for (const tier of MODEL_TIERS as readonly ModelTier[]) {
+      const a = authorRunAllowlist({ modelTier: tier });
+      expect(a.endpoints).toContainEqual(ANTHROPIC_PROBE_ENDPOINT);
+    }
+    expect(ANTHROPIC_PROBE_ENDPOINT).toEqual({ host: "api.anthropic.com", pathPrefix: "/api/hello" });
+    // …but no wider: the only admitted paths on the provider host are the /v1/ API and the probe.
+    const a = authorRunAllowlist({ modelTier: "base" });
+    expect(a.endpoints.filter((e) => e.host === "api.anthropic.com")).toHaveLength(2);
   });
 });
 

@@ -106,6 +106,20 @@ describe("GET /action/:token — the signed one-click consume", () => {
     return { ...m, gateId, runId };
   }
 
+  it("the MINTED /api/action/<token> URL consumes — the emailed link contract (DEF.3 / STB.3 F9)", async () => {
+    // mintEmailAction returns `url = <apiBaseUrl>/api/action/<payload>.<sig>` — the string that
+    // actually lands in the email. The api mounts at the listener root, so the consume handler must
+    // answer at /api/action/:token or every emailed link is a dead 404 (observed on prod, STB.3).
+    const m = await mint("hold");
+    const path = new URL(m.url).pathname;
+    expect(path).toBe(`/api/action/${m.token}`);
+    const r1 = await app.request(path);
+    expect(r1.status).toBe(303);
+    expect(r1.headers.get("location")).toBe(`https://app.test/p/slug-${seed.projectId}/review/${m.runId}?gate=${m.gateId}`);
+    const r2 = await app.request(path);
+    expect(r2.status).toBe(410);
+  });
+
   it("hold consumes once, holds the gate, and redirects to the deep link; the replay is 410", async () => {
     const m = await mint("hold");
     const r1 = await app.request(`/action/${m.token}`);
