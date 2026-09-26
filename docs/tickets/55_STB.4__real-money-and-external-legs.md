@@ -2,8 +2,9 @@
 
 - **Sequence:** 55 · **Phase:** post-P1 closeout · **Tag:** ops
 - **base_branch:** `main` (post-merge).
-- **Depends on:** STB.1–STB.3 (a verified deployed platform). The operator's real-money call is a
-  hard gate inside this ticket.
+- **Depends on:** STB.1–STB.3 (a verified deployed platform) **and DEF.1–DEF.3** — the STB.3
+  findings include delivery-blocking defects (F2 makes Memo reviews un-deliverable); spending real
+  money over them is wrong. The operator's real-money call is a hard gate inside this ticket.
 - **Scope (one line):** the legs that cost real money or external coordination — the live Stripe
   purchase round-trip, pen-test facilitation, and the Anthropic admin-key usage reconciliation.
 - **Spec §§:** 14.2–14.6 (billing), 12.8 (security), 16.3 (open questions).
