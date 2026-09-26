@@ -152,6 +152,15 @@ export interface DeliveryArgs {
   readonly frozenBy?: unknown;
   /** whole-draft covering review (default true); a scoped/phase-subset run sets false (see ObligationDeliveryContext). */
   readonly coversAllObligations?: boolean;
+  /**
+   * PRB.10 — the voice facts stamped on the delivered note (REQ-PERSONA-17/20, §9.3/§9.6): the pinned
+   * `persona_profile_snapshot_id` and the snapshot's build date the note was written against, plus the
+   * 'linked' | 'ad_hoc' mode (a no-voice piece is labeled ad-hoc, never persisted as a voice). Server-resolved
+   * from the run's frozen inputs — never pod-trusted.
+   */
+  readonly personaProfileSnapshotId?: string;
+  readonly personaSnapshotAt?: Date | string;
+  readonly voiceMode?: "linked" | "ad_hoc";
 }
 
 export interface DeliveryResult {
@@ -237,8 +246,9 @@ export async function runDeliveryTransaction(
   const now = deps.clock.now();
   await exec.query(
     `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at,
-       artifact_ids, rubric, protocol_id, protocol_version, prior_review_id)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+       artifact_ids, rubric, protocol_id, protocol_version, prior_review_id,
+       persona_profile_snapshot_id, persona_snapshot_at, voice_mode)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
     [
       correspondenceId,
       args.projectId,
@@ -252,6 +262,12 @@ export async function runDeliveryTransaction(
       args.protocolId ?? null,
       args.protocolVersion ?? null,
       args.priorReviewId ?? null,
+      // PRB.10 — the note records the profile snapshot date it was written against (REQ-PERSONA-17)
+      // and the ad-hoc label for a no-voice piece (REQ-PERSONA-20); both come from the run's frozen
+      // inputs via the caller, never re-derived from mutable persona state.
+      args.personaProfileSnapshotId ?? null,
+      args.personaSnapshotAt ?? null,
+      args.voiceMode ?? null,
     ],
   );
 

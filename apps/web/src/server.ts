@@ -13,6 +13,9 @@ import {
   dossierElement,
   revisionElement,
   editorElement,
+  voicesElement,
+  voiceNewElement,
+  voiceDetailElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -137,10 +140,16 @@ export function createWebApp(deps: WebDeps): Hono {
     const rows = await deps.dataSource.listProjects(session);
     const row = rows.find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const [gates, decisions, approvalOverrides] = await Promise.all([
+    const [gates, decisions, approvalOverrides, projectVoice] = await Promise.all([
       deps.dataSource.listGates(session, row.id).catch(() => []),
       deps.dataSource.listDecisions(session, row.id).catch(() => []),
       deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>),
+      // PRB.10 — the voice picker: the project's linked-voice facts + the selectable personas (§9.6).
+      // (Deferred inside .then so a data source missing the voice seam degrades to no-picker, not a 500.)
+      Promise.all([
+        Promise.resolve().then(() => deps.dataSource.getProjectVoice(session, row.id)).catch(() => null),
+        Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
+      ]).then(([current, options]) => (current ? { current, options } : undefined)),
     ]);
     // a bounced disposition write (a gate row's per-finding override) re-renders with the error under
     // that row's controls — never dropped silently.
@@ -151,6 +160,7 @@ export function createWebApp(deps: WebDeps): Hono {
         gates,
         decisions,
         approvalOverrides,
+        ...(projectVoice ? { projectVoice } : {}),
         compact: isPhoneRequest(c),
         ...(derror
           ? {
@@ -164,6 +174,20 @@ export function createWebApp(deps: WebDeps): Hono {
           : {}),
       }),
     );
+  });
+
+  // PRB.10 — the project voice picker (§9.6; REQ-DATA-32): the select POSTs the chosen persona (or "" for
+  // "No voice" — the ad-hoc default, REQ-PERSONA-20); the api pins the profile snapshot server-side.
+  app.post("/p/:project/voice", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : null;
+    await deps.dataSource.setProjectVoice(session, row.id, { personaId }).catch(() => undefined);
+    return c.redirect(`/p/${slug}`);
   });
 
   // PRB.05 — the per-project approve_triage 24-h opt-in (§6.4 R3): the checkbox writes the
@@ -271,7 +295,40 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // PRB.08 — the REAL balance: spendable credits, suspension, and the beta Payment Link for the panel.
     const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
-    const view = buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl);
+    // PRB.10 — the voice line (§9.6): the project's linked persona + the shared pill, or the ad-hoc
+    // default. When the pill's action is `update_voice` the priced chained action renders ("Update voice
+    // first ≈N cr") — a fact + an action, never a gate (a stale/untested/never-built voice never blocks).
+    const pv = await Promise.resolve()
+      .then(() => deps.dataSource.getProjectVoice(session, row.id))
+      .catch(() => null);
+    let updateEstimateCredits: number | undefined;
+    if (pv?.status?.action === "update_voice" && pv.personaId) {
+      updateEstimateCredits = (
+        await Promise.resolve()
+          .then(() => deps.dataSource.estimateVoice(session, pv.personaId!, "quick"))
+          .catch(() => null)
+      )?.estimateCredits;
+    }
+    const view = {
+      ...buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl),
+      ...(pv
+        ? {
+            voice:
+              pv.voiceMode === "ad_hoc"
+                ? ({ mode: "ad_hoc" } as const)
+                : ({
+                    mode: "linked",
+                    ...(pv.personaId ? { personaId: pv.personaId } : {}),
+                    name: pv.name ?? pv.personaId,
+                    ...(pv.status ? { pill: pv.status.pill } : {}),
+                    ...(pv.snapshot?.builtAt ? { snapshotAt: pv.snapshot.builtAt } : {}),
+                    ...(updateEstimateCredits != null
+                      ? { updateEstimateCredits, updateAction: `/p/${slug}/update-voice` }
+                      : {}),
+                  } as const),
+          }
+        : {}),
+    };
     // REQ-BETA-12 — the exhaustion prompt showing IS the telemetry event (action_taken:"shown"); the panel's
     // Payment-Link click records "open_payment_link" via /p/:slug/exhausted.
     if (view.insufficient) {
@@ -591,6 +648,200 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     await deps.dataSource.reviseWithEdits(session, t.row.id, t.draftId).catch(() => undefined);
     return c.redirect(`/p/${t.slug}`);
+  });
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // PRB.10 — Quick Voice (§9.2–§9.6). SSR only: the library, the creation sheet, the detail page (seed
+  // editor + samples + build history), the project picker's POST, and the run sheet's chained
+  // "Update voice first" action. Every pill renders the shared status projection verbatim.
+  // -------------------------------------------------------------------------------------------------------------------
+
+  // The run sheet's "Update voice first (≈N cr)" — launches a Quick-Voice build for the project's linked
+  // persona and lands back on the sheet (the sheet re-reads the pill, which now says Building). The main
+  // run is NEVER blocked by voice state — this is the optional chained action only.
+  app.post("/p/:project/update-voice", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const personaId = typeof form.voice_persona === "string" ? form.voice_persona : "";
+    if (personaId) {
+      await deps.dataSource
+        .buildVoice(session, personaId, { tier: "quick", projectId: row.id })
+        .catch(() => undefined);
+    }
+    return c.redirect(`/p/${slug}/run${new URL(c.req.url).search}`);
+  });
+
+  // The voice library (§9.1's "Your voices" group).
+  app.get("/voices", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const voices = await deps.dataSource.listVoices(session).catch(() => []);
+    return c.html(renderDocument(c.req.path, voicesElement, { voices }));
+  });
+
+  // The §9.2 creation sheet (GET) — name required; description/byline/sample/mode/tier optional.
+  app.get("/voices/new", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    return c.html(renderDocument(c.req.path, voiceNewElement, { voiceNew: {} }));
+  });
+
+  // The creation sheet's POST: create the persona (+ Mode metadata), attach any pasted sample through the
+  // §9.5 model, and — on "Create and build" — start the profile_voice{tier: quick} run (§9.2 item 3).
+  app.post("/voices/new", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const name = str("name").trim();
+    if (!name) {
+      return c.html(
+        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.nameRequired } }),
+        400,
+      );
+    }
+    const intent = str("intent") === "build" ? "build" : "save";
+    // Upload OR paste (§9.2 beta subset): a .md/.txt/.html file decodes to canonical text here; richer
+    // formats ride the same quarantine→convert seam the api accepts as `quarantineKey` (the deploy leg).
+    const file = form.sample_file;
+    const fileText =
+      file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
+        ? new TextDecoder().decode(await (file as File).arrayBuffer())
+        : "";
+    const sampleText = (fileText || str("sample_text")).trim();
+    if (intent === "build" && !sampleText) {
+      return c.html(
+        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired } }),
+        400,
+      );
+    }
+    const created = await deps.dataSource.createVoice(session, {
+      name,
+      ...(str("byline").trim() ? { byline: str("byline").trim() } : {}),
+      ...(str("description").trim() ? { description: str("description") } : {}),
+      mode: str("mode") || "self",
+    });
+    if (sampleText) {
+      await deps.dataSource
+        .addVoiceSample(session, created.personaId, {
+          text: sampleText,
+          ...(str("sample_title").trim() ? { title: str("sample_title").trim() } : {}),
+        })
+        .catch(() => undefined);
+    }
+    if (intent === "build") {
+      await deps.dataSource.buildVoice(session, created.personaId, { tier: "quick" }).catch(() => undefined);
+    }
+    return c.redirect(`/v/${created.personaId}`);
+  });
+
+  // The voice detail page (§9.5): status + seed editor + samples + build history + profile artifacts.
+  app.get("/v/:persona", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const detail = await deps.dataSource.getVoice(session, personaId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!detail) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const estimate = await deps.dataSource.estimateVoice(session, personaId, "quick").catch(() => undefined);
+    const notice =
+      c.req.query("saved") === "1"
+        ? COPY.voice.detail.seedSaved
+        : c.req.query("added") === "1"
+          ? COPY.voice.detail.sampleAdded
+          : c.req.query("cancelled") === "1"
+            ? COPY.voice.detail.cancelDone
+            : undefined;
+    return c.html(
+      renderDocument(c.req.path, voiceDetailElement, {
+        voice: { detail, ...(estimate ? { estimate } : {}), ...(notice ? { notice } : {}) },
+      }),
+    );
+  });
+
+  // The seed editor's save — recomputes the J9 hash; the pill flips live on the redirect (§9.3).
+  app.post("/v/:persona/seed", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const registers = str("registers")
+      .split(",")
+      .map((r) => r.trim())
+      .filter((r) => r !== "");
+    await deps.dataSource
+      .saveVoiceSeed(session, personaId, {
+        description: str("description"),
+        byline: str("byline"),
+        registers,
+      })
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?saved=1`);
+  });
+
+  // A pasted sample through the §9.5 model — the response's refreshed corpus words + status are the
+  // estimate's <500 ms refresh (REQ-PERSONA-3); the redirect re-reads them.
+  app.post("/v/:persona/samples", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
+    const file = form.file;
+    const fileText =
+      file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
+        ? new TextDecoder().decode(await (file as File).arrayBuffer())
+        : "";
+    const text = (fileText || str("text")).trim();
+    if (text) {
+      await deps.dataSource
+        .addVoiceSample(session, personaId, {
+          text,
+          ...(str("title").trim() ? { title: str("title").trim() } : {}),
+        })
+        .catch(() => undefined);
+    }
+    return c.redirect(`/v/${personaId}?added=1`);
+  });
+
+  // The per-item include/omit toggle (REQ-INGEST-4).
+  app.post("/v/:persona/samples/:itemId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const included = form.included === "true" || form.included === "on";
+    await deps.dataSource
+      .setVoiceSampleIncluded(session, personaId, c.req.param("itemId"), included)
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}`);
+  });
+
+  // "Build voice" / "Update voice" — a profile_voice{tier: quick} run (§9.2 item 3).
+  app.post("/v/:persona/build", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    await deps.dataSource.buildVoice(session, personaId, { tier: "quick" }).catch(() => undefined);
+    return c.redirect(`/v/${personaId}`);
+  });
+
+  // Cancel an open build (the detail page's Cancel).
+  app.post("/v/:persona/cancel", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const runId = typeof form.runId === "string" ? form.runId : "";
+    if (runId) await deps.dataSource.cancelVoiceRun(session, runId).catch(() => undefined);
+    return c.redirect(`/v/${personaId}?cancelled=1`);
   });
 
   // The client bundle (built by build-client.mjs at `pnpm build`; gitignored). Missing → the page still

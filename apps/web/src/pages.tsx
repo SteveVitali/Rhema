@@ -54,7 +54,7 @@ import {
   type TrustChipLabels,
   type DoNothingOutcome,
 } from "@rhema/findings-core";
-import type { EditorDocDto, GateCardDto } from "@rhema/api-client";
+import type { EditorDocDto, GateCardDto, VoiceStatusDto } from "@rhema/api-client";
 import { CHECKABLE_CLAIM_KINDS, type ClaimKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
@@ -184,11 +184,14 @@ export function ProjectsPage(): ReactNode {
     <Shell
       brand={COPY.brand}
       nav={
-        <form method="post" action="/logout" style={{ margin: 0 }}>
-          <button type="submit" style={{ background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", fontSize: "13px" }}>
-            {COPY.projects.signOut}
-          </button>
-        </form>
+        <span style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+          <a href="/voices" style={{ fontSize: "13px" }}>{COPY.voice.nav}</a>
+          <form method="post" action="/logout" style={{ margin: 0 }}>
+            <button type="submit" style={{ background: "none", border: "none", color: "var(--shell-fg-muted)", cursor: "pointer", fontSize: "13px" }}>
+              {COPY.projects.signOut}
+            </button>
+          </form>
+        </span>
       }
       footer={footer()}
     >
@@ -201,7 +204,7 @@ export function ProjectsPage(): ReactNode {
 /** Auth-gated: the flat project view (the studio editing surface is P1.01) + the Needs-you gate cards
  *  and the Decisions list (PRB.05 — the beta Inbox stand-in, §5.7/§6.4). */
 export function ProjectPage(): ReactNode {
-  const { project, gates = [], decisions = [], approvalOverrides = {}, compact, triage } = usePageData();
+  const { project, gates = [], decisions = [], approvalOverrides = {}, compact, triage, projectVoice } = usePageData();
   const slug = project?.slug ?? "";
   const triageOptedIn = typeof approvalOverrides.approve_triage === "number";
   return (
@@ -245,6 +248,39 @@ export function ProjectPage(): ReactNode {
           </label>
           <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" }}>{COPY.gates.optInNote}</p>
           <button type="submit" style={{ fontSize: "12px" }}>{COPY.gates.optInSave}</button>
+        </form>
+      ) : null}
+      {/* PRB.10 — the project voice picker (§9.6; REQ-DATA-32): the linked persona + "No voice"
+          (the ad-hoc default, REQ-PERSONA-20). Selecting a persona pins its current profile snapshot
+          server-side; the shared pill renders beside the name. */}
+      {project && projectVoice ? (
+        <form
+          method="post"
+          action={`/p/${slug}/voice`}
+          data-voice-picker="true"
+          style={{ marginTop: "20px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px", maxWidth: "68ch" }}
+        >
+          <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 6px" }}>
+            {COPY.voice.picker.heading}
+          </h2>
+          <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            <select name="personaId" defaultValue={projectVoice.current.personaId ?? ""} style={{ fontSize: "13px" }}>
+              <option value="">{COPY.voice.picker.noVoice}</option>
+              {projectVoice.options.map((o) => (
+                <option key={o.personaId} value={o.personaId}>
+                  {o.name ?? o.personaId}
+                </option>
+              ))}
+            </select>
+            {projectVoice.current.voiceMode === "linked" && projectVoice.current.status ? (
+              <span data-voice-pill={projectVoice.current.status.pill.tone} style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                {projectVoice.current.status.pill.label}
+              </span>
+            ) : (
+              <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.voice.picker.noVoiceNote}</span>
+            )}
+          </label>
+          <button type="submit" style={{ fontSize: "12px", marginTop: "6px" }}>{COPY.voice.picker.save}</button>
         </form>
       ) : null}
       <div style={{ marginTop: "20px" }}>
@@ -396,7 +432,15 @@ export function RunSheetPage(): ReactNode {
       {runSheet ? (
         <RunSheet
           view={runSheet.view}
-          labels={{ ...runSheetLabels, runLabel: runLabelFor[runSheet.view.workflow] ?? COPY.runSheet.runReview }}
+          labels={{
+            ...runSheetLabels,
+            runLabel: runLabelFor[runSheet.view.workflow] ?? COPY.runSheet.runReview,
+            voiceLabels: {
+              lineLabel: COPY.voice.sheet.lineLabel,
+              adHocLabel: COPY.voice.sheet.adHoc,
+              updateFirstFmt: COPY.voice.sheet.updateFirstFmt,
+            },
+          }}
           runAction={`/p/${slug}/run`}
           exhaustedAction={`/p/${slug}/exhausted`}
         />
@@ -897,4 +941,271 @@ function anchorQuote(f: EditorDocDto["findings"][number]): string | null {
   const a = f.anchor as { quote?: string; unanchored?: true } | null | undefined;
   if (!a || a.unanchored || !a.quote) return null;
   return a.quote;
+}
+
+// =========================================================================================================
+// PRB.10 — Quick Voice (§9.2–§9.6): the library list, the creation sheet, and the detail page. Every pill
+// label/tone comes from the shared `deriveVoiceStatus` projection in the api's DTO — these pages render it
+// verbatim, never re-derive (REQ-PERSONA-14). Progressive enhancement: plain form POSTs throughout.
+// =========================================================================================================
+
+const VC = COPY.voice;
+
+/** The shared pill rendered from the ONE status projection (§9.3). */
+function voicePillSpan(status: VoiceStatusDto | null | undefined): ReactNode {
+  if (!status) return null;
+  return (
+    <span data-voice-pill={status.pill.tone} style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+      {status.pill.label}
+    </span>
+  );
+}
+
+/** Auth-gated: the voice library's "Your voices" group — cards: name, byline, pill, sample count. */
+export function VoicesPage(): ReactNode {
+  const { voices = [] } = usePageData();
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{VC.listHeading}</SectionTitle>
+      <p>
+        <a href="/voices/new" data-new-voice="true">{VC.newCta}</a>
+      </p>
+      {voices.length === 0 ? (
+        <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{VC.listEmpty}</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: "12px 0", display: "grid", gap: "10px" }}>
+          {voices.map((v) => (
+            <li key={v.personaId} data-voice-card={v.personaId} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px 14px" }}>
+              <a href={`/v/${v.personaId}`} style={{ fontWeight: 600, fontSize: "14px" }}>
+                {v.name ?? v.personaId}
+              </a>
+              {v.byline ? <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}> · {v.byline}</span> : null}
+              <div style={{ marginTop: "4px", display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                {voicePillSpan(v.status)}
+                <span>{fmt(VC.sampleCountFmt, { n: v.sampleCount })}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Shell>
+  );
+}
+
+/** Auth-gated: the §9.2 creation sheet — name required; description, byline, one pasted sample, Mode
+ *  (metadata only, Q-11) and the tier radio optional; the AUP one-liner sits above the actions. */
+export function VoiceNewPage(): ReactNode {
+  const { voiceNew } = usePageData();
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
+      <SectionTitle>{VC.new.heading}</SectionTitle>
+      {voiceNew?.error ? (
+        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{voiceNew.error}</p>
+      ) : null}
+      <form method="post" action="/voices/new" encType="multipart/form-data" style={{ maxWidth: "68ch" }}>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
+          {VC.new.nameLabel}
+          <input name="name" required placeholder={VC.new.namePlaceholder} style={fieldStyle} />
+        </label>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "12px" }}>
+          {VC.new.bylineLabel}
+          <input name="byline" style={fieldStyle} />
+        </label>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          {VC.new.describeLabel}
+          <textarea name="description" style={textAreaStyle} />
+        </label>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.describeHint}</p>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          {VC.new.sampleTitleLabel}
+          <input name="sample_title" style={fieldStyle} />
+        </label>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+          {VC.new.sampleLabel}
+          <textarea name="sample_text" style={textAreaStyle} />
+        </label>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+          {VC.new.sampleFileLabel}
+          <input type="file" name="sample_file" accept=".md,.txt,.html" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
+        </label>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>{VC.new.sampleHint}</p>
+        <fieldset style={{ border: "none", padding: 0, margin: "16px 0 0" }}>
+          <legend style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.new.tierLabel}</legend>
+          <label style={{ display: "block", fontSize: "14px", marginTop: "6px" }}>
+            <input type="radio" name="tier" value="quick" defaultChecked /> {VC.new.quickOption}
+            <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}> · {VC.new.quickHint}</span>
+          </label>
+        </fieldset>
+        <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block", marginTop: "16px" }}>
+          {VC.new.modeLabel}{" "}
+          <select name="mode" defaultValue="self" style={{ fontSize: "13px" }}>
+            <option value="self">{VC.new.modeOption.self}</option>
+            <option value="house">{VC.new.modeOption.house}</option>
+            <option value="consented">{VC.new.modeOption.consented}</option>
+            <option value="study">{VC.new.modeOption.study}</option>
+          </select>
+        </label>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "16px", maxWidth: "68ch" }}>
+          {VC.new.aup}
+        </p>
+        <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
+          <button type="submit" name="intent" value="build" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+            {VC.new.createBuild}
+          </button>
+          <button type="submit" name="intent" value="save" style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}>
+            {VC.new.createOnly}
+          </button>
+        </div>
+      </form>
+    </Shell>
+  );
+}
+
+/** Auth-gated: the voice detail page (§9.5) — the shared pill + the seed editor (J9 hash recompute on save,
+ *  the agent-drafted marker until the first user edit), the sample list with include/omit, the build
+ *  history, and the read-only profile artifacts. */
+export function VoiceDetailPage(): ReactNode {
+  const { voice } = usePageData();
+  const d = voice?.detail;
+  const pid = d?.persona.id ?? "";
+  return (
+    <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
+      <SectionTitle>{d?.persona.display_name ?? ""}</SectionTitle>
+      {d?.persona.byline ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "-6px" }}>{d.persona.byline}</p> : null}
+      <p data-voice-status="true" style={{ margin: "4px 0 0" }}>
+        {voicePillSpan(d?.status)}
+        {voice?.estimate ? (
+          <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginLeft: "10px" }}>
+            {fmt(VC.detail.estimateFmt, { n: voice.estimate.estimateCredits })}
+          </span>
+        ) : null}
+      </p>
+      {voice?.notice ? (
+        <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>{voice.notice}</p>
+      ) : null}
+      {d ? (
+        <>
+          {/* Build / update / cancel — the pill's one verb, priced (§9.3; never blocks anything). */}
+          <div style={{ display: "flex", gap: "10px", margin: "10px 0" }}>
+            {d.status.action === "build" || d.status.action === "update_voice" || d.status.action === "test" ? (
+              <form method="post" action={`/v/${pid}/build`} style={{ margin: 0 }}>
+                <button type="submit" data-build-voice="true" style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  {d.status.action === "build" ? VC.detail.buildCta : VC.detail.updateCta}
+                </button>
+              </form>
+            ) : null}
+            {d.persona.active_run_id ? (
+              <form method="post" action={`/v/${pid}/cancel`} style={{ margin: 0 }}>
+                <input type="hidden" name="runId" value={d.persona.active_run_id} />
+                <button type="submit" style={{ padding: "7px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "13px", cursor: "pointer" }}>
+                  {VC.detail.cancelRun}
+                </button>
+              </form>
+            ) : null}
+          </div>
+
+          {/* the seed editor — plain markdown; on save the J9 hash recomputes and the pill flips live. */}
+          <section data-seed-editor="true" style={{ marginTop: "18px", maxWidth: "68ch" }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.seedHeading}</h2>
+            {d.persona.seed_authored_by === "persona_builder" ? (
+              <p data-agent-drafted="true" style={{ fontSize: "12px", color: "var(--sev-major)", margin: "0 0 6px" }}>
+                {VC.detail.agentDraftedMark}
+              </p>
+            ) : null}
+            <form method="post" action={`/v/${pid}/seed`}>
+              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
+                {VC.detail.bylineLabel}
+                <input name="byline" defaultValue={d.persona.byline ?? ""} style={fieldStyle} />
+              </label>
+              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block", marginTop: "8px" }}>
+                {VC.detail.registersLabel}
+                <input name="registers" defaultValue={(d.persona.registers ?? []).join(", ")} style={fieldStyle} />
+              </label>
+              <textarea name="description" defaultValue={d.seedMarkdown} style={{ ...textAreaStyle, marginTop: "8px" }} />
+              <button type="submit" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
+                {VC.detail.seedSave}
+              </button>
+            </form>
+          </section>
+
+          {/* the sample list with the per-item include/omit toggle (REQ-INGEST-4) + a paste box. */}
+          <section data-samples="true" style={{ marginTop: "18px", maxWidth: "68ch" }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.samplesHeading}</h2>
+            {d.samples.length === 0 ? (
+              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.samplesEmpty}</p>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "6px" }}>
+                {d.samples.map((s) => (
+                  <li key={s.id} data-sample={s.id} style={{ display: "flex", gap: "10px", alignItems: "center", fontSize: "13px", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 10px" }}>
+                    <span style={{ flex: 1 }}>{s.title ?? s.id}</span>
+                    <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
+                      {s.word_count != null ? `${s.word_count.toLocaleString("en-US")} w` : ""}
+                    </span>
+                    <form method="post" action={`/v/${pid}/samples/${s.id}`} style={{ margin: 0 }}>
+                      <button type="submit" name="included" value={s.state === "included" ? "false" : "true"} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer" }}>
+                        {s.state === "included" ? VC.detail.omitLabel : VC.detail.includeLabel}
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <form method="post" action={`/v/${pid}/samples`} encType="multipart/form-data" style={{ marginTop: "10px" }}>
+              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
+                {VC.detail.addSampleTitleLabel}
+                <input name="title" style={fieldStyle} />
+              </label>
+              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block", marginTop: "6px" }}>
+                {VC.detail.addSampleLabel}
+                <textarea name="text" style={{ ...textAreaStyle, minHeight: "100px" }} />
+              </label>
+              <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block", marginTop: "6px" }}>
+                {VC.detail.addSampleFileLabel}
+                <input type="file" name="file" accept=".md,.txt,.html" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
+              </label>
+              <button type="submit" style={{ ...submitStyle, width: "auto", marginTop: "8px", padding: "7px 14px", fontSize: "13px" }}>
+                {VC.detail.addSampleCta}
+              </button>
+            </form>
+          </section>
+
+          {/* the run history rows (§9.5's Runs tab — build runs only). */}
+          <section data-runs="true" style={{ marginTop: "18px", maxWidth: "68ch" }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.runsHeading}</h2>
+            {d.runs.length === 0 ? (
+              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.runsEmpty}</p>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+                {d.runs.map((r) => (
+                  <li key={r.id} data-run={r.id}>
+                    {r.workflow} · {VC.detail.runStateLabel[r.state] ?? r.state} · {r.spent_credits} cr ·{" "}
+                    {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* derived profile artifacts — read-only by policy (§9.5 row 36; a write attempt 405s). */}
+          <section data-artifacts="true" style={{ marginTop: "18px", maxWidth: "68ch" }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.artifactsHeading}</h2>
+            {d.artifacts.length === 0 ? (
+              <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.artifactsEmpty}</p>
+            ) : (
+              <>
+                <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{VC.detail.artifactsNote}</p>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "13px", display: "grid", gap: "4px" }}>
+                  {d.artifacts.map((a) => (
+                    <li key={a.version_id} data-artifact-kind={a.kind}>
+                      {a.mirror_path} · {a.kind}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        </>
+      ) : null}
+    </Shell>
+  );
 }

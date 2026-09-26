@@ -6,6 +6,10 @@ import type {
   DecisionItemDto,
   EditorDocDto,
   GateCardDto,
+  ProjectVoiceDto,
+  VoiceDetailDto,
+  VoiceEstimateDto,
+  VoiceListRowDto,
   WhatChangedDto,
 } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
@@ -72,6 +76,22 @@ export interface PageData {
     readonly doc: EditorDocDto;
     /** a note POST redirected back with this set — the "Noted" marker renders. */
     readonly noteSaved?: boolean;
+  };
+  // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
+  /** the library list (GET /voices): every persona + its shared pill + sample count. */
+  readonly voices?: readonly VoiceListRowDto[];
+  /** the §9.2 creation sheet's per-request state (a validation error re-renders with the error). */
+  readonly voiceNew?: { readonly error?: string };
+  /** the voice detail page's full read + any post-action notice. */
+  readonly voice?: {
+    readonly detail: VoiceDetailDto;
+    readonly estimate?: VoiceEstimateDto;
+    readonly notice?: string;
+  };
+  /** the project's voice picker facts (the linked voice + the selectable personas; §9.6). */
+  readonly projectVoice?: {
+    readonly current: ProjectVoiceDto;
+    readonly options: readonly VoiceListRowDto[];
   };
   /** §10.1 — the phone-width input set (UA-sniffed at SSR; the same components render narrower). */
   readonly compact?: boolean;

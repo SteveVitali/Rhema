@@ -1,8 +1,16 @@
 import { Hono } from "hono";
 import { projectState } from "@rhema/orchestrator";
 import type { ProjectState, ProjectStateInput } from "@rhema/orchestrator";
+import {
+  deriveVoiceStatus,
+  type VoiceCurrentFacts,
+  type VoiceRunInProgress,
+  type VoiceSnapshotFacts,
+  type VoiceStatus,
+} from "@rhema/findings-core";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient, InviteGate } from "./invite.js";
+import { parseSampleSet, personaPhaseCount } from "./voice-status.js";
 
 // The beta project list (PRB.01; REQ-PROD-9 / REQ-SPEC-3). Each row's pill + primary action is DERIVED from
 // the §6.3 state function — the project table stores no `status` column. This module reads the project's
@@ -17,6 +25,11 @@ export interface ProjectListRow {
   readonly state: ProjectState;
   /** The highest-n draft head — the source editor's entry point (PRB.07). Null only for a draft-less row. */
   readonly headDraftId: string | null;
+  /**
+   * PRB.10 — the linked voice's chip (§9.6): the persona + the ONE shared status pill, derived at read
+   * time from the same assembler every surface uses. Null for a project with no voice linked (ad-hoc).
+   */
+  readonly voice: { readonly personaId: string; readonly name: string | null; readonly status: VoiceStatus } | null;
 }
 
 interface ProjectRowDb {
@@ -25,6 +38,7 @@ interface ProjectRowDb {
   title: string;
   accepted_draft_id: string | null;
   archived_at: string | Date | null;
+  persona_id: string | null;
 }
 interface DraftRowDb {
   project_id: string;
@@ -60,9 +74,133 @@ export function assembleProjectStateInput(args: {
  * per row-set over all the workspace's projects. Filters by `workspace_id` explicitly; the live deploy runs it
  * inside a `withTenant` transaction so RLS is the backstop.
  */
+/** PRB.10 — the voice chips for every linked persona on the list, batched (3 queries, no N+1). Each
+ *  persona's snapshot facts + current corpus + in-flight build → the ONE shared `deriveVoiceStatus`. */
+async function loadVoiceChips(
+  db: SqlClient,
+  personaIds: readonly string[],
+): Promise<Map<string, { name: string | null; status: VoiceStatus }>> {
+  const out = new Map<string, { name: string | null; status: VoiceStatus }>();
+  if (personaIds.length === 0) return out;
+
+  interface PersonaDb {
+    id: string;
+    display_name: string | null;
+    seed_sha256: string | null;
+    current_profile_id: string | null;
+  }
+  const personas = (
+    await db.query(
+      `select id, display_name, seed_sha256, current_profile_id from personas where id = any($1::text[])`,
+      [personaIds],
+    )
+  ).rows as PersonaDb[];
+  // Latest profile per persona (current_profile_id wins when set) — LATERAL keeps it one query.
+  interface ProfDb {
+    persona_id: string;
+    built_at: string | Date;
+    tier: string | null;
+    seed_sha256: string | null;
+    sample_set: unknown;
+    corpus_size_at_build: number | null;
+    calibration_status: string | null;
+  }
+  const profRes = await db.query(
+    `select p.id as persona_id, pp.* from personas p
+       join lateral (
+         select built_at, tier, seed_sha256, sample_set, corpus_size_at_build, calibration_status
+           from persona_profiles where persona_id = p.id
+          order by (id = p.current_profile_id) desc, built_at desc, id desc limit 1
+       ) pp on true
+      where p.id = any($1::text[])`,
+    [personaIds],
+  );
+  const profileByPersona = new Map<string, ProfDb>();
+  for (const r of profRes.rows as ProfDb[]) {
+    profileByPersona.set(r.persona_id, r);
+  }
+
+  // Current included corpus per persona.
+  interface ItemDb {
+    persona_id: string;
+    id: string;
+    content_sha256: string;
+    word_count: number | null;
+  }
+  const items = (
+    await db.query(
+      `select cn.persona_id, di.id, sv.content_sha256, sv.word_count
+         from connections cn
+         join discovered_items di on di.connection_id = cn.id
+         join sample_versions sv on sv.id = di.current_sample_id
+        where cn.persona_id = any($1::text[]) and di.state = 'included'`,
+      [personaIds],
+    )
+  ).rows as ItemDb[];
+  const corpusByPersona = new Map<string, { samples: Record<string, string>; words: number }>();
+  for (const it of items) {
+    const c = corpusByPersona.get(it.persona_id) ?? { samples: {}, words: 0 };
+    c.samples[it.id] = it.content_sha256;
+    c.words += it.word_count ?? 0;
+    corpusByPersona.set(it.persona_id, c);
+  }
+
+  // In-flight build/refresh runs (latest per persona wins the "Building · phase N of M" chip).
+  interface BuildDb {
+    persona_id: string;
+    tier: string | null;
+    committed: string | number;
+  }
+  const builds = (
+    await db.query(
+      `select distinct on (r.persona_id) r.persona_id, r.inputs->>'tier' as tier,
+              (select count(*) from steps s where s.run_id = r.id and s.state = 'done') as committed
+         from runs r
+        where r.persona_id = any($1::text[])
+          and r.workflow in ('profile_voice','refresh_voice','calibrate_voice')
+          and r.state = any($2::text[])
+        order by r.persona_id, r.created_at desc`,
+      [personaIds, ["created", "awaiting_consent", "queued", "provisioning", "running", "waiting_gate", "cancelling", "finalizing"]],
+    )
+  ).rows as BuildDb[];
+  const buildByPersona = new Map<string, BuildDb>(builds.map((b) => [b.persona_id, b]));
+
+  for (const persona of personas) {
+    const prof = profileByPersona.get(persona.id);
+    const snapshot: VoiceSnapshotFacts | null = prof
+      ? {
+          builtAt: prof.built_at,
+          seedSha256: prof.seed_sha256,
+          sampleSet: parseSampleSet(prof.sample_set),
+          corpusWordsAtBuild: prof.corpus_size_at_build,
+          calibrationStatus: prof.calibration_status,
+          tier: prof.tier,
+        }
+      : null;
+    const corpus = corpusByPersona.get(persona.id) ?? { samples: {}, words: 0 };
+    const current: VoiceCurrentFacts = {
+      seedSha256: persona.seed_sha256,
+      samples: corpus.samples,
+      corpusWords: corpus.words,
+    };
+    const b = buildByPersona.get(persona.id);
+    const runInProgress: VoiceRunInProgress | null = b
+      ? {
+          ordinal: Math.min(Number(b.committed) + 1, personaPhaseCount(b.tier)),
+          of: personaPhaseCount(b.tier),
+        }
+      : null;
+    out.set(persona.id, {
+      name: persona.display_name,
+      status: deriveVoiceStatus({ snapshot, current, runInProgress }),
+    });
+  }
+  return out;
+}
+
 export async function listProjectStates(db: SqlClient, principal: Principal): Promise<ProjectListRow[]> {
   const projRes = await db.query(
-    `select id, slug, title, accepted_draft_id, archived_at
+    `select id, slug, title, accepted_draft_id, archived_at, persona_id
        from projects where workspace_id = $1 order by created_at desc, id`,
     [principal.workspaceId],
   );
@@ -105,6 +243,10 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
   const byProject = <T extends { project_id: string }>(rows: readonly T[], id: string) =>
     rows.filter((r) => r.project_id === id);
 
+  // PRB.10 — the voice chips for every linked persona (one batched read, same shared status function).
+  const personaIds = [...new Set(projects.map((p) => p.persona_id).filter((x): x is string => x != null))];
+  const chips = await loadVoiceChips(db, personaIds);
+
   return projects.map((p) => {
     const acceptedVersionN =
       p.accepted_draft_id != null ? draftNById.get(p.accepted_draft_id) ?? null : null;
@@ -120,7 +262,15 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
       (best, d) => (best == null || d.n > best.n ? d : best),
       null,
     );
-    return { id: p.id, slug: p.slug, title: p.title, state: projectState(input), headDraftId: head?.id ?? null };
+    const chip = p.persona_id != null ? chips.get(p.persona_id) : undefined;
+    return {
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      state: projectState(input),
+      headDraftId: head?.id ?? null,
+      voice: chip ? { personaId: p.persona_id as string, name: chip.name, status: chip.status } : null,
+    };
   });
 }
 

@@ -18,6 +18,11 @@ export const correspondenceItems = pgTable("correspondence_items", {
   scope: jsonb("scope"),
   optedOut: text("opted_out").array().notNull().default([]),
   priorReviewId: text("prior_review_id"),
+  // PRB.10 — the voice facts stamped at delivery (REQ-PERSONA-17/20): the pinned profile snapshot +
+  // its build date the note was written against, and 'linked' | 'ad_hoc' (a no-voice piece's label).
+  personaProfileSnapshotId: text("persona_profile_snapshot_id"),
+  personaSnapshotAt: timestamp("persona_snapshot_at"),
+  voiceMode: text("voice_mode"),
 });
 
 export const claims = pgTable("claims", {
