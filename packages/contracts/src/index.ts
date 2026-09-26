@@ -35,6 +35,9 @@ export * from "./sidecars.js";
 export * from "./events.js";
 export * from "./notes.js";
 
+// notification event types, preferences, and email templates (§5.11/§10.4; REQ-IDE-47/REQ-ACCT-1; PRB.09)
+export * from "./notifications.js";
+
 // analytics event catalogue (design/9 §7.2; REQ-BETA-6…12)
 export * from "./analytics.js";
 

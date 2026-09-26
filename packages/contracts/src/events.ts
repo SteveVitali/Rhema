@@ -103,6 +103,18 @@ export const RUN_EVENTS = {
     density: "summary",
     payload: z.object({ kind: gateKindSchema, action: z.string() }),
   },
+  // PRB.09 (D-P0.10-1): a deadline reminder fired — carries the do-nothing outcome + the offset that fired
+  // (the deep link derives from the run id). ids + template-safe fields only.
+  "gate.reminder": {
+    visibility: "user",
+    density: "summary",
+    payload: z.object({
+      kind: gateKindSchema,
+      offsetMinutes: z.number().int(),
+      action: z.string(), // the do-nothing outcome (on_expiry)
+      deadlineAt: isoSchema.nullable().optional(),
+    }),
+  },
   // research (verbose, requester only) — the query is the agent's question, not our instruction
   "search.performed": {
     visibility: "user",

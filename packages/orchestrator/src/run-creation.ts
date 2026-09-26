@@ -20,6 +20,8 @@ import { applyTransition } from "./transition.js";
 import { validateModelProfile, ModelProfileRejectedError, type ModelProfile, type PhaseClass } from "./capabilities.js";
 import { computeLockSet, type LockSetSpec } from "./locks.js";
 import { openGate } from "./internal-api.js";
+import { scheduleGateNotifications } from "./notifications.js";
+import type { Queue } from "./queue.js";
 
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000; // 24-h memo (§5.6; review 13 F34)
 
@@ -73,14 +75,20 @@ export type CreateRunResult =
  * Create a run (or return the existing run for a duplicate idempotency key). Validates the model profile,
  * freezes the snapshot, places the hold, and lands the run in `queued` (sheet) or `awaiting_consent` (sheet-less).
  */
-export async function createRun(deps: CreateRunDeps, input: CreateRunInput): Promise<CreateRunResult> {
+export async function createRun(
+  deps: CreateRunDeps & { queue?: Queue },
+  input: CreateRunInput,
+): Promise<CreateRunResult> {
   // Capability validation happens before any row is written (REQ-ARCH-9; AC6).
   const validation = validateModelProfile(input.modelProfile, input.phaseClassesUsed);
   if (!validation.ok) {
     return { ok: false, reason: "model_profile_rejected", error: new ModelProfileRejectedError(validation.rejections) };
   }
 
-  return deps.txRunner.run<CreateRunResult>(input.workspaceId, async (tx): Promise<CreateRunResult> => {
+  // PRB.09 — the consent gate's spend notification is scheduled post-commit (queue sends aren't transactional).
+  const box: { consentGate: { gateId: string; deadlineAt: Date } | null } = { consentGate: null };
+
+  const result = await deps.txRunner.run<CreateRunResult>(input.workspaceId, async (tx): Promise<CreateRunResult> => {
     const now = deps.clock.now();
     const runId = deps.ids("run");
     const lockSet = computeLockSet({ workflow: input.workflow, seat: input.seat, ...input.lockSetSpec });
@@ -161,19 +169,34 @@ export async function createRun(deps: CreateRunDeps, input: CreateRunInput): Pro
 
     // Sheet-less run: land in awaiting_consent behind a confirm_cost gate (hold placed at confirm).
     await applyTransition(tx, deps, { runId, from: "created", to: "awaiting_consent" });
-    await openGate(tx, deps, {
+    const deadlineAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const gateId = await openGate(tx, deps, {
       runId,
       kind: "confirm_cost",
       blocking: true,
       onExpiry: "cancel",
       // confirm_cost expires in 7 days → cancel (§6.4); deadline computed here, expiry job owned by P0.10.
-      deadlineAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      deadlineAt,
     });
+    box.consentGate = { gateId, deadlineAt };
     return { ok: true, runId, state: "awaiting_consent", deduped: false };
   }).catch((e: unknown) => {
     if (e instanceof CreationRollback) return e.result;
     throw e;
   });
+
+  // PRB.09 — the confirm_cost spend notice + expiry reminders go out after the commit lands.
+  if (result.ok && box.consentGate && deps.queue) {
+    await scheduleGateNotifications(deps as CreateRunDeps & { queue: Queue }, {
+      gateId: box.consentGate.gateId,
+      workspaceId: input.workspaceId,
+      kind: "confirm_cost",
+      onExpiry: "cancel",
+      deadlineAt: box.consentGate.deadlineAt,
+      now: deps.clock.now(),
+    });
+  }
+  return result;
 }
 
 /** Thrown to roll back the creation transaction while still returning a typed result (dedup / insufficient). */

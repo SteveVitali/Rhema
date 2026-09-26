@@ -47,6 +47,12 @@ import {
   type RunDeliverJobPayload,
 } from "./billing-jobs.js";
 import { AnthropicAdminReportSource } from "./provider-report.js";
+import {
+  ResendMailSender,
+  handleMailSendJobPayload,
+  handleNotifyJobPayload,
+  type WorkerNotificationDeps,
+} from "./notification-jobs.js";
 import { readWorkerEnv } from "./env.js";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
@@ -194,7 +200,16 @@ export async function startWorker(): Promise<void> {
       }
     : undefined;
 
-  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerBillingDeps = {
+  // PRB.09 — the notification config (signed-action secret + link origins) and the Resend transport. Both
+  // are optional seams: a preview stage without the secrets runs the queues as no-ops and stays green.
+  const actionSecret = env.emailActionSecretName ? await access(env.emailActionSecretName) : undefined;
+  const resendKey = env.resendApiKeySecret ? await access(env.resendApiKeySecret) : undefined;
+  const notificationConfig =
+    actionSecret && env.apiPublicUrl && env.appBaseUrl
+      ? { actionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
+      : undefined;
+
+  const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerBillingDeps & WorkerNotificationDeps = {
     txRunner: new PgPoolTxRunner(pool),
     eventWriter: new SqlEventWriter(bus),
     clock,
@@ -214,6 +229,9 @@ export async function startWorker(): Promise<void> {
       recordInstrumentedFold(m.workflow, m as InstrumentedMeasurement);
     },
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
+    ...(notificationConfig ? { notifications: notificationConfig } : {}),
+    ...(resendKey && env.emailFrom ? { mailer: new ResendMailSender(resendKey, env.emailFrom) } : {}),
+    ...(env.emailFrom ? { emailFrom: env.emailFrom } : {}),
   };
 
   // The pg-boss connection BURST at startup (start + createQueue×N) can hit a transient AlloyDB connect timeout
@@ -244,6 +262,8 @@ export async function startWorker(): Promise<void> {
     LEDGER_JOBS.sweepParked,
     STRIPE_EVENT_JOB,
     USAGE_RECONCILE_JOB,
+    "notify",
+    "mail.send",
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
@@ -312,6 +332,15 @@ export async function startWorker(): Promise<void> {
     await handleRunEventsPartition({ db: systemExec, clock });
   });
   await boss.schedule(RUN_EVENT_JOBS.partition, "0 3 * * *");
+
+  // PRB.09 — the notification consumers: `notify` (domain jobs — re-read state, claim, mint links, enqueue
+  // mail) and `mail.send` (the Resend transport leg). Payloads are the NotificationJobPayload shapes.
+  await boss.work("notify", async (jobs) => {
+    for (const job of jobs) await handleNotifyJobPayload(deps, job.data as Parameters<typeof handleNotifyJobPayload>[1]);
+  });
+  await boss.work("mail.send", async (jobs) => {
+    for (const job of jobs) await handleMailSendJobPayload(deps, job.data as Parameters<typeof handleMailSendJobPayload>[1]);
+  });
 
   console.log("[worker] run-lifecycle consumers + crons registered");
 }

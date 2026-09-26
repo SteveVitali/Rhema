@@ -10,6 +10,7 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
+import { NOTIFY_QUEUE, scheduleGateReminders } from "./notifications.js";
 import { conditionalResolve, writeDecision, emitGateResolved } from "./gate-resolution.js";
 import type { RunState } from "./state-machine.js";
 import type { SqlClient } from "./tx.js";
@@ -58,7 +59,10 @@ export async function handleGateExpiry(
   args: { gateId: string; workspaceId: string },
 ): Promise<GateExpiryOutcome> {
   const now = deps.clock.now();
-  const box: { job: { name: string; payload: Record<string, unknown> } | null } = { job: null };
+  const box: { job: { name: string; payload: Record<string, unknown> } | null; autoProceeded: boolean } = {
+    job: null,
+    autoProceeded: false,
+  };
 
   const outcome = await deps.txRunner.run(args.workspaceId, async (tx): Promise<GateExpiryOutcome> => {
     const gr = (
@@ -82,6 +86,14 @@ export async function handleGateExpiry(
     // The deadline moved later (an activity extension): reschedule and do not resolve.
     if (effective.getTime() > now.getTime()) {
       await scheduleGateExpiry(deps, { gateId: args.gateId, workspaceId: args.workspaceId, deadlineAt: effective, now });
+      // PRB.09 (D-P0.10-1): re-arm the T−1 h / T−10 m reminders against the NEW deadline.
+      await scheduleGateReminders(deps, {
+        gateId: args.gateId,
+        workspaceId: args.workspaceId,
+        onExpiry: gr.on_expiry,
+        deadlineAt: effective,
+        now,
+      });
       return { action: "rescheduled", deadlineAt: effective };
     }
 
@@ -103,6 +115,7 @@ export async function handleGateExpiry(
       const nextAttempt = gr.current_attempt + 1;
       await applyTransition(tx, deps, { runId: gr.run_id, from: "waiting_gate", to: "queued", reason: "expired", fields: { currentAttempt: nextAttempt } });
       box.job = { name: RUN_JOBS.resume, payload: { runId: gr.run_id, workspaceId: args.workspaceId, attempt: nextAttempt, fromStep: "next" } };
+      box.autoProceeded = true; // PRB.09: the decision+cost email (§5.11 auto-proceed row)
       return { action: "resolved", onExpiry, state: "queued", presence: usingPresence };
     }
 
@@ -115,6 +128,14 @@ export async function handleGateExpiry(
 
   if (outcome.action === "resolved" && box.job) {
     await deps.queue.send(box.job.name, box.job.payload, { singletonKey: String(box.job.payload.runId) });
+  }
+  if (box.autoProceeded) {
+    // the "Auto-proceeded decision: email decision and cost" row — the handler re-reads gate+decision+spend.
+    await deps.queue.send(
+      NOTIFY_QUEUE,
+      { type: "auto_proceeded", gateId: args.gateId, workspaceId: args.workspaceId },
+      { singletonKey: `notify:auto:${args.gateId}` },
+    );
   }
   return outcome;
 }
@@ -179,17 +200,19 @@ export async function recordGateActivity(
 ): Promise<RecordGateActivityResult | { readonly deadlineAt: null; readonly presenceDeadlineAt: null; readonly noop: true }> {
   const now = deps.clock.now();
   let reschedule: Date | null = null;
+  let gateOnExpiry: GateOnExpiry | null = null;
 
   const out = await deps.txRunner.run(args.workspaceId, async (tx) => {
     const gr = (
       await tx.query(
-        "select on_expiry, deadline_at, presence_deadline_at, opened_at, resolved_at, held from gates where id = $1 for update",
+        "select kind, on_expiry, deadline_at, presence_deadline_at, opened_at, resolved_at, held from gates where id = $1 for update",
         [args.gateId],
       )
     ).rows[0] as
-      | { on_expiry: GateOnExpiry; deadline_at: Date | null; presence_deadline_at: Date | null; opened_at: Date; resolved_at: Date | null; held: boolean }
+      | { kind: GateKind; on_expiry: GateOnExpiry; deadline_at: Date | null; presence_deadline_at: Date | null; opened_at: Date; resolved_at: Date | null; held: boolean }
       | undefined;
     if (!gr || gr.resolved_at != null || gr.held) return { deadlineAt: null, presenceDeadlineAt: null, noop: true as const };
+    gateOnExpiry = gr.on_expiry;
 
     const autoProceed = isAutoProceed(gr.on_expiry);
 
@@ -222,6 +245,19 @@ export async function recordGateActivity(
     return { deadlineAt: extended, presenceDeadlineAt: null };
   });
 
-  if (reschedule) await scheduleGateExpiry(deps, { gateId: args.gateId, workspaceId: args.workspaceId, deadlineAt: reschedule, now });
+  if (reschedule) {
+    await scheduleGateExpiry(deps, { gateId: args.gateId, workspaceId: args.workspaceId, deadlineAt: reschedule, now });
+    // PRB.09 (D-P0.10-1): an activity/presence move re-arms the reminders too (singleton keys carry the
+    // new deadline instant; a stale fire re-reads and re-arms or no-ops).
+    if (gateOnExpiry) {
+      await scheduleGateReminders(deps, {
+        gateId: args.gateId,
+        workspaceId: args.workspaceId,
+        onExpiry: gateOnExpiry,
+        deadlineAt: reschedule,
+        now,
+      });
+    }
+  }
   return out;
 }

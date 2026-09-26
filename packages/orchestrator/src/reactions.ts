@@ -10,11 +10,13 @@ import { applyTransition } from "./transition.js";
 import { openGate, failRun, type OrchestratorDeps } from "./internal-api.js";
 import { resolveGatePolicy, type ApprovalPolicy } from "./gate-policy.js";
 import { conditionalResolve, writeDecision, emitGateResolved } from "./gate-resolution.js";
+import { scheduleGateNotifications } from "./notifications.js";
+import type { Queue } from "./queue.js";
 
 /** A phase may re-plan at most twice (§12.2 back-edges; REQ-WF-5). */
 export const MAX_REPLANS = 2;
 
-type MinDeps = { eventWriter: EventWriter; clock: Clock; txRunner: TxRunner };
+type MinDeps = { eventWriter: EventWriter; clock: Clock; txRunner: TxRunner; queue?: Queue };
 
 export interface ReplanResult {
   readonly replans: number;
@@ -89,6 +91,15 @@ export async function reopenApprovePlan(
       artifactVersionId: args.artifactVersionId,
     });
     return { gateId, autoApproved: false };
+  }).then(async (res) => {
+    // PRB.09 — a re-opened approval gate gets the same +15 min waiting notice (no deadline ⇒ no reminders).
+    if (!res.autoApproved && deps.queue) {
+      await scheduleGateNotifications(
+        { queue: deps.queue, clock: deps.clock },
+        { gateId: res.gateId, workspaceId: args.workspaceId, kind: "approve_plan", onExpiry: "proceed_conservative", deadlineAt: null, now },
+      );
+    }
+    return res;
   });
 }
 
@@ -104,7 +115,7 @@ export async function pauseRun(
   deps: MinDeps & { ids: OrchestratorDeps["ids"] },
   args: { runId: string; workspaceId: string; reason: PauseReason },
 ): Promise<{ gateId: string }> {
-  return deps.txRunner.run(args.workspaceId, async (tx) => {
+  const res = await deps.txRunner.run(args.workspaceId, async (tx) => {
     await applyTransition(tx, deps, {
       runId: args.runId,
       from: "running",
@@ -119,6 +130,15 @@ export async function pauseRun(
     });
     return { gateId };
   });
+  // PRB.09 — a paused run emails too (a refusal card is "Paused run"; the waiting notice carries the
+  // do-nothing outcome — cancel — plus the deep link).
+  if (deps.queue) {
+    await scheduleGateNotifications(
+      { queue: deps.queue, clock: deps.clock },
+      { gateId: res.gateId, workspaceId: args.workspaceId, kind: "refusal", onExpiry: "cancel", deadlineAt: null, now: deps.clock.now() },
+    );
+  }
+  return res;
 }
 
 /**
