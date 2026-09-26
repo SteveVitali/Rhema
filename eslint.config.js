@@ -30,6 +30,8 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
+      // The generated editor client bundle (PRB.07; built by apps/web/build-client.mjs, gitignored).
+      "apps/web/public/**",
       "**/node_modules/**",
       "**/.turbo/**",
       "**/*.tsbuildinfo",
@@ -104,5 +106,24 @@ export default tseslint.config(
   {
     files: ["**/*.mjs"],
     languageOptions: { sourceType: "module", globals: nodeGlobals },
+  },
+  {
+    // The web client bundle sources (PRB.07) run in the browser — DOM globals, not Node's.
+    files: ["apps/web/src/client/**/*.ts"],
+    languageOptions: {
+      globals: {
+        document: "readonly",
+        window: "readonly",
+        navigator: "readonly",
+        HTMLElement: "readonly",
+        HTMLTextAreaElement: "readonly",
+        Blob: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        fetch: "readonly",
+      },
+    },
   },
 );

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -22,6 +22,7 @@ export const importPreviewElement = <ImportPreviewPage />;
 export const runSheetElement = <RunSheetPage />;
 export const dossierElement = <DossierPage />;
 export const revisionElement = <RevisionPage />;
+export const editorElement = <EditorPage />;
 export const notFoundElement = <NotFoundPage />;
 
 export const routes: readonly AppRoute[] = [
@@ -34,6 +35,7 @@ export const routes: readonly AppRoute[] = [
   { path: "/p/:project/run", public: false, element: runSheetElement },
   { path: "/p/:project/review/:runId", public: false, element: dossierElement },
   { path: "/p/:project/revisions/:cid", public: false, element: revisionElement },
+  { path: "/p/:project/edit/:draftId", public: false, element: editorElement },
 ];
 
 /** Resolve a pathname to its route (React Router param matching). Undefined ⇒ 404. */

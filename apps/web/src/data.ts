@@ -13,6 +13,11 @@ import type {
   ApprovalOverridesDto,
   WhatChangedDto,
   HunkCommentDto,
+  EditorDocDto,
+  EditorSaveDto,
+  EditorNoteDto,
+  EditorCancelRunDto,
+  EditorReviseDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -115,6 +120,26 @@ export interface DataSource {
     hunkId: string,
     text: string,
   ): Promise<HunkCommentDto>;
+  /** PRB.07 — the editor document read (markdown + the §6.3 lock + the projected findings rail). */
+  getEditorDoc(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorDocDto>;
+  /** PRB.07 — the debounced autosave POST (no Save button — this IS the save; §5.4). */
+  saveEditorDraft(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+    markdown: string,
+  ): Promise<EditorSaveDto>;
+  /** PRB.07 — the one note field → a Guidance row (§6.3's comment path; REQ-DATA-41 beta form). */
+  postEditorNote(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+    text: string,
+  ): Promise<EditorNoteDto>;
+  /** PRB.07 — the banner's "Cancel run to edit" release (§6.3). */
+  cancelEditorRun(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorCancelRunDto>;
+  /** PRB.07 — "Revise using your edits" (REQ-DATA-26): review of vN + the v(N+1) human-revision base. */
+  reviseWithEdits(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorReviseDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -167,5 +192,15 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getWhatChanged(projectId, responseId),
     commentOnHunk: (session, projectId, responseId, hunkId, text) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).commentOnHunk(projectId, responseId, hunkId, text),
+    getEditorDoc: (session, projectId, draftId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getEditorDoc(projectId, draftId),
+    saveEditorDraft: (session, projectId, draftId, markdown) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveEditorDraft(projectId, draftId, markdown),
+    postEditorNote: (session, projectId, draftId, text) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postEditorNote(projectId, draftId, text),
+    cancelEditorRun: (session, projectId, draftId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelEditorRun(projectId, draftId),
+    reviseWithEdits: (session, projectId, draftId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).reviseWithEdits(projectId, draftId),
   };
 }

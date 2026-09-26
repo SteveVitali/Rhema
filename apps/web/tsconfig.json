@@ -30,6 +30,7 @@
   ],
   "exclude": [
     "dist",
+    "src/client",
     "**/*.test.ts",
     "**/*.test.tsx"
   ]

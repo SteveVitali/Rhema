@@ -52,3 +52,14 @@ export type { DecisionsListProps, DecisionsListLabels } from "./decisions.js";
 // (per-dimension before/after, never an aggregate — REQ-IDE-30).
 export { WhatChangedView, RubricDelta } from "./what-changed.js";
 export type { WhatChangedProps, WhatChangedLabels, RubricDeltaLabels } from "./what-changed.js";
+
+// The source editor (PRB.07; REQ-BETA-21 stopgap #1 → 1.x Source mode): the SSR region the CodeMirror
+// client bundle upgrades — lock banner, sync pill, projected-findings rail, note field, Revise action.
+export { SourceEditor, SyncPill, EditorLockBanner, EditorFindingsRail } from "./source-editor.js";
+export type {
+  SourceEditorProps,
+  SourceEditorLabels,
+  SyncPillLabels,
+  EditorLockView,
+  EditorFindingView,
+} from "./source-editor.js";

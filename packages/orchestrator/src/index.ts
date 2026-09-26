@@ -23,6 +23,7 @@ export * from "./credentials.js";
 export * from "./transition.js";
 
 export * from "./run-creation.js";
+export * from "./cancel.js";
 export * from "./run-shape.js";
 export * from "./allowlist.js";
 export * from "./provision.js";
