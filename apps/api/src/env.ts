@@ -32,6 +32,19 @@ export interface ApiEnv {
   readonly maxUsdPerRun?: number;
   /** The image path the ported skills are baked at (`runSpecConfig.skillsDir`); unset ⇒ the runspec `/app/skills`. */
   readonly skillsDir?: string;
+  /**
+   * The Stripe webhook signing-secret VERSION name (`projects/…/secrets/…/versions/latest`) — the api loads
+   * the `whsec_…` value from Secret Manager at boot like the run-token keys (never a plaintext env var; the
+   * secret is api-only). Unset ⇒ the `/stripe/webhook` route is not mounted (PRB.08; §14.6).
+   */
+  readonly stripeWebhookSecretName?: string;
+  /**
+   * The beta's ONE real-money surface: the Stripe Payment Link the exhaustion panel links out to (deploy
+   * config — a URL, not a secret). Unset ⇒ the panel renders no add-credits action.
+   */
+  readonly stripePaymentLinkUrl?: string;
+  /** The final-month beta-plan offer's link (copy + link only — no subscription machinery; REQ-BETA-14). */
+  readonly betaPlanOfferUrl?: string;
 }
 
 function required(name: string): string {
@@ -63,6 +76,13 @@ export function readApiEnv(): ApiEnv {
     // the harness run-spec sizing knobs (residue 2): the deploy sets these; unset ⇒ the runspec defaults.
     ...(maxUsdPerRun !== undefined ? { maxUsdPerRun } : {}),
     ...(process.env.SKILLS_DIR ? { skillsDir: process.env.SKILLS_DIR } : {}),
+    // PRB.08 billing: the webhook secret is a secret-NAME (loaded via Secret Manager at boot); the Payment
+    // Link + plan-offer URLs are plain deploy config.
+    ...(process.env.STRIPE_WEBHOOK_SECRET_NAME
+      ? { stripeWebhookSecretName: process.env.STRIPE_WEBHOOK_SECRET_NAME }
+      : {}),
+    ...(process.env.STRIPE_PAYMENT_LINK_URL ? { stripePaymentLinkUrl: process.env.STRIPE_PAYMENT_LINK_URL } : {}),
+    ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

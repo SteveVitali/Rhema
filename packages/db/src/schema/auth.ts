@@ -10,6 +10,9 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  // PRB.08 (0020; REQ-PROD-15): "Exclude my usage from product analytics" — recordAnalyticsEvent honors it;
+  // the §14.7 settings toggle that flips it lands with the account settings surface.
+  analyticsOptOut: boolean("analytics_opt_out").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

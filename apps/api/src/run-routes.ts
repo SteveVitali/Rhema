@@ -250,6 +250,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       return c.json({ runId: res.runId, state: res.state, deduped: res.deduped }, res.deduped ? 200 : 201);
     }
     if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
+    // REQ-SPEC-24.7 (PRB.08): a chargeback-suspended account takes no new runs — 403, never a silent queue.
+    if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403);
     return c.json({ error: res.reason, detail: res.error.message }, 422);
   });
 
@@ -274,6 +276,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     });
     if (!res.ok) {
       if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
+      if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403); // REQ-SPEC-24.7
       return c.json({ error: res.reason }, 404);
     }
     if (!res.resolved) return c.json({ resolved: false, reason: res.reason }, 409);

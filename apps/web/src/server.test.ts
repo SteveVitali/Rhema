@@ -100,6 +100,8 @@ function makeDeps(over: Partial<WebDeps> = {}, checkInvite?: DataSource["checkIn
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
       getDossier: async () => DOSSIER,
+      getBillingBalance: async () => ({ spendableCredits: 200_000, suspended: false, clawbackDebt: 0 }),
+      recordExhaustedPrompt: async () => undefined,
     },
     session: () => null,
     ...over,

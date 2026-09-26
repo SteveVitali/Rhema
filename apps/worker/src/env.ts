@@ -38,6 +38,14 @@ export interface WorkerEnv {
   readonly gkeCaData?: string;
   /** default plan concurrency (the real per-account lookup is the subscription tier — PRB.8/P1.16). */
   readonly defaultConcurrency: number;
+  /**
+   * PRB.08 — the provider admin key's secret-version NAME (Secret Manager) for the nightly `usage.reconcile`
+   * Usage & Cost report fetch. Unset ⇒ the reconcile leg skips the report pull (the balance assertion still
+   * runs) — a preview deploy without the admin key stays green.
+   */
+  readonly anthropicAdminKeySecret?: string;
+  /** PRB.08 — the ops alert sink for >2% usage drift / a balance divergence (a webhook URL; console when unset). */
+  readonly opsAlertWebhookUrl?: string;
 }
 
 function required(name: string): string {
@@ -66,6 +74,10 @@ export function readWorkerEnv(): WorkerEnv {
     ...(process.env.SYSTEM_DATABASE_URL ? { systemDatabaseUrl: process.env.SYSTEM_DATABASE_URL } : {}),
     ...(process.env.GKE_ENDPOINT ? { gkeEndpoint: process.env.GKE_ENDPOINT } : {}),
     ...(process.env.GKE_CA_DATA ? { gkeCaData: process.env.GKE_CA_DATA } : {}),
+    ...(process.env.ANTHROPIC_ADMIN_KEY_SECRET
+      ? { anthropicAdminKeySecret: process.env.ANTHROPIC_ADMIN_KEY_SECRET }
+      : {}),
+    ...(process.env.OPS_ALERT_WEBHOOK_URL ? { opsAlertWebhookUrl: process.env.OPS_ALERT_WEBHOOK_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

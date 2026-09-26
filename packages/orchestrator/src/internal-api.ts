@@ -788,6 +788,13 @@ export async function failRun(
         credits: args.refundCredits,
         idempotencyKey: `refund:${args.runId}`,
       });
+      // PRB.08: the run row surfaces "refunded N credits; partial results kept" — emit the whitelisted fact.
+      await deps.eventWriter.append(tx, {
+        runId: args.runId,
+        type: "cost.refunded",
+        payload: { credits: args.refundCredits, reason: args.failure.code },
+        at: deps.clock.now(),
+      });
     }
     if (args.holdLedgerId) {
       await deps.ledger.release(tx, {

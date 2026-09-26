@@ -86,6 +86,15 @@ export interface RunSheetView {
   readonly idempotencyKey: string;
   /** compact per-rigor recompute payload for the no-bundle inline enhancement (§5.6 item 2). */
   readonly recompute: RecomputePayload;
+  /** PRB.08 — the beta Stripe Payment Link the exhaustion panel links to (§14.6; the beta's ONE real-money
+   *  channel). Set only when the deploy configured one AND the account is not suspended. */
+  readonly paymentLinkUrl?: string;
+  /** PRB.08 — the account is suspended (a chargeback): the sheet still renders but the Run button is off and
+   *  the suspended notice shows (REQ-SPEC-24.7). */
+  readonly suspended?: boolean;
+  /** PRB.08 — the final-month beta-plan offer's link (copy + link only — no subscription machinery). Set only
+   *  when the deploy configured it (the final-month window is an ops decision, not code). */
+  readonly planOfferUrl?: string;
 }
 
 /** The data the inline progressive-enhancement script uses to recompute the estimate box on a Rigor change
@@ -117,6 +126,12 @@ export interface BuildRunSheetViewArgs {
   /** the idempotency key minted at sheet open; the caller supplies it so it is stable for the Run click. */
   readonly idempotencyKey: string;
   readonly insufficientMode?: "full" | "beta";
+  /** PRB.08 — the Stripe Payment Link for the exhaustion panel's add-credits action (§14.6). */
+  readonly paymentLinkUrl?: string;
+  /** PRB.08 — the billing account is suspended (chargeback); the sheet renders read-only. */
+  readonly suspended?: boolean;
+  /** PRB.08 — the final-month beta-plan offer link (copy + link only). */
+  readonly planOfferUrl?: string;
 }
 
 /** The "Why this estimate?" breakdown ("21 claims × 24 cr ≈ 500 · 5,180 words ≈ 60"). Approximate by design. */
@@ -229,6 +244,9 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ...(args.scopeLine ? { scopeLine: args.scopeLine } : {}),
     leverMatrix,
     idempotencyKey: args.idempotencyKey,
+    ...(args.paymentLinkUrl && !args.suspended ? { paymentLinkUrl: args.paymentLinkUrl } : {}),
+    ...(args.suspended ? { suspended: true } : {}),
+    ...(args.planOfferUrl ? { planOfferUrl: args.planOfferUrl } : {}),
     recompute: {
       spendableCredits: args.spendableCredits,
       dontAskUnder: args.dontAskUnder ?? 0,

@@ -15,7 +15,7 @@ import {
   randomUlids,
   RUN_JOBS,
 } from "@rhema/orchestrator";
-import { SqlHoldLedger, circuitBreakerState } from "@rhema/ledger";
+import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB } from "@rhema/ledger";
 import { createGcsContentStore } from "@rhema/mirror";
 import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
 import {
@@ -26,7 +26,7 @@ import {
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
 } from "@rhema/live-clients";
-import { createApp, type ApiDeps } from "./index.js";
+import { createApp, type ApiDeps, type BetaApiDeps } from "./index.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
 import type { Principal } from "./run-routes.js";
 
@@ -68,6 +68,11 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     publicKeyName: env.runTokenPublicKeySecret,
     ...(env.runTokenKeyId ? { keyId: env.runTokenKeyId } : {}),
   });
+  // PRB.08: the Stripe webhook signing secret lives in Secret Manager like the run-token keys — the api loads
+  // it at boot; it never appears as a plaintext env var. Unset ⇒ the webhook route 404s (beta off).
+  const stripeWebhookSecret = env.stripeWebhookSecretName
+    ? await access(env.stripeWebhookSecretName)
+    : undefined;
 
   const bus = new RedisRunEventBus(redis, subscriber);
   // The platform-wide circuit-breaker read (credit_ledger across accounts) must NOT run on the user-facing
@@ -81,8 +86,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
       }
     : null;
-  const deps: ApiDeps = {
-    txRunner: new PgPoolTxRunner(pool),
+  const txRunner = new PgPoolTxRunner(pool);
+  const deps: ApiDeps & BetaApiDeps = {
+    txRunner,
     eventWriter: new SqlEventWriter(bus), // post-commit user-event fan-out over Redis
     clock,
     ids,
@@ -100,6 +106,48 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // a per-run workspace-bound store for delivery reads (a run is single-tenant; D-P0.09-1).
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
     ...(systemExec ? { circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })) } : {}),
+    // PRB.08 billing: the system-scoped exec for the `stripe_events` intake (a system table — the restricted
+    // user pool must not own it), the webhook secret, and the beta Payment Link.
+    ...(systemExec ? { systemExec } : {}),
+    ...(stripeWebhookSecret ? { stripeWebhookSecret } : {}),
+    ...(env.stripePaymentLinkUrl ? { paymentLinkUrl: env.stripePaymentLinkUrl } : {}),
+    // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
+    // telemetry emitters to the same validated + opt-out-honoring writer the billing telemetry uses.
+    // finding.disposed (D-PRB.05-1 leg b) + run.estimated (D-PRB.03-1's emit leg). A telemetry write is
+    // fire-and-forget after the response work — a failure is logged, never fatal to the request.
+    emitDisposed: (e) => {
+      void txRunner
+        .run(e.workspaceId, (tx) =>
+          recordAnalyticsEvent(tx, { ids, clock }, {
+            userId: e.userId,
+            workspaceId: e.workspaceId,
+            projectId: e.projectId,
+            event: "finding.disposed",
+            props: {
+              disposition: e.disposition,
+              ...(e.reason_code !== undefined ? { reason_code: e.reason_code } : {}),
+            },
+          }),
+        )
+        .catch((err: unknown) =>
+          console.error("[api] finding.disposed analytics failed:", err instanceof Error ? err.message : err),
+        );
+    },
+    emitEstimated: (ctx, event) => {
+      void txRunner
+        .run(ctx.principal.workspaceId, (tx) =>
+          recordAnalyticsEvent(tx, { ids, clock }, {
+            userId: ctx.principal.userId,
+            workspaceId: ctx.principal.workspaceId,
+            projectId: ctx.projectId,
+            event: "run.estimated",
+            props: { ...event },
+          }),
+        )
+        .catch((err: unknown) =>
+          console.error("[api] run.estimated analytics failed:", err instanceof Error ? err.message : err),
+        );
+    },
     // the harness run-spec sizing config (residue 2 / D-P0.15c-6): the per-run USD ceiling the per-phase SDK
     // budget brake is taken against, and the skills image path. Unset ⇒ the runspec defaults ($10, /app/skills);
     // the outer `capCredits` hold is the hard ceiling regardless.
@@ -141,7 +189,9 @@ export async function startApiServer(): Promise<void> {
     throw lastErr;
   };
   await retryStartup("boss.start", () => boss.start());
-  for (const name of Object.values(RUN_JOBS)) await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
+  for (const name of [...Object.values(RUN_JOBS), STRIPE_EVENT_JOB]) {
+    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
+  }
 
   const app = createApp(deps);
   const server = serve({ fetch: app.fetch, port: env.port }) as unknown as {

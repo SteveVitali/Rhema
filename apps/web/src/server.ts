@@ -44,6 +44,8 @@ export interface WebDeps {
   beginAuth?(method: string, args: { code: string; email?: string }): Promise<AuthOutcome>;
   /** End the session (clears the cookie). Default: no-op. */
   endSession?(c: Context): Promise<void>;
+  /** PRB.08 — the final-month beta-plan offer's link (copy + link only; unset ⇒ no offer line renders). */
+  readonly betaPlanOfferUrl?: string;
 }
 
 function loginErrorFor(reason: string | undefined): string {
@@ -267,7 +269,14 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const view = buildSheet(c.req.query());
+    // PRB.08 — the REAL balance: spendable credits, suspension, and the beta Payment Link for the panel.
+    const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+    const view = buildSheet(c.req.query(), billing, deps.betaPlanOfferUrl);
+    // REQ-BETA-12 — the exhaustion prompt showing IS the telemetry event (action_taken:"shown"); the panel's
+    // Payment-Link click records "open_payment_link" via /p/:slug/exhausted.
+    if (view.insufficient) {
+      await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
+    }
     // PRB.05 / REQ-IDE-28: the Revise sheet shows "you pre-triaged N of M" (the user's rows are
     // highest-precedence guidance for the run). A failed read never blocks the sheet.
     let pretriage: { triaged: number; total: number } | undefined;
@@ -302,7 +311,8 @@ export function createWebApp(deps: WebDeps): Hono {
     const modelTier = normalizeTier("", workflow, rigor);
     const words = Number(str("words")) || 0;
     const claims = Number(str("claims")) || undefined;
-    const view = buildSheet({ workflow, rigor });
+    const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+    const view = buildSheet({ workflow, rigor }, billing, deps.betaPlanOfferUrl);
     try {
       await deps.dataSource.createRun(session, row.id, {
         idempotencyKey: str("idempotencyKey") || randomUUID(),
@@ -321,12 +331,40 @@ export function createWebApp(deps: WebDeps): Hono {
       // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
       // no run created. Any other api error is a real failure and propagates.
       if (e instanceof ApiError && e.status === 402) {
+        // the panel is showing again (the Run click hit the balance wall) — count the impression.
+        await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
         return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient } }));
+      }
+      // REQ-SPEC-24.7: a suspension can land between the sheet render and the Run click — the api 403s
+      // (account_suspended); re-render the sheet, which now reads the suspended balance and shows the notice.
+      if (e instanceof ApiError && e.status === 403) {
+        const fresh = buildSheet({ workflow, rigor }, await deps.dataSource.getBillingBalance(session).catch(() => undefined), deps.betaPlanOfferUrl);
+        return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view: fresh, notice: COPY.runSheet.suspended } }), 403);
       }
       throw e;
     }
     // Re-render the sheet with the run-started confirmation (the run card lives on the project view — P1.01).
     return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, started: true } }));
+  });
+
+  // PRB.08 — the exhaustion panel's Payment-Link action (§14.6; the beta's ONE real-money channel). A plain
+  // form POST (no JS needed): record `credits.exhausted_prompt{action_taken}` (REQ-BETA-12), then 302 to the
+  // Payment Link for `open_payment_link`. The link URL comes from the api's balance read (deploy config) —
+  // never a form field, so this route is no open redirect.
+  app.post("/p/:project/exhausted", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const action = typeof form.action_taken === "string" && form.action_taken !== "" ? form.action_taken : "unknown";
+    await deps.dataSource.recordExhaustedPrompt(session, action).catch(() => undefined);
+    if (action === "open_payment_link") {
+      const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+      if (billing?.paymentLinkUrl) return c.redirect(billing.paymentLinkUrl);
+    }
+    return c.redirect(`/p/${slug}/run`);
   });
 
   // Auth-gated: the delivered-review dossier reading surface (PRB.04, §5.5/§5.7/§6.6). The findings-core read
@@ -603,8 +641,14 @@ function normalizeTier(v: string, workflow: WorkflowKey, rigor: Rigor): ModelTie
 }
 
 /** Build the RunSheetView from the query (beta launcher). Word count is query-driven; the live per-draft
- *  metadata binding is the deploy leg (like the import pipeline). Balance = beta house credits (REQ-BETA-14). */
-function buildSheet(query: Record<string, string>) {
+ *  metadata binding is the deploy leg (like the import pipeline). PRB.08: the spendable balance is the
+ *  account's REAL ledger balance when the billing read resolves — the flat beta house-credit figure is only
+ *  the degraded fallback (an api outage must not block the sheet). */
+function buildSheet(
+  query: Record<string, string>,
+  billing?: { spendableCredits: number; suspended: boolean; paymentLinkUrl?: string },
+  planOfferUrl?: string,
+) {
   const workflow = normalizeWorkflow(query.workflow ?? "review");
   const rigor = normalizeRigor(query.rigor ?? "standard");
   // §6.5: model tier follows rigor in the beta (no tier selector) — always the rigor's default.
@@ -627,9 +671,12 @@ function buildSheet(query: Record<string, string>) {
       ...(query.venue ? { venue: query.venue } : {}),
       ...(query.stage ? { stage: query.stage } : {}),
     },
-    spendableCredits: BETA_HOUSE_CREDITS,
+    spendableCredits: billing?.spendableCredits ?? BETA_HOUSE_CREDITS,
     idempotencyKey: randomUUID(),
     insufficientMode: "beta",
+    ...(billing?.paymentLinkUrl ? { paymentLinkUrl: billing.paymentLinkUrl } : {}),
+    ...(billing?.suspended ? { suspended: true } : {}),
+    ...(planOfferUrl ? { planOfferUrl } : {}),
   });
 }
 

@@ -77,6 +77,20 @@ describe("meterResponse → usage_records{proxy} row (§12.7)", () => {
     expect(row.searches).toBe(10);
   });
 
+  it("carries the provider request id (the usage.reconcile join key, REQ-BILL-13), defaulting to null", () => {
+    const { row } = meterResponse({
+      ctx: ctx(),
+      usage: { ...EMPTY_METERED_USAGE, inputTokens: 1000 },
+      model: "claude-opus-5",
+      agentId: "editor",
+      id: "0000000000000000000000000C",
+      providerRequestId: "req_0123abc",
+    });
+    expect(row.providerRequestId).toBe("req_0123abc");
+    const without = meterResponse({ ctx: ctx(), usage: EMPTY_METERED_USAGE, model: "claude-opus-5", agentId: "e", id: "0000000000000000000000000D" });
+    expect(without.row.providerRequestId).toBeNull();
+  });
+
   it("throws rather than metering an unknown model silently", () => {
     expect(() =>
       meterResponse({ ctx: ctx(), usage: EMPTY_METERED_USAGE, model: "gpt-4", agentId: "e", id: "x" }),

@@ -52,6 +52,7 @@ const USAGE_COLUMNS = [
   "list_cost_usd",
   "credits",
   "source",
+  "provider_request_id",
 ] as const;
 
 export class SqlUsageWriter implements UsageWriter {
@@ -85,6 +86,7 @@ export class SqlUsageWriter implements UsageWriter {
       row.listCostUsd,
       row.credits,
       row.source,
+      row.providerRequestId,
     ];
     const placeholders = USAGE_COLUMNS.map((_, i) => `$${i + 1}`).join(", ");
     await this.db.query(

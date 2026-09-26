@@ -9,7 +9,7 @@ import { balanceEffect, type LedgerKind } from "./balance-effect.js";
 import type { HoldBucket } from "./buckets.js";
 
 /** Where a ledger entry's `source` came from (the audit provenance, not the meter). */
-export type LedgerSource = "run" | "hold" | "system" | "reconcile" | "stripe";
+export type LedgerSource = "run" | "hold" | "system" | "reconcile" | "stripe" | "admin";
 
 export interface LedgerEntryInput {
   readonly workspaceId: string;
@@ -23,6 +23,8 @@ export interface LedgerEntryInput {
   readonly source: LedgerSource;
   readonly reason?: string;
   readonly expiresAt?: Date | null;
+  /** The Stripe object id the entry came from (a checkout session / dispute) — `credit_ledger.stripe_ref`. */
+  readonly stripeRef?: string;
   /** Unique per logical write; a repeat is a no-op that returns the first id (REQ-DATA-34). */
   readonly idempotencyKey: string;
 }
@@ -52,8 +54,8 @@ export async function applyLedgerEntry(
   const at = deps.clock.now();
   const inserted = await tx.query(
     `insert into credit_ledger
-       (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, phase_id, source, reason, expires_at, idempotency_key, at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, phase_id, source, reason, expires_at, stripe_ref, idempotency_key, at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      on conflict (idempotency_key) do nothing
      returning id`,
     [
@@ -68,6 +70,7 @@ export async function applyLedgerEntry(
       entry.source,
       entry.reason ?? null,
       entry.expiresAt ?? null,
+      entry.stripeRef ?? null,
       entry.idempotencyKey,
       at,
     ],
@@ -125,6 +128,7 @@ export async function grant(
     source: args.source ?? "system",
     reason: args.reason,
     expiresAt: args.expiresAt ?? null,
+    ...(args.stripeRef !== undefined ? { stripeRef: args.stripeRef } : {}),
     idempotencyKey: args.idempotencyKey,
   });
 }

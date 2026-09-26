@@ -37,6 +37,9 @@ export interface UsageRecordRow {
   readonly listCostUsd: number;
   readonly credits: number;
   readonly source: "proxy";
+  /** The provider's per-request id (the `request-id` response header) — the nightly `usage.reconcile` job's
+   *  join key against the provider's Usage & Cost report (PRB.08; REQ-BILL-13). */
+  readonly providerRequestId: string | null;
 }
 
 export interface MeteredResult {
@@ -59,6 +62,7 @@ export function meterResponse(input: {
   id: string;
   ts?: string;
   stepId?: string;
+  providerRequestId?: string | null;
 }): MeteredResult {
   const { ctx, usage, model, agentId } = input;
   const table = rateTableFor(ctx.rateTableVersion);
@@ -92,6 +96,7 @@ export function meterResponse(input: {
     // Per-row convenience only; the authoritative per-run debit rounds ONCE over Σ list cost (P0.11 / §14.1).
     credits: Math.round(credits),
     source: "proxy",
+    providerRequestId: input.providerRequestId ?? null,
   };
   return { row, platformCredits: credits, listCostUsd: listUsd };
 }

@@ -43,6 +43,10 @@ export const runs = pgTable("runs", {
   startedAt: timestamp("started_at"),
   endedAt: timestamp("ended_at"),
   parkedUntil: timestamp("parked_until"),
+  // PRB.08 chargeback withhold (0020; REQ-SPEC-24.7): a finalizing run whose account is suspended keeps its
+  // stashed deliver payload until the balance is non-negative (the run.deliver job re-drives it).
+  deliveryWithheldAt: timestamp("delivery_withheld_at"),
+  pendingDelivery: jsonb("pending_delivery"),
 });
 
 export const steps = pgTable("steps", {

@@ -49,8 +49,12 @@ import type { RunApiDeps } from "./run-routes.js";
 export type TriageApiDeps = RunApiDeps & {
   /** the raw SQL client for project-scoped reads (the shell's `db`). */
   db: { query(sql: string, params?: unknown[]): Promise<{ rows: unknown[] }> };
-  /** emits `finding.disposed` analytics (REQ-BETA-6) — optional; the live deploy binds the telemetry sink. */
+  /** emits `finding.disposed` analytics (REQ-BETA-6) — optional; the live deploy binds the telemetry sink
+   *  (`recordAnalyticsEvent`, PRB.08). Carries the envelope ids the analytics writer needs. */
   emitDisposed?: (e: {
+    userId: string;
+    workspaceId: string;
+    projectId: string;
     findingId: string;
     disposition: DispositionKind;
     reason_code?: ReasonCode;
@@ -309,6 +313,9 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
         };
       });
       deps.emitDisposed?.({
+        userId: principal.userId,
+        workspaceId: finding.workspace_id,
+        projectId,
         findingId,
         disposition: v.normalized.kind,
         ...(body.reasonCode != null ? { reason_code: body.reasonCode as ReasonCode } : {}),
@@ -506,6 +513,7 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
     });
     if (!res.ok) {
       if (res.reason === "insufficient_balance") return c.json({ error: res.reason }, 402);
+      if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403); // REQ-SPEC-24.7
       return c.json({ error: res.reason }, 404);
     }
     if (!res.resolved) return c.json({ resolved: false, reason: res.reason }, 409);

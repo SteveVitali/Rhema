@@ -15,6 +15,8 @@ export function startWebServer(): void {
   const port = Number(process.env.PORT ?? 8080);
   const app = createWebApp({
     dataSource: apiDataSource(apiBaseUrl),
+    // PRB.08 — the final-month beta-plan offer (copy + a link only; set by the deploy when the window opens).
+    ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
     session(c) {
       const forwarded: Record<string, string> = {};
       for (const h of IDENTITY_HEADERS) {

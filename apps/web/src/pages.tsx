@@ -365,6 +365,9 @@ const runSheetLabels: RunSheetLabels = {
     repair_research: COPY.runSheet.repairResearchToggle,
     gap_check: COPY.runSheet.gapCheckToggle,
   },
+  buyCreditsLabel: COPY.runSheet.buyCredits,
+  suspendedNotice: COPY.runSheet.suspended,
+  planOffer: { text: COPY.runSheet.planOffer, linkLabel: COPY.runSheet.planOfferLink },
 };
 
 /** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
@@ -395,6 +398,7 @@ export function RunSheetPage(): ReactNode {
           view={runSheet.view}
           labels={{ ...runSheetLabels, runLabel: runLabelFor[runSheet.view.workflow] ?? COPY.runSheet.runReview }}
           runAction={`/p/${slug}/run`}
+          exhaustedAction={`/p/${slug}/exhausted`}
         />
       ) : null}
     </Shell>
@@ -412,6 +416,7 @@ const runCardLabels: RunCardLabels = {
   etaLabel: (lo, hi) => `~${lo}–${hi} min`,
   offLabel: R.offLabel,
   counterLabel: (_key, value, of) => (of != null ? `${value} / ${of}` : String(value)),
+  refundLabel: (credits) => fmt(R.refundFmt, { n: credits }),
 };
 
 const letterLabels: LetterViewLabels = {

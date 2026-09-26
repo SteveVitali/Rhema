@@ -23,7 +23,7 @@ import type {
   RefundArgs,
   LedgerEntryRef,
 } from "@rhema/orchestrator";
-import { InsufficientBalanceError } from "@rhema/orchestrator";
+import { InsufficientBalanceError, AccountSuspendedError } from "@rhema/orchestrator";
 import { ALL_BUCKETS, CONSUMPTION_ORDER, drawFromBuckets, type HoldBucket } from "./buckets.js";
 import { applyLedgerEntry, type EntryDeps } from "./entries.js";
 
@@ -40,6 +40,10 @@ export class EntitlementUnavailableError extends Error {
     this.name = "EntitlementUnavailableError";
   }
 }
+
+// The canonical class lives in @rhema/orchestrator (the orchestrator's creation/consent paths must catch it
+// without a ledger import); re-exported here so @rhema/ledger callers keep one import site.
+export { AccountSuspendedError } from "@rhema/orchestrator";
 
 export class SqlHoldLedger implements HoldLedger {
   constructor(private readonly deps: EntryDeps) {}
@@ -63,15 +67,22 @@ export class SqlHoldLedger implements HoldLedger {
     // Row-lock the billing account (REQ-SPEC-24.2; §12.4 step 2) BEFORE the idempotency check, so a concurrent
     // redelivery serializes here and re-checks under the lock — never re-reading a balance the winner reduced
     // and spuriously failing a hold that already succeeded.
-    await tx.query("select id from billing_accounts where id = $1 for update", [args.billingAccountId]);
+    const account = (
+      await tx.query("select suspended_at from billing_accounts where id = $1 for update", [args.billingAccountId])
+    ).rows[0] as { suspended_at: string | null } | undefined;
     const prior = await this.opRows(tx, args.idempotencyKey, false);
     if (prior.length > 0) {
       // Deterministic primary bucket on replay: the first-drawn bucket in consumption order (not row order).
+      // Idempotency outranks suspension: replaying a hold that already succeeded is not a NEW hold — a
+      // redelivered run.start must not spuriously fail just because a chargeback landed in the gap.
       const first = prior
         .slice()
         .sort((a, b) => CONSUMPTION_ORDER.indexOf(a.bucket as HoldBucket) - CONSUMPTION_ORDER.indexOf(b.bucket as HoldBucket))[0]!;
       return { ledgerId: first.id, bucket: first.bucket as HoldBucket };
     }
+    // A chargeback-suspended account takes no NEW holds (REQ-SPEC-24.7) — running phases still debit their
+    // held reservation (already-incurred COGS); new spend is the thing suspended.
+    if (account?.suspended_at) throw new AccountSuspendedError(args.billingAccountId);
     const available = await this.availableByBucket(tx, args.billingAccountId);
     const draw = drawFromBuckets(available, args.credits);
     if (draw.shortfall > 0) throw new InsufficientBalanceError(args.credits);
