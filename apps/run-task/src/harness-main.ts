@@ -197,11 +197,68 @@ async function postAudit(args: {
     const roots = resolveSeatRoots({ roots: spec.hookPolicyInput.roots, personaId: spec.hookPolicyInput.personaId });
     await materializeWork({ roots, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
 
-    // The agent runs (and the SDK CLI is spawned) in `request.cwd` = `roots.project` (`/work/project`): the
-    // project files now live there, the agent writes its outputs + `.rhema/agent-result.json` there, and the
-    // loop harvests from the same dir. It MUST exist or `spawn` fails ENOENT (the D-P0.15e-2 symptom).
     const cwd = spec.request.cwd;
     await mkdir(cwd, { recursive: true });
+
+    // DEF.1 / D-P0.15h-5 — an input-scoped producer phase (today: the review `second_read`): the server
+    // minted + recorded the launch (`subagent_launches`); the phase IS the scoped query — a private mount
+    // namespace holding `launch.files` only, `tools:["Read"]`, a distinct uid, no seat agent at all. The
+    // harness persists the query's text answer as the phase artifact and stamps the producer marker, so
+    // `second_read_producer_checked` can only pass against an executed launch order (never a model claim).
+    if (spec.scopedLaunch) {
+      const { runScopedPhase } = await import("./scoped-phase.js");
+      const { spawn: spawnSync } = await import("node:child_process");
+      // report the scoped launch on the §12.5 stream (user-visible; the `subagent_launches` attestation
+      // row is recorded server-side when the runspec is built — the harness only emits the event pair).
+      const transport: EventTransport = createFetchEventTransport({ baseUrl: apiBaseUrl, runId, runToken });
+      const events = new EventBufferClient(transport, new FileBufferStore(`${configDir}/events.spool`));
+      await events
+        .enqueue({ type: "subagent.started", payload: { label: spec.scopedLaunch.role, inputs: "explicit_files", fileCount: spec.scopedLaunch.files.length, model: spec.scopedLaunch.model }, agentLabel: spec.scopedLaunch.role })
+        .catch(() => undefined);
+      await events.flush().catch(() => undefined);
+
+      await runScopedPhase(
+        spec,
+        {
+          launch: spec.scopedLaunch,
+          projectDir: cwd,
+          configDir,
+          proxyBaseUrl: agentProxyBaseUrl,
+          runId,
+          agentUid,
+        },
+        {
+          log: console.log,
+          mkdir: (p) => mkdir(p, { recursive: true }).then(() => undefined),
+          writeFile: (p, d) => writeFile(p, d),
+          spawnCollect: (argv, env) =>
+            new Promise((resolve, reject) => {
+              const child = spawnSync(argv[0]!, argv.slice(1), { env });
+              let stdout = "";
+              let stderr = "";
+              child.stdout?.on("data", (c: Buffer) => (stdout += c.toString("utf8")));
+              child.stderr?.on("data", (c: Buffer) => (stderr += c.toString("utf8")));
+              child.on("error", reject);
+              child.on("exit", (code) => resolve({ code: code ?? 1, stdout, stderr }));
+            }),
+        },
+      );
+      await events
+        .enqueue({ type: "subagent.finished", payload: { label: spec.scopedLaunch.role, fileCount: spec.scopedLaunch.files.length }, agentLabel: spec.scopedLaunch.role })
+        .catch(() => undefined);
+      await events.flush().catch(() => undefined);
+
+      const files = await readWorkRoots(cwd, roots.persona);
+      const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+      console.log(`[harness] phase ${spec.request.phase.key} /work files: ${[...files.keys()].sort().join(", ") || "(none)"}`);
+      console.log(`[harness] phase ${spec.request.phase.key} outputs: subtype=${outputs.subtype} versions=${outputs.versions.length} facts=${JSON.stringify(outputs.facts)} phaseResult=${JSON.stringify(outputs.phaseResult)}`);
+      return outputs;
+    }
+
+    // The agent runs (and the SDK CLI is spawned) in `request.cwd` = `roots.project` (`/work/project`): the
+    // project files now live there, the agent writes its outputs + `.rhema/agent-result.json` there, and the
+    // loop harvests from the same dir. It MUST exist or `spawn` fails ENOENT (the D-P0.15e-2 symptom). `cwd`
+    // was mkdir'd above (the scoped-launch branch uses it too).
     // The agent (uid `agent`, 10002) runs in `cwd` and must create its OUTPUT tree there — `.rhema/agent-result.json`
     // + `.rhema/phase-result.json` + the seat's writable namespaces (`agents/<seat>/**`). `cwd` and its parents were
     // created by the harness (uid `harness`, 10001) during materialize, so they are harness-owned and the agent

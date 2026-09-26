@@ -426,8 +426,11 @@ export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
     '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?}]} — the array field is "claims"; the "note" carries the drafting instruction (use as-is / rescoped / with attribution / do not use).',
   "rubric.json":
     '{"sidecar":"rubric","version":1,"dimensions":[{"dimension","score":<1-5>,"cap"?{"at":<1-4>,"reason","entailedByFindingOrdinal"?}}],"swaps"?[{from,to}]} — the array field is "dimensions"; NEVER an aggregate score.',
+  // DEF.1 (F3, STB.3 live): a forward plan (new writing) must OMIT "anchor" — there is no source text to
+  // anchor to. An "anchor" is allowed ONLY when the plan reverse-outlines an existing draft, and then it is
+  // the §11.3 Anchor verbatim — a bare string or a {kind,detail}/{source,location} object fails validation.
   "structure-plan.json":
-    '{"sidecar":"structure_plan","version":1,"spine":<string[]>,"sections":[{"ref","title","targetWords"?,"purpose"?,"anchor"?}],"alternativesConsidered"?<string[]>,"gaps"?<string[]>} — the array fields are "spine" + "sections".',
+    '{"sidecar":"structure_plan","version":1,"spine":<string[]>,"sections":[{"ref","title","targetWords"?,"purpose"?,"anchor"?}],"alternativesConsidered"?<string[]>,"gaps"?<string[]>} — the array fields are "spine" + "sections". OMIT "anchor" on a forward plan (a plan for new writing has no source text to anchor). Emit "anchor" ONLY when reverse-outlining an existing draft, and then as the exact object {"blockId":<string>,"quote":<string>,"startOffset":<int>,"endOffset":<int>,"confidence":<0-1>} (optional "unanchored":true) — a string or any other object shape is invalid.',
   "response-ledger.json":
     '{"sidecar":"response_ledger","version":1,"entries":[{"findingOrdinal":<int — the findings.json ordinal this row answers>,"disposition":{"kind":"accept"|"adapt"|"rebut"|"defer"|"escalate","status":"proposed"|"open"|"done"|"verified"|"mooted"|"deferred"|"escalated"|"honored","rationale"?,"adaptedText"?,"moveOrdinal"?,"applied"?,"actor"?},"anchor"?}],"moves"?[{"ordinal","title","type"?,"status"?,"discharges"?[],"moots"?[]}]} — the array field is "entries" (NOT "rows"); exactly one entry per finding in the review\'s findings.json.',
   "cut-list.json":

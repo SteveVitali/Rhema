@@ -113,6 +113,15 @@ export const SEAT_MOUNTS: Record<AgentTypeKey, readonly MountSpec[]> = {
     PERSONA_SEED,
     { glob: "docs/**", root: "persona", mode: "read", namespace: "persona:<id>" },
     { glob: "profile/**", root: "persona", mode: "readwrite", namespace: "persona:<id>" },
+    // DEF.1 (F1): the phase contract writes `.rhema/phase-result.json` "beside each markdown
+    // deliverable" — for the persona builder that is the persona ROOT (`profile/`'s sibling), not
+    // `profile/` itself. Without it the live profile-voice seat's Write of
+    // `/work/personas/<id>/.rhema/phase-result.json` was denied "write outside the seat namespace"
+    // and the phase failed leg (b) despite a clean sdk success (STB.3, run 01M3DJ5V…). Persona-root
+    // `.rhema/` holds only transient harness-control files (phase-result is never harvested by
+    // basename); the project-side `.rhema/` stays unmounted — `.rhema/manifest.json` there is the
+    // signed mount contract and must remain read-only to every seat.
+    { glob: ".rhema/**", root: "persona", mode: "readwrite", namespace: "persona:<id>" },
   ],
   // The System seat (the orchestrator loop) reads tables, never a mirror (§12.6): no mounts at all.
   system: [],

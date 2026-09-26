@@ -247,6 +247,8 @@ When `sidecar: true`, each `.json` twin is validated at commit against a strict 
 
 Required: `spine` (string array — the gate requires ≥3 entries) and `sections` (one row per section: `ref`, `title`; `targetWords`/`purpose`/`anchor` optional).
 
+`anchor` — **omit it on a forward plan.** A plan for new writing has no source text to anchor to, so a section row is `{ "ref", "title", "targetWords"?, "purpose"? }` and nothing else — never a prose placeholder like `"heading + single descriptive sentence"` and never a non-canonical object like `{ "kind", "detail" }` or `{ "source", "location" }` (the validator rejects every non-canonical shape). An `anchor` is allowed **only** when the plan reverse-outlines an existing draft, and then it is exactly `{"blockId": <string>, "quote": <string>, "startOffset": <int>, "endOffset": <int>, "confidence": <0-1>}` (optional `"unanchored": true`).
+
 **`03-claim-ledger.json`** (Phase 3) — one row per claim in `03-claim-ledger.md`, the same `claim_ledger` envelope the reviewer's verification ledger uses:
 
 ```json

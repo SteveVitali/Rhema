@@ -238,3 +238,48 @@ describe("every anchor-bearing sidecar uses §11.3 Anchor verbatim (AC8, REQ-OBJ
     },
   );
 });
+
+// DEF.1 (F3, diagnosed live STB.3 — draft run 01M3DGGC…): the plan phase emitted `sections[].anchor`
+// as a free-text string ("heading + single descriptive sentence") and as non-canonical objects
+// ({kind,detail} / {source,location}); every shape failed the strict §11.3 schema at commit. The schema
+// must keep rejecting all three live shapes and accept only the canonical Anchor (or an omitted anchor —
+// a forward plan for new writing has nothing to anchor to).
+describe("structure-plan section anchors — canonical §11.3 shape or absent (DEF.1 F3)", () => {
+  const base = {
+    sidecar: "structure_plan",
+    version: 1,
+    spine: ["claim a", "claim b", "claim c"],
+    sections: [{ ref: "I", title: "Opening" }],
+  };
+  const withAnchor = (anchor: unknown) => ({
+    ...base,
+    sections: [{ ref: "I", title: "Opening", anchor }],
+  });
+  const schema = SIDECAR_REGISTRY["structure-plan.json"].schema;
+
+  it("accepts a forward plan with NO anchor keys", () => {
+    expect(() => schema.parse(base)).not.toThrow();
+  });
+
+  it("accepts a canonical §11.3 anchor (reverse-outline of an existing draft)", () => {
+    expect(() =>
+      schema.parse(
+        withAnchor({ blockId: "b3", quote: "the passage", startOffset: 120, endOffset: 141, confidence: 0.92 }),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      schema.parse(
+        withAnchor({ blockId: "b3", quote: "x", startOffset: 0, endOffset: 1, confidence: 1, unanchored: true }),
+      ),
+    ).not.toThrow();
+  });
+
+  it.each([
+    ["a bare descriptive string", "heading + single descriptive sentence"],
+    ["a {kind,detail} object", { kind: "section", detail: "opening heading" }],
+    ["a {source,location} object", { source: "drafts/v1.md", location: "line 3" }],
+    ["a partial anchor (missing confidence)", { blockId: "b", quote: "x", startOffset: 0, endOffset: 1 }],
+  ])("rejects %s — the live F3 malformed shapes", (_name, anchor) => {
+    expect(() => schema.parse(withAnchor(anchor))).toThrow();
+  });
+});

@@ -67,3 +67,9 @@ export const fixtureManifest: WorkflowManifest = {
 
 /** True when the private protocols package is NOT in use (the stub is the resolved implementation). */
 export const IS_PROTOCOLS_STUB = true as const;
+
+/**
+ * Stub parity for `@rhema/protocols`' `SECOND_READ_PROMPT` (DEF.1) — the real constant is protocol IP
+ * (REQ-ARCH-33), so the stub exports an empty placeholder; no public build ever runs a real phase.
+ */
+export const SECOND_READ_PROMPT = "" as const;

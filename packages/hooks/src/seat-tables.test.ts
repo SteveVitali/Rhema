@@ -78,6 +78,14 @@ const TABLE: Row[] = [
   { seat: "persona_builder", op: "read", path: `${V}/docs/sample1.md`, expect: "allow", why: "docs read-only" },
   { seat: "persona_builder", op: "write", path: `${V}/profile/voice-print.md`, expect: "allow", why: "profile writable" },
   { seat: "persona_builder", op: "write", path: `${V}/docs/x.md`, expect: "deny", why: "docs read-only" },
+  // DEF.1 (F1, STB.3 profile-voice 01M3DJ5V…): the phase-result contract writes `.rhema/phase-result.json`
+  // at the persona ROOT — the seat's harness-control area is readwrite there…
+  { seat: "persona_builder", op: "write", path: `${V}/.rhema/phase-result.json`, expect: "allow", why: "persona-root .rhema rw (F1)" },
+  { seat: "persona_builder", op: "write", path: `${V}/.rhema/voice-index.json`, expect: "allow", why: "persona-root .rhema rw (F1)" },
+  // …and NEVER under the project root — the seat has no project mount at all (the signed
+  // `.rhema/manifest.json` contract lives there; it must stay read-only to every seat).
+  { seat: "persona_builder", op: "write", path: `${P}/.rhema/phase-result.json`, expect: "deny", why: "project .rhema never writable" },
+  { seat: "persona_builder", op: "write", path: `${P}/.rhema/manifest.json`, expect: "deny", why: "signed mount contract stays read-only" },
 
   // ---- System: the loop reads tables, never a mirror ----
   { seat: "system", op: "read", path: `${P}/drafts/v1.md`, expect: "deny", why: "no mounts" },

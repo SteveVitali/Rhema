@@ -547,3 +547,80 @@ describe("buildPhaseOutputs — Draft facts (P1.10; REQ-WF-4/5)", () => {
     expect(out.delivery!.sidecars.map((s) => s.filename)).toContain("03-claim-ledger.json");
   });
 });
+
+// DEF.1 (F2, STB.3 live — memo/review run 01M3DKQR…): the second_read phase was produced by nothing —
+// `secondReadProducerQueryId: null, expectedProducerQueryId: null` — because no orchestrator-launched,
+// input-scoped query ever ran (the judge-phase `Agent` deny correctly refused the parent Editor's own
+// spawn). The facts must stay null (failing the oracle) when no marker exists, and populate only from the
+// `.rhema/second-read.json` marker the harness stamps after executing the scoped launch (scoped-phase.ts).
+describe("buildPhaseOutputs — second_read producer facts (DEF.1 F2)", () => {
+  const secondRead = review.phases.find((p) => p.key === "second_read")!;
+  const files0 = () =>
+    new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success" })],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["agents/editor/05-second-read.md", enc("the second read")],
+    ]);
+
+  it("no marker → both facts null (the STB.3 state — the predicate must fail)", () => {
+    const out = buildPhaseOutputs(files0(), makeSpec(secondRead), "editor");
+    expect(out.facts.secondReadProducerQueryId).toBeNull();
+    expect(out.facts.expectedProducerQueryId).toBeNull();
+  });
+
+  it("the seat-dir marker (agents/editor/.rhema/second-read.json) resolves by suffix → both facts set", () => {
+    const files = files0();
+    files.set("agents/editor/.rhema/second-read.json", enc({ producerQueryId: "qry_1", expectedProducerQueryId: "qry_1" }));
+    const out = buildPhaseOutputs(files, makeSpec(secondRead), "editor");
+    expect(out.facts.secondReadProducerQueryId).toBe("qry_1");
+    expect(out.facts.expectedProducerQueryId).toBe("qry_1");
+  });
+
+  it("a mismatched marker still surfaces both facts (the oracle compares, the reader never fakes a match)", () => {
+    const files = files0();
+    files.set("agents/editor/.rhema/second-read.json", enc({ producerQueryId: "qry_a", expectedProducerQueryId: "qry_b" }));
+    const out = buildPhaseOutputs(files, makeSpec(secondRead), "editor");
+    expect(out.facts.secondReadProducerQueryId).toBe("qry_a");
+    expect(out.facts.expectedProducerQueryId).toBe("qry_b");
+  });
+
+  it("the final-phase dossier carries the marker's producerQueryId for checkSecondReadProducer", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success" })],
+      [".rhema/phase-result.json", enc({ status: "done" })],
+      ["agents/editor/editors-letter.md", enc("# Editor's letter\n\nThorough and complete.")],
+      ["agents/editor/.rhema/findings.json", enc(validFindings)],
+      ["agents/editor/.rhema/rubric.json", enc(validRubric)],
+      ["agents/editor/.rhema/second-read.json", enc({ producerQueryId: "qry_1", expectedProducerQueryId: "qry_1" })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(letter), "editor");
+    expect(out.delivery?.secondReadProducerQueryId).toBe("qry_1");
+  });
+});
+
+// DEF.1 (F1, STB.3 live — profile-voice run 01M3DJ5V…): the persona builder's phase-result lives at the
+// PERSONA root (`/work/personas/<id>/.rhema/phase-result.json`), which `readWorkRoots` folds into the map
+// at key `.rhema/phase-result.json`. The oracle's leg (b) must read it — a project-only walk reported
+// "missing or unparseable .rhema/phase-result.json" on a clean run.
+describe("readWorkRoots — persona-root .rhema control files (DEF.1 F1)", () => {
+  async function tmp(): Promise<string> {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    return mkdtemp(join(tmpdir(), "rhema-f1-"));
+  }
+
+  it("the persona-root phase-result resolves at the canonical key", async () => {
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const project = await tmp();
+    const persona = await tmp();
+    await mkdir(join(project, ".rhema"), { recursive: true });
+    await mkdir(join(persona, ".rhema"), { recursive: true });
+    await writeFile(join(project, "manifest.md"), "# Manifest\n");
+    await writeFile(join(persona, ".rhema", "phase-result.json"), JSON.stringify({ status: "done" }));
+    const { readWorkRoots } = await import("./work-reader.js");
+    const files = await readWorkRoots(project, persona);
+    expect(JSON.parse(Buffer.from(files.get(".rhema/phase-result.json")!).toString("utf8"))).toEqual({ status: "done" });
+  });
+});
