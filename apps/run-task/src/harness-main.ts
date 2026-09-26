@@ -117,7 +117,7 @@ async function postAudit(args: {
   if (!res.ok) throw new Error(`harness: audit ship failed ${res.status} for run ${args.runId}`);
 }
 
-  const { readFile, writeFile, mkdir, chmod, readdir, stat } = await import("node:fs/promises");
+  const { readFile, writeFile, mkdir, chmod } = await import("node:fs/promises");
 
   /**
    * Make the agent's writable work tree agent-writable (residue 1, diagnosed live P0.15h). materializeWork
@@ -125,36 +125,21 @@ async function postAudit(args: {
    * files 0644 — all harness-owned. The agent (uid 10002) therefore gets EACCES creating its declared artifacts
    * inside `agents/editor/` (the live symptom: the agent wrote a `_write_test` probe at the 0777 project ROOT,
    * then reported the phase `blocked` because `agents/editor/00-piece-brief.md` could not be written). chmod'ing
-   * only the project root (below) is not enough — the NESTED writable dirs must be world-writable too. Walk the
-   * tree: every DIRECTORY → 0777 (so the agent can create new files anywhere), every FILE that is not the 0444
-   * read-only mount → 0666 (so the agent can overwrite a prior-round output). Read-only mounts (0444) are left
-   * untouched, so this widens only the writable set — the boundary stays the proxy + uid split + §12.6 hook.
+   * only the project root (below) is not enough — the NESTED writable dirs must be world-writable too. The walk
+   * (`makeTreeAgentWritable`, work-perms.ts) sets every DIRECTORY → 0777, every non-0444 FILE → 0666 — and,
+   * since the DEF.1 Stage-B live finding (persona root stayed 0755 → all persona_root writes EACCES'd despite
+   * hook allows), the walked ROOT dir itself too. Read-only mounts (0444) are left untouched, so this widens
+   * only the writable set — the boundary stays the proxy + uid split + §12.6 hook.
    */
-  const makeTreeAgentWritable = async (dir: string): Promise<void> => {
-    let entries: import("node:fs").Dirent[];
-    try {
-      entries = await readdir(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entries) {
-      const abs = `${dir}/${e.name}`;
-      if (e.isDirectory()) {
-        await chmod(abs, 0o777).catch(() => undefined);
-        await makeTreeAgentWritable(abs);
-      } else if (e.isFile()) {
-        const mode = (await stat(abs).then((s) => s.mode & 0o777).catch(() => 0o444));
-        if (mode !== 0o444) await chmod(abs, 0o666).catch(() => undefined); // keep read-only mounts read-only
-      }
-    }
-  };
   const { spawn } = await import("node:child_process");
   const { createFetchEventTransport } = await import("./event-transport.js");
   const { createHookDaemon } = await import("./hook-daemon.js");
   const { createGcsContentStore } = await import("@rhema/mirror");
   const { materializeWork, nodeWorkFs } = await import("./materialize-work.js");
   const { readWorkRoots } = await import("./work-reader.js");
+  const { makeTreeAgentWritable, nodePermFs } = await import("./work-perms.js");
   const { startCredentialInjector } = await import("./credential-injector.js");
+  const makeWritable = (dir: string) => makeTreeAgentWritable(dir, nodePermFs);
 
   const runId = reqEnv("RUN_ID");
   const workspaceId = reqEnv("WORKSPACE_ID");
@@ -272,12 +257,16 @@ async function postAudit(args: {
     // Recurse into the writable tree so the NESTED seat namespace (`agents/<seat>/**`) is agent-writable too —
     // chmod'ing only the root left `agents/editor/` harness-owned 0755, so the agent could not create its
     // declared artifacts there (residue 1, live P0.15h). Read-only mounts stay 0444.
-    await makeTreeAgentWritable(cwd);
+    await makeWritable(cwd);
     // PRB.16b F27 — the persona root needs the same treatment: a persona_builder's `profile/**` mount is
     // `readwrite` in §12.6 but the dir is harness-owned 0755, so the agent gets EACCES on its CANONICAL
     // mount and falls back to `/work/project` (live: Quick Voice 01M2T65W… att-5's committed phase-result
-    // reported exactly this). The walk keeps 0444 mounts (PERSONA.md, docs/**) read-only.
-    if (roots.persona) await makeTreeAgentWritable(roots.persona);
+    // reported exactly this). DEF.1 Stage-B sharpened the fix live (profile_voice 01M3E42J…): the walk
+    // chmod'ed only the root's CONTENTS, so `/work/personas/<id>` itself stayed harness-owned 0755 and the
+    // agent's `.rhema/phase-result.json`/`profile/**` writes still EACCES'd despite hook allows — the
+    // extracted walk now chmods the walked root too (work-perms.ts). It keeps 0444 mounts
+    // (PERSONA.md, docs/**) read-only.
+    if (roots.persona) await makeWritable(roots.persona);
     await mkdir(configDir, { recursive: true });
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
