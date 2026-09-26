@@ -1,8 +1,13 @@
 #!/bin/sh
 # run-task scoped-subagent runner — applies an input-scoped mount plan inside a private mount namespace, then
 # launches the scoped query as a distinct uid (§12.6; REQ-DATA-17/18). Invoked as the runner argv of
-# `unshare --mount --propagation private -- /app/scoped-runner.sh <spec.json>`, so it already runs in a NEW
-# mount namespace whose changes are invisible to the parent and to every other seat.
+# `unshare --mount --propagation private -- setpriv --reuid 0 --regid 0 --clear-groups -- /app/scoped-runner.sh
+# <spec.json>`, so it already runs in a NEW mount namespace whose changes are invisible to the parent and to
+# every other seat — and at REAL uid 0, because util-linux `mount` gates on `getuid()` before calling
+# mount(2): the harness's ambient CAP_SYS_ADMIN is invisible to it, and the binary's setuid bit only fixes
+# the EFFECTIVE uid (ruid stays harness → "must be superuser"). The harness holds ambient CAP_SETUID, so the
+# `setpriv --reuid 0` re-escalation succeeds. This script still drops to the distinct scoped uid with
+# --no-new-privs before the model's process execs — only this trusted setup runner carries ruid 0.
 #
 # The plan (from @rhema/engine buildScopedLaunchSpec, serialized to $1) — this is the SAME sequence the
 # integration proof (docker/privsep-check.sh) exercises:

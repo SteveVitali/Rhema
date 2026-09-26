@@ -16,11 +16,16 @@ pass() { echo "PASS: $1"; }
 bad()  { echo "FAIL: $1"; fail=1; }
 
 # ---------- AC1 — the harness-only secrets file ----------
-SECRETS=/run/secrets/secrets.json
-mkdir -p /run/secrets
-printf '{"runToken":"jwt.SECRET","apiInternalUrl":"http://api.internal","proxyCredential":"cred.SECRET"}' > "$SECRETS"
-chown harness:harness "$SECRETS"
-chmod 0600 "$SECRETS"
+# /tmp not /run — the runtime pod's rootfs is READ-ONLY; /tmp is the writable emptyDir there (and rw in the
+# privsep-test image too), so the check holds under either rootfs mode. The file is created AS harness
+# (umask 077) rather than chown'd — the real pod's cap set drops CAP_CHOWN, so root could not chown there.
+# The AC is the 0600-owner semantics, not the literal path.
+SECRETS=/tmp/secrets/secrets.json
+rm -rf /tmp/secrets
+setpriv --reuid harness --regid harness --clear-groups -- sh -c '
+  mkdir -p /tmp/secrets && umask 077 &&
+  printf "%s" "{\"runToken\":\"jwt.SECRET\",\"apiInternalUrl\":\"http://api.internal\",\"proxyCredential\":\"cred.SECRET\"}" > /tmp/secrets/secrets.json
+'
 
 # harness CAN read it:
 if setpriv --reuid harness --regid harness --clear-groups -- cat "$SECRETS" >/dev/null 2>&1; then
@@ -79,20 +84,37 @@ mkdir -p /work/project/drafts /work/project/agents/author
 echo "THE DRAFT v3" > /work/project/drafts/v3.md
 echo "DRAFTER PRIVATE NOTEBOOK" > /work/project/agents/author/notebook.md
 
-# Run the namespace body in a NEW mount namespace; changes are invisible to the parent and every other seat.
-unshare --mount --propagation private -- /bin/sh -eu -c '
+# Negative control (F-StageB-6): WITHOUT the ruid-0 re-escalation, util-linux `mount` refuses a harness-uid
+# caller even WITH ambient CAP_SYS_ADMIN — it gates on `getuid()` before mount(2) and the binary's setuid
+# bit only fixes the EFFECTIVE uid. This is the exact "must be superuser" failure diagnosed live in DEF.1;
+# the check proves the `setpriv --reuid 0` wrap below is load-bearing, not incidental.
+if setpriv --reuid harness --regid harness --clear-groups \
+     --bounding-set "$HARNESS_AMBIENT" --inh-caps "$HARNESS_AMBIENT" --ambient-caps "$HARNESS_AMBIENT" \
+     -- unshare --mount --propagation private -- mount -t tmpfs -o size=1m tmpfs /work 2>/dev/null; then
+  bad  "AC4: harness-uid mount SUCCEEDED without the ruid-0 wrap (the 'must be superuser' guard is not exercised)"
+else
+  pass "AC4: harness-uid mount is refused without the ruid-0 wrap (must be superuser — ruid gate)"
+fi
+
+# Run the namespace body in a NEW mount namespace through the REAL launch chain — harness uid + ambient caps
+# → unshare → `setpriv --reuid 0` (ruid-0 so `mount` accepts the mount(2) calls) → mounts → scoped uid drop.
+# Changes are invisible to the parent and every other seat.
+setpriv --reuid harness --regid harness --clear-groups \
+  --bounding-set "$HARNESS_AMBIENT" --inh-caps "$HARNESS_AMBIENT" --ambient-caps "$HARNESS_AMBIENT" \
+  -- unshare --mount --propagation private -- setpriv --reuid 0 --regid 0 --clear-groups -- /bin/sh -eu -c '
   root=/work/scoped/second-reader
   # 1) stash the ENUMERATED file outside /work (a ro bind), so it survives the /work overmount:
-  mkdir -p /stash
-  : > /stash/v3.md
-  mount --bind -o ro /work/project/drafts/v3.md /stash/v3.md
+  # the stash mirrors where the real runner puts it (/tmp/scoped-stash): the pod rootfs is READ-ONLY.
+  mkdir -p /tmp/scoped-stash
+  : > /tmp/scoped-stash/v3.md
+  mount --bind -o ro /work/project/drafts/v3.md /tmp/scoped-stash/v3.md
   # 2) overmount the whole seat tree with an empty tmpfs — every other-seat file (the Drafter notebook)
   #    now DOES NOT EXIST in this namespace at the kernel level:
   mount -t tmpfs -o nosuid,nodev,size=16m tmpfs /work
   mkdir -p "$root"
   # 3) bind ONLY the enumerated file into the scoped root, read-only:
   : > "$root/v3.md"
-  mount --bind -o ro /stash/v3.md "$root/v3.md"
+  mount --bind -o ro /tmp/scoped-stash/v3.md "$root/v3.md"
   # assert the scoped root contains EXACTLY the enumerated file:
   listing=$(ls -1A "$root")
   [ "$listing" = "v3.md" ] || { echo "NSFAIL: unexpected files in scoped ns: [$listing]"; exit 21; }

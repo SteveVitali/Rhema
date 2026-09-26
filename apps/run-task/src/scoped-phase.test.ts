@@ -64,7 +64,11 @@ describe("buildScopedPhasePlan (§12.6)", () => {
 
   it("wraps the runner in a private mount namespace (unshare --mount --propagation private)", () => {
     expect(unshareArgv.slice(0, 4)).toEqual(["unshare", "--mount", "--propagation", "private"]);
-    expect(unshareArgv.slice(5)).toEqual([SCOPED_RUNNER, "/config/scoped-spec.json"]);
+    // the runner re-escalates to REAL uid 0 inside the namespace — util-linux `mount` refuses any
+    // ruid≠0 caller ("must be superuser") even with ambient CAP_SYS_ADMIN; the model still drops to
+    // the scoped uid via scoped-runner.sh.
+    expect(unshareArgv.slice(5, -2)).toEqual(["/usr/bin/setpriv", "--reuid", "0", "--regid", "0", "--clear-groups", "--"]);
+    expect(unshareArgv.slice(-2)).toEqual([SCOPED_RUNNER, "/config/scoped-spec.json"]);
   });
 
   it("mounts exactly the enumerated draft, read-only, at a distinct uid, tools=[Read]", () => {

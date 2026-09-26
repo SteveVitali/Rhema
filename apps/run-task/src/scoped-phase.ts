@@ -110,8 +110,10 @@ export function buildScopedPhasePlan(
 }
 
 /**
- * The env the unshared RUNNER starts with (harness-side machinery — `unshare`/`scoped-runner.sh` run as
- * the harness uid and need PATH to resolve `node`/`mount`/`env`). The MODEL's process gets a strictly
+ * The env the unshared RUNNER starts with (harness-side machinery — `unshare` runs as the harness uid,
+ * then `setpriv --reuid 0` re-escalates the runner to real uid 0 inside the new namespace because
+ * util-linux `mount` gates on the real uid, not ambient CAP_SYS_ADMIN; the model's process still drops
+ * to the scoped uid). Needs PATH to resolve `node`/`mount`/`env`. The MODEL's process gets a strictly
  * scrubbed subset: `scoped-runner.sh` re-derives it with `env -i` at the uid drop, forwarding only the
  * REQ-SPEC-10 allowlist keys below (`ANTHROPIC_API_KEY` is the NON-SECRET placeholder the proxy strips —
  * never a real credential). No run token / api URL / credential is ever in scope.

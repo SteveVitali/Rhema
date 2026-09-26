@@ -104,6 +104,23 @@ describe("buildScopedLaunchSpec (§12.6)", () => {
     expect(spec.unshareArgv).toContain("--");
   });
 
+  it("re-escalates the runner to real uid 0 inside the namespace (mount gates on getuid, not ambient caps)", () => {
+    // util-linux `mount` refuses any ruid≠0 caller ("must be superuser") before mount(2) — the harness's
+    // ambient CAP_SYS_ADMIN never reaches it. The runner must exec through `setpriv --reuid 0`; the model
+    // still drops to the scoped uid in scoped-runner.sh.
+    const i = spec.unshareArgv.indexOf("--", 4);
+    expect(spec.unshareArgv.slice(i + 1)).toEqual([
+      "/usr/bin/setpriv",
+      "--reuid",
+      "0",
+      "--regid",
+      "0",
+      "--clear-groups",
+      "--",
+      "/usr/local/bin/rhema-scoped-runner",
+    ]);
+  });
+
   it("records the producerQueryId (§12.2 F17 producer check)", () => {
     expect(spec.producerQueryId).toBe("q_abc");
   });
