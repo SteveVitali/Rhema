@@ -186,6 +186,14 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
               // drop ALL, then add back exactly the caps the privilege-drop + mount isolation need.
               securityContext: {
                 readOnlyRootFilesystem: true,
+                // DEF.1 Stage-B (live finding, review run 01M3EAAZ… second_read): containerd's default
+                // `cri-containerd.apparmor.d` profile denies mount(2) OUTRIGHT regardless of
+                // CAP_SYS_ADMIN — the scoped subagent's `unshare -m` then fails at its implicit
+                // propagation change ("cannot change root filesystem propagation") and the input-
+                // scoped tmpfs/binds can never apply. The §12.6 boundary is uid + mount-namespace
+                // (the pod already holds SYS_ADMIN/SYS_CHROOT for exactly this) — unconfine AppArmor
+                // for the run-task container so the mount calls the boundary itself requires work.
+                appArmorProfile: { type: "Unconfined" },
                 capabilities: {
                   // SETUID/SETGID: the harness→agent uid drop (setpriv). SYS_ADMIN: unshare/mount the input-
                   // scoped subagent namespaces (§12.6). SYS_CHROOT: the scoped-runner chroot.
