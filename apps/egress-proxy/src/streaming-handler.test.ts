@@ -233,6 +233,39 @@ describe("streamProxyRequest — meter-before-end ordering (DEF.3 / STB.3 F10)",
     expect(h2.usageWriter.rows).toHaveLength(0);
   });
 
+  it("a meterOnly (est_) context meters usage but writes no run-scoped rows — and the stream completes", async () => {
+    // DEF.2 Stage-B: the claim pre-pass mints est_<id> credentials with NO `runs` row (an estimate must
+    // never create one). fetch_log/run_events*/pause_signals all FK to runs(id) — pre-fix the step-9
+    // fetch_log write threw INSIDE meter() after the usage commit, truncating the delivered body at the
+    // withheld tail (seen live: a 100-byte partial JSON → res.json() throws → no estimate_cache row).
+    const h = harness({ context: ctx({ runId: "est_1", meterOnly: true }) });
+    const sink = new RecordingSink();
+    await streamProxyRequest(request(), h, sink);
+
+    expect(sink.head?.status).toBe(200);
+    expect(sink.ended).toBe(true); // the FULL body reaches the client…
+    expect(sink.writes.join("")).toBe(streamingFixtureFrames().join(""));
+    expect(h.usageWriter.rows).toHaveLength(1); // …metered as absorbed COGS…
+    expect(h.usageWriter.rows[0]!.runId).toBe("est_1");
+    expect(h.capAccountant.spentCredits("est_1")).toBeGreaterThan(0);
+    expect(h.fetchLogWriter.rows).toHaveLength(0); // …but nothing run-scoped is written.
+  });
+
+  it("a meterOnly context keeps refusal HTTP semantics without emitting run-scoped rows/events", async () => {
+    const h = harness({ context: ctx({ runId: "est_2", meterOnly: true }) });
+    h.capAccountant.record("est_2", 1_000_001); // over the 1,000,000 cap
+    const sink = new RecordingSink();
+    await streamProxyRequest(request(), h, sink);
+
+    expect(sink.head?.status).toBe(402);
+    expect(sink.ended).toBe(true); // a refusal is written whole…
+    expect(h.forwarded.called).toBe(0);
+    expect(h.fetchLogWriter.rows).toHaveLength(0); // …no deny row or event — there is no run to attribute to.
+    const events = h.events as InMemoryEventSink;
+    expect(events.egressDenied).toHaveLength(0);
+    expect(events.pauseSignals).toHaveLength(0);
+  });
+
   it("a response the meter refuses is never fully delivered — honest truncation, not silent unmetering (I2)", async () => {
     // Usage arrives in a message_delta but no model is nameable (not in the stream, not in the
     // request) → the meter must refuse; the withheld terminal frame then never reaches the client.

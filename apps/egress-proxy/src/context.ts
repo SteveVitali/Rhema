@@ -132,6 +132,16 @@ export interface RunContext {
   readonly knownDomains?: readonly string[];
   /** Max DISTINCT novel fetched registrable domains before a fetch is refused (§12.8d). Absent ⇒ uncapped. */
   readonly novelDomainCap?: number;
+  /**
+   * Synthetic metering-only context (DEF.2 F6 — the estimate claim pre-pass mints `est_<id>` credentials
+   * with NO `runs` row — an estimate must never create one, §12.4). `usage_records.run_id` carries no FK,
+   * so metering lands; `fetch_log`, `run_events*` and `pause_signals` all FK to `runs(id)` — a write for an
+   * `est_` id throws the FK and (pre-fix) killed the response inside `meter()`, truncating the stream after
+   * the usage row committed. Set ⇒ meter usage only; run-scoped surfaces skip writes (there is no run to
+   * attribute them to — the usage_record IS the record of the absorbed pre-pass COGS). Deny responses keep
+   * their HTTP semantics either way.
+   */
+  readonly meterOnly?: boolean;
 }
 
 /** The DI seam P0.08 fills: credential → run context, or `null` when the credential binds to no live run. */

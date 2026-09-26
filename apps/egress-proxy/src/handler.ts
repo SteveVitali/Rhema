@@ -173,8 +173,17 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   const agentId = presentedAgentId(req.headers) ?? ctx.agentId;
   const logBase: FetchLogBase = { runId: ctx.runId, attempt: ctx.attempt, agentLabel: agentId };
   const writeFetch = async (row: FetchLogRow): Promise<void> => {
+    // meterOnly contexts (the est_ claim pre-pass) carry no `runs` row — fetch_log FKs to runs(id),
+    // so the write would throw inside meter() and truncate a served response. Their meter of record
+    // is the usage row itself.
+    if (ctx.meterOnly) return;
     await deps.fetchLogWriter.write(row);
   };
+  // Same FK boundary for the event sinks: run_events*/pause_signals reference runs(id). A meterOnly
+  // context keeps the refusal's HTTP semantics but emits nothing run-scoped.
+  const events: EventSink = ctx.meterOnly
+    ? { emitEgressDenied: () => Promise.resolve(), emitPauseSignal: () => Promise.resolve() }
+    : deps.events;
 
   // A refusal that is attributable to a run: log it, emit egress.denied, and pause on a denial spike. Returns a
   // prepared `response` (there is no upstream to forward for a refusal).
@@ -182,7 +191,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
     await writeFetch(
       buildRequestFetchLogRow({ ...logBase, ts: nowIso() }, { url: req.url, status, decision: "deny", denyReason: reason }),
     );
-    await deps.events.emitEgressDenied({
+    await events.emitEgressDenied({
       runId: ctx.runId,
       attempt: ctx.attempt,
       agentId,
@@ -193,7 +202,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
     });
     const spike = denialSpikes.record(ctx.runId);
     if (spike.spike) {
-      await deps.events.emitPauseSignal({
+      await events.emitPauseSignal({
         runId: ctx.runId,
         reason: "egress_denied_spike",
         detail: { count: spike.count },
@@ -277,7 +286,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
             { kind: "search", query: loggableQuery(inv.query), decision: "deny", denyReason: "suspicious_query" },
           ),
         );
-        await deps.events.emitPauseSignal({
+        await events.emitPauseSignal({
           runId: ctx.runId,
           reason: "suspicious_query",
           detail: { matchLength: check.matchLength, agentId },
@@ -317,7 +326,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
             { kind: "fetch", url: effectiveUrl, decision: "deny", denyReason: "user_source" },
           ),
         );
-        await deps.events.emitPauseSignal({
+        await events.emitPauseSignal({
           runId: ctx.runId,
           reason: "user_source_fetch",
           detail: { domain: userSourceHost, agentId },

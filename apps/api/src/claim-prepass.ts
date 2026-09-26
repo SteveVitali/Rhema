@@ -113,6 +113,9 @@ export function createProxyClaimPrePass(deps: ClaimPrePassDeps): ClaimPrePass {
         modelTier: "base",
         rateTableVersion: CURRENT_RATE_TABLE_VERSION,
         capCredits,
+        // Stage-B fix: est_<id> has no `runs` row by design — fetch_log/run_events*/pause_signals all FK
+        // to runs(id), so run-scoped writes must skip. usage_records has no run_id FK — metering lands.
+        meterOnly: true,
       };
       const endpoints = [{ host: PROVIDER_HOST, pathPrefix: MESSAGES_PATH }];
       await deps.db.query(
