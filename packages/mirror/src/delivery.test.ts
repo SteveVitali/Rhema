@@ -210,6 +210,59 @@ describe("delivery transaction", () => {
     expect(((await db.exec.query("select state from drafts where id='dft_v2'")).rows[0] as { state: string }).state).toBe("frozen");
   });
 
+  // PRB.05 (§5.7) — delivering a `response` correspondence freezes the triage ledger: the review
+  // findings' open dispositions lock and link forward (response_id → the delivered response).
+  it("delivering a 'response' freezes + forward-links the review's open dispositions", async () => {
+    // the review the Revise run responds to: one correspondence with one finding + two dispositions.
+    await db.exec.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ('corr_rev',$1,'review','dft_v2','run_rev', now(), '{}')`,
+      [projectId],
+    );
+    await db.exec.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ('rf_1','corr_rev','dft_v2',1,'argument','major','editor','t','b')`,
+    );
+    await db.exec.query(
+      `insert into dispositions(id, finding_id, kind, status, rationale, by_actor)
+       values ('dsp_open','rf_1','rebut','proposed','no','{"kind":"user","userId":"u_1"}'::jsonb)`,
+    );
+
+    const result = await runDeliveryTransaction(
+      db.exec,
+      deps,
+      baseArgs({ correspondenceKind: "response" }),
+    );
+
+    const d = (
+      await db.exec.query("select response_id, frozen_at, move_ordinal from dispositions where id='dsp_open'")
+    ).rows[0] as { response_id: string | null; frozen_at: Date | null; move_ordinal: number | null };
+    expect(d.frozen_at).not.toBeNull(); // cards lock at delivery
+    expect(d.response_id).toBe(result.correspondenceId); // links forward to the response
+    expect(d.move_ordinal).toBeNull(); // the move link lands with PRB.06
+  });
+
+  it("delivering a 'review' does NOT touch dispositions (only a response freezes the ledger)", async () => {
+    await db.exec.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ('corr_rev',$1,'review','dft_v2','run_rev', now(), '{}')`,
+      [projectId],
+    );
+    await db.exec.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ('rf_1','corr_rev','dft_v2',1,'argument','major','editor','t','b')`,
+    );
+    await db.exec.query(
+      `insert into dispositions(id, finding_id, kind, status, by_actor)
+       values ('dsp_open','rf_1','accept','proposed','{"kind":"user","userId":"u_1"}'::jsonb)`,
+    );
+    await runDeliveryTransaction(db.exec, deps, baseArgs({ correspondenceKind: "review" }));
+    const d = (await db.exec.query("select frozen_at, response_id from dispositions where id='dsp_open'"))
+      .rows[0] as { frozen_at: Date | null; response_id: string | null };
+    expect(d.frozen_at).toBeNull();
+    expect(d.response_id).toBeNull();
+  });
+
   // The producer check: a second read not produced by an orchestrator-launched scoped query fails delivery.
   it("fails delivery when the second read's producerQueryId is not an orchestrator launch (§12.2 F17)", async () => {
     await expect(

@@ -1,5 +1,17 @@
 import { createApiClient } from "@rhema/api-client";
-import type { ProjectRow, InviteCheckDto, CreateRunDto, CreatedRunDto } from "@rhema/api-client";
+import type {
+  ProjectRow,
+  InviteCheckDto,
+  CreateRunDto,
+  CreatedRunDto,
+  RecordDispositionDto,
+  DispositionDto,
+  DecisionItemDto,
+  GateCardDto,
+  GateDecisionDto,
+  PretriageDto,
+  ApprovalOverridesDto,
+} from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
 import type { LetterSection } from "@rhema/ui";
@@ -56,6 +68,38 @@ export interface DataSource {
   createImport(session: SessionHeaders, input: ImportInput): Promise<{ draftId: string }>;
   /** The sheet's Run click → the api's only run creator (REQ-CHAT-25). Session forwarded. */
   createRun(session: SessionHeaders, projectId: string, req: CreateRunDto): Promise<CreatedRunDto>;
+  /** PRB.05 — write the user's disposition on a finding (§5.7; reversible until freeze). */
+  recordDisposition(
+    session: SessionHeaders,
+    projectId: string,
+    findingId: string,
+    req: RecordDispositionDto,
+  ): Promise<DispositionDto>;
+  /** PRB.05 — the open gate cards for the project's runs (the Needs-you surface). */
+  listGates(session: SessionHeaders, projectId: string): Promise<GateCardDto[]>;
+  /** PRB.05 — a gate card's decision (approve / wait / stop / …). */
+  decideGate(session: SessionHeaders, projectId: string, gateId: string, req: GateDecisionDto): Promise<void>;
+  /** PRB.05 — a presence/reading ping for the gate's timer (§6.4 item 2; REQ-SPEC-18). */
+  recordGateActivity(
+    session: SessionHeaders,
+    projectId: string,
+    gateId: string,
+    activity: "present" | "reading" | "blur",
+  ): Promise<void>;
+  /** PRB.05 — the Decisions list (open decision_requests for the project). */
+  listDecisions(session: SessionHeaders, projectId: string): Promise<DecisionItemDto[]>;
+  /** PRB.05 — answer a Decisions row. */
+  answerDecision(session: SessionHeaders, projectId: string, decisionId: string, answer: string): Promise<void>;
+  /** PRB.05 — pre-triage facts for the Revise sheet ("you pre-triaged N of M"). */
+  getPretriage(session: SessionHeaders, projectId: string): Promise<PretriageDto>;
+  /** PRB.05 — the project's approval-deadline overrides (§6.4 R3; the approve_triage 24-h opt-in). */
+  getApprovalOverrides(session: SessionHeaders, projectId: string): Promise<ApprovalOverridesDto>;
+  /** PRB.05 — set the approval-deadline overrides (validated server-side; REQ-SPEC-1). */
+  setApprovalOverrides(
+    session: SessionHeaders,
+    projectId: string,
+    overrides: ApprovalOverridesDto,
+  ): Promise<void>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -86,5 +130,23 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     // hold is the deployed api's job. Session forwarded so the api resolves the principal.
     createRun: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createRun(projectId, req),
+    recordDisposition: (session, projectId, findingId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordDisposition(projectId, findingId, req),
+    listGates: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listGates(projectId),
+    decideGate: (session, projectId, gateId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).decideGate(projectId, gateId, req),
+    recordGateActivity: (session, projectId, gateId, activity) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordGateActivity(projectId, gateId, activity),
+    listDecisions: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listDecisions(projectId),
+    answerDecision: (session, projectId, decisionId, answer) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).answerDecision(projectId, decisionId, answer),
+    getPretriage: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPretriage(projectId),
+    getApprovalOverrides: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getApprovalOverrides(projectId),
+    setApprovalOverrides: (session, projectId, overrides) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setApprovalOverrides(projectId, overrides),
   };
 }

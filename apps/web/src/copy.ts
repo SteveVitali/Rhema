@@ -212,6 +212,99 @@ export const COPY = {
     } as Record<string, string>,
   },
 
+  // PRB.05 — the five-verb triage controls (§5.7; REQ-BETA-6, REQ-MOBILE-11 amended).
+  triage: {
+    verbLabel: {
+      accept: "Accept",
+      adapt: "Adapt",
+      rebut: "Rebut",
+      defer: "Defer",
+      escalate: "Escalate",
+    } as Record<string, string>,
+    noteLabel: "Note — required for Rebut and Escalate",
+    noteRequired: "A note is required for Rebut and Escalate — nothing was saved.",
+    notePlaceholder: "Not this round",
+    reasonLegend: "Why? (optional)",
+    reasonLabel: {
+      // REQ-BETA-6's `wrong` code — "wrong" is a banned string outside a calibration verdict (Appendix
+      // D.2), so the chip reads "Incorrect".
+      wrong: "Incorrect",
+      stylistic_disagreement: "Stylistic disagreement",
+      already_knew: "Already knew",
+      too_costly: "Too costly",
+      not_this_round: "Not this round",
+      other: "Other",
+    } as Record<string, string>,
+    adaptLabel: "Proposed edit",
+    appliedNote: "applies at revision time",
+    pretriageFmt: "You pre-triaged {n} of {m} findings — your rows are authoritative for the Revise run.",
+    promoFmt: "More than {n} findings — the Drafter can propose a triage on the Revise run.",
+    savedLabel: "Saved",
+  },
+
+  // PRB.05 — the §6.4 gate cards (all beta kinds) on the Needs-you surface.
+  gates: {
+    heading: "Needs you",
+    kindLabel: {
+      approve_triage: "Approve triage",
+      approve_scope: "Approve scope",
+      approve_sample: "Approve the sample",
+      confirm_cost: "Confirm the cost",
+      spend_overrun: "Spend overrun",
+      resume_partial: "Resume from the partial",
+      refusal: "The run refused",
+      approve_plan: "Approve the plan",
+      approve_outline: "Approve the outline",
+      approve_cutlist: "Approve the cut list",
+      choose_thesis: "Choose a thesis",
+      continue_rounds: "Continue?",
+    } as Record<string, string>,
+    approveLabel: {
+      approve_triage: "Approve proposals",
+      default: "Approve",
+    },
+    approveAutonomousLabel: "Approve and run autonomously",
+    keepPlanningLabel: "Edit guidance / keep planning",
+    waitLabel: "Wait for me",
+    stopLabel: "Stop",
+    waitingLine: "Waiting for you — no deadline.",
+    deadlineFmt: "Due {absolute} · {remaining}",
+    expiredLine: "Overdue — it resolves on the next sweep.",
+    doNothingLine: {
+      proceed_as_proposed: "If you do nothing: it proceeds with the proposals.",
+      proceed_conservative: "If you do nothing: it proceeds conservatively.",
+      cancel: "If you do nothing: the run is cancelled.",
+      accept_partial: "If you do nothing: the partial is accepted.",
+      wait: "If you do nothing: it waits for you.",
+    },
+    spendFmt: "Spent {spent} credits · cap {cap}{remaining}",
+    remainingFmt: " · ~{n} left on the estimate",
+    presenceFmt: "Proposed to proceed in {countdown} unless you say otherwise.",
+    pausedNote: "Paused while you read.",
+    heldLine: "Waiting for you — the deadline is cleared.",
+    guidanceLabel: "Add guidance for the run",
+    standingLabel: "…and remember this for this project",
+    informationalNote: "Informational — the run continues while you read.",
+    escalationNote: "This ledger has escalations — they are decided only by you.",
+    undecidedLabel: "Undecided",
+    userActorLabel: "by you",
+    // §6.4 R3 — the per-project approve_triage 24-h opt-in (default: wait for you).
+    optInHeading: "Approval timing",
+    optInLabel: "Auto-approve triage after 24 h on this project",
+    optInNote: "Approve triage waits for you by default; opting in proceeds with the proposals after 24 h.",
+    optInSave: "Save",
+  },
+
+  // PRB.05 — the Decisions list (§5.7; the beta Inbox stand-in; REQ-OBJ-7/8).
+  decisions: {
+    heading: "Decisions",
+    empty: "Nothing is waiting on your call.",
+    optionLabel: {
+      decide: "Decide",
+      dismiss: "Dismiss",
+    } as Record<string, string>,
+  },
+
   notFound: {
     heading: "Not found",
     body: "That page doesn't exist.",

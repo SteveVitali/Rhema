@@ -49,6 +49,24 @@ describe("disposition rationale rules (§5.7)", () => {
     expect(d.ok).toBe(true);
     expect(d.normalized.applied).toBe(true);
   });
+
+  it("reason codes are optional on EVERY verb and ride through normalization (REQ-BETA-6)", () => {
+    for (const kind of DISPOSITION_VERBS) {
+      const withCode = validateDisposition({ kind, rationale: "r", reasonCode: "wrong" });
+      expect(withCode.ok).toBe(true);
+      expect(withCode.normalized.reasonCode).toBe("wrong");
+    }
+    expect(validateDisposition({ kind: "accept" }).normalized.reasonCode).toBeUndefined();
+  });
+
+  it("adapt carries the human-edited suggestion text (optional)", () => {
+    const d = validateDisposition({ kind: "adapt", adaptedText: "the fixed wording" });
+    expect(d.ok).toBe(true);
+    expect(d.normalized.adaptedText).toBe("the fixed wording");
+    const applied = applyDisposition(undefined, { kind: "adapt", adaptedText: "x", reasonCode: "already_knew" }, user, clock);
+    expect(applied.adaptedText).toBe("x");
+    expect(applied.reasonCode).toBe("already_knew");
+  });
 });
 
 describe("freeze semantics (§5.7)", () => {

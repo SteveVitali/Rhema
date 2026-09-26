@@ -60,6 +60,26 @@ describe("serializer round-trip goldens (AC1, REQ-SPEC-9)", () => {
     }
   }
 
+  it("a user-authored row's actor survives serialize→parse (PRB.05; REQ-SPEC-9)", () => {
+    const rows = {
+      sidecar: "response_ledger",
+      version: 1,
+      entries: [
+        { findingOrdinal: 1, disposition: { kind: "rebut", status: "proposed", rationale: "the stat is fine", actor: "user" } },
+        { findingOrdinal: 2, disposition: { kind: "accept", status: "proposed" } },
+      ],
+    };
+    const { markdown, json } = serializeResponseLedger(rows as never);
+    expect(markdown).toContain("disposition.actor");
+    const result = parseResponseLedger(JSON.parse(json), markdown);
+    expect(result.parseStatus).toBe("ok");
+    if (result.parseStatus === "ok") {
+      const entries = (result.value as { entries: { disposition: { actor?: string } }[] }).entries;
+      expect(entries[0]!.disposition.actor).toBe("user");
+      expect(entries[1]!.disposition.actor).toBeUndefined();
+    }
+  });
+
   it("a corrupted markdown twin fails the cross-check (markdown ↔ sidecar mismatch, REQ-SPEC-12)", () => {
     const rows = responseLedgerSidecarSchema.parse(loadJson("the-politics-of-visibility", "response-ledger.json"));
     const { markdown, json } = serializeResponseLedger(rows);

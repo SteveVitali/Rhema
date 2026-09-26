@@ -13,6 +13,15 @@ import {
   SecondReadView,
   FindingsList,
   VersionObligationChip,
+  DispositionControls,
+  GateCard,
+  TriageLedger,
+  DecisionsList,
+  type DispositionControlsLabels,
+  type GateCardLabels,
+  type TriageLedgerLabels,
+  type DecisionsListLabels,
+  type TriageLedgerRow,
   type DossierLabels,
   type RunSheetLabels,
   type RunCardLabels,
@@ -27,6 +36,9 @@ import {
   buildRunCardView,
   buildRubricView,
   buildTrustChip,
+  buildGateCard,
+  buildTriageQueue,
+  pretriageSummary,
   groupFindingsForList,
   detectReconciliationConflicts,
   collapsedRejected,
@@ -34,7 +46,9 @@ import {
   claimUrlViews,
   fetchLogFromRows,
   type TrustChipLabels,
+  type DoNothingOutcome,
 } from "@rhema/findings-core";
+import type { GateCardDto } from "@rhema/api-client";
 import { CHECKABLE_CLAIM_KINDS, type ClaimKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
@@ -178,9 +192,12 @@ export function ProjectsPage(): ReactNode {
   );
 }
 
-/** Auth-gated: the flat project view (the studio editing surface is P1.01). */
+/** Auth-gated: the flat project view (the studio editing surface is P1.01) + the Needs-you gate cards
+ *  and the Decisions list (PRB.05 — the beta Inbox stand-in, §5.7/§6.4). */
 export function ProjectPage(): ReactNode {
-  const { project } = usePageData();
+  const { project, gates = [], decisions = [], approvalOverrides = {}, compact, triage } = usePageData();
+  const slug = project?.slug ?? "";
+  const triageOptedIn = typeof approvalOverrides.approve_triage === "number";
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
       <SectionTitle>{project?.title ?? ""}</SectionTitle>
@@ -188,10 +205,51 @@ export function ProjectPage(): ReactNode {
       <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px", maxWidth: "68ch" }}>{COPY.project.betaNote}</p>
       {project ? (
         <p style={{ display: "flex", gap: "16px" }}>
-          <a href={`/p/${project.slug}/import`}>{COPY.project.importCta}</a>
-          <a href={`/p/${project.slug}/run`}>{COPY.runSheet.runReview}</a>
+          <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
+          <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
         </p>
       ) : null}
+      {gates.length > 0 ? (
+        <section data-needs-you="true" style={{ marginTop: "20px" }}>
+          <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 10px" }}>
+            {COPY.gates.heading}
+          </h2>
+          {gates.map((g) => gateCardFor(g, slug, compact ?? false, triage?.dispositionError))}
+        </section>
+      ) : null}
+      {/* §6.4 R3 — the per-project approve_triage 24-h opt-in (waits by default). */}
+      {project ? (
+        <form
+          method="post"
+          action={`/p/${slug}/approval-overrides`}
+          data-approval-opt-in="true"
+          style={{ marginTop: "20px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px", maxWidth: "68ch" }}
+        >
+          <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 6px" }}>
+            {COPY.gates.optInHeading}
+          </h2>
+          <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            <input type="checkbox" name="approve_triage_24h" defaultChecked={triageOptedIn} />
+            {COPY.gates.optInLabel}
+          </label>
+          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 8px" }}>{COPY.gates.optInNote}</p>
+          <button type="submit" style={{ fontSize: "12px" }}>{COPY.gates.optInSave}</button>
+        </form>
+      ) : null}
+      <div style={{ marginTop: "20px" }}>
+        <DecisionsList
+          items={decisions.map((d) => ({
+            id: d.id,
+            projectId: d.projectId,
+            obligationId: d.obligationId,
+            text: d.text,
+            options: d.options,
+            createdAt: d.createdAt,
+          }))}
+          formActionFor={(id) => `/p/${slug}/decisions/${id}`}
+          labels={decisionsLabels}
+        />
+      </div>
     </Shell>
   );
 }
@@ -300,12 +358,17 @@ const runSheetLabels: RunSheetLabels = {
 
 /** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
 export function RunSheetPage(): ReactNode {
-  const { runSheet } = usePageData();
+  const { runSheet, pretriage } = usePageData();
   const slug = runSheet?.slug ?? "";
   return (
     <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.runSheet.backToProject}</a>} footer={footer()}>
       <SectionTitle>{COPY.runSheet.heading}</SectionTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.runSheet.lede}</p>
+      {pretriage && runSheet?.view.workflow === "revise" ? (
+        <p data-pretriage-line="true" style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "8px" }}>
+          {fmt(COPY.triage.pretriageFmt, { n: pretriage.triaged, m: pretriage.total })}
+        </p>
+      ) : null}
       {runSheet?.started ? (
         <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
           {COPY.runSheet.started}
@@ -394,9 +457,173 @@ function checkable(kind: string | undefined): boolean {
   return kind == null || CHECKABLE_CLAIM_KINDS.includes(kind as ClaimKind);
 }
 
-/** Auth-gated: the delivered-review dossier (run card, letter, claims, second read, rubric, findings). */
+// ---- PRB.05 — the triage write surfaces (§5.7/§6.4/§10.1) ----
+
+const T = COPY.triage;
+const G = COPY.gates;
+
+const dispositionLabels: DispositionControlsLabels = {
+  verbLabel: (verb) => T.verbLabel[verb] ?? verb,
+  noteLabel: T.noteLabel,
+  notePlaceholder: T.notePlaceholder,
+  reasonLegend: T.reasonLegend,
+  reasonLabel: (code) => T.reasonLabel[code] ?? code,
+  adaptLabel: T.adaptLabel,
+  appliedNote: T.appliedNote,
+};
+
+const gateCardLabels: GateCardLabels = {
+  kindLabel: (kind) => G.kindLabel[kind] ?? kind,
+  approveLabel: (kind) => (kind === "approve_triage" ? G.approveLabel.approve_triage : G.approveLabel.default),
+  approveAutonomousLabel: G.approveAutonomousLabel,
+  keepPlanningLabel: G.keepPlanningLabel,
+  waitLabel: G.waitLabel,
+  stopLabel: G.stopLabel,
+  waitingLine: G.waitingLine,
+  deadlineLine: (absolute, remaining) => fmt(G.deadlineFmt, { absolute, remaining }),
+  expiredLine: G.expiredLine,
+  doNothingLine: (outcome: DoNothingOutcome) => G.doNothingLine[outcome],
+  spendLine: (spent, cap, remaining) =>
+    fmt(G.spendFmt, {
+      spent: spent.toLocaleString("en-US"),
+      cap: cap.toLocaleString("en-US"),
+      remaining: remaining != null ? fmt(G.remainingFmt, { n: remaining.toLocaleString("en-US") }) : "",
+    }),
+  presenceLine: (countdown) => fmt(G.presenceFmt, { countdown }),
+  pausedNote: G.pausedNote,
+  heldLine: G.heldLine,
+  guidanceLabel: G.guidanceLabel,
+  standingLabel: G.standingLabel,
+  informationalNote: G.informationalNote,
+  escalationNote: G.escalationNote,
+};
+
+const triageLedgerLabels: TriageLedgerLabels = {
+  dispositionLabel: (kind) => (kind ? T.verbLabel[kind] ?? kind : G.undecidedLabel),
+  userActorLabel: G.userActorLabel,
+  severityLabel: (s) => R.severityLabel[s] ?? s,
+};
+
+const decisionsLabels: DecisionsListLabels = {
+  heading: COPY.decisions.heading,
+  emptyLabel: COPY.decisions.empty,
+  optionLabel: (option) => COPY.decisions.optionLabel[option] ?? option,
+};
+
+/** The per-finding disposition control (§5.7) — the same component desktop + phone (REQ-SPEC-20). */
+function dispositionControlsFor(
+  view: { id: string; provisional: boolean; suggestion?: { replacement: string } | null; disposition?: { kind: string; rationale?: string; adaptedText?: string; reasonCode?: string } | null },
+  slug: string,
+  runId: string,
+  compact: boolean,
+  error: { findingId: string; message: string } | undefined,
+): ReactNode {
+  return (
+    <DispositionControls
+      formAction={`/p/${slug}/review/${runId}/findings/${view.id}/disposition`}
+      compact={compact}
+      labels={dispositionLabels}
+      suggestion={view.suggestion?.replacement ?? null}
+      {...(view.disposition
+        ? {
+            current: {
+              kind: view.disposition.kind as "accept" | "adapt" | "rebut" | "defer" | "escalate",
+              ...(view.disposition.rationale != null ? { rationale: view.disposition.rationale } : {}),
+              ...(view.disposition.adaptedText != null ? { adaptedText: view.disposition.adaptedText } : {}),
+              ...(view.disposition.reasonCode != null
+                ? { reasonCode: view.disposition.reasonCode as "wrong" }
+                : {}),
+            },
+          }
+        : {})}
+      {...(error && error.findingId === view.id ? { error: error.message } : {})}
+    />
+  );
+}
+
+/** A gate card model for the Needs-you surface (§6.4) — built from the api's GateCardDto. */
+function gateCardFor(
+  gate: GateCardDto,
+  slug: string,
+  compact: boolean,
+  error?: { findingId: string; message: string },
+): ReactNode {
+  const model = buildGateCard(
+    {
+      kind: gate.kind as Parameters<typeof buildGateCard>[0]["kind"],
+      onExpiry: gate.onExpiry as Parameters<typeof buildGateCard>[0]["onExpiry"],
+      blocking: gate.blocking,
+      held: gate.held,
+      openedAt: gate.openedAt,
+      deadlineAt: gate.deadlineAt ?? null,
+      presenceDeadlineAt: gate.presenceDeadlineAt ?? null,
+      pausedWhileReading: gate.pausedWhileReading,
+      spentCredits: gate.spentCredits,
+      capCredits: gate.capCredits,
+      remainingEstimateCredits: gate.remainingEstimateCredits ?? null,
+    },
+    new Date(),
+    compact ? "phone" : "full",
+  );
+  const rows: TriageLedgerRow[] | undefined = gate.triage?.rows.map((r) => ({
+    findingId: r.findingId,
+    ordinal: r.ordinal,
+    title: r.title,
+    severity: r.severity,
+    ...(r.disposition != null
+      ? {
+          disposition: {
+            kind: r.disposition.kind,
+            ...(r.disposition.rationale != null ? { rationale: r.disposition.rationale } : {}),
+            ...(r.disposition.actor != null ? { actor: r.disposition.actor } : {}),
+          },
+        }
+      : {}),
+  }));
+  const hasEscalations = rows?.some((r) => r.disposition?.kind === "escalate") ?? false;
+  return (
+    <GateCard
+      key={gate.id}
+      model={model}
+      compact={compact}
+      formAction={`/p/${slug}/gates/${gate.id}`}
+      activityUrl={`/p/${slug}/gates/${gate.id}/activity`}
+      labels={gateCardLabels}
+      {...(gate.artifactTitle != null ? { artifact: { title: gate.artifactTitle } } : {})}
+      hasEscalations={hasEscalations}
+    >
+      {rows != null ? (
+        <TriageLedger
+          rows={rows}
+          labels={triageLedgerLabels}
+          children={(row) => (
+            // the per-row override — the same disposition control the dossier uses (REQ-SPEC-20).
+            <DispositionControls
+              formAction={`/p/${slug}/findings/${row.findingId}/disposition`}
+              next={`/p/${slug}`}
+              compact
+              labels={dispositionLabels}
+              {...(error && error.findingId === row.findingId ? { error: error.message } : {})}
+              {...(row.disposition
+                ? {
+                    current: {
+                      kind: row.disposition.kind as "accept" | "adapt" | "rebut" | "defer" | "escalate",
+                      ...(row.disposition.rationale != null ? { rationale: row.disposition.rationale } : {}),
+                    },
+                  }
+                : {})}
+            />
+          )}
+        />
+      ) : undefined}
+    </GateCard>
+  );
+}
+
+/** Auth-gated: the delivered-review dossier (run card, letter, claims, second read, rubric, findings)
+ *  with the §5.7 disposition controls on every finalized finding (PRB.05). */
 export function DossierPage(): ReactNode {
-  const { dossier } = usePageData();
+  const { dossier, triage, compact } = usePageData();
   if (!dossier) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
@@ -459,7 +686,39 @@ export function DossierPage(): ReactNode {
 
       <div style={{ margin: "16px 0" }}>
         <h2 style={{ fontSize: "16px", fontWeight: 600 }}>{R.findingsHeading}</h2>
-        <FindingsList groups={groups} conflicts={conflicts} collapsedRejected={rejected} labels={findingsLabels} />
+        {/* pre-triage line (REQ-IDE-28) + the >30-findings triage promo (§5.7). */}
+        {(() => {
+          const summary = pretriageSummary([...dossier.findings]);
+          const queue = buildTriageQueue([...dossier.findings]);
+          return (
+            <>
+              {summary.triaged > 0 ? (
+                <p data-pretriage-line="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0 10px" }}>
+                  {fmt(COPY.triage.pretriageFmt, { n: summary.triaged, m: summary.total })}
+                </p>
+              ) : null}
+              {queue.promoteAgentTriage ? (
+                <p data-triage-promo="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
+                  {fmt(COPY.triage.promoFmt, { n: 30 })}
+                </p>
+              ) : null}
+            </>
+          );
+        })()}
+        <FindingsList
+          groups={groups}
+          conflicts={conflicts}
+          collapsedRejected={rejected}
+          labels={findingsLabels}
+          controlsFor={(view) =>
+            dispositionControlsFor(view, dossier.slug, dossier.runId, compact ?? false, triage?.dispositionError)
+          }
+        />
+        {triage?.savedFindingId ? (
+          <p data-disposition-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)", marginTop: "6px" }}>
+            {COPY.triage.savedLabel}
+          </p>
+        ) : null}
       </div>
     </Shell>
   );

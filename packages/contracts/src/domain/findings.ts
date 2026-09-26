@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { idSchema, isoSchema, urlSchema } from "../ids.js";
+import { reasonCodeSchema } from "../analytics.js";
 import {
   claimVerdictSchema,
   dispositionKindSchema,
@@ -68,6 +69,8 @@ export const dispositionSchema = z.object({
   status: dispositionStatusSchema,
   rationale: z.string().optional(),
   adaptedText: z.string().optional(),
+  /** REQ-BETA-6 — the one-tap reason chip (telemetry; never required). */
+  reasonCode: reasonCodeSchema.optional(),
   moveOrdinal: z.number().int().optional(),
   /** the free Apply verb (REQ-SPEC-6). */
   applied: z.boolean().optional(),
