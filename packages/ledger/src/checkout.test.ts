@@ -49,7 +49,10 @@ describe("startCheckout + resolveCheckoutSession", () => {
     );
     expect(out.url).toContain("checkout.stripe.test");
     const req = stripe.calls[0]!.args as { successUrl: string; cancelUrl: string; metadata?: unknown };
-    expect(req.successUrl).toBe(`https://app.test/billing/checkout-return?session=${out.sessionId}`);
+    // STB.4 — the return URL must be the deployed web route (`/billing/return?session_id=`); the
+    // earlier `/billing/checkout-return?session=` shape 404'd the Stripe redirect end-to-end.
+    expect(req.successUrl).toBe(`https://app.test/billing/return?session_id=${out.sessionId}`);
+    expect(req.cancelUrl).toBe(`https://app.test/billing/return?session_id=${out.sessionId}&cancelled=1`);
 
     const stripeId = (await db.client.query("select stripe_session_id from checkout_sessions where id = $1", [out.sessionId]))
       .rows[0]!.stripe_session_id as string;

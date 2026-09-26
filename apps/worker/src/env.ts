@@ -64,6 +64,11 @@ export interface WorkerEnv {
    * `no_stripe_port` skip — it must never fabricate a charge.
    */
   readonly stripeSecretKeyName?: string;
+  /**
+   * STB.4 — the Stripe API base the REST port calls (`STRIPE_API_BASE_URL`, default
+   * `https://api.stripe.com`). The test-mode vehicle (a Stripe-compatible edge). Never set on prod.
+   */
+  readonly stripeApiBaseUrl?: string;
   /** PRB.09 — the api origin one-click links point at (`<apiPublicUrl>/api/action/<token>`). */
   readonly apiPublicUrl?: string;
   /** PRB.09 — the web app origin for email deep links (`<appBaseUrl>/p/<project>/review/<run>`). */
@@ -140,6 +145,10 @@ export function readWorkerEnv(): WorkerEnv {
     // P1.16 — the Stripe Billing key is a secret-NAME (Secret Manager at boot) for auto-reload.
     ...(process.env.STRIPE_SECRET_KEY_NAME
       ? { stripeSecretKeyName: process.env.STRIPE_SECRET_KEY_NAME }
+      : {}),
+    // STB.4 — the test-mode vehicle's Stripe API base override (never on prod).
+    ...(process.env.STRIPE_API_BASE_URL
+      ? { stripeApiBaseUrl: process.env.STRIPE_API_BASE_URL }
       : {}),
     ...(process.env.API_PUBLIC_URL ? { apiPublicUrl: process.env.API_PUBLIC_URL } : {}),
     ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),

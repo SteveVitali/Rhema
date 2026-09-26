@@ -314,7 +314,14 @@ export async function startWorker(): Promise<void> {
     obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),
     ...(adminKey ? { reportSource: new AnthropicAdminReportSource({ adminKey }) } : {}),
     // P1.16 — the Stripe port for the auto-reload sweep (unset ⇒ logged no_stripe_port skip).
-    ...(stripeKey ? { stripe: new FetchStripePort(stripeKey) } : {}),
+    // STB.4 — `stripeApiBaseUrl` points the port at a test-mode edge when configured.
+    ...(stripeKey
+      ? {
+          stripe: env.stripeApiBaseUrl
+            ? new FetchStripePort(stripeKey, env.stripeApiBaseUrl)
+            : new FetchStripePort(stripeKey),
+        }
+      : {}),
     ...(alertSink ? { alert: alertSink } : {}),
     // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override
     // flips the workflow's `provisional` once real reports land).

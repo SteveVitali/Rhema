@@ -5820,15 +5820,21 @@ export function BillingPage(): ReactNode {
  *  ≤30 s, then the email fallback). `open` ⇒ renderDocument's autoRefresh re-polls; `completed`
  *  ⇒ the continue link returns to where the user started (REQ-BILL-14). */
 export function BillingReturnPage(): ReactNode {
-  const { checkoutReturn } = usePageData();
+  const { checkoutReturn, checkoutCancelled } = usePageData();
   const B = COPY.billing;
-  const state = checkoutReturn?.state ?? "open";
+  const state = checkoutCancelled ? "cancelled" : (checkoutReturn?.state ?? "open");
   const back = checkoutReturn?.returnTo ?? "/app/settings/billing";
   return (
     <Shell brand={COPY.brand} nav={<a href="/app/settings/billing">{B.nav}</a>} footer={footer()}>
       <SectionTitle>{B.returnHeading}</SectionTitle>
       <p data-checkout-state={state} style={{ fontSize: "14px", margin: "12px 0" }}>
-        {state === "completed" ? B.returnDone : state === "expired" ? B.returnExpired : B.returnPending}
+        {state === "completed"
+          ? B.returnDone
+          : state === "cancelled"
+            ? B.returnCancelled
+            : state === "expired"
+              ? B.returnExpired
+              : B.returnPending}
       </p>
       <p style={{ fontSize: "13px" }}>
         <a href={back} data-checkout-continue="true">

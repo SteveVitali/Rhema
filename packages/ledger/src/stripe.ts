@@ -391,9 +391,19 @@ async function processCheckoutCompleted(
     if (!tier || tier === "free" || !session.subscription) {
       return { kind: "unresolved", reason: `subscribe session ${ours.id} lacks plan/subscription` };
     }
-    const periodStart = deps.clock.now();
-    const periodEnd = new Date(periodStart.getTime());
-    periodEnd.setUTCMonth(periodEnd.getUTCMonth() + (cycle === "annual" ? 12 : 1));
+    // `customer.subscription.created` often lands first — the row it wrote carries the canonical
+    // Stripe period. Reuse it instead of clock-now so the activation grant keys on the same period
+    // the invoice/subscription arms use (STB.4: a drifted clock-now period double-granted the first
+    // period) and the stored bounds stay Stripe-synced.
+    const prior = (
+      await exec.query(
+        "select period_start, period_end from subscriptions where stripe_subscription_id = $1",
+        [session.subscription],
+      )
+    ).rows[0] as { period_start: string; period_end: string } | undefined;
+    const periodStart = prior ? new Date(prior.period_start) : deps.clock.now();
+    const periodEnd = prior ? new Date(prior.period_end) : new Date(periodStart.getTime());
+    if (!prior) periodEnd.setUTCMonth(periodEnd.getUTCMonth() + (cycle === "annual" ? 12 : 1));
     let subscriptionId = "";
     let converted = false;
     await deps.runTx(ours.workspaceId, async (tx) => {

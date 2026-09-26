@@ -231,7 +231,14 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     ...(stripeWebhookSecret ? { stripeWebhookSecret } : {}),
     ...(env.stripePaymentLinkUrl ? { paymentLinkUrl: env.stripePaymentLinkUrl } : {}),
     // P1.16 — the Billing port + the app origin Checkout success/cancel URLs bounce through.
-    ...(stripeKey ? { stripe: new FetchStripePort(stripeKey) } : {}),
+    // STB.4 — `stripeApiBaseUrl` points the port at a test-mode edge when configured (default api.stripe.com).
+    ...(stripeKey
+      ? {
+          stripe: env.stripeApiBaseUrl
+            ? new FetchStripePort(stripeKey, env.stripeApiBaseUrl)
+            : new FetchStripePort(stripeKey),
+        }
+      : {}),
     ...(env.appBaseUrl ? { appBaseUrl: env.appBaseUrl } : {}),
     // PRB.09 — the signed-action config the notification routes consume (+ the OrchestratorDeps field the
     // notify path uses when the api process itself schedules/emits).

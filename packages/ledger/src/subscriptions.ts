@@ -67,6 +67,28 @@ export async function grantIncludedCredits(
 ): Promise<{ granted: number; rolledOff: number }> {
   const monthly = planOf(args.tier).includedCreditsMonthly;
   if (monthly <= 0) return { granted: 0, rolledOff: 0 };
+  // Exactly one grant per (subscription, tier, billing period). The same Stripe period reaches the
+  // arms as different instants — the sub object's current_period_start, the invoice's period_start,
+  // the stored row, or the checkout-completed clock — so the exact idempotency key cannot dedupe
+  // across arms (STB.4: `customer.subscription.created` + `checkout.session.completed` each granted
+  // the first period and the included balance doubled). A prior included grant issued inside this
+  // period's window (slack: a webhook processed moments before the canonical period start) means the
+  // period is already granted — whichever arm arrives first wins, later arms are no-ops.
+  const prior = await tx.query(
+    `select 1 from credit_ledger
+       where billing_account_id = $1 and kind = 'grant' and bucket = 'included'
+         and reason = $2 and idempotency_key like $3
+         and at >= $4 and at <= $5
+       limit 1`,
+    [
+      args.billingAccountId,
+      `included:${args.tier}`,
+      `sub:${args.subscriptionId}:included:${args.tier}:%`,
+      new Date(args.periodStart.getTime() - DAY_MS),
+      args.periodEnd,
+    ],
+  );
+  if (prior.rows.length > 0) return { granted: 0, rolledOff: 0 };
   const res = await grant(tx, deps, {
     workspaceId: args.workspaceId,
     billingAccountId: args.billingAccountId,

@@ -47,6 +47,13 @@ export interface ApiEnv {
    */
   readonly stripeSecretKeyName?: string;
   /**
+   * STB.4 — the Stripe API base the REST port calls (`STRIPE_API_BASE_URL`, default
+   * `https://api.stripe.com`). The test-mode vehicle: a stage wired to `sk_test_…` + a
+   * Stripe-compatible edge (Stripe CLI forwarder / a test harness) sets this so the deployed code
+   * path is exercised byte-for-byte without touching a live endpoint. Never set on prod.
+   */
+  readonly stripeApiBaseUrl?: string;
+  /**
    * The beta's ONE real-money surface: the Stripe Payment Link the exhaustion panel links out to (deploy
    * config — a URL, not a secret). Unset ⇒ the panel renders no add-credits action.
    */
@@ -154,6 +161,10 @@ export function readApiEnv(): ApiEnv {
     // P1.16 — the Stripe Billing key is a secret-NAME too (Secret Manager at boot); unset ⇒ checkout 503s.
     ...(process.env.STRIPE_SECRET_KEY_NAME
       ? { stripeSecretKeyName: process.env.STRIPE_SECRET_KEY_NAME }
+      : {}),
+    // STB.4 — the test-mode vehicle's Stripe API base override (never on prod).
+    ...(process.env.STRIPE_API_BASE_URL
+      ? { stripeApiBaseUrl: process.env.STRIPE_API_BASE_URL }
       : {}),
     ...(process.env.STRIPE_PAYMENT_LINK_URL ? { stripePaymentLinkUrl: process.env.STRIPE_PAYMENT_LINK_URL } : {}),
     ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),

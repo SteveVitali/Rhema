@@ -362,6 +362,80 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
     expect((await readBalances(db, BA)).included!.available).toBe(12000); // Studio's included grant
   });
 
+  it("customer.subscription.created then checkout.session.completed grants the first period ONCE (STB.4 double-grant)", async () => {
+    // Stripe's usual ordering: subscription.created lands before checkout.session.completed.
+    await checkoutSessionRow({ id: "chk_race", kind: "subscribe", plan: "writer", cycle: "monthly", stripeSessionId: "cs_race" });
+    const created = await emit("evt_race_created", "customer.subscription.created", {
+      id: "sub_race_1",
+      status: "active",
+      customer: "cus_race",
+      current_period_start: unix(P0),
+      current_period_end: unix(P1),
+      metadata: { billing_account_id: BA, plan: "writer" },
+      items: { data: [{ plan: { interval: "month" } }] },
+    });
+    expect(created).toMatchObject({ kind: "subscription_synced", billingAccountId: BA });
+    const completed = await emit("evt_race_completed", "checkout.session.completed", {
+      id: "cs_race",
+      subscription: "sub_race_1",
+      customer: "cus_race",
+      metadata: { checkout_session_id: "chk_race" },
+    });
+    expect(completed).toMatchObject({ kind: "subscription_activated" });
+    // STB.4 regression — without the period-scoped dedupe, this was two 2000-credit grants.
+    const n = (
+      await db.client.query(
+        "select count(*)::int n from credit_ledger where billing_account_id=$1 and kind='grant' and bucket='included'",
+        [BA],
+      )
+    ).rows[0] as { n: number };
+    expect(n).toEqual({ n: 1 });
+    expect((await readBalances(db, BA)).included!.available).toBe(2000);
+    // the stored period stays Stripe-canonical (not the processing clock).
+    expect(new Date((await subRowByStripeId("sub_race_1"))!.period_start as string).toISOString()).toBe(
+      P0.toISOString(),
+    );
+  });
+
+  it("checkout.session.completed first, then subscription.created + the create-invoice — still one grant", async () => {
+    await checkoutSessionRow({ id: "chk_race2", kind: "subscribe", plan: "writer", cycle: "monthly", stripeSessionId: "cs_race2" });
+    const completed = await emit("evt_race2_completed", "checkout.session.completed", {
+      id: "cs_race2",
+      subscription: "sub_race_2",
+      customer: "cus_race2",
+      metadata: { checkout_session_id: "chk_race2" },
+    });
+    expect(completed).toMatchObject({ kind: "subscription_activated" });
+    // subscription.created for the known row → sync only (no grant); the create-invoice's paid arm
+    // names the same period through invoice.period_start — the window dedupe must still skip it.
+    await emit("evt_race2_created", "customer.subscription.created", {
+      id: "sub_race_2",
+      status: "active",
+      customer: "cus_race2",
+      current_period_start: unix(NOW),
+      current_period_end: unix(new Date(NOW.getTime() + 31 * 24 * 60 * 60 * 1000)),
+      metadata: { billing_account_id: BA, plan: "writer" },
+      items: { data: [{ plan: { interval: "month" } }] },
+    });
+    await emit("evt_race2_invoice", "invoice.paid", {
+      id: "in_race2",
+      subscription: "sub_race_2",
+      customer: "cus_race2",
+      billing_reason: "subscription_create",
+      period_start: unix(NOW),
+      period_end: unix(new Date(NOW.getTime() + 31 * 24 * 60 * 60 * 1000)),
+      metadata: { billing_account_id: BA },
+    });
+    const n = (
+      await db.client.query(
+        "select count(*)::int n from credit_ledger where billing_account_id=$1 and kind='grant' and bucket='included'",
+        [BA],
+      )
+    ).rows[0] as { n: number };
+    expect(n).toEqual({ n: 1 });
+    expect((await readBalances(db, BA)).included!.available).toBe(2000);
+  });
+
   it("customer.subscription.deleted ends the plan", async () => {
     await activate("sub_live_9");
     const out = await emit("evt_sub_del", "customer.subscription.deleted", {
