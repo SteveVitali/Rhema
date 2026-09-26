@@ -17,11 +17,11 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      PRB.01            # G1 PASSED + G2 DEFERRED (operator decision 2026-09-15, readouts/GATE-G2.md): proceed to Phase-B implementation. Next code ticket = 17_PRB.01__beta-shell-and-invites.md (implement-spec). H2 corpus + G2 wave-1 eval deferred (still HARD-gate public launch + §16.4 marketing claims).
-lastCompleted:   GATE-G1           # Phase-0 exit dispositioned PASSED (with accepted exceptions) 2026-09-15; see readouts/GATE-G1.md. Last code ticket: P0.15k (PR #28).
-blockedOn:       (nothing)         # a REAL block only (red verification, missing dependency/infra). Human gates + pending G1 are NOT blocks
+nextTicket:      PRB.02            # PRB.01 landed (PR #29). Next code ticket = 18_PRB.02__import-fetcher-convert.md (implement-spec). G2 wave-1 eval + H2 corpus still DEFERRED (HARD-gate public launch + §16.4 marketing claims).
+lastCompleted:   PRB.01            # beta web shell, invite gating, sample dossier (PR #29, base P0.15k). Deterministic ACs green + live HTTP boot; live auth/data = D-PRB.01-1/-3.
+blockedOn:       (nothing)         # a REAL block only (red verification, missing dependency/infra). Human gates + pending gates are NOT blocks
 pauseRequested:  false
-returnPass:      (none)            # P0.15j AC3 + P0.15k AC1 DONE live (2026-09-11, PR #28); the remaining narrow legs (D-P0.15-2/-3, D-P0.15k-1/-2, D-P0.08-2) are gate-pending DEFERRALS, not full-ticket re-runs
+returnPass:      (none)            # P0.15j AC3 + P0.15k AC1 DONE live (2026-09-11, PR #28); narrow legs are gate-pending DEFERRALS. PRB.01 live legs (D-PRB.01-1/-2/-3) are DEFERRALS, not re-runs
 manifest:        docs/tickets/00_MANIFEST.md
 canonicalSpec:   docs/rhema-design-spec.md
 memoryRoot:      docs/build
@@ -29,12 +29,12 @@ dispatchTarget:  manual
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, stevevitali/p0-01-monorepo-and-infra) — P0.01's fork point
-chainTip:        stevevitali/p0-15k-live-three-project-reviews-cost
+chainTip:        stevevitali/prb-01-beta-shell-and-invites
 benchmarkSet:    PENDING_CREATE     # §18 corpus is HUMAN row H2; dev set = the three real projects
 autonomy:        checkpoint
 mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up at the end
 round:           1
-updatedAt:       2026-09-15         # GATE G1 PASSED (with accepted exceptions); Phase 0 exited
+updatedAt:       2026-09-15         # PRB.01 landed (PR #29); chain advanced to Phase-B UI
 ```
 
 ## OPEN FINDINGS
@@ -119,3 +119,4 @@ run-time `P0.15b…P0.15i` inserts are `inserted` events. Reconstructed by MAINT
 - 2026-09-11 — P0.15k Stage B executed live — branch `stevevitali/p0-15k-live-three-project-reviews-cost` · PR #28 · operator-authorized (~$300 ceiling; ~$207 list / 12 runs spent; dev stack left UP) · **AC1 MET:** all 3 real projects' Reviews DELIVERED green on `dev` (`assessPhase0ExitForRun` PASSED: violations=0, sidecars ok, cited⇒fetched 0-miss on 22/36/26 URLs); provision ~20-23 s (< 45 s SLO) · **Path B (operator ruling, ADR-006, commit `eae46ba`):** cited⇒fetched wall confirmed live (224 fetched, still 18 cited-from-memory) → delivery strips unfetched citations + downgrades the claim, not a hard-fail; unblocked all 3 deliveries · **verdictContext Set-loss fix (commit `db455dc`):** Path B exposed a latent §12.8(c) crash (pod's JSON POST drops the Sets) → api rebuilds verdictContext server-side · **AC2 PARTIAL:** fold proven live — review (cal 1.949) + fact_check (1.793) → instrumented; revise/profile_voice blocked on fixtures (D-P0.15k-1); ±2% not comparable (D-P0.08-2) · **AC3 PARTIAL:** gate resolution live; structured-edit leg gate-pending (D-P0.15k-2) · **AC4 DONE:** readout rewritten with measured values · **Deferrals:** closed **D-P0.15-1, D-P0.15i-2**; opened D-P0.15k-1/-2; D-P0.15-2/-3 → PARTIAL · **G1:** CORE criterion (3-project reviews green) MET; narrow legs gate-pending; operator dispositions at `16a_GATE-G1` · next → GATE G1
 - 2026-09-15 — GATE G1 dispositioned — **PASSED, with accepted exceptions** (operator, after P0.15k Stage B / PR #28). §17 Phase-0 exit met: three real-project Reviews deliver green live (boundary=0, cited⇒fetched green via Path B/ADR-006, sidecars ok), start-latency p95 ~20–23 s (< 45 s), pilot-wave clause met deterministically. Phase-0 deferrals reconciled (`DEFERRALS.md` § "Reconciliation — G1 clear"): live rows DONE; §18-eval → G2; beta/IDE/CI/ops → later phases. **Accepted exceptions** (tracked): ±2% cross-check (D-P0.08-2/D-P0.15-2), live structured gate-EDIT (D-P0.15-3/D-P0.15k-2), revise/profile_voice fold (D-P0.15k-1). §16.4 caveat: marketing claims await the citation-completeness follow-up. **Phase 0 EXITED.** next → HUMAN-H2 (benchmark corpus) → GATE G2 (wave-1 LIFT, gates all Phase-B UI). See `readouts/GATE-G1.md`.
 - 2026-09-15 — GATE G2 deferred — **DEFERRED (operator decision): proceed to Phase-B implementation without the wave-1 eval.** Deliberate override of §17/REQ-EVAL-15 ("no UI spend beyond Phase 0 until G2") for build velocity; G2 NOT passed. H2 corpus + wave-1 eval deferred. Standing: §16.4 marketing/efficacy claims do NOT ship until LIFT met; REQ-EVAL-16 consequences apply retroactively to UI built if the eval later fails (UI spend at risk); G2 stays a HARD gate before public launch. next → **PRB.01** (`17_PRB.01__beta-shell-and-invites.md`, implement-spec). See `readouts/GATE-G2.md`.
+- 2026-09-15 — PRB.01 done — branch `stevevitali/prb-01-beta-shell-and-invites` · PR #29 · base `stevevitali/p0-15k-live-three-project-reviews-cost` · Beta web shell (React Router SSR via tsc/Hono, no Vite — ADR-007, REQ-BETA-21 stopgap #2): invite gate (@rhema/db 0016 + apps/api invite.ts, enforced at web /login before any auth; no public signup/pricing, REQ-BETA-19), project list from §6.3 `projectState` (REQ-PROD-9/REQ-SPEC-3, no stored status), public invite page + read-only sample dossier with a contradicted Tier-1 claim + fetched-URL chip (REQ-POS-3), §5.9 tokens (@rhema/tokens), React primitives (@rhema/ui), typed @rhema/api-client, reusable `lintCopy` over Appendix D.2 (REQ-PROD-6/REQ-BILL-18) · **Verify:** turbo build lint typecheck 102/102; pnpm test 1305 pass/2 skip; all 5 ACs deterministic (invite gate/project-list on PGlite, SSR render, route manifest, copy lint) + a live HTTP boot over a real socket; fresh-context design review → 3 fixes (consume() atomic-CTE race, Google email-bound pre-check, invalid aria-readonly→data-readonly) + 2 accepted/documented (consume wiring, check oracle); check-build-memory 0 violations · **Deferrals:** opened D-PRB.01-1/-2/-3 · closed none · **Deviations:** ADR-007 (React SSR, no Vite/framework-mode) · chainTip → `stevevitali/prb-01-beta-shell-and-invites` · next → PRB.02

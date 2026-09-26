@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { buildRatesPublication } from "@rhema/contracts";
 import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
+import { createShellRoutes } from "./project-list.js";
+import { createInviteGate, type SqlClient } from "./invite.js";
 
 // api — Hono REST + SSE. P0.08 adds run creation + the internal run API (run-routes.ts); P0.08b adds the
 // viewer-facing run-event SSE route (sse-routes.ts). Both mount when the orchestrator deps are supplied. The
@@ -14,12 +16,22 @@ export { createRunRoutes } from "./run-routes.js";
 export type { RunApiDeps, Principal } from "./run-routes.js";
 export { createSseRoutes, resolveSseAccess, parseAfterSeq } from "./sse-routes.js";
 export type { SseApiDeps } from "./sse-routes.js";
+export { createInviteGate } from "./invite.js";
+export type { InviteGate, InviteCheck, InviteRejectReason, SqlClient } from "./invite.js";
+export {
+  createShellRoutes,
+  listProjectStates,
+  assembleProjectStateInput,
+  type ProjectListRow,
+  type ShellApiDeps,
+} from "./project-list.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b). */
 export type ApiDeps = RunApiDeps & SseApiDeps;
 
-/** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes. */
-export function createApp(deps?: ApiDeps): Hono {
+/** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
+ *  `deps.db` (a SqlClient) to also mount the beta shell's project-list route (PRB.01). */
+export function createApp(deps?: ApiDeps & { db?: SqlClient }): Hono {
   const app = new Hono();
   app.get("/healthz", (c) => c.json({ ok: true, service: "api" }));
   // Public rate publication (REQ-BILL-19; §14.6): current + previous rate tables with effective dates and the
@@ -28,6 +40,16 @@ export function createApp(deps?: ApiDeps): Hono {
   if (deps) {
     app.route("/", createRunRoutes(deps));
     app.route("/", createSseRoutes(deps));
+    if (deps.db) {
+      app.route(
+        "/",
+        createShellRoutes({
+          principal: deps.principal,
+          db: deps.db,
+          inviteGate: createInviteGate(deps.db),
+        }),
+      );
+    }
   }
   return app;
 }

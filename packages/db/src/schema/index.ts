@@ -4,6 +4,7 @@
 // `backlog_items` is absent because migration 0005 drops it.
 
 export * from "./auth.js"; // P0.01: Better Auth tables (user, session, account, verification, device)
+export * from "./invites.js"; // PRB.01: beta invite gating (invites, invite_redemptions)
 export * from "./deployments.js"; // P0.01: deploy provenance (REQ-ARCH-39)
 export * from "./tenancy.js";
 export * from "./projects.js";
