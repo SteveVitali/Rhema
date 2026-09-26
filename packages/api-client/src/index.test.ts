@@ -54,4 +54,44 @@ describe("createApiClient", () => {
     });
     await expect(client.listProjects()).rejects.toBeInstanceOf(ApiError);
   });
+
+  it("estimate POSTs /projects/:id/estimates (the stateless service — REQ-SPEC-16)", async () => {
+    let seen: { url: string; init: RequestInit } | null = null;
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      headers: { cookie: "s=1" },
+      fetch: fakeFetch((url, init) => {
+        seen = { url, init };
+        return new Response(JSON.stringify({ estimateCredits: 560, capCredits: 840, rateTableVersion: 1, provisional: true, levers: {} }), { status: 200 });
+      }),
+    });
+    const est = await client.estimate("proj_pv", { workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 5180 } });
+    expect(est.estimateCredits).toBe(560);
+    expect(seen!.url).toBe("http://api.local/projects/proj_pv/estimates");
+    expect(seen!.init.method).toBe("POST");
+    expect((seen!.init.headers as Record<string, string>).cookie).toBe("s=1");
+  });
+
+  it("createRun POSTs /projects/:id/runs with the client-minted idempotency key (REQ-CHAT-25)", async () => {
+    let body: string | null = null;
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch((_url, init) => {
+        body = init.body as string;
+        return new Response(JSON.stringify({ runId: "run_1", state: "queued", deduped: false }), { status: 201 });
+      }),
+    });
+    const res = await client.createRun("proj_pv", {
+      idempotencyKey: "idem_1",
+      workflow: "review",
+      modelProfile: { tier: "balanced" },
+      modelTier: "balanced",
+      rigor: "standard",
+      estimateCredits: 560,
+      capCredits: 840,
+      rateTableVersion: 1,
+    });
+    expect(res.runId).toBe("run_1");
+    expect(JSON.parse(body!).idempotencyKey).toBe("idem_1");
+  });
 });

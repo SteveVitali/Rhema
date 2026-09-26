@@ -152,6 +152,12 @@ export interface EstimateOptions {
   readonly variant?: string;
   /** include the per-phase addend terms (default true); Quick review runs pass false (discourse/second read off). */
   readonly includeAddends?: boolean;
+  /**
+   * When set, include ONLY the named addend phases (an Advanced per-phase toggle set — REQ-BILL-5). Overrides
+   * `includeAddends`; an addend whose phase is absent is excluded. This is how the run sheet computes a signed
+   * delta for one phase toggle (e.g. discourse off) from the SAME estimator rather than a second formula.
+   */
+  readonly enabledAddends?: readonly string[];
 }
 
 function evalTerms(t: EstimatorTerms, inp: EstimatorInputs): number {
@@ -181,8 +187,12 @@ export function estimateCredits(spec: EstimatorSpec, inputs: EstimatorInputs, op
     );
   }
   let base = evalTerms(primary, inputs);
-  if (opts.includeAddends !== false && spec.addends) {
-    for (const a of spec.addends) base += evalTerms(a.terms, inputs);
+  if (spec.addends) {
+    const enabled = opts.enabledAddends;
+    for (const a of spec.addends) {
+      const include = enabled ? enabled.includes(a.phase) : opts.includeAddends !== false;
+      if (include) base += evalTerms(a.terms, inputs);
+    }
   }
   const scaled = base * (spec.calibrationScale ?? 1);
   return Math.ceil(scaled * MODEL_TIER_MULTIPLIERS[opts.tier] * rigorMultiplier(spec.workflow, opts.rigor));

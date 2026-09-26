@@ -43,6 +43,49 @@ export interface InviteCheckDto {
   readonly reason?: string;
 }
 
+/** The stateless estimate request (REQ-SPEC-16). Mirrors the api's `POST /projects/:id/estimates` body. */
+export interface EstimateRequestDto {
+  readonly workflow: string;
+  readonly rigor: "quick" | "standard" | "full_board";
+  readonly modelTier: "base" | "balanced" | "frontier";
+  readonly inputs?: Readonly<{ words?: number; claims?: number; findings?: number; movesWithResearch?: number }>;
+  readonly variant?: string;
+  readonly draftSha?: string;
+  readonly refine?: boolean;
+}
+
+/** The estimate response (REQ-SPEC-16): `{estimate, cap, levers, claimCount?}`. `levers` is the lever matrix. */
+export interface EstimateDto {
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+  readonly rateTableVersion: number;
+  readonly provisional: boolean;
+  readonly claimCount?: number;
+  readonly levers: unknown;
+}
+
+/** The run-creation body the sheet's Run click POSTs (REQ-CHAT-25 — the only run creator). */
+export interface CreateRunDto {
+  readonly idempotencyKey: string;
+  readonly workflow: string;
+  readonly modelProfile: unknown;
+  readonly modelTier: "base" | "balanced" | "frontier";
+  readonly rigor: "quick" | "standard" | "full_board";
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+  readonly rateTableVersion: number;
+  readonly inputs?: Readonly<Record<string, unknown>>;
+  /** the frozen input snapshot (REQ-BILL-6): word/claim counts the estimate was computed for. */
+  readonly inputSnapshot?: Readonly<Record<string, unknown>>;
+  readonly draftId?: string;
+}
+
+export interface CreatedRunDto {
+  readonly runId: string;
+  readonly state: string;
+  readonly deduped?: boolean;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -72,6 +115,10 @@ export interface ApiClient {
   listProjects(init?: RequestInitLite): Promise<ProjectRow[]>;
   /** Validate a beta invite code (and, for an email-bound invite, the email) before a signup is attempted. */
   checkInvite(code: string, email?: string): Promise<InviteCheckDto>;
+  /** The stateless, cached estimate (REQ-SPEC-16) — creates no run row and emits `run.estimated`. */
+  estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto>;
+  /** The sheet's Run click — the ONLY run creator (REQ-CHAT-25); the client-minted idempotency key is in the body. */
+  createRun(projectId: string, req: CreateRunDto, init?: RequestInitLite): Promise<CreatedRunDto>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -102,6 +149,20 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code, email }),
+      });
+    },
+    async estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto> {
+      return json<EstimateDto>(`/projects/${encodeURIComponent(projectId)}/estimates`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async createRun(projectId: string, req: CreateRunDto, init?: RequestInitLite): Promise<CreatedRunDto> {
+      return json<CreatedRunDto>(`/projects/${encodeURIComponent(projectId)}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
       });
     },
   };

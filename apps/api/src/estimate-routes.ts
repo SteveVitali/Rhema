@@ -1,0 +1,207 @@
+// The stateless, cached estimate endpoint (REQ-SPEC-16; §5.6 item 1; §12.4 step 1). `POST
+// /projects/:id/estimates {workflow, rigor, model_profile, inputs}` → `{estimate, cap, levers, claimCount?}`.
+// It creates NO `runs` row (the sheet's Run click is the only run creator — REQ-CHAT-25) and emits
+// `run.estimated`. Two figures from the same estimator: an IMMEDIATE provisional figure from the word
+// count (returned without ever blocking the Run button), and a REFINED figure from a Haiku-class claim
+// pre-pass cached per (draft sha, workflow, rigor, tier) — its ~5-credit COGS absorbed, paid once per draft
+// version (§5.6 item 1). The pre-pass and the cache are DI'd seams; the live Haiku call is a deferred leg.
+
+import { Hono } from "hono";
+import {
+  buildEstimate,
+  buildLeverMatrix,
+  type LeverMatrix,
+} from "@rhema/run-sheet";
+import type { EstimatorInputs } from "@rhema/protocols";
+import type { ModelTier, Rigor, WorkflowKey } from "@rhema/contracts";
+import type { Principal } from "./run-routes.js";
+
+/** The Haiku-class claim pre-pass (§5.6 item 1). Returns the refined claim count for a draft version. */
+export interface ClaimPrePass {
+  count(args: { projectId: string; draftSha?: string; workflow: WorkflowKey; inputs: EstimatorInputs }): Promise<number>;
+}
+
+/** One cached estimate row (per the `(draft sha, workflow, rigor, tier)` `cache_key`). */
+export interface CachedEstimate {
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+  readonly rateTableVersion: number;
+  readonly claimCount: number | null;
+  readonly provisional: boolean;
+}
+
+/** The `estimate_cache` store seam (0017). Live binds to Postgres; tests bind an in-memory/PGlite store. */
+export interface EstimateCacheStore {
+  get(cacheKey: string): Promise<CachedEstimate | null>;
+  put(cacheKey: string, row: CachedEstimate): Promise<void>;
+}
+
+/** The analytics `run.estimated` event (§3.5; REQ-SPEC-16) — no `runs` row, just telemetry. */
+export interface RunEstimatedEvent {
+  readonly kind: WorkflowKey;
+  readonly rigor: Rigor;
+  readonly estimate: number;
+  readonly cap: number;
+  readonly levers_shown: boolean;
+}
+
+export interface EstimateApiDeps {
+  principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
+  /** the pre-pass result cache (0017). Unset ⇒ every call is provisional (no refinement persisted). */
+  readonly estimateCache?: EstimateCacheStore;
+  /** the Haiku-class claim pre-pass. Unset ⇒ refinement is a deferred live leg (stays provisional). */
+  readonly claimPrePass?: ClaimPrePass;
+  /** emit `run.estimated` (REQ-SPEC-16). Unset ⇒ no telemetry. */
+  emitEstimated?(ctx: { projectId: string; principal: Principal }, event: RunEstimatedEvent): void;
+  /** the pre-pass budget in ms (§5.6 item 1: ≤5 s). Default 5000. */
+  readonly prePassBudgetMs?: number;
+  clock?: { now(): Date };
+}
+
+interface EstimateBody {
+  workflow: string;
+  rigor: Rigor;
+  modelTier: ModelTier;
+  modelProfile?: unknown;
+  inputs?: EstimatorInputs;
+  variant?: string;
+  draftSha?: string;
+  entitlement?: boolean;
+  breakerMultiplier?: 1 | 2;
+  /** the client's follow-up refine request (within ≤5 s of open); default false (the immediate figure). */
+  refine?: boolean;
+}
+
+/** The `(draft sha, workflow, rigor, tier[, variant])` cache key (§12.4 step 1). */
+export function estimateCacheKey(b: {
+  draftSha?: string;
+  workflow: string;
+  rigor: Rigor;
+  modelTier: ModelTier;
+  variant?: string;
+}): string {
+  return [b.draftSha ?? "nosha", b.workflow, b.rigor, b.modelTier, b.variant ?? ""].join("|");
+}
+
+/** Race a promise against a budget; resolves `null` if the budget elapses first (never rejects on timeout). */
+async function withBudget<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), ms);
+  });
+  try {
+    return await Promise.race([p.then((v) => v), timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
+export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
+  const app = new Hono();
+
+  app.post("/projects/:id/estimates", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const projectId = c.req.param("id");
+    const body = (await c.req.json()) as EstimateBody;
+    if (!body.workflow || !body.rigor || !body.modelTier) {
+      return c.json({ error: "workflow, rigor and modelTier required" }, 400);
+    }
+    const workflow = body.workflow as WorkflowKey;
+    const inputs = body.inputs ?? {};
+    const common = {
+      workflow,
+      rigor: body.rigor,
+      modelTier: body.modelTier,
+      inputs,
+      ...(body.variant ? { variant: body.variant } : {}),
+      ...(body.breakerMultiplier ? { breakerMultiplier: body.breakerMultiplier } : {}),
+    } as const;
+
+    const cacheKey = estimateCacheKey(body);
+
+    // A cached REFINED row short-circuits both intents (the pre-pass COGS is paid once per draft version).
+    const cached = deps.estimateCache ? await deps.estimateCache.get(cacheKey) : null;
+    if (cached && !cached.provisional) {
+      return respond(c, deps, { projectId, principal }, workflow, body.rigor, {
+        estimateCredits: cached.estimateCredits,
+        capCredits: cached.capCredits,
+        rateTableVersion: cached.rateTableVersion,
+        provisional: false,
+        ...(cached.claimCount != null ? { claimCount: cached.claimCount } : {}),
+        levers: buildLeverMatrix({ ...common, claimCount: cached.claimCount ?? undefined }),
+      });
+    }
+
+    // The IMMEDIATE provisional figure — never blocks the Run button (§5.6 item 1).
+    const provisional = buildEstimate(common);
+
+    // A refine request runs the pre-pass under the ≤5 s budget and caches the refined figure (§5.6 item 1).
+    if (body.refine && deps.claimPrePass) {
+      const count = await withBudget(
+        deps.claimPrePass.count({ projectId, draftSha: body.draftSha, workflow, inputs }),
+        deps.prePassBudgetMs ?? 5000,
+      );
+      if (count != null) {
+        const refined = buildEstimate({ ...common, claimCount: count });
+        if (deps.estimateCache) {
+          await deps.estimateCache.put(cacheKey, {
+            estimateCredits: refined.estimateCredits,
+            capCredits: refined.capCredits,
+            rateTableVersion: refined.rateTableVersion,
+            claimCount: refined.claimCount ?? count,
+            provisional: false,
+          });
+        }
+        return respond(c, deps, { projectId, principal }, workflow, body.rigor, {
+          estimateCredits: refined.estimateCredits,
+          capCredits: refined.capCredits,
+          rateTableVersion: refined.rateTableVersion,
+          provisional: false,
+          ...(refined.claimCount != null ? { claimCount: refined.claimCount } : {}),
+          levers: buildLeverMatrix({ ...common, claimCount: count }),
+        });
+      }
+      // budget elapsed → fall through to the provisional figure (the Run button was never blocked).
+    }
+
+    return respond(c, deps, { projectId, principal }, workflow, body.rigor, {
+      estimateCredits: provisional.estimateCredits,
+      capCredits: provisional.capCredits,
+      rateTableVersion: provisional.rateTableVersion,
+      provisional: provisional.provisional,
+      ...(provisional.claimCount != null ? { claimCount: provisional.claimCount } : {}),
+      levers: buildLeverMatrix(common),
+    });
+  });
+
+  return app;
+}
+
+interface EstimateResponse {
+  estimateCredits: number;
+  capCredits: number;
+  rateTableVersion: number;
+  provisional: boolean;
+  claimCount?: number;
+  levers: LeverMatrix;
+}
+
+/** Emit `run.estimated` (REQ-SPEC-16) and return the estimate response. NO `runs` row is ever created. */
+function respond(
+  c: { json: (b: unknown, s?: number) => Response },
+  deps: EstimateApiDeps,
+  ctx: { projectId: string; principal: Principal },
+  workflow: WorkflowKey,
+  rigor: Rigor,
+  res: EstimateResponse,
+): Response {
+  deps.emitEstimated?.(ctx, {
+    kind: workflow,
+    rigor,
+    estimate: res.estimateCredits,
+    cap: res.capCredits,
+    levers_shown: true,
+  });
+  return c.json(res);
+}
