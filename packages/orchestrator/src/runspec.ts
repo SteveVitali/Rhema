@@ -38,7 +38,13 @@ export const DEFAULT_MAX_TURNS = 40;
 export interface HookPolicyInput {
   readonly seat: AgentTypeKey;
   readonly personaId?: string;
-  readonly roots?: { readonly project?: string; readonly persona?: string; readonly skills?: string };
+  readonly roots?: {
+    readonly project?: string;
+    readonly persona?: string;
+    readonly skills?: string;
+    /** Harness-injected (the staged `<CLAUDE_CONFIG_DIR>/skills`) — never set server-side. */
+    readonly config?: string;
+  };
   /** the seat's permitted tool tokens (from the `agent_types` row); `web_fetch` gating is in `urlPolicy`. */
   readonly tools: readonly string[];
   readonly urlPolicy: UrlPolicy;
@@ -467,6 +473,18 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       ? {
           research_fanout:
             "Context contract (PRB.24): do NOT run one long research session over the whole claim/topic inventory — every request resends the full session transcript. Fan research out to `researcher` subagents in bounded batches of at most 5 items each. A researcher verifies ONLY its assigned items and returns a compact verdict list (item → verdict → retrieved source URLs) — never pasted page text. Assemble the ledger/report rows yourself from the returned verdicts and write the dossier file incrementally as each batch returns; if a subagent's batch stalls, re-delegate the remaining items in a fresh batch rather than continuing in your own context.",
+        }
+      : {}),
+    // DEF.1 Stage-B (live rerun 01M3E8F8…, draft attempts 1–5): the ported skill names the ledger's
+    // canonical layout in `references/draft-ledger.md`, but that file lived at `/app/skills/…` —
+    // outside every §12.6 mount root — so the model's Read escape-denied and it improvised a prose
+    // ledger `draftedSectionCount` reads as ZERO (draft_sections_eq_plan failed on every attempt).
+    // The skills mount grant makes the reference readable; this input line points the model at the
+    // exact path up front so it never has to discover it, and names the parser's hard contract.
+    ...(hyd.workflow === "draft" && phase.key === "draft"
+      ? {
+          draft_ledger_contract:
+            "Before writing 04-draft-ledger.md, READ the canonical format at /app/skills/draft-from-outline/references/draft-ledger.md (readable; mounted for your seat). Its required shape is a `## Sections` table with these columns: | # | Section | Function (from plan) | Budget | Actual | Status | Claim rows used | Deviation | — one row per plan section, Status ∈ drafted|seams-read|verified. Prose headings/bullets do NOT parse and fail the phase predicate.",
         }
       : {}),
   };

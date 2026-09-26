@@ -358,6 +358,35 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
   });
 
+  // DEF.1 Stage-B — the draft phase pins a pointer to the canonical ledger reference (the live
+  // failure: the model couldn't read /app/skills/…/draft-ledger.md and improvised a prose ledger
+  // that draftedSectionCount reads as zero → draft_sections_eq_plan failed on five attempts).
+  it("the draft phase carries `draft_ledger_contract` naming the canonical reference + the parse contract", async () => {
+    const runId = await seedWorkflowRun("run_draft_ledger", "draft");
+    // commit intake/voice/plan/grounding so the selected phase is `draft` (index 4).
+    const order = ["intake", "voice", "plan", "grounding"] as const;
+    for (const [i, key] of order.entries()) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_dl_${i}`, runId, key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("draft");
+    const hint = String(spec.request.inputs.draft_ledger_contract);
+    expect(hint).toContain("/app/skills/draft-from-outline/references/draft-ledger.md");
+    expect(hint).toContain("## Sections");
+    expect(hint).toContain("drafted");
+  });
+
+  it("a non-draft phase carries NO draft_ledger_contract input", async () => {
+    const runId = await seedWorkflowRun("run_no_draft_ledger", "draft");
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("intake");
+    expect(spec.request.inputs.draft_ledger_contract).toBeUndefined();
+  });
+
   it("F16 — run-scope guidance is delivered into `inputs.guidance` at the phase boundary + marked consumed", async () => {
     const runId = await seedWorkflowRun("run_guid", "revise");
     // the pretriage-style note captured at run creation (run-scope, queued_message source).

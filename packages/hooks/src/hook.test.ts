@@ -290,6 +290,50 @@ describe("baked skill tree reads (DEF.1 Stage-B)", () => {
     expect(d.decision).toBe("deny");
     expect(d.reason).toBe("path escapes the sandbox root");
   });
+
+  it("allows reads at the staged <configDir>/skills path when the harness supplies the config root", () => {
+    const policy = compileSeatPolicy({
+      seat: "author",
+      personaId: "p1",
+      tools: ["read", "write"],
+      phase: RESEARCH,
+      runId: "run_1",
+      agentLabel: "author",
+      roots: { config: "/config/skills" },
+    });
+    // The staged dir itself (a plain `ls` / Glob target that needs no symlink resolution).
+    const ls = evaluateToolUse(
+      { tool: "Glob", input: { path: "/config/skills/draft-from-outline", pattern: "*" } },
+      policy,
+      newDenialState(),
+      { ...CTX, resolveRealpath: (p: string) => p },
+    );
+    expect(ls.decision).toBe("allow");
+    // A Read THROUGH the staged symlink realpaths to /app/skills — classified under the skills root.
+    const throughSymlink = evaluateToolUse(
+      { tool: "Read", input: { file_path: "/config/skills/draft-from-outline/references/draft-ledger.md" } },
+      policy,
+      newDenialState(),
+      {
+        ...CTX,
+        resolveRealpath: (p: string) =>
+          p.startsWith("/config/skills/") ? p.replace("/config/skills", "/app/skills") : p,
+      },
+    );
+    expect(throughSymlink.decision).toBe("allow");
+    expect(throughSymlink.accessRows[0]?.path).toBe("/app/skills/draft-from-outline/references/draft-ledger.md");
+  });
+
+  it("does not grant the config root when the harness does not supply it", () => {
+    const policy = editorPolicy(RESEARCH);
+    const d = evaluateToolUse(
+      { tool: "Glob", input: { path: "/config/skills", pattern: "*" } },
+      policy,
+      newDenialState(),
+      CTX,
+    );
+    expect(d.decision).toBe("deny");
+  });
 });
 
 describe("toPreToolUseResult adapter", () => {

@@ -297,7 +297,16 @@ async function postAudit(args: {
     // the daemon holds the audit writer; the agent asks it for allow/deny and learns nothing else (§12.6). The
     // policy is server-authored (REQ-ARCH-17): the api ships JSON-safe compile inputs; the harness compiles the
     // live SeatPolicy here with the SAME @rhema/hooks code + a fresh per-phase DenialState.
-    const policy = compileSeatPolicy(spec.hookPolicyInput as unknown as CompileInput);
+    // The staged skills dir (`<configDir>/skills`) is harness-side env state the server never sees, so
+    // the `config` root is injected here at compile time — it grants read on the symlink dir itself
+    // (reads through a link realpath to `/app/skills` and classify under the skills root either way).
+    const policy = compileSeatPolicy({
+      ...(spec.hookPolicyInput as unknown as CompileInput),
+      roots: {
+        ...spec.hookPolicyInput.roots,
+        config: `${configDir}/skills`,
+      },
+    } as CompileInput);
     // REQ-ARCH-18 / REQ-DATA-16: the §12.6 audit sink — the daemon writes every allow/deny + fetch row into a
     // buffered writer that ships to `POST /internal/runs/:id/audit` (run-token auth, fenced, append-only). The
     // sink lives harness-side: nothing but the allow/deny decision crosses the agent socket. Rows ship on a

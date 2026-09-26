@@ -74,6 +74,7 @@ function rootsOf(policy: SeatPolicy): { base: string }[] {
   const roots = [{ base: policy.roots.project }];
   if (policy.roots.persona) roots.push({ base: policy.roots.persona });
   if (policy.roots.skills) roots.push({ base: policy.roots.skills });
+  if (policy.roots.config) roots.push({ base: policy.roots.config });
   return roots;
 }
 

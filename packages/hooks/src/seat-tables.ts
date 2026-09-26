@@ -25,15 +25,23 @@ export const DEFAULT_SKILLS_ROOT = "/app/skills";
  * `roots.project`) exists. `<id>` in the persona template is substituted with the run's persona directory id.
  */
 export function resolveSeatRoots(input: {
-  readonly roots?: { readonly project?: string; readonly persona?: string; readonly skills?: string };
+  readonly roots?: {
+    readonly project?: string;
+    readonly persona?: string;
+    readonly skills?: string;
+    readonly config?: string;
+  };
   readonly personaId?: string;
-}): { project: string; persona: string; skills: string } {
+}): { project: string; persona: string; skills: string; config?: string } {
   const personaTemplate = input.roots?.persona ?? DEFAULT_PERSONA_ROOT;
   const persona = input.personaId ? personaTemplate.replace("<id>", input.personaId) : personaTemplate;
   return {
     project: input.roots?.project ?? DEFAULT_PROJECT_ROOT,
     persona,
     skills: input.roots?.skills ?? DEFAULT_SKILLS_ROOT,
+    // No default — `config` (the staged `<CLAUDE_CONFIG_DIR>/skills`) is harness-side state; the server
+    // never knows it, so it only enters the roots set when the harness passes it at compile time.
+    ...(input.roots?.config ? { config: input.roots.config } : {}),
   };
 }
 
@@ -138,8 +146,14 @@ export interface CompileInput {
   readonly seat: AgentTypeKey;
   /** The persona directory id for this run (substituted for `<id>` in persona namespaces/roots). */
   readonly personaId?: string;
-  /** Mount roots; defaults to the container layout `/work/project` + `/work/personas/<id>` + `/app/skills`. */
-  readonly roots?: { readonly project?: string; readonly persona?: string; readonly skills?: string };
+  /** Mount roots; defaults to the container layout `/work/project` + `/work/personas/<id>` + `/app/skills`.
+   *  `config` (the staged `<CLAUDE_CONFIG_DIR>/skills`) has no default — the harness passes it. */
+  readonly roots?: {
+    readonly project?: string;
+    readonly persona?: string;
+    readonly skills?: string;
+    readonly config?: string;
+  };
   /** The seat's permitted tool tokens (from the `agent_types` row). */
   readonly tools: Iterable<string>;
   readonly urlPolicy?: UrlPolicy;
@@ -170,8 +184,17 @@ function resolveNamespace(ns: Namespace, personaId: string | undefined): Namespa
   return ns;
 }
 
-function baseFor(root: MountRoot, roots: { project: string; persona: string; skills: string }): string {
-  return root === "project" ? roots.project : root === "persona" ? roots.persona : roots.skills;
+function baseFor(root: MountRoot, roots: { project: string; persona: string; skills: string; config?: string }): string {
+  switch (root) {
+    case "project":
+      return roots.project;
+    case "persona":
+      return roots.persona;
+    case "skills":
+      return roots.skills;
+    case "config":
+      return roots.config!;
+  }
 }
 
 /**
@@ -196,8 +219,14 @@ export function compileSeatPolicy(input: CompileInput): SeatPolicy {
   // it improvised a prose ledger the `draft_sections_eq_plan` parser could not read (STB.3 rerun 01M3E8F8…).
   // Read-only: the grant widens visibility to protocol content only — no seat ever writes `/app/skills`.
   specs.push({ glob: "**", root: "skills", mode: "read", namespace: "shared" });
+  // …and the staged symlink dir itself (`<CLAUDE_CONFIG_DIR>/skills/<name>` → `/app/skills/<name>`):
+  // the model resolves SKILL.md's relative `references/…` paths against the STAGED path, and may `ls`
+  // the dir. Reads through a symlink realpath to the skills root; the dir itself + non-symlinked
+  // children classify under this root. Only granted when the harness passed the root (it's env-state).
+  if (roots.config) specs.push({ glob: "**", root: "config", mode: "read", namespace: "shared" });
 
   const hasPersonaMount = specs.some((s) => s.root === "persona");
+  const hasConfigMount = specs.some((s) => s.root === "config");
   const mounts: MountRule[] = specs.map((s) => ({
     ...s,
     namespace: resolveNamespace(s.namespace, input.personaId),
@@ -210,6 +239,7 @@ export function compileSeatPolicy(input: CompileInput): SeatPolicy {
       project: roots.project,
       ...(hasPersonaMount ? { persona: roots.persona } : {}),
       skills: roots.skills,
+      ...(hasConfigMount ? { config: roots.config } : {}),
     },
     mounts,
     tools: new Set(input.tools),
