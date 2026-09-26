@@ -27,6 +27,7 @@ import {
   computeBetaDashboard,
   renderBetaDashboard,
   killTrial,
+  reconcileBalances,
   type EntryDeps,
 } from "@rhema/ledger";
 import { systemClock, randomUlids, RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
@@ -80,6 +81,10 @@ const USAGE = `rhema admin — operator billing actions (every action is audited
                  (REQ-VIS-11: refuses without a live 72-h grant; writes the user-visible
                   support_access_log row + the admin_actions audit row for the one access)
   beta-report  [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>]   (default: the trailing 7 days)
+  recompute-balances --billing-account <id> [--apply]
+                 (DEF.2 — the deterministic held/available reconcile: DRY-RUN by default — prints the
+                  ledger-fold position, the counter-vs-fold divergences and the planned hold backfills;
+                  --apply appends the reconcile holds + rewrites credit_balances + audits the repair)
 `;
 
 /**
@@ -251,6 +256,47 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
           at: now,
         });
         out(`support access recorded for ${userId} (grant ${grant.id}, expires logged)`);
+        return 0;
+      }
+      case "recompute-balances": {
+        // DEF.2 (F4) — the deterministic correction path behind the nightly `balances = Σ ledger`
+        // assertion. DRY-RUN is the default: print the fold, the divergences and the planned backfill
+        // holds and write NOTHING (production verification stays read-only). `--apply` performs the
+        // documented repair: a `reconcile`-sourced hold per negative-fold bucket (the reservation the
+        // unheld debits never placed) + the `credit_balances` counter rewritten to the fold + the
+        // `admin_actions('balance_recompute')` audit row — one tenant tx per account.
+        if (!billingAccountId) return (out(USAGE), 2);
+        const apply = rest.includes("--apply");
+        const res = await reconcileBalances(
+          {
+            ...deps,
+            runTx: (ws, fn) => deps.txRunner.run(ws, fn),
+            workspacesForAccount: async (acct) =>
+              (
+                (
+                  await deps.systemExec.query(
+                    "select id from workspaces where billing_account_id = $1 order by created_at, id",
+                    [acct],
+                  )
+                ).rows as { id: string }[]
+              ).map((r) => r.id),
+            actor: deps.operatorId,
+          },
+          { billingAccountId, apply },
+        );
+        for (const b of res.backfills) {
+          out(`  backfill hold ${b.credits} cr → ${b.bucket}${b.ledgerId ? ` (ledger ${b.ledgerId})` : " (planned)"}`);
+        }
+        for (const d of res.divergences) {
+          out(
+            `  ${d.bucket}: available ${d.actualAvailable}→${d.expectedAvailable}, held ${d.actualHeld}→${d.expectedHeld}`,
+          );
+        }
+        out(
+          res.applied
+            ? `recomputed ${billingAccountId} — ${res.divergences.length} divergent bucket(s) repaired, ${res.backfills.length} backfill(s), audit ${res.auditId}`
+            : `dry-run ${billingAccountId} — ${res.divergences.length} divergent bucket(s), ${res.backfills.length} backfill(s) planned (pass --apply to repair)`,
+        );
         return 0;
       }
       case "beta-report": {

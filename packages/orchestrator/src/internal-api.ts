@@ -51,7 +51,13 @@ import { userSourceMounts } from "./user-sources.js";
 import { applyOutlineApproval } from "./outline-delivery.js";
 import { applyFigureDelivery, enqueueFigureRender } from "./figure-delivery.js";
 import type { FigureClaimsMountProvider } from "./figure-claims.js";
-import { reconcileRunSpend } from "./spend.js";
+import {
+  absorbMeteredGap,
+  incrementalMeteredDebit,
+  netDebitedCredits,
+  reconcileRunSpend,
+  settleMeteredDebit,
+} from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
 /** The full DI bundle the internal API + provisioning + reaper + phase loop share. */
@@ -863,10 +869,15 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         }
       }
 
-      // debit per committed step (REQ-DATA-34), coupling into the ledger inside the commit tx. `args.credits`
-      // is the step's reconciled cost (from the proxy's metered rows); P0.11's `debit` enforces min(actual,
-      // cap − Σ) under the run-row lock. idempotent on (run, step, attempt) via the ledger's idempotency key.
-      if (args.credits > 0) {
+      // debit per committed step (REQ-DATA-34), coupling into the ledger inside the commit tx. DEF.2/F5:
+      // the charge follows the PROXY meter, not only the pod's claim — `incrementalMeteredDebit` returns
+      // max(args.credits, attempt metered − attempt debited), so a step rollup that under-counts burn the
+      // proxy saw (subagent fan-out, server-tool fees — the PRB.25 gap) commits the metered delta at the
+      // next boundary instead of leaking it (STB.3's committed-vs-metered divergence). `args.credits`
+      // remains the floor and the whole story where no proxy rows exist; P0.11's `debit` still enforces
+      // min(actual, cap − Σ) under the run-row lock. idempotent on (run, step, attempt).
+      const debitCredits = await incrementalMeteredDebit(tx, args.runId, args.attempt, args.credits);
+      if (debitCredits > 0) {
         const ba = (
           await tx.query("select w.billing_account_id from runs r join workspaces w on w.id=r.workspace_id where r.id=$1", [
             args.runId,
@@ -878,7 +889,7 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
           workspaceId: args.workspaceId,
           runId: args.runId,
           phaseId: stepId,
-          credits: args.credits,
+          credits: debitCredits,
           idempotencyKey: `debit:${args.runId}:${args.stepKey}:${args.attempt}`,
         });
       }
@@ -1158,7 +1169,28 @@ export async function failStep(
             },
           },
         });
-        await reconcileRunSpend(tx, args.runId);
+        // DEF.2/F5 — a failed run refunds its net committed debits (§12.4 step 9: failed/refused runs
+        // `refund` their debits), then the metered burn the user did not pay books absorbed (platform
+        // COGS — REQ-SPEC-24.8 "carried in the reserve"). The refund precedes the absorb so the gap is
+        // computed against the post-refund charge (≈ the whole metered figure).
+        if (money) {
+          const netDebited = await netDebitedCredits(tx, args.runId);
+          if (netDebited > 0) {
+            await deps.ledger.refund(tx, {
+              billingAccountId: money.billing_account_id,
+              workspaceId: args.workspaceId,
+              runId: args.runId,
+              credits: netDebited,
+              idempotencyKey: `refund:${args.runId}`,
+            });
+            await deps.eventWriter.append(tx, {
+              runId: args.runId,
+              type: "cost.refunded",
+              payload: { credits: netDebited, reason: terminal.code },
+              at: now,
+            });
+          }
+        }
         if (money?.hold_ledger_id) {
           await deps.ledger.release(tx, {
             billingAccountId: money.billing_account_id,
@@ -1168,6 +1200,14 @@ export async function failStep(
             idempotencyKey: `release:${args.runId}`,
           });
         }
+        if (money) {
+          await absorbMeteredGap(tx, deps, {
+            runId: args.runId,
+            workspaceId: args.workspaceId,
+            billingAccountId: money.billing_account_id,
+          });
+        }
+        await reconcileRunSpend(tx, args.runId);
         await revokeRunCredentials(tx, args.runId, now); // terminal revocation (REQ-SPEC-11)
         terminalCode = terminal.code;
       }
@@ -1226,6 +1266,20 @@ export async function finalizeRun(
 ): Promise<{ ok: true; state: RunState }> {
   await deps.txRunner.run(args.workspaceId, async (tx) => {
     await applyTransition(tx, deps, { runId: args.runId, from: "finalizing", to: "completed" });
+    // DEF.2/F5 — the charge leg of §12.4 step 9: debit the attempt's proxy-metered remainder the phase
+    // commits never reached (a lagged metered row, under-reported subagent burn) BEFORE the release —
+    // the catch-up draws the run's held credits; released first it would draw nothing and absorb.
+    const curAttempt = (
+      await tx.query("select current_attempt from runs where id = $1", [args.runId])
+    ).rows[0] as { current_attempt: number } | undefined;
+    if (curAttempt) {
+      await settleMeteredDebit(tx, deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        billingAccountId: args.billingAccountId,
+        attempt: curAttempt.current_attempt,
+      });
+    }
     if (args.holdLedgerId) {
       await deps.ledger.release(tx, {
         billingAccountId: args.billingAccountId,
@@ -1235,6 +1289,12 @@ export async function finalizeRun(
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    // a residual metered-over-cap remainder absorbs as platform COGS (writeDebit self-books most of it).
+    await absorbMeteredGap(tx, deps, {
+      runId: args.runId,
+      workspaceId: args.workspaceId,
+      billingAccountId: args.billingAccountId,
+    });
     // PRB.16b: reconcile spent_credits from the usage rows of record before the final figure is
     // emitted — a caller-resolved `args.spentCredits` can predate the last metered usage.
     const spentCredits = Math.max(args.spentCredits, await reconcileRunSpend(tx, args.runId));
@@ -1530,7 +1590,13 @@ export async function finalizeRun(
   return { ok: true, state: "completed" };
 }
 
-/** Terminal failure with a refund of debits (§12.4 step 9): from `running`/`provisioning`/`finalizing` → failed. */
+/**
+ * Terminal failure with a refund of debits (§12.4 step 9): from `running`/`provisioning`/`finalizing` →
+ * failed. DEF.2/F5 — the refund is the DEFAULT, not a caller option: `refundCredits` unset refunds the
+ * run's whole net committed charge (Σ debit − Σ refund — the spec's "failed/refused runs refund their
+ * debits"); an explicit `0` opts out (e.g. a policy that keeps a delivered partial paid). After the
+ * release, the metered burn the user did not pay books `adjustment(absorbed)` — platform COGS.
+ */
 export async function failRun(
   deps: OrchestratorDeps,
   args: { runId: string; workspaceId: string; billingAccountId: string; from: RunState; failure: { code: string; message: string; retryable: boolean }; refundCredits?: number; holdLedgerId?: string },
@@ -1544,19 +1610,20 @@ export async function failRun(
       fields: { failure: args.failure },
     });
     // refund debits before any delivery (REQ-DATA-34); release the unused hold.
-    if (args.refundCredits && args.refundCredits > 0) {
+    const refundCredits = args.refundCredits ?? (await netDebitedCredits(tx, args.runId));
+    if (refundCredits > 0) {
       await deps.ledger.refund(tx, {
         billingAccountId: args.billingAccountId,
         workspaceId: args.workspaceId,
         runId: args.runId,
-        credits: args.refundCredits,
+        credits: refundCredits,
         idempotencyKey: `refund:${args.runId}`,
       });
       // PRB.08: the run row surfaces "refunded N credits; partial results kept" — emit the whitelisted fact.
       await deps.eventWriter.append(tx, {
         runId: args.runId,
         type: "cost.refunded",
-        payload: { credits: args.refundCredits, reason: args.failure.code },
+        payload: { credits: refundCredits, reason: args.failure.code },
         at: deps.clock.now(),
       });
     }
@@ -1569,6 +1636,13 @@ export async function failRun(
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    // DEF.2/F5 — the metered burn the user did not pay absorbs as platform COGS (post-refund ⇒ ≈ the
+    // whole metered figure); episode-keyed so a fail→resume→fail saga absorbs each leg once.
+    await absorbMeteredGap(tx, deps, {
+      runId: args.runId,
+      workspaceId: args.workspaceId,
+      billingAccountId: args.billingAccountId,
+    });
     await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
     await revokeRunCredentials(tx, args.runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
   });

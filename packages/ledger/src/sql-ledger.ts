@@ -21,6 +21,7 @@ import type {
   DebitArgs,
   ReleaseArgs,
   RefundArgs,
+  AbsorbArgs,
   LedgerEntryRef,
 } from "@rhema/orchestrator";
 import { InsufficientBalanceError, AccountSuspendedError } from "@rhema/orchestrator";
@@ -265,6 +266,34 @@ export class SqlHoldLedger implements HoldLedger {
       if (!primary) primary = res.ledgerId;
     }
     return { ledgerId: primary ?? `ref_${args.runId}` };
+  }
+
+  /**
+   * Book metered burn the user did not pay — an `adjustment(absorbed)` row (DEF.2/F5; REQ-SPEC-24.8's
+   * "carried in the reserve"; the REQ-SPEC-24.5 circuit breaker reads Σ absorbed). No balance effect —
+   * `adjustment` is the pure accounting-record kind, so this never touches credits the run still holds.
+   */
+  async absorb(tx: SqlClient, args: AbsorbArgs): Promise<LedgerEntryRef> {
+    await tx.query("select id from runs where id = $1 for update", [args.runId]);
+    const prior = await this.opRows(tx, args.idempotencyKey, true);
+    if (prior.length > 0) return { ledgerId: prior[0]!.id };
+
+    const runRow = (
+      await tx.query("select hold_bucket from runs where id = $1", [args.runId])
+    ).rows[0] as { hold_bucket: string | null } | undefined;
+    const bucket = (runRow?.hold_bucket as HoldBucket | null) ?? "included";
+    const res = await applyLedgerEntry(tx, this.deps, {
+      workspaceId: args.workspaceId,
+      billingAccountId: args.billingAccountId,
+      kind: "adjustment",
+      credits: args.credits,
+      bucket,
+      runId: args.runId,
+      source: "system",
+      reason: "absorbed",
+      idempotencyKey: `${args.idempotencyKey}#absorbed`,
+    });
+    return { ledgerId: res.ledgerId };
   }
 
   // ---- shared reads -------------------------------------------------------------------------------------

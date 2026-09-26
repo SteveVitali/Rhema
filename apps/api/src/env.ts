@@ -107,6 +107,14 @@ export interface ApiEnv {
    * `live fetcher not wired` (upload/paste/export still work — they carry their own bytes).
    */
   readonly fetcherServiceUrl?: string;
+  /**
+   * DEF.2 (F6) — the egress-proxy internal base URL (`EGRESS_PROXY_URL`, the same `rhema:proxyBaseUrl`
+   * the run-task pods get as `ANTHROPIC_BASE_URL`): the estimate claim pre-pass's ONLY provider route
+   * (REQ-ARCH-30 — the api never holds a provider key; it presents a purpose-minted proxy credential).
+   * The pre-pass also needs `SYSTEM_DATABASE_URL` (the proxy_* mint is elevated). Unset ⇒ every
+   * estimate stays provisional — the §5.6 graceful posture, never a half-bound refine.
+   */
+  readonly egressProxyUrl?: string;
 }
 
 function required(name: string): string {
@@ -179,6 +187,8 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
     // P1.15 — the fetcher service URL (the api's discovery/review fetches ride it).
     ...(process.env.FETCHER_SERVICE_URL ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL } : {}),
+    // DEF.2 (F6) — the egress-proxy base URL the estimate pre-pass's synthetic credential calls.
+    ...(process.env.EGRESS_PROXY_URL ? { egressProxyUrl: process.env.EGRESS_PROXY_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

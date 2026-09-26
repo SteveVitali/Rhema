@@ -12,6 +12,7 @@ import {
 import type { ContentStore } from "@rhema/mirror";
 import type { ConversionResult } from "@rhema/contracts";
 import type { FetchPort, FetchResult } from "@rhema/ingest";
+import { assertBalances, grant } from "@rhema/ledger";
 import {
   INGEST_JOB_NAMES,
   handleIngestReconstruct,
@@ -20,6 +21,7 @@ import {
   handleVoicePurge,
   sqlSampleMeter,
   type IngestBlobStore,
+  type SampleMeter,
   type WorkerIngestDeps,
 } from "./ingest-jobs.js";
 
@@ -103,7 +105,7 @@ beforeEach(async () => {
     ingestBlobs: blobs,
     converter,
     contentStoreFor: () => cs,
-    meter: sqlSampleMeter(ids),
+    meter: sqlSampleMeter({ ids, clock }),
     minFetchIntervalMs: 0,
   };
 });
@@ -227,15 +229,23 @@ describe("ingest.reconstruct job", () => {
     await seedPersona();
     await seedUrlConnection();
     await handleIngestSync(deps, { connectionId: "cn_1", personaId: "per_1", workspaceId: "ws_seed" });
-    await db.pg.query(
-      `insert into credit_balances (billing_account_id, bucket, available, held)
-         values ('ba_seed','included',1000,0)`,
+    // Seed the spendable balance through the canonical grant (DEF.2: direct counter writes are the
+    // drift class under test — the fold must see every credit through `credit_ledger`).
+    await deps.txRunner.run("ws_seed", (tx) =>
+      grant(tx, { ids, clock }, {
+        workspaceId: "ws_seed",
+        billingAccountId: "ba_seed",
+        bucket: "included",
+        credits: 1000,
+        idempotencyKey: "seed:grant:included",
+        source: "system",
+      }),
     );
   }
   const itemId = async () =>
     (await q<{ id: string }>(`select id from discovered_items where connection_id = 'cn_1'`))[0]!.id;
 
-  it("debits the shown estimate and writes a 'reconstructed' version", async () => {
+  it("debits the shown estimate through the canonical ledger path and writes a 'reconstructed' version", async () => {
     await seedPartialItem();
     const deps2: WorkerIngestDeps = {
       ...deps,
@@ -250,20 +260,56 @@ describe("ingest.reconstruct job", () => {
       capCredits: 4,
     });
     expect(res).toMatchObject({ ok: true, newVersion: true, quality: "reconstructed" });
-    const ledger = await q<{ kind: string; credits: number; source: string }>(
-      `select kind, credits, source from credit_ledger where workspace_id = 'ws_seed'`,
+    // DEF.2/F4 — a priced op is a canonical hold+debit pair (reserve, then spend the reservation);
+    // a bare 'debit' with no hold is exactly the counter-vs-ledger drift STB.3 found on prod.
+    const ledger = await q<{ kind: string; credits: number; source: string; reason: string }>(
+      `select kind, credits, source, reason from credit_ledger
+         where workspace_id = 'ws_seed' and kind in ('hold','debit') order by at, id`,
     );
     expect(ledger).toEqual([
-      { kind: "debit", credits: 4, source: "ingest.reconstruct.text" },
+      { kind: "hold", credits: 4, source: "system", reason: "ingest.reconstruct.text: sample reconstruction (text)" },
+      { kind: "debit", credits: 4, source: "system", reason: "ingest.reconstruct.text: sample reconstruction (text)" },
     ]);
-    const bal = await q<{ available: number }>(
-      `select available::int as available from credit_balances where billing_account_id = 'ba_seed' and bucket = 'included'`,
+    const bal = await q<{ available: number; held: number }>(
+      `select available::int as available, held::int as held
+         from credit_balances where billing_account_id = 'ba_seed' and bucket = 'included'`,
     );
     expect(bal[0]!.available).toBe(996);
+    expect(bal[0]!.held).toBe(0); // the reservation is spent, not left held
+    // The nightly assertion (REQ-SPEC-24.1) must see the counter agree with the ledger — the old
+    // direct-SQL debit left available −4 where the fold expects held −4 → guaranteed divergence.
+    const assertion = await assertBalances(db.client, { billingAccountId: "ba_seed" });
+    expect(assertion.ok).toBe(true);
+    expect(assertion.divergences).toEqual([]);
     const svs = await q<{ n: number; quality: string }>(
       `select n, quality from sample_versions order by n`,
     );
     expect(svs.map((s) => s.quality)).toEqual(["partial", "reconstructed"]);
+  });
+
+  it("the metered debit is idempotent — a re-drive with the same key charges once", async () => {
+    await seedPartialItem();
+    const meter = sqlSampleMeter({ ids, clock });
+    const charge = (tx: Parameters<SampleMeter["debit"]>[0]) =>
+      meter.debit(tx, {
+        workspaceId: "ws_seed",
+        credits: 4,
+        source: "ingest.reconstruct.text",
+        reason: "sample reconstruction (text)",
+        idempotencyKey: "reconstruct:item_1:text:sv_1",
+      });
+    const first = await deps.txRunner.run("ws_seed", (tx) => charge(tx));
+    expect(first.ok).toBe(true);
+    // the at-least-once job re-drive: same logical debit, same key — a no-op (REQ-DATA-34).
+    const second = await deps.txRunner.run("ws_seed", (tx) => charge(tx));
+    expect(second.ok).toBe(true);
+    expect(await q(`select id from credit_ledger where kind in ('hold','debit')`)).toHaveLength(2); // hold + debit, once
+    const bal = await q<{ available: number }>(
+      `select available::int as available from credit_balances where billing_account_id = 'ba_seed' and bucket = 'included'`,
+    );
+    expect(bal[0]!.available).toBe(996);
+    const assertion = await assertBalances(db.client, { billingAccountId: "ba_seed" });
+    expect(assertion.ok).toBe(true);
   });
 
   it("an identical reconstruction writes NO new version (dedup on body hash)", async () => {
@@ -301,7 +347,7 @@ describe("ingest.reconstruct job", () => {
     });
     expect(res).toMatchObject({ ok: false, reason: "insufficient_balance" });
     expect(await q(`select id from sample_versions`)).toHaveLength(1);
-    expect(await q(`select id from credit_ledger`)).toHaveLength(0);
+    expect(await q(`select id from credit_ledger where kind in ('hold','debit')`)).toHaveLength(0);
   });
 });
 

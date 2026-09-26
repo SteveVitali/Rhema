@@ -102,6 +102,41 @@ describe("cancelRun — the Page's 'Cancel run to edit' (PRB.07; §6.3)", () => 
     expect(row.spent_credits).toBe(65); // folded from the proxy's usage rows at the terminal settle
   });
 
+  it("DEF.2/F5 — release-ONLY: committed debits stand; the uncommitted metered burn absorbs as COGS", async () => {
+    // the explicit cancel settle (REQ-SPEC-24.6/24.8): a user cancel keeps partials resumable → the
+    // committed phases stay paid (no refund), while the in-flight phase's metered burn is platform COGS.
+    const seed = await seedProject(db);
+    await seedRun(db, { runId: "run_c", workspaceId: ws, projectId: "prj_seed", state: "running", holdLedgerId: "hold_c" });
+    await db.client.query("insert into proxy_credentials(id, run_id) values ('cred_c','run_c')", []);
+    await db.client.query(
+      `insert into usage_records(
+         id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider, model, model_tier,
+         rate_table_version, list_cost_usd, credits, source)
+       values ('ur_c', now(), $1, $2, 'run_c', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, 65, 'proxy')`,
+      [ws, seed.billingAccountId],
+    );
+    await db.client.query(
+      `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key, at)
+       values ('led_c1', $1, $2, 'debit', 30, 'included', 'run_c', 'run', 'debit:run_c:intake:1#included', now())`,
+      [ws, seed.billingAccountId],
+    );
+
+    const r = await cancelRun(deps, { runId: "run_c", workspaceId: ws });
+    expect(r).toMatchObject({ ok: true, state: "cancelled" });
+    // the committed debit is NOT refunded — the kept partials stay paid for (resumable, REQ-SPEC-24.6).
+    expect(deps.ledger.ops.filter((o) => o.op === "refund")).toHaveLength(0);
+    // the hold releases as ever…
+    expect(deps.ledger.ops.filter((o) => o.op === "release")).toHaveLength(1);
+    // …and the uncommitted metered residue books absorbed: 65 metered − 30 committed = 35 platform COGS.
+    expect(
+      deps.ledger.ops.filter((o) => o.op === "absorb").map((o) => (o.args as { credits: number }).credits),
+    ).toEqual([35]);
+    const row = (await db.client.query("select spent_credits from runs where id = 'run_c'")).rows[0] as {
+      spent_credits: number;
+    };
+    expect(row.spent_credits).toBe(65); // the usage surface still reads metered truth
+  });
+
   it("the proxy's usage rows are the meter of record — sdk-side rows stand in only when none metered", async () => {
     const seed = await seedProject(db);
     await seedRun(db, { runId: "run_p", workspaceId: ws, projectId: "prj_seed", state: "running" });

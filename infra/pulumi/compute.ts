@@ -528,6 +528,10 @@ export function createCompute(args: ComputeArgs): Compute {
                       ? [{ name: "SYSTEM_DATABASE_URL", value: args.apiSystemDatabaseUrl }]
                       : []),
                     ...(args.apiRedisUrl ? [{ name: "REDIS_URL", value: args.apiRedisUrl }] : []),
+                    // DEF.2 (F6) — the estimate claim pre-pass rides the egress proxy (the api holds
+                    // no provider key; it presents a purpose-minted credential). Same `rhema:proxyBaseUrl`
+                    // the worker hands pods as `ANTHROPIC_BASE_URL`; unset ⇒ estimates stay provisional.
+                    ...(args.proxyBaseUrl ? [{ name: "EGRESS_PROXY_URL", value: args.proxyBaseUrl }] : []),
                   ],
                 }
               : {}),

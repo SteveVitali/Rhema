@@ -140,10 +140,14 @@ export function createNetwork(args: NetworkArgs): Network {
     network: network.id,
     direction: "INGRESS",
     priority: 1000,
-    sourceRanges: [SUBNET_CIDRS["sandbox"], "35.191.0.0/16", "130.211.0.0/22"],
+    // DEF.2 (F6): + private-app — the Cloud Run services' Direct-VPC egress sources inside this range
+    // (the api's estimate claim pre-pass calls the proxy on a minted credential; the credential + the
+    // allowlist still gate it — this is transport admission, not authorization).
+    sourceRanges: [SUBNET_CIDRS["sandbox"], SUBNET_CIDRS["private-app"], "35.191.0.0/16", "130.211.0.0/22"],
     allows: [{ protocol: "tcp", ports: ["443", "8443"] }],
     targetTags: [EGRESS_PROXY_TAG],
-    description: "Sandbox subnet reaches the proxy (8443/443); GCP health-check probers reach 8443.",
+    description:
+      "Sandbox + private-app (Cloud Run api pre-pass) subnets reach the proxy (8443/443); GCP health-check probers reach 8443.",
   });
 
   // --- Sandbox NODE bootstrap over Private Google Access (D-P0.15c-8) -----------------------------

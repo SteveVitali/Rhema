@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
+import { createOrchestratorTestDb, seedProject, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
 import {
   createEstimateRoutes,
   estimateCacheKey,
@@ -8,6 +9,7 @@ import {
   type ClaimPrePass,
   type RunEstimatedEvent,
 } from "./estimate-routes.js";
+import { SqlEstimateCacheStore } from "./estimate-cache.js";
 import type { Principal } from "./run-routes.js";
 
 const principal: Principal = { userId: "u1", workspaceId: "w1", billingAccountId: "b1" };
@@ -140,5 +142,116 @@ describe("POST /projects/:id/estimates (REQ-SPEC-16)", () => {
     expect(estimateCacheKey({ draftSha: "s", workflow: "review", rigor: "quick", modelTier: "base", scope: "section:III" })).toBe(
       "s|review|quick|base||section:III",
     );
+  });
+});
+
+// ---- DEF.2 (F6) — live-binding surface + route hardening ------------------------------------------------
+
+describe("F6 — principal attribution + the tenant guard", () => {
+  it("passes the principal's workspace + billing account to the pre-pass (COGS attribution)", async () => {
+    let seen: Parameters<ClaimPrePass["count"]>[0] | undefined;
+    const prePass: ClaimPrePass = {
+      count: async (a) => {
+        seen = a;
+        return 10;
+      },
+    };
+    const { app } = makeApp({ claimPrePass: prePass });
+    await post(app, "p1", { ...REVIEW, refine: true });
+    expect(seen).toMatchObject({ projectId: "p1", workspaceId: "w1", billingAccountId: "b1", workflow: "review" });
+  });
+
+  it("404s a project outside the caller's workspace when db is bound (global-cache probe guard)", async () => {
+    const db = { query: async () => ({ rows: [] }) }; // no row ⇒ not this tenant's project
+    const { app } = makeApp({ db });
+    const r = await post(app, "foreign_proj", REVIEW);
+    expect(r.status).toBe(404);
+    expect(((await r.json()) as { error: string }).error).toBe("not_found");
+  });
+
+  it("serves when the project belongs to the caller's workspace (the db-bound check passes)", async () => {
+    const db = {
+      query: async (_sql: string, params?: unknown[]) => ({
+        rows: params?.[0] === "p1" && params?.[1] === "w1" ? [{ id: "p1" }] : [],
+      }),
+    };
+    const { app } = makeApp({ db });
+    const r = await post(app, "p1", REVIEW);
+    expect(r.status).toBe(200);
+  });
+});
+
+describe("F6 — the live estimate path over PGlite (refine → estimate_cache → short-circuit)", () => {
+  let db: OrchestratorTestDb;
+  const WS = "ws_est";
+  const BA = "ba_est";
+  const PROJ = "prj_est";
+  const P = (): Principal => ({ userId: "u_est", workspaceId: WS, billingAccountId: BA });
+
+  beforeEach(async () => {
+    db = await createOrchestratorTestDb();
+    await seedProject(db, { userId: "u_est", workspaceId: WS, billingAccountId: BA, projectId: PROJ });
+  });
+  afterEach(() => db.close());
+
+  it("refine persists estimate_cache (provisional=false, claim_count set); repeats short-circuit; no runs row", async () => {
+    const cache = new SqlEstimateCacheStore(db.client, () => `ec_${Math.random().toString(36).slice(2, 10)}`);
+    let prePassCalls = 0;
+    const events: RunEstimatedEvent[] = [];
+    const app = createEstimateRoutes({
+      principal: P,
+      db: db.client,
+      estimateCache: cache,
+      claimPrePass: {
+        count: async () => {
+          prePassCalls += 1;
+          return 45;
+        },
+      },
+      emitEstimated: (_ctx, e) => events.push(e),
+    });
+
+    // 1. immediate → provisional, no pre-pass.
+    const p = (await (await post(app, PROJ, REVIEW)).json()) as { provisional: boolean };
+    expect(p.provisional).toBe(true);
+    expect(prePassCalls).toBe(0);
+
+    // 2. refine → refined figure persisted to the real estimate_cache row.
+    const r = (await (await post(app, PROJ, { ...REVIEW, refine: true })).json()) as {
+      provisional: boolean;
+      claimCount?: number;
+      estimateCredits: number;
+      capCredits: number;
+      rateTableVersion: number;
+    };
+    expect(r.provisional).toBe(false);
+    expect(r.claimCount).toBe(45);
+    expect(prePassCalls).toBe(1);
+    const row = (
+      await db.client.query(
+        "select estimate_credits, cap_credits, rate_table_version, claim_count, provisional from estimate_cache where cache_key = $1",
+        [estimateCacheKey(REVIEW)],
+      )
+    ).rows[0] as
+      | { estimate_credits: number; cap_credits: number; rate_table_version: number; claim_count: number; provisional: boolean }
+      | undefined;
+    expect(row).toMatchObject({ claim_count: 45, provisional: false, estimate_credits: r.estimateCredits, cap_credits: r.capCredits });
+
+    // 3. a repeat request short-circuits on the cached row — the pre-pass runs ONCE per draft version.
+    const r2 = (await (await post(app, PROJ, { ...REVIEW, refine: true })).json()) as {
+      provisional: boolean;
+      claimCount?: number;
+      estimateCredits: number;
+    };
+    expect(r2.provisional).toBe(false);
+    expect(r2.claimCount).toBe(45);
+    expect(r2.estimateCredits).toBe(r.estimateCredits);
+    expect(prePassCalls).toBe(1);
+
+    // 4. REQ-SPEC-16 — the estimate endpoint never creates a runs row; telemetry is the only record.
+    const runs = (await db.client.query("select count(*)::int n from runs")).rows[0] as { n: number };
+    expect(runs.n).toBe(0);
+    expect(events).toHaveLength(3);
+    expect(events.every((e) => e.kind === "review" && e.levers_shown)).toBe(true);
   });
 });

@@ -48,6 +48,8 @@ import { provisionPersonalAccount } from "./signup.js";
 import { createShowcaseSeeder } from "./showcase.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
 import type { SqlClient } from "./invite.js";
+import { SqlEstimateCacheStore } from "./estimate-cache.js";
+import { createProxyClaimPrePass } from "./claim-prepass.js";
 
 /** Build the live api deps from the environment (constructs the heavy clients). */
 export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: PgBoss; pool: pg.Pool }> {
@@ -286,6 +288,23 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           console.error("[api] run.estimated analytics failed:", err instanceof Error ? err.message : err),
         );
     },
+    // DEF.2 (F6; closes D-PRB.03-1) — the estimate service's live seams. `estimate_cache` is
+    // tenantless + granted to `rhema_app` (0025), so the store binds unconditionally on the app
+    // pool. The claim pre-pass needs BOTH the proxy URL and the elevated exec — the synthetic
+    // credential mint writes proxy_* tables the restricted role is intentionally ungranted
+    // (0025); a partial config leaves every estimate provisional (the designed degraded posture).
+    estimateCache: new SqlEstimateCacheStore(rawDb, ids),
+    ...(env.egressProxyUrl && systemExec
+      ? {
+          claimPrePass: createProxyClaimPrePass({
+            proxyBaseUrl: env.egressProxyUrl,
+            db: systemExec,
+            contentStore: artifactsStore,
+            ids,
+            clock,
+          }),
+        }
+      : {}),
     // the harness run-spec sizing config (residue 2 / D-P0.15c-6): the per-run USD ceiling the per-phase SDK
     // budget brake is taken against, and the skills image path. Unset ⇒ the runspec defaults ($10, /app/skills);
     // the outer `capCredits` hold is the hard ceiling regardless.
