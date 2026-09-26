@@ -79,8 +79,13 @@ config:
   # §12.4 transition table (gate-resolution's allCommitted path 500'd every last-phase-gate approve;
   # latent since P1.12). Both gate-resolvers ride the table: api (resolveGate) + worker (stranded
   # sweep auto-resolve). run-task unchanged (keeps the def1 digest).
+  # DEF.1 Stage-B hotfix 2 (build rhema:def1c, Cloud Build 080f5e0c, 2026-09-26, SHA 5d40868):
+  # run-task only — live finding on the profile_voice rerun (01M3E42JXTF3HVZZQV0806SZPB): the
+  # agent-writable tree walk chmod'ed a dir's CONTENTS but never the dir itself, so the persona root
+  # /work/personas/<id> stayed harness-owned 0755 and every persona-root write (phase-result.json,
+  # profile/**) EACCES'd despite hook allows. work-perms.ts chmods the walked root too.
   rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5d25a7905d5856652b0ab3fb546c1cbdc5dac135198f5c1211c5add754db286d","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:a9b6f0670ee07e421689527e9462d529cc28581f29782a7dd0e313e386f7c239","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:bb85f45a82683a3b94592cd1a06c083f1373d8ee54fe49da398fb495717cf3fb
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:2ec8104b5a3cd9b370fca9be7da87ad2c46b6c42fc108a041ca4e6a499fbec13
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cf779cd54857aaf4040cb1cf20a823276ec9d2adfb9c4847e7955b5d0f5e794c
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
