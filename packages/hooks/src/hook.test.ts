@@ -248,6 +248,50 @@ describe("Glob/Grep pattern escape (Finding 8)", () => {
   });
 });
 
+describe("baked skill tree reads (DEF.1 Stage-B)", () => {
+  const SKILLS_REF = "/app/skills/draft-from-outline/references/draft-ledger.md";
+
+  it("allows a Read of a skill reference under /app/skills", () => {
+    const policy = compileSeatPolicy({
+      seat: "author",
+      personaId: "p1",
+      tools: ["read", "write"],
+      phase: RESEARCH,
+      runId: "run_1",
+      agentLabel: "author",
+    });
+    const d = evaluateToolUse({ tool: "Read", input: { file_path: SKILLS_REF } }, policy, newDenialState(), CTX);
+    expect(d.decision).toBe("allow");
+    expect(d.accessRows[0]).toMatchObject({ tool: "Read", decision: "allow", namespace: "shared" });
+  });
+
+  it("denies a Write under /app/skills (read-only grant)", () => {
+    const policy = compileSeatPolicy({
+      seat: "author",
+      personaId: "p1",
+      tools: ["read", "write"],
+      phase: RESEARCH,
+      runId: "run_1",
+      agentLabel: "author",
+    });
+    const d = evaluateToolUse({ tool: "Write", input: { file_path: SKILLS_REF } }, policy, newDenialState(), CTX);
+    expect(d.decision).toBe("deny");
+    expect(d.reason).toBe("write to a read-only path");
+  });
+
+  it("still denies reads elsewhere under /app (no blanket /app grant)", () => {
+    const policy = editorPolicy(RESEARCH);
+    const d = evaluateToolUse(
+      { tool: "Read", input: { file_path: "/app/dist/hook-daemon.js" } },
+      policy,
+      newDenialState(),
+      CTX,
+    );
+    expect(d.decision).toBe("deny");
+    expect(d.reason).toBe("path escapes the sandbox root");
+  });
+});
+
 describe("toPreToolUseResult adapter", () => {
   it("maps a deny with a reason and carries the control signal", () => {
     const state = newDenialState();

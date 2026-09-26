@@ -14,6 +14,8 @@ import { EMPTY_URL_POLICY } from "./types.js";
 
 export const DEFAULT_PROJECT_ROOT = "/work/project";
 export const DEFAULT_PERSONA_ROOT = "/work/personas/<id>";
+/** The baked skill tree in the run-task image (`stageSkills` symlinks it into the CLI config dir). */
+export const DEFAULT_SKILLS_ROOT = "/app/skills";
 
 /**
  * Resolve a run's mount roots (the `/work` base for each `MountRoot`) from the seat-policy inputs — the SINGLE
@@ -23,12 +25,16 @@ export const DEFAULT_PERSONA_ROOT = "/work/personas/<id>";
  * `roots.project`) exists. `<id>` in the persona template is substituted with the run's persona directory id.
  */
 export function resolveSeatRoots(input: {
-  readonly roots?: { readonly project?: string; readonly persona?: string };
+  readonly roots?: { readonly project?: string; readonly persona?: string; readonly skills?: string };
   readonly personaId?: string;
-}): { project: string; persona: string } {
+}): { project: string; persona: string; skills: string } {
   const personaTemplate = input.roots?.persona ?? DEFAULT_PERSONA_ROOT;
   const persona = input.personaId ? personaTemplate.replace("<id>", input.personaId) : personaTemplate;
-  return { project: input.roots?.project ?? DEFAULT_PROJECT_ROOT, persona };
+  return {
+    project: input.roots?.project ?? DEFAULT_PROJECT_ROOT,
+    persona,
+    skills: input.roots?.skills ?? DEFAULT_SKILLS_ROOT,
+  };
 }
 
 /** Shared-record project paths readable by every author-side seat (§12.6; read-only bind mounts). */
@@ -132,8 +138,8 @@ export interface CompileInput {
   readonly seat: AgentTypeKey;
   /** The persona directory id for this run (substituted for `<id>` in persona namespaces/roots). */
   readonly personaId?: string;
-  /** Mount roots; defaults to the container layout `/work/project` + `/work/personas/<id>`. */
-  readonly roots?: { readonly project?: string; readonly persona?: string };
+  /** Mount roots; defaults to the container layout `/work/project` + `/work/personas/<id>` + `/app/skills`. */
+  readonly roots?: { readonly project?: string; readonly persona?: string; readonly skills?: string };
   /** The seat's permitted tool tokens (from the `agent_types` row). */
   readonly tools: Iterable<string>;
   readonly urlPolicy?: UrlPolicy;
@@ -164,8 +170,8 @@ function resolveNamespace(ns: Namespace, personaId: string | undefined): Namespa
   return ns;
 }
 
-function baseFor(root: MountRoot, roots: { project: string; persona: string }): string {
-  return root === "project" ? roots.project : roots.persona;
+function baseFor(root: MountRoot, roots: { project: string; persona: string; skills: string }): string {
+  return root === "project" ? roots.project : root === "persona" ? roots.persona : roots.skills;
 }
 
 /**
@@ -184,6 +190,12 @@ export function compileSeatPolicy(input: CompileInput): SeatPolicy {
   for (const path of input.writableArtifacts ?? []) {
     specs.push({ glob: path, root: "project", mode: "readwrite", namespace: "shared" });
   }
+  // DEF.1 Stage-B: every seat reads the baked skill tree — `stageSkills` symlinks `/app/skills/<name>` into
+  // the CLI config dir, and reference files resolve (via realpath or the baked path directly) to this root.
+  // Without the grant the model's Read of e.g. `draft-ledger.md` denied "path escapes the sandbox root" and
+  // it improvised a prose ledger the `draft_sections_eq_plan` parser could not read (STB.3 rerun 01M3E8F8…).
+  // Read-only: the grant widens visibility to protocol content only — no seat ever writes `/app/skills`.
+  specs.push({ glob: "**", root: "skills", mode: "read", namespace: "shared" });
 
   const hasPersonaMount = specs.some((s) => s.root === "persona");
   const mounts: MountRule[] = specs.map((s) => ({
@@ -194,7 +206,11 @@ export function compileSeatPolicy(input: CompileInput): SeatPolicy {
 
   return {
     seat: input.seat,
-    roots: { project: roots.project, ...(hasPersonaMount ? { persona: roots.persona } : {}) },
+    roots: {
+      project: roots.project,
+      ...(hasPersonaMount ? { persona: roots.persona } : {}),
+      skills: roots.skills,
+    },
     mounts,
     tools: new Set(input.tools),
     urlPolicy: input.urlPolicy ?? EMPTY_URL_POLICY,

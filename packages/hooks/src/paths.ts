@@ -16,6 +16,8 @@ function escapeRe(s: string): string {
 
 /** Compile a mount glob to an anchored regex. `prefix/**` matches the prefix dir and everything under it. */
 export function globToRegExp(glob: string): RegExp {
+  // `**` alone = the whole mount tree (the skills-root read grant, DEF.1 Stage-B).
+  if (glob === "**") return /^.*$/;
   if (glob.endsWith("/**")) {
     return new RegExp("^" + escapeRe(glob.slice(0, -3)) + "(?:/.*)?$");
   }
@@ -71,6 +73,7 @@ export interface PathClassification {
 function rootsOf(policy: SeatPolicy): { base: string }[] {
   const roots = [{ base: policy.roots.project }];
   if (policy.roots.persona) roots.push({ base: policy.roots.persona });
+  if (policy.roots.skills) roots.push({ base: policy.roots.skills });
   return roots;
 }
 

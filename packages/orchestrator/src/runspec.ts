@@ -38,7 +38,7 @@ export const DEFAULT_MAX_TURNS = 40;
 export interface HookPolicyInput {
   readonly seat: AgentTypeKey;
   readonly personaId?: string;
-  readonly roots?: { readonly project?: string; readonly persona?: string };
+  readonly roots?: { readonly project?: string; readonly persona?: string; readonly skills?: string };
   /** the seat's permitted tool tokens (from the `agent_types` row); `web_fetch` gating is in `urlPolicy`. */
   readonly tools: readonly string[];
   readonly urlPolicy: UrlPolicy;
