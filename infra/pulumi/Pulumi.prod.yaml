@@ -106,8 +106,14 @@ config:
   # ruid 0 inside the namespace via `setpriv --reuid 0` (ambient CAP_SETUID carries it); the model still
   # drops to the distinct scoped uid with --no-new-privs. Verified live on the probe pod: all privsep
   # checks pass through the real launch chain (rerun 01M3EAAZ… second_read attempt 5).
+  # DEF.1 Stage-B hotfix 7 (build rhema:def1h, Cloud Build fe969d4c, 2026-09-26, SHA 6a36dde):
+  # run-task only — mounts then worked and scoped-query.js launched, but the vendored CLI crashed on
+  # `uv_os_homedir ENOENT`: the scoped uid (agentUid+offset) has no passwd entry and options.env
+  # REPLACES the Bun subprocess env (no HOME). The image now carries passwd entries for scoped uids
+  # 10003–10006, and HOME is set to the scoped root in both env layers (runner env -i + query
+  # options.env). Probe-verified: the CLI ran the full query path end to end.
   rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f4e7806e75c2b0d68c591712f4f53adbc26199fcfd760f66329bcc0b4afdaa27","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e4dc868720ae8e89c24e65917274bfd513b20c2e43d0cf359698049165bbfba1","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:3f48c17f8b841ec5609227971bfdfacd5820b9278d3732f3a1aee1b21c94544d
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:0833dfd61d29b3c2bed281c241111b3e6152e3873c86f1f0fcc001b40eab4a04
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cf779cd54857aaf4040cb1cf20a823276ec9d2adfb9c4847e7955b5d0f5e794c
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
