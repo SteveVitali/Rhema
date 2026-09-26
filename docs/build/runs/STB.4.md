@@ -138,7 +138,7 @@ cost for the window could not be pulled. Divergence: **not computable this leg.*
   timing-sensitive `<100ms` assertion (133ms under suite load — **flaky, unrelated to this diff; green
   in isolation at 16ms**; run-sheet untouched).
 - `pnpm check:licenses` — 607 packages OK · `pnpm check:protocol-markers` — 45 files OK ·
-  `check-upstream-diff.mjs` — 22 files reconcile.
+  `check-upstream-diff.mjs` — 22 files reconcile · `check-build-memory.sh` — **0 violations**.
 
 ## Still owed (explicit)
 
