@@ -26,6 +26,7 @@
     "@rhema/tokens": "workspace:*",
     "@rhema/contracts": "workspace:*",
     "@rhema/run-sheet": "workspace:*",
+    "@rhema/findings-core": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^7.9.1",

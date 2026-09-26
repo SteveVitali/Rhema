@@ -70,6 +70,20 @@ export default tseslint.config(
     },
   },
   {
+    // @rhema/findings-core is the framework-free logic web + 1.x mobile share verbatim (§10.2 REQ-MOBILE-4):
+    // it must NEVER import React/React-DOM. The presentational surfaces live in @rhema/ui (PRB.04 AC1).
+    files: ["packages/findings-core/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { paths: [
+          { name: "react", message: "findings-core is framework-free (REQ-MOBILE-4): no React. Put presentation in @rhema/ui." },
+          { name: "react-dom", message: "findings-core is framework-free (REQ-MOBILE-4): no React. Put presentation in @rhema/ui." },
+        ] },
+      ],
+    },
+  },
+  {
     // The banned/reserved-string DATA file and test files legitimately contain banned strings (as the
     // Appendix D.2 bedrock, or as rule assertions). The no-banned-strings rule targets user-facing COPY, not
     // the vocabulary definition itself, so it is off for those files.

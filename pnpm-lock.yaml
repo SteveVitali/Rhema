@@ -232,6 +232,9 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@rhema/findings-core':
+        specifier: workspace:*
+        version: link:../../packages/findings-core
       '@rhema/run-sheet':
         specifier: workspace:*
         version: link:../../packages/run-sheet
@@ -628,6 +631,12 @@ importers:
 
   packages/ui:
     dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/findings-core':
+        specifier: workspace:*
+        version: link:../findings-core
       '@rhema/run-sheet':
         specifier: workspace:*
         version: link:../run-sheet
