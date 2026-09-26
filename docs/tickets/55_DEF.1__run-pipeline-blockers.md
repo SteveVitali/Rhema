@@ -1,8 +1,9 @@
 # DEF.1 — Run-pipeline blockers (F1/F2/F3)
 
-- **Sequence:** 56 · **Phase:** post-P1 defect pass · **Tag:** fix
+- **Sequence:** 55 · **Phase:** post-P1 defect pass · **Tag:** fix
 - **base_branch:** `stevevitali/p1-22-launch-checks` (chain tip — stacks on the existing chain).
-- **Depends on:** STB.3 (the legs that surfaced these). Blocks STB.4.
+- **Depends on:** STB.3 (the legs that surfaced these).
+- **Blocks:** STB.4 must not run until this lands — real money must not ride over delivery-blocking defects.
 - **Scope (one line):** fix the three live-verified defects that killed deliveries on prod: the
   missing/unparseable `.rhema/phase-result.json` (F1), the never-satisfiable
   `second_read_producer_checked` predicate (F2), and the `structure-plan.json` sidecar missing
@@ -10,7 +11,7 @@
 - **Spec §§:** 12.6 (phase-result contract, second-read orchestrator rule), 12.2 (sidecar shapes).
 - **REQ coverage:** REQ-SPEC-25 (verification integrity), REQ-DATA-20 (iteration caps), the
   affected runs' REQ-WF rows.
-- **Run:** `implement-spec spec=docs/tickets/56_DEF.1__run-pipeline-blockers.md`
+- **Run:** `implement-spec spec=docs/tickets/55_DEF.1__run-pipeline-blockers.md`
 - **Gate status:** $0 Stage A (code + tests). Stage B = re-running the three killed legs at their
   original caps (outline ≤$3, research ≤$5, draft ≤$10, memo ≤$15 — combined ≤$33).
 - **Live stage:** Stage B is the leg re-runs — operator-gated per standing policy.
@@ -55,7 +56,7 @@ deliver:
 
 ## Out of scope
 
-- F4–F10 (tickets 57–58). Re-running the legs in this ticket (that's Stage B).
+- F4–F10 (tickets 56–57). Re-running the legs in this ticket (that's Stage B).
 
 ## Acceptance
 

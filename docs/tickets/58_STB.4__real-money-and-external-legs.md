@@ -1,6 +1,6 @@
 # STB.4 — Real-money + external legs
 
-- **Sequence:** 55 · **Phase:** post-P1 closeout · **Tag:** ops
+- **Sequence:** 58 · **Phase:** post-P1 closeout · **Tag:** ops
 - **base_branch:** `main` (post-merge).
 - **Depends on:** STB.1–STB.3 (a verified deployed platform) **and DEF.1–DEF.3** — the STB.3
   findings include delivery-blocking defects (F2 makes Memo reviews un-deliverable); spending real
@@ -9,7 +9,7 @@
   purchase round-trip, pen-test facilitation, and the Anthropic admin-key usage reconciliation.
 - **Spec §§:** 14.2–14.6 (billing), 12.8 (security), 16.3 (open questions).
 - **REQ coverage:** REQ-BILL-* live legs, D-P1.16-1, D-P1.22-3, D-PRB.08-1b.
-- **Run:** `implement-spec spec=docs/tickets/55_STB.4__real-money-and-external-legs.md`
+- **Run:** `implement-spec spec=docs/tickets/58_STB.4__real-money-and-external-legs.md`
 - **Gate status:** **operator hard gate** — real money and external procurement. Every leg below
   pauses for explicit operator approval at the point of spend.
 - **Live stage:** this ticket IS the live work.

@@ -1,6 +1,6 @@
 # DEF.2 — Ledger + metering integrity (F4/F5/F6)
 
-- **Sequence:** 57 · **Phase:** post-P1 defect pass · **Tag:** fix
+- **Sequence:** 56 · **Phase:** post-P1 defect pass · **Tag:** fix
 - **base_branch:** `stevevitali/p1-22-launch-checks` (chain tip).
 - **Depends on:** STB.3 findings. Independent of DEF.1 (parallel-safe code areas, but keep branch
   order per chain convention).
@@ -10,7 +10,7 @@
 - **Spec §§:** 14.5 (usage truthfulness), 14.2 (credit semantics), 12.2 (estimate/cap derivation).
 - **REQ coverage:** REQ-BILL-* integrity (the platform's accounting lies at −897 held),
   REQ-SPEC-24 (estimate/cap derivation), REQ-DATA-42 (usage surfaces read truth).
-- **Run:** `implement-spec spec=docs/tickets/57_DEF.2__ledger-metering-integrity.md`
+- **Run:** `implement-spec spec=docs/tickets/56_DEF.2__ledger-metering-integrity.md`
 - **Gate status:** $0 — code + tests + a DB reconcile. No inference.
 - **Live stage:** Stage B = prod verify of the reconcile + a recompute on a throwaway account;
   $0. Operator-gated.

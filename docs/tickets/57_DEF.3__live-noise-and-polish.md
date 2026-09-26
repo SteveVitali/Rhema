@@ -1,15 +1,15 @@
 # DEF.3 — Live noise + polish (F7/F9/F10)
 
-- **Sequence:** 58 · **Phase:** post-P1 defect pass · **Tag:** fix
+- **Sequence:** 57 · **Phase:** post-P1 defect pass · **Tag:** fix
 - **base_branch:** `stevevitali/p1-22-launch-checks` (chain tip).
-- **Depends on:** ST.3 findings. Independent of DEF.1/DEF.2.
+- **Depends on:** STB.3 findings. Independent of DEF.1/DEF.2.
 - **Scope (one line):** the smaller live-verified defects — the SDK `/api/hello` probe tripping
   real SLOs (F7), the dead `/api/action` deep-link (F9), and the chat_turn 43>40 cap overshoot
   (F10).
 - **Spec §§:** 13.5 (SLO truthfulness), 10.1 (notification deep-links), 12.2 (cap semantics).
 - **REQ coverage:** REQ-ARCH-13 (SLO instrumentation), REQ-OBJ-6 (action links), REQ-BILL cap
   semantics.
-- **Run:** `implement-spec spec=docs/tickets/58_DEF.3__live-noise-and-polish.md`
+- **Run:** `implement-spec spec=docs/tickets/57_DEF.3__live-noise-and-polish.md`
 - **Gate status:** $0 Stage A. Stage B ≤$5 (one chat_turn re-verify).
 - **Live stage:** operator-gated re-verify of the cap fix.
 
