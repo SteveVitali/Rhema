@@ -18,6 +18,7 @@
 import {
   processStripeEvent,
   reconcileProviderReport,
+  reconcileProviderWindow,
   assertBalances,
   RUN_DELIVER_JOB,
   runBillingPeriodTick,
@@ -28,6 +29,7 @@ import {
   type ReconcileAlert,
   type ReconcileMeasurement,
   type ReconcileResult,
+  type ReconcileWindowResult,
   type StripeEventOutcome,
   type StripePort,
   type PeriodTickResult,
@@ -89,6 +91,8 @@ export function handleStripeEvent(
 
 export interface UsageReconcileResult {
   readonly report: ReconcileResult | null;
+  /** the aggregate-window arm's result (Anthropic emits windows, never per-request rows). */
+  readonly window: ReconcileWindowResult | null;
   /** REQ-SPEC-24.1 — the nightly balances = Σ ledger assertion riding the same job. */
   readonly balances: { ok: boolean; accountsChecked: number; divergences: number };
 }
@@ -101,17 +105,27 @@ export async function handleUsageReconcile(deps: WorkerBillingDeps): Promise<Usa
     ((a) => console.error("[worker] billing alert:", JSON.stringify(a)));
 
   let report: ReconcileResult | null = null;
+  let window: ReconcileWindowResult | null = null;
   if (deps.reportSource) {
     const usageReport = await deps.reportSource.fetch();
-    report = await reconcileProviderReport(deps.systemExec, {
-      ids: deps.ids,
-      clock: deps.clock,
-      ledger: deps.ledger,
-      runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
-      eventWriter: deps.eventWriter,
-      alert,
-      ...(deps.recalibrate ? { recalibrate: deps.recalibrate } : {}),
-    }, usageReport);
+    // The window arm first: Anthropic's Usage & Cost API serves ONLY aggregate buckets — no
+    // per-request rows — so `window` is the real reconcile and `rows` stays empty there. The
+    // request-id arm runs whenever a provider DOES emit rows (the seam is provider-generic).
+    const w = usageReport.window;
+    if (w) {
+      window = await reconcileProviderWindow(deps.systemExec, { alert }, { ...usageReport, window: w });
+    }
+    if (usageReport.rows.length > 0) {
+      report = await reconcileProviderReport(deps.systemExec, {
+        ids: deps.ids,
+        clock: deps.clock,
+        ledger: deps.ledger,
+        runTx: (workspaceId, fn) => deps.txRunner.run(workspaceId, fn),
+        eventWriter: deps.eventWriter,
+        alert,
+        ...(deps.recalibrate ? { recalibrate: deps.recalibrate } : {}),
+      }, usageReport);
+    }
   } else {
     console.error("[worker] usage.reconcile: no provider report source configured — skipping (deploy leg)");
   }
@@ -127,6 +141,7 @@ export async function handleUsageReconcile(deps: WorkerBillingDeps): Promise<Usa
   }
   return {
     report,
+    window,
     balances: {
       ok: assertion.ok,
       accountsChecked: assertion.accountsChecked,

@@ -94,6 +94,40 @@ describe("handleUsageReconcile (nightly usage.reconcile — REQ-BILL-13 + REQ-SP
   it("a missing report source skips the report leg but still runs the balances assertion", async () => {
     const res = await handleUsageReconcile(deps());
     expect(res.report).toBeNull();
+    expect(res.window).toBeNull();
+    expect(res.balances.ok).toBe(true);
+  });
+
+  it("a window-scoped report (the Anthropic contract) reconciles against the metered window — detection only", async () => {
+    await seedMeteredRun();
+    const alerts: ReconcileAlert[] = [];
+    const res = await handleUsageReconcile(deps({
+      reportSource: {
+        fetch: async () => ({
+          provider: "anthropic",
+          reportKey: "anthropic:2026-09-20",
+          rows: [],
+          window: {
+            start: new Date("2026-09-20T00:00:00Z"),
+            end: new Date("2026-09-21T00:00:00Z"),
+            usd: 0.97, // provider reports 3% less than the $1.00 metered row
+            tokensByModel: [
+              { model: "claude-test", uncachedInputTokens: 0, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, outputTokens: 0, webSearchRequests: 0 },
+            ],
+          },
+        }),
+      },
+      alert: (a) => void alerts.push(a),
+    }));
+    expect(res.report).toBeNull(); // no per-request rows → the request-id arm did not run
+    expect(res.window?.proxyUsd).toBeCloseTo(1.0, 6);
+    expect(res.window?.reportUsd).toBeCloseTo(0.97, 6);
+    expect(res.window?.alerted).toBe(true);
+    expect(alerts.some((a) => a.kind === "usage_drift")).toBe(true);
+    // detection-only: the window arm never lands provider_report rows or refunds.
+    expect(
+      (await db.client.query("select count(*)::int n from usage_records where source = 'provider_report'")).rows[0],
+    ).toEqual({ n: 0 });
     expect(res.balances.ok).toBe(true);
   });
 });
