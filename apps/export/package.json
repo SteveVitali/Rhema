@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "export — pandoc + typst container (skeleton service).",
+  "description": "export — pandoc container: md/txt/docx from canonical markdown (§12.1, §13.4).",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,9 +17,13 @@
     "build": "tsc -b",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "start": "node dist/main.js serve"
   },
   "dependencies": {
     "@rhema/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "jszip": "^3.10.2"
   }
 }

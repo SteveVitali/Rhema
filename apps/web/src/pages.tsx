@@ -216,6 +216,7 @@ export function ProjectPage(): ReactNode {
         <p style={{ display: "flex", gap: "16px" }}>
           <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
           <a href={`/p/${slug}/run`}>{COPY.runSheet.runReview}</a>
+          <a href={`/p/${slug}/export`}>{COPY.project.exportCta}</a>
           {project.headDraftId ? (
             <a data-edit-source="true" href={`/p/${slug}/edit/${project.headDraftId}`}>
               {COPY.project.editCta}
@@ -1204,6 +1205,110 @@ export function VoiceDetailPage(): ReactNode {
               </>
             )}
           </section>
+        </>
+      ) : null}
+    </Shell>
+  );
+}
+
+/** PRB.11 — the export dialog (§13.4, §8.4 REQ-VIS-10, §11.7): format radios, the never-blocking
+ *  obligation line with links (incl. `pre_export` horizons just returned to open), the AI-use attach
+ *  toggle + statement preview, the append-only addition field, and the standalone-statement downloads.
+ *  Pure SSR: the export form POSTs and the download links GET — no client JS. */
+export function ExportPage(): ReactNode {
+  const { export: ex } = usePageData();
+  const slug = ex?.slug ?? "";
+  const dialog = ex?.dialog;
+  const statement = dialog?.statement;
+  return (
+    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.project.backToList}</a>} footer={footer()}>
+      <SectionTitle>{COPY.export.heading}</SectionTitle>
+      <p style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
+        {COPY.export.lede}
+      </p>
+      {ex?.error ? (
+        <p data-export-error="true" style={{ color: "var(--shell-fg)", fontSize: "13px" }}>{ex.error}</p>
+      ) : null}
+      {dialog ? (
+        <>
+          {/* the §11.7 obligation line — informational, with links; export never blocks on it. */}
+          <p data-obligation-line="true" style={{ fontSize: "13px", color: "var(--shell-fg)", margin: "12px 0 4px" }}>
+            {dialog.obligations.line} — {COPY.export.obligationsNote}
+          </p>
+          {dialog.obligations.items.length > 0 ? (
+            <ul data-obligation-items="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px", paddingLeft: "18px" }}>
+              {dialog.obligations.items.map((o) => (
+                <li key={o.id} data-obligation-id={o.id} data-returned={dialog.obligations.returnedIds.includes(o.id) || undefined}>
+                  {o.reviewRunId ? (
+                    <a href={`/p/${slug}/review/${o.reviewRunId}`}>{o.title}</a>
+                  ) : (
+                    o.title
+                  )}{" "}
+                  · {o.severity} · {o.state}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <form method="post" action={`/p/${slug}/export`} data-export-form="true" style={{ marginTop: "16px", maxWidth: "68ch" }}>
+            <fieldset style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px 14px" }}>
+              <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)" }}>{COPY.export.formatLegend}</legend>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                {dialog.formats.map((f, i) => (
+                  <label key={f.id} style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                    <input type="radio" name="format" value={f.id} defaultChecked={i === 0} />
+                    {f.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginTop: "12px", fontSize: "13px", color: "var(--shell-fg)" }}>
+              <input type="checkbox" name="attachAiUse" defaultChecked style={{ marginTop: "2px" }} />
+              <span>
+                {COPY.export.attachLabel}
+                <span style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.export.attachNote}</span>
+              </span>
+            </label>
+            <button type="submit" style={{ marginTop: "12px", fontSize: "13px" }}>{COPY.export.exportCta}</button>
+          </form>
+
+          {/* the statement preview — generated sentences (recomputed from run rows) + the author's
+              append-only additions. */}
+          {statement ? (
+            <section data-ai-use="true" style={{ marginTop: "20px", maxWidth: "68ch" }}>
+              <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 6px" }}>
+                {COPY.export.statementHeading}
+              </h2>
+              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 8px" }}>{COPY.export.statementNote}</p>
+              <p data-generated="true" style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--shell-fg)" }}>
+                {statement.generated.join(" ")}
+              </p>
+              {statement.additions.map((a) => (
+                <p key={a.id} data-addition={a.id} style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--shell-fg-muted)", margin: "6px 0 0" }}>
+                  {a.sentence}
+                </p>
+              ))}
+              <form method="post" action={`/p/${slug}/export/addition`} style={{ marginTop: "10px" }}>
+                <label htmlFor="ai-use-addition" style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+                  {COPY.export.additionLabel}
+                </label>
+                <input
+                  id="ai-use-addition"
+                  type="text"
+                  name="sentence"
+                  placeholder={COPY.export.additionPlaceholder}
+                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", fontSize: "13px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", boxSizing: "border-box" }}
+                />
+                <button type="submit" style={{ marginTop: "6px", fontSize: "12px" }}>{COPY.export.additionCta}</button>
+              </form>
+              <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "10px" }}>
+                {COPY.export.standaloneHeading}:{" "}
+                <a href={`/p/${slug}/export/ai-use/md`}>.md</a>
+                {" · "}
+                <a href={`/p/${slug}/export/ai-use/docx`}>.docx</a>
+              </p>
+            </section>
+          ) : null}
         </>
       ) : null}
     </Shell>

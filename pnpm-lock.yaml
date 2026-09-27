@@ -46,6 +46,9 @@ importers:
       '@hono/node-server':
         specifier: 2.1.1
         version: 2.1.1(hono@4.13.5)
+      '@rhema/ai-use':
+        specifier: workspace:*
+        version: link:../../packages/ai-use
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -172,6 +175,10 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+    devDependencies:
+      jszip:
+        specifier: ^3.10.2
+        version: 3.10.2
 
   apps/fetcher:
     dependencies:
@@ -381,6 +388,19 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.23.0
+
+  packages/ai-use:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/mirror':
+        specifier: workspace:*
+        version: link:../mirror
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
 
   packages/api-client:
     dependencies:
@@ -4728,6 +4748,14 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.20.1)
 
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@26.4.1))':
+    dependencies:
+      '@vitest/spy': 2.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 5.4.21(@types/node@26.4.1)
+
   '@vitest/pretty-format@2.1.9':
     dependencies:
       tinyrainbow: 1.2.0
@@ -6674,7 +6702,7 @@ snapshots:
   vitest@2.1.9(@types/node@26.4.1)(happy-dom@20.14.5):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.4.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

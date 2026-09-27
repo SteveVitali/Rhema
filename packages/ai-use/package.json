@@ -1,0 +1,29 @@
+{
+  "name": "@rhema/ai-use",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The AI-use statement (PRB.11; §8.4 REQ-VIS-10, REQ-POS-6/REQ-GENRE-5): generated sentences recomputed from run rows only — workflows, model tiers, dates, phase names, approvals, human-revision versions, and the open-obligation count — plus the author's append-only additions. Essay/general template at beta; the Academic ICMJE template is P1.21.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/mirror": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}

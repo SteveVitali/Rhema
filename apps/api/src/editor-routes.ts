@@ -31,7 +31,7 @@ export type EditorApiDeps = RunApiDeps & {
   db: { query(sql: string, params?: unknown[]): Promise<{ rows: unknown[] }> };
 };
 
-interface DraftHeadRow {
+export interface DraftHeadRow {
   id: string;
   project_id: string;
   n: number;
@@ -61,8 +61,9 @@ async function editorLock(
 
 /** The draft the editor is bound to: the requested draft, or — when it is a FROZEN base with a WORKING
  *  human_revision child — the child (the user's edits live there; a stale /edit/:frozenId load must see
- *  them). Returns undefined when the draft doesn't exist in the project. */
-async function resolveEditorHead(
+ *  them). Returns undefined when the draft doesn't exist in the project. Exported for the export routes
+ *  (PRB.11) — the export reads the same head the editor shows. */
+export async function resolveEditorHead(
   exec: SqlExecutor,
   projectId: string,
   draftId: string,
@@ -89,7 +90,7 @@ async function resolveEditorHead(
   return head;
 }
 
-async function versionText(
+export async function versionText(
   store: ContentStore | null,
   exec: SqlExecutor,
   versionId: string | null,
