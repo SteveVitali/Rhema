@@ -118,12 +118,13 @@ jobs:
       # be computed over the committed trio — D-P0.04-2).
       - run: pnpm --filter @rhema/infra --filter @rhema/protocols build
       - name: Build + scan service images, pin digests, record provenance (REQ-ARCH-39)
-        # Build run-task, export, fetcher, egress-proxy per §13.2, scan with Trivy, pin digests, then
-        # record the deploy provenance artifact. Placeholder images build today; scans wired here.
+        # Build the FULL production image set (PRB.15): every service the prod stack deploys, so the
+        # provenance artifact carries a real digest for each — run-task (GKE Job), the egress-proxy MIG,
+        # the six Cloud Run services, and the convert Cloud Run Job. All real images; no sleepers.
         run: |
           set -euo pipefail
           declare -A DIGESTS
-          for svc in run-task export fetcher egress-proxy; do
+          for svc in run-task egress-proxy api web worker fetcher convert export collab; do
             docker build -f "apps/$svc/Dockerfile" -t "rhema/$svc:${{ github.sha }}" .
             digest=$(docker image inspect "rhema/$svc:${{ github.sha }}" --format '{{ index .Id }}')
             echo "$svc digest: $digest"

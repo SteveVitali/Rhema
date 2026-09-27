@@ -1,5 +1,25 @@
 # HUMAN H6 — Prod-launch accounts, domains, secrets; the Stripe live-mode decision
 
+> **Amended 2026-09-17:** the operator controls the **`rhema.tools`** zone only — `rhema.app` and
+> `rhemausercontent.com` are NOT available and never will be. Everywhere this ticket (and the rest
+> of the prod round) names them, read: app on the **`rhema.tools` apex**, api on
+> **`api.rhema.tools`**, the cookieless user-content serving origin on **`usercontent.rhema.tools`**
+> (+ `*.usercontent.rhema.tools` wildcard for per-workspace content hosts). The DNS-access item
+> below is satisfied by control of the single `rhema.tools` zone; the OAuth consent screen and the
+> Resend sending domain are `@rhema.tools`/the `rhema.tools` zone. The separate-registrable-domain
+> cookie-isolation argument is superseded by host-only `__Host-` session cookies (see the PRB.15
+> amendment note + `apps/api/src/auth.ts`).
+>
+> **Amended 2026-09-17 (same date, second note):** two items below shift. (1) **The postgres
+> password seeds the prod *Cloud SQL* `postgres` user**, not an AlloyDB cluster — prod's engine
+> moved to Cloud SQL `db-g1-small` for the ~$50/mo budget (ADR-010; the `alloydb-password` Secret
+> Manager id + `rhema:alloydbPassword` key are kept, engine-agnostic). (2) **The required-secret
+> checklist is 11, not 12** — `ops-alert-webhook-url` is provisioned but deliberately optional: no
+> alert destination exists yet, so the drift/balance alert path stays inert rather than blocking
+> bring-up; seeding a version + re-adding the id to `PROD_REQUIRED_SECRETS` opts back in. (3) The
+> "stated prod budget" item now reads ~**$50/mo** — the runbook carries the honest floor estimate
+> (~$95/mo always-on before traffic; the GKE free-tier waiver + documented levers close the gap).
+
 > **Operator work — NOT an `implement-spec` input.** Do before/alongside `28d_PRB.13`–`28f_PRB.15`;
 > everything below must hold **before `28f_PRB.15` Stage B** (the prod `pulumi up`) — the Stripe
 > item specifically gates `28h_PRB.17`'s real-money leg. Inserted 2026-09-16 (prod-launch round;

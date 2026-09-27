@@ -15,3 +15,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-007](ADR-007-beta-shell-react-ssr-no-vite.md) | The beta shell is React Router SSR built with `tsc` (no Vite / no framework mode) | PRB.01 (beta web shell, invite gating, sample dossier) | Accepted |
 | [ADR-008](ADR-008-open-selfserve-paid-prod-launch.md) | Open self-serve paid launch on prod — the partner program, G3, and H2 stay deferred | decompose-spec plan extension (28c–28h: HUMAN-H6, PRB.13–PRB.17) | Accepted |
 | [ADR-009](ADR-009-signup-admission-boundary.md) | Signup admission lives in the api; the sign-in link is the verification; the throttle is fixed-window per-instance | PRB.13 (open self-serve signup + the 0-credit purchase path) | Accepted |
+| [ADR-010](ADR-010-cloudsql-prod-database.md) | The production database is Cloud SQL for PostgreSQL, not AlloyDB | PRB.15 (prod bring-up — Stage A amendment, same PR) | Accepted |

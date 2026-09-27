@@ -1,0 +1,57 @@
+# Pulumi stack: prod (PRB.15 — Stage A authors the config; Stage B is operator-gated).
+#
+# The stack name IS the stage name (`prod` → the stage facts' prod profile: warm Cloud SQL
+# db-g1-small — Postgres engine amended 2026-09-17 from AlloyDB for the ~$50/mo budget — BASIC
+# Memorystore, ZONAL GKE + 1 e2-medium node, $100/run guard, signup.mode=open, the real
+# rhema.tools / *.usercontent.rhema.tools domains — same-day single-zone amendment).
+# Non-secret config is committed; every SECRET below is set with
+# `pulumi config set --secret` IN THE OPERATOR'S ENVIRONMENT ONLY — never committed (REQ-ARCH-30).
+#
+# Operator secrets to set before `pulumi up` (values are HUMAN-H6's out-of-band material):
+#   rhema:alloydbPassword          — postgres bootstrap password (engine-agnostic name; binds the
+#                                    Cloud SQL `postgres` built-in user; also seed the SM container
+#                                    rhema-prod-alloydb-password)
+#   rhema:proxyDatabaseUrl         — egress-proxy's DATABASE_URL (restricted role; Cloud SQL
+#                                    private-IP host — get it via `pulumi stack output databaseHost`)
+#   rhema:workerDatabaseUrl        — worker DATABASE_URL (RLS-enforced role)
+#   rhema:workerSystemDatabaseUrl  — worker SYSTEM_DATABASE_URL (elevated, cross-tenant sweeps)
+#   rhema:appDatabaseUrl           — api DATABASE_URL (RLS-enforced role) — canonical name
+#                                    (rhema:apiDatabaseUrl still reads as a fallback for old stacks)
+#   rhema:apiSystemDatabaseUrl     — api SYSTEM_DATABASE_URL (circuit-breaker read)
+#   rhema:redisUrl                 — Memorystore redis:// URL (shared api + worker + web)
+# NOT required (provisioned but intentionally unseeded — amended 2026-09-17):
+#   rhema-prod-ops-alert-webhook-url — the drift/balance alert sink; the alert path stays INERT
+#                                    until a destination exists (seed a version + re-add the id to
+#                                    PROD_REQUIRED_SECRETS to opt back in)
+# Operator plain config to set:
+#   rhema:serviceImages            — JSON {"api":"…@sha256:…","web":…,"worker":…,"fetcher":…,
+#                                    "convert":…,"export":…,"collab":…} (images CI publishes it)
+#   rhema:runTaskImageDigest       — …/run-task@sha256:…
+#   rhema:proxyImage               — …/egress-proxy@sha256:…
+#   rhema:internalApiUrl           — defaults to https://api.rhema.tools when unset
+#   rhema:proxyBaseUrl             — the proxy MIG's internal base URL (set after the MIG stands up)
+#   rhema:emailFrom                — e.g. hello@rhema.tools (Resend-verified domain)
+config:
+  gcp:project: rhema-507501
+  gcp:region: us-central1
+  rhema:deployProxyMig: "true"
+  rhema:alloydbPassword:
+    secure: AAABABdnGSVhDc7r6ZGYBW0ysC0neCWyooEWVhhMkLAelxPgad7/GvJwebXx6mmNWRr9x1EgCl2KAKqkPg6yxxLUVwkqGgcB
+  rhema:emailFrom: hello@rhema.tools
+  rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
+  rhema:appDatabaseUrl:
+    secure: AAABAApBKr+m9gFXRcvpjniOuMtbNlz2ZnARhO0SXSiM0KVsmX9j2KL9RB6SItYvGDmUIijQcBxkU5Yn6230Z/bxQdlKA1XuOJp6sKaq+hxgWGfJux5aTACoGFsCihwjLzBfMKYhYg98Fat2SoNhxJaaUQ==
+  rhema:apiSystemDatabaseUrl:
+    secure: AAABAKrBlYu2FhQAhMtXogd5SVkBqdDfQ56WXvIwM6gjqT0UX+nh7aDUY/pvqXOxh/uCeB/JHDsMKQmRx0nOCVtAdkwAscY3rCRIT/tVaUUn4unbdYhIRbX4kqd5fh2TPUICtJVf5c+4Rfvv7ErimEw2pA==
+  rhema:workerDatabaseUrl:
+    secure: AAABALu5KaH9Lq++54laQG8iR2fy6trS7hzIRdClYJ1WXhULcIoXglqBEVRrtPaUr0sZ4DkX2Tani4moI4cCicl3YdawfrH8ZzWpK9OaFF3rrW/5kUIjWVh/hT8cCBKroYekcAmzs2EQeOn/F+aSDGBHrQ==
+  rhema:workerSystemDatabaseUrl:
+    secure: AAABAKPQMgDtR9sB/uU6oTTkn0dfCA0mEek2B5tS+goIkzAEr3W8ZaUqSZ3gbLfMJkj/mrPnbGwDblYTuuGSSbzirgLf3hRDlOMkRPQCU8U1pJVJy/vbg5g3IydsGNhNA9munaBIaD8nFFAAH54ScMwBMw==
+  rhema:proxyDatabaseUrl:
+    secure: AAABAC6YMHHH5eT/zHnfGdqzfZFXw9L+EsEOMfWmVeXc5DFhWYtI2prkLsiWgTu3gZ7DCs7rE0uS6pVkrUrbG81QuzQx3jJ76BG4LlAuA8TwSIuKCsFHqosmlUXdIsPIIfuYnNa6xr2HDjI8Ia+JvkHU8g==
+  rhema:redisUrl:
+    secure: AAABAJUM34u/xy00JC36/XGUbeppQFXmiVUwMn36aV/Zw5uRZ0FCgObXVhXyfeLXGbUHbzEQiqn1iA==
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:6dbb4f3cab984ed92d22650a3fc377befdf62aa06553ff4187d1a2d58bf9df25","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:3cc2def0175f49acd1902e0f45bf6f1e2a4bd7a97f6ce763b225d601d54a2786","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:d894e32c952ad75e4258fde6181091323eef38b8cf3625ad9134fd5dd1ee6883","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:4fb6bb7b07b2d0e797d4c0ca1f1dde128de20e96a880da62ff1bde4133556a06","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:e220cf976eeb8cdcd169d990613621a8ff96c97e50be6cfc711fe6f9b7475307","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:e6d3bc60396115bdd42b5d5b9454689d94d9a254443972534313df29e1ce6d67","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:5072732dbeb535202a5425342ee5567d01547c9907c589c3b4bf58b6b96169e9"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:f45e966f7610536e82d7f8367f8667c1aab0d9fa023a0cf2212d11b7f6f41ea0
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:2a64b9031b4ff22cfbbfe7776f6318b3f75b5bbe7b90ca0a9ff5c0b08dd89cf8
+  rhema:proxyBaseUrl: http://10.8.16.4:8443

@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { STAGES, stageConfigFor, stageKindFor, sandboxSubnetOf } from "./stages.js";
+import {
+  ALL_SECRET_IDS,
+  PROD_DOMAINS,
+  PROD_REQUIRED_SECRETS,
+  STAGES,
+  stageConfigFor,
+  stageKindFor,
+  sandboxSubnetOf,
+} from "./stages.js";
 
 describe("stage kinds (§13.2)", () => {
   it("maps concrete stack names to kinds", () => {
@@ -54,20 +62,35 @@ describe("no other subnet accidentally opens the sandbox posture", () => {
   });
 });
 
-describe("AlloyDB + preview guards (AC2 — GCP)", () => {
-  it("prod AlloyDB keeps a warm primary at >= 4 vCPU and does not pause", () => {
-    expect(STAGES.prod.alloydb.primaryCpuCount).toBeGreaterThanOrEqual(4);
-    expect(STAGES.prod.alloydb.paused).toBe(false);
-    expect(STAGES.prod.alloydb.backupRetentionDays).toBe(35);
+describe("managed Postgres engine + preview guards (AC2 — GCP; prod→Cloud SQL amended 2026-09-17)", () => {
+  it("prod runs Cloud SQL — db-g1-small (minimal prod-ready shared-core), warm, 35-day backups", () => {
+    const d = STAGES.prod.database;
+    expect(d.engine).toBe("cloudsql");
+    expect(d.cloudSqlTier).toBe("db-g1-small");
+    expect(d.paused).toBe(false); // warm — never paused
+    expect(d.backupRetentionDays).toBe(35); // daily automated backups; PITR caps at 7d (Cloud SQL)
   });
 
-  it("preview AlloyDB is small + paused with isolated buckets and a $3/run guard (REQ-ARCH-38)", () => {
+  it("dev + preview stay on AlloyDB (dev is the already-live substrate; preview is small/paused)", () => {
+    expect(STAGES.dev.database.engine).toBe("alloydb");
+    expect(STAGES.dev.database.paused).toBe(false);
     const p = STAGES.preview;
-    expect(p.alloydb.paused).toBe(true);
-    expect(p.alloydb.primaryCpuCount).toBeLessThanOrEqual(2); // smallest AlloyDB shape
+    expect(p.database.engine).toBe("alloydb");
+    expect(p.database.paused).toBe(true);
+    expect(p.database.primaryCpuCount).toBeLessThanOrEqual(2); // smallest AlloyDB shape
     expect(p.isolatedBuckets).toBe(true);
     expect(p.maxUsdPerRun).toBe(3);
     expect(p.allowsProductionSecrets).toBe(false); // never production secrets in previews
+  });
+
+  it("the engine descriptor is internally consistent (tier only on cloudsql, vCPU only on alloydb)", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      if (cfg.database.engine === "cloudsql") {
+        expect(cfg.database.cloudSqlTier, name).toMatch(/^db-/);
+      } else {
+        expect(cfg.database.primaryCpuCount, name).toBeGreaterThanOrEqual(1);
+      }
+    }
   });
 
   it("every stage versions its GCS buckets and isolates them (REQ-ARCH-28)", () => {
@@ -79,9 +102,68 @@ describe("AlloyDB + preview guards (AC2 — GCP)", () => {
 });
 
 describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () => {
-  it("every stage is invite until the prod bring-up (PRB.15) deliberately flips prod — the flag fails closed", () => {
+  it("prod is open (PRB.15's deliberate flip); every non-prod stage stays invite — the flag fails closed", () => {
+    expect(STAGES.prod.signupMode).toBe("open");
     for (const [name, cfg] of Object.entries(STAGES)) {
+      if (name === "prod") continue;
       expect(cfg.signupMode, `stage ${name}`).toBe("invite");
     }
+  });
+});
+
+describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => {
+  it("prod carries the real domains: rhema.tools apex + api.rhema.tools + the cookieless usercontent.rhema.tools (amended 2026-09-17)", () => {
+    expect(STAGES.prod.domains).toEqual(PROD_DOMAINS);
+    expect(STAGES.prod.domains!.app).toBe("rhema.tools");
+    expect(STAGES.prod.domains!.api).toBe("api.rhema.tools");
+    expect(STAGES.prod.domains!.userContent).toBe("usercontent.rhema.tools");
+    // Amended 2026-09-17: the operator controls ONE zone (rhema.tools), so the user-content origin is a
+    // SIBLING subdomain on the app's own registrable domain — the earlier separate-registrable-domain
+    // isolation (rhemausercontent.com) is superseded. The origin is still a distinct host + a distinct
+    // origin (different port of entry on the LB, a different backend, zero Set-Cookie), and the session
+    // side of the boundary is enforced by host-only `__Host-` cookies (asserted in
+    // apps/api/src/auth.test.ts): a `Domain=rhema.tools` plant from usercontent.* can neither shadow the
+    // `__Host-`-named session cookie nor receive it.
+    expect(STAGES.prod.domains!.userContent.endsWith(`.${STAGES.prod.domains!.app}`)).toBe(true); // same zone
+    expect(STAGES.prod.domains!.userContent).not.toBe(STAGES.prod.domains!.app); // a distinct host/origin
+    expect(STAGES.prod.domains!.api.endsWith(`.${STAGES.prod.domains!.app}`)).toBe(true);
+  });
+
+  it("non-prod stages carry no domains block (the placeholder `${stack}.rhema.dev` cert suffices)", () => {
+    expect(STAGES.dev.domains).toBeUndefined();
+    expect(STAGES.preview.domains).toBeUndefined();
+  });
+});
+
+describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; REQ-ARCH-30)", () => {
+  it("prod requires the production secret set minus the opted-out ops webhook (amended 2026-09-17)", () => {
+    for (const id of ALL_SECRET_IDS) {
+      if (id === "ops-alert-webhook-url") continue; // operator opted out — inert until a destination exists
+      expect(PROD_REQUIRED_SECRETS, `missing ${id}`).toContain(id);
+    }
+    // The H6-named prod credentials are all present.
+    for (const id of [
+      "alloydb-password",
+      "anthropic-api-key",
+      "anthropic-admin-key",
+      "resend-api-key",
+      "stripe-secret",
+      "stripe-webhook-secret",
+      "google-oauth-client-secret",
+    ]) {
+      expect(STAGES.prod.requiredSecrets, `missing ${id}`).toContain(id);
+    }
+    // The ops-alert container is still PROVISIONED (opting back in = seed a version + re-add the id)
+    // but is NOT required — the drift-alert path must not block prod bring-up.
+    expect(ALL_SECRET_IDS).toContain("ops-alert-webhook-url");
+    expect(PROD_REQUIRED_SECRETS).not.toContain("ops-alert-webhook-url");
+  });
+
+  it("previews require only the non-production keys; prod is the only allowsProductionSecrets stage", () => {
+    expect(STAGES.preview.requiredSecrets).not.toContain("stripe-secret");
+    expect(STAGES.preview.requiredSecrets).not.toContain("resend-api-key");
+    expect(STAGES.preview.allowsProductionSecrets).toBe(false);
+    expect(STAGES.dev.allowsProductionSecrets).toBe(false);
+    expect(STAGES.prod.allowsProductionSecrets).toBe(true);
   });
 });

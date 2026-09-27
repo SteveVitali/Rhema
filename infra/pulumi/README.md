@@ -15,10 +15,12 @@ deployed shape cannot drift from what the tests prove.
 | Area | Resource |
 |---|---|
 | Network | Custom VPC, three `/20` subnets, Cloud NAT for **private-app only**, firewall rules making the sandbox a one-way street to the proxy (`network.ts`) |
-| Data | AlloyDB cluster + primary (preview = small/paused), isolated + versioned GCS buckets with the §13.3 retention lifecycle, Memorystore Redis (`data.ts`) |
-| Secrets | Secret Manager containers: `anthropic-api-key` (proxy-only), Better-Auth, Google OAuth, Stripe, run-token signing key (`secrets.ts`) |
-| IAM | One Workload-Identity SA per service + explicit least-privilege secret/bucket bindings (`iam.ts`) |
-| Compute | GKE **Standard** cluster (dataplane-v2 for NetworkPolicy) + node pool for run-task (CAP_SYS_ADMIN), egress-proxy MIG (startup-script `docker run` — the supported re-platform, D-P0.15c-7), seven Cloud Run services, external HTTPS LB + Cloud CDN for `web` (`compute.ts`) |
+| Data | The stage's managed Postgres on the shared PSA peering — AlloyDB cluster + primary on dev/preview (preview = small/paused); **Cloud SQL Postgres 16 on prod** (`db-g1-small`, zonal, private-IP, 35 daily backups + 7-day PITR — amended 2026-09-17 for the ~$50/mo budget); the `postgres` bootstrap password binds to `rhema:alloydbPassword` on either engine, isolated + versioned GCS buckets with the §13.3 retention lifecycle, Memorystore Redis (BASIC on all stages — prod included, same-day amendment) (`data.ts`) |
+| Secrets | Secret Manager containers for every id in `ALL_SECRET_IDS` (stage facts — `anthropic-api-key` proxy-only, run-token key, AlloyDB password, Better-Auth, Google OAuth, Stripe + webhook secret, email-action HMAC, Resend, admin key, ops webhook, user-content signing key); versions are always operator-set out of band (`secrets.ts`) |
+| IAM | One Workload-Identity SA per service + explicit least-privilege secret/bucket bindings — incl. the fetcher's `objectCreator` CONDITIONED to `user-content`'s `quarantine/` prefix and the convert Job's read (`iam.ts`) |
+| Images | The per-stack Artifact Registry docker repo `rhema-<stack>` the images CI/`cloudbuild.yaml` push to (`compute.ts`) |
+| Compute | GKE **Standard** cluster (dataplane-v2 for NetworkPolicy) + node pool for run-task (CAP_SYS_ADMIN), egress-proxy MIG (startup-script `docker run` — the supported re-platform, D-P0.15c-7), six Cloud Run services + the convert Cloud Run **Job** (§12.1), external HTTPS LB + Cloud CDN fronting `web`/`api` and — on prod — the private `*.usercontent.rhema.tools` backend-bucket origin (`compute.ts`) |
+| Domains/TLS (prod) | Managed cert over `rhema.tools`, `api.rhema.tools`, `usercontent.rhema.tools`, `*.usercontent.rhema.tools` (one zone — amended 2026-09-17); a reserved global IPv4; host-routing URL map; the operator's DNS records emitted as the `dnsRecords` stack output (PRB.15) |
 | Sandbox node egress | A Private-Google-Access route + firewalls (to the `199.36.153.8/30` VIP and the GKE master CIDR) + private DNS zones so the no-NAT sandbox nodes bootstrap + pull images (`network.ts`); the run-task GSA gets `roles/artifactregistry.reader` (`iam.ts`) — D-P0.15c-8 |
 | Run-task k8s state | The `runs` namespace, the WI-bound `run-task-ksa`, and the pod egress NetworkPolicy (`infra/k8s/`, applied post-`up` by `infra/k8s/apply.sh`) — D-P0.15c-8 |
 
@@ -61,8 +63,16 @@ PROJECT=rhema-507501 STACK=dev ./infra/k8s/apply.sh   # namespace + run-task-ksa
 
 ```bash
 printf %s "$ANTHROPIC_API_KEY" | gcloud secrets versions add rhema-dev-anthropic-api-key --data-file=-
-# …likewise better-auth-secret, google-oauth-client-secret, stripe-secret, run-token-signing-key
+# …likewise the rest of the stack's `requiredSecrets` (stage facts; `pulumi stack output requiredSecrets`)
 ```
+
+## Production
+
+The prod stack (`Pulumi.prod.yaml`) runs the real domains, warm AlloyDB, STANDARD_HA Redis, open
+signup, and the full image/secret set. The complete operator runbook — config, images, `up`, the k8s
+post-step, DNS, migrations + `seedProtocols`, the provenance row, and the D-P0.13-2 provider write —
+is **`infra/PROD-BRINGUP.md`**. Every step there is operator-gated (HUMAN-H6 + a stated budget); this
+repo's Stage-A work only made it possible.
 
 ## Post-deploy network assertion (D-P0.01-2 — the live half of AC3)
 

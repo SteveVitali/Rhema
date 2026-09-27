@@ -13,7 +13,9 @@
     { "path": "../packages/engine" },
     { "path": "../packages/mirror" },
     { "path": "../packages/protocols" },
+    { "path": "../packages/benchmark" },
     { "path": "../packages/contracts" },
+    { "path": "../infra" },
     { "path": "../packages/db" }
   ],
   "exclude": ["dist", "**/*.test.ts"]

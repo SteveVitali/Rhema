@@ -1,7 +1,7 @@
 # Security Policy
 
 ## Reporting a vulnerability
-Please report suspected security issues privately to **security@rhema.app**. Do not open a public
+Please report suspected security issues privately to **security@rhema.tools**. Do not open a public
 issue for a vulnerability. We aim to acknowledge within 3 business days and to provide a remediation
 timeline after triage.
 
