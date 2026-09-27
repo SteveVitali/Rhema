@@ -2,6 +2,8 @@
 // injects (Cloud Run env + Secret Manager secret refs) into a typed config. Fail-fast on a missing required
 // var — a half-configured api must not start and silently mis-route runs.
 
+import { parseSignupMode, type SignupMode } from "@rhema/contracts";
+
 export interface ApiEnv {
   readonly port: number;
   /** AlloyDB connection string (`postgresql://…`) — a RESTRICTED, RLS-ENFORCED role for user-facing reads. */
@@ -60,6 +62,12 @@ export interface ApiEnv {
    * `export_not_wired` (the dialog + statement reads still work).
    */
   readonly exportServiceUrl?: string;
+  /**
+   * PRB.13 — `signup.mode` (REQ-BETA-19 amended 2026-09-16; `SIGNUP_MODE`): `invite` keeps the PRB.01
+   * gate, `open` permits self-serve account creation. The stage config sets it (PRB.15 flips prod);
+   * unset/unknown ⇒ `invite` — the flag fails closed.
+   */
+  readonly signupMode: SignupMode;
 }
 
 function required(name: string): string {
@@ -107,6 +115,8 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),
     // PRB.11 — the isolated export container's service URL (pandoc lives there, never here).
     ...(process.env.EXPORT_SERVICE_URL ? { exportServiceUrl: process.env.EXPORT_SERVICE_URL } : {}),
+    // PRB.13 — signup mode; unknown/unset parses to `invite` (never fail open).
+    signupMode: parseSignupMode(process.env.SIGNUP_MODE),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

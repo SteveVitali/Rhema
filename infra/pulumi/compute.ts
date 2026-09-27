@@ -249,8 +249,18 @@ export function createCompute(args: ComputeArgs): Compute {
               : {}),
             // PRB.11 — the api reaches the isolated export container at EXPORT_SERVICE_URL (the export
             // service is created first in CLOUD_RUN_SERVICES so its uri resolves here).
-            ...(svc === "api"
-              ? { envs: [{ name: "EXPORT_SERVICE_URL", value: services["export"]!.uri }] }
+            // PRB.13 — `signup.mode` (REQ-BETA-19 amended) deploys to BOTH consumers from the one stage
+            // fact: the api's `POST /signup` admission gate and the web `/login` pre-gate read the same
+            // `SIGNUP_MODE` (a mode string — never a secret). All stages are `invite` until PRB.15 flips prod.
+            ...(svc === "api" || svc === "web"
+              ? {
+                  envs: [
+                    ...(svc === "api"
+                      ? [{ name: "EXPORT_SERVICE_URL", value: services["export"]!.uri }]
+                      : []),
+                    { name: "SIGNUP_MODE", value: cfg.signupMode },
+                  ],
+                }
               : {}),
           },
         ],

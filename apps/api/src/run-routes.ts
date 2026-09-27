@@ -87,6 +87,13 @@ export interface RunApiDeps extends OrchestratorDeps {
    * Unset ⇒ the shared versioned rate-table renderer. Injected so tests can force a deterministic figure.
    */
   readonly renderCredits?: CreditRenderer;
+  /**
+   * PRB.13 — the verified-email gate (REQ-BETA-19 amended 2026-09-16): run creation requires a verified
+   * email — a self-serve account's sign-in link IS the verification (one email path; no second send).
+   * Resolves the principal's `user.email_verified`; `false` ⇒ 403 `email_unverified`. Unset ⇒ the gate is
+   * not applied (fixture/deploys without a user lookup); `createApp` binds it whenever `deps.db` exists.
+   */
+  userEmailVerified?(userId: string): Promise<boolean>;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -113,6 +120,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
   app.post("/projects/:id/runs", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    // PRB.13 — verified email before run creation (REQ-BETA-19 amended). Fail-closed: a bound lookup that
+    // cannot prove verification refuses; the gate is inert only where no user lookup is bound at all.
+    if (deps.userEmailVerified && !(await deps.userEmailVerified(principal.userId))) {
+      return c.json({ error: "email_unverified" }, 403);
+    }
     const projectId = c.req.param("id");
     const body = (await c.req.json()) as CreateRunBody;
     if (!body.idempotencyKey || !body.workflow) return c.json({ error: "idempotencyKey and workflow required" }, 400);

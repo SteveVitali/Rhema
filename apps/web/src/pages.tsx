@@ -83,13 +83,16 @@ function footer(): ReactNode {
   return <span>{COPY.footer}</span>;
 }
 
-/** Public: the invite page + the read-only sample dossier. No pricing, no plans, no public signup. */
+/** Public: the landing page + the read-only sample dossier. Invite-only in `invite` mode, self-serve in
+ *  `open` (PRB.13, REQ-BETA-19 amended) — still not a marketing page either way: no pricing, no plans. */
 export function InvitePage(): ReactNode {
+  const { invite } = usePageData();
+  const open = invite?.signupOpen === true;
   return (
-    <Shell brand={COPY.brand} tagline={COPY.tagline} nav={<a href="/login">{COPY.invite.signInCta}</a>} footer={footer()}>
+    <Shell brand={COPY.brand} tagline={COPY.tagline} nav={<a href="/login">{open ? COPY.invite.signInCtaOpen : COPY.invite.signInCta}</a>} footer={footer()}>
       <SectionTitle>{COPY.invite.heading}</SectionTitle>
       <p style={{ fontSize: "16px", lineHeight: 1.6, color: "var(--shell-fg)", maxWidth: "68ch" }}>{COPY.invite.lede}</p>
-      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{COPY.invite.accessNote}</p>
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{open ? COPY.invite.accessNoteOpen : COPY.invite.accessNote}</p>
 
       <h2 style={{ fontSize: "16px", fontWeight: 600, marginTop: "32px" }}>{COPY.invite.sampleHeading}</h2>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", marginBottom: "16px", maxWidth: "68ch" }}>
@@ -130,14 +133,17 @@ const submitStyle = {
   cursor: "pointer",
 };
 
-/** The ONLY signup path: invitation code required (REQ-BETA-19). No public signup, no pricing. */
+/** The ONLY signup path: the invitation code is required in `invite` mode and optional in `open`
+ *  (PRB.13, REQ-BETA-19 amended — enforced server-side at POST /login, never by the form alone).
+ *  No pricing page, no plan ladder either way. */
 export function LoginPage(): ReactNode {
   const { login } = usePageData();
+  const open = login?.signupOpen === true;
   return (
     <Shell brand={COPY.brand} footer={footer()}>
       <div style={{ maxWidth: "380px", margin: "0 auto" }}>
         <SectionTitle>{COPY.login.heading}</SectionTitle>
-        <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{COPY.login.note}</p>
+        <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{open ? COPY.login.noteOpen : COPY.login.note}</p>
 
         {login?.error ? (
           <p role="alert" style={{ color: "var(--sev-blocking)", fontSize: "13px" }}>
@@ -152,8 +158,8 @@ export function LoginPage(): ReactNode {
 
         <form method="post" action="/login">
           <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
-            {COPY.login.codeLabel}
-            <input name="code" required defaultValue={login?.code ?? ""} placeholder={COPY.login.codePlaceholder} style={fieldStyle} />
+            {open ? COPY.login.codeLabelOptional : COPY.login.codeLabel}
+            <input name="code" required={!open} defaultValue={login?.code ?? ""} placeholder={COPY.login.codePlaceholder} style={fieldStyle} />
           </label>
           <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px", display: "block" }}>
             {COPY.login.emailLabel}

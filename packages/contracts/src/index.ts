@@ -42,6 +42,10 @@ export * from "./notifications.js";
 // analytics event catalogue (design/9 §7.2; REQ-BETA-6…12)
 export * from "./analytics.js";
 
+// signup admission mode + the beta-grade abuse throttle (PRB.13; REQ-BETA-19 amended 2026-09-16)
+export * from "./signup.js";
+export * from "./rate-limit.js";
+
 // phone-width-shared read models (§5.7, §10.5)
 export * from "./views.js";
 
