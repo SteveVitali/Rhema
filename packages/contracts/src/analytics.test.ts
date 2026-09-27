@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   ANALYTICS_EVENTS,
   ANALYTICS_EVENT_NAMES,
+  BETA_GATE_THRESHOLDS,
+  CLIENT_ANALYTICS_EVENTS,
+  CLIENT_ANALYTICS_EVENT_NAMES,
   REASON_CODES,
   parseAnalyticsEvent,
 } from "./analytics.js";
@@ -97,5 +100,62 @@ describe("REQ-BETA-6…12 event shapes", () => {
     expect(() =>
       ANALYTICS_EVENTS["credits.exhausted_prompt"].parse({ action_taken: "topup" }),
     ).not.toThrow();
+  });
+});
+
+describe("REQ-PROD-15 — every run event carries cost_actual / cost_estimate / rigor", () => {
+  it("all run.* catalogue schemas declare the three economics keys (AC1)", () => {
+    const runEvents = ANALYTICS_EVENT_NAMES.filter((n) => n.startsWith("run."));
+    expect(runEvents.length).toBeGreaterThan(5);
+    for (const name of runEvents) {
+      const shape = (ANALYTICS_EVENTS[name] as { shape: Record<string, unknown> }).shape;
+      for (const key of ["cost_actual", "cost_estimate", "rigor"]) {
+        expect(shape, `${name} missing ${key}`).toHaveProperty(key);
+      }
+    }
+  });
+
+  it("a run event parses with all three economics fields populated", () => {
+    const e = parseAnalyticsEvent("run.completed", ENV, {
+      verdict: "strong",
+      cost_actual: 512,
+      cost_estimate: 560,
+      rigor: "standard",
+    });
+    expect(e.props).toMatchObject({ cost_actual: 512, cost_estimate: 560, rigor: "standard" });
+  });
+});
+
+describe("client intake whitelist (PRB.12)", () => {
+  it("is a strict subset of the catalogue (only view/dwell/timer signals a server can't see)", () => {
+    for (const name of CLIENT_ANALYTICS_EVENTS) {
+      expect(ANALYTICS_EVENT_NAMES).toContain(name);
+    }
+    // server-owned facts must never be client-mintable (spend events stay forgery-proof)
+    for (const serverOnly of [
+      "topup.purchased",
+      "credits.granted",
+      "run.launched",
+      "finding.disposed",
+      "wtp.recorded",
+    ]) {
+      expect(CLIENT_ANALYTICS_EVENT_NAMES.has(serverOnly)).toBe(false);
+    }
+  });
+});
+
+describe("REQ-BETA-18 gate registry (pre-registered thresholds)", () => {
+  it("registers all nine gate metrics with the verbatim REQ-BETA-18 values", () => {
+    expect(BETA_GATE_THRESHOLDS).toMatchObject({
+      repeatCycleRate: { value: 0.5, direction: "floor", clause: "proceed" },
+      acceptAdaptShare: { value: 0.55, direction: "floor", clause: "proceed" },
+      secondManuscriptImport: { value: 0.6, direction: "floor", clause: "proceed" },
+      paidConversion: { value: 0.4, direction: "floor", clause: "proceed" },
+      round2Rate: { value: 0.2, direction: "floor", clause: "stop" },
+      medianStatedWtp: { value: 20, direction: "floor", clause: "stop" },
+      autoProceedShare: { value: 0.4, direction: "ceiling", clause: "stop" },
+      cancelRate: { value: 0.08, direction: "ceiling", clause: "stop" },
+      boundaryAttestationFailures: { value: 0, direction: "exact", clause: "stop" },
+    });
   });
 });

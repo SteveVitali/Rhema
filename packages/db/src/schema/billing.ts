@@ -171,7 +171,9 @@ export const adminActions = pgTable("admin_actions", {
 });
 
 // PRB.08 (0020) — the beta's persisted analytics sink (REQ-BETA-12). Envelope columns lifted for queries;
-// props is the catalogue-validated payload (`parseAnalyticsEvent` at the write boundary).
+// props is the catalogue-validated payload (`parseAnalyticsEvent` at the write boundary). PRB.12 (0024):
+// `dedupe_key` — the materializer's idempotency key; a partial unique index makes a replayed projection
+// insert a no-op.
 export const analyticsEvents = pgTable("analytics_events", {
   id: text("id").primaryKey(),
   userId: text("user_id"),
@@ -180,5 +182,6 @@ export const analyticsEvents = pgTable("analytics_events", {
   runId: text("run_id"),
   event: text("event").notNull(),
   props: jsonb("props").notNull(),
+  dedupeKey: text("dedupe_key"),
   at: timestamp("at").notNull().defaultNow(),
 });

@@ -38,6 +38,7 @@ import {
 } from "@rhema/findings-core";
 import { sha256Hex, type ContentStore } from "@rhema/mirror";
 import type { Principal } from "./run-routes.js";
+import { recordAnalyticsEvent } from "@rhema/ledger";
 import { loadVoiceStatus } from "./voice-status.js";
 import type { Converter } from "./import.js";
 
@@ -254,6 +255,21 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       const v = await loadVoiceStatus(tx, { personaId });
       return v?.status ?? null;
     });
+    // voice.created (PRB.12 emission audit — this route owns it): the beta creates Quick voices only —
+    // the Full build is a later tier; `samples` counts the uploads already attached (0 at create). The
+    // write is post-commit and non-fatal: a telemetry failure is logged, never a failed create.
+    await deps.txRunner
+      .run(principal.workspaceId, (tx) =>
+        recordAnalyticsEvent(tx, deps, {
+          userId: principal.userId,
+          workspaceId: principal.workspaceId,
+          event: "voice.created",
+          props: { tier: "quick", samples: 0 },
+        }),
+      )
+      .catch((err: unknown) =>
+        console.error("[api] voice.created analytics failed:", err instanceof Error ? err.message : err),
+      );
     return c.json({ personaId, mode, seedAuthoredBy: agentDrafted ? "persona_builder" : "user", status: res }, 201);
   });
 

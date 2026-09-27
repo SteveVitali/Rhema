@@ -80,24 +80,78 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
     const row = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const bal = (
         await tx.query(
-          "select coalesce(sum(available),0)::int as spendable from credit_balances where billing_account_id = $1",
+          `select coalesce(sum(available),0)::int as spendable,
+                  coalesce(sum(held),0)::int as held
+             from credit_balances where billing_account_id = $1`,
           [principal.billingAccountId],
         )
-      ).rows[0] as { spendable: number } | undefined;
+      ).rows[0] as { spendable: number; held: number } | undefined;
       const acct = (
         await tx.query(
           "select suspended_at, clawback_debt::int as debt from billing_accounts where id = $1",
           [principal.billingAccountId],
         )
       ).rows[0] as { suspended_at: string | null; debt: number } | undefined;
-      return { spendable: Number(bal?.spendable ?? 0), suspended: acct?.suspended_at != null, clawbackDebt: Number(acct?.debt ?? 0) };
+      return {
+        spendable: Number(bal?.spendable ?? 0),
+        held: Number(bal?.held ?? 0),
+        suspended: acct?.suspended_at != null,
+        clawbackDebt: Number(acct?.debt ?? 0),
+      };
     });
     return c.json({
       spendableCredits: row.spendable,
+      /** §14.5 level-0 chip detail: credits held against in-flight runs (the chip's hover line). */
+      heldCredits: row.held,
       suspended: row.suspended,
       clawbackDebt: row.clawbackDebt,
       ...(deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
     });
+  });
+
+  // ---- the level-1 usage glance (PRB.12; §14.5): the balance + the account's recent runs' spend — the
+  //      usage page's rows. Credits are the user-facing cost unit (P0.11's proxy COGS stays operator-side). --
+  app.get("/billing/usage", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const bal = (
+        await tx.query(
+          `select coalesce(sum(available),0)::int as spendable,
+                  coalesce(sum(held),0)::int as held
+             from credit_balances where billing_account_id = $1`,
+          [principal.billingAccountId],
+        )
+      ).rows[0] as { spendable: number; held: number } | undefined;
+      const runs = (
+        await tx.query(
+          `select id, project_id, workflow, state, estimate_credits, cap_credits, spent_credits,
+                  created_at, ended_at
+             from runs where workspace_id = $1 order by created_at desc limit 50`,
+          [principal.workspaceId],
+        )
+      ).rows as {
+        id: string; project_id: string | null; workflow: string; state: string;
+        estimate_credits: number; cap_credits: number; spent_credits: number;
+        created_at: string; ended_at: string | null;
+      }[];
+      return {
+        spendableCredits: Number(bal?.spendable ?? 0),
+        heldCredits: Number(bal?.held ?? 0),
+        runs: runs.map((r) => ({
+          runId: r.id,
+          projectId: r.project_id,
+          workflow: r.workflow,
+          state: r.state,
+          estimateCredits: Number(r.estimate_credits),
+          capCredits: Number(r.cap_credits),
+          spentCredits: Number(r.spent_credits),
+          createdAt: r.created_at,
+          endedAt: r.ended_at,
+        })),
+      };
+    });
+    return c.json(out);
   });
 
   // ---- the exhaustion prompt's telemetry write (REQ-BETA-12: credits.exhausted_prompt{action_taken}) -----

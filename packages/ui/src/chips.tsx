@@ -81,6 +81,51 @@ export function ObligationChip({ state, label }: { state: ObligationStateKind; l
   );
 }
 
+/**
+ * The §14.5 level-0 balance chip (PRB.12): spendable credits in the shell header; the held figure rides on
+ * the tooltip (`title`) — "held on hover" is the whole level-0 contract. Text comes in as props so copy stays
+ * in the app's vocab-linted layer.
+ */
+export function BalanceChip({
+  spendableCredits,
+  heldCredits,
+  label,
+  heldTitle,
+}: {
+  readonly spendableCredits: number;
+  readonly heldCredits?: number;
+  /** e.g. "1,240 cr" — composed by the app (vocab lint covers it). */
+  readonly label: string;
+  /** the hover line, e.g. "300 cr held against running jobs" — shown when heldCredits > 0. */
+  readonly heldTitle?: string;
+}): ReactNode {
+  return (
+    <a
+      href="/usage"
+      data-balance-chip="true"
+      data-spendable={spendableCredits}
+      data-held={heldCredits ?? 0}
+      title={heldCredits != null && heldCredits > 0 ? heldTitle : undefined}
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: "4px",
+        padding: "2px 10px",
+        borderRadius: "999px",
+        border: "1px solid var(--shell-border)",
+        background: "var(--shell-raised)",
+        color: "var(--shell-fg)",
+        fontSize: "12px",
+        fontVariantNumeric: "tabular-nums",
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </a>
+  );
+}
+
 /** The version header's open-obligations chip `⚑ 3 open · 2 addressed` (REQ-OBJ-6; §5.8). */
 export function VersionObligationChip({
   open,
