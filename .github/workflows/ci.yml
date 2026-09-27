@@ -145,6 +145,20 @@ jobs:
           echo "protocols_version for provenance: ${PROTOCOLS_VERSION:-<stub fallback>}"
           GIT_SHA="${{ github.sha }}" IMAGE_DIGESTS="$json" STAGE="ci" PROTOCOLS_VERSION="$PROTOCOLS_VERSION" \
             node scripts/record-provenance.mjs
+      - name: Assert the provenance carries the real PROTOCOLS_VERSION (D-P0.04-2)
+        # The committed packages/protocols makes this offline-checkable: the artifact must stamp the computed
+        # `0.4.0+<sha>` over the trio — never the stub-0.0.0 fallback (which would mean the hash silently broke).
+        run: |
+          set -euo pipefail
+          PV="$(node scripts/compute-protocols-version.mjs --bare)"
+          case "$PV" in
+            0.4.0+*) : ;;
+            *) echo "expected a 0.4.0+<sha> protocols_version, got '${PV:-<empty>}'"; exit 1 ;;
+          esac
+          artifact="provenance-artifacts/ci-${{ github.sha }}.json"
+          grep -F "\"protocols_version\": \"$PV\"" "$artifact"
+          ! grep -F "stub-0.0.0" "$artifact"
+          echo "provenance protocols_version verified: $PV"
       - uses: actions/upload-artifact@v4
         with:
           name: deploy-provenance

@@ -18,6 +18,7 @@ beforeEach(async () => {
     ...base,
     launcher,
     config: { imageDigest: "sha256:pinned", serviceAccount: "sa", provider: "anthropic", concurrencyFor: () => 5 },
+    systemExec: db.client,
   };
 });
 afterEach(() => db.close());

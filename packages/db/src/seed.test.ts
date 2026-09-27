@@ -64,6 +64,56 @@ describe("real-project seed (REQ-DATA-3)", () => {
     await db.close();
   });
 
+  // D-P0.15k-1: the revise + profile_voice instrumented fixtures. A revise run needs a delivered review's
+  // obligations on a revise-target draft (the seed's corr_* + obl_* + working v2 drafts); a profile_voice run
+  // needs an author body-of-work — the seeded persona's included corpus the §9.3 snapshot reads.
+  it("seeds the revise targets and the author corpus the instrumented folds need (D-P0.15k-1)", async () => {
+    const db = await createTestDb();
+    await seedRealProjects(db);
+
+    // revise target: every project has a delivered 'review' correspondence (the run's server-resolved
+    // priorReviewId; proj_sd has two rounds) AND a working draft to revise.
+    const corr = (
+      await db.query("select count(*)::int n from correspondence_items where kind='review' and delivered_at is not null")
+    ).rows[0] as { n: number };
+    expect(Number(corr.n)).toBe(4);
+    const working = (
+      await db.query("select count(*)::int n from drafts where state='working'")
+    ).rows[0] as { n: number };
+    expect(Number(working.n)).toBe(3);
+    // … and each working draft carries a head artifact_version (materializable bytes — the revise target).
+    const workingHeads = (
+      await db.query(
+        `select count(*)::int n from artifacts a join artifact_versions av on av.artifact_id = a.id
+          where a.mirror_path = 'drafts/v2.md'`,
+      )
+    ).rows[0] as { n: number };
+    expect(Number(workingHeads.n)).toBe(3);
+    const openObl = (
+      await db.query("select count(*)::int n from revision_obligations")
+    ).rows[0] as { n: number };
+    expect(Number(openObl.n)).toBe(3);
+
+    // author corpus: per_seed with a connection + three INCLUDED samples carrying a current sample_version
+    // (what the build's §9.3 sample_set/corpus_size snapshot reads).
+    const persona = (await db.query("select mode, kind from personas where id='per_seed'")).rows[0] as
+      | { mode: string; kind: string }
+      | undefined;
+    expect(persona).toEqual({ mode: "self", kind: "leaf" });
+    const corpus = (
+      await db.query(
+        `select di.id, sv.content_sha256, sv.word_count
+           from discovered_items di
+           join connections cn on cn.id = di.connection_id
+           join sample_versions sv on sv.id = di.current_sample_id
+          where cn.persona_id = 'per_seed' and di.state = 'included'`,
+      )
+    ).rows as { id: string; content_sha256: string; word_count: number }[];
+    expect(corpus.map((r) => r.id).sort()).toEqual(["di_seed1", "di_seed2", "di_seed3"]);
+    expect(corpus.every((r) => r.content_sha256.length === 64 && r.word_count > 0)).toBe(true);
+    await db.close();
+  });
+
   it("code seeds are idempotent", async () => {
     const db = await createTestDb();
     await agentTypesSeed(db);

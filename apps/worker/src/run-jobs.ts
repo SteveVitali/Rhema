@@ -13,10 +13,12 @@ import {
   revokeRunCredentials,
   gateExpiryJob,
   handleGateExpiry,
+  sweepStrandedRuns,
   type OrchestratorDeps,
   type JobLauncher,
   type ProvisionResult,
   type ReapOutcome,
+  type StrandedSweepOutcome,
   type GateExpiryOutcome,
   type RunState,
   type SqlClient,
@@ -35,6 +37,12 @@ export interface WorkerRunConfig {
 export interface WorkerRunDeps extends OrchestratorDeps {
   readonly launcher: JobLauncher;
   readonly config: WorkerRunConfig;
+  /**
+   * A system-scoped SqlClient for the stranded-run sweep's cross-tenant `runs`/`gates` scan (PRB.14 —
+   * D-P0.08-4/D-P0.10-2), bound like the parked sweep's (`systemDatabaseUrl` when set, else the main
+   * pool — see main.ts).
+   */
+  readonly systemExec: SqlClient;
 }
 
 export interface RunJobPayload {
@@ -105,6 +113,17 @@ export function handleRunResume(deps: WorkerRunDeps, job: RunJobPayload): Promis
 /** `run.reap` (cron, 1 min) — orphan stale runs and re-enqueue / open resume_partial. */
 export function handleRunReap(deps: WorkerRunDeps): Promise<ReapOutcome[]> {
   return reap(deps);
+}
+
+/**
+ * The stranded-run sweep (PRB.14 — D-P0.08-4/D-P0.10-2), run on the same 1-min `run.reap` cron: fails
+ * `provisioning` runs past the launch SLO (hold + credential + writer lock released on the terminal edge),
+ * re-sends the launch job for `queued` runs whose post-commit send was lost (singleton-keyed — a still-live
+ * job dedupes), and re-arms a parked run's unresolved gate expiry (a stranded confirm_cost then cancels and
+ * releases its hold). See `stranded-sweep.ts` in @rhema/orchestrator for the scan semantics.
+ */
+export function handleStrandedSweep(deps: WorkerRunDeps): Promise<StrandedSweepOutcome[]> {
+  return sweepStrandedRuns(deps);
 }
 
 export interface CancelResult {
