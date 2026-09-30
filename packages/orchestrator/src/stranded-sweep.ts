@@ -29,6 +29,7 @@
 
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
 import type { OrchestratorDeps } from "./internal-api.js";
 import type { SqlClient } from "./tx.js";
@@ -138,6 +139,7 @@ export async function sweepStrandedRuns(
           idempotencyKey: `release:${row.id}`,
         });
       }
+      await reconcileRunSpend(tx, row.id); // PRB.16b — the terminal settle owns the spend figure
       await revokeRunCredentials(tx, row.id, now);
       return true;
     });
@@ -168,7 +170,7 @@ export async function sweepStrandedRuns(
   }
 
   // ---- Leg C (D-P0.10-2, consent half): re-arm the expiry job for a parked run's unresolved gate. ----
-  // `scheduleGateExpiry` singleton-keys on `gate:<id>:<deadlineMs>` — a gate whose job is still active
+  // `scheduleGateExpiry` singleton-keys on `gate.expiry:<id>:<deadlineMs>` — a gate whose job is still active
   // dedupes; a gate whose post-commit send was lost (or never armed — confirm_cost's 7-day expiry has no
   // other arming site) gets a job that fires at the deadline (immediately when already overdue → the
   // expiry handler's conditional resolve cancels + releases the hold).

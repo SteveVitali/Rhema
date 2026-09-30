@@ -61,7 +61,7 @@ describe("estimateCredits (§12.2 consumer)", () => {
   it("selects a named variant (profile_voice quick vs full)", () => {
     const spec = ESTIMATORS.profile_voice!;
     const quick = estimateCredits(spec, { words: 2000 }, { tier: "base", rigor: "standard", variant: "quick" });
-    expect(quick).toBe(Math.ceil(40 + 0.012 * 2000)); // 64
+    expect(quick).toBe(Math.ceil(40 + 0.09 * 2000)); // 220 — PRB.16b: recalibrated on the live census burn
     const full = estimateCredits(spec, { wordsRead: 5000, piecesRead: 3, holdouts: 1 }, { tier: "base", rigor: "standard", variant: "full" });
     expect(full).toBe(Math.ceil(120 + 0.009 * 5000 + 40 * 3 + 90 * 1)); // 120+45+120+90 = 375
   });

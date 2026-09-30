@@ -22,6 +22,10 @@ export const INDEPENDENCE_CONTEXTS: readonly string[] = [
   "second_read",
   "fidelity_audit",
   "gap_check",
+  // the revise manifest's gap-check phase key (PRB.16b F16 — the phase IS the §12.6 fresh-context
+  // check; the list carried the `gap_check` label but not this manifest key, so guidance would have
+  // leaked into the independence context it is required to stay out of, REQ-RUN-18).
+  "gap_analysis",
 ];
 
 export function isIndependenceContext(context: string | undefined): boolean {

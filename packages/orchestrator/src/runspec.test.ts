@@ -130,6 +130,25 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     }
   });
 
+  // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
+  // frontmatter); the spec must pin them, with personas_dir the ABSOLUTE mount base the harness
+  // materializes into — the conventions file that documents the layout is not shipped in the pod's
+  // skillsDir, so a run whose agent can't resolve the persona dir produces nothing (live: Quick
+  // Voice 01M2T65W5PZ3174FPVFNQRVKZS attempt-1, two zero-output sub-runs).
+  it("persona-builder spec pins `persona` + `personas_dir` in the phase inputs (F23)", async () => {
+    const runId = await seedWorkflowRun("run_pv", "profile_voice");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set persona_id = $2 where id = $1`, [runId, "per_1"]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.inputs.persona).toBe("per_1");
+    expect(spec.request.inputs.personas_dir).toBe("/work/personas");
+    // a persona-less run carries neither key.
+    const specNp = await buildHarnessRunSpec(deps, { runId: await seedWorkflowRun("run_rv", "review"), attempt: 1, workspaceId: seed.workspaceId });
+    expect(specNp.request.inputs.persona).toBeUndefined();
+    expect(specNp.request.inputs.personas_dir).toBeUndefined();
+  });
+
   it("honors an explicit `phase` pin in the frozen inputs (REQ-SPEC-13 — run exactly phase N)", async () => {
     const runId = await seedWorkflowRun("run_pin", "review");
     const review = WORKFLOW_MANIFESTS.review!;
@@ -270,5 +289,85 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
     expect(spec.request.phase.key).toBe("substance"); // no tier opt-out — all 6 phases active
     expect(spec.request.of).toBe(manifest.phases.length);
+  });
+
+  it("F15 — a sidecar-declaring phase injects `sidecar_output` + `sidecar_contract` (the entries-not-rows fix)", async () => {
+    const runId = await seedWorkflowRun("run_triage_sc", "revise");
+    const revise = WORKFLOW_MANIFESTS.revise!;
+    const triage = revise.phases.find((p) => p.key === "triage")!;
+    // commit bootstrap + research so the selected phase is triage (the sidecar-declaring one).
+    for (const [key, i] of [["bootstrap", 0], ["research", 1]] as const) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_sc_${i}`, runId, key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("triage");
+    // `sidecar: true` (revise defaultInputs) + the contract hint — the exact envelope reaches the prompt.
+    expect(spec.request.inputs.sidecar).toBe(true);
+    expect(spec.request.inputs.sidecar_output).toBe(triage.sidecars.join(", "));
+    const contract = String(spec.request.inputs.sidecar_contract);
+    expect(contract).toContain("response-ledger.json");
+    expect(contract).toContain('"entries"');
+    expect(contract).toContain("findingOrdinal");
+    // the phase-result enum is pinned too (live: the agent wrote "success" — the oracle's
+    // non-blocked/non-replan fall-through was the only thing that passed leg b).
+    expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
+  });
+
+  it("F15 — a phase with NO declared sidecars carries no sidecar_contract input", async () => {
+    const runId = await seedWorkflowRun("run_no_sc", "revise");
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("bootstrap"); // sidecars: []
+    expect(spec.request.inputs.sidecar_output).toBeUndefined();
+    expect(spec.request.inputs.sidecar_contract).toBeUndefined();
+    // …but `sidecar: true` is still in effect (revise defaultInputs), so the phase-result enum hint lands
+    // on EVERY phase of the run — it is the input that makes the skill write the file at all.
+    expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
+  });
+
+  it("F16 — run-scope guidance is delivered into `inputs.guidance` at the phase boundary + marked consumed", async () => {
+    const runId = await seedWorkflowRun("run_guid", "revise");
+    // the pretriage-style note captured at run creation (run-scope, queued_message source).
+    const gdnId = deps.ids("gdn"); // a real ULID — the guidance.delivered payload validates ids
+    await db.pg.query(
+      `insert into guidance(id, project_id, run_id, source, anchors, body, standing, workflows, consumed_by, active, created_by, created_at)
+       values ($1,$2,$3,'queued_message',null,'rows marked actor:user are authoritative and must not be overridden',false,null,'[]'::jsonb,true,'"usr_1"',now())`,
+      [gdnId, seed.projectId, runId],
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(String(spec.request.inputs.guidance)).toContain("actor:user are authoritative");
+    // consumed: the row records this run+phase, and a guidance.delivered event was appended.
+    const row = (await db.pg.query(`select consumed_by from guidance where id = $1`, [gdnId])).rows[0] as { consumed_by: { runId: string; phase: string }[] };
+    expect(row.consumed_by).toEqual([{ runId, phase: "bootstrap" }]);
+    const ev = deps.eventWriter.forRun(runId).filter((e) => e.type === "guidance.delivered");
+    expect(ev).toHaveLength(1);
+  });
+
+  it("F16 — an independence phase (review second_read) is delivered NO guidance (REQ-RUN-18)", async () => {
+    const runId = await seedWorkflowRun("run_indep", "review");
+    const review = WORKFLOW_MANIFESTS.review!;
+    const gdnId = deps.ids("gdn");
+    await db.pg.query(
+      `insert into guidance(id, project_id, run_id, source, anchors, body, standing, workflows, consumed_by, active, created_by, created_at)
+       values ($1,$2,$3,'queued_message',null,'do not deliver me into second read',false,null,'[]'::jsonb,true,'"usr_1"',now())`,
+      [gdnId, seed.projectId, runId],
+    );
+    // commit phases 0..3 so the selected phase is second_read (manifest index 4).
+    for (let i = 0; i < 4; i++) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_indep_${i}`, runId, review.phases[i]!.key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("second_read");
+    expect(spec.request.inputs.guidance).toBeUndefined();
+    // and the record was NOT consumed (it stays deliverable for the next non-independence phase).
+    const row = (await db.pg.query(`select consumed_by from guidance where id = $1`, [gdnId])).rows[0] as { consumed_by: unknown[] };
+    expect(row.consumed_by).toEqual([]);
   });
 });

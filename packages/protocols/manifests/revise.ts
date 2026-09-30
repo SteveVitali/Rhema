@@ -8,6 +8,11 @@ import type { WorkflowManifest } from "../src/manifest-types.js";
 export const revise: WorkflowManifest = {
   workflow: "revise",
   skill: "respond-to-review",
+  // `sidecar: true` (PRB.16b F15): the ported skill gates BOTH the `.rhema/response-ledger.json` twin
+  // AND `.rhema/phase-result.json` on this input ("with `sidecar` absent the skill runs exactly as
+  // upstream") — but triage's oracle declares `sidecar_validates: response-ledger.json` + leg (b)
+  // requires phase-result.json, so a revise run was asked to prove outputs it was never told to emit.
+  defaultInputs: { sidecar: true },
   phases: [
     {
       key: "bootstrap",
@@ -48,6 +53,10 @@ export const revise: WorkflowManifest = {
       predicates: ["one row per finding", "sidecar validates"],
       sidecars: ["response-ledger.json"],
       gateAfter: "approve_triage",
+      // PRB.16b F19 — the gate must BIND the produced ledger version: the approve_triage card and the
+      // merged write-back overlay (loadLedgerEntries → serializeGateOverlay) read the gate's
+      // artifact_version_id; without it the overlay path was dead code (gates opened with NULL).
+      gateArtifact: "agents/author/ledgers/vN-response-ledger.md",
       phaseClass: "judge",
       budgetShare: 0.12,
       allowsSubagents: false,

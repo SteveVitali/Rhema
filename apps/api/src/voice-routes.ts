@@ -8,7 +8,7 @@
 //   POST /voices/:id/samples            upload/paste → connection + discovered_item + sample v1 (§9.5)
 //   PATCH /voices/:id/samples/:itemId   include/omit an item (the status re-derives at read)
 //   POST /voices/:id/seed               seed save → PERSONA.md version + J9 hash recompute + live pill
-//   GET  /voices/:id/estimate           the ≤500 ms estimate (Quick `40 + 0.012·words` at Base; REQ-PERSONA-3)
+//   GET  /voices/:id/estimate           the ≤500 ms estimate (Quick `40 + 0.09·words` at Base; REQ-PERSONA-3)
 //   POST /voices/:id/build              "Create and build" → a profile_voice{tier} run (§9.2 item 3)
 //   PATCH /runs/:id                     cancel an open build (cancelRun's legal edges)
 //   PUT  /artifacts/:vid                derived-artifact write gate — 405 with `editMode` (§9.5 row 36)
@@ -426,7 +426,12 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         workspaceId: principal.workspaceId,
         personaId,
         kind: "sample",
-        mirrorPath: `samples/${itemId}.md`,
+        // PRB.16b F18 — the persona_builder seat mounts `docs/**` only (§12.6 verbatim; conventions/
+        // personas.md: "docs/ is human-supplied and agent-read"). A `samples/` path was structurally
+        // invisible — census self-reported blocked with "no docs/ directory". Corpus files the operator
+        // supplies belong under `docs/`; the item id stays in the filename so the snapshot's sample_set
+        // (itemId → sha) still correlates to the mounted file.
+        mirrorPath: `docs/samples/${itemId}.md`,
         markdown,
         wordCount: words,
         actor: { kind: "user", userId: principal.userId },

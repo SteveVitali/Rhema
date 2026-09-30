@@ -34,6 +34,7 @@ import {
   type PhaseResultFile,
   type PredicateFacts,
 } from "@rhema/orchestrator";
+import { resolveProducedPath } from "./work-reader.js";
 
 /** Error classes whose remedy is re-running the same phase once (guided for artifact_missing) — mirrors runPhase. */
 const RERUN_CLASSES: ReadonlySet<ErrorClass> = new Set([
@@ -233,8 +234,11 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       if (verdict.outcome === "incomplete" && RERUN_CLASSES.has(verdict.errorClass)) {
         const policy = retryPolicyFor(verdict.errorClass);
         if (policy.maxRetries > 0) {
+          // PRB.16b F15 — fold each failed predicate's TARGET + detail (incl. sidecar schema issues)
+          // into the guidance: the bare reason named only predicate KINDS, so a retry re-guessed the
+          // same contract violation (live: `rows` written for the required `entries` array ×3).
           const guidance = policy.guided
-            ? `Previous attempt incomplete: ${verdict.reason}. Complete every declared artifact.`
+            ? `Previous attempt incomplete: ${verdict.reason}${describePredicateFailures(verdict.failedPredicates)}. Complete every declared artifact.`
             : undefined;
           outputs = await deps.runPhase(spec, guidance ? { guidance } : {});
           verdict = evaluateOracle(
@@ -285,9 +289,18 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         ? deps.gateContext(now())
         : { policy: "named" as const, now: now() };
       // a pinned phase:N run finalizes after this one phase; otherwise the manifest decides advance/gate/finalize.
-      const next: CommitNext = spec.stopAfterPhase
+      let next: CommitNext = spec.stopAfterPhase
         ? { kind: "finalize" }
         : decideCommitNext({ phase, isLastPhase, gate: gateCtx });
+      // PRB.16b F19 — bind the gate to the produced version of the phase's declared `gateArtifact`:
+      // `gates.artifact_version_id` is what the approve_triage card and the write-back overlay merge
+      // (mergedTriageLedger → serializeGateOverlay) read — `decideCommitNext` never supplied it, so
+      // every gate opened with NULL and the overlay path was dead code.
+      if (next.kind === "gate" && phase.gateArtifact) {
+        const produced = resolveProducedPath(Object.keys(harvested.byPath), phase.gateArtifact);
+        const versionId = produced ? harvested.byPath[produced] : undefined;
+        if (versionId) next = { ...next, artifactVersionId: versionId };
+      }
 
       const committed = await deps.client.commit({
         stepKey: phase.key,
@@ -304,12 +317,18 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         next,
       });
       if (!committed.ok) {
-        return {
-          kind: "failed",
-          phasesCommitted,
-          errorClass: "infra",
-          reason: `commit rejected: ${committed.code ?? "unknown"}`,
-        };
+        // PRB.16b F17: a non-stale commit rejection must still leave a DB trace — previously the pod just
+        // exited, the run stayed `running`, and the orphan/reaper loop parked it on `resume_partial` with NO
+        // step row and NO engine.error (the live 01M2SH38 attempt-5 case: a `gates_step_id_fkey` rollback
+        // surfaced only in api logs). `stale_task` is the exception — a genuinely-stale attempt's failStep
+        // would be stale-fenced too, and the live attempt owns the write.
+        const reason = `commit rejected: ${committed.code ?? "unknown"}`;
+        if (committed.code !== "stale_task") {
+          await deps.client
+            .failStep({ stepKey: phase.key, ordinal: phase.index, errorClass: "infra", reason })
+            .catch(() => undefined); // best-effort diagnostics; the pod still exits failed either way
+        }
+        return { kind: "failed", phasesCommitted, errorClass: "infra", reason };
       }
       phasesCommitted++;
 

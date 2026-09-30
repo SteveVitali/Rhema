@@ -136,7 +136,7 @@ export async function main(): Promise<void> {
   const { createHookDaemon } = await import("./hook-daemon.js");
   const { createGcsContentStore } = await import("@rhema/mirror");
   const { materializeWork, nodeWorkFs } = await import("./materialize-work.js");
-  const { readWorkDir } = await import("./work-reader.js");
+  const { readWorkRoots } = await import("./work-reader.js");
   const { startCredentialInjector } = await import("./credential-injector.js");
 
   const runId = reqEnv("RUN_ID");
@@ -199,12 +199,29 @@ export async function main(): Promise<void> {
     // chmod'ing only the root left `agents/editor/` harness-owned 0755, so the agent could not create its
     // declared artifacts there (residue 1, live P0.15h). Read-only mounts stay 0444.
     await makeTreeAgentWritable(cwd);
+    // PRB.16b F27 — the persona root needs the same treatment: a persona_builder's `profile/**` mount is
+    // `readwrite` in §12.6 but the dir is harness-owned 0755, so the agent gets EACCES on its CANONICAL
+    // mount and falls back to `/work/project` (live: Quick Voice 01M2T65W… att-5's committed phase-result
+    // reported exactly this). The walk keeps 0444 mounts (PERSONA.md, docs/**) read-only.
+    if (roots.persona) await makeTreeAgentWritable(roots.persona);
     await mkdir(configDir, { recursive: true });
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
     await stageSkills({ skillsDir: spec.skillsDir, configDir });
+    // PRB.16b F16 — MERGE the guided-retry text with any guidance the runspec already delivered
+    // (standing / run-scope §6.5 records land in `inputs.guidance` server-side); overwriting it here
+    // would silently drop the human's authoritative rows note exactly on the retry that needs it.
     const request = opts.guidance
-      ? { ...spec.request, inputs: { ...spec.request.inputs, guidance: opts.guidance } }
+      ? {
+          ...spec.request,
+          inputs: {
+            ...spec.request.inputs,
+            guidance:
+              typeof spec.request.inputs.guidance === "string" && spec.request.inputs.guidance.length > 0
+                ? `${spec.request.inputs.guidance}\n${opts.guidance}`
+                : opts.guidance,
+          },
+        }
       : spec.request;
     const agentSpec: AgentPhaseSpec = {
       request,
@@ -241,7 +258,9 @@ export async function main(): Promise<void> {
       await hookDaemon.close();
     }
 
-    const files = await readWorkDir(cwd);
+    // PRB.16b F22 — read BOTH roots: a persona-builder phase's declared outputs live under
+    // `roots.persona` (`/work/personas/<id>/profile/**`), which a cwd-only walk never saw.
+    const files = await readWorkRoots(cwd, roots.persona);
     const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
     // DIAGNOSTIC (K5 / D-P0.06-1, the first live SDK exercise): dump what the agent actually produced in /work vs
     // what the completion oracle judged, so the intake predicate can be reconciled against real skill output.

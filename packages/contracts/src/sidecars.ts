@@ -232,3 +232,28 @@ export const SIDECAR_REGISTRY = {
 } as const;
 
 export type SidecarFilename = keyof typeof SIDECAR_REGISTRY;
+
+/**
+ * A compact, human-authored contract hint per sidecar — the exact envelope + required fields the
+ * `sidecar: true` skill input must emit (PRB.16b F15). The ported skills' docs say only "emits the
+ * structured-output twin to `.rhema/<name>.json`" — nothing names the envelope or its REQUIRED array
+ * field, so a live agent guessed `rows` for `entries` and failed `sidecar_validates` on every attempt
+ * (prod run `01M2SH38…`, triage ×4). These hints ride into the phase prompt via `inputs.sidecar_contract`
+ * (`runspec.ts`), so the agent sees the contract on attempt 1. Keep each hint terse and field-exact —
+ * it is a writing contract, not prose. The zod schemas above remain the authority; a hint that drifts
+ * from its schema fails `sidecar_validates` just the same.
+ */
+export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
+  "findings.json":
+    '{"sidecar":"findings","version":1,"findings":[{"ordinal":<int>,"kind","severity","origin","anchor"|<null>,"title","body","evidence"?{"verdict"?,"urls"?[{url,accessed}]},"suggestion"?{replacement},"rubricDims"?[],"letterSection"?,"carriesObligationId"?}]} — the array field is "findings".',
+  "01-claim-ledger.json":
+    '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?}]} — the array field is "claims".',
+  "rubric.json":
+    '{"sidecar":"rubric","version":1,"dimensions":[{"dimension","score":<1-5>,"cap"?{"at":<1-4>,"reason","entailedByFindingOrdinal"?}}],"swaps"?[{from,to}]} — the array field is "dimensions"; NEVER an aggregate score.',
+  "structure-plan.json":
+    '{"sidecar":"structure_plan","version":1,"spine":<string[]>,"sections":[{"ref","title","targetWords"?,"purpose"?,"anchor"?}],"alternativesConsidered"?<string[]>,"gaps"?<string[]>} — the array fields are "spine" + "sections".',
+  "response-ledger.json":
+    '{"sidecar":"response_ledger","version":1,"entries":[{"findingOrdinal":<int — the findings.json ordinal this row answers>,"disposition":{"kind":"accept"|"adapt"|"rebut"|"defer"|"escalate","status":"proposed"|"open"|"done"|"verified"|"mooted"|"deferred"|"escalated"|"honored","rationale"?,"adaptedText"?,"moveOrdinal"?,"applied"?,"actor"?},"anchor"?}],"moves"?[{"ordinal","title","type"?,"status"?,"discharges"?[],"moots"?[]}]} — the array field is "entries" (NOT "rows"); exactly one entry per finding in the review\'s findings.json.',
+  "cut-list.json":
+    '{"sidecar":"cut_list","version":1,"targetWords"?<int>,"cuts":[{"ordinal":<int>,"anchor","words":<int>,"reason","protect"?}]} — the array field is "cuts".',
+};

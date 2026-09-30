@@ -11,6 +11,7 @@ export type { ContentStore } from "@rhema/mirror"; // re-exported so adapters ca
 import type { OrchestratorDeps } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import { InsufficientBalanceError, AccountSuspendedError } from "./ledger.js";
 import { RUN_JOBS } from "./queue.js";
 import { serializeGateOverlay } from "./gate-overlay.js";
@@ -174,6 +175,7 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
             idempotencyKey: `release:${args.runId}`,
           });
         }
+        await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
         await revokeRunCredentials(tx, args.runId, now);
         return { ok: true, resolved: true, state: "cancelled", overlayVersionIds: [] };
       }

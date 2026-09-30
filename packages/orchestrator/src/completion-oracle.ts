@@ -117,6 +117,14 @@ export interface PredicateFacts {
   readonly inventoryPresent?: boolean;
   /** sidecar filename → validates against its P0.02 zod schema. */
   readonly sidecarValidates?: Readonly<Record<string, boolean>>;
+  /**
+   * sidecar filename → WHY validation failed (a compact issue summary, e.g.
+   * `entries: expected array, received undefined` or `missing or unparseable JSON`). Surfaces as the
+   * `sidecar_validates` predicate's detail → the failStep reason AND the guided-retry text, so the next
+   * attempt sees the exact contract violation instead of a bare `false` (PRB.16b F15 — a live run
+   * guessed `rows` for the required `entries` array and burned three triage attempts re-guessing).
+   */
+  readonly sidecarIssues?: Readonly<Record<string, string>>;
 }
 
 function pass(predicate: CompletionPredicate, ok: boolean, detail?: string): EvaluatedPredicate {
@@ -168,7 +176,7 @@ export function createFactsEvaluator(facts: PredicateFacts): PredicateEvaluator 
       case "thesis_and_inventory_present":
         return pass(p, facts.thesisPresent === true && facts.inventoryPresent === true);
       case "sidecar_validates":
-        return pass(p, facts.sidecarValidates?.[p.sidecar] === true);
+        return pass(p, facts.sidecarValidates?.[p.sidecar] === true, facts.sidecarIssues?.[p.sidecar]);
       default: {
         const _exhaustive: never = p;
         return pass(_exhaustive as CompletionPredicate, false, "unknown predicate kind");

@@ -169,6 +169,10 @@ jobs:
     name: public-safe (gitleaks / markers / licence policy)
     needs: typecheck-lint-unit
     runs-on: ubuntu-latest
+    # gitleaks-action v2's PR scan lists the PR's commits via the REST API, which needs
+    # pull-requests: read. The repo default GITHUB_TOKEN is contents:read only, so the scan
+    # 403'd ("Resource not accessible by integration") and the job died before it scanned.
+    # (contents: read must be restated — any permissions block zeroes the unlisted scopes.)
     permissions:
       contents: read
       pull-requests: read
@@ -189,7 +193,10 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # gitleaks-action v2 breaking change: PR scans require the token explicitly.
+          # `github.token` (not `secrets.GITHUB_TOKEN`) — the secrets reference now fails
+          # workflow evaluation outright (every job dies at setup with zero steps/logs).
+          GITHUB_TOKEN: ${{ github.token }}
       - name: licence policy (allowlist + checked-in exceptions — REQ-ARCH-40)
         run: pnpm check:licenses
       - name: no protocol markers in public bundles (REQ-ARCH-33)

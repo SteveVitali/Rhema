@@ -170,11 +170,35 @@ export interface DeliveryResult {
   readonly strippedCitations: number;
   readonly accessReport: AccessReport;
   readonly accessReportVersionId: string;
+  /** the version ids of the dossier copies published under `correspondence/<kind>/<ordinal>/` (F12). */
+  readonly dossierVersionIds: readonly string[];
   /** the v(N+1) draft row a `response` delivery created (PRB.06); unset otherwise. */
   readonly newDraftId?: string;
   /** the per-move `revision.move_traced` payloads emitted (PRB.06; REQ-BETA-7). */
   readonly moveTraces?: readonly MoveTrace[];
 }
+
+/**
+ * The artifact kinds a delivery publishes into the shared `correspondence/<kind>/<ordinal>/` tree —
+ * §8.2's shared-record rows plus the structured `sidecar` twins and the frozen `response_ledger`.
+ * Working-memory kinds (research/source notes, voice charter, briefs/plans, drafts) stay private to
+ * the producing seat: the delivered dossier is the seat's complete statement, never its deliberations.
+ */
+const CORRESPONDENCE_DOSSIER_KINDS: ReadonlySet<string> = new Set([
+  "figure",
+  "companion_doc",
+  "drafting_note",
+  "editors_letter",
+  "piece_brief",
+  "claim_ledger",
+  "discourse_report",
+  "argument_notes",
+  "craft_notes",
+  "second_read",
+  "response_letter",
+  "response_ledger",
+  "sidecar",
+]);
 
 /** The set of normalized urls the proxy actually fetched for a run (the fetch log of record). */
 async function fetchedNormalizedUrls(exec: SqlExecutor, runId: string): Promise<Set<string>> {
@@ -365,6 +389,128 @@ export async function runDeliveryTransaction(
   if (args.deliveredVersionIds.length > 0) {
     await exec.query(`update artifact_versions set immutable = true where id = any($1::text[])`, [
       args.deliveredVersionIds as string[],
+    ]);
+  }
+
+  // ---- 5b. publish the dossier into the shared correspondence tree (PRB.16b; LIVE FINDING 12) ------
+  // The seat wrote its dossier under its PRIVATE namespace (`agents/editor/**` — the manifest pins
+  // `output_dir` there because `correspondence/` is a read-only mount for seats), so a responding
+  // run's author seat — whose shared read is exactly `drafts/ correspondence/ manifest.md` — could
+  // not see the delivered dossier and self-reported `blocked` at bootstrap. Publish each produced
+  // dossier artifact the run committed as a `correspondence/<kind>/<ordinal>/<basename>` SHARED
+  // artifact: the same content-addressed bytes re-pointed (no re-upload), marked immutable. The
+  // correspondence item's `artifact_ids` grows to name the complete shared dossier.
+  const produced = (
+    await exec.query(
+      `select distinct on (a.id)
+          a.mirror_path, a.kind, av.content_sha256, av.s3_key, av.bytes, av.word_count, av.media_type,
+          av.parse_status
+         from steps s
+         join artifact_versions av on av.id = any(s.produced_version_ids)
+         join artifacts a on a.id = av.artifact_id
+        where s.run_id = $1 and s.state = 'done' and a.namespace like 'agent:%'
+        order by a.id, av.ordinal desc`,
+      [args.runId],
+    )
+  ).rows as {
+    mirror_path: string;
+    kind: string;
+    content_sha256: string;
+    s3_key: string;
+    bytes: number;
+    word_count: number | null;
+    media_type: string;
+    parse_status: string | null;
+  }[];
+  // One file per basename — the canonical (shallowest) path wins a `foo.json` vs `.rhema/foo.json`
+  // collision so the correspondence copy is the file the seat meant, not a harness twin.
+  const dossierByBase = new Map<string, (typeof produced)[number]>();
+  for (const r of produced) {
+    if (!CORRESPONDENCE_DOSSIER_KINDS.has(r.kind)) continue;
+    const base = r.mirror_path.slice(r.mirror_path.lastIndexOf("/") + 1);
+    const cur = dossierByBase.get(base);
+    if (!cur || r.mirror_path.length < cur.mirror_path.length) dossierByBase.set(base, r);
+  }
+  const dossierVersionIds: string[] = [];
+  for (const [base, r] of dossierByBase) {
+    const corrPath = `correspondence/${args.correspondenceKind}/${ordinal}/${base}`;
+    let artifactId = (
+      (await exec.query(`select id from artifacts where project_id = $1 and mirror_path = $2`, [
+        args.projectId,
+        corrPath,
+      ])).rows[0] as { id: string } | undefined
+    )?.id;
+    if (!artifactId) {
+      artifactId = deps.ids("art");
+      await exec.query(
+        `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, created_at)
+         values ($1,$2,$3,$4,'shared',$5,$6)`,
+        [artifactId, args.workspaceId, args.projectId, r.kind, corrPath, now],
+      );
+    }
+    const vOrd = (
+      (await exec.query(
+        "select coalesce(max(ordinal),0)+1 as n from artifact_versions where artifact_id = $1",
+        [artifactId],
+      )).rows[0] as { n: number }
+    ).n;
+    const versionId = deps.ids("av");
+    await exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes,
+         word_count, media_type, created_by, created_at, immutable, parse_status)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11)`,
+      [
+        versionId,
+        artifactId,
+        vOrd,
+        r.content_sha256,
+        r.s3_key, // the content-addressed bytes are already stored — re-point, never re-upload
+        r.bytes,
+        r.word_count,
+        r.media_type,
+        JSON.stringify({ kind: "system" }),
+        now,
+        r.parse_status, // the same bytes carry the same parse verdict
+      ],
+    );
+    await exec.query("update artifacts set head_version_id = $2 where id = $1", [artifactId, versionId]);
+    dossierVersionIds.push(versionId);
+  }
+  // The findings/rubric structured twins were never artifacts (they live in `.rhema/` — a derived,
+  // never-harvested directory), so serialize them here from the VERBATIM-persisted sidecars. The
+  // claim-ledger twin is deliberately NOT shipped: Path-B citation stripping made the pod's JSON
+  // non-authoritative — the delivered claims+claim_sources rows are the cited⇒fetched truth.
+  const sidecarTwins: { filename: string; json: unknown }[] = [];
+  if (args.findings) sidecarTwins.push({ filename: "findings.json", json: args.findings });
+  if (args.rubric) sidecarTwins.push({ filename: "rubric.json", json: args.rubric });
+  if (sidecarTwins.length > 0) {
+    const persisted = await persistHarvest(
+      exec,
+      deps.store,
+      deps,
+      { workspaceId: args.workspaceId, projectId: args.projectId, createdBy: { kind: "system" } },
+      sidecarTwins.map((t) => {
+        const bytes = Buffer.from(JSON.stringify(t.json, null, 2), "utf8");
+        return {
+          path: `correspondence/${args.correspondenceKind}/${ordinal}/${t.filename}`,
+          root: "project" as const,
+          kind: "sidecar",
+          namespace: "shared",
+          sha256: sha256Hex(bytes),
+          bytes,
+          wordCount: 0,
+        };
+      }),
+    );
+    for (const p of persisted) {
+      await exec.query(`update artifact_versions set immutable = true where id = $1`, [p.versionId]);
+      dossierVersionIds.push(p.versionId);
+    }
+  }
+  if (dossierVersionIds.length > 0) {
+    await exec.query(`update correspondence_items set artifact_ids = artifact_ids || $2::text[] where id = $1`, [
+      correspondenceId,
+      dossierVersionIds as string[],
     ]);
   }
 
@@ -596,6 +742,7 @@ export async function runDeliveryTransaction(
     strippedCitations,
     accessReport,
     accessReportVersionId: persistedReport.versionId,
+    dossierVersionIds,
     ...(newDraftId != null ? { newDraftId } : {}),
     ...(moveTraces != null ? { moveTraces } : {}),
   };

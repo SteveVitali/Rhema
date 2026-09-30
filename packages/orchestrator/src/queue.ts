@@ -14,18 +14,29 @@ export const RUN_JOBS = {
 export type RunJobName = (typeof RUN_JOBS)[keyof typeof RUN_JOBS];
 
 /**
- * The `gate:<id>` expiry job TYPE name. This ticket only REGISTERS the type (so a caller can name it); the
- * scheduling and handler semantics — deadline re-read, conditional resolve — are owned by P0.10.
+ * The gate-expiry QUEUE name (§12.4; §6.4 item 6). ONE pg-boss queue for every gate — the gate id rides
+ * the job payload + singleton key. The original design name was `gate:<id>` per gate, but `:` is ILLEGAL
+ * in a pg-boss queue name (`assertObjectName` throws `Name can only contain alphanumeric characters,
+ * underscores, hyphens, periods, or forward slashes`): every deadline-bearing gate's post-commit send
+ * 500'd AFTER the commit tx had already opened the gate — the pod marked the committed step failed and
+ * the expiry job never armed (PRB.16b F25, live: `approve_sample`'s 24h deadline, run
+ * 01M2T65W5PZ3174FPVFNQRVKZS). A single constant name is legal, needs one createQueue + one consumer.
  */
-export function gateExpiryJob(gateId: string): string {
-  return `gate:${gateId}`;
+export const GATE_EXPIRY_QUEUE = "gate.expiry";
+
+/**
+ * The gate-expiry job TYPE name. Kept for callers that name the type; the queue is constant and the gate
+ * id travels in the payload + singleton key (F25 — the `gate:<id>` form is an illegal pg-boss name).
+ */
+export function gateExpiryJob(_gateId: string): string {
+  return GATE_EXPIRY_QUEUE;
 }
 
 /**
- * Schedule (or reschedule) the `gate:<id>` expiry job for a deadline (P0.10; §6.4 item 6). The singleton key
- * includes the deadline instant, so scheduling the SAME deadline twice dedupes, but a MOVED deadline schedules a
- * fresh job (the stale job's fire is a harmless no-op — the handler re-reads the deadline). `null` (a *wait*
- * gate) schedules nothing.
+ * Schedule (or reschedule) the gate-expiry job for a deadline (P0.10; §6.4 item 6). The singleton key
+ * carries the gate id + deadline instant, so scheduling the SAME deadline twice dedupes, but a MOVED
+ * deadline schedules a fresh job (the stale job's fire is a harmless no-op — the handler re-reads the
+ * deadline). `null` (a *wait* gate) schedules nothing.
  */
 export async function scheduleGateExpiry(
   deps: { queue: Queue },
@@ -34,9 +45,9 @@ export async function scheduleGateExpiry(
   if (args.deadlineAt == null) return;
   const startAfterMs = Math.max(0, args.deadlineAt.getTime() - args.now.getTime());
   await deps.queue.send(
-    gateExpiryJob(args.gateId),
+    GATE_EXPIRY_QUEUE,
     { gateId: args.gateId, workspaceId: args.workspaceId },
-    { singletonKey: `${gateExpiryJob(args.gateId)}:${args.deadlineAt.getTime()}`, startAfterMs },
+    { singletonKey: `${GATE_EXPIRY_QUEUE}:${args.gateId}:${args.deadlineAt.getTime()}`, startAfterMs },
   );
 }
 

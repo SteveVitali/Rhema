@@ -77,6 +77,14 @@ describe("phase manifests (§12.2)", () => {
         const sum = m.phases.reduce((a, p) => a + p.budgetShare, 0);
         expect(sum).toBeCloseTo(1, 9);
       });
+
+      it("F15 — a workflow that declares sidecars passes `sidecar: true` in defaultInputs", () => {
+        // the ported skills gate `.rhema/<name>.json` + `.rhema/phase-result.json` emission on the
+        // `sidecar` input; an oracle `sidecar_validates` must never demand what the skill wasn't asked
+        // to emit (PRB.16b F15 — revise declared response-ledger.json with no defaultInputs at all).
+        const declares = m.phases.some((p) => p.sidecars.length > 0);
+        if (declares) expect(m.defaultInputs?.sidecar).toBe(true);
+      });
     });
   }
 

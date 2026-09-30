@@ -9,6 +9,7 @@
 import { applyTransition } from "./transition.js";
 import { conditionalResolve, emitGateResolved, writeDecision } from "./gate-resolution.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { reconcileRunSpend } from "./spend.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import type { OrchestratorDeps } from "./internal-api.js";
 import type { SqlClient } from "./tx.js";
@@ -89,6 +90,9 @@ export async function cancelRun(deps: OrchestratorDeps, args: CancelRunArgs): Pr
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    // PRB.16b: reconcile spent_credits from the usage rows of record — a mid-phase cancel committed
+    // no step, so the accumulated figure misses the in-flight spend the proxy already metered.
+    await reconcileRunSpend(tx, args.runId);
     await revokeRunCredentials(tx, args.runId, now);
     return { ok: true, state: "cancelled", alreadyTerminal: false };
   });

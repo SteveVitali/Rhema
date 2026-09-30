@@ -7,14 +7,15 @@
 // avoids mounting a large spec as a Secret. NO secret is ever in the spec (REQ-SPEC-10/11) — the run token and
 // the proxy credential reach only the harness uid via the 0400 Secret mount, never this JSON.
 
-import type { AgentTypeKey, CorrespondenceKind, ModelTier, WorkflowKey } from "@rhema/contracts";
-import { MODEL_TIERS } from "@rhema/contracts";
+import type { AgentTypeKey, CorrespondenceKind, ModelTier, SidecarFilename, WorkflowKey } from "@rhema/contracts";
+import { MODEL_TIERS, SIDECAR_CONTRACT_HINTS } from "@rhema/contracts";
 import type { PhaseRequest } from "@rhema/engine";
 import type { MirrorManifest } from "@rhema/mirror";
-import { EMPTY_URL_POLICY, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
+import { EMPTY_URL_POLICY, resolveSeatRoots, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
+import { consumeGuidance } from "./guidance.js";
 
 /** Where the ported skills are baked in the run-task image (`apps/run-task/Dockerfile` COPYs them here). */
 export const DEFAULT_SKILLS_DIR = "/app/skills";
@@ -199,16 +200,81 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   const maxUsdPerRun = args.maxUsdPerRun ?? DEFAULT_MAX_USD_PER_RUN;
   const maxBudgetUsd = Math.max(0.5, round2(phase.budgetShare * maxUsdPerRun));
 
+  // Guidance delivery at the phase boundary (§6.5; REQ-GATE-9/10/11; REQ-RUN-7/18 — PRB.16b F16):
+  // `consumeGuidance` renders the dated/sourced list AND marks `consumed_by` + emits
+  // `guidance.delivered` — but it had NO caller, so standing/run-scope guidance (e.g. the pretriage
+  // "actor:user rows are authoritative" note captured at run creation) was recorded yet never reached
+  // the pod. The runspec is fetched once per phase boundary — the delivery point the contract names.
+  // `context: phase.key` routes independence phases (`second_read`, `fidelity_audit`, `gap_check`,
+  // `gap_analysis`) to the REQ-RUN-18 exclusion. Frozen `inputs.guidance` (creation-time seed) merges
+  // AFTER the delivered list — delivery is the higher-precedence channel (§6.5).
+  const delivered = facts.projectId != null
+    ? await consumeGuidance(deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        projectId: facts.projectId,
+        workflow,
+        phase: phase.key,
+        context: phase.key,
+      })
+    : { rendered: "", delivered: [] };
+
   // frozen run inputs win over the manifest defaults; `phase` pins the one skill phase to run (REQ-SPEC-13).
   // `phase_output` names the exact artifact(s) this phase must write, taken from the manifest so the agent's
   // write target can never drift from the completion oracle's predicate (residue 1, diagnosed live P0.15g: the
   // single-phase craft invocation produced no `04-craft-notes.md`). Phase-derived, so it wins over any frozen
   // input, exactly as `phase` does.
+  // `sidecar_output`/`sidecar_contract` do the same for the phase's DECLARED sidecars (PRB.16b F15): the
+  // ported skills' docs only say a `sidecar: true` input "emits the structured-output twin to
+  // `.rhema/<name>.json`" — the required envelope (`entries`, not `rows`, …) was never in the prompt, so a
+  // live Revise agent guessed the shape and failed `sidecar_validates` on every attempt (run `01M2SH38…`).
+  // The contract hint rides the `key=value` input lines straight into the phase prompt (attempt 1 sees it).
   const inputs: Record<string, unknown> = {
     ...(manifest.defaultInputs ?? {}),
     ...hyd.inputs,
     phase: phase.skillPhase,
+    // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
+    // frontmatter); the frozen inputs only carried `personaId`, and `conventions/personas.md` — the
+    // file that pins the sandbox layout — is NOT shipped in the pod's skillsDir (`/app/skills`
+    // holds the three skill dirs only). The live Quick Voice census agent never resolved the corpus
+    // and exited `success` twice with zero output (run 01M2T65W5PZ3174FPVFNQRVKZS attempt-1). Pin
+    // the args the skill declares + the ABSOLUTE personas_dir the harness materializes into (the
+    // same resolveSeatRoots derivation the hook policy + materializer use — never a parallel path).
+    ...(hyd.personaId
+      ? {
+          persona: hyd.personaId,
+          personas_dir: resolveSeatRoots({ personaId: hyd.personaId }).persona.replace(
+            /\/[^/]+$/,
+            "",
+          ),
+        }
+      : {}),
+    // delivered guidance lands FIRST (highest precedence), then any frozen `inputs.guidance` seed.
+    ...(delivered.rendered
+      ? {
+          guidance:
+            delivered.rendered + (typeof hyd.inputs.guidance === "string" ? `\n${hyd.inputs.guidance}` : ""),
+        }
+      : {}),
     ...(phase.artifacts.length > 0 ? { phase_output: phase.artifacts.join(", ") } : {}),
+    ...(phase.sidecars.length > 0
+      ? {
+          sidecar_output: phase.sidecars.join(", "),
+          sidecar_contract: phase.sidecars
+            .map((s) => `${s} must be: ${SIDECAR_CONTRACT_HINTS[s as SidecarFilename] ?? "the registered schema for this filename"}`)
+            .join("\n"),
+        }
+      : {}),
+    // F15 follow-on (live attempt 5): the SAME invisible-contract class hid `.rhema/phase-result.json`'s
+    // status enum — the skill docs say `{status}` with no value, so the live agent wrote "success" and only
+    // the oracle's non-blocked/non-replan fall-through saved leg (b). Pin the enum explicitly whenever the
+    // `sidecar` input (manifest default or frozen override) is what makes the skill write the file.
+    ...((hyd.inputs.sidecar ?? manifest.defaultInputs?.sidecar) === true
+      ? {
+          phase_result_contract:
+            '.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports).',
+        }
+      : {}),
   };
 
   const request: PhaseRequest = {

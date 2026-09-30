@@ -79,6 +79,49 @@ describe("cancelRun — the Page's 'Cancel run to edit' (PRB.07; §6.3)", () => 
     expect(deps.ledger.ops.filter((o) => o.op === "release")).toHaveLength(1);
   });
 
+  it("reconciles runs.spent_credits from the usage rows of record at the cancelled edge (PRB.16b)", async () => {
+    // the carry-over finding: a mid-phase cancel committed no step, so the accumulated figure missed the
+    // in-flight spend the proxy already metered — `usage_records` held the truth while spent_credits stayed 0.
+    const seed = await seedProject(db); // billing account for the usage row
+    await seedRun(db, { runId: "run_s", workspaceId: ws, projectId: "prj_seed", state: "running", spentCredits: 0 });
+    await db.client.query(
+      `insert into usage_records(
+         id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider, model, model_tier,
+         rate_table_version, list_cost_usd, credits, source)
+       values
+         ('ur_a', now(), $1, $2, 'run_s', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, 41, 'proxy'),
+         ('ur_b', now(), $1, $2, 'run_s', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.3, 24, 'proxy')`,
+      [ws, seed.billingAccountId],
+    );
+
+    const r = await cancelRun(deps, { runId: "run_s", workspaceId: ws });
+    expect(r).toMatchObject({ ok: true, state: "cancelled" });
+    const row = (await db.client.query("select spent_credits from runs where id = 'run_s'")).rows[0] as {
+      spent_credits: number;
+    };
+    expect(row.spent_credits).toBe(65); // folded from the proxy's usage rows at the terminal settle
+  });
+
+  it("the proxy's usage rows are the meter of record — sdk-side rows stand in only when none metered", async () => {
+    const seed = await seedProject(db);
+    await seedRun(db, { runId: "run_p", workspaceId: ws, projectId: "prj_seed", state: "running" });
+    await db.client.query(
+      `insert into usage_records(
+         id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider, model, model_tier,
+         rate_table_version, list_cost_usd, credits, source)
+       values
+         ('ur_px', now(), $1, $2, 'run_p', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, 65, 'proxy'),
+         ('ur_sdk', now(), $1, $2, 'run_p', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0, 999, 'sdk_stream')`,
+      [ws, seed.billingAccountId],
+    );
+    const r = await cancelRun(deps, { runId: "run_p", workspaceId: ws });
+    expect(r).toMatchObject({ ok: true, state: "cancelled" });
+    const row = (await db.client.query("select spent_credits from runs where id = 'run_p'")).rows[0] as {
+      spent_credits: number;
+    };
+    expect(row.spent_credits).toBe(65); // the meter of record wins — the sdk twin is never double-counted
+  });
+
   it("is idempotent: a terminal run reports its state; a second cancel is a no-op", async () => {
     await seedRun(db, { runId: "run_t", workspaceId: ws, projectId: "prj_seed", state: "cancelled" });
     const r = await cancelRun(deps, { runId: "run_t", workspaceId: ws });

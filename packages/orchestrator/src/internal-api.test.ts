@@ -178,6 +178,105 @@ describe("commitStep — atomicity, idempotency, gate-open", () => {
     ).rows[0] as { parked_until: Date | null };
     expect(row.parked_until).not.toBeNull();
   });
+
+  // PRB.16b LIVE FINDING 17 — the resume_partial path: a prior attempt's failStep leaves a `steps` row for
+  // the ordinal, so the retried phase's commit takes the ON CONFLICT update path and the minted id never
+  // lands. `gates.step_id` / `runs.current_step_id` / `debit.phaseId` must use the row that EXISTS — the
+  // live 01M2SH38 attempt-5 verdict was complete and the commit 500'd on `gates_step_id_fkey`, orphaning
+  // the run on resume_partial with zero step trace.
+  it("a re-committed step binds the gate to the EXISTING step row id (F17)", async () => {
+    await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "triage",
+      ordinal: 2,
+      errorClass: "artifact_missing",
+      reason: "attempt 1 predicates failed",
+    });
+    const existing = (
+      await db.client.query("select id from steps where run_id='run1' and ordinal=2", [])
+    ).rows[0] as { id: string };
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "triage",
+      ordinal: 2,
+      of: 7,
+      credits: 60,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "gate", gateKind: "approve_triage", blocking: false, onExpiry: "proceed_as_proposed" },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select step_id from gates where run_id='run1'", [])
+    ).rows[0] as { step_id: string };
+    expect(gate.step_id).toBe(existing.id); // the row that exists — never the discarded minted id
+    const run = (
+      await db.client.query("select current_step_id, state from runs where id='run1'", [])
+    ).rows[0] as { current_step_id: string; state: string };
+    expect(run.current_step_id).toBe(existing.id);
+    expect(run.state).toBe("waiting_gate");
+  });
+
+  // PRB.16b LIVE FINDING 21 — `next.deadlineAt` is a `Date` pod-side but crosses the JSON commit body
+  // as an ISO STRING: `openGate`'s `deadlineAt.toISOString()` threw `TypeError: … is not a function`
+  // and rolled the commit back — EVERY deadline-bearing gate kind (approve_sample & co.) was
+  // uncommittable over the wire while the wait kinds (approve_triage, `deadlineMs: null`) survived.
+  // Live: Quick Voice run 01M2T65W5PZ3174FPVFNQRVKZS — census harvested clean, the approve_sample
+  // open 500'd, the pod recorded "commit rejected: unknown".
+  it("gate: a wire-STRING deadlineAt is coerced to a Date — deadline-bearing gates commit (F21)", async () => {
+    const deadline = new Date("2026-09-19T12:00:00.000Z");
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "census",
+      ordinal: 0,
+      of: 4,
+      credits: 40,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      // the JSON body shape the pod actually POSTs — the string is the wire encoding, not a Date.
+      next: {
+        kind: "gate",
+        gateKind: "approve_sample",
+        blocking: true,
+        onExpiry: "proceed_as_proposed",
+        deadlineAt: deadline.toISOString() as unknown as Date,
+      },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select deadline_at from gates where run_id='run1'", [])
+    ).rows[0] as { deadline_at: Date | null };
+    expect(gate.deadline_at?.getTime()).toBe(deadline.getTime());
+  });
+
+  it("gate: a malformed wire deadlineAt degrades to wait semantics rather than crashing (F21)", async () => {
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "census",
+      ordinal: 0,
+      of: 4,
+      credits: 40,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: {
+        kind: "gate",
+        gateKind: "approve_sample",
+        blocking: true,
+        onExpiry: "proceed_as_proposed",
+        deadlineAt: "not-a-date" as unknown as Date,
+      },
+    });
+    expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
+    const gate = (
+      await db.client.query("select deadline_at from gates where run_id='run1'", [])
+    ).rows[0] as { deadline_at: Date | null };
+    expect(gate.deadline_at).toBeNull();
+  });
 });
 
 describe("finalize, fail, hydration, audit", () => {
@@ -210,7 +309,43 @@ describe("finalize, fail, hydration, audit", () => {
     const h = await hydration(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
     expect(h.runId).toBe("run1");
     expect(h.workflow).toBe("review");
+    expect(h.seat).toBe("editor");
     expect(h.overlays).toEqual([]);
+  });
+
+  // PRB.16b LIVE FINDING 14 — `runs.agent_instance_id` is never populated by run creation, so the old
+  // `?? "editor"` fallback hydrated EVERY workflow as the editor seat: a Revise ran without its
+  // `agents/author/**` working memory (unmounted → unharvestable → blocked predicates) while the
+  // editor's private namespace was mounted instead (a boundary inversion). The workflow's declared
+  // seat is the frozen authority when no agent instance is bound.
+  it("hydration resolves the workflow's declared seat when no agent instance is bound", async () => {
+    await seedRun(db, { runId: "rev1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "revise", state: "running" });
+    await seedRun(db, { runId: "pv1", workspaceId: seed.workspaceId, personaId: "per_t1", workflow: "profile_voice", state: "running" });
+    await seedRun(db, { runId: "rv1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "review", state: "running" });
+    const revise = await hydration(deps, { runId: "rev1", attempt: 1, workspaceId: seed.workspaceId });
+    const voice = await hydration(deps, { runId: "pv1", attempt: 1, workspaceId: seed.workspaceId });
+    const review = await hydration(deps, { runId: "rv1", attempt: 1, workspaceId: seed.workspaceId });
+    expect(revise.seat).toBe("author");
+    expect(voice.seat).toBe("persona_builder");
+    expect(review.seat).toBe("editor");
+    // the author manifest's entries carry the author seat — never the editor's private namespace.
+    expect(revise.manifest.seat).toBe("author");
+    expect(revise.manifest.entries.every((e) => !e.path.startsWith("agents/editor/"))).toBe(true);
+  });
+
+  it("hydration: a bound agent instance's type_key still wins over the workflow default", async () => {
+    await db.client.query(
+      `insert into agent_types(key, display_name, readable, writable, persona_view, tools, skills, default_model_profile, subagents)
+       values ('assistant','Assistant','{}','{}','{}','{}','{}','balanced','{}')`,
+      [],
+    );
+    await db.client.query(
+      "insert into agent_instances(id, project_id, type_key, namespace) values ('ai_a',$1,'assistant','agent:assistant')",
+      [seed.projectId],
+    );
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "revise", agentInstanceId: "ai_a", state: "running" });
+    const h = await hydration(deps, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    expect(h.seat).toBe("assistant");
   });
 
   it("audit appends fetch_log rows carrying run/attempt", async () => {
@@ -270,6 +405,149 @@ describe("failStep — records the failure AND surfaces it (D-P0.15e-4 observabi
     });
     expect(res).toEqual({ ok: false, code: "stale_task", currentAttempt: 2 });
     expect(deps.eventWriter.typesForRun("run1")).not.toContain("engine.error");
+  });
+});
+
+describe("failStep — terminal phase failures finalize the run in one tx (PRB.16b; LIVE FINDING 13)", () => {
+  // The live defect: a pod that died on `402 cap reached` (or a phase that self-reported blocked) left the
+  // run `running`; the heartbeat went stale → orphaned → stranded-sweep re-enqueue → new pod → instant 402.
+  // The step-fail endpoint now takes `running → failed` + reconciles spend + releases the hold + revokes the
+  // credential inside the SAME transaction, so the reaper sees a terminal run.
+  async function seedTerminalFixture(state = "running"): Promise<void> {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state,
+      holdLedgerId: "led_hold",
+    });
+    await db.client.query(
+      "insert into proxy_credentials(id, run_id, attempt, credential_hash) values ('pcr_1','run1',1,'h')",
+      [],
+    );
+    // the proxy's usage rows of record: 65 credits metered but never committed (the phase died mid-flight).
+    await db.client.query(
+      `insert into usage_records(
+         id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider, model, model_tier,
+         rate_table_version, list_cost_usd, credits, source)
+       values ('ur_1', now(), $1, $2, 'run1', 1, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, 65, 'proxy')`,
+      [seed.workspaceId, seed.billingAccountId],
+    );
+  }
+
+  async function runRow(): Promise<{ state: string; spent_credits: number; failure: { code: string } | null; ended_at: Date | null }> {
+    return (
+      await db.client.query("select state, spent_credits, failure, ended_at from runs where id = 'run1'", [])
+    ).rows[0] as { state: string; spent_credits: number; failure: { code: string } | null; ended_at: Date | null };
+  }
+
+  it("a cap-402 reason takes running → failed + releases the hold + revokes the credential + reconciles spend", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "craft",
+      ordinal: 1,
+      errorClass: "infra",
+      reason: "SDK result subtype error_during_execution — agent error [api_error]: run run1 has reached its cap of 60 credits (402)",
+    });
+    expect(res).toEqual({ ok: true, terminal: "cap_reached" });
+
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.failure).toMatchObject({ code: "cap_reached" });
+    expect(row.ended_at).not.toBeNull();
+    expect(row.spent_credits).toBe(65); // reconciled from the proxy's usage rows
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+    const cred = (await db.client.query("select revoked_at from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      revoked_at: Date | null;
+    };
+    expect(cred.revoked_at).not.toBeNull();
+    // the paired state_changed event rode the same tx; the step row still records the failure.
+    expect(deps.eventWriter.typesForRun("run1")).toEqual(
+      expect.arrayContaining(["engine.error", "run.state_changed"]),
+    );
+    const step = (await db.client.query("select state from steps where run_id='run1' and ordinal=1", [])).rows[0] as {
+      state: string;
+    };
+    expect(step.state).toBe("failed");
+  });
+
+  it("a `budget` error class terminalizes identically (the engine's 402 subtype)", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "verification",
+      ordinal: 2,
+      errorClass: "budget",
+      reason: "SDK result subtype budget (not success)",
+    });
+    expect(res).toEqual({ ok: true, terminal: "cap_reached" });
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.spent_credits).toBe(65);
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
+  it("a `blocked` phase result terminalizes as phase_blocked (the dossier-visibility block)", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "bootstrap",
+      ordinal: 0,
+      errorClass: "blocked",
+      reason: "phase-result blocked [sdk=success]",
+    });
+    expect(res).toEqual({ ok: true, terminal: "phase_blocked" });
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.failure).toMatchObject({ code: "phase_blocked" });
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
+  it("a non-terminal class leaves the run running for the caller/reaper to decide", async () => {
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "intake",
+      ordinal: 0,
+      errorClass: "infra",
+      reason: "SDK result subtype error_during_execution — agent error [Error]: socket hangup",
+    });
+    expect(res).toEqual({ ok: true });
+    const row = await runRow();
+    expect(row.state).toBe("running");
+    expect(row.ended_at).toBeNull();
+    expect(deps.ledger.opsOf("release")).toHaveLength(0);
+  });
+
+  it("a terminal report on a run no longer `running` records the step but does not transition", async () => {
+    // the pod was mid-cancel: `cancelling` has no →failed edge; the step fact still lands and the
+    // cancellation path owns the terminal settle.
+    await seedTerminalFixture("cancelling");
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "craft",
+      ordinal: 1,
+      errorClass: "budget",
+    });
+    expect(res).toEqual({ ok: true });
+    const row = await runRow();
+    expect(row.state).toBe("cancelling");
+    expect(deps.ledger.opsOf("release")).toHaveLength(0);
+    const step = (await db.client.query("select state from steps where run_id='run1' and ordinal=1", [])).rows[0] as {
+      state: string;
+    };
+    expect(step.state).toBe("failed");
   });
 });
 

@@ -5,7 +5,7 @@
 // event (REQ-DATA-33). Artifact materialization/harvest (P0.09), gate resolution (P0.10) and ledger internals
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
-import type { AgentTypeKey, GateKind, GateOnExpiry } from "@rhema/contracts";
+import type { AgentTypeKey, GateKind, GateOnExpiry, WorkflowKey } from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
 import {
   buildSeatHydration,
@@ -34,6 +34,8 @@ import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
+import { seatForWorkflow } from "./run-shape.js";
+import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
 /** The full DI bundle the internal API + provisioning + reaper + phase loop share. */
@@ -360,7 +362,15 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       seat: string | null;
     };
     const inputs = typeof row.inputs === "string" ? (JSON.parse(row.inputs) as Record<string, unknown>) : row.inputs;
-    const seat = (row.seat ?? "editor") as AgentTypeKey;
+    // The seat resolves from the run's agent instance when one is bound; otherwise from the workflow's
+    // declared seat (PRB.16b; LIVE FINDING 14 — `agent_instance_id` is never populated by run creation,
+    // so every author-seat and persona-builder-seat run silently hydrated as `editor`: the author's
+    // `agents/author/**` working memory was unmounted/unwritable, the editor's private namespace was
+    // mounted in its place — a boundary inversion — and a Revise bootstrap could never see the dossier
+    // through the author's shared `correspondence/` view as §12.6 intends). The workflow is the frozen
+    // authority: `revise` hydrates `author`, `profile_voice` hydrates `persona_builder`, `review` keeps
+    // `editor`. An explicit agent instance still wins (the seat override hook).
+    const seat = (row.seat ?? seatForWorkflow(row.workflow as WorkflowKey)) as AgentTypeKey;
     // On resume, apply the run's accumulated gate-derived overlays (REQ-SPEC-9): a caller may pass them
     // explicitly, else they are loaded from the resolved gates' `Decision.overlayVersionIds`. [] on attempt 1.
     const overlays = args.overlays ?? (await loadRunOverlays(tx, args.runId));
@@ -588,6 +598,23 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
  * are the ledger's / P0.09's; this owns the durable step + state write.
  */
 export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): Promise<CommitStepResult> {
+  // PRB.16b F21 (live): `next.deadlineAt` is a `Date` pod-side but crosses the JSON commit body as an
+  // ISO STRING — `openGate`'s `deadlineAt.toISOString()` then threw `TypeError: … is not a function`
+  // and rolled the whole commit tx back. Every DEADLINE-bearing gate kind was uncommittable over the
+  // wire (approve_sample/approve_cutlist/approve_plan/confirm_cost/resume_partial/refusal); the wait
+  // kinds (approve_triage & co., `deadlineMs: null`) never carried the field and survived — which is
+  // why the defect surfaced first on Quick Voice's `approve_sample` (run 01M2T65W5PZ3174FPVFNQRVKZS:
+  // census harvested 2 versions, the commit 500'd opening the gate, the pod saw
+  // "commit rejected: unknown"). Coerce at this funnel — the single point openGate + the post-commit
+  // schedulers all read — so wire callers need no knowledge of the encoding. A malformed value
+  // degrades to `null` (wait semantics: no expiry job scheduled) rather than crash-looping the step.
+  const next: CommitNext = (() => {
+    if (args.next.kind !== "gate") return args.next;
+    const raw = args.next.deadlineAt as unknown;
+    if (typeof raw !== "string") return args.next;
+    const parsed = new Date(raw);
+    return { ...args.next, deadlineAt: Number.isNaN(parsed.getTime()) ? null : parsed };
+  })();
   const box: { debitedBillingAccountId: string | null } = { debitedBillingAccountId: null };
   try {
     const res = await deps.txRunner.run(args.workspaceId, async (tx): Promise<CommitStepResult & { ok: true }> => {
@@ -605,16 +632,22 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       }
 
       const now = deps.clock.now();
-      const stepId = deps.ids("step");
-      await tx.query(
+      // PRB.16b F17: `returning id` is REQUIRED here — on the conflict path (a RETRIED step whose failed row
+      // already exists for the ordinal) the minted id is discarded and the pre-existing row keeps its own. The
+      // returned id is the ONLY `steps.id` that actually exists downstream: a freshly-minted id used for
+      // `current_step_id` / `debit.phaseId` / `gates.step_id` writes a dangling reference, and `openGate`'s
+      // `gates_step_id_fkey` then rolls the whole commit back (live: run 01M2SH38's attempt-5 triage verdict
+      // was complete and the commit 500'd on exactly this — the pod's "commit rejected" exit orphaned the run).
+      const upserted = await tx.query(
         `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids, started_at,
            ended_at, credits, result)
          values ($1,$2,$3,$4,'done',$5,$6,$7,$7,$8,$9)
          on conflict (run_id, ordinal) do update set
            state='done', attempt=excluded.attempt, produced_version_ids=excluded.produced_version_ids,
-           ended_at=excluded.ended_at, credits=excluded.credits, result=excluded.result`,
+           ended_at=excluded.ended_at, credits=excluded.credits, result=excluded.result
+         returning id`,
         [
-          stepId,
+          deps.ids("step"),
           args.runId,
           args.stepKey,
           args.ordinal,
@@ -625,6 +658,7 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
           JSON.stringify(args.result),
         ],
       );
+      const stepId = (upserted.rows[0] as { id: string }).id;
 
       await deps.eventWriter.append(tx, {
         runId: args.runId,
@@ -666,11 +700,11 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         });
       }
 
-      if (args.next.kind === "advance") {
+      if (next.kind === "advance") {
         const state = (await readRunState(tx, args.runId))!; // stays running (self-edge, no state row change)
         return { ok: true, idempotent: false, state };
       }
-      if (args.next.kind === "finalize") {
+      if (next.kind === "finalize") {
         await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "finalizing" });
         return { ok: true, idempotent: false, state: "finalizing" };
       }
@@ -679,24 +713,24 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "waiting_gate", fields: parkFields });
       const gateId = await openGate(tx, deps, {
         runId: args.runId,
-        kind: args.next.gateKind,
-        blocking: args.next.blocking,
-        onExpiry: args.next.onExpiry,
+        kind: next.gateKind,
+        blocking: next.blocking,
+        onExpiry: next.onExpiry,
         stepId,
-        artifactVersionId: args.next.artifactVersionId,
-        deadlineAt: args.next.deadlineAt,
+        artifactVersionId: next.artifactVersionId,
+        deadlineAt: next.deadlineAt,
       });
       return { ok: true, idempotent: false, state: "waiting_gate", gateId };
     });
     // Schedule the `gate:<id>` expiry job AFTER commit (§6.4 item 6; the queue send is not transactional with
     // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing.
-    if (res.ok && !res.idempotent && res.gateId && args.next.kind === "gate") {
+    if (res.ok && !res.idempotent && res.gateId && next.kind === "gate") {
       const now = deps.clock.now();
-      if (args.next.deadlineAt) {
+      if (next.deadlineAt) {
         await scheduleGateExpiry(deps, {
           gateId: res.gateId,
           workspaceId: args.workspaceId,
-          deadlineAt: args.next.deadlineAt,
+          deadlineAt: next.deadlineAt,
           now,
         });
       }
@@ -705,9 +739,9 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       await scheduleGateNotifications(deps, {
         gateId: res.gateId,
         workspaceId: args.workspaceId,
-        kind: args.next.gateKind,
-        onExpiry: args.next.onExpiry as GateOnExpiry,
-        deadlineAt: args.next.deadlineAt ?? null,
+        kind: next.gateKind,
+        onExpiry: next.onExpiry as GateOnExpiry,
+        deadlineAt: next.deadlineAt ?? null,
         now,
       });
     }
@@ -726,16 +760,45 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
 }
 
 /**
+ * The cap-402 signature as it reaches the pod-reported failure reason: the egress proxy's 402 body
+ * (`run … has reached its cap of N credits`) surfaces inside the agent's thrown SDK error, folded
+ * into `reason` by the commit loop (D-P0.15e-4). A bare `402` status mention counts too — the proxy
+ * is the only 402 source in the run path.
+ */
+const CAP_REACHED_REASON = /reached its cap|cap[_\s-]?reached|cap of \d+ credits|\b402\b/i;
+
+/**
+ * Terminal phase failures (PRB.16b; LIVE FINDING 13): outcomes the pod and the reaper can NEVER
+ * recover by re-running the same phase. A `budget` subtype or a cap-402 reason means every further
+ * model request 402s instantly (the proxy refuses before forwarding); a phase-result `blocked` is
+ * the agent's own terminal report (e.g. the dossier-visibility block); a `replan` asks for a
+ * back-edge no machinery exists to take. Leaving the run `running` for the reaper was the live
+ * cap-402 crash loop (heartbeat stale → orphaned → re-enqueued → instant 402 → repeat).
+ */
+function terminalPhaseFailure(errorClass: string, reason: string | undefined): { code: string } | null {
+  if (errorClass === "budget" || (reason != null && CAP_REACHED_REASON.test(reason))) {
+    return { code: "cap_reached" };
+  }
+  if (errorClass === "blocked") return { code: "phase_blocked" };
+  if (errorClass === "replan") return { code: "phase_replan" };
+  return null;
+}
+
+/**
  * `POST /internal/runs/:id/steps/:key/fail` — record a step failure. The error-class decision (retry / gate /
- * quarantine) is the phase loop's; this endpoint marks the step failed and fences by attempt.
+ * quarantine) is the phase loop's; this endpoint marks the step failed and fences by attempt. When the
+ * failure is TERMINAL (cap-402 / blocked / replan — F13), the same transaction also fails the RUN:
+ * `running → failed` + spend reconcile + hold release + credential revocation — never left `running`
+ * for the reaper to re-enqueue into the same instant failure.
  */
 export async function failStep(
   deps: OrchestratorDeps,
   args: { runId: string; attempt: number; workspaceId: string; stepKey: string; ordinal: number; errorClass: string; reason?: string },
-): Promise<{ ok: true } | { ok: false; code: "stale_task"; currentAttempt: number }> {
+): Promise<{ ok: true; terminal?: string } | { ok: false; code: "stale_task"; currentAttempt: number }> {
+  let terminalCode: string | undefined;
   try {
-    return await deps.txRunner.run(args.workspaceId, async (tx) => {
-      await fence(tx, args.runId, args.attempt);
+    const res = await deps.txRunner.run(args.workspaceId, async (tx) => {
+      const fenceRow = await fence(tx, args.runId, args.attempt);
       const now = deps.clock.now();
       const stepId = deps.ids("step");
       await tx.query(
@@ -755,8 +818,58 @@ export async function failStep(
         payload: { errorClass: args.errorClass, phase: args.stepKey, ordinal: args.ordinal, ...(args.reason ? { reason: args.reason } : {}) },
         at: now,
       });
-      return { ok: true };
+
+      // F13 (PRB.16b): a terminal phase failure finalizes the run HERE, inside the step-fail tx —
+      // transition + spend reconcile + hold release + credential revocation are one commit, and the
+      // reaper/stranded sweep see a terminal run (no second provisioning).
+      const terminal = terminalPhaseFailure(args.errorClass, args.reason);
+      if (terminal && fenceRow.state === "running") {
+        const money = (
+          await tx.query(
+            `select r.hold_ledger_id, w.billing_account_id
+               from runs r join workspaces w on w.id = r.workspace_id where r.id = $1`,
+            [args.runId],
+          )
+        ).rows[0] as { hold_ledger_id: string | null; billing_account_id: string } | undefined;
+        await applyTransition(tx, deps, {
+          runId: args.runId,
+          from: "running",
+          to: "failed",
+          reason: terminal.code,
+          fields: {
+            failure: {
+              code: terminal.code,
+              // the pod's folded reason can run long (class + SDK subtype + agent message) — bound it.
+              message: (args.reason ?? terminal.code).slice(0, 500),
+              retryable: false,
+            },
+          },
+        });
+        await reconcileRunSpend(tx, args.runId);
+        if (money?.hold_ledger_id) {
+          await deps.ledger.release(tx, {
+            billingAccountId: money.billing_account_id,
+            workspaceId: args.workspaceId,
+            runId: args.runId,
+            holdLedgerId: money.hold_ledger_id,
+            idempotencyKey: `release:${args.runId}`,
+          });
+        }
+        await revokeRunCredentials(tx, args.runId, now); // terminal revocation (REQ-SPEC-11)
+        terminalCode = terminal.code;
+      }
+      return { ok: true as const, ...(terminalCode ? { terminal: terminalCode } : {}) };
     });
+    // post-commit side effects for a terminalized run (the heartbeat stops; the failed notice queues).
+    if (terminalCode) {
+      await deps.heartbeats.clear(args.runId);
+      await scheduleRunTerminalNotification(deps, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        outcome: "failed",
+      });
+    }
+    return res;
   } catch (e) {
     if (e instanceof StaleTaskError) return { ok: false, code: "stale_task", currentAttempt: e.currentAttempt };
     throw e;
@@ -783,11 +896,14 @@ export async function finalizeRun(
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    // PRB.16b: reconcile spent_credits from the usage rows of record before the final figure is
+    // emitted — a caller-resolved `args.spentCredits` can predate the last metered usage.
+    const spentCredits = Math.max(args.spentCredits, await reconcileRunSpend(tx, args.runId));
     await deps.eventWriter.append(tx, {
       runId: args.runId,
       type: "cost.final",
       payload: {
-        spentCredits: args.spentCredits,
+        spentCredits,
         capCredits: args.capCredits,
         ...(args.byPhase ? { byPhase: args.byPhase } : {}),
       },
@@ -887,6 +1003,7 @@ export async function failRun(
         idempotencyKey: `release:${args.runId}`,
       });
     }
+    await reconcileRunSpend(tx, args.runId); // PRB.16b — the terminal settle owns the spend figure
     await revokeRunCredentials(tx, args.runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
   });
   await deps.heartbeats.clear(args.runId);

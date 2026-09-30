@@ -406,4 +406,82 @@ describe("delivery transaction", () => {
     const result = await runDeliveryTransaction(db.exec, deps, baseArgs({ secondReadProducerQueryId: "q_second" }));
     expect(result.correspondenceId).toBeTruthy();
   });
+
+  // PRB.16b (LIVE FINDING 12) — the seat wrote its dossier under its PRIVATE `agents/editor/` namespace
+  // (the manifest pins output_dir there; `correspondence/` is a read-only mount), so a responding run's
+  // author seat — shared read exactly `drafts/ correspondence/ manifest.md` — could not see it and
+  // self-reported `blocked` at bootstrap. Delivery publishes each produced dossier-kind artifact as a
+  // shared `correspondence/<kind>/<ordinal>/<basename>` copy: same content-addressed bytes, immutable.
+  it("publishes the agent-namespace dossier into shared correspondence/<kind>/<ordinal>/ (F12)", async () => {
+    // the review run's produced versions: the dossier files + a private research note that must NOT ship.
+    const letter = await store.putText(workspaceId, "# Editor's letter\nVerdict: revise.\n");
+    const claimMd = await store.putText(workspaceId, "# Claim ledger\n");
+    const notes = await store.putText(workspaceId, "# private research scratch\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id) values
+         ('art_letter',$1,$2,'editors_letter','agent:editor','agents/editor/editors-letter.md','av_letter'),
+         ('art_claim',$1,$2,'claim_ledger','agent:editor','agents/editor/01-claim-ledger.md','av_claim'),
+         ('art_notes',$1,$2,'research_note','agent:editor','agents/editor/research/index.md','av_notes')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by) values
+         ('av_letter','art_letter',1,$1,$4,100,'text/markdown','{"kind":"agent"}'::jsonb),
+         ('av_claim','art_claim',1,$2,$5,80,'text/markdown','{"kind":"agent"}'::jsonb),
+         ('av_notes','art_notes',1,$3,$6,50,'text/markdown','{"kind":"agent"}'::jsonb)`,
+      [letter.sha256, claimMd.sha256, notes.sha256, letter.key, claimMd.key, notes.key],
+    );
+    // the run's committed steps name the produced versions — the dossier source of truth.
+    await db.exec.query(
+      `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids) values
+         ('st_letter',$1,'letter',6,'done',1,'{av_letter}'),
+         ('st_verif',$1,'verification',2,'done',1,'{av_claim,av_notes}')`,
+      [runId],
+    );
+
+    const result = await runDeliveryTransaction(db.exec, deps, baseArgs());
+
+    // the dossier copies landed as shared, immutable versions of the SAME bytes under review ordinal 1.
+    const copies = (
+      await db.exec.query(
+        `select a.mirror_path, a.kind, a.namespace, av.immutable, av.content_sha256, av.s3_key
+           from artifacts a join artifact_versions av on av.artifact_id = a.id
+          where a.mirror_path like 'correspondence/review/1/%' and a.kind <> 'access_report'
+          order by a.mirror_path`,
+        [],
+      )
+    ).rows as { mirror_path: string; kind: string; namespace: string; immutable: boolean; content_sha256: string; s3_key: string }[];
+    // the .md dossier copies + the findings.json twin serialized from the verbatim-persisted sidecar
+    // (.rhema/ twins are never harvested — findings/rubric ship only via this delivery write).
+    expect(copies).toHaveLength(3); // the dossier kinds only — the private research note stays agent-side
+    expect(copies.map((c) => c.mirror_path)).toEqual([
+      "correspondence/review/1/01-claim-ledger.md",
+      "correspondence/review/1/editors-letter.md",
+      "correspondence/review/1/findings.json",
+    ]);
+    for (const c of copies) {
+      expect(c.namespace).toBe("shared");
+      expect(c.immutable).toBe(true);
+    }
+    expect(copies[0]!.content_sha256).toBe(claimMd.sha256);
+    expect(copies[0]!.s3_key).toBe(claimMd.key); // re-pointed, never re-uploaded
+    expect(copies[1]!.content_sha256).toBe(letter.sha256);
+    expect(result.dossierVersionIds).toHaveLength(3);
+
+    // the correspondence item's artifact_ids name the complete shared dossier.
+    const corr = (
+      await db.exec.query("select artifact_ids from correspondence_items where id=$1", [result.correspondenceId])
+    ).rows[0] as { artifact_ids: string[] };
+    for (const v of result.dossierVersionIds) expect(corr.artifact_ids).toContain(v);
+
+    // nothing private leaked: no artifact under correspondence/ names the research note's bytes.
+    const leaked = (
+      await db.exec.query(
+        `select count(*)::int as n from artifacts a join artifact_versions av on av.artifact_id = a.id
+          where a.mirror_path like 'correspondence/%' and av.content_sha256 = $1`,
+        [notes.sha256],
+      )
+    ).rows[0] as { n: number };
+    expect(leaked.n).toBe(0);
+  });
 });

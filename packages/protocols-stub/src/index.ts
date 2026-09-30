@@ -22,6 +22,8 @@ export interface PhaseManifest {
   predicates: string[];
   sidecars: string[];
   gateAfter?: string;
+  /** the declared artifact whose produced version a `gateAfter` gate binds (stub parity; PRB.16b F19). */
+  gateArtifact?: string;
   optional?: Rigor;
   phaseClass: PhaseClass;
   parallelGroup?: string;
