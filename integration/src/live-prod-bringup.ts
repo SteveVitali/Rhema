@@ -4,7 +4,8 @@
 // `cloud-sql-proxy --private-ip` per infra/PROD-BRINGUP.md §7). Deliberately does NOT run
 // `seedRealProjects` — that fixture is
 // dev/preview sample data and must never land on prod (real accounts provision themselves through
-// self-serve signup; the only code-seeded data prod needs is the protocol table).
+// self-serve signup). The code-seeded data prod DOES need: the protocol table + the `agent_types` seat
+// rows (PRB.17 — the seat tool-token sets the §12.6 hook enforces come from `agent_types.tools`).
 //
 // Idempotent: `applyMigrations` skips already-recorded migrations; `seedProtocols` upserts on
 // (id, version). Safe to re-run. Verifies afterward: prints the recorded-migration count and every
@@ -14,7 +15,7 @@
 // cannot import them; the thin `scripts/live/prod-migrate-seed.mjs` runner spawns tsx on this file.
 
 import pg from "pg";
-import { applyMigrations, type MigrationDb } from "@rhema/db";
+import { applyMigrations, agentTypesSeed, type MigrationDb } from "@rhema/db";
 import { seedProtocols } from "@rhema/protocols";
 
 export interface ProdBringupResult {
@@ -48,6 +49,15 @@ export async function runProdMigrateSeed(
   ).rows as { id: string; version: number }[];
   for (const p of protocols) log(`[seed] protocol ${p.id} v${p.version}`);
   if (protocols.length === 0) throw new Error("seedProtocols ran but the protocols table is empty");
+
+  // The agent_types code-seed (REQ-DATA-3): the five seat rows drive `agent_types.tools` → the seat
+  // policy's tool-token set the §12.6 hook enforces. PRB.17 found prod's table EMPTY (this runner only
+  // seeded protocols), so once the PreToolUse envelope fix made enforcement real, every matched tool
+  // was denied for every seat and no phase could commit. Idempotent (on conflict do nothing).
+  await agentTypesSeed(db);
+  const seats = (await pool.query("select key from agent_types order by key")).rows as { key: string }[];
+  log(`[seed] agent_types: ${seats.map((s) => s.key).join(", ") || "(none)"}`);
+  if (seats.length === 0) throw new Error("agentTypesSeed ran but the agent_types table is empty");
 
   return { applied, migrationsRecorded: recorded.n, protocols };
 }

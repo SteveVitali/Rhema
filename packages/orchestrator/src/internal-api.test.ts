@@ -574,7 +574,9 @@ describe("harvest — provisional sdk_stream usage priced by the rate table (D-P
       cacheCreationTokens: 250_000,
       webSearchRequests: 4,
       webFetchRequests: 2,
-      costUsd: 0,
+      // The SDK's own cost figure (what a real result message reports) — distinct from the rate-table
+      // price above so the sdk_estimate row proves it records THIS number, not the rendered figure.
+      costUsd: 4.213,
     };
     const res = await harvestStep(
       { ...deps, store: new InMemoryContentStore(), renderCredits: rateTableCreditRenderer },
@@ -606,15 +608,23 @@ describe("harvest — provisional sdk_stream usage priced by the rate table (D-P
       expect(divergence).toBeLessThanOrEqual(0.02); // within the §17 exit tolerance — only the display round
     }
 
-    // the provisional row + the usage.tick event carry it; the row is a display figure, never the meter.
-    const row = (
+    // the provisional rows + the usage.tick event carry it; the sdk_stream row is a display figure,
+    // never the meter. The sdk_estimate row lands beside it (D-P0.15-2): the SDK's own costUsd
+    // platform-priced — the figure of record the ±2% cross-check diffs the proxy's list_cost_usd
+    // against on live runs.
+    const rows = (
       await db.txRunner.run(seed.workspaceId, (tx) =>
-        tx.query("select credits, list_cost_usd, source from usage_records where run_id='run1'", []),
+        tx.query("select credits, list_cost_usd, source from usage_records where run_id='run1' order by source", []),
       )
-    ).rows[0] as { credits: number; list_cost_usd: number; source: string };
-    expect(row.source).toBe("sdk_stream");
-    expect(Number(row.list_cost_usd)).toBe(0);
+    ).rows as { credits: number; list_cost_usd: number; source: string }[];
+    const stream = rows.find((r) => r.source === "sdk_stream");
+    const estimate = rows.find((r) => r.source === "sdk_estimate");
+    expect(stream).toBeDefined();
+    expect(Number(stream!.list_cost_usd)).toBe(0);
+    expect(estimate).toBeDefined();
+    expect(Number(estimate!.list_cost_usd)).toBe(usage.costUsd);
+    expect(Number(estimate!.credits)).toBe(Math.round(platformCredits(usage.costUsd)));
     const tick = deps.eventWriter.forRun("run1").find((e) => e.type === "usage.tick");
-    expect(tick?.payload).toMatchObject({ spentCredits: 200 + Number(row.credits), capCredits: 2091 });
+    expect(tick?.payload).toMatchObject({ spentCredits: 200 + Number(stream!.credits), capCredits: 2091 });
   });
 });

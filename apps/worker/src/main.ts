@@ -192,7 +192,15 @@ export async function startWorker(): Promise<void> {
   // on preview stages, where usage.reconcile then skips the report pull and still runs the balance
   // assertion), the ops alert sink, and the estimator-recalibration fold (@rhema/protocols — server-side
   // only; nothing protocol reaches a payload).
-  const adminKey = env.anthropicAdminKeySecret ? await access(env.anthropicAdminKeySecret) : undefined;
+  // PRB.17 — a seeded PLACEHOLDER value (the secret NAME is provisioned before the real admin key exists,
+  // as on prod 2026-09-18) must not construct a source whose 401s crash every nightly `usage.reconcile`
+  // before it reaches the balance assertion. Same guard shape as the Resend placeholder below: a value
+  // self-marked `placeholder` is "not configured" → the report pull skips, the assertion still runs.
+  const adminSecret = env.anthropicAdminKeySecret ? await access(env.anthropicAdminKeySecret) : undefined;
+  const adminKey = adminSecret && !/placeholder/i.test(adminSecret) ? adminSecret : undefined;
+  if (adminSecret && !adminKey) {
+    console.log("[worker] ANTHROPIC admin key is a placeholder — Usage & Cost report pull unconfigured");
+  }
   const alertSink = env.opsAlertWebhookUrl
     ? async (a: unknown) => {
         await fetch(env.opsAlertWebhookUrl!, {

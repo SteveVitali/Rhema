@@ -8,6 +8,10 @@ import {
 // REQ-ARCH-9 (AC6): a model-profile override whose provider lacks the phase class's capabilities is rejected.
 
 describe("model-profile validation against the §12.3 capability table (REQ-ARCH-9)", () => {
+  it("treats an absent profile as the tier default (PRB.17: prod 500'd on a body without modelProfile)", () => {
+    expect(validateModelProfile(undefined, ["research", "judge"])).toEqual({ ok: true });
+  });
+
   it("accepts the default profile (no overrides = Anthropic, which satisfies every class)", () => {
     const profile: ModelProfile = { tier: "balanced" };
     expect(validateModelProfile(profile, ["research", "judge", "generate", "package"])).toEqual({

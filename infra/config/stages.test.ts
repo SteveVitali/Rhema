@@ -136,9 +136,8 @@ describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => 
 });
 
 describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; REQ-ARCH-30)", () => {
-  it("prod requires the production secret set minus the opted-out ops webhook (amended 2026-09-17)", () => {
+  it("prod requires the full production secret set (ops webhook re-added 2026-09-18 for PRB.17)", () => {
     for (const id of ALL_SECRET_IDS) {
-      if (id === "ops-alert-webhook-url") continue; // operator opted out — inert until a destination exists
       expect(PROD_REQUIRED_SECRETS, `missing ${id}`).toContain(id);
     }
     // The H6-named prod credentials are all present.
@@ -153,10 +152,10 @@ describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; RE
     ]) {
       expect(STAGES.prod.requiredSecrets, `missing ${id}`).toContain(id);
     }
-    // The ops-alert container is still PROVISIONED (opting back in = seed a version + re-add the id)
-    // but is NOT required — the drift-alert path must not block prod bring-up.
+    // The ops-alert sink is required on prod again (PRB.17's gate answer made the webhook catcher the
+    // prod alert destination — the drift/balance-divergence alert path must not be inert).
     expect(ALL_SECRET_IDS).toContain("ops-alert-webhook-url");
-    expect(PROD_REQUIRED_SECRETS).not.toContain("ops-alert-webhook-url");
+    expect(PROD_REQUIRED_SECRETS).toContain("ops-alert-webhook-url");
   });
 
   it("previews require only the non-production keys; prod is the only allowsProductionSecrets stage", () => {

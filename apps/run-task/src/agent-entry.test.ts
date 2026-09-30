@@ -1,6 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createServer, type Server } from "node:net";
 import type { Engine, EngineEvent, PhaseRequest, UsageSnapshot } from "@rhema/engine";
-import { runAgentPhase, sanitizeAgentError } from "./agent-entry.js";
+import { buildPreToolUseHook, runAgentPhase, sanitizeAgentError } from "./agent-entry.js";
 import { EventBufferClient, InMemoryBufferStore, type EventTransport, type OutboundEvent } from "./event-buffer.js";
 
 const usage: UsageSnapshot = {
@@ -98,5 +102,82 @@ describe("sanitizeAgentError — the observability sink's error fact (D-P0.15e-4
     expect(fact.message).not.toContain("sk-ant-abc123DEF");
     expect(fact.message).toContain("Bearer [redacted]");
     expect(fact.message).toContain("sk-[redacted]");
+  });
+});
+
+describe("buildPreToolUseHook — SDK envelope → ToolUse translation (PRB.17 live finding)", () => {
+  const dirs: string[] = [];
+  const servers: Server[] = [];
+  afterEach(async () => {
+    for (const s of servers.splice(0)) await new Promise<void>((r) => s.close(() => r()));
+    for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+  });
+
+  it("translates the SDK PreToolUseHookInput {tool_name, tool_input} to ToolUse {tool, input} on the wire", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "rhema-hookw-"));
+    dirs.push(dir);
+    const socketPath = join(dir, "hook.sock");
+    const captured: unknown[] = [];
+    const server = createServer((sock) => {
+      let buf = "";
+      sock.on("data", (chunk) => {
+        buf += chunk.toString();
+        const nl = buf.indexOf("\n");
+        if (nl === -1) return;
+        captured.push(JSON.parse(buf.slice(0, nl)));
+        sock.write(
+          JSON.stringify({
+            id: 1,
+            hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "allow" },
+          }) + "\n",
+        );
+      });
+    });
+    servers.push(server);
+    await new Promise<void>((r) => server.listen(socketPath, r));
+
+    const hook = buildPreToolUseHook(socketPath);
+    // The REAL SDK callback input (sdk.d.ts PreToolUseHookInput): the ENVELOPE, not ToolUse.
+    const res = (await hook({
+      hook_event_name: "PreToolUse",
+      tool_name: "Write",
+      tool_input: { file_path: "/work/project/drafts/v1.md", content: "x" },
+      tool_use_id: "toolu_1",
+      session_id: "s1",
+      transcript_path: "/tmp/t",
+      cwd: "/work/project",
+    })) as { hookSpecificOutput: { permissionDecision: string } };
+
+    expect(res.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(captured).toHaveLength(1);
+    const wire = captured[0] as { id: number; use: { tool: string; input: Record<string, unknown> } };
+    expect(wire.use.tool).toBe("Write");
+    expect(wire.use.input).toEqual({ file_path: "/work/project/drafts/v1.md", content: "x" });
+  });
+
+  it("maps a non-object tool_input to {} rather than crashing (defensive — malformed envelopes deny harness-side)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "rhema-hookw-"));
+    dirs.push(dir);
+    const socketPath = join(dir, "hook.sock");
+    const captured: unknown[] = [];
+    const server = createServer((sock) => {
+      sock.on("data", (chunk) => {
+        captured.push(JSON.parse(chunk.toString().trim()));
+        sock.write(
+          JSON.stringify({
+            id: 1,
+            hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "allow" },
+          }) + "\n",
+        );
+      });
+    });
+    servers.push(server);
+    await new Promise<void>((r) => server.listen(socketPath, r));
+
+    const hook = buildPreToolUseHook(socketPath);
+    await hook({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: "ls -la", tool_use_id: "t", session_id: "s", transcript_path: "/t", cwd: "/w" });
+    const wire = captured[0] as { use: { tool: string; input: Record<string, unknown> } };
+    expect(wire.use.tool).toBe("Bash");
+    expect(wire.use.input).toEqual({});
   });
 });

@@ -2,7 +2,8 @@
 //
 // SDK hooks run as uid `harness`, not `agent`: the daemon holds the run token and the audit writer, and the
 // `agent` uid cannot read the socket's credentials. The mechanism: the daemon listens on a Unix socket owned
-// by `harness` (mode 0600), and answers tool-use queries with an ALLOW/DENY decision ONLY — the token and
+// by `harness` (chmod 0666 so the agent uid can connect — only the decision crosses it), and answers
+// tool-use queries with an ALLOW/DENY decision ONLY — the token and
 // the audit rows never cross the socket. The agent-side hook connects, asks "may I run this tool?", and gets
 // a `PreToolUseResult`; it can learn nothing else. Policy is per-run DATA (REQ-ARCH-17): the daemon is
 // constructed with a compiled `SeatPolicy` + a per-phase `DenialState`, and it delegates every decision to
@@ -79,6 +80,24 @@ export function createHookDaemon(opts: HookDaemonOptions): Promise<HookDaemon> {
       socket.write(JSON.stringify({ id: -1, error: "bad request" }) + "\n");
       return;
     }
+    // Fail CLOSED on a malformed envelope: the agent sends `use` as `ToolUse{tool,input}`; anything else
+    // (e.g. the SDK's `tool_name`/`tool_input` envelope forwarded verbatim — the PRB.17 live finding) makes
+    // evaluateToolUse see `tool === undefined` and hit its "outside remit — pass through, no audit" branch,
+    // silently allowing every tool with zero audit rows. A boundary that can't name the tool denies + logs.
+    if (typeof req?.use?.tool !== "string" || req.use.tool === "") {
+      console.warn(`[hook] malformed tool-use envelope (no tool name) — denying`);
+      socket.write(
+        JSON.stringify({
+          id: typeof req?.id === "number" ? req.id : -1,
+          hookSpecificOutput: {
+            hookEventName: "PreToolUse",
+            permissionDecision: "deny",
+            permissionDecisionReason: "malformed tool-use envelope: no tool name",
+          },
+        }) + "\n",
+      );
+      return;
+    }
     const decision = evaluateToolUse(req.use, opts.policy, opts.state, {
       ...(opts.audit ? { sink: opts.audit } : {}),
       ...(opts.resolveRealpath ? { resolveRealpath: opts.resolveRealpath } : {}),
@@ -115,10 +134,21 @@ export function createHookDaemon(opts: HookDaemonOptions): Promise<HookDaemon> {
       }
       resolve({
         server,
-        close: () =>
-          new Promise<void>((res) => {
+        // The daemon is per-phase: closing flushes the buffered audit sink so each phase's access/fetch rows
+        // ship to the internal API (append-only — a failed flush keeps the rows buffered, but the daemon is
+        // closing so we log and move on rather than wedge the phase teardown).
+        close: async () => {
+          if (opts.audit) {
+            try {
+              await opts.audit.flush();
+            } catch (e) {
+              console.warn(`[hook] audit flush failed at close: ${e instanceof Error ? e.message : e}`);
+            }
+          }
+          await new Promise<void>((res) => {
             server.close(() => res());
-          }),
+          });
+        },
       });
     });
   });

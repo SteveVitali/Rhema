@@ -64,9 +64,8 @@ export const ALL_SECRET_IDS = [
   "resend-api-key", // worker — the mail.send transport (PRB.09)
   "anthropic-admin-key", // worker — the Usage & Cost report for usage.reconcile (PRB.08)
   "ops-alert-webhook-url", // worker — the >2%-drift / balance-divergence alert sink (PRB.08).
-  //   PROVISIONED on prod but NOT required (amended 2026-09-17 — the operator has no alert
-  //   destination yet; the drift-alert path stays inert until a version is seeded and the id is
-  //   re-added to PROD_REQUIRED_SECRETS)
+  //   REQUIRED on prod again (amended 2026-09-18 — PRB.17's gate answer chose the "tiny webhook
+  //   catcher" alert path, so the worker's OPS_ALERT_WEBHOOK_URL env must exist before prod serves)
   "user-content-signing-key", // api — signs the CDN download URLs for the PRIVATE user-content bucket
   //   (the *.usercontent.rhema.tools origin serves only signed requests; the same key is added to the
   //   backend bucket by the operator — `gcloud compute backend-buckets add-signed-url-key`, runbook)
@@ -74,14 +73,10 @@ export const ALL_SECRET_IDS = [
 
 /**
  * The prod secret set — every name HUMAN-H6 must seed a version of before `pulumi up prod` serves.
- * `ops-alert-webhook-url` is deliberately OUT (amended 2026-09-17 — the operator opted out: no alert
- * destination exists yet; the worker's drift/balance-divergence alert path stays inert rather than
- * failing closed). Its container is still provisioned — opting back in is seeding a version and
- * re-adding the id here.
+ * `ops-alert-webhook-url` is back IN (amended 2026-09-18 — the PRB.17 gate answer named the webhook
+ * catcher the prod alert destination; the drift/balance-divergence alert path fails closed without it).
  */
-export const PROD_REQUIRED_SECRETS: readonly string[] = ALL_SECRET_IDS.filter(
-  (id) => id !== "ops-alert-webhook-url",
-);
+export const PROD_REQUIRED_SECRETS: readonly string[] = ALL_SECRET_IDS;
 
 /** The dev secret set — the shared-integration stack serves the full auth/billing/mail surface
  *  (PRB.08/09 live legs run there); only the prod-ops alert sink is prod-only. */

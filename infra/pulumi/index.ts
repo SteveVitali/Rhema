@@ -60,6 +60,9 @@ const proxyBaseUrl = rhemaConfig.get("proxyBaseUrl");
 // PRB.16 — the Google OAuth client ID (plain deploy config — the SECRET is the `google-oauth-client-secret`
 // SM container). Until the real client id lands the api's auth surface stays gated on authSecretsReady.
 const googleOauthClientId = rhemaConfig.get("googleOauthClientId");
+// PRB.17 — the Stripe Payment Link URL (plain deploy config — the exhaustion panel + billing surface
+// 302 to it; the whsec_… + sk_… stay Secret-Manager values, never config).
+const stripePaymentLinkUrl = rhemaConfig.get("stripePaymentLinkUrl");
 // PRB.15 — the real digest-pinned service images as a JSON `{service: ref}` map (the images CI publishes
 // it; REQ-ARCH-39). Missing entries fall back to the placeholder so `preview` stays plannable.
 const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImages");
@@ -98,6 +101,7 @@ const compute = createCompute({
   ...(internalApiUrl ? { internalApiUrl } : {}),
   ...(proxyBaseUrl ? { proxyBaseUrl } : {}),
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
+  ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
 });
 

@@ -49,7 +49,7 @@ describe("PreToolUse enforcement — a deny BLOCKS a read-only-mount write (resi
 
     // the exact write that SUCCEEDED live before the output_dir fix (the seat delivers to correspondence via the
     // server delivery tx, never by writing the mount itself — §12.6: correspondence/** is a READ mount).
-    const res = (await hook({ tool: "Write", input: { file_path: "/work/project/correspondence/v1-review/00-piece-brief.md" } })) as {
+    const res = (await hook({ hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: "/work/project/correspondence/v1-review/00-piece-brief.md" } })) as {
       hookSpecificOutput: { hookEventName: string; permissionDecision: string; permissionDecisionReason?: string };
     };
 
@@ -66,7 +66,7 @@ describe("PreToolUse enforcement — a deny BLOCKS a read-only-mount write (resi
     daemon = await createHookDaemon({ socketPath, policy: editorCraftPolicy(), state: newDenialState(), resolveRealpath: lexicalRealpath });
     const hook = buildPreToolUseHook(socketPath);
 
-    const res = (await hook({ tool: "Write", input: { file_path: "/work/project/agents/editor/04-craft-notes.md" } })) as {
+    const res = (await hook({ hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: "/work/project/agents/editor/04-craft-notes.md" } })) as {
       hookSpecificOutput: { permissionDecision: string };
     };
     expect(res.hookSpecificOutput.permissionDecision).toBe("allow");
@@ -78,7 +78,7 @@ describe("PreToolUse enforcement — a deny BLOCKS a read-only-mount write (resi
     const hook = buildPreToolUseHook(socketPath);
 
     for (const path of ["/work/project/agents/author/notebook.md", "/work/project/../etc/passwd"]) {
-      const res = (await hook({ tool: "Write", input: { file_path: path } })) as {
+      const res = (await hook({ hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: path } })) as {
         hookSpecificOutput: { permissionDecision: string };
       };
       expect(res.hookSpecificOutput.permissionDecision, `write to ${path}`).toBe("deny");

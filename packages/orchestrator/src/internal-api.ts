@@ -5,7 +5,7 @@
 // event (REQ-DATA-33). Artifact materialization/harvest (P0.09), gate resolution (P0.10) and ledger internals
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
-import type { AgentTypeKey, GateKind, GateOnExpiry, WorkflowKey } from "@rhema/contracts";
+import { platformCredits, type AgentTypeKey, type GateKind, type GateOnExpiry, type WorkflowKey } from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
 import {
   buildSeatHydration,
@@ -542,6 +542,38 @@ export async function harvestStep(deps: HarvestStepDeps, args: HarvestStepArgs):
             args.usage.webFetchRequests,
             0,
             credits,
+          ],
+        );
+        // The `sdk_estimate` cross-check row (D-P0.15-2 / REQ-SPEC-11): the SDK's own `costUsd` at the same
+        // phase boundary, platform-priced the same way the proxy's metered rows are — the figure of record
+        // `proxyVsSdkCrossCheck` diffs against the proxy's `list_cost_usd` (the ±2% live leg). Without this
+        // writer the cross-check compares the proxy against nothing on real runs.
+        await tx.query(
+          `insert into usage_records(
+             id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+             model_tier, rate_table_version, input_tokens, cache_write_tokens, cache_read_tokens, output_tokens,
+             searches, fetches, list_cost_usd, credits, source)
+           select $1,$2,r.workspace_id,w.billing_account_id,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'sdk_estimate'
+             from runs r join workspaces w on w.id = r.workspace_id where r.id = $3`,
+          [
+            deps.ids("usg"),
+            now,
+            args.runId,
+            args.attempt,
+            `step:${args.stepKey}`,
+            args.seat,
+            "anthropic",
+            runRow.model_tier,
+            runRow.model_tier,
+            runRow.rate_table_version,
+            args.usage.inputTokens,
+            args.usage.cacheCreationTokens,
+            args.usage.cacheReadTokens,
+            args.usage.outputTokens,
+            args.usage.webSearchRequests,
+            args.usage.webFetchRequests,
+            args.usage.costUsd,
+            Math.round(platformCredits(args.usage.costUsd)),
           ],
         );
         await deps.eventWriter.append(tx, {
