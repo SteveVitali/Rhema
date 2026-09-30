@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-57 (PR-E4, PR-R3 — the during/after half)
 - **Run:** `implement-spec spec=docs/tickets/68_RPT.1__live-meter-and-run-report.md`
 - **Gate status:** none beyond the round-3 standing authorization (ADR-013); no backfill of historical `steps` rows (a one-off prod data write — operator-paused; historical rows render "—" instead); the Stage B run uses JOURNEY.1's funded test tenant + test mailbox (HUMAN-H7) — if unticked, the H7 DEFERRALS rule applies
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy (pre-authorized if the preview is clean and migrations are additive) + one Quick/Base run on JOURNEY.1's ≤300-word fixture to watch the meter and read the report ≤$5 metered
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy (pre-authorized if the preview is clean and migrations are additive) + one Quick/Base run on JOURNEY.1's ≤300-word fixture to watch the meter and read the report ≤$3 metered
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $3** (was ≤ $5); aim for ≈ $1. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-RPT.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 During the 2026-09-30 review the card's spend sat at 112 cr for 6+ minutes of verification (PR-E4), then the report
@@ -91,7 +94,7 @@ figures reconcile with each other and with the ledger — in either ECON.1 debit
       worked-example label. *(deterministic + live on the test tenant)*
 - [ ] **Journey step R6 green** on the deployed stage via the JOURNEY.1 harness: on the ≤300-word fixture run the card's
       meter shows ≥ 2 distinct spent values within a single phase, and the run report's spent equals Σ debits (cross-checked
-      read-only against the ledger in the run ledger); expected-red flag flipped; screenshots committed. *(agentic — live, ≤$5)*
+      read-only against the ledger in the run ledger); expected-red flag flipped; screenshots committed. *(agentic — live, ≤$3)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
 ## Requirement IDs to satisfy and stamp in the PR

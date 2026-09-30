@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-25 (D-P0.15b-1 residual — `pr-<n>` full-stack up/destroy never exercised; X-dev-stack-stale)
 - **Run:** `implement-spec spec=docs/tickets/80_OPS.1__preview-stages.md`
 - **Gate status:** infra cost deltas > $15/month. On today's stage facts a standing full `dev` (warm 2-vCPU AlloyDB, a regional GKE cluster, the proxy MIG) far exceeds that, so dev's standing shape is operator-paused. The ticket brings dev up for its verification window within the cap, then returns it to its idle shape. Also paused: creating any third-party credential for previews (a dedicated Anthropic/Resend/Stripe key) and DNS changes (previews get none). `stack=prod` is refused by the guard, never paused-and-asked.
-- **Live stage:** Stage A: code + tests ($0). Stage B: `dev` full-stack up; one `pr-<n>` preview up → migrate/seed → smoke + $0 journey legs → destroy; ≤$20 infra (resource-hours × list price), $0 inference
+- **Live stage:** Stage A: code + tests ($0). Stage B: `dev` full-stack up; one `pr-<n>` preview up → migrate/seed → smoke + $0 journey legs → destroy; ≤$15 infra (resource-hours × list price), $0 inference
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B infra cost cap is **≤ $15** (was ≤ $20); aim for ≈ $8. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-OPS.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Every Stage B in rounds 1–2 ran on prod, because `dev` holds only a 23-resource skeleton with stale pins (STB.1 §1)
@@ -105,7 +108,7 @@ has only unit-level proof in `stages.test.ts`. This ticket makes the stage model
   - [ ] `MAX_USD_PER_RUN=3` and invite-mode signup are live. *(agentic)*
   - [ ] The $0 journey legs are green, with screenshots. *(agentic)*
   - [ ] The `destroy` + `stack rm` are clean, with zero orphans. *(agentic)*
-- [ ] The infra cost of the whole window is ≤ $20, computed from resource-hours × list price and confirmed from
+- [ ] The infra cost of the whole window is ≤ $15, computed from resource-hours × list price and confirmed from
       billing once available (a D-row if billing lags). *(agentic)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 

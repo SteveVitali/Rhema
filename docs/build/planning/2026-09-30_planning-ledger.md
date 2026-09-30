@@ -15,7 +15,7 @@
 | D3 | Trial + pricing | **Keep the free trial review.** Pricing is Claude's judgment → **charge what we meter** (§14.1 restated; REQ-SPEC-32); the plan price anchors are unchanged and "what it covers" is recomputed from measured cost cards. The trial moves to **interim terms** tied to measured COGS (REQ-SPEC-8 amended), plus a COGS-reduction ticket (ECON.2) that restores the spec's trial terms when met. See ADR-014. | operator (keep trial) + Claude (pricing) |
 | D4 | A review with zero successful fetches | **Fail-soft, honest, refunded:** preflight the web tools before any debit; a zero-fetch review delivers as *Unverified* with its research phases refunded and an ops alert (REQ-SPEC-31, ADR-015). | Claude (delegated) |
 | D5 | G2 / H2 | **Stay deferred.** Not scheduled in round 3. G2 remains the HARD gate before §16.4 claims and public launch; the launch-surface lint keeps enforcing "no superiority claims". | Claude (delegated) |
-| D6 | Round-3 spend envelope | **≤ $300 total live inference** across the round, within per-ticket caps (below), plus a weekly paid journey run ≤ $10/week once JOURNEY.1 lands (the nightly journey runs $0 legs only). See the standing authorization. | Claude (delegated) |
+| D6 | Round-3 spend envelope | ~~≤ $300~~ **revised the same day: hard ≤ $200, target ≤ $100** (see the Budget note) — originally **≤ $300 total live inference** across the round, within per-ticket caps (below), plus a weekly paid journey run ≤ $10/week once JOURNEY.1 lands (the nightly journey runs $0 legs only). See the standing authorization. | Claude (delegated) |
 | D7 | Build-memory cleanup | **Yes** — MAINT.2 is an early chain row. | operator |
 | — | Operator's own product feedback | **Skipped this round.** The agentic browser review (the `PR-*` findings) stands in. | operator |
 
@@ -119,6 +119,15 @@ in depth).
 - BL-48/49 are closed; the BL-49 flips are executed by MAINT.2.
 
 **Budget:** Σ caps ≈ $255 inference + $20 infra, within the $300 D6 envelope.
+
+> **Amended 2026-09-30 (operator — D6 revised):** the round-3 limit is **hard ≤ $200, target ≤ $100** (metered, infra
+> included). Per-ticket Stage B caps (hard / target): JOURNEY.1 5/3 (weekly paid journey ≤ $5/week) · RES.1 10/5 ·
+> RES.2 3/2 · ECON.1 30/15 · EST.1 5/3 · RPT.1 3/1 · ACT.1 12/6 · RUN.1 3/2 · SLO.1 10/5 · DEF.4 3/1 · SEC.3 5/3 ·
+> OPS.1 15/8 infra · CITE.1 10/5 · ECON.2 30/15 · STB.5b 25/12 · CAP.2 10/5 — Σ hard ≈ $179 + ≤ $20 of weekly
+> journeys; Σ targets ≈ $91 + ~$10. Each capped ticket carries a dated note: legs cheapest-first, stop when the
+> evidence suffices, dropped legs become DEFERRALS rows. **Round-level control:** at every ticket boundary the
+> orchestrator sums the round's metered spend from the PHASE LOG; at ≥ $100 it sets `pauseRequested: true` for the
+> operator; it never starts a leg that could pass $200.
 
 ## Shared decisions and their owners (the fragmentation guard)
 

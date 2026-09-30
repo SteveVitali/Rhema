@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-50 (PR-J1), BL-62 (PR-U6 content half — all-dash rows, "Start free" on paid CTAs, Team "$/mo Annual")
 - **Run:** `implement-spec spec=docs/tickets/70_ACT.1__trial-entitlement.md`
 - **Gate status:** **trial go-live** for real users is operator-paused — a change to what users are charged (ADR-013/014); if the derived word cap falls below 1,500 words the **operator sets the ceiling**; retuning the kill switch away from $50/day is the operator's; rewriting existing accounts' entitlement rows is a one-off prod data write → operator-paused (design so it is unnecessary); a phone-OTP or ASN vendor needing a new third-party credential → operator-paused (else a `D-ACT.1-n` row); the Stage B runs use JOURNEY.1's test tenants + test mailbox (HUMAN-H7)
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy (pre-authorized if the preview is clean and migrations are additive) + the N5 trial Review on JOURNEY.1's ≤300-word fixture + one trial Review near the derived word cap, test tenants only, ≤$20 metered in total
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy (pre-authorized if the preview is clean and migrations are additive) + the N5 trial Review on JOURNEY.1's ≤300-word fixture + one trial Review near the derived word cap, test tenants only, ≤$12 metered in total
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $12** (was ≤ $20); aim for ≈ $6. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-ACT.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 The landing says "No card. Your first review is included." and pricing says "One Review of up to 6,000 words, Standard
@@ -129,8 +132,8 @@ The shipped §14.3 terms also cannot hold at measured COGS (ADR-014). This ticke
 - [ ] **Journey step C1 green:** landing, pricing and trial claims equal the entitlement config and the EST.1 API for
       the test audience, and no trial claim shows for the not-yet-live public audience. *(agentic — live, $0)*
 - [ ] One test-tenant trial Review near the derived word cap delivers with no cap death, and its metered list COGS is
-      recorded against the $15 ceiling. Stop and open a `D-ACT.1-n` row if cumulative Stage B spend would pass $20.
-      *(agentic — live, total ≤ $20)*
+      recorded against the $15 ceiling. Stop and open a `D-ACT.1-n` row if cumulative Stage B spend would pass $12.
+      *(agentic — live, total ≤ $12)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
 ## Requirement IDs to satisfy and stamp in the PR

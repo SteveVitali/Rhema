@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-13 (the debit / calibration / §6.5-preset half: X-unit-economics, PR-E5, PR-E6, the D-PRB.21-1 residual), BL-14 (D-P0.15k-1, ADR-005), BL-10 (the F5 proof only: X-f5-settlement-live-proof)
 - **Run:** `implement-spec spec=docs/tickets/66_ECON.1__charge-what-we-meter.md`
 - **Gate status:** Operator-paused: the **metered-debit flip** (`debitMode=metered`), preceded by **paid-account notice** whose timing is HUMAN-H7's call; **sending** that notice; the **admin-key Usage & Cost reconcile** (HUMAN-H7 admin key, BL-34); any **one-off prod data write** (the calibration store is filled only by committed code paths — never a manual insert); any ADR that **relaxes a spec target** (REQ-BILL-7's multiplier rule, REQ-SPEC-32(c)).
-- **Live stage:** Stage A: code + tests ($0). Stage B: harvest admissible prod runs ($0), then instrumented Reviews and one F5 cancel leg per the spend plan, then deploy the calibrated caps with `debitMode=committed`, ≤ $40 metered (list $)
+- **Live stage:** Stage A: code + tests ($0). Stage B: harvest admissible prod runs ($0), then instrumented Reviews and one F5 cancel leg per the spend plan, then deploy the calibrated caps with `debitMode=committed`, ≤ $30 metered (list $)
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $30** (was ≤ $40); aim for ≈ $15. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-ECON.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 ADR-014 decides to charge what we meter (REQ-SPEC-32(a)), but only after calibrating. Its premise figures need
@@ -137,7 +140,7 @@ The flip itself is the operator's.
      instrumented runs (drift ≤ 2%).
    - Otherwise: a `D-ECON.1-n` row, reason "H7 pending: admin key".
 
-**Spend plan (Stage B ≤ $40 metered list $; stop adding legs at $36 cumulative).**
+**Spend plan (Stage B ≤ $30 metered list $; stop adding legs at $27 cumulative).**
 
 | leg | cell | budget (list $) |
 |---|---|---|
@@ -166,7 +169,7 @@ or `D-ECON.1-n` rows.
 - [ ] **Quick claim cap.** The 5-claim fact-check cap is enforced, or an ADR plus a `D-ECON.1-n` row explains why not. The estimator prices the same phase set. *(deterministic)*
 - [ ] **Quick presets (journey).** The JOURNEY.1 walk shows the Quick sheet with discourse and second read off, and the run card lists them skipped. *(agentic)*
 - [ ] **Durable store.** A fold survives a process restart, and api and worker read the same bucket. The per-bucket refit hits REQ-BILL-7's thresholds in tests (p95 1.29 / 1.31, the 1.25 floor, the 2× breaker). The migration passes the additive lint. *(deterministic)*
-- [ ] **Stage B deploy.** Admissible runs are harvested. The instrumented legs are recorded with metered list $ per leg, total ≤ $40. The calibrated caps are deployed with `debitMode=committed`. Deployed provenance = the chain-tip SHA. *(agentic)*
+- [ ] **Stage B deploy.** Admissible runs are harvested. The instrumented legs are recorded with metered list $ per leg, total ≤ $30. The calibrated caps are deployed with `debitMode=committed`. Deployed provenance = the chain-tip SHA. *(agentic)*
 - [ ] **Stage B calibration report.** Present per bucket. In-sample cap reach ≤ 10% under `metered` at the new caps. *(agentic)*
 - [ ] **F5 settlement.** The four numbers agree live for the completed run and the cancelled run. *(agentic)*
 - [ ] **Flip readiness.** The notice template, recipient query, send CLI and flip/rollback runbook exist. **No notice sent, no flip made.** A LEDGER GATE DECISIONS row asks the operator for the notice timing and the flip. *(agentic)*

@@ -10,10 +10,13 @@
 - **Depends on:** CAP.1
 - **Run:** `implement-spec spec=docs/tickets/87_CAP.2__capstone-composed-verification.md`
 - **Gate status:** none
-- **Live stage:** operator-gated: ≤ $15 metered (round-3 standing authorization, ADR-013)
+- **Live stage:** operator-gated: ≤ $10 metered (round-3 standing authorization, ADR-013)
 
 > Each additive ticket only ever exercised its own slice; the fully-composed path may never
 > have run green. This ticket runs the **whole build as one unit**.
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $10** (was ≤ $15); aim for ≈ $5. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-CAP.2-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Exercise the composed build of every executed chain row (rounds 1–3: the 58 original/inserted rows, CAPSTONE/RCN.1/STB.1–4/DEF.1–3, and round 3's 27) tickets end-to-end and record the result, so
@@ -58,5 +61,5 @@ The composed-verification / integration ids of `docs/rhema-design-spec.md` (matc
   - the SEC.1 two-tenant probe
   - one paid new-visitor journey including the trial Review
   - the REQ-SPEC-32(c) calibration report
-- **Budget:** ≤ $15 metered, under the round-3 standing authorization (ADR-013).
+- **Budget:** ≤ $10 metered, under the round-3 standing authorization (ADR-013).
 - **A step still red** is recorded, not fabricated green, and routed as `xfail` with a DEFERRALS id.

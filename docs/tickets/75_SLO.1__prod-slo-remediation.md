@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-07 (PR-R2; X-f8-prod-slos-red, X-slo-probe-gaps, OF-stb3-live-findings F8)
 - **Run:** `implement-spec spec=docs/tickets/75_SLO.1__prod-slo-remediation.md`
 - **Gate status:** pauses for the operator under the REVISED standing authorization: **any ADR that relaxes a spec target** (SLO re-basing, e.g. the `proxy_vs_sdk` ± 2% row); **infra cost deltas > $15/month** (a warm pod pool, min GKE nodes, a larger worker floor); **one-off prod data writes** (only if a probe fix needs a historical backfill). Additive migrations and a clean-preview `pulumi up` are pre-authorized.
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then bounded runs to sample the corrected signals (chat turns for run start; one Review under *Wait for me at each* for gate resume), plus a 7-day prod read — ≤ $20 metered.
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then bounded runs to sample the corrected signals (chat turns for run start; one Review under *Wait for me at each* for gate resume), plus a 7-day prod read — ≤ $10 metered.
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $10** (was ≤ $20); aim for ≈ $5. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-SLO.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Every §13.5 SLO read red on prod, and it still does after DEF.1–3. The live worker logged at 2026-09-30
@@ -139,7 +142,7 @@ hold.
 - [ ] The REQ-ARCH-34 weekly review exists (summary line + dashboard + the LEDGER rule) and produced its first
       readout from prod. *(agentic)*
 - [ ] The nightly JOURNEY.1 run is green on the deployed SHA, and deployed provenance equals this ticket's
-      chain-tip SHA (REQ-SPEC-29). Metered spend ≤ $20. *(agentic)*
+      chain-tip SHA (REQ-SPEC-29). Metered spend ≤ $10. *(agentic)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
 ## Requirement IDs to satisfy and stamp in the PR

@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-56 (PR-Q1) — the delivery / refund half
 - **Run:** `implement-spec spec=docs/tickets/64_RES.2__unverified-delivery-and-refund.md`
 - **Gate status:** "one-off prod data writes" — any retroactive refund or relabel of past zero-coverage Reviews, including `01M3SK62YZST272B35CG12K6TW` (632 cr on the operator's promo credits), is operator-paused; RES.2 only emits the list. Otherwise none beyond the round-3 standing authorization (ADR-013).
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then one ≤ 300-word Review on a flagged test tenant forced to zero coverage, walked with the JOURNEY.1 harness, ≤ $5 metered
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then one ≤ 300-word Review on a flagged test tenant forced to zero coverage, walked with the JOURNEY.1 harness, ≤ $3 metered
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $3** (was ≤ $5); aim for ≈ $2. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-RES.2-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 ADR-006 (Path B) strips an unfetched citation and downgrades its claim. It has no rule for the case where
@@ -102,7 +105,7 @@ RES.1 makes zero coverage rare. RES.2 makes it honest and free to the user when 
    - Emit to the run ledger the prior delivered Reviews that meet the predicate, with their would-be refund amounts,
      for the operator to act on.
    - The refunds themselves are a paused one-off write.
-9. **Stage B** (≤ $5).
+9. **Stage B** (≤ $3).
    - Deploy.
    - Run a ≤ 300-word Review on a JOURNEY.1-flagged test tenant, forced to zero coverage **downstream of RES.1's
      preflight** (e.g. a test-tenant-only URL policy that denies verification's fetch targets).
@@ -130,7 +133,7 @@ RES.1 makes zero coverage rare. RES.2 makes it honest and free to the user when 
   - The forced zero-coverage test Review shows *Unverified* above the verdict on the run card and the dossier.
   - The test mailbox receives the delivery email carrying the label.
   - The ledger shows the platform-fault refund rows, and the alert reached the channel.
-  - The metered spend is ≤ $5.
+  - The metered spend is ≤ $3.
 
   *(agentic)*
 - [ ] **Stage B regression.** RES.1's N6 Review is **not** labelled *Unverified* (no new spend). *(agentic)*

@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-57 (PR-E1, PR-E3 — pre-run figures half), BL-58 (PR-E2), BL-11(a) (D-DEF.3-2), BL-12 (X-lever-matrix-flake)
 - **Run:** `implement-spec spec=docs/tickets/67_EST.1__one-estimate-everywhere.md`
 - **Gate status:** none beyond the round-3 standing authorization (ADR-013) — this ticket changes what users are *shown*, not what they are charged (the metered-debit flip is ECON.1's operator pause); the Stage B journey needs JOURNEY.1's test mailbox + funded test tenant (HUMAN-H7) — if still unticked, the journey legs follow the H7 DEFERRALS rule
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy (pre-authorized `pulumi up prod` if the preview is clean), claim pre-pass refinements + at most one paid run on JOURNEY.1's ≤300-word fixture at a user-selected Base tier ≤$10 metered
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy (pre-authorized `pulumi up prod` if the preview is clean), claim pre-pass refinements + at most one paid run on JOURNEY.1's ≤300-word fixture at a user-selected Base tier ≤$5 metered
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $5** (was ≤ $10); aim for ≈ $3. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-EST.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 On 2026-09-30 the same 1,003-word essay was priced by six surfaces that disagreed 10–20× (PR-E1): protocol card
@@ -114,7 +117,7 @@ moment any surface drifts from it (REQ-SPEC-32(b)).
       and the protocol card matches the API at its labelled length; the step's expected-red flag is flipped; screenshots
       committed. *(agentic — live, $0)*
 - [ ] One paid run on the ≤300-word fixture at a user-selected Base tier: its frozen tier/estimate/cap equal what the
-      sheet showed and the metered actual is recorded against the printed range in the run ledger (≤$10). *(agentic — live)*
+      sheet showed and the metered actual is recorded against the printed range in the run ledger (≤$5). *(agentic — live)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
 ## Requirement IDs to satisfy and stamp in the PR

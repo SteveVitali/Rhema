@@ -7,6 +7,11 @@
   REQ-SPEC-1, REQ-GROWTH-1 (amended); REQ-EVAL-15/16/19 (standing, unchanged)
 - **Spec:** rhema-design-spec status line; §13.5, §14; Appendix A.9 (2026-09-30 note)
 
+> **Amended 2026-09-30 (operator, same day):** D6's envelope is revised to **hard ≤ $200, target ≤ $100** of metered
+> spend (infra included), with per-ticket caps lowered to match; the weekly paid journey is ≤ $5. The orchestrator
+> pauses the chain when round-3 cumulative metered spend reaches $100 and never starts a leg that could pass $200.
+> Recorded in LEDGER GATE DECISIONS (D6 revised) and the planning ledger's Budget note.
+
 ## Context
 
 Rounds 1–2 executed the whole chain: the 50 original rows, the prod-launch inserts, the full IDE, the
@@ -99,6 +104,6 @@ acceptance (REQ-SPEC-29, ADR-016) and tenant isolation in depth (REQ-SPEC-30, AD
 
 - The operator merges the stack, which changes D1's base.
 - H2 is funded, which reopens D5.
-- Round-3 live spend reaches $300 with rows remaining, which reopens D6.
+- Round-3 live spend reaches $100 (the pause) or $200 (the hard stop) with rows remaining, which reopens D6.
 - A downstream worker's action under the standing authorization causes a prod incident, which narrows the
   authorization.

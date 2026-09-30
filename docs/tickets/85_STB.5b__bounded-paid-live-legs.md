@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-16, BL-17, BL-18, BL-19 (BL-20 and BL-24 moved to HUMAN-H7)
 - **Run:** `implement-spec spec=docs/tickets/85_STB.5b__bounded-paid-live-legs.md`
 - **Gate status:** none beyond the round-3 standing authorization (ADR-013)
-- **Live stage:** Stage A: harness scripts + tests ($0). Stage B: the legs, ≤ $40 metered combined, cheapest first.
+- **Live stage:** Stage A: harness scripts + tests ($0). Stage B: the legs, ≤ $25 metered combined, cheapest first.
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $25** (was ≤ $40); aim for ≈ $12. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-STB.5b-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Close the four remaining paid live-verification rows with real evidence on prod. The rows are:
@@ -37,7 +40,7 @@ Close the four remaining paid live-verification rows with real evidence on prod.
 
 ## Acceptance criteria
 - [ ] Each BL-16–19 source deferral row is flipped DONE with live evidence, or stays OPEN with a sharpened residual and reason. *(agentic)*
-- [ ] Combined metered spend ≤ $40; a leg that would exceed its cap stops and is recorded. *(agentic)*
+- [ ] Combined metered spend ≤ $25; a leg that would exceed its cap stops and is recorded. *(agentic)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
 ## Requirement IDs to satisfy and stamp in the PR

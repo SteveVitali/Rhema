@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-55 (PR-J6), BL-59 (PR-R1), BL-52 (b) (PR-J3, walkthrough half; the dossier 500 is HOT.1's)
 - **Run:** `implement-spec spec=docs/tickets/73_RUN.1__run-and-chat-defects.md`
 - **Gate status:** none beyond the round-3 standing authorization (ADR-013). The chat leg is a plain turn, not a research burst, so it does not wait on the H7 research-burst ruling (BL-20). The journey legs need the H7 test mailbox through JOURNEY.1.
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then one live chat turn, one walkthrough regeneration, and one Review observed through its Approve-scope gate (Stopped after the gate, or carried on the weekly paid journey) — ≤ $5 metered.
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then one live chat turn, one walkthrough regeneration, and one Review observed through its Approve-scope gate (Stopped after the gate, or carried on the weekly paid journey) — ≤ $3 metered.
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $3** (was ≤ $5); aim for ≈ $2. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-RUN.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Three defects a user hits within minutes of the live review:
@@ -120,7 +123,7 @@ Three defects a user hits within minutes of the live review:
       - R4: a live chat turn answers with its credits shown
       - R7: an informational Approve-scope passes without a click, and the labels match the behaviour
       - screenshots committed
-      - metered spend ≤ $5 in total *(agentic — JOURNEY.1)*
+      - metered spend ≤ $3 in total *(agentic — JOURNEY.1)*
 - [ ] Deployed provenance equals this ticket's chain-tip SHA (REQ-SPEC-29). *(deterministic)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
@@ -169,4 +172,4 @@ REQ-SPEC-29 (R4, R7).
 - **DEFERRALS:**
   - Annotate **D-P1.11-1**'s chat_turn half with the live turn's plan-card event and `turn-result.json`; its
     research_burst half stays with BL-20.
-  - Anything the live legs cannot show within $5 becomes `D-RUN.1-<n>`.
+  - Anything the live legs cannot show within $3 becomes `D-RUN.1-<n>`.

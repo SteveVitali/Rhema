@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-56 (PR-Q1) — the diagnosis / fix / preflight / floor half
 - **Run:** `implement-spec spec=docs/tickets/63_RES.1__review-research-restore.md`
 - **Gate status:** none beyond the round-3 standing authorization (ADR-013). N6 runs on the JOURNEY.1 harness and inherits its test-mailbox dependency (HUMAN-H7 item 1); if that is unprovisioned, N6 stays expected-red under a `D-RES.1-n` row.
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then ≤ 3 probes plus two bounded Reviews on the planted-error fixture through the JOURNEY.1 harness, ≤ $15 metered (list $, proxy rows)
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy, then ≤ 3 probes plus two bounded Reviews on the planted-error fixture through the JOURNEY.1 harness, ≤ $10 metered (list $, proxy rows)
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $10** (was ≤ $15); aim for ≈ $5. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-RES.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 On 2026-09-30 a paid Quick/Base Review on prod (run `01M3SK62YZST272B35CG12K6TW`, the planted-error essay) ran every
@@ -106,13 +109,13 @@ It owns journey step **N6**.
    - A recorded-response deterministic twin runs in CI at $0.
    - **Owned decision → write an ADR:** the probe's shape — a `meterOnly`-style synthetic credential like DEF.2's
      `est_` pre-pass, or a one-claim `fact_check` run.
-6. **Stage B** (≤ $15 metered, list $ = Σ proxy `usage_records.credits` × $0.01 ÷ 1.4 — re-confirm in `apps/egress-proxy/src/rates.ts`).
+6. **Stage B** (≤ $10 metered, list $ = Σ proxy `usage_records.credits` × $0.01 ÷ 1.4 — re-confirm in `apps/egress-proxy/src/rates.ts`).
    - Deploy under the standing authorization.
    - Run ≤ 3 probes (≤ $3).
    - Run one Quick/Base Review of the full planted-error essay through the JOURNEY.1 harness. This is the
      before/after against `01M3SK62…` (≤ $7).
    - Run one Standard/Base Review of a ≤ 300-word planted-error excerpt, the trial cell (≤ $5).
-   - Stop at $15. Record spend per leg.
+   - Stop at $10. Record spend per leg.
 
 ## Out of scope
 - *Unverified* delivery, the platform-fault refund class, the label on card/dossier/email, the ops alert for zero coverage, the D.2 vocabulary, trial restore → **RES.2**.
@@ -131,7 +134,7 @@ It owns journey step **N6**.
 - [ ] Stage B: `pulumi preview` shows zero replace/delete on stateful resources and migrations pass the additive lint. Deployed provenance = the chain-tip SHA. *(agentic)*
 - [ ] Stage B: a live probe (≤ $1) returns *Contradicted* for the planted claim with a fetched source. `usage_records`/`fetch_log` show ≥ 1 search for both the Sonnet and the Haiku pair. *(agentic)*
 - [ ] **Journey step N6 green** (JOURNEY.1 harness, screenshots committed): the Quick/Base Review of the planted-error essay delivers a dossier with ≥ 1 fetched-✓ claim, and the planted error is *Contradicted* with its source. Its `fetch_log` has verification-phase search rows. *(agentic)*
-- [ ] Stage B: the Standard/Base excerpt Review also shows fetched coverage, or a `D-RES.1-n` row records why not. Total Stage B metered spend ≤ $15, recorded per leg. *(agentic)*
+- [ ] Stage B: the Standard/Base excerpt Review also shows fetched coverage, or a `D-RES.1-n` row records why not. Total Stage B metered spend ≤ $10, recorded per leg. *(agentic)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 
 ## Requirement IDs to satisfy and stamp in the PR

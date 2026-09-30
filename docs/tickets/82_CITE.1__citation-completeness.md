@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-15 (X-citation-completeness; ADR-006 revisit trigger (b); G1 readout "§16.4 claims await the citation-completeness follow-up")
 - **Run:** `implement-spec spec=docs/tickets/82_CITE.1__citation-completeness.md`
 - **Gate status:** covered by the round-3 standing authorization (ADR-013). Two conditional pauses: a new credit grant to fund the test tenant (a one-off prod data write) if RES.1's funding path does not cover it, and any new third-party credential a backfill design would need (the preferred designs need none).
-- **Live stage:** Stage A is code and tests ($0), plus a read-only baseline over prod's delivered Reviews ($0). Stage B is deploy plus bounded probe runs ≤ $15 metered (per-leg caps below).
+- **Live stage:** Stage A is code and tests ($0), plus a read-only baseline over prod's delivered Reviews ($0). Stage B is deploy plus bounded probe runs ≤ $10 metered (per-leg caps below).
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $10** (was ≤ $15); aim for ≈ $5. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-CITE.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 ADR-006 (Path B) delivers a Review even when the fact-check cites URLs it never retrieved: the citation is stripped
@@ -113,7 +116,7 @@ and persists a completeness rate, so ECON.2 measures COGS on the final pipeline 
 - [ ] Before any Stage B spend, the ADR pre-registers the completeness target. The proposed default is aggregate
       completeness after backfill ≥ 0.95 over the Stage B probe runs, with no run below 0.80, and a stated
       improvement over item 1's baseline. The target is not chosen after seeing results. *(agentic)*
-- [ ] **Stage B, ≤ $15 metered, cheapest-first**, after deploying the chain-tip SHA under the standing authorization:
+- [ ] **Stage B, ≤ $10 metered, cheapest-first**, after deploying the chain-tip SHA under the standing authorization:
       Leg 1, RES.1's single-phase verification probe on the planted-error essay ×3 (≤ $1.50 each); Leg 2, the same
       probe on `packages/protocols/fixtures/_evals/golden-op-ed.md` ×2 (≤ $2 each); Leg 3, one Quick/Base Review of
       `golden-op-ed.md` delivered end to end on a JOURNEY.1 test tenant (≤ $4). A leg whose derived cap exceeds the

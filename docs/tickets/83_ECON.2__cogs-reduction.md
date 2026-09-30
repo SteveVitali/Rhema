@@ -10,7 +10,10 @@
 - **Run:** `implement-spec spec=docs/tickets/83_ECON.2__cogs-reduction.md`
 - **Gate status:** the REQ-SPEC-8 restore flip is operator-paused (it returns the trial word cap to 6,000 and changes what the trial covers). Any lever that routes outside §12.3's table, changes a §6.5 preset, or relaxes a spec target is an operator-paused spec amendment and is not in this ticket. A new test-tenant credit grant is a one-off prod data write (conditional pause). Everything else sits within the round-3 standing authorization (ADR-013).
 - **Live stage:** Stage A is code, flags, tests and offline token accounting ($0). Stage B is lever legs plus the
-  non-regression Review plus the restore confirm, ≤ $40 metered (per-leg caps below).
+  non-regression Review plus the restore confirm, ≤ $30 metered (per-leg caps below).
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $30** (was ≤ $40); aim for ≈ $15. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-ECON.2-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Under charge-what-we-meter (ADR-014), prices fall only when measured COGS falls. The 2026-09-30 Quick/Base Review
@@ -103,7 +106,7 @@ a Standard/Base 6,000-word Review ≤ $6), the §14.3 trial terms are prepared b
 - [ ] Before any spend, the ADR pre-registers the measurement protocol: the fixture per lever, n per arm, and the
       adoption rule (for example, the saving exceeds the OFF arm's observed spread). Offline accounting (item 3) is
       in the run ledger. *(agentic)*
-- [ ] **Stage B, ≤ $40 metered, cheapest-first:** lever legs ≤ $19 in total (L5 ≤ $3, L4 ≤ $3, L1 ≤ $4 and L2 ≤ $4
+- [ ] **Stage B, ≤ $30 metered, cheapest-first:** lever legs ≤ $19 in total (L5 ≤ $3, L4 ≤ $3, L1 ≤ $4 and L2 ≤ $4
       on phase-pinned runs of the ≤ 300-word fixture; L3 ≤ $5 at Balanced); the ON-arm Review ≤ $12 (a full
       Standard/Base Review of the planted-error essay on a JOURNEY.1 test tenant); the restore confirm ≤ $9, only if
       the refit predicts p90 ≤ $6. A leg whose derived cap exceeds its remaining budget is skipped with a reason, never

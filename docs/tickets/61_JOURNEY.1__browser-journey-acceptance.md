@@ -3,7 +3,7 @@
 - **Sequence:** 61 (round 3) · **Phase:** round 3 — launch readiness · **Kind:** ticket · **Tag:** harness
 - **base_branch:** current checkout (the chain tip the previous round-3 row left; stacked PR)
 - **Depends on:** HOT.1, SEC.1 (the two-tenant probe + the system-pool lint the purge sweep obeys; HOT.1's parity and the N7/R1 fixes)
-- **Scope (one line):** a committed Playwright suite (`packages/journeys`) walks the product as users do. It owns the step registry (per-step owner + expected-red flag), real magic-link sessions into an operator-provisioned test mailbox, flagged test tenants (excluded from SLOs and the trial kill switch, auto-purged), a nightly $0 run and a weekly paid run (≤ 300-word fixture, ≤ $10), and the deploy-provenance ↔ chain-tip check.
+- **Scope (one line):** a committed Playwright suite (`packages/journeys`) walks the product as users do. It owns the step registry (per-step owner + expected-red flag), real magic-link sessions into an operator-provisioned test mailbox, flagged test tenants (excluded from SLOs and the trial kill switch, auto-purged), a nightly $0 run and a weekly paid run (≤ 300-word fixture, ≤ $5), and the deploy-provenance ↔ chain-tip check.
 - **Spec §§:** §13.5 (2026-09-30 banner), §13.2; Appendix A.9 (REQ-SPEC-29 row); ADR-016; ADR-013 (standing authorization)
 - **REQ coverage:** REQ-SPEC-29 (primary), REQ-ARCH-39 (stamp in the PR)
 - **Absorbs (backlog):** BL-32 (the automatable half; D-PRB.04-2, D-PRB.07-1, D-P1.08-1, D-P1.09-1, D-P1.17-2, D-P1.19-2, D-P1.20-1, X-p102-page-editor-live-verify — mapped to steps, see deliverable 9)
@@ -11,8 +11,11 @@
 - **Gate status:** Three items.
   - The HUMAN-H7 **test mailbox**. Provisioning it creates a third-party credential, so it is operator-only; `provided: yes/no` only.
   - The paid proof, if run before ACT.1's trial exists, needs an operator-approved **house-credit grant** to the journey tenant (a one-off prod data write → paused). Otherwise the paid leg waits for ACT.1.
-  - The weekly paid run itself is pre-authorized (≤ $10 metered, ≤ 300 words; ends at round close).
-- **Live stage:** Stage A: code + tests ($0). Stage B: the suite against prod — the nightly $0 legs, the test-tenant flag/exclusion/purge observed, and the provenance check, plus one paid journey if funded. **≤ $10** metered.
+  - The weekly paid run itself is pre-authorized (≤ $5 metered, ≤ 300 words; ends at round close).
+- **Live stage:** Stage A: code + tests ($0). Stage B: the suite against prod — the nightly $0 legs, the test-tenant flag/exclusion/purge observed, and the provenance check, plus one paid journey if funded. **≤ $5** metered.
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $5** (was ≤ $10); aim for ≈ $3. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-JOURNEY.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Nothing in rounds 1–2 walked the product as a user, so 3,496 green tests shipped with a broken journey. The
@@ -103,8 +106,8 @@ This ticket builds that walker and the registry every later round-3 ticket turns
    - **Nightly:** `$0` legs only against prod. That means no run creation and no chat turn.
    - **Weekly paid:** one Standard/Base Review of a committed **≤ 300-word planted-error fixture** (original text,
      one deliberate factual error — reusable by RES.1) plus one chat turn.
-     - The run's cap is set so the worst-case **metered list cost** is ≤ $10 (re-confirm the rate table's 1.4×).
-     - A spend guard sums the week's metered usage for flagged tenants and refuses to start at ≥ $10.
+     - The run's cap is set so the worst-case **metered list cost** is ≤ $5 (re-confirm the rate table's 1.4×).
+     - A spend guard sums the week's metered usage for flagged tenants and refuses to start at ≥ $5.
    - **`workflow_dispatch`:** inputs `stage`, `steps`, `paid` (this is what later tickets' Stage B runs).
    - **Outputs:** a JSON report + screenshots as CI artifacts. A ticket's Stage B commits its screenshots under
      `docs/build/reports/<date>_<ID>-journeys/`.
@@ -141,7 +144,7 @@ This ticket builds that walker and the registry every later round-3 ticket turns
       includes it). `probeSlos` and the trial accumulator exclude flagged workspaces. The purge sweep deletes only
       flagged workspaces past N hours. Each has a PGlite test that fails with the exclusion removed.
       *(deterministic)*
-- [ ] The spend guard refuses the weekly paid run once the week's flagged-tenant metered spend is ≥ $10 (fixture).
+- [ ] The spend guard refuses the weekly paid run once the week's flagged-tenant metered spend is ≥ $5 (fixture).
       `check-deploy-provenance` fails on a mismatched SHA. *(deterministic)*
 - [ ] **Stage B**, nightly legs on prod:
   - a real magic link arrives in the test mailbox and signs in (N2's magic-link half)
@@ -156,7 +159,7 @@ This ticket builds that walker and the registry every later round-3 ticket turns
   - a tenant past the purge window is hard-deleted (a short window is configured for the proof)
 
   *(agentic)*
-- [ ] **Stage B**, paid (≤ $10 metered): one weekly-paid journey completes, **only if** funded by the operator
+- [ ] **Stage B**, paid (≤ $5 metered): one weekly-paid journey completes, **only if** funded by the operator
       grant. Otherwise it is `D-JOURNEY.1-n` ("paid leg: unfunded until ACT.1 / an operator grant").
       *(agentic)*
 - [ ] If the H7 mailbox is not provisioned: Stage A lands, the public legs (landing, pricing, parity, provenance)

@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-10 minus the F5 settlement proof (D-DEF.2-1, X-held-check-migration-parity, X-balance-divergence-recheck), BL-11(b) (X-second-read-guidance-ignored), BL-30 (D-P0.15d-2; BILL.2 merged here)
 - **Run:** `implement-spec spec=docs/tickets/78_DEF.4__ledger-integrity-refund-window.md`
 - **Gate status:** one-off prod data writes (any `recompute-balances --apply` on a still-divergent account) · the refund window going live on prod, which changes what users are charged and needs BL-30's operator product ruling (it ships flag-off, enabled only for JOURNEY.1 test tenants in Stage B) · the validate migration rides the pre-authorized `pulumi up prod` only if it passes the additive-migration lint
-- **Live stage:** Stage A: code + tests ($0). Stage B: deploy; the prod checks are read-only ($0); then the refund-window journey on a test tenant, reusing a completed test-tenant run where one exists, else one ≤ 300-word fixture run — ≤$5 metered
+- **Live stage:** Stage A: code + tests ($0). Stage B: deploy; the prod checks are read-only ($0); then the refund-window journey on a test tenant, reusing a completed test-tenant run where one exists, else one ≤ 300-word fixture run — ≤$3 metered
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $3** (was ≤ $5); aim for ≈ $1. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-DEF.4-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 Money paths do what §14.4 says, including the edge cases. The documented balance repair runs without manual DDL,
@@ -104,7 +107,7 @@ partial that resumes re-debits first.
         the run report shows the refund control visible, enabled and unobscured, and "refunded N credits"
         afterwards. *(agentic)*
   - [ ] The balance moves by exactly N. The second request reads "sent for review". *(agentic)*
-  - [ ] Total spend ≤ $5 metered. *(agentic)*
+  - [ ] Total spend ≤ $3 metered. *(agentic)*
 - [ ] Deployed provenance equals the chain-tip SHA. D-DEF.2-1 and D-P0.15d-2 are flipped with evidence. *(agentic)*
 - [ ] verification green; every new behaviour has a test that fails if it is removed; requirement ids stamped in the PR; anything not automatically verifiable is a `DEFERRALS.md` row with its compensating control; ADRs written for every deviation and owned decision; `BUILD_INDEX.md` row and `LEDGER.md` advanced. *(agentic — the universal phase-gate AC)*
 

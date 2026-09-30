@@ -9,7 +9,10 @@
 - **Absorbs (backlog):** BL-26 (D-P0.06-3, X-apparmor-unconfined-runtask; DEF.1 F-StageB-5), plus the "no literal `uid=` print" caveat on D-P0.15f-1 / D-P1.22-2(a)
 - **Run:** `implement-spec spec=docs/tickets/79_SEC.3__run-task-confinement.md`
 - **Gate status:** none beyond the round-3 standing authorization (ADR-013). The image digest roll and the profile loader ride a pre-authorized `pulumi up prod` / `infra/k8s/apply.sh`: stateless, zero stateful replace/delete, ≤ $15/mo delta. It pauses if the chosen mechanism needs a GKE cluster or node-pool replace, because in-flight runs die.
-- **Live stage:** Stage A: code + tests ($0; the Docker privsep legs run locally and in CI `integration`). Stage B: push + pin the distroless image; load the profile on the sandbox pool; run the production-image privsep self-test pod ($0); then one bounded run that exercises the scoped second read under the new profile — ≤$10
+- **Live stage:** Stage A: code + tests ($0; the Docker privsep legs run locally and in CI `integration`). Stage B: push + pin the distroless image; load the profile on the sandbox pool; run the production-image privsep self-test pod ($0); then one bounded run that exercises the scoped second read under the new profile — ≤$5
+
+
+> **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $5** (was ≤ $10); aim for ≈ $3. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-SEC.3-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
 ## Goal
 The run-task pod is the product's hardest boundary: the model's process runs there. Two gaps separate it from the
@@ -120,7 +123,7 @@ This ticket closes both gaps:
   - [ ] A real run's pod logs show `uid=10001` for the harness and `uid=10002` for the agent, with no `setresgid`
         EPERM. *(agentic)*
 - [ ] Stage B: a bounded run's input-scoped second_read completes under the new profile:
-      `second_read_producer_checked` green, `boundary.attested` violations = 0, total ≤ $10 metered. Deployed
+      `second_read_producer_checked` green, `boundary.attested` violations = 0, total ≤ $5 metered. Deployed
       provenance equals the chain-tip SHA. *(agentic)*
 - [ ] A rollback is documented and rehearsed as config: the previous digest pin plus the previous profile type,
       with no code revert. *(agentic)*

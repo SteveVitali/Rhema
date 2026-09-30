@@ -6,6 +6,8 @@
 - **Requirement ids:** REQ-SPEC-29 (new), REQ-ARCH-39
 - **Spec:** §13.5 (amended 2026-09-30), §13.2; Appendix A.9
 
+> **Amended 2026-09-30 (operator):** the weekly paid journey is capped at **$5** (round-3 D6 revised: hard ≤ $200, target ≤ $100).
+
 ## Context
 
 Rounds 1–2 verified user surfaces through unit and integration tests plus "headless batteries": HTTP 200s and DOM
