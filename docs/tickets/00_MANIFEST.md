@@ -104,6 +104,11 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
   DEFERRALS row); the Google OAuth consent screen published for the prod domain; the Resend
   sending-domain verification; a stated prod budget.
 
+- **H7 — Round-3 operator legs** (round 3, 2026-09-30; `85a_HUMAN-H7` — start now): the exposure-window access review +
+  disclosure decision, prod test-data cleanup, live-mode Stripe re-verify, the Anthropic admin key, the external
+  pen test, the nightly-golden budget, the H3/ADR-008 revisit, real-device checks. None is covered by round 3's
+  standing authorization (ADR-013); tickets that reach a gated remainder first defer it (H7 pending).
+
 ## The chain
 
 | # | Ticket file | Phase | Scope (one line) |
@@ -202,6 +207,43 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 56 | `56_DEF.2__ledger-metering-integrity.md` | post-P1 fix | F4 held-counter drift, F5 committed-vs-metered divergence, F6 estimate_cache unbound |
 | 57 | `57_DEF.3__live-noise-and-polish.md` | post-P1 fix | F7 SDK probe SLO noise, F9 dead /api/action, F10 chat_turn cap overshoot |
 | 58 | `58_STB.4__real-money-and-external-legs.md` | post-P1 | live Stripe ≤$50 + pen-test facilitation + admin-key reconciliation — operator hard gates; **depends on DEF.1–3** (don't spend real money over live defects) |
+| 59 | `59_SEC.1__tenant-isolation-in-depth.md` | R3 | **ROUND 3 (2026-09-30, ADR-013)** — split DB roles: user-serving pool non-BYPASSRLS, system pool only for sweeps; suite as the user role; two-tenant probe; exposure list for H7 (PR-S1, BL-08) |
+| 60 | `60_HOT.1__prod-hotfix-pack.md` | R3 | dossier 500 + prod-shape contract tests; `/assets/page.js` route + bundle↔route parity; Quiet affordance; digest query; LB logging; hide false claims; deploy incl. STB.4 Stripe fixes |
+| 61 | `61_JOURNEY.1__browser-journey-acceptance.md` | R3 | Playwright journeys + step registry (expected-red → owners turn green), real magic-link test mailbox, test tenants, nightly $0 / weekly paid, provenance check (REQ-SPEC-29) |
+| 62 | `62_MAINT.2__build-memory-hygiene.md` | R3 | LEDGER cleanup + size cut, Plan-extensions backfill, stale DEFERRALS flips, prod test-data inventory |
+| 63 | `63_RES.1__review-research-restore.md` | R3 | why `web_search` never reached the model (PR-Q1); research floor; preflight of every model × tool pair (REQ-SPEC-31 1–2) |
+| 64 | `64_RES.2__unverified-delivery-and-refund.md` | R3 | zero-coverage → *Unverified* delivery, platform-fault refund class, alert, vocabulary, trial-restore hook (REQ-SPEC-31 3) |
+| 65 | `65_BILL.3__credit-purchase-path.md` | R3 | Add credits vs CSP, checkout URL, pending-checkout email, billing failure-state tests; re-opening purchase operator-paused (PR-J2) |
+| 66 | `66_ECON.1__charge-what-we-meter.md` | R3 | committed = metered (flagged, calibrated caps shipped together, flip operator-paused + notice); §6.5 presets; cost cards → estimator → caps; durable store (ADR-014) |
+| 67 | `67_EST.1__one-estimate-everywhere.md` | R3 | one estimator on every pre-run surface; tier control (REQ-IDE-13 amended); estimate route 400; lever-matrix flake |
+| 68 | `68_RPT.1__live-meter-and-run-report.md` | R3 | live meter; run report reconciled; Showcase run out of usage history |
+| 69 | `69_SEC.2__signup-admission-and-throttle.md` | R3 | `signup.mode` + invite field; shared Redis throttle store |
+| 70 | `70_ACT.1__trial-entitlement.md` | R3 | trial at Standard/Base with a measured word cap under the $15 ceiling; unlock checks; kill switch; claim render model; go-live operator-paused (PR-J1) |
+| 71 | `71_ONB.1__import-latency-and-held-draft.md` | R3 | text import ≤ 20 s p95; held draft persists; import fidelity (REQ-GROWTH-1 amended) |
+| 72 | `72_EDIT.1__edit-path.md` | R3 | editing a locked version forks v(N+1); `/v/working` → head; Page editor saves in a browser (PR-J4) |
+| 73 | `73_RUN.1__run-and-chat-defects.md` | R3 | chat 502 + Send occlusion; gate labels from the defaults table; walkthrough failure |
+| 74 | `74_OBS.1__observability.md` | R3 | api listener leak; structured error logs; 5xx reporting |
+| 75 | `75_SLO.1__prod-slo-remediation.md` | R3 | run-start / gate-resume / event-delivery / success SLOs on prod (PR-R2) |
+| 76 | `76_UX.1__copy-ia-brand.md` | R3 | copy + IA + brand/meta/email (PR-U1–U4, U8, U9) |
+| 77 | `77_UX.2__layout-responsive.md` | R3 | layout + responsive + WCAG on touched surfaces (PR-U5–U7) |
+| 78 | `78_DEF.4__ledger-integrity-refund-window.md` | R3 | ledger integrity closeout + scoped second-read guidance + the user refund window (BILL.2 merged) |
+| 79 | `79_SEC.3__run-task-confinement.md` | R3 | distroless run-task + tight AppArmor + live privsep check |
+| 80 | `80_OPS.1__preview-stages.md` | R3 | full `dev` + one `pr-<n>` preview up/destroy (never prod) |
+| 81 | `81_OPS.2__iac-drift-cost-cache.md` | R3 | IaC/runbook drift, measured prod bill + HA pre-plan, Turbo cache |
+| 82 | `82_CITE.1__citation-completeness.md` | R3 | fetch-then-cite / backfill + measured citation completeness (before ECON.2) |
+| 83 | `83_ECON.2__cogs-reduction.md` | R3 | named COGS levers with non-regression ACs; the REQ-SPEC-8 restore flip (operator-paused) |
+| 84 | `84_STB.5a__headless-live-legs.md` | R3 | the $0 live legs on the journey harness |
+| 85 | `85_STB.5b__bounded-paid-live-legs.md` | R3 | the paid bounded live legs (≤ $40) |
+| — | `85a_HUMAN-H7__round3-operator-legs.md` | R3 | **HUMAN** — round-3 operator legs (start now): test mailbox, notice timing, exposure review, test-data cleanup, live Stripe, admin key, pen test, golden budget, H3 revisit, BL-20 ruling, BL-24, real devices |
+| 86 | `86_CAP.1__capstone-gap-analysis.md` | tail | **capstone** — whole-build gap analysis + `COVERAGE_MATRIX.csv` (first standard CAP.1) |
+| 87 | `87_CAP.2__capstone-composed-verification.md` | tail | **capstone** — composed verification: full journey suite + two-tenant probe + one paid new-visitor journey |
+| 88 | `88_CAP.3__capstone-closure.md` | tail | **capstone** — close routed gaps; the ACCEPTED-deviations list |
+| — | `88a_GATE-ACCEPT__accepted-deviations.md` | tail | **GATE** (operator) — sign the accepted-deviations list; never guessed past |
+| 89 | `89_REC.1__backlog-and-readiness.md` | tail | **reconcile** — backlog + operational readiness (reconcile-build mode=backlog) |
+| 90 | `90_REC.2__spec-reconciliation.md` | tail | **reconcile** — spec reconciliation (mode=spec) |
+| 91 | `91_REC.3__integration-plan.md` | tail | **reconcile** — integration/merge plan for #48 → round-3 tip (mode=integration; never merges) |
+| 92 | `92_DOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs |
+| 93 | `93_DOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs |
 
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
@@ -285,6 +327,16 @@ this gate reads.
 10. **Events/telemetry never carry prompt text, reasoning, private memory, or raw page text**
     (REQ-DATA-37; REQ-VIS-11; REQ-ARCH-14).
 11. **The run sheet is the only run creator and the only paywall** (REQ-CHAT-25; REQ-GROWTH-13).
+12. **A user surface is verified by walking it** (round 3; REQ-SPEC-29, ADR-016): every Stage B touching a user
+    surface is accepted by the JOURNEY.1 browser journeys (visible text + actionable controls + screenshots), a
+    built client bundle without a served route fails CI, and a ticket's close records deployed provenance = its
+    chain-tip SHA. (Tickets landing before JOURNEY.1 use HTTP-level + test evidence.)
+13. **Tenant isolation in depth** (round 3; REQ-SPEC-30, ADR-017): user-serving code connects with a role that
+    cannot bypass RLS; only the documented system pool may bypass — never for a user request, with explicit
+    workspace predicates on its queries; any ticket adding a tenant read extends the two-tenant probe.
+14. **Money and research are truthful** (round 3; REQ-SPEC-32, REQ-SPEC-31, ADR-014/015): debits equal metered burn
+    clamped at the cap; every price/duration/trial claim a user sees comes from the one estimator/entitlement
+    config; a Review that could not research says so and refunds the research phases.
 
 ## Out of scope (no ticket does this; the capstone verifies none crept in)
 
@@ -298,6 +350,11 @@ mode as such, span provenance *rendering*, sharing roles, Team tier, Run rounds,
 edit/Titles/Abstract/Reverse outline/Interview/Steelman/Map the field, additional ingestion
 providers, seat profile pages, preference-profile aggregation); non-Anthropic providers (1.x, only
 via `packages/harness` — REQ-ARCH-10); Temporal (stage 3 trigger not reached in MVP).
+
+
+**Round 3 (2026-09-30) — additionally out of scope:** merging the stacked PRs (D1 — REC.3 writes the plan, the
+operator merges); H2/G2 and any §16.4 efficacy claim (D5); BL-31 matcher-3 tuning (round 4, needs adjudication
+data); working copies / suggestion reconciliation (still 1.x — EDIT.1 forks to v(N+1)); new 1.x features of any kind.
 
 ## Requirement-ID → ticket index (authoritative for coverage)
 
@@ -373,7 +430,10 @@ REQ-SPEC-20 in PRB.05/P1.19)
 (serializers P0.04) · 10→P0.06 · 11→P0.07 · 12→P0.04 (delivery P0.09) · 13→P0.08 (data P0.03) ·
 14→P0.02 · 15→P1.11 · 16→PRB.03 (API P0.08) · 17→P0.10 · 18→PRB.05 (state P0.10) · 19→P1.02 ·
 20→P1.19 (beta halves PRB.05/PRB.09) · 21→P0.02 · 22→P0.04 · 23/26/28→reserved (merged) ·
-24→P0.11 (item 7 PRB.08) · 25→P1.22 (halves P0.07/P0.09/PRB.02) · 27→P1.14
+24→P0.11 (item 7 PRB.08) · 25→P1.22 (halves P0.07/P0.09/PRB.02) · 27→P1.14 · **round 3 (2026-09-30):**
+29→JOURNEY.1 (asset-route parity half HOT.1) · 30→SEC.1 · 31→RES.1 (delivery/refund half RES.2) · 32→EST.1
+for (b) ((a)→ECON.1; claims half ACT.1; (c)→ECON.2) · 8 (amended interim terms)→ACT.1 (restore flip ECON.2) ·
+REQ-VIS-9 (reconciled)→CITE.1 (Unverified half RES.2)
 
 **REQ-OBJ:** 1→P0.02 · 2–5→P0.12 · 6→P0.12 (surfaces PRB.03/04/06, PRB.11, P1.08/P1.19) ·
 7→P0.02 · 8→P0.09 · 9→**deferred 1.x** (kind pre-registered P0.02) · 10→P0.09 (hook half P0.05) ·
@@ -437,6 +497,17 @@ has exactly one owner.
   text preserved — append-only). Affects PRB.01 (the invite gate becomes a mode flag — PRB.13 owns
   the open-signup surface) and the whole `28c`–`28h` round. **(ADR-008)**
 
+- **2026-09-30 (round 3 — launch readiness; REQ-SPEC-29…32 added; REQ-SPEC-8 / REQ-IDE-13 / REQ-SPEC-1 /
+  REQ-GROWTH-1 amended; §11.4, §12.8, §13.5, §14.1, §14.3 banners; §13.5 SLO row added):** a browser-driven review of
+  prod (`docs/build/reports/2026-09-30_prod-design-review.md`) found the new-user journey broken at load-bearing
+  steps, a live cross-tenant read, a paid Review with no web research, and prices modelled far below metered cost.
+  Added: user-journey acceptance (REQ-SPEC-29, ADR-016), tenant isolation in depth (REQ-SPEC-30, ADR-017), research
+  integrity (REQ-SPEC-31, ADR-015), cost truthfulness — charge what we meter + one calibrated estimator
+  (REQ-SPEC-32, ADR-014). Amended: interim trial terms (REQ-SPEC-8), tier choice on the sheet (REQ-IDE-13), gate
+  labels from the defaults table (REQ-SPEC-1), the 20 s import as an SLO (REQ-GROWTH-1). Original texts preserved
+  (Appendix A.9 note). Approver: operator (2026-09-30; D3 pricing, D4, D5, D6 delegated to Claude's judgment —
+  recorded in `docs/build/planning/2026-09-30_planning-ledger.md` and LEDGER GATE DECISIONS). **(ADR-013…017)**
+
 ## Decomposition decisions (operator may veto; see the session report)
 
 1. Phase-0 port scope = Review/Revise/Fact-check/persona-Quick; Draft/Outline/Research ports
@@ -458,6 +529,19 @@ has exactly one owner.
    transaction; `gate:<id>` job ownership split stated (P0.08 registers, P0.10 owns semantics);
    analytics event schemas moved to P0.02; P1.14's forward dependency on P1.15 removed; matrix
    row 37 citation import named in P1.02; duplicate coverage claims annotated as halves.
+
+9. **Round 3 (2026-09-30; `decompose-spec mode=extend`; ADR-013).** Inputs: `docs/build/BACKLOG.csv` (65 rows),
+   the prod design review (`docs/build/reports/2026-09-30_prod-design-review.md`), operator decisions D1–D7 (D3
+   pricing / D4 / D5 / D6 delegated). Partition + briefs: `docs/build/planning/2026-09-30_planning-ledger.md`.
+   Sized for `subagent` dispatch. **Phase-4 adversarial review (fresh context): "not sound as written; sound with
+   revisions" — 17 findings, 16 accepted (#1 was a read race):** metered-debit flip flagged + calibrated caps in the
+   same deploy + operator-paused with notice; trial at Standard/Base with a measured word cap (not Quick); SEC.1
+   re-scoped to the role split (+ rollback + exposure list); RES.1/RES.2, EST.1/RPT.1, STB.5a/STB.5b splits;
+   BILL.2 → DEF.4; research floor owned by RES.1, CITE.1 before ECON.2, ECON.2 named levers + non-regression ACs;
+   EDIT.1 re-cited (no working copies); LB logging → HOT.1; HOT.1 hides false claims; MAINT.2 after JOURNEY.1;
+   H7 before the tail; journey step owners + expected-red + real magic-link mailbox; one primary owner per REQ;
+   D4 sharpened (coverage-based, new refund class, D.2 vocabulary, REQ-VIS-9 reconciled); standing authorization
+   tightened (metered-cost caps, mechanical "additive" check, more pauses).
 
 ## Plan extensions (append-only: inserts, splits, rounds)
 
@@ -495,3 +579,10 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   Revise `response`-delivery design fix + mount-policy half, fetch byte-receipts decision, bounded
   live verifies for D-PRB.16-2/-4). `anthropic-admin-key` stays a placeholder → usage.reconcile
   stays deferred; D-PRB.16-5 stays an operator ruling. G3 remains parked; P1.* skeletons unchanged.
+- **2026-09-30 — ROUND 3 (launch readiness; ADR-013).** 37 rows appended after `58_STB.4`: 27 implement-spec
+  tickets `59_SEC.1` … `85_STB.5b`, the HUMAN marker `85a_HUMAN-H7`, and the standard v2 tail `86_CAP.1` …
+  `93_DOC.2` (with `88a_GATE-ACCEPT`) — the first time this build runs the standard tail. Synthesized from the
+  65-row backlog + the 2026-09-30 browser review of prod; spec amended (REQ-SPEC-29…32 added; REQ-SPEC-8 /
+  IDE-13 / SPEC-1 / GROWTH-1 / VIS-9 amended; Appendix D.2 *Unverified*); ADR-013…017. Builds on the unmerged chain
+  tip (D1). **Not yet recorded here (MAINT.2 backfills):** the 2026-09-22…09-26 inserts (28k–28p, the P1 bodies,
+  CAPSTONE, RCN.1, STB.1–4, DEF.1–3) whose chain-table rows exist but whose Plan-extensions lines were never written.
