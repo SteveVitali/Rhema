@@ -36,8 +36,13 @@
   > - **Verified live on 2026-09-30:** the delegated token read `users/me/profile` as `test@rhema.tools`.
   > - **Caveat:** domain-wide delegation covers every @rhema.tools mailbox. Keep `test@` the only mailbox in this
   >   Workspace, or revisit before adding real inboxes.
-  > - **Pending:** the Workspace MX record (and the verification TXT) sit on the wrong host names in Squarespace
-  >   (`gmail`/`default` instead of `@`). Mail delivery to `test@` is verified once they are fixed.
+  > - **DNS fixed 2026-09-30.** The Workspace MX (`1 smtp.google.com`) and the verification TXT had been saved on the
+  >   wrong hosts (`gmail`/`default`) and were moved to `@` in Squarespace; no other record changed. Public DNS and
+  >   Google Admin now show rhema.tools **Verified**.
+  > - **Delivery verified end to end 2026-09-30:** a probe mail to `test+h7-probe@rhema.tools` arrived in about
+  >   10 s and was read back through the keyless service account (plus-addressing confirmed).
+  > - **Optional, not done:** Admin's "Complete email setup" (outbound SPF/DKIM/DMARC for mail *sent* from
+  >   Workspace). It isn't needed for receiving, and Resend's sending records are unaffected.
 - [ ] **Paid-account notice for the metered-debit flip (ADR-014).** Decide the notice period: REQ-BILL-2's 30-day
   spirit, or shorter given how few accounts pay. Then approve ECON.1's flip when it's due.
 - [ ] **Exposure-window access review + disclosure decision (BL-37).**
