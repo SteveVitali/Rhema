@@ -65,6 +65,12 @@ export interface ComputeArgs {
   runTaskImageDigest?: pulumi.Input<string>;
   /** the api's internal URL the worker + pod reach (`API_INTERNAL_URL`). */
   internalApiUrl?: pulumi.Input<string>;
+  /**
+   * PRB.16 — the Google OAuth CLIENT ID (plain deploy config, `rhema:googleOauthClientId`; the SECRET is
+   * the `google-oauth-client-secret` SM container). The api mounts `/api/auth/*` only when the id + both
+   * secret names resolve (the authSecretsReady gate) — a partial config leaves the surface 404.
+   */
+  googleOauthClientId?: pulumi.Input<string>;
   /** the egress-proxy base URL the Job's sandbox uses (`ANTHROPIC_BASE_URL`). */
   proxyBaseUrl?: pulumi.Input<string>;
   /** the GCS artifacts bucket the run-task harness materializes `/work` from (`OBJECTS_BUCKET`). */
@@ -397,6 +403,28 @@ export function createCompute(args: ComputeArgs): Compute {
                           },
                         ]
                       : []),
+                    // PRB.16 — the Better Auth binding (D-P0.01-3): the signing secret + Google client
+                    // SECRET as Secret-Manager NAMES (values load at boot; the api SA holds
+                    // secretAccessor — iam.ts). The OAuth client ID is plain deploy config
+                    // (`rhema:googleOauthClientId`). Auth mounts only when all three + APP_BASE_URL
+                    // resolve (server.ts's authSecretsReady gate) — partial ⇒ /api/auth/* stays 404.
+                    ...(requires("better-auth-secret")
+                      ? [{ name: "BETTER_AUTH_SECRET_NAME", value: secretVersion(secrets.betterAuthSecret) }]
+                      : []),
+                    ...(requires("google-oauth-client-secret")
+                      ? [
+                          {
+                            name: "GOOGLE_OAUTH_CLIENT_SECRET_NAME",
+                            value: secretVersion(secrets.googleOauthClientSecret),
+                          },
+                        ]
+                      : []),
+                    ...(args.googleOauthClientId
+                      ? [{ name: "GOOGLE_OAUTH_CLIENT_ID", value: args.googleOauthClientId }]
+                      : []),
+                    // PRB.16 — the x-rhema-* identity-header shim is dev/preview ONLY (client-forgeable;
+                    // prod's identity path is the session cookie). Never set on prod.
+                    ...(cfg.kind !== "prod" ? [{ name: "IDENTITY_HEADERS", value: "true" }] : []),
                     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
                     ...(args.apiDatabaseUrl ? [{ name: "DATABASE_URL", value: args.apiDatabaseUrl }] : []),
@@ -414,6 +442,9 @@ export function createCompute(args: ComputeArgs): Compute {
                   envs: [
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
                     ...(apiOrigin ? [{ name: "API_BASE_URL", value: apiOrigin }] : []),
+                    // PRB.16 — the app's own public origin: the OAuth/magic-link `callbackURL` base the
+                    // web's auth proxy builds (it must equal the api's trusted origin — the app host).
+                    ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
                   ],
                 }
               : {}),
@@ -457,6 +488,16 @@ export function createCompute(args: ComputeArgs): Compute {
       member: "allUsers",
     });
   }
+
+  // api → export service-to-service invoker (LIVE FINDING 11): the export container is invoker-gated by
+  // design (the comment above); the api SA gets `roles/run.invoker` and the api mints an OIDC ID token per
+  // hop (fetchGceMetadataIdToken in server.ts). Without BOTH halves the prod export 403s at the frontend.
+  new gcp.cloudrunv2.ServiceIamMember(name("api-invokes-export"), {
+    location: region,
+    name: services["export"]!.name,
+    role: "roles/run.invoker",
+    member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["api"].email}`,
+  });
 
   // --- External HTTPS LB + Cloud CDN fronting `web`, the api, and (prod) the cookieless user-content
   // origin. prod gets the real domains + a reserved global IP the operator's DNS records point at.

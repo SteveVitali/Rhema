@@ -22,13 +22,24 @@ export interface AuthSecrets {
   trustedOrigins?: string[];
 }
 
-/** Enqueues the magic-link email onto the worker's `mail.send` queue (wired in P0.08 / PRB.09). */
+/** Enqueues the magic-link email onto the worker's `auth.mail` queue (wired PRB.16; Resend = D-PRB.16-x). */
 export type SendMagicLink = (args: { email: string; url: string; token: string }) => Promise<void>;
+
+/**
+ * PRB.16 — provisioning seam for self-serve paths that never pass through `POST /signup` (Google OAuth,
+ * magic link on a returning-but-never-provisioned account): the api binds `onUserCreate` to the same
+ * personal-workspace + billing-account + membership rows `admitSignup` writes, so a session always
+ * resolves to a principal (the session→membership→workspace join would otherwise return null).
+ */
+export interface AuthHooks {
+  onUserCreate?: (user: { id: string; email: string; name?: string | null }) => Promise<void>;
+}
 
 export function createAuth(
   secrets: AuthSecrets,
   database: BetterAuthOptions["database"],
   sendMagicLink: SendMagicLink,
+  hooks?: AuthHooks,
 ): ReturnType<typeof betterAuth> {
   // PRB.15 (rhema.tools single-zone amendment, 2026-09-17 — REQ-ARCH-24 amended): user content now
   // serves from a SIBLING subdomain on the app's own zone (`usercontent.rhema.tools`), so the old
@@ -46,6 +57,55 @@ export function createAuth(
     secret: secrets.betterAuthSecret,
     database,
     ...(secrets.trustedOrigins ? { trustedOrigins: secrets.trustedOrigins } : {}),
+    // PRB.16 — the committed schema (0002 + 0025) is snake_case; Better Auth's default column names are
+    // camelCase (`userId`, `expiresAt`, …). Map every field explicitly so the Kysely adapter queries the
+    // real columns — a missed mapping is a silent `column "userId" does not exist` at runtime.
+    user: {
+      fields: { emailVerified: "email_verified", createdAt: "created_at", updatedAt: "updated_at" },
+    },
+    session: {
+      fields: {
+        token: "token",
+        userId: "user_id",
+        expiresAt: "expires_at",
+        ipAddress: "ip_address",
+        userAgent: "user_agent",
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      },
+    },
+    account: {
+      fields: {
+        accountId: "account_id",
+        providerId: "provider_id",
+        userId: "user_id",
+        accessToken: "access_token",
+        refreshToken: "refresh_token",
+        idToken: "id_token",
+        accessTokenExpiresAt: "access_token_expires_at",
+        refreshTokenExpiresAt: "refresh_token_expires_at",
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      },
+    },
+    verification: {
+      fields: { expiresAt: "expires_at", createdAt: "created_at", updatedAt: "updated_at" },
+    },
+    // PRB.16 — a self-serve OAuth/magic-link user-create provisions the same account rows POST /signup
+    // writes (the `resolveSessionPrincipal` join needs the personal-workspace membership).
+    ...(hooks?.onUserCreate
+      ? {
+          databaseHooks: {
+            user: {
+              create: {
+                after: async (user: { id: string; email: string; name?: string | null }) => {
+                  await hooks.onUserCreate!({ id: user.id, email: user.email, name: user.name ?? null });
+                },
+              },
+            },
+          },
+        }
+      : {}),
     socialProviders: {
       google: {
         clientId: secrets.googleClientId,

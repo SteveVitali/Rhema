@@ -419,6 +419,9 @@ importers:
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@rhema/findings-core':
+        specifier: workspace:*
+        version: link:../findings-core
 
   packages/benchmark:
     dependencies:

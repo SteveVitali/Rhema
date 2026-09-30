@@ -27,6 +27,7 @@ export const session = pgTable("session", {
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(), // 0025 — the Kysely adapter writes it
 });
 
 export const account = pgTable("account", {
@@ -36,11 +37,17 @@ export const account = pgTable("account", {
     .references(() => user.id, { onDelete: "cascade" }),
   providerId: text("provider_id").notNull(), // "google" | "credential" | …
   accountId: text("account_id").notNull(),
+  // 0025 — better-auth 1.7.2's account key is {issuer, accountId}; `issuer` backfilled 'local:oauth:<provider>'.
+  issuer: text("issuer").notNull(),
+  scope: text("scope"),
+  password: text("password"),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
   accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 /** Magic-link / email verification tokens. */
@@ -50,6 +57,7 @@ export const verification = pgTable("verification", {
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 /** Device list stub (§13.1) — populated when Apple sign-in + mobile step-up land. */

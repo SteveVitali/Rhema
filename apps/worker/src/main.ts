@@ -204,7 +204,17 @@ export async function startWorker(): Promise<void> {
   // PRB.09 — the notification config (signed-action secret + link origins) and the Resend transport. Both
   // are optional seams: a preview stage without the secrets runs the queues as no-ops and stays green.
   const actionSecret = env.emailActionSecretName ? await access(env.emailActionSecretName) : undefined;
-  const resendKey = env.resendApiKeySecret ? await access(env.resendApiKeySecret) : undefined;
+  // PRB.16 — a seeded PLACEHOLDER value (the secret NAME is provisioned before the real key exists, as
+  // on prod 2026-09-17) must not construct a client that fails every send and burns pg-boss retries.
+  // Resend keys carry the `re_` prefix — and the seeded stand-ins MIMIC it (`re_placeholder_…`), so the
+  // guard checks the prefix AND refuses any value self-marked as a placeholder; anything else is
+  // "not configured" → the mail legs no-op cleanly.
+  const resendSecret = env.resendApiKeySecret ? await access(env.resendApiKeySecret) : undefined;
+  const resendKey =
+    resendSecret?.startsWith("re_") && !/placeholder/i.test(resendSecret) ? resendSecret : undefined;
+  if (resendSecret && !resendKey) {
+    console.log("[worker] RESEND key is a placeholder/malformed — mail transport unconfigured");
+  }
   const notificationConfig =
     actionSecret && env.apiPublicUrl && env.appBaseUrl
       ? { actionSecret, apiBaseUrl: env.apiPublicUrl, appBaseUrl: env.appBaseUrl }
@@ -265,6 +275,7 @@ export async function startWorker(): Promise<void> {
     USAGE_RECONCILE_JOB,
     "notify",
     "mail.send",
+    "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
@@ -344,6 +355,19 @@ export async function startWorker(): Promise<void> {
   });
   await boss.work("mail.send", async (jobs) => {
     for (const job of jobs) await handleMailSendJobPayload(deps, job.data as Parameters<typeof handleMailSendJobPayload>[1]);
+  });
+  // PRB.16 — the auth-mail transport (magic links). A plain `to/subject/text/html` send — no notification
+  // delivery row (pre-auth mail has no workspace). Unconfigured mailer ⇒ drop (the api's enqueue remains
+  // as a dead-letter-visible claim; Resend is PRB.16's deferred live leg).
+  await boss.work("auth.mail", async (jobs) => {
+    for (const job of jobs) {
+      const p = job.data as { to: string; subject: string; text: string; html: string };
+      if (!deps.mailer) {
+        console.log(`[worker] auth.mail dropped (no mailer configured): to=${p.to}`);
+        continue;
+      }
+      await deps.mailer.send({ to: p.to, subject: p.subject, text: p.text, html: p.html });
+    }
   });
 
   console.log("[worker] run-lifecycle consumers + crons registered");

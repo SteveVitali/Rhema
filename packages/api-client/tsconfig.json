@@ -10,6 +10,9 @@
   "references": [
     {
       "path": "../contracts"
+    },
+    {
+      "path": "../findings-core"
     }
   ],
   "exclude": [

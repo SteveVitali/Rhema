@@ -130,7 +130,12 @@ export function buildRunTaskSecretManifest(config: GkeLauncherConfig, spec: JobS
 export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec): KubeJobManifest {
   const name = runJobName(spec);
   const secretName = runSecretName(spec);
-  const image = `${config.imageRepo}@${spec.imageDigest}`;
+  // The deploy config `rhema:runTaskImageDigest` carries the full `repo@sha256:…` ref (the runbook's
+  // pinning shape), while tests/specs pass the bare digest — accept both (an already-qualified ref is
+  // used verbatim; double-qualifying produces an InvalidImageName pod, PRB.16 live finding).
+  const image = spec.imageDigest.includes("@")
+    ? spec.imageDigest
+    : `${config.imageRepo}@${spec.imageDigest}`;
   const labels = runLabels(spec);
   const env: Array<{ name: string; value: string }> = [
     { name: "RUN_ID", value: spec.runId },
@@ -288,6 +293,34 @@ export async function fetchGceMetadataAccessToken(fetchImpl: FetchLike = fetch a
   const body = (await res.json()) as { access_token?: string };
   if (!body.access_token) throw new Error("k8s-launcher: GCE metadata token response had no access_token");
   return body.access_token;
+}
+
+/** GCE/Cloud Run metadata OIDC identity endpoint (the runtime SA's ID token; `audience` = the target service). */
+export const GCE_METADATA_IDENTITY_URL =
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity";
+
+/**
+ * Mint an OIDC ID token for the runtime service account with `audience` = the target service's root URL —
+ * the credential an invoker-gated Cloud Run service expects (`Authorization: Bearer`). Called per hop:
+ * the metadata server is link-local, and the token is short-lived, so no refresh machinery is needed.
+ * The identity endpoint returns the JWT as a plain-text body (unlike the JSON token endpoint).
+ */
+export type TextFetchLike = (url: string, init?: { headers?: Record<string, string> }) => Promise<{
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+}>;
+
+export async function fetchGceMetadataIdToken(
+  audience: string,
+  fetchImpl: TextFetchLike = fetch as unknown as TextFetchLike,
+): Promise<string> {
+  const url = `${GCE_METADATA_IDENTITY_URL}?audience=${encodeURIComponent(audience)}&format=full`;
+  const res = await fetchImpl(url, { headers: { "Metadata-Flavor": "Google" } });
+  if (!res.ok) throw new Error(`k8s-launcher: GCE metadata identity fetch failed ${res.status}`);
+  const idToken = (await res.text()).trim();
+  if (!idToken) throw new Error("k8s-launcher: GCE metadata identity response had no token");
+  return idToken;
 }
 
 /** The minimal `@kubernetes/client-node` surface the metadata launcher uses (the real module satisfies it). */

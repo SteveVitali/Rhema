@@ -78,6 +78,33 @@ describe("guidance capture + delivery (§6.5; REQ-GATE-9/10/11; REQ-RUN-18)", ()
     expect(stillThere.active).toBe(false);
   });
 
+  it("run-scope guidance emits guidance.captured on the run stream; project-scope emits none (run_event_seq FK — PRB.16 live finding)", async () => {
+    // The run_event_seq.run_id → runs.id FK means the event stream can only attach to a real run: a
+    // project-scope capture must NOT append (the prod note path 500'd on the FK; InMemoryEventWriter
+    // bypassed the seq table, so only the append/no-append contract is assertable here).
+    await captureGuidance(deps, {
+      workspaceId: ws,
+      projectId: "prj_seed",
+      userId: "usr_seed",
+      source: "gate_edit",
+      text: "A standing note.",
+      scope: "project",
+    });
+    expect(deps.eventWriter.events.filter((e) => e.type === "guidance.captured")).toHaveLength(0);
+    expect(deps.eventWriter.typesForRun("prj_seed")).not.toContain("guidance.captured");
+
+    await captureGuidance(deps, {
+      workspaceId: ws,
+      projectId: "prj_seed",
+      userId: "usr_seed",
+      source: "queued_message",
+      text: "A run note.",
+      scope: "run",
+      runId: "run1",
+    });
+    expect(deps.eventWriter.typesForRun("run1")).toContain("guidance.captured");
+  });
+
   it("workflows narrow which workflows guidance applies to", async () => {
     await captureGuidance(deps, {
       workspaceId: ws,

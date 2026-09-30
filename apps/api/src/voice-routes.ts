@@ -46,6 +46,8 @@ export interface VoiceApiDeps extends OrchestratorDeps {
   readonly principal: (c: { req: { header(name: string): string | undefined } }) => Principal | null;
   /** the workspace-bound store the seed + sample bodies persist through (same seam as import's). */
   readonly contentStore?: ContentStore;
+  /** the deploy's per-workspace store factory (prod binds this; same seam as the editor's storeFor). */
+  readonly contentStoreFor?: (workspaceId: string) => Promise<ContentStore> | ContentStore;
   /** the PRB.02 convert-service seam (a sample upload previews through it — REQ-INGEST-1). */
   readonly converter?: Converter;
 }
@@ -75,7 +77,8 @@ const PRETERMINAL_STATES = [
 export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
   const app = new Hono();
 
-  const store = (): ContentStore | null => deps.contentStore ?? null;
+  const storeFor = async (workspaceId: string): Promise<ContentStore | null> =>
+    (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.contentStore) ?? null;
 
   /** Persist a markdown body as a persona artifact + immutable v1 version; returns the ids. */
   const writePersonaArtifact = async (
@@ -90,7 +93,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       wordCount?: number;
     },
   ): Promise<{ artifactId: string; versionId: string; contentSha256: string }> => {
-    const cs = store();
+    const cs = await storeFor(args.workspaceId);
     if (!cs) throw new Error("content store unavailable");
     const bytes = new TextEncoder().encode(args.markdown);
     const contentSha256 = sha256Hex(bytes);
@@ -125,7 +128,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     tx: { query: (sql: string, params?: unknown[]) => Promise<{ rows: unknown[] }> },
     args: { workspaceId: string; personaId: string; seedArtifactId: string | null; markdown: string; actor: Record<string, unknown> },
   ): Promise<string> => {
-    const cs = store();
+    const cs = await storeFor(args.workspaceId);
     if (!cs) throw new Error("content store unavailable");
     const bytes = new TextEncoder().encode(args.markdown);
     const contentSha256 = sha256Hex(bytes);
@@ -351,7 +354,8 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       );
       // The seed's current text (the editor pre-fills it) — read from the head seed version's store bytes.
       let seedMarkdown = "";
-      if (v.persona.seed_artifact_id && deps.contentStore) {
+      const readStore = await storeFor(principal.workspaceId);
+      if (v.persona.seed_artifact_id && readStore) {
         const head = await tx.query(
           `select av.content_sha256 from artifact_versions av
              join artifacts a on a.id = av.artifact_id
@@ -360,7 +364,7 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
         );
         const sha = (head.rows[0] as { content_sha256: string } | undefined)?.content_sha256;
         if (sha) {
-          const bytes = await deps.contentStore.get(sha).catch(() => null);
+          const bytes = await readStore.get(sha).catch(() => null);
           if (bytes) seedMarkdown = new TextDecoder().decode(bytes);
         }
       }

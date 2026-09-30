@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { WORKFLOW_MANIFESTS, type PhaseManifest } from "@rhema/protocols";
-import type { HarnessRunSpec } from "@rhema/orchestrator";
+import { HEARTBEAT_INTERVAL_MS, type HarnessRunSpec } from "@rhema/orchestrator";
 import type { PredicateFacts } from "@rhema/orchestrator";
 import { emptyUsage } from "@rhema/engine";
 import {
@@ -246,6 +246,67 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(reason).toContain("leg=predicate"); // the failed oracle leg
     expect(reason).toContain("artifact_nonempty:04-craft-notes.md"); // the exact missing artifact
     expect(reason).toContain("(nonempty)"); // the evaluator detail
+  });
+
+  it("keeps beating every HEARTBEAT_INTERVAL_MS while a phase runs, so a minutes-long phase is never reaped as stale", async () => {
+    // PRB.16 prod finding: a pod that beat only once at start was orphaned mid-phase (stale > 3 min), the
+    // run re-queued, and the live pod's commits were then fenced as stale_task — a crash loop. The loop
+    // must beat on an interval through the whole commit/deliver loop.
+    vi.useFakeTimers();
+    try {
+      let beats = 0;
+      let resolvePhase: ((o: PhaseRunOutputs) => void) | undefined;
+      const spec = makeSpec({ ...byKey("craft"), index: OF - 1 });
+      const { client } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));
+      client.heartbeat = () => {
+        beats++;
+        return Promise.resolve({ ok: true });
+      };
+      const runPhase = () =>
+        new Promise<PhaseRunOutputs>((r) => {
+          resolvePhase = r;
+        });
+      const loop = runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+      // phase still running well past the stale threshold: the beats must keep landing.
+      await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS * 10);
+      expect(beats).toBeGreaterThanOrEqual(1 + 10); // first beat + 10 interval beats
+      resolvePhase!(completeOutputs(NONEMPTY("04-craft-notes.md")));
+      const res = await loop;
+      expect(res.kind).toBe("completed"); // single pinned-phase? no — last phase (index OF-1) → finalize
+      // the interval must stop with the loop (no dangling timer)
+      const beatsAtEnd = beats;
+      await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS * 3);
+      expect(beats).toBe(beatsAtEnd);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("exits between phases when a heartbeat reports cancelRequested (Stop reaches the task)", async () => {
+    vi.useFakeTimers();
+    try {
+      let beats = 0;
+      const spec = makeSpec({ ...byKey("craft"), index: 5 }); // non-final phase → loop iterates after commit
+      const { client } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));
+      client.heartbeat = () => {
+        beats++;
+        return Promise.resolve({ ok: true, cancelRequested: beats > 1 });
+      };
+      let resolvePhase: ((o: PhaseRunOutputs) => void) | undefined;
+      const runPhase = () =>
+        new Promise<PhaseRunOutputs>((r) => {
+          resolvePhase = r;
+        });
+      const loop = runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+      await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL_MS * 2); // a beat reports the cancel flag
+      resolvePhase!(completeOutputs(NONEMPTY("04-craft-notes.md")));
+      const res = await loop;
+      // the phase's commit may land, but the next iteration sees the flag and the pod exits
+      expect(res.kind).toBe("failed");
+      expect(res.kind === "failed" ? res.reason : "").toContain("cancel");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("never sees the run token or any secret — the loop's inputs carry only server-authored data", async () => {

@@ -61,3 +61,29 @@ describe("readApiEnv — PRB.13 signup.mode (REQ-BETA-19 amended 2026-09-16)", (
     expect(readApiEnv().signupMode).toBe("open");
   });
 });
+
+describe("readApiEnv — PRB.16 auth binding (D-P0.01-3)", () => {
+  it("the auth secret names + client id are optional and pass through verbatim", () => {
+    const env = readApiEnv();
+    expect(env.betterAuthSecretName).toBeUndefined();
+    expect(env.googleOauthClientId).toBeUndefined();
+    expect(env.googleOauthClientSecretName).toBeUndefined();
+    process.env.BETTER_AUTH_SECRET_NAME = "projects/p/secrets/bas/versions/latest";
+    process.env.GOOGLE_OAUTH_CLIENT_ID = "id.apps.googleusercontent.com";
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET_NAME = "projects/p/secrets/gos/versions/latest";
+    const env2 = readApiEnv();
+    expect(env2.betterAuthSecretName).toBe("projects/p/secrets/bas/versions/latest");
+    expect(env2.googleOauthClientId).toBe("id.apps.googleusercontent.com");
+    expect(env2.googleOauthClientSecretName).toBe("projects/p/secrets/gos/versions/latest");
+  });
+
+  it("IDENTITY_HEADERS only turns on at the literal 'true' (the forgeable-header shim; never prod)", () => {
+    expect(readApiEnv().identityHeaders).toBeUndefined();
+    for (const bad of ["1", "TRUE", "yes"]) {
+      process.env.IDENTITY_HEADERS = bad;
+      expect(readApiEnv().identityHeaders, `for ${JSON.stringify(bad)}`).toBeUndefined();
+    }
+    process.env.IDENTITY_HEADERS = "true";
+    expect(readApiEnv().identityHeaders).toBe(true);
+  });
+});

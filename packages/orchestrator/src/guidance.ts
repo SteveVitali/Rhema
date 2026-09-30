@@ -69,7 +69,14 @@ export async function captureGuidanceTx(tx: SqlClient, deps: CaptureDeps, args: 
       now,
     ],
   );
-  await deps.eventWriter.append(tx, { runId: args.runId ?? args.projectId, type: "guidance.captured", payload: { guidanceId }, at: now });
+  // The `guidance.captured` event lives on the RUN stream (run_event_seq.run_id → runs.id): it exists to
+  // fan out to a live run's SSE, so it can only be emitted when a real run id is present. A project-scope
+  // (standing) guidance has no run — the Guidance row itself is the durable record, and keying the stream
+  // by projectId violates the FK on real Postgres (PRB.16 LIVE FINDING: the note path 500'd on prod;
+  // dev tests never saw it because InMemoryEventWriter bypasses run_event_seq).
+  if (args.runId != null) {
+    await deps.eventWriter.append(tx, { runId: args.runId, type: "guidance.captured", payload: { guidanceId }, at: now });
+  }
   return guidanceId;
 }
 

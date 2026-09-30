@@ -1,11 +1,22 @@
 import { Hono } from "hono";
-import { buildRatesPublication, createIpEmailThrottle, type SignupMode, type IpEmailThrottle } from "@rhema/contracts";
-import { createRunRoutes, type RunApiDeps } from "./run-routes.js";
+import {
+  buildRatesPublication,
+  createIpEmailThrottle,
+  type SignupMode,
+  type IpEmailThrottle,
+} from "@rhema/contracts";
+import {
+  createSessionMiddleware,
+  createOriginGuard,
+  sessionScopedPrincipal,
+} from "./auth-context.js";
+import { createRunRoutes, type RunApiDeps, type Principal } from "./run-routes.js";
 import { createEstimateRoutes, type EstimateApiDeps } from "./estimate-routes.js";
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
 import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
 import { createRevisionRoutes, type RevisionApiDeps } from "./revision-routes.js";
+import { createDossierRoutes, type DossierApiDeps } from "./dossier-routes.js";
 import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
 import { createBillingRoutes } from "./billing-routes.js";
 import { createNotificationRoutes } from "./notification-routes.js";
@@ -25,6 +36,20 @@ import type { ContentStore } from "@rhema/mirror";
 
 export { createAuth } from "./auth.js";
 export type { AuthSecrets, SendMagicLink } from "./auth.js";
+export {
+  createSessionMiddleware,
+  createOriginGuard,
+  createScopedDb,
+  sessionTokenFromCookieHeader,
+  resolveSessionPrincipal,
+  sessionScopedPrincipal,
+  headerIdentityPrincipal,
+  runWithPrincipal,
+  currentPrincipal,
+  currentTenant,
+  SESSION_COOKIE_NAMES,
+} from "./auth-context.js";
+export type { SessionMiddlewareOptions, TenantPool } from "./auth-context.js";
 export { createRunRoutes } from "./run-routes.js";
 export type { RunApiDeps, Principal } from "./run-routes.js";
 export { createEstimateRoutes, estimateCacheKey } from "./estimate-routes.js";
@@ -70,6 +95,8 @@ export type { VoiceApiDeps } from "./voice-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
 export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
+export { createDossierRoutes, parseLetterSections } from "./dossier-routes.js";
+export type { DossierApiDeps } from "./dossier-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
 export type { AnalyticsApiDeps } from "./analytics-routes.js";
 
@@ -115,6 +142,27 @@ export interface BetaApiDeps {
    * (`SIGNUP_THROTTLE_DEFAULTS`); injected in tests for a deterministic window.
    */
   signupThrottle?: IpEmailThrottle;
+  /**
+   * PRB.16 — the Better Auth handler mounted at `/api/auth/*`. The deploy's `baseURL` is the APP origin
+   * (the SSR web service proxies `/api/auth/*` server-side, so auth cookies plant host-only on
+   * `rhema.tools`). Unset ⇒ the auth surface 404s (pre-PRB.16 prod posture).
+   */
+  auth?: { handler(req: Request): Promise<Response> };
+  /**
+   * PRB.16 — resolve the request's session cookie to the principal (live: the `session` table lookup).
+   * Mounted as request middleware; the route-level `deps.principal` reads the resolved value.
+   */
+  sessionResolver?: (req: Request) => Promise<Principal | null>;
+  /**
+   * PRB.16 — dev/preview ONLY: trust `x-rhema-*` identity headers when no session resolves. Never set
+   * on prod (client-forgeable); the stage wiring sets it for non-prod.
+   */
+  identityHeaders?: boolean;
+  /**
+   * PRB.16 — the CSRF origin allowlist for state-changing requests (single-zone amendment means the
+   * user-content host is same-site, so SameSite=Lax alone is insufficient). Unset ⇒ no guard.
+   */
+  allowedOrigins?: readonly string[];
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -122,11 +170,38 @@ export interface BetaApiDeps {
  *  content store — the draft-import routes (PRB.02). */
 export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   const app = new Hono();
+  // PRB.16 — request middleware FIRST (before every route): resolve the session principal into the ALS
+  // context the `principal` seams + scoped `db` read, then apply the mutation Origin allowlist.
+  if (deps?.sessionResolver || deps?.identityHeaders) {
+    app.use(
+      "*",
+      createSessionMiddleware({
+        resolve: deps.sessionResolver ?? (async () => null),
+        ...(deps.identityHeaders ? { identityHeaders: true } : {}),
+      }),
+    );
+  }
+  if (deps?.allowedOrigins) app.use("*", createOriginGuard(deps.allowedOrigins));
   app.get("/healthz", (c) => c.json({ ok: true, service: "api" }));
   // Public rate publication (REQ-BILL-19; §14.6): current + previous rate tables with effective dates and the
   // 1.4 platform rate. No auth — every run report links to its version. The full pricing page is PRB.8/P1.16.
   app.get("/pricing/rates", (c) => c.json(buildRatesPublication()));
   if (deps) {
+    // PRB.16 — the Better Auth surface (Google OAuth + magic link). baseURL is the APP origin and the
+    // web service proxies `/api/auth/*` server-side, so the OAuth callback + every auth cookie plant
+    // host-only on rhema.tools (the browser never talks to api.rhema.tools).
+    if (deps.auth) {
+      const auth = deps.auth;
+      app.on(["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], "/api/auth/*", (c) =>
+        auth.handler(c.req.raw),
+      );
+    }
+    // PRB.16 — the resolved session principal, for the driver/operator's "am I signed in" assert.
+    app.get("/session", (c) => {
+      const principal = sessionScopedPrincipal(c);
+      if (!principal) return c.json({ error: "unauthenticated" }, 401);
+      return c.json(principal);
+    });
     // PRB.13 — the verified-email run-creation gate (REQ-BETA-19 amended) binds whenever a user lookup
     // exists (`deps.db`): a missing row or `email_verified=false` refuses `POST /projects/:id/runs` 403.
     // Unbound ⇒ the gate is inert (fixture/deploys without a user table read).
@@ -157,6 +232,11 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     );
     // PRB.06 — What-changed + hunk-comment routes (session-authed; the readable store seam is optional).
     app.route("/", createRevisionRoutes(deps as RevisionApiDeps));
+    // PRB.16 — the delivered-review dossier read (PRB.04's deferred live binding, finding 7): the whole
+    // dossier assembled from delivered rows — correspondence/rubric, findings+dispositions, claims+
+    // claim_sources joined to the proxy fetch_log, the letter markdown → sections, the re-derived
+    // access_report, the run's own event stream, and the obligation counts.
+    app.route("/", createDossierRoutes(deps as DossierApiDeps));
     // PRB.10 — the voice surface (§9.2–§9.6): personas, samples, the seed editor, the build run, the
     // project voice pin, and the derived-artifact write gate (405 for editMode:"none").
     app.route(
@@ -165,6 +245,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ...deps,
         principal: deps.principal,
         ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+        ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
         ...(deps.importConverter ? { converter: deps.importConverter } : {}),
       }),
     );

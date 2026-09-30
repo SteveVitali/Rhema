@@ -7,7 +7,9 @@ import {
   buildRunTaskJobManifest,
   buildRunTaskSecretManifest,
   fetchGceMetadataAccessToken,
+  fetchGceMetadataIdToken,
   GCE_METADATA_TOKEN_URL,
+  GCE_METADATA_IDENTITY_URL,
   kubeName,
   runJobName,
   runSecretName,
@@ -68,6 +70,15 @@ describe("buildRunTaskJobManifest", () => {
 
   it("runs the digest-pinned image", () => {
     expect(container.image).toBe("us-central1-docker.pkg.dev/rhema-507501/rhema/run-task@sha256:deadbeef");
+  });
+
+  it("accepts a fully-qualified repo@digest ref verbatim (the deploy config's pinning shape; PRB.16)", () => {
+    const qualified = buildRunTaskJobManifest(config, {
+      ...spec,
+      imageDigest: "us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:cafe",
+    });
+    const c = ((qualified.spec.template as { spec: Record<string, unknown> }).spec.containers as Array<Record<string, unknown>>)[0]!;
+    expect(c.image).toBe("us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:cafe");
   });
 
   it("grants the privilege-drop + mount-isolation caps, read-only root FS, restart Never", () => {
@@ -168,6 +179,32 @@ describe("fetchGceMetadataAccessToken", () => {
   it("throws on a non-OK response or a missing access_token", async () => {
     await expect(fetchGceMetadataAccessToken(() => Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({}) }))).rejects.toThrow(/metadata token fetch failed 500/);
     await expect(fetchGceMetadataAccessToken(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) }))).rejects.toThrow(/no access_token/);
+  });
+});
+
+describe("fetchGceMetadataIdToken", () => {
+  it("GETs the identity endpoint with audience + Metadata-Flavor and returns the raw JWT text", async () => {
+    let seenUrl = "";
+    let seenHeaders: Record<string, string> | undefined;
+    const token = await fetchGceMetadataIdToken("https://svc-a1b2-uc.a.run.app/", (url, init) => {
+      seenUrl = url;
+      seenHeaders = init?.headers;
+      return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("eyJ.id.token\n") });
+    });
+    expect(token).toBe("eyJ.id.token");
+    expect(seenUrl).toBe(
+      `${GCE_METADATA_IDENTITY_URL}?audience=${encodeURIComponent("https://svc-a1b2-uc.a.run.app/")}&format=full`,
+    );
+    expect(seenHeaders).toMatchObject({ "Metadata-Flavor": "Google" });
+  });
+
+  it("throws on a non-OK response or an empty body", async () => {
+    await expect(
+      fetchGceMetadataIdToken("https://svc", () => Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve("") })),
+    ).rejects.toThrow(/identity fetch failed 404/);
+    await expect(
+      fetchGceMetadataIdToken("https://svc", () => Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve("  ") })),
+    ).rejects.toThrow(/no token/);
   });
 });
 

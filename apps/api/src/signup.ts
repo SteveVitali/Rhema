@@ -132,22 +132,48 @@ export async function admitSignup(
     if (!consumed.ok) return { ok: false, reason: consumed.reason };
   }
 
-  const billingAccountId = deps.ids("ba");
-  const workspaceId = deps.ids("ws");
-  await deps.db.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
+  const provisioned = await provisionPersonalAccount(deps.db, deps.ids, userId);
+  return { ok: true, created: true, userId, ...provisioned };
+}
+
+/**
+ * The personal-account rows every sign-in resolves through (`resolveSessionPrincipal` joins
+ * workspace_members → workspaces for `kind='personal'`): a fresh billing account, a personal workspace,
+ * and the user's admin membership. Idempotent — called from `POST /signup` admission AND from Better
+ * Auth's `user.create` hook (the OAuth/magic-link paths that never see the signup route; PRB.16).
+ */
+export async function provisionPersonalAccount(
+  db: SqlClient,
+  ids: (prefix: string) => string,
+  userId: string,
+): Promise<{ workspaceId: string; billingAccountId: string }> {
+  // already provisioned ⇒ return the existing personal workspace (a second personal workspace would fork
+  // the session→principal resolution).
+  const existing = (
+    await db.query(
+      `select w.id as workspace_id, w.billing_account_id
+         from workspaces w join workspace_members m on m.workspace_id = w.id
+        where m.user_id = $1 and w.kind = 'personal' limit 1`,
+      [userId],
+    )
+  ).rows[0] as { workspace_id: string; billing_account_id: string } | undefined;
+  if (existing) return { workspaceId: existing.workspace_id, billingAccountId: existing.billing_account_id };
+  const billingAccountId = ids("ba");
+  const workspaceId = ids("ws");
+  await db.query(`insert into billing_accounts(id) values ($1) on conflict (id) do nothing`, [
     billingAccountId,
   ]);
-  await deps.db.query(
+  await db.query(
     `insert into workspaces(id, kind, name, billing_account_id) values ($1, 'personal', $2, $3)
        on conflict (id) do nothing`,
     [workspaceId, "Personal", billingAccountId],
   );
-  await deps.db.query(
+  await db.query(
     `insert into workspace_members(workspace_id, user_id, role) values ($1, $2, 'admin')
        on conflict (workspace_id, user_id) do nothing`,
     [workspaceId, userId],
   );
-  return { ok: true, created: true, userId, workspaceId, billingAccountId };
+  return { workspaceId, billingAccountId };
 }
 
 export interface SignupApiDeps extends SignupPolicyDeps {

@@ -154,7 +154,7 @@ describe("AC1 — invite gating", () => {
     const app = createWebApp(makeDeps({ beginAuth }));
     const res = await app.request("/login", { method: "POST", ...form({ code: "GOOD", email: "a@b.com", method: "magic_link" }) });
     expect(res.status).toBe(200);
-    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "GOOD", email: "a@b.com" });
+    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "GOOD", email: "a@b.com" }, expect.anything());
     expect(await res.text()).toContain("Check your email");
   });
 
@@ -217,7 +217,7 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
     expect(res.status).toBe(200);
     expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link" }); // no code field
-    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "", email: "a@b.com" });
+    expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "", email: "a@b.com" }, expect.anything());
     expect(await res.text()).toContain("Check your email");
   });
 
@@ -708,6 +708,35 @@ describe("PRB.06 — the revision (What-changed) page", () => {
       },
     });
     const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope");
+    expect(res.status).toBe(404);
+  });
+});
+
+// PRB.16 — the /api/auth/* proxy mount: present ⇒ forwarded verbatim to the api (the OAuth callback +
+// cookies stay on this host); absent ⇒ 404 (the pre-PRB.16 posture). The relay itself lives in main.ts.
+describe("PRB.16 — /api/auth/* proxy mount", () => {
+  it("forwards the request to the authProxy seam and returns its response (set-cookie preserved)", async () => {
+    const seen: string[] = [];
+    const app = createWebApp(
+      makeDeps({
+        authProxy: async (req) => {
+          seen.push(`${req.method} ${new URL(req.url).pathname}`);
+          return new Response("ok", {
+            status: 200,
+            headers: [["set-cookie", "__Host-rhema.state=abc; Path=/; Secure; HttpOnly"]],
+          });
+        },
+      }),
+    );
+    const res = await app.request("/api/auth/callback/google?code=x", { method: "GET" });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("ok");
+    expect(res.headers.get("set-cookie")).toContain("__Host-rhema.state=abc");
+    expect(seen).toEqual(["GET /api/auth/callback/google"]);
+  });
+
+  it("without the seam the surface 404s", async () => {
+    const res = await createWebApp(makeDeps()).request("/api/auth/session");
     expect(res.status).toBe(404);
   });
 });

@@ -72,6 +72,43 @@ describe("createApiClient", () => {
     expect((seen!.init.headers as Record<string, string>).cookie).toBe("s=1");
   });
 
+  it("getDossier GETs /projects/:id/review/:runId/dossier (PRB.16 — the delivered-review read)", async () => {
+    let seen: { url: string; init: RequestInit } | null = null;
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      headers: { cookie: "s=1" },
+      fetch: fakeFetch((url, init) => {
+        seen = { url, init };
+        return new Response(
+          JSON.stringify({
+            slug: "the-politics-of-visibility",
+            runId: "run_1",
+            projectTitle: "The Politics of Visibility",
+            versionLabel: "Review of v1",
+            openObligations: 1,
+            addressedObligations: 0,
+            runCard: { runId: "run_1", state: "completed", phases: [], spent: 520, cap: 840 },
+            letterTitle: "The Politics of Visibility",
+            letterSections: [],
+            claims: [],
+            fetchLog: ["https://example.com/stat"],
+            findings: [],
+            rubric: [{ dimension: "structure", score: 3 }],
+            accessReport: { seat: "reviewer", mountedPathCount: 1, byTopLevel: {}, fetches: 1, deniedAttempts: 0, violations: 0, subagents: [] },
+            findingObligations: { fnd_1: "open" },
+          }),
+          { status: 200 },
+        );
+      }),
+    });
+    const dto = await client.getDossier("proj_pv", "run_1");
+    expect(dto.findingObligations).toEqual({ fnd_1: "open" });
+    expect(dto.accessReport.seat).toBe("reviewer");
+    expect(seen!.url).toBe("http://api.local/projects/proj_pv/review/run_1/dossier");
+    expect(seen!.init.method).toBe("GET");
+    expect((seen!.init.headers as Record<string, string>).cookie).toBe("s=1");
+  });
+
   it("signup POSTs /signup and returns the created flag (PRB.13)", async () => {
     const client = createApiClient({
       baseUrl: "http://api.local",

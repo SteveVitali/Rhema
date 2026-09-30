@@ -46,16 +46,23 @@ export interface ExportRunner {
 }
 
 /** The live binding: POST {markdown, format} to the export Cloud Run service (§12.1). The api never sees
- *  pandoc — it sends canonical markdown and receives converted bytes. */
+ *  pandoc — it sends canonical markdown and receives converted bytes. The export service is invoker-gated
+ *  (internal services have no allUsers grant — compute.ts), so prod wires `tokenFor` to the metadata
+ *  server's OIDC identity endpoint and the hop carries `Authorization: Bearer <id-token>` with the
+ *  audience = the service's root URL (LIVE FINDING 11 — an unauthenticated hop 403s at the frontend). */
 export function createServiceExportRunner(
   baseUrl: string,
   fetchImpl: typeof fetch = fetch,
+  tokenFor?: (audience: string) => Promise<string>,
 ): ExportRunner {
+  const root = baseUrl.replace(/\/+$/, "");
   return {
     async run({ markdown, format }) {
-      const res = await fetchImpl(`${baseUrl.replace(/\/+$/, "")}/export`, {
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      if (tokenFor) headers["authorization"] = `Bearer ${await tokenFor(root)}`;
+      const res = await fetchImpl(`${root}/export`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers,
         body: JSON.stringify({ markdown, format }),
       });
       if (!res.ok) {
