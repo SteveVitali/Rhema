@@ -40,6 +40,12 @@
   - the review-test project in your own workspace
 
   MAINT.2 lists them; you authorize the deletes.
+
+  > **2026-09-30 — partly done (operator-authorized):** the review-test project in the operator's workspace was deleted
+  > through the product (in "Recently deleted" until its 30-day purge). The review account
+  > `14stevevitali+rhema-review@gmail.com` has account deletion scheduled through Settings → Data; it hard-deletes on
+  > 2026-10-14 with its two projects. The browser sessions used by the review were signed out server-side. **Still
+  > open:** the test draft v7 on `my-first-project` and the stray `deployments` provenance row (MAINT.2 inventory).
 - [ ] **Live-mode Stripe re-verify (BL-33).** A real `api.stripe.com` purchase on the live key, the hosted UX,
   3DS, Tax, and test clocks. Real money: at your discretion, after BILL.3 lands.
 - [ ] **Anthropic admin/org key for the Usage & Cost reconcile (BL-34).** Seed a real admin-scoped key into
