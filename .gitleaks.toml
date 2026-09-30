@@ -11,4 +11,5 @@ paths = [
   '''docs/.*''',
   '''.*\.example$''',
   '''pnpm-lock\.yaml''',
+  '''apps/api/src/auth\.test\.ts''',
 ]

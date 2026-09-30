@@ -169,6 +169,9 @@ jobs:
     name: public-safe (gitleaks / markers / licence policy)
     needs: typecheck-lint-unit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -186,6 +189,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: licence policy (allowlist + checked-in exceptions — REQ-ARCH-40)
         run: pnpm check:licenses
       - name: no protocol markers in public bundles (REQ-ARCH-33)
