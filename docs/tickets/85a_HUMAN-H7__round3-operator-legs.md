@@ -22,9 +22,22 @@
 
 ## Checklist
 
-- [ ] **Test mailbox for JOURNEY.1.** Provision a dedicated mailbox, record `provided: yes` only, and store the
+- [x] **Test mailbox for JOURNEY.1.** Provision a dedicated mailbox, record `provided: yes` only, and store the
   credential in Secret Manager or the CI secret store. The journeys sign test users in through the real magic-link
   flow; no session is ever minted.
+
+  > **2026-09-30 — done (provided: yes; keyless, so no secret is stored anywhere).** The mailbox is **`test@rhema.tools`**
+  > on the rhema.tools Google Workspace; test identities are plus-addresses `test+<tag>@rhema.tools`.
+  > - **Reader:** service account `rhema-journeys@rhema-507501.iam.gserviceaccount.com`, with **no keys**, reads it
+  >   through the Gmail API using Workspace domain-wide delegation. The client ID is `100664519061217437800` and the
+  >   only scope is `https://www.googleapis.com/auth/gmail.readonly`.
+  > - **Signing:** tokens are signed through IAM Credentials `signJwt` with `sub=test@rhema.tools`. The operator holds
+  >   `roles/iam.serviceAccountTokenCreator` on the service account.
+  > - **Verified live on 2026-09-30:** the delegated token read `users/me/profile` as `test@rhema.tools`.
+  > - **Caveat:** domain-wide delegation covers every @rhema.tools mailbox. Keep `test@` the only mailbox in this
+  >   Workspace, or revisit before adding real inboxes.
+  > - **Pending:** the Workspace MX record (and the verification TXT) sit on the wrong host names in Squarespace
+  >   (`gmail`/`default` instead of `@`). Mail delivery to `test@` is verified once they are fixed.
 - [ ] **Paid-account notice for the metered-debit flip (ADR-014).** Decide the notice period: REQ-BILL-2's 30-day
   spirit, or shorter given how few accounts pay. Then approve ECON.1's flip when it's due.
 - [ ] **Exposure-window access review + disclosure decision (BL-37).**

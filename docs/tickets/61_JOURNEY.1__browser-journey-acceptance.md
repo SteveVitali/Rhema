@@ -17,6 +17,22 @@
 
 > **Amended 2026-09-30 (operator — round-3 spend limit: hard ≤ $200, target ≤ $100):** this ticket's Stage B metered spend cap is **≤ $5** (was ≤ $10); aim for ≈ $3. Run legs cheapest-first and stop once the acceptance evidence suffices; where a leg plan below sums past the new cap, drop the lowest-priority legs and record each dropped leg as a `D-JOURNEY.1-<n>` row (never overspend). The orchestrator pauses the chain when round-3 cumulative metered spend reaches $100 and hard-stops at $200 (LEDGER GATE DECISIONS 2026-09-30, D6 revised).
 
+
+> **Amended 2026-09-30 (HUMAN-H7 mailbox provisioned — use it; the ADR still records the choice):** the test mailbox is
+> `test@rhema.tools` (Google Workspace), and test identities are `test+<tag>@rhema.tools`.
+> - **The mailbox client:** reads via the **Gmail API with domain-wide delegation**, **keyless**. Sign a JWT through IAM
+>   Credentials `signJwt` as `rhema-journeys@rhema-507501.iam.gserviceaccount.com`
+>   (`iss`=SA, **`sub` hard-pinned to `test@rhema.tools`**, `scope`=`https://www.googleapis.com/auth/gmail.readonly`,
+>   `aud`=`https://oauth2.googleapis.com/token`), then exchange it with the `jwt-bearer` grant. No secret is stored
+>   anywhere: the "credential in Secret Manager / CI" clause is satisfied by having none.
+> - **The runner identity** needs `roles/iam.serviceAccountTokenCreator` on that service account. Today only the
+>   operator holds it; grant CI's Workload Identity principal in IaC.
+> - **Adopt into Pulumi:** the service account, the `gmail.googleapis.com` enablement and the binding were created by
+>   hand on 2026-09-30.
+> - **Test-tenant flagging** can key on `test+*@rhema.tools`.
+> - **Domain-wide delegation reaches every @rhema.tools mailbox.** The client must refuse any `sub` other than
+>   `test@rhema.tools`.
+
 ## Goal
 Nothing in rounds 1–2 walked the product as a user, so 3,496 green tests shipped with a broken journey. The
 review's Process finding 1, ADR-016 and REQ-SPEC-29 make **walking it** the acceptance of every user-surface
