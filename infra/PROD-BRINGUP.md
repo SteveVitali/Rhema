@@ -74,8 +74,9 @@ pulumi config set          rhema:proxyBaseUrl        'http://<proxy-internal-add
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
 ```bash
+# _GIT_SHA (JOURNEY.1) bakes the commit into api/web images → /healthz build.gitSha (provenance).
 gcloud builds submit --config cloudbuild.yaml --project rhema-507501 \
-  --substitutions _AR=us-central1-docker.pkg.dev/rhema-507501/rhema-prod,_TAG=prod
+  --substitutions _AR=us-central1-docker.pkg.dev/rhema-507501/rhema-prod,_TAG=prod,_GIT_SHA=$(git rev-parse HEAD)
 # then capture each pushed digest:
 gcloud artifacts docker images list us-central1-docker.pkg.dev/rhema-507501/rhema-prod \
   --include-tags --format='table(package,tag,digest)'

@@ -1,6 +1,7 @@
 # Cloud Build: build + push the full production image set to Artifact Registry, natively on amd64 (the
 # run-task/Cloud Run/GKE target arch). Invoked by:
-#   gcloud builds submit --config cloudbuild.yaml --project rhema-507501 --substitutions _AR=<repo>,_TAG=<tag>
+#   gcloud builds submit --config cloudbuild.yaml --project rhema-507501 \
+#     --substitutions _AR=<repo>,_TAG=<tag>,_GIT_SHA=$(git rev-parse HEAD)
 # where <repo> is the stack's repo the Pulumi program provisions (`us-central1-docker.pkg.dev/rhema-507501/
 # rhema-<stack>` — e.g. rhema-prod for prod). The whole repo is the build context (the Dockerfiles
 # COPY . . and pnpm install from the lockfile); the .gcloudignore keeps installed deps/build outputs out
@@ -13,6 +14,9 @@
 substitutions:
   _AR: us-central1-docker.pkg.dev/rhema-507501/rhema-dev
   _TAG: dev
+  # JOURNEY.1 — callers pass the built commit (gcloud builds submit has no $COMMIT_SHA — that
+  # substitution only exists for repo-connected triggers). A trigger can map _GIT_SHA=$COMMIT_SHA.
+  _GIT_SHA: unknown
 # BuildKit is required: the Dockerfiles use `FROM --platform=$TARGETPLATFORM`, and the automatic
 # platform ARGs (TARGETPLATFORM/BUILDPLATFORM) are only populated by BuildKit. Without DOCKER_BUILDKIT=1
 # the classic builder leaves $TARGETPLATFORM empty and fails ("invalid platform component"). On Cloud
@@ -30,12 +34,12 @@ steps:
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]
     # JOURNEY.1 (REQ-ARCH-39) — GIT_SHA bakes the built commit into the image for /healthz's
-    # build.gitSha (the deploy-provenance check); $COMMIT_SHA is Cloud Build's automatic substitution.
-    args: ["build", "-f", "apps/api/Dockerfile", "--build-arg", "GIT_SHA=$COMMIT_SHA", "-t", "${_AR}/api:${_TAG}", "."]
+    # build.gitSha (the deploy-provenance check); _GIT_SHA is caller-supplied (see substitutions).
+    args: ["build", "-f", "apps/api/Dockerfile", "--build-arg", "GIT_SHA=${_GIT_SHA}", "-t", "${_AR}/api:${_TAG}", "."]
   - id: web
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]
-    args: ["build", "-f", "apps/web/Dockerfile", "--build-arg", "GIT_SHA=$COMMIT_SHA", "-t", "${_AR}/web:${_TAG}", "."]
+    args: ["build", "-f", "apps/web/Dockerfile", "--build-arg", "GIT_SHA=${_GIT_SHA}", "-t", "${_AR}/web:${_TAG}", "."]
   - id: worker
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]
