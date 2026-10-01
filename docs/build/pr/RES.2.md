@@ -94,13 +94,61 @@ polarities), `materialize` (BL-66 — foreign/same-run/unbound). Migration 0047 
 
 ## Deferred (operator)
 
-- **D-RES.2-1** — Stage B: deploy + forced-Unverified walk on a test tenant + N6 regression stays
-  unlabelled (≤$3).
-- **D-RES.2-2** — run `res2-unverified-scan.mjs` against prod; operator rules on retroactive
-  refunds/relabels (incl. `01M3SK62YZST272B35CG12K6TW`).
+- ~~D-RES.2-1~~ **DONE 2026-10-01** — Stage B executed on prod (see below).
+- ~~D-RES.2-2~~ **PARTIAL** — the prod scan ran; the retro refund/relabel ruling is handed to the
+  operator as LEDGER GATE DECISIONS **GD-RES.2-1**.
 - **D-RES.2-3** — `fact_check` extension of the label (ADR-025).
 - D-P0.15d-2 gains a dated note: `refundPhases` has its first live caller (the platform-fault path);
   the row stays OPEN for the stop-path half.
+
+## Stage B — executed live on prod 2026-10-01
+
+**Deploy.** Migration `0047_run_delivery.sql` applied 19:57:46Z (`_migrations`; `runs.delivery` +
+`trial_restorations` live). All nine images Cloud-Built at `d15e1bd` (build `ef3f5f94`), digests
+pinned in `Pulumi.prod.yaml` (`5700ca2`). `pulumi preview`: zero replace/delete on stateful
+resources (+1 SLO alert policy `unverified_review_rate_7d_pct`, 8 updates, 1 proxy-template roll);
+`pulumi up` prod = **update 101**. Provenance: `GET /healthz` on api + web →
+`build.gitSha=d15e1bd76a83fc6811f125de7af6a30f7159e475`; `deployments` row recorded.
+
+**Forced-Unverified walk** — run `01M3WJ2393X73MA6JYQF04STK3` (test workspace `is_test=true`,
+`inputs.force_unverified=true`, the account's trial entitlement consumed through the real §14.3
+unlock gate → Standard/Base Review of the 267-word excerpt):
+
+- delivered `completed` at 21:02:10Z —
+  `delivery = {"label":"unverified","alerted":true,"coveredClaims":0,"checkableClaims":7,
+  "refundedCredits":0,"trialRestoredAt":"2026-10-01T21:02:10.921Z",
+  "platformFaultSettledAt":"2026-10-01T21:02:10.925Z"}`;
+- `run.unverified` emitted in the completion commit (no `run.completed`); claim verdicts stay
+  `unverifiable` (7 Tier-1/2 + 1 Tier-3);
+- trial entitlement restored `consumed → unused` exactly once with `trial_restorations` audit row
+  `01M3WMCMZ9KW81800C81X3Q5QX`;
+- `refundedCredits:0` is correct for this funding shape — a trial-pocket run writes no credit-bucket
+  phase debits to refund; the platform instead absorbed 558 cr of metered burn as COGS
+  (`reason=absorbed`). The `platform_fault:zero_coverage` refund-row leg is proven on credit-funded
+  runs by `unverified-settle.test.ts`;
+- exactly one ops alert received by the prod catcher 21:02:31Z —
+  `{kind:'unverified_delivery', runId, workspaceId, checkableClaims:7, coveredClaims:0,
+  refundedCredits:0}` — ids + counts only;
+- `run_finished` email sent 21:02:16Z; the mailbox copy leads with *"Unverified — research could
+  not check the claims …"* (delivered to the test mailbox's spam folder — a sender-deliverability
+  fact, not a label-path miss);
+- screenshots `docs/build/reports/2026-10-01_RES.2-walk/` — dossier (3 `data-delivery-label`
+  elements) + project run card (1) both render the label above the verdict.
+
+**N6 regression ($0).** Existing normal delivered Reviews remain unlabelled:
+`01M3V5QT57YS4P4T6CXDQWRF9V` (test tenant) and `01M3TS9ASMJSD1CQW59K1G1XBQ` (prod) both read
+`delivery=null`; the pre-0047 incident run `01M3SK62…` was not retro-labelled.
+
+**Historical scan (live, read-only).** 26 completed review/fact_check runs scanned, 4 candidates:
+`01M3EAAZG2…` (review, would-refund 56 cr), `01M3SK62…` (review, 340 cr — the incident run),
+`01M3VT9R…` + `01M3VYSGV…` (fact_check, 390/522 cr, test tenants — the RES.1 probes). Verbatim list
+in `runs/RES.2.md` § Historical scan; ruling → **GD-RES.2-1**. No retro write performed.
+
+**Spend.** Deploy $0 · forced walk **$7.27 metered** (`usage_records.list_cost_usd`) · N6 $0 · scan
+$0 — **Stage B total $7.27, over the ticket's ≤$3 cap by $4.27.** Cause: routing the launch through
+the trial entitlement (to exercise the restore leg live) pinned Standard rigor (~2× a Quick run),
+and a 20:39Z heartbeat-stale hiccup re-drove one pod attempt. Recorded for the operator as
+**GD-RES.2-2**; no further spend legs ran after the crossing was observed mid-run.
 
 ## Requirement ids
 

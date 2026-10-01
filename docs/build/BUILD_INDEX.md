@@ -120,3 +120,21 @@ operator-gated/deferred (DEFERRALS + G1); `fixture-only` = deterministic/integra
   delivered claim ledger was the prior run's bytes (stale `agents/editor/01-claim-ledger.json`
   mount on re-run) → defect **BL-66** → RES.2. N6 + Standard excerpt cut by the $2.51 remainder →
   **D-RES.1-1 → PARTIAL; D-RES.1-2/-3 stay OPEN.** Evidence: `runs/RES.1.md` § Stage B.
+- 2026-10-01 — **correction to row 92 (RES.2), added at the Stage-B closeout / BUILD_INDEX.md:108** —
+  the "gate-pending · Stage B + prod scan operator-gated" verification cell is stale from the same
+  day's continuation. **PR is #86** (`—` cell stale). Stage B **executed** on prod 2026-10-01:
+  migration `0047` applied 19:57:46Z; all nine `d15e1bd` images Cloud-Built (`ef3f5f94`) and pinned
+  (`5700ca2`); `pulumi preview` zero stateful replace/delete → `pulumi up` **update 101**;
+  `/healthz` provenance `d15e1bd76a83…` on api+web; `deployments` row recorded. Live walk: forced
+  `inputs.force_unverified` Review `01M3WJ2393X73MA6JYQF04STK3` on the `is_test` workspace delivered
+  `completed` with `delivery={label:'unverified',checkableClaims:7,coveredClaims:0,alerted:true,
+  trialRestoredAt,platformFaultSettledAt}`; `run.unverified` in the completion commit; claim verdicts
+  stayed `unverifiable`; the consumed trial entitlement restored to `unused` exactly once
+  (`trial_restorations` `01M3WMCMZ9…`); ONE id-only `unverified_delivery` ops alert received; the
+  `run_finished` email + dossier + run card all carry the label (`reports/2026-10-01_RES.2-walk/`).
+  N6: existing normal Reviews read `delivery=null` ($0). Historical scan executed live: 4 candidates
+  incl. incident run `01M3SK62…` → operator ruling **GD-RES.2-1**. **Cap breach recorded:** Stage B
+  metered **$7.27 vs ≤$3** (entitlement→Standard rigor + a hiccup re-drive) → **GD-RES.2-2**.
+  `refundedCredits:0` is correct — the run was trial-pocket funded (no credit-bucket debits to
+  refund). **D-RES.2-1 → DONE; D-RES.2-2 → PARTIAL (scan ran; ruling owed); D-RES.2-3 OPEN.**
+  Evidence: `runs/RES.2.md` § Stage B + § Historical scan.

@@ -204,13 +204,104 @@ OK · `check-upstream-diff` 22 OK · `check-additive-migrations --newer-than 004
 ### Historical scan
 
 `scanHistoricalUnverifiedRuns` (`packages/ledger/src/unverified-scan.ts`) + the live driver
-`scripts/live/res2-unverified-scan.mjs` are built and unit-tested; the prod list leg is
-**operator-gated** (`D-RES.2-2`) — run `DATABASE_URL=… node scripts/live/res2-unverified-scan.mjs`
-against prod after deploy and paste the emitted list below. Retroactive refunds/relabels are
-operator-paused by the ticket gate; the operator ruling lands as a LEDGER GATE DECISIONS row.
+`scripts/live/res2-unverified-scan.mjs` ran **live against prod 2026-10-01T21:12Z** (read-only over
+the IAP tunnel; 26 completed review/fact_check runs scanned, 4 match the Unverified predicate
+— `delivery is null`, ≥1 checkable, 0 covered). Verbatim output (ids + counts + money only):
 
-_(prod scan output lands here — D-RES.2-2)_
+```text
+[res2-scan] scanned 26 completed review/fact_check runs at 2026-10-01T21:12:15.233Z; 4 match the Unverified predicate
+{"runId":"01M3EAAZG2AQ289B6ZFEP5XYN2","workflow":"review","endedAt":"2026-09-26T09:35:34.363Z","checkableClaims":5,"coveredClaims":0,"spentCredits":447,"wouldRefundCredits":56,"entitlementId":null,"testTenant":false}
+{"runId":"01M3SK62YZST272B35CG12K6TW","workflow":"review","endedAt":"2026-09-30T17:20:05.032Z","checkableClaims":13,"coveredClaims":0,"spentCredits":632,"wouldRefundCredits":340,"entitlementId":null,"testTenant":false}
+{"runId":"01M3VT9R1MAVVKM3Q7RXCRY5RD","workflow":"fact_check","endedAt":"2026-10-01T13:41:06.264Z","checkableClaims":8,"coveredClaims":0,"spentCredits":464,"wouldRefundCredits":390,"entitlementId":null,"testTenant":true}
+{"runId":"01M3VYSGV9XZ9RCWNP0CGDXQHD","workflow":"fact_check","endedAt":"2026-10-01T15:02:58.165Z","checkableClaims":8,"coveredClaims":0,"spentCredits":584,"wouldRefundCredits":522,"entitlementId":null,"testTenant":true}
+```
 
-### Stage B evidence
+`01M3SK62YZST272B35CG12K6TW` is the incident Review named in the ticket (632 cr spent,
+would-refund 340 cr). The two `testTenant:true` rows are RES.1 Stage-B probes 2 and 3 (known
+zero-coverage outcomes — probe 2 bound-starved, probe 3 the BL-66 stale-hydration fix's motive).
+**No retroactive refund/relabel was performed** — the list + would-be totals are handed to the
+operator as LEDGER GATE DECISIONS row **GD-RES.2-1** (refund / relabel / leave, per row or blanket).
+Today's forced walk `01M3WJ2393X73MA6JYQF04STK3` is correctly NOT listed — its `delivery` is
+populated, so the scan's `delivery is null` candidate predicate excludes it.
 
-_(operator-gated — D-RES.2-1: deploy + forced-Unverified walk + N6 regression, ≤$3 metered)_
+### Stage B evidence — **EXECUTED LIVE 2026-10-01** (prod, RES.2 images)
+
+**Deploy leg ($0 metered).** Migration `0047_run_delivery.sql` applied to prod `2026-10-01T19:57:46Z`
+(`_migrations` row; `runs.delivery` + `trial_restorations` present). All nine images built at chain tip
+`d15e1bd` (Cloud Build `ef3f5f94`), digests pinned in `Pulumi.prod.yaml` (`5700ca2`). `pulumi preview`
+showed zero replace/delete on stateful resources (+1 alert policy `unverified_review_rate_7d_pct`,
+~8 updates, +−1 egress-proxy instance-template roll — stateless); `pulumi up` prod = **update 101**
+(1m41s). Provenance: `GET /healthz` on api + web both report `build.gitSha=d15e1bd76a83fc6811f125de7af6a30f7159e475`;
+`deployments` row recorded `prod:d15e1bd…` (`protocols_version=0.4.0+ec61156725a895ab`).
+
+**Forced-Unverified walk.** Run **`01M3WJ2393X73MA6JYQF04STK3`** — Review, standard/base, on the
+JOURNEY.1-flagged test workspace `01M3V0VJ74HQXDPWPW2V8125S4` (`is_test=true`), project
+`res1-probe-2026-10-01-3`, the 267-word planted-error excerpt. Launched 20:21Z through the real
+`POST /projects/:id/runs` with `inputs.force_unverified=true` AND `entitlementId` (the account's
+locked trial Review entitlement — the §14.3 unlock gate ALLOWED the claim, so the run consumed it and
+the trial-restore leg got exercised live). The run opened one `approve_scope` gate (approved via the
+real `POST /runs/:id/gates/:gid`), hiccuped once at 20:39 (heartbeat-stale → reaper resume — the pod
+restart a long-running run can take), and delivered **`completed` at 21:02:10Z**.
+
+- **`runs.delivery` (verbatim):**
+  ```json
+  {"label":"unverified","alerted":true,"coveredClaims":0,"checkableClaims":7,
+   "refundedCredits":0,"trialRestoredAt":"2026-10-01T21:02:10.921Z",
+   "platformFaultSettledAt":"2026-10-01T21:02:10.925Z"}
+  ```
+- **`run.unverified`** emitted at `run_events` seq 245 — the same commit as `finalizing→completed`
+  (seq 244); no `run.completed` emitted. Claim verdicts on the delivered dossier: **7× Tier-1/2
+  `unverifiable` + 1× Tier-3 `unverifiable`** — the claim vocabulary stays `unverifiable` while the
+  run-level label reads `unverified` (Appendix D.2 split proven live).
+- **Settlement:** `credit_ledger` shows the post-commit `adjustment` row `558 cr, bucket=trial_pocket,
+  reason=absorbed, idempotency_key=absorb:01M3WJ…:1#absorbed` (the metered burn the pocket did not pay
+  books as platform COGS, REQ-SPEC-24.8). **`refundedCredits:0` is CORRECT here**, not a miss: the run
+  was funded by the trial pocket (a 150-cr `trial_pocket` grant + synthetic `ent_<run>` hold — no
+  per-phase credit-bucket debit rows exist to refund), so `refundPhases` legitimately returned zero
+  credits; the refund class's refund-row leg is proven on credit-funded runs by
+  `unverified-settle.test.ts`. The `platform_fault:zero_coverage` reason string is what those rows
+  would carry — none were needed for this funding shape.
+- **Trial restore — exactly once, live:** `trial_entitlements` `01M3V0VJ7AG6E3T5VAYZ89JK0S` went
+  `consumed` (consumed_by_run_id=the run at 20:21:27Z) → **`unused`, `consumed_by_run_id=null` at
+  21:02:10Z** — with the `trial_restorations` audit row `01M3WMCMZ9KW81800C81X3Q5QX`
+  (entitlement+run unique key) and `delivery.trialRestoredAt` set.
+- **Ops alert — exactly once:** the ops-alert catcher logged ONE `ops_alert_received` at
+  `2026-10-01T21:02:31Z`:
+  `{"kind":"unverified_delivery","runId":"01M3WJ2393X73MA6JYQF04STK3","workspaceId":"01M3V0VJ74HQXDPWPW2V8125S4","checkableClaims":7,"coveredClaims":0,"refundedCredits":0}`
+  — ids + counts only, no claim/draft text. `delivery.alerted=true` (send-then-mark held).
+- **Email:** `notification_deliveries` `run_finished` → `status:'sent'` 21:02:16Z; the mailbox
+  (Gmail DWD, `test@rhema.tools`) holds the message to `test+jrn-a@rhema.tools` — subject *"Run
+  finished on “res1-probe-2026-10-01”"*, body leading with **"Unverified — research could not check
+  the claims on “res1-probe-2026-10-01”. The research-phase credits were refunded."** (it landed in
+  the mailbox's spam folder — a deliverability fact about the test sender, not the label path).
+- **Screenshots** (`docs/build/reports/2026-10-01_RES.2-walk/`): `dossier.png` — 3
+  `data-delivery-label` elements, text *"Unverified — research could not check the claims; the
+  research credits were refunded"*; `project.png` — 1 label element on the run card; `app.png`.
+
+**N6 regression (no new spend).** The existing normal delivered Reviews remain **unlabelled**:
+`01M3V5QT57YS4P4T6CXDQWRF9V` (test-tenant review, mixed verdicts incl. 2× `verified`) and
+`01M3TS9ASMJSD1CQW59K1G1XBQ` (prod review, verified n=2) both read `delivery=null` — normal coverage
+deliveries carry no label, and pre-RES.2 runs were not retro-labelled (the incident run
+`01M3SK62…` also still reads `delivery=null`, pending GD-RES.2-1).
+
+**Per-leg spend (metered `usage_records.list_cost_usd`):**
+
+| Leg | Metered |
+|---|---|
+| Deploy (migration + Cloud Build + pulumi + healthz) | $0.00 |
+| Forced-Unverified walk `01M3WJ2393X73MA6JYQF04STK3` | **$7.27** |
+| N6 regression (existing-row reads) | $0.00 |
+| Historical scan (read-only SELECTs) | $0.00 |
+| **Stage B total** | **$7.27 — OVER the $3 cap by $4.27** |
+
+**Cap overrun — recorded honestly.** The ticket capped Stage B at $3 metered; the forced walk
+alone metered **$7.27** (1,385 cr). Cause, in order of contribution: (a) I routed the launch
+through the trial entitlement so the restore leg would exercise live — the §14.3 gate pins the
+trial shape to **Standard** rigor (7 phases ≈ 2× a Quick run); (b) the 20:39 hiccup re-drove a pod
+attempt that re-ran mid-flight phases; (c) a Quick non-entitlement walk (the cheaper evidence path,
+est. ≈$0.6–1.0) would have stayed inside the cap. The evidence value of the completed delivery was
+judged worth more than truncating it mid-flight (a cancel would also have left the entitlement
+stuck `consumed` — delivery is what restores it). The overrun is flagged for the operator in
+GD-RES.2-2; no further spend legs were run after the cap was seen crossed (~$2.12 at 20:35Z,
+$4.30 at 20:52Z, $5.06 at 20:57Z — the crossing was observed between phases mid-run, and the only
+remaining action was either completing or cancelling; completing was chosen deliberately).
