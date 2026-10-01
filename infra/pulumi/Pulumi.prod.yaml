@@ -142,9 +142,21 @@ config:
   # stays postgres; pg-boss on the system DSN; collab DATABASE_URL → secretKeyRef
   # rhema-prod-collab-database-url), the /voices + loadProject workspace predicates, and the
   # withTenant role pin. web/fetcher/convert/export/egress-proxy unchanged — keep their digests.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:7684708bdc99e9e5a50cddcbd1439d5729f2b57baea030fea817439bfd0102b3","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:071d775d3a569d551bcd63cab22924900c006664eb2032d918625d3c4fad1b1a","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:9681d2aacf869f4871ad33ab93ea7f8f2289a7c706afdd9252b0a45cdb8e502e","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:e54e1600f39d2c0baf576140cc2a86ba3166a7985966784a61c97b786c9b4e71","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:cb092544fcd6a0e5f9e102816ada7e50c9b202e33dddafe6cb796227bce1cf9b","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:bd3fdfffb83050571204d2af324d710cdce5f25858755a312551b4bde4ae67f4","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:63237c0fc79aeb49e87987514422e71d7a85156a87cfc098455f3781258a8e67"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:fd2091cb55137a1af27dfc1f75ba8842dfccc397be46bdadcf034f3a17b706bb
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:f3423b8c934c62e357bbbc9afc5ec19476e1477a68b1dec7091df79ca0863737
+  # RES.1 Stage-B (build rhema:res1, Cloud Build 6a8c60f9, 2026-10-02, chain-tip SHA 3ee862f9 —
+  # stacks on the SEC.1 deploy): all nine images rebuilt on the RES.1 tip. Carries: the research
+  # floor (worker run-task sizing/enforcement), model×server-tool preflight through the real proxy
+  # before debit (api orchestrator + egress-proxy research-evidence rows), preflight-failure hold
+  # release/zero-debit, and the planted-error probe/journey surfaces. healthz provenance requires
+  # every service rebuilt on the tip SHA, so all nine pins move together.
+  # RES.1 Stage-B hotfix (build rhema:res1b, Cloud Build 56535f25, 2026-10-02, SHA 0552433):
+  # the first live probe failed closed — `research_preflight_failed`, all four pairs HTTP 400
+  # `invalid_request_error` (hold 945cr fully released, zero debit — the fail-closed path working).
+  # Isolated: the preflight probe omitted `anthropic-version` (the proxy forwards client headers
+  # verbatim, injects none; Anthropic requires it). One-line fix in run-task + test pin; all nine
+  # images rebuilt on the hotfix tip.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f94a026b0d524e1e76ac8fff98be4c91a12c204e2817c77d3f3fd456364c918f","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:c2069535dc2b6074eda00380986911ea9cdebb8cde85169223a153e4c857cee6","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:41fcaf30038c7b351fc62ea80d6fe0c4f12b1509b228fd6a8fe77e006f731d9c","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:cd0f71dcaefa3cd702fecf53fef86012585ee40e1334692cb3af5ca395b7d3b8","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:e757cdafe988167978793045c08bc4d5f5bfbb0962a2ef1bc97c43f54d4936a6","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:8d49886ebea0b15d1d3e2245542a4c27e6107c4406416b8a45748bf4feb66045","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:8a6368a103c0bbd727c3939b4fcf32e8cc52c32fcef1d56ad78813a9bc75fef0"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:debed0d41b7858e833ef8c3b436ce20de65acc0dc8e9aa29dfeeed9fa8414207
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:605414a0279cf11ae92b7801364067c639fb0572e6ca607207cd96856cb90387
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
