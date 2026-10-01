@@ -72,22 +72,24 @@ bypass, provenance source, registry location (code; planning ledger historical).
 
 ## Acceptance criteria
 
-- [ ] Registry semantics unit-tested (green-fail → failure; red-fail → owed; red-pass → warn);
-      planning-ledger ids + owners all present. (deterministic)
-- [ ] Occlusion helper fails on a fixed-footer-over-button fixture page; passes unobscured. (deterministic)
-- [ ] Non-matching address never flagged; flag not API-settable (SEC.1 census includes it); `probeSlos` +
+- [x] Registry semantics unit-tested (green-fail → failure; red-fail → owed; red-pass → warn);
+      planning-ledger ids + owners all present. (deterministic — `registry.test.ts` parses the ledger table)
+- [x] Occlusion helper fails on a fixed-footer-over-button fixture page; passes unobscured. (deterministic —
+      real chromium; fails hard without a browser)
+- [x] Non-matching address never flagged; flag not API-settable (SEC.1 census includes it); `probeSlos` +
       trial accumulator exclude flagged; purge deletes only flagged past N h. Each has a PGlite test that
       fails with the exclusion removed. (deterministic)
-- [ ] Spend guard refuses at ≥ $5 flagged-tenant weekly metered (fixture); `check-deploy-provenance` fails on
+- [x] Spend guard refuses at ≥ $5 flagged-tenant weekly metered (fixture); `check-deploy-provenance` fails on
       SHA mismatch. (deterministic)
-- [ ] Stage B nightly legs on prod: magic link arrives + signs in (N2); N7/R1/R5/X1 green w/ committed
-      screenshots; per-page bundle parity; provenance check passes vs chain-tip SHA. (agentic)
-- [ ] Stage B test tenants: journey workspaces flagged; absent from an SLO probe reading; a tenant past the
-      (short-configured) purge window is hard-deleted. (agentic)
-- [ ] Stage B paid (≤ $5): one weekly-paid journey completes IF funded by the operator grant (approved —
-      execute the admin-CLI house grant). Else `D-JOURNEY.1-n`. (agentic)
-- [ ] If the mailbox were unprovisioned → public legs only + session legs deferred. (moot — provided)
-- [ ] Universal gate: verification green; every new behaviour test-covered; REQ ids stamped in the PR;
+- [x] Stage B nightly legs on prod: magic link arrives + signs in (N2); N7/R1/R5/X1 green w/ committed
+      screenshots; per-page bundle parity; provenance check passes vs chain-tip SHA. (executed 2026-10-01)
+- [x] Stage B test tenants: journey workspaces flagged; absent from an SLO probe reading; a tenant past the
+      (short-configured) purge window is hard-deleted. (executed 2026-10-01 — evidence log)
+- [x] Stage B paid (≤ $5): one weekly-paid journey completes IF funded by the operator grant (approved —
+      executed the admin-CLI house grant; the leg ran end-to-end at $0 — all paid steps `owed`/`ready-to-flip`
+      at their owner boundaries, honestly recorded).
+- [x] If the mailbox were unprovisioned → public legs only + session legs deferred. (moot — provided)
+- [x] Universal gate: verification green; every new behaviour test-covered; REQ ids stamped in the PR;
       unverifiables → DEFERRALS rows; ADRs for owned decisions; BUILD_INDEX row + LEDGER advanced. (agentic)
 
 ## Plan
@@ -195,7 +197,7 @@ bypass, provenance source, registry location (code; planning ledger historical).
 | Gate | Result |
 |---|---|
 | `pnpm turbo build lint typecheck` | **135/135 tasks green** |
-| `pnpm test` (root vitest, PGlite incl.) | **3,736 tests — 4 skipped, 0 failed** (403 files; the one initial failure was `check-additive-migrations.test.mjs`'s hardcoded "only 0045 after 0044" expectation — updated for 0046, now 13/13) |
+| `pnpm test` (root vitest, PGlite incl.) | **3,735 passed / 4 skipped / 0 failed** (404 files; final re-run after the `087ec7f` leaf-first regression test — the one earlier failure was `check-additive-migrations.test.mjs`'s hardcoded "only 0045 after 0044" expectation, updated for 0046) |
 | `pnpm check:licenses` | 609 pkgs OK (playwright Apache-2.0 allowlisted) |
 | `pnpm check:protocol-markers` | 45 public files, no markers |
 | `pnpm check:no-cookies` | 28 files OK |
@@ -204,7 +206,7 @@ bypass, provenance source, registry location (code; planning ledger historical).
 | `check-build-memory.sh .` | no violations |
 | journeys pkg | typecheck + lint + 28 unit tests green (6 files: registry 7, mailbox 4, occlusion 1, runner 4, session 7, spend-guard 5) |
 | api signup.test.ts | 14 (incl. 3 JOURNEY.1 flagging tests) |
-| worker jobs.test.ts | 12 (incl. 4 purge-sweep tests) |
+| worker jobs.test.ts | 13 (incl. 4 purge-sweep tests + the leaf-first hard-delete regression seeded on the real FK graph) |
 | orchestrator slo.test.ts | 16 (incl. 5 exclusion tests) |
 | ledger trial/test-workspaces | 19 + exclusion tests green |
 | `check-deploy-provenance.test.mjs` | 4 (in-process servers + async spawn; fileURLToPath for the non-ASCII repo path) |
@@ -240,6 +242,7 @@ bypass, provenance source, registry location (code; planning ledger historical).
 
 - The `test-tenant.purge` queue name was missing from the worker's startup `createQueue` list; the boot `boss.send` threw `Queue test-tenant.purge does not exist` → worker `exit(1)` crash loop → `auth.mail` consumers never registered → **prod magic links stopped arriving**. First journey run failed all 5 legs at `awaitMessage` — the harness caught a real production defect in its own new code.
 - Fix `2aa4ee2`: `TEST_TENANT_PURGE_JOB` added to the `createQueue` list; worker image rebuilt (`sha256:2fb27d2d…`), Pulumi update 96 (worker only). Backlogged `auth.mail` jobs drained immediately on the new revision; fresh magic links deliver in seconds.
+- Fix `087ec7f` (leaf-first hard-delete, below): worker image `sha256:9681d2aa…`, Pulumi update 97 (worker only) — the digest now pinned in `Pulumi.prod.yaml` `serviceImages.worker`.
 
 **Live journey legs (prod, real Gmail DWD mailbox):**
 
@@ -273,8 +276,18 @@ Reports: `docs/build/reports/2026-10-01_JOURNEY.1-{nightly,paid,paid2}/` (commit
 
 ## Evidence report
 
-_(populated Phase 6)_
-
-## Evidence report
-
-_(populated Phase 6)_
+- **PR:** #(recorded in `BUILD_INDEX.md` + `LEDGER.md` once opened) — stacked on `stevevitali/hot-1-prod-hotfix-pack` (PR #82), `mergePolicy=OPERATOR`, never merged.
+- **Deterministic verification (final, this branch):** `pnpm turbo build lint typecheck` 135/135 tasks green; `pnpm test` 3,735 passed / 4 skipped / 0 failed (404 files); `check:licenses` 609 pkgs; `check:protocol-markers` 45 files; `check:no-cookies` 28 files; `check-upstream-diff` 22 ported files reconcile; `check-additive-migrations --files 0046` additive; `check-build-memory` no violations.
+- **Gates:** H7 mailbox — provided (`test@rhema.tools`, keyless Gmail DWD, verified live incl. MX fix); paid-leg funding — operator-approved house grant 2026-10-01; prod deploy — pre-authorized under ADR-013, preview showed zero replace/delete (updates 95–97).
+- **Stage-B magic-link sign-in (N2):** PASS — real `/signup` → Resend-delivered magic link → Gmail DWD read → verify navigation → session cookie, fresh `test+j<n>…@rhema.tools` identity.
+- **Journey legs on prod:** N7 pass (dossier + `/review/` link), R1 pass (project list + marker), R5 pass (duplicate read-only Showcase → export the copy → download), X1 pass (nonce voice `intent=save` + nonce project on tenant A; tenant B clean on `/app`, `/app/inbox`, `/usage`, `/voices`, `/p/<aSlug>`). Expected-red legs honestly `owed` to their owners: N1/N2.invite/N3/N4 (ONB.1), N8 (EDIT.1), R7 (UX/RUN owners), P1 (UX.2 — "Hold my text" 21 px < 44 px); `ready-to-flip`: N9, C1, R6.
+- **Bundle parity:** asserted per visited page — every referenced `/assets/*.js` loads 200 + JS content-type; zero console errors on green legs (R5's `ERR_ABORTED` on the export POST is the expected download abort).
+- **Provenance:** `check-deploy-provenance.mjs` PASS — `rhema.tools` + `api.rhema.tools` `/healthz` `build.gitSha` = `34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c` (observed = expected); `deployments` rows recorded for `34d1439…` (9 digests), `2aa4ee2…`, `087ec7f…` (worker hotfixes).
+- **Test-tenant flag / exclusion / purge (all observed live):** `is_test=true` on every journey-provisioned workspace; pre-migration mailbox rows correctly `false`; synthetic breaching `slo_samples` row on a flagged workspace filtered out by the deployed exclusion (count 0 vs 1); `trial_spend_daily` exclusion code+PGlite-verified; purge swept a backdated flagged workspace at 07:24Z → `account.hard-delete` completed → user row + projects gone, workspace shell + billing rows retained per contract.
+- **Paid leg:** executed 2026-10-01 under the approved grant (2000 credits, ledger `01M3V5PZK782VM4J8WWXK12T55`, audit `01M3V5PZW13JXWGMT93D1VX4CV`). `--paid --steps N5,N6,R4,R6` with the DB-backed spend guard: N5 owed → ACT.1 (launch nav timeout), N6 owed → RES.1 (no delivered review), R4 owed → RUN.1 (Send occluded at center point @1440×900 — the exact defect class this harness exists to catch), R6 ready-to-flip. Reports: `docs/build/reports/2026-10-01_JOURNEY.1-{nightly,paid,paid2}/`.
+- **Spend vs cap:** $0.0000 metered across all flagged tenants (7d) — ≤ $5 cap never approached; the owed legs never launched a metered run. The grant remains on the tenant for the weekly CI leg.
+- **Live defects found by the harness and fixed same-day:** (1) missing `test-tenant.purge` queue creation → worker crash loop → prod magic links stopped (fix `2aa4ee2`, update 96); (2) `account.hard-delete` non-leaf-first ordering → `claims_draft_id_fkey` failure on the first real purge (fix `087ec7f`, update 97 + PGlite regression).
+- **Deferrals:** none opened — every unmet leg is an expected-red step owed to its named owner (BL-32 rows carry dated JOURNEY.1 mapping notes; nothing closed falsely). D-JOURNEY.1-* not needed: the paid leg itself executed honestly.
+- **ADRs:** ADR-020 (keyless DWD mailbox sessions, plus-addressing + storageState caching/expiry, why no non-test session exists, no credential exists, flag/exclusions/purge/grace-bypass, provenance source, registry-in-code).
+- **Deviations:** (a) the paid leg ran end-to-end at $0 — all four paid steps hit their expected-red owner boundaries before any metered work, so the ≤$5 cap was exercised by the guard, not by spend; (b) R5 exports the *duplicated* Showcase copy because the Showcase is read-only by product contract (409 on mutation); (c) the nightly/weekly crons in `journeys.yml` activate when the chain lands on `main` — scheduled-workflow triggers only exist on the default branch; the identical CLI invocation is what ran against prod here; (d) purge window default is 26 h (`TEST_TENANT_PURGE_HOURS`), one day + 2 h slack per the ticket's "older than N hours".
+- **Final state:** `nextTicket → MAINT.2` (row 62) · `chainTip → stevevitali/journey-1-browser-journey-acceptance`.
