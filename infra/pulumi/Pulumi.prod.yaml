@@ -154,9 +154,17 @@ config:
   # Isolated: the preflight probe omitted `anthropic-version` (the proxy forwards client headers
   # verbatim, injects none; Anthropic requires it). One-line fix in run-task + test pin; all nine
   # images rebuilt on the hotfix tip.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f94a026b0d524e1e76ac8fff98be4c91a12c204e2817c77d3f3fd456364c918f","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:c2069535dc2b6074eda00380986911ea9cdebb8cde85169223a153e4c857cee6","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:41fcaf30038c7b351fc62ea80d6fe0c4f12b1509b228fd6a8fe77e006f731d9c","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:cd0f71dcaefa3cd702fecf53fef86012585ee40e1334692cb3af5ca395b7d3b8","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:e757cdafe988167978793045c08bc4d5f5bfbb0962a2ef1bc97c43f54d4936a6","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:8d49886ebea0b15d1d3e2245542a4c27e6107c4406416b8a45748bf4feb66045","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:8a6368a103c0bbd727c3939b4fcf32e8cc52c32fcef1d56ad78813a9bc75fef0"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:debed0d41b7858e833ef8c3b436ce20de65acc0dc8e9aa29dfeeed9fa8414207
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:605414a0279cf11ae92b7801364067c639fb0572e6ca607207cd96856cb90387
+  # RES.1 Stage-B hotfix 2 (build rhema:res1c, Cloud Build 7b8bc3eb, 2026-10-01, SHA 7833ece):
+  # the SECOND live probe (01M3VT9R…) ran real searches/fetches but every claim still landed
+  # Unverifiable — diagnosis: claims=0 fallback bound (8/16) + preflight executions consuming the
+  # bound it verifies + an uncapped whole-remainder grant starving parallel research siblings
+  # ("no working web_search" was literally true for starved requests). Carries: per-call grant
+  # caps (floor(budget/4) via RESEARCH_PARALLELISM) in authorWebToolPolicy, preflight excluded
+  # from bound settlement, and the probe launcher's inputSnapshot pass-through. All nine images
+  # rebuilt on the hotfix tip so healthz provenance stays uniform.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5eb3640691ab16e00d0cc2f2e3705fc0dc68a8fdc355fb5fe0f0921e2c590ddb","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:95ae7b1af5455545b868607339e345f1c5827b2535be16c970c306616b77b379","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:231ce872506d84c69f5afcd6de1e382cd6a8e59611dbf86b1aa16a1d4ce3b933","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:59e2ec7b19df90a7f03d9daf708c007642b29669d736a9bb42a19d764769b957","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:9ed30c42f52f9145d7521184b1e8ae3e4e0fbb37925e43572e97b7a961cac421","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:235561238600ca4a33f4d3c223107d9f3081a93484eb669d1a8b0e57f561a6d1","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:97d90e523ee7368c5ec790b0367e4acdafa9dc908a28e6a8edcddc06009ea7d1"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:faa6aa00b8b6e678c17f69bd8632e30199578c2630a4561073e324e44acd06d9
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:618ddfa8a23c6277b25b321ad15eae6b23e7c9f75247fbb9fb25c9443a224f15
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

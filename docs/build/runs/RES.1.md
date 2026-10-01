@@ -196,7 +196,7 @@ through the run's own proxy (the same admission path the incident lacked).
 | Preflight pass / fail (zero debit, hold released, burn absorbed, one id-only alert) | ✅ `research-preflight.test.ts` (5), `harness-loop.test.ts` (20), `internal-api.test.ts` terminal settle, `stranded-sweep.test.ts` leg D send-then-mark |
 | Preflight precedes first commit; resume re-preflights | ✅ once-per-pod flag + fresh pod on resume; resume test in `harness-loop.test.ts` |
 | Probe twin in CI + committed fixture (no user-identifying content) | ✅ `research-probe.test.ts` (5); `packages/journeys/fixtures/planted-error-{essay,excerpt}.md` (1029w + 267w, incident essay recovered) |
-| Stage B deploy + ≤3 probes + N6 + Standard/Base excerpt | ⏸ operator-gated → `D-RES.1-{1,2,3}` (no stage runs this branch's images; N6 needs the JOURNEY.1 harness + H7 mailbox) |
+| Stage B deploy + ≤3 probes + N6 + Standard/Base excerpt | ▶ **partial — executed 2026-10-01** (see Stage B evidence): deploy to `prod:7833ece` ✓; 3/3 probes ran ($7.49) — tool-reach restored on both models + preflight fail-path proven live at $0, but the *Contradicted* assertion unmet (new defect BL-66: stale claim-ledger mount ships prior verdicts on a re-run); N6 + Standard cut by the remaining $2.51 → `D-RES.1-2/-3` OPEN, `D-RES.1-1` PARTIAL |
 | Universal gate: verification green, tests per behavior, REQ stamps, DEFERRALS rows, ADRs, index/ledger | ✅ verification below; REQ-SPEC-31/(1)(2), REQ-VIS-9, REQ-SPEC-11, REQ-ARCH-31, REQ-SPEC-29(N6 deferred) stamped in `docs/build/pr/RES.1.md`; ADR-021/022/023; rows appended |
 
 ## Verification (Phase 5)
@@ -212,20 +212,71 @@ through the run's own proxy (the same admission path the incident lacked).
   sanctioned edits — no protocol/skill text touched (Manifest #8).
 - `check-build-memory.sh` — no violations; 6 pre-existing warnings (none introduced by this run;
   the `Harness:` header rule satisfied on this ledger).
+- **2026-10-01 re-verify at tip `7833ece` (Stage-B close-out):** `turbo build lint typecheck`
+  **135/135**; `pnpm test` **404 files / 3,785 passed / 6 skipped**; `check:licenses` 609;
+  `check:protocol-markers` 45; `check-upstream-diff` 22 files vs pin `5fef4165`;
+  additive-migration lint clean (no migrations newer than base).
 
-## Stage B evidence
+## Stage B evidence (executed 2026-10-01; spend $7.49 of the $10 cap)
 
-**Deferred — operator-gated** (standing Stage-B rule: no `pulumi up` from the build env, and no stage
-runs this branch's images until the stacked PR deploys). Owed legs, in ticket order, recorded as
-`D-RES.1-<n>` in `docs/tickets/DEFERRALS.md` (≤ $10 metered total, cheapest-first):
+Stage B ran live on prod across three deploys and three probes. Metered spend is Σ
+`usage_records.credits` where `source='proxy'` × $0.01 ÷ 1.4 (`USD_PER_CREDIT`/`PLATFORM_RATE` in
+`packages/contracts/src/domain/rates.ts` — re-confirmed this session).
 
-- **D-RES.1-1** — deploy + ≤3 live probes via `scripts/live/res1-probe.mjs` (≤ $3): asserts ≥1 search
-  result, ≥1 `fetch_log` fetch row, *Contradicted* on the planted claim, both tier models.
-- **D-RES.1-2** — JOURNEY.1 N6: Quick/Base Review of `planted-error-essay.md` (≤ $7): dossier with
-  ≥1 fetched-✓ claim + the planted error *Contradicted* with source; verification-phase search rows
-  in `fetch_log`. Inherits the H7 test-mailbox dependency.
-- **D-RES.1-3** — one Standard/Base Review of `planted-error-excerpt.md` (≤ $5) if the cap allows.
+**Deploys (`deployments` rows; `pulumi preview`/`up` showed zero replace/delete on stateful
+resources each time — updates through 99+; additive-migration lint pass, no new migrations):**
 
-Every deterministic proxy in place: 3,782 unit/integration tests incl. the incident regression,
-the recorded-response probe twin, the floor guard, the preflight matrix, and the pod-loop
-preflight-seam test over real api routes.
+| deployment | deployed_at | carries |
+|---|---|---|
+| `prod:3ee862f…` | 2026-10-01T12:39:56Z | RES.1 Stage-A tip (res1 images) |
+| `prod:0552433…` | 2026-10-01T13:22:54Z | res1b — hotfix `ccb3412` (preflight sends `anthropic-version`) |
+| `prod:7833ece…` | 2026-10-01T14:43:39Z | res1c — hotfix `7833ece` (per-call grant caps via `RESEARCH_PARALLELISM`, preflight excluded from bound settlement, probe inputSnapshot pass-through); Cloud Build `7b8bc3eb`; proxy `sha256:618ddfa8…`, run-task `sha256:faa6aa00…` |
+
+Provenance: `GET /healthz` on `rhema.tools` and `api.rhema.tools` both report
+`build.gitSha = 7833ece8c44706f6054a0167f9f3b1960e361149` = the chain tip (verified 2026-10-01T15:23Z).
+
+**Probes** (`scripts/live/res1-probe.mjs` → `driveResearchProbe`; principal = the funded
+`test+jrn-a@rhema.tools` tenant — user `01M3V0VJ…`, workspace `01M3V0VJ74HQXDPWPW2V8125S4`, billing
+`01M3V0VJ741QESKB93G2HWF5P6` — project `01M3VT6Y6XREDBN1D6EW16Y5S8` holding the excerpt draft;
+session cookie minted through the real magic-link funnel, never forged):
+
+| probe | run | deploy | outcome | proxy credits | list $ |
+|---|---|---|---|---|---|
+| 1 | `01M3VRDV9YKEAQKKQE7W2693KF` (12:53:30Z) | `prod:3ee862f` | `failed/research_preflight_failed` in ~1 s — all 4 pairs HTTP 400 `invalid_request_error` (the missing `anthropic-version` defect); **zero debit rows** (holds 945 cr released in full: `credit_ledger` hold 10+935 → release 10+935); `failure.alerted=true` (one id-only ops alert) | 0 | $0.00 |
+| 2 | `01M3VT9R1MAVVKM3Q7RXCRY5RD` (13:26:12Z) | `prod:0552433` | completed; preflight passed (the `anthropic-version` fix held); 8 searches / 16 fetches metered — but the claims=0 fallback bound (8/16) + preflight executions consuming the bound + uncapped whole-remainder grant starved parallel siblings → **9/9 Unverifiable**, model ledger note "No working web_search/web_fetch tool available this session" | 464 | $3.31 |
+| 3 | `01M3VYSGV9XZ9RCWNP0CGDXQHD` (14:44:44Z) | `prod:7833ece` | completed; **tool-reach restored on BOTH models** — `claude-sonnet-5`: 7 searches / 16 fetches / 523 cr; `claude-haiku-4-5-20251001`: 12 searches / 7 fetches / 61 cr; `fetch_log` 304 rows (26 search-allow, 224 fetch-allow) hitting the right sources (`en.wikipedia.org/wiki/Library_of_Congress`, `loc.gov/…`) — but **delivered claims 9/9 Unverifiable, byte-identical notes to probe 2's ledger** | 584 | $4.17 |
+
+**Probe-leg verdict vs the AC.** Met: a live run completed on res1c; `usage_records` show ≥1 search
+for BOTH the Sonnet main pair and the Haiku research-subagent pair; ≥1 `fetch_log` fetch row exists
+(224 allow); the preflight both passes live (probes 2–3 proceeded) and fails closed live at $0
+(probe 1: `research_preflight_failed`, zero debits, hold released, one alert — the REQ-SPEC-31(1)
+contract end-to-end on prod). **Not met: the planted claim never landed *Contradicted*.**
+
+**Root cause of the residual miss — a NEW defect surfaced by the probes (recorded as BL-66):**
+probe 3 reused probe 2's project, and `run_mounts` shows `agents/editor/01-claim-ledger.json`
+mounted `readwrite` at the declared output path **seeded with probe 2's artifact bytes**
+(sha256 `020b0a11…`, artifactVersion `01M3VV4ZT…`). No new artifact version was produced for the
+claim-ledger path on run 3 (content unchanged), and delivery persisted the stale all-Unverifiable
+verdicts — notes identical verbatim to the prior run, including its session-specific "two researcher
+subagent batches" phrasing. So a re-run on a project carrying a prior claim ledger can ship the
+prior run's verdicts unchanged: the delivered verdicts were not produced by this run's (working)
+research. The seeding-plus-harvest-precedence mechanism (`resolveKey` prefers the shortest suffix
+match — the mounted `agents/editor/01-claim-ledger.json` over a fresh `agents/editor/.rhema/…` write)
+is recorded in BL-66 → RES.2's *Unverified delivery* lane. A fresh-project probe exercises the clean
+path but the ticket's ≤3-probe count and the remaining cap are both exhausted.
+
+**Legs cut by the cap (recorded per the amended contract, "never overspend"):**
+
+- **D-RES.1-2 (N6)** — the Quick/Base Review of the full planted-error essay via the JOURNEY.1
+  harness never ran: probes consumed $7.49 and a Quick review of a ~1,000-word draft meters ~$4.5
+  (the incident run charged 632 cr) — more than the $2.51 remaining. N6 stays `expected:red` in
+  `packages/journeys/src/registry.ts`.
+- **D-RES.1-3 (Standard/Base excerpt)** — same cap reality (≤$5 leg vs $2.51 remaining).
+
+**Per-leg spend (metered list $):** deploy legs $0 · probe 1 $0.00 · probe 2 $3.31 · probe 3 $4.17 ·
+N6 not run ($0) · Standard not run ($0) — **total $7.49 ≤ $10**. The ≤$3 probe-leg plan was exceeded
+because the ≤$1/probe estimate under-sized the claimCount-scaled research bound (each completing
+probe meters ~$3.3–4.2 at list).
+
+Every deterministic proxy stays in place: the incident regression suite, the recorded-response probe
+twin, the floor guard, the preflight matrix, and the pod-loop preflight-seam test.
