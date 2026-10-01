@@ -96,9 +96,11 @@ function makeDeps(
   over: Partial<WebDeps> = {},
   checkInvite?: DataSource["checkInvite"],
   signup?: DataSource["signup"],
+  checkSession: DataSource["checkSession"] = async () => true,
 ): WebDeps {
   return {
     dataSource: {
+      checkSession,
       listProjects: async () => PROJECTS,
       checkInvite: checkInvite ?? (async (code) => (code === "GOOD" ? { ok: true } : { ok: false, reason: "unknown" })),
       // The api's POST /signup stand-in (PRB.13): "GOOD" redeems, anything else refuses like the real
@@ -111,7 +113,7 @@ function makeDeps(
             : req.code == null
               ? { ok: false as const, status: 403, error: "invite_required" }
               : { ok: false as const, status: 403, error: "unknown" }),
-      previewImport: async () => PREVIEW,
+      previewImport: async () => ({ preview: PREVIEW, quarantineKey: "quarantine/ws1/up1" }),
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
       getDossier: async () => DOSSIER,
@@ -208,6 +210,28 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(html).toContain("an invitation code is optional");
     expect(html).toContain("Invitation code (optional)");
     expect(html).not.toContain("an invitation code is required");
+  });
+
+  it("GET / redirects a viewer whose session still resolves — no redundant re-login", async () => {
+    const app = createWebApp(
+      makeDeps({ session: () => ({ cookie: "__Host-rhema.session_token=tok.sig" }) }),
+    );
+    const res = await app.request("/", { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app");
+  });
+
+  it("GET / renders the invite page when the forwarded session is stale", async () => {
+    const app = createWebApp(
+      makeDeps(
+        { session: () => ({ cookie: "__Host-rhema.session_token=stale.sig" }) },
+        undefined,
+        undefined,
+        async () => false,
+      ),
+    );
+    const res = await app.request("/");
+    expect(res.status).toBe(200);
   });
 
   it("open mode: no code admits the account through POST /signup and sends the link", async () => {
@@ -385,6 +409,8 @@ describe("§5.3 import flow (deliverable 4)", () => {
     expect(html).toContain("Create and fix later");
     expect(html).toContain("Fix now");
     expect(html).toContain("unconv-1"); // the unconverted block id shown in the notes
+    // PRB.20 — the preview form replays the minted quarantine key so Create never re-uploads.
+    expect(html).toContain('type="hidden" name="qk" value="quarantine/ws1/up1"');
   });
 
   it("POST create makes the draft and redirects to the project", async () => {

@@ -82,6 +82,19 @@ export interface ApiEnv {
    * resolves (the PRB.15 deploy shim for stages without sign-in). NEVER set on prod.
    */
   readonly identityHeaders?: boolean;
+  /**
+   * PRB.20 — the user-content GCS bucket (`USER_CONTENT_BUCKET`): where quarantine presigned PUTs land and
+   * the convert Job's converted-result objects are read back. Required (with `convertJob`) to mount the
+   * import routes; unset ⇒ import stays unmounted rather than half-wired.
+   */
+  readonly userContentBucket?: string;
+  /**
+   * PRB.20 — the convert Cloud Run Job's full resource name (`CONVERT_JOB`,
+   * `projects/<p>/locations/<r>/jobs/<name>`) — invoked via the Run Admin API `jobs:run`.
+   */
+  readonly convertJob?: string;
+  /** PRB.20 — the Job's user-content volume mount path inside the container (`CONVERT_JOB_ROOT`, `/usercontent`). */
+  readonly convertJobRoot?: string;
 }
 
 function required(name: string): string {
@@ -144,6 +157,10 @@ export function readApiEnv(): ApiEnv {
       : {}),
     // PRB.16 — the identity-header shim: NEVER on prod (client-forgeable); dev/preview only.
     ...(process.env.IDENTITY_HEADERS === "true" ? { identityHeaders: true } : {}),
+    // PRB.20 — the live ingestion binding config (both must be set for the import routes to mount).
+    ...(process.env.USER_CONTENT_BUCKET ? { userContentBucket: process.env.USER_CONTENT_BUCKET } : {}),
+    ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),
+    ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

@@ -10,3 +10,4 @@ export * from "./event-bus.js";
 export * from "./queue.js";
 export * from "./k8s-launcher.js";
 export * from "./secret-manager.js";
+export * from "./ingest.js";

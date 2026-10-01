@@ -20,6 +20,8 @@ export interface ConversionPreviewProps {
     readonly formAction: string; // POST target for "Create and fix later"
     readonly createLabel: string;
     readonly fixNowLabel: string;
+    /** Hidden inputs the form carries (PRB.20 — the minted quarantine key so create replays it). */
+    readonly hiddenFields?: Readonly<Record<string, string>>;
   };
   readonly labels: {
     readonly sourceHeading: string;
@@ -73,6 +75,9 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
       <ConversionNotesCard warnings={props.warnings} heading={props.labels.warningsHeading} empty={props.labels.noWarnings} />
 
       <form method="post" action={props.actions.formAction} style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+        {Object.entries(props.actions.hiddenFields ?? {}).map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
         <button
           type="submit"
           name="action"

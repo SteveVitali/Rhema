@@ -2,7 +2,7 @@
 // text; REQ-ARCH-33). The DTOs mirror the api's wire shapes; `createApiClient` takes an injectable `fetch` so
 // SSR loaders (which forward the viewer's session) and tests bind their own transport.
 
-import type { Claim, FindingView, ObligationState } from "@rhema/contracts";
+import type { Claim, ConversionResult, FindingView, ObligationState } from "@rhema/contracts";
 import type { AccessReportFacts, RubricRowInput, RunCardInput } from "@rhema/findings-core";
 
 export const PACKAGE_NAME = "@rhema/api-client" as const;
@@ -759,6 +759,32 @@ export interface AiUseAdditionDto {
   readonly createdAt: string;
 }
 
+// ---- PRB.20 — the live ingestion path (D-PRB.02-1) ----
+
+/** POST /import/presign's response: the v4-signed PUT URL + the workspace-scoped quarantine key + the
+ *  signed headers the browser MUST echo verbatim (the content-length bound is inside the signature). */
+export interface PresignedImportDto {
+  readonly url: string;
+  readonly key: string;
+  readonly maxBytes: number;
+  readonly requiredHeaders: Readonly<Record<string, string>>;
+}
+
+/** The body both import endpoints take — the minted `quarantine/<workspaceId>/<uploadId>` key. */
+export interface ImportRequestDto {
+  readonly quarantineKey: string;
+}
+
+/** The imported draft the create endpoint returns (§5.3 "Create and fix later" → frozen draft 1). */
+export interface CreatedImportDraftDto {
+  readonly draftId: string;
+  readonly versionId: string;
+  readonly artifactId: string;
+  readonly n: number;
+  readonly wordCount: number;
+  readonly contentSha256: string;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -921,6 +947,13 @@ export interface ApiClient {
     sentence: string,
     init?: RequestInitLite,
   ): Promise<AiUseAdditionDto>;
+  // ---- PRB.20 — import (browser upload → quarantine → convert → preview → draft 1) ----
+  /** POST /import/presign — mint a workspace-scoped quarantine key + a ≤25 MB v4-signed PUT. */
+  presignImportUpload(init?: RequestInitLite): Promise<PresignedImportDto>;
+  /** POST /projects/:id/import/preview — run the convert Job on the quarantine key → §5.3 preview. */
+  previewImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<ConversionResult>;
+  /** POST /projects/:id/import/create — convert + write the frozen `human_upload` draft 1 (201). */
+  createImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<CreatedImportDraftDto>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -1297,6 +1330,35 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ sentence }),
       });
+    },
+    async presignImportUpload(init?: RequestInitLite): Promise<PresignedImportDto> {
+      return json<PresignedImportDto>("/import/presign", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async previewImport(projectId, req, init): Promise<ConversionResult> {
+      const body = await json<{ preview: ConversionResult }>(
+        `/projects/${encodeURIComponent(projectId)}/import/preview`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+      return body.preview;
+    },
+    async createImport(projectId, req, init): Promise<CreatedImportDraftDto> {
+      const body = await json<{ draft: CreatedImportDraftDto }>(
+        `/projects/${encodeURIComponent(projectId)}/import/create`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+      return body.draft;
     },
   };
 }

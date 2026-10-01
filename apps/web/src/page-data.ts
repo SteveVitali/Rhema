@@ -47,6 +47,8 @@ export interface PageData {
     readonly convertedMarkdown: string;
     readonly countLine: string;
     readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+    /** PRB.20 — the minted quarantine key; the create form replays it in the hidden `qk` field. */
+    readonly quarantineKey?: string;
     readonly created?: boolean;
   };
   readonly runSheet?: {

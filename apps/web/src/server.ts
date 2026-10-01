@@ -165,17 +165,29 @@ export function createWebApp(deps: WebDeps): Hono {
     app.all("/api/auth/*", (c) => proxy(c.req.raw));
   }
 
+  // A viewer with a live session never needs the public pages — send them straight to the app.
+  // Without this check `/` renders the sign-in affordance unconditionally, so a returning signed-in
+  // user "has to log in again" (each sign-in mints a redundant session row).
+  const signedIn = async (c: Context): Promise<boolean> => {
+    const s = deps.session(c);
+    return s ? await deps.dataSource.checkSession(s).catch(() => false) : false;
+  };
+
   // Public: the invite page (+ read-only sample dossier). In `open` mode the access note drops the
   // invitation requirement — still no marketing page, still factual.
-  const invite = (c: Context) =>
-    c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
+  const invite = async (c: Context) =>
+    (await signedIn(c))
+      ? c.redirect("/app")
+      : c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
   app.get("/", invite);
   app.get("/invite", invite);
 
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).
-  app.get("/login", (c) =>
-    c.html(renderDocument(c.req.path, loginElement, { login: { signupOpen } })));
+  app.get("/login", async (c) =>
+    (await signedIn(c))
+      ? c.redirect("/app")
+      : c.html(renderDocument(c.req.path, loginElement, { login: { signupOpen } })));
 
   app.post("/login", async (c) => {
     const form = await c.req.parseBody();
@@ -448,8 +460,12 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return c.redirect("/login");
     const slug = c.req.param("project");
     const input = await parseImportInput(c, slug);
-    const result = await deps.dataSource.previewImport(session, input);
-    return c.html(renderDocument(c.req.path, importPreviewElement, { conversion: toConversionData(slug, input, result) }));
+    const { preview, quarantineKey } = await deps.dataSource.previewImport(session, input);
+    return c.html(
+      renderDocument(c.req.path, importPreviewElement, {
+        conversion: toConversionData(slug, input, preview, quarantineKey),
+      }),
+    );
   });
 
   app.post("/p/:project/import/create", async (c) => {
@@ -1254,16 +1270,23 @@ function countLine(c: ConversionResult["counts"]): string {
 
 async function parseImportInput(c: Context, slug: string): Promise<ImportInput> {
   const form = await c.req.parseBody();
+  // PRB.20 — the preview form replays the minted quarantine key in `qk` so Create does not re-upload.
+  const qk = typeof form.qk === "string" && form.qk ? form.qk : undefined;
   const paste = typeof form.paste === "string" ? form.paste : "";
   const file = form.file;
   if (file && typeof file === "object" && "arrayBuffer" in file) {
     const f = file as File;
-    return { projectSlug: slug, fileName: f.name, bytes: new Uint8Array(await f.arrayBuffer()) };
+    return {
+      projectSlug: slug,
+      fileName: f.name,
+      bytes: new Uint8Array(await f.arrayBuffer()),
+      ...(qk ? { quarantineKey: qk } : {}),
+    };
   }
-  return { projectSlug: slug, text: paste };
+  return { projectSlug: slug, text: paste, ...(qk ? { quarantineKey: qk } : {}) };
 }
 
-function toConversionData(slug: string, input: ImportInput, result: ConversionResult) {
+function toConversionData(slug: string, input: ImportInput, result: ConversionResult, quarantineKey: string) {
   return {
     projectSlug: slug,
     sourceLabel: input.fileName ?? "pasted text",
@@ -1271,5 +1294,7 @@ function toConversionData(slug: string, input: ImportInput, result: ConversionRe
     convertedMarkdown: result.markdown,
     countLine: countLine(result.counts),
     warnings: result.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+    // the create form replays this verbatim — no second upload, no second convert run.
+    quarantineKey,
   };
 }

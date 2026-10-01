@@ -24,6 +24,7 @@
     "@rhema/db": "workspace:*",
     "@rhema/orchestrator": "workspace:*",
     "@google-cloud/secret-manager": "7.0.0",
+    "@google-cloud/storage": "8.0.1",
     "@kubernetes/client-node": "2.0.0",
     "ioredis": "6.0.0",
     "pg": "8.23.0",
