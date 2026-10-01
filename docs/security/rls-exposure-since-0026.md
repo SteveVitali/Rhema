@@ -6,10 +6,12 @@ first prod deploy — whichever is later, per the ticket) until the SEC.1 role s
 the *only* isolation on the user-serving path and it was *bypassed* for the serving role — any
 tenant-scoped query missing an explicit workspace predicate could return another workspace's rows.
 
-**Status.** Every entry's "fixed" date is the SEC.1 stage-B switch timestamp (pending — see
-`docs/tickets/DEFERRALS.md` if the window defers); code-level predicates marked FIXED below already
-hold on a bypass role (verified by `apps/api/src/voice-routes.test.ts` BYPASSRLS simulation and the
-two-tenant probe `integration/src/two-tenant-probe.ts`).
+**Status.** The SEC.1 stage-B switch executed **2026-10-01 ~01:52Z** (migration 0045 applied +
+`pulumi up` prod rolled api/worker/collab onto `rhema_app_login` via `rhema-prod-app-database-url`;
+`ALTER ROLE … LOGIN` applied; post-switch two-tenant probe `passed:true` zero findings — run ledger
+`docs/build/runs/SEC.1.md`). Code-level predicates marked FIXED below already hold on a bypass role
+(verified by `apps/api/src/voice-routes.test.ts` BYPASSRLS simulation and the two-tenant probe
+`integration/src/two-tenant-probe.ts`); post-switch the role itself no longer bypasses.
 
 ## Confirmed leaks (had no predicate, served cross-tenant)
 
