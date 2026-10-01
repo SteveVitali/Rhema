@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { ProjectGroupView, ProjectRowView, VoiceGroupView } from "@rhema/ui";
+import type { ProjectGroupView, ProjectRowView, VoiceGroupView, FeedRow } from "@rhema/ui";
 import type { RunSheetView } from "@rhema/run-sheet";
 import type {
   ApprovalOverridesDto,
@@ -16,6 +16,8 @@ import type {
   VoiceEstimateDto,
   VoiceListRowDto,
   WhatChangedDto,
+  TimelineDto,
+  RunReportDto,
 } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
@@ -135,6 +137,25 @@ export interface PageData {
     readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
     /** the Timeline's run rows. */
     readonly timeline?: readonly { id: string; label: string; state: string; href?: string }[];
+    /**
+     * P1.05 — the structured Timeline pane read (GET /projects/:id/timeline): rounds, run cards, the
+     * next-step card. Supersedes the flat `timeline` rows when present (§5.5).
+     */
+    readonly timelineView?: TimelineDto;
+    /**
+     * P1.05 — the Desk's Live feed tab data (§5.5; REQ-IDE-14): the replayed rows at `density` plus the
+     * same-origin events URL the island tails.
+     */
+    readonly feed?: {
+      readonly runId: string;
+      readonly eventsUrl: string;
+      readonly density: "summary" | "details" | "verbose";
+      readonly rows: readonly FeedRow[];
+      /** the highest replayed seq — the island's EventSource resumes at `?after=<lastSeq>`. */
+      readonly lastSeq?: number;
+    };
+    /** the ⌘⇧R "run next step" target (the run sheet for the next-step verb). */
+    readonly runNextHref?: string;
     readonly status?: {
       readonly version?: string;
       readonly words?: number;
@@ -262,6 +283,12 @@ export interface PageData {
   readonly privacy?: { readonly analyticsOptOut: boolean; readonly saved?: boolean };
   /** the level-1 usage glance (balance + recent runs' spend). */
   readonly usage?: UsageDto;
+  /** P1.05 — the run report page (`/p/:project/r/:run`; §14.5 Level 3 + the Advanced Level-4 read). */
+  readonly runReport?: {
+    readonly slug: string;
+    readonly runId: string;
+    readonly report: RunReportDto;
+  };
   /** the page's dwell-heartbeat surface label — set ⇒ renderDocument emits the beacon script (REQ-BETA-10). */
   readonly dwellSurface?: string;
   /**

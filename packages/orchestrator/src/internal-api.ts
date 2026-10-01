@@ -765,6 +765,34 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       }
 
       if (next.kind === "advance") {
+        // P1.05 — "Pause after this phase" (§6.5; REQ-GATE-12 amended): the flag set by the steering route
+        // is honored HERE, at the committed boundary — the in-flight phase's step row + spend landed above,
+        // so the park is clean: clear the request, stamp `paused_at`, park `running → waiting_gate` at zero
+        // compute, and emit `steer.paused`. No gate row opens — this is a steering park, not an approval;
+        // the task exits on `state === "waiting_gate"` and `resumePausedRun` re-queues it.
+        const pauseRequested = (
+          await tx.query("select pause_requested_at from runs where id = $1", [args.runId])
+        ).rows[0] as { pause_requested_at: Date | null } | undefined;
+        if (pauseRequested?.pause_requested_at != null) {
+          await tx.query("update runs set pause_requested_at = null, paused_at = $2 where id = $1", [
+            args.runId,
+            now,
+          ]);
+          await applyTransition(tx, deps, {
+            runId: args.runId,
+            from: "running",
+            to: "waiting_gate",
+            reason: "paused",
+            fields: { parkedUntil: new Date(now.getTime() + THIRTY_DAYS_MS) },
+          });
+          await deps.eventWriter.append(tx, {
+            runId: args.runId,
+            type: "steer.paused",
+            payload: { reason: "paused after phase" },
+            at: now,
+          });
+          return { ok: true, idempotent: false, state: "waiting_gate" };
+        }
         const state = (await readRunState(tx, args.runId))!; // stays running (self-edge, no state row change)
         return { ok: true, idempotent: false, state };
       }

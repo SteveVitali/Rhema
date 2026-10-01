@@ -2,8 +2,17 @@
 // text; REQ-ARCH-33). The DTOs mirror the api's wire shapes; `createApiClient` takes an injectable `fetch` so
 // SSR loaders (which forward the viewer's session) and tests bind their own transport.
 
-import type { Claim, ConversionResult, FindingView, ObligationState } from "@rhema/contracts";
-import type { AccessReportFacts, RubricRowInput, RunCardInput } from "@rhema/findings-core";
+import type { Claim, ConversionResult, FindingView, ObligationState, RunState } from "@rhema/contracts";
+import type {
+  AccessReportFacts,
+  RubricRowInput,
+  RunCardInput,
+  RunCardView,
+  RoundSummaryPart,
+  RunReportView,
+  RunReportAdvancedView,
+  TimelineDraft,
+} from "@rhema/findings-core";
 
 export const PACKAGE_NAME = "@rhema/api-client" as const;
 
@@ -960,6 +969,57 @@ export interface CreatedImportDraftDto {
   readonly contentSha256: string;
 }
 
+// ---- P1.05 — Timeline / run report / steering DTOs (§5.5/§6.5/§14.5) ----
+
+/** A run inside a round (or ungrouped): the card view is the whitelisted orchestrator projection. */
+export interface TimelineRunDto {
+  readonly runId: string;
+  readonly workflow: string;
+  readonly state: RunState;
+  readonly createdAt: string;
+  readonly subjectN: number | null;
+  readonly producedN: number | null;
+  readonly card: RunCardView;
+}
+
+/** One round card: `vN` anchor → the runs that consumed it → the `v(N+1)` it produced. */
+export interface TimelineRoundDto {
+  readonly n: number;
+  readonly anchor: TimelineDraft | null;
+  readonly producedN: number | null;
+  /** the collapsed summary parts (`v1 → review (49) → revise → v2`) — controlled tokens, numbers only. */
+  readonly parts: readonly RoundSummaryPart[];
+  readonly runs: readonly TimelineRunDto[];
+}
+
+/** The next-step card above the newest round (§5.5): the state function's verb + a re-derived estimate. */
+export interface TimelineNextStepDto {
+  readonly verb: string;
+  readonly label: string | null;
+  readonly estimateCredits: number | null;
+  readonly headDraftN: number | null;
+}
+
+/** `GET /projects/:id/timeline` — the full Timeline pane read. */
+export interface TimelineDto {
+  readonly project: { readonly id: string; readonly slug: string; readonly title: string };
+  readonly state: ProjectStateDto;
+  readonly nextStep: TimelineNextStepDto;
+  readonly rounds: readonly TimelineRoundDto[];
+  readonly ungrouped: readonly TimelineRunDto[];
+  /** the Outline/"Imported draft" chip rendered below the oldest round. */
+  readonly originChip: { readonly kind: "outline" | "imported_draft" } | null;
+}
+
+/** `GET /runs/:id/report` — Level 3; `advancedView` present only on `?advanced=1`. */
+export interface RunReportDto {
+  readonly kind: "ok";
+  readonly report: RunReportView;
+  readonly advancedView?: RunReportAdvancedView;
+  /** the owning project's slug (the `/app/usage/r/:run` redirect resolves its /p/ path from it). */
+  readonly projectSlug?: string | null;
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -1189,6 +1249,21 @@ export interface ApiClient {
   previewImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<ImportPreviewDto>;
   /** POST /projects/:id/import/create — convert + write the frozen `human_upload` draft 1 (201). */
   createImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<CreatedImportDraftDto>;
+  // ---- P1.05 — the Timeline round log, run report, and §6.5 steering ----
+  /** GET /projects/:id/timeline — the round log: per-run cards, rounds, the next-step card. */
+  getTimeline(projectId: string, init?: RequestInitLite): Promise<TimelineDto>;
+  /** GET /runs/:id/report — the Level-3 report; `advanced` adds the Level-4 drill-down. */
+  getRunReport(runId: string, opts?: { advanced?: boolean }, init?: RequestInitLite): Promise<RunReportDto>;
+  /** POST /runs/:id/pause — "Pause after this phase" (honored at the next committed boundary). */
+  pauseRun(runId: string, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
+  /** POST /runs/:id/resume — resume a steering-parked run; `note` captures Resume-with-note. */
+  resumeRun(runId: string, req?: { note?: string }, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
+  /** POST /runs/:id/notes — a note for the next phase → Guidance{queued_message}. */
+  postRunNote(runId: string, text: string, init?: RequestInitLite): Promise<{ ok: true; guidanceId: string }>;
+  /** POST /runs/:id/stop — Stop, keep partials. */
+  stopRun(runId: string, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
+  /** POST /runs/:id/walkthrough/retry — re-enqueue the one package-class walkthrough call. */
+  retryWalkthrough(runId: string, init?: RequestInitLite): Promise<{ status: string }>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -1752,6 +1827,54 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         return { status: "pending", quarantineKey: body.quarantineKey ?? req.quarantineKey };
       }
       return { status: "ready", preview: body.preview };
+    },
+    // ---- P1.05 — Timeline / report / steering ----
+    async getTimeline(projectId, init): Promise<TimelineDto> {
+      return json<TimelineDto>(`/projects/${encodeURIComponent(projectId)}/timeline`, {
+        method: "GET",
+        headers: { ...(init?.headers as Record<string, string> | undefined) },
+      });
+    },
+    async getRunReport(runId, opts, init): Promise<RunReportDto> {
+      return json<RunReportDto>(`/runs/${encodeURIComponent(runId)}/report${opts?.advanced ? "?advanced=1" : ""}`, {
+        method: "GET",
+        headers: { ...(init?.headers as Record<string, string> | undefined) },
+      });
+    },
+    async pauseRun(runId, init): Promise<{ ok: true; state: string }> {
+      return json(`/runs/${encodeURIComponent(runId)}/pause`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async resumeRun(runId, req, init): Promise<{ ok: true; state: string }> {
+      return json(`/runs/${encodeURIComponent(runId)}/resume`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req ?? {}),
+      });
+    },
+    async postRunNote(runId, text, init): Promise<{ ok: true; guidanceId: string }> {
+      return json(`/runs/${encodeURIComponent(runId)}/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ text }),
+      });
+    },
+    async stopRun(runId, init): Promise<{ ok: true; state: string }> {
+      return json(`/runs/${encodeURIComponent(runId)}/stop`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async retryWalkthrough(runId, init): Promise<{ status: string }> {
+      return json(`/runs/${encodeURIComponent(runId)}/walkthrough/retry`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
     },
   };
 }

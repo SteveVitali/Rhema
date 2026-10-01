@@ -27,6 +27,7 @@ import {
   PageEditor,
   IdeShell,
   EmptyProject,
+  RunReport,
   type WhatChangedLabels,
   type SourceEditorLabels,
   type PageEditorLabels,
@@ -44,6 +45,10 @@ import {
   type SecondReadLabels,
   type FindingsListLabels,
   type ClaimTableRow,
+  type LiveFeedLabels,
+  type TimelineLabels,
+  type TimelineHrefs,
+  type RunReportLabels,
 } from "@rhema/ui";
 import {
   buildRunCardView,
@@ -66,6 +71,7 @@ import type { EditorDocDto, GateCardDto, VoiceStatusDto } from "@rhema/api-clien
 import { CHECKABLE_CLAIM_KINDS, type ClaimKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
+import { feedLabelMapsJson } from "./feed-labels.js";
 import { usePageData } from "./page-data.js";
 
 /** Replace `{key}` placeholders in a copy template with string/number values. */
@@ -113,6 +119,28 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       {...(ide.sourceHref ? { sourceHref: ide.sourceHref } : {})}
       {...(ide.findings ? { findings: ide.findings, hasFindings: true } : {})}
       {...(ide.timeline ? { timeline: ide.timeline } : {})}
+      {...(ide.timelineView
+        ? {
+            timelineView: ide.timelineView,
+            timelineLabels,
+            timelineCardLabels: runCardLabels,
+            timelineHrefs: timelineHrefs(slug),
+          }
+        : {})}
+      {...(ide.feed
+        ? {
+            feed: {
+              runId: ide.feed.runId,
+              eventsUrl: ide.feed.eventsUrl,
+              density: ide.feed.density,
+              rows: ide.feed.rows,
+              ...(ide.feed.lastSeq != null ? { lastSeq: ide.feed.lastSeq } : {}),
+              labels: feedLabels,
+              labelMaps: feedLabelMapsJson(),
+            },
+          }
+        : {})}
+      {...(ide.runNextHref ? { runNextHref: ide.runNextHref } : {})}
       {...(ide.activeRun ? { activeRun: ide.activeRun } : {})}
       {...(ide.inboxCount != null ? { inboxCount: ide.inboxCount } : {})}
       {...(ide.status ? { status: ide.status } : {})}
@@ -1013,6 +1041,114 @@ const runCardLabels: RunCardLabels = {
   offLabel: R.offLabel,
   counterLabel: (_key, value, of) => (of != null ? `${value} / ${of}` : String(value)),
   refundLabel: (credits) => fmt(R.refundFmt, { n: credits }),
+  // ---- P1.05 — the §5.5 state chrome + §6.5 steering ----
+  queueLabel: (pos) => fmt(COPY.steer.queueFmt, { n: pos }),
+  estimateLabel: (actual, est) =>
+    fmt(COPY.steer.estimateLineFmt, { actual: actual.toLocaleString("en-US"), est: est.toLocaleString("en-US") }),
+  pausedLabel: (done, total) => fmt(COPY.steer.pausedFmt, { done, total }),
+  partialLabel: (done, total) => fmt(COPY.steer.partialFmt, { done, total }),
+  waitingGateLabel: (kind, deadlineAt) =>
+    fmt(COPY.steer.waitingGateFmt, { kind: G.kindLabel[kind] ?? kind }) + (deadlineAt != null ? ` · ${deadlineAt.slice(0, 10)}` : ""),
+  queuedNotesLabel: (n) => fmt(COPY.steer.queuedNotesFmt, { n }),
+  deliverableLabel: (key, count) =>
+    count != null ? fmt(COPY.steer.deliverableLabel[key] ?? key, { n: count }) : (COPY.steer.deliverableLabel[key] ?? key),
+  actionLabel: (action) =>
+    action === "pause" ? COPY.steer.pause
+    : action === "stop" ? COPY.steer.stop
+    : action === "cancel" ? COPY.steer.cancel
+    : action === "resume" ? COPY.steer.resume
+    : action === "note" ? COPY.steer.note
+    : action === "report" ? COPY.steer.report
+    : action === "open_deliverable" ? COPY.steer.openDeliverable
+    : action === "live_feed" ? COPY.steer.liveFeed
+    : COPY.steer.retryWalkthrough,
+  notePlaceholder: COPY.steer.notePlaceholder,
+  walkthroughHeading: COPY.steer.walkthroughHeading,
+  walkthroughPendingLabel: COPY.steer.walkthroughPending,
+  walkthroughFailedLabel: COPY.steer.walkthroughFailed,
+  reportLabel: COPY.steer.report,
+};
+
+// ---- P1.05 — the Timeline pane + the run report (§5.5/§14.5) ----
+
+const TL = COPY.timeline;
+const RP = COPY.report;
+
+const timelineLabels: TimelineLabels = {
+  nextStepLabel: (verb, headDraftN) =>
+    fmt(TL.nextStep[verb] ?? verb, { n: headDraftN ?? "" }).replace(/\s+/g, " ").trim(),
+  estimateLabel: (credits) => fmt(TL.estimateFmt, { n: credits.toLocaleString("en-US") }),
+  versionLabel: (n) => fmt(TL.versionFmt, { n }),
+  workflowLabel: (workflow, count) =>
+    (TL.workflowLabel[workflow] ?? workflow) + (count != null ? ` ${fmt(TL.countFmt, { n: count })}` : ""),
+  arrow: TL.arrow,
+  originChipLabel: (kind) => TL.originChip[kind],
+  runLineLabel: (workflow, createdAt) =>
+    `${TL.workflowLabel[workflow] ?? workflow} · ${createdAt.slice(0, 10)}`,
+  emptyText: COPY.ide.timeline.empty,
+  verbLabel: (verb) => TL.verbs[verb] ?? verb,
+};
+
+/** The card action targets inside a project's pages — steering POSTs + the dossier/report links. */
+function timelineHrefs(slug: string): TimelineHrefs {
+  return {
+    nextStep: `/p/${slug}/run`,
+    reportHref: (runId) => `/p/${slug}/r/${runId}#report`,
+    deliverableHref: (runId) => `/p/${slug}/review/${runId}`,
+    steeringHref: (runId, action) => `/p/${slug}/r/${runId}/${action}`,
+    gateHref: () => `/p/${slug}`,
+    versionHref: (n) => `/p/${slug}/v/${n}`,
+    verbHref: (verb) => `/p/${slug}/run?workflow=${verb}`,
+  };
+}
+
+const feedLabels: LiveFeedLabels = {
+  densityLabel: (d) => COPY.review.densityLabel[d] ?? d,
+  heading: COPY.review.feedHeading,
+};
+
+const reportLabels: RunReportLabels = {
+  heading: RP.heading,
+  estimateLine: (actual, estimate, ratio) =>
+    estimate != null
+      ? fmt(RP.estimateFmt, { spent: actual.toLocaleString("en-US"), est: estimate.toLocaleString("en-US") }) +
+        (ratio != null ? ` (${ratio}×)` : "")
+      : fmt(RP.noEstimate, { spent: actual.toLocaleString("en-US") }),
+  refundLine: (credits) => fmt(RP.refundFmt, { n: credits.toLocaleString("en-US") }),
+  phaseHeading: RP.phaseHeading,
+  phaseLabel: (k) => R.phaseLabel[k] ?? k,
+  seatLabel: (seat) => (seat != null ? (RP.seatLabel[seat] ?? seat) : "—"),
+  offLabel: R.offLabel,
+  phaseDetail: (credits, durationMs, searches, fetches) => {
+    const base =
+      durationMs != null
+        ? fmt(RP.phaseDetailDurationFmt, { credits: credits.toLocaleString("en-US"), n: Math.round(durationMs / 60000) })
+        : fmt(RP.phaseDetailFmt, { credits: credits.toLocaleString("en-US") });
+    const tail = searches > 0 || fetches > 0 ? ` · ${searches + fetches}` : "";
+    return base + tail;
+  },
+  seatsHeading: RP.seatsHeading,
+  seatSplitLine: (seat, credits, share) =>
+    fmt(RP.seatSplitFmt, { seat: RP.seatLabel[seat] ?? seat, credits: credits.toLocaleString("en-US"), pct: Math.round(share * 100) }),
+  flagsHeading: RP.flagsHeading,
+  flagLabel: (key) => RP.flagLabel[key] ?? key,
+  claimsLine: (checked, verified, perVerified) =>
+    perVerified != null
+      ? fmt(RP.claimsFmt, { checked, verified, per: perVerified.toLocaleString("en-US") })
+      : fmt(RP.claimsNoVerifyFmt, { checked, verified }),
+  driversHeading: RP.driversHeading,
+  driverLabel: (key, phase, share) =>
+    key === "phase_share" && phase != null && share != null
+      ? fmt(RP.driverPhaseShareFmt, { phase: R.phaseLabel[phase] ?? phase, pct: Math.round(share * 100) })
+      : key === "within_estimate"
+        ? RP.driverWithinEstimate
+        : (RP.flagLabel[key] ?? key),
+  guidanceHeading: RP.guidanceHeading,
+  guidanceLabel: (key) => RP.guidanceLabel[key] ?? key,
+  advancedHeading: RP.advancedHeading,
+  advancedColumns: RP.advancedColumns,
+  notAvailable: RP.notAvailable,
+  loadAdvanced: RP.loadAdvanced,
 };
 
 const letterLabels: LetterViewLabels = {
@@ -1277,7 +1413,17 @@ export function DossierPage(): ReactNode {
       </div>
 
       <div style={{ margin: "16px 0" }}>
-        <RunCard view={buildRunCardView(dossier.runCard)} labels={runCardLabels} />
+        {/* P1.05 — the dossier card carries the same actions the Timeline's card does (report link,
+            walkthrough block, retry) — same view model, same labels (re-skin, never a fork). */}
+        <RunCard
+          view={buildRunCardView(dossier.runCard)}
+          labels={runCardLabels}
+          hrefs={{
+            report: `/p/${dossier.slug}/r/${dossier.runId}#report`,
+            deliverable: `/p/${dossier.slug}/review/${dossier.runId}`,
+            retryWalkthrough: `/p/${dossier.slug}/r/${dossier.runId}/walkthrough`,
+          }}
+        />
       </div>
 
       <div style={{ margin: "16px 0" }}>
@@ -1354,6 +1500,33 @@ export function DossierPage(): ReactNode {
             {COPY.triage.savedLabel}
           </p>
         ) : null}
+      </div>
+    </IdeFrame>
+  );
+}
+
+/** P1.05 — the run report page (`/p/:project/r/:run#report`; §14.5 Level 3 + the Advanced Level-4
+ *  disclosure). Renders inside the IDE frame so the Timeline keeps its context. */
+export function RunReportPage(): ReactNode {
+  const { runReport } = usePageData();
+  if (!runReport) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{RP.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{RP.emptyRun}</p>
+      </Shell>
+    );
+  }
+  return (
+    <IdeFrame>
+      <SectionTitle>{RP.heading}</SectionTitle>
+      <div style={{ margin: "16px 0" }}>
+        <RunReport
+          view={runReport.report.report}
+          {...(runReport.report.advancedView ? { advanced: runReport.report.advancedView } : {})}
+          labels={reportLabels}
+          advancedHref={`/p/${runReport.slug}/r/${runReport.runId}?advanced=1`}
+        />
       </div>
     </IdeFrame>
   );

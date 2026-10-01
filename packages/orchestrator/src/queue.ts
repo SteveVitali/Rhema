@@ -10,6 +10,8 @@ export const RUN_JOBS = {
   reap: "run.reap",
   /** PRB.08 — re-drives a delivery a chargeback withheld (the stashed `runs.pending_delivery`). */
   deliver: "run.deliver",
+  /** P1.05 — the one package-class model call that writes a delivered run's walkthrough (§5.6). */
+  walkthrough: "run.walkthrough",
 } as const;
 export type RunJobName = (typeof RUN_JOBS)[keyof typeof RUN_JOBS];
 

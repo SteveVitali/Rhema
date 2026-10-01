@@ -39,3 +39,23 @@ export function phaseClassesForWorkflow(workflow: WorkflowKey): PhaseClass[] {
   for (const phase of manifest.phases) classes.add(phase.phaseClass as PhaseClass);
   return [...classes];
 }
+
+/**
+ * The workflow's phase list for the run card / run report (P1.05; §5.5): manifest order, each phase's seat,
+ * and whether the run's FROZEN inputs opt it out (the same `optOutFlag`/`optional` rule `buildHarnessRunSpec`
+ * applies — duplicated nowhere else; the card's "off" rows come from THIS, REQ-IDE-12).
+ */
+export function phaseShapeForWorkflow(
+  workflow: WorkflowKey,
+  inputs: Record<string, unknown>,
+): readonly { key: string; seat: string | null; off: boolean }[] {
+  const manifest = WORKFLOW_MANIFESTS[workflow];
+  if (!manifest) return [];
+  return manifest.phases.map((p) => ({
+    key: p.key,
+    seat: p.seat,
+    off:
+      (p.optOutFlag != null && inputs[p.optOutFlag] === false) ||
+      (p.optional != null && inputs["tier"] === p.optional),
+  }));
+}

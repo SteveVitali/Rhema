@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRunCardView, deriveRunCardInput, CARD_EVENT_TYPES, type RunEventLike } from "./run-card.js";
+import { buildRunCardView, deriveRunCardInput, etaBandForPhases, CARD_EVENT_TYPES, type RunEventLike } from "./run-card.js";
 
 // AC2 — the run card renders ONLY orchestrator-emitted state/counters; a stream carrying agent-authored
 // progress text contributes NONE of it (REQ-IDE-11). REQ-IDE-12 — opt-out phases render "off".
@@ -97,5 +97,110 @@ describe("the refund line (PRB.08; REQ-BETA-18)", () => {
     const input = deriveRunCardInput("run_1", events, { phaseKeys: PHASES });
     expect(input.refundedCredits).toBe(0);
     expect(buildRunCardView(input).refundedCredits).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------------------------------------------------------
+// P1.05 — the six §5.5 card states + the derived primary-action table (REQ-IDE-18 steering affordances).
+
+import { runCardActions, type RunCardInput } from "./run-card.js";
+
+const base = (over: Partial<RunCardInput> = {}): RunCardInput => ({
+  runId: "r",
+  state: "running",
+  phases: [],
+  spentCredits: 0,
+  capCredits: 100,
+  ...over,
+});
+
+describe("the six §5.5 card states → primary actions", () => {
+  it("queued/created → cancel only (with queue position when supplied)", () => {
+    const view = buildRunCardView(base({ state: "queued", queuePosition: 3 }));
+    expect(view.actions).toEqual(["cancel"]);
+    expect(view.queuePosition).toBe(3);
+  });
+
+  it("running → pause / stop / note / live_feed", () => {
+    expect(buildRunCardView(base({ state: "running" })).actions).toEqual([
+      "pause",
+      "stop",
+      "note",
+      "live_feed",
+    ]);
+  });
+
+  it("waiting_gate + paused → resume / stop (the steering park, not an approval)", () => {
+    const view = buildRunCardView(base({ state: "waiting_gate", paused: true }));
+    expect(view.paused).toBe(true);
+    expect(view.actions).toEqual(["resume", "stop"]);
+  });
+
+  it("waiting_gate WITHOUT paused → a real gate: the approval owns actions, the card offers the feed", () => {
+    const view = buildRunCardView(
+      base({ state: "waiting_gate", waitingGate: { kind: "approve_plan", deadlineAt: null } }),
+    );
+    expect(view.paused).toBe(false);
+    expect(view.actions).toEqual(["live_feed"]);
+    expect(view.waitingGate?.kind).toBe("approve_plan");
+  });
+
+  it("`paused` is ignored off waiting_gate — a running run can never render the paused variant", () => {
+    const view = buildRunCardView(base({ state: "running", paused: true }));
+    expect(view.paused).toBe(false);
+    expect(view.actions).toContain("pause");
+  });
+
+  it("completed → open_deliverable (when chips exist) + report; a failed walkthrough adds retry", () => {
+    const view = buildRunCardView(
+      base({ state: "completed", deliverables: [{ key: "letter" }, { key: "findings", count: 41 }] }),
+    );
+    expect(view.actions).toEqual(["open_deliverable", "report"]);
+
+    const failed = buildRunCardView(
+      base({ state: "completed", deliverables: [{ key: "letter" }], walkthrough: { status: "failed" } }),
+    );
+    expect(failed.actions).toEqual(["open_deliverable", "report", "retry_walkthrough"]);
+
+    const noDeliverables = buildRunCardView(base({ state: "completed" }));
+    expect(noDeliverables.actions).toEqual(["report"]);
+  });
+
+  it("failed/cancelled/completed_partial → resume (when resumable) + report", () => {
+    for (const state of ["failed", "cancelled", "completed_partial"] as const) {
+      expect(buildRunCardView(base({ state, resumable: true })).actions).toEqual(["resume", "report"]);
+      expect(buildRunCardView(base({ state, resumable: false })).actions).toEqual(["report"]);
+    }
+    const failedView = buildRunCardView(base({ state: "failed", failureCode: "cap_exceeded" }));
+    expect(failedView.failureCode).toBe("cap_exceeded");
+  });
+
+  it("runCardActions is pure: provisioning (not in the §5.5 table) falls through to no actions", () => {
+    expect(
+      runCardActions({ state: "provisioning", paused: false, resumable: false, hasDeliverable: false, walkthroughFailed: false }),
+    ).toEqual([]);
+  });
+});
+
+describe("etaBandForPhases (ledger K4 — the running card's ≈ low–high min band)", () => {
+  const phases = (statuses: string[]) =>
+    statuses.map((s, i) => ({ key: `p${i}`, ordinal: i + 1, status: s as "done" | "running" | "pending" | "off" }));
+
+  it("projects the mean committed-step duration over the phases still to run — band [0.8×, 1.5×]", () => {
+    // 2 committed steps at 10 min each, 3 phases remaining → 10 min × 3 = 30 min → [24, 45].
+    const band = etaBandForPhases(phases(["done", "done", "running", "pending", "pending"]), [
+      { durationMs: 10 * 60 * 1000 },
+      { durationMs: 10 * 60 * 1000 },
+    ]);
+    expect(band).toEqual({ lowMin: 24, highMin: 45 });
+  });
+
+  it("uses the flat 5-min/phase prior when no step has committed yet", () => {
+    // 2 remaining → prior 5 min × 2 = 10 min → [8, 15].
+    expect(etaBandForPhases(phases(["running", "pending"]), [])).toEqual({ lowMin: 8, highMin: 15 });
+  });
+
+  it("is null once nothing remains — and 'off' phases never count", () => {
+    expect(etaBandForPhases(phases(["done", "done", "off"]), [{ durationMs: 60000 }])).toBeNull();
   });
 });

@@ -29,6 +29,7 @@ import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { createThemeRoutes } from "./theme-routes.js";
+import { createTimelineRoutes } from "./timeline-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore } from "@rhema/mirror";
 
@@ -111,6 +112,8 @@ export { createExportRoutes, createServiceExportRunner } from "./export-routes.j
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
 export { createDossierRoutes, parseLetterSections } from "./dossier-routes.js";
 export type { DossierApiDeps } from "./dossier-routes.js";
+export { createTimelineRoutes } from "./timeline-routes.js";
+export type { TimelineApiDeps } from "./timeline-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
 export { createThemeRoutes } from "./theme-routes.js";
 export type { AnalyticsApiDeps } from "./analytics-routes.js";
@@ -254,6 +257,10 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     // claim_sources joined to the proxy fetch_log, the letter markdown → sections, the re-derived
     // access_report, the run's own event stream, and the obligation counts.
     app.route("/", createDossierRoutes(deps as DossierApiDeps));
+    // P1.05 — the Timeline round log, the Level-3/4 run report, and the §6.5 steering endpoints
+    // (pause-after-phase / resume / queue-note / stop / walkthrough retry). Session-authed like the
+    // gate routes; all state changes ride the canonical orchestrator seams.
+    app.route("/", createTimelineRoutes(deps));
     // PRB.10 — the voice surface (§9.2–§9.6): personas, samples, the seed editor, the build run, the
     // project voice pin, and the derived-artifact write gate (405 for editMode:"none").
     app.route(

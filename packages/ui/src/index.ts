@@ -36,7 +36,12 @@ export type {
 export { TrustChip, ObligationChip, VersionObligationChip, BalanceChip } from "./chips.js";
 export type { ObligationStateKind } from "./chips.js";
 export { RunCard, LiveFeed } from "./run-card.js";
-export type { RunCardLabels, LiveFeedLabels, FeedRow } from "./run-card.js";
+export type { RunCardLabels, RunCardHrefs, LiveFeedLabels, FeedRow } from "./run-card.js";
+// P1.05 — the Timeline pane's round log (§5.5) + the Level-3/4 run report (§14.5).
+export { TimelinePane } from "./timeline.js";
+export type { TimelineViewWire, TimelineRoundWire, TimelineLabels, TimelineHrefs } from "./timeline.js";
+export { RunReport } from "./run-report.js";
+export type { RunReportLabels } from "./run-report.js";
 export { FindingCard, FindingsList, ConflictRow } from "./findings.js";
 export type { FindingCardProps, FindingCardLabels, FindingsListProps, FindingsListLabels, ConflictRowLabels } from "./findings.js";
 export { ClaimsTable } from "./claims.js";

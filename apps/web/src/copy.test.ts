@@ -8,13 +8,20 @@ import { collectCopyStrings } from "./copy.js";
 
 describe("copy vocabulary lint (Appendix D.2)", () => {
   it("the entire UI copy table is free of banned strings", () => {
-    // "Advanced" is the ONE sanctioned Appendix D.2 exception the beta copy uses — the run sheet's
-    // progressive-disclosure label (§6.5), used in exactly its permitted role. Every other banned/excepted
-    // term (incl. "tokens") must still be absent.
-    const violations = lintCopy(collectCopyStrings(), { allow: ["Advanced"] });
+    // Two sanctioned Appendix D.2 exceptions the beta copy uses: "Advanced" as the progressive-disclosure
+    // label (§6.5; P1.05's report heading reuses the same role) and "tokens" ONLY under that disclosure
+    // (§14.5's Level-4 drill-down columns). Every other banned/excepted term must still be absent.
+    const violations = lintCopy(collectCopyStrings(), { allow: ["Advanced", "tokens"] });
     expect(violations).toEqual([]);
-    // and the sanctioned term is genuinely only the disclosure label (nowhere else, and never "tokens").
-    expect(lintCopy(collectCopyStrings()).map((v) => v.term)).toEqual(["Advanced"]);
+    // and each excepted term stays inside its sanctioned role — nowhere else in the table.
+    for (const v of lintCopy(collectCopyStrings())) {
+      if (v.term === "tokens") {
+        expect(v.key.startsWith("report.advancedColumns.")).toBe(true);
+      } else {
+        expect(v.term).toBe("Advanced");
+        expect(["runSheet.advanced", "report.advancedHeading"]).toContain(v.key);
+      }
+    }
   });
 
   it("PRB.13 — the open-mode signup copy is factual and lint-clean (REQ-POS-4/5/13)", () => {
