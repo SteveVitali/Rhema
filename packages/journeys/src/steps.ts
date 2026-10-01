@@ -16,6 +16,14 @@ const PAID_FIXTURE = readFileSync(
   "utf8",
 );
 
+/** RES.1 — the recovered 1,029-word incident essay (planted error: Library of Congress 1850 → the
+ *  real 1800). N6 drives a Quick/Base Review on it — the before/after against incident run
+ *  01M3SK62YZST272B35CG12K6TW. */
+const PLANTED_ESSAY = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../fixtures/planted-error-essay.md"),
+  "utf8",
+);
+
 // ---------------------------------------------------------------- helpers
 
 /** Bundle-parity leg (PR-J4): every served /assets/*.js came back 200 with a JS content-type, and
@@ -223,18 +231,111 @@ const N5: StepFn = async (ctx) => {
   await page.waitForLoadState("domcontentloaded");
 };
 
-/** N6 (RED, RES.1; paid) — delivered dossier: ≥1 fetched-✓ claim; planted error Contradicted. */
+/**
+ * RES.1 — create a project from pasted draft text through the REAL two-step ingest: POST /app/new
+ * runs the conversion preview (pending → meta-refresh → preview), then its Create click replays the
+ * quarantine key and lands on /p/<slug>. (N5's plain helper only covers the synchronous `scratch`
+ * entry; the draft entries are deliberately preview-first — §5.3's make-or-break moment.) Exported
+ * for the live-probe provisioner (provision-res1.ts) — the probe's excerpt project is created by
+ * the same real path.
+ */
+export async function createDraftProject(
+  page: Page,
+  webBaseUrl: string,
+  title: string,
+  text: string,
+): Promise<string> {
+  await gotoOk(page, `${webBaseUrl}/app/new?entry=draft`);
+  await page.fill('input[name="title"]', title);
+  await page.fill('textarea[name="paste"]', text);
+  await page.click('form[action="/app/new"] button[type="submit"], form[action="/app/new"] button:not([type])');
+  // pending → meta-refresh (5 s cadence) → preview: wait for the preview's Create form. A cold
+  // convert Job runs ~2.5–4 min (PRB.21's own note), so the budget is 5 min — never a stale page.
+  const create = page.locator('form[action="/app/new/create"] button[value="create"]').first();
+  await create.waitFor({ state: "visible", timeout: 300_000 });
+  // the preview panes can push the actions row below the fold — scroll so the occlusion check's
+  // center point is inside the viewport (elementFromPoint returns null off-viewport).
+  await create.scrollIntoViewIfNeeded();
+  await assertActionable(create, "conversion preview Create");
+  await create.click();
+  await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 30_000 });
+  const m = /\/p\/([a-z0-9-]+)/i.exec(page.url());
+  if (!m?.[1]) throw new Error(`draft project did not land on /p/<slug> (landed ${page.url()})`);
+  return m[1];
+}
+
+/** N6 (RED→green under RES.1; paid) — the planted-error Quick/Base Review end-to-end through the
+ *  real surfaces on the funded test tenant (jrn-a): paste the essay → run sheet (rigor=quick,
+ *  this-run autorun) → deliver → the dossier shows ≥1 fetched-✓ claim AND the planted error row
+ *  *Contradicted* with a fetched source. This is the before/after against incident run
+ *  01M3SK62YZST272B35CG12K6TW, where every claim went Unverifiable (no web_search ever reached the
+ *  model — RES.1's root cause). */
 const N6: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  const row = page.locator('a[href*="/review/"]').first();
-  if ((await row.count()) === 0) throw new Error("no delivered review to inspect");
-  await row.click();
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("N6ESSAY"), PLANTED_ESSAY);
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
+  // the ticket's cell is Quick/Base — select the rigor radio explicitly (the query arg pre-selects
+  // it; checking makes the intent load-bearing rather than ambient).
+  const rigor = page.locator('input[name="rigor"][value="quick"]');
+  if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
+  // "This run only — run it to completion" (per-run gates_off): the leg is unattended; named
+  // approvals would park the review at its gates.
+  const auto = page.locator('input[name="autoRun"]');
+  if ((await auto.count()) > 0 && !(await auto.isChecked())) await auto.check();
+  const runBtn = page.locator('button[data-run-button="true"]').first();
+  await assertActionable(runBtn, "Review launch");
+  await runBtn.click();
   await page.waitForLoadState("domcontentloaded");
-  const fetched = await page.locator('[data-verdict="fetched"], [data-tier]').count();
+  // two-click consent is client-side (§5.6): if the sheet re-rendered still armed, click the
+  // (now "Confirm…"-labelled) button once more; a started run instead re-renders `started`.
+  if ((await page.locator('[data-run-sheet] [data-started="true"]').count()) === 0) {
+    const again = page.locator('button[data-run-button="true"]').first();
+    if ((await again.count()) > 0 && (await again.isVisible().catch(() => false))) {
+      await again.click();
+      await page.waitForLoadState("domcontentloaded");
+    }
+  }
+  // the launched run's dossier URL: the sheet's activeRun card links /p/<slug>/review/<runId>.
+  // Re-load the sheet (now in its activeRun state) to read the run id off the link.
+  const runLinkSel = `a[href^="/p/${slug}/review/"]`;
+  let reviewHref: string | null = await page
+    .locator(runLinkSel)
+    .first()
+    .getAttribute("href")
+    .catch(() => null);
+  if (!reviewHref) {
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
+    reviewHref = await page.locator(runLinkSel).first().getAttribute("href").catch(() => null);
+  }
+  if (!reviewHref) throw new Error("run sheet shows no active-run dossier link after launch");
+  const runId = /\/review\/([A-Za-z0-9]+)/.exec(reviewHref)?.[1] ?? "";
+  // poll the dossier route until the run delivers — it 404s while the run is in flight.
+  const deadline = Date.now() + 40 * 60_000;
+  let delivered = false;
+  while (Date.now() < deadline) {
+    const r = await page.goto(`${ctx.webBaseUrl}${reviewHref}`, { waitUntil: "domcontentloaded" }).catch(() => null);
+    if (r && r.status() === 200) {
+      delivered = true;
+      break;
+    }
+    await new Promise((res) => setTimeout(res, 20_000));
+  }
+  if (!delivered) throw new Error(`run ${runId} did not deliver a dossier within 40 min`);
+  // ≥1 fetched-✓ claim: a FetchedUrlChip (`a[data-fetched="true"]`, primitives.tsx) — a source the
+  // fact-check actually retrieved, stamped from the run's own fetch_log (REQ-POS-3's proof).
+  const fetched = await page.locator('a[data-fetched="true"]').count();
   if (fetched === 0) throw new Error("dossier shows no fetched-✓ claims");
-  const contra = await page.locator('[data-contradicted-tier1="true"]').count();
-  if (contra === 0) throw new Error("planted error is not marked Contradicted");
+  // the planted error row itself: verdict Contradicted + its fetched source inside the same row.
+  const planted = page.locator('li[data-verdict]', { hasText: "Library of Congress" });
+  if ((await planted.count()) === 0) throw new Error("no claim row names the planted LoC claim");
+  const contra = page.locator('li[data-verdict="contradicted"]', { hasText: "Library of Congress" });
+  if ((await contra.count()) === 0) {
+    throw new Error("planted error is not marked Contradicted");
+  }
+  const plantedSource = contra.first().locator('a[data-fetched="true"]');
+  if ((await plantedSource.count()) === 0) {
+    throw new Error("planted error is Contradicted but carries no fetched source");
+  }
 };
 
 /** N7 (GREEN, HOT.1) — a dossier renders, including the Showcase dossier. */
