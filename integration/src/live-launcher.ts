@@ -124,6 +124,14 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
     readonly workflow: WorkflowKind;
     readonly rigor?: Rigor;
     readonly instrumented?: boolean;
+    /**
+     * RES.1 — the word/claim counts the run's estimate + web-research bound are sized on
+     * (`runs.input_snapshot`, read at provision for `authorWebToolPolicy`). The sheet carries these
+     * from its claim pre-pass; an API-direct launch that omits them silently lands the claims=0
+     * fallback bound (8 searches/16 fetches) — the first live probe starved verification on exactly
+     * this. Pass the fixture's real counts when the caller knows them.
+     */
+    readonly inputSnapshot?: Record<string, unknown>;
   }): Promise<LaunchedRun> {
     const { projectId, workflow, instrumented = false } = input;
     const workflowKey = WORKFLOW_KEY_BY_KIND[workflow];
@@ -148,6 +156,8 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
       // G1 delivers with second_read off — this ticket's Stage B AC1). It is a review-only input.
       inputs: { ...(draftId ? { draftId } : {}), sidecar: true, instrumented, ...(workflow === "review" ? { second_read: false } : {}) },
       ...(draftId ? { draftId } : {}),
+      // the word/claim counts the estimate + research bound size on (see `launch` above).
+      ...(input.inputSnapshot ? { inputSnapshot: input.inputSnapshot } : {}),
     };
 
     const res = await this.fetch(`${this.base}/projects/${projectId}/runs`, {

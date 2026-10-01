@@ -28,6 +28,15 @@ export const PLANTED_CLAIM = {
   expectVerdict: "contradicted",
 } as const;
 
+/**
+ * The probe fixture's sizing snapshot — the `wordCount`/`claimCount` the launch sheet would carry
+ * from its claim pre-pass into `runs.input_snapshot` (what `authorWebToolPolicy` reads to scale the
+ * research bound). `planted-error-excerpt.md` is fixed: 267 words, 9 checkable claims (the count the
+ * first live run's claim extraction produced). An API-direct launch that omits it lands the claims=0
+ * fallback bound (8 searches/16 fetches) — the starvation the first live probe hit.
+ */
+export const PROBE_INPUT_SNAPSHOT = { wordCount: 267, claimCount: 9 } as const;
+
 // ---------------------------------------------------------------- evidence types ----
 
 export interface UsageByModel {
@@ -216,7 +225,12 @@ export async function driveResearchProbe(opts: DriveProbeOptions): Promise<Probe
     ...(opts.now ? { now: opts.now } : {}),
     ...(opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {}),
   });
-  const launched = await launcher.launch({ projectId: opts.projectId, workflow: "fact_check" });
+  const launched = await launcher.launch({
+    projectId: opts.projectId,
+    workflow: "fact_check",
+    // the fixture's real sizing — the claim-scaled research bound (see PROBE_INPUT_SNAPSHOT).
+    inputSnapshot: PROBE_INPUT_SNAPSHOT,
+  });
   const evidence = await collectProbeEvidence(opts.sql, launched.runId);
   return evaluateProbeEvidence(evidence);
 }

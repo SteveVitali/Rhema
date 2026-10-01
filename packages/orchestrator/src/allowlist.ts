@@ -100,6 +100,19 @@ export const FETCH_MAX_CONTENT_TOKENS = 8000 as const;
 export const RESEARCH_FLOOR_SHARE = 0.5 as const;
 
 /**
+ * RES.1 — the research wave width: the parallel subagent fan-out verification typically runs
+ * (the 2026-09-30 incident was four Haiku researchers; a fact_check verification spawns the same
+ * shape). The proxy reserves each request's granted `max_uses` against the run bound for the life
+ * of the request — so an UNCAPPED grant hands the first request of the wave the entire remainder
+ * and strips the tools from every sibling admitted while it is in-flight (probe 01M3VT9R…:
+ * `max_uses` defaulted to 15 against a 6-search remainder; the sibling researchers ran tool-less
+ * and honestly reported "no working web_search"). Bounding the per-call grant at budget ÷ width
+ * keeps the whole wave tool-bearing; `max_uses` bounds one API call only, so a researcher that
+ * needs more simply continues on the next turn while budget remains.
+ */
+export const RESEARCH_PARALLELISM = 4 as const;
+
+/**
  * RES.1 (REQ-SPEC-31(2)) — the ONE pure sizing function for the research floor: verification's
  * reserved share of the run's search/fetch budgets. The budgets it floors are already claim-scaled
  * (`authorWebToolPolicy`), so the signature carries `claims` for the record and `rigor` for the fold
@@ -150,6 +163,10 @@ export function authorWebToolPolicy(args: { readonly claims?: number }): WebTool
     fetch: true,
     fetchBudget,
     searchBudget,
+    // RES.1 — per-call grant caps so one in-flight request's reservation cannot strip its parallel
+    // siblings: at most a quarter of the run bound per API call (see RESEARCH_PARALLELISM).
+    searchMaxUses: Math.max(1, Math.floor(searchBudget / RESEARCH_PARALLELISM)),
+    fetchMaxUses: Math.max(1, Math.floor(fetchBudget / RESEARCH_PARALLELISM)),
     ...authorResearchFloor({ claims, searchBudget, fetchBudget }),
     fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
   };

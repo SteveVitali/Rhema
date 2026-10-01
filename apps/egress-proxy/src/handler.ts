@@ -459,10 +459,17 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
       // PRB.22: feed the per-run research bound. The metered `server_tool_use` counts are authoritative
       // (they're what the provider billed); block-level fetch activity also counts search-result urls,
       // so it is not a per-invocation count — usage only.
-      researchUsage.record(ctx.runId, {
-        fetches: usage?.webFetchRequests ?? 0,
-        searches: usage?.webSearchRequests ?? 0,
-      });
+      // RES.1 — a preflight probe bypasses the bound at ADMISSION (bypassBudget); it must not consume it
+      // at settlement either. The probe's whole job is proving the tools reach the model before paid
+      // research runs — charging its executions against the envelope shrinks the very share it verifies
+      // (the first live probe spent 2 of 8 searches + 2 of 16 fetches on preflight alone). The usage row
+      // still meters above (billing truth); only the bound-tracker skips the probe.
+      if (!preflight) {
+        researchUsage.record(ctx.runId, {
+          fetches: usage?.webFetchRequests ?? 0,
+          searches: usage?.webSearchRequests ?? 0,
+        });
+      }
       for (const act of serverTools) {
         await writeFetch(
           act.kind === "search"

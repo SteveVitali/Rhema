@@ -32,6 +32,8 @@ export interface WorkflowLauncher {
     readonly rigor?: Rigor;
     /** an instrumented cost run (one per workflow×rigor) whose measured credits fold into the estimator. */
     readonly instrumented?: boolean;
+    /** RES.1 — word/claim counts for `runs.input_snapshot` (sizes the web-research bound at provision). */
+    readonly inputSnapshot?: Record<string, unknown>;
   }): Promise<LaunchedRun>;
 }
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_TIERS, isModelPriceable, CURRENT_RATE_TABLE_VERSION, type ModelTier } from "@rhema/contracts";
 import { rosterModelIds, mainModelForTier } from "@rhema/engine";
-import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, authorResearchFloor, authorResearchPreflight, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES, RESEARCH_FLOOR_SHARE } from "./allowlist.js";
+import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, authorResearchFloor, authorResearchPreflight, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES, RESEARCH_FLOOR_SHARE, RESEARCH_PARALLELISM } from "./allowlist.js";
 
 // F4 — the model-allowlist trap. The proxy admits a request only when `body.model` is EXACTLY on the run's
 // allowlist (`MODELS_BY_TIER`, an exact-match includes) AND priceable in the rate table; otherwise it 403s the
@@ -65,6 +65,23 @@ describe("authorWebToolPolicy (PRB.22 — the per-run research bound)", () => {
     const p = authorWebToolPolicy({ claims: 3 });
     expect(p.fetchBudget).toBe(24); // 12 + 4×3
     expect(p.searchBudget).toBe(11); // 8 + 3
+  });
+
+  it("RES.1 — per-call grants cap at budget ÷ wave width so parallel researchers can't starve", () => {
+    const p = authorWebToolPolicy({ claims: 9 });
+    // 17 searches / 48 fetches → each request reserves ≤4 / ≤12, so a 4-subagent wave never
+    // hands the whole remainder to its first request (the starved-sibling failure the first
+    // live probe hit — probe 01M3VT9R…). `max_uses` is per-call: more turns just keep working.
+    expect(p.searchMaxUses).toBe(4);
+    expect(p.fetchMaxUses).toBe(12);
+    // the wave invariant: RESEARCH_PARALLELISM concurrent full grants never oversubscribe the bound.
+    expect(p.searchMaxUses! * RESEARCH_PARALLELISM).toBeLessThanOrEqual(p.searchBudget!);
+    expect(p.fetchMaxUses! * RESEARCH_PARALLELISM).toBeLessThanOrEqual(p.fetchBudget!);
+    const small = authorWebToolPolicy({});
+    expect(small.searchMaxUses).toBe(2); // floor(8/4)
+    expect(small.fetchMaxUses).toBe(4); // floor(16/4)
+    // a claim-less bound still grants at least one invocation per call — never a zeroed tool.
+    expect(small.searchMaxUses!).toBeGreaterThanOrEqual(1);
   });
 
   it("RES.1 — floors half the authored bound to research-class phases (the verification reserve)", () => {

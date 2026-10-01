@@ -609,6 +609,34 @@ describe("handleProxyRequest — RES.1 executed-only history + research floor + 
     expect(toolsOf(probe).find((t) => t.name === "web_search")?.max_uses).toBe(1);
   });
 
+  it("a metered PREFLIGHT response does not consume the research bound it exists to verify", async () => {
+    // RES.1 — bypassBudget is symmetric: the probe's executions must not settle into the committed
+    // count either, or preflight shrinks the envelope it is proving reachable (first live probe:
+    // 2 of 8 searches + 2 of 16 fetches spent on preflight before verification even ran).
+    const context = ctx({ webTools: { searchBudget: 8 } });
+    const shared = new ResearchUsageTracker();
+    const probeResponse: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1, server_tool_use: { web_search_requests: 1 } },
+      }),
+    };
+    const h = harness({ context, response: probeResponse });
+    await handleProxyRequest(
+      request({ headers: { ...request().headers, [PHASE]: "preflight" } }),
+      { ...h, researchUsage: shared },
+    );
+    // billed usage still lands on the usage row (the meter of record)…
+    expect(h.usageWriter.rows[0]!.searches).toBe(1);
+    // …but the research bound sees nothing — the next request still draws the full budget.
+    expect(shared.usage("run_1")).toEqual({ fetches: 0, searches: 0 });
+    const h2 = harness({ context });
+    await handleProxyRequest(request(), { ...h2, researchUsage: shared });
+    expect(toolsOf(h2).find((t) => t.name === "web_search")?.max_uses).toBe(8);
+  });
+
   it("two parallel requests can never be granted the same budget slice (the four-subagent window)", async () => {
     // The incident shape: 12-search budget, a wave of parallel research subagents each admitted with the
     // full remainder while committed=0. With reservations the second wave-member sees the first's grant.
