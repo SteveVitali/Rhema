@@ -59,6 +59,9 @@ async function main(): Promise<number> {
       },
       projectId: need("PROBE_PROJECT_ID"),
       sql,
+      // PROBE_ATTEMPT (or a process-unique fallback) keeps a retried probe from replaying the
+      // previous attempt's idempotency key — each of the ≤3 attempts must mint a NEW run.
+      idempotencySeed: process.env.PROBE_ATTEMPT ?? `p${Date.now().toString(36)}`,
       ...(fetchWithSession ? { fetch: fetchWithSession } : {}),
     });
     const failures = [...out.failures];

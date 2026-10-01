@@ -192,6 +192,8 @@ export interface DriveProbeOptions {
   /** pg-backed executor for terminal polling + evidence rows. */
   readonly sql: SqlClient;
   readonly timeoutMs?: number;
+  /** folded into the launch idempotency key — a retried probe attempt must mint a NEW run. */
+  readonly idempotencySeed?: string;
   readonly fetch?: FetchLike;
   readonly sleep?: (ms: number) => Promise<void>;
   readonly now?: () => number;
@@ -208,6 +210,7 @@ export async function driveResearchProbe(opts: DriveProbeOptions): Promise<Probe
     sql: opts.sql,
     // the probe's own bound: a small cap so a misbehaving run dies at cap instead of the budget.
     modelTier: "base",
+    ...(opts.idempotencySeed ? { idempotencySeed: opts.idempotencySeed } : {}),
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
     ...(opts.sleep ? { sleep: opts.sleep } : {}),
     ...(opts.now ? { now: opts.now } : {}),

@@ -48,6 +48,12 @@ export interface LiveLauncherOptions {
   // ---- polling ----
   readonly pollIntervalMs?: number;
   readonly timeoutMs?: number;
+  /**
+   * A per-PROCESS nonce folded into every launch's idempotency key (RES.1 live probes). The in-process
+   * seq alone resets on restart — a retried probe would replay the previous attempt's key and read back
+   * its (already-terminal) run. Live drivers MUST pass one (e.g. attempt tag); tests omit it.
+   */
+  readonly idempotencySeed?: string;
   // ---- injectable seams (tests) ----
   readonly fetch?: FetchLike;
   readonly sleep?: (ms: number) => Promise<void>;
@@ -123,8 +129,11 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
     const workflowKey = WORKFLOW_KEY_BY_KIND[workflow];
     const rigor = workflow === "quick_voice" ? "quick" : RIGOR_KEY[input.rigor ?? "standard"];
     const draftId = this.opts.draftIdFor?.(projectId);
-    // A distinct key per call so createRun's idempotency never collapses two intended runs into one (deduped).
-    const idempotencyKey = `live-${workflow}-${projectId}-${rigor}-${instrumented ? "i" : "n"}-${++this.launchSeq}`;
+    // A distinct key per call so createRun's idempotency never collapses two intended runs into one
+    // (deduped); `idempotencySeed` extends that across process restarts (a retried probe attempt must
+    // mint a NEW run, not replay the previous attempt's terminal row).
+    const seed = this.opts.idempotencySeed ? `${this.opts.idempotencySeed}-` : "";
+    const idempotencyKey = `live-${workflow}-${projectId}-${rigor}-${instrumented ? "i" : "n"}-${seed}${++this.launchSeq}`;
 
     const body = {
       idempotencyKey,

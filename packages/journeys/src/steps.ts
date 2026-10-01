@@ -286,26 +286,25 @@ const N6: StepFn = async (ctx) => {
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
   await page.waitForLoadState("domcontentloaded");
-  // two-click consent is client-side (§5.6): if the sheet re-rendered still armed, click the
-  // (now "Confirm…"-labelled) button once more; a started run instead re-renders `started`.
-  if ((await page.locator('[data-run-sheet] [data-started="true"]').count()) === 0) {
-    const again = page.locator('button[data-run-button="true"]').first();
-    if ((await again.count()) > 0 && (await again.isVisible().catch(() => false))) {
-      await again.click();
-      await page.waitForLoadState("domcontentloaded");
-    }
+  // a launch refusal re-renders the sheet with role=alert (402 balance / 403 gate / 409 conflict /
+  // suspension) — surface the honest notice instead of a bare timeout.
+  const alert = page.locator('p[role="alert"]').first();
+  if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
+    throw new Error(`run launch refused: ${(await alert.textContent())?.trim()}`);
   }
-  // the launched run's dossier URL: the sheet's activeRun card links /p/<slug>/review/<runId>.
-  // Re-load the sheet (now in its activeRun state) to read the run id off the link.
+  // The launched run's dossier URL: a non-terminal run renders the activeRun card (the
+  // /p/<slug>/review/<runId> link) on the sheet in place of the Run affordance. The POST's
+  // re-render may carry only the "started" status; the GET picks the card up.
   const runLinkSel = `a[href^="/p/${slug}/review/"]`;
   let reviewHref: string | null = await page
     .locator(runLinkSel)
     .first()
     .getAttribute("href")
     .catch(() => null);
-  if (!reviewHref) {
+  for (let i = 0; i < 12 && !reviewHref; i++) {
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
     reviewHref = await page.locator(runLinkSel).first().getAttribute("href").catch(() => null);
+    if (!reviewHref) await new Promise((res) => setTimeout(res, 5_000));
   }
   if (!reviewHref) throw new Error("run sheet shows no active-run dossier link after launch");
   const runId = /\/review\/([A-Za-z0-9]+)/.exec(reviewHref)?.[1] ?? "";
