@@ -167,6 +167,75 @@ describe("handleAccountHardDelete (account.hard-delete consumer)", () => {
     expect(r.retain).toContain("anonymized-ledger-rows");
     expect(r.retain).toContain("stripe-customer");
   });
+
+  // JOURNEY.1 (live finding, 2026-10-01): the purge sweep's first real hard-delete failed on
+  // `claims_draft_id_fkey` — the projects cascade never reaches NO ACTION children of the content
+  // tree. Seed the full leaf chain (gate→step→run, decision_request→revision_obligation→finding,
+  // disposition→finding, obligation_findings, claim/correspondence→draft) and prove the delete
+  // completes leaf-first.
+  it("hard-deletes a tenant whose claims/findings/correspondence reference drafts (leaf-first)", async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedProject(db, { draftN: 1 });
+    const ws = seed.workspaceId;
+    await db.pg.query(`update "user" set deletion_requested_at = $1 where id = $2`, [
+      day(0).toISOString(),
+      seed.userId,
+    ]);
+    const { seedRun, seedGate } = await import("@rhema/orchestrator/testing");
+    await seedRun(db, { runId: "run_hd", workspaceId: ws, projectId: seed.projectId, state: "finished" });
+    await db.client.query(
+      `insert into steps(id, run_id, phase, ordinal, state) values ('stp_hd','run_hd','verify',1,'done')`,
+    );
+    await seedGate(db, { gateId: "gt_hd", runId: "run_hd", stepId: "stp_hd", kind: "confirm", onExpiry: "proceed" });
+    await db.client.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ('ci_hd', $1, 'review', $2, 'run_hd', now(), '{}'::text[])`,
+      [seed.projectId, seed.draftId],
+    );
+    await db.client.query(
+      `insert into claims(id, correspondence_id, draft_id, ordinal, text, verdict)
+       values ('cl_hd','ci_hd',$1,1,'the claim','supported')`,
+      [seed.draftId],
+    );
+    await db.client.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ('fnd_hd','ci_hd',$1,1,'contradiction','major','agent','T','B')`,
+      [seed.draftId],
+    );
+    await db.client.query(
+      `insert into revision_obligations(id, project_id, source, severity, kind, title, state, opened_on_draft_id, finding_id, created_by)
+       values ('ro_hd',$1,'finding','major','fix','O','open',$2,'fnd_hd',jsonb_build_object('kind','user','id',$3::text))`,
+      [seed.projectId, seed.draftId, seed.userId],
+    );
+    await db.client.query(
+      `insert into obligation_findings(obligation_id, finding_id, correspondence_id, relation)
+       values ('ro_hd','fnd_hd','ci_hd','root')`,
+    );
+    await db.client.query(
+      `insert into decision_requests(id, project_id, text, options, state, obligation_id)
+       values ('dr_hd',$1,'q','{}'::text[],'open','ro_hd')`,
+      [seed.projectId],
+    );
+    await db.client.query(
+      `insert into dispositions(id, finding_id, kind, by_actor) values ('dp_hd','fnd_hd','accept',jsonb_build_object('kind','user'))`,
+    );
+
+    const r = await handleAccountHardDelete(
+      { tenantId: ws, userId: seed.userId, deletionRequestedAt: day(0).toISOString() },
+      { systemExec: db.client, now: day(14) },
+    );
+    expect(r.phase).toBe("hard-delete");
+    expect(r.deleted?.["projects"]).toBe(1);
+    expect(r.deleted?.["claims"]).toBe(1);
+    expect(r.deleted?.["correspondence_items"]).toBe(1);
+    const left = await db.client.query(
+      `select (select count(*)::int from "user" where id=$1) u,
+              (select count(*)::int from projects where workspace_id=$2) p,
+              (select count(*)::int from claims where draft_id=$3) c`,
+      [seed.userId, ws, seed.draftId],
+    );
+    expect(left.rows[0]).toEqual({ u: 0, p: 0, c: 0 });
+  });
 });
 
 // JOURNEY.1 — the test-tenant auto-purge sweep (REQ-SPEC-29; ADR-020): flagged workspaces past the

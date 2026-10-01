@@ -250,8 +250,85 @@ export async function handleAccountHardDelete(
        (select id from personas where workspace_id = $1) returning composite_id`,
     [tenant],
   );
-  // 3 — the content roots: projects cascade drafts/artifacts/runs/gates/findings/guidance/threads/
-  //     files/obligations/figures/versions; personas cascade connections + samples + profiles.
+  // 3 — leaf-first: every NO ACTION child of the content tree dies before its parent, because the
+  //     projects cascade only reaches the CASCADE-marked edges (found live 2026-10-01 — the purge
+  //     sweep's first hard-delete tripped `claims_draft_id_fkey`). Order: gates (→steps NO ACTION),
+  //     obligation links (decision_requests→revision_obligations, obligation_findings→findings),
+  //     revision_obligations + dispositions, then claims/findings/correspondence (all →drafts NO
+  //     ACTION), THEN projects cascade drafts/runs/steps/artifacts; drafts→artifact_versions
+  //     (promoted_version_id NO ACTION) is satisfied because artifacts die after projects.
+  await del(
+    "gates",
+    `delete from gates where step_id in
+       (select s.id from steps s join runs r on r.id = s.run_id join projects p on p.id = r.project_id
+         where p.workspace_id = $1)
+       or run_id in
+       (select r.id from runs r join projects p on p.id = r.project_id where p.workspace_id = $1)
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "decision_requests",
+    `delete from decision_requests where project_id in
+       (select id from projects where workspace_id = $1) returning id`,
+    [tenant],
+  );
+  await del(
+    "obligation_findings",
+    `delete from obligation_findings where obligation_id in
+       (select id from revision_obligations where project_id in
+         (select id from projects where workspace_id = $1))
+       or finding_id in
+       (select f.id from findings f join correspondence_items ci on ci.id = f.correspondence_id
+         where ci.project_id in (select id from projects where workspace_id = $1))
+      returning obligation_id`,
+    [tenant],
+  );
+  await del(
+    "revision_obligations",
+    `delete from revision_obligations where project_id in
+       (select id from projects where workspace_id = $1) returning id`,
+    [tenant],
+  );
+  await del(
+    "dispositions",
+    `delete from dispositions where response_id in
+       (select id from correspondence_items where project_id in
+         (select id from projects where workspace_id = $1))
+       or finding_id in
+       (select f.id from findings f join correspondence_items ci on ci.id = f.correspondence_id
+         where ci.project_id in (select id from projects where workspace_id = $1))
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "findings",
+    `delete from findings where draft_id in
+       (select d.id from drafts d join projects p on p.id = d.project_id where p.workspace_id = $1)
+       or correspondence_id in
+       (select id from correspondence_items where project_id in
+         (select id from projects where workspace_id = $1))
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "claims",
+    `delete from claims where draft_id in
+       (select d.id from drafts d join projects p on p.id = d.project_id where p.workspace_id = $1)
+       or correspondence_id in
+       (select id from correspondence_items where project_id in
+         (select id from projects where workspace_id = $1))
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "correspondence_items",
+    `delete from correspondence_items where project_id in
+       (select id from projects where workspace_id = $1) returning id`,
+    [tenant],
+  );
+  // 4 — the content roots: projects cascade drafts/artifacts/runs/steps/guidance/threads/files/
+  //     versions; personas cascade connections + samples + profiles.
   await del("projects", `delete from projects where workspace_id = $1 returning id`, [tenant]);
   await del("personas", `delete from personas where workspace_id = $1 returning id`, [tenant]);
   await del("artifacts", `delete from artifacts where workspace_id = $1 returning id`, [tenant]);
