@@ -9,6 +9,11 @@
   reconcile leg EXECUTED 2026-09-26** — read-only `assertBalances` + `recompute-balances` DRY-RUN
   against prod (no writes; evidence §6). The `--apply` repair + the estimate-cache live-fill leg
   stay operator-gated (needs the F6 api deploy + migration 0044).
+  - *Correction (2026-10-01, MAINT.2 — dated note; header left intact):* the last sentence went
+    stale the same day. The `--apply` reconcile (180 cr backfill + counter rewrite), migration
+    0044 `NOT VALID` validation, and the F6 live estimate-cache fill (non-provisional row, repeat
+    call 80 ms, zero `est_*` usage rows) all EXECUTED — see §6 + §7 and the 2026-09-26 PHASE LOG
+    entries. D-PRB.03-1 is DONE.
 - **Spend:** $0 (no inference; the reconcile leg is read-only).
 
 ## 1. Root-cause diagnoses (AC1)

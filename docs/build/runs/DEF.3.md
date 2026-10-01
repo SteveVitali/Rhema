@@ -8,6 +8,11 @@
 - **Gate status:** **Stage A (code + tests) DONE** — all deterministic gates green, $0. **Stage B
   (one bounded live chat_turn re-verify, ≤$5) OWED — operator/deploy-gated** (needs the api +
   egress-proxy images deployed; no `pulumi up` from the build env). See §5.
+  - *Correction (2026-10-01, MAINT.2 — dated note; header left intact):* Stage B was executed on
+    prod the same day (≈$0.53 incl. the DEF.2 leg): F10 meter-before-stream-end proven (chat_turn
+    `01M3EVPYKJ9W3KBGDCPBZEXDV7` completed at 27 cr / cap 40; the deliberate cap-crossing run
+    `01M3EW0E…` → 402s, debits clamped at cap), F7 probe admitted with zero `egress_denied` noise,
+    F9 minted `/api/action/<token>` link verified 303/410/400 — all in §6; D-DEF.3-1 is DONE.
 - **Spend:** $0 (Stage A only — no inference, no deploy).
 
 ## 1. Root-cause diagnoses (AC1)

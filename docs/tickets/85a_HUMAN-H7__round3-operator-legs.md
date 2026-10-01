@@ -64,6 +64,11 @@
   > `14stevevitali+rhema-review@gmail.com` has account deletion scheduled through Settings → Data; it hard-deletes on
   > 2026-10-14 with its two projects. The browser sessions used by the review were signed out server-side. **Still
   > open:** the test draft v7 on `my-first-project` and the stray `deployments` provenance row (MAINT.2 inventory).
+  >
+  > **2026-10-01 (MAINT.2):** the committed inventory is
+  > `docs/build/reports/2026-10-01_prod-test-data-inventory.md` — every candidate with ids, committed evidence,
+  > a recommended action and a delete-risk note (rows 8–9 flag the `is_test` ambiguity for SEC.1's probe
+  > accounts). Checkbox left for the operator — the deletes are yours to authorize and run.
 - [ ] **Live-mode Stripe re-verify (BL-33).** A real `api.stripe.com` purchase on the live key, the hosted UX,
   3DS, Tax, and test clocks. Real money: at your discretion, after BILL.3 lands.
 - [ ] **Anthropic admin/org key for the Usage & Cost reconcile (BL-34).** Seed a real admin-scoped key into
