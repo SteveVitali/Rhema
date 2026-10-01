@@ -109,7 +109,13 @@
 
 ## Gap table
 
-(filled at Phase 4)
+| Gap found (Phase-4 review + live legs) | Resolution |
+|---|---|
+| `secrets-manifests` collab-env test keyed literal `name:` regex — two DATABASE_URL branches = 3 hits | Test amended to the stricter contract (unique names; only `collab-database-url` secretKeyRef allowed) |
+| Prod `_migrations` row `0044_ledger_integrity` recorded without `.sql` (2026-09-26 manual apply) → migrator re-applied 0044 → 42710 | Renormalized the row to the filename; `0045` then applied clean. Bookkeeping repair, not a code change. |
+| Collab `DATABASE_URL` plaintext env (REQ-ARCH-30 finding) | Fixed in this PR — `secretKeyRef` to `rhema-prod-collab-database-url` (operator-seeded pre-switch). |
+| `pnpm test` initially linted `integration/.scratch/**` | `.scratch` added to the eslint ignore list. |
+| Probe accounts must come through the real funnel (ADR-016) | Done: `test+sec1a/b@rhema.tools` magic-link sign-in on prod; mailbox read keylessly via `rhema-journeys` DWD. |
 
 ## Evidence log
 
@@ -132,6 +138,23 @@
   cross-tenant; web `/voices` + `/app` pages carried the same markers. 8 routes probed, `passed:false`.
   (This is the expected pre-switch posture — `postgres` BYPASSRLS + pre-fix image.)
 
+- 2026-10-01 — Stage-B legs 3–6 (switch + verify + observe): `pulumi preview` +6/~6/0-replace/0-delete;
+  `pulumi up` prod update 93 (78 s) — RandomPassword → `rhema-prod-app-database-url` SM v1, secretKeyRef
+  mounts, IAM bindings, `sec1` digests on api (`…d960e79c`), worker (`…0c99aa79`), collab (`…e5685cd6`),
+  run-task (`…bea178c5`); `ALTER ROLE rhema_app_login LOGIN PASSWORD` ~01:52Z (LOGIN now; still
+  NOBYPASSRLS/NOSUPERUSER — verified via `pg_roles`); post-switch probe `passed:true`, `findings:[]`,
+  8 routes × 2 tenants (JSON + web); direct `rhema_app_login` connect → unscoped `personas`/`projects`
+  → 0 rows, `pause_signals`/`stripe_events` → permission denied, `SET row_security=off` → error;
+  `pg_stat_activity` shows pg-boss on `postgres` only; provenance row `prod:987ce002…`; 30-min
+  observation (→ ~02:22Z): api `00047-xwk`, worker `00041-48p`, collab `00005-rjq` all Ready; logs
+  clean — no permission-denied or role errors; worker booted pg-boss on the system DSN and ran
+  scheduled sweeps (`billing.auto-reload`, SLO probes) normally.
+
 ## Evidence report
 
-(filled at Phase 6)
+**Decision: KEEP.** The SEC.1 role split is live on prod: user-serving `DATABASE_URL` connects as
+`rhema_app_login` (NOBYPASSRLS member of `rhema_app`), `SYSTEM_DATABASE_URL` retains `postgres` for the
+audited seams, and the live two-tenant probe passed with zero foreign markers where the pre-switch run
+reproduced the `/voices` leak verbatim. Deliverables 1–10 all landed; D-SEC.1-1 closed with live
+evidence; D-SEC.1-2 (H7 exposure review) stays OPEN and operator-owned. PR #81 stacked on
+`stevevitali/stb-4-real-money-external`; mergePolicy=OPERATOR — do not merge.

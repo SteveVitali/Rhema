@@ -48,18 +48,29 @@ and only named, linted, allowlisted seams keep the elevated `SYSTEM_DATABASE_URL
   cross-tenant, how it's audited) and `docs/security/rls-exposure-since-0026.md` (the RLS-only
   exposure windows for HUMAN-H7 — ids/counts only, no user data).
 
-## Live verification (Stage-B window, operator-authorized)
+## Live verification (Stage-B window, operator-authorized, 2026-10-01)
 
-- `pulumi preview` prod: +7 create / ~6 update / 0 replace / 0 delete — no stateful changes.
-- Pre-switch probe (real sessions, `test+sec1a/b@rhema.tools` via the magic-link funnel): **failed
-  as designed** — `GET /voices` + `GET /voices/<foreign>` + `/voices` & `/app` pages returned
-  foreign-tenant markers under the old `postgres` BYPASSRLS posture. (Confirms the live leak.)
-- Migration `0045` applied to prod Cloud SQL; role verified `NOLOGIN/NOBYPASSRLS/NOSUPERUSER`,
-  sole membership `rhema_app`.
+- `pulumi preview` prod: +6 create / ~6 update / 0 replace / 0 delete — no stateful changes.
+- Migration `0045` applied to prod Cloud SQL (a stale `0044_ledger_integrity` `_migrations` row
+  recorded without the `.sql` suffix was renormalized first — the migrator matches on filenames).
 - `rhema-prod-collab-database-url` secret created + version seeded before the collab env flip.
-- Post-switch probe + 30-min observation: **see run ledger Evidence log** (filled at Stage-B
-  completion; rollback path = `update-traffic --to-revisions <pre-switch>=100` + `alter role …
-  nologin`).
+- Probe sessions acquired through the real signup funnel (`test+sec1a/b@rhema.tools` magic links,
+  mailbox read keylessly via the `rhema-journeys` service account — never minted tokens).
+- **Pre-switch probe FAILED as designed** — `GET /voices`, `GET /voices/<foreign>`, and the
+  `/voices`/`/app` web pages returned foreign-tenant markers under the old `postgres` BYPASSRLS
+  posture. Live leak confirmed and dated.
+- `pulumi up` prod (update 93): generated `rhema_app_login` password → `rhema-prod-app-database-url`
+  SM version, `secretKeyRef` mounts, `sec1` digests on api/worker/collab + `run-task`.
+- `ALTER ROLE rhema_app_login LOGIN PASSWORD` ~01:52Z — role is `LOGIN`, still `NOBYPASSRLS`/`NOSUPERUSER`.
+- **Post-switch probe `passed:true`, zero findings** (8 routes × 2 tenants, JSON + web pages).
+- Direct-role spot check: connecting as `rhema_app_login`, unscoped `personas`/`projects` reads
+  return 0 rows (FORCE RLS), `pause_signals`/`stripe_events` → permission denied, `SET
+  row_security=off` → hard error. `pg_stat_activity` shows pg-boss on `postgres` only.
+- Deployment provenance row: `prod:987ce00244645c73333f019a18df960bfaa9d73f`
+  (`protocols_version 0.4.0+ec61156725a895ab`).
+- 30-min observation clean — no `permission denied` / role errors in api/worker/collab logs; worker
+  booted pg-boss on the system DSN and ran scheduled sweeps normally. Rollback path stood ready
+  (`update-traffic --to-revisions <pre-switch>=100` + `alter role … nologin`) and was not needed.
 
 ## Test plan
 
