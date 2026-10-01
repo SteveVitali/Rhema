@@ -230,8 +230,25 @@ const N7: StepFn = async (ctx) => {
   if (!/^\/p\/[^/]+/.test(new URL(page.url()).pathname)) {
     const row = page.locator('a[href*="/review/"], a[href^="/p/"]').first();
     if ((await row.count()) === 0) throw new Error("no dossier link on the project home");
-    await row.click();
-    await page.waitForLoadState("domcontentloaded");
+    // The first match can sit inside a collapsed group (the Quiet fold) — a click on a hidden
+    // element times out, while the dossier-render claim only needs the destination. Click when
+    // it's visible; otherwise follow the href directly.
+    if (await row.isVisible().catch(() => false)) {
+      await row.click();
+      await page.waitForLoadState("domcontentloaded");
+    } else {
+      const href = await row.getAttribute("href");
+      if (!href) throw new Error("dossier link has no href");
+      await gotoOk(page, `${ctx.webBaseUrl}${href}`);
+    }
+  }
+  // /p/<slug> is the overview when fixtures exist — the dossier itself lives at /p/<slug>/review/<runId>.
+  if (!/\/review\//.test(new URL(page.url()).pathname)) {
+    const reviewLink = page.locator('a[href*="/review/"]').first();
+    if ((await reviewLink.count()) > 0) {
+      const href = await reviewLink.getAttribute("href");
+      if (href) await gotoOk(page, `${ctx.webBaseUrl}${href}`);
+    }
   }
   // a rendered dossier: the letter + at least one claim/finding row
   const claims = await page.locator("[data-verdict], [data-tier]").count();
@@ -299,13 +316,25 @@ const R4: StepFn = async (ctx) => {
 /** R5 (GREEN, JOURNEY.1) — an export downloads (the §13.4 export dialog → file). */
 const R5: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  const title = ctx.marker("R5PROJ");
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  await page.fill('input[name="title"]', title);
-  await page.click('button[type="submit"], button:not([type])');
-  await page.waitForURL(/\/p\/([a-z0-9-]+)/i, { timeout: 15_000 });
+  // A scratch project has no draft text (POST export → empty_draft), and the seeded Showcase is
+  // read-only (export POSTs 409). The honest free leg: duplicate the Showcase — the copy carries
+  // real draft bytes and is the tenant's own — then export THAT. The duplicate CTA rides the
+  // dossier banner at /p/<slug>/review/<runId>; /p/showcase itself is the overview (fixtures keep it).
+  await gotoOk(page, `${ctx.webBaseUrl}/p/showcase`);
+  if (!/\/review\//.test(new URL(page.url()).pathname)) {
+    const reviewLink = page.locator('a[href*="/review/"]').first();
+    if ((await reviewLink.count()) === 0) throw new Error("no dossier link on the Showcase overview");
+    const href = await reviewLink.getAttribute("href");
+    if (!href) throw new Error("dossier link has no href");
+    await gotoOk(page, `${ctx.webBaseUrl}${href}`);
+  }
+  const dup = page.locator('form[action$="/duplicate"] button[type="submit"], form[action$="/duplicate"] button:not([type])').first();
+  if ((await dup.count()) === 0) throw new Error("no duplicate control on the Showcase");
+  await assertActionable(dup, "showcase duplicate");
+  await dup.click();
+  await page.waitForURL(/\/p\/([a-z0-9-]+)/i, { timeout: 20_000 });
   const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
-  if (!slug) throw new Error("no project slug for export");
+  if (!slug || slug === "showcase") throw new Error(`duplicate did not land on a copy (url ${page.url()})`);
   // open the export dialog and submit — the response is a file download.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
   const exportForm = page.locator('form[data-export-form="true"], form[action$="/export"]');
@@ -405,7 +434,9 @@ const X1: StepFn = async (ctx) => {
   const nameField = a.page.locator('input[name="name"]').first();
   if ((await nameField.count()) === 0) throw new Error("no name field on /voices/new");
   await nameField.fill(aVoice);
-  await a.page.click('form button[type="submit"], form button:not([type])');
+  // intent=save is the $0 leg; the first submit button is intent=build (a metered voice build that
+  // also 400s without a sample — never click it here).
+  await a.page.click('button[name="intent"][value="save"]');
   await a.page.waitForLoadState("domcontentloaded");
   // sanity: the voice lands on A's own /voices (else the isolation probe below is vacuous).
   await gotoOk(a.page, `${ctx.webBaseUrl}/voices`);

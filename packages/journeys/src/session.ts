@@ -124,7 +124,10 @@ export class JourneySessions {
     await page.fill('input[name="email"]', email);
     // the magic-link submit (never the google button — this harness uses no third-party IdP)
     await page.click('button[name="method"][value="magic_link"]');
-    await page.waitForSelector('[role="status"]', { timeout: 15_000 }); // "link sent" state
+    // "link sent" — the POST round-trips api admission + personal-workspace provisioning (the
+    // Showcase seed writes artifacts + content-store bytes), so 15 s is too tight on prod; 45 s
+    // still fails fast enough to matter.
+    await page.waitForSelector('[role="status"]', { timeout: 45_000 });
     const link = await this.deps.mailbox.awaitMagicLink(
       email,
       sentAt,
