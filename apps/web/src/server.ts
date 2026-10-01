@@ -23,6 +23,7 @@ import {
 } from "./routes.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput } from "./data.js";
+import type { PageData } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
 import {
   RIGORS,
@@ -158,6 +159,80 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.get("/healthz", (c) => c.json({ ok: true, service: "web" }));
 
+  // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
+  // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
+  // flash — the inline boot script resolves dark|light|auto + the per-project paper pin before paint) and
+  // PageData.ide feeds the shell's per-user×project pane key + the same-origin write endpoints. The theme
+  // reads are best-effort — a data seam missing them degrades to the defaults, never a failed page.
+  const ideContext = async (
+    c: Context,
+    session: SessionHeaders,
+    row: { id: string; slug: string; paperTheme?: "light" | "follow" | "dark"; headDraftId?: string | null; activeRun?: { runId: string; state: string } | null },
+    opts: {
+      inboxCount?: number;
+      findings?: { id: string; severity: string; kind: string; excerpt: string }[];
+      timeline?: { id: string; label: string; state: string; href?: string }[];
+      status?: { version?: string; words?: number; readMin?: number; venueCap?: string; credits?: number; sync?: "synced" | "syncing" | "offline" };
+    } = {},
+  ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide">> => {
+    const [principal, theme] = await Promise.all([
+      Promise.resolve()
+        .then(() => deps.dataSource.getSessionPrincipal?.(session))
+        .catch(() => null),
+      Promise.resolve()
+        .then(() => deps.dataSource.getTheme?.(session))
+        .catch(() => null),
+    ]);
+    return {
+      ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
+      paperTheme: row.paperTheme ?? "light",
+      ide: {
+        ...(principal?.userId ? { userId: principal.userId } : {}),
+        projectId: row.id,
+        ...(c.req.query("focus") === "1" ? { initialView: "focus" as const } : {}),
+        ...(row.headDraftId ? { sourceHref: `/p/${row.slug}/edit/${row.headDraftId}` } : {}),
+        ...(row.activeRun ? { activeRun: row.activeRun } : {}),
+        ...(opts.inboxCount != null ? { inboxCount: opts.inboxCount } : {}),
+        ...(opts.findings ? { findings: opts.findings } : {}),
+        ...(opts.timeline ? { timeline: opts.timeline } : {}),
+        ...(opts.status ? { status: opts.status } : {}),
+        themeUrl: "/ide/theme",
+        paperThemeUrl: `/p/${row.slug}/paper-theme`,
+      },
+    };
+  };
+
+  // The island's same-origin theme writes — the web server forwards the session to the api (the bundle
+  // never holds a credential; REQ-ARCH-33). Fire-and-forget from the client; the localStorage mirror is
+  // already applied optimistically, so a failed write degrades to session-local.
+  app.post("/ide/theme", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const body = (await c.req.json().catch(() => null)) as { appTheme?: unknown } | null;
+    const appTheme = body?.appTheme;
+    if (appTheme !== "dark" && appTheme !== "light" && appTheme !== "auto") {
+      return c.json({ error: "appTheme must be 'dark' | 'light' | 'auto'" }, 422);
+    }
+    const out = await deps.dataSource.setTheme(session, appTheme).catch(() => null);
+    return c.json({ ok: true, appTheme, ...(out ? {} : { deferred: true }) });
+  });
+
+  app.post("/p/:project/paper-theme", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const slug = c.req.param("project");
+    const body = (await c.req.json().catch(() => null)) as { paperTheme?: unknown } | null;
+    const paperTheme = body?.paperTheme;
+    if (paperTheme !== "light" && paperTheme !== "follow" && paperTheme !== "dark") {
+      return c.json({ error: "paperTheme must be 'light' | 'follow' | 'dark'" }, 422);
+    }
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const out = await deps.dataSource.setPaperTheme(session, row.id, paperTheme).catch(() => null);
+    return c.json({ ok: true, paperTheme, ...(out ? {} : { deferred: true }) });
+  });
+
+
   // PRB.16 — the Better Auth surface, proxied to the api so the OAuth callback + auth cookies live on
   // this host (the browser never talks to api.rhema.tools; see apps/api/src/auth-context.ts).
   if (deps.authProxy) {
@@ -278,10 +353,26 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/settings", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    const privacy = await deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false }));
+    const [privacy, theme] = await Promise.all([
+      deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false })),
+      Promise.resolve().then(() => deps.dataSource.getTheme?.(session)).catch(() => null),
+    ]);
     return c.html(renderDocument(c.req.path, settingsElement, {
       privacy: { analyticsOptOut: privacy.analyticsOptOut, saved: c.req.query("saved") === "1" },
+      ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
     }));
+  });
+  // P1.01 — the app-theme control (the no-JS form counterpart of the IDE shell's theme menu; both write
+  // "user".app_theme through the api). The POST redirects back with the saved flash.
+  app.post("/settings/theme", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const appTheme = form.appTheme;
+    if (appTheme === "dark" || appTheme === "light" || appTheme === "auto") {
+      await deps.dataSource.setTheme(session, appTheme).catch(() => undefined);
+    }
+    return c.redirect("/settings?saved=1");
   });
   app.post("/settings/privacy", async (c) => {
     const session = deps.session(c);
@@ -345,6 +436,8 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     return c.html(
       renderDocument(c.req.path, projectElement, {
+        // P1.01 — the project overview mounts inside the IDE frame; ?focus=1 seeds the Focus view.
+        ...(await ideContext(c, session, { ...row, slug }, { inboxCount: gates.length + decisions.length })),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
         gates,
         dwellSurface: "project",
@@ -452,7 +545,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(renderDocument(c.req.path, importElement, { project: { title: row.title, pill: row.state.pill, slug } }));
+    return c.html(
+      renderDocument(c.req.path, importElement, {
+        ...(await ideContext(c, session, row)),
+        project: { title: row.title, pill: row.state.pill, slug },
+      }),
+    );
   });
 
   app.post("/p/:project/import/preview", async (c) => {
@@ -467,6 +565,8 @@ export function createWebApp(deps: WebDeps): Hono {
       // a retry is neither a second upload nor a duplicate `jobs:run`).
       return c.html(
         renderDocument(c.req.path, importPreviewElement, {
+          ...(await ideContext(c, session, { id: slug, slug })),
+          project: { title: input.fileName ?? slug, pill: "", slug },
           conversion: {
             projectSlug: slug,
             sourceLabel: input.fileName ?? "pasted text",
@@ -479,6 +579,8 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     return c.html(
       renderDocument(c.req.path, importPreviewElement, {
+        ...(await ideContext(c, session, { id: slug, slug })),
+        project: { title: input.fileName ?? slug, pill: "", slug },
         conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
       }),
     );
@@ -499,6 +601,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (out.status === "pending") {
       return c.html(
         renderDocument(c.req.path, importPreviewElement, {
+          ...(await ideContext(c, session, { id: slug, slug })),
+          project: { title: input.fileName ?? slug, pill: "", slug },
           conversion: {
             projectSlug: slug,
             sourceLabel: input.fileName ?? "the upload",
@@ -511,6 +615,8 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     return c.html(
       renderDocument(c.req.path, importPreviewElement, {
+        ...(await ideContext(c, session, { id: slug, slug })),
+        project: { title: input.fileName ?? slug, pill: "", slug },
         conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
       }),
     );
@@ -560,6 +666,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (row.activeRun) {
       return c.html(
         renderDocument(c.req.path, runSheetElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
           runSheet: {
             slug,
             projectTitle: row.title,
@@ -625,6 +733,8 @@ export function createWebApp(deps: WebDeps): Hono {
         .catch(() => undefined);
     }
     return c.html(renderDocument(c.req.path, runSheetElement, {
+      ...(await ideContext(c, session, row)),
+      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
       runSheet: { slug, projectTitle: row.title, view },
       ...(pretriage ? { pretriage } : {}),
       compact: isPhoneRequest(c),
@@ -694,6 +804,8 @@ export function createWebApp(deps: WebDeps): Hono {
           .catch(() => undefined);
         return c.html(
           renderDocument(c.req.path, runSheetElement, {
+            ...(await ideContext(c, session, { ...fresh, id: row.id, slug })),
+            project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
             runSheet: {
               slug,
               projectTitle: row.title,
@@ -707,7 +819,11 @@ export function createWebApp(deps: WebDeps): Hono {
       if (e instanceof ApiError && e.status === 402) {
         // the panel is showing again (the Run click hit the balance wall) — count the impression.
         await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
-        return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient } }));
+        return c.html(renderDocument(c.req.path, runSheetElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient },
+        }));
       }
       // REQ-SPEC-24.7 + PRB.13: a suspension or an unverified email can land between the sheet render and
       // the Run click — the api 403s with the reason code on the error (`account_suspended` /
@@ -715,12 +831,20 @@ export function createWebApp(deps: WebDeps): Hono {
       if (e instanceof ApiError && e.status === 403) {
         const fresh = buildSheet({ workflow, rigor }, await deps.dataSource.getBillingBalance(session).catch(() => undefined), deps.betaPlanOfferUrl);
         const notice = e.code === "email_unverified" ? COPY.runSheet.emailUnverified : COPY.runSheet.suspended;
-        return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view: fresh, notice } }), 403);
+        return c.html(renderDocument(c.req.path, runSheetElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          runSheet: { slug, projectTitle: row.title, view: fresh, notice },
+        }), 403);
       }
       throw e;
     }
     // Re-render the sheet with the run-started confirmation (the run card lives on the project view — P1.01).
-    return c.html(renderDocument(c.req.path, runSheetElement, { runSheet: { slug, projectTitle: row.title, view, started: true } }));
+    return c.html(renderDocument(c.req.path, runSheetElement, {
+      ...(await ideContext(c, session, row)),
+      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      runSheet: { slug, projectTitle: row.title, view, started: true },
+    }));
   });
 
   // PRB.08 — the exhaustion panel's Payment-Link action (§14.6; the beta's ONE real-money channel). A plain
@@ -769,6 +893,14 @@ export function createWebApp(deps: WebDeps): Hono {
       emit(session, "secondread.opened", {}, { projectId: row.id, runId });
     }
     return c.html(renderDocument(c.req.path, dossierElement, {
+      // P1.01 — the dossier IS the IDE's flagship reading surface: its findings feed the Margin
+      // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
+      ...(await ideContext(c, session, row, {
+        findings: dossier.findings.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+        timeline: [{ id: runId, label: dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }],
+        status: { version: dossier.versionLabel },
+      })),
+      project: { title: dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
       dossier,
       compact: isPhoneRequest(c),
       dwellSurface: "dossier",
@@ -814,6 +946,10 @@ export function createWebApp(deps: WebDeps): Hono {
             : `a rationale is required for ${verb}`;
         return c.html(
           renderDocument(c.req.path, dossierElement, {
+            ...(await ideContext(c, session, row, {
+              findings: dossier.findings.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+            })),
+            project: { title: dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
             dossier,
             compact: isPhoneRequest(c),
             triage: { dispositionError: { findingId, message } },
@@ -845,6 +981,8 @@ export function createWebApp(deps: WebDeps): Hono {
     const commented = c.req.query("commented") || undefined;
     return c.html(
       renderDocument(c.req.path, revisionElement, {
+        ...(await ideContext(c, session, row)),
+        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
         revision: { slug, data, ...(commented ? { commentedHunkId: commented } : {}) },
         compact: isPhoneRequest(c),
       }),
@@ -896,6 +1034,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!doc) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     return c.html(
       renderDocument(c.req.path, editorElement, {
+        ...(await ideContext(c, session, t.row)),
+        project: { title: t.row.title, pill: t.row.state.pill, slug: t.slug, headDraftId: t.row.headDraftId },
         editor: {
           slug: t.slug,
           projectId: t.row.id,
@@ -1008,6 +1148,8 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!dialog) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     return c.html(
       renderDocument(c.req.path, exportElement, {
+        ...(await ideContext(c, session, t.row)),
+        project: { title: t.row.title, pill: t.row.state.pill, slug: t.slug, headDraftId: t.row.headDraftId },
         export: {
           slug: t.slug,
           projectId: t.row.id,
@@ -1276,8 +1418,9 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/v/${personaId}?cancelled=1`);
   });
 
-  // The client bundle (built by build-client.mjs at `pnpm build`; gitignored). Missing → the page still
-  // works: the textarea stays the read-only no-JS view and the form POSTs carry the write paths.
+  // The client bundles (built by build-client.mjs at `pnpm build`; gitignored). Missing → the page still
+  // works: the textarea stays the read-only no-JS view and the form POSTs carry the write paths; the IDE
+  // shell's server-rendered panes stay static (no drag/focus chrome).
   const clientBundlePath = new URL("../public/editor.js", import.meta.url);
   app.get("/assets/editor.js", async (c) => {
     const body = await readFile(clientBundlePath).catch(() => null);
@@ -1285,6 +1428,28 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.body(body, 200, {
       "content-type": "text/javascript; charset=utf-8",
       "cache-control": "no-cache",
+    });
+  });
+  const ideBundlePath = new URL("../public/ide.js", import.meta.url);
+  app.get("/assets/ide.js", async (c) => {
+    const body = await readFile(ideBundlePath).catch(() => null);
+    if (!body) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": "text/javascript; charset=utf-8",
+      "cache-control": "no-cache",
+    });
+  });
+  // P1.01 (REQ-IDE-39) — the self-hosted variable fonts themeCss()'s @font-face blocks point at
+  // (/assets/fonts/<file>; build-client.mjs copies them from the Fontsource packages into public/fonts/).
+  // Long-cacheable: the filenames carry the face+subset, and a changed face ships a new filename.
+  app.get("/assets/fonts/:file", async (c) => {
+    const file = c.req.param("file") ?? "";
+    if (!/^[\w.-]+\.woff2$/.test(file)) return c.body(null, 404);
+    const body = await readFile(new URL(`../public/fonts/${file}`, import.meta.url)).catch(() => null);
+    if (!body) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000, immutable",
     });
   });
 

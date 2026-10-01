@@ -35,6 +35,8 @@ export interface ProjectListRow {
    * time from the same assembler every surface uses. Null for a project with no voice linked (ad-hoc).
    */
   readonly voice: { readonly personaId: string; readonly name: string | null; readonly status: VoiceStatus } | null;
+  /** P1.01 — the per-project paper pin ('light'|'follow'|'dark'; REQ-IDE-38) for the IDE shell's SSR stamp. */
+  readonly paperTheme: "light" | "follow" | "dark";
 }
 
 interface ProjectRowDb {
@@ -44,6 +46,7 @@ interface ProjectRowDb {
   accepted_draft_id: string | null;
   archived_at: string | Date | null;
   persona_id: string | null;
+  paper_theme: "light" | "follow" | "dark";
 }
 interface DraftRowDb {
   project_id: string;
@@ -205,7 +208,7 @@ async function loadVoiceChips(
 
 export async function listProjectStates(db: SqlClient, principal: Principal): Promise<ProjectListRow[]> {
   const projRes = await db.query(
-    `select id, slug, title, accepted_draft_id, archived_at, persona_id
+    `select id, slug, title, accepted_draft_id, archived_at, persona_id, paper_theme
        from projects where workspace_id = $1 order by created_at desc, id`,
     [principal.workspaceId],
   );
@@ -281,6 +284,7 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
       headDraftId: head?.id ?? null,
       activeRun: active ? { runId: active.id, state: active.state } : null,
       voice: chip ? { personaId: p.persona_id as string, name: chip.name, status: chip.status } : null,
+      paperTheme: p.paper_theme,
     };
   });
 }

@@ -936,3 +936,157 @@ describe("PRB.16 — /api/auth/* proxy mount", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------------
+// P1.01 — the IDE shell mount (§5.1) + SSR theme stamping (REQ-IDE-38 amended): /p/:project… documents
+// carry the seven-region markup + the deferred ide.js island + data-app-theme/data-paper BEFORE first
+// paint; the same-origin theme writes forward through the data seam. The flat-shell pages stay flat.
+describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
+  const SESSION = { cookie: "tok" };
+  const ideDeps = (over: Partial<DataSource> = {}): WebDeps =>
+    makeDeps({
+      session: () => SESSION,
+      dataSource: {
+        ...makeDeps().dataSource,
+        listProjects: async () => [
+          { ...PROJECTS[0]!, paperTheme: "follow" as const, headDraftId: "d_head" },
+        ],
+        listGates: async () => [],
+        listDecisions: async () => [],
+        getApprovalOverrides: async () => ({}),
+        getProjectVoice: async () => {
+          throw new ApiError(404, "none");
+        },
+        listVoices: async () => [],
+        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getTheme: async () => ({ appTheme: "auto" as const }),
+        setTheme: vi.fn(async () => ({ appTheme: "light" as const })),
+        setPaperTheme: vi.fn(async () => ({ paperTheme: "dark" as const })),
+        ...over,
+      },
+    });
+
+  it("the project page mounts the seven regions + the deferred island + stamped theme attrs", async () => {
+    const res = await createWebApp(ideDeps()).request("/p/the-politics-of-visibility");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // the seven §5.1 regions
+    for (const cls of ["ide-rail", "ide-files", "ide-page", "ide-margin", "ide-timeline", "ide-desk", "ide-statusbar"]) {
+      expect(html).toContain(cls);
+    }
+    expect(html).toContain('data-ide="1"');
+    expect(html).toContain('src="/assets/ide.js"');
+    // REQ-IDE-38: the stored pref stamps data-app-theme; auto resolves dark SSR-side (re-resolved pre-paint).
+    expect(html).toContain('data-app-theme="auto"');
+    expect(html).toContain('data-theme="dark"');
+    expect(html).toContain('data-paper="follow"');
+    expect(html).toContain('data-user="u_1"');
+    expect(html).toContain('data-theme-url="/ide/theme"');
+    expect(html).toContain('data-paper-url="/p/the-politics-of-visibility/paper-theme"');
+  });
+
+  it("?focus=1 seeds the Focus view (the island strips the flag)", async () => {
+    const html = await (await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1")).text();
+    expect(html).toContain('data-view="focus"');
+  });
+
+  it("a stored light pref stamps data-theme=light; an absent pref stamps no data-app-theme", async () => {
+    const light = await (await createWebApp(ideDeps({ getTheme: async () => ({ appTheme: "light" as const }) }))
+      .request("/p/the-politics-of-visibility")).text();
+    expect(light).toContain('data-app-theme="light"');
+    expect(light).toContain('data-theme="light"');
+    const none = await (await createWebApp(
+      ideDeps({ getTheme: async () => { throw new ApiError(500, "down"); } }),
+    ).request("/p/the-politics-of-visibility")).text();
+    expect(none).not.toContain('data-app-theme="'); // the <html> pref attr (data-app-theme-pref is the shell's)
+    expect(none).toContain('data-theme="dark"'); // the default, never a broken page
+  });
+
+  it("the flat pages carry no IDE markup; the boot script is inline in every document", async () => {
+    const home = await (await createWebApp(makeDeps()).request("/")).text();
+    expect(home).not.toContain('data-ide="1"');
+    expect(home).not.toContain("/assets/ide.js");
+    expect(home).toContain('data-theme="dark"');
+  });
+
+  it("POST /ide/theme validates the enum and forwards through the data seam", async () => {
+    const setTheme = vi.fn(async () => ({ appTheme: "light" as const }));
+    const app = createWebApp(ideDeps({ setTheme }));
+    const ok = await app.request("/ide/theme", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ appTheme: "light" }),
+    });
+    expect(ok.status).toBe(200);
+    expect(setTheme).toHaveBeenCalledWith(SESSION, "light");
+    const bad = await app.request("/ide/theme", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ appTheme: "sepia" }),
+    });
+    expect(bad.status).toBe(422);
+    expect((await createWebApp(makeDeps()).request("/ide/theme", { method: "POST" })).status).toBe(401);
+  });
+
+  it("POST /p/:project/paper-theme resolves the slug → id and forwards; bad values 422", async () => {
+    const setPaperTheme = vi.fn(async () => ({ paperTheme: "dark" as const }));
+    const app = createWebApp(ideDeps({ setPaperTheme }));
+    const ok = await app.request("/p/the-politics-of-visibility/paper-theme", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ paperTheme: "dark" }),
+    });
+    expect(ok.status).toBe(200);
+    expect(setPaperTheme).toHaveBeenCalledWith(SESSION, "proj_pv", "dark");
+    const bad = await app.request("/p/the-politics-of-visibility/paper-theme", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ paperTheme: "sepia" }),
+    });
+    expect(bad.status).toBe(422);
+    const missing = await app.request("/p/nope/paper-theme", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ paperTheme: "dark" }),
+    });
+    expect(missing.status).toBe(404);
+  });
+});
+
+describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the shell menu)", () => {
+  const SESSION = { cookie: "tok" };
+  it("GET /settings renders the select with the stored pref; POST /settings/theme persists + redirects", async () => {
+    const setTheme = vi.fn(async () => ({ appTheme: "auto" as const }));
+    const deps = makeDeps({
+      session: () => SESSION,
+      dataSource: {
+        ...makeDeps().dataSource,
+        getPrivacySettings: async () => ({ analyticsOptOut: false }),
+        getTheme: async () => ({ appTheme: "auto" as const }),
+        setTheme,
+      },
+    });
+    const app = createWebApp(deps);
+    const html = await (await app.request("/settings")).text();
+    expect(html).toContain('name="appTheme"');
+    expect(html).toContain('option value="auto" selected');
+    const res = await app.request("/settings/theme", {
+      method: "POST",
+      ...form({ appTheme: "auto" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/settings?saved=1");
+    expect(setTheme).toHaveBeenCalledWith(SESSION, "auto");
+  });
+
+  it("a bad theme value is refused (no write) but still redirects — the form is progressive enhancement", async () => {
+    const setTheme = vi.fn(async () => ({ appTheme: "dark" as const }));
+    const app = createWebApp(makeDeps({
+      session: () => SESSION,
+      dataSource: { ...makeDeps().dataSource, setTheme },
+    }));
+    const res = await app.request("/settings/theme", { method: "POST", ...form({ appTheme: "sepia" }) });
+    expect(res.status).toBe(302);
+    expect(setTheme).not.toHaveBeenCalled();
+  });
+});

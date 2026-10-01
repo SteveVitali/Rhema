@@ -108,20 +108,29 @@ export default tseslint.config(
     languageOptions: { sourceType: "module", globals: nodeGlobals },
   },
   {
-    // The web client bundle sources (PRB.07) run in the browser — DOM globals, not Node's.
+    // The web client bundle sources (PRB.07 editor + P1.01 ide) run in the browser — DOM globals, not
+    // Node's.
     files: ["apps/web/src/client/**/*.ts"],
     languageOptions: {
       globals: {
         document: "readonly",
         window: "readonly",
         navigator: "readonly",
+        location: "readonly",
+        history: "readonly",
+        localStorage: "readonly",
+        matchMedia: "readonly",
         HTMLElement: "readonly",
         HTMLTextAreaElement: "readonly",
+        HTMLButtonElement: "readonly",
+        PointerEvent: "readonly",
+        MediaQueryListEvent: "readonly",
         Blob: "readonly",
         setInterval: "readonly",
         clearInterval: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
+        requestAnimationFrame: "readonly",
         fetch: "readonly",
       },
     },

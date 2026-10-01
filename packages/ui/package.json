@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@rhema/tokens": "workspace:*",
+    "@rhema/ide": "workspace:*",
     "@rhema/run-sheet": "workspace:*",
     "@rhema/findings-core": "workspace:*",
     "@rhema/contracts": "workspace:*",

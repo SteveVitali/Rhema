@@ -40,6 +40,40 @@ export interface PageData {
     /** the highest-n draft head — the "Edit source" link's target (PRB.07). */
     readonly headDraftId?: string | null;
   };
+  /**
+   * P1.01 — theme stamping (REQ-IDE-38 amended): the account's stored app-theme pref (dark|light|auto),
+   * emitted as `data-app-theme` so the pre-paint boot script resolves it; the per-project paper policy is
+   * `paperTheme` (emitted as `data-paper`). `ide` marks the document as an IDE surface — it carries the
+   * §5.1 stylesheet + the ide.js island and feeds the shell's per-user×project pane key + endpoints.
+   */
+  readonly theme?: { readonly pref?: "dark" | "light" | "auto" };
+  readonly paperTheme?: "light" | "follow" | "dark";
+  readonly ide?: {
+    readonly userId?: string;
+    readonly projectId?: string;
+    /** ?focus=1 — the ONE shareable pane flag (applied, then stripped from the address bar). */
+    readonly initialView?: "write" | "read" | "focus";
+    /** the Advanced-tier source file row's link (PRB.07 editor). */
+    readonly sourceHref?: string;
+    /** a non-terminal run — the Desk auto-opens on its Live feed (§5.1). */
+    readonly activeRun?: { readonly runId: string; readonly state: string } | null;
+    /** the Inbox badge = open gates + open decisions for the project. */
+    readonly inboxCount?: number;
+    /** the Margin's findings (absent ⇒ the region hides — §5.1). */
+    readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
+    /** the Timeline's run rows. */
+    readonly timeline?: readonly { id: string; label: string; state: string; href?: string }[];
+    readonly status?: {
+      readonly version?: string;
+      readonly words?: number;
+      readonly readMin?: number;
+      readonly venueCap?: string;
+      readonly credits?: number;
+      readonly sync?: "synced" | "syncing" | "offline";
+    };
+    readonly themeUrl?: string;
+    readonly paperThemeUrl?: string;
+  };
   readonly conversion?:
     | {
         readonly projectSlug: string;

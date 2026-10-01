@@ -13,6 +13,8 @@ export const user = pgTable("user", {
   // PRB.08 (0020; REQ-PROD-15): "Exclude my usage from product analytics" — recordAnalyticsEvent honors it;
   // the §14.7 settings toggle that flips it lands with the account settings surface.
   analyticsOptOut: boolean("analytics_opt_out").notNull().default(false),
+  // P1.01 (0027; REQ-IDE-38): the app theme preference — 'dark' | 'light' | 'auto', dark default.
+  appTheme: text("app_theme").notNull().default("dark"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

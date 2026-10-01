@@ -40,6 +40,9 @@ import type {
   AnalyticsEventRequestDto,
   PrivacySettingsDto,
   UsageDto,
+  ThemeSettingsDto,
+  PaperThemeDto,
+  PrincipalDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -277,6 +280,19 @@ export interface DataSource {
   setAnalyticsOptOut(session: SessionHeaders, analyticsOptOut: boolean): Promise<PrivacySettingsDto>;
   /** the level-1 usage glance: balance + recent runs' spend (§14.5). */
   getUsage(session: SessionHeaders): Promise<UsageDto>;
+  // ---- P1.01 — theme policy (REQ-IDE-38 amended) ----
+  /** the resolved session principal (GET /session) — the IDE pane key's userId + SSR's theme stamping. */
+  getSessionPrincipal(session: SessionHeaders): Promise<PrincipalDto>;
+  /** the account's app theme (GET /settings/theme) — dark | light | auto. */
+  getTheme(session: SessionHeaders): Promise<ThemeSettingsDto>;
+  /** set the app theme (the IDE theme menu's POST → PUT /settings/theme). */
+  setTheme(session: SessionHeaders, appTheme: ThemeSettingsDto["appTheme"]): Promise<ThemeSettingsDto>;
+  /** set the project's paper pin (⌘⇧L → PUT /projects/:id/paper-theme). */
+  setPaperTheme(
+    session: SessionHeaders,
+    projectId: string,
+    paperTheme: PaperThemeDto["paperTheme"],
+  ): Promise<PaperThemeDto>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -430,5 +446,14 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setAnalyticsOptOut(analyticsOptOut),
     getUsage: (session) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsage(),
+    // ---- P1.01 — theme policy ----
+    getSessionPrincipal: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getSession(),
+    getTheme: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getTheme(),
+    setTheme: (session, appTheme) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setTheme(appTheme),
+    setPaperTheme: (session, projectId, paperTheme) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setPaperTheme(projectId, paperTheme),
   };
 }

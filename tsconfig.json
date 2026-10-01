@@ -20,6 +20,7 @@
     { "path": "packages/ui" },
     { "path": "packages/api-client" },
     { "path": "packages/tokens" },
+    { "path": "packages/ide" },
     { "path": "packages/findings-core" },
     { "path": "packages/markdown-view" },
     { "path": "packages/markdown" },

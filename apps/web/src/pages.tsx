@@ -21,6 +21,8 @@ import {
   WhatChangedView,
   RubricDelta,
   SourceEditor,
+  IdeShell,
+  EmptyProject,
   type WhatChangedLabels,
   type SourceEditorLabels,
   type DispositionControlsLabels,
@@ -81,6 +83,44 @@ const dossierLabels: DossierLabels = {
 
 function footer(): ReactNode {
   return <span>{COPY.footer}</span>;
+}
+
+/**
+ * P1.01 — the §5.1 IDE frame every `/p/:project…` route renders inside (REQ-IDE-8): Rail / Files / Page /
+ * Margin / Timeline / Desk / Status bar. The frame is SSR-static + attribute-driven; the ide.js island
+ * adds the pane toggles, drag handles, View/theme menus, and ⌘ shortcuts on top. `data.ide` in PageData
+ * marks the document (renderDocument emits the pane stylesheet + the deferred island script). The Page
+ * content sits on the `.paper` sheet, which remaps --shell-* to the paper palette so existing components
+ * theme correctly inside a pinned-light or pinned-dark sheet.
+ */
+export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
+  const data = usePageData();
+  const ide = data.ide ?? {};
+  const slug = data.project?.slug ?? "";
+  return (
+    <IdeShell
+      project={{ slug, title: data.project?.title ?? "", ...(data.project?.pill ? { pill: data.project.pill } : {}) }}
+      {...(ide.userId ? { userId: ide.userId } : {})}
+      {...(ide.projectId ? { projectId: ide.projectId } : {})}
+      {...(data.paperTheme ? { paperTheme: data.paperTheme } : {})}
+      {...(data.theme?.pref ? { appTheme: data.theme.pref } : {})}
+      {...(ide.initialView ? { initialView: ide.initialView } : {})}
+      {...(ide.sourceHref ? { sourceHref: ide.sourceHref } : {})}
+      {...(ide.findings ? { findings: ide.findings, hasFindings: true } : {})}
+      {...(ide.timeline ? { timeline: ide.timeline } : {})}
+      {...(ide.activeRun ? { activeRun: ide.activeRun } : {})}
+      {...(ide.inboxCount != null ? { inboxCount: ide.inboxCount } : {})}
+      {...(ide.status ? { status: ide.status } : {})}
+      {...(ide.themeUrl ? { themeUrl: ide.themeUrl } : {})}
+      {...(ide.paperThemeUrl ? { paperThemeUrl: ide.paperThemeUrl } : {})}
+      labels={{
+        ...COPY.ide,
+        viewMenu: { ...COPY.ide.viewMenu, advanced: COPY.runSheet.advanced },
+      }}
+    >
+      {children}
+    </IdeShell>
+  );
 }
 
 /** Public: the landing page + the read-only sample dossier. Invite-only in `invite` mode, self-serve in
@@ -225,10 +265,20 @@ export function ProjectPage(): ReactNode {
   const slug = project?.slug ?? "";
   const triageOptedIn = typeof approvalOverrides.approve_triage === "number";
   return (
-    <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
+    <IdeFrame>
+      {/* P1.01 — the project overview IS the IDE's Page surface. An empty project (no draft head) renders
+          the §5.9 empty-project state: three entry cards + the quiet serif title field. */}
+      {project && !project.headDraftId ? (
+        <EmptyProject
+          labels={{
+            titlePlaceholder: COPY.ide.emptyProject.titlePlaceholder,
+            cards: COPY.ide.emptyProject.cards,
+          }}
+          paths={[`/p/${slug}/import`, `/p/${slug}/import`, `/p/${slug}/run`]}
+        />
+      ) : null}
       <SectionTitle>{project?.title ?? ""}</SectionTitle>
       {project ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{project.pill}</p> : null}
-      <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px", maxWidth: "68ch" }}>{COPY.project.betaNote}</p>
       {project ? (
         <p style={{ display: "flex", gap: "16px" }}>
           <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
@@ -315,7 +365,7 @@ export function ProjectPage(): ReactNode {
           labels={decisionsLabels}
         />
       </div>
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -339,7 +389,7 @@ export function ImportPage(): ReactNode {
   const { project } = usePageData();
   const slug = project?.slug ?? "";
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.project.backToList}</a>} footer={footer()}>
+    <IdeFrame>
       <SectionTitle>{COPY.import.heading}</SectionTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.import.lede}</p>
       <form method="post" action={`/p/${slug}/import/preview`} encType="multipart/form-data">
@@ -357,7 +407,7 @@ export function ImportPage(): ReactNode {
           </button>
         </div>
       </form>
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -366,7 +416,7 @@ export function ImportPreviewPage(): ReactNode {
   const { conversion } = usePageData();
   const slug = conversion?.projectSlug ?? "";
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.project.backToList}</a>} footer={footer()}>
+    <IdeFrame>
       <SectionTitle>{COPY.import.previewHeading}</SectionTitle>
       {conversion?.created ? (
         <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>
@@ -407,7 +457,7 @@ export function ImportPreviewPage(): ReactNode {
           }}
         />
       ) : null}
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -442,7 +492,7 @@ export function RunSheetPage(): ReactNode {
   const { runSheet, pretriage } = usePageData();
   const slug = runSheet?.slug ?? "";
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.runSheet.backToProject}</a>} footer={footer()}>
+    <IdeFrame>
       <SectionTitle>{COPY.runSheet.heading}</SectionTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.runSheet.lede}</p>
       {pretriage && runSheet?.view.workflow === "revise" ? (
@@ -490,7 +540,7 @@ export function RunSheetPage(): ReactNode {
           exhaustedAction={`/p/${slug}/exhausted`}
         />
       ) : null}
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -758,7 +808,7 @@ export function DossierPage(): ReactNode {
   const reconciliation = summarizeReconciliation([...dossier.findings]);
 
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${dossier.slug}`}>{R.backToProject}</a>} footer={footer()}>
+    <IdeFrame>
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <SectionTitle>{dossier.projectTitle}</SectionTitle>
         <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>
@@ -848,7 +898,7 @@ export function DossierPage(): ReactNode {
           </p>
         ) : null}
       </div>
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -906,7 +956,7 @@ export function RevisionPage(): ReactNode {
   }
   const { slug, data } = revision;
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.review.backToProject}</a>} footer={footer()}>
+    <IdeFrame>
       <WhatChangedView
         // the wire shape is the findings-core view model modulo `unlinked.entries` being unknown[].
         view={data.view as unknown as Parameters<typeof WhatChangedView>[0]["view"]}
@@ -920,7 +970,7 @@ export function RevisionPage(): ReactNode {
           {V.commentSavedLabel}
         </p>
       ) : null}
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -961,7 +1011,7 @@ export function EditorPage(): ReactNode {
   const { slug, doc } = editor;
   const base = `/p/${slug}/edit/${doc.draftId}`;
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.review.backToProject}</a>} footer={footer()}>
+    <IdeFrame>
       <SourceEditor
         markdown={doc.markdown}
         draftId={doc.draftId}
@@ -985,7 +1035,7 @@ export function EditorPage(): ReactNode {
         noteSaved={editor.noteSaved}
         labels={editorLabels}
       />
-    </Shell>
+    </IdeFrame>
   );
 }
 
@@ -1273,7 +1323,7 @@ export function ExportPage(): ReactNode {
   const dialog = ex?.dialog;
   const statement = dialog?.statement;
   return (
-    <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{COPY.project.backToList}</a>} footer={footer()}>
+    <IdeFrame>
       <SectionTitle>{COPY.export.heading}</SectionTitle>
       <p style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
         {COPY.export.lede}
@@ -1363,18 +1413,37 @@ export function ExportPage(): ReactNode {
           ) : null}
         </>
       ) : null}
-    </Shell>
+    </IdeFrame>
   );
 }
 
 /** PRB.12 — Settings (level-0 minimal): the one control REQ-PROD-15 requires to exist and bind — the
  *  analytics opt-out. A plain form POST; the flag also hides existing events from every read. */
 export function SettingsPage(): ReactNode {
-  const { privacy } = usePageData();
+  const { privacy, theme } = usePageData();
+  const pref = theme?.pref ?? "dark";
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
       <SectionTitle>{COPY.settings.heading}</SectionTitle>
-      <section aria-label={COPY.settings.privacyHeading} style={{ marginTop: "16px", maxWidth: "68ch" }}>
+      {/* P1.01 — the app theme (dark/light/auto), a plain form POST: works with no JS; the IDE shell's
+          theme menu writes the same user field through /ide/theme. */}
+      <section aria-label={COPY.settings.themeHeading} style={{ marginTop: "16px", maxWidth: "68ch" }}>
+        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.settings.themeHeading}</h3>
+        <form method="post" action="/settings/theme">
+          <label style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)" }}>
+            <select name="appTheme" defaultValue={pref} style={{ fontSize: "13px" }}>
+              <option value="dark">{COPY.settings.themeDark}</option>
+              <option value="light">{COPY.settings.themeLight}</option>
+              <option value="auto">{COPY.settings.themeAuto}</option>
+            </select>
+          </label>
+          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "6px 0 10px" }}>
+            {COPY.settings.themeNote}
+          </p>
+          <button type="submit" style={{ fontSize: "13px" }}>{COPY.settings.saveCta}</button>
+        </form>
+      </section>
+      <section aria-label={COPY.settings.privacyHeading} style={{ marginTop: "24px", maxWidth: "68ch" }}>
         <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.settings.privacyHeading}</h3>
         <form method="post" action="/settings/privacy" data-privacy-form="true">
           <label style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "13px", color: "var(--shell-fg)" }}>

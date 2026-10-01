@@ -52,6 +52,8 @@ export interface ProjectRow {
     readonly name: string | null;
     readonly status: VoiceStatusDto;
   } | null;
+  /** P1.01 — the project's paper pin ('light'|'follow'|'dark'; REQ-IDE-38); the IDE SSR stamps it. */
+  readonly paperTheme?: "light" | "follow" | "dark";
 }
 
 export interface InviteCheckDto {
@@ -481,6 +483,24 @@ export interface AnalyticsEventRequestDto {
 /** GET/POST /settings/privacy — the account's analytics opt-out flag. */
 export interface PrivacySettingsDto {
   readonly analyticsOptOut: boolean;
+}
+
+/**
+ * P1.01 — GET/PUT /settings/theme (the app theme) and PUT /projects/:id/paper-theme (the per-project
+ * paper pin; REQ-IDE-38 amended). `appTheme`: 'dark' | 'light' | 'auto'. `paperTheme`:
+ * 'light' | 'follow' | 'dark' — pinned-light is the default (the warm sheet inside the dark shell).
+ */
+export interface ThemeSettingsDto {
+  readonly appTheme: "dark" | "light" | "auto";
+}
+export interface PaperThemeDto {
+  readonly paperTheme: "light" | "follow" | "dark";
+}
+/** GET /session — the resolved principal (mirrors apps/api's Principal shape). */
+export interface PrincipalDto {
+  readonly userId: string;
+  readonly workspaceId: string;
+  readonly billingAccountId: string;
 }
 
 /** GET /billing/usage — the level-1 usage glance: balance + the account's recent runs' spend. */
@@ -918,6 +938,19 @@ export interface ApiClient {
   setAnalyticsOptOut(analyticsOptOut: boolean, init?: RequestInitLite): Promise<PrivacySettingsDto>;
   /** The level-1 usage glance: the balance + the account's recent runs' spend (P0.11 data). */
   getUsage(init?: RequestInitLite): Promise<UsageDto>;
+  // ---- P1.01 — theme policy (REQ-IDE-38 amended) ----
+  /** The resolved session principal — the pane-storage key's userId + the boot asserts' "am I signed in". */
+  getSession(init?: RequestInitLite): Promise<PrincipalDto>;
+  /** The per-user app theme (dark | light | auto — dark default; §5.9 theme policy). */
+  getTheme(init?: RequestInitLite): Promise<ThemeSettingsDto>;
+  /** Set the app theme (the Settings control; the IDE's light/dark/auto cycle posts here). */
+  setTheme(appTheme: ThemeSettingsDto["appTheme"], init?: RequestInitLite): Promise<ThemeSettingsDto>;
+  /** Set a project's paper pin (⌘⇧L posts here — 'light' | 'follow' | 'dark'). */
+  setPaperTheme(
+    projectId: string,
+    paperTheme: PaperThemeDto["paperTheme"],
+    init?: RequestInitLite,
+  ): Promise<PaperThemeDto>;
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
   /** The library's "Your voices" group — every persona + its shared pill. */
   listVoices(init?: RequestInitLite): Promise<VoiceListRowDto[]>;
@@ -1241,6 +1274,33 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       return json<UsageDto>("/billing/usage", {
         method: "GET",
         headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    // ---- P1.01 — theme policy ----
+    async getSession(init): Promise<PrincipalDto> {
+      return json<PrincipalDto>("/session", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async getTheme(init): Promise<ThemeSettingsDto> {
+      return json<ThemeSettingsDto>("/settings/theme", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async setTheme(appTheme, init): Promise<ThemeSettingsDto> {
+      return json<ThemeSettingsDto>("/settings/theme", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ appTheme }),
+      });
+    },
+    async setPaperTheme(projectId, paperTheme, init): Promise<PaperThemeDto> {
+      return json<PaperThemeDto>(`/projects/${encodeURIComponent(projectId)}/paper-theme`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ paperTheme }),
       });
     },
     // ---- PRB.10 — Quick Voice ----
