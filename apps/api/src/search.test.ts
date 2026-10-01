@@ -1,0 +1,117 @@
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createOrchestratorTestDb, seedProject, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
+import { createSearchRoutes, indexProjectDoc, upsertProjectSearchDoc, projectDocBody } from "./search.js";
+import type { SqlClient } from "./invite.js";
+import type { Principal } from "./run-routes.js";
+
+// P1.04 — the §5.2/§11.4 server-side search (AC: title/Voice/venue/body matches via the tsvector index).
+// Deterministic on PGlite (real Postgres semantics — to_tsvector/websearch_to_tsquery/ts_headline).
+
+let db: OrchestratorTestDb;
+let sql: SqlClient;
+let seed: Awaited<ReturnType<typeof seedProject>>;
+let idc = 0;
+const ids = () => `psd_${++idc}`;
+
+beforeEach(async () => {
+  db = await createOrchestratorTestDb();
+  sql = { query: (q, p) => db.pg.query(q, p as unknown[]) as Promise<{ rows: unknown[] }> };
+  seed = await seedProject(db);
+  idc = 0;
+});
+afterEach(() => db.close());
+
+const principal = (): Principal => ({
+  userId: seed.userId,
+  workspaceId: seed.workspaceId,
+  billingAccountId: seed.billingAccountId,
+});
+
+const app = (authed = true) =>
+  createSearchRoutes({ principal: () => (authed ? principal() : null), db: sql, ids });
+
+describe("project_search_docs — write paths", () => {
+  it("indexProjectDoc composes title + venue + linked Voice name; upsert refreshes", async () => {
+    await db.pg.query(`update projects set title='The Long Essay', venue='Plough' where id=$1`, [seed.projectId]);
+    await db.pg.query(
+      `insert into personas (id, workspace_id, display_name, mode, kind, provenance)
+         values ('per_v','ws_seed','Sebastian Voice','self','leaf','user')`,
+    );
+    await db.pg.query(`update projects set persona_id='per_v' where id=$1`, [seed.projectId]);
+    await indexProjectDoc(sql, { projectId: seed.projectId, workspaceId: seed.workspaceId, id: ids });
+    const doc = (
+      await db.pg.query(
+        `select kind, ref_id, body from project_search_docs where project_id=$1`,
+        [seed.projectId],
+      )
+    ).rows[0] as { kind: string; ref_id: string; body: string };
+    expect(doc).toMatchObject({ kind: "project", ref_id: "" });
+    expect(doc.body).toContain("The Long Essay");
+    expect(doc.body).toContain("Plough");
+    expect(doc.body).toContain("Sebastian Voice");
+    // rename refreshes the same row (the (project,kind,ref) unique key)
+    await db.pg.query(`update projects set title='Renamed Essay' where id=$1`, [seed.projectId]);
+    await indexProjectDoc(sql, { projectId: seed.projectId, workspaceId: seed.workspaceId, id: ids });
+    const docs = await db.pg.query(`select body from project_search_docs where project_id=$1`, [seed.projectId]);
+    expect(docs.rows).toEqual([{ body: expect.stringContaining("Renamed Essay") }]);
+  });
+});
+
+describe("GET /projects/search — §5.2 interim search", () => {
+  it("matches title, venue, Voice name, and materialized draft markdown", async () => {
+    await db.pg.query(`update projects set title='Visibility Politics', venue='Plough' where id=$1`, [seed.projectId]);
+    await db.pg.query(
+      `insert into personas (id, workspace_id, display_name, mode, kind, provenance)
+         values ('per_v','ws_seed','Vladimir Propp','self','leaf','user')`,
+    );
+    await db.pg.query(`update projects set persona_id='per_v' where id=$1`, [seed.projectId]);
+    await upsertProjectSearchDoc(sql, {
+      projectId: seed.projectId, workspaceId: seed.workspaceId, kind: "draft", refId: "d1",
+      body: "The morphology of the folktale reframes narrative structure.",
+      id: ids,
+    });
+    for (const [q, why] of [
+      ["Visibility", "title"],
+      ["Plough", "venue"],
+      ["Propp", "voice name"],
+      ["folktale", "draft body"],
+    ] as const) {
+      const res = await app().request(`/projects/search?q=${encodeURIComponent(q)}`);
+      expect(res.status).toBe(200);
+      const { results } = (await res.json()) as { results: { title: string; slug: string; kind: string; snippet: string }[] };
+      expect(results.length, `q=${q} (${why})`).toBeGreaterThan(0);
+      expect(results[0]!.slug).toBe(`slug-${seed.projectId}`);
+      expect(results[0]!.snippet.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("self-heals a project that was never indexed (title hits without a write-path call)", async () => {
+    // no indexProjectDoc call — the handler's INSERT…SELECT refreshes the 'project' doc itself.
+    const res = await app().request(`/projects/search?q=${encodeURIComponent("Seed")}`);
+    const { results } = (await res.json()) as { results: { title: string }[] };
+    expect(results.some((r) => r.title === "Seed project")).toBe(true);
+  });
+
+  it("excludes archived + deleted projects and other tenants' docs", async () => {
+    await indexProjectDoc(sql, { projectId: seed.projectId, workspaceId: seed.workspaceId, id: ids });
+    await db.pg.query(`update projects set archived_at=now() where id=$1`, [seed.projectId]);
+    let res = await app().request(`/projects/search?q=Seed`);
+    expect(((await res.json()) as { results: unknown[] }).results).toEqual([]);
+    await db.pg.query(`update projects set archived_at=null, deleted_at=now() where id=$1`, [seed.projectId]);
+    res = await app().request(`/projects/search?q=Seed`);
+    expect(((await res.json()) as { results: unknown[] }).results).toEqual([]);
+  });
+
+  it("empty q → []; 401 unauthenticated", async () => {
+    const res = await app().request(`/projects/search?q=`);
+    expect(await res.json()).toEqual({ results: [] });
+    expect((await app(false).request(`/projects/search?q=x`)).status).toBe(401);
+  });
+});
+
+describe("projectDocBody", () => {
+  it("joins only present fields", () => {
+    expect(projectDocBody({ title: "T", venue: null, voiceName: null })).toBe("T");
+    expect(projectDocBody({ title: "T", venue: "V", voiceName: "W" })).toBe("T\nV\nW");
+  });
+});

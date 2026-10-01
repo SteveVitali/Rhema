@@ -130,6 +130,17 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (!body.idempotencyKey || !body.workflow) return c.json({ error: "idempotencyKey and workflow required" }, 400);
     const workflow = body.workflow as WorkflowKey;
 
+    // P1.04 — §6.3: archived projects are read-only (runs block); soft-deleted rows are gone. The check
+    // is a cheap tenant-scoped read before any spend work happens.
+    const gateRow = (
+      await deps.txRunner.run(principal.workspaceId, (tx) =>
+        tx.query(`select archived_at, deleted_at from projects where id = $1`, [projectId]),
+      )
+    ).rows[0] as { archived_at: unknown; deleted_at: unknown } | undefined;
+    // A missing row keeps prior behavior (the fixture harness creates runs without project rows).
+    if (gateRow?.deleted_at != null) return c.json({ error: "not_found" }, 404);
+    if (gateRow?.archived_at != null) return c.json({ error: "project_archived" }, 409);
+
     // PRB.23 — resolve the sheet's Advanced per-phase toggle set ONCE, server-side: rigor
     // defaults + the submitted overrides (sanitized to the profile's declared toggle keys —
     // `body.toggles` is client input). The SAME resolved set (a) prices the re-derived estimate

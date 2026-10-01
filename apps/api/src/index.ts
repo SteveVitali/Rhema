@@ -23,6 +23,8 @@ import { createNotificationRoutes } from "./notification-routes.js";
 import { createInviteGate, type SqlClient } from "./invite.js";
 import { createSignupRoutes, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
 import { createImportRoutes, type Converter, type ImportUploadDeps } from "./import.js";
+import { createProjectRoutes } from "./project-routes.js";
+import { createSearchRoutes } from "./search.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
@@ -71,12 +73,22 @@ export {
   createShellRoutes,
   listProjectStates,
   assembleProjectStateInput,
+  projectGroupKey,
+  buildStatusLine,
+  clampStatusLine,
   type ProjectListRow,
+  type ProjectGroupKey,
   type ShellApiDeps,
 } from "./project-list.js";
+export { createProjectRoutes, slugify } from "./project-routes.js";
+export type { ProjectApiDeps } from "./project-routes.js";
+export { createSearchRoutes, upsertProjectSearchDoc, indexProjectDoc } from "./search.js";
+export type { SearchApiDeps, ProjectSearchHit } from "./search.js";
 export {
   createImportRoutes,
   createImportedDraft,
+  createOutlineArtifact,
+  writeMarkdownArtifact,
   type Converter,
   type ImportApiDeps,
   type ImportUploadDeps,
@@ -331,6 +343,21 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           inviteGate,
         }),
       );
+      // P1.04 — the workspace home (§5.2/§5.3): the three-entry create, the row actions, the per-user
+      // grouping preference, the protocol cards, and the server-side search over project_search_docs.
+      app.route(
+        "/",
+        createProjectRoutes({
+          principal: deps.principal,
+          db,
+          txRunner: deps.txRunner,
+          ids: deps.ids,
+          clock: deps.clock,
+          ...(deps.importConverter ? { converter: deps.importConverter } : {}),
+          ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+        }),
+      );
+      app.route("/", createSearchRoutes({ principal: deps.principal, db, ids: deps.ids }));
       if (deps.importConverter && deps.contentStore) {
         app.route(
           "/",

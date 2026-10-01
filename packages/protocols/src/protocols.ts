@@ -118,6 +118,138 @@ export const ESSAY_PROTOCOL: Protocol = {
 /** Every protocol seeded in this phase (Essay only — Q-22). Academic/Op-ed/Memo land at P1.21. */
 export const PROTOCOL_SEEDS: Protocol[] = [ESSAY_PROTOCOL];
 
+// ---------------------------------------------------------------------------------------------------------
+// P1.04 — the new-project sheet's protocol cards (§5.3; REQ-GENRE-3/4). The sheet shows the FOUR §6.7
+// protocols even though only Essay's full `Protocol` body is seeded — these cards carry the picker's
+// public metadata (tagline, hold-you-to line, venue bar, length prefill) while the rubric/calibration
+// bodies stay P1.21's. Nothing here is protocol IP: it is the same metadata the §6.7 table publishes.
+// ---------------------------------------------------------------------------------------------------------
+
+export interface ProtocolCard {
+  readonly id: "essay" | "academic" | "op-ed" | "memo" | string;
+  readonly name: string;
+  readonly tagline: string;
+  /** §5.3: "what the Editor will hold you to" — the card's second line. */
+  readonly holdYouTo: string;
+  /** The venue typeahead source: a verified outlet table or free-text only (REQ-GENRE-4). */
+  readonly venueBar: { readonly kind: VenueBarKind; readonly table: readonly VenueRow[]; readonly prompt: string };
+  /** Target-length prefill unit + apparatus level (§6.7's "Length / apparatus" row). */
+  readonly lengthNorms: {
+    readonly unit: "words" | "pages" | "minutes";
+    readonly default?: number;
+    readonly apparatus: "none" | "light" | "full";
+  };
+  /** A representative draft length the api uses to price the card's typical Review band. */
+  readonly typicalWords: number;
+  /** The card's default entry point (§6.7 intake_expectations.entry_default). */
+  readonly entryDefault: "chat" | "outline" | "draft";
+}
+
+const VENUE_VERIFIED_AT = "2026-09-01T00:00:00.000Z"; // REQ-GENRE-3: venue rows re-verified before launch (H4)
+
+export const PROTOCOL_CARDS: readonly ProtocolCard[] = [
+  {
+    id: ESSAY_PROTOCOL.id,
+    name: ESSAY_PROTOCOL.name,
+    tagline: ESSAY_PROTOCOL.tagline,
+    holdYouTo: "Every claim checked, the field mapped, an independent second read, a verdict.",
+    venueBar: {
+      kind: ESSAY_PROTOCOL.venue_bar.kind,
+      table: ESSAY_PROTOCOL.venue_bar.table ?? [],
+      prompt: ESSAY_PROTOCOL.venue_bar.prompt,
+    },
+    lengthNorms: {
+      unit: ESSAY_PROTOCOL.length_norms.unit,
+      default: ESSAY_PROTOCOL.length_norms.default,
+      apparatus: ESSAY_PROTOCOL.length_norms.apparatus,
+    },
+    typicalWords: 4_000,
+    entryDefault: ESSAY_PROTOCOL.intake_expectations.entry_default,
+  },
+  {
+    id: "academic",
+    name: "Academic",
+    tagline: "Journal articles, thesis chapters, and grants — held to the target venue's bar.",
+    holdYouTo: "No fabricated references; apparatus in full; abstract and keywords required.",
+    venueBar: {
+      kind: "outlet-table",
+      // §6.7: "target journal / committee; seeded table" — journal length limits are human-verified
+      // content (H4); rows without bounds leave the prefill to the protocol's own length norms.
+      table: [{ venue: "PLOS ONE", verified_at: VENUE_VERIFIED_AT }],
+      prompt: "The target journal or committee — pick from the table or type a venue.",
+    },
+    lengthNorms: { unit: "words", apparatus: "full" },
+    typicalWords: 8_000,
+    entryDefault: "outline",
+  },
+  {
+    id: "op-ed",
+    name: "Op-ed",
+    tagline: "Short opinion pieces held to an outlet's word cap and a fast verdict.",
+    holdYouTo: "Links only; the outlet cap is the meter; a tight argument over apparatus.",
+    venueBar: {
+      kind: "outlet-table",
+      // §6.7's named op-ed table (verified_at per row, REQ-GENRE-3).
+      table: [
+        { venue: "NYT", minWords: 400, maxWords: 1_200, verified_at: VENUE_VERIFIED_AT },
+        { venue: "WaPo", maxWords: 750, verified_at: VENUE_VERIFIED_AT },
+        { venue: "WSJ", minWords: 600, maxWords: 1_200, verified_at: VENUE_VERIFIED_AT },
+        { venue: "LAT", maxWords: 750, verified_at: VENUE_VERIFIED_AT },
+        { venue: "USA Today", minWords: 650, maxWords: 900, verified_at: VENUE_VERIFIED_AT },
+        { venue: "Globe", maxWords: 700, verified_at: VENUE_VERIFIED_AT },
+      ],
+      prompt: "The outlet this piece is written for — pick from the table or type a venue.",
+    },
+    lengthNorms: { unit: "words", apparatus: "none" },
+    typicalWords: 800,
+    entryDefault: "draft",
+  },
+  {
+    id: "memo",
+    name: "Memo",
+    tagline: "Internal briefs and six-pagers — written to be read silently and decided on.",
+    holdYouTo: "An executive summary up front; light apparatus; the named audience's questions answered.",
+    venueBar: {
+      kind: "silent-read",
+      table: [],
+      prompt: "Read silently — optionally name the audience.",
+    },
+    lengthNorms: { unit: "pages", default: 6, apparatus: "light" },
+    typicalWords: 2_400,
+    entryDefault: "outline",
+  },
+];
+
+/** The card for a protocol id (null ⇒ unknown — the sheet asks once rather than guessing). */
+export function protocolCard(id: string | null | undefined): ProtocolCard | null {
+  return PROTOCOL_CARDS.find((p) => p.id === id) ?? null;
+}
+
+/**
+ * REQ-GENRE-4's apparatus probe: a linked Voice's `structure_repertoire` artifact head records the
+ * writer's apparatus level (`apparatus: full` ⇒ the Academic default). The artifact is markdown, so
+ * the probe accepts a frontmatter-style `apparatus: full` line or a JSON `"apparatus": "full"` field.
+ * Returns null when the repertoire does not record one (the sheet asks once instead of guessing).
+ */
+export function detectApparatus(structureRepertoire: string | null | undefined): "full" | "light" | "none" | null {
+  if (!structureRepertoire) return null;
+  const m = /apparatus\s*[:=]\s*"?(full|light|none)"?\b/i.exec(structureRepertoire);
+  if (!m?.[1]) return null;
+  return m[1].toLowerCase() as "full" | "light" | "none";
+}
+
+/**
+ * REQ-GENRE-4's default rule, pure: Essay for Unfiled (no linked Voice); Academic when the Voice's
+ * structure repertoire records `apparatus: full`; null ⇒ the sheet asks once.
+ */
+export function defaultProtocolId(args: {
+  personaId: string | null;
+  structureRepertoire: string | null;
+}): string | null {
+  if (!args.personaId) return "essay";
+  return detectApparatus(args.structureRepertoire) === "full" ? "academic" : null;
+}
+
 /** The DB `protocols`-table row for a protocol (P0.02 schema: id, version, body, venue_table_verified_at). */
 export function protocolSeedRow(p: Protocol): {
   id: string;

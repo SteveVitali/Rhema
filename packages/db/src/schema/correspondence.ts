@@ -23,6 +23,8 @@ export const correspondenceItems = pgTable("correspondence_items", {
   personaProfileSnapshotId: text("persona_profile_snapshot_id"),
   personaSnapshotAt: timestamp("persona_snapshot_at"),
   voiceMode: text("voice_mode"),
+  // P1.04 (0029; §5.2): stamped once when the delivered letter is opened — the Ready-to-read clear.
+  letterOpenedAt: timestamp("letter_opened_at"),
 });
 
 export const claims = pgTable("claims", {

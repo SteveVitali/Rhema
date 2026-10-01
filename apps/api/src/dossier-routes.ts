@@ -251,6 +251,14 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         | undefined;
       if (!corr) return null;
 
+      // P1.04 — reading the letter stamps it once (§5.2: "Ready to read" clears when the deliverable is
+      // opened). This feeds `letterOpenedAt` on the §6.3 input — the row's suggested action flips to
+      // "Revise from this review" on the next list read.
+      await tx.query(
+        `update correspondence_items set letter_opened_at = coalesce(letter_opened_at, now()) where id = $1`,
+        [corr.id],
+      );
+
       const run = (
         await tx.query(
           `select id, workflow, state, cap_credits, current_attempt from runs where id = $1`,

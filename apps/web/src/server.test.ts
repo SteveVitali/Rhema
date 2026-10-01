@@ -1090,3 +1090,272 @@ describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the
     expect(setTheme).not.toHaveBeenCalled();
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------------
+// P1.04 — the §5.2 workspace home + the §5.3 three-entry new-project flow: grouped rows, the filters
+// (Voice chips + Protocol + Sort + Archived/Deleted affordances), the conversion preview on the live
+// PRB.20 path, and the per-entry landing cards. Every seam is a data-source stub — the api tests carry
+// the DB truth; these assert the web surface wires it up.
+describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.3)", () => {
+  const SESSION = { cookie: "tok" };
+  const PROTOCOL_CARD = {
+    id: "essay",
+    name: "Essay",
+    tagline: "The argued piece.",
+    holdYouTo: "A thesis that pays off.",
+    venueBar: { kind: "typeahead", table: [{ venue: "n+1" }], prompt: "Pick or type a venue" },
+    lengthNorms: { unit: "words", default: 3000, apparatus: "light" },
+    entryDefault: "essay",
+    typicalReviewCredits: 640,
+  };
+  const VOICES = [
+    {
+      personaId: "per_self",
+      name: "Mine",
+      byline: null,
+      mode: "self",
+      sampleCount: 4,
+      status: { pill: { label: "Ready", tone: "ready" }, stale: false },
+    },
+    {
+      personaId: "per_house",
+      name: "House",
+      byline: null,
+      mode: "house",
+      sampleCount: 9,
+      status: { pill: { label: "Ready", tone: "ready" }, stale: false },
+    },
+  ];
+  const homeDeps = (over: Partial<DataSource> = {}): WebDeps =>
+    makeDeps({
+      session: () => SESSION,
+      dataSource: {
+        ...makeDeps().dataSource,
+        listVoices: async () => VOICES as never,
+        getProjectGrouping: async () => "attention" as const,
+        setProjectGrouping: async () => undefined,
+        listProtocolCards: async () => [PROTOCOL_CARD] as never,
+        searchProjects: async () => [],
+        listDeletedProjects: async () => [],
+        listGates: async () => [],
+        listDecisions: async () => [],
+        getApprovalOverrides: async () => ({}),
+        getProjectVoice: async () => {
+          throw new ApiError(404, "none");
+        },
+        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        createProject: async () => ({ id: "p_new", slug: "my-essay", draftId: "d3", draftN: 3 }),
+        previewWorkspaceImport: async () => ({
+          status: "ready" as const,
+          preview: PREVIEW,
+          quarantineKey: "quarantine/ws1/up_new",
+        }),
+        ...over,
+      },
+    });
+
+  it("/app renders the attention groups, the row anatomy, and the control bar (filter/sort/group)", async () => {
+    const res = await createWebApp(homeDeps()).request("/app");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // the four §5.2 groups render (Quiet collapsed with its Unfiled/Voice sub-counts)
+    for (const g of ["needs_you", "running", "ready_to_read", "quiet"]) {
+      // empty groups render nothing; the fixture rows land in quiet
+      void g;
+    }
+    expect(html).toContain('data-collapsed-group="quiet"');
+    expect(html).toContain("Unfiled");
+    // the bar: search, Group-by (persisted), Protocol filter, Sort, Archived + Deleted affordances
+    expect(html).toContain('name="q"');
+    expect(html).toContain('name="groupBy"');
+    expect(html).toContain('name="protocol"');
+    expect(html).toContain('name="sort"');
+    expect(html).toContain("All protocols");
+    expect(html).toContain("Recent");
+    expect(html).toContain("Show archived");
+    expect(html).toContain("Show recently deleted");
+    // the row: state pill + one primary action + the "…" menu's seven actions
+    expect(html).toContain("Edited by you");
+    expect(html).toContain("Revise using your edits");
+    for (const label of ["Rename", "Duplicate", "Change voice", "Export", "Archive", "Delete"]) {
+      expect(html).toContain(label);
+    }
+    // the Voice filter chips render (All + each voice + Unfiled)
+    expect(html).toContain('data-voice-filters="true"');
+    // exactly one New-project affordance
+    expect(html.match(/data-new-project="true"/g)?.length).toBe(1);
+  });
+
+  it("?protocol= filters the rows; ?sort=title orders them; ?voice= narrows to a voice", async () => {
+    const rows = [
+      { ...PROJECTS[0]!, protocolId: "academic" },
+      { ...PROJECTS[1]!, protocolId: "essay" },
+    ];
+    const app = createWebApp(homeDeps({ listProjects: async () => rows }));
+    const html = await (await app.request("/app?protocol=essay")).text();
+    expect(html).toContain("New Essay");
+    expect(html).not.toContain("The Politics of Visibility");
+    const sorted = await (await app.request("/app?sort=title")).text();
+    expect(sorted.indexOf("New Essay")).toBeLessThan(sorted.indexOf("The Politics of Visibility"));
+  });
+
+  it("?deleted=1 renders the restore window's rows; POST /p/:slug/restore calls the api", async () => {
+    const restoreProject = vi.fn(async () => undefined);
+    const app = createWebApp(
+      homeDeps({
+        listDeletedProjects: async () => [{ ...PROJECTS[0]!, deletedAt: "2026-01-01T00:00:00Z" }],
+        restoreProject,
+      }),
+    );
+    const html = await (await app.request("/app?deleted=1")).text();
+    expect(html).toContain('data-deleted-section="true"');
+    expect(html).toContain("Recently deleted");
+    expect(html).toContain("/p/the-politics-of-visibility/restore");
+    const res = await app.request("/p/the-politics-of-visibility/restore", { method: "POST" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app?deleted=1");
+    expect(restoreProject).toHaveBeenCalledWith(SESSION, "proj_pv");
+  });
+
+  it("POST /app/grouping persists the per-user pref and returns home", async () => {
+    const setProjectGrouping = vi.fn(async () => undefined);
+    const app = createWebApp(homeDeps({ setProjectGrouping }));
+    const res = await app.request("/app/grouping", { method: "POST", ...form({ groupBy: "voice" }) });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app");
+    expect(setProjectGrouping).toHaveBeenCalledWith(SESSION, "voice");
+  });
+
+  it("GET /app/new renders exactly three entry cards + the protocol/venue/Voice pickers", async () => {
+    const html = await (await createWebApp(homeDeps()).request("/app/new")).text();
+    for (const entry of ["scratch", "outline", "draft"]) {
+      expect(html).toContain(`data-entry="${entry}"`);
+    }
+    // no fourth entry point exists (the draft+review import is a 1.x in-project action)
+    expect(html.match(/data-entry="/g)?.length).toBe(3);
+    // protocol cards carry tagline + hold-you-to + the typical Review estimate
+    expect(html).toContain('data-protocol-card="essay"');
+    expect(html).toContain("A thesis that pays off.");
+    expect(html).toContain("Review ≈ 640 credits");
+    // the venue typeahead over the card's table + free text
+    expect(html).toContain('list="np-venues"');
+    expect(html).toContain("n+1");
+    // the Voice picker: No voice + Your voices / House styles optgroups
+    expect(html).toContain("No voice");
+    expect(html).toContain("Your voices");
+    expect(html).toContain("House styles");
+  });
+
+  it("the draft entry's sheet carries the REQ-PROD-8 starting-version field", async () => {
+    const html = await (await createWebApp(homeDeps()).request("/app/new?entry=draft")).text();
+    expect(html).toContain('name="startVersion"');
+  });
+
+  it("POST /app/new scratch creates immediately and lands on the §5.3 next-step card", async () => {
+    const createProject = vi.fn(async () => ({ id: "p_new", slug: "my-essay" }));
+    const app = createWebApp(homeDeps({ createProject }));
+    const res = await app.request("/app/new", {
+      method: "POST",
+      ...form({ entry: "scratch", title: "My Essay", protocolId: "essay" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/my-essay?created=scratch");
+    expect(createProject).toHaveBeenCalledWith(
+      SESSION,
+      expect.objectContaining({ title: "My Essay", entry: "scratch", protocolId: "essay" }),
+    );
+  });
+
+  it("POST /app/new draft runs the conversion preview FIRST — nothing is created until Create", async () => {
+    const createProject = vi.fn(async () => ({ id: "p_new", slug: "my-essay" }));
+    const previewWorkspaceImport = vi.fn(async () => ({
+      status: "ready" as const,
+      preview: PREVIEW,
+      quarantineKey: "quarantine/ws1/up_new",
+    }));
+    const app = createWebApp(homeDeps({ createProject, previewWorkspaceImport }));
+    const res = await app.request("/app/new", {
+      method: "POST",
+      ...form({ entry: "draft", title: "My Essay", paste: "<h1>Heading</h1>", startVersion: "3" }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // the §5.3 preview contract: source beside converted, the count line, anchored warnings, both actions
+    expect(html).toContain("Source");
+    expect(html).toContain("Converted");
+    expect(html).toContain("3 words · 0 footnotes");
+    expect(html).toContain("could not be converted");
+    expect(html).toContain("Create and fix later");
+    expect(html).toContain("Fix now");
+    // the form replays the SAME quarantine key + every pick — Create never re-uploads
+    expect(html).toContain('type="hidden" name="qk" value="quarantine/ws1/up_new"');
+    expect(html).toContain('name="startVersion" value="3"');
+    expect(createProject).not.toHaveBeenCalled();
+    expect(previewWorkspaceImport).toHaveBeenCalledOnce();
+  });
+
+  it("POST /app/new/create replays the quarantine key + picks; fix_now lands on the draft's Page", async () => {
+    const createProject = vi.fn(async () => ({
+      id: "p_new",
+      slug: "my-essay",
+      draftId: "d3",
+      draftN: 3,
+      conversionNotes: { warnings: 1, unconverted: 1 },
+    }));
+    const app = createWebApp(homeDeps({ createProject }));
+    const res = await app.request("/app/new/create", {
+      method: "POST",
+      ...form({
+        entry: "draft", title: "My Essay", protocolId: "essay", venue: "n+1",
+        personaId: "per_self", startVersion: "3", qk: "quarantine/ws1/up_new", action: "fix_now",
+      }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/p/my-essay/v/3?created=draft");
+    expect(res.headers.get("location")).toContain("cn=1");
+    expect(createProject).toHaveBeenCalledWith(
+      SESSION,
+      expect.objectContaining({
+        title: "My Essay", entry: "draft", protocolId: "essay", venue: "n+1",
+        personaId: "per_self", startVersion: 3, quarantineKey: "quarantine/ws1/up_new",
+      }),
+    );
+    // the default action lands on the project page with the next-step card
+    const plain = await app.request("/app/new/create", {
+      method: "POST",
+      ...form({ entry: "outline", title: "My Essay", qk: "quarantine/ws1/up_new" }),
+    });
+    expect(plain.headers.get("location")).toContain("/p/my-essay?created=outline");
+  });
+
+  it("GET /p/:slug?created=draft renders the next-step card + the conversion-notes line", async () => {
+    const app = createWebApp(homeDeps());
+    const html = await (
+      await app.request("/p/the-politics-of-visibility?created=draft&cn=2&cu=1")
+    ).text();
+    expect(html).toContain('data-next-step-card="draft"');
+    expect(html).toContain("Review v");
+    expect(html).toContain("Conversion notes");
+  });
+
+  it("a still-converting key re-renders the pending state with a meta-refresh poll (never a re-upload)", async () => {
+    const app = createWebApp(
+      homeDeps({
+        previewWorkspaceImport: async () => ({
+          status: "pending" as const,
+          quarantineKey: "quarantine/ws1/up_cold",
+        }),
+      }),
+    );
+    const res = await app.request("/app/new", {
+      method: "POST",
+      ...form({ entry: "outline", title: "My Essay", paste: "notes" }),
+    });
+    const html = await res.text();
+    expect(html).toContain('data-conversion-pending="true"');
+    expect(html).toContain("http-equiv=\"refresh\"");
+    // the poll URL replays the same quarantine key (HTML-escaped & in the meta content)
+    expect(html).toContain("/app/new/preview?entry=outline&amp;");
+    expect(html).toContain("qk=quarantine%2Fws1%2Fup_cold");
+  });
+});

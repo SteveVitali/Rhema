@@ -34,6 +34,9 @@ export interface ProjectStateDto {
   readonly suggested: SuggestedNextDto;
 }
 
+/** P1.04 — the §5.2 attention groups (derived per row by the assembler, never persisted). */
+export type ProjectGroupKey = "needs_you" | "running" | "ready_to_read" | "quiet";
+
 export interface ProjectRow {
   readonly id: string;
   readonly slug: string;
@@ -41,20 +44,99 @@ export interface ProjectRow {
   readonly state: ProjectStateDto;
   /** The highest-n draft head — the source editor's entry point (PRB.07). */
   readonly headDraftId?: string | null;
+  /** P1.04 — the head draft's ordinal for the row's "vN" version label (null ⇒ no drafts). */
+  readonly headDraftN?: number | null;
   /**
    * PRB.21 — the project's ONE non-terminal run when it has one (D-PRB.20-1: at most one — the create
    * route 409s a second). The run sheet renders its in-progress state + links here instead of Run.
    */
-  readonly activeRun?: { readonly runId: string; readonly state: string } | null;
+  readonly activeRun?: { readonly runId: string; readonly state: string; readonly workflow?: string } | null;
   /** PRB.10 — the linked voice's chip (persona + the shared status pill); null ⇒ ad-hoc (§9.6). */
   readonly voice?: {
     readonly personaId: string;
     readonly name: string | null;
     readonly status: VoiceStatusDto;
+    /** P1.04 — the project pins an older profile snapshot (the voice group header's count). */
+    readonly usesOlderProfile?: boolean;
   } | null;
   /** P1.01 — the project's paper pin ('light'|'follow'|'dark'; REQ-IDE-38); the IDE SSR stamps it. */
   readonly paperTheme?: "light" | "follow" | "dark";
+  /** P1.04 — protocol + venue picks (the row's secondary chips / search facets). */
+  readonly protocolId?: string | null;
+  readonly venue?: string | null;
+  /** P1.04 — archived rows render under the Archived affordance only. */
+  readonly archivedAt?: string | null;
+  /** P1.04 — set only on `?scope=deleted` reads (the 30-day restore window's rows). */
+  readonly deletedAt?: string | null;
+  /** P1.04 — the latest run ended failed/cancelled (the row's red indicator). */
+  readonly lastRunFailed?: boolean;
+  /** P1.04 — the soonest unresolved blocking-gate deadline (Needs-you ordering). */
+  readonly needsYouDeadlineAt?: string | null;
+  /** P1.04 — the latest review letter has been opened (Ready-to-read clears). */
+  readonly letterOpened?: boolean;
+  /** P1.04 — the assembled ≤120-char status line (state + phase + counts, deterministic). */
+  readonly statusLine?: string;
+  /** P1.04 — the row's §5.2 attention group (server-derived). */
+  readonly group?: ProjectGroupKey;
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// P1.04 — the workspace home's writes + reads (§5.2/§5.3): the row actions, the new-project create
+// (entry + protocol/venue/Voice picks + the quarantined conversion the workspace-scoped preview
+// produced), the server-side search, and the per-user grouping preference.
+// ---------------------------------------------------------------------------------------------------------
+
+/** `POST /projects` — the §5.3 three-entry create. */
+export interface CreateProjectDto {
+  readonly title: string;
+  readonly entry: "scratch" | "outline" | "draft";
+  readonly protocolId?: string | null;
+  readonly venue?: string | null;
+  readonly personaId?: string | null;
+  /** REQ-PROD-8 — the first draft's version label (a project may start at v3). */
+  readonly startVersion?: number;
+  /** Upload entries only: the quarantined conversion the workspace preview produced (reused — never
+   *  re-uploaded or re-converted). */
+  readonly quarantineKey?: string;
+}
+
+export interface CreatedProjectDto {
+  readonly id: string;
+  readonly slug: string;
+  readonly draftId?: string | null;
+  readonly draftN?: number | null;
+  /** set when the quarantined conversion left warnings — the Page's Conversion notes card. */
+  readonly conversionNotes?: { warnings: number; unconverted: number } | null;
+}
+
+/** The §5.3 protocol card (picker metadata — the full §6.7 body stays server-side). */
+export interface ProtocolCardDto {
+  readonly id: string;
+  readonly name: string;
+  readonly tagline: string;
+  readonly holdYouTo: string;
+  readonly venueBar: {
+    readonly kind: string;
+    readonly table: readonly { venue: string; minWords?: number; maxWords?: number }[];
+    readonly prompt: string;
+  };
+  readonly lengthNorms: { readonly unit: string; readonly default?: number; readonly apparatus: string };
+  readonly entryDefault: string;
+  /** the api-computed typical Review figure for this protocol's card ("Review ≈ N credits"). */
+  readonly typicalReviewCredits?: number;
+}
+
+/** `GET /projects/search` hit (§5.2's interim search — the ⌘K palette is P1.06's). */
+export interface ProjectSearchHitDto {
+  readonly projectId: string;
+  readonly slug: string;
+  readonly title: string;
+  readonly kind: "project" | "draft" | "letter";
+  readonly snippet: string;
+}
+
+/** The per-user /app grouping preference ('attention' | 'voice'). */
+export type ProjectGroupByDto = "attention" | "voice";
 
 export interface InviteCheckDto {
   readonly ok: boolean;
@@ -858,6 +940,9 @@ export interface ImportRequestDto {
    * (read-back + the in-flight marker make a retry cheap — never a duplicate `jobs:run`).
    */
   readonly waitMs?: number;
+  /** REQ-PROD-8 (P1.04) — `import/create` only: the imported draft's declared version label
+   *  (a project may start at v3; ignored when lower than the next ordinal). */
+  readonly startVersion?: number;
 }
 
 /** `import/preview`'s response — the §5.3 payload once converted, `pending` while the Job still runs. */
@@ -905,8 +990,9 @@ export class ApiError extends Error {
 }
 
 export interface ApiClient {
-  /** List the signed-in principal's projects with their derived §6.3 state (session forwarded via headers). */
-  listProjects(init?: RequestInitLite): Promise<ProjectRow[]>;
+  /** List the signed-in principal's projects with their derived §6.3 state (session forwarded via headers).
+   *  `scope: "deleted"` reads back only the soft-deleted rows (the §5.2 30-day restore window). */
+  listProjects(init?: RequestInitLite, opts?: { scope?: "deleted" }): Promise<ProjectRow[]>;
   /** Validate a beta invite code (and, for an email-bound invite, the email) before a signup is attempted. */
   checkInvite(code: string, email?: string): Promise<InviteCheckDto>;
   /**
@@ -919,6 +1005,31 @@ export interface ApiClient {
   estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto>;
   /** The sheet's Run click — the ONLY run creator (REQ-CHAT-25); the client-minted idempotency key is in the body. */
   createRun(projectId: string, req: CreateRunDto, init?: RequestInitLite): Promise<CreatedRunDto>;
+  // ---- P1.04 — project home: create + row actions + search + grouping (§5.2/§5.3) ----
+  /** `POST /projects` — the §5.3 create (entry + picks + the adopted quarantined conversion). */
+  createProject(req: CreateProjectDto, init?: RequestInitLite): Promise<CreatedProjectDto>;
+  /** The row action — rename (the slug stays put). */
+  renameProject(projectId: string, title: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** The row action — duplicate drafts + outline + Voice link (never correspondence; origin=duplicate). */
+  duplicateProject(projectId: string, init?: RequestInitLite): Promise<CreatedProjectDto>;
+  /** The row action — archive (soft; runs block; the row leaves the list). */
+  archiveProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** Restore an archived project to the list. */
+  unarchiveProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** The row action — soft-delete (30-day window; hidden from every read). */
+  deleteProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** Restore a soft-deleted project inside the 30-day window. */
+  restoreProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** `GET /projects/search?q=` — the server-side index over title/Voice/venue/materialized markdown. */
+  searchProjects(q: string, init?: RequestInitLite): Promise<ProjectSearchHitDto[]>;
+  /** The per-user grouping preference (GET /settings/project-grouping). */
+  getProjectGrouping(init?: RequestInitLite): Promise<ProjectGroupByDto>;
+  /** Set the per-user grouping preference. */
+  setProjectGrouping(groupBy: ProjectGroupByDto, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** `GET /protocols` — the four §5.3 protocol cards + venue tables + the computed cost band. */
+  listProtocolCards(init?: RequestInitLite): Promise<ProtocolCardDto[]>;
+  /** P1.04 — the workspace-scoped conversion preview (new-project flow: no project exists yet). */
+  previewImportWorkspace(req: ImportRequestDto, init?: RequestInitLite): Promise<ImportPreviewDto>;
   /** Write/replace the user's disposition on a finalized finding (§5.7; reversible until freeze). */
   recordDisposition(
     projectId: string,
@@ -1122,11 +1233,14 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
   }
 
   return {
-    async listProjects(init?: RequestInitLite): Promise<ProjectRow[]> {
-      const body = await json<{ projects: ProjectRow[] }>("/projects", {
-        method: "GET",
-        headers: init?.headers as Record<string, string> | undefined,
-      });
+    async listProjects(init?: RequestInitLite, opts?: { scope?: "deleted" }): Promise<ProjectRow[]> {
+      const body = await json<{ projects: ProjectRow[] }>(
+        opts?.scope === "deleted" ? "/projects?scope=deleted" : "/projects",
+        {
+          method: "GET",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
       return body.projects;
     },
     async checkInvite(code: string, email?: string): Promise<InviteCheckDto> {
@@ -1543,6 +1657,101 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         },
       );
       return body.draft;
+    },
+    // ---- P1.04 — project home (§5.2/§5.3) ----
+    async createProject(req, init): Promise<CreatedProjectDto> {
+      const body = await json<{ project: CreatedProjectDto }>("/projects", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+      return body.project;
+    },
+    async renameProject(projectId, title, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/rename`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ title }),
+      });
+    },
+    async duplicateProject(projectId, init): Promise<CreatedProjectDto> {
+      const body = await json<{ project: CreatedProjectDto }>(
+        `/projects/${encodeURIComponent(projectId)}/duplicate`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: "{}",
+        },
+      );
+      return body.project;
+    },
+    async archiveProject(projectId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/archive`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async unarchiveProject(projectId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/unarchive`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async deleteProject(projectId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/delete`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async restoreProject(projectId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/projects/${encodeURIComponent(projectId)}/restore`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async searchProjects(q, init): Promise<ProjectSearchHitDto[]> {
+      const body = await json<{ results: ProjectSearchHitDto[] }>(
+        `/projects/search?q=${encodeURIComponent(q)}`,
+        { headers: { ...(init?.headers as Record<string, string> | undefined) } },
+      );
+      return body.results;
+    },
+    async getProjectGrouping(init): Promise<ProjectGroupByDto> {
+      const body = await json<{ groupBy: ProjectGroupByDto }>("/settings/project-grouping", {
+        headers: { ...(init?.headers as Record<string, string> | undefined) },
+      });
+      return body.groupBy;
+    },
+    async setProjectGrouping(groupBy, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>("/settings/project-grouping", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ groupBy }),
+      });
+    },
+    async listProtocolCards(init): Promise<ProtocolCardDto[]> {
+      const body = await json<{ protocols: ProtocolCardDto[] }>("/protocols", {
+        headers: { ...(init?.headers as Record<string, string> | undefined) },
+      });
+      return body.protocols;
+    },
+    async previewImportWorkspace(req, init): Promise<ImportPreviewDto> {
+      const body = await json<{ preview?: ConversionResult; pending?: boolean; quarantineKey?: string }>(
+        "/import/preview",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+      if (body.pending === true || body.preview == null) {
+        return { status: "pending", quarantineKey: body.quarantineKey ?? req.quarantineKey };
+      }
+      return { status: "ready", preview: body.preview };
     },
   };
 }

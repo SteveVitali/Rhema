@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { toProjectRowView } from "./state-map.js";
+import { toProjectRowView, groupByAttention, groupByVoice } from "./state-map.js";
 import { renderDocument } from "./render.js";
 import {
   inviteElement,
   loginElement,
   projectsElement,
   projectElement,
+  newProjectElement,
   importElement,
   importPreviewElement,
   runSheetElement,
@@ -22,7 +23,7 @@ import {
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
-import type { DataSource, SessionHeaders, ImportInput } from "./data.js";
+import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import type { PageData } from "./page-data.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
@@ -341,18 +342,412 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect("/");
   });
 
-  // Auth-gated: the project list.
+  // Auth-gated: the §5.2 workspace home (P1.04). The attention-grouped list (Needs you / Running /
+  // Ready to read / Quiet-collapsed) or the alternate Voice grouping when the user's stored pref says
+  // so; the Voice filter chips narrow both; `?q=` swaps the groups for the server-side search hits;
+  // `?archived=1` adds the archived rows under the affordance. Every row's state arrives derived —
+  // the api assembles it from the row sets through `projectState`; this route only maps → groups.
   app.get("/app", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    const rows = (await deps.dataSource.listProjects(session)).map(toProjectRowView);
-    // PRB.12 — the §14.5 level-0 balance chip rides the nav (best-effort: a billing-read miss never
-    // blocks the list).
-    const bal = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+    const q = (c.req.query("q") ?? "").trim();
+    const voiceFilter = c.req.query("voice") || null; // a personaId or 'unfiled'
+    const protocolFilter = c.req.query("protocol") || null; // a protocol id (§5.2 organisation)
+    const sort = c.req.query("sort") === "title" ? "title" : "recent"; // Recent is the default
+    const showArchived = c.req.query("archived") === "1";
+    const showDeleted = c.req.query("deleted") === "1";
+    const [rows, voices, groupBy, bal, search, protocols, deletedRows] = await Promise.all([
+      deps.dataSource.listProjects(session),
+      // The P1.04 seams degrade to empty/attention when a data source lacks them (fixtures, stale
+      // bindings) — a missing method is a TypeError, not a rejection, so invoke inside .then.
+      Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
+      Promise.resolve()
+        .then(() => deps.dataSource.getProjectGrouping(session))
+        .catch(() => "attention" as const),
+      // PRB.12 — the §14.5 level-0 balance chip rides the nav (best-effort: a billing-read miss never
+      // blocks the list).
+      deps.dataSource.getBillingBalance(session).catch(() => undefined),
+      q
+        ? Promise.resolve()
+            .then(() => deps.dataSource.searchProjects(session, q))
+            .catch(() => [])
+        : Promise.resolve(null),
+      // the Protocol filter dropdown's options (the four seeded cards — picker metadata only).
+      Promise.resolve().then(() => deps.dataSource.listProtocolCards(session)).catch(() => []),
+      // `?deleted=1` — the 30-day restore window's rows (a separate scope: the list never mixes them).
+      showDeleted
+        ? Promise.resolve()
+            .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
+            .catch(() => [])
+        : Promise.resolve([]),
+    ]);
+    let filtered = voiceFilter
+      ? rows.filter((r) => (voiceFilter === "unfiled" ? r.voice == null : r.voice?.personaId === voiceFilter))
+      : rows;
+    if (protocolFilter) filtered = filtered.filter((r) => r.protocolId === protocolFilter);
+    // Sort applies within each group (Needs-you keeps its deadline order regardless — §5.2).
+    if (sort === "title") filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+    const activeRows = filtered.filter((r) => r.archivedAt == null);
+    const ctx = { voices };
+    const toViews = (list: readonly typeof rows[number][]) => list.map((r) => toProjectRowView(r, ctx));
     return c.html(renderDocument(c.req.path, projectsElement, {
-      projects: rows,
+      home: {
+        groupBy,
+        attentionGroups: groupByAttention(activeRows).map((g) => ({ ...g, rows: toViews(g.rows) })),
+        voiceGroups: groupByVoice(activeRows).map((g) => ({ ...g, rows: toViews(g.rows) })),
+        voices,
+        voiceFilter,
+        protocolFilter,
+        protocols,
+        sort,
+        showArchived,
+        archivedRows: toViews(filtered.filter((r) => r.archivedAt != null)),
+        showDeleted,
+        deletedRows: toViews(deletedRows),
+        ...(search != null ? { search: { q, results: search } } : {}),
+      },
       ...(bal ? { balance: { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 } } : {}),
     }));
+  });
+
+  // P1.04 — the Group-by select persists the per-user pref (PUT /settings/project-grouping) then
+  // returns to the home (filter/search query params are dropped — grouping is the whole-page mode).
+  app.post("/app/grouping", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const groupBy = form.groupBy === "voice" ? "voice" : "attention";
+    await Promise.resolve()
+      .then(() => deps.dataSource.setProjectGrouping(session, groupBy))
+      .catch(() => undefined);
+    return c.redirect("/app");
+  });
+
+  // ---- P1.04 — the §5.3 new-project sheet: exactly three entries (scratch / outline / draft) ----
+
+  const NEW_PROJECT_ENTRIES = new Set(["scratch", "outline", "draft"] as const);
+  type NewProjectEntry = "scratch" | "outline" | "draft";
+
+  /** The sheet's submitted picker fields — carried through preview/poll/create as hidden inputs. */
+  const newProjectForm = (form: Record<string, unknown>) => {
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string).trim() : "");
+    const sv = Number(str("startVersion"));
+    return {
+      title: str("title"),
+      protocolId: str("protocolId") || null,
+      venue: str("venue") || null,
+      personaId: str("personaId") || null,
+      startVersion: Number.isInteger(sv) && sv >= 1 ? sv : null,
+    };
+  };
+
+  /** The shared sheet loader: the protocol cards + the Voice picker's personas (+ REQ-GENRE-4's default
+   *  display — Essay for no Voice; the api re-runs the full rule at create). */
+  const loadNewProjectSheet = async (session: SessionHeaders) => {
+    const [protocols, voices] = await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.listProtocolCards(session)).catch(() => []),
+      Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
+    ]);
+    return { protocols, voices };
+  };
+
+  /** The pending preview's poll URL — the form fields ride the query so a refresh round-trips them. */
+  const newProjectPollUrl = (
+    entry: NewProjectEntry,
+    quarantineKey: string,
+    form: ReturnType<typeof newProjectForm>,
+    sourceLabel?: string,
+  ): string => {
+    const p = new URLSearchParams({ entry, qk: quarantineKey, title: form.title });
+    if (form.protocolId) p.set("protocolId", form.protocolId);
+    if (form.venue) p.set("venue", form.venue);
+    if (form.personaId) p.set("personaId", form.personaId);
+    if (form.startVersion != null) p.set("startVersion", String(form.startVersion));
+    if (sourceLabel) p.set("src", sourceLabel);
+    return `/app/new/preview?${p.toString()}`;
+  };
+
+  const renderNewProject = (
+    c: Context,
+    path: string,
+    base: { protocols: Awaited<ReturnType<typeof loadNewProjectSheet>>["protocols"]; voices: Awaited<ReturnType<typeof loadNewProjectSheet>>["voices"] },
+    np: Omit<NonNullable<PageData["newProject"]>, "protocols" | "voices">,
+    extra?: Partial<PageData>,
+  ) =>
+    c.html(
+      renderDocument(path, newProjectElement, {
+        newProject: { protocols: base.protocols, voices: base.voices, ...np },
+        ...extra,
+      }),
+    );
+
+  app.get("/app/new", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const entryQ = c.req.query("entry");
+    const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
+      ? (entryQ as NewProjectEntry)
+      : "scratch";
+    const sheet = await loadNewProjectSheet(session);
+    return renderNewProject(c, c.req.path, sheet, {
+      entry,
+      defaultProtocolId: null,
+      askProtocol: false,
+      form: { title: "", protocolId: null, venue: null, personaId: null, startVersion: null },
+    });
+  });
+
+  // The sheet's submit: scratch creates immediately; the upload entries run the workspace-scoped
+  // conversion preview FIRST (§5.3's make-or-break moment — nothing is created until the user sees
+  // source-beside-converted and clicks Create).
+  app.post("/app/new", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const entryQ = typeof form.entry === "string" ? form.entry : "";
+    const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
+      ? (entryQ as NewProjectEntry)
+      : "scratch";
+    const picks = newProjectForm(form);
+    const sheet = await loadNewProjectSheet(session);
+    if (!picks.title) {
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: "A title is required.",
+      }, undefined);
+    }
+    if (entry === "scratch") {
+      let created;
+      try {
+        created = await deps.dataSource.createProject(session, {
+          title: picks.title, entry, protocolId: picks.protocolId, venue: picks.venue, personaId: picks.personaId,
+        });
+      } catch (e) {
+        const message = e instanceof ApiError ? `Could not create the project (${e.code ?? e.status}).` : "Could not create the project.";
+        return renderNewProject(c, c.req.path, sheet, {
+          entry, defaultProtocolId: null, askProtocol: false, form: picks, error: message,
+        });
+      }
+      return c.redirect(`/p/${created.slug}?created=scratch`);
+    }
+    // Upload entries — presign → quarantine PUT → convert Job → the preview leg (the PRB.20 path,
+    // workspace-scoped: no project exists yet).
+    const file = form.file;
+    const bytes =
+      file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
+        ? new Uint8Array(await (file as File).arrayBuffer())
+        : undefined;
+    const fileName = bytes && file && typeof file === "object" ? (file as File).name : undefined;
+    const paste = typeof form.paste === "string" ? form.paste : "";
+    if (!bytes && !paste.trim()) {
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks,
+        error: "Upload a file or paste the text.",
+      });
+    }
+    const sourceLabel = fileName ?? "pasted text";
+    const raw = await Promise.resolve()
+      .then(() =>
+        deps.dataSource.previewWorkspaceImport(session, {
+          ...(bytes ? { bytes, ...(fileName ? { fileName } : {}) } : { text: paste }),
+        }),
+      )
+      .catch((e: unknown) => e);
+    const out =
+      raw && typeof raw === "object" && "status" in raw ? (raw as ImportPreviewOutcome) : null;
+    if (!out) {
+      // the preview seam missing/failed — re-render the sheet with the honest error, nothing created.
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks,
+        error: "The conversion could not start — try again.",
+      });
+    }
+    if (out.status === "pending") {
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks,
+        pending: { quarantineKey: out.quarantineKey, sourceLabel },
+      }, {
+        autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, out.quarantineKey, picks, sourceLabel) },
+      });
+    }
+    return renderNewProject(c, c.req.path, sheet, {
+      entry, defaultProtocolId: null, askProtocol: false, form: picks,
+      preview: {
+        quarantineKey: out.quarantineKey,
+        sourceLabel,
+        sourceText: paste || (bytes ? `(${bytes.byteLength} bytes)` : ""),
+        convertedMarkdown: out.preview.markdown,
+        countLine: countLine(out.preview.counts),
+        warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+      },
+    });
+  });
+
+  // PRB.21-style poll leg for the new-project preview (meta-refresh target): re-preview the SAME
+  // quarantine key — a warm read-back answers in ~190 ms; cold re-answers pending inside the bound.
+  app.get("/app/new/preview", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const entryQ = c.req.query("entry") ?? "draft";
+    const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
+      ? (entryQ as NewProjectEntry)
+      : "draft";
+    const picks = newProjectForm(c.req.query() as Record<string, unknown>);
+    const qk = c.req.query("qk");
+    if (!qk) return c.redirect(`/app/new?entry=${entry}`);
+    const sheet = await loadNewProjectSheet(session);
+    const sourceLabel = c.req.query("src") ?? "the upload";
+    const out = await Promise.resolve()
+      .then(() =>
+        deps.dataSource.previewWorkspaceImport(session, {
+          quarantineKey: qk,
+          fileName: c.req.query("src") ?? undefined,
+        }),
+      )
+      .catch(() => null);
+    if (!out) return c.redirect(`/app/new?entry=${entry}`);
+    if (out.status === "pending") {
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks,
+        pending: { quarantineKey: qk, sourceLabel },
+      }, {
+        autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, qk, picks, sourceLabel) },
+      });
+    }
+    return renderNewProject(c, c.req.path, sheet, {
+      entry, defaultProtocolId: null, askProtocol: false, form: picks,
+      preview: {
+        quarantineKey: qk,
+        sourceLabel,
+        sourceText: "(the uploaded source — already converted)",
+        convertedMarkdown: out.preview.markdown,
+        countLine: countLine(out.preview.counts),
+        warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+      },
+    });
+  });
+
+  // The preview's Create (and Fix-now) — replays the quarantine key + the pick fields; the api adopts
+  // the ALREADY-converted object (never a second upload or a second Job).
+  app.post("/app/new/create", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const entryQ = typeof form.entry === "string" ? form.entry : "";
+    const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
+      ? (entryQ as NewProjectEntry)
+      : "draft";
+    const picks = newProjectForm(form);
+    const qk = typeof form.qk === "string" ? form.qk : "";
+    const sheet = await loadNewProjectSheet(session);
+    let created;
+    try {
+      created = await deps.dataSource.createProject(session, {
+        title: picks.title,
+        entry,
+        protocolId: picks.protocolId,
+        venue: picks.venue,
+        personaId: picks.personaId,
+        ...(picks.startVersion != null ? { startVersion: picks.startVersion } : {}),
+        quarantineKey: qk,
+      });
+    } catch (e) {
+      // A still-converting key (a stale preview page or a slow Job) drops back to the converting
+      // state — its poll finishes the preview, no bytes re-uploaded.
+      if (e instanceof ApiError && e.status === 409 && e.code === "conversion_pending") {
+        return renderNewProject(c, c.req.path, sheet, {
+          entry, defaultProtocolId: null, askProtocol: false, form: picks,
+          pending: { quarantineKey: qk, sourceLabel: "the upload" },
+        }, {
+          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, qk, picks) },
+        });
+      }
+      const message = e instanceof ApiError ? `Could not create the project (${e.code ?? e.status}).` : "Could not create the project.";
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: message,
+      }, undefined);
+    }
+    // §5.3's per-entry landing: the project opens with its next-step card (`?created=` drives it) and —
+    // for an upload that left warnings — the Conversion-notes line. Fix-now lands on the Page at the
+    // imported draft where the [unconverted] markers live.
+    const q = new URLSearchParams({ created: entry });
+    if (created.conversionNotes) {
+      q.set("cn", String(created.conversionNotes.warnings));
+      q.set("cu", String(created.conversionNotes.unconverted));
+    }
+    const action = typeof form.action === "string" ? form.action : "create";
+    if (action === "fix_now" && entry === "draft" && created.draftN != null) {
+      return c.redirect(`/p/${created.slug}/v/${created.draftN}?${q.toString()}`);
+    }
+    return c.redirect(`/p/${created.slug}?${q.toString()}`);
+  });
+
+  // ---- P1.04 — the row actions (§5.2's "…" menu): the web POSTs resolve slug → id then call the
+  // api through the data source. Slugs never change on rename; duplicate lands on the copy. ----
+
+  /** Resolve the session-scoped project row for a slug (list rows are already tenant-scoped). */
+  const projectRowFor = async (session: SessionHeaders, slug: string) =>
+    (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug) ?? null;
+
+  app.post("/p/:project/rename", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = await projectRowFor(session, slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const title = typeof form.title === "string" ? form.title.trim() : "";
+    if (title) {
+      await Promise.resolve()
+        .then(() => deps.dataSource.renameProject(session, row.id, title))
+        .catch(() => undefined);
+    }
+    return c.redirect(`/p/${slug}`);
+  });
+
+  app.post("/p/:project/duplicate", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = await projectRowFor(session, slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const copy = await Promise.resolve()
+      .then(() => deps.dataSource.duplicateProject(session, row.id))
+      .catch(() => null);
+    return c.redirect(copy ? `/p/${copy.slug}` : `/p/${slug}`);
+  });
+
+  for (const [suffix, call] of [
+    ["archive", (ds: DataSource, s: SessionHeaders, id: string) => ds.archiveProject(s, id)],
+    ["unarchive", (ds: DataSource, s: SessionHeaders, id: string) => ds.unarchiveProject(s, id)],
+    ["delete", (ds: DataSource, s: SessionHeaders, id: string) => ds.deleteProject(s, id)],
+  ] as const) {
+    app.post(`/p/:project/${suffix}`, async (c) => {
+      const session = deps.session(c);
+      if (!session) return c.redirect("/login");
+      const slug = c.req.param("project");
+      const row = await projectRowFor(session, slug);
+      if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      await Promise.resolve()
+        .then(() => call(deps.dataSource, session, row.id))
+        .catch(() => undefined);
+      return c.redirect("/app");
+    });
+  }
+
+  // Restore resolves against the DELETED rows (the live list never carries them — §5.2's 30-day window).
+  app.post("/p/:project/restore", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const deleted = await Promise.resolve()
+      .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
+      .catch(() => []);
+    const row = deleted.find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    await Promise.resolve()
+      .then(() => deps.dataSource.restoreProject(session, row.id))
+      .catch(() => undefined);
+    return c.redirect("/app?deleted=1");
   });
 
   // ---- PRB.12 — Settings (the REQ-PROD-15 toggle) + the §14.5 usage glance + the dwell beacon sink ----
@@ -461,7 +856,32 @@ export function createWebApp(deps: WebDeps): Hono {
               }
             : {}),
         })),
-        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          // P1.04 — the row action's Rename (?rename=1 renders the inline title form) and the §5.3
+          // create landing (?created=scratch|outline|draft → the next-step card; cn/cu carry the
+          // conversion's warning/unconverted counts onto the Conversion-notes line).
+          ...(c.req.query("rename") === "1" ? { rename: true } : {}),
+          ...(["scratch", "outline", "draft"].includes(c.req.query("created") ?? "")
+            ? {
+                created: {
+                  entry: c.req.query("created") as "scratch" | "outline" | "draft",
+                  draftN: row.headDraftN ?? null,
+                  ...(c.req.query("cn") != null || c.req.query("cu") != null
+                    ? {
+                        notes: {
+                          warnings: Number(c.req.query("cn") ?? 0) || 0,
+                          unconverted: Number(c.req.query("cu") ?? 0) || 0,
+                        },
+                      }
+                    : {}),
+                },
+              }
+            : {}),
+        },
         ...(pageLoad
           ? {
               page: {

@@ -2,7 +2,10 @@ import type { ReactNode } from "react";
 import {
   Shell,
   SectionTitle,
-  ProjectList,
+  Chip,
+  ProjectRow,
+  ProjectGroupList,
+  VoiceGroupList,
   DossierView,
   ConversionPreview,
   RunSheet,
@@ -226,9 +229,44 @@ export function LoginPage(): ReactNode {
   );
 }
 
-/** Auth-gated: the project list, each row's pill + action derived from the §6.3 state function. */
+/** Auth-gated: the §5.2 workspace home (P1.04) — the attention-grouped list, the Voice filter chips,
+ *  the Group-by select (persisted per user), the Archived affordance, and the search field. Every
+ *  row's state arrives already derived (the api runs projectState over the row sets). */
 export function ProjectsPage(): ReactNode {
-  const { projects = [], balance } = usePageData();
+  const { home, balance } = usePageData();
+  const groupBy = home?.groupBy ?? "attention";
+  const voiceFilter = home?.voiceFilter ?? null;
+  const protocolFilter = home?.protocolFilter ?? null;
+  const sort = home?.sort ?? "recent";
+  const voices = home?.voices ?? [];
+  const protocols = home?.protocols ?? [];
+  const search = home?.search;
+  /** the controls' hrefs keep the live query while swapping one facet. */
+  const homeHref = (opts: {
+    voice?: string | null;
+    protocol?: string | null;
+    sort?: "recent" | "title";
+    archived?: boolean;
+    deleted?: boolean;
+    q?: string | null;
+  }) => {
+    const p = new URLSearchParams();
+    const q = opts.q === undefined ? search?.q : opts.q;
+    const voice = opts.voice === undefined ? voiceFilter : opts.voice;
+    const protocol = opts.protocol === undefined ? protocolFilter : opts.protocol;
+    const s2 = opts.sort === undefined ? sort : opts.sort;
+    const archived = opts.archived === undefined ? home?.showArchived : opts.archived;
+    const deleted = opts.deleted === undefined ? home?.showDeleted : opts.deleted;
+    if (q) p.set("q", q);
+    if (voice) p.set("voice", voice);
+    if (protocol) p.set("protocol", protocol);
+    if (s2 === "title") p.set("sort", "title");
+    if (archived) p.set("archived", "1");
+    if (deleted) p.set("deleted", "1");
+    const s = p.toString();
+    return s ? `/app?${s}` : "/app";
+  };
+  const filterHref = (voice: string | null) => homeHref({ voice });
   return (
     <Shell
       brand={COPY.brand}
@@ -255,7 +293,151 @@ export function ProjectsPage(): ReactNode {
       footer={footer()}
     >
       <SectionTitle>{COPY.projects.heading}</SectionTitle>
-      <ProjectList rows={projects} emptyLabel={COPY.projects.empty} />
+      {/* the controls bar: search, Group-by (persisted), the Voice filter chips, the Archived
+          affordance — every control is a plain link or form (no client JS). */}
+      <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginBottom: "14px" }}>
+        <a
+          href="/app/new"
+          data-new-project="true"
+          style={{ padding: "6px 14px", borderRadius: "8px", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}
+        >
+          {COPY.projectHome.newProject}
+        </a>
+        <form method="get" action="/app" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }}>
+          {voiceFilter ? <input type="hidden" name="voice" value={voiceFilter} /> : null}
+          {protocolFilter ? <input type="hidden" name="protocol" value={protocolFilter} /> : null}
+          {sort === "title" ? <input type="hidden" name="sort" value="title" /> : null}
+          {home?.showArchived ? <input type="hidden" name="archived" value="1" /> : null}
+          {home?.showDeleted ? <input type="hidden" name="deleted" value="1" /> : null}
+          <input
+            type="search"
+            name="q"
+            defaultValue={search?.q ?? ""}
+            placeholder={COPY.projectHome.searchPlaceholder}
+            aria-label={COPY.projectHome.searchPlaceholder}
+            style={{ padding: "5px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-surface)", color: "var(--shell-fg)", fontSize: "13px", minWidth: "220px" }}
+          />
+          <button type="submit" style={{ fontSize: "13px" }}>{COPY.projectHome.searchSubmit}</button>
+        </form>
+        <form method="post" action="/app/grouping" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }} data-group-by="true">
+          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.groupByLabel}</label>
+          <select name="groupBy" defaultValue={groupBy} style={{ fontSize: "12px" }}>
+            <option value="attention">{COPY.projectHome.groupAttention}</option>
+            <option value="voice">{COPY.projectHome.groupVoice}</option>
+          </select>
+          <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.applyLabel}</button>
+        </form>
+        {/* the Protocol filter + Sort dropdowns (§5.2's bar) — a GET keeps every other live param. */}
+        <form method="get" action="/app" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }} data-filter-form="true">
+          {search?.q ? <input type="hidden" name="q" value={search.q} /> : null}
+          {voiceFilter ? <input type="hidden" name="voice" value={voiceFilter} /> : null}
+          {home?.showArchived ? <input type="hidden" name="archived" value="1" /> : null}
+          {home?.showDeleted ? <input type="hidden" name="deleted" value="1" /> : null}
+          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.protocolFilterLabel}</label>
+          <select name="protocol" defaultValue={protocolFilter ?? ""} style={{ fontSize: "12px" }}>
+            <option value="">{COPY.projectHome.protocolAll}</option>
+            {protocols.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.sortLabel}</label>
+          <select name="sort" defaultValue={sort} style={{ fontSize: "12px" }}>
+            <option value="recent">{COPY.projectHome.sortRecent}</option>
+            <option value="title">{COPY.projectHome.sortTitle}</option>
+          </select>
+          <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.applyLabel}</button>
+        </form>
+        {/* the Archived + Recently-deleted affordances — links keep the other live params. */}
+        <a href={homeHref({ archived: !(home?.showArchived ?? false) })}
+           data-archived-toggle="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          {home?.showArchived ? COPY.projectHome.archivedHide : COPY.projectHome.archivedShow}
+        </a>
+        <a href={homeHref({ deleted: !(home?.showDeleted ?? false) })}
+           data-deleted-toggle="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+          {home?.showDeleted ? COPY.projectHome.deletedHide : COPY.projectHome.deletedShow}
+        </a>
+      </div>
+      {/* the Voice filter chips — All, each voice, then Unfiled. */}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }} data-voice-filters="true">
+        <Chip label={COPY.projectHome.filterAll} href={filterHref(null)} />
+        {voices.map((v) => (
+          <Chip
+            key={v.personaId}
+            label={`${v.name ?? v.personaId}${voiceFilter === v.personaId ? " ✓" : ""}`}
+            href={filterHref(v.personaId)}
+          />
+        ))}
+        <Chip
+          label={`${COPY.projectHome.unfiled}${voiceFilter === "unfiled" ? " ✓" : ""}`}
+          href={filterHref("unfiled")}
+        />
+      </div>
+      {search ? (
+        // the server-side hits replace the groups while `?q=` is live (§5.2's interim search).
+        <section data-search-results="true">
+          <h2 style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
+            {COPY.projectHome.searchResults} · {search.results.length}
+          </h2>
+          {search.results.length === 0 ? (
+            <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{COPY.projects.empty}</p>
+          ) : (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, border: "1px solid var(--shell-border)", borderRadius: "12px", overflow: "hidden", background: "var(--shell-surface)" }}>
+              {search.results.map((h) => (
+                <li key={`${h.kind}:${h.projectId}`} style={{ padding: "10px 16px", borderBottom: "1px solid var(--shell-border)" }}>
+                  <a href={`/p/${h.slug}`} style={{ color: "var(--shell-fg)", fontWeight: 500, fontSize: "14px", textDecoration: "none" }}>
+                    {h.title}
+                  </a>
+                  <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px", marginLeft: "8px" }}>{h.kind}</span>
+                  <div style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px" }}>{h.snippet}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : groupBy === "voice" ? (
+        <VoiceGroupList groups={home?.voiceGroups ?? []} emptyLabel={COPY.projects.empty} />
+      ) : (
+        <ProjectGroupList groups={home?.attentionGroups ?? []} emptyLabel={COPY.projects.empty} />
+      )}
+      {home?.showArchived && home.archivedRows.length > 0 ? (
+        <details data-archived-section="true" style={{ marginTop: "18px" }} open>
+          <summary style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--shell-fg-muted)", cursor: "pointer", listStyle: "none" }}>
+            {COPY.projectHome.archivedHeading} · {home.archivedRows.length}
+          </summary>
+          <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0, border: "1px solid var(--shell-border)", borderRadius: "12px", overflow: "hidden", background: "var(--shell-surface)" }}>
+            {home.archivedRows.map((row) => (
+              <ProjectRow key={row.id} row={row} />
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {/* the 30-day restore window (§5.2's soft delete) — the ONLY surface that reads deleted rows. */}
+      {home?.showDeleted ? (
+        <section data-deleted-section="true" style={{ marginTop: "18px" }}>
+          <h2 style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
+            {COPY.projectHome.deletedHeading} · {home.deletedRows.length}
+          </h2>
+          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{COPY.projectHome.deletedNote}</p>
+          {home.deletedRows.length > 0 ? (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, border: "1px solid var(--shell-border)", borderRadius: "12px", overflow: "hidden", background: "var(--shell-surface)" }}>
+              {home.deletedRows.map((row) => (
+                <li
+                  key={row.id}
+                  data-deleted-row={row.id}
+                  style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", borderBottom: "1px solid var(--shell-border)" }}
+                >
+                  <span style={{ flex: "1 1 auto", color: "var(--shell-fg)", fontSize: "14px" }}>{row.title}</span>
+                  <form method="post" action={`${row.href}/restore`} style={{ margin: 0 }}>
+                    <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.actionRestore}</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
     </Shell>
   );
 }
@@ -281,7 +463,48 @@ export function ProjectPage(): ReactNode {
         />
       ) : null}
       <SectionTitle>{project?.title ?? ""}</SectionTitle>
+      {project?.rename ? (
+        // P1.04 — the row action's Rename: an inline title form posting to /p/:slug/rename.
+        <form method="post" action={`/p/${slug}/rename`} data-rename-form="true" style={{ display: "flex", gap: "8px", alignItems: "center", margin: "8px 0" }}>
+          <input
+            type="text"
+            name="title"
+            required
+            defaultValue={project.title}
+            placeholder={COPY.projectHome.renamePlaceholder}
+            style={{ padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "14px", minWidth: "280px" }}
+          />
+          <button type="submit" style={{ fontSize: "13px" }}>{COPY.projectHome.renameSave}</button>
+        </form>
+      ) : null}
       {project ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{project.pill}</p> : null}
+      {project?.created ? (
+        // P1.04 — the §5.3 per-entry landing: the next-step card at the head. Scratch points at the
+        // Desk's Chat (the Assistant surface is P1.11's); outline lands Draft v1; draft lands the
+        // Review — its estimate lives on the run sheet the card links to.
+        <section data-next-step-card={project.created.entry} style={{ margin: "12px 0", padding: "12px 14px", border: "1px solid var(--shell-border)", borderRadius: "10px", background: "var(--shell-surface)", maxWidth: "68ch" }}>
+          <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
+            {COPY.newProject.nextStepHeading}
+          </h2>
+          <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: 0 }}>
+            {project.created.entry === "scratch"
+              ? COPY.newProject.nextStepScratch
+              : project.created.entry === "outline"
+                ? fmt(COPY.newProject.nextStepOutlineFmt, { v: "v1" })
+                : fmt(COPY.newProject.nextStepDraftFmt, { v: `v${project.created.draftN ?? 1}` })}
+          </p>
+          {project.created.entry === "draft" ? (
+            <p style={{ margin: "8px 0 0" }}>
+              <a href={`/p/${slug}/run`} style={{ fontSize: "13px" }}>{COPY.runSheet.runReview}</a>
+            </p>
+          ) : null}
+          {project.created.notes && (project.created.notes.warnings > 0 || project.created.notes.unconverted > 0) ? (
+            <p data-conversion-notes="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "8px 0 0" }}>
+              {`${COPY.newProject.conversionNotes}: ${project.created.notes.warnings} · ${COPY.newProject.unconvertedNote}`}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
       {project ? (
         <p style={{ display: "flex", gap: "16px" }}>
           <a href={`/p/${slug}/import`}>{COPY.project.importCta}</a>
@@ -464,6 +687,232 @@ export function ImportPreviewPage(): ReactNode {
             fixNowNote: COPY.import.fixNowNote,
           }}
         />
+      ) : null}
+    </IdeFrame>
+  );
+}
+
+/** P1.04 — the §5.3 new-project sheet. Exactly three entries (Scratch / Upload an outline / Upload a
+ *  draft — no fourth); Title + Protocol cards + Venue + Voice picks; the upload entries run the §5.3
+ *  conversion preview (source beside converted, count line, anchored warnings, Create-and-fix-later /
+ *  Fix-now) on the live PRB.20 quarantine path before anything is created. */
+export function NewProjectPage(): ReactNode {
+  const { newProject: np } = usePageData();
+  const entry = np?.entry ?? "scratch";
+  const form = np?.form ?? { title: "", protocolId: null, venue: null, personaId: null, startVersion: null };
+  const protocols = np?.protocols ?? [];
+  const voices = np?.voices ?? [];
+  const pickedCard = protocols.find((p) => p.id === form.protocolId) ?? null;
+  const venueRows = pickedCard?.venueBar.table ?? protocols.flatMap((p) => p.venueBar.table);
+  const cards = [
+    { key: "scratch" as const, title: COPY.newProject.entryScratch, body: COPY.newProject.entryScratchNote },
+    { key: "outline" as const, title: COPY.newProject.entryOutline, body: COPY.newProject.entryOutlineNote },
+    { key: "draft" as const, title: COPY.newProject.entryDraft, body: COPY.newProject.entryDraftNote },
+  ];
+  return (
+    <IdeFrame>
+      <p style={{ margin: "0 0 6px" }}>
+        <a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>
+      </p>
+      <SectionTitle>{COPY.newProject.heading}</SectionTitle>
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.newProject.lede}</p>
+      {/* exactly three entry cards — each selects the sheet's entry (§5.3; no fourth exists). */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", margin: "16px 0" }}>
+        {cards.map((card) => (
+          <a
+            key={card.key}
+            href={`/app/new?entry=${card.key}`}
+            data-entry={card.key}
+            style={{
+              display: "block",
+              padding: "12px 14px",
+              borderRadius: "10px",
+              border: `1px solid ${entry === card.key ? "var(--accent)" : "var(--shell-border)"}`,
+              background: "var(--shell-surface)",
+              textDecoration: "none",
+              color: "var(--shell-fg)",
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: "14px" }}>{card.title}</div>
+            <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "4px" }}>{card.body}</div>
+          </a>
+        ))}
+      </div>
+      {np?.error ? (
+        <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{np.error}</p>
+      ) : null}
+      {np?.pending ? (
+        // the converting state (PRB.21 cadence): the page's meta-refresh re-polls the preview GET.
+        <section style={{ maxWidth: "68ch" }} data-conversion-pending="true">
+          <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
+            {fmt(COPY.import.convertingFmt, { name: np.pending.sourceLabel })}
+          </p>
+          <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px" }}>{COPY.import.convertingNote}</p>
+        </section>
+      ) : null}
+      {np?.preview ? (
+        <ConversionPreview
+          sourceLabel={np.preview.sourceLabel}
+          sourceText={np.preview.sourceText}
+          convertedMarkdown={np.preview.convertedMarkdown}
+          countLine={np.preview.countLine}
+          warnings={np.preview.warnings}
+          actions={{
+            formAction: "/app/new/create",
+            createLabel: COPY.import.createLabel,
+            fixNowLabel: COPY.import.fixNowLabel,
+            // replay the minted quarantine key + every pick — Create never re-uploads the bytes.
+            hiddenFields: {
+              entry,
+              title: form.title,
+              ...(form.protocolId ? { protocolId: form.protocolId } : {}),
+              ...(form.venue ? { venue: form.venue } : {}),
+              ...(form.personaId ? { personaId: form.personaId } : {}),
+              ...(form.startVersion != null ? { startVersion: String(form.startVersion) } : {}),
+              qk: np.preview.quarantineKey,
+            },
+          }}
+          labels={{
+            sourceHeading: COPY.import.sourceHeading,
+            convertedHeading: COPY.import.convertedHeading,
+            warningsHeading: COPY.import.warningsHeading,
+            noWarnings: COPY.import.noWarnings,
+            fixNowNote: COPY.import.fixNowNote,
+          }}
+        />
+      ) : null}
+      {np && !np.pending && !np.preview ? (
+        <form method="post" action="/app/new" encType="multipart/form-data" style={{ maxWidth: "68ch" }}>
+          <input type="hidden" name="entry" value={entry} />
+          <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+            {COPY.newProject.titleLabel}
+            <input
+              type="text"
+              name="title"
+              required
+              defaultValue={form.title}
+              placeholder={COPY.newProject.titlePlaceholder}
+              style={{ display: "block", marginTop: "4px", width: "100%", maxWidth: "420px", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "14px", boxSizing: "border-box" }}
+            />
+          </label>
+          {/* the protocol cards (REQ-GENRE-4): tagline + hold-you-to + the estimator's cost band. */}
+          <fieldset style={{ border: "none", padding: 0, margin: "16px 0 0" }}>
+            <legend style={{ fontSize: "13px", color: "var(--shell-fg-muted)", padding: 0 }}>{COPY.newProject.protocolLegend}</legend>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "6px" }}>
+              {protocols.map((p) => (
+                <label
+                  key={p.id}
+                  data-protocol-card={p.id}
+                  style={{
+                    display: "block",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    border: `1px solid ${form.protocolId === p.id ? "var(--accent)" : "var(--shell-border)"}`,
+                    background: "var(--shell-surface)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input type="radio" name="protocolId" value={p.id} defaultChecked={form.protocolId === p.id} style={{ marginRight: "6px" }} />
+                  <span style={{ fontWeight: 600, fontSize: "13px" }}>{p.name}</span>
+                  <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "4px" }}>{p.tagline}</div>
+                  <div style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>{p.holdYouTo}</div>
+                  {p.typicalReviewCredits != null ? (
+                    <div className="tnum" style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>
+                      {`Review ≈ ${p.typicalReviewCredits} credits`}
+                    </div>
+                  ) : null}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
+            {COPY.newProject.venueLabel}
+            <input
+              type="text"
+              name="venue"
+              list="np-venues"
+              defaultValue={form.venue ?? ""}
+              placeholder={COPY.newProject.venuePlaceholder}
+              style={{ display: "block", marginTop: "4px", width: "100%", maxWidth: "420px", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "14px", boxSizing: "border-box" }}
+            />
+            {/* the typeahead source — the picked protocol's venue table (all tables when unpicked);
+                free text always allowed (REQ-GENRE-4). */}
+            <datalist id="np-venues">
+              {venueRows.map((v) => (
+                <option key={v.venue} value={v.venue} />
+              ))}
+            </datalist>
+          </label>
+          {pickedCard?.lengthNorms.default != null ? (
+            <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }} className="tnum">
+              {`${COPY.newProject.lengthLabel}: ${pickedCard.lengthNorms.default} ${pickedCard.lengthNorms.unit}`}
+            </p>
+          ) : null}
+          {/* the Voice picker (§9.6 / REQ-PERSONA-20): No voice (the ad-hoc default) + every persona
+              with its shared pill; never-built voices are allowed with the honest hint. */}
+          <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
+            {COPY.newProject.voiceLegend}
+            <select name="personaId" defaultValue={form.personaId ?? ""} style={{ display: "block", marginTop: "4px", fontSize: "13px" }}>
+              <option value="">{COPY.voice.picker.noVoice}</option>
+              {/* REQ-PERSONA-20 — the picker groups Your voices then House styles (mode='house'). */}
+              {voices.filter((v) => v.mode !== "house").length > 0 ? (
+                <optgroup label={COPY.newProject.voiceGroupYours}>
+                  {voices
+                    .filter((v) => v.mode !== "house")
+                    .map((v) => (
+                      <option key={v.personaId} value={v.personaId}>
+                        {`${v.name ?? v.personaId} — ${v.status.pill.label}`}
+                      </option>
+                    ))}
+                </optgroup>
+              ) : null}
+              {voices.filter((v) => v.mode === "house").length > 0 ? (
+                <optgroup label={COPY.newProject.voiceGroupHouse}>
+                  {voices
+                    .filter((v) => v.mode === "house")
+                    .map((v) => (
+                      <option key={v.personaId} value={v.personaId}>
+                        {`${v.name ?? v.personaId} — ${v.status.pill.label}`}
+                      </option>
+                    ))}
+                </optgroup>
+              ) : null}
+            </select>
+          </label>
+          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" }}>
+            {COPY.newProject.voiceHintNeverBuilt}{" "}
+            <a href="/voices/new" style={{ fontSize: "12px" }}>{COPY.voice.newCta}</a>
+          </p>
+          {entry === "draft" ? (
+            <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
+              {COPY.newProject.startVersionLabel}
+              <input
+                type="number"
+                name="startVersion"
+                min={1}
+                defaultValue={form.startVersion != null ? String(form.startVersion) : ""}
+                style={{ display: "block", marginTop: "4px", width: "90px", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }}
+              />
+            </label>
+          ) : null}
+          {entry !== "scratch" ? (
+            <>
+              <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "16px" }}>
+                {COPY.newProject.fileLabel}
+                <input type="file" name="file" accept=".md,.txt,.html,.docx,.pdf" style={{ display: "block", marginTop: "4px", color: "var(--shell-fg)" }} />
+              </label>
+              <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px" }}>
+                {COPY.newProject.pasteLabel}
+                <textarea name="paste" style={textAreaStyle} />
+              </label>
+            </>
+          ) : null}
+          <div style={{ marginTop: "18px" }}>
+            <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+              {entry === "scratch" ? COPY.newProject.createCta : COPY.newProject.continueCta}
+            </button>
+          </div>
+        </form>
       ) : null}
     </IdeFrame>
   );

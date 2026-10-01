@@ -46,6 +46,11 @@ import type {
   ThemeSettingsDto,
   PaperThemeDto,
   PrincipalDto,
+  CreateProjectDto,
+  CreatedProjectDto,
+  ProjectSearchHitDto,
+  ProjectGroupByDto,
+  ProtocolCardDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -56,6 +61,14 @@ import type { LetterSection } from "@rhema/ui";
 // an in-memory fake (no api, no network).
 
 export type SessionHeaders = Readonly<Record<string, string>>;
+
+/** P1.04 — the new-project flow's upload input (no project exists yet — the key is workspace-scoped). */
+export interface WorkspaceImportInput {
+  readonly text?: string;
+  readonly fileName?: string;
+  readonly bytes?: Uint8Array;
+  readonly quarantineKey?: string;
+}
 
 export interface ImportInput {
   readonly projectSlug: string;
@@ -314,6 +327,33 @@ export interface DataSource {
     projectId: string,
     paperTheme: PaperThemeDto["paperTheme"],
   ): Promise<PaperThemeDto>;
+  // ---- P1.04 — the §5.2 workspace home + the §5.3 new-project flow ----
+  /** POST /projects — the three-entry create; upload entries adopt the quarantined conversion. */
+  createProject(session: SessionHeaders, req: CreateProjectDto): Promise<CreatedProjectDto>;
+  /** The workspace-scoped conversion preview — the new-project flow's leg before any project exists. */
+  previewWorkspaceImport(session: SessionHeaders, input: WorkspaceImportInput): Promise<ImportPreviewOutcome>;
+  /** Row action — rename (the slug stays put). */
+  renameProject(session: SessionHeaders, projectId: string, title: string): Promise<void>;
+  /** Row action — duplicate drafts + outline + Voice link (never correspondence; origin=duplicate). */
+  duplicateProject(session: SessionHeaders, projectId: string): Promise<CreatedProjectDto>;
+  /** Row action — archive (soft; runs block; the row leaves the list). */
+  archiveProject(session: SessionHeaders, projectId: string): Promise<void>;
+  /** Restore an archived project. */
+  unarchiveProject(session: SessionHeaders, projectId: string): Promise<void>;
+  /** Row action — soft-delete (30-day window). */
+  deleteProject(session: SessionHeaders, projectId: string): Promise<void>;
+  /** Restore a soft-deleted project inside the window. */
+  restoreProject(session: SessionHeaders, projectId: string): Promise<void>;
+  /** The 30-day restore window's rows — soft-deleted projects only (`GET /projects?scope=deleted`). */
+  listDeletedProjects?(session: SessionHeaders): Promise<ProjectRow[]>;
+  /** `GET /projects/search?q=` — title / Voice / venue / materialized markdown. */
+  searchProjects(session: SessionHeaders, q: string): Promise<ProjectSearchHitDto[]>;
+  /** The per-user /app grouping preference. */
+  getProjectGrouping(session: SessionHeaders): Promise<ProjectGroupByDto>;
+  /** Persist the grouping preference (the Group-by select). */
+  setProjectGrouping(session: SessionHeaders, groupBy: ProjectGroupByDto): Promise<void>;
+  /** The four §5.3 protocol cards (+ venue tables + the estimator's cost band). */
+  listProtocolCards(session: SessionHeaders): Promise<ProtocolCardDto[]>;
 }
 
 /** The production data source: the typed api client over the api base URL. */
@@ -330,7 +370,7 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
   // to GCS on the signed URL with the signed headers echoed verbatim. The session cookie rides ONLY the
   // api calls — it never leaves for a third-party origin. A replayed `quarantineKey` (the preview form's
   // hidden field) skips the upload entirely.
-  const uploadKey = async (session: SessionHeaders, input: ImportInput): Promise<string> => {
+  const uploadKey = async (session: SessionHeaders, input: WorkspaceImportInput): Promise<string> => {
     if (input.quarantineKey) return input.quarantineKey;
     const bytes =
       input.bytes ?? (typeof input.text === "string" ? new TextEncoder().encode(input.text) : undefined);
@@ -484,5 +524,49 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setTheme(appTheme),
     setPaperTheme: (session, projectId, paperTheme) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setPaperTheme(projectId, paperTheme),
+    // ---- P1.04 — the workspace home + the §5.3 new-project flow ----
+    createProject: (session, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createProject(req),
+    // The workspace-scoped preview leg: presign → PUT to quarantine → POST /import/preview. Replaying a
+    // `quarantineKey` polls the SAME conversion (no re-upload, no duplicate Job).
+    previewWorkspaceImport: async (session, input) => {
+      const quarantineKey = await uploadKey(session, input);
+      const out = await client(session).previewImportWorkspace({
+        quarantineKey,
+        waitMs: IMPORT_PREVIEW_WAIT_MS,
+      });
+      if (out.status === "pending") return { status: "pending", quarantineKey };
+      return { status: "ready", preview: out.preview, quarantineKey };
+    },
+    renameProject: async (session, projectId, title) => {
+      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).renameProject(projectId, title);
+    },
+    duplicateProject: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).duplicateProject(projectId),
+    archiveProject: async (session, projectId) => {
+      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).archiveProject(projectId);
+    },
+    unarchiveProject: async (session, projectId) => {
+      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).unarchiveProject(projectId);
+    },
+    deleteProject: async (session, projectId) => {
+      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).deleteProject(projectId);
+    },
+    restoreProject: async (session, projectId) => {
+      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).restoreProject(projectId);
+    },
+    listDeletedProjects: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProjects(undefined, {
+        scope: "deleted",
+      }),
+    searchProjects: (session, q) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).searchProjects(q),
+    getProjectGrouping: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getProjectGrouping(),
+    setProjectGrouping: async (session, groupBy) => {
+      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setProjectGrouping(groupBy);
+    },
+    listProtocolCards: (session) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProtocolCards(),
   };
 }
