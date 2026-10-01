@@ -4,8 +4,9 @@
  * A ported skill/convention file MUST equal the pinned upstream file transformed by ONLY the
  * sanctioned edits: the six harness-neutral inputs, the `.rhema/phase-result.json` output, the
  * `sidecar: true` structured-output emission (with explicit severity — REQ-SPEC-4 — and the
- * re-review `carriesObligationId` — REQ-OBJ-4), the Q-11 edits (REQ-ARCH-8), and the
- * persona-resolution edit. This module is the side-effect-free engine that both the port generator
+ * re-review `carriesObligationId` — REQ-OBJ-4), the Q-11 edits (REQ-ARCH-8), the
+ * persona-resolution edit, and the P1.14 `reseed` charter-reseed phase (REQ-WF-11 / §9.6). This
+ * module is the side-effect-free engine that both the port generator
  * (`--write`) and the upstream-diff CI check (`scripts/check-upstream-diff.mjs`) run, so "generate"
  * and "verify" can never disagree, and any later hand-edit to a ported file that is not expressed as
  * a sanctioned op is caught as drift (REQ-SPEC-22: drift is a fork, not a diff).
@@ -21,6 +22,7 @@ export const SANCTIONED_CATEGORIES = Object.freeze([
   "sidecar", // structured-output emission behind `sidecar: true` (incl. explicit severity, carriesObligationId)
   "q11", // REQ-ARCH-8: drop usage=study default+report, the non-self positions.md quotation-bound rule, docs/-enlargement
   "persona-resolution", // resolve personas from the harness mount (/work/personas/<id>)
+  "reseed", // P1.14 (REQ-WF-11 / §9.6): the Rhema-owned `phase=reseed` charter-reseed step documented in bootstrap-persona (the reseed_charter workflow's skill phase)
 ]);
 
 class PortError extends Error {}
