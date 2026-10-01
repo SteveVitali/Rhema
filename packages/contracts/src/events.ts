@@ -271,6 +271,16 @@ export const RUN_EVENTS = {
     density: "summary",
     payload: z.object({ credits: z.number().int(), reason: boundedText }),
   },
+  // RES.2 (REQ-SPEC-31(3)) — a zero-coverage Review delivered Unverified: the run-level label persisted,
+  // the platform-fault refund follows as `cost.refunded`. Counts only — never claim text.
+  "run.unverified": {
+    visibility: "user",
+    density: "summary",
+    payload: z.object({
+      checkableClaims: z.number().int(),
+      coveredClaims: z.number().int(),
+    }),
+  },
   // misc summary
   "check.result": {
     visibility: "user",

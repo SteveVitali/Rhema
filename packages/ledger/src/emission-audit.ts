@@ -72,6 +72,9 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   "run.approval_decided": { status: "materialized", source: `${MAT}: gates + decisions` },
   "run.stopped": { status: "materialized", source: `${MAT}: runs` },
   "run.completed": { status: "materialized", source: `${MAT}: runs` },
+  // RES.2 — an Unverified delivery materializes as `run.unverified`, never `run.completed` (the
+  // persisted `runs.delivery` label is the projector's discriminator; success cohorts stay clean).
+  "run.unverified": { status: "materialized", source: `${MAT}: runs.delivery` },
   "run.failed": { status: "materialized", source: `${MAT}: runs` },
   "run.report_viewed": { status: "emitted", source: WEB },
   // ---- §3.5 additions

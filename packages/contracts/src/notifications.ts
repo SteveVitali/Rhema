@@ -371,10 +371,22 @@ export const INBOX_COPY: Record<
     })) as never,
   },
   run_finished: {
-    params: z.object({ projectTitle: title2.optional(), workflowLabel: label2.optional() }),
-    render: ((p: { projectTitle?: string; workflowLabel?: string }) => ({
+    // RES.2 — `deliveryLabel` carries the run-level label ("Unverified"); it reads above the rest of the
+    // row copy, the same slot it occupies on the run card + dossier (above the verdict).
+    params: z.object({
+      projectTitle: title2.optional(),
+      workflowLabel: label2.optional(),
+      deliveryLabel: label2.optional(),
+    }),
+    render: ((p: { projectTitle?: string; workflowLabel?: string; deliveryLabel?: string }) => ({
       title: `${p.workflowLabel ?? "Run"} finished — the deliverable is ready`,
-      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+      ...(p.deliveryLabel
+        ? {
+            body: `${p.deliveryLabel} — claims could not be checked; research credits refunded.${p.projectTitle ? ` · ${p.projectTitle}` : ""}`,
+          }
+        : p.projectTitle
+          ? { body: p.projectTitle }
+          : {}),
     })) as never,
   },
   run_failed: {
@@ -614,10 +626,18 @@ export const EMAIL_TEMPLATES = {
   ),
 
   run_finished: define(
-    z.object({ projectTitle: title.optional(), openUrl: url }),
+    z.object({ projectTitle: title.optional(), openUrl: url, deliveryLabel: label.optional() }),
     (p) => {
       const where = p.projectTitle ? ` on “${p.projectTitle}”` : "";
-      const lines = [`Your run finished${where} — the deliverable is ready.`, `Open the project to read it.`];
+      // RES.2 — an Unverified delivery leads with the run-level label, above everything else in the body
+      // (the same slot it occupies above the verdict on the card + dossier), and states the refund.
+      const lines = p.deliveryLabel
+        ? [
+            `${p.deliveryLabel} — research could not check the claims${where}.`,
+            `The research-phase credits were refunded.`,
+            `Open the project to read the deliverable.`,
+          ]
+        : [`Your run finished${where} — the deliverable is ready.`, `Open the project to read it.`];
       return {
         subject: `Run finished${where}`,
         text: `${lines.join("\n")}\n\nOpen: ${p.openUrl}`,

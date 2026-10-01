@@ -16,7 +16,7 @@ import {
   RUN_JOBS,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
-import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
+import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery } from "@rhema/ledger";
 import { createGcsContentStore, createGcsRestoreBlobStore } from "@rhema/mirror";
 import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
 import {
@@ -176,6 +176,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   // user surface under the non-bypass role. (`DATABASE_URL` itself is repointed by the deploy —
   // infra/pulumi — this pin is the second layer.)
   const txRunner = new PgPoolTxRunner(pool, { role: USER_SERVING_ROLE });
+  // Hoisted so RES.2's `settleUnverified` closure binds the same ledger + writer the run paths use.
+  const holdLedger = new SqlHoldLedger({ ids, clock });
+  const runEventWriter = new SqlEventWriter(bus);
   // PRB.20 — the artifacts-bucket content store doubles as the imported-draft byte store (the draft create
   // path writes content-addressed markdown there); hoist so `store` (write-back overlays) and `contentStore`
   // (import) share one binding.
@@ -185,12 +188,18 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   const restoreBlobs = await createGcsRestoreBlobStore(env.objectsBucket);
   const deps: ApiDeps & BetaApiDeps = {
     txRunner,
-    eventWriter: new SqlEventWriter(bus), // post-commit user-event fan-out over Redis
+    eventWriter: runEventWriter, // post-commit user-event fan-out over Redis
     clock,
     ids,
     heartbeats: new RedisHeartbeatStore(redis),
     tokens: new Rs256RunTokenService(keys, clock),
-    ledger: new SqlHoldLedger({ ids, clock }),
+    ledger: holdLedger,
+    // RES.2 (REQ-SPEC-31(3)) — the Unverified platform-fault settle for the pod's POST /deliver path:
+    // refund + absorb + trial restore commit in their own tx; the ops page stays unbound here (the api
+    // owns no alert webhook) — the worker's stranded sweep leg E sends + marks it (`alerted` unset ⇒
+    // retried until the worker's bound sink takes it).
+    settleUnverified: (a) =>
+      settleUnverifiedDelivery({ txRunner, ledger: holdLedger, eventWriter: runEventWriter, ids, clock }, a),
     queue,
     obligationMount: createObligationMountProvider(),
     // the obligation spawn/join hook, constructed into the delivery transaction (D-P0.12-1).

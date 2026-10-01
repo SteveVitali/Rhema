@@ -29,3 +29,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-021](ADR-021-research-floor-enforcement.md) | The research floor — a reserved verification share enforced at the proxy | RES.1 | Accepted |
 | [ADR-022](ADR-022-research-preflight-protocol.md) | The research preflight — model × server-tool pairs proven before any debit | RES.1 | Accepted |
 | [ADR-023](ADR-023-planted-error-probe-shape.md) | The research probe is a real bounded `fact_check` run, not a synthetic credential | RES.1 | Accepted |
+| [ADR-024](ADR-024-platform-fault-refund-class.md) | The platform-fault refund class — `platform_fault:<cause>` reasons and the REQ-SPEC-24(6) carve-out | RES.2 | Accepted |
+| [ADR-025](ADR-025-delivery-label-persistence-and-scope.md) | The delivery label persists on `runs.delivery`; *Unverified* is Review-scoped in v1 | RES.2 | Accepted |
+| [ADR-026](ADR-026-test-tenant-unverified-forcing.md) | The *Unverified* forcing flag is test-tenant-only and budget-shaped | RES.2 | Accepted |

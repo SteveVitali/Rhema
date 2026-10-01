@@ -48,7 +48,10 @@ export async function weeklyEstimatorRefit(
       `select estimate_credits::float as est, spent_credits::float as act
          from runs
         where state = 'completed' and ended_at >= $1 and ended_at <= $2
-          and spent_credits > 0 and estimate_credits > 0 and entitlement_id is null`,
+          and spent_credits > 0 and estimate_credits > 0 and entitlement_id is null
+          -- RES.2 — an Unverified delivery's spend was refunded as platform fault: it is not cost
+          -- evidence for the estimate↔actual ratio (its research ran with zero coverage by definition).
+          and (delivery ->> 'label') is distinct from 'unverified'`,
       [since, now],
     )
   ).rows as { est: number; act: number }[];

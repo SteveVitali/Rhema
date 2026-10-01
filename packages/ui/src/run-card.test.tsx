@@ -150,3 +150,38 @@ describe("RunCard — the six §5.5 states (P1.05; REQ-IDE-11/12)", () => {
     expect(html).toContain('data-run-action="retry_walkthrough"');
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------------
+// RES.2 (REQ-SPEC-31(3)) — the persisted run-level delivery label renders ABOVE the verdict/state line
+// (the same slot the dossier banner + delivery email carry), read off `view.deliveryLabel` — never
+// recomputed. The claim verdicts below stay `unverifiable` (a different word, a different row).
+
+describe("RunCard — the Unverified label (RES.2)", () => {
+  const LABELLED_LABELS: RunCardLabels = {
+    ...P105_LABELS,
+    // a distinctive state string so "above the verdict" is assertable as markup order
+    // (`data-run-state="…"` is a section attribute and precedes children — never the anchor).
+    stateLabel: (s) => `STATE:${s}`,
+    deliveryLabel: () => `Unverified — research could not check the claims; research credits refunded`,
+  };
+
+  it("renders the persisted label above the state line", () => {
+    const html = renderToStaticMarkup(
+      <RunCard
+        view={view({ state: "completed", deliveryLabel: "unverified", deliverables: [{ key: "letter" }] })}
+        labels={LABELLED_LABELS}
+      />,
+    );
+    expect(html).toContain('data-delivery-label="unverified"');
+    // the label sits ABOVE the state row — its markup precedes the rendered state text in the output.
+    expect(html.indexOf('data-delivery-label')).toBeLessThan(html.indexOf("STATE:completed"));
+  });
+
+  it("no label → no banner (and the state row still renders)", () => {
+    const html = renderToStaticMarkup(
+      <RunCard view={view({ state: "completed" })} labels={LABELLED_LABELS} />,
+    );
+    expect(html).not.toContain("data-delivery-label");
+    expect(html).toContain("STATE:completed");
+  });
+});

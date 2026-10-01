@@ -20,7 +20,7 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
-import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
+import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery } from "@rhema/ledger";
 import { SqlObligationHook } from "@rhema/obligations";
 import { recordInstrumentedFold, type InstrumentedMeasurement } from "@rhema/protocols";
 import { createGcsContentStore } from "@rhema/mirror";
@@ -308,13 +308,18 @@ export async function startWorker(): Promise<void> {
     ? new AnthropicWalkthroughGenerator({ apiKey: walkthroughKey })
     : { generate: () => Promise.reject(new Error("walkthrough unconfigured")) };
 
+  // SEC.1 — `txRunner` runs the user-serving role (the tenant transactions RLS binds); the role pin is
+  // belt-and-suspenders on top of the repointed DATABASE_URL. `systemTxRunner` rides the elevated pool
+  // for the paths that write system tables (the proxy credential mint at provision — see OrchestratorDeps).
+  // Hoisted so RES.2's `settleUnverified` closure binds the same runner.
+  const txRunner = new PgPoolTxRunner(pool, { role: USER_SERVING_ROLE });
+  const systemTxRunner = new PgPoolTxRunner(systemPool);
+  const eventWriter = new SqlEventWriter(bus);
+
   const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerFullBillingDeps & WorkerNotificationDeps & { walkthrough: typeof walkthrough } = {
-    // SEC.1 — `txRunner` runs the user-serving role (the tenant transactions RLS binds); the role pin is
-    // belt-and-suspenders on top of the repointed DATABASE_URL. `systemTxRunner` rides the elevated pool
-    // for the paths that write system tables (the proxy credential mint at provision — see OrchestratorDeps).
-    txRunner: new PgPoolTxRunner(pool, { role: USER_SERVING_ROLE }),
-    systemTxRunner: new PgPoolTxRunner(systemPool),
-    eventWriter: new SqlEventWriter(bus),
+    txRunner,
+    systemTxRunner,
+    eventWriter,
     clock,
     ids,
     heartbeats: new RedisHeartbeatStore(redis),
@@ -339,6 +344,14 @@ export async function startWorker(): Promise<void> {
         }
       : {}),
     ...(alertSink ? { alert: alertSink } : {}),
+    // RES.2 (REQ-SPEC-31(3); ADR-024) — the Unverified platform-fault settle. `deliverRun` calls it
+    // post-commit (best-effort: a failure never un-delivers); the stranded sweep's leg E is the durable
+    // retry while `delivery.platformFaultSettledAt`/`alerted` stay unset. The ops page rides `alertSink`.
+    settleUnverified: (a) =>
+      settleUnverifiedDelivery(
+        { txRunner, ledger, eventWriter, ids, clock, ...(alertSink ? { alert: alertSink } : {}) },
+        a,
+      ),
     // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override
     // flips the workflow's `provisional` once real reports land).
     recalibrate: (m) => {

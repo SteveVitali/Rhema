@@ -4,7 +4,7 @@ import { harvest } from "./harvest.js";
 import type { HarvestFile } from "./harvest.js";
 import { createMirrorTestDb, type MirrorTestDb } from "./testing/harness.js";
 import { InMemoryContentStore } from "./content-store.js";
-import { seedAllRealProjects, seedArtifact, type SeededMirrorProject } from "./testing/fixture.js";
+import { seedAllRealProjects, seedArtifact, seedRun, type SeededMirrorProject } from "./testing/fixture.js";
 import { declaredWritableArtifacts } from "./mounts.js";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 
@@ -152,5 +152,50 @@ describe("materialize + harvest", () => {
     // without the grant the same artifact stays read-only.
     const plain = await materializeSeat(db.exec, store, { seat: "author", projectId: p.projectId, personaId: p.personaId });
     expect(plain.manifest.entries.find((e) => e.path === "drafts/v2.md")?.mode).toBe("read");
+  });
+
+  // BL-66 (RES.2) — a head version under `agents/**` that a DIFFERENT run's committed steps produced is
+  // foreign working memory: it must not mount for a new run (stale seat output was leaking into fresh
+  // hydrations). The producing run keeps it (resume-safe), shared output still mounts, and an unversioned
+  // provenance (no runId / no produced link) is untouched.
+  it("BL-66 — agents/** head produced by another run is excluded; same-run and shared output still mount", async () => {
+    const p = projects[0]!;
+    await seedRun(db.exec, { runId: "run_other", workspaceId, projectId: p.projectId, state: "completed" });
+    await seedRun(db.exec, { runId: "run_new", workspaceId, projectId: p.projectId, state: "provisioning" });
+    // a seat-scoped memo + a shared artifact, both attributed to run_other's committed revise step.
+    const memo = await seedArtifact(db.exec, store, workspaceId, {
+      scope: "project", scopeId: p.projectId, kind: "source_note", namespace: "agent:author",
+      mirrorPath: "agents/author/foreign-memo.md", content: "prior run's working memo\n",
+    });
+    const shared = await seedArtifact(db.exec, store, workspaceId, {
+      scope: "project", scopeId: p.projectId, kind: "draft", namespace: "shared",
+      mirrorPath: "drafts/v2.md", content: "# v2 revised\n",
+    });
+    await db.exec.query(
+      `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids)
+       values ('st_other_revise','run_other','revise',1,'done',1,$1::text[])`,
+      [`{${memo.versionId},${shared.versionId}}`],
+    );
+
+    // a NEW run never sees the foreign seat output; shared output (same produced link) still mounts.
+    const fresh = await materializeSeat(db.exec, store, {
+      seat: "author", projectId: p.projectId, personaId: p.personaId, runId: "run_new",
+    });
+    const freshPaths = fresh.files.map((f) => f.path);
+    expect(freshPaths).not.toContain("agents/author/foreign-memo.md");
+    expect(freshPaths).toContain("drafts/v2.md");
+    expect(freshPaths).toContain("agents/author/notebook.md"); // seeded provenance — never run-produced
+
+    // the producing run re-materializes its own output (resume-safe).
+    const resumed = await materializeSeat(db.exec, store, {
+      seat: "author", projectId: p.projectId, personaId: p.personaId, runId: "run_other",
+    });
+    expect(resumed.files.map((f) => f.path)).toContain("agents/author/foreign-memo.md");
+
+    // no runId → the filter is inert (call sites always pass one; unbound reads stay permissive).
+    const unbound = await materializeSeat(db.exec, store, {
+      seat: "author", projectId: p.projectId, personaId: p.personaId,
+    });
+    expect(unbound.files.map((f) => f.path)).toContain("agents/author/foreign-memo.md");
   });
 });

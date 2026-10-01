@@ -162,4 +162,18 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all render (REQ
     expect(html).toContain('data-contradicted-tier1="true"');
     expect(html).toContain('data-fetched="true"');
   });
+
+  it("RES.2 — the persisted Unverified label renders as the banner above the verdict", async () => {
+    const data: DossierData = { ...dossier([]), deliveryLabel: "unverified" };
+    const dataSource: DataSource = { ...makeDeps([]).dataSource, getDossier: async () => data };
+    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/p/showcase/review/run_1");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-delivery-label="unverified"');
+    // the banner reads "Unverified" — the reserved run-level word — above the verdict section.
+    expect(html.indexOf('data-delivery-label="unverified"')).toBeLessThan(html.indexOf("Verdict"));
+    // and a dossier with no label renders no banner.
+    const plain = await getDossierHtml([]);
+    expect(plain).not.toContain("data-delivery-label");
+  });
 });

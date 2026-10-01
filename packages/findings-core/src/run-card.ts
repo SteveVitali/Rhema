@@ -104,6 +104,12 @@ export interface RunCardInput {
    * policy-skipped). SQL-side rows — the card renders one line each, never agent text.
    */
   readonly decisions?: readonly GateDecisionView[];
+  /**
+   * RES.2 (REQ-SPEC-31(3)) — the persisted run-level delivery label (`runs.delivery.label`, write-once).
+   * "unverified" is the only value today: the run completed but its research checked nothing, so the
+   * label renders ABOVE the verdict/state on the card — and is never recomputed from claim text.
+   */
+  readonly deliveryLabel?: "unverified" | null;
 }
 
 export interface RunCardView {
@@ -136,6 +142,8 @@ export interface RunCardView {
   readonly decisions: readonly GateDecisionView[];
   /** the state-specific primary actions (§5.5), derived — the UI renders each as a labelled affordance. */
   readonly actions: readonly RunCardAction[];
+  /** RES.2 — the persisted run-level delivery label (null when the run was not labelled). */
+  readonly deliveryLabel: "unverified" | null;
 }
 
 /**
@@ -219,6 +227,7 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
     resumable,
     queuedNotes: input.queuedNotes ?? 0,
     decisions: input.decisions ?? [],
+    deliveryLabel: input.deliveryLabel ?? null,
     actions: runCardActions({
       state: input.state,
       paused,
@@ -281,6 +290,8 @@ interface DeriveOptions {
   readonly queuedNotes?: number;
   /** P1.09 — SQL-side decision rows (the event stream carries only gate ids/enums). */
   readonly decisions?: readonly GateDecisionView[];
+  /** RES.2 — SQL-side `runs.delivery.label`; the event stream never carries it (write-once, read once). */
+  readonly deliveryLabel?: "unverified" | null;
 }
 
 function asRecord(v: unknown): Record<string, unknown> {
@@ -442,6 +453,7 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
     ...(opts.resumable != null ? { resumable: opts.resumable } : {}),
     queuedNotes: opts.queuedNotes ?? 0,
     ...(opts.decisions ? { decisions: opts.decisions } : {}),
+    ...(opts.deliveryLabel != null ? { deliveryLabel: opts.deliveryLabel } : {}),
   };
 }
 

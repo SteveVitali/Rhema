@@ -80,6 +80,8 @@ interface RunRow {
   state: string;
   seat: string | null;
   billing_account_id: string;
+  /** RES.2 — the JOURNEY.1 test-tenant flag; the ONLY thing `inputs.force_unverified` may key on. */
+  is_test: boolean;
   /** the frozen input snapshot ({wordCount, claimCount?, …}) — drives the research bound (PRB.22). */
   input_snapshot: { wordCount?: number; claimCount?: number } | null;
   /** the run's FROZEN inputs — the assistant workflows' consented budget/sources + URL policy (P1.11). */
@@ -90,7 +92,8 @@ async function loadRun(deps: WorkerRunDeps, workspaceId: string, runId: string):
   return deps.txRunner.run(workspaceId, async (tx: SqlClient) => {
     const res = await tx.query(
       `select r.workflow, r.project_id, r.persona_id, r.model_tier, r.rate_table_version, r.cap_credits,
-              r.hold_ledger_id, r.state, r.input_snapshot, r.inputs, ai.type_key as seat, w.billing_account_id
+              r.hold_ledger_id, r.state, r.input_snapshot, r.inputs, ai.type_key as seat,
+              w.billing_account_id, w.is_test
          from runs r
          join workspaces w on w.id = r.workspace_id
          left join agent_instances ai on ai.id = r.agent_instance_id
@@ -121,9 +124,17 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   const snap = run.input_snapshot ?? {};
   const claims =
     typeof snap.claimCount === "number" ? snap.claimCount : provisionalClaimCount(workflow, snap.wordCount);
-  const webTools =
-    authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
-    authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
+  // RES.2 (REQ-SPEC-31(3); ADR-026) — `inputs.force_unverified` forces a zero-coverage Review for the
+  // JOURNEY.1 Stage-B walk. It is honored ONLY on a flagged test workspace (`workspaces.is_test`,
+  // migration 0046): a production run's frozen input can never reach this branch, and even there the
+  // flag only zeroes the research budgets — RES.1's preflight still runs first (the proxy admits a
+  // `preflight`-stamped probe past the bound), so the run must genuinely reach verification before the
+  // delivered coverage reads zero. Unreachable for non-test tenants by construction.
+  const forceUnverified = run.is_test === true && run.inputs?.force_unverified === true;
+  const webTools = forceUnverified
+    ? { search: true, fetch: true, searchBudget: 0, fetchBudget: 0, searchFloor: 0, fetchFloor: 0 }
+    : authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
+      authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
   // P1.21 (REQ-WF-8/§16.4) — a Memo run's `user_sources[]` text rides the credential context as
   // `draftText`: the proxy's n-gram guard diffs every search query against it, so internal figures
   // cannot leak inside a query (the fetch-side deny is the frozen `urlPolicy.userSourceDomains`).

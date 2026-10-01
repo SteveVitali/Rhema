@@ -97,6 +97,13 @@ export const ANALYTICS_EVENTS = {
     verdict: z.string().optional(),
   }),
   "run.failed": runEconomicsSchema.extend({ stage: z.string(), refunded: z.boolean() }),
+  // RES.2 (REQ-SPEC-31(3)) — an Unverified delivery: its own event so success cohorts stay clean
+  // (`run.completed` is never emitted for it — isSuccessfulDelivery is the shared predicate).
+  "run.unverified": runEconomicsSchema.extend({
+    checkable_claims: z.number().int().optional(),
+    covered_claims: z.number().int().optional(),
+    refunded: z.boolean().optional(),
+  }),
   "run.report_viewed": runEconomicsSchema.extend({}),
   // §3.5 additions
   "finding.applied": z.object({ severity: z.string() }), // the free Apply verb (§5.7)

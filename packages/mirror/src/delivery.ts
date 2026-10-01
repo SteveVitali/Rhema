@@ -15,7 +15,13 @@ import type {
   ResponseLedgerSidecar,
   RubricSidecar,
 } from "@rhema/contracts";
-import { parseRunEvent, figureProvenanceSchema, verificationFromVerdicts } from "@rhema/contracts";
+import {
+  parseRunEvent,
+  figureProvenanceSchema,
+  verificationFromVerdicts,
+  isCheckableClaimTier,
+  type VerificationCoverage,
+} from "@rhema/contracts";
 import { diffMarkdown, traceRevisionMoves, type MoveTrace } from "@rhema/findings-core";
 import type { SqlExecutor } from "./sql.js";
 import type { SidecarInput } from "./validation.js";
@@ -180,6 +186,14 @@ export interface DeliveryResult {
   readonly newDraftId?: string;
   /** the per-move `revision.move_traced` payloads emitted (PRB.06; REQ-BETA-7). */
   readonly moveTraces?: readonly MoveTrace[];
+  /**
+   * RES.2 (REQ-SPEC-31(3)) — the delivered verification coverage, computed HERE on server-owned facts:
+   * `checkableClaims` counts the Tier-1/2 inventory; `coveredClaims` counts those that kept ≥1
+   * fetch-verified source (post Path-B strip — a persisted `claim_sources` row / surviving claim url IS
+   * the cited⇒fetched truth, never the model's prose). The orchestrator's `isUnverifiedDelivery` predicate
+   * reads this; surfaces never recompute.
+   */
+  readonly verificationCoverage: VerificationCoverage;
 }
 
 /**
@@ -347,6 +361,8 @@ export async function runDeliveryTransaction(
 
   // ---- 3. claims + claim_sources -------------------------------------------------------------------
   const persistedClaims: { claimId: string; ordinal: number; normalizedUrl?: string | null; anchor?: unknown | null }[] = [];
+  let checkableClaims = 0;
+  let coveredClaims = 0;
   for (const a of applied) {
     const c = a.claim;
     const claimId = deps.ids("clm");
@@ -358,6 +374,13 @@ export async function runDeliveryTransaction(
     const keptSources = (c.sources ?? []).filter((s) => isFetched(s.url));
     strippedCitations += (c.sources ?? []).length - keptSources.length;
     const claimUrl = claimUrlUnfetched ? null : (c.url ?? null);
+    // RES.2 — the post-strip coverage tally: a checkable claim is "covered" when the delivered ledger
+    // carries ≥1 fetch-verified source row for it (or its own cited url survived the strip). Every
+    // input here is the POST-STRIP fact — model-claimed sources absent from the fetch log never count.
+    if (isCheckableClaimTier(c.tier)) {
+      checkableClaims += 1;
+      if (keptSources.length > 0 || claimUrl !== null) coveredClaims += 1;
+    }
     await exec.query(
       `insert into claims(id, correspondence_id, draft_id, ordinal, text, tier, verdict, kind, url,
          normalized_url, accessed_at, note, source_check, anchor, human_added, figure_id)
@@ -880,5 +903,6 @@ export async function runDeliveryTransaction(
     dossierVersionIds,
     ...(newDraftId != null ? { newDraftId } : {}),
     ...(moveTraces != null ? { moveTraces } : {}),
+    verificationCoverage: { checkableClaims, coveredClaims },
   };
 }

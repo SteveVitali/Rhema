@@ -263,6 +263,9 @@ export class SqlHoldLedger implements HoldLedger {
         bucket: d.bucket,
         runId: args.runId,
         source: "run",
+        // RES.2 — `platform_fault:<cause>` marks the platform-fault class (`isPlatformFaultRefund`);
+        // undefined stays an ordinary run refund.
+        ...(args.reason ? { reason: args.reason } : {}),
         idempotencyKey: `${args.idempotencyKey}#${d.bucket}`,
       });
       if (!primary) primary = res.ledgerId;

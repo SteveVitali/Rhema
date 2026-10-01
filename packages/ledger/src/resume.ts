@@ -24,6 +24,12 @@ export interface RefundPhasesArgs {
    * against the first and silently not return the re-debited credits (a money-loss bug).
    */
   readonly idempotencyKey: string;
+  /**
+   * RES.2 — the refund class stamped on the rows (`platform_fault:<cause>` for the Unverified /
+   * research-preflight refunds). A platform-fault refund is never re-debited on resume and never
+   * counted by DEF.4's user-refund window (`isPlatformFaultRefund`).
+   */
+  readonly reason?: string;
 }
 
 export interface PhaseRefund {
@@ -61,6 +67,7 @@ export async function refundPhases(
         runId: args.runId,
         phaseId,
         source: "run",
+        ...(args.reason ? { reason: args.reason } : {}),
         idempotencyKey: `${args.idempotencyKey}:${phaseId}#${d.bucket}`,
       });
       // Only count credits this call actually applied — a replay (applied=false) returns the existing row and
@@ -85,7 +92,10 @@ export async function reDebitRefundedPhases(
   const phases = await refundedPhasesInOrder(tx, args.runId);
   const out: PhaseRefund[] = [];
   for (const phaseId of phases) {
-    const refunded = await sumForPhase(tx, args.runId, phaseId, "refund");
+    // RES.2 — only USER-class refunds re-debit: a `platform_fault:*` refund is the platform paying for
+    // its own failure (the phase ran but could not research) and NEVER re-charges on resume — a
+    // re-verification is a new run, debited normally (REQ-SPEC-24(6) carve-out).
+    const refunded = await sumRefundedForPhase(tx, args.runId, phaseId, { excludePlatformFault: true });
     const alreadyReDebited = await sumReDebitedForPhase(tx, args.runId, phaseId);
     const remaining = refunded - alreadyReDebited;
     if (remaining <= 0) {
@@ -132,7 +142,8 @@ async function netDebitedByBucketForPhase(
   return out;
 }
 
-/** Phases that carry a refund, in committed order (earliest debit first), so they re-debit before new phases. */
+/** Phases that carry a USER-class refund, in committed order (earliest debit first), so they re-debit
+ *  before new phases. RES.2: `platform_fault:*` refunds are excluded — platform-fault work never re-charges. */
 async function refundedPhasesInOrder(tx: SqlClient, runId: string): Promise<string[]> {
   const rows = (
     await tx.query(
@@ -140,7 +151,8 @@ async function refundedPhasesInOrder(tx: SqlClient, runId: string): Promise<stri
          from credit_ledger
         where run_id = $1 and phase_id is not null and kind in ('debit','refund')
         group by phase_id
-        having sum(case when kind = 'refund' then credits else 0 end) > 0
+        having sum(case when kind = 'refund' and (reason is null or reason not like 'platform_fault:%')
+                        then credits else 0 end) > 0
         order by first_at, phase_id`,
       [runId],
     )
@@ -148,11 +160,19 @@ async function refundedPhasesInOrder(tx: SqlClient, runId: string): Promise<stri
   return rows.map((r) => r.phase_id);
 }
 
-async function sumForPhase(tx: SqlClient, runId: string, phaseId: string, kind: string): Promise<number> {
+/** Σ refund for a phase — `excludePlatformFault` drops the `platform_fault:*` rows (RES.2). */
+async function sumRefundedForPhase(
+  tx: SqlClient,
+  runId: string,
+  phaseId: string,
+  opts?: { excludePlatformFault?: boolean },
+): Promise<number> {
   const r = (
     await tx.query(
-      "select coalesce(sum(credits), 0)::int as s from credit_ledger where run_id = $1 and phase_id = $2 and kind = $3",
-      [runId, phaseId, kind],
+      `select coalesce(sum(credits), 0)::int as s from credit_ledger
+        where run_id = $1 and phase_id = $2 and kind = 'refund'
+          ${opts?.excludePlatformFault ? "and (reason is null or reason not like 'platform_fault:%')" : ""}`,
+      [runId, phaseId],
     )
   ).rows[0] as { s: number };
   return Number(r.s);

@@ -184,6 +184,148 @@ describe("deliverRun (orchestrator wiring)", () => {
     expect(deps.eventWriter.events.some((e) => e.type === "cost.final")).toBe(false);
   });
 
+  // ---- RES.2 (REQ-SPEC-31(3)) — the Unverified classification ------------------------------------
+  // The predicate runs on POST-STRIP coverage the mirror counts: ≥1 checkable Tier-1/2 claim, zero
+  // covered. The label + `run.unverified` commit atomically with `finalizing → completed`; the
+  // platform-fault settle is post-commit and best-effort (the sweep retries while unmarked).
+
+  /** A claim ledger of checkable claims whose cited sources were never fetched (all stripped). */
+  function zeroCoverageDelivery(over: Partial<DeliveryArgs> = {}): DeliveryArgs {
+    const claimLedger: ClaimLedgerSidecar = {
+      sidecar: "claim_ledger",
+      version: 1,
+      claims: [
+        // tier-2 checkable; its url + source were never fetched → the Path-B strip leaves 0 covered.
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: "https://unfetched.example/a", normalizedUrl: "unfetched.example/a", humanAdded: false },
+        { ordinal: 2, text: "c2", tier: 1, verdict: "verified", humanAdded: false, sources: [{ url: "https://unfetched.example/b", normalizedUrl: "unfetched.example/b", accessedAt: "2026-09-02T11:00:00Z", stance: "supports" }] },
+      ],
+    } as ClaimLedgerSidecar;
+    return delivery({
+      sidecars: [{ filename: "01-claim-ledger.json", json: claimLedger }],
+      claimLedger,
+      ...over,
+    });
+  }
+
+  it("zero coverage → completed with the write-once Unverified label, run.unverified, and a post-commit settle call", async () => {
+    const settled: { runId: string; phaseKeys: readonly string[]; checkableClaims: number; coveredClaims: number }[] = [];
+    const result = await deliverRun(
+      { ...deps, store, settleUnverified: async (a) => { settled.push(a); } },
+      { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: zeroCoverageDelivery() },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state).toBe("completed");
+
+    // the persisted label + counts — atomically with the transition (one commit).
+    const run = (await db.client.query("select state, delivery from runs where id=$1", [RUN])).rows[0] as {
+      state: string;
+      delivery: { label?: string; checkableClaims?: number; coveredClaims?: number } | null;
+    };
+    expect(run.state).toBe("completed");
+    expect(run.delivery).toMatchObject({ label: "unverified", checkableClaims: 2, coveredClaims: 0 });
+
+    // `run.unverified` in the run stream (the analytics `run.completed` suppression is the dashboard's).
+    const ev = deps.eventWriter.events.find((e) => e.type === "run.unverified");
+    expect(ev?.payload).toMatchObject({ checkableClaims: 2, coveredClaims: 0 });
+
+    // the research-class phase keys resolve from the review manifest (verification + discourse).
+    expect(settled).toHaveLength(1);
+    expect(settled[0]).toMatchObject({
+      runId: RUN,
+      workspaceId: WS,
+      billingAccountId: "ba_seed",
+      phaseKeys: ["verification", "discourse"],
+      checkableClaims: 2,
+      coveredClaims: 0,
+    });
+    // every stripped claim's verdict stays the CLAIM verdict `unverifiable` — never the run label.
+    const claims = (await db.client.query("select verdict from claims order by ordinal", [])).rows as { verdict: string }[];
+    expect(claims.map((c) => c.verdict)).toEqual(["unverifiable", "unverifiable"]);
+  });
+
+  it("an injected settlement failure still leaves the dossier delivered (settle is post-commit)", async () => {
+    const result = await deliverRun(
+      { ...deps, store, settleUnverified: () => Promise.reject(new Error("settle exploded")) },
+      { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: zeroCoverageDelivery() },
+    );
+    expect(result.ok).toBe(true);
+    const run = (await db.client.query("select state, delivery->>'label' as label from runs where id=$1", [RUN])).rows[0] as {
+      state: string;
+      label: string | null;
+    };
+    expect(run).toMatchObject({ state: "completed", label: "unverified" });
+    // the correspondence row committed — the delivery itself never hinges on settlement.
+    const corr = (await db.client.query("select count(*)::int as n from correspondence_items where run_id=$1", [RUN])).rows[0] as { n: number };
+    expect(corr.n).toBe(1);
+  });
+
+  it("partial coverage → NOT Unverified (one fetched Tier-1 claim of two)", async () => {
+    const settled: unknown[] = [];
+    const claimLedger: ClaimLedgerSidecar = {
+      sidecar: "claim_ledger",
+      version: 1,
+      claims: [
+        { ordinal: 1, text: "c1", tier: 1, verdict: "verified", url: FETCHED, normalizedUrl: normalizeUrl(FETCHED), humanAdded: false },
+        { ordinal: 2, text: "c2", tier: 2, verdict: "verified", url: "https://unfetched.example/a", normalizedUrl: "unfetched.example/a", humanAdded: false },
+      ],
+    } as ClaimLedgerSidecar;
+    const result = await deliverRun(
+      { ...deps, store, settleUnverified: async (a) => { settled.push(a); } },
+      {
+        billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100,
+        delivery: delivery({ sidecars: [{ filename: "01-claim-ledger.json", json: claimLedger }], claimLedger }),
+      },
+    );
+    expect(result.ok).toBe(true);
+    const run = (await db.client.query("select delivery from runs where id=$1", [RUN])).rows[0] as { delivery: unknown };
+    expect(run.delivery).toBeNull(); // partial coverage is an ordinary delivery — no label
+    expect(settled).toHaveLength(0);
+    expect(deps.eventWriter.events.some((e) => e.type === "run.unverified")).toBe(false);
+    expect(deps.eventWriter.events.some((e) => e.type === "cost.final")).toBe(true);
+  });
+
+  it("no Tier-1/2 claims → NOT Unverified (nothing was checkable)", async () => {
+    const settled: unknown[] = [];
+    const claimLedger: ClaimLedgerSidecar = {
+      sidecar: "claim_ledger",
+      version: 1,
+      claims: [
+        { ordinal: 1, text: "style note", tier: 3, verdict: "unsupported", humanAdded: false },
+      ],
+    } as ClaimLedgerSidecar;
+    const result = await deliverRun(
+      { ...deps, store, settleUnverified: async (a) => { settled.push(a); } },
+      {
+        billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100,
+        delivery: delivery({ sidecars: [{ filename: "01-claim-ledger.json", json: claimLedger }], claimLedger }),
+      },
+    );
+    expect(result.ok).toBe(true);
+    const run = (await db.client.query("select delivery from runs where id=$1", [RUN])).rows[0] as { delivery: unknown };
+    expect(run.delivery).toBeNull();
+    expect(settled).toHaveLength(0);
+  });
+
+  it("the label is write-once — a re-drive of the committed run cannot overwrite delivery", async () => {
+    const result = await deliverRun(
+      { ...deps, store, settleUnverified: async () => {} },
+      { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: zeroCoverageDelivery() },
+    );
+    expect(result.ok).toBe(true);
+    // a second deliverRun finds the run no longer `finalizing` — the CAS throws and the blob is intact.
+    await expect(
+      deliverRun(
+        { ...deps, store, settleUnverified: async () => {} },
+        { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: delivery() },
+      ),
+    ).rejects.toThrow();
+    const run = (await db.client.query("select delivery from runs where id=$1", [RUN])).rows[0] as {
+      delivery: { label?: string } | null;
+    };
+    expect(run.delivery?.label).toBe("unverified");
+  });
+
   it("a run flagged delivery_withheld_at by the chargeback (account since reinstated) still withholds until the marker clears", async () => {
     await db.txRunner.run("ws_seed", (tx) => tx.query("update runs set delivery_withheld_at = now() where id = $1", [RUN]));
     const result = await deliverRun(

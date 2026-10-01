@@ -139,7 +139,7 @@ const EXPECTED_RLS_FORCED = new Set([
   "account_exports", "ai_use_additions", "analytics_events", "artifacts", "auto_reload_events",
   "checkout_sessions", "credit_ledger", "email_action_tokens", "notification_deliveries",
   "personas", "project_search_docs", "projects", "run_event_seq", "run_events", "runs",
-  "timeline_events", "usage_records",
+  "timeline_events", "trial_restorations", "usage_records",
 ]);
 
 describe("the tenancy census (REQ-ARCH-25/26 — every table classified, exhaustively)", () => {
@@ -338,6 +338,7 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   support_access_log: "si",
   team_waitlist: "si",
   timeline_events: "si",
+  trial_restorations: "si", // RES.2 (0047) — the platform-fault trial-restore audit row; append-only
   trial_spend_daily: "siu",
   trial_unlock_checks: "si",
   // ---- full DML (the ordinary user-serving surface) ------------------------------------------------

@@ -185,3 +185,60 @@ describe("probeSlos — test-tenant exclusion (JOURNEY.1)", () => {
     expect(reading(await probeSlos(db.client), "event_delivery_latency_p95_s").status).not.toBe("breach");
   });
 });
+
+// RES.2 (REQ-SPEC-31(3)) — an Unverified delivery is never a success: it stays in the rate's
+// denominator (the run DID complete — the platform failed its research) but leaves the numerator,
+// and the weekly `unverified_review_rate_7d_pct` signal counts it.
+describe("probeSlos — Unverified exclusions (RES.2)", () => {
+  async function seedLabelled(runId: string, label: string | null) {
+    await seedRun(db, { runId, workspaceId: seed.workspaceId, projectId: seed.projectId, state: "completed" });
+    await db.client.query(
+      `update runs set ended_at = now(), delivery = $2::jsonb where id = $1`,
+      [runId, label ? JSON.stringify({ label, checkableClaims: 9, coveredClaims: 0 }) : null],
+    );
+  }
+
+  it("an Unverified run leaves the success numerator — 1 unverified + 0 ordinary → 0% breach", async () => {
+    await seedLabelled("run_uv", "unverified");
+    const r = reading(await probeSlos(db.client), "run_success_rate_24h_pct");
+    expect(r.status).toBe("breach"); // 0/1 — the run counts, just never as a success
+    expect(r.value).toBe(0);
+  });
+
+  it("an unlabelled completed run is still a success (the label is read, not inferred)", async () => {
+    await seedLabelled("run_ok", null);
+    await seedLabelled("run_uv", "unverified");
+    const r = reading(await probeSlos(db.client), "run_success_rate_24h_pct");
+    expect(r.value).toBe(50); // 1 of 2 — the label, not the outcome, is the exclusion
+  });
+
+  it("the weekly Unverified rate computes on fixtures: 1 of 2 completed Reviews → 50% breach", async () => {
+    await seedLabelled("run_ok", null);
+    await seedLabelled("run_uv", "unverified");
+    const r = reading(await probeSlos(db.client), "unverified_review_rate_7d_pct");
+    expect(r.status).toBe("breach");
+    expect(r.value).toBe(50);
+  });
+
+  it("the weekly rate ignores non-review workflows and test tenants", async () => {
+    await seedLabelled("run_uv", "unverified");
+    // a fact_check Unverified — in the denominator only if the probe scoped to it (it scopes to review)
+    await seedRun(db, { runId: "run_fc", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "fact_check", state: "completed" });
+    await db.client.query(
+      `update runs set ended_at = now(), delivery = '{"label":"unverified","checkableClaims":3,"coveredClaims":0}'::jsonb where id = 'run_fc'`,
+      [],
+    );
+    // a test tenant's unverified Review — excluded entirely.
+    const t = await seedProject(db, { workspaceId: "ws_t", userId: "usr_t", projectId: "prj_t" });
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [t.workspaceId]);
+    await seedRun(db, { runId: "run_tt", workspaceId: t.workspaceId, projectId: t.projectId, state: "completed" });
+    await db.client.query(
+      `update runs set ended_at = now(), delivery = '{"label":"unverified","checkableClaims":2,"coveredClaims":0}'::jsonb where id = 'run_tt'`,
+      [],
+    );
+    const r = reading(await probeSlos(db.client), "unverified_review_rate_7d_pct");
+    // only run_uv is a real review → 1/1 = 100% (fact_check + test tenant excluded).
+    expect(r.value).toBe(100);
+    expect(r.status).toBe("breach");
+  });
+});

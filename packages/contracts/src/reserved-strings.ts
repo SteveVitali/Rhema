@@ -74,6 +74,15 @@ export const RESERVED_CLASSES: ReservedClass[] = [
     strings: ["Write", "Read", "Focus", "Source"],
     rule: "only as View-menu values",
   },
+  {
+    // RES.2 (REQ-SPEC-31(3); Appendix D.2) — the run-level delivery label class. "Unverified" names a
+    // RUN whose verification found zero coverage (the platform could not fetch any source); a claim's
+    // verdict is `unverifiable` — never "unverified" — and copy must never conflate the two.
+    id: "delivery_labels",
+    label: "Delivery labels",
+    strings: ["Unverified"],
+    rule: "only as the run-level delivery label above the verdict (a claim verdict is `unverifiable`)",
+  },
 ];
 
 /** Reserved product nouns (§4.3); usable only as defined there. "backlog" is banned (the object is Obligation). */
@@ -129,6 +138,13 @@ export const BANNED_STRINGS: BannedString[] = [
   { text: "browser", except: "not for the Files pane" },
   { text: "wrong", except: "never in a calibration verdict" },
   { text: "backlog", except: "the object is the Obligation (v0.3)" },
+  {
+    // RES.2: the lowercase form is banned outright (a claim verdict is `unverifiable`, and run copy uses
+    // the title-cased label). The title-cased form is reserved for the delivery-label slot itself — the
+    // surfaces render `DELIVERY_LABEL_DISPLAY.unverified` there, nothing else.
+    text: "unverified",
+    except: 'the run-level delivery label "Unverified" only',
+  },
 ];
 
 /** The flat list of banned substrings with no context exception — the seed for the strict no-banned-strings lint. */

@@ -27,6 +27,8 @@
 // The better long-term fix is a transactional outbox (a job row committed with the transition, relayed
 // post-commit); this sweep is the small honest recovery the deferral rows name (see the PRB.14 ticket).
 
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
+import type { WorkflowKey } from "@rhema/contracts";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { reconcileRunSpend } from "./spend.js";
@@ -60,7 +62,8 @@ export type StrandedSweepOutcome =
   | { readonly kind: "provisioning_failed"; readonly runId: string; readonly workspaceId: string }
   | { readonly kind: "queued_reenqueued"; readonly runId: string; readonly workspaceId: string; readonly attempt: number }
   | { readonly kind: "gate_rearmed"; readonly gateId: string; readonly runId: string; readonly workspaceId: string }
-  | { readonly kind: "preflight_alerted"; readonly runId: string; readonly workspaceId: string };
+  | { readonly kind: "preflight_alerted"; readonly runId: string; readonly workspaceId: string }
+  | { readonly kind: "unverified_settled"; readonly runId: string; readonly workspaceId: string };
 
 interface StuckRow {
   readonly id: string;
@@ -223,6 +226,50 @@ export async function sweepStrandedRuns(
       ),
     );
     outcomes.push({ kind: "preflight_alerted", runId: row.id, workspaceId: row.workspace_id });
+  }
+
+  // ---- Leg E (RES.2; REQ-SPEC-31(3)): an Unverified run whose platform-fault settlement did not ----
+  // land (deliverRun calls it best-effort post-commit; a crash/failure between commit and settle leaves
+  // `delivery.platformFaultSettledAt`/`delivery.alerted` unset) retries HERE. `settleUnverified` is
+  // idempotent per leg — refund keys, the entitlement's `consumed_by_run_id` guard, and the audit row's
+  // unique constraint all dedupe — so re-driving a half-settled run is safe. The alert leg itself is
+  // send-then-mark inside the settle, so a sink failure surfaces as an unset `alerted` marker and
+  // retries next pass — exactly one page per Unverified delivery.
+  const unsettledUnverified = (
+    await deps.systemExec.query(
+      `select r.id, r.workspace_id, r.workflow, w.billing_account_id,
+              r.delivery ->> 'checkableClaims' as checkable_claims,
+              r.delivery ->> 'coveredClaims' as covered_claims
+         from runs r join workspaces w on w.id = r.workspace_id
+        where r.state = 'completed'
+          and r.delivery ->> 'label' = 'unverified'
+          and (r.delivery ->> 'platformFaultSettledAt' is null or r.delivery ->> 'alerted' is null)
+        order by r.ended_at`,
+      [],
+    )
+  ).rows as {
+    id: string; workspace_id: string; workflow: WorkflowKey; billing_account_id: string;
+    checkable_claims: string | null; covered_claims: string | null;
+  }[];
+  for (const row of unsettledUnverified) {
+    const phaseKeys = (WORKFLOW_MANIFESTS[row.workflow]?.phases ?? [])
+      .filter((p) => p.phaseClass === "research")
+      .map((p) => p.key);
+    if (!deps.settleUnverified) break; // unbound deploy (no ledger) — nothing to retry
+    try {
+      await deps.settleUnverified({
+        runId: row.id,
+        workspaceId: row.workspace_id,
+        billingAccountId: row.billing_account_id,
+        phaseKeys,
+        checkableClaims: Number(row.checkable_claims ?? 0),
+        coveredClaims: Number(row.covered_claims ?? 0),
+      });
+      outcomes.push({ kind: "unverified_settled", runId: row.id, workspaceId: row.workspace_id });
+    } catch {
+      // a settlement leg failed — the markers stay unset and the next pass retries. One bad run must
+      // never wedge the rest of the sweep.
+    }
   }
 
   return outcomes;

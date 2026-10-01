@@ -1330,6 +1330,8 @@ const runCardLabels: RunCardLabels = {
   offLabel: R.offLabel,
   counterLabel: (_key, value, of) => (of != null ? `${value} / ${of}` : String(value)),
   refundLabel: (credits) => fmt(R.refundFmt, { n: credits }),
+  // RES.2 — the run-level delivery-label line above the card's state/verdict (machine value → copy).
+  deliveryLabel: () => fmt(R.deliveryBannerFmt, { label: R.deliveryLabel }),
   // ---- P1.05 — the §5.5 state chrome + §6.5 steering ----
   queueLabel: (pos) => fmt(COPY.steer.queueFmt, { n: pos }),
   estimateLabel: (actual, est) =>
@@ -2303,6 +2305,25 @@ export function DossierPage(): ReactNode {
             __html: `(function(){var el=document.querySelector('[data-finding="${dossier.firstFindingId}"]');if(!el)return;var sent=false;function fire(){if(sent)return;sent=true;var b=JSON.stringify({event:"showcase.finding_anchor_viewed",props:{}});try{if(navigator.sendBeacon){navigator.sendBeacon("/a/acq",new Blob([b],{type:"application/json"}));return;}}catch(e){}fetch("/a/acq",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true}).catch(function(){});}var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){fire();io.disconnect();}}},{threshold:0.4});io.observe(el);setTimeout(function(){var r=el.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0)fire();},1200);})();`,
           }}
         />
+      ) : null}
+      {/* RES.2 — the persisted run-level label leads the dossier, above the verdict row
+          (the same slot the card + email carry); the claim verdict stays `unverifiable`. */}
+      {dossier.deliveryLabel ? (
+        <div
+          data-delivery-label={dossier.deliveryLabel}
+          style={{
+            margin: "0 0 12px",
+            padding: "10px 14px",
+            borderRadius: "8px",
+            border: "1px solid var(--shell-border)",
+            background: "var(--shell-raised)",
+            fontSize: "13px",
+            fontWeight: 600,
+            color: "var(--shell-fg)",
+          }}
+        >
+          {fmt(R.deliveryBannerFmt, { label: R.deliveryLabel })}
+        </div>
       ) : null}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <SectionTitle>{dossier.projectTitle}</SectionTitle>

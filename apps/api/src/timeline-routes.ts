@@ -13,6 +13,7 @@
 
 import { Hono } from "hono";
 import type { RunState, WorkflowKey } from "@rhema/contracts";
+import { deliveryLabelFromRow } from "@rhema/contracts";
 import {
   buildRunCardView,
   etaBandForPhases,
@@ -81,6 +82,8 @@ interface RunRow {
   walkthrough: { status?: string; text?: string; attempts?: number } | null;
   paused_at: string | Date | null;
   inputs: Record<string, unknown> | string;
+  /** RES.2 — the persisted run-level delivery blob (label + counts + settlement markers). */
+  delivery: unknown;
 }
 
 interface StepRow {
@@ -187,7 +190,7 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       const runs = (
         await tx.query(
           `select id, workflow, state, created_at, started_at, ended_at, estimate_credits, cap_credits,
-                  spent_credits, failure, walkthrough, paused_at, inputs
+                  spent_credits, failure, walkthrough, paused_at, inputs, delivery
              from runs where project_id = $1 order by created_at desc, id`,
           [projectId],
         )
@@ -430,6 +433,8 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           failureCode: r.failure?.code ?? null,
           resumable: (r.state === "completed_partial" || r.state === "failed" || r.state === "cancelled") && runSteps.some((s) => s.state === "done"),
           queuedNotes: notesByRun.get(r.id) ?? 0,
+          // RES.2 — the write-once run-level label; the card renders it above the state line.
+          deliveryLabel: deliveryLabelFromRow(r.delivery),
         });
         return {
           runId: r.id,

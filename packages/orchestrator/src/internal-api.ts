@@ -5,7 +5,14 @@
 // event (REQ-DATA-33). Artifact materialization/harvest (P0.09), gate resolution (P0.10) and ledger internals
 // (P0.11) live behind the interfaces this module calls; this ticket owns the durable lifecycle.
 
-import { platformCredits, type AgentTypeKey, type GateKind, type GateOnExpiry, type WorkflowKey } from "@rhema/contracts";
+import {
+  platformCredits,
+  PLATFORM_FAULT_RESEARCH_PREFLIGHT,
+  type AgentTypeKey,
+  type GateKind,
+  type GateOnExpiry,
+  type WorkflowKey,
+} from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
 import {
   buildSeatHydration,
@@ -109,6 +116,29 @@ export interface OrchestratorDeps {
   // e.g. the worker's billing sink takes `ReconcileAlert` — while the sweep's preflight page sends
   // its own id-only shape. Method-param bivariance keeps both assignable to this seam.
   alert?(a: unknown): void | Promise<void>;
+  /**
+   * RES.2 (REQ-SPEC-31(3)) — the platform-fault settlement for an Unverified delivery: refund the run's
+   * research-class phase debits, absorb the refunded metered burn, restore the consumed trial
+   * entitlement, stamp the `runs.delivery` settlement markers, then page once. Bound by the deploy
+   * (api + worker) to @rhema/ledger's `settleUnverifiedDelivery` — the orchestrator holds only the seam
+   * because `refundPhases` lives across the ledger boundary. Callers: `deliverRun` (post-commit,
+   * best-effort) and the stranded sweep's leg E (the durable retry). Unset ⇒ the label still persists
+   * atomically; settlement simply waits for a bound caller.
+   */
+  settleUnverified?(args: UnverifiedSettleArgs): Promise<unknown>;
+}
+
+/** The settlement parameters for one Unverified delivery (RES.2) — passed to `deps.settleUnverified`. */
+export interface UnverifiedSettleArgs {
+  readonly runId: string;
+  readonly workspaceId: string;
+  readonly billingAccountId: string;
+  /** the run manifest's research-class phase KEYS (review: `verification` + `discourse`; fact_check:
+   *  `verification`) — the settle resolves them to the committed `steps.id`s the debit rows carry. */
+  readonly phaseKeys: readonly string[];
+  /** the persisted coverage counts (the alert payload carries them; ids + counts only — invariant 10). */
+  readonly checkableClaims: number;
+  readonly coveredClaims: number;
 }
 
 /** Builds the re-review `obligations.json` mount file for a seat's hydration, or null when none applies. */
@@ -514,6 +544,8 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       overlays,
       serverFiles,
       writablePaths,
+      // BL-66 — bind the run so a prior run's seat-namespace output never mounts into this run's /work.
+      runId: args.runId,
     });
     await recordMounts(tx, { runId: args.runId, attempt: args.attempt, manifest });
 
@@ -1207,6 +1239,12 @@ export async function failStep(
               workspaceId: args.workspaceId,
               runId: args.runId,
               credits: netDebited,
+              // RES.2 — a research-preflight failure is a PLATFORM fault (the harness could never reach
+              // research tools): the refund rows carry the platform-fault class so they never re-debit
+              // on resume and stay out of DEF.4's user-refund accounting.
+              ...(terminal.code === "research_preflight_failed"
+                ? { reason: PLATFORM_FAULT_RESEARCH_PREFLIGHT }
+                : {}),
               idempotencyKey: `refund:${args.runId}`,
             });
             await deps.eventWriter.append(tx, {
@@ -1643,6 +1681,11 @@ export async function failRun(
         workspaceId: args.workspaceId,
         runId: args.runId,
         credits: refundCredits,
+        // RES.2 — the research-preflight default refund rides the platform-fault class (same class as the
+        // Unverified refund; the pod could never reach research tools — the fault is ours, not the user's).
+        ...(args.failure.code === "research_preflight_failed"
+          ? { reason: PLATFORM_FAULT_RESEARCH_PREFLIGHT }
+          : {}),
         idempotencyKey: `refund:${args.runId}`,
       });
       // PRB.08: the run row surfaces "refunded N credits; partial results kept" — emit the whitelisted fact.

@@ -192,6 +192,23 @@ describe("materializeRunAnalytics — the domain→stream projector", () => {
     ).rows[0] as { props: Record<string, unknown> };
     expect(completed.props).toMatchObject({ cost_actual: 500, cost_estimate: 560, rigor: "standard" });
   });
+
+  it("RES.2 — an Unverified-labelled run materializes run.unverified, never run.completed", async () => {
+    // the fixture's completed run carries the persisted label → the projector emits the fault event.
+    await db.pg.query(
+      `update runs set delivery = '{"label":"unverified","checkableClaims":16,"coveredClaims":0}'::jsonb where id = $1`,
+      [RUN1],
+    );
+    await materializeRunAnalytics(db.client, deps(), WINDOW);
+    const rows = (
+      await db.client.query(
+        "select event, props from analytics_events where run_id = $1 and event in ('run.completed','run.unverified')",
+        [RUN1],
+      )
+    ).rows as { event: string; props: Record<string, unknown> }[];
+    expect(rows.map((r) => r.event)).toEqual(["run.unverified"]);
+    expect(rows[0]!.props).toMatchObject({ checkable_claims: 16, covered_claims: 0, refunded: true });
+  });
 });
 
 describe("computeBetaDashboard + renderBetaDashboard (AC4)", () => {

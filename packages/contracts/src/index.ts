@@ -18,6 +18,7 @@ export * from "./artifact-policy.js";
 export * from "./domain/anchor.js";
 export * from "./domain/common.js";
 export * from "./domain/claims.js";
+export * from "./delivery-label.js";
 export * from "./domain/findings.js";
 export * from "./domain/obligations.js";
 export * from "./domain/gates.js";

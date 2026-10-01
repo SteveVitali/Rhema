@@ -41,7 +41,7 @@ describe("canonical vocabularies — REQ-SPEC-2 / REQ-PROD-6", () => {
 });
 
 describe("Appendix D.2 reserved/banned strings — lint bedrock (REQ-PROD-6, REQ-BILL-18)", () => {
-  it("carries the seven reserved classes verbatim", () => {
+  it("carries the eight reserved classes verbatim (RES.2 adds delivery_labels)", () => {
     const ids = RESERVED_CLASSES.map((c) => c.id);
     expect(ids).toEqual([
       "plan_names",
@@ -51,9 +51,14 @@ describe("Appendix D.2 reserved/banned strings — lint bedrock (REQ-PROD-6, REQ
       "approvals",
       "autonomy",
       "views",
+      // RES.2 — the run-level delivery label ("Unverified") is reserved D.2 vocabulary, distinct
+      // from the claim verdict `unverifiable`.
+      "delivery_labels",
     ]);
     const plans = RESERVED_CLASSES.find((c) => c.id === "plan_names")!;
     expect(plans.strings).toEqual(["Free", "Writer", "Studio", "Studio Max", "Team"]);
+    const labels = RESERVED_CLASSES.find((c) => c.id === "delivery_labels")!;
+    expect(labels.strings).toEqual(["Unverified"]);
   });
 
   it("bans the load-bearing strings (Pro, gate, tokens, Claude Code, backlog, unlimited)", () => {

@@ -280,3 +280,63 @@ describe("leg D — the research_preflight_failed alert (RES.1; REQ-SPEC-31(3))"
     expect(alerts).toHaveLength(0);
   });
 });
+
+describe("leg E — the Unverified settlement retry (RES.2; REQ-SPEC-31(3))", () => {
+  async function seedUnverifiedDelivered(runId: string, markers: Record<string, unknown> = {}) {
+    await seedRun(db, { runId, workspaceId: seed.workspaceId, projectId: seed.projectId, state: "completed", stateSince: AGO(60_000) });
+    await db.client.query(
+      `update runs set delivery = $2::jsonb where id = $1`,
+      [runId, JSON.stringify({ label: "unverified", checkableClaims: 16, coveredClaims: 0, ...markers })],
+    );
+  }
+
+  it("retries an unsettled Unverified run through deps.settleUnverified with the manifest's research keys", async () => {
+    await seedUnverifiedDelivered("run_uv"); // no markers — deliverRun's post-commit settle never landed
+    const calls: { runId: string; phaseKeys: readonly string[]; checkableClaims: number }[] = [];
+    const out = await sweepStrandedRuns({
+      ...sweepDeps(),
+      settleUnverified: async (a) => { calls.push(a); },
+    });
+    expect(out).toEqual([{ kind: "unverified_settled", runId: "run_uv", workspaceId: seed.workspaceId }]);
+    expect(calls).toEqual([
+      { runId: "run_uv", workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId, phaseKeys: ["verification", "discourse"], checkableClaims: 16, coveredClaims: 0 },
+    ]);
+  });
+
+  it("skips a fully settled+alerted run and a completed run with no label", async () => {
+    await seedUnverifiedDelivered("run_done", { platformFaultSettledAt: "2026-09-16T11:00:00Z", alerted: true });
+    await seedRun(db, { runId: "run_plain", workspaceId: seed.workspaceId, state: "completed" });
+    const calls: unknown[] = [];
+    const out = await sweepStrandedRuns({ ...sweepDeps(), settleUnverified: async (a) => { calls.push(a); } });
+    expect(out.filter((o) => o.kind === "unverified_settled")).toEqual([]);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("still retries when only the money marker landed (the alert half is unset)", async () => {
+    await seedUnverifiedDelivered("run_half", { platformFaultSettledAt: "2026-09-16T11:00:00Z" }); // alerted unset
+    const calls: unknown[] = [];
+    const out = await sweepStrandedRuns({ ...sweepDeps(), settleUnverified: async (a) => { calls.push(a); } });
+    expect(out).toEqual([{ kind: "unverified_settled", runId: "run_half", workspaceId: seed.workspaceId }]);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("swallows a settle failure per-run (the next pass retries) and never wedges the sweep", async () => {
+    await seedUnverifiedDelivered("run_bad");
+    await seedUnverifiedDelivered("run_good");
+    let threw = false;
+    const out = await sweepStrandedRuns({
+      ...sweepDeps(),
+      settleUnverified: async (a) => {
+        if (a.runId === "run_bad") { threw = true; throw new Error("settle exploded"); }
+      },
+    });
+    expect(threw).toBe(true);
+    expect(out).toEqual([{ kind: "unverified_settled", runId: "run_good", workspaceId: seed.workspaceId }]);
+  });
+
+  it("an unbound settleUnverified leaves the rows for a bound deploy (no crash, no outcome)", async () => {
+    await seedUnverifiedDelivered("run_uv");
+    const out = await sweepStrandedRuns(sweepDeps()); // no settleUnverified in deps
+    expect(out.filter((o) => o.kind === "unverified_settled")).toEqual([]);
+  });
+});
