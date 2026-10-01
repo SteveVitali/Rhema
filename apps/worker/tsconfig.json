@@ -27,6 +27,9 @@
       "path": "../../packages/mirror"
     },
     {
+      "path": "../../packages/obligations"
+    },
+    {
       "path": "../../packages/protocols"
     }
   ],

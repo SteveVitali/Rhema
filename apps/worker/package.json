@@ -25,6 +25,7 @@
     "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
     "@rhema/mirror": "workspace:*",
+    "@rhema/obligations": "workspace:*",
     "@rhema/orchestrator": "workspace:*",
     "@rhema/protocols": "workspace:*",
     "ioredis": "6.0.0",

@@ -342,12 +342,14 @@ describe("delivery transaction", () => {
     expect(d.by_actor.kind).toBe("user");
 
     // the v(N+1) draft row: origin response_to_review, based on the frozen head, promoted to the
-    // delivered drafts/v3.md version.
+    // delivered drafts/v3.md version — and born FROZEN (PRB.19: it IS the delivered revision, sealed like
+    // its base; editing it forks a human_revision child per REQ-DATA-24).
     expect(result.newDraftId).toBe(nextDraftId);
     const next = (
-      await db.exec.query("select n, origin, base_draft_id, promoted_version_id from drafts where id=$1", [nextDraftId])
-    ).rows[0] as { n: number; origin: string; base_draft_id: string; promoted_version_id: string };
-    expect(next).toMatchObject({ n: 4, origin: "response_to_review", base_draft_id: baseDraftId, promoted_version_id: "av_v3" });
+      await db.exec.query("select n, origin, state, base_draft_id, promoted_version_id, frozen_at from drafts where id=$1", [nextDraftId])
+    ).rows[0] as { n: number; origin: string; state: string; base_draft_id: string; promoted_version_id: string; frozen_at: Date | null };
+    expect(next).toMatchObject({ n: 4, origin: "response_to_review", state: "frozen", base_draft_id: baseDraftId, promoted_version_id: "av_v3" });
+    expect(next.frozen_at).not.toBeNull();
 
     // prior_review_id on the response correspondence.
     const corr = (
@@ -368,6 +370,109 @@ describe("delivery transaction", () => {
     });
     expect((traces[0]!.payload as { charsChanged: number }).charsChanged).toBeGreaterThan(0);
     expect(result.moveTraces).toMatchObject([{ moveId: "M1", hunkCount: 1 }]);
+  });
+
+  // PRB.19 (F26) — the REAL revise shape: `drafts/v(N+1).md` is produced by the `revise` phase, so it lands
+  // in `steps.produced_version_ids`, NOT in `deliveredVersionIds` (which name only the final `deliver`
+  // phase's artifacts — the response letter). The reserved `nextDraftId` row + `revision.move_traced` must
+  // still materialize.
+  it("materializes the reserved nextDraftId from a draft produced by an EARLIER phase (F26)", async () => {
+    const reviewCorrId = deps.ids("corr");
+    const findingId = deps.ids("fnd");
+    const baseDraftId = deps.ids("dft");
+    const nextDraftId = deps.ids("dft");
+    await db.exec.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, delivered_at, artifact_ids)
+       values ($1,$2,'review','dft_v2','run_rev', now(), '{}')`,
+      [reviewCorrId, projectId],
+    );
+    await db.exec.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ($1,$2,'dft_v2',1,'argument','major','editor','weak pillar','b')`,
+      [findingId, reviewCorrId],
+    );
+    // the delivery base under a ULID id, as THE working head (dft_v2 freezes first — one working head per
+    // project, REQ-DATA-14); it freezes onto av_v2 at delivery → the diff's "before".
+    await db.exec.query("update drafts set state='frozen', promoted_version_id='av_v2' where id='dft_v2'");
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, base_draft_id)
+       values ($1,$2,3,'response_to_review','working','dft_v2')`,
+      [baseDraftId, projectId],
+    );
+    // the produced draft — committed by the `revise` step (produced_version_ids), never deliveredVersionIds.
+    const v4 = await store.putText(workspaceId, "# v2\n\nThe restated pillar paragraph.\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_v4',$1,$2,'draft','shared','drafts/v4.md','av_v4')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_v4','art_v4',1,$1,'k',40,'text/markdown','{"kind":"agent"}'::jsonb)`,
+      [v4.sha256],
+    );
+    await db.exec.query(
+      `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids)
+       values ('st_revise',$1,'revise',3,'done',1,'{av_v4}')`,
+      [runId],
+    );
+    // the delivered dossier is the response letter only (the deliver phase's declared artifact).
+    const letter = await store.putText(workspaceId, "# Response\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_resp',$1,$2,'response_letter','shared','correspondence/v2-response.md','av_resp')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_resp','art_resp',1,$1,'k',20,'text/markdown','{"kind":"agent"}'::jsonb)`,
+      [letter.sha256],
+    );
+    const ledger = {
+      sidecar: "response_ledger",
+      version: 1,
+      entries: [
+        {
+          findingOrdinal: 1,
+          disposition: { kind: "accept", status: "done", moveOrdinal: 1, actor: "drafter" },
+          anchor: { blockId: "b2", quote: "restated pillar paragraph", startOffset: 0, endOffset: 0, confidence: 1 },
+        },
+      ],
+      moves: [{ ordinal: 1, title: "Restate the pillar" }],
+    };
+
+    const base = baseArgs();
+    const result = await runDeliveryTransaction(db.exec, deps, {
+      ...base,
+      draftId: baseDraftId,
+      correspondenceKind: "response",
+      priorReviewId: reviewCorrId,
+      newDraftId: nextDraftId,
+      deliveredVersionIds: ["av_resp"], // the letter only — the draft came through steps.produced_version_ids
+      sidecars: [{ filename: "response-ledger.json", json: ledger as never }],
+      claimLedger: undefined,
+      findings: undefined,
+    });
+
+    // the reserved draft row: v4, frozen, promoted to the produced drafts/v4.md version (immutable now).
+    expect(result.newDraftId).toBe(nextDraftId);
+    const next = (
+      await db.exec.query("select n, origin, state, base_draft_id, promoted_version_id, frozen_at from drafts where id=$1", [nextDraftId])
+    ).rows[0] as { n: number; origin: string; state: string; base_draft_id: string; promoted_version_id: string; frozen_at: Date | null };
+    expect(next).toMatchObject({ n: 4, origin: "response_to_review", state: "frozen", base_draft_id: baseDraftId, promoted_version_id: "av_v4" });
+    expect(next.frozen_at).not.toBeNull();
+    expect(((await db.exec.query("select immutable from artifact_versions where id='av_v4'")).rows[0] as { immutable: boolean }).immutable).toBe(true);
+
+    // the ledger row folded + the move trace emitted against the produced draft.
+    const disp = (
+      await db.exec.query("select kind, response_id, frozen_at from dispositions where finding_id=$1", [findingId])
+    ).rows[0] as { kind: string; response_id: string | null; frozen_at: Date | null };
+    expect(disp.kind).toBe("accept");
+    expect(disp.response_id).toBe(result.correspondenceId);
+    expect(disp.frozen_at).not.toBeNull();
+    const traces = events.filter((e) => e.type === "revision.move_traced");
+    expect(traces).toHaveLength(1);
+    expect(traces[0]!.payload).toMatchObject({ findingId, moveId: "M1", draftId: nextDraftId, baseDraftId });
   });
 
   it("delivering a 'review' does NOT touch dispositions (only a response freezes the ledger)", async () => {

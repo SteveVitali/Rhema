@@ -104,4 +104,46 @@ describe("harvest", () => {
     expect(result.unknownPaths).toContain("agents/author/mystery.xyz");
     expect(result.stepFailed).toBe(true);
   });
+
+  // PRB.19 (F26b) — the run's declared phase outputs are writable even under the seat's read-only shared
+  // mounts: `drafts/v2.md` + `correspondence/v1-response.md` (the revise deliverables the live pod wrote and
+  // lost — D-PRB.16-1) persist as content-addressed versions instead of dropping as violations.
+  it("persists a NEW declared output under a read-only shared mount when the run grants it (F26b)", async () => {
+    const tree = await authorTree();
+    const files = [
+      ...asFiles(tree),
+      { path: "drafts/v2.md", root: "project" as const, bytes: Buffer.from("# revised\n") },
+      { path: "correspondence/v1-response.md", root: "project" as const, bytes: Buffer.from("# response\n") },
+    ];
+    const result = harvest({
+      seat: "author",
+      manifest: tree.manifest,
+      files,
+      writablePaths: ["drafts/v2.md", "correspondence/v1-response.md"],
+    });
+    expect(result.boundaryViolations).toEqual([]);
+    expect(result.stepFailed).toBe(false);
+    expect(result.newVersions.map((v) => v.path).sort()).toEqual([
+      "correspondence/v1-response.md",
+      "drafts/v2.md",
+    ]);
+    expect(result.newVersions.find((v) => v.path === "drafts/v2.md")!.kind).toBe("draft");
+    expect(result.newVersions.find((v) => v.path === "correspondence/v1-response.md")!.kind).toBe("response_letter");
+  });
+
+  it("a shared path NOT in the grant still drops as out_of_allowlist (the grant is path-precise)", async () => {
+    const tree = await authorTree();
+    const files = [
+      ...asFiles(tree),
+      { path: "drafts/v9.md", root: "project" as const, bytes: Buffer.from("# stray\n") },
+    ];
+    const result = harvest({
+      seat: "author",
+      manifest: tree.manifest,
+      files,
+      writablePaths: ["drafts/v2.md", "correspondence/v1-response.md"],
+    });
+    expect(result.boundaryViolations).toContainEqual({ path: "drafts/v9.md", reason: "out_of_allowlist" });
+    expect(result.newVersions).toEqual([]);
+  });
 });

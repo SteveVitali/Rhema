@@ -129,6 +129,13 @@ export interface CompileInput {
   readonly compositeVoiceMemberFiles?: readonly string[];
   /** True only for the input-scoped holdout-calibrator subagent (§12.6). */
   readonly isCalibrator?: boolean;
+  /**
+   * PRB.19 (F26b) — the run's DECLARED phase-output paths granted writable for THIS run (server-computed by
+   * `declaredWritableArtifacts` and carried on the run spec). Each becomes a `readwrite` project mount rule —
+   * the classifier prefers a writable match over the seat's `read` glob, so `drafts/v(N+1).md` and
+   * `correspondence/vN-response.md` are writable while every other shared artifact stays read-only.
+   */
+  readonly writableArtifacts?: readonly string[];
 }
 
 function resolveNamespace(ns: Namespace, personaId: string | undefined): Namespace {
@@ -152,6 +159,11 @@ export function compileSeatPolicy(input: CompileInput): SeatPolicy {
   const specs: MountSpec[] = [...SEAT_MOUNTS[input.seat]];
   for (const file of input.compositeVoiceMemberFiles ?? []) {
     specs.push({ glob: file, root: "persona", mode: "read", namespace: "persona:<id>" });
+  }
+  // PRB.19 (F26b): the run's declared outputs mount readwrite alongside the seat's read-only shared globs —
+  // `classifyPath` prefers the writable rule when both match, so the grant upgrades exactly these paths.
+  for (const path of input.writableArtifacts ?? []) {
+    specs.push({ glob: path, root: "project", mode: "readwrite", namespace: "shared" });
   }
 
   const hasPersonaMount = specs.some((s) => s.root === "persona");

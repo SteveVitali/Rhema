@@ -316,7 +316,14 @@ export function buildPhaseOutputs(files: ReadonlyMap<string, Uint8Array>, spec: 
   const usage: UsageSnapshot = agentResult?.usage ?? emptyUsage();
   const phaseResult = readJson<PhaseResultFile>(files, PHASE_RESULT_PATH);
 
-  const diff = harvest({ seat, manifest: spec.manifest, files: harvestFiles(files, spec.manifest, primaryRoot(seat)) });
+  const diff = harvest({
+    seat,
+    manifest: spec.manifest,
+    files: harvestFiles(files, spec.manifest, primaryRoot(seat)),
+    // PRB.19 (F26b): the run's declared phase outputs are writable even under a §12.6 read-only mount, so
+    // `drafts/v(N+1).md` + `correspondence/vN-response.md` persist instead of dropping as boundary violations.
+    writablePaths: spec.writablePaths,
+  });
   const versions: NewVersion[] = [...diff.newVersions];
   // PRB.16b F20 — a declared sidecar the agent wrote under `.rhema/` is skipped by the mirror's
   // derived-file rule (root `.rhema/` is never harvested), so the structured rows the oracle just

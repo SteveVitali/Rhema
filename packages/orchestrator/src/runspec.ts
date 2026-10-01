@@ -41,6 +41,13 @@ export interface HookPolicyInput {
   readonly phase: PhasePolicy;
   readonly runId: string;
   readonly agentLabel?: string;
+  /**
+   * PRB.19 (F26b) — the run's declared phase-output paths granted writable for THIS run (server-computed by
+   * `declaredWritableArtifacts`; e.g. `drafts/v3.md`, `correspondence/v1-response.md`). The harness folds them
+   * into `compileSeatPolicy` — each becomes a `readwrite` project rule the classifier prefers over the seat's
+   * `read` glob.
+   */
+  readonly writableArtifacts?: readonly string[];
 }
 
 /**
@@ -65,6 +72,12 @@ export interface HarnessRunSpec {
    *  supplies the /work-derived dossier content, the server supplies these attestation facts). Present only for
    *  a draft-targeting run (a Review); absent ⇒ the loop finalizes WITHOUT delivering (a no-draft/scoped run). */
   readonly delivery?: DeliveryFacts;
+  /**
+   * PRB.19 (F26b) — the run's declared phase-output paths granted writable for this run (the same list folded
+   * into `hookPolicyInput.writableArtifacts`). The harness passes it to `harvest` so a NEW file at a granted
+   * shared path (e.g. `drafts/v(N+1).md`) persists instead of dropping as `out_of_allowlist`.
+   */
+  readonly writablePaths: readonly string[];
 }
 
 /** The server-side delivery facts the harness folds into the final `DeliveryArgs` (P0.15e). */
@@ -106,8 +119,6 @@ interface RunSpecFacts {
   /** distinct committed (`done`) phases so far → the index of the phase to run next (0 on a fresh run). */
   readonly committedPhases: number;
   readonly projectId: string | null;
-  /** the reviewed draft's promoted head version (null when the run's draft has no promoted version). */
-  readonly draftPromotedVersionId: string | null;
 }
 
 function round2(n: number): number {
@@ -138,7 +149,6 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   const seat = hyd.seat as AgentTypeKey;
 
   // 2) run-level facts: model tier, the seat's tool set, the committed-phase count, the run's URL policy.
-  const draftId = typeof hyd.inputs.draftId === "string" ? hyd.inputs.draftId : undefined;
   const facts = await deps.txRunner.run(args.workspaceId, async (tx): Promise<RunSpecFacts> => {
     const runRow = (await tx.query("select model_tier, project_id from runs where id = $1", [args.runId])).rows[0] as
       | { model_tier: string; project_id: string | null }
@@ -150,18 +160,11 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     const done = (
       await tx.query("select count(distinct ordinal)::int as n from steps where run_id = $1 and state = 'done'", [args.runId])
     ).rows[0] as { n: number };
-    // the reviewed draft's promoted head version — the delivery freezes the draft at it (REQ-DATA-14).
-    const draftRow = draftId
-      ? ((await tx.query("select promoted_version_id from drafts where id = $1", [draftId])).rows[0] as
-          | { promoted_version_id: string | null }
-          | undefined)
-      : undefined;
     return {
       modelTier: runRow.model_tier,
       tools: at?.tools ?? [],
       committedPhases: done.n,
       projectId: runRow.project_id,
-      draftPromotedVersionId: draftRow?.promoted_version_id ?? null,
     };
   });
 
@@ -271,8 +274,13 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     // `sidecar` input (manifest default or frozen override) is what makes the skill write the file.
     ...((hyd.inputs.sidecar ?? manifest.defaultInputs?.sidecar) === true
       ? {
+          // PRB.19 (live F34) — pin the WRITABLE location too: the bare `.rhema/…` path resolves cwd-relative
+          // to the project root, which the §12.6 seat table denies — the live Revise bootstrap agent's literal
+          // `Write /work/project/.rhema/phase-result.json` was hook-denied and the phase failed on a missing
+          // phase-result despite sdk=success (run 01M2VDHN… att-2). The seat dir `agents/<seat>/.rhema/` is
+          // writable AND suffix-resolves for the oracle.
           phase_result_contract:
-            '.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports).',
+            `.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports). Write it under your writable seat directory as agents/${seat}/.rhema/phase-result.json (likewise agents/${seat}/.rhema/<sidecar>.json for sidecars) — the project root is read-only for your seat.`,
         }
       : {}),
   };
@@ -300,17 +308,20 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     phase: { key: phase.key, phaseClass: phase.phaseClass, allowsSubagents: phase.allowsSubagents },
     runId: args.runId,
     agentLabel: seat,
+    ...(hyd.writablePaths.length > 0 ? { writableArtifacts: hyd.writablePaths } : {}),
   };
 
-  // delivery facts — only for a draft-targeting run whose draft has a promoted head to freeze at. A run with no
-  // draft (or an un-promoted draft) delivers nothing here; the loop finalizes without a dossier POST.
+  // delivery facts — for a draft-targeting run whose RESOLVED base has a promoted head to freeze at. The base
+  // is server-resolved in `hydration` (PRB.19 / F26a): a Review's `inputs.draftId`, a Revise's
+  // `manualRevision.baseDraftId` → working head → `priorReviewId`'s reviewed draft. A run with no draft (or an
+  // un-promoted draft) delivers nothing here; the loop finalizes without a dossier POST.
   const delivery: DeliveryFacts | undefined =
-    facts.projectId && draftId && facts.draftPromotedVersionId
+    facts.projectId && hyd.deliveryBase?.promotedVersionId
       ? {
           projectId: facts.projectId,
-          draftId,
+          draftId: hyd.deliveryBase.id,
           correspondenceKind: CORRESPONDENCE_KIND_BY_WORKFLOW[workflow] ?? "review",
-          draftPromotedVersionId: facts.draftPromotedVersionId,
+          draftPromotedVersionId: hyd.deliveryBase.promotedVersionId,
           // PRB.06: the re-review/response links are frozen inputs the server seeded at creation — the
           // harness folds them verbatim; the api's deliver route re-resolves them as the attestation fact.
           ...(typeof hyd.inputs.priorReviewId === "string" ? { priorReviewId: hyd.inputs.priorReviewId } : {}),
@@ -325,6 +336,7 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     manifest: hyd.manifest,
     serverFiles: hyd.serverFiles,
     hookPolicyInput,
+    writablePaths: hyd.writablePaths,
     // a user-pinned phase (frozen input, before the merge above) makes this a one-phase run that stops after
     // committing (REQ-SPEC-13); a normal run has no pin and advances/gates/finalizes through the loop.
     ...(pinnedSkillPhase ? { stopAfterPhase: true } : {}),

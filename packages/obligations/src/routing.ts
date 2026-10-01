@@ -47,11 +47,21 @@ export async function routeDisposition(
   args: RouteDispositionArgs,
 ): Promise<RouteResult> {
   const at = args.at ?? deps.clock.now();
+  // PRB.19 (live F33) — SAME-TARGET routing is idempotent: a disposition whose terminal state the obligation
+  // already carries (e.g. a pretriage `rebut`/`defer` routed at record-time by the Findings-UI verb, then
+  // re-routed when the frozen response ledger folds at delivery) is a no-op, NOT a closed-world error — the
+  // second route re-states the same decision, and aborting the whole delivery tx on `rebutted → rebutted`
+  // wedged prod run 01M2VDHN… in `finalizing`. A DIFFERENT target still validates against the closed world.
+  const sameTargetNoop = async (target: "addressed" | "rebutted" | "deferred"): Promise<boolean> => {
+    const current = await loadObligation(exec, args.obligationId);
+    return current?.state === target;
+  };
   switch (args.kind) {
     case "accept":
     case "adapt": {
       // addressed only once the move is recorded done/verified (a frozen response-ledger move — REQ-OBJ-3).
       if (args.status !== "done" && args.status !== "verified") return { transitioned: false };
+      if (await sameTargetNoop("addressed")) return { transitioned: false, to: "addressed" };
       await applyObligationTransition(exec, deps, {
         obligationId: args.obligationId,
         to: "addressed",
@@ -68,6 +78,7 @@ export async function routeDisposition(
       if (!(args.rationale && args.rationale.trim())) {
         throw new ObligationTransitionError("a rebut disposition requires a rationale (§11.7; DB-checked)");
       }
+      if (await sameTargetNoop("rebutted")) return { transitioned: false, to: "rebutted" };
       await applyObligationTransition(exec, deps, {
         obligationId: args.obligationId,
         to: "rebutted",
@@ -85,6 +96,7 @@ export async function routeDisposition(
       const horizon: DeferHorizon = args.deferHorizon ?? { until: "next_review" };
       // the DDL check requires a non-null rationale for deferred; default the §5.7 "Not this round" copy.
       const rationale = args.rationale && args.rationale.trim() ? args.rationale : "Not this round";
+      if (await sameTargetNoop("deferred")) return { transitioned: false, to: "deferred" };
       await applyObligationTransition(exec, deps, {
         obligationId: args.obligationId,
         to: "deferred",

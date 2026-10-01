@@ -9,6 +9,7 @@ import { platformCredits, type AgentTypeKey, type GateKind, type GateOnExpiry, t
 import type { UsageSnapshot } from "@rhema/engine";
 import {
   buildSeatHydration,
+  declaredWritableArtifacts,
   persistHarvest,
   recordMounts,
   type ContentStore,
@@ -17,6 +18,7 @@ import {
   type Overlay,
   type ServerFile,
 } from "@rhema/mirror";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -35,6 +37,7 @@ import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { seatForWorkflow } from "./run-shape.js";
+import { resolveDeliveryBase, type DeliveryBaseDraft } from "./delivery-base.js";
 import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
@@ -329,6 +332,15 @@ export interface HydrationResponse {
   /** derived (non-artifact) mount-file bytes by path, utf8 — the manifest entries the harness cannot fetch from
    *  GCS because they are server-generated (`manifest.md`, the re-review `obligations.json`). D-P0.15c-6. */
   readonly serverFiles: Record<string, string>;
+  /**
+   * PRB.19 (F26b) — the run's declared phase-output paths granted writable for this run (the manifest entries
+   * for committed artifacts at these paths already carry `mode:"readwrite"`; this list is the NEW-file grant
+   * the harvest + hook policy enforce). Sorted, deduped; [] for a run whose workflow declares none.
+   */
+  readonly writablePaths: readonly string[];
+  /** PRB.19 (F26a) — the server-resolved delivery base (the draft the delivery freezes + diffs against) with
+   *  its EFFECTIVE promoted head; null when the run's project has no draft to deliver on. */
+  readonly deliveryBase: DeliveryBaseDraft | null;
 }
 
 export interface HydrationArgs {
@@ -390,12 +402,30 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       if (oblFile) serverFiles.push(oblFile);
     }
 
+    // PRB.19 (F26) — resolve the delivery base + the run's declared-output write grant BEFORE the manifest:
+    // the grant decides the manifest `mode` of any committed artifact at a declared path, and the base's `n`
+    // resolves the `vN`/`v(N+1)` placeholders the declared artifacts name. Both are server facts (frozen
+    // inputs + tables) — the pod never supplies them.
+    const deliveryResolution = row.project_id
+      ? await resolveDeliveryBase(tx, { projectId: row.project_id, workflow: row.workflow, inputs })
+      : { base: null, reviewedDraftN: null };
+    const deliveryBase = deliveryResolution.base;
+    const workflowManifest = WORKFLOW_MANIFESTS[row.workflow as WorkflowKey];
+    const writablePaths =
+      row.project_id && workflowManifest
+        ? declaredWritableArtifacts(seat, workflowManifest, {
+            baseDraftN: deliveryBase?.n ?? null,
+            reviewedDraftN: deliveryResolution.reviewedDraftN,
+          })
+        : [];
+
     const { manifest, derived } = await buildSeatHydration(tx, {
       seat,
       projectId: row.project_id,
       personaId: row.persona_id,
       overlays,
       serverFiles,
+      writablePaths,
     });
     await recordMounts(tx, { runId: args.runId, attempt: args.attempt, manifest });
 
@@ -413,6 +443,8 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       overlays: overlays.map((o) => o.artifactVersionId),
       manifest,
       serverFiles: derivedFiles,
+      writablePaths,
+      deliveryBase,
     };
   });
 }

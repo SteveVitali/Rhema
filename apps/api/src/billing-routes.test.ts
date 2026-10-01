@@ -120,6 +120,7 @@ describe("GET /billing/balance", () => {
       suspended: false,
       clawbackDebt: 0,
       paymentLinkUrl: "https://buy.stripe.com/test_beta",
+      billingAccountId: BA, // PRB.19 (F32) — the web pins client_reference_id from it
     });
   });
 

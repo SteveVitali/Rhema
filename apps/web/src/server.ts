@@ -603,7 +603,12 @@ export function createWebApp(deps: WebDeps): Hono {
     await deps.dataSource.recordExhaustedPrompt(session, action).catch(() => undefined);
     if (action === "open_payment_link") {
       const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
-      if (billing?.paymentLinkUrl) return c.redirect(billing.paymentLinkUrl);
+      // F32 (PRB.19): the Payment Link must carry `client_reference_id=<billingAccountId>` — without it the
+      // Stripe-originated checkout lands `unresolved` (money taken, no grant(topup)). Composed, never
+      // concatenated, so an existing query on the configured link survives.
+      if (billing?.paymentLinkUrl) {
+        return c.redirect(paymentLinkWithReference(billing.paymentLinkUrl, billing.billingAccountId));
+      }
     }
     return c.redirect(`/p/${slug}/run`);
   });
@@ -1164,6 +1169,23 @@ function isPhoneRequest(c: Context): boolean {
 /** A `next` redirect target must stay inside the app (no open redirects). */
 function safeBack(next: string, fallback: string): string {
   return next.startsWith("/p/") ? next : fallback;
+}
+
+/**
+ * F32 (PRB.19) — the Payment-Link 302 target carries `client_reference_id=<billingAccountId>` so the
+ * Stripe-originated checkout joins the caller's account (a bare link lands the purchase `unresolved`).
+ * Composed via `URL` (an existing query on the configured link survives; `set` never double-appends).
+ * A malformed configured URL or a missing account id returns the link unchanged — the redirect never breaks.
+ */
+export function paymentLinkWithReference(link: string, billingAccountId: string | undefined): string {
+  if (!billingAccountId) return link;
+  try {
+    const url = new URL(link);
+    url.searchParams.set("client_reference_id", billingAccountId);
+    return url.toString();
+  } catch {
+    return link;
+  }
 }
 
 // ---- run sheet helpers (§5.6) ----

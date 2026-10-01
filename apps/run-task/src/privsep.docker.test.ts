@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { dockerUsable } from "./docker-probe.js";
 
 // AC1 + AC4 — the KERNEL-level proof, run against the built image. This exercises the real mechanics no unit
 // test can: a process under uid `agent` is denied the harness-only secrets file (EACCES), and an input-scoped
@@ -12,20 +13,13 @@ import { dirname, resolve } from "node:path";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
-function dockerUsable(): boolean {
-  try {
-    execFileSync("docker", ["version", "--format", "{{.Server.Version}}"], { stdio: "pipe" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 // Run where Docker is usable AND we are not in the plain unit CI job: locally (no CI env) it always runs;
 // in CI it runs only when the integration job opts in with RHEMA_DOCKER_TESTS=1 (so the unit job is not
 // surprised by a Docker build needing network + CAP_SYS_ADMIN). See DEFERRALS D-P0.06-2.
+// PRB.19: the opt-out is evaluated FIRST — the unit CI job never spawns `docker` — and the probe itself is
+// bounded (`docker-probe.ts`), so an unresponsive daemon can no longer hang the whole `pnpm test` run.
 const CI_OPT_OUT = !!process.env.CI && process.env.RHEMA_DOCKER_TESTS !== "1";
-const ENABLED = dockerUsable() && !CI_OPT_OUT;
+const ENABLED = !CI_OPT_OUT && dockerUsable();
 const HAVE_DOCKER = ENABLED;
 
 describe.skipIf(!ENABLED)("run-task image privilege separation (AC1, AC4)", () => {

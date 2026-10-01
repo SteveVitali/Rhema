@@ -87,6 +87,22 @@ export function createAuth(
         createdAt: "created_at",
         updatedAt: "updated_at",
       },
+      // PRB.19 follow-up — D-P0.01-3 requires Google AND magic-link to work for the SAME user. The
+      // prod operator account was created via magic-link, so a first Google sign-in for that email
+      // previously failed with `account_not_linked` (Better Auth's anti-takeover default). Enable
+      // linking gated to `trustedProviders` (Google verifies its emails; the existing account's
+      // email is already verified via the magic link), so same-email social + magic-link converge
+      // on one account without opening a takeover surface.
+      //
+      // `requireLocalEmailVerified: false` (v1.7.x default is true) — a same-email Google sign-in
+      // must link even when the local row's email_verified is false (e.g. a magic-link request whose
+      // delivery never completed). Google only asserts emails it has verified, so trusting it here
+      // can't cross accounts; on link, better-auth promotes the local row to email_verified=true.
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["google"],
+        requireLocalEmailVerified: false,
+      },
     },
     verification: {
       fields: { expiresAt: "expires_at", createdAt: "created_at", updatedAt: "updated_at" },
@@ -131,6 +147,11 @@ export function createAuth(
       // the __Host- contract. Disabled explicitly so the intent is reviewable, not just defaulted.
       crossSubDomainCookies: { enabled: false },
       defaultCookieAttributes: { secure, sameSite: "lax", path: "/", httpOnly: true },
+      // Resolve the real client IP for rate limiting — every request arrives via the web service's
+      // server-side proxy or the LB, both of which forward the original client in x-forwarded-for.
+      // Without this the limiter falls back to ONE shared per-path bucket (warned live 2026-09-22:
+      // "could not determine a client IP") and a handful of retries 403/429s sign-in for everyone.
+      ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
     },
   }) as unknown as ReturnType<typeof betterAuth>;
 }

@@ -4,7 +4,9 @@ import { harvest } from "./harvest.js";
 import type { HarvestFile } from "./harvest.js";
 import { createMirrorTestDb, type MirrorTestDb } from "./testing/harness.js";
 import { InMemoryContentStore } from "./content-store.js";
-import { seedAllRealProjects, type SeededMirrorProject } from "./testing/fixture.js";
+import { seedAllRealProjects, seedArtifact, type SeededMirrorProject } from "./testing/fixture.js";
+import { declaredWritableArtifacts } from "./mounts.js";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 
 // P0.09 materialize (REQ-DATA-5) + the seat-mount exclusions (REQ-DATA-10; §12.6) + the round-trip golden
 // (REQ-DATA-9a). Deterministic over PGlite + an in-memory content store.
@@ -108,5 +110,47 @@ describe("materialize + harvest", () => {
     const letter = tree.files.find((f) => f.path === "correspondence/v1-review-1/editors-letter.md")!;
     expect(letter.sha256).toBe(overlaySha);
     expect(letter.artifactVersionId).toBe("av_overlay");
+  });
+
+  // PRB.19 (F26b) — the declared-output write grant: the manifest's `phase.artifacts` under a §12.6
+  // read-only shared mount are writable for the run that declares them, and a committed artifact at a
+  // granted path mounts `readwrite` (re-materialized but still editable through verify/deliver).
+  it("declaredWritableArtifacts resolves the manifest's vN/v(N+1) templates to concrete granted paths", () => {
+    const revise = WORKFLOW_MANIFESTS.revise!;
+    // canonical revise: base = reviewed = v1 → drafts/v2.md + correspondence/v1-response.md granted;
+    // `agents/author/**` declarations are already readwrite (no grant) and basename-only manifests grant none.
+    expect(declaredWritableArtifacts("author", revise, { baseDraftN: 1, reviewedDraftN: 1 })).toEqual([
+      "correspondence/v1-response.md",
+      "drafts/v2.md",
+    ]);
+    // a divergent head (manualRevision on v2 while the review covered v1) grants BOTH readings.
+    expect(declaredWritableArtifacts("author", revise, { baseDraftN: 2, reviewedDraftN: 1 })).toEqual([
+      "correspondence/v1-response.md",
+      "correspondence/v2-response.md",
+      "drafts/v2.md",
+      "drafts/v3.md",
+    ]);
+    // the review manifest declares only output_dir-relative basenames → no shared-path grants.
+    expect(declaredWritableArtifacts("editor", WORKFLOW_MANIFESTS.review!, { baseDraftN: 1, reviewedDraftN: 1 })).toEqual([]);
+    // no draft context → no template expansion → no grant.
+    expect(declaredWritableArtifacts("author", revise, { baseDraftN: null, reviewedDraftN: null })).toEqual([]);
+  });
+
+  it("a committed artifact at a granted declared-output path mounts readwrite (the grant upgrades the mode)", async () => {
+    const p = projects[0]!;
+    // the committed `drafts/v2.md` — the revise phase's produced draft, re-materialized at verify/deliver.
+    await seedArtifact(db.exec, store, workspaceId, {
+      scope: "project", scopeId: p.projectId, kind: "draft", namespace: "shared",
+      mirrorPath: "drafts/v2.md", content: "# v2 revised\n",
+    });
+    const granted = await materializeSeat(db.exec, store, {
+      seat: "author", projectId: p.projectId, personaId: p.personaId,
+      writablePaths: ["drafts/v2.md", "correspondence/v1-response.md"],
+    });
+    expect(granted.manifest.entries.find((e) => e.path === "drafts/v2.md")?.mode).toBe("readwrite");
+    expect(granted.manifest.entries.find((e) => e.path === "drafts/v1.md")?.mode).toBe("read"); // untouched
+    // without the grant the same artifact stays read-only.
+    const plain = await materializeSeat(db.exec, store, { seat: "author", projectId: p.projectId, personaId: p.personaId });
+    expect(plain.manifest.entries.find((e) => e.path === "drafts/v2.md")?.mode).toBe("read");
   });
 });

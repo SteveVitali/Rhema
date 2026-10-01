@@ -65,6 +65,13 @@ export interface HarvestArgs {
   readonly seat: AgentTypeKey;
   readonly manifest: MirrorManifest;
   readonly files: readonly HarvestFile[];
+  /**
+   * PRB.19 (F26b) — the run's DECLARED phase-output paths (`spec.writablePaths`, from
+   * `declaredWritableArtifacts`): a NEW file at a granted path is harvested even though its §12.6 seat mount
+   * is `read` — `drafts/v(N+1).md` + `correspondence/vN-response.md` are the revise run's own deliverables, not
+   * boundary violations. (A committed artifact at a granted path already mounts `readwrite` via the manifest.)
+   */
+  readonly writablePaths?: readonly string[];
 }
 
 /** Skip the regenerated-from-tables files: they are never harvested (they carry no `artifactVersionId`). */
@@ -80,6 +87,7 @@ function wordCount(bytes: Uint8Array): number {
 /** Compute the write-back diff (pure). The caller fails the step on `stepFailed`, else persists `newVersions`. */
 export function harvest(args: HarvestArgs): HarvestResult {
   const baseline = manifestByPath(args.manifest);
+  const writableSet = new Set(args.writablePaths ?? []);
   const newVersions: NewVersion[] = [];
   const unchanged: string[] = [];
   const readOnlyHashMismatch: string[] = [];
@@ -112,7 +120,7 @@ export function harvest(args: HarvestArgs): HarvestResult {
     }
 
     // a NEW file (no manifest entry).
-    if (isWritable(args.seat, f.root, f.path)) {
+    if (isWritable(args.seat, f.root, f.path) || (f.root === "project" && writableSet.has(f.path))) {
       pushVersion(newVersions, unknownPaths, f, sha);
     } else {
       violations.push({ path: f.path, reason: "out_of_allowlist" }); // dropped (mount is read-only + hook denies).

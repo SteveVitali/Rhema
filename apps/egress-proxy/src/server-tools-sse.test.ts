@@ -106,4 +106,43 @@ describe("extractResponseServerToolsSse (D-P0.07-5)", () => {
     });
     expect(extractResponseServerTools(err)).toEqual([]);
   });
+
+  // PRB.19 — the fetch byte receipt: the server-tool result carries the page inline (encrypted_content for a
+  // search hit, content.source.data for a web_fetch) — its size is what `fetch_log.bytes` records.
+  it("a web_search_result's encrypted_content sizes the fetched page (bytes on the fetch activity)", () => {
+    const page = "x".repeat(1234);
+    const body = JSON.stringify({
+      content: [
+        { type: "web_search_tool_result", content: [{ type: "web_search_result", url: "https://a.test/p", encrypted_content: page }] },
+      ],
+    });
+    expect(extractResponseServerTools(body)).toEqual([{ kind: "fetch", url: "https://a.test/p", bytes: Buffer.byteLength(page, "utf8") }]);
+  });
+
+  it("a web_fetch_tool_result's content.source.data sizes the page (utf8 and base64)", () => {
+    const text = "hello fetched page";
+    const body = JSON.stringify({
+      content: [
+        {
+          type: "web_fetch_tool_result",
+          content: { type: "web_fetch_result", url: "https://a.test/f", content: { source: { type: "text", data: text } } },
+        },
+        {
+          type: "web_fetch_tool_result",
+          content: { type: "web_fetch_result", url: "https://a.test/pdf", content: { source: { type: "base64", media_type: "application/pdf", data: Buffer.from("PDFBYTES").toString("base64") } } },
+        },
+      ],
+    });
+    expect(extractResponseServerTools(body)).toEqual([
+      { kind: "fetch", url: "https://a.test/f", bytes: Buffer.byteLength(text, "utf8") },
+      { kind: "fetch", url: "https://a.test/pdf", bytes: Buffer.byteLength("PDFBYTES") },
+    ]);
+  });
+
+  it("a result with no inline content carries no byte receipt (undefined — the row logs null, never a guess)", () => {
+    const body = JSON.stringify({
+      content: [{ type: "web_search_tool_result", content: [{ type: "web_search_result", url: "https://a.test/p" }] }],
+    });
+    expect(extractResponseServerTools(body)).toEqual([{ kind: "fetch", url: "https://a.test/p" }]);
+  });
 });
