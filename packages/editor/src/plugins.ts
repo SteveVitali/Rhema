@@ -1,6 +1,8 @@
 import { EditorState, Plugin, type Command, type Transaction } from "prosemirror-state";
 import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
+import type * as Y from "yjs";
+import { ySyncPlugin, yUndoPlugin, undo as yUndo, redo as yRedo } from "y-prosemirror";
 import {
   baseKeymap, toggleMark, chainCommands, deleteSelection, joinBackward, selectNodeBackward,
   newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock,
@@ -25,8 +27,16 @@ export function humanTr(tr: Transaction, kind: "human" | "pasted" | "human-mobil
 
 const inList: Command = (state) => state.selection.$from.parent.type.name === "list_item";
 
-/** The Page's plugin set. `initSources` seeds the provenance map from the stored version row. */
-export function pagePlugins(initSources?: ReadonlyMap<string, BlockSource>): Plugin[] {
+/**
+ * The Page's plugin set. `initSources` seeds the provenance map from the stored version row.
+ * `collab.fragment` (P1.03) swaps the local `history()` for the Yjs binding — `ySyncPlugin` renders +
+ * syncs the shared `Y.XmlFragment` and `yUndoPlugin` scopes undo to THIS client's own changes — the
+ * right pair once the document is a CRDT (a peer's edits must never enter the local undo stack).
+ */
+export function pagePlugins(
+  initSources?: ReadonlyMap<string, BlockSource>,
+  collab?: { fragment: Y.XmlFragment },
+): Plugin[] {
   const s = pageSchema;
   const listItem = s.nodes.list_item!;
   return [
@@ -45,9 +55,9 @@ export function pagePlugins(initSources?: ReadonlyMap<string, BlockSource>): Plu
       ],
     }),
     keymap({
-      "Mod-z": undo,
-      "Mod-y": redo,
-      "Shift-Mod-z": redo,
+      "Mod-z": collab ? yUndo : undo,
+      "Mod-y": collab ? yRedo : redo,
+      "Shift-Mod-z": collab ? yRedo : redo,
       "Mod-b": toggleMark(s.marks.strong!),
       "Mod-i": toggleMark(s.marks.em!),
       "Mod-`": toggleMark(s.marks.code!),
@@ -64,7 +74,7 @@ export function pagePlugins(initSources?: ReadonlyMap<string, BlockSource>): Plu
     keymap(baseKeymap),
     dropCursor(),
     gapCursor(),
-    history(),
+    ...(collab ? [ySyncPlugin(collab.fragment), yUndoPlugin()] : [history()]),
     decorationsPlugin(),
     provenancePlugin(initSources),
   ];
@@ -77,5 +87,20 @@ export function createPageState(
   return EditorState.create({
     doc: pageSchema.nodeFromJSON(docJson),
     plugins: pagePlugins(initSources),
+  });
+}
+
+/**
+ * The collab-bound Page state (P1.03): no `doc` — the ySyncPlugin's binding renders the Y.XmlFragment's
+ * synced content into the view on bind (the seed comes from the y-indexeddb record + the server's
+ * live_docs.y_state merge, never from a markdown POST round-trip).
+ */
+export function createCollabPageState(
+  fragment: Y.XmlFragment,
+  initSources?: ReadonlyMap<string, BlockSource>,
+): EditorState {
+  return EditorState.create({
+    schema: pageSchema,
+    plugins: pagePlugins(initSources, { fragment }),
   });
 }

@@ -1082,7 +1082,15 @@ const pageLabels: PageEditorLabels = {
   readOnlyNote: E.readOnlyNote,
   danglingCiteNote: E.danglingCiteNote,
   authorshipHint: E.authorshipHint,
-  sync: { synced: E.sync.synced, syncing: E.sync.syncing, queued: E.sync.queued, locked: E.sync.locked },
+  forkFmt: E.forkFmt,
+  sync: {
+    synced: E.sync.synced,
+    syncing: E.sync.syncing,
+    queued: E.sync.queued,
+    locked: E.sync.locked,
+    offline: E.sync.offline,
+    readOnly: E.sync.readOnly,
+  },
 };
 
 /** The cite keys in the doc that resolve to no bibliography item — rendered visibly (never dropped). */
@@ -1142,6 +1150,7 @@ function PageSurface(): ReactNode {
         provenance={doc.provenance ?? null}
         danglingCites={danglingCites(doc)}
         readOnly={page.readOnly === true}
+        {...(page.collabWsUrl ? { collabWsUrl: page.collabWsUrl } : {})}
         saveUrl={`${base}/save`}
         docUrl={`${base}/doc`}
         noteUrl={`${base}/note`}

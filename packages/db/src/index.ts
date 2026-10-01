@@ -6,6 +6,13 @@
 export * as schema from "./schema/index.js";
 export { withTenant, type TenantClient } from "./rls.js";
 export {
+  SESSION_COOKIE_NAMES,
+  resolveSessionPrincipal,
+  sessionTokenFromCookieHeader,
+  type SessionPrincipal,
+  type SessionSqlClient,
+} from "./session.js";
+export {
   applyMigrations,
   readMigrations,
   type Migration,

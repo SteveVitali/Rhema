@@ -59,6 +59,12 @@ export interface ComputeArgs {
   apiSystemDatabaseUrl?: pulumi.Input<string>;
   /** the api's Memorystore Redis URL (a Pulumi secret config; prod shares `rhema:redisUrl`). */
   apiRedisUrl?: pulumi.Input<string>;
+  /**
+   * P1.03 — the collab service's connection as the LIMITED `rhema_collab` role (a Pulumi secret
+   * config, `rhema:collabDatabaseUrl`; the role's grants are migration 0028). Never a superuser
+   * string, and never shared with api/worker connections (REQ-ARCH-25).
+   */
+  collabDatabaseUrl?: pulumi.Input<string>;
   /** the worker's Resend From address (`EMAIL_FROM`, plain deploy config). */
   emailFrom?: pulumi.Input<string>;
   /** the digest-pinned run-task image the worker launches as the two-uid GKE Job. */
@@ -378,6 +384,10 @@ export function createCompute(args: ComputeArgs): Compute {
     // startup CPU boost so the cold import finishes in seconds. (A gcloud image-swap that omits these silently
     // reverts to the throttled default — the live-deploy step must preserve them, hence they live in IaC.)
     const isWorker = svc === "worker";
+    // P1.03 — collab is the single-writer MVP shape (§5.10): without a Redis sync tier two instances
+    // would split a document's live state, so maxScale=1 is the honest bound at EVERY stage (prod
+    // included) until the multi-instance design lands.
+    const isCollab = svc === "collab";
     services[svc] = new gcp.cloudrunv2.Service(name(svc), {
       location: region,
       // Cloud Run v2 defaults deletionProtection=true, which BLOCKS a `pulumi destroy` of a dev/preview stack
@@ -390,7 +400,7 @@ export function createCompute(args: ComputeArgs): Compute {
         serviceAccount: iam.serviceAccounts[svc].email,
         scaling: {
           minInstanceCount: isWorker ? 1 : cfg.kind === "prod" ? 1 : 0,
-          maxInstanceCount: isWorker ? (cfg.kind === "prod" ? 3 : 1) : cfg.kind === "prod" ? 10 : 2,
+          maxInstanceCount: isCollab ? 1 : isWorker ? (cfg.kind === "prod" ? 3 : 1) : cfg.kind === "prod" ? 10 : 2,
         },
         containers: [
           {
@@ -484,6 +494,20 @@ export function createCompute(args: ComputeArgs): Compute {
                   ],
                 }
               : {}),
+            // P1.03 — the collab service's env: the `rhema_collab` role's DATABASE_URL (a Pulumi
+            // secret config — never a shared/superuser string) + the artifacts bucket the
+            // content-addressed objects + `restore/<ydoc>/<ts>` blobs land in. No provider/model
+            // keys ever reach this service (REQ-ARCH-30).
+            ...(svc === "collab"
+              ? {
+                  envs: [
+                    { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
+                    ...(args.collabDatabaseUrl
+                      ? [{ name: "DATABASE_URL", value: args.collabDatabaseUrl }]
+                      : []),
+                  ],
+                }
+              : {}),
             // PRB.15 — prod's web reads the real api origin (`https://api.rhema.tools`) so the SPA's
             // data-source + the magic-link POST hit the LB-fronted api; non-prod keeps the default.
             ...(svc === "web"
@@ -494,6 +518,11 @@ export function createCompute(args: ComputeArgs): Compute {
                     // PRB.16 — the app's own public origin: the OAuth/magic-link `callbackURL` base the
                     // web's auth proxy builds (it must equal the api's trusted origin — the app host).
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
+                    // P1.03 — the Page's collab transport: same-origin WSS on the APP host (the
+                    // `__Host-` session cookie rides the upgrade; the LB path-routes /collab/*).
+                    ...(appOrigin
+                      ? [{ name: "COLLAB_WS_URL", value: `wss://${domains!.app}/collab` }]
+                      : []),
                   ],
                 }
               : {}),
@@ -525,12 +554,14 @@ export function createCompute(args: ComputeArgs): Compute {
   }
 
   // --- Public invoker grants (surfaced live at Stage B, 2026-09-17): the LB-fronted services —
-  // `web` (the public site) and `api` (host-routed api.rhema.tools) — need `roles/run.invoker` for
-  // `allUsers`: the Google Frontend does not mint identity for LB→serverless-NEG hops, so without the
-  // grant every public request 403s. Dev worked only because `gcloud run deploy` granted this
-  // implicitly. Internal services (worker/fetcher/export/collab) stay invoker-gated — their
-  // service-to-service auth wiring is the live leg of D-PRB.02-1 / PRB.16 scope.
-  for (const svc of ["web", "api"] as const) {
+  // `web` (the public site), `api` (host-routed api.rhema.tools), and — P1.03 — `collab` (path-routed
+  // `/collab*` on the app host) — need `roles/run.invoker` for `allUsers`: the Google Frontend does
+  // not mint identity for LB→serverless-NEG hops, so without the grant every public request 403s.
+  // Dev worked only because `gcloud run deploy` granted this implicitly. Collab's real auth is the
+  // session cookie its WebSocket hook resolves (the invoker grant is transport-only); the remaining
+  // internal services (worker/fetcher/export) stay invoker-gated — their service-to-service auth
+  // wiring is the live leg of D-PRB.02-1 / PRB.16 scope.
+  for (const svc of ["web", "api", "collab"] as const) {
     new gcp.cloudrunv2.ServiceIamMember(name(`${svc}-public-invoker`), {
       location: region,
       name: services[svc]!.name,
@@ -585,6 +616,23 @@ export function createCompute(args: ComputeArgs): Compute {
     backends: [{ group: apiNeg.id }],
   });
 
+  // P1.03 — the collab service behind the SAME LB, path-routed `/collab*` on the APP host (the
+  // `__Host-` session cookie only rides same-host upgrades — the WebSocket auth hook reads it). No
+  // CDN (WS frames are never cacheable), and a long timeoutSec: the LB's default 30 s backend timeout
+  // becomes the WebSocket IDLE timeout — an hour keeps a quiet editing session's socket alive.
+  const collabNeg = new gcp.compute.RegionNetworkEndpointGroup(name("collab-neg"), {
+    region,
+    networkEndpointType: "SERVERLESS",
+    cloudRun: { service: services["collab"]!.name },
+  });
+  const collabBackend = new gcp.compute.BackendService(name("collab-backend"), {
+    protocol: "HTTPS",
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+    enableCdn: false,
+    timeoutSec: 3600,
+    backends: [{ group: collabNeg.id }],
+  });
+
   // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `usercontent.rhema.tools` (the `*.`
   // wildcard was dropped at Stage B — managed certs reject wildcard SANs; see the cert below) is
   // host-routed to a backend bucket over the PRIVATE, uniform-IAM `user-content` bucket —
@@ -608,6 +656,9 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(domains && userContentBackend
       ? {
           hostRules: [
+            // P1.03 — the app host gets an explicit matcher so `/collab` + `/collab/*` (the WSS
+            // upgrade + the M17 block routes) reach the collab service; everything else stays web.
+            { hosts: [domains.app], pathMatcher: "app" },
             { hosts: [domains.api], pathMatcher: "api" },
             // Bare host only — the `*.usercontent.rhema.tools` wildcard host rule was dropped in
             // Stage B (2026-09-17): Google `ManagedSslCertificate` rejects wildcard SANs at create
@@ -615,6 +666,13 @@ export function createCompute(args: ComputeArgs): Compute {
             { hosts: [domains.userContent], pathMatcher: "usercontent" },
           ],
           pathMatchers: [
+            {
+              name: "app",
+              defaultService: webBackend.id,
+              pathRules: [
+                { paths: ["/collab", "/collab/*"], service: collabBackend.id },
+              ],
+            },
             { name: "api", defaultService: apiBackend.id },
             { name: "usercontent", defaultService: userContentBackend.id },
           ],

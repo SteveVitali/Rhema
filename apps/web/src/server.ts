@@ -85,6 +85,11 @@ export interface WebDeps {
    * Unset ⇒ the beta-grade default below. Only requests that reach the send count against it.
    */
   readonly magicLinkThrottle?: IpEmailThrottle;
+  /**
+   * P1.03 — the collab WSS base the Page's island connects to (`wss://<host>/collab`, env
+   * COLLAB_WS_URL). Unset ⇒ the Page mounts without a collab session (the static read view).
+   */
+  readonly collabWsUrl?: string;
 }
 
 /** The beta-grade magic-link throttle — per IP + per email, fixed window (PRB.13; D-PRB.13-1: in-memory). */
@@ -458,7 +463,15 @@ export function createWebApp(deps: WebDeps): Hono {
         })),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
         ...(pageLoad
-          ? { page: { slug, projectId: row.id, doc: pageLoad.doc, docJson: pageLoad.docJson } }
+          ? {
+              page: {
+                slug,
+                projectId: row.id,
+                doc: pageLoad.doc,
+                docJson: pageLoad.docJson,
+                ...(deps.collabWsUrl ? { collabWsUrl: deps.collabWsUrl } : {}),
+              },
+            }
           : {}),
         gates,
         dwellSurface: "project",
@@ -1085,6 +1098,7 @@ export function createWebApp(deps: WebDeps): Hono {
           projectId: row.id,
           doc,
           docJson: pageLoad.docJson,
+          ...(deps.collabWsUrl ? { collabWsUrl: deps.collabWsUrl } : {}),
           ...(c.req.query("noted") ? { noteSaved: true } : {}),
         },
         dwellSurface: "page",

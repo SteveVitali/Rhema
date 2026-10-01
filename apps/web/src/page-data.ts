@@ -151,6 +151,8 @@ export interface PageData {
     readonly focusFindingId?: string;
     /** non-draft artifact reads (/a/:artifactId) — the Page renders them read-only (P1.02 item 4). */
     readonly readOnly?: boolean;
+    /** P1.03 — the collab WSS base the island connects to (`wss://<host>/collab`; env COLLAB_WS_URL). */
+    readonly collabWsUrl?: string;
   };
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
   /** the library list (GET /voices): every persona + its shared pill + sample count. */

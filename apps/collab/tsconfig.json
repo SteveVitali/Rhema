@@ -13,6 +13,18 @@
     },
     {
       "path": "../../packages/db"
+    },
+    {
+      "path": "../../packages/editor"
+    },
+    {
+      "path": "../../packages/findings-core"
+    },
+    {
+      "path": "../../packages/mirror"
+    },
+    {
+      "path": "../../packages/orchestrator"
     }
   ],
   "exclude": [
