@@ -276,7 +276,7 @@ Reports: `docs/build/reports/2026-10-01_JOURNEY.1-{nightly,paid,paid2}/` (commit
 
 ## Evidence report
 
-- **PR:** #(recorded in `BUILD_INDEX.md` + `LEDGER.md` once opened) — stacked on `stevevitali/hot-1-prod-hotfix-pack` (PR #82), `mergePolicy=OPERATOR`, never merged.
+- **PR:** [#83](https://github.com/SteveVitali/Rhema/pull/83) — stacked on `stevevitali/hot-1-prod-hotfix-pack` (PR #82), `mergePolicy=OPERATOR`, never merged.
 - **Deterministic verification (final, this branch):** `pnpm turbo build lint typecheck` 135/135 tasks green; `pnpm test` 3,735 passed / 4 skipped / 0 failed (404 files); `check:licenses` 609 pkgs; `check:protocol-markers` 45 files; `check:no-cookies` 28 files; `check-upstream-diff` 22 ported files reconcile; `check-additive-migrations --files 0046` additive; `check-build-memory` no violations.
 - **Gates:** H7 mailbox — provided (`test@rhema.tools`, keyless Gmail DWD, verified live incl. MX fix); paid-leg funding — operator-approved house grant 2026-10-01; prod deploy — pre-authorized under ADR-013, preview showed zero replace/delete (updates 95–97).
 - **Stage-B magic-link sign-in (N2):** PASS — real `/signup` → Resend-delivered magic link → Gmail DWD read → verify navigation → session cookie, fresh `test+j<n>…@rhema.tools` identity.
