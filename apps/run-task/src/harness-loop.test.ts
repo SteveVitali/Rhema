@@ -388,6 +388,140 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(serialized).not.toContain("api_key");
     await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
   });
+
+  // RES.1 (REQ-SPEC-31(3)) — the research preflight: prove every server-authored model × server-tool
+  // pair through the run's own proxy BEFORE the first phase's model traffic. A refused pair (the
+  // 2026-09-30 incident's failure class) terminalizes the run instead of charging an Unverifiable run.
+  describe("the research preflight (RES.1)", () => {
+    const PAIRS = {
+      models: ["m1", "m2"],
+      tools: ["web_search" as const],
+      toolTypes: { web_search: "web_search_20250305", web_fetch: "web_fetch_20250910" },
+      pairs: [
+        { model: "m1", tool: "web_search" as const },
+        { model: "m2", tool: "web_search" as const },
+      ],
+    };
+
+    it("a passing preflight runs once, then every phase in the pod rides the proven pairs", async () => {
+      let probes = 0;
+      const letter = { ...byKey("letter"), index: OF - 1 };
+      const specs = [
+        makeSpec(byKey("craft"), { researchPreflight: PAIRS }),
+        makeSpec(letter, { researchPreflight: PAIRS, delivery: DELIVERY_FACTS }),
+      ];
+      const dossier: WorkDeliveryContent = {
+        deliveredPaths: ["correspondence/editors-letter.md"],
+        sidecars: [{ filename: "findings.json", json: { sidecar: "findings", version: 1, findings: [] } }],
+        coversAllObligations: true,
+      };
+      const { rec, client, runPhase } = makeHarness(specs, (spec) =>
+        spec.request.phase.key === "letter"
+          ? completeOutputs(
+              { letterSectionsComplete: true, rubricDimensionCount: 8, sidecarValidates: { "findings.json": true, "rubric.json": true } },
+              {
+                versions: [{ path: "correspondence/editors-letter.md", root: "project", kind: "letter", namespace: "editor", sha256: "s", bytes: Buffer.from("L"), wordCount: 1 }],
+                delivery: dossier,
+              },
+            )
+          : completeOutputs(NONEMPTY("04-craft-notes.md")),
+      );
+      const res = await runCommitLoop({
+        client,
+        runPhase,
+        workspaceId: "ws1",
+        preflight: () => {
+          probes++;
+          return Promise.resolve({ ok: true });
+        },
+      });
+      expect(res.kind).toBe("delivered");
+      expect(probes).toBe(1); // once per pod, not once per phase
+      expect(rec.fails).toHaveLength(0);
+    });
+
+    it("a refused pair terminalizes the run via failStep BEFORE any phase runs", async () => {
+      const spec = makeSpec(byKey("craft"), { researchPreflight: PAIRS });
+      const { rec, client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("x.md")));
+      let phasesRun = 0;
+      const res = await runCommitLoop({
+        client,
+        runPhase: (s, o) => {
+          phasesRun++;
+          return runPhase(s, o);
+        },
+        workspaceId: "ws1",
+        preflight: () =>
+          Promise.resolve({
+            ok: false as const,
+            failures: [{ model: "m2", tool: "web_search", status: 400, reason: "invalid_request_error" }],
+          }),
+      });
+      expect(res).toEqual({
+        kind: "failed",
+        phasesCommitted: 0,
+        errorClass: "research_preflight_failed",
+        reason: expect.stringContaining("m2×web_search HTTP 400"),
+      });
+      expect(phasesRun).toBe(0); // no paid model traffic before the guard
+      expect(rec.fails).toHaveLength(1);
+      expect(rec.fails[0]!.errorClass).toBe("research_preflight_failed");
+      expect(rec.fails[0]!.reason).toContain("invalid_request_error");
+    });
+
+    it("a spec demanding preflight with an UNBOUND seam fails closed — never a silent skip", async () => {
+      const spec = makeSpec(byKey("craft"), { researchPreflight: PAIRS });
+      const { rec, client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("x.md")));
+      const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" }); // no preflight dep
+      expect(res.kind).toBe("failed");
+      expect(rec.fails[0]!.errorClass).toBe("research_preflight_failed");
+      expect(rec.fails[0]!.reason).toContain("unbound");
+    });
+
+    it("a RESUME re-preflights — each pod start is a fresh loop and a fresh probe", async () => {
+      let probes = 0;
+      const preflight = () => {
+        probes++;
+        return Promise.resolve({ ok: true as const });
+      };
+      // pod 1: a gate phase commits and the pod exits; pod 2 (the resume) probes again before its phase.
+      const gate = makeHarness([makeSpec(byKey("intake"), { researchPreflight: PAIRS })], () => completeOutputs(INTAKE_FACTS));
+      const res1 = await runCommitLoop({ client: gate.client, runPhase: gate.runPhase, workspaceId: "ws1", preflight });
+      expect(res1.kind).toBe("gated");
+      const letter = { ...byKey("letter"), index: OF - 1 };
+      const resume = makeHarness(
+        [makeSpec(letter, { researchPreflight: PAIRS, delivery: DELIVERY_FACTS })],
+        () =>
+          completeOutputs(
+            { letterSectionsComplete: true, rubricDimensionCount: 8, sidecarValidates: { "findings.json": true, "rubric.json": true } },
+            {
+              versions: [{ path: "correspondence/editors-letter.md", root: "project", kind: "letter", namespace: "editor", sha256: "s", bytes: Buffer.from("L"), wordCount: 1 }],
+              delivery: { deliveredPaths: ["correspondence/editors-letter.md"], sidecars: [], coversAllObligations: true },
+            },
+          ),
+      );
+      const res2 = await runCommitLoop({ client: resume.client, runPhase: resume.runPhase, workspaceId: "ws1", preflight });
+      expect(res2.kind).toBe("delivered");
+      expect(probes).toBe(2); // one per pod lifetime
+    });
+
+    it("a spec with NO researchPreflight never invokes the seam (legacy probes unchanged)", async () => {
+      const spec = makeSpec({ ...byKey("craft"), index: OF - 1 });
+      const { client, runPhase } = makeHarness([spec], () => completeOutputs(NONEMPTY("04-craft-notes.md")));
+      let probes = 0;
+      const res = await runCommitLoop({
+        client,
+        runPhase,
+        workspaceId: "ws1",
+        preflight: () => {
+          probes++;
+          return Promise.resolve({ ok: true });
+        },
+      });
+      expect(res.kind).toBe("completed");
+      expect(probes).toBe(0);
+    });
+  });
 });
 
 const DELIVERY_FACTS = {

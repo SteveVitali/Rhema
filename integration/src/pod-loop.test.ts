@@ -48,7 +48,12 @@ function makeApiLoopClient(api: ReturnType<typeof createRunRoutes>, runId: strin
       return { ok: json.ok === true, state: json.state as string | undefined };
     },
     async failStep(a: FailCall) {
-      await post(`/steps/${a.stepKey}/fail`, { ordinal: a.ordinal, errorClass: a.errorClass, reason: a.reason });
+      const { json } = await post(`/steps/${a.stepKey}/fail`, { ordinal: a.ordinal, errorClass: a.errorClass, reason: a.reason });
+      return {
+        ok: json.ok === true,
+        backEdge: json.backEdge as { to: string[]; replans: number } | undefined,
+        gateId: json.gateId as string | undefined,
+      };
     },
     async deliver(a) {
       const { json } = await post("/deliver", { delivery: a.delivery });
@@ -118,9 +123,21 @@ describe("pod loop over the real api routes (P0.15e; D-P0.15d-4)", () => {
         facts: { thesisPresent: true, inventoryPresent: true },
       });
 
-    const res = await runCommitLoop({ client, runPhase, workspaceId: h.seed.workspaceId });
+    // RES.1: a research-bearing spec carries researchPreflight → the loop requires the seam (fail-closed);
+    // the pod provides it like harness-main does (here a recording stub — the live probe is Stage B).
+    const prefLighted: string[][] = [];
+    const res = await runCommitLoop({
+      client,
+      runPhase,
+      workspaceId: h.seed.workspaceId,
+      preflight: async (spec) => {
+        prefLighted.push(spec.pairs.map((p) => `${p.model}:${p.tool}`));
+        return { ok: true };
+      },
+    });
 
     expect(res).toEqual({ kind: "gated", phasesCommitted: 1 });
+    expect(prefLighted.length).toBe(1); // the seam ran once, before the phase
     // one intake step committed, a gate opened, the produced brief persisted as an artifact version.
     const steps = await h.db.client.query("select phase, state from steps where run_id=$1", [runId]);
     expect(steps.rows).toEqual([{ phase: "intake", state: "done" }]);
@@ -175,7 +192,12 @@ describe("pod loop over the real api routes (P0.15e; D-P0.15d-4)", () => {
         },
       });
 
-    const res = await runCommitLoop({ client, runPhase, workspaceId: h.seed.workspaceId });
+    const res = await runCommitLoop({
+      client,
+      runPhase,
+      workspaceId: h.seed.workspaceId,
+      preflight: async () => ({ ok: true }), // RES.1 — the research-bearing spec's preflight seam (stubbed; Stage B is live)
+    });
 
     expect(res.kind).toBe("delivered");
     const state = await h.db.client.query("select state from runs where id=$1", [runId]);

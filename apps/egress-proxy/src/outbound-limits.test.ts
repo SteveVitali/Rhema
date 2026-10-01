@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { registrableDomainOf } from "./domains.js";
 import {
+  extractExecutedServerToolUses,
   extractServerToolInvocations,
   guardWebFetchUrl,
   MAX_WEB_FETCH_QUERY_CHARS,
   NovelDomainTracker,
+  RESEARCH_GRANT_TTL_MS,
   ResearchUsageTracker,
   rewriteFetchUrl,
 } from "./outbound-limits.js";
@@ -90,6 +92,59 @@ describe("novel-domain cap (§12.8d)", () => {
   });
 });
 
+describe("extractExecutedServerToolUses — RES.1 executed-only history counting", () => {
+  it("ignores bare tool_use calls (the 2026-09-30 phantom) and counts real server-tool executions", () => {
+    const body = {
+      messages: [
+        {
+          role: "assistant",
+          content: [
+            // the incident shape: a CLIENT call the provider never ran — must not count.
+            { type: "tool_use", name: "web_search", input: { query: "test search" } },
+            { type: "tool_use", name: "web_fetch", input: { url: "https://never.example/x" } },
+            // a real server-side search the provider executed.
+            { type: "server_tool_use", name: "web_search", input: { query: "who wrote middlemarch" } },
+          ],
+        },
+        {
+          role: "user",
+          content: [
+            { type: "web_search_tool_result", tool_use_id: "t1", content: [] },
+            { type: "web_fetch_tool_result", tool_use_id: "t2", content: [{ url: "https://a.example/" }] },
+          ],
+        },
+      ],
+    };
+    // searches: max(server_tool_use=1, results=1) = 1 — the phantom tool_use adds nothing.
+    // fetches: the result proves an execution even though its use block is absent (max(0,1)=1).
+    expect(extractExecutedServerToolUses(body)).toEqual({ searches: 1, fetches: 1 });
+  });
+
+  it("survives a compacted transcript that dropped the use block but kept the result", () => {
+    const body = {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "web_fetch_tool_result", content: [{ url: "https://a.example/" }] },
+            { type: "web_fetch_tool_result", content: [{ url: "https://b.example/" }] },
+          ],
+        },
+      ],
+    };
+    expect(extractExecutedServerToolUses(body)).toEqual({ searches: 0, fetches: 2 });
+  });
+
+  it("tolerates a malformed body", () => {
+    expect(extractExecutedServerToolUses(null)).toEqual({ searches: 0, fetches: 0 });
+    expect(extractExecutedServerToolUses({ messages: "nope" })).toEqual({ searches: 0, fetches: 0 });
+    expect(extractExecutedServerToolUses({ messages: [{ role: "user", content: "text" }] })).toEqual({
+      searches: 0,
+      fetches: 0,
+    });
+  });
+});
+
 describe("ResearchUsageTracker — per-run research bound (PRB.22; D-PRB.21-1)", () => {
   it("accumulates metered fetch/search counts per run across responses", () => {
     const t = new ResearchUsageTracker();
@@ -100,5 +155,38 @@ describe("ResearchUsageTracker — per-run research bound (PRB.22; D-PRB.21-1)",
     expect(t.usage("run1")).toEqual({ fetches: 5, searches: 5 });
     // run-keyed: another run is unaffected.
     expect(t.usage("run2")).toEqual({ fetches: 0, searches: 0 });
+  });
+
+  it("sums live admission grants into inflight() and releases them idempotently (RES.1)", () => {
+    const t = new ResearchUsageTracker();
+    const r1 = t.reserve("run1", { searches: 5, fetches: 10 });
+    const r2 = t.reserve("run1", { searches: 3, fetches: 0 });
+    // the incident window: a second request sees the first's grant already committed against headroom.
+    expect(t.inflight("run1")).toEqual({ searches: 8, fetches: 10 });
+    r1.release();
+    expect(t.inflight("run1")).toEqual({ searches: 3, fetches: 0 });
+    r1.release(); // idempotent
+    expect(t.inflight("run1")).toEqual({ searches: 3, fetches: 0 });
+    r2.release();
+    expect(t.inflight("run1")).toEqual({ searches: 0, fetches: 0 });
+    // run-keyed: another run's grants are independent.
+    expect(t.inflight("run2")).toEqual({ searches: 0, fetches: 0 });
+  });
+
+  it("expires a wedged grant at the TTL so a stuck request can never starve verification", () => {
+    let now = 1_000;
+    const t = new ResearchUsageTracker({ now: () => now });
+    t.reserve("run1", { searches: 20, fetches: 0 });
+    expect(t.inflight("run1").searches).toBe(20);
+    now += RESEARCH_GRANT_TTL_MS - 1;
+    expect(t.inflight("run1").searches).toBe(20); // still live just under the TTL
+    now += 2; // past expiry
+    expect(t.inflight("run1")).toEqual({ searches: 0, fetches: 0 });
+  });
+
+  it("a zero grant returns a no-op reservation", () => {
+    const t = new ResearchUsageTracker();
+    t.reserve("run1", { searches: 0, fetches: 0 }).release();
+    expect(t.inflight("run1")).toEqual({ searches: 0, fetches: 0 });
   });
 });

@@ -2,7 +2,13 @@ import { describe, it, expect, afterEach } from "vitest";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { startCredentialInjector, type CredentialInjector } from "./credential-injector.js";
-import { PROXY_CREDENTIAL_HEADER, injectProxyCredential, validateProxyRequest } from "./proxy-injector.js";
+import {
+  PHASE_CLASS_HEADER,
+  PROXY_CREDENTIAL_HEADER,
+  injectProxyCredential,
+  stampPhaseClass,
+  validateProxyRequest,
+} from "./proxy-injector.js";
 
 const CREDENTIAL = "cred-per-run-abc";
 
@@ -103,6 +109,34 @@ describe("startCredentialInjector (D-P0.15f-2 — the harness-side credential pa
     const res = await fetch(`${injector.url}/v1/messages`, { method: "POST", body: "{}" });
     expect(res.status).toBe(502);
   });
+
+  it("RES.1 — stamps the live phase class per request and drops any agent-supplied copy", async () => {
+    upstream = await startFakeUpstream();
+    let phaseClass: string | undefined = "judge";
+    injector = await startCredentialInjector({
+      credential: CREDENTIAL,
+      upstreamBaseUrl: upstream.url,
+      phaseClass: () => phaseClass,
+    });
+
+    // a judge-phase request carries `judge`; the agent's own forged stamp is replaced, never trusted.
+    await fetch(`${injector.url}/v1/messages`, {
+      method: "POST",
+      headers: { [PHASE_CLASS_HEADER]: "research" }, // the agent claiming research class
+      body: "{}",
+    });
+    expect(upstream.received.headers[PHASE_CLASS_HEADER]).toBe("judge");
+
+    // the phase boundary: the harness flips the class and the NEXT request carries it live.
+    phaseClass = "research";
+    await fetch(`${injector.url}/v1/messages`, { method: "POST", body: "{}" });
+    expect(upstream.received.headers[PHASE_CLASS_HEADER]).toBe("research");
+
+    // no stamp configured → the header is absent (the proxy reads absent as not floor-eligible).
+    phaseClass = undefined;
+    await fetch(`${injector.url}/v1/messages`, { method: "POST", body: "{}" });
+    expect(upstream.received.headers[PHASE_CLASS_HEADER]).toBeUndefined();
+  });
 });
 
 describe("the boundary the injector satisfies (REQ-SPEC-11 reference rule)", () => {
@@ -116,5 +150,12 @@ describe("the boundary the injector satisfies (REQ-SPEC-11 reference rule)", () 
     const headers = injectProxyCredential({}, CREDENTIAL);
     const v = validateProxyRequest({ headers, host: "api.anthropic.com", expectedCredential: CREDENTIAL, allowlist });
     expect(v.ok).toBe(true);
+  });
+  it("stampPhaseClass overwrites a forged header (any casing) and omits it when undefined", () => {
+    const stamped = stampPhaseClass({ "X-Rhema-Phase-Class": "research", "x-keep": "1" }, "judge");
+    expect(stamped[PHASE_CLASS_HEADER]).toBe("judge");
+    expect(Object.keys(stamped).filter((k) => k.toLowerCase() === PHASE_CLASS_HEADER)).toHaveLength(1);
+    expect(stamped["x-keep"]).toBe("1");
+    expect(stampPhaseClass({ "x-keep": "1" }, undefined)[PHASE_CLASS_HEADER]).toBeUndefined();
   });
 });

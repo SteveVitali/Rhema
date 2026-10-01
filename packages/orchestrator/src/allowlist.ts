@@ -90,6 +90,37 @@ export const RESEARCH_SEARCH_MAX = 32 as const;
 /** Per fetched page, tokens entering context (the proxy sets `max_content_tokens` on web_fetch). */
 export const FETCH_MAX_CONTENT_TOKENS = 8000 as const;
 
+/**
+ * RES.1 (REQ-SPEC-31(2)) — the research floor share: the fraction of each run budget reserved for
+ * research-class traffic (`phaseClass: "research"`, the verification/discourse passes). The proxy enforces
+ * it against the harness-stamped `x-rhema-phase-class`: non-eligible requests bound at `budget − floor`, so
+ * a judge/generate phase — or the agent + its subagents inside one — can never consume verification's share.
+ * The floor is a GUARANTEE, not a research cap: research-class traffic draws the whole remaining budget.
+ */
+export const RESEARCH_FLOOR_SHARE = 0.5 as const;
+
+/**
+ * RES.1 (REQ-SPEC-31(2)) — the ONE pure sizing function for the research floor: verification's
+ * reserved share of the run's search/fetch budgets. The budgets it floors are already claim-scaled
+ * (`authorWebToolPolicy`), so the signature carries `claims` for the record and `rigor` for the fold
+ * ECON.1's Quick 5-claim cap makes later — the share itself is uniform today: half of every bounded
+ * kind is held for research-class traffic, and no earlier phase or subagent may spend it. The proxy
+ * enforces it; the named guard test in `allowlist.test.ts` fails if the share or output is lowered.
+ */
+export function authorResearchFloor(args: {
+  /** claims verification will actually check (the budget inputs are already claim-scaled). */
+  readonly claims?: number;
+  /** the run's rigor — carried for ECON.1's Quick cap fold; the share is rigor-uniform today. */
+  readonly rigor?: string;
+  readonly searchBudget: number;
+  readonly fetchBudget: number;
+}): { readonly searchFloor: number; readonly fetchFloor: number } {
+  return {
+    searchFloor: Math.floor(args.searchBudget * RESEARCH_FLOOR_SHARE),
+    fetchFloor: Math.floor(args.fetchBudget * RESEARCH_FLOOR_SHARE),
+  };
+}
+
 function clampInt(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, Math.round(n)));
 }
@@ -98,14 +129,28 @@ function clampInt(n: number, lo: number, hi: number): number {
  * Author the run's `webTools` policy from the claim count (the input snapshot's `claimCount`, or the
  * density-derived provisional count). Claims scale the budgets; every run is bounded even at claims=0 —
  * verification still does baseline reading, and a missing count must not mean unbounded research.
+ * RES.1: half the authored bound is floored to research-class phases (the claim-scaled budget exists FOR
+ * verification; reserving half keeps a draft-time browse from starving it while still leaving earlier
+ * phases a real allowance).
  */
 export function authorWebToolPolicy(args: { readonly claims?: number }): WebToolPolicyData {
   const claims = Math.max(0, args.claims ?? 0);
+  const searchBudget = clampInt(
+    RESEARCH_SEARCH_BASE + RESEARCH_SEARCH_PER_CLAIM * claims,
+    RESEARCH_SEARCH_BASE,
+    RESEARCH_SEARCH_MAX,
+  );
+  const fetchBudget = clampInt(
+    RESEARCH_FETCH_BASE + RESEARCH_FETCH_PER_CLAIM * claims,
+    RESEARCH_FETCH_MIN,
+    RESEARCH_FETCH_MAX,
+  );
   return {
     search: true,
     fetch: true,
-    fetchBudget: clampInt(RESEARCH_FETCH_BASE + RESEARCH_FETCH_PER_CLAIM * claims, RESEARCH_FETCH_MIN, RESEARCH_FETCH_MAX),
-    searchBudget: clampInt(RESEARCH_SEARCH_BASE + RESEARCH_SEARCH_PER_CLAIM * claims, RESEARCH_SEARCH_BASE, RESEARCH_SEARCH_MAX),
+    fetchBudget,
+    searchBudget,
+    ...authorResearchFloor({ claims, searchBudget, fetchBudget }),
     fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
   };
 }
@@ -159,6 +204,9 @@ export function authorAssistantWebToolPolicy(args: {
       // the burst's plan decomposes into ≤N fetches; searches bound at the same N for discovery.
       fetchBudget: sources,
       searchBudget: sources,
+      // RES.1 — the burst runs a judge-class triage BEFORE its research phase; floor half the source
+      // bound so triage browsing can never starve the research pass it precedes.
+      ...authorResearchFloor({ searchBudget: sources, fetchBudget: sources }),
       fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
     };
   }
@@ -178,6 +226,60 @@ export function authorAssistantWebToolPolicy(args: {
     };
   }
   return null;
+}
+
+// ---------------------------------------------------------- research preflight (RES.1; REQ-SPEC-31(3)) ----
+
+/**
+ * The server web-tool `type` variants the proxy injects (the wire contract — duplicated with
+ * `apps/egress-proxy/src/url-policy.ts` deliberately, like the credential headers). The preflight probe
+ * declares THESE variants (never its own guess) so a model × variant rejection is what fails the run.
+ */
+export const WEB_SEARCH_TOOL_TYPE = "web_search_20250305" as const;
+export const WEB_FETCH_TOOL_TYPE = "web_fetch_20250910" as const;
+export type ServerWebToolKind = "web_search" | "web_fetch";
+
+/**
+ * One model × server-tool pair the run may exercise. The preflight probe proves each pair — through the
+ * run's OWN proxy credential — before any paid phase runs (and again on every resume).
+ */
+export interface ResearchPreflightPair {
+  readonly model: string;
+  readonly tool: ServerWebToolKind;
+}
+
+/**
+ * The server-authored preflight manifest on the run spec: the models the run's tier may call, the
+ * tool kinds its `webTools` policy enables, their provider `type` variants, and the flattened pair set.
+ */
+export interface ResearchPreflightSpec {
+  readonly models: readonly string[];
+  readonly tools: readonly ServerWebToolKind[];
+  readonly toolTypes: { readonly web_search: string; readonly web_fetch: string };
+  readonly pairs: readonly ResearchPreflightPair[];
+}
+
+/**
+ * Author the run's preflight manifest (RES.1). `models` = the tier's roster (the same set the proxy
+ * allowlist admits — a pair that isn't allowlisted can never run anyway); `tools` = the webTools policy's
+ * enabled kinds (absent ⇒ the proxy defaults: both on). A run whose policy disables a tool simply has no
+ * pairs for it — probing a disabled pair would prove nothing (the proxy strips the tool).
+ */
+export function authorResearchPreflight(args: {
+  readonly modelTier: ModelTier;
+  readonly webTools?: WebToolPolicyData | null;
+}): ResearchPreflightSpec {
+  const models = MODELS_BY_TIER[args.modelTier];
+  const tools: ServerWebToolKind[] = [
+    ...(args.webTools?.search === false ? [] : (["web_search"] as const)),
+    ...(args.webTools?.fetch === false ? [] : (["web_fetch"] as const)),
+  ];
+  return {
+    models,
+    tools,
+    toolTypes: { web_search: WEB_SEARCH_TOOL_TYPE, web_fetch: WEB_FETCH_TOOL_TYPE },
+    pairs: models.flatMap((model) => tools.map((tool) => ({ model, tool }))),
+  };
 }
 
 /**

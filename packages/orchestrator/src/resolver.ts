@@ -46,6 +46,13 @@ export interface WebToolPolicyData {
   readonly fetchMaxUses?: number;
   readonly searchBudget?: number;
   readonly fetchBudget?: number;
+  /**
+   * RES.1 (REQ-SPEC-31(2)) — the research floor: invocations reserved for research-class traffic.
+   * The proxy admits a request stamped `x-rhema-phase-class: research`/`preflight` against the FULL
+   * remaining budget; every other request sees `budget − floor` — the share verification is owed.
+   */
+  readonly searchFloor?: number;
+  readonly fetchFloor?: number;
   readonly fetchMaxContentTokens?: number;
 }
 

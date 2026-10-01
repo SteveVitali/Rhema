@@ -19,7 +19,7 @@
 import http from "node:http";
 import https from "node:https";
 import type { AddressInfo } from "node:net";
-import { PROXY_CREDENTIAL_HEADER } from "./proxy-injector.js";
+import { PHASE_CLASS_HEADER, PROXY_CREDENTIAL_HEADER } from "./proxy-injector.js";
 
 /** Request headers the injector must not forward verbatim: `host` is re-derived from the upstream URL; the
  *  credential slot is stamped by us; the rest are per-connection hop-by-hop headers (RFC 7230 §6.1) plus the
@@ -37,6 +37,9 @@ const DROP_REQUEST_HEADERS = new Set<string>([
   "transfer-encoding",
   "content-length",
   PROXY_CREDENTIAL_HEADER, // never trust an agent-supplied credential header — we stamp the real one
+  // RES.1 (REQ-SPEC-31(2)): the research floor stamp is harness truth — an agent-supplied phase class
+  // would let a non-research phase pose as `research` and drain the reserved verification share.
+  PHASE_CLASS_HEADER,
   // the agent's env carries a NON-SECRET placeholder ANTHROPIC_API_KEY so the CLI runs (D-P0.06-1); strip the
   // resulting x-api-key/authorization here so it never leaves the pod — the egress-proxy authenticates via the
   // injected credential and injects the REAL provider key itself (defense-in-depth; the proxy also strips these).
@@ -81,13 +84,23 @@ export interface StartInjectorArgs {
   readonly credential: string;
   /** the egress-proxy base URL — the injector's upstream (the run's real `ANTHROPIC_BASE_URL`). */
   readonly upstreamBaseUrl: string;
+  /**
+   * RES.1 (REQ-SPEC-31(2)) — the current phase's manifest `phaseClass`, read per request. The harness
+   * updates it at each phase boundary; the injector stamps it as `x-rhema-phase-class` so the proxy can
+   * reserve the verification floor for research-class traffic only. Omit ⇒ no stamp (safe default).
+   */
+  readonly phaseClass?: () => string | undefined;
   /** loopback bind host (default `127.0.0.1`) + port (default `0` → an ephemeral free port). */
   readonly host?: string;
   readonly port?: number;
 }
 
 /** Build the forwarded request headers: copy the agent's, drop the un-forwardable set, stamp the credential. */
-function buildForwardHeaders(incoming: http.IncomingHttpHeaders, credential: string): http.OutgoingHttpHeaders {
+function buildForwardHeaders(
+  incoming: http.IncomingHttpHeaders,
+  credential: string,
+  phaseClass: string | undefined,
+): http.OutgoingHttpHeaders {
   const out: http.OutgoingHttpHeaders = {};
   for (const [k, v] of Object.entries(incoming)) {
     if (v === undefined) continue;
@@ -95,6 +108,7 @@ function buildForwardHeaders(incoming: http.IncomingHttpHeaders, credential: str
     out[k] = v;
   }
   out[PROXY_CREDENTIAL_HEADER] = credential; // the harness's credential — the agent never held it
+  if (phaseClass !== undefined) out[PHASE_CLASS_HEADER] = phaseClass; // RES.1 — harness truth, never the agent's
   return out;
 }
 
@@ -119,7 +133,7 @@ export async function startCredentialInjector(args: StartInjectorArgs): Promise<
         port: upstream.port || (upstreamIsHttps ? 443 : 80),
         method: clientReq.method,
         path: `${target.pathname}${target.search}`,
-        headers: buildForwardHeaders(clientReq.headers, args.credential),
+        headers: buildForwardHeaders(clientReq.headers, args.credential, args.phaseClass?.()),
       },
       (upstreamRes) => {
         // stream the response back (status + filtered headers + body) — SSE frames pass through incrementally.

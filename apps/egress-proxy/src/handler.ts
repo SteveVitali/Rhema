@@ -15,6 +15,7 @@ import {
   isModelAllowed,
   presentedAgentId,
   presentedCredential,
+  presentedPhaseClass,
 } from "./credential.js";
 import {
   buildRequestFetchLogRow,
@@ -26,12 +27,14 @@ import { ulid, type IdFactory } from "./ids.js";
 import { meterResponse } from "./metering.js";
 import { hostnameOf, registrableDomainOf } from "./domains.js";
 import {
+  extractExecutedServerToolUses,
   extractResponseServerTools,
   extractResponseServerToolsSse,
   extractServerToolInvocations,
   guardWebFetchUrl,
   NovelDomainTracker,
   ResearchUsageTracker,
+  type ResearchReservation,
   rewriteFetchUrl,
 } from "./outbound-limits.js";
 import { isSseBody } from "./usage-block.js";
@@ -39,7 +42,12 @@ import { checkSearchQuery, SUSPICIOUS_QUERY_THRESHOLD } from "./ngram.js";
 import { isModelPriceable } from "./rates.js";
 import type { FetchLogWriter, SecretProvider, UsageWriter } from "./sinks.js";
 import { DenialSpikeTracker, type EventSink } from "./signals.js";
-import { ensureServerWebTools, injectUrlPolicyIntoBody, resolveServerWebToolConfig } from "./url-policy.js";
+import {
+  ensureServerWebTools,
+  injectUrlPolicyIntoBody,
+  resolveServerWebToolConfig,
+  webToolGrantsOf,
+} from "./url-policy.js";
 import { extractModel, extractUsage } from "./usage-block.js";
 
 /** One inbound request as the proxy sees it (method, target, headers, raw body). */
@@ -133,6 +141,12 @@ export interface PreparedForward {
    * response, never a partial frame. Call exactly once per response.
    */
   meter(upstream: UpstreamResponse): Promise<void>;
+  /**
+   * RES.1 — release this request's in-flight research reservation when the forward itself fails (the meter
+   * path releases too, idempotently). The caller invokes it on a `forward`/`streamForward` throw so a dead
+   * upstream can't hold a budget slice hostage.
+   */
+  release(): void;
 }
 
 /** The outcome of the pre-forward pipeline: an early refusal to return as-is, or a prepared forward. */
@@ -350,26 +364,50 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   // --- 6. Server web tools + URL policy (§12.6; P0.15i; PRB.22 research bound). GUARANTEE the run's server
   //        web_search tool is in the request (the vendored CLI does not reliably add it — P0.15h
   //        `searches=0`), then scope every server web tool to the run's allowed/blocked domains. The
-  //        research bound rides here too: `used` is the run's cumulative search/fetch invocations — the
-  //        max of THIS request's history (server-tool calls persist in `messages[]`) and the tracker's
-  //        metered-response totals (covers input-scoped subagents whose history the main request never
-  //        carries) — so `ensureServerWebTools` can shrink `max_uses` to the remainder and drop the tool
-  //        at zero. The search RESULT urls land in the fetch log at step 9, so `cited⇒fetched` has real
-  //        provenance. ---
+  //        research bound rides here too: committed use is the max of THIS request's EXECUTED history
+  //        (result-bearing `server_tool_use`/`web_*_tool_result` blocks persist in `messages[]`; RES.1 —
+  //        a bare call block is not an execution) and the tracker's metered-response totals (covers
+  //        input-scoped subagents whose history the main request never carries); the run's live
+  //        reservations sit on top, so `ensureServerWebTools` shrinks `max_uses` to the remainder and
+  //        drops the tool at zero — and a non-research-phase request sees the remainder NET of the
+  //        research floor (REQ-SPEC-31(2)). The search RESULT urls land in the fetch log at step 9, so
+  //        `cited⇒fetched` has real provenance. ---
   const isMessagesCreate = req.method.toUpperCase() === "POST" && req.path.replace(/\?.*$/, "").endsWith("/v1/messages");
-  const historyUse = { searches: 0, fetches: 0 };
-  for (const inv of invocations) {
-    if (inv.kind === "search") historyUse.searches++;
-    else historyUse.fetches++;
-  }
+  // RES.1 — EXECUTED-only history: a flat `tool_use`/`server_tool_use` block in `messages[]` is the
+  // model's CALL, not proof the provider ran anything (the request-content contract the incident
+  // exploited). Only `server_tool_use` inside a RESULT-bearing message (the provider-written turn the
+  // client echoes back) and `web_*_tool_result` blocks count — `extractExecutedServerToolUses`.
+  const historyUse = extractExecutedServerToolUses(body);
   const meteredUse = researchUsage.usage(ctx.runId);
-  const used = {
+  const committed = {
     searches: Math.max(historyUse.searches, meteredUse.searches),
     fetches: Math.max(historyUse.fetches, meteredUse.fetches),
   };
-  const ensured = isMessagesCreate
-    ? ensureServerWebTools(outboundBody, resolveServerWebToolConfig(ctx.webTools), used)
-    : { body: outboundBody, added: false };
+  // RES.1 — the research floor (REQ-SPEC-31(2)): only a request stamped `research` by the harness
+  // (`x-rhema-phase-class`, which the agent cannot set) may draw the floor share; `preflight` bypasses
+  // the bound entirely (its probe declares `max_uses: 1`) so a budget-exhausted resume still re-preflights.
+  const phaseClass = presentedPhaseClass(req.headers);
+  const preflight = phaseClass === "preflight";
+  const floorEligible = phaseClass === "research";
+  let reservation: ResearchReservation | undefined;
+  let ensured: { body: unknown; added: boolean };
+  if (isMessagesCreate) {
+    // Committed + the live in-flight grants is the bound — serialized here, per-request, so N parallel
+    // requests cannot each be granted the same remaining slice before any of them meters.
+    const inflight = researchUsage.inflight(ctx.runId);
+    const used = preflight
+      ? { searches: 0, fetches: 0 }
+      : { searches: committed.searches + inflight.searches, fetches: committed.fetches + inflight.fetches };
+    ensured = ensureServerWebTools(outboundBody, resolveServerWebToolConfig(ctx.webTools), used, {
+      floorEligible,
+      bypassBudget: preflight,
+    });
+    // The grant this request received becomes a reservation — released inside `meter` when the response's
+    // real usage lands (or by the caller on a forward failure). Idempotent.
+    reservation = researchUsage.reserve(ctx.runId, webToolGrantsOf(ensured.body));
+  } else {
+    ensured = { body: outboundBody, added: false };
+  }
   const injected = injectUrlPolicyIntoBody(ensured.body, ctx.urlPolicy);
   const finalBody =
     injected.rewritten || ensured.added || outboundBody !== body ? JSON.stringify(injected.body) : req.body;
@@ -385,6 +423,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   };
 
   const meter = async (upstream: UpstreamResponse): Promise<void> => {
+   try {
     // --- 8. Meter every served response's usage into the rows of record (§12.7) ---
     if (upstream.status >= 200 && upstream.status < 300) {
       const contentType = headerValue(upstream.headers, "content-type");
@@ -439,9 +478,18 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
         { url: req.url, status: upstream.status, bytes: Buffer.byteLength(upstream.body), decision: "allow" },
       ),
     );
+   } finally {
+    // RES.1 — the grant is now either metered (2xx) or unreachable (non-2xx/meter throw); either way the
+    // reservation hands its slice back so a later request isn't starved by an abandoned grant.
+    reservation?.release();
+   }
   };
 
-  return { kind: "forward", forwardReq, meter };
+  const release = (): void => {
+    reservation?.release();
+  };
+
+  return { kind: "forward", forwardReq, meter, release };
 }
 
 /**
@@ -452,7 +500,13 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
 export async function handleProxyRequest(req: ProxyRequest, deps: HandlerDeps): Promise<ProxyResponse> {
   const prep = await prepareProxyRequest(req, deps);
   if (prep.kind === "response") return prep.response;
-  const upstream = await deps.forward(prep.forwardReq);
+  let upstream: UpstreamResponse;
+  try {
+    upstream = await deps.forward(prep.forwardReq);
+  } catch (e) {
+    prep.release(); // RES.1 — a dead upstream must not hold the reservation slice
+    throw e;
+  }
   await prep.meter(upstream);
   return { status: upstream.status, headers: { ...upstream.headers }, body: upstream.body };
 }
@@ -509,16 +563,27 @@ export async function streamProxyRequest(req: ProxyRequest, deps: StreamingHandl
     return;
   }
 
-  const upstream = await deps.streamForward(prep.forwardReq);
+  let upstream: StreamingUpstreamResponse;
+  try {
+    upstream = await deps.streamForward(prep.forwardReq);
+  } catch (e) {
+    prep.release(); // RES.1 — a dead upstream must not hold the reservation slice
+    throw e;
+  }
   sink.writeHead(upstream.status, stripResponseFramingHeaders(upstream.headers));
 
   const chunks: Buffer[] = [];
   let last: Buffer | undefined;
-  for await (const chunk of upstream.body) {
-    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    chunks.push(buf);
-    if (last !== undefined) sink.write(last); // incremental delivery — every frame but the terminal one
-    last = buf;
+  try {
+    for await (const chunk of upstream.body) {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      chunks.push(buf);
+      if (last !== undefined) sink.write(last); // incremental delivery — every frame but the terminal one
+      last = buf;
+    }
+  } catch (e) {
+    prep.release(); // RES.1 — a truncated upstream must not hold the reservation slice
+    throw e;
   }
 
   // Meter over the COMPLETE accumulated body BEFORE the final bytes leave (§12.7; I2). A throw here

@@ -8,6 +8,7 @@ import {
   ensureServerWebTools,
   injectUrlPolicyIntoBody,
   resolveServerWebToolConfig,
+  webToolGrantsOf,
   WEB_FETCH_TOOL_TYPE,
   WEB_SEARCH_TOOL_TYPE,
 } from "./url-policy.js";
@@ -74,6 +75,8 @@ describe("resolveServerWebToolConfig (P0.15i)", () => {
       fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
       searchBudget: DEFAULT_WEB_SEARCH_BUDGET,
       fetchBudget: DEFAULT_WEB_FETCH_BUDGET,
+      searchFloor: 0,
+      fetchFloor: 0,
       fetchMaxContentTokens: DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
     });
   });
@@ -86,8 +89,16 @@ describe("resolveServerWebToolConfig (P0.15i)", () => {
       fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
       searchBudget: DEFAULT_WEB_SEARCH_BUDGET,
       fetchBudget: 9,
+      searchFloor: 0,
+      fetchFloor: 0,
       fetchMaxContentTokens: 4000,
     });
+  });
+
+  it("clamps an over-budget floor to the budget (a floor can never exceed what the run holds)", () => {
+    const c = resolveServerWebToolConfig({ searchBudget: 4, searchFloor: 10, fetchFloor: 2 });
+    expect(c.searchFloor).toBe(4);
+    expect(c.fetchFloor).toBe(2);
   });
 
   it("lets a run explicitly opt web_fetch OUT (e.g. a scoped subagent)", () => {
@@ -244,5 +255,120 @@ describe("ensureServerWebTools — per-run research budgets (PRB.22; D-PRB.21-1)
     const fetchTool = (out as { tools: Record<string, unknown>[] }).tools.find((t) => serverName(t) === "web_fetch")!;
     expect(fetchTool["max_uses"]).toBe(3);
     expect(fetchTool["max_content_tokens"]).toBe(2000);
+  });
+});
+
+describe("ensureServerWebTools — RES.1 client-alias strip (the 2026-09-30 incident shape)", () => {
+  const bareBody = () => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: "verify this" }] });
+  const config = resolveServerWebToolConfig(undefined);
+
+  it("a CUSTOM tool that merely borrows the name `web_search` is stripped, and the real server tool injected", () => {
+    // The incident: the body carried a bare-name `web_search` with no server `type` — it satisfied no
+    // server contract, yet counted as "already present" under the old name-or-type match, so the request
+    // went upstream with a tool the model could call but the provider would never execute (searches=0).
+    const body = {
+      ...bareBody(),
+      tools: [
+        { name: "web_search", description: "search the web", input_schema: { type: "object" } },
+        { name: "web_fetch", description: "fetch a url", input_schema: { type: "object" } },
+        { type: "custom_tool", name: "calculator" },
+      ],
+    };
+    const { body: out } = ensureServerWebTools(body, config);
+    const tools = (out as { tools: Record<string, unknown>[] }).tools;
+    // the bare-name impostors are gone; only tools with a real server `type` survive.
+    const searchTools = tools.filter((t) => serverName(t) === "web_search");
+    expect(searchTools).toHaveLength(1);
+    expect(searchTools[0]).toMatchObject({ type: WEB_SEARCH_TOOL_TYPE, name: "web_search" });
+    const fetchTools = tools.filter((t) => serverName(t) === "web_fetch");
+    expect(fetchTools).toHaveLength(1);
+    expect(fetchTools[0]).toMatchObject({ type: WEB_FETCH_TOOL_TYPE });
+    expect(tools).toContainEqual({ type: "custom_tool", name: "calculator" });
+  });
+
+  it("still strips the PascalCase CLI client tools AND a lowercase name-borrower in one pass", () => {
+    const body = {
+      ...bareBody(),
+      tools: [{ name: "WebSearch" }, { name: "web_search" }, { name: "web_fetch" }],
+    };
+    const { body: out } = ensureServerWebTools(body, config);
+    const tools = (out as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.filter((t) => serverName(t) === "web_search")).toHaveLength(1);
+    expect(tools.filter((t) => serverName(t) === "web_fetch")).toHaveLength(1);
+    expect(tools.every((t) => typeof t["type"] === "string" && (t["type"] as string).startsWith("web_"))).toBe(true);
+  });
+
+  it("a server tool the client declared WITH the real `type` is kept, not re-injected", () => {
+    const body = {
+      ...bareBody(),
+      tools: [{ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: 2 }],
+    };
+    const { body: out } = ensureServerWebTools(body, config);
+    const tools = (out as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.filter((t) => serverName(t) === "web_search")).toHaveLength(1);
+    expect(tools.find((t) => serverName(t) === "web_search")!["max_uses"]).toBe(2);
+  });
+});
+
+describe("ensureServerWebTools — RES.1 research floor + preflight bypass (REQ-SPEC-31(2))", () => {
+  const bareBody = () => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: "verify this" }] });
+
+  it("a non-eligible request sees the bound NET of the floor; a research request sees the full remainder", () => {
+    // searchBudget 24, floor 4: a judge/side request near the end of the budget is starved at 24−4,
+    // reserving the last 4 searches for research-class traffic.
+    const config = resolveServerWebToolConfig({ searchFloor: 4, fetchFloor: 8 });
+    const used = { searches: 21, fetches: 45 };
+
+    const nonEligible = ensureServerWebTools(bareBody(), config, used, {});
+    const neTools = (nonEligible.body as { tools?: Record<string, unknown>[] }).tools ?? [];
+    // 24 − 4 floor − 21 used = −1 ⇒ search dropped; 48 − 8 − 45 = −5 ⇒ fetch dropped.
+    expect(neTools.some((t) => serverName(t) === "web_search")).toBe(false);
+    expect(neTools.some((t) => serverName(t) === "web_fetch")).toBe(false);
+
+    const eligible = ensureServerWebTools(bareBody(), config, used, { floorEligible: true });
+    const eTools = (eligible.body as { tools: Record<string, unknown>[] }).tools;
+    // research-class: 24 − 21 = 3 searches; 48 − 45 = 3 fetches — the floor share is theirs.
+    expect(eTools.find((t) => serverName(t) === "web_search")!["max_uses"]).toBe(3);
+    expect(eTools.find((t) => serverName(t) === "web_fetch")!["max_uses"]).toBe(3);
+  });
+
+  it("the floor leaves an under-budget non-eligible request's clamp intact when headroom remains", () => {
+    const config = resolveServerWebToolConfig({ searchFloor: 4 });
+    const { body } = ensureServerWebTools(bareBody(), config, { searches: 0, fetches: 0 }, {});
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    // 24 − 4 = 20 bound > 15 per-call cap ⇒ per-call cap still applies.
+    expect(tools.find((t) => serverName(t) === "web_search")!["max_uses"]).toBe(DEFAULT_WEB_SEARCH_MAX_USES);
+  });
+
+  it("a preflight probe keeps its declared max_uses:1 even on an exhausted budget (resume re-preflight)", () => {
+    const config = resolveServerWebToolConfig({ searchFloor: 4 });
+    const probeBody = {
+      ...bareBody(),
+      tools: [
+        { type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: 1 },
+        { type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: 1 },
+      ],
+    };
+    const { body } = ensureServerWebTools(probeBody, config, { searches: 24, fetches: 48 }, { bypassBudget: true });
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.find((t) => serverName(t) === "web_search")!["max_uses"]).toBe(1);
+    expect(tools.find((t) => serverName(t) === "web_fetch")!["max_uses"]).toBe(1);
+  });
+
+  it("a preflight probe cannot resurrect a tool the run disabled outright", () => {
+    const config = resolveServerWebToolConfig({ fetch: false });
+    const probeBody = {
+      ...bareBody(),
+      tools: [{ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: 1 }],
+    };
+    const { body } = ensureServerWebTools(probeBody, config, { searches: 0, fetches: 0 }, { bypassBudget: true });
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.some((t) => serverName(t) === "web_fetch")).toBe(false);
+  });
+
+  it("webToolGrantsOf reads the granted max_uses off a rewritten body (the reservation amount)", () => {
+    const config = resolveServerWebToolConfig({ searchBudget: 10, fetchBudget: 6 });
+    const { body } = ensureServerWebTools(bareBody(), config, { searches: 0, fetches: 0 });
+    expect(webToolGrantsOf(body)).toEqual({ searches: 10, fetches: 6 });
   });
 });

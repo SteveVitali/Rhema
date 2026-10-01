@@ -21,6 +21,7 @@
     "integration/src/run-live-exit.ts": "live-exit runner binds a systemExec-shaped adapter",
     "packages/orchestrator/src/internal-api.ts": "OrchestratorDeps declares the systemTxRunner field",
     "packages/orchestrator/src/provision.ts": "proxy_* mint + __system__ revocation ride systemTxRunner",
+    "packages/orchestrator/src/runspec.ts": "RES.1 — reads the live proxy_credentials context->'webTools' so researchPreflight mirrors the policy the proxy enforces",
     "packages/orchestrator/src/stranded-sweep.ts": "cross-tenant stranded-run scans via systemExec",
     "packages/orchestrator/src/testing/deps.ts": "test deps bind the harness systemTxRunner",
     "packages/orchestrator/src/testing/pg.ts": "the test harness defines both runners"

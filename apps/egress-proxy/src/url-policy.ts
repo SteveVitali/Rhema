@@ -41,32 +41,48 @@ export interface WebToolUsage {
   readonly fetches: number;
 }
 
-/** Classify a tool definition as a server web_search / web_fetch tool (or neither), by its name/type tag. */
+/**
+ * Classify a tool definition as a SERVER web_search / web_fetch tool (or neither). RES.1 — the match is the
+ * `type` field only (`web_search_20250305` / `web_fetch_20250910` / any `web_*_…` server variant): a bare
+ * `{name:"web_search"}` CUSTOM tool is a client tool — it satisfies no server contract and must never
+ * suppress the real injection (the 2026-09-30 incident path: a client-named `web_search` counted as "the
+ * server tool is already present", so the request went out with a tool the model could call but the
+ * provider would never execute — `tool_use` emitted, `searches=0` metered).
+ */
 function serverWebToolKind(tool: unknown): "search" | "fetch" | null {
   if (!tool || typeof tool !== "object") return null;
-  const t = tool as { name?: unknown; type?: unknown };
-  const tag = `${typeof t.name === "string" ? t.name : ""} ${typeof t.type === "string" ? t.type : ""}`;
-  if (tag.includes("web_search")) return "search";
-  if (tag.includes("web_fetch")) return "fetch";
+  const type = (tool as { type?: unknown }).type;
+  if (typeof type !== "string") return null;
+  if (type.startsWith("web_search")) return "search";
+  if (type.startsWith("web_fetch")) return "fetch";
   return null;
 }
 
-/** A tool definition is a server web tool when its name or type names web_search / web_fetch. */
+/** A tool definition is a server web tool when its `type` names a web_search / web_fetch server variant. */
 function isServerWebTool(tool: unknown): tool is Record<string, unknown> {
   return serverWebToolKind(tool) !== null;
 }
 
 /**
- * The vendored `claude` CLI's own CLIENT-side web tools (§12.6; P0.15i). It DECLARES these in the request
- * `tools[]` by their Claude Code names regardless of `allowedTools` — and the model, seeing a familiar
- * `WebSearch`, calls it in preference to Anthropic's server-side `web_search`, so no server search executes
- * (`usage_records.searches = 0`, no `web_search_tool_result`, hence `cited_not_fetched`). Confirmed live
- * 2026-09-09 via the proxy request diagnostic. A client fetch/search cannot traverse the sandbox's proxy-only
- * egress anyway. So the proxy STRIPS these from the body, leaving only the injected server tool for the model.
+ * The vendored `claude` CLI's own CLIENT-side web tools (§12.6; P0.15i) — PLUS any custom tool that merely
+ * borrows the server tool's name (RES.1). The CLI DECLARES `WebSearch`/`WebFetch` in the request `tools[]`
+ * regardless of `allowedTools` — and the model, seeing a familiar `WebSearch`, calls it in preference to
+ * Anthropic's server-side `web_search`, so no server search executes (`usage_records.searches = 0`, no
+ * `web_search_tool_result`, hence `cited_not_fetched`). Confirmed live 2026-09-09 via the proxy request
+ * diagnostic. RES.1 adds the lowercase `web_search`/`web_fetch` names: a sandbox-declared CUSTOM tool under
+ * that name is still client-side (no server `type`) and would shadow the real injection exactly the same
+ * way. A client fetch/search cannot traverse the sandbox's proxy-only egress anyway. So the proxy STRIPS
+ * these from the body, leaving only the injected server tool for the model.
  */
-const CLIENT_WEB_TOOL_NAMES: ReadonlySet<string> = new Set(["WebSearch", "WebFetch"]);
+const CLIENT_WEB_TOOL_NAMES: ReadonlySet<string> = new Set(["WebSearch", "WebFetch", "web_search", "web_fetch"]);
 function isClientWebTool(tool: unknown): boolean {
-  return !!tool && typeof tool === "object" && CLIENT_WEB_TOOL_NAMES.has((tool as { name?: unknown }).name as string);
+  return (
+    !!tool &&
+    typeof tool === "object" &&
+    CLIENT_WEB_TOOL_NAMES.has((tool as { name?: unknown }).name as string) &&
+    // a tool that carries a real server `type` is the injected/provider tool, never a client alias.
+    serverWebToolKind(tool) === null
+  );
 }
 
 /** The concrete, resolved web-tool config the proxy acts on for one request (defaults filled in). */
@@ -78,6 +94,14 @@ export interface ServerWebToolConfig {
   /** Run-total invocation budgets (PRB.22); 0 remaining ⇒ the tool is removed from the request. */
   readonly searchBudget: number;
   readonly fetchBudget: number;
+  /**
+   * RES.1 (REQ-SPEC-31(2)) — the RESEARCH FLOOR: invocations reserved for research-class traffic.
+   * A request that is not floor-eligible sees `budget − floor` as its bound; a research-phase (or
+   * preflight) request sees the full `budget` — so earlier phases, judge classes and side traffic can
+   * never consume the share verification needs. Default 0 (no floor) keeps pre-RES.1 policies identical.
+   */
+  readonly searchFloor: number;
+  readonly fetchFloor: number;
   /** Per-page context truncation applied to every web_fetch tool (`max_content_tokens`). */
   readonly fetchMaxContentTokens: number;
 }
@@ -100,8 +124,41 @@ export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): S
     fetchMaxUses: policy?.fetchMaxUses ?? DEFAULT_WEB_FETCH_MAX_USES,
     searchBudget: policy?.searchBudget ?? DEFAULT_WEB_SEARCH_BUDGET,
     fetchBudget: policy?.fetchBudget ?? DEFAULT_WEB_FETCH_BUDGET,
+    searchFloor: Math.min(policy?.searchFloor ?? 0, policy?.searchBudget ?? DEFAULT_WEB_SEARCH_BUDGET),
+    fetchFloor: Math.min(policy?.fetchFloor ?? 0, policy?.fetchBudget ?? DEFAULT_WEB_FETCH_BUDGET),
     fetchMaxContentTokens: policy?.fetchMaxContentTokens ?? DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
   };
+}
+
+/**
+ * Admission facts for `ensureServerWebTools` (RES.1; REQ-SPEC-31(2)).
+ *  - `floorEligible`: the harness-stamped phase class was `research` — this request may draw the floor
+ *    share; a non-eligible request's bound is `budget − floor` instead of `budget`.
+ *  - `bypassBudget`: the harness's own preflight probe (`x-rhema-phase-class: preflight`). A probe must
+ *    reach the tools even on a budget-exhausted resume — its whole job is proving tool reachability —
+ *    so its `max_uses` grant is bounded by the per-call cap alone (the probe declares `max_uses: 1`).
+ */
+export interface WebToolAdmission {
+  readonly floorEligible?: boolean;
+  readonly bypassBudget?: boolean;
+}
+
+/** Read the granted `max_uses` off the web tools in a (rewritten) request body — the reservation amount. */
+export function webToolGrantsOf(body: unknown): { searches: number; fetches: number } {
+  const tools = (body as { tools?: unknown } | null)?.tools;
+  let searches = 0;
+  let fetches = 0;
+  if (Array.isArray(tools)) {
+    for (const t of tools) {
+      const kind = serverWebToolKind(t);
+      if (kind === null) continue;
+      const max = (t as { max_uses?: unknown }).max_uses;
+      const n = typeof max === "number" && Number.isFinite(max) ? Math.max(0, Math.floor(max)) : 0;
+      if (kind === "search") searches += n;
+      else fetches += n;
+    }
+  }
+  return { searches, fetches };
 }
 
 /**
@@ -123,6 +180,7 @@ export function ensureServerWebTools(
   body: unknown,
   config: ServerWebToolConfig,
   used?: WebToolUsage,
+  admission?: WebToolAdmission,
 ): { body: unknown; added: boolean } {
   if (!body || typeof body !== "object") return { body, added: false };
   const b = body as { messages?: unknown; tools?: unknown };
@@ -136,9 +194,20 @@ export function ensureServerWebTools(
   // (PRB.22) Per-run budgets: `max_uses` bounds only ONE API call, so the run's remaining budget is
   // enforced HERE — an exhausted kind's tool is dropped entirely (the model proceeds without it), and a
   // partial remainder clamps `max_uses` below the per-call cap. `used` counts every invocation the proxy
-  // has seen for the run (history + metered responses), so the bound holds across turns and subagents.
-  const searchRemaining = config.search ? config.searchBudget - (used?.searches ?? 0) : 0;
-  const fetchRemaining = config.fetch ? config.fetchBudget - (used?.fetches ?? 0) : 0;
+  // has seen for the run (committed history + metered responses + live grants), so the bound holds across
+  // turns and subagents. RES.1: a non-floor-eligible request additionally sees its bound reduced by the
+  // research floor (`budget − floor`), reserving that share for research-class traffic; `bypassBudget`
+  // (the harness's preflight probe) grants up to the per-call cap regardless of remaining.
+  const searchRemaining = config.search
+    ? admission?.bypassBudget
+      ? config.searchMaxUses
+      : config.searchBudget - (admission?.floorEligible ? 0 : config.searchFloor) - (used?.searches ?? 0)
+    : 0;
+  const fetchRemaining = config.fetch
+    ? admission?.bypassBudget
+      ? config.fetchMaxUses
+      : config.fetchBudget - (admission?.floorEligible ? 0 : config.fetchFloor) - (used?.fetches ?? 0)
+    : 0;
 
   // (1) strip the CLI's client web tools so they cannot pre-empt the server tool.
   const kept = tools.filter((t) => !isClientWebTool(t));

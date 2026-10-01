@@ -14,6 +14,16 @@ export const PROXY_CREDENTIAL_HEADER = "x-rhema-proxy-credential";
 export const AGENT_ID_HEADER = "x-rhema-agent-id";
 
 /**
+ * The harness-stamped phase identity for the research floor (RES.1; REQ-SPEC-31(2)). The credential
+ * injector (uid `harness`) stamps the current phase's `phaseClass` on every request it forwards — the
+ * AGENT can never set it (the injector drops any agent-supplied copy before stamping). The proxy reads
+ * it to decide whether the request may draw on the run's reserved verification floor: `"research"` and
+ * `"preflight"` (the harness's own probe) are floor-eligible; anything else (or absent) is not. Never
+ * forwarded upstream.
+ */
+export const PHASE_CLASS_HEADER = "x-rhema-phase-class";
+
+/**
  * Request headers the proxy must never forward to the provider: the sandbox's own credentials (stripped so it
  * cannot bill outside the meter), the proxy's internal headers, and hop-by-hop headers the forward client
  * re-derives. All lowercase — node lowercases incoming header names.
@@ -24,6 +34,7 @@ const NEVER_FORWARD = new Set<string>([
   "proxy-authorization",
   PROXY_CREDENTIAL_HEADER,
   AGENT_ID_HEADER,
+  PHASE_CLASS_HEADER,
   "cookie",
   "host",
   "connection",
@@ -60,6 +71,11 @@ export function presentedCredential(headers: Readonly<Record<string, string>>): 
 /** The harness-stamped agent id for subagent attribution, or `undefined` (falls back to the run's default). */
 export function presentedAgentId(headers: Readonly<Record<string, string>>): string | undefined {
   return lower(headers)[AGENT_ID_HEADER];
+}
+
+/** The harness-stamped phase class for the research floor, or `undefined` (unstamped ⇒ not floor-eligible). */
+export function presentedPhaseClass(headers: Readonly<Record<string, string>>): string | undefined {
+  return lower(headers)[PHASE_CLASS_HEADER];
 }
 
 /**

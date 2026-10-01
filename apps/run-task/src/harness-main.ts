@@ -163,7 +163,16 @@ async function postAudit(args: {
   // egress-proxy). The injector — running in THIS uid `harness` process — stamps `x-rhema-proxy-credential`
   // on every request and forwards to the egress-proxy; the agent's scrubbed env carries only this loopback URL
   // and never the credential, so a credential-less shell-escape request straight to the egress-proxy 403s.
-  const injector = await startCredentialInjector({ credential: proxyCredential, upstreamBaseUrl: egressProxyBaseUrl });
+  // RES.1 (REQ-SPEC-31(2)) — the research floor's phase stamp. The injector reads `currentPhaseClass` per
+  // request; `runOnePhaseInPod` sets it from the server-authored manifest `phaseClass` at each phase start,
+  // so a `research`-class phase's traffic (its seat AND all its subagents — everything egresses through the
+  // injector) alone may draw the reserved floor share.
+  let currentPhaseClass: string | undefined;
+  const injector = await startCredentialInjector({
+    credential: proxyCredential,
+    upstreamBaseUrl: egressProxyBaseUrl,
+    phaseClass: () => currentPhaseClass,
+  });
   const agentProxyBaseUrl = injector.url;
   console.log(`[harness] credential injector listening at ${agentProxyBaseUrl} → ${egressProxyBaseUrl} for run ${runId}`);
 
@@ -175,6 +184,9 @@ async function postAudit(args: {
    * entries materialize under their mount root and the agent runs in `request.cwd` = `roots.project`.
    */
   const runOnePhaseInPod = async (spec: HarnessRunSpec, opts: { guidance?: string }): Promise<PhaseRunOutputs> => {
+    // RES.1 — stamp this phase's class on every egress request for the duration of the phase (the injector
+    // reads `currentPhaseClass` live; the agent cannot forge it — see credential-injector).
+    currentPhaseClass = spec.request.phase.phaseClass;
     const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
     // Reconciled /work layout (F3): materialize each manifest entry under its mount root, using the SAME roots
     // the §12.6 hook compiles against (`resolveSeatRoots`) — so a `project` entry lands at `/work/project/…`
@@ -354,9 +366,18 @@ async function postAudit(args: {
   };
 
   // drive the run phase-by-phase to a terminal outcome (§12.4 steps 6–8); always tear the injector down after.
+  // RES.1 — the preflight seam probes the run's OWN egress-proxy (not the injector loopback: the injector
+  // is the agent's path; the harness's probe rides the real upstream with the credential it holds).
+  const { runResearchPreflight } = await import("./research-preflight.js");
   let result;
   try {
-    result = await runCommitLoop({ client, runPhase: runOnePhaseInPod, workspaceId });
+    result = await runCommitLoop({
+      client,
+      runPhase: runOnePhaseInPod,
+      workspaceId,
+      preflight: (spec) =>
+        runResearchPreflight({ baseUrl: egressProxyBaseUrl, credential: proxyCredential, spec }),
+    });
   } finally {
     await injector.close();
   }
