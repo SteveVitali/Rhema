@@ -113,7 +113,24 @@
 
 ## Evidence log
 
-(filled at Phase 5+)
+- 2026-10-01 — Gates: `pnpm turbo build lint typecheck` 132/132 tasks green; `pnpm test` full suite
+  green (single initial failure — `secrets-manifests` collab-env literal-name regex broke on the new
+  two-branch DATABASE_URL source; test amended to the stricter contract, suite re-verified);
+  `check:licenses` OK (607 pkgs); `check:protocol-markers` OK (45 files); `check-upstream-diff` OK
+  (22 ported files vs pin 5fef4165); `check-build-memory` 0 violations.
+- 2026-10-01 — Stage-B leg 1 (migration): prod `_migrations` had `0044_ledger_integrity` recorded
+  without the `.sql` suffix (a 2026-09-26 manual apply) — the migrator re-tried it and 42710'd on
+  `credit_balances_held_nonnegative`. Renormalized the row to `0044_ledger_integrity.sql`
+  (applied_at preserved), then `prod-migrate-seed.mjs` applied `0045_user_serving_role.sql` cleanly
+  (45 recorded). Verified live: `rhema_app_login` = NOLOGIN/NOSUPERUSER/NOBYPASSRLS, sole membership
+  `rhema_app`, `rhema_revoke_run_credentials` SECURITY DEFINER present.
+- 2026-10-01 — Stage-B leg 2 (pre-switch probe): two probe accounts acquired through the REAL
+  signup funnel — magic-link POST to `api.rhema.tools` → Resend → `test+sec1a/b@rhema.tools` →
+  Gmail read via `rhema-journeys` SA impersonation (DWD, keyless) → verify link → `__Host-` session
+  cookie. **Pre-switch probe FAILED as designed** — live leak confirmed pre-deploy: `GET /voices`
+  returned foreign-tenant persona ids for both tenants; `GET /voices/<foreign>` answered 200
+  cross-tenant; web `/voices` + `/app` pages carried the same markers. 8 routes probed, `passed:false`.
+  (This is the expected pre-switch posture — `postgres` BYPASSRLS + pre-fix image.)
 
 ## Evidence report
 
