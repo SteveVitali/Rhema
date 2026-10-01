@@ -23,7 +23,8 @@ export type SdkQueryLike = (args: { prompt: string; options: unknown }) => Async
  * our §12.2 contract fields are silently ignored by the wrapper, so passing them is a no-op that misrepresents
  * what is enforced. Concretely:
  *   • Forwarded (real `Options` fields): cwd, model, agents, hooks, permissionMode (`'dontAsk'` is a real
- *     PermissionMode), allowedTools, disallowedTools, maxTurns, maxBudgetUsd, env, skills, abortController, and
+ *     PermissionMode), allowedTools, disallowedTools, tools (PRB.23 — the advertised schema set, NOT a
+ *     permission list), maxTurns, maxBudgetUsd, env, skills, abortController, and
  *     pathToClaudeCodeExecutable when set.
  *   • DROPPED (NOT real SDK fields — recorded as un-enforced by the wrapper, F5): `skillsDir` (skills are staged
  *     to a discoverable dir + enabled via `skills`), `cacheControlTtl` (1-h caching not applied), and the
@@ -41,6 +42,7 @@ export function toSdkOptions(options: AgentSdkQueryOptions): Record<string, unkn
     permissionMode: options.permissionMode,
     allowedTools: options.allowedTools,
     disallowedTools: options.disallowedTools,
+    tools: options.tools,
     maxTurns: options.maxTurns,
     maxBudgetUsd: options.maxBudgetUsd,
     env: options.env,

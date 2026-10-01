@@ -13,7 +13,7 @@ import {
   type WorkflowKey,
 } from "@rhema/contracts";
 import { estimateCredits, estimatorSpec, type EstimatorInputs } from "@rhema/protocols";
-import { resolveToggles, sheetProfile, type ToggleState } from "./profiles.js";
+import { activePhaseCount, resolveToggles, sheetProfile, type ToggleState } from "./profiles.js";
 
 /**
  * The protocol's typical claim density (claims per word) for the immediate figure, per workflow with a
@@ -69,7 +69,16 @@ export function buildEstimate(args: BuildEstimateArgs): Estimate {
       provisional = true;
     }
   }
-  const baseInputs: EstimatorInputs = { ...args.inputs, ...(claims != null ? { claims } : {}) };
+  // PRB.23 — the per-phase fixed-overhead term reads `inputs.phases`: the count of manifest
+  // phases that will ACTUALLY run under the resolved toggles (the same opt-out rule the
+  // orchestrator's runspec applies to the frozen inputs). Estimate and runtime consume one
+  // derivation — a quick review prices five phase sessions, not seven.
+  const phases = activePhaseCount(args.workflow, toggles);
+  const baseInputs: EstimatorInputs = {
+    ...args.inputs,
+    ...(claims != null ? { claims } : {}),
+    ...(phases != null ? { phases } : {}),
+  };
 
   const { inputs, enabledAddends } = profile.applyToggles(baseInputs, toggles);
   const spec = estimatorSpec(args.workflow);

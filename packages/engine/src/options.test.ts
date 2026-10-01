@@ -67,6 +67,16 @@ describe("buildQueryOptions (§12.2)", () => {
     expect(o.allowedTools).not.toContain("WebSearch");
   });
 
+  it("PRB.23 — restricts the ADVERTISED tool set (`tools`), not just the permission gate", () => {
+    // `allowedTools` alone still ships every built-in schema (~77.8 KB / ~19K tokens per
+    // request — measured on the vendored CLI). `tools` sets the base set actually serialized:
+    // the seven real built-ins the seats use; WebFetch/WebSearch stop shipping entirely.
+    expect(o.tools).toEqual(["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"]);
+    expect(o.tools).not.toContain("WebFetch");
+    expect(o.tools).not.toContain("WebSearch");
+    expect(o.tools).not.toContain("Skill"); // the slash command is expanded client-side
+  });
+
   it("passes the per-phase budget and turn ceilings", () => {
     expect(o.maxBudgetUsd).toBe(4.2);
     expect(o.maxTurns).toBe(40);

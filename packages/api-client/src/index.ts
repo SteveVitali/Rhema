@@ -113,6 +113,12 @@ export interface CreateRunDto {
   readonly inputs?: Readonly<Record<string, unknown>>;
   /** the frozen input snapshot (REQ-BILL-6): word/claim counts the estimate was computed for. */
   readonly inputSnapshot?: Readonly<Record<string, unknown>>;
+  /**
+   * PRB.23 — the sheet's resolved Advanced per-phase toggle set (rigor defaults + user
+   * overrides). The api freezes it into the run's inputs as manifest `optOutFlag`s and
+   * re-derives the estimate from the SAME set, so the priced phase set is the executed one.
+   */
+  readonly toggles?: Readonly<Record<string, boolean>>;
   readonly draftId?: string;
 }
 

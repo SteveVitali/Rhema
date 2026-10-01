@@ -155,6 +155,10 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
       <input type="hidden" name="rateTableVersion" value={est.rateTableVersion} />
       <input type="hidden" name="words" value={view.title.words} />
       {view.title.claims != null ? <input type="hidden" name="claims" value={view.title.claims} /> : null}
+      {/* PRB.23 — the sentinel listing every toggle this form rendered. An UNCHECKED checkbox
+          submits no field, so the run POST cannot otherwise distinguish "user turned it off"
+          from "not on this sheet": the server resolves each listed key as on/off. */}
+      <input type="hidden" name="toggleKeys" value={view.toggleDeltas.map((d) => d.toggle).join(",")} />
 
       {/* title line: "Review v2 · 5,180 words · 21 claims" */}
       <h2 style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>

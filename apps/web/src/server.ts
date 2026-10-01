@@ -649,8 +649,21 @@ export function createWebApp(deps: WebDeps): Hono {
     const modelTier = normalizeTier("", workflow, rigor);
     const words = Number(str("words")) || 0;
     const claims = Number(str("claims")) || undefined;
+    // PRB.23 — the Advanced toggles ride the SAME form as `toggle.<key>` checkboxes plus a
+    // `toggleKeys` sentinel (an unchecked box submits NOTHING, so the sentinel is what lets an
+    // explicit OFF reach the server). The resolved set is sent to the api, which freezes it into
+    // the run's inputs (phase opt-out flags) and prices the SAME set — before this, the estimate
+    // priced rigor defaults while the pod ran every manifest phase regardless.
+    const toggleKeys = str("toggleKeys").split(",").filter(Boolean);
+    const toggles: Record<string, boolean> = {};
+    const toggleQuery: Record<string, string> = {};
+    for (const key of toggleKeys) {
+      const on = str(`toggle.${key}`) === "on";
+      toggles[key] = on;
+      toggleQuery[`toggle.${key}`] = on ? "on" : "off";
+    }
     const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
-    const view = buildSheet({ workflow, rigor }, billing, deps.betaPlanOfferUrl);
+    const view = buildSheet({ workflow, rigor, ...toggleQuery }, billing, deps.betaPlanOfferUrl);
     try {
       await deps.dataSource.createRun(session, row.id, {
         idempotencyKey: str("idempotencyKey") || randomUUID(),
@@ -662,6 +675,9 @@ export function createWebApp(deps: WebDeps): Hono {
         capCredits: Number(str("capCredits")) || 0,
         rateTableVersion: Number(str("rateTableVersion")) || 1,
         inputs: {},
+        // the sheet's resolved Advanced toggle set — the api freezes it into the run inputs as
+        // manifest opt-out flags AND re-derives the estimate from it (PRB.23).
+        toggles,
         // REQ-BILL-6: freeze the word/claim counts the estimate was computed for on the run record.
         inputSnapshot: { wordCount: words, ...(claims != null ? { claimCount: claims } : {}) },
       });

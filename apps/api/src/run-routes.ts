@@ -37,7 +37,7 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
-import { buildEstimate } from "@rhema/run-sheet";
+import { buildEstimate, phaseFlagsForToggles, resolveToggles, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
@@ -130,6 +130,28 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (!body.idempotencyKey || !body.workflow) return c.json({ error: "idempotencyKey and workflow required" }, 400);
     const workflow = body.workflow as WorkflowKey;
 
+    // PRB.23 — resolve the sheet's Advanced per-phase toggle set ONCE, server-side: rigor
+    // defaults + the submitted overrides (sanitized to the profile's declared toggle keys —
+    // `body.toggles` is client input). The SAME resolved set (a) prices the re-derived estimate
+    // below and (b) freezes the manifest's `optOutFlag`s into the run inputs, so the priced
+    // phase set is the executed one. Before this the toggles never left the sheet: the web POST
+    // froze `inputs:{}`, `runspec.isOptedOut` could never fire, and a quick review ran all
+    // seven phases while being priced for five (D-PRB.21-1 divergence).
+    let resolvedToggles: ToggleState | undefined;
+    let phaseFlags: Record<string, boolean> = {};
+    try {
+      const profile = sheetProfile(workflow);
+      const overrides: ToggleState = {};
+      for (const key of profile.toggles) {
+        const v = body.toggles?.[key];
+        if (typeof v === "boolean") overrides[key] = v;
+      }
+      resolvedToggles = resolveToggles(profile, body.rigor, overrides);
+      phaseFlags = phaseFlagsForToggles(workflow, resolvedToggles);
+    } catch {
+      // not a beta-sheet workflow — no toggle semantics; the 1.5× floor below still applies.
+    }
+
     // Estimator cap sizing (PRB.3; REQ-BILL-3/6, §5.6 item 4). The cap is the hard proxy budget, so the
     // estimate + cap the run is CREATED with must be re-derived server-side from the levers, never trusted
     // from the client (a crafted or JS-stale POST could otherwise freeze money figures that do not match the
@@ -150,6 +172,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           ...(typeof snap.claimCount === "number" ? { claims: snap.claimCount } : {}),
         },
         ...(typeof snap.claimCount === "number" ? { claimCount: snap.claimCount } : {}),
+        // PRB.23 — the SAME resolved toggle set that freezes the phase flags below.
+        ...(resolvedToggles ? { toggles: resolvedToggles } : {}),
       });
       estimateCredits = derived.estimateCredits;
       capCredits = derived.capCredits;
@@ -171,6 +195,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // a response-ledger sidecar (actor: "user") — the file-level source the triage phase reads — and a
     // run-scope guidance record states "you pre-triaged N of M" so the run never overrides a user row.
     let inputs = body.inputs ?? {};
+    // PRB.23 — freeze the resolved phase-run flags into the run inputs (server-authored: they
+    // win over any client-supplied key). `runspec.isOptedOut` reads `inputs[optOutFlag] ===
+    // false`; the flags also ride the phase prompt's `key=value` lines, so the ported skill
+    // sees its declared opt-out inputs too (the flags ARE the SKILL.md frontmatter inputs).
+    inputs = { ...inputs, ...phaseFlags };
     let pretriage: { triaged: number; total: number } | null = null;
     // PRB.06: prior_review is a SERVER-resolved fact (never client-trusted — a crafted input cannot point a
     // response at the wrong dossier, and a re-review's changed_since is computed from the store's bytes).
@@ -623,6 +652,9 @@ interface CreateRunBody {
   rateTableVersion: number;
   inputs?: Record<string, unknown>;
   inputSnapshot?: Record<string, unknown>;
+  /** PRB.23 — the sheet's Advanced per-phase toggle overrides (resolved against rigor defaults
+   *  server-side; frozen into `inputs` as manifest `optOutFlag`s and priced identically). */
+  toggles?: Record<string, boolean>;
   sheetLaunched?: boolean;
   entitlementId?: string;
   imageDigest?: string;

@@ -57,11 +57,12 @@ config:
     secure: AAABAC6YMHHH5eT/zHnfGdqzfZFXw9L+EsEOMfWmVeXc5DFhWYtI2prkLsiWgTu3gZ7DCs7rE0uS6pVkrUrbG81QuzQx3jJ76BG4LlAuA8TwSIuKCsFHqosmlUXdIsPIIfuYnNa6xr2HDjI8Ia+JvkHU8g==
   rhema:redisUrl:
     secure: AAABAJUM34u/xy00JC36/XGUbeppQFXmiVUwMn36aV/Zw5uRZ0FCgObXVhXyfeLXGbUHbzEQiqn1iA==
-  # PRB.22 Stage-B refresh (build rhema:prb22): api/worker/egress-proxy rebuilt — per-run web
-  # research bound (budgets + max_content_tokens + usage tracking) + estimator research addend.
-  # web/run-task/fetcher/convert/export/collab stay at PRB.21-era pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:50f87736daa3531281619448b98bd06a3d661efb346e34dafff0572349eca0db","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:3db3597d33ace3a235325e9c33c23a9f2f9685d7ed10828453bb96cf1221a133","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:c38a3da2b3d6ac1fb8aab1502d91a534d201ed4ca00cf90d9c850bbe922083a2","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:4fb6bb7b07b2d0e797d4c0ca1f1dde128de20e96a880da62ff1bde4133556a06","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:4f764617622f6e268860f7e7e7eaed19abba9b2a0ad61f92e04e2731856fc775","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:e6d3bc60396115bdd42b5d5b9454689d94d9a254443972534313df29e1ce6d67","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:5072732dbeb535202a5425342ee5567d01547c9907c589c3b4bf58b6b96169e9"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:d7c01575bb873d0c248bb4942c86f4bd99b7efa2eb8b97e1e14ba2f6820c1469
+  # PRB.23 Stage-B refresh (build rhema:prb23): api/web/worker/run-task rebuilt — BASE_TOOLS
+  # envelope cut (-45%), sheet toggle freeze into run inputs, per-phase context-churn estimate
+  # term, scrubbed-env caching/subagent knobs. egress-proxy/fetcher/convert/export/collab stay
+  # at PRB.22-era pins.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:46e36e6fca9dca4d1782c3ad1240e32a1311963363edefc55b6968036c37af0a","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:6b2e3688ee5c9577709990d650f204a81b97105e98f412fff7dc56fd79477e10","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:4a510df2d35d28712ca292b7e3eabef0a046e9474a1894fba3037dbc29e54290","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:4fb6bb7b07b2d0e797d4c0ca1f1dde128de20e96a880da62ff1bde4133556a06","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:4f764617622f6e268860f7e7e7eaed19abba9b2a0ad61f92e04e2731856fc775","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:e6d3bc60396115bdd42b5d5b9454689d94d9a254443972534313df29e1ce6d67","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:5072732dbeb535202a5425342ee5567d01547c9907c589c3b4bf58b6b96169e9"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:87b6da36a41eaaa0ee77a530eee0a027fdfad357dc32e4041570ddd1a701f3ee
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:4938ae233036030454a3b04c8b03239f96f5097908d978f517473f18f67d4d3b
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app

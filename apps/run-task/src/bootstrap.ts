@@ -8,7 +8,7 @@
 // env). The in-image proof that the RUNNING agent uid cannot read the secrets file / socket is the integration
 // test recorded in DEFERRALS.
 
-import { buildAgentEnv, assertScrubbed, buildOtelConfig } from "@rhema/engine";
+import { buildAgentEnv, assertScrubbed, buildOtelConfig, MAX_CONCURRENT_SUBAGENTS } from "@rhema/engine";
 
 export interface AgentLaunchInput {
   readonly runId: string;
@@ -51,7 +51,12 @@ export interface AgentLaunch {
  * harness-only secrets file or socket by group membership. Asserts the env is secret-free before returning.
  */
 export function buildAgentLaunch(input: AgentLaunchInput): AgentLaunch {
-  const scrubbed = buildAgentEnv({ runId: input.runId, proxyBaseUrl: input.proxyBaseUrl, configDir: input.configDir });
+  const scrubbed = buildAgentEnv({
+    runId: input.runId,
+    proxyBaseUrl: input.proxyBaseUrl,
+    configDir: input.configDir,
+    maxConcurrentSubagents: MAX_CONCURRENT_SUBAGENTS,
+  });
   assertScrubbed(scrubbed); // belt to buildAgentEnv's braces — never launch with a secret in scope.
   // OTel config (ids + counts only; content flags off — §13.5) is non-secret and rides in the process env so
   // the SDK's telemetry inherits it. It is added AFTER the scrub assertion (OTel keys are not secrets).

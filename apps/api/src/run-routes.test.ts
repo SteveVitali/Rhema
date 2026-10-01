@@ -134,6 +134,61 @@ describe("POST /projects/:id/runs", () => {
     });
     expect(ok.status).toBe(201);
   });
+
+  it("PRB.23 — the sheet's resolved toggles freeze into run inputs as phase opt-out flags", async () => {
+    // The D-PRB.21-1 divergence: the estimate priced rigor-default toggles while `inputs:{}`
+    // meant `runspec.isOptedOut` could never fire — a quick review ran all seven phases. Now the
+    // same resolved set prices AND gates: quick defaults → verification on, the two optional
+    // phases frozen off.
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-tgl-1", rigor: "quick", modelTier: "base", modelProfile: { tier: "base" } }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs, estimate_credits, cap_credits from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+      estimate_credits: number;
+      cap_credits: number;
+    };
+    expect(row.inputs.verification).toBe(true);
+    expect(row.inputs.discourse).toBe(false);
+    expect(row.inputs.second_read).toBe(false);
+    // the estimate was re-derived from the SAME resolved set (quick review, 5 active phases):
+    // (40 + 0.012×5180 + 24×21 + 5×50 churn) + (60 + 16×21 research) = 1252.16, ×0.6 → 752; cap 1128.
+    expect(row.estimate_credits).toBe(752);
+    expect(row.cap_credits).toBe(1128);
+  });
+
+  it("PRB.23 — submitted toggle overrides win over rigor defaults (explicit off survives)", async () => {
+    // fact_check off at standard: the verification phase opts out (and is not priced).
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-tgl-2", toggles: { fact_check: false } })),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.verification).toBe(false);
+    expect(row.inputs.discourse).toBe(true);
+    expect(row.inputs.second_read).toBe(true);
+  });
+
+  it("PRB.23 — a client cannot smuggle a phase flag through `inputs` (server-authored flags win)", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-tgl-3", inputs: { draftId: seed.draftId, sidecar: true, verification: false } }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    // standard defaults keep verification on — the crafted input was overridden.
+    expect(row.inputs.verification).toBe(true);
+  });
 });
 
 describe("internal run API — token auth + fencing", () => {
@@ -282,10 +337,10 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       estimate_credits: number;
       cap_credits: number;
     };
-    // review/standard/base on 8k words + 45 claims = 2174 credits (incl. the PRB.22 verification-research
-    // addend: base 1216 + 780 research + 138 discourse + 40 second read); cap = ceil(1.5 × 2174) = 3261.
-    expect(row.estimate_credits).toBe(2174);
-    expect(row.cap_credits).toBe(3261);
+    // review/standard/base on 8k words + 45 claims = 2524 credits (base 1216 + 780 research +
+    // 138 discourse + 40 second read + 7×50 PRB.23 context-churn); cap = ceil(1.5 × 2524) = 3786.
+    expect(row.estimate_credits).toBe(2524);
+    expect(row.cap_credits).toBe(3786);
   });
 
   // D-P0.11-1 / REQ-SPEC-24.5 — a tripped circuit breaker scales the NEW run's server-derived cap by the
@@ -306,9 +361,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       estimate_credits: number;
       cap_credits: number;
     };
-    // same levers as the re-derive test above: estimate 2174, base cap 3261 — the tripped breaker doubles it.
-    expect(row.estimate_credits).toBe(2174);
-    expect(row.cap_credits).toBe(6522);
+    // same levers as the re-derive test above: estimate 2524, base cap 3786 — the tripped breaker doubles it.
+    expect(row.estimate_credits).toBe(2524);
+    expect(row.cap_credits).toBe(7572);
   });
 
   // AC4 (run path) — insufficient balance returns 402 and creates NO run row (never billed; §5.6 item 6, §14.6).

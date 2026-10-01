@@ -569,6 +569,54 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     expect(html).toContain("Your run has started");
   });
 
+  it("PRB.23 — the run POST forwards the submitted toggle set (sentinel resolves unchecked = off)", async () => {
+    // An unchecked checkbox submits no field, so `toggleKeys` is the sentinel: every rendered
+    // toggle is listed there, and only `toggle.<key>=on` means on. The resolved set reaches the
+    // api, which freezes it into the run inputs as phase opt-out flags.
+    const seen: Record<string, boolean>[] = [];
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async (_s, _p, req) => {
+        seen.push({ ...(req.toggles ?? {}) });
+        return { runId: "run_t", state: "queued", deduped: false };
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({
+        workflow: "review", rigor: "quick", idempotencyKey: "idem_tgl",
+        estimateCredits: "288", capCredits: "432",
+        toggleKeys: "fact_check,discourse,second_read",
+        "toggle.fact_check": "on",
+        "toggle.discourse": "on",
+        // second_read deliberately unchecked → absent → resolves false (an explicit off).
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(seen).toEqual([{ fact_check: true, discourse: true, second_read: false }]);
+  });
+
+  it("PRB.23 — no sentinel ⇒ no toggles sent (rigor defaults apply server-side)", async () => {
+    const seen: (Readonly<Record<string, boolean>> | undefined)[] = [];
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async (_s, _p, req) => {
+        seen.push(req.toggles);
+        return { runId: "run_t2", state: "queued", deduped: false };
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_tgl2", estimateCredits: "560", capCredits: "840" }),
+    });
+    expect(res.status).toBe(200);
+    expect(seen).toEqual([{}]);
+  });
+
   it("PRB.21 — GET renders the in-progress state (not the Run affordance) when the project has an active run", async () => {
     const deps = makeDeps({ session: () => ({}) });
     const running: ProjectRow[] = [

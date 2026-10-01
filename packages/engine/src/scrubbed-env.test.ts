@@ -12,10 +12,22 @@ import {
 // to present to the internal API or the proxy.
 
 describe("buildAgentEnv (REQ-SPEC-10)", () => {
-  const env = buildAgentEnv({ runId: "run_9", proxyBaseUrl: "http://proxy.internal:8080", configDir: "/work/.config" });
+  const env = buildAgentEnv({
+    runId: "run_9",
+    proxyBaseUrl: "http://proxy.internal:8080",
+    configDir: "/work/.config",
+    maxConcurrentSubagents: 5,
+  });
 
   it("contains exactly the scrubbed key set", () => {
     expect(Object.keys(env).sort()).toEqual([...ALLOWED_AGENT_ENV_KEYS].sort());
+  });
+
+  it("PRB.23 — realizes the §12.2 advisory caps through real CLI env vars", () => {
+    // `cacheControlTtl`/`maxConcurrentSubagents` are not SDK option fields; the vendored CLI
+    // honors these env vars instead (both are in its env allowlist). Non-secret config keys.
+    expect(env.ENABLE_PROMPT_CACHING_1H).toBe("1");
+    expect(env.CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION).toBe("5");
   });
 
   it("sets the proxy URL, disables auto-memory, and pins the per-run config dir", () => {
@@ -53,6 +65,8 @@ describe("assertScrubbed (the last-line guard before execve)", () => {
         ANTHROPIC_API_KEY: PROXY_PLACEHOLDER_ANTHROPIC_API_KEY,
         CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
         CLAUDE_CONFIG_DIR: "/c",
+        ENABLE_PROMPT_CACHING_1H: "1",
+        CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION: "5",
       }),
     ).not.toThrow();
   });

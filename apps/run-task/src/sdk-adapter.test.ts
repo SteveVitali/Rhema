@@ -16,6 +16,7 @@ const OPTIONS = {
   permissionMode: "dontAsk",
   allowedTools: ["Read"],
   disallowedTools: ["Bash(curl *)"],
+  tools: ["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"],
   maxBudgetUsd: 4.2,
   maxTurns: 10,
   env: { RUN_ID: "run_1" },
@@ -65,6 +66,9 @@ describe("adaptSdkQuery (D-P0.06-4 — the QueryFn↔SDK bridge)", () => {
     expect(mapped.maxTurns).toBe(10);
     expect(mapped.maxBudgetUsd).toBe(4.2);
     expect(mapped.allowedTools).toEqual(["Read"]);
+    // PRB.23 — `tools` is a REAL SDK field (the advertised built-in schema set, distinct from
+    // the `allowedTools` permission gate): it must forward verbatim.
+    expect(mapped.tools).toEqual(["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"]);
     // fields the vendored SDK does NOT read are dropped (they were silently ignored — the audit's F5):
     for (const dropped of ["skillsDir", "cacheControlTtl", "maxSubagentDepth", "maxConcurrentSubagents", "sessionStore"]) {
       expect(dropped in mapped).toBe(false);
