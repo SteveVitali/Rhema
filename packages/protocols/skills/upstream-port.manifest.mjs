@@ -253,6 +253,16 @@ These are harness-neutral additions; the response regimen is upstream-verbatim.
         sidecarList: "profile files are the artifacts; sidecar writes only .rhema/phase-result.json here",
       }),
     },
+    // ---- Rhema-owned phase (P1.14 — REQ-WF-11 / §9.6): the charter-reseed step ----
+    // `phase=reseed` runs the charter-rewrite step the reseed_charter workflow drives (its skill is
+    // bootstrap-persona, skillPhase "reseed"); it is a Rhema delta, not one of the upstream six.
+    {
+      op: "replace",
+      category: "reseed",
+      find: "fallback order (0, 1, 2, 3, 4, 5).\"",
+      replace:
+        "fallback order (0, 1, 2, 3, 4, 5). The Rhema-owned value \\\"reseed\\\" runs only the charter-reseed step (see 'Reseeding the voice charter' below) — it is not one of the upstream six.\"",
+    },
     {
       op: "insertAfter",
       category: "sidecar",
@@ -293,6 +303,13 @@ These are harness-neutral additions; the persona regimen is upstream-verbatim.
       op: "delete",
       category: "q11",
       find: ' Under any mode but `self`, this file is quotation-bound: no\n  extrapolated views, no "would probably argue."',
+    },
+    // Append the Rhema-owned reseed phase section at end of file (P1.14 — REQ-WF-11 / §9.6).
+    {
+      op: "insertAfter",
+      category: "reseed",
+      anchor: "in the convention's closing section; do not oversell).\n",
+      insert: "\n## Phase reseed — Reseeding the voice charter *(Rhema-owned)*\n\nA Rhema-owned step (added at port — P1.14; not one of the upstream six): after a\nproject adopts a rebuilt voice profile, the project's voice charter — the\n`agents/author/voice-charter.md` consuming skills load — must be re-seeded from\nthe adopted profile so the voice-derived lines track the new truth.\n\nThe charter is two halves:\n\n- **the seeded block** — every line above the `## Guidance` heading. These are\n  the voice-derived lines (persona name, byline, register list, the voice-print\n  pointers). Rewrite them from the mounted profile; they are yours to change.\n- **the guidance section** — `## Guidance` and every line under it. These are\n  the project's own edits to the seeded charter. They carry **verbatim** —\n  byte-for-byte, no rewording, no reordering. The artifact kind's edit mode is\n  guidance-only: guidance lines are outside this step's output scope, and the\n  server-side diff the adopt dialog previewed treats any guidance change as a\n  leak.\n\nSteps:\n\n1. Read the adopted profile's `profile/index.md` (mounted read-only) for the\n   persona name, byline, and register list.\n2. Read the current `agents/author/voice-charter.md` if it exists — for its\n   guidance section only.\n3. Write `agents/author/voice-charter.md`: the regenerated seeded block, a blank\n   line, then the guidance section carried verbatim (or none if the charter had\n   none).\n\nIf you produce no version, the server's deterministic reseed writes the same\nshape — the seeded lines regenerate from the persona row and the guidance\ncarries. Either way, guidance bytes never change.\n",
     },
   ],
 
