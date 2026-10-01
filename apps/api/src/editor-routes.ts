@@ -8,6 +8,7 @@
 // project-scoped read verifies the workspace — a cross-workspace id is not_found, never a leak.
 
 import { Hono } from "hono";
+import { statusMeters, venueCapLabel, importBibliography, detectBibliographyFormat } from "@rhema/editor";
 import {
   cancelRun,
   captureGuidance,
@@ -21,7 +22,7 @@ import {
 } from "@rhema/orchestrator";
 import { projectFindingsOntoMarkdown, type FindingProjectionResult } from "@rhema/findings-core";
 import { mootObligation, findingObligationState } from "@rhema/obligations";
-import { saveManualRevision, type ContentStore, type SqlExecutor } from "@rhema/mirror";
+import { saveManualRevision, sha256Hex, type ContentStore, type SqlExecutor } from "@rhema/mirror";
 import type { Actor, Anchor } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import type { RunApiDeps } from "./run-routes.js";
@@ -67,6 +68,7 @@ export async function resolveEditorHead(
   exec: SqlExecutor,
   projectId: string,
   draftId: string,
+  opts: { exact?: boolean } = {},
 ): Promise<DraftHeadRow | undefined> {
   let head = (
     await exec.query(
@@ -75,7 +77,9 @@ export async function resolveEditorHead(
       [draftId, projectId],
     )
   ).rows[0] as DraftHeadRow | undefined;
-  if (head?.state === "frozen") {
+  // P1.02: `?exact=1` reads THIS draft's bytes — /v/:n on a frozen draft shows vN itself (read-only),
+  // never its working child.
+  if (!opts.exact && head?.state === "frozen") {
     const child = (
       await exec.query(
         `select id, project_id, n, origin, state, promoted_version_id, base_draft_id
@@ -161,15 +165,96 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     return r != null && r.workspace_id === workspaceId;
   };
 
+  // ---- P1.02 — the project's CSL-JSON bibliography (kind='bibliography', mirror_path
+  //      'bibliography/csl.json'). Items carry citeKey (the `[@key]` a cite node references) + the raw
+  //      CSL-JSON item verbatim. ----
+  const BIBLIOGRAPHY_PATH = "bibliography/csl.json";
+
+  const readBibliography = async (
+    exec: SqlExecutor,
+    store: ContentStore | null,
+    projectId: string,
+  ): Promise<{ citeKey: string; item: Record<string, unknown> }[]> => {
+    if (!store) return [];
+    const row = (
+      await exec.query(
+        `select av.content_sha256
+           from artifacts a join artifact_versions av on av.id = a.head_version_id
+          where a.project_id = $1 and a.mirror_path = $2`,
+        [projectId, BIBLIOGRAPHY_PATH],
+      )
+    ).rows[0] as { content_sha256: string } | undefined;
+    if (!row) return [];
+    const bytes = await store.get(row.content_sha256).catch(() => null);
+    if (!bytes) return [];
+    try {
+      const items = JSON.parse(Buffer.from(bytes).toString("utf8")) as { id: string }[];
+      return (Array.isArray(items) ? items : []).map((it) => ({
+        citeKey: String(it.id),
+        item: it as unknown as Record<string, unknown>,
+      }));
+    } catch {
+      return [];
+    }
+  };
+
+  /** The REQ-PROD-14 venue-cap meter: `projects.venue` → the seeded protocol's venue_bar row → the
+   *  "+N over Venue" label. Only the rendered string crosses to the client (REQ-ARCH-33). */
+  const venueCapFor = async (exec: SqlExecutor, projectId: string, words: number): Promise<string | null> => {
+    const p = (
+      await exec.query(`select venue, protocol_id, protocol_version from projects where id = $1`, [projectId])
+    ).rows[0] as { venue: string | null; protocol_id: string | null; protocol_version: number } | undefined;
+    if (!p?.venue || !p.protocol_id) return null;
+    const proto = (
+      await exec.query(`select body from protocols where id = $1 and version = $2`, [p.protocol_id, p.protocol_version])
+    ).rows[0] as { body: { venue_bar?: { table?: { venue: string; maxWords?: number }[] } } } | undefined;
+    const row = (proto?.body?.venue_bar?.table ?? []).find(
+      (r) => r.venue.toLowerCase() === p.venue!.toLowerCase(),
+    );
+    if (!row?.maxWords) return null;
+    return venueCapLabel(words, p.venue, row.maxWords);
+  };
+
+  // ---- /v/:n + /v/working draft-ref resolution (P1.02): 'working' → the project's working head;
+  //      a number → that draft. 404 when absent. ----
+  app.get("/projects/:id/editor/resolve/:v", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
+    const v = c.req.param("v");
+    const row = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      if (v === "working") {
+        return (
+          (await tx.query(
+            `select id, n, state, origin from drafts where project_id = $1 and state = 'working'
+             order by n desc limit 1`,
+            [c.req.param("id")],
+          )).rows[0] as { id: string; n: number; state: string; origin: string } | undefined
+        );
+      }
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < 1) return undefined;
+      return (
+        (await tx.query(
+          `select id, n, state, origin from drafts where project_id = $1 and n = $2`,
+          [c.req.param("id"), n],
+        )).rows[0] as { id: string; n: number; state: string; origin: string } | undefined
+      );
+    });
+    if (!row) return c.json({ error: "not_found" }, 404);
+    return c.json({ draftId: row.id, draftN: row.n, state: row.state, origin: row.origin });
+  });
+
   // ---- the document + lock + findings rail the editor SSRs/refresh-loads. ----
   app.get("/projects/:id/editor/:draftId", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const store = await storeFor(principal.workspaceId);
+    const exact = c.req.query("exact") === "1";
 
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const head = await resolveEditorHead(tx, c.req.param("id"), c.req.param("draftId"));
+      const head = await resolveEditorHead(tx, c.req.param("id"), c.req.param("draftId"), { exact });
       if (!head) return { ok: false as const, reason: "not_found" };
 
       const versionId =
@@ -207,6 +292,23 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
         )
       ).rows as FindingSourceRow[];
 
+      // ---- P1.02 sidecar reads (all best-effort — an old row without them yields nulls) ----
+      const [provRow, mapRow, bibliography] = await Promise.all([
+        versionId
+          ? tx.query(`select spans from provenance_maps where draft_version_id = $1`, [versionId])
+          : Promise.resolve({ rows: [] }),
+        versionId
+          ? tx.query(`select block_id_map from artifact_versions where id = $1`, [versionId])
+          : Promise.resolve({ rows: [] }),
+        readBibliography(tx, store, c.req.param("id")),
+      ]);
+      const spans = (provRow.rows[0] as { spans?: { blockId: string; source: unknown }[] } | undefined)?.spans;
+      const provenance: Record<string, unknown> = {};
+      if (Array.isArray(spans)) for (const s of spans) if (s?.blockId) provenance[s.blockId] = s.source;
+      const blockIdMap = (mapRow.rows[0] as { block_id_map?: unknown } | undefined)?.block_id_map ?? null;
+      const meters = statusMeters(markdown);
+      const venueCap = await venueCapFor(tx, c.req.param("id"), meters.words);
+
       return {
         ok: true as const,
         dto: {
@@ -220,6 +322,12 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
           sha256: text?.sha256 ?? null,
           lock,
           findings: findingsDto(findingRows, markdown),
+          provenance: Object.keys(provenance).length > 0 ? provenance : null,
+          blockIdMap,
+          bibliography,
+          venueCap,
+          meters,
+          proposals: [],
         },
       };
     });
@@ -232,7 +340,12 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
-    const body = (await c.req.json().catch(() => ({}))) as { markdown?: string };
+    const body = (await c.req.json().catch(() => ({}))) as {
+      markdown?: string;
+      // P1.02 — the Page's live provenance capture (block map + write-only agent-span sets).
+      provenanceSpans?: { blockId: string; source: unknown }[];
+      agentSpans?: { blockId: string; from: number; to: number }[];
+    };
     if (typeof body.markdown !== "string") return c.json({ error: "markdown required" }, 400);
     const store = await storeFor(principal.workspaceId);
     if (!store) return c.json({ error: "content store unavailable" }, 500);
@@ -251,6 +364,14 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
         draftId: c.req.param("draftId"),
         markdown: body.markdown!,
         userId: principal.userId,
+        ...(body.provenanceSpans || body.agentSpans
+          ? {
+              provenance: {
+                spans: body.provenanceSpans as never,
+                agentSpans: body.agentSpans,
+              },
+            }
+          : {}),
       });
       return r;
     });
@@ -447,6 +568,138 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       await deps.queue.send(RUN_JOBS.start, { runId: res.runId, workspaceId: principal.workspaceId }, { singletonKey: res.runId });
     }
     return c.json({ runId: res.runId, state: res.state, deduped: res.deduped, mootedFindingIds: prep.mootedFindingIds }, res.deduped ? 200 : 201);
+  });
+
+  // ---- P1.02 — bibliography read + import (matrix row 37: BibTeX / CSL-JSON / Zotero into CSL-JSON
+  //      items). The artifact is content-addressed like every other; the import REPLACES the item set
+  //      (imports merge client-side via re-import; there is no per-item editor at MVP). ----
+  app.get("/projects/:id/bibliography", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
+    const store = await storeFor(principal.workspaceId);
+    const items = await deps.txRunner.run(principal.workspaceId, async (tx) =>
+      readBibliography(tx, store, c.req.param("id")));
+    return c.json({ items });
+  });
+
+  app.post("/projects/:id/bibliography", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
+    const body = (await c.req.json().catch(() => ({}))) as { format?: string; content?: string };
+    if (typeof body.content !== "string" || body.content.trim() === "") {
+      return c.json({ error: "content required" }, 400);
+    }
+    const format = body.format ?? detectBibliographyFormat(body.content) ?? undefined;
+    if (!format || !["bibtex", "csl-json", "zotero"].includes(format)) {
+      return c.json({ error: "unrecognized bibliography format" }, 422);
+    }
+    let items;
+    try {
+      items = importBibliography(format as "bibtex" | "csl-json" | "zotero", body.content);
+    } catch (e) {
+      return c.json({ error: `import failed: ${e instanceof Error ? e.message : "parse error"}` }, 422);
+    }
+    const store = await storeFor(principal.workspaceId);
+    if (!store) return c.json({ error: "content store unavailable" }, 500);
+
+    const payload = Buffer.from(JSON.stringify(items, null, 2), "utf8");
+    const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const sha256 = sha256Hex(new Uint8Array(payload));
+      const { key } = await store.put(principal.workspaceId, sha256, new Uint8Array(payload));
+      let artifactId = (
+        (await tx.query(
+          `select id from artifacts where project_id = $1 and mirror_path = $2`,
+          [c.req.param("id"), BIBLIOGRAPHY_PATH],
+        )).rows[0] as { id: string } | undefined
+      )?.id;
+      if (!artifactId) {
+        artifactId = deps.ids("art");
+        await tx.query(
+          `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, created_at)
+           values ($1,$2,$3,'bibliography','shared',$4,$5)`,
+          [artifactId, principal.workspaceId, c.req.param("id"), BIBLIOGRAPHY_PATH, deps.clock.now()],
+        );
+      }
+      const ordinal = (
+        (await tx.query(
+          "select coalesce(max(ordinal),0)+1 as n from artifact_versions where artifact_id = $1",
+          [artifactId],
+        )).rows[0] as { n: number }
+      ).n;
+      const versionId = deps.ids("av");
+      await tx.query(
+        `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes,
+           media_type, created_by, created_at, immutable)
+         values ($1,$2,$3,$4,$5,$6,'application/json',$7,$8,false)`,
+        [versionId, artifactId, ordinal, sha256, key, payload.byteLength,
+         JSON.stringify({ kind: "user", userId: principal.userId }), deps.clock.now()],
+      );
+      await tx.query("update artifacts set head_version_id = $2 where id = $1", [artifactId, versionId]);
+      return { versionId };
+    });
+    void res;
+    return c.json({
+      imported: items.length,
+      format,
+      items: items.map((it) => ({ citeKey: it.id, item: it as unknown as Record<string, unknown> })),
+    });
+  });
+
+  // ---- P1.02 — the read-only Page read for a non-draft artifact (/a/:artifactId). Any artifact kind;
+  //      only text/markdown bodies render on the Page (others 415). ----
+  app.get("/projects/:id/artifacts/:artifactId/page", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
+    const store = await storeFor(principal.workspaceId);
+    const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const row = (
+        await tx.query(
+          `select a.id, a.kind, a.mirror_path, av.id as version_id, av.ordinal, av.media_type, av.block_id_map
+             from artifacts a join artifact_versions av on av.id = a.head_version_id
+            where a.id = $1 and a.project_id = $2`,
+          [c.req.param("artifactId"), c.req.param("id")],
+        )
+      ).rows[0] as
+        | { id: string; kind: string; mirror_path: string; version_id: string; ordinal: number; media_type: string; block_id_map: unknown }
+        | undefined;
+      if (!row) return null;
+      if (row.media_type !== "text/markdown") return { notMarkdown: true as const };
+      const text = await versionText(store, tx, row.version_id);
+      if (!text) return null;
+      const spans = (
+        (await tx.query(`select spans from provenance_maps where draft_version_id = $1`, [row.version_id]))
+          .rows[0] as { spans?: { blockId: string; source: unknown }[] } | undefined
+      )?.spans;
+      const provenance: Record<string, unknown> = {};
+      if (Array.isArray(spans)) for (const s of spans) if (s?.blockId) provenance[s.blockId] = s.source;
+      const meters = statusMeters(text.text);
+      return {
+        draftId: row.id, // the artifact id stands in — read-only; no save path binds
+        draftN: row.ordinal,
+        origin: "artifact",
+        state: "frozen",
+        baseDraftId: null,
+        baseDraftN: null,
+        markdown: text.text,
+        sha256: text.sha256,
+        lock: null,
+        findings: [],
+        provenance: Object.keys(provenance).length > 0 ? provenance : null,
+        blockIdMap: row.block_id_map ?? null,
+        bibliography: await readBibliography(tx, store, c.req.param("id")),
+        venueCap: null,
+        meters,
+        proposals: [],
+        artifactKind: row.kind,
+        artifactPath: row.mirror_path,
+      };
+    });
+    if (res == null) return c.json({ error: "not_found" }, 404);
+    if ("notMarkdown" in res) return c.json({ error: "not_markdown" }, 415);
+    return c.json(res);
   });
 
   return app;

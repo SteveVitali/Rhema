@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { sha256Hex } from "@rhema/contracts";
 
 // The voice status pill — ONE function over the snapshot facts, rendered byte-identically on every surface
 // (§9.3; REQ-PERSONA-13/14). Staleness is computed at READ time from the stored snapshot + the current facts;
@@ -7,12 +7,13 @@ import { createHash } from "node:crypto";
 // `BETA_VOICE_STATES` — states 5 (`aged`) and 7 (`badly_off`) exist here so the function is correct when the
 // facts produce them, but nothing at beta can create them (P1.14/P1.15 own the full surface).
 //
-// Framework-free + DOM-free like the rest of this package; hashing uses node:crypto (the seed hash is a
-// server-side fact — the mobile client consumes the derived status, never re-hashes).
+// Framework-free + DOM-free like the rest of this package; hashing uses @rhema/contracts' isomorphic
+// sha256 (the seed hash is a server-side fact — the mobile client consumes the derived status, never
+// re-hashes — but this module also ships in the Page's browser bundle, so no node:crypto).
 
 /** sha256 of some utf8 text, lower-case hex — same primitive the content store uses. */
 function sha256Text(text: string): string {
-  return createHash("sha256").update(text, "utf8").digest("hex");
+  return sha256Hex(text);
 }
 
 /**

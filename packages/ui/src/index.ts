@@ -53,6 +53,17 @@ export type { DecisionsListProps, DecisionsListLabels } from "./decisions.js";
 export { WhatChangedView, RubricDelta } from "./what-changed.js";
 export type { WhatChangedProps, WhatChangedLabels, RubricDeltaLabels } from "./what-changed.js";
 
+// The Page (P1.02) — the schema-first editor surface. SSR renders the full chrome + a static typeset
+// render of the PM doc (PmPreview); the page.js island mounts ProseMirror over the embedded doc JSON.
+export { PageEditor, PmPreview } from "./page-editor.js";
+export type {
+  PageEditorProps,
+  PageEditorLabels,
+  PageFindingView,
+  PageLockView,
+  PageProposalView,
+} from "./page-editor.js";
+
 // The source editor (PRB.07; REQ-BETA-21 stopgap #1 → 1.x Source mode): the SSR region the CodeMirror
 // client bundle upgrades — lock banner, sync pill, projected-findings rail, note field, Revise action.
 export { SourceEditor, SyncPill, EditorLockBanner, EditorFindingsRail } from "./source-editor.js";

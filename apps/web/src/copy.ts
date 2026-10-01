@@ -395,6 +395,14 @@ export const COPY = {
     noteSubmit: "Add note",
     noteSaved: "Noted — the next revision will read it.",
     revise: "Revise using your edits",
+    // P1.02 — the Page (schema-first editor): the strings the Source stopgap never had.
+    frozenBannerFmt: "v{n} is frozen — your edits here open a new revision.",
+    readOnlyNote: "This version is read-only.",
+    proposalsHeading: "Proposed changes",
+    accept: "Accept",
+    reject: "Reject",
+    danglingCiteNote: "Citations without a bibliography entry",
+    authorshipHint: "View → Authorship shows who wrote each block.",
   },
 
   // PRB.10 — Quick Voice (§9.2–§9.6): the creation sheet, the library list, the detail page (seed editor +
@@ -615,6 +623,7 @@ export const COPY = {
       },
       findingCards: "Finding cards",
       suggestionsInline: "Inline suggestions",
+      authorship: "Authorship",
       // NOTE: the Advanced toggle reuses COPY.runSheet.advanced at the IdeFrame labels site — Appendix D.2
       // sanctions the term ONCE (the progressive-disclosure label); a second copy-table entry trips the
       // copy lint even though this is the same permitted role.

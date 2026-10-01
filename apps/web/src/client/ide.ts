@@ -160,15 +160,42 @@ function main(): void {
       closeMenus();
     }),
   );
+
+  // P1.02 — the Authorship overlay toggle: read-only decorations over the Page's blocks (NOT pane
+  // state — it persists on its own key and the page.js island listens for the change event).
+  const AUTHORSHIP_KEY = `rhema:authorship:v1:${projectId}`;
+  let authorship = false;
+  try {
+    authorship = localStorage.getItem(AUTHORSHIP_KEY) === "1";
+  } catch {
+    /* private mode — session-only */
+  }
+  const applyAuthorship = (): void => {
+    if (authorship) ide.dataset["authorship"] = "1";
+    else delete ide.dataset["authorship"];
+    for (const b of ide.querySelectorAll<HTMLElement>('[data-ide-toggle="authorship"]')) {
+      b.setAttribute("aria-checked", String(authorship));
+    }
+    window.dispatchEvent(new CustomEvent("rhema:authorship", { detail: { on: authorship } }));
+  };
   ide.querySelectorAll<HTMLElement>("[data-ide-toggle]").forEach((el) =>
     el.addEventListener("click", () => {
-      const id = el.dataset["ideToggle"] as keyof PaneState;
+      const id = el.dataset["ideToggle"] as keyof PaneState | "authorship";
       if (id === "findingCards" || id === "suggestionsInline" || id === "advanced") {
         setState({ [id]: !state[id] } as Partial<PaneState>);
+      } else if (id === "authorship") {
+        authorship = !authorship;
+        try {
+          localStorage.setItem(AUTHORSHIP_KEY, authorship ? "1" : "0");
+        } catch {
+          /* ignore */
+        }
+        applyAuthorship();
       }
       closeMenus();
     }),
   );
+  applyAuthorship();
 
   // ---- typography: font preset + reader stepper (localStorage-backed) --
   let readerStep = 0;

@@ -14,6 +14,9 @@ import type {
   WhatChangedDto,
   HunkCommentDto,
   EditorDocDto,
+  EditorResolveDto,
+  BibliographyDto,
+  BibliographyImportDto,
   EditorSaveDto,
   EditorNoteDto,
   EditorCancelRunDto,
@@ -187,13 +190,31 @@ export interface DataSource {
     text: string,
   ): Promise<HunkCommentDto>;
   /** PRB.07 — the editor document read (markdown + the §6.3 lock + the projected findings rail). */
-  getEditorDoc(session: SessionHeaders, projectId: string, draftId: string): Promise<EditorDocDto>;
+  getEditorDoc(
+    session: SessionHeaders,
+    projectId: string,
+    draftId: string,
+    opts?: { exact?: boolean },
+  ): Promise<EditorDocDto>;
+  /** P1.02 — resolve a `/v/:n|working` ref to its draft id (the Page's versioned routes). */
+  resolveEditorDraft(session: SessionHeaders, projectId: string, v: string): Promise<EditorResolveDto>;
+  /** P1.02 — the project's stored CSL-JSON bibliography items. */
+  getBibliography(session: SessionHeaders, projectId: string): Promise<BibliographyDto>;
+  /** P1.02 — import BibTeX/CSL-JSON/Zotero text into the project's bibliography items. */
+  importBibliography(
+    session: SessionHeaders,
+    projectId: string,
+    req: { format?: string; content: string },
+  ): Promise<BibliographyImportDto>;
+  /** P1.02 — the read-only Page read for a non-draft artifact (`/a/:artifactId`). */
+  getArtifactPage(session: SessionHeaders, projectId: string, artifactId: string): Promise<EditorDocDto>;
   /** PRB.07 — the debounced autosave POST (no Save button — this IS the save; §5.4). */
   saveEditorDraft(
     session: SessionHeaders,
     projectId: string,
     draftId: string,
     markdown: string,
+    meta?: { provenanceSpans?: { blockId: string; source: unknown }[]; agentSpans?: { blockId: string; from: number; to: number }[] },
   ): Promise<EditorSaveDto>;
   /** PRB.07 — the one note field → a Guidance row (§6.3's comment path; REQ-DATA-41 beta form). */
   postEditorNote(
@@ -389,10 +410,18 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getWhatChanged(projectId, responseId),
     commentOnHunk: (session, projectId, responseId, hunkId, text) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).commentOnHunk(projectId, responseId, hunkId, text),
-    getEditorDoc: (session, projectId, draftId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getEditorDoc(projectId, draftId),
-    saveEditorDraft: (session, projectId, draftId, markdown) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveEditorDraft(projectId, draftId, markdown),
+    getEditorDoc: (session, projectId, draftId, opts) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getEditorDoc(projectId, draftId, { opts }),
+    resolveEditorDraft: (session, projectId, v) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).resolveEditorDraft(projectId, v),
+    getBibliography: (session, projectId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getBibliography(projectId),
+    importBibliography: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).importBibliography(projectId, req),
+    getArtifactPage: (session, projectId, artifactId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getArtifactPage(projectId, artifactId),
+    saveEditorDraft: (session, projectId, draftId, markdown, meta) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveEditorDraft(projectId, draftId, markdown, { meta }),
     postEditorNote: (session, projectId, draftId, text) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postEditorNote(projectId, draftId, text),
     cancelEditorRun: (session, projectId, draftId) =>

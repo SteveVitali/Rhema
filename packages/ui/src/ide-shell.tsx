@@ -41,6 +41,8 @@ export interface IdeLabels {
     views: Record<ViewMode, string>;
     findingCards: string;
     suggestionsInline: string;
+    /** P1.02 — the Page's per-block authorship overlay toggle (read-only decorations). */
+    authorship: string;
     advanced: string;
     fontSerif: string;
     fontSans: string;
@@ -265,9 +267,10 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       <footer className="ide-statusbar" aria-label="Status">
         {props.status?.version ? <span>{L.statusBar.versionPrefix}{props.status.version}</span> : null}
         <span className="ide-sync" data-state={sync} role="status" aria-live="polite">{syncLabel}</span>
-        {typeof props.status?.words === "number" ? <span className="ide-count">{fmt(L.statusBar.wordsFmt, props.status.words)}</span> : null}
-        {typeof props.status?.readMin === "number" ? <span className="ide-count">{fmt(L.statusBar.readMinFmt, props.status.readMin)}</span> : null}
-        {props.status?.venueCap ? <span>{props.status.venueCap}</span> : null}
+        {/* data-status-* slots: the page.js island rewrites them live (per-keystroke meters, P1.02). */}
+        {typeof props.status?.words === "number" ? <span className="ide-count" data-status-words data-fmt={L.statusBar.wordsFmt}>{fmt(L.statusBar.wordsFmt, props.status.words)}</span> : null}
+        {typeof props.status?.readMin === "number" ? <span className="ide-count" data-status-readmin data-fmt={L.statusBar.readMinFmt}>{fmt(L.statusBar.readMinFmt, props.status.readMin)}</span> : null}
+        {props.status?.venueCap ? <span data-status-venue>{props.status.venueCap}</span> : null}
         <span style={{ marginLeft: "auto" }} />
         {typeof props.status?.credits === "number" ? <span className="ide-count">{fmt(L.statusBar.creditsFmt, props.status.credits)}</span> : null}
         <button type="button" data-ide-theme-menu aria-haspopup="menu" aria-expanded="false">{L.statusBar.theme}</button>
@@ -285,10 +288,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         <div className="ide-menu-sep" />
         {viewMenuModel(view).map((t) => (
           <button key={t.id} type="button" role="menuitemcheckbox"
-                  aria-checked={t.id === "advanced" ? "false" : "true"}
+                  aria-checked={t.id === "advanced" || t.id === "authorship" ? "false" : "true"}
+                  {...(t.id === "authorship" ? { "data-tier": "advanced" } : {})}
                   data-ide-toggle={t.id} className="ide-menu-row">
             {t.id === "findingCards" ? L.viewMenu.findingCards
               : t.id === "suggestionsInline" ? L.viewMenu.suggestionsInline
+              : t.id === "authorship" ? L.viewMenu.authorship
               : L.viewMenu.advanced}
           </button>
         ))}

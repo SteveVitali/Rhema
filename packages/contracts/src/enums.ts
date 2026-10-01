@@ -393,5 +393,7 @@ export const PROVENANCE_SOURCE_KINDS = [
   "pasted",
   "chat",
   "suggestion_applied",
+  // REQ-POS-9 (P1.02): a human edit inside a captured agent span degrades the block to `mixed`.
+  "mixed",
 ] as const;
 export type ProvenanceSourceKind = (typeof PROVENANCE_SOURCE_KINDS)[number];

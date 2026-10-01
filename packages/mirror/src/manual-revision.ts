@@ -42,6 +42,18 @@ export interface SaveManualRevisionArgs {
   readonly userId: string;
   /** a run to attribute the timeline events to when the save happened inside one (usually absent). */
   readonly runId?: string;
+  /**
+   * P1.02 — the live provenance the Page captured between saves (REQ-DATA-29 amended, REQ-POS-9):
+   * `spans` = the per-block `{blockId → source}` map the editor's provenance plugin maintains (a human
+   * edit inside a captured agent span already degraded to `mixed` client-side); `agentSpans` = the
+   * write-only span sets recorded at each agent-origin transaction. Absent ⇒ the diff-derived
+   * `humanRevisionProvenance` map is written (the PRB.07 behavior — a caller that doesn't track live
+   * origins still gets a correct block-level map).
+   */
+  readonly provenance?: {
+    readonly spans?: readonly ProvenanceSpan[];
+    readonly agentSpans?: readonly { readonly blockId: string; readonly from: number; readonly to: number }[];
+  };
 }
 
 export type SaveManualRevisionResult =
@@ -275,7 +287,26 @@ export async function saveManualRevision(
       blockIdMap: (prev?.blockIdMap as ProvenanceBase["blockIdMap"]) ?? null,
       fallbackSource: actorToSource(prev?.createdBy, headN - 1),
     };
-    const spans = humanRevisionProvenance(beforeMd, args.markdown, provenanceBase);
+    // P1.02: the Page's live capture wins when present (it saw the individual transactions — the diff
+    // fallback can only see net change). Agent-span captures fold onto their block rows as `capture`
+    // (write-only, REQ-POS-9 — additive jsonb; readers of {blockId,source} are unaffected).
+    let spans: unknown[] = args.provenance?.spans
+      ? args.provenance.spans.map((s) => ({ blockId: s.blockId, source: s.source }))
+      : [...humanRevisionProvenance(beforeMd, args.markdown, provenanceBase)];
+    const captures = args.provenance?.agentSpans ?? [];
+    if (captures.length > 0) {
+      const byBlock = new Map<string, { from: number; to: number }[]>();
+      for (const c of captures) {
+        const arr = byBlock.get(c.blockId) ?? [];
+        arr.push({ from: c.from, to: c.to });
+        byBlock.set(c.blockId, arr);
+      }
+      spans = spans.map((s) => {
+        const row = s as { blockId: string };
+        const cap = byBlock.get(row.blockId);
+        return cap ? { ...(s as object), capture: cap } : s;
+      });
+    }
     await exec.query(
       `insert into provenance_maps(draft_version_id, granularity, spans) values ($1,'block',$2)
        on conflict (draft_version_id) do update set spans = excluded.spans`,

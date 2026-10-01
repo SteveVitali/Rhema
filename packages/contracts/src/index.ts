@@ -32,6 +32,9 @@ export * from "./domain/estimate.js";
 // structured-output sidecars (REQ-SPEC-12, REQ-OBJ-16)
 export * from "./sidecars.js";
 
+// isomorphic sha256 (pure TS — DOM-free packages + browser bundles can't use node:crypto)
+export * from "./sha256.js";
+
 // run events (§12.5) + agent.note templates (REQ-ARCH-14)
 export * from "./events.js";
 export * from "./notes.js";

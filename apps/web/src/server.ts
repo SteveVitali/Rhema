@@ -12,7 +12,7 @@ import {
   runSheetElement,
   dossierElement,
   revisionElement,
-  editorElement,
+  pageElement,
   exportElement,
   voicesElement,
   voiceNewElement,
@@ -24,6 +24,7 @@ import {
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput } from "./data.js";
 import type { PageData } from "./page-data.js";
+import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
 import {
   RIGORS,
@@ -434,11 +435,31 @@ export function createWebApp(deps: WebDeps): Hono {
         emit(session, "gate.presence_timer_shown", { kind: g.kind }, { projectId: row.id, runId: g.runId });
       }
     }
+    // P1.02 item 12 — `/p/:project` opens the Page on the working head. The doc read is exact and
+    // best-effort: a missing/locked head degrades to the plain overview, never a failed page.
+    const pageLoad = row.headDraftId
+      ? await loadEditorPage(deps.dataSource, session, row.id, row.headDraftId).catch(() => null)
+      : null;
     return c.html(
       renderDocument(c.req.path, projectElement, {
         // P1.01 — the project overview mounts inside the IDE frame; ?focus=1 seeds the Focus view.
-        ...(await ideContext(c, session, { ...row, slug }, { inboxCount: gates.length + decisions.length })),
+        ...(await ideContext(c, session, { ...row, slug }, {
+          inboxCount: gates.length + decisions.length,
+          ...(pageLoad
+            ? {
+                status: {
+                  version: `v${pageLoad.doc.draftN}`,
+                  ...(pageLoad.doc.meters?.words != null ? { words: pageLoad.doc.meters.words } : {}),
+                  ...(pageLoad.doc.meters?.readMin != null ? { readMin: pageLoad.doc.meters.readMin } : {}),
+                  ...(pageLoad.doc.venueCap ? { venueCap: pageLoad.doc.venueCap } : {}),
+                },
+              }
+            : {}),
+        })),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        ...(pageLoad
+          ? { page: { slug, projectId: row.id, doc: pageLoad.doc, docJson: pageLoad.docJson } }
+          : {}),
         gates,
         dwellSurface: "project",
         decisions,
@@ -1022,29 +1043,107 @@ export function createWebApp(deps: WebDeps): Hono {
     return { slug, row, draftId: c.req.param("draftId") ?? "" };
   };
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // P1.02 — the Page routes (§5.4; REQ-DATA-28/29 amended). `/p/:project/v/working` is the editable
+  // head; `/p/:project/v/:n` renders that version's draft (frozen ⇒ read-only Page — typing would fork,
+  // but the frozen view itself is the read render). The CodeMirror `/edit/:draftId` page is superseded
+  // (redirect below); its same-origin /doc /save /note /cancel-run /revise endpoints stay — they ARE
+  // the Page's transport surface (the seam, unchanged for P1.03's swap).
+  // -------------------------------------------------------------------------------------------------------------------
+
+  app.get("/p/:project/v/:v", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const v = c.req.param("v") ?? "working";
+    const resolved = await deps.dataSource.resolveEditorDraft(session, row.id, v).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!resolved) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const pageLoad = await loadEditorPage(deps.dataSource, session, row.id, resolved.draftId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!pageLoad) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const { doc } = pageLoad;
+    return c.html(
+      renderDocument(c.req.path, pageElement, {
+        ...(await ideContext(c, session, row, {
+          status: {
+            version: `v${doc.draftN}`,
+            ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+            ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+            ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
+          },
+        })),
+        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        page: {
+          slug,
+          projectId: row.id,
+          doc,
+          docJson: pageLoad.docJson,
+          ...(c.req.query("noted") ? { noteSaved: true } : {}),
+        },
+        dwellSurface: "page",
+      }),
+    );
+  });
+
+  // P1.02 item 4 — the Page renders ANY markdown artifact, read-only (non-draft kinds have no save
+  // path; the DTO's draftId is the artifact id, so the transport URLs 404 if ever called — the island
+  // mounts read-only anyway).
+  app.get("/p/:project/a/:artifactId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const doc = await deps.dataSource
+      .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
+      .catch((e) => {
+        if (e instanceof ApiError && (e.status === 404 || e.status === 415)) return null;
+        throw e;
+      });
+    if (!doc) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(
+      renderDocument(c.req.path, pageElement, {
+        ...(await ideContext(c, session, row, {
+          status: {
+            version: `v${doc.draftN}`,
+            ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+            ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+          },
+        })),
+        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        page: {
+          slug,
+          projectId: row.id,
+          doc,
+          docJson: docJsonFor(doc),
+          readOnly: true,
+        },
+        dwellSurface: "page",
+      }),
+    );
+  });
+
+  // The superseded CodeMirror page redirects to the Page (the route's JSON/form endpoints below stay —
+  // the Page's transport uses them; `?noted=1` survives the hop).
   app.get("/p/:project/edit/:draftId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const t = await editorTarget(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const doc = await deps.dataSource.getEditorDoc(session, t.row.id, t.draftId).catch((e) => {
+    const doc = await deps.dataSource.getEditorDoc(session, t.row.id, t.draftId, { exact: true }).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     });
     if (!doc) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(
-      renderDocument(c.req.path, editorElement, {
-        ...(await ideContext(c, session, t.row)),
-        project: { title: t.row.title, pill: t.row.state.pill, slug: t.slug, headDraftId: t.row.headDraftId },
-        editor: {
-          slug: t.slug,
-          projectId: t.row.id,
-          doc,
-          ...(c.req.query("noted") ? { noteSaved: true } : {}),
-        },
-        dwellSurface: "editor",
-      }),
-    );
+    const noted = c.req.query("noted") ? "?noted=1" : "";
+    return c.redirect(`/p/${t.slug}/v/${doc.draftN}${noted}`);
   });
 
   // The client bundle's lock poll — the doc read as JSON (the api's EditorDocDto verbatim).
@@ -1071,15 +1170,28 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!t) return c.json({ error: "not_found" }, 404);
     const contentType = c.req.header("content-type") ?? "";
     let markdown: string | null = null;
+    // P1.02 — the Page's live provenance capture rides the same JSON save body.
+    let meta: { provenanceSpans?: { blockId: string; source: unknown }[]; agentSpans?: { blockId: string; from: number; to: number }[] } | undefined;
     if (contentType.includes("text/plain")) {
       markdown = await c.req.text();
     } else {
-      const body = (await c.req.json().catch(() => ({}))) as { markdown?: string };
+      const body = (await c.req.json().catch(() => ({}))) as {
+        markdown?: string;
+        provenanceSpans?: { blockId: string; source: unknown }[];
+        agentSpans?: { blockId: string; from: number; to: number }[];
+      };
       if (typeof body.markdown === "string") markdown = body.markdown;
+      if (body.provenanceSpans || body.agentSpans) {
+        meta = { provenanceSpans: body.provenanceSpans, agentSpans: body.agentSpans };
+      }
     }
     if (markdown == null) return c.json({ error: "markdown required" }, 400);
     try {
-      const saved = await deps.dataSource.saveEditorDraft(session, t.row.id, t.draftId, markdown);
+      // only pass the 5th arg when the Page sent capture metadata — keeps the no-meta call shape the
+      // beta contract established (and the existing route tests' exact-arity assertions intact).
+      const saved = meta
+        ? await deps.dataSource.saveEditorDraft(session, t.row.id, t.draftId, markdown, meta)
+        : await deps.dataSource.saveEditorDraft(session, t.row.id, t.draftId, markdown);
       return c.json(saved);
     } catch (e) {
       // The api's status passes through — 409 (locked) is what flips the client bundle into the

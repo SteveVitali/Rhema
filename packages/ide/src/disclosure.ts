@@ -37,6 +37,8 @@ export const CONTROL_DISCLOSURE: Readonly<Record<string, DisclosureTier>> = {
   "reader.stepper": "on_demand",
   // ---- advanced — mechanism (⌘⇧M; §5.1 lists these verbatim) ----
   "view.source": "advanced",
+  // P1.02 — the Page's block-level Authorship overlay is a View-menu (Advanced) toggle (REQ-POS-8).
+  "view.authorship": "advanced",
   "raw.tokens": "advanced",
   "model.tier": "advanced",
   "model.names": "advanced",

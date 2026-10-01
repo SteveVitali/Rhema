@@ -412,6 +412,54 @@ export interface EditorDocDto {
   readonly sha256: string | null;
   readonly lock: EditorLockDto | null;
   readonly findings: EditorFindingDto[];
+  // ---- P1.02 — the Page's sidecar reads (all absent on older servers; the client degrades) ----
+  /** the displayed version's block-level provenance (`{blockId → ProvenanceSource}` — the overlay + the
+   *  provenance plugin's init state). */
+  readonly provenance?: Record<string, unknown> | null;
+  /** the displayed version's stored block-id sidecar `{blockId → {ordinal, contentHash}}`. */
+  readonly blockIdMap?: Record<string, { ordinal: number; contentHash: string }> | null;
+  /** the project's CSL-JSON bibliography items (cite resolution + dangling-key rendering). */
+  readonly bibliography?: { citeKey: string; item: Record<string, unknown> }[];
+  /** the REQ-PROD-14 venue-cap meter, already rendered (e.g. "+212 over WaPo"); null when no venue. */
+  readonly venueCap?: string | null;
+  /** the word count + reading-time meters, server-computed for SSR parity. */
+  readonly meters?: { words: number; readMin: number };
+  /** proposal cards queued for the Page (agent-origin in-place changes; empty until a producer lands). */
+  readonly proposals?: {
+    id: string;
+    kind: "replace" | "insert";
+    from: number;
+    to: number;
+    markdown: string;
+    origin: string;
+    label?: string;
+  }[];
+}
+
+/** `?exact=1` — read THIS draft's bytes (a frozen vN stays vN); the default follows a frozen head to
+ *  its working human_revision child (the edit-path semantics PRB.07 established). */
+export interface EditorDocOptions {
+  readonly exact?: boolean;
+}
+
+/** The draft-ref resolution for `/v/:n` + `/v/working` routing (P1.02). */
+export interface EditorResolveDto {
+  readonly draftId: string;
+  readonly draftN: number;
+  readonly state: string;
+  readonly origin: string;
+}
+
+/** A CSL-JSON item as stored for the project (P1.02; matrix row 37). */
+export interface BibliographyDto {
+  readonly items: { citeKey: string; item: Record<string, unknown> }[];
+}
+
+/** The bibliography import result (POST …/bibliography). */
+export interface BibliographyImportDto {
+  readonly imported: number;
+  readonly format: string;
+  readonly items: { citeKey: string; item: Record<string, unknown> }[];
 }
 
 /** The autosave response — `forked` marks the first save on a frozen head (v(N+1) created). */
@@ -912,10 +960,30 @@ export interface ApiClient {
     init?: RequestInitLite,
   ): Promise<HunkCommentDto>;
   /** The editor document: markdown + the §6.3 run lock + the projected findings rail (PRB.07). */
-  getEditorDoc(projectId: string, draftId: string, init?: RequestInitLite): Promise<EditorDocDto>;
+  getEditorDoc(projectId: string, draftId: string, init?: RequestInitLite & { opts?: EditorDocOptions }): Promise<EditorDocDto>;
+  /** P1.02 — resolve a `/v/:n|working` ref to its draft (for the Page's versioned routes). */
+  resolveEditorDraft(projectId: string, v: string, init?: RequestInitLite): Promise<EditorResolveDto>;
+  /** P1.02 — the project's stored CSL-JSON bibliography. */
+  getBibliography(projectId: string, init?: RequestInitLite): Promise<BibliographyDto>;
+  /** P1.02 — import a bibliography (BibTeX / CSL-JSON / Zotero export text) into the project's items. */
+  importBibliography(
+    projectId: string,
+    req: { format?: string; content: string },
+    init?: RequestInitLite,
+  ): Promise<BibliographyImportDto>;
+  /** P1.02 — the read-only Page read for a non-draft artifact (`/a/:artifactId`). */
+  getArtifactPage(projectId: string, artifactId: string, init?: RequestInitLite): Promise<EditorDocDto>;
   /** The debounced autosave — forks a frozen head to v(N+1) `human_revision` on first save (REQ-DATA-24).
    *  Throws `ApiError(409)` while a run holds the head (read-only during runs, §6.3). */
-  saveEditorDraft(projectId: string, draftId: string, markdown: string, init?: RequestInitLite): Promise<EditorSaveDto>;
+  saveEditorDraft(
+    projectId: string,
+    draftId: string,
+    markdown: string,
+    init?: RequestInitLite & {
+      /** P1.02 — the live provenance capture the Page sends with the save. */
+      meta?: { provenanceSpans?: { blockId: string; source: unknown }[]; agentSpans?: { blockId: string; from: number; to: number }[] };
+    },
+  ): Promise<EditorSaveDto>;
   /** The one note field → a Guidance row the next Revise consumes (REQ-DATA-41's comment path). */
   postEditorNote(projectId: string, draftId: string, text: string, init?: RequestInitLite): Promise<EditorNoteDto>;
   /** "Cancel run to edit" — cancels the run holding the head (§6.3 banner release). */
@@ -1199,8 +1267,37 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       );
     },
     async getEditorDoc(projectId, draftId, init): Promise<EditorDocDto> {
+      const exact = init?.opts?.exact ? "?exact=1" : "";
       return json<EditorDocDto>(
-        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}`,
+        `/projects/${encodeURIComponent(projectId)}/editor/${encodeURIComponent(draftId)}${exact}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async resolveEditorDraft(projectId, v, init): Promise<EditorResolveDto> {
+      return json<EditorResolveDto>(
+        `/projects/${encodeURIComponent(projectId)}/editor/resolve/${encodeURIComponent(v)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async getBibliography(projectId, init): Promise<BibliographyDto> {
+      return json<BibliographyDto>(
+        `/projects/${encodeURIComponent(projectId)}/bibliography`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async importBibliography(projectId, req, init): Promise<BibliographyImportDto> {
+      return json<BibliographyImportDto>(
+        `/projects/${encodeURIComponent(projectId)}/bibliography`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async getArtifactPage(projectId, artifactId, init): Promise<EditorDocDto> {
+      return json<EditorDocDto>(
+        `/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(artifactId)}/page`,
         { method: "GET", headers: init?.headers as Record<string, string> | undefined },
       );
     },
@@ -1210,7 +1307,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         {
           method: "POST",
           headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
-          body: JSON.stringify({ markdown }),
+          body: JSON.stringify({ markdown, ...(init?.meta ?? {}) }),
         },
       );
     },

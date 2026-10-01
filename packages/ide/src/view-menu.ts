@@ -19,10 +19,12 @@ export const VIEW_MODES: readonly { id: ViewMode }[] = [
   { id: "focus" },
 ] as const;
 
-/** The View menu's toggle rows, in order. */
+/** The View menu's toggle rows, in order. `authorship` is P1.02's overlay (read-only decorations over
+ *  the Page's blocks — off by default; it is session state, not pane state). */
 export const VIEW_MENU_TOGGLES: readonly ViewMenuItem[] = [
   { id: "findingCards" },
   { id: "suggestionsInline", inViews: ["write", "read"] },
+  { id: "authorship", inViews: ["write", "read"] },
   { id: "advanced" },
 ] as const;
 

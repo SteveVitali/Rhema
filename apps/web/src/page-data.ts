@@ -137,6 +137,21 @@ export interface PageData {
     /** a note POST redirected back with this set — the "Noted" marker renders. */
     readonly noteSaved?: boolean;
   };
+  /** P1.02 — the Page (the schema-first editor surface): the api doc read + the PM doc JSON the island
+   *  mounts (built server-side so SSR and the client see the SAME nodes). */
+  readonly page?: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly doc: EditorDocDto;
+    /** `markdownToDoc(doc.markdown).toJSON()` — embedded as `data-page-doc` for the island. */
+    readonly docJson: unknown;
+    /** a note POST redirected back with this set — the "Noted" marker renders. */
+    readonly noteSaved?: boolean;
+    /** the finding to focus (a /f/:findingId deep link landed here). */
+    readonly focusFindingId?: string;
+    /** non-draft artifact reads (/a/:artifactId) — the Page renders them read-only (P1.02 item 4). */
+    readonly readOnly?: boolean;
+  };
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
   /** the library list (GET /voices): every persona + its shared pill + sample count. */
   readonly voices?: readonly VoiceListRowDto[];
@@ -185,4 +200,29 @@ export interface PageData {
 export const PageDataContext = createContext<PageData>({});
 export function usePageData(): PageData {
   return useContext(PageDataContext);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// P1.02 — the Page loader: read the draft doc (exact — the /v/:n view shows THAT draft's bytes; the
+// frozen→fork dance is the save path's job) and build its PM doc JSON server-side so the SSR preview
+// and the mounted island share the same nodes. `@rhema/editor` is DOM-free for this path (md→PM uses
+// prosemirror-model only).
+// ---------------------------------------------------------------------------------------------------------------------
+
+import { markdownToDoc } from "@rhema/editor";
+import type { DataSource, SessionHeaders } from "./data.js";
+
+export async function loadEditorPage(
+  dataSource: DataSource,
+  session: SessionHeaders,
+  projectId: string,
+  draftId: string,
+): Promise<{ doc: EditorDocDto; docJson: unknown }> {
+  const doc = await dataSource.getEditorDoc(session, projectId, draftId, { exact: true });
+  return { doc, docJson: docJsonFor(doc) };
+}
+
+/** The PM doc JSON for an already-fetched doc read (the artifact page + the draft path share it). */
+export function docJsonFor(doc: EditorDocDto): unknown {
+  return markdownToDoc(doc.markdown).toJSON();
 }

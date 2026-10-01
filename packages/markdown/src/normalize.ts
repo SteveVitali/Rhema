@@ -1,10 +1,6 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkStringify from "remark-stringify";
-import remarkFrontmatter from "remark-frontmatter";
 import { visit } from "unist-util-visit";
 import type { Root, Heading, RootContent } from "mdast";
+import { canonicalProcessor } from "./profile.js";
 
 // The canonical Rhema Markdown normalizer (research/9 §4; REQ-DATA-9d import half). It is the "first pass at
 // import" the conversion preview (§5.3) shows, and it is IDEMPOTENT: normalizeMarkdown(normalizeMarkdown(x))
@@ -12,7 +8,8 @@ import type { Root, Heading, RootContent } from "mdast";
 //   - no body H1 (title lives in front-matter): demote headings so the first body heading is H2;
 //   - footnotes renumbered sequentially in first-reference order and collected at the end;
 //   - no hard wraps, one blank line between blocks, UTF-8 NFC, smart quotes preserved as characters.
-// Structured citations are NOT parsed at ingest (§4.3); tables/math are retained (GFM + `$…$`).
+//   - (P1.02) math parsed via the profile's remark-math so canonical math is `$…$` / `$$\n…\n$$`.
+// Structured citations are NOT parsed at ingest (§4.3); they canonicalize as escaped text `\[@key]`.
 
 /** Demote headings so the shallowest becomes H2 (no body H1). Idempotent: after one pass min depth ≥ 2. */
 function demoteHeadings() {
@@ -70,27 +67,9 @@ function renumberFootnotes() {
   };
 }
 
-const processor = unified()
-  .use(remarkParse)
-  .use(remarkFrontmatter, ["yaml"])
-  .use(remarkGfm)
+const processor = canonicalProcessor()
   .use(demoteHeadings)
-  .use(renumberFootnotes)
-  .use(remarkStringify, {
-    bullet: "-",
-    listItemIndent: "one",
-    emphasis: "_",
-    strong: "*",
-    fence: "`",
-    fences: true,
-    rule: "-",
-    ruleRepetition: 3,
-    ruleSpaces: false,
-    setext: false,
-    tightDefinitions: true,
-    resourceLink: false,
-    // remark-stringify does not hard-wrap by default (one line per block); NFC is applied on input.
-  });
+  .use(renumberFootnotes);
 
 /** Normalize markdown to the canonical Rhema Markdown profile. Idempotent (REQ-DATA-9d). */
 export function normalizeMarkdown(markdown: string): string {
