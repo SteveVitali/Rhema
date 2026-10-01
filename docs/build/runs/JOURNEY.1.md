@@ -223,12 +223,57 @@ bypass, provenance source, registry location (code; planning ledger historical).
 | `journeys.yml` nightly/weekly/dispatch/artifacts | ✅ landed | `stage`/`steps`/`paid` inputs; WIF auth; report+screenshots artifact |
 | BL-32 mapping notes | ✅ landed | 7 D-rows + BACKLOG X-p102 dated notes |
 | README + ADR-020 | ✅ landed | run + flip semantics documented |
-| Stage B: deploy + live legs + flag/SLO/purge observed | ⏳ pending | operator-tooling path (gcloud builds → pulumi up → migrate → journeys) |
-| Stage B: paid leg (approved grant) | ⏳ pending | `admin-cli house-grant` to the flagged tenant, then `--paid` legs |
+| Stage B: deploy + live legs + flag/SLO/purge observed | ✅ mostly green | see Evidence log — all 5 green legs pass live; purge + SLO observed |
+| Stage B: paid leg (approved grant) | ✅ ran, $0 spent | grant applied; all paid legs `owed`/flip — no metered run ever launched |
 
 ## Evidence log
 
-_(populated Phase 5 — Stage B live legs)_
+**Stage B prod deploy (2026-10-01):**
+
+- Cloud Build `c9c726e8-614a-4b6a-bb5f-25f751a3bf7e` — all 9 images pushed (tag `34d1439`).
+- Pulumi prod update 95 — `+3 ~8 =1`, no replaces/deletes; journeys SA, Gmail API, WIF bindings, image/env updates.
+- Migration `0046_test_workspaces.sql` applied via the documented IAP-tunnel path (46 migrations recorded; additive lint pass).
+- Provenance: `GET /healthz` on `rhema.tools` + `api.rhema.tools` both report `build.gitSha = 34d1439…` — `check-deploy-provenance.mjs` PASS.
+- `deployments` rows: `prod:34d1439…` (9 digests, protocols `0.4.0+ec61156725a895ab`) and `prod:2aa4ee2…` (worker hotfix digest).
+
+**Live incident found by the harness's own first run (fixed same day):**
+
+- The `test-tenant.purge` queue name was missing from the worker's startup `createQueue` list; the boot `boss.send` threw `Queue test-tenant.purge does not exist` → worker `exit(1)` crash loop → `auth.mail` consumers never registered → **prod magic links stopped arriving**. First journey run failed all 5 legs at `awaitMessage` — the harness caught a real production defect in its own new code.
+- Fix `2aa4ee2`: `TEST_TENANT_PURGE_JOB` added to the `createQueue` list; worker image rebuilt (`sha256:2fb27d2d…`), Pulumi update 96 (worker only). Backlogged `auth.mail` jobs drained immediately on the new revision; fresh magic links deliver in seconds.
+
+**Live journey legs (prod, real Gmail DWD mailbox):**
+
+| Step | Outcome | Note |
+|---|---|---|
+| N2 | ✅ pass | real `/signup` → magic-link email → verify → session cookie (fresh identity) |
+| N7 | ✅ pass | dossier renders (follows the `/review/` link; the project-home link can sit in a collapsed group — the leg now follows the href when hidden) |
+| R1 | ✅ pass | project list + marker row |
+| R5 | ✅ pass | duplicate Showcase → export the copy → download (scratch projects are `empty_draft`; Showcase is read-only by design) |
+| X1 | ✅ pass | nonce voice (intent=save) + nonce project on tenant A; tenant B clean on `/app`, `/app/inbox`, `/usage`, `/voices`, `/p/<aSlug>` |
+
+Full nightly-equivalent sweep (`2026-10-01_JOURNEY.1-nightly`, all 12 free legs): PASS N2/N7/R1/R5/X1 · owed N1 (no drop-zone), N2.invite (code first), N3 (preview nav timeout), N4 (no sheet estimate), N8 (no edit affordance), R7 (no informational gate on the board), P1 (sub-44px "Hold my text" @21px) · ready-to-flip N9 (Stripe-hosted page reached), C1 (claims parity holds) · paid legs correctly skipped.
+
+Reports: `docs/build/reports/2026-10-01_JOURNEY.1-{nightly,paid,paid2}/` (committed: report.json + per-step screenshots + console/request evidence).
+
+**Test-tenant flag / exclusions / purge (live):**
+
+- `workspaces.is_test = true` observed on all journey signups (`test+j<n>…`, `test+jrn-a/b`); pre-migration test-mailbox rows correctly unflagged.
+- SLO exclusion verified live: a synthetic breaching `slo_samples` row on a flagged workspace is filtered by the deployed `TEST_TENANT_FREE` fragment (`count=0` with exclusion vs `count=1` without); row removed after the probe.
+- Purge, observed end-to-end: the backdated flagged workspace was swept at 07:24Z — `user.deletion_requested_at` stamped past grace (2026-09-16), `account.hard-delete` enqueued + **completed** (user row gone, `projects`=0, workspace shell + billing rows retained per the retention contract). The sweep's own run logged `{"scanned":1,"purgedWorkspaces":["01M3V2EQ…"],"enqueuedDeletes":1}`.
+- **Second live defect the sweep surfaced (fixed same day):** the first real `account.hard-delete` FAILED on `claims_draft_id_fkey` — the projects cascade only reaches CASCADE edges; claims/correspondence/findings/revision_obligations/gates/decision_requests/obligation_findings/dispositions all hold NO ACTION references. Fix `087ec7f`: leaf-first deletes + a PGlite regression test seeding the full leaf chain. (Pre-existing P1.20 defect — also would have failed the real user's 10-14-scheduled hard-delete.)
+- Trial kill-switch exclusion: code-verified (`recordTrialSpend` early-return for `is_test`) + PGlite; live counter movement requires a paid hold — recorded under the paid leg.
+
+**Paid leg (operator-approved grant, 2026-10-01):**
+
+- `admin-cli house-grant` → 2000 credits (~$14) onto the flagged `jrn-a` tenant (ledger `01M3V5PZK…`, audit `01M3V5PZW…`).
+- `--paid --steps N5,N6,R4,R6` + `JOURNEY_DATABASE_URL` (DB-backed spend guard): **N5 owed** (launch navigation timed out — the review never started), **N6 owed** (no delivered review to inspect), **R4 owed** (`Send` occluded at its center point @1440×900 — the class of defect this harness exists to catch), **R6 ready-to-flip** (meter surface consistent).
+- Metered spend across ALL flagged tenants, 7d: **$0.0000 / 0 credits** — the owed legs never launched a metered run, so the ≤$5 cap was never approached. The grant remains on the tenant for the weekly CI leg.
+
+**Throttle note:** prod signup admission is `perIp=10/hr` (api) and magic-link send `perEmail=4/hr` (web). Repeated operator runs exhaust the IP window; fresh runs wait for the hour boundary. No product change needed — session caching + stable identities keep CI within budget.
+
+## Evidence report
+
+_(populated Phase 6)_
 
 ## Evidence report
 

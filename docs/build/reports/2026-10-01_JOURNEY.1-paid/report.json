@@ -1,0 +1,75 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "f525ef7d8336",
+  "startedAt": "2026-10-01T07:26:52.631Z",
+  "finishedAt": "2026-10-01T07:28:21.689Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c",
+    "observed": {
+      "web": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c",
+      "api": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N5",
+      "journey": "new-visitor",
+      "owner": "ACT.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 44110,
+      "error": "page.waitForURL: Timeout 15000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================",
+      "screenshot": "N5.png"
+    },
+    {
+      "id": "N6",
+      "journey": "new-visitor",
+      "owner": "RES.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1204,
+      "error": "no delivered review to inspect",
+      "screenshot": "N6.png"
+    },
+    {
+      "id": "R4",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31086,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('a[href^=\"/p/\"]').first()\n    - locator resolved to <a href=\"/p/jrn-adf39ec69042-tenanta\">JRN-ADF39EC69042-TENANTA</a>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is not stable\n  - retrying click action\n    - waiting for element to be visible, enabled and stable\n    - element is not visible\n  - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    58 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "screenshot": "R4.png"
+    },
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1396,
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": true
+}

@@ -59,6 +59,24 @@ async function createScratchProject(
   return m[1];
 }
 
+/**
+ * Follow the first project/dossier link on /app — clicking times out when the row sits inside a
+ * collapsed group (the Quiet fold), so a hidden link is followed by href instead of clicked. The
+ * point of these legs is the destination surface, not the list's expand affordance (P1 owns that).
+ */
+async function followProjectLink(page: Page, ctx: StepCtx, sel = 'a[href^="/p/"]'): Promise<void> {
+  const row = page.locator(sel).first();
+  if ((await row.count()) === 0) throw new Error("no project link on the page");
+  if (await row.isVisible().catch(() => false)) {
+    await row.click();
+    await page.waitForLoadState("domcontentloaded");
+    return;
+  }
+  const href = await row.getAttribute("href");
+  if (!href) throw new Error("project link has no href");
+  await gotoOk(page, `${ctx.webBaseUrl}${href}`);
+}
+
 // ---------------------------------------------------------------- new-visitor
 
 /** N2 (GREEN, JOURNEY.1) — real magic-link signup into the test mailbox; lands signed-in. */
@@ -159,10 +177,7 @@ const N4: StepFn = async (ctx) => {
 const N8: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  const row = page.locator('a[href^="/p/"]').first();
-  if ((await row.count()) === 0) throw new Error("no project to open");
-  await row.click();
-  await page.waitForLoadState("domcontentloaded");
+  await followProjectLink(page, ctx);
   // the locked-version edit affordance → fork to v(N+1)
   const edit = page.locator('a[href*="/edit/"], button:has-text("Edit")').first();
   if ((await edit.count()) === 0) throw new Error("no edit affordance on the project page");
@@ -294,10 +309,7 @@ const R4: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  const row = page.locator('a[href^="/p/"]').first();
-  if ((await row.count()) === 0) throw new Error("no project for the chat leg");
-  await row.click();
-  await page.waitForLoadState("domcontentloaded");
+  await followProjectLink(page, ctx);
   const input = page.locator('form[action$="/chat/turns"] input[name="body"], input[name="body"]').first();
   if ((await input.count()) === 0) throw new Error("no chat input on the project page");
   const send = page.locator('form[action$="/chat/turns"] button[type="submit"]').first();
