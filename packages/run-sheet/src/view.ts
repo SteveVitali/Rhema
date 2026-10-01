@@ -160,7 +160,11 @@ export interface BuildRunSheetViewArgs {
 /** The "Why this estimate?" breakdown ("21 claims × 24 cr ≈ 500 · 5,180 words ≈ 60"). Approximate by design. */
 function whyLine(args: BuildRunSheetViewArgs, claims: number | undefined): string {
   const spec = estimatorSpec(args.workflow);
-  const scale = MODEL_TIER_MULTIPLIERS[args.modelTier] * rigorMultiplier(args.workflow, args.rigor) * (spec?.calibrationScale ?? 1);
+  const scale =
+    MODEL_TIER_MULTIPLIERS[args.modelTier] *
+    rigorMultiplier(args.workflow, args.rigor) *
+    (spec?.calibrationScale ?? 1) *
+    (spec?.meteredCoverage ?? 1);
   const parts: string[] = [];
   const perClaim = spec?.costPerVerifiedClaimBase;
   if (claims != null && perClaim != null) {

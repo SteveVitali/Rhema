@@ -169,9 +169,9 @@ jobs:
     name: public-safe (gitleaks / markers / licence policy)
     needs: typecheck-lint-unit
     runs-on: ubuntu-latest
-    # gitleaks-action v2 reads the PR commit list (GET /pulls/<n>/commits) on pull_request
-    # events; the default job token is contents:read only, so that call 403s ("Resource not
-    # accessible by integration"). Grant the minimal read scopes it needs (as on #45–50).
+    # gitleaks-action@v2 calls GET /pulls/<n>/commits on pull_request events; without a
+    # pull-requests: read scope the default GITHUB_TOKEN gets 403 "Resource not accessible
+    # by integration" and the job dies before the licence/markers steps run.
     permissions:
       contents: read
       pull-requests: read

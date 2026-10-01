@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   ESTIMATORS,
+  METERED_VS_COMMITTED_COVERAGE,
   MODEL_TIER_MULTIPLIERS,
   RIGOR_MULTIPLIERS,
   rigorMultiplier,
@@ -31,7 +32,8 @@ describe("estimateCredits (§12.2 consumer)", () => {
     const spec = ESTIMATORS.review!;
     // includeAddends:false → just the base form
     const base = estimateCredits(spec, { words: 3000, claims: 10 }, { tier: "base", rigor: "standard", includeAddends: false });
-    expect(base).toBe(Math.ceil(40 + 0.012 * 3000 + 24 * 10)); // 40 + 36 + 240 = 316
+    // 40 + 36 + 240 = 316, ×1.25 metered-vs-committed coverage (PRB.25) = 395
+    expect(base).toBe(Math.ceil(316 * 1.25));
   });
 
   it("adds the per-phase addend terms by default (verification research + discourse + second read)", () => {
@@ -39,16 +41,26 @@ describe("estimateCredits (§12.2 consumer)", () => {
     const withAddends = estimateCredits(spec, { words: 3000, claims: 10 }, { tier: "base", rigor: "standard" });
     // base 316 + verification research (PRB.22 floor 60 + PRB.24 loop churn 140 + 16*10 = 360) +
     // discourse (90 + 140 loop churn + 0.006*3000=18 → 248) + second_read (0.005*3000=15)
-    // = 316+360+248+15 = 939
-    expect(withAddends).toBe(939);
+    // = 316+360+248+15 = 939, ×1.25 coverage (PRB.25) = 1173.75 → 1174
+    expect(withAddends).toBe(1174);
   });
 
   it("applies the model-tier multiplier (1× / 2.2× / 4.5×)", () => {
     const spec = ESTIMATORS.fact_check!; // base: 220 + 27*claims (PRB.22 research + PRB.24 loop churn folded in)
-    const claims = { claims: 10 }; // base standard = 220 + 270 = 490
-    expect(estimateCredits(spec, claims, { tier: "base", rigor: "standard" })).toBe(490);
-    expect(estimateCredits(spec, claims, { tier: "balanced", rigor: "standard" })).toBe(Math.ceil(490 * 2.2)); // 1078
-    expect(estimateCredits(spec, claims, { tier: "frontier", rigor: "standard" })).toBe(Math.ceil(490 * 4.5)); // 2205
+    const claims = { claims: 10 }; // base standard = 220 + 270 = 490, ×1.5 research-workflow coverage = 735
+    expect(estimateCredits(spec, claims, { tier: "base", rigor: "standard" })).toBe(735);
+    expect(estimateCredits(spec, claims, { tier: "balanced", rigor: "standard" })).toBe(Math.ceil(735 * 2.2)); // 1617
+    expect(estimateCredits(spec, claims, { tier: "frontier", rigor: "standard" })).toBe(Math.ceil(735 * 4.5)); // 3308
+  });
+
+  it("applies the metered-vs-committed coverage (PRB.25) — absent from a spec ⇒ ×1", () => {
+    // review carries 1.25: the estimate predicts the proxy-metered cost the cap is enforced on.
+    const review = estimateCredits(ESTIMATORS.review!, { words: 3000, claims: 10 }, { tier: "base", rigor: "standard", includeAddends: false });
+    expect(review).toBe(Math.ceil(316 * METERED_VS_COMMITTED_COVERAGE)); // 395
+    // profile_voice carries none — its quick variant was already calibrated to PROXY-metered
+    // credits (PRB.16b), so coverage would double-count.
+    const pv = estimateCredits(ESTIMATORS.profile_voice!, { words: 2000 }, { tier: "base", rigor: "standard", variant: "quick" });
+    expect(pv).toBe(220);
   });
 
   it("applies the §6.1 rigor multiplier (Review Quick 0.6× / Full board 1.2×)", () => {
@@ -89,9 +101,9 @@ describe("rigorMultiplier + RIGOR_MULTIPLIERS", () => {
 describe("foldInstrumentedRun (§16.3 #1 — measured replaces provisional)", () => {
   it("calibrates the modeled shape to the measured anchor and marks the spec instrumented", () => {
     const spec = ESTIMATORS.fact_check!; // base standard tier=base: 220 + 27*claims (PRB.22 research + PRB.24 loop churn)
-    const inputs = { claims: 10 }; // modeled prediction = 490
+    const inputs = { claims: 10 }; // modeled prediction = 490 ×1.5 coverage = 735
     const predicted = estimateCredits(spec, inputs, { tier: "base", rigor: "standard" });
-    expect(predicted).toBe(490);
+    expect(predicted).toBe(735);
 
     const measured = 420; // a real proxy-metered run came in ~20% higher than the model
     const folded = foldInstrumentedRun(spec, {
