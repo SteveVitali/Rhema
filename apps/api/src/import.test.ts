@@ -108,6 +108,75 @@ describe("createImportRoutes", () => {
     expect(exists).toBe(1);
   });
 
+  it("PRB.21 — a still-converting key with a wait budget → 202 pending; a retry serves the cached result", async () => {
+    // the converter resolves null while the Job runs (bounded wait expired), the result once converted.
+    let ready = false;
+    const staged: Converter = { preview: async () => (ready ? RESULT : null) };
+    const stagedApp = createImportRoutes({
+      principal: () => ({ ...principal, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId, userId: seed.userId }),
+      db: sql,
+      contentStore: store,
+      converter: staged,
+      ids,
+    });
+    const req = () => ({
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ quarantineKey: QK(), waitMs: 20_000 }),
+    });
+    const p1 = await stagedApp.request("/projects/p/import/preview", req());
+    expect(p1.status).toBe(202);
+    expect(await p1.json()).toEqual({ pending: true, quarantineKey: QK() });
+
+    ready = true;
+    const p2 = await stagedApp.request("/projects/p/import/preview", req());
+    expect(p2.status).toBe(200);
+    expect(((await p2.json()) as { preview: ConversionResult }).preview.markdown).toBe(RESULT.markdown);
+  });
+
+  it("PRB.21 — create on a still-converting key → 409 conversion_pending (never a draft, never a hang)", async () => {
+    const pending: Converter = { preview: async () => null };
+    const pendingApp = createImportRoutes({
+      principal: () => ({ ...principal, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId, userId: seed.userId }),
+      db: sql,
+      contentStore: store,
+      converter: pending,
+      ids,
+    });
+    const res = await pendingApp.request(`/projects/${seed.projectId}/import/create`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ quarantineKey: QK() }),
+    });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "conversion_pending", quarantineKey: QK() });
+    expect((await db.pg.query(`select count(*)::int n from drafts where origin='human_upload'`)).rows[0]).toEqual({ n: 0 });
+  });
+
+  it("PRB.21 — waitMs is clamped to the api's bound and forwarded to the converter", async () => {
+    let seen: number | undefined;
+    const probing: Converter = {
+      preview: async (_k, opts) => {
+        seen = opts?.waitMs;
+        return RESULT;
+      },
+    };
+    const probeApp = createImportRoutes({
+      principal: () => ({ ...principal, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId, userId: seed.userId }),
+      db: sql,
+      contentStore: store,
+      converter: probing,
+      ids,
+    });
+    const res = await probeApp.request("/projects/p/import/preview", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ quarantineKey: QK(), waitMs: 999_999 }),
+    });
+    expect(res.status).toBe(200);
+    expect(seen).toBe(25_000); // clamped to IMPORT_PREVIEW_WAIT_MS
+  });
+
   it("401s an unauthenticated import", async () => {
     const noauth = createImportRoutes({ principal: () => null, db: sql, contentStore: store, converter, ids });
     const res = await noauth.request("/projects/p/import/create", {

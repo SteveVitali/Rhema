@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { projectState } from "@rhema/orchestrator";
+import { projectState, NON_TERMINAL_RUN_STATES } from "@rhema/orchestrator";
 import type { ProjectState, ProjectStateInput } from "@rhema/orchestrator";
 import {
   deriveVoiceStatus,
@@ -25,6 +25,11 @@ export interface ProjectListRow {
   readonly state: ProjectState;
   /** The highest-n draft head — the source editor's entry point (PRB.07). Null only for a draft-less row. */
   readonly headDraftId: string | null;
+  /**
+   * PRB.21 / D-PRB.20-1 — the project's ONE non-terminal run when it has one (the run sheet renders its
+   * in-progress state + links here instead of a Run affordance; creation 409s `run_in_progress`).
+   */
+  readonly activeRun: { readonly runId: string; readonly state: string } | null;
   /**
    * PRB.10 — the linked voice's chip (§9.6): the persona + the ONE shared status pill, derived at read
    * time from the same assembler every surface uses. Null for a project with no voice linked (ad-hoc).
@@ -235,10 +240,10 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
   const responses = responsesRes.rows as { project_id: string; review_draft_n: number }[];
 
   const runsRes = await db.query(
-    `select project_id, state from runs where project_id = any($1::text[])`,
+    `select project_id, id, state, created_at from runs where project_id = any($1::text[])`,
     [ids],
   );
-  const runs = runsRes.rows as { project_id: string; state: string }[];
+  const runs = runsRes.rows as { project_id: string; id: string; state: string; created_at: string | Date }[];
 
   const byProject = <T extends { project_id: string }>(rows: readonly T[], id: string) =>
     rows.filter((r) => r.project_id === id);
@@ -262,6 +267,11 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
       (best, d) => (best == null || d.n > best.n ? d : best),
       null,
     );
+    // PRB.21 — the project's non-terminal run (at most one — the create guard enforces it). Surfaced so
+    // the run sheet can render "run in progress" + a link instead of a second Run affordance.
+    const active = byProject(runs, p.id)
+      .filter((r) => (NON_TERMINAL_RUN_STATES as readonly string[]).includes(r.state))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
     const chip = p.persona_id != null ? chips.get(p.persona_id) : undefined;
     return {
       id: p.id,
@@ -269,6 +279,7 @@ export async function listProjectStates(db: SqlClient, principal: Principal): Pr
       title: p.title,
       state: projectState(input),
       headDraftId: head?.id ?? null,
+      activeRun: active ? { runId: active.id, state: active.state } : null,
       voice: chip ? { personaId: p.persona_id as string, name: chip.name, status: chip.status } : null,
     };
   });

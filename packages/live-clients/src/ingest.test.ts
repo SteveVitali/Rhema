@@ -204,4 +204,133 @@ describe("createConvertJobPreview", () => {
     const conv = createConvertJobPreview(baseArgs({ fetchImpl: f }));
     await expect(conv.preview(KEY)).rejects.toThrow("convert_output_missing");
   });
+
+  // ---- PRB.21 — bounded wait + the in-flight marker (join-or-launch) ----
+
+  /** A marker-capable object store: save honors ifGenerationMatch:0 (412 on existing), delete drops. */
+  function markerObjects(seed: Record<string, string> = {}): GcsObjectsLike & { store: Record<string, string> } {
+    const store = { ...seed };
+    return {
+      store,
+      file: (name: string) => ({
+        download: async (): Promise<readonly [Uint8Array]> => {
+          if (!(name in store)) {
+            const e = new Error("No such object") as Error & { code: number };
+            e.code = 404;
+            throw e;
+          }
+          return [new TextEncoder().encode(store[name]!)] as const;
+        },
+        save: async (data: string | Uint8Array, opts?: { preconditionOpts?: { ifGenerationMatch?: number } }) => {
+          if (opts?.preconditionOpts?.ifGenerationMatch === 0 && name in store) {
+            const e = new Error("Precondition Failed") as Error & { code: number };
+            e.code = 412;
+            throw e;
+          }
+          store[name] = typeof data === "string" ? data : new TextDecoder().decode(data);
+        },
+        delete: async () => {
+          delete store[name];
+        },
+      }),
+    };
+  }
+
+  it("a bounded wait returns null (pending) while the execution still runs — one launch only", async () => {
+    const objects = markerObjects();
+    const f = fakeFetch((url) =>
+      url.endsWith(":run")
+        ? { status: 200, body: { name: "op5", metadata: { name: EXEC } } }
+        : { status: 200, body: { name: EXEC, conditions: [{ type: "Completed", status: "Unknown" }] } },
+    );
+    const conv = createConvertJobPreview(
+      baseArgs({ objects, fetchImpl: f, sleep: () => new Promise((r) => setTimeout(r, 2)) }),
+    );
+    // waitMs = 0 ⇒ the first poll-loop iteration already exceeds the soft deadline.
+    expect(await conv.preview(KEY, { waitMs: 0 })).toBeNull();
+    expect(f.calls.filter((c) => c.url.endsWith(":run"))).toHaveLength(1);
+    // the marker recorded the launched execution for the join path.
+    const marker = JSON.parse(objects.store["converting/ws1/u1.json"]!) as { execution?: string };
+    expect(marker.execution).toBe(EXEC);
+  });
+
+  it("a retried preview JOINS the marker's execution — never a duplicate jobs:run", async () => {
+    const objects = markerObjects();
+    let polls = 0;
+    const f = fakeFetch((url) => {
+      if (url.endsWith(":run")) return { status: 200, body: { name: "op6", metadata: { name: EXEC } } };
+      polls += 1;
+      // the execution completes on the THIRD poll overall — so the second preview's join sees it done.
+      if (polls < 3) return { status: 200, body: { name: EXEC, conditions: [{ type: "Completed", status: "Unknown" }] } };
+      objects.store["converted/ws1/u1.json"] = JSON.stringify(RESULT);
+      return { status: 200, body: { name: EXEC, completionTime: "t", conditions: [{ type: "Completed", status: "True" }] } };
+    });
+    const conv = createConvertJobPreview(
+      baseArgs({ objects, fetchImpl: f, sleep: () => new Promise((r) => setTimeout(r, 1)) }),
+    );
+    // first call: launches, waits ~1 poll, budget expires → pending.
+    expect(await conv.preview(KEY, { waitMs: 1 })).toBeNull();
+    // retry: joins the SAME execution (no second :run), polls it to completion, reads the result.
+    const out = await conv.preview(KEY, { waitMs: 60_000 });
+    expect(out).toEqual(RESULT);
+    expect(f.calls.filter((c) => c.url.endsWith(":run"))).toHaveLength(1);
+    // the marker is cleared once the converted object lands.
+    expect("converting/ws1/u1.json" in objects.store).toBe(false);
+  });
+
+  it("two SIMULTANEOUS previews dedupe on the atomic claim — one jobs:run total", async () => {
+    const objects = markerObjects();
+    let polls = 0;
+    const f = fakeFetch((url) => {
+      if (url.endsWith(":run")) return { status: 200, body: { name: "op7", metadata: { name: EXEC } } };
+      polls += 1;
+      if (polls < 2) return { status: 200, body: { name: EXEC, conditions: [{ type: "Completed", status: "Unknown" }] } };
+      objects.store["converted/ws1/u1.json"] = JSON.stringify(RESULT);
+      return { status: 200, body: { name: EXEC, completionTime: "t", conditions: [{ type: "Completed", status: "True" }] } };
+    });
+    const conv = createConvertJobPreview(
+      baseArgs({ objects, fetchImpl: f, sleep: () => new Promise((r) => setTimeout(r, 1)) }),
+    );
+    const [a, b] = await Promise.all([
+      conv.preview(KEY, { waitMs: 60_000 }),
+      conv.preview(KEY, { waitMs: 60_000 }),
+    ]);
+    // One claims + launches; the other joins the published execution (or reports pending once, in which
+    // case its retry joins) — either way there is exactly ONE jobs:run.
+    expect(f.calls.filter((c) => c.url.endsWith(":run"))).toHaveLength(1);
+    expect(a === null || a.markdown === RESULT.markdown).toBe(true);
+    expect(b === null || b.markdown === RESULT.markdown).toBe(true);
+  });
+
+  it("a marker whose execution 404s is stale — the retried preview clears it and relaunches", async () => {
+    const objects = markerObjects({
+      "converting/ws1/u1.json": JSON.stringify({ startedAt: Date.now(), execution: `${JOB}/executions/dead` }),
+    });
+    const f = fakeFetch((url) => {
+      if (url.endsWith(":run")) return { status: 200, body: { name: "op8", metadata: { name: EXEC } } };
+      if (url.endsWith("/executions/dead")) return { status: 404, body: {} };
+      objects.store["converted/ws1/u1.json"] = JSON.stringify(RESULT);
+      return { status: 200, body: { name: EXEC, completionTime: "t", conditions: [{ type: "Completed", status: "True" }] } };
+    });
+    const conv = createConvertJobPreview(baseArgs({ objects, fetchImpl: f }));
+    expect(await conv.preview(KEY)).toEqual(RESULT);
+    // exactly one NEW launch (the join of the dead execution + the relaunch — never a third).
+    expect(f.calls.filter((c) => c.url.endsWith(":run"))).toHaveLength(1);
+  });
+
+  it("a stale marker (older than the TTL) is taken over, not joined", async () => {
+    const objects = markerObjects({
+      "converting/ws1/u1.json": JSON.stringify({ startedAt: Date.now() - 20 * 60_000, execution: `${JOB}/executions/old` }),
+    });
+    const f = fakeFetch((url) => {
+      if (url.endsWith(":run")) return { status: 200, body: { name: "op9", metadata: { name: EXEC } } };
+      objects.store["converted/ws1/u1.json"] = JSON.stringify(RESULT);
+      return { status: 200, body: { name: EXEC, completionTime: "t", conditions: [{ type: "Completed", status: "True" }] } };
+    });
+    const conv = createConvertJobPreview(baseArgs({ objects, fetchImpl: f }));
+    expect(await conv.preview(KEY)).toEqual(RESULT);
+    expect(f.calls.filter((c) => c.url.endsWith(":run"))).toHaveLength(1);
+    // the old execution is never polled — the takeover launches fresh.
+    expect(f.calls.some((c) => c.url.endsWith("/executions/old"))).toBe(false);
+  });
 });

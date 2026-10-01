@@ -77,6 +77,10 @@ export const COPY = {
     fixNowLabel: "Fix now",
     fixNowNote: "Fix now opens the affected block; Create and fix later keeps notes on the timeline.",
     created: "Draft created.",
+    // PRB.21 — the converting state (a cold convert Job runs ~2.5–4 min): honest pending copy while the
+    // page's meta-refresh re-polls the preview GET on the quarantine key.
+    convertingFmt: "Converting {name} — a cold start can take a few minutes.",
+    convertingNote: "This page refreshes itself until the preview is ready; you can also close it and come back to the project.",
   },
 
   runSheet: {
@@ -93,6 +97,10 @@ export const COPY = {
     advanced: "Advanced",
     started: "Your run has started. Watch it on the project.",
     insufficient: "This run's cap is more than your spendable balance. Lower the rigor to fit, or add credits.",
+    // PRB.21 / D-PRB.20-1 — the in-progress state that REPLACES the Run affordance while a non-terminal
+    // run exists (at most one per project; the api 409s a second create — this is the honest screen).
+    inProgress: "A run is already in progress on this project.",
+    openRun: "Open the live run",
     // PRB.08 — the exhaustion panel's Payment Link action + the suspended-account notice + the final-month
     // beta-plan offer (copy + link only — REQ-BETA-14/15, §14.6; no subscription machinery).
     buyCredits: "Add credits",

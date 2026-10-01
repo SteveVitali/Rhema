@@ -113,7 +113,7 @@ function makeDeps(
             : req.code == null
               ? { ok: false as const, status: 403, error: "invite_required" }
               : { ok: false as const, status: 403, error: "unknown" }),
-      previewImport: async () => ({ preview: PREVIEW, quarantineKey: "quarantine/ws1/up1" }),
+      previewImport: async () => ({ status: "ready" as const, preview: PREVIEW, quarantineKey: "quarantine/ws1/up1" }),
       createImport: async () => ({ draftId: "d_new" }),
       createRun: async () => ({ runId: "run_new", state: "queued", deduped: false }),
       getDossier: async () => DOSSIER,
@@ -427,6 +427,73 @@ describe("§5.3 import flow (deliverable 4)", () => {
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/login");
   });
+
+  it("PRB.21 — a pending preview renders the converting state + a meta-refresh poll on the quarantine key", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      previewImport: async () => ({ status: "pending" as const, quarantineKey: "quarantine/ws1/up1" }),
+    };
+    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/import/preview", {
+      method: "POST",
+      ...form({ paste: "hello" }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("cold start can take a few minutes");
+    expect(html).toContain('http-equiv="refresh"');
+    expect(html).toContain("/p/the-politics-of-visibility/import/preview?qk=quarantine%2Fws1%2Fup1");
+    // no Create affordance on a pending page — there is nothing to create yet.
+    expect(html).not.toContain("Create and fix later");
+  });
+
+  it("PRB.21 — the poll GET re-previews the quarantine key: pending stays pending, ready renders the preview", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    const seen: string[] = [];
+    let ready = false;
+    deps.dataSource = {
+      ...deps.dataSource,
+      previewImport: async (_s, input) => {
+        seen.push(input.quarantineKey ?? "");
+        return ready
+          ? { status: "ready" as const, preview: PREVIEW, quarantineKey: input.quarantineKey! }
+          : { status: "pending" as const, quarantineKey: input.quarantineKey! };
+      },
+    };
+    const app = createWebApp(deps);
+    const url = "/p/the-politics-of-visibility/import/preview?qk=" + encodeURIComponent("quarantine/ws1/up1");
+
+    const p1 = await app.request(url);
+    expect(p1.status).toBe(200);
+    expect(await p1.text()).toContain("cold start can take a few minutes");
+
+    ready = true;
+    const p2 = await app.request(url);
+    expect(p2.status).toBe(200);
+    const html = await p2.text();
+    expect(html).toContain("Conversion preview");
+    expect(html).toContain("Create and fix later");
+    // both polls replayed the SAME quarantine key — never a re-upload.
+    expect(seen).toEqual(["quarantine/ws1/up1", "quarantine/ws1/up1"]);
+  });
+
+  it("PRB.21 — a create that hits conversion_pending drops back to the converting state", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createImport: async () => {
+        throw new ApiError(409, "http://api/projects/proj_pv/import/create", undefined, "conversion_pending");
+      },
+    };
+    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/import/create", {
+      method: "POST",
+      ...form({ qk: "quarantine/ws1/up1" }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("cold start can take a few minutes");
+    expect(html).toContain('http-equiv="refresh"');
+  });
 });
 
 describe("AC5 — private + capped (REQ-BETA-19)", () => {
@@ -500,6 +567,49 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     expect(calls).toEqual([{ projectId: "proj_pv", workflow: "review" }]);
     const html = await res.text();
     expect(html).toContain("Your run has started");
+  });
+
+  it("PRB.21 — GET renders the in-progress state (not the Run affordance) when the project has an active run", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    const running: ProjectRow[] = [
+      { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },
+      PROJECTS[1]!,
+    ];
+    deps.dataSource = { ...deps.dataSource, listProjects: async () => running };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("A run is already in progress on this project");
+    expect(html).toContain('href="/p/the-politics-of-visibility/review/run_live"');
+    // the Run affordance is REPLACED — a second click can never spawn a duplicate.
+    expect(html).not.toContain("Confirm and run");
+    expect(html).not.toContain('data-paywall="run-sheet"');
+  });
+
+  it("PRB.21 — a 409 run_in_progress on POST re-renders the in-progress state (never an error page)", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async () => {
+        throw new ApiError(409, "http://api/projects/proj_pv/runs", undefined, "run_in_progress");
+      },
+      // the re-render refreshes the active-run fact from the project list.
+      listProjects: async () => [
+        { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "queued" } },
+        PROJECTS[1]!,
+      ],
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_dup", estimateCredits: "560", capCredits: "840" }),
+    });
+    expect(res.status).toBe(409);
+    const html = await res.text();
+    expect(html).toContain("A run is already in progress on this project");
+    expect(html).toContain('href="/p/the-politics-of-visibility/review/run_live"');
+    expect(html).not.toContain("Your run has started");
   });
 
   it("an insufficient-balance 402 re-renders the sheet with the resolution notice, not started (§14.6)", async () => {

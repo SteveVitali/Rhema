@@ -39,11 +39,21 @@ export function renderDocument(url: string, element: ReactNode, data: PageData =
       <StaticRouter location={url}>{element}</StaticRouter>
     </PageDataContext.Provider>,
   );
+  // PRB.21 — a pending page carries a meta-refresh so it re-polls itself on a timer (the import
+  // preview's converting state); the URL is app-generated (the quarantine-key poll path), not user input.
+  const refresh = data.autoRefresh
+    ? `<meta http-equiv="refresh" content="${data.autoRefresh.seconds};url=${escapeHtml(data.autoRefresh.url)}">`
+    : "";
   return (
     `<!doctype html><html lang="en" data-theme="dark">` +
     `<head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
-    `<title>${DOC_TITLE}</title><style>${THEME_CSS}</style></head>` +
+    `${refresh}<title>${DOC_TITLE}</title><style>${THEME_CSS}</style></head>` +
     `<body>${body}${data.dwellSurface ? dwellBeacon(data.dwellSurface) : ""}</body></html>`
   );
+}
+
+/** Minimal escaping for interpolating an app-built URL into a `<meta>` attribute. */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

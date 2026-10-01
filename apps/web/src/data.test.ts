@@ -152,9 +152,24 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
     expect(put.init.headers).toEqual({ "x-goog-content-length-range": "0,26214400" });
     expect(put.init.headers).not.toHaveProperty("cookie");
     expect(new TextDecoder().decode(put.init.body as Uint8Array)).toBe("# Hi");
-    // preview posts the minted key
-    expect(JSON.parse(seen[3]!.init.body as string)).toEqual({ quarantineKey: PRESIGN.key });
-    expect(out).toEqual({ preview: CONVERSION, quarantineKey: PRESIGN.key });
+    // preview posts the minted key + the PRB.21 wait budget (the api holds at most that long, then 202s).
+    expect(JSON.parse(seen[3]!.init.body as string)).toEqual({ quarantineKey: PRESIGN.key, waitMs: 20_000 });
+    expect(out).toEqual({ status: "ready", preview: CONVERSION, quarantineKey: PRESIGN.key });
+  });
+
+  it("PRB.21 — a 202 pending preview resolves {status:'pending'} with the key the caller re-polls", async () => {
+    const ds = apiDataSource(
+      "http://api.local",
+      fakeFetch((url) => {
+        if (url.endsWith("/projects")) return new Response(JSON.stringify({ projects: [PROJECT] }));
+        if (url.endsWith("/import/preview"))
+          return new Response(JSON.stringify({ pending: true, quarantineKey: PRESIGN.key }), { status: 202 });
+        return new Response("not found", { status: 404 });
+      }),
+    );
+    // a replayed quarantineKey skips the upload entirely — this is the poll leg.
+    const out = await ds.previewImport(SESSION, { projectSlug: PROJECT.slug, quarantineKey: PRESIGN.key });
+    expect(out).toEqual({ status: "pending", quarantineKey: PRESIGN.key });
   });
 
   it("pasted text goes through the same quarantine path (encoded as utf-8 bytes)", async () => {

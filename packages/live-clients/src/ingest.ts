@@ -78,6 +78,14 @@ export async function createStorageV4SignedUrlProvider(): Promise<SignedUrlProvi
 
 export interface GcsObjectFileLike {
   download(): Promise<readonly [Uint8Array | Buffer | string]>;
+  /**
+   * PRB.21 — the in-flight marker write. `preconditionOpts.ifGenerationMatch: 0` maps to GCS's
+   * create-only precondition (412 when the object exists) — the atomic claim that makes two
+   * simultaneous previews dedupe instead of racing two `jobs:run`s. Absent ⇒ dedupe is skipped.
+   */
+  save?(data: string | Uint8Array, opts?: { preconditionOpts?: { ifGenerationMatch?: number } }): Promise<unknown>;
+  /** PRB.21 — clear a marker whose execution died or lied (404). */
+  delete?(): Promise<unknown>;
 }
 export interface GcsObjectsLike {
   file(name: string): GcsObjectFileLike;
@@ -159,6 +167,14 @@ const DEFAULT_MOUNT = "/usercontent";
 const DEFAULT_TIMEOUT_MS = 300_000;
 const DEFAULT_POLL_MS = 1_000;
 const RUN_API = "https://run.googleapis.com/v2";
+// PRB.21 — the in-flight conversion marker (`converting/<ws>/<id>.json` on the same bucket; the api SA's
+// bucket-wide objectAdmin covers the prefix). A fresh marker names the execution already converting this
+// key, so a retried preview JOINS it instead of spawning a duplicate `jobs:run`; a marker older than the
+// TTL means the launcher's execution is gone (executions are bounded by `timeoutMs`) — take over. The
+// launch grace covers the claim→`jobs:run`→publish window: a marker without an execution younger than it
+// is a launch in flight, older than it is a dead claim.
+const MARKER_TTL_MS = 15 * 60_000;
+const MARKER_LAUNCH_GRACE_MS = 30_000;
 
 const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -167,13 +183,19 @@ const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
  * The live Converter (apps/api/src/import.ts `Converter.preview`). Validates the quarantine key shape,
- * serves a cached converted object if the Job already ran for this upload, otherwise runs the Job
- * (`jobs:run` + container-arg override → mounted paths — needs `run.jobs.runWithOverrides`, granted via
- * `roles/run.jobsExecutorWithOverrides` on the Job), polls the Execution resource (a Job child the
- * Job-scoped grant covers), then reads the result object.
+ * serves a cached converted object if the Job already ran for this upload, otherwise joins-or-launches a
+ * Job execution (`jobs:run` + container-arg override → mounted paths — needs `run.jobs.runWithOverrides`,
+ * granted via `roles/run.jobsExecutorWithOverrides` on the Job), polls the Execution resource (a Job child
+ * the Job-scoped grant covers), then reads the result object.
+ *
+ * PRB.21 — pending + dedupe semantics: `opts.waitMs` is the per-request wait budget — a call that exhausts
+ * it resolves `null` (still converting; the caller retries) instead of holding one request for the whole
+ * ~2.5–4 min cold execution. The `converting/` marker records the launched execution so a retry JOINS it
+ * rather than spawning a duplicate `jobs:run` (join-or-launch). With `waitMs` unset the call waits to the
+ * full `timeoutMs` bound and throws on expiry — the pre-PRB.21 contract `import/create` still relies on.
  */
 export function createConvertJobPreview(args: ConvertJobArgs): {
-  preview(quarantineKey: string): Promise<ConversionResult>;
+  preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null>;
 } {
   const mount = (args.mountPath ?? DEFAULT_MOUNT).replace(/\/+$/, "");
   const fetchImpl: RestFetchLike = args.fetchImpl ?? (fetch as unknown as RestFetchLike);
@@ -197,8 +219,59 @@ export function createConvertJobPreview(args: ConvertJobArgs): {
     }
   }
 
+  // ---- the in-flight marker (converting/<ws>/<id>.json) — advisory; every write is best-effort. ----
+  interface ConversionMarker {
+    readonly startedAt?: number;
+    readonly execution?: string;
+  }
+  const markerKey = (ws: string, id: string) => `converting/${ws}/${id}.json`;
+
+  async function readMarker(key: string): Promise<ConversionMarker | null> {
+    try {
+      const [buf] = await args.objects.file(key).download();
+      const text = typeof buf === "string" ? buf : Buffer.from(buf).toString("utf8");
+      const m = JSON.parse(text) as ConversionMarker;
+      return typeof m?.startedAt === "number" ? m : null;
+    } catch (e) {
+      const code = (e as { code?: number | string }).code;
+      if (
+        code === 404 ||
+        code === "404" ||
+        e instanceof SyntaxError ||
+        /not.?found|no such object/i.test(String((e as Error)?.message ?? e))
+      ) {
+        return null;
+      }
+      throw e;
+    }
+  }
+
+  const writeMarker = (key: string, m: ConversionMarker) =>
+    args.objects.file(key).save?.(JSON.stringify(m)).then(() => true).catch(() => false);
+  const clearMarker = (key: string) => args.objects.file(key).delete?.().then(() => undefined).catch(() => undefined);
+
+  /**
+   * The atomic claim: create-only write (`ifGenerationMatch: 0`). Resolves `true` when THIS call claimed
+   * the marker, `false` when it already exists (412 — someone else is converting), `"unsupported"` when
+   * the injected surface can't write (dedupe degrades to join-less launching, the pre-PRB.21 posture).
+   */
+  async function tryClaimMarker(key: string, m: ConversionMarker): Promise<boolean | "unsupported"> {
+    const file = args.objects.file(key);
+    if (!file.save) return "unsupported";
+    try {
+      await file.save(JSON.stringify(m), { preconditionOpts: { ifGenerationMatch: 0 } });
+      return true;
+    } catch (e) {
+      const code = (e as { code?: number | string }).code;
+      if (code === 412 || code === "412" || /precondition|412/i.test(String((e as Error)?.message ?? e))) {
+        return false;
+      }
+      return false; // any other write failure ⇒ treat as "someone's converting" — never double-launch on doubt
+    }
+  }
+
   return {
-    async preview(quarantineKey: string): Promise<ConversionResult> {
+    async preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null> {
       const parsed = parseQuarantineKey(quarantineKey);
       if (!parsed) throw new Error("invalid_quarantine_key");
 
@@ -207,36 +280,90 @@ export function createConvertJobPreview(args: ConvertJobArgs): {
       if (cached) return cached;
 
       const outKey = convertedResultKey(quarantineKey);
+      const mKey = markerKey(parsed.workspaceId, parsed.uploadId);
       const token = await tokenFor();
       const auth = { authorization: `Bearer ${token}`, "content-type": "application/json" };
-      const run = await fetchImpl(`${RUN_API}/${args.job}:run`, {
-        method: "POST",
-        headers: auth,
-        body: JSON.stringify({
-          overrides: {
-            taskCount: 1,
-            containerOverrides: [{ args: [`${mount}/${quarantineKey}`, `${mount}/${outKey}`] }],
-          },
-        }),
-      });
-      if (!run.ok) {
-        // Surface the API's error body — a bare status hides IAM vs quota vs API-disabled failures.
-        const detail = (await run.text().catch(() => "")).slice(0, 500);
-        throw new Error(`convert job run failed (${run.status}): ${detail}`);
+      const softDeadline = opts?.waitMs != null ? Date.now() + opts.waitMs : null;
+      const hardDeadline = Date.now() + timeoutMs;
+
+      async function launch(): Promise<string> {
+        const run = await fetchImpl(`${RUN_API}/${args.job}:run`, {
+          method: "POST",
+          headers: auth,
+          body: JSON.stringify({
+            overrides: {
+              taskCount: 1,
+              containerOverrides: [{ args: [`${mount}/${quarantineKey}`, `${mount}/${outKey}`] }],
+            },
+          }),
+        });
+        if (!run.ok) {
+          // Surface the API's error body — a bare status hides IAM vs quota vs API-disabled failures.
+          const detail = (await run.text().catch(() => "")).slice(0, 500);
+          throw new Error(`convert job run failed (${run.status}): ${detail}`);
+        }
+        const op = (await run.json()) as RunOperation;
+        const execName = op.metadata?.name;
+        if (!execName) throw new Error("convert job run returned no execution name");
+        return execName;
       }
-      const op = (await run.json()) as RunOperation;
-      const execName = op.metadata?.name;
-      if (!execName) throw new Error("convert job run returned no execution name");
+
+      // Join-or-launch (PRB.21): the claim is atomic (create-only write). The claimer owns the launch;
+      // everyone else reads the marker — a fresh `execution` is joined, a claim that never published one
+      // inside the grace is dead (its `jobs:run` threw) and gets taken over, as is a stale marker.
+      // A bounded caller that lands inside the launch window just reports pending — its next poll joins.
+      async function launchAndPublish(): Promise<string> {
+        try {
+          const name = await launch();
+          await writeMarker(mKey, { startedAt: Date.now(), execution: name });
+          return name;
+        } catch (e) {
+          await clearMarker(mKey); // the launch died before an execution existed — don't hold the claim
+          throw e;
+        }
+      }
+
+      let joined = false;
+      let execName: string;
+      const claimed = await tryClaimMarker(mKey, { startedAt: Date.now() });
+      if (claimed === true || claimed === "unsupported") {
+        // we claimed (or dedupe is unsupported — marker writes then no-op): launch + publish.
+        execName = await launchAndPublish();
+      } else {
+        const marker = await readMarker(mKey);
+        const exec = marker?.execution;
+        const age = marker?.startedAt != null ? Date.now() - marker.startedAt : Number.POSITIVE_INFINITY;
+        if (exec != null && age < MARKER_TTL_MS) {
+          execName = exec;
+          joined = true;
+        } else if (exec == null && age < MARKER_LAUNCH_GRACE_MS) {
+          // A claim landed but its `jobs:run` hasn't published the execution yet. A bounded caller
+          // reports pending — the next poll joins the published execution. An unbounded caller waits
+          // out the grace, then takes over if nothing ever published.
+          if (softDeadline != null) return null;
+          execName = await launchAndPublish();
+        } else {
+          execName = await launchAndPublish(); // stale marker or a dead claim — take over
+        }
+      }
 
       // Poll the Execution until its `Completed` condition lands. The converted OBJECT is the durable
       // result — the execution only gates when to read it.
-      const deadline = Date.now() + timeoutMs;
       let failed: string | null = null;
       for (;;) {
-        if (Date.now() > deadline) throw new Error("convert job timed out");
+        const nowTs = Date.now();
+        if (softDeadline != null && nowTs > softDeadline) return null; // still converting — caller retries
+        if (nowTs > hardDeadline) throw new Error("convert job timed out");
         await sleep(pollMs);
         const got = await fetchImpl(`${RUN_API}/${execName}`, { headers: auth });
         if (!got.ok) {
+          if (got.status === 404 && joined) {
+            // The marker outlived its execution — clear it and launch a fresh one rather than wait the TTL out.
+            await clearMarker(mKey);
+            joined = false;
+            execName = await launchAndPublish();
+            continue;
+          }
           const detail = (await got.text().catch(() => "")).slice(0, 500);
           throw new Error(`convert execution poll failed (${got.status}): ${detail}`);
         }
@@ -253,10 +380,14 @@ export function createConvertJobPreview(args: ConvertJobArgs): {
           break;
         }
       }
-      if (failed) throw new Error(`convert job failed: ${failed}`);
+      if (failed) {
+        await clearMarker(mKey); // a failed execution leaves no result — the next preview may relaunch
+        throw new Error(`convert job failed: ${failed}`);
+      }
 
       const result = await readResult(quarantineKey);
       if (!result) throw new Error("convert_output_missing"); // job done but no converted object — fail loud
+      await clearMarker(mKey);
       return result;
     },
   };

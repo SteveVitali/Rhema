@@ -81,9 +81,58 @@ describe("run creation (§12.4 step 2; REQ-SPEC-16)", () => {
     expect(deps.ledger.opsOf("hold")).toHaveLength(1);
   });
 
-  it("a different idempotency key makes a distinct run", async () => {
+  it("a different idempotency key makes a distinct run once the active run is terminal", async () => {
     await createRun(deps, baseInput());
+    // PRB.21 — at most ONE non-terminal run per project: the second key only creates after the first
+    // run lands terminal (the live-run conflict is its own test below).
+    await db.client.query("update runs set state = 'completed' where project_id = $1", [seed.projectId]);
     await createRun(deps, baseInput({ idempotencyKey: "idem-2" }));
+    expect(await runCount()).toBe(2);
+  });
+
+  it("PRB.21 / D-PRB.20-1: a second create while a run is non-terminal → run_in_progress, one row, one hold", async () => {
+    const first = await createRun(deps, baseInput());
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const second = await createRun(deps, baseInput({ idempotencyKey: "idem-2" }));
+    expect(second.ok).toBe(false);
+    if (!second.ok) {
+      expect(second.reason).toBe("run_in_progress");
+      if (second.reason === "run_in_progress") expect(second.activeRunId).toBe(first.runId);
+    }
+    // No second run row, no second memo, and never a second hold — the whole creation rolled back.
+    expect(await runCount()).toBe(1);
+    expect(deps.ledger.opsOf("hold")).toHaveLength(1);
+    const memo = await db.client.query("select count(*)::int as n from run_idempotency", []);
+    expect((memo.rows[0] as { n: number }).n).toBe(1);
+  });
+
+  it("PRB.21: a run parked in awaiting_consent still blocks a second create (non-terminal is the real set)", async () => {
+    const first = await createRun(deps, baseInput({ sheetLaunched: false }));
+    expect(first.ok && first.state).toBe("awaiting_consent");
+    const second = await createRun(deps, baseInput({ idempotencyKey: "idem-2" }));
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.reason).toBe("run_in_progress");
+    expect(await runCount()).toBe(1);
+  });
+
+  it("PRB.21: an idempotent replay of the in-flight run dedupes (200-path) instead of 409ing", async () => {
+    const first = await createRun(deps, baseInput());
+    // same idempotency key = the same submission's retry — it must return the live run, never the guard.
+    const retry = await createRun(deps, baseInput());
+    expect(first.ok && retry.ok).toBe(true);
+    if (first.ok && retry.ok) {
+      expect(retry.runId).toBe(first.runId);
+      expect(retry.deduped).toBe(true);
+    }
+    expect(await runCount()).toBe(1);
+  });
+
+  it("PRB.21: a project-less run (persona builds) skips the project guard entirely", async () => {
+    const a = await createRun(deps, baseInput({ projectId: undefined }));
+    const b = await createRun(deps, baseInput({ projectId: undefined, idempotencyKey: "idem-2" }));
+    expect(a.ok && b.ok).toBe(true);
     expect(await runCount()).toBe(2);
   });
 

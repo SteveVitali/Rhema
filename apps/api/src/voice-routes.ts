@@ -410,7 +410,10 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       const qk = safeKey(body.quarantineKey, principal.workspaceId);
       if (qk) {
         if (!deps.converter) throw new Error("converter unavailable");
-        const pv = await deps.converter.preview(qk);
+        // PRB.21 — bound the wait (a cold convert Job runs ~2.5–4 min): still-converting ⇒
+        // conversion_pending, never a multi-minute hold inside this transaction.
+        const pv = await deps.converter.preview(qk, { waitMs: 25_000 });
+        if (pv == null) return { error: "conversion_pending" };
         markdown = pv.markdown;
         quality = pv.quality;
         qualityNotes = pv.qualityNotes;
@@ -458,7 +461,8 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
       return { itemId, sampleVersionId, words: facts.words, status: v?.status ?? null };
     });
     if (res === null) return c.json({ error: "not_found" }, 404);
-    if ("error" in res) return c.json({ error: res.error }, 400);
+    // a still-converting upload is a retryable 409, not a 400 bad-request (PRB.21).
+    if ("error" in res) return c.json({ error: res.error }, res.error === "conversion_pending" ? 409 : 400);
     return c.json(res, 201);
   });
 

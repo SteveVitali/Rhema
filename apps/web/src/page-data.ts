@@ -40,17 +40,28 @@ export interface PageData {
     /** the highest-n draft head — the "Edit source" link's target (PRB.07). */
     readonly headDraftId?: string | null;
   };
-  readonly conversion?: {
-    readonly projectSlug: string;
-    readonly sourceLabel: string;
-    readonly sourceText: string;
-    readonly convertedMarkdown: string;
-    readonly countLine: string;
-    readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
-    /** PRB.20 — the minted quarantine key; the create form replays it in the hidden `qk` field. */
-    readonly quarantineKey?: string;
-    readonly created?: boolean;
-  };
+  readonly conversion?:
+    | {
+        readonly projectSlug: string;
+        readonly sourceLabel: string;
+        readonly sourceText: string;
+        readonly convertedMarkdown: string;
+        readonly countLine: string;
+        readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+        /** PRB.20 — the minted quarantine key; the create form replays it in the hidden `qk` field. */
+        readonly quarantineKey?: string;
+        readonly created?: boolean;
+        readonly pending?: false;
+      }
+    | {
+        // PRB.21 — the converting state: a cold Job is still running; the page carries a meta-refresh
+        // (autoRefresh) that re-polls the preview GET on this quarantine key until it's ready.
+        readonly projectSlug: string;
+        readonly sourceLabel: string;
+        readonly pending: true;
+        readonly quarantineKey: string;
+        readonly created?: boolean;
+      };
   readonly runSheet?: {
     readonly slug: string;
     readonly projectTitle: string;
@@ -59,6 +70,11 @@ export interface PageData {
     readonly started?: boolean;
     /** a blocking notice (e.g. insufficient balance — §14.6) shown in place of the started confirmation. */
     readonly notice?: string;
+    /**
+     * PRB.21 / D-PRB.20-1 — the project's non-terminal run. Set ⇒ the sheet renders the in-progress
+     * state (a link to the run's surface) INSTEAD of the Run affordance; the api's create 409 maps here.
+     */
+    readonly activeRun?: { readonly runId: string; readonly state: string } | null;
   };
   /** the delivered-review dossier the reading surfaces render (PRB.04). */
   readonly dossier?: DossierData;
@@ -125,6 +141,11 @@ export interface PageData {
   readonly usage?: UsageDto;
   /** the page's dwell-heartbeat surface label — set ⇒ renderDocument emits the beacon script (REQ-BETA-10). */
   readonly dwellSurface?: string;
+  /**
+   * PRB.21 — set ⇒ the document emits `<meta http-equiv="refresh" content="<seconds>;url=<url>">` so a
+   * pending page re-polls itself without a client bundle (the import preview's converting state).
+   */
+  readonly autoRefresh?: { readonly seconds: number; readonly url: string };
 }
 
 export const PageDataContext = createContext<PageData>({});

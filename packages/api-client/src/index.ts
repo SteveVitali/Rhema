@@ -41,6 +41,11 @@ export interface ProjectRow {
   readonly state: ProjectStateDto;
   /** The highest-n draft head — the source editor's entry point (PRB.07). */
   readonly headDraftId?: string | null;
+  /**
+   * PRB.21 — the project's ONE non-terminal run when it has one (D-PRB.20-1: at most one — the create
+   * route 409s a second). The run sheet renders its in-progress state + links here instead of Run.
+   */
+  readonly activeRun?: { readonly runId: string; readonly state: string } | null;
   /** PRB.10 — the linked voice's chip (persona + the shared status pill); null ⇒ ad-hoc (§9.6). */
   readonly voice?: {
     readonly personaId: string;
@@ -773,7 +778,18 @@ export interface PresignedImportDto {
 /** The body both import endpoints take — the minted `quarantine/<workspaceId>/<uploadId>` key. */
 export interface ImportRequestDto {
   readonly quarantineKey: string;
+  /**
+   * PRB.21 — the caller's wait budget in ms (clamped server-side). With it, `import/preview` answers
+   * 202 `pending` instead of holding open through a ~2.5–4 min cold convert Job; the caller retries
+   * (read-back + the in-flight marker make a retry cheap — never a duplicate `jobs:run`).
+   */
+  readonly waitMs?: number;
 }
+
+/** `import/preview`'s response — the §5.3 payload once converted, `pending` while the Job still runs. */
+export type ImportPreviewDto =
+  | { readonly status: "ready"; readonly preview: ConversionResult }
+  | { readonly status: "pending"; readonly quarantineKey: string };
 
 /** The imported draft the create endpoint returns (§5.3 "Create and fix later" → frozen draft 1). */
 export interface CreatedImportDraftDto {
@@ -950,8 +966,9 @@ export interface ApiClient {
   // ---- PRB.20 — import (browser upload → quarantine → convert → preview → draft 1) ----
   /** POST /import/presign — mint a workspace-scoped quarantine key + a ≤25 MB v4-signed PUT. */
   presignImportUpload(init?: RequestInitLite): Promise<PresignedImportDto>;
-  /** POST /projects/:id/import/preview — run the convert Job on the quarantine key → §5.3 preview. */
-  previewImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<ConversionResult>;
+  /** POST /projects/:id/import/preview — convert the quarantine key → §5.3 preview. With `waitMs` the
+   *  api answers `pending` instead of holding through a cold Job (PRB.21); retry to join the same run. */
+  previewImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<ImportPreviewDto>;
   /** POST /projects/:id/import/create — convert + write the frozen `human_upload` draft 1 (201). */
   createImport(projectId: string, req: ImportRequestDto, init?: RequestInitLite): Promise<CreatedImportDraftDto>;
 }
@@ -1338,8 +1355,8 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         body: "{}",
       });
     },
-    async previewImport(projectId, req, init): Promise<ConversionResult> {
-      const body = await json<{ preview: ConversionResult }>(
+    async previewImport(projectId, req, init): Promise<ImportPreviewDto> {
+      const body = await json<{ preview?: ConversionResult; pending?: boolean; quarantineKey?: string }>(
         `/projects/${encodeURIComponent(projectId)}/import/preview`,
         {
           method: "POST",
@@ -1347,7 +1364,11 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
           body: JSON.stringify(req),
         },
       );
-      return body.preview;
+      // 202 pending ⇒ still converting (the api joined/launched the Job's execution — retry, never re-upload).
+      if (body.pending === true || body.preview == null) {
+        return { status: "pending", quarantineKey: body.quarantineKey ?? req.quarantineKey };
+      }
+      return { status: "ready", preview: body.preview };
     },
     async createImport(projectId, req, init): Promise<CreatedImportDraftDto> {
       const body = await json<{ draft: CreatedImportDraftDto }>(

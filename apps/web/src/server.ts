@@ -460,10 +460,58 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return c.redirect("/login");
     const slug = c.req.param("project");
     const input = await parseImportInput(c, slug);
-    const { preview, quarantineKey } = await deps.dataSource.previewImport(session, input);
+    const out = await deps.dataSource.previewImport(session, input);
+    if (out.status === "pending") {
+      // PRB.21 — a cold convert Job runs ~2.5–4 min; never hold one request for it. Render the
+      // converting state; the page re-polls the GET below (the api joins the in-flight execution —
+      // a retry is neither a second upload nor a duplicate `jobs:run`).
+      return c.html(
+        renderDocument(c.req.path, importPreviewElement, {
+          conversion: {
+            projectSlug: slug,
+            sourceLabel: input.fileName ?? "pasted text",
+            pending: true,
+            quarantineKey: out.quarantineKey,
+          },
+          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: importPollUrl(slug, out.quarantineKey, input.fileName) },
+        }),
+      );
+    }
     return c.html(
       renderDocument(c.req.path, importPreviewElement, {
-        conversion: toConversionData(slug, input, preview, quarantineKey),
+        conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
+      }),
+    );
+  });
+
+  // PRB.21 — the pending preview's poll leg (the page's meta-refresh target): re-preview the SAME
+  // quarantine key. Warm, the read-back cache answers in ~190 ms; cold, the api joins the still-running
+  // execution and answers `pending` again inside the bounded wait — the page refreshes itself until ready.
+  app.get("/p/:project/import/preview", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const qk = c.req.query("qk");
+    if (!qk) return c.redirect(`/p/${slug}/import`);
+    const src = c.req.query("src");
+    const input: ImportInput = { projectSlug: slug, quarantineKey: qk, ...(src ? { fileName: src } : {}) };
+    const out = await deps.dataSource.previewImport(session, input);
+    if (out.status === "pending") {
+      return c.html(
+        renderDocument(c.req.path, importPreviewElement, {
+          conversion: {
+            projectSlug: slug,
+            sourceLabel: input.fileName ?? "the upload",
+            pending: true,
+            quarantineKey: out.quarantineKey,
+          },
+          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: importPollUrl(slug, out.quarantineKey, input.fileName) },
+        }),
+      );
+    }
+    return c.html(
+      renderDocument(c.req.path, importPreviewElement, {
+        conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
       }),
     );
   });
@@ -473,7 +521,26 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return c.redirect("/login");
     const slug = c.req.param("project");
     const input = await parseImportInput(c, slug);
-    await deps.dataSource.createImport(session, input);
+    try {
+      await deps.dataSource.createImport(session, input);
+    } catch (e) {
+      // PRB.21 — the converted object wasn't there yet (a stale preview page or a slow Job): the api
+      // 409s `conversion_pending` — drop back to the converting state; its poll finishes the preview.
+      if (e instanceof ApiError && e.status === 409 && e.code === "conversion_pending" && input.quarantineKey) {
+        return c.html(
+          renderDocument(c.req.path, importPreviewElement, {
+            conversion: {
+              projectSlug: slug,
+              sourceLabel: input.fileName ?? "the upload",
+              pending: true,
+              quarantineKey: input.quarantineKey,
+            },
+            autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: importPollUrl(slug, input.quarantineKey, input.fileName) },
+          }),
+        );
+      }
+      throw e;
+    }
     // The draft now exists; the flat project view shows it. (Fix-now block editing is PRB.07.)
     return c.redirect(`/p/${slug}`);
   });
@@ -487,6 +554,22 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // PRB.21 / D-PRB.20-1 — the project already has a non-terminal run ⇒ the sheet renders its
+    // in-progress state (a link to the run's surface) instead of the Run affordance; a second Run click
+    // can never spawn a duplicate (the api also 409s — this is the honest first screen).
+    if (row.activeRun) {
+      return c.html(
+        renderDocument(c.req.path, runSheetElement, {
+          runSheet: {
+            slug,
+            projectTitle: row.title,
+            view: buildSheet(c.req.query(), undefined, deps.betaPlanOfferUrl),
+            activeRun: row.activeRun,
+          },
+          compact: isPhoneRequest(c),
+        }),
+      );
+    }
     // PRB.08 — the REAL balance: spendable credits, suspension, and the beta Payment Link for the panel.
     const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
     // PRB.10 — the voice line (§9.6): the project's linked persona + the shared pill, or the ad-hoc
@@ -585,6 +668,26 @@ export function createWebApp(deps: WebDeps): Hono {
     } catch (e) {
       // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
       // no run created. Any other api error is a real failure and propagates.
+      // PRB.21 / D-PRB.20-1 — a run went live between the sheet render and the click (or a second tab):
+      // the api 409s `run_in_progress` and no second hold was taken. Re-render the in-progress state,
+      // refreshing the active run fact from the project list — never an error page.
+      if (e instanceof ApiError && e.status === 409 && e.code === "run_in_progress") {
+        const fresh = await deps.dataSource
+          .listProjects(session)
+          .then((rows) => rows.find((r) => r.slug === slug))
+          .catch(() => undefined);
+        return c.html(
+          renderDocument(c.req.path, runSheetElement, {
+            runSheet: {
+              slug,
+              projectTitle: row.title,
+              view,
+              activeRun: fresh?.activeRun ?? { runId: "", state: "" },
+            },
+          }),
+          409,
+        );
+      }
       if (e instanceof ApiError && e.status === 402) {
         // the panel is showing again (the Run click hit the balance wall) — count the impression.
         await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
@@ -1268,6 +1371,17 @@ function countLine(c: ConversionResult["counts"]): string {
   return [p(c.words, "word"), p(c.footnotes, "footnote"), `${n(c.citationSpans)} citation-like ${c.citationSpans === 1 ? "span" : "spans"}`, p(c.tables, "table"), p(c.figures, "figure")].join(" · ");
 }
 
+/**
+ * PRB.21 — the pending preview's self-poll cadence + its GET URL (meta-refresh target). The page
+ * re-polls on the quarantine key every few seconds; each poll holds at most the api's bounded wait
+ * (~20 s) and returns the moment the converted object lands.
+ */
+const IMPORT_PREVIEW_POLL_SECONDS = 5;
+function importPollUrl(slug: string, quarantineKey: string, sourceLabel?: string): string {
+  const q = `?qk=${encodeURIComponent(quarantineKey)}`;
+  return `/p/${slug}/import/preview${q}${sourceLabel ? `&src=${encodeURIComponent(sourceLabel)}` : ""}`;
+}
+
 async function parseImportInput(c: Context, slug: string): Promise<ImportInput> {
   const form = await c.req.parseBody();
   // PRB.20 — the preview form replays the minted quarantine key in `qk` so Create does not re-upload.
@@ -1290,7 +1404,9 @@ function toConversionData(slug: string, input: ImportInput, result: ConversionRe
   return {
     projectSlug: slug,
     sourceLabel: input.fileName ?? "pasted text",
-    sourceText: input.text ?? (input.bytes ? `(${input.bytes.byteLength} bytes)` : ""),
+    // A re-polled preview (PRB.21) carries only the quarantine key — the source bytes already live in
+    // quarantine, so the source pane states that plainly rather than rendering blank.
+    sourceText: input.text ?? (input.bytes ? `(${input.bytes.byteLength} bytes)` : "(the uploaded source — already converted)"),
     convertedMarkdown: result.markdown,
     countLine: countLine(result.counts),
     warnings: result.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
