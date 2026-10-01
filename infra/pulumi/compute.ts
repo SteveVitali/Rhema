@@ -361,6 +361,9 @@ export function createCompute(args: ComputeArgs): Compute {
       : []),
     ...(args.proxyBaseUrl ? [{ name: "ANTHROPIC_BASE_URL", value: args.proxyBaseUrl }] : []),
     ...(args.objectsBucket ? [{ name: "OBJECTS_BUCKET", value: args.objectsBucket }] : []),
+    // JOURNEY.1 — the test-tenant auto-purge window (hours; the hourly `test-tenant.purge` sweep
+    // reaps flagged workspaces older than this through account.hard-delete).
+    { name: "TEST_TENANT_PURGE_HOURS", value: "26" },
   ];
 
   // --- convert: a Cloud Run JOB, not a service (§12.1 — "a Cloud Run Job per batch, no network, no DB").
@@ -537,6 +540,10 @@ export function createCompute(args: ComputeArgs): Compute {
                     { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
                     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
+                    // JOURNEY.1 — the test-mailbox flagging config (a deploy constant, not a
+                    // secret): workspaces provisioned for test@rhema.tools / test+<tag>@rhema.tools
+                    // are flagged is_test at creation (SLO/trial exclusion + the purge sweep).
+                    { name: "TEST_MAILBOX", value: "test@rhema.tools" },
                     // SEC.1 — the api's DATABASE_URL mounts the `rhema_app_login` DSN from Secret
                     // Manager via secretKeyRef on stages that provision `app-database-url` (never a
                     // plaintext `value`; REQ-ARCH-30). Config-driven `apiDatabaseUrl` remains the

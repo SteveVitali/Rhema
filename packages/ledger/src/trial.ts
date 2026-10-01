@@ -237,8 +237,28 @@ export async function gateTrialUnlock(
  * a refused hold rolls the increment back (no phantom usage). Throws `TrialCeilingExhaustedError` over the
  * bound. Returns the new day total.
  */
-export async function recordTrialSpend(tx: SqlClient, credits: number, now: Date): Promise<number> {
+export async function recordTrialSpend(
+  tx: SqlClient,
+  credits: number,
+  now: Date,
+  opts?: { workspaceId?: string },
+): Promise<number> {
   const day = now.toISOString().slice(0, 10);
+  // JOURNEY.1 (REQ-SPEC-29): flagged test tenants never count against the global daily trial-spend
+  // ceiling — the kill switch measures REAL users' trial burn, not the journey harness's. The read is
+  // in-tx so a flagged hold still returns the day's running total (callers only need the count on
+  // refusal; a test-tenant hold can never trip the ceiling).
+  if (opts?.workspaceId) {
+    const flagged = (
+      await tx.query("select is_test from workspaces where id = $1", [opts.workspaceId])
+    ).rows[0] as { is_test: boolean } | undefined;
+    if (flagged?.is_test) {
+      const cur = (
+        await tx.query("select credits::int as c from trial_spend_daily where day = $1", [day])
+      ).rows[0] as { c: number } | undefined;
+      return Number(cur?.c ?? 0);
+    }
+  }
   const row = (
     await tx.query(
       `insert into trial_spend_daily (day, credits) values ($1, $2)

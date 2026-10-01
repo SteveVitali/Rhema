@@ -63,6 +63,8 @@ export function startWebServer(): void {
     signupMode: parseSignupMode(process.env.SIGNUP_MODE),
     // P1.03 — the Page's collab transport (the LB path-routes /collab to the collab service).
     ...(process.env.COLLAB_WS_URL ? { collabWsUrl: process.env.COLLAB_WS_URL } : {}),
+    // JOURNEY.1 — the image-baked deploy SHA for /healthz provenance.
+    ...(process.env.RHEMA_BUILD_GIT_SHA ? { buildGitSha: process.env.RHEMA_BUILD_GIT_SHA } : {}),
     session(c) {
       const forwarded: Record<string, string> = {};
       const cookie = c.req.header("cookie");

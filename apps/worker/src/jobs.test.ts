@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { createOrchestratorTestDb, seedProject, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
-import { handleProjectPurge, handleAccountHardDelete } from "./jobs.js";
+import { handleProjectPurge, handleAccountHardDelete, handleTestTenantPurge } from "./jobs.js";
 
 let db: OrchestratorTestDb | undefined;
 afterEach(async () => {
@@ -166,5 +166,77 @@ describe("handleAccountHardDelete (account.hard-delete consumer)", () => {
     expect(r.phase).toBe("hard-delete");
     expect(r.retain).toContain("anonymized-ledger-rows");
     expect(r.retain).toContain("stripe-customer");
+  });
+});
+
+// JOURNEY.1 — the test-tenant auto-purge sweep (REQ-SPEC-29; ADR-020): flagged workspaces past the
+// window route through the existing account.hard-delete pipeline with the grace bypassed.
+describe("handleTestTenantPurge (test-tenant.purge consumer)", () => {
+  async function seedFlaggedTenant(db2: NonNullable<typeof db>, args: { stale: boolean; flagged?: boolean }) {
+    const seed = await seedProject(db2, {});
+    await db2.pg.query(
+      `insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,
+      [seed.workspaceId, seed.userId],
+    );
+    if (args.flagged !== false) {
+      await db2.pg.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    }
+    if (args.stale) {
+      await db2.pg.query(`update workspaces set created_at = now() - interval '30 days' where id = $1`, [
+        seed.workspaceId,
+      ]);
+    }
+    return seed;
+  }
+
+  it("purges a flagged tenant past the window through account.hard-delete (grace bypassed)", async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedFlaggedTenant(db, { stale: true });
+    const sent: { name: string; payload: Record<string, unknown> }[] = [];
+    const queue = {
+      async send(name: string, payload: Record<string, unknown>) {
+        sent.push({ name, payload });
+      },
+    };
+    const r = await handleTestTenantPurge({ olderThanHours: 26 }, { systemExec: db.client, queue });
+    expect(r.purgedWorkspaces).toEqual([seed.workspaceId]);
+    expect(r.enqueuedDeletes).toBe(1);
+    expect(sent[0]?.name).toBe("account.hard-delete");
+    expect(sent[0]?.payload.userId).toBe(seed.userId);
+    // the stamped marker sits past the 14-day grace — the hard-delete handler reads hard-delete.
+    const u = (
+      await db.client.query(`select deletion_requested_at from "user" where id = $1`, [seed.userId])
+    ).rows[0] as { deletion_requested_at: Date };
+    expect(u.deletion_requested_at).toBeTruthy();
+    expect(Date.now() - u.deletion_requested_at.getTime()).toBeGreaterThan(14 * 24 * 60 * 60 * 1000);
+  });
+
+  it("never touches an unflagged workspace, however stale", async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedFlaggedTenant(db, { stale: true, flagged: false });
+    const sent: unknown[] = [];
+    const queue = { async send(_n: string, _p: Record<string, unknown>) { sent.push(1); } };
+    const r = await handleTestTenantPurge({ olderThanHours: 26 }, { systemExec: db.client, queue });
+    expect(r.enqueuedDeletes).toBe(0);
+    expect(sent).toEqual([]);
+    const u = (
+      await db.client.query(`select deletion_requested_at from "user" where id = $1`, [seed.userId])
+    ).rows[0] as { deletion_requested_at: Date | null };
+    expect(u.deletion_requested_at).toBeNull();
+  });
+
+  it("a flagged workspace inside the window is left for a later sweep", async () => {
+    db = await createOrchestratorTestDb();
+    await seedFlaggedTenant(db, { stale: false });
+    const sent: unknown[] = [];
+    const queue = { async send(_n: string, _p: Record<string, unknown>) { sent.push(1); } };
+    const r = await handleTestTenantPurge({ olderThanHours: 26 }, { systemExec: db.client, queue });
+    expect(r.enqueuedDeletes).toBe(0);
+    expect(sent).toEqual([]);
+  });
+
+  it("without a system pool or queue the sweep is a no-op (test seam)", async () => {
+    const r = await handleTestTenantPurge({ olderThanHours: 26 }, {});
+    expect(r).toEqual({ scanned: 0, purgedWorkspaces: [], enqueuedDeletes: 0 });
   });
 });

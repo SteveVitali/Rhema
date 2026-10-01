@@ -145,6 +145,11 @@ in depth).
 
 ## Journey step registry (JOURNEY.1 owns the format; each step starts expected-red until its owner turns it green)
 
+> **2026-10-01 (JOURNEY.1):** this table is now **historical** — the live registry is committed code at
+> `packages/journeys/src/registry.ts` (`STEP_REGISTRY`), which records id, journey, assertion, owner,
+> `expected` (`red`/`green`), and `paid` per step, plus the runner's flip semantics. Keep the table
+> below as the design record; do not edit it to track flips — flip the code row.
+
 | step | journey | what is asserted (visible text / actionable control) | owner |
 |---|---|---|---|
 | N1 | new visitor | the landing drop-zone holds a dropped draft across sign-in and later page loads | ONB.1 |

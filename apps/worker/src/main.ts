@@ -99,8 +99,11 @@ import {
 import {
   handleAccountHardDelete,
   handleProjectPurge,
+  handleTestTenantPurge,
+  TEST_TENANT_PURGE_JOB,
   type AccountHardDeleteJob,
   type ProjectPurgeJob,
+  type TestTenantPurgeJob,
 } from "./jobs.js";
 
 /** P1.20 — the `account.hard-delete` queue name (the api enqueues at the grace end). */
@@ -652,6 +655,21 @@ export async function startWorker(): Promise<void> {
     await sweepWorkspaces("run_digest", new Date().toISOString().slice(0, 13));
   });
   await boss.schedule("notify.sweep.hourly", "55 * * * *"); // hourly — the optional run-finished digest
+
+  // JOURNEY.1 (REQ-SPEC-29; ADR-020) — the test-tenant auto-purge: hourly, on the system pool (a
+  // deliberate allowlisted cross-tenant scan). Flagged workspaces past TEST_TENANT_PURGE_HOURS are
+  // routed through `account.hard-delete` (grace bypassed — flagged accounts only).
+  const testTenantPurgeHours = Number(process.env.TEST_TENANT_PURGE_HOURS ?? 26);
+  await boss.work<TestTenantPurgeJob>(TEST_TENANT_PURGE_JOB, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleTestTenantPurge(job.data, { systemExec, queue: deps.queue });
+      if (r.purgedWorkspaces.length > 0) {
+        console.log(`[worker] test-tenant.purge → ${JSON.stringify(r)}`);
+      }
+    }
+  });
+  await boss.send(TEST_TENANT_PURGE_JOB, { olderThanHours: testTenantPurgeHours }, { singletonKey: "boot" });
+  await boss.schedule(TEST_TENANT_PURGE_JOB, "10 * * * *", { olderThanHours: testTenantPurgeHours });
 
   // PRB.16 — the auth-mail transport (magic links). A plain `to/subject/text/html` send — no notification
   // delivery row (pre-auth mail has no workspace). Unconfigured mailer ⇒ drop (the api's enqueue remains

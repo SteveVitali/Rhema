@@ -132,3 +132,56 @@ describe("probeSlos — the §13.5 signal registry (REQ-ARCH-34)", () => {
     expect(r.status).toBe("breach");
   });
 });
+
+// JOURNEY.1 — flagged test tenants are excluded from every SLO reading (REQ-SPEC-29; ADR-020):
+// test traffic must never move the platform numbers in EITHER direction.
+describe("probeSlos — test-tenant exclusion (JOURNEY.1)", () => {
+  it("a flagged workspace's failed run cannot drop run_success_rate", async () => {
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    await seedRun(db, { runId: "run_t", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "failed" });
+    await db.client.query(`update runs set ended_at = now() where id = 'run_t'`, []);
+    // the test run is the ONLY failed row in-window — excluded, so the rate is empty, not breach.
+    const r = reading(await probeSlos(db.client), "run_success_rate_24h_pct");
+    expect(r.status).not.toBe("breach");
+  });
+  it("a flagged workspace's orphan cannot trip orphaned_runs; an unflagged one still can", async () => {
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    await seedRun(db, { runId: "run_t", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "orphaned" });
+    let r = reading(await probeSlos(db.client), "orphaned_runs");
+    expect(r.status).not.toBe("breach");
+    // seed a SECOND (real) workspace's orphan — it still breaches.
+    const real = await seedProject(db, { workspaceId: "ws_real", userId: "usr_real", projectId: "prj_real" });
+    await seedRun(db, { runId: "run_r", workspaceId: real.workspaceId, projectId: real.projectId, state: "orphaned" });
+    r = reading(await probeSlos(db.client), "orphaned_runs");
+    expect(r.status).toBe("breach");
+    expect(r.value).toBe(1);
+  });
+  it("a flagged workspace's fetch_log denial cannot trip egress_denied_10m", async () => {
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    await seedRun(db, { runId: "run_t", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await db.client.query(
+      `insert into fetch_log (run_id, ts, agent_label, kind, decision, status) values ('run_t', now(), 'a', 'fetch', 'deny', 403)`,
+      [],
+    );
+    expect(reading(await probeSlos(db.client), "egress_denied_10m").status).not.toBe("breach");
+  });
+  it("NULL-workspace slo_samples still count (platform-level samples are not test traffic)", async () => {
+    for (let i = 0; i < 10; i++) {
+      await db.client.query(
+        `insert into slo_samples (signal, value_ms, workspace_id) values ('event_delivery_ms', 8000, null)`,
+        [],
+      );
+    }
+    expect(reading(await probeSlos(db.client), "event_delivery_latency_p95_s").status).toBe("breach");
+    // …but flagged-workspace samples are excluded.
+    await db.client.query(`delete from slo_samples`, []);
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    for (let i = 0; i < 10; i++) {
+      await db.client.query(
+        `insert into slo_samples (signal, value_ms, workspace_id) values ('event_delivery_ms', 8000, $1)`,
+        [seed.workspaceId],
+      );
+    }
+    expect(reading(await probeSlos(db.client), "event_delivery_latency_p95_s").status).not.toBe("breach");
+  });
+});

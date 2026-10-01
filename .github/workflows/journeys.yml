@@ -1,0 +1,81 @@
+name: journeys
+
+# JOURNEY.1 (REQ-SPEC-29; ADR-016/ADR-020) — the browser-journey acceptance harness against
+# Stage-B prod. Two schedules:
+#   nightly  — every free leg (the registry minus paid steps); $0 metered spend.
+#   weekly   — the same legs PLUS the paid steps (N5/N6/R4/R6) against ONE ≤300-word fixture and
+#              one chat turn, bounded by the $5 metered-spend guard.
+# Both authenticate to GCP via Workload Identity Federation (github-pool → the repo-attribute
+# principalSet), mint a caller token, and the mailbox client signs a Gmail-DWD JWT via IAM
+# Credentials against rhema-journeys@ — no key, no mailbox credential, nothing secret in CI.
+
+on:
+  schedule:
+    - cron: "5 6 * * *"     # nightly $0 legs
+    - cron: "35 4 * * 1"    # weekly paid leg (Monday 04:35 UTC — inside the off-peak window)
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "target stage (prod resolves to rhema.tools / api.rhema.tools; other stages need JOURNEY_WEB_URL/JOURNEY_API_URL env)"
+        type: string
+        default: "prod"
+      paid:
+        description: "include the paid legs (≤$5 cap)"
+        type: boolean
+        default: false
+      steps:
+        description: "comma-separated step ids (default: full registry)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write # WIF — the CI caller credential for signJwt
+
+env:
+  JOURNEY_WEB_URL: https://rhema.tools
+  JOURNEY_API_URL: https://api.rhema.tools
+  JOURNEY_STATE_DIR: .journeys-state
+
+jobs:
+  journeys:
+    name: journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @rhema/journeys build
+      - name: Install Chrome (the scheduled run's browser channel)
+        run: pnpm --filter @rhema/journeys exec playwright install chrome
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.JOURNEY_WIF_PROVIDER }}
+          service_account: ${{ vars.JOURNEY_CI_SA }}
+          token_format: access_token
+      - name: Run the journey suite
+        env:
+          JOURNEY_GCP_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          JOURNEY_EXPECT_SHA: ${{ github.sha }}
+          JOURNEY_PAID: ${{ (github.event_name == 'schedule' && github.event.schedule == '35 4 * * 1') || inputs.paid }}
+        run: |
+          set -uo pipefail
+          args=(--web "$JOURNEY_WEB_URL" --api "$JOURNEY_API_URL" \
+                --state-dir "$JOURNEY_STATE_DIR" \
+                --out "journey-report")
+          args+=(--stage "${{ inputs.stage || 'prod' }}")
+          [ -n "${JOURNEY_EXPECT_SHA:-}" ] && args+=(--expect-sha "$JOURNEY_EXPECT_SHA")
+          [ "${JOURNEY_PAID:-false}" = "true" ] && args+=(--paid)
+          [ -n "${{ inputs.steps }}" ] && args+=(--steps "${{ inputs.steps }}")
+          pnpm --filter @rhema/journeys exec rhema-journeys "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: journey-report-${{ github.run_id }}
+          path: journey-report/

@@ -37,6 +37,9 @@ jobs:
       # resolves to its stub (RHEMA_EVALS_PATH unset).
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build lint typecheck
+      # JOURNEY.1 — the journeys package's occlusion test drives a real browser; install the bundled
+      # chromium so the unit job's assertions are never vacuous (the test fails hard under CI otherwise).
+      - run: pnpm --filter @rhema/journeys exec playwright install chromium
       - run: pnpm test
       # Upstream-diff gate (REQ-ARCH-5; AC1): the ported skills equal the vendored pin + only sanctioned
       # edits. Self-contained (reads packages/protocols/upstream-pin) — no external repo needed.
@@ -135,7 +138,9 @@ jobs:
           set -euo pipefail
           declare -A DIGESTS
           for svc in run-task egress-proxy api web worker fetcher convert export collab; do
-            docker build -f "apps/$svc/Dockerfile" -t "rhema/$svc:${{ github.sha }}" .
+            # JOURNEY.1 (REQ-ARCH-39) — bake the commit into the image; /healthz serves it.
+            docker build -f "apps/$svc/Dockerfile" --build-arg GIT_SHA="${{ github.sha }}" \
+              -t "rhema/$svc:${{ github.sha }}" .
             digest=$(docker image inspect "rhema/$svc:${{ github.sha }}" --format '{{ index .Id }}')
             echo "$svc digest: $digest"
             DIGESTS[$svc]=$digest

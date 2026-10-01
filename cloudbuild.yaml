@@ -29,11 +29,13 @@ steps:
   - id: api
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]
-    args: ["build", "-f", "apps/api/Dockerfile", "-t", "${_AR}/api:${_TAG}", "."]
+    # JOURNEY.1 (REQ-ARCH-39) — GIT_SHA bakes the built commit into the image for /healthz's
+    # build.gitSha (the deploy-provenance check); $COMMIT_SHA is Cloud Build's automatic substitution.
+    args: ["build", "-f", "apps/api/Dockerfile", "--build-arg", "GIT_SHA=$COMMIT_SHA", "-t", "${_AR}/api:${_TAG}", "."]
   - id: web
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]
-    args: ["build", "-f", "apps/web/Dockerfile", "-t", "${_AR}/web:${_TAG}", "."]
+    args: ["build", "-f", "apps/web/Dockerfile", "--build-arg", "GIT_SHA=$COMMIT_SHA", "-t", "${_AR}/web:${_TAG}", "."]
   - id: worker
     name: gcr.io/cloud-builders/docker
     env: ["DOCKER_BUILDKIT=1"]

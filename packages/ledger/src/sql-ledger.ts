@@ -80,7 +80,9 @@ export class SqlHoldLedger implements HoldLedger {
       } else {
         // a fresh claim counts against the global daily trial-spend ceiling (REQ-GROWTH-15 amended) — the
         // increment is in this tx, so a refused hold rolls it back.
-        await recordTrialSpend(tx, args.credits, this.deps.clock.now());
+        await recordTrialSpend(tx, args.credits, this.deps.clock.now(), {
+          workspaceId: args.workspaceId,
+        });
         await tx.query(
           "update billing_accounts set trial_state = 'trial_used' where id = $1 and trial_state = 'trial_active'",
           [args.billingAccountId],

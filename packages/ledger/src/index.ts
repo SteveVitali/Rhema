@@ -35,3 +35,6 @@ export * from "./auto-reload.js";
 export * from "./usage.js";
 export * from "./estimator-refit.js";
 export * from "./reprice.js";
+
+// JOURNEY.1 — the test-tenant flag predicates (REQ-SPEC-29; ADR-020). ACT.1 hooks `isTestWorkspace`.
+export * from "./test-workspaces.js";

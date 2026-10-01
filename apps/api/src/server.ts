@@ -151,6 +151,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
                 ids,
                 store: artifactsStore,
               }),
+              // JOURNEY.1 — test-mailbox flagging on the self-serve paths (OAuth/magic-link) too.
+              ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
             });
           },
         },
@@ -267,6 +269,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
     // stays D-PRB.01-3's leg (PRB.16).
     signupMode: env.signupMode,
+    // JOURNEY.1 — test-mailbox flagging + the healthz provenance field.
+    ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
+    ...(env.buildGitSha ? { buildGitSha: env.buildGitSha } : {}),
     // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
     // telemetry emitters to the same validated + opt-out-honoring writer the billing telemetry uses.
     // finding.disposed (D-PRB.05-1 leg b) + run.estimated (D-PRB.03-1's emit leg). A telemetry write is
