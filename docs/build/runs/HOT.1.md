@@ -178,16 +178,67 @@ Walked every deliverable end-to-end after implementation; findings and resolutio
 
 ### Stage B (live)
 
-`pulumi preview --stack prod` (2026-10-01): **9 in-place updates, 0 create/replace/delete,
-138 unchanged** — the three `+logConfig` BackendService updates (web/api/collab) plus six
-`-scaling` Cloud Run diffs that merely drop an explicit `{manualInstanceCount:0,
-minInstanceCount:0, scalingMode:""}` block (provider normalization back to default
-autoscaling; in-place, not a replacement). Gates: zero stateful replace/delete ✓; LB logging
-change is in-place ✓; Cloud Logging request-log ingestion at beta traffic is well under the
-$15/mo cap (HTTP LB logs ≈ $0.50/GiB, single-digit-GiB worst case) ✓.
+`pulumi preview --stack prod` (2026-10-01 ~03:40Z): **9 in-place updates, 0
+create/replace/delete, 138 unchanged** — the three `+logConfig` BackendService updates
+(web/api/collab) plus six `-scaling` Cloud Run diffs that merely drop an explicit
+`{manualInstanceCount:0, minInstanceCount:0, scalingMode:""}` block (provider normalization
+back to default autoscaling; in-place, not a replacement). Gates: zero stateful
+replace/delete ✓; LB logging change is in-place ✓; Cloud Logging request-log ingestion at
+beta traffic is well under the $15/mo cap (HTTP LB logs ≈ $0.50/GiB, single-digit-GiB worst
+case) ✓.
 
-(Further live results appended below as they land.)
+#### Deploy + provenance (2026-10-01 ~03:41–03:44Z)
+
+- `gcloud builds submit` build `3fa84dbc` → all 9 images pushed (`…/rhema-prod/*:prod`).
+- Digests pinned: `rhema:serviceImages` (7), `rhema:runTaskImageDigest` (worker env only),
+  `rhema:proxyImage` **re-pinned to the already-deployed digest** — HOT.1 touches no
+  egress-proxy code, avoiding an InstanceTemplate replace + MIG roll.
+- Final preview: **10 in-place updates, 0 replace/delete**. `pulumi up` prod **update 94** —
+  all 10 applied clean in 2m43s; Cloud Run revisions rolled to the `d3d904d` images
+  (web `00016-7wc`, api `00048-jfq`, worker `00042-ncp`, collab `00006-wbl` etc.).
+- Migrations: `prod-migrate-seed.mjs` over an IAP SSH tunnel (egress-proxy VM → private IP;
+  the runbook's in-VPC path) — **no new migrations** (45 recorded; the additive-migration
+  gate ran inside the migrator and passed), protocol seeds idempotent.
+- Provenance: `deployments` row **`prod:d3d904d823d308042d92029ae94ebb91288a632f`** —
+  9 image digests, `protocols_version 0.4.0+ec61156725a895ab`. `cf40f28` (STB.4 Stripe
+  fixes) verified ancestor of the deployed SHA.
+
+#### Live HTTP + browser legs (2026-10-01 03:45–03:52Z)
+
+| Leg | Result |
+|---|---|
+| `/assets/{editor,ide,page,outline,landing}.js` | **200 `text/javascript` ×5** — page.js now served |
+| Landing `/` (unauth curl + browser) | 200, **zero hidden-claim text** (regex sweep for "first review included/free" + "≈N loops") |
+| `/pricing` (unauth curl + browser) | 200, **claim-free** |
+| `/billing/return?cancelled=1` unauth | 302 → `/login` once (expected); **authed: 200, renders once, no loop** |
+| Deliberate 404 `/hot1-lb-log-probe-1790826324` | 404 → **present in `loadbalancing.googleapis.com/requests`** at 03:45:24Z (status 404, curl UA) — LB logging live |
+| Magic-link session `test+hot1b@rhema.tools` | real funnel: Resend → Gmail read keylessly via `rhema-journeys` DWD (`signJwt`+token exchange, `gmail.readonly`) → verify → `__Host-` session. (First alias `test+hot1a` hit the per-email sign-in throttle on re-request — honest note.) |
+| Showcase dossier (N7 HTTP half) | verify redirects to `/p/showcase/review/01M3TS9ASMJSD1CQW59K1G1XBQ` → **200**, findings rendered, **the nrscotland.gov.uk Tier-1 contradiction URL present** — the pre-fix 500 is gone |
+| Project list (R1 HTTP half) | `/app` 200: `data-collapsed-marker="true"` + `data-cue-when-closed="true"` + "N quiet" — desktop AND phone |
+| Project page + `page.js` | 200, references `/assets/page.js`, **0 app console errors** (one cosmetic `favicon.ico` 404 resource error — pre-existing, recorded honestly) |
+| Hourly digest sweep | `notify.sweep.hourly` fired **03:55:04Z post-deploy**; 7 `run_digest` notify jobs **all completed**; Cloud SQL logs show **zero `finished_at` errors since 03:41Z** (the 02:55Z pre-deploy `column r.finished_at does not exist` error remains in history as the defect's last occurrence) |
+
+Screenshots: `docs/build/reports/2026-10-01_HOT.1/` — 11 PNGs (1440×900 + 390×844):
+project list w/ Quiet marker, showcase dossier w/ finding, project page, landing, pricing,
+billing-return redirect target; `legs.json` holds the raw leg results.
+
+Authed landing/pricing note: a signed-in `/` + `/pricing` browser visit redirects to `/app`
+(design), so those screenshots capture `/app`; the claim-free assertions on landing/pricing
+were verified both by unauth curl HTML sweeps AND the unauth browser pass — evidence honest.
 
 ## Evidence & close-out
 
-(filled at close)
+- **All six review defects fixed + verified live.** No `D-HOT.1-*` deferral rows were needed —
+  every Stage-B leg executed: deploy gates green, `pulumi up` update 94 clean, migrations
+  no-op, provenance row written, all HTTP/browser/log legs pass, screenshots committed.
+- **N7 + R1 hand off to JOURNEY.1 as expected-green:** the HTTP halves are proven here
+  (dossier 200 + Quiet affordance); JOURNEY.1 carries the full journey assertions.
+- **Observation (not a regression, no ticket):** `favicon.ico` 404 console noise — cosmetic,
+  pre-existing; noted for UX.1's polish sweep.
+- **Adjacent live finding:** the 03:49Z worker log shows the `run.walkthrough` job failing —
+  that's RUN.1's tracked defect (explicitly out of scope here).
+- ADR-019 records the two decisions (read-boundary evidence normalization; typed
+  claims-visibility config). ADR index regenerated via `adr-index.sh`.
+- Stacked PR against `stevevitali/sec-1-tenant-isolation-in-depth`; mergePolicy=OPERATOR —
+  never merged by this run.
+- Spend: **$0 metered inference**; Cloud Logging delta ≪ $15/mo cap.
