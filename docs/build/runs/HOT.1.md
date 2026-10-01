@@ -4,7 +4,9 @@
 
 - **Spec:** `docs/tickets/60_HOT.1__prod-hotfix-pack.md` (sequence 60, round 3).
 - **Base:** `stevevitali/sec-1-tenant-isolation-in-depth` @ `f0247ed` (chain tip; SEC.1 PR #81 unmerged).
-- **Branch:** `stevevitali/hot-1-prod-hotfix-pack` — stacked PR, `mergePolicy=OPERATOR`, never merge.
+- **Branch:** `stevevitali/hot-1-prod-hotfix-pack` — **PR #82** stacked on SEC.1,
+  `mergePolicy=OPERATOR`, never merge. Deployed SHA `d3d904d` (close-out commit `12f1c35`
+  carries the evidence/docs on top).
 - **Mode:** `implement-spec`, autonomous. Stage B deploy pre-authorized per ADR-013 once: (a)
   additive-migration lint passes, (b) `pulumi preview` shows zero replace/delete on stateful
   resources, (c) monthly cost delta ≤ $15. HOT.1 does **not** perform SEC.1's role switch
