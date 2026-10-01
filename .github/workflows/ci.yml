@@ -51,12 +51,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # HOT.1 — the additive-migration lint diffs against the PR base ref; it needs the history.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # HOT.1 (ADR-013): the additive-migration lint — rejects DROP/RENAME/type changes/table
+      # rewrites/role changes in migrations newer than the PR base; the prod deploy runbook re-runs
+      # it against the `_migrations` max.
+      - run: |
+          BASE="${{ github.base_ref || 'main' }}"
+          git fetch origin "$BASE" --depth=1 || true
+          node scripts/check-additive-migrations.mjs --since-git "origin/$BASE"
       # P0.02: the contract suites — the REQ-SPEC-14 policy≡kind test, the frozen ClaimVerdict golden, the
       # sidecar/anchor (REQ-OBJ-16/17) and event/notes/analytics schemas, and the @rhema/db deterministic ACs
       # (migrations, immutability + obligation triggers, two-tenant RLS isolation, real-project seed) run here

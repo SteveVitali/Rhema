@@ -24,3 +24,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-016](ADR-016-browser-journey-acceptance.md) | Browser-journey acceptance — a user surface is verified by walking it | JOURNEY.1 (owner); every later round-3 Stage B consumes it | Accepted |
 | [ADR-017](ADR-017-tenant-isolation-in-depth.md) | Tenant isolation in depth — user-serving code cannot bypass RLS | SEC.1 | Accepted |
 | [ADR-018](ADR-018-user-serving-role-mechanics.md) | The user-serving role's mechanics — identity, grants, pools, and the lint boundary | SEC.1 | Accepted |
+| [ADR-019](ADR-019-evidence-normalization-and-claims-visibility.md) | Evidence normalization at read seams, and the public-claims visibility config | HOT.1 | Accepted |

@@ -360,9 +360,26 @@ export function ProjectGroupList({
           </>
         );
         if (g.collapsed) {
+          // HOT.1 (REQ-IDE-4) — `listStyle: "none"` suppresses the native disclosure triangle, so the
+          // group looked empty/inert (PR-J5). Ship an explicit affordance instead: the ▸ marker
+          // (rotated open by a theme-css rule on [open]) plus a text Show/Hide cue the same rule swaps.
+          const cueStyle: CSSProperties = {
+            fontWeight: 400,
+            textTransform: "none",
+            letterSpacing: 0,
+            color: "var(--shell-fg-faint)",
+            marginLeft: "8px",
+          };
           return (
             <details key={g.key} style={groupSectionStyle} data-collapsed-group={g.key}>
               <summary style={{ ...groupHeadingStyle, cursor: "pointer", listStyle: "none" }}>
+                <span
+                  aria-hidden="true"
+                  data-collapsed-marker="true"
+                  style={{ display: "inline-block", marginRight: "6px", transition: "transform 0.15s" }}
+                >
+                  ▸
+                </span>
                 {g.label} · {g.rows.length}
                 {g.summary ? (
                   <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
@@ -370,6 +387,12 @@ export function ProjectGroupList({
                     — {g.summary}
                   </span>
                 ) : null}
+                <span data-cue-when-closed="true" style={cueStyle}>
+                  {"· Show"}
+                </span>
+                <span data-cue-when-open="true" style={cueStyle}>
+                  {"· Hide"}
+                </span>
               </summary>
               <RowList rows={g.rows} />
             </details>

@@ -5,6 +5,8 @@
 // estimator's — the run sheet's live estimate is authoritative for a real run).
 import type { ModelTier, PlanTier, Rigor } from "../vocab.js";
 import { PRICING, planOf } from "./pricing.js";
+import type { PlanSpec, TrialSpec } from "./pricing.js";
+import { PUBLIC_CLAIMS, publicClaimEnabled, type PublicClaimsConfig } from "./public-claims.js";
 
 export const MODEL_TIER_LABELS: Record<ModelTier, string> = {
   base: "Base",
@@ -176,15 +178,18 @@ export interface PlanCard {
   /** the 15% saving rendered in DOLLARS (per year at the annual rate). */
   readonly annualSavingsUsdPerYear: number | null;
   readonly includedCreditsMonthly: number;
-  readonly whatItCovers: string;
+  /** HOT.1 — null while the plan's coverage line is a hidden claim (see `whatItCoversClaimId`). */
+  readonly whatItCovers: string | null;
   readonly waitlist: boolean;
   readonly perSeat: boolean;
-  /** Free's honesty split: what the account is before vs after the trial window. */
-  readonly freeNotes?: { readonly trialWindow: string; readonly postTrial: string };
+  /** Free's honesty split: what the account is before vs after the trial window. `trialWindow` is the
+   *  included-Review claim — absent while `trial.firstReviewIncluded` is hidden (HOT.1). */
+  readonly freeNotes?: { readonly trialWindow?: string; readonly postTrial: string };
 }
 
-/** The plan ladder in display order — Free first (the honesty column), Team last (waitlist). */
-export function planLadder(): readonly PlanCard[] {
+/** The plan ladder in display order — Free first (the honesty column), Team last (waitlist).
+ *  HOT.1: gated claims null out here so a consumer can't render them by accident. */
+export function planLadder(claims: PublicClaimsConfig = PUBLIC_CLAIMS): readonly PlanCard[] {
   const order: readonly PlanTier[] = ["free", "writer", "studio", "studio_max", "team"];
   return order.map((tier) => {
     const p = planOf(tier);
@@ -196,19 +201,55 @@ export function planLadder(): readonly PlanCard[] {
       annualSavingsUsdPerYear:
         p.annualMonthlyUsd != null ? (p.monthlyUsd - p.annualMonthlyUsd) * 12 : null,
       includedCreditsMonthly: p.includedCreditsMonthly,
-      whatItCovers: p.whatItCovers,
+      whatItCovers: p.whatItCoversClaimId != null && !publicClaimEnabled(p.whatItCoversClaimId, claims)
+        ? null
+        : p.whatItCovers,
       waitlist: p.waitlist === true,
       perSeat: p.perSeat === true,
       ...(tier === "free"
         ? {
             freeNotes: {
-              trialWindow: PRICING.trial.includedNote,
+              ...(publicClaimEnabled("trial.firstReviewIncluded", claims)
+                ? { trialWindow: PRICING.trial.includedNote }
+                : {}),
               postTrial: PRICING.trial.postTrialNote,
             },
           }
         : {}),
     };
   });
+}
+
+/**
+ * HOT.1 — the /billing/plans wire shape after the claims gate: hidden claims transmit `null` on the
+ * DTO itself so no client can render (or log) claim text the config has disabled.
+ */
+export function visiblePlansPublication(claims: PublicClaimsConfig = PUBLIC_CLAIMS): {
+  readonly plans: Record<PlanTier, Omit<PlanSpec, "whatItCovers"> & { readonly whatItCovers: string | null }>;
+  readonly trial: Omit<TrialSpec, "includedNote"> & { readonly includedNote: string | null };
+} {
+  const plans = Object.fromEntries(
+    (Object.keys(PRICING.plans) as PlanTier[]).map((tier) => {
+      const p = PRICING.plans[tier];
+      return [
+        tier,
+        {
+          ...p,
+          whatItCovers:
+            p.whatItCoversClaimId != null && !publicClaimEnabled(p.whatItCoversClaimId, claims)
+              ? null
+              : p.whatItCovers,
+        },
+      ];
+    }),
+  ) as Record<PlanTier, Omit<PlanSpec, "whatItCovers"> & { readonly whatItCovers: string | null }>;
+  return {
+    plans,
+    trial: {
+      ...PRICING.trial,
+      includedNote: publicClaimEnabled("trial.firstReviewIncluded", claims) ? PRICING.trial.includedNote : null,
+    },
+  };
 }
 
 export interface MatrixRow {
@@ -301,8 +342,9 @@ export function pricingFaq(): readonly FaqItem[] {
   ];
 }
 
-/** The whole derived page model — one call the route + contract test share. */
-export function buildPricingPageData(): {
+/** The whole derived page model — one call the route + contract test share.
+ *  HOT.1: `claims` gates the hidden public claims (default `PUBLIC_CLAIMS` — all off). */
+export function buildPricingPageData(claims: PublicClaimsConfig = PUBLIC_CLAIMS): {
   readonly usdPerCredit: number;
   readonly annualSavingsPct: number;
   readonly plans: readonly PlanCard[];
@@ -318,7 +360,7 @@ export function buildPricingPageData(): {
   return {
     usdPerCredit: PRICING.usdPerCredit,
     annualSavingsPct: PRICING.annualSavingsPct,
-    plans: planLadder(),
+    plans: planLadder(claims),
     cards: PRICING.costCardShapes.map(costCardFigures),
     voiceCard: voiceProfileCard(),
     quickReview: quickReviewLine(),

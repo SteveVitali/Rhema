@@ -69,9 +69,10 @@ import {
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, type GateKind } from "@rhema/contracts";
+import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { CLIENT_ENTRIES } from "../client-entries.mjs";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
 // client bundle). Auth-gated routes redirect to /login. `signup.mode` decides what POST /login requires
@@ -122,6 +123,12 @@ export interface WebDeps {
    * COLLAB_WS_URL). Unset ⇒ the Page mounts without a collab session (the static read view).
    */
   readonly collabWsUrl?: string;
+  /**
+   * HOT.1 — the public-claims visibility config for the marketing pages (default `PUBLIC_CLAIMS`:
+   * every gated claim hidden). A test flips ids here; ACT.1/EST.1 enable claims from config, never
+   * by re-introducing parallel copy.
+   */
+  readonly claims?: PublicClaimsConfig;
 }
 
 /** The beta-grade magic-link throttle — per IP + per email, fixed window (PRB.13; D-PRB.13-1: in-memory). */
@@ -1238,7 +1245,7 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/", async (c) => {
     if (await signedIn(c)) return c.redirect("/app");
     landingBeacon("landing.viewed", c, c.req.query("src") ? { src: c.req.query("src") } : undefined);
-    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen } }));
+    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen }, claims: deps.claims }));
   });
 
   // P1.17 (§15.2) — /pricing: the derived page model (the annual toggle re-renders prices and shows
@@ -1246,7 +1253,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/pricing", async (c) => {
     if (await signedIn(c)) return c.redirect("/app");
     return c.html(
-      renderDocument(c.req.path, pricingElement, { pricing: { annual: c.req.query("cycle") === "annual" } }),
+      renderDocument(c.req.path, pricingElement, {
+        pricing: { annual: c.req.query("cycle") === "annual" },
+        claims: deps.claims,
+      }),
     );
   });
 
@@ -4953,47 +4963,21 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/v/${personaId}?cancelled=1`);
   });
 
-  // The client bundles (built by build-client.mjs at `pnpm build`; gitignored). Missing → the page still
-  // works: the textarea stays the read-only no-JS view and the form POSTs carry the write paths; the IDE
-  // shell's server-rendered panes stay static (no drag/focus chrome).
-  const clientBundlePath = new URL("../public/editor.js", import.meta.url);
-  app.get("/assets/editor.js", async (c) => {
-    const body = await readFile(clientBundlePath).catch(() => null);
-    if (!body) return c.body(null, 404);
-    return c.body(body, 200, {
-      "content-type": "text/javascript; charset=utf-8",
-      "cache-control": "no-cache",
+  // The client bundles (built by build-client.mjs at `pnpm build` from CLIENT_ENTRIES — HOT.1's
+  // bundle↔route parity: every built entry is served; a missing artifact 404s with an EMPTY body and
+  // the page still works — the textarea stays the read-only no-JS view and the form POSTs carry the
+  // write paths; the IDE shell's server-rendered panes stay static. Never a silent fall-through to the
+  // not-found HTML.)
+  for (const entry of CLIENT_ENTRIES) {
+    app.get(`/assets/${entry}.js`, async (c) => {
+      const body = await readFile(new URL(`../public/${entry}.js`, import.meta.url)).catch(() => null);
+      if (!body) return c.body(null, 404);
+      return c.body(body, 200, {
+        "content-type": "text/javascript; charset=utf-8",
+        "cache-control": "no-cache",
+      });
     });
-  });
-  const ideBundlePath = new URL("../public/ide.js", import.meta.url);
-  app.get("/assets/ide.js", async (c) => {
-    const body = await readFile(ideBundlePath).catch(() => null);
-    if (!body) return c.body(null, 404);
-    return c.body(body, 200, {
-      "content-type": "text/javascript; charset=utf-8",
-      "cache-control": "no-cache",
-    });
-  });
-  // P1.12 — the outline editor island (debounced `ed.*` autosave; missing bundle → the no-JS Save).
-  const outlineBundlePath = new URL("../public/outline.js", import.meta.url);
-  app.get("/assets/outline.js", async (c) => {
-    const body = await readFile(outlineBundlePath).catch(() => null);
-    if (!body) return c.body(null, 404);
-    return c.body(body, 200, {
-      "content-type": "text/javascript; charset=utf-8",
-      "cache-control": "no-cache",
-    });
-  });
-  // P1.17 — the landing island (drop-zone hold + beacon; also rehydrates the hold on /app/new?held=1).
-  const landingBundlePath = new URL("../public/landing.js", import.meta.url);
-  app.get("/assets/landing.js", async (c) => {
-    const body = await readFile(landingBundlePath).catch(() => null);
-    if (!body) return c.body(null, 404);
-    return c.body(body, 200, {
-      "content-type": "text/javascript; charset=utf-8",
-      "cache-control": "no-cache",
-    });
-  });
+  }
   // P1.01 (REQ-IDE-39) — the self-hosted variable fonts themeCss()'s @font-face blocks point at
   // (/assets/fonts/<file>; build-client.mjs copies them from the Fontsource packages into public/fonts/).
   // Long-cacheable: the filenames carry the face+subset, and a changed face ships a new filename.

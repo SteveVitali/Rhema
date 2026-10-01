@@ -8,6 +8,7 @@ import type {
 import { WHOLE_PIECE } from "./anchor.js";
 import { canDispose } from "./disposition.js";
 import { SEVERITY_ORDER, groupFindingsForList } from "./find-view.js";
+import { normalizeEvidence } from "./normalize-evidence.js";
 import { buildTriageQueue, triageTier, TRIAGE_PROMO_THRESHOLD } from "./triage.js";
 
 // The §5.7 findings-surface derivations (P1.07; REQ-IDE-23/24/26, REQ-SPEC-6, REQ-OBJ-6). ONE FindingView[]
@@ -121,7 +122,10 @@ export function filterFindings(
       const sec = v.letterSection ?? "whole";
       if (sec !== filters.section) return false;
     }
-    if (filters.hasUrl === true && (v.evidence?.urls.length ?? 0) === 0) return false;
+    // HOT.1 — `urls` goes through the normalizer: a legacy/partial evidence blob still answers the
+    // hasUrl filter correctly and never throws (ADR-019).
+    if (filters.hasUrl === true && (normalizeEvidence(v.evidence)?.urls.length ?? 0) === 0)
+      return false;
     if (filters.hasSuggestion === true && v.suggestion == null) return false;
     if (filters.openObligation === true && !(ctx?.openObligationIds?.has(v.id) ?? false)) return false;
     return true;

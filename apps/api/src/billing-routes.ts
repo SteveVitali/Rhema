@@ -30,7 +30,7 @@ import {
   usageCsvText,
   type StripePort,
 } from "@rhema/ledger";
-import { PRICING, planOf, priceCents, topUpPack, PLAN_TIERS, type PlanTier } from "@rhema/contracts";
+import { PRICING, planOf, priceCents, topUpPack, visiblePlansPublication, PLAN_TIERS, type PlanTier } from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
 
 export interface BillingApiDeps {
@@ -220,16 +220,19 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   // P1.16 — billing, full (§14.2/14.3/14.5/14.6)
   // ============================================================================
 
-  // ---- the plan ladder (REQ-GROWTH-4/7/8): the pricing.json publication the web renders. --------------
+  // ---- the plan ladder (REQ-GROWTH-4/7/8): the pricing.json publication the web renders. HOT.1 —
+  // `visiblePlansPublication` applies the claims gate server-side: a hidden claim's text transmits as
+  // null on the DTO, so no client can render what the config has disabled. -------------------------
   app.get("/billing/plans", (c) => {
+    const visible = visiblePlansPublication();
     return c.json({
       version: PRICING.version,
       issuedAt: PRICING.issuedAt,
       usdPerCredit: PRICING.usdPerCredit,
       platformRate: PRICING.platformRate,
       annualSavingsPct: PRICING.annualSavingsPct,
-      plans: PRICING.plans,
-      trial: PRICING.trial,
+      plans: visible.plans,
+      trial: visible.trial,
       topUpPacks: PRICING.topUpPacks,
       autoReloadDefaults: PRICING.autoReload,
     });

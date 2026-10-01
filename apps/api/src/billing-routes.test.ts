@@ -183,8 +183,8 @@ describe("GET /billing/plans — the pricing.json publication", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       version: string;
-      plans: Record<string, { waitlist?: boolean }>;
-      trial: { windowDays: number; entitlement: { wordCap: number } };
+      plans: Record<string, { waitlist?: boolean; whatItCovers: string | null }>;
+      trial: { windowDays: number; entitlement: { wordCap: number }; includedNote: string | null };
       topUpPacks: { id: string }[];
     };
     expect(body.version).toBe(PRICING.version);
@@ -192,6 +192,12 @@ describe("GET /billing/plans — the pricing.json publication", () => {
     expect(body.plans["team"]?.waitlist).toBe(true);
     expect(body.trial.entitlement.wordCap).toBe(6000);
     expect(body.topUpPacks).toHaveLength(3);
+    // HOT.1 — the claims gate is server-side: hidden claims transmit null on the DTO itself.
+    expect(body.trial.includedNote).toBeNull();
+    expect(body.plans["writer"]?.whatItCovers).toBeNull();
+    expect(body.plans["studio"]?.whatItCovers).toBeNull();
+    expect(body.plans["studio_max"]?.whatItCovers).toBeNull();
+    expect(body.plans["team"]?.whatItCovers).toContain("Pooled credits");
   });
 });
 

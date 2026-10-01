@@ -1,6 +1,7 @@
 import type { Anchor, Finding, FindingView, Severity } from "@rhema/contracts";
 import type { DispositionState } from "./disposition.js";
 import { WHOLE_PIECE } from "./anchor.js";
+import { normalizeEvidence } from "./normalize-evidence.js";
 
 // The FindingView read model built from rows (§5.7; deliverable 1). `Finding`/`Disposition` are §11.3's
 // canonical row shapes; `FindingView` is the IDE read model both clients render. Framework-free.
@@ -27,6 +28,9 @@ export interface BuildFindingViewOptions {
  * §11.3's `Finding`/`Disposition`. `provisional` marks a streaming card; the disposition (if frozen) locks it.
  */
 export function buildFindingView(finding: Finding, opts: BuildFindingViewOptions = {}): FindingView {
+  // HOT.1 — the view boundary is an evidence read seam: the stored blob may be a legacy shape, so the
+  // view carries only the normalized contract (`urls` always present).
+  const evidence = normalizeEvidence(finding.evidence);
   return {
     id: finding.id,
     correspondenceId: finding.correspondenceId,
@@ -39,7 +43,7 @@ export function buildFindingView(finding: Finding, opts: BuildFindingViewOptions
     ...(opts.projection != null ? { projection: opts.projection } : {}),
     title: finding.title,
     body: finding.body,
-    ...(finding.evidence != null ? { evidence: finding.evidence } : {}),
+    ...(evidence != null ? { evidence } : {}),
     ...(finding.suggestion != null ? { suggestion: finding.suggestion } : {}),
     rubricDims: finding.rubricDims,
     ...(finding.letterSection != null ? { letterSection: finding.letterSection } : {}),

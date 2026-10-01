@@ -48,7 +48,8 @@ const PLANS: BillingPlansDto = {
     entitlement: { kind: "review", wordCap: 6000, rigor: "standard", modelTier: "base" },
     pocketCredits: 150,
     upgradePromoCredits: 800,
-    includedNote: "Your trial review run is Included — no credits spent.",
+    // HOT.1 — the api redacts the gated claim to null while `trial.firstReviewIncluded` is hidden.
+    includedNote: null,
     postTrialNote: "After the trial, Free: 10 credits a day, chat only.",
     eligibilityLine: "One trial per person.",
   },
@@ -197,12 +198,27 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
     expect(html).toContain("renewal payment didn&#x27;t go through");
   });
 
-  it("the trial card renders Included for an active trial (§5.6 item 9 / §14.3)", async () => {
+  it("the trial card renders the factual window line for an active trial while the claim is hidden (HOT.1)", async () => {
     const app = createWebApp(makeDeps({
       subscription: sub({
         tier: "free",
         trial: { state: "trial_active", entitlement: { id: "te_1", state: "active", wordCap: 6000, expiresAt: null } },
       }),
+    }));
+    const html = await (await app.request("/settings/billing")).text();
+    expect(html).toContain('data-trial-state="active"');
+    // the gated claim (badge + "your review run is Included") stays off; the factual window renders.
+    expect(html).not.toContain("Included");
+    expect(html).toContain("Trial window — 14 days.");
+  });
+
+  it("a claim-on DTO (includedNote non-null) renders the Included badge + note (HOT.1 flip seam)", async () => {
+    const app = createWebApp(makeDeps({
+      subscription: sub({
+        tier: "free",
+        trial: { state: "trial_active", entitlement: { id: "te_1", state: "active", wordCap: 6000, expiresAt: null } },
+      }),
+      plans: { ...PLANS, trial: { ...PLANS.trial, includedNote: "Your trial review run is Included — no credits spent." } },
     }));
     const html = await (await app.request("/settings/billing")).text();
     expect(html).toContain('data-trial-state="active"');

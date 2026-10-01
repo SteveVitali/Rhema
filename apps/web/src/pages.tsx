@@ -79,6 +79,7 @@ import {
   claimUrlViews,
   evidenceUrlViews,
   fetchLogFromRows,
+  normalizeEvidence,
   buildRubricDelta,
   // P1.07 — the findings-surface derivations (§5.7): margin clustering, the shared filters, the
   // sectioned triage queue, the Quick severity budget, and the Apply gate.
@@ -1851,13 +1852,17 @@ function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: Re
     const state = dossier.findingObligations?.[view.id];
     return state ? { state, label: R.obligationStateLabel[state] ?? state } : undefined;
   };
-  const evidenceFor = (view: FindingView) =>
-    view.evidence
+  const evidenceFor = (view: FindingView) => {
+    // HOT.1 — normalize at the render seam: a view assembled without the api's row normalization (a
+    // bypass regression) still renders instead of 500ing on `.urls` (ADR-019).
+    const evidence = normalizeEvidence(view.evidence);
+    return evidence != null
       ? {
-          ...(view.evidence.verdict != null ? { verdictLabel: R.verdictLabel[view.evidence.verdict] ?? view.evidence.verdict } : {}),
-          urls: evidenceUrlViews(view.evidence, fetchLog),
+          ...(evidence.verdict != null ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict } : {}),
+          urls: evidenceUrlViews(evidence, fetchLog),
         }
       : undefined;
+  };
   const controlsFor = (view: FindingView) =>
     findingControlsFor(view, dossier.slug, dossier.runId, compact, err, {
       hasObligation: dossier.findingObligations?.[view.id] != null,
@@ -2488,7 +2493,7 @@ export function DossierPage(): ReactNode {
           </p>
         ) : null}
         {/* the once-per-surface evidence explainer (§5.7) — shown when any finding carries URLs. */}
-        {visible.some((f) => (f.evidence?.urls.length ?? 0) > 0) ? (
+        {visible.some((f) => (normalizeEvidence(f.evidence)?.urls.length ?? 0) > 0) ? (
           <p data-evidence-explainer="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 10px" }}>
             {R.evidenceExplainer}
           </p>
@@ -2512,16 +2517,17 @@ export function DossierPage(): ReactNode {
             })
           }
           promoteActionFor={(view) => `/p/${dossier.slug}/findings/${view.id}/promote`}
-          evidenceFor={(view) =>
-            view.evidence
+          evidenceFor={(view) => {
+            const evidence = normalizeEvidence(view.evidence);
+            return evidence != null
               ? {
-                  ...(view.evidence.verdict != null
-                    ? { verdictLabel: R.verdictLabel[view.evidence.verdict] ?? view.evidence.verdict }
+                  ...(evidence.verdict != null
+                    ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict }
                     : {}),
-                  urls: evidenceUrlViews(view.evidence, fetchLog),
+                  urls: evidenceUrlViews(evidence, fetchLog),
                 }
-              : undefined
-          }
+              : undefined;
+          }}
         />
         {triage?.savedFindingId ? (
           <p data-disposition-saved="true" style={{ fontSize: "12px", color: "var(--state-ready)", marginTop: "6px" }}>
@@ -5681,8 +5687,14 @@ export function BillingPage(): ReactNode {
         <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.planHeading}</h3>
         {sub.trial.state === "trial_active" ? (
           <p data-trial-state="active" style={{ fontSize: "13px", margin: "4px 0" }}>
-            <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "999px", border: "1px solid var(--accent)", color: "var(--accent)" }}>{B.includedBadge}</span>
-            {" "}{plans.trial.includedNote}
+            {/* HOT.1 — the api nulls `includedNote` while `trial.firstReviewIncluded` is hidden;
+                the badge + claim text render together, else the factual window note. */}
+            {plans.trial.includedNote != null ? (
+              <>
+                <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "999px", border: "1px solid var(--accent)", color: "var(--accent)" }}>{B.includedBadge}</span>
+                {" "}{plans.trial.includedNote}
+              </>
+            ) : B.trialWindowFmt.replace("{days}", String(plans.trial.windowDays))}
           </p>
         ) : sub.trial.state === "trial_denied" ? (
           <p data-trial-state="denied" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "4px 0" }}>{B.trialDeniedNote}</p>
@@ -5728,7 +5740,10 @@ export function BillingPage(): ReactNode {
                   ) : null}
                 </span>
               </div>
-              <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 8px" }}>{plan.whatItCovers}</p>
+              {/* HOT.1 — null while the plan's coverage line is a hidden claim (DTO-redacted). */}
+              {plan.whatItCovers != null ? (
+                <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "4px 0 8px" }}>{plan.whatItCovers}</p>
+              ) : null}
               {plan.waitlist ? (
                 <form method="post" action="/app/settings/billing/waitlist" data-waitlist-form="true" style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
                   <input type="email" name="email" required placeholder={B.teamEmailLabel}

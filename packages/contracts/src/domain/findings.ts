@@ -33,11 +33,19 @@ export const findingProjectionSchema = z.object({
   relEnd: z.string().optional(),
 });
 
+/**
+ * HOT.1 (ADR-019) — the stored evidence shape is deliberately PARTIAL: `urls` is optional on the row
+ * type so an unguarded `finding.evidence.urls` read fails typecheck and every consumer goes through
+ * `normalizeEvidence` (findings-core), which returns the canonical shape with `urls` always present.
+ * `accessed` is optional because rows/sidecars written before the canonical shape settled carry no
+ * stamp.
+ */
 export const findingEvidenceSchema = z.object({
   claimId: idSchema.optional(),
   verdict: claimVerdictSchema.optional(),
-  urls: z.array(z.object({ url: urlSchema, accessed: isoSchema })),
+  urls: z.array(z.object({ url: urlSchema, accessed: isoSchema.optional() })).optional(),
 });
+export type FindingEvidence = z.infer<typeof findingEvidenceSchema>;
 
 export const findingSchema = z.object({
   id: idSchema,

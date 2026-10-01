@@ -1402,7 +1402,9 @@ export const COPY = {
     nav: "Billing",
     heading: "Billing",
     planHeading: "Plan",
-    trialActiveFmt: "Trial — {n} days left · your review run is Included",
+    // HOT.1 — `trialActiveFmt` ("your review run is Included") was dead claim copy; the trial_active
+    // line falls back to this factual window note while `trial.firstReviewIncluded` is hidden.
+    trialWindowFmt: "Trial window — {days} days.",
     trialDeniedNote: "The trial wasn't available for this signup. Plans start below.",
     trialUsedNote: "Trial used. Plans start below.",
     freeNote: "Free — chat only, daily credits.",
@@ -1957,8 +1959,9 @@ export const COPY = {
       lede:
         "Rhēma reads a finished draft the way a demanding editor would — checks every load-bearing " +
         "claim against real sources, maps the argument, and hands back a dossier you can act on.",
-      // §14.3 — the trial note, verbatim in spirit (the landing and the mechanics are one sentence).
-      trialNote: "No card. Your first review is included.",
+      // §14.3 — the trial note. HOT.1: the honest default; the "first review is included" variant is
+      // gated claim text in contracts' PUBLIC_CLAIM_COPY (trial.firstReviewIncluded), never here.
+      trialNote: "No card required.",
       ctaPrimary: "Start with a draft",
       ctaScratch: "Start from scratch",
       ctaOutline: "Upload an outline",
@@ -2040,7 +2043,10 @@ export const COPY = {
         },
         {
           q: "Do I pay to look?",
-          a: "No card is required to start — your first review is included in the trial window.",
+          // HOT.1 — honest default; the "first review included" variant is the gated claim
+          // `trial.firstReviewIncluded` (its ON text lives in PUBLIC_CLAIM_COPY, not here).
+          a: "No card is required to start.",
+          claimId: "trial.firstReviewIncluded",
         },
         {
           q: "Is my text used to train models?",
@@ -2066,7 +2072,8 @@ export const COPY = {
     annualSaveFmt: "Save ${n}/yr",
     annualSavingLine: "Annual billing saves {pct}% — shown in dollars on the card.",
     freeHeading: "Free",
-    freeTrialNote: "The included first review runs inside the trial window.",
+    // HOT.1 — `freeTrialNote` ("the included first review…") removed: an unrendered hidden claim does
+    // not belong in the copy table at all; the gated variant lives in contracts' PUBLIC_CLAIM_COPY.
     freePostNote: "After the window: keep your workspace, buy runs with top-ups.",
     waitlistCta: "Join the waitlist",
     startCta: "Start free",
@@ -2081,7 +2088,9 @@ export const COPY = {
     factCheckOffLabel: "fact-check off",
     matrixHeading: "The ladder, compared",
     faqHeading: "Questions",
-    trialRuleFmt: "One trial per person — {days} days, one included Review, no card.",
+    // HOT.1 — honest default; the "one included Review" variant is the gated claim
+    // `trial.firstReviewIncluded` (PUBLIC_CLAIM_COPY), not a copy-table string.
+    trialRuleFmt: "One trial per person — {days} days, no card.",
     topUpHeading: "Top-up packs",
     topUpNoteFmt: "Never expire for {months} months.",
     creditsLabel: "credits",

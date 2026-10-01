@@ -30,11 +30,13 @@ export const findingViewSchema = z.object({
   projection: anchorSchema.optional(),
   title: z.string(),
   body: z.string(),
+  // HOT.1 — same relaxation as findingEvidenceSchema: `urls` is always present (post-normalization),
+  // `accessed` is optional because legacy rows carry no stamp.
   evidence: z
     .object({
       claimId: idSchema.optional(),
       verdict: claimVerdictSchema.optional(),
-      urls: z.array(z.object({ url: urlSchema, accessed: isoSchema })),
+      urls: z.array(z.object({ url: urlSchema, accessed: isoSchema.optional() })),
     })
     .optional(),
   suggestion: z.object({ replacement: z.string() }).optional(),

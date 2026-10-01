@@ -1168,7 +1168,8 @@ export interface BillingPlanDto {
   readonly priorityQueue?: boolean;
   readonly waitlist?: boolean;
   readonly seatsIncluded?: number;
-  readonly whatItCovers: string;
+  /** HOT.1 — null while the plan's coverage line is a hidden claim (the api redacts it server-side). */
+  readonly whatItCovers: string | null;
 }
 
 /** GET /billing/plans — the published pricing payload (REQ-GROWTH-4/7/8; §14.2). */
@@ -1184,7 +1185,8 @@ export interface BillingPlansDto {
     readonly entitlement: { readonly kind: string; readonly wordCap: number; readonly rigor: string; readonly modelTier: string };
     readonly pocketCredits: number;
     readonly upgradePromoCredits: number;
-    readonly includedNote: string;
+    /** HOT.1 — null while `trial.firstReviewIncluded` is hidden. */
+    readonly includedNote: string | null;
     readonly postTrialNote: string;
     readonly eligibilityLine: string;
   };

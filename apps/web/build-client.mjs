@@ -8,12 +8,13 @@
 import { build } from "esbuild";
 import { mkdir, copyFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { CLIENT_ENTRIES } from "./client-entries.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 
 await mkdir(new URL("public", import.meta.url), { recursive: true });
 
-for (const entry of ["editor", "ide", "page", "outline", "landing"]) {
+for (const entry of CLIENT_ENTRIES) {
   await build({
     entryPoints: [`${root}src/client/${entry}.ts`],
     bundle: true,
