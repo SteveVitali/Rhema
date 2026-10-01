@@ -11,6 +11,7 @@ paths = [
   '''docs/.*''',
   '''.*\.example$''',
   '''pnpm-lock\.yaml''',
+  '''apps/api/src/auth\.test\.ts''',
 ]
 # Non-secret literals that trip the default high-entropy rules (e.g. generic-api-key). Real secrets
 # never live in the repo (REQ-ARCH-30 — Secrets Manager/SSM only); these are scoped to specific
