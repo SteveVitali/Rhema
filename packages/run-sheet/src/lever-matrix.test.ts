@@ -33,8 +33,9 @@ describe("buildLeverMatrix — recompute + signed deltas (§5.6 item 2; REQ-BILL
     expect(Math.abs(off.estimateCredits - 330) / 330).toBeLessThanOrEqual(0.1);
     // turning fact-check off is a strict reduction (a negative delta).
     expect(off.estimateCredits).toBeLessThan(on.estimateCredits);
-    // and the delta equals the claim-verification contribution (45 claims × the per-claim cost).
-    expect(on.estimateCredits - off.estimateCredits).toBe(45 * 24);
+    // and the delta equals the claim-verification contribution: 45 claims × the per-claim cost PLUS the
+    // verification-phase research addend (PRB.22 — 60 floor + 16/claim), which is bound to the same toggle.
+    expect(on.estimateCredits - off.estimateCredits).toBe(45 * 24 + 60 + 45 * 16);
   });
 
   it("each Advanced toggle exposes a SIGNED delta from the same estimator", () => {

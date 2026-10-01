@@ -26,6 +26,22 @@ export interface RunAllowlistData {
   readonly urlPolicy: ProxyUrlPolicyData;
 }
 
+/**
+ * The run's server web-research policy (§12.6; P0.15i + PRB.22), mirrored structurally from the
+ * egress-proxy `WebToolPolicy` (the proxy-local type is the authority; the security boundary keeps the
+ * graphs separate). The budgets bound a run's TOTAL search/fetch invocations — `max_uses` bounds a single
+ * API call only — and `fetchMaxContentTokens` truncates each fetched page before context ingress.
+ */
+export interface WebToolPolicyData {
+  readonly search?: boolean;
+  readonly fetch?: boolean;
+  readonly searchMaxUses?: number;
+  readonly fetchMaxUses?: number;
+  readonly searchBudget?: number;
+  readonly fetchBudget?: number;
+  readonly fetchMaxContentTokens?: number;
+}
+
 /** The RunContext attribution denormalized onto the credential (everything but allowlist/urlPolicy). */
 export interface RunContextData {
   readonly runId: string;
@@ -42,6 +58,8 @@ export interface RunContextData {
   readonly modelTier: string;
   readonly rateTableVersion: number;
   readonly capCredits: number;
+  /** The run's server web-research policy (PRB.22); absent ⇒ the proxy's bounded defaults apply. */
+  readonly webTools?: WebToolPolicyData;
 }
 
 /** The resolved context the proxy consumes — structurally the egress-proxy `RunContext`. */

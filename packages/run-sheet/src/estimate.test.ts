@@ -51,6 +51,28 @@ describe("buildEstimate — provisional then refined (REQ-SPEC-16; §5.6 item 1)
     expect(provisional.capCredits).toBeLessThan(refined.capCredits);
   });
 
+  it("prices the verification-phase research addend, bound to the fact_check toggle (PRB.22)", () => {
+    // D-PRB.21-1: verification's web research was unmodeled burn. Now the estimate carries a claim-scaled
+    // research addend — a 701-word doc (≈3 claims) estimates (40 + 8.412 + 72) + (60 + 48) = 228.412 at
+    // Base/Standard, and Quick (0.6×) lands ~138 → a cap above the bounded-burn floor.
+    const quick = buildEstimate({ workflow: "review", rigor: "quick", modelTier: "base", inputs: { words: 701 } });
+    expect(quick.claimCount).toBe(3);
+    expect(quick.estimateCredits).toBe(Math.ceil(228.412 * 0.6)); // 138
+    // the old modeled quick floor (≈73) sat below minimum viable burn — the bound+addend pair fixes that.
+    expect(quick.capCredits).toBeGreaterThan(146);
+
+    // fact_check OFF ⇒ no verification phase ⇒ the research addend leaves with the per-claim term.
+    const off = buildEstimate({
+      workflow: "review", rigor: "standard", modelTier: "base",
+      inputs: { words: 701 }, toggles: { fact_check: false },
+    });
+    const on = buildEstimate({
+      workflow: "review", rigor: "standard", modelTier: "base",
+      inputs: { words: 701 }, toggles: { fact_check: true },
+    });
+    expect(on.estimateCredits - off.estimateCredits).toBe(3 * 24 + 60 + 3 * 16);
+  });
+
   it("reflects a folded instrumented spec (override-first) without a code change", () => {
     resetInstrumentedOverrides();
     const modeled = buildEstimate({ workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 5180 }, claimCount: 45 });

@@ -34,19 +34,20 @@ describe("estimateCredits (§12.2 consumer)", () => {
     expect(base).toBe(Math.ceil(40 + 0.012 * 3000 + 24 * 10)); // 40 + 36 + 240 = 316
   });
 
-  it("adds the per-phase addend terms by default (discourse + second read)", () => {
+  it("adds the per-phase addend terms by default (verification research + discourse + second read)", () => {
     const spec = ESTIMATORS.review!;
     const withAddends = estimateCredits(spec, { words: 3000, claims: 10 }, { tier: "base", rigor: "standard" });
-    // base 316 + discourse (90 + 0.006*3000=18 → 108) + second_read (0.005*3000=15) = 316+108+15 = 439
-    expect(withAddends).toBe(439);
+    // base 316 + verification research (60 + 16*10 = 220 — PRB.22) + discourse (90 + 0.006*3000=18 → 108)
+    // + second_read (0.005*3000=15) = 316+220+108+15 = 659
+    expect(withAddends).toBe(659);
   });
 
   it("applies the model-tier multiplier (1× / 2.2× / 4.5×)", () => {
-    const spec = ESTIMATORS.fact_check!; // base: 20 + 11*claims
-    const claims = { claims: 10 }; // base standard = 20 + 110 = 130
-    expect(estimateCredits(spec, claims, { tier: "base", rigor: "standard" })).toBe(130);
-    expect(estimateCredits(spec, claims, { tier: "balanced", rigor: "standard" })).toBe(Math.ceil(130 * 2.2)); // 286
-    expect(estimateCredits(spec, claims, { tier: "frontier", rigor: "standard" })).toBe(Math.ceil(130 * 4.5)); // 585
+    const spec = ESTIMATORS.fact_check!; // base: 80 + 27*claims (PRB.22: verification research folded in)
+    const claims = { claims: 10 }; // base standard = 80 + 270 = 350
+    expect(estimateCredits(spec, claims, { tier: "base", rigor: "standard" })).toBe(350);
+    expect(estimateCredits(spec, claims, { tier: "balanced", rigor: "standard" })).toBe(Math.ceil(350 * 2.2)); // 770
+    expect(estimateCredits(spec, claims, { tier: "frontier", rigor: "standard" })).toBe(Math.ceil(350 * 4.5)); // 1575
   });
 
   it("applies the §6.1 rigor multiplier (Review Quick 0.6× / Full board 1.2×)", () => {
@@ -86,12 +87,12 @@ describe("rigorMultiplier + RIGOR_MULTIPLIERS", () => {
 
 describe("foldInstrumentedRun (§16.3 #1 — measured replaces provisional)", () => {
   it("calibrates the modeled shape to the measured anchor and marks the spec instrumented", () => {
-    const spec = ESTIMATORS.fact_check!; // base standard tier=base: 20 + 11*claims
-    const inputs = { claims: 10 }; // modeled prediction = 130
+    const spec = ESTIMATORS.fact_check!; // base standard tier=base: 80 + 27*claims (PRB.22 research folded in)
+    const inputs = { claims: 10 }; // modeled prediction = 350
     const predicted = estimateCredits(spec, inputs, { tier: "base", rigor: "standard" });
-    expect(predicted).toBe(130);
+    expect(predicted).toBe(350);
 
-    const measured = 156; // a real proxy-metered run came in 20% higher than the model
+    const measured = 420; // a real proxy-metered run came in ~20% higher than the model
     const folded = foldInstrumentedRun(spec, {
       runId: "run_fc_1", tier: "base", rigor: "standard", inputs, measuredCredits: measured,
       measuredAt: "2026-09-03T00:00:00Z",
@@ -102,7 +103,7 @@ describe("foldInstrumentedRun (§16.3 #1 — measured replaces provisional)", ()
     expect(folded.runsBehind).toEqual(["run_fc_1"]);
     expect(folded.measuredAt).toBe("2026-09-03T00:00:00Z");
     // the folded spec now reproduces the measured credits at the same inputs
-    expect(estimateCredits(folded, inputs, { tier: "base", rigor: "standard" })).toBe(measured);
+    expect(estimateCredits(folded, inputs, { tier: "base", rigor: "standard" })).toBe(420);
   });
 
   it("records phase-aware cache economics (review 13 F8) when captured", () => {

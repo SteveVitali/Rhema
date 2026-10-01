@@ -66,6 +66,20 @@ export interface WebToolPolicy {
   readonly searchMaxUses?: number;
   /** `max_uses` for the injected web_fetch tool (default `DEFAULT_WEB_FETCH_MAX_USES`). */
   readonly fetchMaxUses?: number;
+  /**
+   * The run's TOTAL web_search budget across all requests (PRB.22 — D-PRB.21-1). `max_uses` bounds a single
+   * API call only, so the proxy tracks cumulative use and shrinks/removes the tool as the budget is consumed
+   * (default `DEFAULT_WEB_SEARCH_BUDGET`).
+   */
+  readonly searchBudget?: number;
+  /** The run's TOTAL web_fetch budget across all requests (default `DEFAULT_WEB_FETCH_BUDGET`). */
+  readonly fetchBudget?: number;
+  /**
+   * `max_content_tokens` set on every web_fetch tool — the per-page context truncation (PRB.22). Fetched
+   * pages used to enter context wholesale (6.65M cache-read tokens on one 701-word review); this caps each
+   * page's ingress (default `DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS`).
+   */
+  readonly fetchMaxContentTokens?: number;
 }
 
 /**

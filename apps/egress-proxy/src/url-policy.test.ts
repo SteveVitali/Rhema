@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_WEB_FETCH_BUDGET,
+  DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
   DEFAULT_WEB_FETCH_MAX_USES,
+  DEFAULT_WEB_SEARCH_BUDGET,
   DEFAULT_WEB_SEARCH_MAX_USES,
   ensureServerWebTools,
   injectUrlPolicyIntoBody,
@@ -63,21 +66,27 @@ describe("URL policy body injection (§12.6)", () => {
 });
 
 describe("resolveServerWebToolConfig (P0.15i)", () => {
-  it("defaults BOTH web_search and web_fetch ON (both GA, no beta header) with default max_uses when the policy is absent", () => {
+  it("defaults BOTH web_search and web_fetch ON (both GA, no beta header) with default max_uses + bounded budgets when the policy is absent", () => {
     expect(resolveServerWebToolConfig(undefined)).toEqual({
       search: true,
       fetch: true,
       searchMaxUses: DEFAULT_WEB_SEARCH_MAX_USES,
       fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
+      searchBudget: DEFAULT_WEB_SEARCH_BUDGET,
+      fetchBudget: DEFAULT_WEB_FETCH_BUDGET,
+      fetchMaxContentTokens: DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
     });
   });
 
   it("honors explicit opt-outs and custom caps", () => {
-    expect(resolveServerWebToolConfig({ search: false, fetch: false, searchMaxUses: 3 })).toEqual({
+    expect(resolveServerWebToolConfig({ search: false, fetch: false, searchMaxUses: 3, fetchBudget: 9, fetchMaxContentTokens: 4000 })).toEqual({
       search: false,
       fetch: false,
       searchMaxUses: 3,
       fetchMaxUses: DEFAULT_WEB_FETCH_MAX_USES,
+      searchBudget: DEFAULT_WEB_SEARCH_BUDGET,
+      fetchBudget: 9,
+      fetchMaxContentTokens: 4000,
     });
   });
 
@@ -95,8 +104,14 @@ describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6
     expect(added).toBe(true);
     const tools = (body as { tools: Record<string, unknown>[] }).tools;
     expect(tools).toContainEqual({ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: DEFAULT_WEB_SEARCH_MAX_USES });
-    // web_fetch is ON by default (GA, no beta header) — required for cited⇒fetched of directly-fetched sources.
-    expect(tools).toContainEqual({ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: DEFAULT_WEB_FETCH_MAX_USES });
+    // web_fetch is ON by default (GA, no beta header) — required for cited⇒fetched of directly-fetched
+    // sources; PRB.22 pins per-page context truncation on every injected fetch tool.
+    expect(tools).toContainEqual({
+      type: WEB_FETCH_TOOL_TYPE,
+      name: "web_fetch",
+      max_uses: DEFAULT_WEB_FETCH_MAX_USES,
+      max_content_tokens: DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
+    });
   });
 
   it("STRIPS the CLI's client WebSearch/WebFetch tools so they cannot pre-empt the injected server tool (P0.15i, live-confirmed)", () => {
@@ -137,12 +152,21 @@ describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6
     expect(tools.some((t) => t["name"] === "web_search")).toBe(true);
   });
 
-  it("does NOT duplicate a server web tool the CLI already added, for either kind (add-if-absent)", () => {
-    const { added } = ensureServerWebTools(
+  it("does NOT duplicate a server web tool the CLI already added — but CLAMPS it to the run policy (PRB.22)", () => {
+    const { body, added } = ensureServerWebTools(
       { ...bareBody(), tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }, { type: "web_fetch_20250910", name: "web_fetch" }] },
-      resolveServerWebToolConfig({ fetch: true }), // both enabled — still no duplicate
+      resolveServerWebToolConfig({ fetch: true }),
     );
-    expect(added).toBe(false);
+    // The fetch tool lacked max_uses/max_content_tokens — the proxy pins both (added: a policy clamp is a rewrite).
+    expect(added).toBe(true);
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.filter((t) => serverName(t) === "web_search")).toHaveLength(1);
+    expect(tools.filter((t) => serverName(t) === "web_fetch")).toHaveLength(1);
+    // the sandbox's TIGHTER max_uses (5 < the run's bound) is never widened.
+    expect(tools.find((t) => serverName(t) === "web_search")!["max_uses"]).toBe(5);
+    const fetchTool = tools.find((t) => serverName(t) === "web_fetch")!;
+    expect(fetchTool["max_uses"]).toBe(DEFAULT_WEB_FETCH_MAX_USES);
+    expect(fetchTool["max_content_tokens"]).toBe(DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS);
   });
 
   it("never touches a non-Messages body (no `messages` array) or a non-object", () => {
@@ -164,5 +188,61 @@ describe("ensureServerWebTools — proxy guarantees the server web tools (§12.6
     expect(rewritten).toBe(true);
     const search = (body as { tools: Record<string, unknown>[] }).tools.find((t) => t["name"] === "web_search")!;
     expect(search["blocked_domains"]).toEqual(["holdout.example"]);
+  });
+});
+
+const serverName = (t: Record<string, unknown>): string => String(t["name"] ?? "");
+
+describe("ensureServerWebTools — per-run research budgets (PRB.22; D-PRB.21-1)", () => {
+  const bareBody = () => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: "verify this" }] });
+
+  it("shrinks the injected tools' max_uses to the run's REMAINING budget", () => {
+    const config = resolveServerWebToolConfig({ fetchBudget: 6, searchBudget: 2 });
+    const { body } = ensureServerWebTools(bareBody(), config, { fetches: 4, searches: 1 });
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    // fetch: 6 − 4 used ⇒ only 2 left this call; search: 2 − 1 ⇒ 1 left.
+    expect(tools.find((t) => serverName(t) === "web_fetch")!["max_uses"]).toBe(2);
+    expect(tools.find((t) => serverName(t) === "web_search")!["max_uses"]).toBe(1);
+  });
+
+  it("DROPS a tool entirely once its run budget is exhausted — the model proceeds without it", () => {
+    const config = resolveServerWebToolConfig({ fetchBudget: 20, searchBudget: 24 });
+    const { body, added } = ensureServerWebTools(bareBody(), config, { fetches: 20, searches: 3 });
+    expect(added).toBe(true);
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.some((t) => serverName(t) === "web_fetch")).toBe(false);
+    expect(tools.some((t) => serverName(t) === "web_search")).toBe(true);
+  });
+
+  it("removes an EXISTING (sandbox-declared) web tool whose budget is exhausted — never just un-injected", () => {
+    const config = resolveServerWebToolConfig({ searchBudget: 5 });
+    const body = { ...bareBody(), tools: [{ type: "web_search_20250305", name: "web_search" }, { type: "custom_tool", name: "calc" }] };
+    const { body: out } = ensureServerWebTools(body, config, { searches: 5, fetches: 0 });
+    const tools = (out as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.some((t) => serverName(t) === "web_search")).toBe(false);
+    expect(tools).toContainEqual({ type: "custom_tool", name: "calc" });
+    // the enabled, still-budgeted fetch tool is still injected.
+    expect(tools.some((t) => serverName(t) === "web_fetch")).toBe(true);
+  });
+
+  it("strips a sandbox-declared web tool the run's policy disables outright", () => {
+    const config = resolveServerWebToolConfig({ fetch: false }); // scoped subagent: no fetching
+    const body = { ...bareBody(), tools: [{ type: "web_fetch_20250910", name: "web_fetch" }] };
+    const { body: out } = ensureServerWebTools(body, config);
+    const tools = (out as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.some((t) => serverName(t) === "web_fetch")).toBe(false);
+    expect(tools.some((t) => serverName(t) === "web_search")).toBe(true); // still injected
+  });
+
+  it("never widens a sandbox-declared max_uses/max_content_tokens tighter than the run's bound", () => {
+    const config = resolveServerWebToolConfig({ fetchMaxContentTokens: 8000 });
+    const body = {
+      ...bareBody(),
+      tools: [{ type: "web_fetch_20250910", name: "web_fetch", max_uses: 3, max_content_tokens: 2000 }],
+    };
+    const { body: out } = ensureServerWebTools(body, config);
+    const fetchTool = (out as { tools: Record<string, unknown>[] }).tools.find((t) => serverName(t) === "web_fetch")!;
+    expect(fetchTool["max_uses"]).toBe(3);
+    expect(fetchTool["max_content_tokens"]).toBe(2000);
   });
 });

@@ -31,6 +31,9 @@
     },
     {
       "path": "../../packages/protocols"
+    },
+    {
+      "path": "../../packages/run-sheet"
     }
   ],
   "exclude": [

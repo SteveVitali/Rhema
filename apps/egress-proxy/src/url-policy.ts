@@ -18,9 +18,28 @@ import type { ProxyUrlPolicy, WebToolPolicy } from "./context.js";
  */
 export const WEB_SEARCH_TOOL_TYPE = "web_search_20250305" as const;
 export const WEB_FETCH_TOOL_TYPE = "web_fetch_20250910" as const;
-/** Default `max_uses` caps for the injected tools (a per-run budget/cap still bounds real spend). */
+/** Default `max_uses` caps for the injected tools. `max_uses` bounds ONE API call only (per-request — the
+ *  model re-issues tools each turn), so the per-RUN budgets below are the real bound (PRB.22). */
 export const DEFAULT_WEB_SEARCH_MAX_USES = 15 as const;
 export const DEFAULT_WEB_FETCH_MAX_USES = 15 as const;
+
+/**
+ * Per-run research budgets (PRB.22 — D-PRB.21-1). Verification research was unbounded: a 701-word review
+ * burned 128 fetches + 13 searches and 6.65M cache-read tokens because fetched pages entered context
+ * wholesale and every turn re-read them. `DEFAULT_WEB_*_BUDGET` bound a run's TOTAL search/fetch
+ * invocations; `DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS` truncates each fetched page before it enters context
+ * (the `max_content_tokens` tool param). The orchestrator authors per-run budgets scaled to the claim count
+ * (`authorWebToolPolicy`); these defaults are the fail-safe bound for any credentialed run without one.
+ */
+export const DEFAULT_WEB_SEARCH_BUDGET = 24 as const;
+export const DEFAULT_WEB_FETCH_BUDGET = 48 as const;
+export const DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS = 8000 as const;
+
+/** A run's cumulative server web-tool use so far (history + metered responses), for budget enforcement. */
+export interface WebToolUsage {
+  readonly searches: number;
+  readonly fetches: number;
+}
 
 /** Classify a tool definition as a server web_search / web_fetch tool (or neither), by its name/type tag. */
 function serverWebToolKind(tool: unknown): "search" | "fetch" | null {
@@ -56,6 +75,11 @@ export interface ServerWebToolConfig {
   readonly fetch: boolean;
   readonly searchMaxUses: number;
   readonly fetchMaxUses: number;
+  /** Run-total invocation budgets (PRB.22); 0 remaining ⇒ the tool is removed from the request. */
+  readonly searchBudget: number;
+  readonly fetchBudget: number;
+  /** Per-page context truncation applied to every web_fetch tool (`max_content_tokens`). */
+  readonly fetchMaxContentTokens: number;
 }
 
 /**
@@ -74,6 +98,9 @@ export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): S
     fetch: policy?.fetch ?? true,
     searchMaxUses: policy?.searchMaxUses ?? DEFAULT_WEB_SEARCH_MAX_USES,
     fetchMaxUses: policy?.fetchMaxUses ?? DEFAULT_WEB_FETCH_MAX_USES,
+    searchBudget: policy?.searchBudget ?? DEFAULT_WEB_SEARCH_BUDGET,
+    fetchBudget: policy?.fetchBudget ?? DEFAULT_WEB_FETCH_BUDGET,
+    fetchMaxContentTokens: policy?.fetchMaxContentTokens ?? DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
   };
 }
 
@@ -95,32 +122,92 @@ export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): S
 export function ensureServerWebTools(
   body: unknown,
   config: ServerWebToolConfig,
+  used?: WebToolUsage,
 ): { body: unknown; added: boolean } {
-  if (!config.search && !config.fetch) return { body, added: false };
   if (!body || typeof body !== "object") return { body, added: false };
   const b = body as { messages?: unknown; tools?: unknown };
   // Only a Messages request carries `messages[]`; never inject into other endpoints' bodies.
   if (!Array.isArray(b.messages)) return { body, added: false };
-
   const tools = Array.isArray(b.tools) ? b.tools : [];
+  // Fast path: nothing to inject AND no web tools to police — leave the body untouched.
+  if (tools.every((t) => !isClientWebTool(t) && serverWebToolKind(t) === null) && !config.search && !config.fetch)
+    return { body, added: false };
+
+  // (PRB.22) Per-run budgets: `max_uses` bounds only ONE API call, so the run's remaining budget is
+  // enforced HERE — an exhausted kind's tool is dropped entirely (the model proceeds without it), and a
+  // partial remainder clamps `max_uses` below the per-call cap. `used` counts every invocation the proxy
+  // has seen for the run (history + metered responses), so the bound holds across turns and subagents.
+  const searchRemaining = config.search ? config.searchBudget - (used?.searches ?? 0) : 0;
+  const fetchRemaining = config.fetch ? config.fetchBudget - (used?.fetches ?? 0) : 0;
+
   // (1) strip the CLI's client web tools so they cannot pre-empt the server tool.
   const kept = tools.filter((t) => !isClientWebTool(t));
-  const strippedAny = kept.length !== tools.length;
-  const hasSearch = kept.some((t) => serverWebToolKind(t) === "search");
-  const hasFetch = kept.some((t) => serverWebToolKind(t) === "fetch");
 
-  // (2) add the server web tool(s) the run wants and does not already have.
+  // (2) clamp every server web tool already in the body: drop a kind the run disabled or exhausted;
+  //     otherwise shrink its max_uses to the run's remaining budget (never widened past what the sandbox
+  //     set) and pin web_fetch's max_content_tokens to the run's page cap. A sandbox-declared tool gets
+  //     the SAME treatment as an injected one — the run's policy is server-side truth.
+  let changed = kept.length !== tools.length;
+  const clamped: Record<string, unknown>[] = [];
+  for (const t of kept) {
+    const kind = serverWebToolKind(t);
+    const tool = JSON.parse(JSON.stringify(t)) as Record<string, unknown>;
+    if (kind === "search") {
+      if (!config.search || searchRemaining <= 0) {
+        changed = true;
+        continue; // disabled for this run, or search budget exhausted — the tool leaves the request
+      }
+      const cap = Math.min(config.searchMaxUses, searchRemaining);
+      const had = typeof tool["max_uses"] === "number";
+      const next = Math.min(had ? (tool["max_uses"] as number) : cap, cap);
+      if (!had || next !== tool["max_uses"]) changed = true;
+      tool["max_uses"] = next;
+    } else if (kind === "fetch") {
+      if (!config.fetch || fetchRemaining <= 0) {
+        changed = true;
+        continue; // disabled for this run, or fetch budget exhausted — the tool leaves the request
+      }
+      const cap = Math.min(config.fetchMaxUses, fetchRemaining);
+      const had = typeof tool["max_uses"] === "number";
+      const next = Math.min(had ? (tool["max_uses"] as number) : cap, cap);
+      if (!had || next !== tool["max_uses"]) changed = true;
+      tool["max_uses"] = next;
+      // per-page truncation: set (never widen) max_content_tokens.
+      const contentCap = config.fetchMaxContentTokens;
+      const hadContent = typeof tool["max_content_tokens"] === "number";
+      const nextContent = Math.min(hadContent ? (tool["max_content_tokens"] as number) : contentCap, contentCap);
+      if (!hadContent || nextContent !== tool["max_content_tokens"]) changed = true;
+      tool["max_content_tokens"] = nextContent;
+    }
+    clamped.push(tool);
+  }
+
+  const hasSearch = clamped.some((t) => serverWebToolKind(t) === "search");
+  const hasFetch = clamped.some((t) => serverWebToolKind(t) === "fetch");
+
+  // (3) add the server web tool(s) the run wants, does not already have, and still has budget for.
   const additions: Record<string, unknown>[] = [];
-  if (config.search && !hasSearch) {
-    additions.push({ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: config.searchMaxUses });
+  if (config.search && !hasSearch && searchRemaining > 0) {
+    additions.push({
+      type: WEB_SEARCH_TOOL_TYPE,
+      name: "web_search",
+      max_uses: Math.min(config.searchMaxUses, searchRemaining),
+    });
+    changed = true;
   }
-  if (config.fetch && !hasFetch) {
-    additions.push({ type: WEB_FETCH_TOOL_TYPE, name: "web_fetch", max_uses: config.fetchMaxUses });
+  if (config.fetch && !hasFetch && fetchRemaining > 0) {
+    additions.push({
+      type: WEB_FETCH_TOOL_TYPE,
+      name: "web_fetch",
+      max_uses: Math.min(config.fetchMaxUses, fetchRemaining),
+      max_content_tokens: config.fetchMaxContentTokens,
+    });
+    changed = true;
   }
-  if (!strippedAny && additions.length === 0) return { body, added: false };
+  if (!changed) return { body, added: false };
 
   const clone = JSON.parse(JSON.stringify(body)) as { tools?: unknown[] };
-  clone.tools = [...kept.map((t) => JSON.parse(JSON.stringify(t)) as unknown), ...additions];
+  clone.tools = [...clamped, ...additions];
   return { body: clone, added: true };
 }
 

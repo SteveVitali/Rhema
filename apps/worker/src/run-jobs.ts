@@ -8,6 +8,7 @@ import {
   provisionRun,
   reap,
   authorRunAllowlist,
+  authorWebToolPolicy,
   seatForWorkflow,
   applyTransition,
   revokeRunCredentials,
@@ -25,6 +26,7 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import type { WorkflowKey } from "@rhema/contracts";
+import { provisionalClaimCount } from "@rhema/run-sheet";
 
 /** Static config a deploy supplies (the pinned image, the run service account, the provider). */
 export interface WorkerRunConfig {
@@ -62,13 +64,15 @@ interface RunRow {
   state: string;
   seat: string | null;
   billing_account_id: string;
+  /** the frozen input snapshot ({wordCount, claimCount?, …}) — drives the research bound (PRB.22). */
+  input_snapshot: { wordCount?: number; claimCount?: number } | null;
 }
 
 async function loadRun(deps: WorkerRunDeps, workspaceId: string, runId: string): Promise<RunRow> {
   return deps.txRunner.run(workspaceId, async (tx: SqlClient) => {
     const res = await tx.query(
       `select r.workflow, r.project_id, r.persona_id, r.model_tier, r.rate_table_version, r.cap_credits,
-              r.hold_ledger_id, r.state, ai.type_key as seat, w.billing_account_id
+              r.hold_ledger_id, r.state, r.input_snapshot, ai.type_key as seat, w.billing_account_id
          from runs r
          join workspaces w on w.id = r.workspace_id
          left join agent_instances ai on ai.id = r.agent_instance_id
@@ -86,6 +90,12 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   const workflow = run.workflow as WorkflowKey;
   const seat = run.seat ?? seatForWorkflow(workflow);
   const allowlist = authorRunAllowlist({ modelTier: run.model_tier as ModelTier });
+  // PRB.22 — the run's web-research bound: the snapshot's refined claimCount, else the same
+  // density-derived provisional count the estimate used, so the bound and the price agree.
+  const snap = run.input_snapshot ?? {};
+  const claims =
+    typeof snap.claimCount === "number" ? snap.claimCount : provisionalClaimCount(workflow, snap.wordCount);
+  const webTools = authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
   return provisionRun(deps, deps.launcher, {
     runId: job.runId,
     workspaceId: job.workspaceId,
@@ -103,6 +113,7 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
     rateTableVersion: run.rate_table_version,
     capCredits: run.cap_credits,
     allowlist,
+    webTools,
   });
 }
 

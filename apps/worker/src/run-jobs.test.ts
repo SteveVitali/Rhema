@@ -38,6 +38,37 @@ describe("worker run-lifecycle handlers", () => {
     expect(cred.n).toBe(1);
   });
 
+  it("run.start authors the run's webTools research bound from the snapshot claim count (PRB.22)", async () => {
+    await seedRun(db, {
+      runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId,
+      workflow: "review", state: "queued", lockSet: [],
+      inputSnapshot: { wordCount: 701, claimCount: 3 },
+    });
+    const res = await handleRunStart(deps, { runId: "run1", workspaceId: seed.workspaceId });
+    expect(res.ok).toBe(true);
+    const row = (await db.client.query("select context from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      context: { webTools?: { fetchBudget?: number; searchBudget?: number; fetchMaxContentTokens?: number } } | string;
+    };
+    const context = typeof row.context === "string" ? JSON.parse(row.context) : row.context;
+    // 3 claims ⇒ fetch 12+4·3=24, search 8+3=11, pages truncated at 8k tokens.
+    expect(context.webTools).toMatchObject({ fetchBudget: 24, searchBudget: 11, fetchMaxContentTokens: 8000 });
+  });
+
+  it("run.start derives the bound from word-count density when claimCount is absent (PRB.22)", async () => {
+    await seedRun(db, {
+      runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId,
+      workflow: "review", state: "queued", lockSet: [],
+      inputSnapshot: { wordCount: 5180 },
+    });
+    await handleRunStart(deps, { runId: "run1", workspaceId: seed.workspaceId });
+    const row = (await db.client.query("select context from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      context: { webTools?: { fetchBudget?: number } } | string;
+    };
+    const context = typeof row.context === "string" ? JSON.parse(row.context) : row.context;
+    // 5180 × 0.004 ≈ 21 claims ⇒ fetch 12+4·21=96 → clamped at the 80 ceiling.
+    expect(context.webTools?.fetchBudget).toBe(80);
+  });
+
   it("run.reap orphans a stale run and re-enqueues it", async () => {
     await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running", currentAttempt: 1 });
     await deps.heartbeats.beat({

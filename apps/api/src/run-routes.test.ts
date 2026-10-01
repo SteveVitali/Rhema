@@ -282,9 +282,10 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       estimate_credits: number;
       cap_credits: number;
     };
-    // review/standard/base on 8k words + 45 claims = 1394 credits; cap = ceil(1.5 × 1394) = 2091.
-    expect(row.estimate_credits).toBe(1394);
-    expect(row.cap_credits).toBe(2091);
+    // review/standard/base on 8k words + 45 claims = 2174 credits (incl. the PRB.22 verification-research
+    // addend: base 1216 + 780 research + 138 discourse + 40 second read); cap = ceil(1.5 × 2174) = 3261.
+    expect(row.estimate_credits).toBe(2174);
+    expect(row.cap_credits).toBe(3261);
   });
 
   // D-P0.11-1 / REQ-SPEC-24.5 — a tripped circuit breaker scales the NEW run's server-derived cap by the
@@ -305,9 +306,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       estimate_credits: number;
       cap_credits: number;
     };
-    // same levers as the re-derive test above: estimate 1394, base cap 2091 — the tripped breaker doubles it.
-    expect(row.estimate_credits).toBe(1394);
-    expect(row.cap_credits).toBe(4182);
+    // same levers as the re-derive test above: estimate 2174, base cap 3261 — the tripped breaker doubles it.
+    expect(row.estimate_credits).toBe(2174);
+    expect(row.cap_credits).toBe(6522);
   });
 
   // AC4 (run path) — insufficient balance returns 402 and creates NO run row (never billed; §5.6 item 6, §14.6).

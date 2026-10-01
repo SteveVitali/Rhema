@@ -64,6 +64,8 @@ const REVIEW: WorkflowSheetProfile = {
   },
   applyToggles(baseInputs, toggles) {
     const enabledAddends: string[] = [];
+    // fact-check on ⇒ the verification phase runs, so its bounded-research addend is priced (PRB.22).
+    if (toggles.fact_check) enabledAddends.push("verification");
     if (toggles.discourse) enabledAddends.push("discourse");
     if (toggles.second_read) enabledAddends.push("second_read");
     // fact-check off removes the claim-verification cost (the perClaim term) — the dominant Review lever.
