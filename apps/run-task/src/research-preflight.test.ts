@@ -95,6 +95,9 @@ describe("runResearchPreflight — the bounded model × server-tool probe (RES.1
       expect(c.url).toBe("https://proxy.test/v1/messages");
       expect(c.headers[PROXY_CREDENTIAL_HEADER]).toBe("cred-1");
       expect(c.headers[PHASE_CLASS_HEADER]).toBe("preflight");
+      // the proxy forwards client headers verbatim and injects none — a probe without
+      // anthropic-version 400s `invalid_request_error` upstream (live-diagnosed 2026-10-01).
+      expect(c.headers["anthropic-version"]).toBe("2023-06-01");
       expect(c.body.tools[0]!.max_uses).toBe(1);
       expect(c.body.tool_choice).toEqual({ type: "tool", name: c.body.tools[0]!.name });
     }

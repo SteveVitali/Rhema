@@ -98,6 +98,11 @@ export async function runResearchPreflight(args: {
           method: "POST",
           headers: {
             "content-type": "application/json",
+            // The proxy forwards the client's headers verbatim (credential.ts NEVER_FORWARD only
+            // strips auth/hop headers — it injects no provider headers): Anthropic refuses a bare
+            // /v1/messages with 400 `invalid_request_error: anthropic-version: header is required`.
+            // Diagnosed live 2026-10-01 — the first prod probe 400'd all four pairs on exactly that.
+            "anthropic-version": "2023-06-01",
             [PROXY_CREDENTIAL_HEADER]: args.credential,
             // the bypass class: the proxy lifts the budget bound for a stamped probe so a spent-budget
             // resume still re-preflights (RES.1). `max_uses: 1` bounds the declared tool anyway.
