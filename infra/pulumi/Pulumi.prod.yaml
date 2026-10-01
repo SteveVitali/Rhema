@@ -57,12 +57,12 @@ config:
     secure: AAABAC6YMHHH5eT/zHnfGdqzfZFXw9L+EsEOMfWmVeXc5DFhWYtI2prkLsiWgTu3gZ7DCs7rE0uS6pVkrUrbG81QuzQx3jJ76BG4LlAuA8TwSIuKCsFHqosmlUXdIsPIIfuYnNa6xr2HDjI8Ia+JvkHU8g==
   rhema:redisUrl:
     secure: AAABAJUM34u/xy00JC36/XGUbeppQFXmiVUwMn36aV/Zw5uRZ0FCgObXVhXyfeLXGbUHbzEQiqn1iA==
-  # PRB.23 Stage-B refresh (build rhema:prb23): api/web/worker/run-task rebuilt — BASE_TOOLS
-  # envelope cut (-45%), sheet toggle freeze into run inputs, per-phase context-churn estimate
-  # term, scrubbed-env caching/subagent knobs. egress-proxy/fetcher/convert/export/collab stay
-  # at PRB.22-era pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:46e36e6fca9dca4d1782c3ad1240e32a1311963363edefc55b6968036c37af0a","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:6b2e3688ee5c9577709990d650f204a81b97105e98f412fff7dc56fd79477e10","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:4a510df2d35d28712ca292b7e3eabef0a046e9474a1894fba3037dbc29e54290","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:4fb6bb7b07b2d0e797d4c0ca1f1dde128de20e96a880da62ff1bde4133556a06","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:4f764617622f6e268860f7e7e7eaed19abba9b2a0ad61f92e04e2731856fc775","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:e6d3bc60396115bdd42b5d5b9454689d94d9a254443972534313df29e1ce6d67","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:5072732dbeb535202a5425342ee5567d01547c9907c589c3b4bf58b6b96169e9"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:87b6da36a41eaaa0ee77a530eee0a027fdfad357dc32e4041570ddd1a701f3ee
+  # PRB.24 Stage-B refresh (build rhema:prb24): api/worker/run-task rebuilt — bounded
+  # research_fanout contract + researcher AgentDef + autoCompactWindow 80K + churn-term
+  # recalibration (per-phase 100 + research-loop 140). web stays at prb23 pin;
+  # egress-proxy/fetcher/convert/export/collab stay at PRB.22-era pins.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:64e3343232f4f8dd8c5e0eb565c2946539346ff3e0663b952c01a00c82072303","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:6b2e3688ee5c9577709990d650f204a81b97105e98f412fff7dc56fd79477e10","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:00fa33ad2348cb525a80e292bea961e7ba9615b13e66ad31f3eb81a164551671","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:4fb6bb7b07b2d0e797d4c0ca1f1dde128de20e96a880da62ff1bde4133556a06","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:4f764617622f6e268860f7e7e7eaed19abba9b2a0ad61f92e04e2731856fc775","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:e6d3bc60396115bdd42b5d5b9454689d94d9a254443972534313df29e1ce6d67","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:5072732dbeb535202a5425342ee5567d01547c9907c589c3b4bf58b6b96169e9"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:8dd606f912d9f68ec06be283f5d20a6dff733192f467429c6a796a4207d02e68
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:4938ae233036030454a3b04c8b03239f96f5097908d978f517473f18f67d4d3b
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app

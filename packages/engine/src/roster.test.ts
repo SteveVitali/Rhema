@@ -21,6 +21,18 @@ describe("buildAgentRoster (§12.2/§12.3)", () => {
     expect(r.researcher.inputScoped).toBe(false);
   });
 
+  it("PRB.24 — the researcher's description carries the bounded-scope/compact-return contract", () => {
+    // `toSdkAgents` synthesizes the subagent's system `prompt` from this description, so the
+    // intra-phase transcript bound must live HERE to reach the subagent's own context: verify
+    // only the assigned batch, return compact verdicts — never pasted page text (which would
+    // re-inflate the seat's transcript).
+    const r = buildAgentRoster({ tier: "base" });
+    const d = r.researcher.description;
+    expect(d).toContain("ONLY the items");
+    expect(d).toContain("verdict");
+    expect(d).toContain("never raw page text");
+  });
+
   it("routes research subagents to Haiku at Base and judges to Sonnet (§12.3)", () => {
     const r = buildAgentRoster({ tier: "base" });
     // bare family id (F4) — must match the proxy allowlist + rate table exactly, not a dated id.

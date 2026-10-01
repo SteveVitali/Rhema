@@ -61,6 +61,30 @@ export const ALLOWED_TOOLS = [
 export const BASE_TOOLS = ["Agent", "Bash", "Edit", "Glob", "Grep", "Read", "Write"] as const;
 
 /**
+ * The intra-phase transcript bound (PRB.24). Phases already get fresh `query()` sessions (no
+ * `resume` is ever forwarded), so the accumulation is INTRA-phase: a research-class phase seat
+ * (verification, discourse) runs one long loop — per claim it searches, fetches (≤8K-token
+ * pages), verifies, writes ledger rows — and EVERY Messages request resends the entire session
+ * transcript. Run `01M35Y9BH…` measured ~40 verification requests averaging ~60K cache-read
+ * tokens each (≈2.4M in the phase, ≈347 credits of uncommitted burn) before the run died
+ * `cap_reached` at 506 against a 432 cap — with 2 `context.compacted` events, proving the CLI's
+ * auto-compaction ran but only at its DEFAULT window (~the model's believed ~200K limit), i.e.
+ * the transcript grew to ~an order of magnitude above the observed per-request average before
+ * the bound moved.
+ *
+ * `autoCompactWindow` is a REAL vendored-SDK `Settings` key ("Auto-compact window size"), applied
+ * through `Options.settings` (the flag-settings layer — the highest-priority user-controlled
+ * settings tier), so the CLI's own auto-compaction now fires when a phase session's context
+ * approaches ~80K tokens instead of ~200K — a HARD per-request ceiling on transcript resend that
+ * applies session-wide (main context AND subagent sessions). The value is sized above one
+ * bounded claim-batch working set (~16K envelope + ≤5×8K fetched pages + ~15K notes ≈ 71K) so a
+ * seat honoring the `research_fanout` contract never thrashes; a non-compliant monolithic loop
+ * is capped near 80K/request + compaction overhead instead of growing unboundedly. This is the
+ * enforcement layer — the `research_fanout` prompt contract (runspec) is the shape instruction.
+ */
+export const TRANSCRIPT_COMPACTION_WINDOW_TOKENS = 80_000;
+
+/**
  * Cosmetic `disallowedTools` (§12.2, review 13 F18): they cut accidental attempts and audit noise, NOTHING
  * more — the VPC (no route), the per-run proxy credential (REQ-SPEC-11) and the uid split (REQ-SPEC-10) are
  * the enforcement. Verbatim from the spec.
@@ -100,6 +124,9 @@ export interface AgentSdkQueryOptions {
   /** REAL SDK field (PRB.23): the base set of built-in tools the CLI advertises — the request's
    *  tool-schema payload is built from THIS list, not from `allowedTools`. */
   tools: string[];
+  /** REAL SDK field (PRB.24): `Options.settings` — a flag-tier `Settings` object carrying
+   *  `autoCompactWindow`, the intra-phase transcript bound (see TRANSCRIPT_COMPACTION_WINDOW_TOKENS). */
+  settings: { autoCompactWindow: number };
   /** the per-phase inner budget brake (§12.4). */
   maxBudgetUsd: number;
   maxTurns: number;
@@ -159,6 +186,8 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
     allowedTools: [...ALLOWED_TOOLS],
     disallowedTools: [...COSMETIC_DISALLOWED_TOOLS],
     tools: [...BASE_TOOLS], // the advertised schema set — PRB.23 measured −54 KB/request
+    // the intra-phase transcript bound (PRB.24) — flag-tier settings, session-wide
+    settings: { autoCompactWindow: TRANSCRIPT_COMPACTION_WINDOW_TOKENS },
     maxBudgetUsd: req.maxBudgetUsd,
     maxTurns: req.maxTurns,
     env,

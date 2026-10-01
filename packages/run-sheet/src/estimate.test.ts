@@ -51,19 +51,21 @@ describe("buildEstimate — provisional then refined (REQ-SPEC-16; §5.6 item 1)
     expect(provisional.capCredits).toBeLessThan(refined.capCredits);
   });
 
-  it("prices the verification research addend + the context-churn floor, bound to the toggles (PRB.22/PRB.23)", () => {
+  it("prices the verification research addend + the context-churn floor, bound to the toggles (PRB.22/PRB.23/PRB.24)", () => {
     // D-PRB.21-1: verification's web research was unmodeled (PRB.22 addend); the per-turn transcript
     // resend the proxy meters was ALSO unmodeled — PRB.23's `perPhase` term prices it against the
-    // ACTIVE phase count. Quick's defaults (discourse/second_read off) ⇒ 5 of 7 phases active:
-    // base 40 + 8.412 + 72 + 5×50 churn = 370.412, + verification addend 108 = 478.412 at
-    // Base/Standard, ×0.6 rigor = 288 (the measured failed run burned 211 and did NOT finish).
+    // ACTIVE phase count, PRB.24 recalibrates it to the measured ordinary-phase churn (100) and adds
+    // the measured research-loop churn (140) to the verification addend. Quick's defaults
+    // (discourse/second_read off) ⇒ 5 of 7 phases active:
+    // base 40 + 8.412 + 72 + 5×100 churn = 620.412, + verification addend (200 + 48) = 868.412 at
+    // Base/Standard, ×0.6 rigor = 522 — ≈ the measured failed run's actual 506 metered burn.
     const quick = buildEstimate({ workflow: "review", rigor: "quick", modelTier: "base", inputs: { words: 701 } });
     expect(quick.claimCount).toBe(3);
-    expect(quick.estimateCredits).toBe(Math.ceil(478.412 * 0.6)); // 288
-    expect(quick.capCredits).toBe(Math.ceil(quick.estimateCredits * 1.5)); // 432
+    expect(quick.estimateCredits).toBe(Math.ceil(868.412 * 0.6)); // 522
+    expect(quick.capCredits).toBe(Math.ceil(quick.estimateCredits * 1.5)); // 783
 
     // fact_check OFF ⇒ no verification phase ⇒ the research addend AND that phase's churn term
-    // leave with the per-claim term: 3×24 claims + (60+3×16) research + 50 churn = 230.
+    // leave with the per-claim term: 3×24 claims + (200+3×16) research + 100 churn = 420.
     const off = buildEstimate({
       workflow: "review", rigor: "standard", modelTier: "base",
       inputs: { words: 701 }, toggles: { fact_check: false },
@@ -72,20 +74,20 @@ describe("buildEstimate — provisional then refined (REQ-SPEC-16; §5.6 item 1)
       workflow: "review", rigor: "standard", modelTier: "base",
       inputs: { words: 701 }, toggles: { fact_check: true },
     });
-    expect(on.estimateCredits - off.estimateCredits).toBe(3 * 24 + 60 + 3 * 16 + 50);
+    expect(on.estimateCredits - off.estimateCredits).toBe(3 * 24 + 200 + 3 * 16 + 100);
   });
 
-  it("PRB.23 — the phase count follows the resolved toggles (priced set == executed set)", () => {
+  it("PRB.23/PRB.24 — the phase count follows the resolved toggles (priced set == executed set)", () => {
     // Standard defaults all three toggles on → 7 active phases; turning discourse + second_read
-    // off drops the figure by BOTH their addends AND their per-phase churn (2 × 50).
+    // off drops the figure by BOTH their addends AND their per-phase churn (2 × 100).
     const all = buildEstimate({ workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 701 } });
     const twoOff = buildEstimate({
       workflow: "review", rigor: "standard", modelTier: "base",
       inputs: { words: 701 }, toggles: { discourse: false, second_read: false },
     });
-    // discourse addend (90 + 0.006×701) + second_read addend (0.005×701) + 2 phases of churn,
-    // under the shared ceil: 676.123→677 vs 478.412→479.
-    expect(all.estimateCredits - twoOff.estimateCredits).toBe(198);
+    // discourse addend (230 + 0.006×701) + second_read addend (0.005×701) + 2 phases of churn,
+    // under the shared ceil: 1306.123→1307 vs 868.412→869.
+    expect(all.estimateCredits - twoOff.estimateCredits).toBe(438);
   });
 
   it("reflects a folded instrumented spec (override-first) without a code change", () => {

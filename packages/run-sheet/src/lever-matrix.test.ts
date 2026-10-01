@@ -26,17 +26,19 @@ describe("buildLeverMatrix — recompute + signed deltas (§5.6 item 2; REQ-BILL
     expect(m.states[key]).toBeDefined();
   });
 
-  it("REQ-BILL-5: fact-check OFF on the 8k/45 review moves the figure to ≈614 ± 10% (Base/Standard)", () => {
+  it("REQ-BILL-5: fact-check OFF on the 8k/45 review moves the figure to ≈1054 ± 10% (Base/Standard)", () => {
     const on = buildEstimate({ workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 8000, claims: 45 }, toggles: { fact_check: true } });
     const off = buildEstimate({ workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 8000, claims: 45 }, toggles: { fact_check: false } });
-    // the golden's post-toggle figure ≈ 614 (PRB.23's per-phase churn repriced the golden).
-    expect(Math.abs(off.estimateCredits - 614) / 614).toBeLessThanOrEqual(0.1);
+    // the golden's post-toggle figure ≈ 1054 (PRB.24's churn recalibration repriced the golden:
+    // 736 base incl. 6×100 churn + 278 discourse + 40 second_read).
+    expect(Math.abs(off.estimateCredits - 1054) / 1054).toBeLessThanOrEqual(0.1);
     // turning fact-check off is a strict reduction (a negative delta).
     expect(off.estimateCredits).toBeLessThan(on.estimateCredits);
     // and the delta equals the claim-verification contribution: 45 claims × the per-claim cost PLUS the
-    // verification-phase research addend (PRB.22 — 60 floor + 16/claim) PLUS that phase's churn
-    // (PRB.23 — the verification phase no longer runs, so its ~50-cr session burn leaves too).
-    expect(on.estimateCredits - off.estimateCredits).toBe(45 * 24 + 60 + 45 * 16 + 50);
+    // verification-phase research addend (PRB.22 — 60 floor + 16/claim; PRB.24 — +140 measured
+    // research-loop churn) PLUS that phase's churn (the verification phase no longer runs, so its
+    // ~100-cr session burn leaves too).
+    expect(on.estimateCredits - off.estimateCredits).toBe(45 * 24 + 200 + 45 * 16 + 100);
   });
 
   it("each Advanced toggle exposes a SIGNED delta from the same estimator", () => {
