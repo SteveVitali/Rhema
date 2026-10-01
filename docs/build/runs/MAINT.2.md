@@ -317,7 +317,7 @@ query may run — none was needed since the inventory documents the uncertainty 
 | Check | Command | Result |
 |---|---|---|
 | tree validator | `check-build-memory.sh .` | **0 violations, 6 warnings** (all pre-existing; `.agents/scratch` orient warning resolved) |
-| staged history | `check-build-memory.sh . --staged` | **0 violations** (27 record dates; 1,003 changed protected lines judged) |
+| staged history | `check-build-memory.sh . --staged` | **0 violations** (27 record dates; 1,073 changed protected lines judged — implementation-commit index) |
 | append-only vs base | `node docs/build/tools/check-append-only.mjs --base a2bf831ec58f1ce245bfed8a12376961bd9ed790` | **OK** — PHASE LOG + GATE DECISIONS prefixes intact, all DEFERRALS ids + cell text survive, Plan extensions only grew |
 | append-only staged | `… --staged` | **OK** |
 | negative fixtures | `… --selftest` | **SELFTEST OK** — deleted-row and edited-PHASE-LOG fixtures both flagged; clean fixture passes |
@@ -337,3 +337,35 @@ node docs/build/tools/check-append-only.mjs --selftest              # negative-f
 Exit 0 clean, 1 violations, 2 usage. Asserts: LEDGER PHASE LOG + GATE DECISIONS base sections are
 strict prefixes of head; every base DEFERRALS row id survives with every cell's original text (a
 status flip may prepend a dated keyword); manifest § Plan extensions base lines survive in order.
+
+## Closeout — 2026-10-01
+
+- **PR:** [#84](https://github.com/SteveVitali/Rhema/pull/84) —
+  `stevevitali/maint-2-build-memory-hygiene` → base `stevevitali/journey-1-browser-journey-acceptance`.
+  Operator-held (`mergePolicy=OPERATOR`); not merged by the worker.
+- **Commits:** `2d61a6f` (implementation: LEDGER/archive/manifest/DEFERRALS/headers/inventory/
+  validator/policy), PR-body commit, then this closeout commit (BUILD_INDEX row 90, CURRENT STATE
+  advance, PHASE LOG entry).
+- **BUILD_INDEX:** row 90 appended.
+- **Final state:** `nextTicket → RES.1` (row 63) · `chainTip → stevevitali/maint-2-build-memory-hygiene`
+  · `lastCompleted: MAINT.2`.
+- **Post-closeout verification** (index = closeout edits; vs HEAD `8c020ab` = impl + PR-body commits):
+
+  | Check | Command | Result |
+  |---|---|---|
+  | build memory (tree) | `check-build-memory.sh .` | **0 violations, 6 warnings** — same pre-existing classes; ledger-budget now 45 oversized PHASE LOG entries (+1 = this closeout entry, same legacy class); `nextTicket` warning unchanged in kind (`RES.1` vs deferred `GATE-G2`) |
+  | staged history | `check-build-memory.sh . --staged` | **0 violations** (3 record dates; 41 changed protected lines judged — closeout delta only) |
+  | append-only vs base | `check-append-only.mjs --base a2bf831` | **OK** (tree + `--staged`) — PHASE LOG grew only by this entry |
+  | negative fixtures | `… --selftest` | **SELFTEST OK** — 4 fixtures incl. appended-entry-must-pass (see fix below) |
+  | backlog parser | `check-backlog.sh docs/build/BACKLOG.csv docs/build docs/tickets` | **6 issues** — unchanged (REC.1 scope) |
+  | whitespace | `git diff --cached --check` | clean |
+
+- **Validator fix during closeout:** appending the closeout PHASE LOG entry exposed a real bug —
+  `split("\n")` yields a trailing `""` element on a newline-terminated file, so a legitimate append
+  landed where the base's EOF artifact stood and the strict-prefix loop flagged it. Fixed by
+  trimming trailing empty lines from the base section only (content lines still compare strictly);
+  a fourth selftest fixture (appended entry must pass) guards the regression. Selftest: 4/4.
+- **Operator-owned remainders:** H7's test-data cleanup (inventory rows + delete-risk are in the
+  committed report — nothing was deleted); the six re-assessed P1 PARTIAL rows land on
+  STB.5a/STB.5b/OPS.1/H7 as noted; REC.1 owns the residual `check-backlog` gaps (ADR-018…020 +
+  D-P0.08b-3/D-P1.22-1/D-SEC.1-2 source rows) and the upstream parser fix proposal.

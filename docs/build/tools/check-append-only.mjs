@@ -91,6 +91,10 @@ function check(baseDocs, headDocs) {
       violations.push(`${file}: § ${sec} removed at head`);
       continue;
     }
+    // A trailing empty element is a file-ending artifact (the text after the last "\n"), not a
+    // content line — a legitimate append lands where it stood. Content lines still compare
+    // strictly, so an insertion before the last entry still diverges.
+    while (bsec.length && bsec[bsec.length - 1].trim() === "") bsec.pop();
     for (let i = 0; i < bsec.length; i++) {
       if (hsec[i] !== bsec[i]) {
         violations.push(
@@ -201,6 +205,15 @@ function main() {
       const v = check(baseDocs, baseDocs);
       if (v.length === 0) console.log("selftest: clean fixture passes ✓");
       else { console.log(`selftest: clean fixture flagged ✗ (${v[0]})`); fails++; }
+    }
+    // Fixture D: appending a PHASE LOG entry at EOF must pass (the base file's trailing newline
+    // must not count as protected content).
+    {
+      const grown = baseDocs["docs/build/LEDGER.md"] + "- 2026-10-02 — **FAKE appended entry**\n";
+      const head = { ...baseDocs, "docs/build/LEDGER.md": grown };
+      const v = check(baseDocs, head);
+      if (v.length === 0) console.log("selftest: appended-entry fixture passes ✓");
+      else { console.log(`selftest: appended-entry fixture flagged ✗ (${v[0]})`); fails++; }
     }
     console.log(fails === 0 ? "SELFTEST OK" : `SELFTEST FAILED (${fails})`);
     process.exit(fails === 0 ? 0 : 1);
