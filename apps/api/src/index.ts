@@ -25,6 +25,7 @@ import { createSignupRoutes, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
 import { createImportRoutes, type Converter, type ImportUploadDeps } from "./import.js";
 import { createProjectRoutes } from "./project-routes.js";
 import { createSearchRoutes } from "./search.js";
+import { createSheetContextRoutes } from "./sheet-context.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
@@ -365,6 +366,18 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         }),
       );
       app.route("/", createSearchRoutes({ principal: deps.principal, db, ids: deps.ids }));
+      // P1.06 — the run sheet's single context read (§5.6; REQ-IDE-13): head-draft facts + sections +
+      // obligation counts + the trial entitlement + the user's consent pref + `blockedBy` (the per-lock
+      // conflict under the P1.06 concurrency ruling).
+      app.route(
+        "/",
+        createSheetContextRoutes({
+          principal: deps.principal,
+          db,
+          ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
+          ...(deps.contentStore ? { store: deps.contentStore } : {}),
+        }),
+      );
       if (deps.importConverter && deps.contentStore) {
         app.route(
           "/",

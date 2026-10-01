@@ -25,7 +25,13 @@ export const lockKeys = {
   draftRead: (draftId: string): LockKey => `${READ_PREFIX}${draftId}`,
   draftWrite: (draftId: string): LockKey => `draft:write:${draftId}`,
   head: (projectId: string): LockKey => `head:${projectId}`,
-  corr: (draftId: string, kind: string, k: number): LockKey => `corr:${draftId}:${kind}:${k}`,
+  /**
+   * Correspondence slot lock (exclusive). P1.06 — a `scopeKey` discriminates same-kind reads of one draft
+   * by their run scope (`corr:d1:review:1:sec-III` ∥ `corr:d1:review:1:sec-IV`), so scoped readers
+   * parallelize while identical submissions still collide (no duplicate spend).
+   */
+  corr: (draftId: string, kind: string, k: number, scopeKey?: string): LockKey =>
+    `corr:${draftId}:${kind}:${k}${scopeKey ? `:${scopeKey}` : ""}`,
   nsWrite: (seat: string, projectId: string): LockKey => `ns:write:agent:${seat}:${projectId}`,
   personaProfileWrite: (personaId: string): LockKey => `persona:profile:write:${personaId}`,
 } as const;
@@ -82,6 +88,11 @@ export interface LockSetSpec {
   /** Correspondence kind for reader locks (e.g. "review"), and the parallel-variant slot k. */
   readonly corrKind?: string;
   readonly corrK?: number;
+  /**
+   * P1.06 (ledger G22 / REQ-CHAT-23) — the run's scope discriminating the corr lock so scoped readers of
+   * one draft parallelize (the §7.2 serialized scope, e.g. "section:III"). Unset ⇒ the unscoped slot.
+   */
+  readonly scopeKey?: string;
 }
 
 /**
@@ -103,7 +114,7 @@ export function computeLockSet(spec: LockSetSpec): LockKey[] {
   }
   // reader workflows (review, fact_check, …): a shared read + a per-variant correspondence lock.
   if (spec.draftId) keys.push(lockKeys.draftRead(spec.draftId));
-  if (spec.draftId && spec.corrKind) keys.push(lockKeys.corr(spec.draftId, spec.corrKind, spec.corrK ?? 1));
+  if (spec.draftId && spec.corrKind) keys.push(lockKeys.corr(spec.draftId, spec.corrKind, spec.corrK ?? 1, spec.scopeKey));
   return keys;
 }
 

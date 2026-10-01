@@ -22,6 +22,7 @@
   "dependencies": {
     "@hono/node-server": "2.1.1",
     "@rhema/ai-use": "workspace:*",
+    "@rhema/commands": "workspace:*",
     "@rhema/contracts": "workspace:*",
     "@rhema/db": "workspace:*",
     "@rhema/editor": "workspace:*",

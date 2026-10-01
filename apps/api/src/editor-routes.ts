@@ -464,23 +464,38 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
           [draftId, projectId],
         )
       ).rows[0] as DraftHeadRow | undefined;
-      // A stale form action still targets the FROZEN base — follow it to the working human_revision
-      // child (same resolution the GET/save routes use).
+      // A stale form action still targets the FROZEN base — follow it to the human_revision child
+      // (same resolution the GET/save routes use). P1.06: promote-on-launch may have already frozen
+      // that child with the run that read it — a re-POST then resolves the frozen child so the
+      // `revise-edits:` memo dedupes in createRun (a second run is never created) instead of 409ing.
       if (head?.state === "frozen") {
         head = (
           (
             await tx.query(
               `select id, project_id, n, origin, state, promoted_version_id, base_draft_id
                  from drafts
-                where base_draft_id = $1 and origin = 'human_revision' and state = 'working'
-                order by n desc limit 1 for update`,
+                where base_draft_id = $1 and origin = 'human_revision' and state in ('working','frozen')
+                order by (state = 'working') desc, n desc limit 1 for update`,
               [head.id],
             )
           ).rows[0] as DraftHeadRow | undefined
         ) ?? head;
       }
-      if (!head || head.origin !== "human_revision" || head.state !== "working" || !head.base_draft_id) {
+      if (!head || head.origin !== "human_revision" || !head.base_draft_id) {
         return { ok: false as const, reason: "not_a_human_revision" };
+      }
+      if (head.state !== "working") {
+        // The only legitimate frozen head here is one promote-on-launch froze for THIS submission's
+        // run — identifiable by its fresh `revise-edits:<headId>` memo (the same 24-h TTL createRun's
+        // findFreshMemo applies, so an expired memo still 409s rather than revising a frozen head).
+        const memo = (
+          await tx.query(
+            `select 1 from run_idempotency
+              where billing_account_id = $1 and idempotency_key = $2 and created_at > $3`,
+            [principal.billingAccountId, `revise-edits:${head.id}`, new Date(deps.clock.now().getTime() - 24 * 60 * 60 * 1000)],
+          )
+        ).rows[0];
+        if (!memo) return { ok: false as const, reason: "not_a_human_revision" };
       }
       const lock = await editorLock(tx, projectId, head.id);
       if (lock) return { ok: false as const, reason: "locked" as const, lock };

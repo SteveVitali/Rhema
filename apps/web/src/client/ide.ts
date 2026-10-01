@@ -6,8 +6,10 @@
 // credential, and no protocol/eval text may reach it, REQ-ARCH-33). `?focus=1` is the ONE shareable pane
 // URL flag: applied, then stripped from the address bar.
 
+import { parseCommand, resolveCommand } from "@rhema/commands";
 import {
   DEFAULT_PANE_STATE,
+  contextMenuItems,
   cyclePaperTheme,
   feedRowVisible,
   formatFeedRow,
@@ -17,11 +19,18 @@ import {
   parsePaperTheme,
   parsePaneState,
   resolveAppTheme,
+  selectionMenuItems,
   serializePaneState,
   THEME_STORAGE_KEY,
+  dispatchIdeKey,
+  paletteModel,
+  type CommandMenuItem,
   type FeedDensityTab,
   type FeedLabelMaps,
+  type FocusZone,
   type PaneState,
+  type PaletteData,
+  type PaletteRow,
   type PaperTheme,
 } from "@rhema/ide";
 
@@ -323,40 +332,543 @@ function main(): void {
     });
   }
 
-  // ---- keyboard chrome (⌘1 Files · ⌘2 Timeline · ⌘J Desk · ⌘⇧F Focus · ⌘⇧M Advanced · ⌘⇧L paper) ----
-  window.addEventListener("keydown", (e) => {
-    const mod = e.metaKey || e.ctrlKey;
-    if (mod && !e.shiftKey && e.key === "1") {
+  // ---- P1.06 — the ⌘K palette + the `?` cheat sheet (§5.12; REQ-IDE-49, REQ-CHAT-24/28) ----
+  // SSR emitted the skeleton + the embedded PaletteData JSON; the island owns open/close, filtering,
+  // the /-command structured row, keyboard navigation, and the search-hit section. EVERY activation
+  // is a navigation (a sheet GET or a path) — the palette never launches a run.
+  const paletteEl = ide.querySelector<HTMLElement>("[data-ide-palette]");
+  const paletteInput = paletteEl?.querySelector<HTMLInputElement>("[data-palette-input]");
+  const paletteResults = paletteEl?.querySelector<HTMLElement>("[data-palette-results]");
+  const paletteEmpty = paletteEl?.querySelector<HTMLElement>("[data-palette-empty]");
+  const cheatEl = ide.querySelector<HTMLElement>("[data-ide-cheatsheet]");
+  let paletteData: PaletteData = { projectSlug: slug };
+  try {
+    if (paletteEl?.dataset["palette"]) {
+      paletteData = { ...paletteData, ...(JSON.parse(paletteEl.dataset["palette"]) as PaletteData) };
+    }
+  } catch {
+    /* malformed embedded JSON → the bare palette still works */
+  }
+  let sectionLabels: Record<string, string> = {};
+  try {
+    sectionLabels = JSON.parse(paletteEl?.dataset["paletteSections"] ?? "{}") as Record<string, string>;
+  } catch {
+    /* fall back to the model's own labels */
+  }
+  const paletteSearchUrl = paletteEl?.dataset["paletteSearch"] ?? "";
+  let paletteQ = "";
+  let paletteActive = 0;
+  let searchHits: { label: string; path: string }[] = [];
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** The flat row order ↑/↓ and Enter walk — model sections, then the fetched doc hits. */
+  function flatPaletteRows(): PaletteRow[] {
+    const model = paletteModel(paletteData, paletteQ);
+    const rows = model.sections.flatMap((s) => s.rows);
+    return [
+      ...rows,
+      ...searchHits.map((h, i) => ({
+        id: `hit:${i}`,
+        label: h.label,
+        action: { kind: "navigate", path: h.path } as const,
+      })),
+    ];
+  }
+
+  function renderPalette(): void {
+    if (!paletteResults) return;
+    const model = paletteModel(paletteData, paletteQ);
+    paletteResults.textContent = "";
+    if (model.commandRow) {
+      const c = model.commandRow;
+      const box = document.createElement("div");
+      box.className = `ide-pal-command${c.ok ? "" : " err"}`;
+      const chips = document.createElement("div");
+      chips.className = "ide-pal-chips";
+      for (const text of c.chips) {
+        const chip = document.createElement("span");
+        chip.className = "ide-pal-chip";
+        chip.textContent = text;
+        chips.appendChild(chip);
+      }
+      if (c.ok && chips.childElementCount === 0) {
+        const chip = document.createElement("span");
+        chip.className = "ide-pal-chip";
+        chip.textContent = c.raw;
+        chips.appendChild(chip);
+      }
+      box.appendChild(chips);
+      if (!c.ok) {
+        const err = document.createElement("p");
+        err.className = "ide-pal-error";
+        err.textContent = c.suggestions?.length
+          ? `${c.error ?? ""} Try: ${c.suggestions.join(", ")}`
+          : (c.error ?? "");
+        box.appendChild(err);
+      } else if (c.resolution?.kind === "disabled") {
+        const err = document.createElement("p");
+        err.className = "ide-pal-error";
+        err.textContent = c.resolution.reason;
+        box.appendChild(err);
+      }
+      paletteResults.appendChild(box);
+      paletteEmpty?.setAttribute("hidden", "");
+      return;
+    }
+    let i = 0;
+    const renderRow = (row: PaletteRow, host: HTMLElement): void => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ide-pal-row";
+      if (i === paletteActive) b.dataset["active"] = "";
+      b.dataset["paletteIndex"] = String(i);
+      b.setAttribute("role", "option");
+      const label = document.createElement("span");
+      label.textContent = row.label;
+      b.appendChild(label);
+      if (row.pinned) {
+        const pin = document.createElement("span");
+        pin.className = "ide-pal-pinned";
+        pin.textContent = "next step";
+        b.appendChild(pin);
+      }
+      if (row.action.kind === "disabled") {
+        b.dataset["disabled"] = "";
+        b.setAttribute("aria-disabled", "true");
+        const hint = document.createElement("span");
+        hint.className = "ide-pal-hint";
+        hint.textContent = row.action.reason;
+        b.appendChild(hint);
+      } else if (row.hint) {
+        const hint = document.createElement("span");
+        hint.className = "ide-pal-hint";
+        hint.textContent = row.hint;
+        b.appendChild(hint);
+      }
+      const index = i;
+      b.addEventListener("click", () => activatePaletteRow(index));
+      host.appendChild(b);
+      i += 1;
+    };
+    for (const section of model.sections) {
+      const sec = document.createElement("div");
+      const cap = document.createElement("p");
+      cap.className = "ide-pal-section";
+      cap.textContent = sectionLabels[section.key] ?? section.label;
+      sec.appendChild(cap);
+      for (const row of section.rows) renderRow(row, sec);
+      paletteResults.appendChild(sec);
+    }
+    if (searchHits.length > 0) {
+      const sec = document.createElement("div");
+      const cap = document.createElement("p");
+      cap.className = "ide-pal-section";
+      cap.textContent = sectionLabels["goto"] ?? "Go to";
+      sec.appendChild(cap);
+      for (const h of searchHits) renderRow({ id: "", label: h.label, action: { kind: "navigate", path: h.path } }, sec);
+      paletteResults.appendChild(sec);
+    }
+    const total = flatPaletteRows().length;
+    if (paletteActive >= total) paletteActive = Math.max(0, total - 1);
+    if (paletteEmpty) paletteEmpty.hidden = total > 0;
+    paletteResults.querySelector<HTMLElement>(".ide-pal-row[data-active]")?.scrollIntoView({ block: "nearest" });
+  }
+
+  function activatePaletteRow(index: number): void {
+    const row = flatPaletteRows()[index];
+    if (!row) return;
+    if (row.action.kind === "sheet" || row.action.kind === "navigate") {
+      window.location.assign(row.action.path); // GET only — the sheet owns the launch POST
+    }
+    // disabled rows sit inert — their reason is the row's hint
+  }
+
+  function openPalette(initial = ""): void {
+    if (!paletteEl) return;
+    closeCmdMenu();
+    paletteQ = initial;
+    paletteActive = 0;
+    searchHits = [];
+    paletteEl.hidden = false;
+    if (paletteInput) {
+      paletteInput.value = initial;
+      paletteInput.focus();
+      paletteInput.setSelectionRange(initial.length, initial.length);
+    }
+    renderPalette();
+  }
+  function closePalette(): void {
+    if (paletteEl) paletteEl.hidden = true;
+    paletteInput?.blur();
+  }
+  const paletteOpen = (): boolean => paletteEl != null && !paletteEl.hidden;
+
+  paletteEl?.addEventListener("click", (e) => {
+    if (e.target === paletteEl) closePalette(); // backdrop click closes
+  });
+  paletteInput?.addEventListener("input", () => {
+    paletteQ = paletteInput.value;
+    paletteActive = 0;
+    renderPalette();
+    // free-text (non-command) queries also hit the doc search — debounced, same-origin.
+    if (searchTimer) clearTimeout(searchTimer);
+    const q = paletteQ.trim();
+    if (q && !q.startsWith("/") && paletteSearchUrl) {
+      searchTimer = setTimeout(() => {
+        fetch(`${paletteSearchUrl}?q=${encodeURIComponent(q)}`, { credentials: "same-origin" })
+          .then((r) => (r.ok ? r.json() : { results: [] }))
+          .then((body: { results?: { label: string; path: string }[] }) => {
+            searchHits = body.results ?? [];
+            renderPalette();
+          })
+          .catch(() => undefined);
+      }, 180);
+    } else if (searchHits.length > 0) {
+      searchHits = [];
+      renderPalette();
+    }
+  });
+  paletteInput?.addEventListener("keydown", (e) => {
+    const rows = flatPaletteRows();
+    if (e.key === "ArrowDown") {
       e.preventDefault();
-      setState({ filesOpen: !state.filesOpen });
-    } else if (mod && !e.shiftKey && e.key === "2") {
+      paletteActive = Math.min(rows.length - 1, paletteActive + 1);
+      renderPalette();
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setState({ timelineOpen: !state.timelineOpen });
-    } else if (mod && !e.shiftKey && e.key.toLowerCase() === "j") {
+      paletteActive = Math.max(0, paletteActive - 1);
+      renderPalette();
+    } else if (e.key === "Enter") {
       e.preventDefault();
-      setState({ deskOpen: !state.deskOpen });
-    } else if (mod && e.shiftKey && e.key.toLowerCase() === "f") {
-      e.preventDefault();
-      setState({ view: state.view === "focus" ? "write" : "focus" });
-    } else if (mod && e.shiftKey && e.key.toLowerCase() === "m") {
-      e.preventDefault();
-      setState({ advanced: !state.advanced });
-    } else if (mod && e.shiftKey && e.key.toLowerCase() === "l") {
-      e.preventDefault();
-      const cur = parsePaperTheme(doc.getAttribute("data-paper") ?? "light");
-      const next = cyclePaperTheme(cur);
-      applyPaper(next);
-      post(ide.dataset["paperUrl"], { paperTheme: next });
-    } else if (mod && e.shiftKey && e.key.toLowerCase() === "r") {
-      // ⌘⇧R — run the next step (§5.5): navigate to the run sheet the next-step card points at.
-      const href = ide.dataset["runNext"];
-      if (href) {
-        e.preventDefault();
-        window.location.assign(href);
+      const model = paletteModel(paletteData, paletteQ);
+      if (model.mode === "command") {
+        const r = model.commandRow?.resolution;
+        if (r && (r.kind === "sheet" || r.kind === "navigate")) window.location.assign(r.path);
+      } else {
+        activatePaletteRow(paletteActive);
       }
     } else if (e.key === "Escape") {
-      closeMenus();
+      e.preventDefault();
+      e.stopPropagation();
+      closePalette();
     }
+  });
+  ide.querySelector<HTMLElement>("[data-ide-cheatsheet-close]")?.addEventListener("click", () => {
+    if (cheatEl) cheatEl.hidden = true;
+  });
+  cheatEl?.addEventListener("click", (e) => {
+    if (e.target === cheatEl) cheatEl.hidden = true;
+  });
+  const toggleCheat = (): void => {
+    if (cheatEl) cheatEl.hidden = !cheatEl.hidden;
+  };
+  const cheatOpen = (): boolean => cheatEl != null && !cheatEl.hidden;
+
+  // ---- findings focus (§5.12's inert-while-typing chords): the Margin's fcards take programmatic
+  // focus; j/k walk them, Enter jumps to the anchor, the letter chords dispatch a findings event the
+  // dossier surface binds (P1.07). Escape returns focus to the Page. ----
+  const fcards = (): HTMLElement[] => [...ide.querySelectorAll<HTMLElement>(".ide-fcard")];
+  let findingIx = -1;
+  function focusFinding(ix: number): void {
+    const cards = fcards();
+    if (cards.length === 0) return;
+    findingIx = Math.max(0, Math.min(cards.length - 1, ix));
+    const card = cards[findingIx];
+    if (!card) return;
+    card.tabIndex = -1;
+    card.focus();
+  }
+  function findingAction(action: string): void {
+    const card = fcards()[findingIx];
+    if (!card) return;
+    card.dispatchEvent(new CustomEvent("rhema:finding-action", { bubbles: true, detail: { action, findingId: card.dataset["findingId"] } }));
+  }
+
+  function focusZone(): FocusZone {
+    const el = document.activeElement as HTMLElement | null;
+    if (!el || el === document.body) return "none";
+    if (el.closest("[data-ide-palette]") || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return "input";
+    if (el.isContentEditable || el.closest(".ProseMirror") || el.closest("[data-page-host]")) return "page";
+    if (el.closest(".ide-fcard") || el.closest(".ide-margin")) return "margin";
+    return "none";
+  }
+
+  // ---- the §5.12 keymap dispatcher (⌘K palette · ⌘1/⌘2/⌘J panes · ⌘⇧F/M/L · ⌘⇧R next step ·
+  //      ⌘G approval · ⌥[/⌥] versions · j/k + P A D R F E findings · ? cheat sheet · ⌘S restore) ----
+  window.addEventListener("keydown", (e) => {
+    if (paletteOpen()) {
+      // While the palette owns focus, only ⌘K/Escape outside the input close it.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        closePalette();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        closePalette();
+      }
+      return;
+    }
+    const action = dispatchIdeKey(
+      {
+        key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+      },
+      focusZone(),
+    );
+    if (!action) {
+      if (e.key === "Escape") {
+        closeMenus();
+        closeCmdMenu();
+        if (cheatEl && !cheatEl.hidden) cheatEl.hidden = true;
+      }
+      return;
+    }
+    switch (action.kind) {
+      case "palette":
+        e.preventDefault();
+        // bare "/" opens straight into command mode (the §7.2 grammar); ⌘K opens browse.
+        openPalette(e.key === "/" ? "/" : "");
+        break;
+      case "pane":
+        e.preventDefault();
+        if (action.pane === "files") setState({ filesOpen: !state.filesOpen });
+        else if (action.pane === "timeline") setState({ timelineOpen: !state.timelineOpen });
+        else setState({ deskOpen: !state.deskOpen });
+        break;
+      case "focus-mode":
+        e.preventDefault();
+        setState({ view: state.view === "focus" ? "write" : "focus" });
+        break;
+      case "paper-theme": {
+        e.preventDefault();
+        const next = cyclePaperTheme(parsePaperTheme(doc.getAttribute("data-paper") ?? "light"));
+        applyPaper(next);
+        post(ide.dataset["paperUrl"], { paperTheme: next });
+        break;
+      }
+      case "view-menu": {
+        e.preventDefault();
+        const anchor = ide.querySelector<HTMLElement>("[data-ide-view-menu]");
+        if (anchor) openMenu("view", anchor);
+        break;
+      }
+      case "sheet":
+        // ⌘⇧D/E/V open the run sheet (GET) for the workflow — the sheet still owns the launch POST.
+        e.preventDefault();
+        window.location.assign(`/p/${slug}/run?workflow=${action.workflow}`);
+        break;
+      case "run-next": {
+        const href = ide.dataset["runNext"];
+        if (href) {
+          e.preventDefault();
+          window.location.assign(href);
+        }
+        break;
+      }
+      case "goto-approval":
+        e.preventDefault();
+        if (slug) window.location.assign(`/p/${slug}`); // the Needs-you strip owns the gate list
+        break;
+      case "inbox":
+        e.preventDefault();
+        window.location.assign("/app"); // the shelf is the inbox surface
+        break;
+      case "settings":
+        e.preventDefault();
+        window.location.assign("/settings");
+        break;
+      case "version-next":
+      case "version-prev": {
+        e.preventDefault();
+        const m = /\/v\/(\d+)/.exec(window.location.pathname);
+        if (m) {
+          const n = Number.parseInt(m[1] ?? "1", 10) + (action.kind === "version-next" ? 1 : -1);
+          if (n >= 1) window.location.assign(window.location.pathname.replace(/\/v\/\d+/, `/v/${n}`));
+        }
+        break;
+      }
+      case "compare-previous":
+        e.preventDefault();
+        openPalette("/compare ");
+        break;
+      case "triage":
+        e.preventDefault();
+        if (!state.deskOpen) setState({ deskOpen: true });
+        focusFinding(0);
+        break;
+      case "finding-next":
+        e.preventDefault();
+        focusFinding(findingIx + 1);
+        break;
+      case "finding-prev":
+        e.preventDefault();
+        focusFinding(findingIx - 1);
+        break;
+      case "finding-anchor-next":
+      case "finding-anchor-prev": {
+        e.preventDefault();
+        const ticks = [...ide.querySelectorAll<HTMLElement>(".ide-tick")];
+        const cur = ticks.findIndex((t) => t === document.activeElement || t.contains(document.activeElement));
+        const next = ticks[Math.max(0, Math.min(ticks.length - 1, cur + (action.kind === "finding-anchor-next" ? 1 : -1)))];
+        next?.click();
+        break;
+      }
+      case "finding-open": {
+        e.preventDefault();
+        const card = fcards()[findingIx];
+        card?.querySelector<HTMLElement>("a, button")?.click();
+        break;
+      }
+      case "finding-escape":
+        e.preventDefault();
+        findingIx = -1;
+        (document.activeElement as HTMLElement | null)?.blur();
+        closeMenus();
+        break;
+      case "finding-apply":
+      case "finding-disposition":
+        e.preventDefault();
+        findingAction(action.kind === "finding-disposition" ? action.disposition : "apply");
+        break;
+      case "restore-point":
+        e.preventDefault();
+        // ⌘S names a restore point — the Page island (page.ts) owns the save; the event lets any
+        // other surface bind it later.
+        ide.dispatchEvent(new CustomEvent("rhema:restore-point", { bubbles: true }));
+        break;
+      case "cheatsheet":
+        e.preventDefault();
+        toggleCheat();
+        break;
+      case "undo":
+      case "redo":
+        // ⌘Z/⌘⇧Z belong to the focused surface (the editor handles its own); in chrome focus they
+        // stay inert rather than hijacking the browser.
+        break;
+      default:
+        break;
+    }
+    if (cheatOpen() && action.kind !== "cheatsheet" && cheatEl) {
+      // any other chord dismisses the cheat sheet (it never swallows input)
+      cheatEl.hidden = true;
+    }
+  });
+
+  // ---- P1.06 — the selection popover + the Timeline context menu (§7.2/§7.4; REQ-CHAT-21/22) ----
+  // The third and fourth surfaces over the ONE grammar: `selectionMenuItems`/`contextMenuItems` are
+  // the pure models; each item's `command` parses + resolves through the same path as a typed
+  // palette command — the byte-identical-sheet invariant. No item ever POSTs — the sheet remains
+  // the only launcher (REQ-CHAT-25); 1.x verbs render disabled-with-reason, never guessed.
+  let cmdMenu: HTMLElement | null = null;
+  const closeCmdMenu = (): void => {
+    cmdMenu?.remove();
+    cmdMenu = null;
+  };
+  function openCmdMenu(items: readonly CommandMenuItem[], x: number, y: number, kind: string): void {
+    closeCmdMenu();
+    const menu = document.createElement("div");
+    menu.className = "ide-cmdmenu";
+    menu.dataset["kind"] = kind;
+    menu.setAttribute("role", "menu");
+    for (const item of items) {
+      if (item.separator) {
+        const sep = document.createElement("div");
+        sep.className = "ide-cmdmenu-sep";
+        menu.appendChild(sep);
+        continue;
+      }
+      const parsed = item.command ? parseCommand(item.command) : null;
+      const resolution = parsed?.ok ? resolveCommand(parsed.command, { projectSlug: slug }) : null;
+      const disabledReason =
+        resolution?.kind === "disabled"
+          ? resolution.reason
+          : parsed && !parsed.ok
+            ? (parsed.error ?? "Unparsable command.")
+            : null;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ide-pal-row";
+      b.setAttribute("role", "menuitem");
+      const label = document.createElement("span");
+      label.textContent = item.label;
+      b.appendChild(label);
+      if (disabledReason) {
+        b.dataset["disabled"] = "";
+        b.setAttribute("aria-disabled", "true");
+        const hint = document.createElement("span");
+        hint.className = "ide-pal-hint";
+        hint.textContent = disabledReason;
+        b.appendChild(hint);
+      } else {
+        if (item.hint) {
+          const hint = document.createElement("span");
+          hint.className = "ide-pal-hint";
+          hint.textContent = item.hint;
+          b.appendChild(hint);
+        }
+        b.addEventListener("click", () => {
+          closeCmdMenu();
+          if (item.action === "ask") {
+            // §7.4 — Ask opens the composer (the Desk's chat tab; the anchored-composer prefill is
+            // P1.11's seam — it consumes this same grammar).
+            setState({ deskOpen: true, deskTab: "chat" });
+          } else if (resolution && (resolution.kind === "sheet" || resolution.kind === "navigate")) {
+            window.location.assign(resolution.path); // GET only — the sheet owns the launch POST
+          }
+        });
+      }
+      menu.appendChild(b);
+    }
+    document.body.appendChild(menu);
+    cmdMenu = menu;
+    // clamp inside the viewport so a bottom-edge selection still shows the whole menu
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
+    menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - w - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - h - 8))}px`;
+  }
+  document.addEventListener("mousedown", (e) => {
+    if (cmdMenu && !cmdMenu.contains(e.target as Node)) closeCmdMenu();
+  });
+
+  // the §7.4 selection popover — a non-collapsed selection inside the Page offers
+  // Ask · Visualize · Fact-check · Review this section (Line-edit/Cut are 1.x, marked).
+  const pagePane = ide.querySelector<HTMLElement>('[data-pane="page"]');
+  let selTimer: ReturnType<typeof setTimeout> | undefined;
+  const selectionMenu = (): void => {
+    if (selTimer) clearTimeout(selTimer);
+    selTimer = setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !pagePane) return;
+      const range = sel.getRangeAt(0);
+      if (!pagePane.contains(range.commonAncestorContainer)) return;
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+      openCmdMenu(selectionMenuItems(), rect.left + rect.width / 2, rect.bottom + 8, "selection");
+    }, 120); // let a drag/double-click settle before measuring the range
+  };
+  document.addEventListener("mouseup", (e) => {
+    if (cmdMenu?.contains(e.target as Node)) return; // a click inside the menu isn't a new selection
+    if (pagePane?.contains(e.target as Node)) selectionMenu();
+    else closeCmdMenu();
+  });
+  document.addEventListener("keyup", (e) => {
+    if (e.shiftKey || e.key === "Shift") selectionMenu(); // shift-selection has no mouseup
+  });
+  document.addEventListener("selectionchange", () => {
+    const sel = window.getSelection();
+    if (cmdMenu?.dataset["kind"] === "selection" && (!sel || sel.isCollapsed)) closeCmdMenu();
+  });
+
+  // the artifact/Timeline context menu — a right-click on a round scopes the verbs to its subject
+  // version (@vN off data-round); outside a round the bare verbs apply to the current head.
+  ide.querySelector<HTMLElement>('[data-pane="timeline"]')?.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    const round = (e.target as HTMLElement).closest<HTMLElement>("[data-round]");
+    const n = round?.dataset["round"];
+    openCmdMenu(contextMenuItems(n != null ? Number(n) : undefined), e.clientX, e.clientY, "context");
   });
 
   // ---- P1.05 — the Desk's Live feed (§5.5; REQ-IDE-14): density tabs + the same-origin SSE tail ----

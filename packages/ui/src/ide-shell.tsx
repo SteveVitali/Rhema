@@ -6,7 +6,7 @@
 
 import type { ReactNode } from "react";
 import type { DeskTab, ViewMode } from "@rhema/ide";
-import { viewMenuModel, VIEW_MODES } from "@rhema/ide";
+import { viewMenuModel, VIEW_MODES, CHEAT_SHEET } from "@rhema/ide";
 import { EmptyFindings } from "./ide-states.js";
 import { LiveFeed, type FeedRow, type LiveFeedLabels, type RunCardLabels } from "./run-card.js";
 import { TimelinePane, type TimelineViewWire, type TimelineLabels, type TimelineHrefs } from "./timeline.js";
@@ -52,6 +52,9 @@ export interface IdeLabels {
     readerSmaller: string;
   };
   themes: { dark: string; light: string; auto: string; paperLight: string; paperFollow: string; paperDark: string };
+  /** P1.06 (§5.12) — the ⌘K palette's + the `?` cheat sheet's chrome labels (COPY-owned). */
+  palette: { dialogLabel: string; placeholder: string; emptyLabel: string; sectionLabels: Record<string, string> };
+  cheatsheet: { heading: string; closeLabel: string };
 }
 
 export interface IdeShellProps {
@@ -98,6 +101,13 @@ export interface IdeShellProps {
   };
   /** the ⌘⇧R "run next step" target — the run sheet for the next-step card's verb (§5.5/§6.3). */
   readonly runNextHref?: string;
+  /**
+   * P1.06 (§5.12; REQ-CHAT-28) — the ⌘K palette's embedded `PaletteData` JSON (next-step pin, Go-to
+   * targets, recent runs, threads, settings) + the same-origin search URL the island calls for
+   * free-text hits. The palette NEVER launches a run — every cost-bearing row is a sheet GET.
+   */
+  readonly palette?: string;
+  readonly paletteSearchUrl?: string;
   readonly inboxCount?: number;
   readonly status?: {
     readonly version?: string;
@@ -208,7 +218,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
                  title={f.excerpt} style={{ background: `var(--sev-${f.severity})` }} />
             ))}
             {findings.map((f) => (
-              <div key={`card-${f.id}`} className="ide-fcard" style={{ borderLeftColor: `var(--sev-${f.severity})` }}>
+              <div key={`card-${f.id}`} id={`finding-${f.id}`} data-finding-id={f.id} className="ide-fcard" style={{ borderLeftColor: `var(--sev-${f.severity})` }}>
                 {f.excerpt}
               </div>
             ))}
@@ -374,6 +384,52 @@ export function IdeShell(props: IdeShellProps): ReactNode {
             {L.themes[t === "follow" ? "paperFollow" : t === "light" ? "paperLight" : "paperDark"]}
           </button>
         ))}
+      </div>
+
+      {/* P1.06 (§5.12) — the ⌘K command palette. SSR renders the skeleton + the embedded PaletteData
+          JSON; the ide.js island drives open/close, filtering, the /-command structured row, and
+          keyboard navigation. Every row NAVIGATES or opens the run sheet's GET — the palette never
+          launches a run (no POST ever leaves this element). */}
+      <div
+        className="ide-palette"
+        data-ide-palette
+        role="dialog"
+        aria-label={L.palette.dialogLabel}
+        aria-modal="true"
+        hidden
+        data-palette-sections={JSON.stringify(L.palette.sectionLabels)}
+        {...(props.palette ? { "data-palette": props.palette } : {})}
+        {...(props.paletteSearchUrl ? { "data-palette-search": props.paletteSearchUrl } : {})}
+      >
+        <input
+          type="text"
+          data-palette-input
+          placeholder={L.palette.placeholder}
+          aria-label={L.palette.placeholder}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <div data-palette-results role="listbox" aria-label={L.palette.emptyLabel} />
+        <div data-palette-empty hidden>{L.palette.emptyLabel}</div>
+      </div>
+
+      {/* P1.06 (§5.12) — the `?` cheat sheet: the full keymap rendered from the shared CHEAT_SHEET
+          table (@rhema/ide) so the card can never drift from the dispatcher. */}
+      <div className="ide-cheatsheet" data-ide-cheatsheet role="dialog" aria-label={L.cheatsheet.heading} hidden>
+        <div className="ide-cheatsheet-card">
+          <div className="ide-pane-head">
+            <span>{L.cheatsheet.heading}</span>
+            <button type="button" data-ide-cheatsheet-close aria-label={L.cheatsheet.closeLabel}>×</button>
+          </div>
+          <ul>
+            {CHEAT_SHEET.map((row) => (
+              <li key={row.keys} className="ide-cheatsheet-row">
+                <kbd>{row.keys}</kbd>
+                <span>{row.action}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

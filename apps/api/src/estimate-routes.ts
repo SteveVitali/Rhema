@@ -70,17 +70,25 @@ interface EstimateBody {
   breakerMultiplier?: 1 | 2;
   /** the client's follow-up refine request (within ≤5 s of open); default false (the immediate figure). */
   refine?: boolean;
+  /**
+   * P1.06 (§7.2) — the canonical serialized scope (`"section:III"`). Scoped estimates cache under their
+   * own key (the scope is part of the price), and the web passes scoped estimator inputs (the section's
+   * words, `findings:1`, …) in `inputs`.
+   */
+  scope?: string;
 }
 
-/** The `(draft sha, workflow, rigor, tier[, variant])` cache key (§12.4 step 1). */
+/** The `(draft sha, workflow, rigor, tier[, variant][, scope])` cache key (§12.4 step 1; P1.06 — scope
+ *  is part of the key: a section-scoped estimate must never reuse the whole-draft refined figure). */
 export function estimateCacheKey(b: {
   draftSha?: string;
   workflow: string;
   rigor: Rigor;
   modelTier: ModelTier;
   variant?: string;
+  scope?: string;
 }): string {
-  return [b.draftSha ?? "nosha", b.workflow, b.rigor, b.modelTier, b.variant ?? ""].join("|");
+  return [b.draftSha ?? "nosha", b.workflow, b.rigor, b.modelTier, b.variant ?? "", b.scope ?? ""].join("|");
 }
 
 /** Race a promise against a budget; resolves `null` if the budget elapses first (never rejects on timeout). */

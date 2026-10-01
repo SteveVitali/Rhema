@@ -177,5 +177,27 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
     return c.json({ ok: true });
   });
 
+  // ---- P1.06 (§5.6; REQ-BILL-4) — the "don't ask me to confirm runs under N credits" pref. Per-user on
+  //      "user".consent_dont_ask_under; the spec caps it at 1,000 credits so the >500-consent wall always
+  //      has room to bite above the pref. 0 disables the pref (every run over the base threshold asks). ----
+  app.put("/settings/consent", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const body = (await c.req.json().catch(() => null)) as { dontAskUnder?: unknown } | null;
+    const n = body?.dontAskUnder;
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 0) {
+      return c.json({ error: "dontAskUnder must be an integer ≥ 0" }, 422);
+    }
+    const clamped = Math.min(n, 1000); // REQ-BILL-4: the pref is capped at 1,000 credits
+    await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      await tx.query(`update "user" set consent_dont_ask_under = $2, updated_at = $3 where id = $1`, [
+        principal.userId,
+        clamped,
+        deps.clock.now(),
+      ]);
+    });
+    return c.json({ ok: true, dontAskUnder: clamped });
+  });
+
   return app;
 }

@@ -19,6 +19,7 @@ import {
   type WorkflowKey,
 } from "@rhema/contracts";
 import { estimatorSpec, MODEL_TIER_MULTIPLIERS, rigorMultiplier, type EstimatorInputs } from "@rhema/protocols";
+import { APPROVAL_DISPLAY } from "@rhema/commands";
 import { buildEstimate } from "./estimate.js";
 import { buildLeverMatrix, leverKey, type LeverMatrix, type TimeBand } from "./lever-matrix.js";
 import { sheetProfile, type ToggleKey, type ToggleState } from "./profiles.js";
@@ -37,6 +38,34 @@ export interface SheetScope {
   readonly venue?: string;
   readonly stage?: string;
   readonly voice?: string;
+}
+
+/**
+ * P1.06 (§7.2; REQ-CHAT-23) — the run's §7.2 command scope as rendered on the sheet: the scope pills
+ * under the title line + the whole-draft comparison figure when the scope repriced the run. The
+ * grammar stays in @rhema/commands — callers hand this module labels + estimator inputs, never syntax.
+ */
+export interface CommandScopeView {
+  /** the canonical serialized scope (`section:III`) — the hidden `scope` form field round-trips it. */
+  readonly serialized: string;
+  /** the human pill labels ("Section III", "Finding v2/17"). */
+  readonly labels: readonly string[];
+  /**
+   * The whole-draft comparison figure (§5.6: "the scoped estimate beside the whole-draft estimate").
+   * Set only when the scope repriced the run — `estimate` is ALWAYS the run's own price (the scoped
+   * figure when scoped); this is the unscoped context line.
+   */
+  readonly wholeEstimateCredits?: number;
+  readonly wholeCapCredits?: number;
+}
+
+/** The §14.3 trial-entitlement facts the sheet needs for its `Included` rendering (REQ-BILL-4: a
+ *  qualifying entitlement run shows "Included" — no dollar/cap arithmetic, no consent click). */
+export interface EntitlementDetails {
+  readonly wordCap: number;
+  readonly rigor: string;
+  readonly modelTier: string;
+  readonly kind: string;
 }
 
 export interface RunSheetTitle {
@@ -97,9 +126,47 @@ export interface RunSheetView {
   readonly insufficient: InsufficientBalanceResolution | null;
   readonly toggleDeltas: LeverMatrix["toggleDeltas"];
   readonly collapsedSummary: string;
+  /** P1.06 (§5.6) — the collapsed row's editable scope facts (Protocol · Venue · Stage · Voice). */
+  readonly scope: SheetScope;
+  /**
+   * P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence at launch: informational by
+   * default; a blocking 2-hour proceed-as-proposed gate under Full board / a protocol|venue change;
+   * "waits for you" under Wait-for-me-at-each.
+   */
+  readonly scopeApprovalLine: string;
   readonly whyLine: string;
   /** the obligation scope line (REQ-OBJ-6), when the caller supplied obligation data. */
   readonly scopeLine?: string;
+  /** P1.06 (§7.2) — the run's command scope pills + the whole-draft comparison figure. */
+  readonly commandScope?: CommandScopeView;
+  /**
+   * P1.06 (§14.3) — true ⇒ the estimate box renders "Included" (the trial entitlement covers the run):
+   * no dollar/cap arithmetic, no consent click. `entitlementLine` carries the detail
+   * ("Trial run · up to 6,000 words" / "the first 6,000 words" when the draft exceeds the cap).
+   */
+  readonly included?: boolean;
+  readonly entitlementLine?: string;
+  /**
+   * P1.06 (§5.6 collapsed row) — the sheet's editable rows: Approvals (the project's policy), the
+   * "don't ask me to confirm under N credits" pref, and the budget cap (editable UPWARD only — the
+   * computed cap is the floor; the Run click can only raise it).
+   */
+  readonly approvalPolicy: "named" | "wait_each" | "run_to_completion";
+  readonly approvalPolicyDisplay: string;
+  readonly dontAskUnder: number;
+  /** the cap's editable floor — the computed cap (ceil(1.5×estimate)); lower values never submit. */
+  readonly capFloorCredits: number;
+  /** the guidance text the sheet re-renders into its free-text field (a typed /command's tail). */
+  readonly guidance?: string;
+  /** P1.06 (§5.6) — standing notes count beside the guidance box ("N standing notes apply"). */
+  readonly standingNotes?: number;
+  /**
+   * P1.06 (§5.6 item 7) — the promote-on-launch line: a WORKING head freezes to `vN` atomically with
+   * the run ("The working copy will be promoted to vN when this run starts").
+   */
+  readonly promoteLine?: string;
+  /** the target draft's state at sheet open — `working` ⇒ the promote line shows. */
+  readonly headState?: string;
   /** PRB.10 — the linked-voice line (§9.6): name + shared pill + the optional "Update voice first"
    *  chained action. `ad_hoc` renders the "No voice" label; never a run blocker. */
   readonly voice?: RunSheetVoice;
@@ -142,10 +209,39 @@ export interface BuildRunSheetViewArgs {
   readonly spendableCredits: number;
   readonly dontAskUnder?: number;
   readonly entitlement?: boolean;
+  /** P1.06 (§14.3) — the unused trial entitlement's facts → the `Included` rendering + the word-cap line. */
+  readonly entitlementDetails?: EntitlementDetails;
   readonly breakerMultiplier?: 1 | 2;
   readonly claimCount?: number;
   /** the obligation scope line (Review/Revise), from @rhema/obligations `runSheetObligations` (REQ-OBJ-6). */
   readonly scopeLine?: string;
+  /**
+   * P1.06 (§7.2) — the run's command scope: the serialized form (the hidden form field), the pill
+   * labels, and the scope's own estimator inputs (a section's words / `findings:1`). When
+   * `scopedInputs` resolves, `estimate` IS the scoped price and the whole-draft figure renders beside it.
+   */
+  readonly commandScope?: {
+    readonly serialized: string;
+    readonly labels: readonly string[];
+    readonly scopedInputs?: EstimatorInputs;
+  };
+  /** the project's approval policy the sheet's Approvals row edits (§5.6 collapsed row). */
+  readonly approvalPolicy?: "named" | "wait_each" | "run_to_completion";
+  /**
+   * P1.06 (REQ-SPEC-17) — the scope-gate blocking condition the sheet surfaces and the run freezes
+   * (`inputs.scopeBlocking`): Full board, or a protocol/venue change vs the project's pinned scope.
+   * Wait-for-me-each needs no flag — the policy branch already blocks.
+   */
+  readonly scopeBlocking?: boolean;
+  /** the sheet's free-text guidance (a typed command's tail) — re-rendered into the field. */
+  readonly guidance?: string;
+  /** P1.06 (§5.6) — the project's standing guidance count rendered beside the guidance box. */
+  readonly standingNotes?: number;
+  /** the cap the user edited UPWARD to (≥ computed cap floor); unset ⇒ the computed cap. */
+  readonly capOverrideCredits?: number;
+  /** the head draft's state (`working` ⇒ the promote-on-launch line) + its NEXT version label. */
+  readonly headState?: string;
+  readonly promoteToVersion?: string;
   /** the idempotency key minted at sheet open; the caller supplies it so it is stable for the Run click. */
   readonly idempotencyKey: string;
   readonly insufficientMode?: "full" | "beta";
@@ -158,7 +254,7 @@ export interface BuildRunSheetViewArgs {
 }
 
 /** The "Why this estimate?" breakdown ("21 claims × 24 cr ≈ 500 · 5,180 words ≈ 60"). Approximate by design. */
-function whyLine(args: BuildRunSheetViewArgs, claims: number | undefined): string {
+function whyLine(args: BuildRunSheetViewArgs, pricedInputs: EstimatorInputs, claims: number | undefined): string {
   const spec = estimatorSpec(args.workflow);
   const scale =
     MODEL_TIER_MULTIPLIERS[args.modelTier] *
@@ -171,7 +267,7 @@ function whyLine(args: BuildRunSheetViewArgs, claims: number | undefined): strin
     parts.push(`${formatCredits(claims)} claims × ${formatCredits(perClaim)} cr ≈ ${formatCredits(claims * perClaim * scale)}`);
   }
   const perWord = spec?.base?.perWord;
-  const words = args.inputs.words;
+  const words = pricedInputs.words;
   if (perWord != null && words) {
     parts.push(`${formatCredits(words)} words ≈ ${formatCredits(words * perWord * scale)}`);
   }
@@ -191,20 +287,35 @@ function collapsedSummary(scope: SheetScope, modelTier: ModelTier): string {
  */
 export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   const profile = sheetProfile(args.workflow);
+  // P1.06 — a resolved command scope reprices the run from the scope's own inputs (a section's words,
+  // `findings:1`); `estimate` is the RUN's price. The whole-draft figure renders beside it for context.
+  const pricedInputs = args.commandScope?.scopedInputs ?? args.inputs;
   const estimate = buildEstimate({
     workflow: args.workflow,
     rigor: args.rigor,
     modelTier: args.modelTier,
-    inputs: args.inputs,
+    inputs: pricedInputs,
     ...(args.toggles ? { toggles: args.toggles } : {}),
     ...(args.variant ? { variant: args.variant } : {}),
     ...(args.breakerMultiplier ? { breakerMultiplier: args.breakerMultiplier } : {}),
     ...(args.claimCount != null ? { claimCount: args.claimCount } : {}),
   });
+  const whole = args.commandScope?.scopedInputs
+    ? buildEstimate({
+        workflow: args.workflow,
+        rigor: args.rigor,
+        modelTier: args.modelTier,
+        inputs: args.inputs,
+        ...(args.toggles ? { toggles: args.toggles } : {}),
+        ...(args.variant ? { variant: args.variant } : {}),
+        ...(args.breakerMultiplier ? { breakerMultiplier: args.breakerMultiplier } : {}),
+        ...(args.claimCount != null ? { claimCount: args.claimCount } : {}),
+      })
+    : null;
 
   const leverMatrix = buildLeverMatrix({
     workflow: args.workflow,
-    inputs: args.inputs,
+    inputs: pricedInputs,
     rigor: args.rigor,
     modelTier: args.modelTier,
     ...(args.toggles ? { toggles: args.toggles } : {}),
@@ -213,7 +324,11 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ...(args.claimCount != null ? { claimCount: args.claimCount } : {}),
   });
 
-  const balanceAfterCap = args.spendableCredits - estimate.capCredits;
+  // P1.06 — the cap is editable UPWARD only: a submitted/queried override (`--budget`, a raised field)
+  // above the computed floor wins; a lower value is clamped to the floor, never below it (§5.6).
+  const effectiveCapCredits =
+    args.capOverrideCredits != null ? Math.max(args.capOverrideCredits, estimate.capCredits) : estimate.capCredits;
+  const balanceAfterCap = args.spendableCredits - effectiveCapCredits;
   const consent = consentDecision({
     estimateCredits: estimate.estimateCredits,
     spendableCredits: args.spendableCredits,
@@ -221,12 +336,41 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ...(args.entitlement ? { entitlement: args.entitlement } : {}),
   });
   const insufficient = resolveInsufficientBalance({
-    capCredits: estimate.capCredits,
+    capCredits: effectiveCapCredits,
     spendableCredits: args.spendableCredits,
     ...(args.insufficientMode ? { mode: args.insufficientMode } : {}),
   });
 
   const claims = estimate.claimCount;
+
+  // P1.06 (§14.3) — the trial entitlement's `Included` rendering: a qualifying unused entitlement makes
+  // the run free — the box shows "Included" with the word-cap detail, no dollar/cap arithmetic, and the
+  // consent click never appears (consentDecision already returns needsSecondClick:false). When the draft
+  // exceeds the entitlement's word cap the offer is the FIRST wordCap words (the sheet shows the @words
+  // scope chip so the covered slice is explicit).
+  const included = !!args.entitlement;
+  const entitlementLine = args.entitlementDetails
+    ? (args.inputs.words ?? 0) > args.entitlementDetails.wordCap
+      ? `Included — your trial run covers the first ${args.entitlementDetails.wordCap.toLocaleString("en-US")} words`
+      : `Included — your trial run covers up to ${args.entitlementDetails.wordCap.toLocaleString("en-US")} words`
+    : args.entitlement
+      ? "Included — your trial run"
+      : undefined;
+
+  // P1.06 — the collapsed-row's editable rows: the project approval policy + the consent pref + the
+  // cap (upward-only — the floor is the computed figure). Approval labels are the canonical strings
+  // (@rhema/commands — the palette's `--wait`/`--auto` chips and the sheet's select share them).
+  const approvalPolicy = args.approvalPolicy ?? "named";
+
+  // P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence surfaced at launch: informational
+  // by default; blocking (2 h, proceed-as-proposed) at Full board / on a protocol|venue change; "waits
+  // for you" under Wait-for-me-at-each. The gate mechanics are the landed resolveGatePolicy.
+  const scopeApprovalLine =
+    approvalPolicy === "wait_each"
+      ? "Scope approval — the run waits for you at the scope gate."
+      : args.scopeBlocking
+        ? "Scope approval — a blocking gate opens at launch; proceeds as proposed after 2 hours."
+        : "Scope approval — informational; the run proceeds.";
 
   // per-rigor DEFAULT state at THAT rigor's default model tier (§6.5: tier is a consequence of rigor) —
   // the inline enhancement's recompute table. Switching rigor moves the tier with it.
@@ -256,19 +400,44 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     modelTierDisplay: MODEL_TIER_DISPLAY[args.modelTier],
     estimate: {
       estimateCredits: estimate.estimateCredits,
-      capCredits: estimate.capCredits,
+      capCredits: effectiveCapCredits,
       rateTableVersion: estimate.rateTableVersion,
       provisional: estimate.provisional,
-      dollarsLine: estimateLine(estimate.estimateCredits, estimate.capCredits),
-      creditsLine: creditsLine(estimate.estimateCredits, estimate.capCredits, balanceAfterCap),
+      dollarsLine: estimateLine(estimate.estimateCredits, effectiveCapCredits),
+      creditsLine: creditsLine(estimate.estimateCredits, effectiveCapCredits, balanceAfterCap),
       time: leverMatrix.current.time,
     },
     consent,
     insufficient,
     toggleDeltas: leverMatrix.toggleDeltas,
     collapsedSummary: collapsedSummary(args.scope, args.modelTier),
-    whyLine: whyLine(args, claims),
+    scope: args.scope,
+    scopeApprovalLine,
+    whyLine: whyLine(args, pricedInputs, claims),
     ...(args.scopeLine ? { scopeLine: args.scopeLine } : {}),
+    // P1.06 — the command-scope pills + the whole-draft comparison figure (§5.6: scoped beside whole).
+    ...(args.commandScope
+      ? {
+          commandScope: {
+            serialized: args.commandScope.serialized,
+            labels: args.commandScope.labels,
+            ...(whole ? { wholeEstimateCredits: whole.estimateCredits, wholeCapCredits: whole.capCredits } : {}),
+          } satisfies CommandScopeView,
+        }
+      : {}),
+    ...(included ? { included: true } : {}),
+    ...(entitlementLine ? { entitlementLine } : {}),
+    approvalPolicy,
+    approvalPolicyDisplay: APPROVAL_DISPLAY[approvalPolicy] ?? approvalPolicy,
+    dontAskUnder: args.dontAskUnder ?? 0,
+    capFloorCredits: estimate.capCredits,
+    ...(args.guidance ? { guidance: args.guidance } : {}),
+    ...(args.standingNotes != null ? { standingNotes: args.standingNotes } : {}),
+    ...(args.headState === "working" && args.promoteToVersion
+      ? { promoteLine: `The working copy will be promoted to ${args.promoteToVersion} when this run starts.`, headState: args.headState }
+      : args.headState
+        ? { headState: args.headState }
+        : {}),
     leverMatrix,
     idempotencyKey: args.idempotencyKey,
     ...(args.paymentLinkUrl && !args.suspended ? { paymentLinkUrl: args.paymentLinkUrl } : {}),

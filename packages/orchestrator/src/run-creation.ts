@@ -19,7 +19,7 @@ import type { SqlClient, TxRunner } from "./tx.js";
 import { applyTransition } from "./transition.js";
 import { NON_TERMINAL_RUN_STATES } from "./state-machine.js";
 import { validateModelProfile, ModelProfileRejectedError, type ModelProfile, type PhaseClass } from "./capabilities.js";
-import { computeLockSet, type LockSetSpec } from "./locks.js";
+import { computeLockSet, firstConflict, type LockSetSpec } from "./locks.js";
 import { openGate } from "./internal-api.js";
 import { scheduleGateNotifications } from "./notifications.js";
 import type { Queue } from "./queue.js";
@@ -54,6 +54,12 @@ export interface CreateRunInput {
   readonly entitlementId?: string;
   readonly imageDigest?: string;
   readonly protocolsVersion?: string;
+  /**
+   * P1.06 (§7.2; REQ-CHAT-23; ledger G22) — the run's scope as the canonical parsed ref list
+   * (`[{kind:"section", ref:"III"}]` — @rhema/commands ScopeRef shape; the api parses the wire string,
+   * this module stays grammar-free). Persisted verbatim to `runs.scope` jsonb + `input_snapshot.scope`.
+   */
+  readonly scope?: readonly unknown[];
   /** how to compute the run's lock set (writer/reader/persona). */
   readonly lockSetSpec: Omit<LockSetSpec, "workflow" | "seat">;
 }
@@ -97,12 +103,14 @@ export async function createRun(
     const runId = deps.ids("run");
     const lockSet = computeLockSet({ workflow: input.workflow, seat: input.seat, ...input.lockSetSpec });
 
-    // PRB.21 / D-PRB.20-1 — the beta concurrency ruling: at most ONE non-terminal run per project.
-    // `select … for update` on the projects row serializes same-project creates: a second creator
-    // blocks on the lock until this transaction commits, then sees the new run under READ COMMITTED —
-    // the check-then-insert below cannot race. (P1.06 scoped runs may legitimately parallelize; the
-    // relaxation point is THIS guard — per-scope instead of per-project — recorded in the ledger, not
-    // built.) A project-less run skips the guard entirely.
+    // P1.06 — the concurrency ruling (the PRB.21 guard relaxed, per the ticket's recorded ruling):
+    // the guard moves from per-PROJECT to per-WRITE-LOCK. The `for update` on the projects row still
+    // serializes same-project creates (check-then-insert cannot race under READ COMMITTED). A new run
+    // conflicts iff its computed lock set shares an EXCLUSIVE key with a non-terminal run's frozen
+    // lock_set — `draft:read:*` keys are shared, so readers (review, fact-check, research) run
+    // concurrently including scoped ones (the scope key discriminates their corr locks); writers still
+    // exclude one another on `ns:write`/`draft:write` (§6.3 "never two writers of one draft", §12.4).
+    // A project-less run skips the guard entirely.
     if (input.projectId) {
       await tx.query("select id from projects where id = $1 for update", [input.projectId]);
       // A retry of THIS submission dedupes to its live run — the memo check precedes the guard so an
@@ -113,25 +121,51 @@ export async function createRun(
         throw new CreationRollback({ ok: true, runId: memoRun, state, deduped: true });
       }
       const active = await tx.query(
-        `select id from runs where project_id = $1 and state = any($2::text[])
-           order by created_at desc limit 1`,
+        `select id, lock_set from runs where project_id = $1 and state = any($2::text[])
+           order by created_at`,
         [input.projectId, [...NON_TERMINAL_RUN_STATES]],
       );
-      const activeRow = active.rows[0] as { id: string } | undefined;
-      if (activeRow) {
-        // roll the whole creation back — no run row, no memo, and never a second hold.
-        throw new CreationRollback({ ok: false, reason: "run_in_progress", activeRunId: activeRow.id });
+      for (const row of active.rows as { id: string; lock_set: string[] | null }[]) {
+        const held = row.lock_set ?? [];
+        const hit = firstConflict(lockSet, held);
+        if (hit != null) {
+          // roll the whole creation back — no run row, no memo, and never a second hold.
+          throw new CreationRollback({ ok: false, reason: "run_in_progress", activeRunId: row.id });
+        }
       }
     }
 
-    // Insert the frozen run row in `created`; transitions below pair state with events.
+    // P1.06 — promote-on-launch (§5.6 item 7): a run whose read set names a WORKING head promotes it —
+    // freeze to its promoted version atomically with the run row (the sheet's "will be promoted to vN"
+    // line made the promise; freeze is one-way and guarded on state='working' so it is idempotent).
+    // A head never promoted (promoted_version_id NULL — nothing saved yet) cannot freeze; the run then
+    // reads whatever the draft's current version pointer is, unchanged from before.
+    if (input.lockSetSpec.draftId) {
+      const head = (
+        await tx.query(`select state, promoted_version_id from drafts where id = $1 for update`, [
+          input.lockSetSpec.draftId,
+        ])
+      ).rows[0] as { state: string; promoted_version_id: string | null } | undefined;
+      if (head?.state === "working" && head.promoted_version_id != null) {
+        await tx.query(`update drafts set state = 'frozen', frozen_at = $2, frozen_by = $3 where id = $1`, [
+          input.lockSetSpec.draftId,
+          now,
+          JSON.stringify({ cause: "run_read", runId }),
+        ]);
+      }
+    }
+
+    // Insert the frozen run row in `created`; transitions below pair state with events. `scope` (P1.06)
+    // is the parsed §7.2 scope ref list — first-class on the row (§11.4 `runs.scope`) and frozen into
+    // `inputs`/`input_snapshot` so the dossier keying and the audit trail carry it (REQ-CHAT-23).
+    const scopeJson = input.scope && input.scope.length > 0 ? JSON.stringify(input.scope) : null;
     await tx.query(
       `insert into runs(
          id, workspace_id, project_id, persona_id, workflow, agent_instance_id, state, state_since,
          current_attempt, inputs, input_snapshot, model_profile, model_tier, rigor,
          estimate_credits, cap_credits, spent_credits, rate_table_version, entitlement_id,
-         lock_set, requested_by, image_digest, protocols_version, created_at)
-       values ($1,$2,$3,$4,$5,$6,'created',$7,1,$8,$9,$10,$11,$12,$13,$14,0,$15,$16,$17,$18,$19,$20,$7)`,
+         lock_set, requested_by, image_digest, protocols_version, scope, created_at)
+       values ($1,$2,$3,$4,$5,$6,'created',$7,1,$8,$9,$10,$11,$12,$13,$14,0,$15,$16,$17,$18,$19,$20,$21,$7)`,
       [
         runId,
         input.workspaceId,
@@ -140,8 +174,8 @@ export async function createRun(
         input.workflow,
         input.agentInstanceId ?? null,
         now,
-        JSON.stringify({ ...input.inputs, modelProfile: input.modelProfile }),
-        JSON.stringify(input.inputSnapshot),
+        JSON.stringify({ ...input.inputs, ...(input.scope?.length ? { scope: input.scope } : {}), modelProfile: input.modelProfile }),
+        JSON.stringify({ ...input.inputSnapshot, ...(input.scope?.length ? { scope: input.scope } : {}) }),
         JSON.stringify(input.modelProfile),
         input.modelTier,
         input.rigor,
@@ -153,6 +187,7 @@ export async function createRun(
         input.requestedBy ?? null,
         input.imageDigest ?? null,
         input.protocolsVersion ?? null,
+        scopeJson,
       ],
     );
 

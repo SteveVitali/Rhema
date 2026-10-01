@@ -27,3 +27,11 @@ export type { DisclosureTier } from "./disclosure.js";
 // P1.05 — the live feed's row formatter (SSR + island share it; REQ-IDE-14).
 export { feedTabForContractDensity, feedRowVisible, formatFeedRow } from "./feed-row.js";
 export type { FeedDensityTab, FeedLabelMaps } from "./feed-row.js";
+// P1.06 — the §5.12 keymap dispatcher + the ⌘K palette model (REQ-IDE-49, REQ-CHAT-28).
+export { dispatchIdeKey, CHEAT_SHEET } from "./keymap.js";
+export type { FocusZone, KeyChord, IdeAction } from "./keymap.js";
+export { buildPalette, paletteModel, commandForVerb } from "./palette.js";
+export type { PaletteData, PaletteModel, PaletteRow, PaletteSection, PaletteTarget, CommandRowModel } from "./palette.js";
+// P1.06 — the selection popover + the Timeline context-menu item models (§7.4; REQ-CHAT-22).
+export { selectionMenuItems, contextMenuItems } from "./menus.js";
+export type { CommandMenuItem } from "./menus.js";

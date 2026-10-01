@@ -202,6 +202,24 @@ export const COPY = {
     repairResearchToggle: "Repair research",
     gapCheckToggle: "Gap check",
     backToProject: "Back to the project",
+    // P1.06 — the §5.6 collapsed row's editable fields + the §14.3 trial badge + the §7.2 scope pills'
+    // whole-draft comparison line.
+    approvals: "Approvals",
+    approvalDisplay: {
+      named: "Named approvals",
+      wait_each: "Wait for me at each",
+      run_to_completion: "Run to completion",
+    },
+    capLabel: "Budget cap (credits)",
+    dontAskLabel: "Don't ask me to confirm runs under (credits)",
+    guidanceLabel: "Guidance",
+    guidancePlaceholder: "Anything this run should know?",
+    standingNotesFmt: "{n} standing notes apply",
+    protocolLabel: "Protocol",
+    venueLabel: "Venue",
+    stageLabel: "Stage",
+    wholeDraftPrefix: "Whole draft:",
+    includedLabel: "Included",
   },
 
   dossier: {
@@ -731,6 +749,23 @@ export const COPY = {
       paperLight: "Pinned light",
       paperFollow: "Follow app theme",
       paperDark: "Pinned dark",
+    },
+    // P1.06 (§5.12) — the ⌘K palette's + the `?` cheat sheet's chrome.
+    palette: {
+      dialogLabel: "Command palette",
+      placeholder: "Type / for a command, or search…",
+      emptyLabel: "Nothing matches.",
+      sectionLabels: {
+        run: "Run",
+        goto: "Go to",
+        recent: "Recent runs",
+        threads: "Threads",
+        settings: "Settings",
+      },
+    },
+    cheatsheet: {
+      heading: "Keyboard",
+      closeLabel: "Close",
     },
     emptyProject: {
       titlePlaceholder: "Untitled project",

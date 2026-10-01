@@ -66,6 +66,13 @@ const LABELS: IdeLabels = {
     paperFollow: "Follow app theme",
     paperDark: "Pinned dark",
   },
+  palette: {
+    dialogLabel: "Command palette",
+    placeholder: "Type / for a command, or search…",
+    emptyLabel: "Nothing matches.",
+    sectionLabels: { run: "Run", goto: "Go to", recent: "Recent runs", threads: "Threads", settings: "Settings" },
+  },
+  cheatsheet: { heading: "Keyboard", closeLabel: "Close" },
 };
 
 const shell = (extra: Partial<Parameters<typeof IdeShell>[0]> = {}) =>

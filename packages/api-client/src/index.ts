@@ -142,6 +142,8 @@ export interface ProjectSearchHitDto {
   readonly title: string;
   readonly kind: "project" | "draft" | "letter";
   readonly snippet: string;
+  /** P1.06 — the doc's ref ('' project · draft id · correspondence id) so a palette row deep-links. */
+  readonly refId?: string;
 }
 
 /** The per-user /app grouping preference ('attention' | 'voice'). */
@@ -181,6 +183,8 @@ export interface EstimateRequestDto {
   readonly variant?: string;
   readonly draftSha?: string;
   readonly refine?: boolean;
+  /** P1.06 (§7.2) — the canonical serialized scope (`"section:III"`); part of the estimate cache key. */
+  readonly scope?: string;
 }
 
 /** The estimate response (REQ-SPEC-16): `{estimate, cap, levers, claimCount?}`. `levers` is the lever matrix. */
@@ -213,12 +217,60 @@ export interface CreateRunDto {
    */
   readonly toggles?: Readonly<Record<string, boolean>>;
   readonly draftId?: string;
+  /**
+   * P1.06 (§7.2; REQ-CHAT-23) — the run's scope in the canonical serialized form (`"section:III"`); the
+   * api parses it into `runs.scope` and uses it to discriminate the corr lock (scoped readers parallelize).
+   */
+  readonly scope?: string;
+  /** the sheet's free-text guidance → a run-scope Guidance row (§6.5). */
+  readonly guidance?: string;
+  /** the sheet's Approvals choice → the project's `approval_policy` (§5.6). */
+  readonly approvalPolicy?: "named" | "wait_each" | "run_to_completion";
+  /** the reader's correspondence kind + variant slot (the corr lock discriminator). */
+  readonly corrKind?: string;
+  readonly corrK?: number;
 }
 
 export interface CreatedRunDto {
   readonly runId: string;
   readonly state: string;
   readonly deduped?: boolean;
+}
+
+/**
+ * P1.06 (§5.6; REQ-IDE-13) — `GET /projects/:id/run-sheet-context`: the ONE read the sheet's GET
+ * consumes — head-draft facts (version, words, sha, derived sections), the project's scope defaults,
+ * obligation + standing-note counts, the unused trial entitlement, the consent pref, the project's
+ * non-terminal runs, and `blockedBy` (the per-lock conflict under the P1.06 concurrency ruling).
+ */
+export interface RunSheetContextDto {
+  readonly project: {
+    readonly protocol: string | null;
+    readonly venue: string | null;
+    readonly approvalPolicy: string;
+  };
+  readonly headDraft: {
+    readonly id: string;
+    readonly n: number;
+    readonly state: string;
+    readonly words: number | null;
+    readonly sha256: string | null;
+  } | null;
+  readonly sections: readonly { readonly ref: string; readonly title: string; readonly words: number }[];
+  readonly openObligations: number;
+  readonly reviewScopeLine: string | null;
+  readonly reviseScopeLine: string | null;
+  readonly standingNotes: number;
+  readonly entitlement: {
+    readonly id: string;
+    readonly kind: string;
+    readonly wordCap: number;
+    readonly rigor: string;
+    readonly modelTier: string;
+  } | null;
+  readonly dontAskUnder: number;
+  readonly activeRuns: readonly { readonly id: string; readonly workflow: string; readonly state: string; readonly scope: unknown }[];
+  readonly blockedBy: { readonly runId: string; readonly state: string } | null;
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -446,6 +498,8 @@ export interface DossierDto {
   readonly runId: string;
   readonly projectTitle: string;
   readonly versionLabel: string;
+  /** P1.06 (§7.2) — a scoped run's scope as chip labels ("§III"); absent on whole-draft runs. */
+  readonly scopeLabels?: readonly string[];
   readonly openObligations: number;
   readonly addressedObligations: number;
   readonly runCard: RunCardInput;
@@ -1065,6 +1119,13 @@ export interface ApiClient {
   estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto>;
   /** The sheet's Run click — the ONLY run creator (REQ-CHAT-25); the client-minted idempotency key is in the body. */
   createRun(projectId: string, req: CreateRunDto, init?: RequestInitLite): Promise<CreatedRunDto>;
+  /**
+   * P1.06 — `GET /projects/:id/run-sheet-context` (§5.6): the ONE read the sheet's GET consumes (head
+   * draft, derived sections, obligations, entitlement, consent pref, `blockedBy` under the P1.06 ruling).
+   */
+  runSheetContext(projectId: string, args?: { workflow?: string; scope?: string }, init?: RequestInitLite): Promise<RunSheetContextDto>;
+  /** P1.06 (REQ-BILL-4) — `PUT /settings/consent`: the per-user "don't ask under N credits" pref (≤1,000). */
+  setConsentPref(dontAskUnder: number, init?: RequestInitLite): Promise<{ ok: true; dontAskUnder: number }>;
   // ---- P1.04 — project home: create + row actions + search + grouping (§5.2/§5.3) ----
   /** `POST /projects` — the §5.3 create (entry + picks + the adopted quarantined conversion). */
   createProject(req: CreateProjectDto, init?: RequestInitLite): Promise<CreatedProjectDto>;
@@ -1080,8 +1141,9 @@ export interface ApiClient {
   deleteProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
   /** Restore a soft-deleted project inside the 30-day window. */
   restoreProject(projectId: string, init?: RequestInitLite): Promise<{ ok: true }>;
-  /** `GET /projects/search?q=` — the server-side index over title/Voice/venue/materialized markdown. */
-  searchProjects(q: string, init?: RequestInitLite): Promise<ProjectSearchHitDto[]>;
+  /** `GET /projects/search?q=` — the server-side index over title/Voice/venue/materialized markdown.
+   *  P1.06: `projectId` narrows the hits to one project (the ⌘K palette's "Go to" section). */
+  searchProjects(q: string, init?: RequestInitLite, opts?: { projectId?: string }): Promise<ProjectSearchHitDto[]>;
   /** The per-user grouping preference (GET /settings/project-grouping). */
   getProjectGrouping(init?: RequestInitLite): Promise<ProjectGroupByDto>;
   /** Set the per-user grouping preference. */
@@ -1357,6 +1419,23 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify(req),
+      });
+    },
+    async runSheetContext(projectId, args, init): Promise<RunSheetContextDto> {
+      const qs = new URLSearchParams();
+      if (args?.workflow) qs.set("workflow", args.workflow);
+      if (args?.scope) qs.set("scope", args.scope);
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      return json<RunSheetContextDto>(
+        `/projects/${encodeURIComponent(projectId)}/run-sheet-context${suffix}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async setConsentPref(dontAskUnder, init): Promise<{ ok: true; dontAskUnder: number }> {
+      return json<{ ok: true; dontAskUnder: number }>("/settings/consent", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({ dontAskUnder }),
       });
     },
     async recordDisposition(projectId, findingId, req, init): Promise<DispositionDto> {
@@ -1788,9 +1867,11 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         body: "{}",
       });
     },
-    async searchProjects(q, init): Promise<ProjectSearchHitDto[]> {
+    async searchProjects(q, init, opts): Promise<ProjectSearchHitDto[]> {
+      const qs = new URLSearchParams({ q });
+      if (opts?.projectId) qs.set("project", opts.projectId);
       const body = await json<{ results: ProjectSearchHitDto[] }>(
-        `/projects/search?q=${encodeURIComponent(q)}`,
+        `/projects/search?${qs.toString()}`,
         { headers: { ...(init?.headers as Record<string, string> | undefined) } },
       );
       return body.results;
