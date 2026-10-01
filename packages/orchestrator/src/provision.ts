@@ -289,7 +289,17 @@ export async function mintProxyCredential(deps: OrchestratorDeps, args: MintCred
   };
 
   // one tenant-scoped transaction: the non-RLS proxy rows + the RLS `runs` link commit together.
-  await deps.txRunner.run(args.workspaceId, async (tx) => {
+  // SEC.1: this is a SYSTEM-pool transaction (`deps.systemTxRunner`) — the user-serving role holds
+  // no grant on proxy_allowlists/proxy_credentials, so the mint MUST ride the elevated pool. No
+  // fallback to `deps.txRunner`: silently running an elevated write under the user-serving role is
+  // exactly the failure mode the split removes — absent wiring is a config error, fail closed.
+  const systemTxRunner = deps.systemTxRunner;
+  if (!systemTxRunner) {
+    throw new Error(
+      "provisionRunCredentials requires deps.systemTxRunner (the system pool) — the proxy_* mint must not run on the user-serving role (SEC.1)",
+    );
+  }
+  await systemTxRunner.run(args.workspaceId, async (tx) => {
     await tx.query(
       `insert into proxy_allowlists(id, run_id, hosts, endpoints, models, url_policy, cap_credits, created_at)
        values ($1,$2,$3,$4,$5,$6,$7,$8)`,
@@ -318,10 +328,20 @@ export async function mintProxyCredential(deps: OrchestratorDeps, args: MintCred
   return secret;
 }
 
-/** Revoke a run's proxy credentials (rotation per attempt; revocation at terminal — REQ-SPEC-11). */
+/** Revoke a run's proxy credentials (rotation per attempt; revocation at terminal — REQ-SPEC-11).
+ * SEC.1: rides the system pool (`deps.systemTxRunner`) — the revoke itself crosses the grant boundary
+ * via the 0045 definer function, so the '__system__' tenant scope here is the system runner's marker
+ * for unconditional revocation. */
 export async function revokeCredentials(deps: OrchestratorDeps, runId: string): Promise<void> {
-  // proxy_credentials is not under RLS; any tenant scope works.
-  await deps.txRunner.run("__system__", (tx) => revokeRunCredentials(tx, runId, deps.clock.now()));
+  // proxy_credentials is not under RLS; any tenant scope works — the definer function requires the
+  // '__system__' (or unset) scope to skip its workspace check. SEC.1: fail closed — the revoke rides
+  // the system pool only; a missing `systemTxRunner` is a wiring error, never a user-pool fallback.
+  if (!deps.systemTxRunner) {
+    throw new Error(
+      "revokeCredentials requires deps.systemTxRunner (the system pool) — refusing the user-serving role (SEC.1)",
+    );
+  }
+  await deps.systemTxRunner.run("__system__", (tx) => revokeRunCredentials(tx, runId, deps.clock.now()));
 }
 
 async function lockSetOf(tx: SqlClient, runId: string): Promise<LockKey[]> {

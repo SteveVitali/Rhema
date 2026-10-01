@@ -333,7 +333,21 @@ export function createCompute(args: ComputeArgs): Compute {
     // public endpoint + cluster CA + a per-launch metadata OAuth token (its SA has roles/container.developer).
     { name: "GKE_ENDPOINT", value: gke.endpoint },
     { name: "GKE_CA_DATA", value: gke.masterAuth.clusterCaCertificate },
-    ...(args.workerDatabaseUrl ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }] : []),
+    // SEC.1 — on stages that provision `app-database-url` the worker's user-serving DSN comes from
+    // Secret Manager via secretKeyRef (never a plaintext env `value`; REQ-ARCH-30). The
+    // `workerDatabaseUrl` config path stays as the fallback for preview stacks that don't provision it.
+    ...(requires("app-database-url")
+      ? [
+          {
+            name: "DATABASE_URL",
+            valueSource: {
+              secretKeyRef: { secret: secrets.byId["app-database-url"].secretId, version: "latest" },
+            },
+          },
+        ]
+      : args.workerDatabaseUrl
+        ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }]
+        : []),
     ...(args.workerSystemDatabaseUrl ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }] : []),
     ...(args.workerRedisUrl ? [{ name: "REDIS_URL", value: args.workerRedisUrl }] : []),
     ...(args.emailFrom ? [{ name: "EMAIL_FROM", value: args.emailFrom }] : []),
@@ -523,7 +537,25 @@ export function createCompute(args: ComputeArgs): Compute {
                     { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
                     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
-                    ...(args.apiDatabaseUrl ? [{ name: "DATABASE_URL", value: args.apiDatabaseUrl }] : []),
+                    // SEC.1 — the api's DATABASE_URL mounts the `rhema_app_login` DSN from Secret
+                    // Manager via secretKeyRef on stages that provision `app-database-url` (never a
+                    // plaintext `value`; REQ-ARCH-30). Config-driven `apiDatabaseUrl` remains the
+                    // preview fallback.
+                    ...(requires("app-database-url")
+                      ? [
+                          {
+                            name: "DATABASE_URL",
+                            valueSource: {
+                              secretKeyRef: {
+                                secret: secrets.byId["app-database-url"].secretId,
+                                version: "latest",
+                              },
+                            },
+                          },
+                        ]
+                      : args.apiDatabaseUrl
+                        ? [{ name: "DATABASE_URL", value: args.apiDatabaseUrl }]
+                        : []),
                     ...(args.apiSystemDatabaseUrl
                       ? [{ name: "SYSTEM_DATABASE_URL", value: args.apiSystemDatabaseUrl }]
                       : []),
@@ -543,9 +575,24 @@ export function createCompute(args: ComputeArgs): Compute {
               ? {
                   envs: [
                     { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
-                    ...(args.collabDatabaseUrl
-                      ? [{ name: "DATABASE_URL", value: args.collabDatabaseUrl }]
-                      : []),
+                    // SEC.1 — REQ-ARCH-30: no plaintext secret env on collab. On stages that seed
+                    // `collab-database-url` the DSN mounts via secretKeyRef; the config `value:` path
+                    // is the preview/fallback only.
+                    ...(requires("collab-database-url")
+                      ? [
+                          {
+                            name: "DATABASE_URL",
+                            valueSource: {
+                              secretKeyRef: {
+                                secret: secrets.byId["collab-database-url"].secretId,
+                                version: "latest",
+                              },
+                            },
+                          },
+                        ]
+                      : args.collabDatabaseUrl
+                        ? [{ name: "DATABASE_URL", value: args.collabDatabaseUrl }]
+                        : []),
                   ],
                 }
               : {}),

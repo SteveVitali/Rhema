@@ -19,6 +19,7 @@ import {
   probeSlos,
   type SqlClient,
 } from "@rhema/orchestrator";
+import { USER_SERVING_ROLE } from "@rhema/db";
 import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
 import { SqlObligationHook } from "@rhema/obligations";
 import { recordInstrumentedFold, type InstrumentedMeasurement } from "@rhema/protocols";
@@ -133,10 +134,16 @@ export async function startWorker(): Promise<void> {
   // unaffected). TCP keepalive holds the connections open; bounded pools + a real connect timeout keep the
   // footprint sane and fail fast rather than hanging.
   const pgOpts = { keepAlive: true, keepAliveInitialDelayMillis: 10_000, connectionTimeoutMillis: 15_000, idleTimeoutMillis: 30_000 };
+  // SEC.1 (REQ-SPEC-30) — the pool split: `DATABASE_URL` authenticates as `rhema_app_login` (the
+  // user-serving role: NOBYPASSRLS, RLS-bound tenant transactions) and `SYSTEM_DATABASE_URL` — REQUIRED,
+  // fail-closed in env.ts — is the elevated role for the audited system seams (sweeps, credential mint,
+  // the circuit-breaker read). pg-boss rides the SYSTEM DSN: it owns the `pgboss` schema (self-migrating
+  // queue transport — schema CREATE + full DML), which the user role must never be granted; job payloads
+  // carry no tenant rows, so the queue is transport, not tenancy.
   const pool = new pg.Pool({ connectionString: env.databaseUrl, max: 6, ...pgOpts });
   const redis = new Redis(env.redisUrl, { maxRetriesPerRequest: 3, enableOfflineQueue: true, lazyConnect: false });
   const subscriber = redis.duplicate();
-  const boss = new PgBoss({ connectionString: env.databaseUrl, max: 5, ...pgOpts });
+  const boss = new PgBoss({ connectionString: env.systemDatabaseUrl, max: 5, ...pgOpts });
 
   // A background service must never let a transient infra blip become an UNHANDLED error that exits the process
   // (a single pg-boss connection timeout on the reaper cron was crashing the whole worker → EventEmitter
@@ -229,9 +236,11 @@ export async function startWorker(): Promise<void> {
   };
 
   // A system-scoped client for the parked sweep + run-event maintenance (cross-tenant / system-table reads).
-  // Uses a SEPARATE elevated connection when `systemDatabaseUrl` is set, so the tenant `pool` above can stay a
-  // restricted RLS-enforced role (defense-in-depth); falls back to the main pool otherwise.
-  const systemPool = env.systemDatabaseUrl ? new pg.Pool({ connectionString: env.systemDatabaseUrl, max: 4, ...pgOpts }) : pool;
+  // SEC.1 — the elevated system pool is REQUIRED (env.ts throws without SYSTEM_DATABASE_URL): there is no
+  // fallback to the user pool, because a system seam silently running as the RLS-bound role is exactly the
+  // failure mode the role split removes. `systemTxRunner` binds the tenant-scoped transaction seam to it;
+  // `systemExec` is the bare cross-tenant exec for the sweeps.
+  const systemPool = new pg.Pool({ connectionString: env.systemDatabaseUrl, max: 4, ...pgOpts });
   systemPool.on("error", (err: unknown) => console.error("[worker] system pg pool error (non-fatal):", err));
   const systemExec: SqlClient = {
     query: (sql, params) => systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
@@ -297,7 +306,11 @@ export async function startWorker(): Promise<void> {
     : { generate: () => Promise.reject(new Error("walkthrough unconfigured")) };
 
   const deps: WorkerRunDeps & WorkerLedgerDeps & WorkerFullBillingDeps & WorkerNotificationDeps & { walkthrough: typeof walkthrough } = {
-    txRunner: new PgPoolTxRunner(pool),
+    // SEC.1 — `txRunner` runs the user-serving role (the tenant transactions RLS binds); the role pin is
+    // belt-and-suspenders on top of the repointed DATABASE_URL. `systemTxRunner` rides the elevated pool
+    // for the paths that write system tables (the proxy credential mint at provision — see OrchestratorDeps).
+    txRunner: new PgPoolTxRunner(pool, { role: USER_SERVING_ROLE }),
+    systemTxRunner: new PgPoolTxRunner(systemPool),
     eventWriter: new SqlEventWriter(bus),
     clock,
     ids,

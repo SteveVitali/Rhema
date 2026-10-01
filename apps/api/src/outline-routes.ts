@@ -69,10 +69,14 @@ interface OutlineArtifactRow {
 // -----------------------------------------------------------------------------------------------
 // helpers
 
-/** A project row (slug + lifecycle gates) or null. */
-async function loadProject(deps: OutlineApiDeps, projectId: string) {
+/** A project row (slug + lifecycle gates) for the CALLER'S tenant or null — SEC.1 explicit
+ *  workspace predicate (RLS is the backstop, not the check). */
+async function loadProject(deps: OutlineApiDeps, projectId: string, workspaceId: string) {
   return (
-    ((await deps.db.query(`select id, slug, archived_at, deleted_at from projects where id = $1`, [projectId]))
+    ((await deps.db.query(
+      `select id, slug, archived_at, deleted_at from projects where id = $1 and workspace_id = $2`,
+      [projectId, workspaceId],
+    ))
       .rows[0] as
       | { id: string; slug: string; archived_at: string | Date | null; deleted_at: string | Date | null }
       | undefined) ?? null
@@ -309,7 +313,7 @@ export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id")!;
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (write && project.archived_at != null) return c.json({ error: "project_archived" }, 409);
     return { principal, projectId, slug: project.slug };

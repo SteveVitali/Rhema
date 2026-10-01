@@ -192,10 +192,15 @@ async function loadThread(deps: ChatApiDeps, projectId: string, threadId: string
   return rows.find((t) => t.id === threadId) ?? null;
 }
 
-/** A project row (slug + lifecycle gates) or null. */
-async function loadProject(deps: ChatApiDeps, projectId: string) {
+/** A project row (slug + lifecycle gates) for the CALLER'S tenant or null. The explicit
+ *  `workspace_id` predicate is the SEC.1 code-level guard — RLS is the backstop, not the check (a
+ *  bypass role must still answer 404 for a foreign id). */
+async function loadProject(deps: ChatApiDeps, projectId: string, workspaceId: string) {
   return (
-    ((await deps.db.query(`select id, slug, archived_at, deleted_at from projects where id = $1`, [projectId]))
+    ((await deps.db.query(
+      `select id, slug, archived_at, deleted_at from projects where id = $1 and workspace_id = $2`,
+      [projectId, workspaceId],
+    ))
       .rows[0] as
       | { id: string; slug: string; archived_at: string | Date | null; deleted_at: string | Date | null }
       | undefined) ?? null
@@ -284,7 +289,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
 
     const defaultThread = await ensureDefaultThread(deps.db, { projectId, createdBy: principal.userId }, () =>
@@ -370,7 +375,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (project.archived_at != null) return c.json({ error: "project_archived" }, 409);
     const body = (await c.req.json().catch(() => null)) as { name?: unknown } | null;
@@ -439,7 +444,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
     const threadId = c.req.param("tid");
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (project.archived_at != null) return c.json({ error: "project_archived" }, 409);
     const thread = await loadThread(deps, projectId, threadId);
@@ -657,7 +662,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
     const threadId = c.req.param("tid");
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
     const body = (await c.req.json().catch(() => null)) as { runId?: unknown; action?: unknown } | null;
     const action = body?.action;
@@ -811,7 +816,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (project.archived_at != null) return c.json({ error: "project_archived" }, 409);
     if (!deps.contentStore || !deps.converter) return c.json({ error: "chat_not_wired" }, 503);
@@ -862,7 +867,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    if (!(await loadProject(deps, projectId))) return c.json({ error: "not_found" }, 404);
+    if (!(await loadProject(deps, projectId, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const index = await readIndex(deps, projectId);
     return c.json({ sources: sourceCards(index) });
   });
@@ -875,7 +880,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    if (!(await loadProject(deps, projectId))) return c.json({ error: "not_found" }, 404);
+    if (!(await loadProject(deps, projectId, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const body = (await c.req.json().catch(() => null)) as {
       anchor?: unknown;
       replacement?: unknown;
@@ -917,7 +922,7 @@ export function createChatRoutes(deps: ChatApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const project = await loadProject(deps, projectId);
+    const project = await loadProject(deps, projectId, principal.workspaceId);
     if (!project || project.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (project.archived_at != null) return c.json({ error: "project_archived" }, 409);
     if (!deps.contentStore) return c.json({ error: "chat_not_wired" }, 503);

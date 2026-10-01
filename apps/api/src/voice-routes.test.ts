@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
+import type { TxRunner } from "@rhema/orchestrator";
+import { withTenant } from "@rhema/db";
 import { InMemoryContentStore } from "@rhema/mirror";
 import { createApp, type Principal } from "./index.js";
 
@@ -366,5 +368,72 @@ describe("AC-I-B — the Connection model has nowhere a cookie/session token cou
       )
     ).rows;
     expect(cols).toEqual([]);
+  });
+});
+
+// ============================================================================
+// SEC.1 (PR-S1; REQ-SPEC-30; ADR-017) — the /voices BYPASSRLS regression: since 0026 every prod pool
+// connected as postgres (rolbypassrls=true), so `app.tenant_id` scoped nothing and the un-predicated
+// personas list leaked every workspace's voices (live finding 2026-09-30). This test drives the route
+// over a deliberately BYPASSRLS role — the route's own `workspace_id` predicate is then the ONLY
+// filter: remove it and tenant B sees tenant A's personas again.
+// ============================================================================
+
+describe("SEC.1 — /voices tenant isolation under a BYPASSRLS role (PR-S1 regression)", () => {
+  it("GET /voices returns only the caller's personas even when the exec role bypasses RLS", async () => {
+    // A throwaway BYPASSRLS role simulates today's prod pool: `bypassrls` makes RLS inert and the
+    // `rhema_app` membership gives it the user surface's grants — exactly the postgres-since-0026
+    // shape (app.tenant_id decorative, every tenant table reachable).
+    await db.pg.exec("create role bypass_probe bypassrls nologin; grant rhema_app to bypass_probe");
+    const bypassRunner: TxRunner = {
+      run: (tenantId, fn) =>
+        withTenant(db.pg, tenantId, () => fn(db.client), { role: "bypass_probe" }),
+    };
+
+    const a = await seedProject(db, {
+      userId: "usr_a", workspaceId: "ws_a", billingAccountId: "ba_a", projectId: "prj_a",
+    });
+    const b = await seedProject(db, {
+      userId: "usr_b", workspaceId: "ws_b", billingAccountId: "ba_b", projectId: "prj_b",
+    });
+    await db.pg.query(
+      `insert into personas(id, workspace_id, display_name, mode, kind, provenance)
+         values ('per_a','ws_a','A voice','self','leaf','user'),
+                ('per_b','ws_b','B voice','self','leaf','user')`,
+    );
+
+    // Sanity gate — prove the bypass is real before trusting the assertion below: an unscoped read
+    // inside a ws_b tenant tx under the bypass role must still see BOTH personas.
+    const unscoped = await bypassRunner.run("ws_b", (tx) =>
+      tx.query("select count(*)::int as c from personas"),
+    );
+    expect((unscoped.rows[0] as { c: number }).c).toBe(2);
+
+    const principalB: Principal = { userId: b.userId, workspaceId: "ws_b", billingAccountId: b.billingAccountId };
+    const bypassApp = createApp({
+      ...deps,
+      txRunner: bypassRunner,
+      principal: () => principalB,
+      db: db.client,
+      contentStore: store,
+    });
+    const res = await bypassApp.request("/voices");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { voices: { personaId: string }[] };
+    // The compensating predicate — not RLS — is what holds this under a bypass role.
+    expect(body.voices.map((v) => v.personaId).sort()).toEqual(["per_b"]);
+
+    // …and under the REAL user-serving role the same holds with RLS binding (defense in depth):
+    const roleApp = createApp({
+      ...deps, // makeDeps(db).txRunner is bound to rhema_app_login by the harness
+      principal: () => principalB,
+      db: db.client,
+      contentStore: store,
+    });
+    const resRole = await roleApp.request("/voices");
+    expect(resRole.status).toBe(200);
+    const roleBody = (await resRole.json()) as { voices: { personaId: string }[] };
+    expect(roleBody.voices.map((v) => v.personaId).sort()).toEqual(["per_b"]);
+    void a;
   });
 });

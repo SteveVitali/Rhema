@@ -31,4 +31,59 @@ describe.skipIf(!DATABASE_URL)("migrations + real-project seed against a server 
     const drafts = (await pool!.query("select count(*)::int n from drafts")).rows[0] as { n: number };
     expect(drafts.n).toBeGreaterThanOrEqual(6);
   });
+
+  // SEC.1 — the user-serving role on a REAL Postgres 16 (the CI leg PGlite approximates): enable
+  // LOGIN on a throwaway password (the CI service is disposable; prod's Stage B does this for real),
+  // then connect AS `rhema_app_login` and prove (a) it is not superuser/BYPASSRLS, (b) tenant txns
+  // filter to the tenant, and (c) the system-table grant boundary holds.
+  it("rhema_app_login on postgres:16 — NOBYPASSRLS, tenant-scoped, denied the system tables", async () => {
+    await applyMigrations(db);
+    await pool!.query(`alter role rhema_app_login login password 'sec1-ci-probe'`);
+    const user = new pg.Pool({
+      connectionString: DATABASE_URL!.replace("postgres:postgres@", "rhema_app_login:sec1-ci-probe@"),
+      max: 1,
+    });
+    try {
+      // (a) attributes
+      const attrs = (
+        await user.query(
+          `select rolname, rolsuper, rolbypassrls from pg_roles where rolname = 'rhema_app_login'`,
+        )
+      ).rows[0] as { rolname: string; rolsuper: boolean; rolbypassrls: boolean };
+      expect(attrs.rolsuper).toBe(false);
+      expect(attrs.rolbypassrls).toBe(false);
+
+      // (b) tenant isolation — seed two workspaces' projects as superuser, read as the user role
+      // (same minimal shape seedProject uses — snake_case Better Auth columns)
+      await pool!.query(`
+        insert into "user" (id, email, email_verified)
+          values ('usr_cia','a@probe.test',true), ('usr_cib','b@probe.test',true) on conflict do nothing;
+        insert into billing_accounts (id) values ('ba_cia'), ('ba_cib') on conflict do nothing;
+        insert into workspaces (id, kind, name, billing_account_id)
+          values ('ws_cia','personal','A','ba_cia'), ('ws_cib','personal','B','ba_cib') on conflict do nothing;
+        insert into projects (id, workspace_id, owner_id, title, slug)
+          values ('prj_cia','ws_cia','usr_cia','A','cia'), ('prj_cib','ws_cib','usr_cib','B','cib')
+          on conflict do nothing;
+      `);
+      const client = await user.connect();
+      try {
+        await client.query("begin");
+        await client.query("select set_config('role','rhema_app_login',true)");
+        await client.query("select set_config('app.tenant_id','ws_cia',true)");
+        const rows = (await client.query("select id from projects order by id")).rows as { id: string }[];
+        expect(rows.map((r) => r.id)).toEqual(["prj_cia"]);
+
+        // (c) the system-table boundary: proxy_credentials is denied to the user role
+        await expect(client.query("select id from proxy_credentials")).rejects.toThrow(
+          /permission denied/i,
+        );
+        await client.query("rollback");
+      } finally {
+        client.release();
+      }
+    } finally {
+      await user.end();
+      await pool!.query(`alter role rhema_app_login nologin`);
+    }
+  });
 });

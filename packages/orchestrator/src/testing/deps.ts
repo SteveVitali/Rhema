@@ -27,6 +27,10 @@ export function makeDeps(
   const clock = new FixedClock(opts.now ?? new Date("2026-09-02T12:00:00Z"));
   return {
     txRunner: db.txRunner,
+    // SEC.1 — the system-pool twin prod wires for proxy-credential mints / system sweeps
+    // (OrchestratorDeps.systemTxRunner). Provision paths that write proxy_* tables ride it —
+    // under the user-scoped `txRunner` (rhema_app_login) they correctly fail closed.
+    systemTxRunner: db.systemTxRunner,
     eventWriter: new InMemoryEventWriter(),
     clock,
     // ULID-shaped ids by default so ids emitted into events pass the write-boundary id validation; opt into the

@@ -69,6 +69,12 @@ export const ALL_SECRET_IDS = [
   "user-content-signing-key", // api — signs the CDN download URLs for the PRIVATE user-content bucket
   //   (the *.usercontent.rhema.tools origin serves only signed requests; the same key is added to the
   //   backend bucket by the operator — `gcloud compute backend-buckets add-signed-url-key`, runbook)
+  "app-database-url", // SEC.1 — the `rhema_app_login` user-serving DSN for api + worker. Its version
+  //   is PULUMI-MANAGED (a @pulumi/random password materialized as the version by the program itself
+  //   — never operator-seeded, never committed; the value sits encrypted in stack state + SM only).
+  "collab-database-url", // SEC.1 — the `rhema_collab` role's DSN (REQ-ARCH-30: no plaintext env on
+  //   collab). Operator-seeded like the rest — seed BEFORE the deploy that flips collab's env to
+  //   secretKeyRef or the service crash-loops on a versionless secret.
 ] as const;
 
 /**
@@ -91,6 +97,8 @@ export const DEV_REQUIRED_SECRETS: readonly string[] = [
   "email-action-secret",
   "resend-api-key",
   "anthropic-admin-key",
+  "app-database-url",
+  "collab-database-url",
 ];
 
 /** The preview secret set — previews never carry production secrets (REQ-ARCH-38). */

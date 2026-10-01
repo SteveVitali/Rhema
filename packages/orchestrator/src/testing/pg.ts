@@ -3,16 +3,32 @@
 // the orchestrator's transactions run exactly as they would against AlloyDB (RLS included).
 
 import { PGlite } from "@electric-sql/pglite";
-import { applyMigrations } from "@rhema/db";
+import { applyMigrations, withTenant, USER_SERVING_ROLE } from "@rhema/db";
 import type { SqlClient, TxRunner } from "../tx.js";
 
 export interface OrchestratorTestDb {
-  /** raw PGlite handle — for seeding / reading non-RLS tables (proxy_*, run_idempotency, gates, steps). */
+  /** raw PGlite handle — the SEED/SYSTEM handle (PGlite's bootstrap superuser, like the bypass role the
+   *  system pool holds). For seeding / reading non-RLS tables (proxy_*, run_idempotency, gates, steps)
+   *  and for asserting what a tenant transaction must NOT see. */
   readonly pg: PGlite;
-  /** a bare SqlClient over the raw handle (no tenant set) — non-RLS reads only. */
+  /** a bare SqlClient over the raw handle (superuser, no tenant set) — the system/seeding seam. */
   readonly client: SqlClient;
-  /** tenant-scoped transaction runner (sets app.tenant_id for RLS). */
+  /**
+   * tenant-scoped transaction runner — SEC.1 (REQ-SPEC-30): every transaction runs
+   * `set_config('role','rhema_app_login',true)` + `app.tenant_id` via `withTenant`, so the suite
+   * exercises EXACTLY the role prod's user-serving pool authenticates as (grants + RLS bind; a query
+   * that silently relied on the bootstrap superuser / a BYPASSRLS role turns red here). The seeding
+   * and system seams stay on `pg`/`client`.
+   */
   readonly txRunner: TxRunner;
+  /**
+   * SEC.1 — the SYSTEM-pool twin of `txRunner`: identical tenant-scoped transaction semantics but NO
+   * `rhema_app_login` role pin (PGlite's bootstrap superuser ≈ prod's `SYSTEM_DATABASE_URL` role —
+   * BYPASSRLS, full grants). Bind it as `deps.systemTxRunner` for the paths prod wires to the system
+   * pool (proxy-credential mint, sweeps); a path that needs a grant the user role lacks turns red
+   * under `txRunner` and is the audit's signal to reach for this.
+   */
+  readonly systemTxRunner: TxRunner;
   close(): Promise<void>;
 }
 
@@ -27,21 +43,21 @@ export async function createOrchestratorTestDb(): Promise<OrchestratorTestDb> {
 
   const txRunner: TxRunner = {
     async run<T>(tenantId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> {
-      await pg.query("begin");
-      try {
-        // transaction-local RLS tenant (is_local = true), reset automatically at commit/rollback.
-        await pg.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
-        const out = await fn(client);
-        await pg.query("commit");
-        return out;
-      } catch (e) {
-        await pg.query("rollback");
-        throw e;
-      }
+      // PGlite is single-connection: `pg` and `client` are the same session, so `withTenant(pg, …)`
+      // brackets `fn(client)` on the one wire — the transaction-local ROLE + tenant apply to it.
+      return withTenant(pg, tenantId, () => fn(client), { role: USER_SERVING_ROLE });
     },
   };
 
-  return { pg, client, txRunner, close: () => pg.close() };
+  // The system-pool runner: same single wire, no role pin — the transaction runs as the bootstrap
+  // superuser exactly like prod's elevated pool, so grants + RLS stay inert for system paths.
+  const systemTxRunner: TxRunner = {
+    async run<T>(tenantId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> {
+      return withTenant(pg, tenantId, () => fn(client));
+    },
+  };
+
+  return { pg, client, txRunner, systemTxRunner, close: () => pg.close() };
 }
 
 export interface SeedProjectArgs {

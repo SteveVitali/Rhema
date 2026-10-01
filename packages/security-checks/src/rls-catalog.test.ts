@@ -17,9 +17,15 @@ import { applyMigrations, withTenant, type TenantClient } from "@rhema/db";
 //     A table added without a classification decision fails this test — that IS the enumeration the
 //     ticket demands (every P1-era table included).
 //
-//  2. THE POOLED PROBE — one reused connection (role `rhema_app`, FORCE-RLS bound) alternates tenants
-//     through `withTenant` over every bucket-A table incl. the P1-era ones; assert isolation,
-//     deny-by-default with no tenant, and WITH CHECK on a cross-tenant write.
+//  2. THE POOLED PROBE — one reused connection (role `rhema_app_login` — the prod-shaped user-serving
+//     LOGIN member of `rhema_app` from 0045, FORCE-RLS bound) alternates tenants through `withTenant`
+//     over every bucket-A table incl. the P1-era ones; assert isolation, deny-by-default with no
+//     tenant, and WITH CHECK on a cross-tenant write.
+//
+//  3. THE ROLE SPLIT (SEC.1, REQ-SPEC-30) — `rhema_app_login`'s attributes are pinned (never superuser,
+//     never BYPASSRLS, never a member of postgres/cloudsqlsuperuser), and EVERY table carries an
+//     explicit per-privilege grant decision (`USER_ROLE_GRANTS`) verified against
+//     `has_table_privilege` — a new table without a decision fails the census.
 //
 // Named residual (audited, not silently accepted): bucket-C child tables carry no row-level policy —
 // a tenant-scoped transaction that queried a child table WITHOUT joining through its parent could
@@ -226,7 +232,7 @@ describe("the two-tenant pooled probe over the full enforced surface (REQ-DATA-4
         await pg.query(`insert into ${t.table}(${c}) values (${ph})`, v);
       }
     }
-    await pg.exec("set role rhema_app");
+    await pg.exec("set role rhema_app_login");
     try {
       for (const t of TENANT_TABLES) {
         const a = await withTenant(db, "ws_a", (tx) => tx.query(`select * from ${t.table}`));
@@ -251,7 +257,7 @@ describe("the two-tenant pooled probe over the full enforced surface (REQ-DATA-4
   });
 
   it("the exempted tables are unreachable-or-system under the app role exactly as documented", async () => {
-    await pg.exec("set role rhema_app");
+    await pg.exec("set role rhema_app_login");
     try {
       // run_events_default has no direct grant — the partition is only reachable through the RLS'd parent.
       await expect(db.query("select count(*) from run_events_default")).rejects.toThrow();
@@ -261,5 +267,234 @@ describe("the two-tenant pooled probe over the full enforced surface (REQ-DATA-4
     } finally {
       await pg.exec("reset role");
     }
+  });
+});
+
+// ============================================================================
+// SEC.1 (REQ-SPEC-30; ADR-017/018) — the user-role grant census + role-attribute pins.
+// ============================================================================
+
+/**
+ * The explicit user-role grant decision for EVERY public table — verified against
+ * `has_table_privilege('rhema_app', …)` (which `rhema_app_login` inherits; the grant decision lives on
+ * the group so any future member carries it). Letters are the expected privilege set: s=select,
+ * i=insert, u=update, d=delete; `"-"` = denied (system-tier or enclave-only). A table added without a
+ * decision fails the census — that is REQ-SPEC-30's "ungranted new table fails CI".
+ *
+ * Denied set (all system-tier; reasons in docs/security/tenancy-audit.md § grant census):
+ * `_migrations` (migrator bookkeeping, owner-only), `proxy_allowlists`/`proxy_credentials` (the egress
+ * proxy's own credential tables — the api's claim pre-pass mint rides the system pool), every
+ * `benchmark_*` (the enclave's `rhema_benchmark` role only), `run_events_default` (partition reachable
+ * only through the RLS'd parent), `slo_samples` is insert-only (api's autosave/SSE samples), and the
+ * 0045 revocations: `pause_signals`, `stripe_events`, `deployments`, `estimator_config`,
+ * `estimator_fits`.
+ */
+const USER_ROLE_GRANTS: Record<string, string> = {
+  // ---- denied (system tier / enclave / owner-only bookkeeping) ------------------------------------
+  _migrations: "-",
+  proxy_allowlists: "-",
+  proxy_credentials: "-",
+  run_events_default: "-",
+  pause_signals: "-",
+  stripe_events: "-",
+  deployments: "-",
+  estimator_config: "-",
+  estimator_fits: "-",
+  acquisition_events: "i", // pre-auth funnel beacon — api inserts through the raw client (0037)
+  slo_samples: "i", // api writes autosave_save_ms / event_delivery_ms inside tenant txs (0042)
+  benchmark_arm_configs: "-",
+  benchmark_arm_runs: "-",
+  benchmark_consequence_log: "-",
+  benchmark_contamination_records: "-",
+  benchmark_corpus_drafts: "-",
+  benchmark_deviations: "-",
+  benchmark_enclave_access_log: "-",
+  benchmark_extraction_audits: "-",
+  benchmark_gold_annotations: "-",
+  benchmark_judge_calibrations: "-",
+  benchmark_judge_scores: "-",
+  benchmark_match_records: "-",
+  benchmark_memorization_probes: "-",
+  benchmark_normalized_findings: "-",
+  benchmark_pairwise_preferences: "-",
+  benchmark_preregistrations: "-",
+  benchmark_provider_verifications: "-",
+  benchmark_wave_drafts: "-",
+  benchmark_wave_reports: "-",
+  benchmark_waves: "-",
+  // ---- partial grants (append-only / read-write mixes the product surface earned) -----------------
+  account_exports: "siu",
+  admin_actions: "si", // the user-triggered support-access grant writes the audit row (settings-routes)
+  ai_use_additions: "si",
+  analytics_events: "si",
+  auto_reload_events: "si",
+  checkout_sessions: "siu",
+  email_action_tokens: "siu",
+  notification_deliveries: "siu",
+  obligation_findings: "sid",
+  obligation_transitions: "si",
+  run_events_internal: "sid",
+  support_access_grants: "siu",
+  support_access_log: "si",
+  team_waitlist: "si",
+  timeline_events: "si",
+  trial_spend_daily: "siu",
+  trial_unlock_checks: "si",
+  // ---- full DML (the ordinary user-serving surface) ------------------------------------------------
+  access_log: "siud",
+  account: "siud",
+  agent_instances: "siud",
+  agent_types: "siud",
+  artifact_versions: "siud",
+  artifacts: "siud",
+  billing_accounts: "siud",
+  claim_sources: "siud",
+  claims: "siud",
+  connections: "siud",
+  correspondence_items: "siud",
+  credit_balances: "siud",
+  credit_ledger: "siud",
+  decision_requests: "siud",
+  decisions: "siud",
+  device: "siud",
+  discovered_items: "siud",
+  dispositions: "siud",
+  drafts: "siud",
+  estimate_cache: "siud",
+  fetch_log: "siud",
+  figure_versions: "siud",
+  figures: "siud",
+  findings: "siud",
+  gates: "siud",
+  guidance: "siud",
+  inbox_items: "siud",
+  invite_redemptions: "siud",
+  invites: "siud",
+  live_docs: "siud",
+  notification_devices: "siud",
+  notification_prefs: "siud",
+  persona_build_notes: "siud",
+  persona_members: "siud",
+  persona_profiles: "siud",
+  personas: "siud",
+  profile_corrections: "siud",
+  project_members: "siud",
+  project_search_docs: "siud",
+  projects: "siud",
+  protocols: "siud",
+  provenance_maps: "siud",
+  restore_points: "siud",
+  revision_obligations: "siud",
+  run_event_seq: "siud",
+  run_events: "siud",
+  run_idempotency: "siud",
+  run_mounts: "siud",
+  runs: "siud",
+  sample_versions: "siud",
+  session: "siud",
+  steps: "siud",
+  subagent_launches: "siud",
+  subscriptions: "siud",
+  threads: "siud",
+  trial_entitlements: "siud",
+  usage_records: "siud",
+  user: "siud",
+  verification: "siud",
+  working_copies: "siud",
+  workspace_members: "siud",
+  workspaces: "siud",
+};
+
+const PRIVILEGE_OF: Record<string, string> = { s: "select", i: "insert", u: "update", d: "delete" };
+
+describe("the user-role split (SEC.1; REQ-SPEC-30; ADR-017/018)", () => {
+  it("rhema_app_login exists as NOLOGIN NOBYPASSRLS NOSUPERUSER, a member of rhema_app only", async () => {
+    const role = (
+      await pg.query(
+        `select rolsuper, rolbypassrls, rolinherit, rolcreatedb, rolcreaterole, rolreplication, rolcanlogin
+           from pg_roles where rolname = 'rhema_app_login'`,
+      )
+    ).rows[0] as
+      | {
+          rolsuper: boolean; rolbypassrls: boolean; rolinherit: boolean;
+          rolcreatedb: boolean; rolcreaterole: boolean; rolreplication: boolean; rolcanlogin: boolean;
+        }
+      | undefined;
+    expect(role, "rhema_app_login missing — 0045 did not run").toBeDefined();
+    expect(role!.rolsuper).toBe(false);
+    expect(role!.rolbypassrls).toBe(false);
+    expect(role!.rolcreatedb).toBe(false);
+    expect(role!.rolcreaterole).toBe(false);
+    expect(role!.rolreplication).toBe(false);
+    // NOLOGIN until the Stage-B window runs ALTER ROLE … LOGIN PASSWORD (the gated half of SEC.1).
+    expect(role!.rolcanlogin).toBe(false);
+    // membership: IN rhema_app, and NEVER postgres/cloudsqlsuperuser — the AC's pg_has_role asserts
+    // (via pg_auth_members so a parent role absent on this engine — cloudsqlsuperuser is Cloud-SQL-only
+    // — reads false rather than erroring).
+    const memberOf = async (parent: string) =>
+      (
+        await pg.query(
+          `select exists(select 1 from pg_auth_members am
+                           join pg_roles m on m.oid = am.member join pg_roles p on p.oid = am.roleid
+                          where m.rolname = 'rhema_app_login' and p.rolname = $1) ok`,
+          [parent],
+        )
+      ).rows[0] as { ok: boolean };
+    expect(await memberOf("rhema_app")).toEqual({ ok: true });
+    for (const parent of ["postgres", "cloudsqlsuperuser"]) {
+      expect(await memberOf(parent), `rhema_app_login must not inherit ${parent}`).toEqual({
+        ok: false,
+      });
+    }
+    // the split's whole point: the other application roles never carry BYPASSRLS either
+    // (rhema_collab named by the ticket; rhema_app itself stays NOLOGIN — logins go through the child).
+    const roles = (
+      await pg.query(
+        `select rolname, rolbypassrls, rolcanlogin, rolsuper from pg_roles
+          where rolname in ('rhema_app','rhema_collab','rhema_harvester','rhema_app_login') order by 1`,
+      )
+    ).rows as { rolname: string; rolbypassrls: boolean; rolcanlogin: boolean; rolsuper: boolean }[];
+    for (const r of roles) {
+      expect(r.rolbypassrls, `${r.rolname} must never bypass RLS`).toBe(false);
+      expect(r.rolsuper, `${r.rolname} must not be superuser`).toBe(false);
+    }
+    expect(roles.find((r) => r.rolname === "rhema_app")!.rolcanlogin).toBe(false);
+    expect(roles.find((r) => r.rolname === "rhema_collab")!.rolcanlogin).toBe(false);
+    expect(roles.find((r) => r.rolname === "rhema_harvester")!.rolcanlogin).toBe(false);
+  });
+
+  it("every table's rhema_app privilege set matches the pinned grant decision exactly", async () => {
+    const tables = (await catalog()).map((t) => t.relname);
+    const problems: string[] = [];
+    for (const t of tables) {
+      const pin = USER_ROLE_GRANTS[t];
+      if (pin === undefined) {
+        problems.push(`${t}: no user-role grant decision — add one to USER_ROLE_GRANTS (0045 census)`);
+        continue;
+      }
+      for (const [letter, priv] of Object.entries(PRIVILEGE_OF)) {
+        const has = (
+          await pg.query(`select has_table_privilege('rhema_app', $1, $2) ok`, [
+            `public.${t}`,
+            priv,
+          ])
+        ).rows[0] as { ok: boolean };
+        const want = pin.includes(letter);
+        if (has.ok !== want) {
+          problems.push(
+            `${t}: ${priv} ${has.ok ? "granted but" : "NOT granted —"} pinned '${pin}' — ` +
+              (has.ok
+                ? "revoke it or update the pin (was this grant deliberate?)"
+                : "grant it in a migration or update the pin"),
+          );
+        }
+      }
+    }
+    // and nothing pinned is stale — a renamed/dropped table surfaces here.
+    const live = new Set(tables);
+    for (const pinned of Object.keys(USER_ROLE_GRANTS)) {
+      if (!live.has(pinned)) problems.push(`${pinned}: pinned in USER_ROLE_GRANTS but absent from the schema`);
+    }
+    expect(problems).toEqual([]);
   });
 });

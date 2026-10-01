@@ -37,6 +37,8 @@ export default tseslint.config(
       "**/*.tsbuildinfo",
       "docs/**",
       ".agents/**",
+      // Operator/one-off scratch scripts (gitignored) — never part of the lint graph.
+      "**/.scratch/**",
       // Vendored proprietary bundles (e.g. apps/run-task/vendor/claude-agent-sdk) are gitignored, copied into
       // the image verbatim, and never part of the lint graph — a fresh CI checkout has no vendor dir at all.
       "**/vendor/**",
@@ -62,6 +64,9 @@ export default tseslint.config(
       ],
       // REQ-DATA-4 / REQ-ARCH-25: the tenant is set only via the withTenant wrapper (set_config).
       "rhema/no-raw-set-tenant": "error",
+      // REQ-SPEC-30 (SEC.1): the elevated/system-pool seams live behind the audited allowlist in
+      // tools/system-pool-boundary.json — user-facing modules may not reference them.
+      "rhema/no-system-pool-in-user-route": "error",
       // REQ-GROWTH-16: <RunButton> requires an `estimate` prop (a run is never launched without a shown estimate).
       "rhema/require-estimate-prop": "error",
       // Underscore-prefixed args/vars are intentional placeholders (skeleton stubs, unimplemented seams).

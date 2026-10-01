@@ -9,5 +9,8 @@
     "@pulumi/pulumi": "3.261.0",
     "@types/node": "^22.7.0",
     "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@pulumi/random": "^4.18.4"
   }
 }

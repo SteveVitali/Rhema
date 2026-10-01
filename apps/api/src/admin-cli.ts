@@ -328,19 +328,21 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
   }
 }
 
-/** The live entrypoint: `node dist/admin-cli.js <verb> …` with DATABASE_URL + RHEMA_OPERATOR_ID. */
+/** The live entrypoint: `node dist/admin-cli.js <verb> …` with SYSTEM_DATABASE_URL + RHEMA_OPERATOR_ID. */
 export async function main(): Promise<void> {
   const operatorId = process.env.RHEMA_OPERATOR_ID;
-  const databaseUrl = process.env.DATABASE_URL;
+  // SEC.1 — the admin CLI is a SYSTEM-tier tool (cross-tenant support access, deployments, analytics
+  // materialization): it authenticates on the elevated DSN, never the user-serving `DATABASE_URL`.
+  const databaseUrl = process.env.SYSTEM_DATABASE_URL;
   if (!operatorId || !databaseUrl) {
-    console.error("rhema admin requires RHEMA_OPERATOR_ID (the audited actor) and DATABASE_URL");
+    console.error("rhema admin requires RHEMA_OPERATOR_ID (the audited actor) and SYSTEM_DATABASE_URL");
     process.exit(2);
   }
   const pool = new pg.Pool({ connectionString: databaseUrl });
   const systemExec: SqlClient = {
     query: (sql, params) => pool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
-  // pg-boss over the same DATABASE_URL — only `reinstate` sends (the withheld-delivery re-drive).
+  // pg-boss over the same SYSTEM_DATABASE_URL — only `reinstate` sends (the withheld-delivery re-drive).
   const boss = new PgBoss(databaseUrl);
   boss.on("error", (err: unknown) => console.error("[admin] pg-boss error:", err instanceof Error ? err.message : err));
   await boss.start();
