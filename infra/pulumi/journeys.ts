@@ -12,7 +12,8 @@ import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
 
 export interface JourneysArgs {
-  readonly project: pulumi.Input<string>;
+  /** the concrete GCP project id (`rhema-507501`) — `import:` ids need plain strings, not Outputs. */
+  readonly project: string;
   /** the GitHub repo the CI WIF principalSet is scoped to (`<org>/<repo>`). */
   readonly ciRepository: string;
 }
@@ -27,18 +28,19 @@ export function createJourneys(args: JourneysArgs): void {
         "Keyless Gmail-DWD reader for the browser-journey harness: signJwt only; no exported key ever.",
     },
     {
-      import: pulumi.interpolate`projects/${args.project}/serviceAccounts/rhema-journeys@${args.project}.iam.gserviceaccount.com`,
+      import: `projects/${args.project}/serviceAccounts/rhema-journeys@${args.project}.iam.gserviceaccount.com`,
     },
-  );
-
-  new gcp.projects.Service(
-    "journey-gmail-api",
-    { service: "gmail.googleapis.com", disableOnDestroy: false },
-    { import: pulumi.interpolate`projects/${args.project}/services/gmail.googleapis.com` },
   );
 
   // The CI principal: github-pool's repo-attribute principalSet resolves the project NUMBER lazily.
   const proj = gcp.organizations.getProjectOutput({ projectId: args.project });
+  // gmail.googleapis.com was enabled by hand 2026-09-30. Service create on an already-enabled API is
+  // an idempotent no-op (services.enable returns success), so the first `up` adopts it into state
+  // without an import id; disableOnDestroy protects teardown either way.
+  new gcp.projects.Service(
+    "journey-gmail-api",
+    { service: "gmail.googleapis.com", disableOnDestroy: false },
+  );
   new gcp.serviceaccount.IAMMember("ci-journeys-token-creator", {
     serviceAccountId: journeysSa.name,
     role: "roles/iam.serviceAccountTokenCreator",

@@ -426,6 +426,7 @@ export async function startWorker(): Promise<void> {
     ACCOUNT_EXPORT_QUEUE, // P1.18 — the whole-account zip build + emailed 7-day link (REQ-ACCT-3)
     ACCOUNT_HARD_DELETE_JOB, // the api enqueues at the deletion grace end (P1.20)
     PROJECT_PURGE_JOB, // the api enqueues at the tombstone's +30d (D-P1.04-2)
+    TEST_TENANT_PURGE_JOB, // JOURNEY.1 — hourly flagged-tenant sweep (createQueue precedes work/send/schedule)
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
