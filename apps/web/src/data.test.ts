@@ -206,3 +206,62 @@ describe("apiDataSource import — presign → PUT → preview → create (PRB.2
     ).rejects.toBeInstanceOf(ApiError);
   });
 });
+
+describe("SEC.2 — apiDataSource.signup carries the trusted client-IP stamp (ADR-040)", () => {
+  it("sends the stamped headers and never leaks clientIp into the wire body", async () => {
+    const seen: { url: string; init: RequestInit }[] = [];
+    const ds = apiDataSource(
+      "http://api.local",
+      fakeFetch((url, init) => {
+        seen.push({ url, init });
+        return new Response(JSON.stringify({ ok: true, created: true }), { status: 201 });
+      }),
+      async (ip) => ({ "x-rhema-client-ip": ip, "x-rhema-internal-token": "tok_abc" }),
+    );
+    const out = await ds.signup({ email: "a@b.com", code: "GOOD", method: "magic_link", clientIp: "198.51.100.7" });
+    expect(out).toEqual({ ok: true, created: true });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.url).toBe("http://api.local/signup");
+    const h = seen[0]!.init.headers as Record<string, string>;
+    expect(h["x-rhema-client-ip"]).toBe("198.51.100.7");
+    expect(h["x-rhema-internal-token"]).toBe("tok_abc");
+    expect(JSON.parse(seen[0]!.init.body as string)).toEqual({
+      email: "a@b.com",
+      code: "GOOD",
+      method: "magic_link",
+    });
+  });
+
+  it("no clientIp ⇒ no stamp call, no internal headers on the wire", async () => {
+    const seen: { url: string; init: RequestInit }[] = [];
+    let stamped = 0;
+    const ds = apiDataSource(
+      "http://api.local",
+      fakeFetch((url, init) => {
+        seen.push({ url, init });
+        return new Response(JSON.stringify({ ok: true, created: false }), { status: 200 });
+      }),
+      async () => {
+        stamped++;
+        return { "x-rhema-client-ip": "unused" };
+      },
+    );
+    await ds.signup({ email: "a@b.com" });
+    expect(stamped).toBe(0);
+    const h = seen[0]!.init.headers as Record<string, string>;
+    expect(h["x-rhema-client-ip"]).toBeUndefined();
+    expect(h["x-rhema-internal-token"]).toBeUndefined();
+  });
+
+  it("an api 429 surfaces as `rate_limited` data — never a thrown ApiError", async () => {
+    const ds = apiDataSource(
+      "http://api.local",
+      fakeFetch(() => new Response(JSON.stringify({ error: "rate_limited" }), { status: 429 })),
+    );
+    await expect(ds.signup({ email: "a@b.com" })).resolves.toEqual({
+      ok: false,
+      status: 429,
+      error: "rate_limited",
+    });
+  });
+});

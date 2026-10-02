@@ -331,6 +331,28 @@ export async function fetchGceMetadataIdToken(
   return idToken;
 }
 
+/** GCE/Cloud Run metadata instance-id endpoint (the serving instance's stable id). */
+export const GCE_METADATA_INSTANCE_ID_URL =
+  "http://metadata.google.internal/computeMetadata/v1/instance/id";
+
+/**
+ * SEC.2 (Stage-B evidence) — the serving Cloud Run instance's metadata id, so a write-free live leg
+ * can record WHICH instances served a request (`x-rhema-instance`). Resolves `undefined` off-GCP —
+ * the caller's fallback (a boot UUID) still discriminates instances for the same purpose.
+ */
+export async function fetchGceMetadataInstanceId(
+  fetchImpl: TextFetchLike = fetch as unknown as TextFetchLike,
+): Promise<string | undefined> {
+  try {
+    const res = await fetchImpl(GCE_METADATA_INSTANCE_ID_URL, { headers: { "Metadata-Flavor": "Google" } });
+    if (!res.ok) return undefined;
+    const id = (await res.text()).trim();
+    return /^[0-9]+$/.test(id) ? `cr-${id}` : undefined;
+  } catch {
+    return undefined; // no metadata server (local dev) — never fail boot over provenance
+  }
+}
+
 /** The minimal `@kubernetes/client-node` surface the metadata launcher uses (the real module satisfies it). */
 export interface KubeClientModule {
   KubeConfig: new () => {

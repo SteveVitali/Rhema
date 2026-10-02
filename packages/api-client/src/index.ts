@@ -2571,8 +2571,9 @@ export interface ApiClient {
    * PRB.13 — admit + provision an account through `POST /signup` (REQ-BETA-19 amended 2026-09-16): in
    * `invite` mode a valid code is required and consumed at creation; in `open` mode the code is optional.
    * Expected refusals resolve as `{ok:false, error}` — the same data shape `checkInvite` returns.
+   * SEC.2 — `init.headers` carries the web's trusted client-IP stamp (ADR-040).
    */
-  signup(req: SignupRequestDto): Promise<SignupResultDto>;
+  signup(req: SignupRequestDto, init?: RequestInitLite): Promise<SignupResultDto>;
   /** The stateless, cached estimate (REQ-SPEC-16) — creates no run row and emits `run.estimated`. */
   estimate(projectId: string, req: EstimateRequestDto, init?: RequestInitLite): Promise<EstimateDto>;
   /** The sheet's Run click — the ONLY run creator (REQ-CHAT-25); the client-minted idempotency key is in the body. */
@@ -3305,11 +3306,15 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         body: JSON.stringify({ code, email }),
       });
     },
-    async signup(req: SignupRequestDto): Promise<SignupResultDto> {
+    async signup(req: SignupRequestDto, init?: RequestInitLite): Promise<SignupResultDto> {
       try {
         const body = await json<{ ok: true; created: boolean }>("/signup", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            // SEC.2 — the web's trusted client-IP stamp rides init.headers (ADR-040).
+            ...(init?.headers as Record<string, string> | undefined),
+          },
           body: JSON.stringify(req),
         });
         return { ok: true, created: body.created === true };

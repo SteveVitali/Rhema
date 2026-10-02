@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { ApiError, type ProjectRow } from "@rhema/api-client";
-import { createIpEmailThrottle } from "@rhema/contracts";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
 import type { DataSource, DossierData } from "./data.js";
 
@@ -240,7 +239,8 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     const app = createWebApp(makeDeps({ signupMode: "open", beginAuth }, undefined, signup));
     const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
     expect(res.status).toBe(200);
-    expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link" }); // no code field
+    // no code field; SEC.2 — the resolved browser IP rides the request (headerless test ⇒ "unknown").
+    expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link", clientIp: "unknown" });
     expect(beginAuth).toHaveBeenCalledWith("magic_link", { code: "", email: "a@b.com" }, expect.anything());
     expect(await res.text()).toContain("Check your email");
   });
@@ -285,38 +285,49 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(html).toContain('href="/signup'); // the funnel's CTA — open mode needs no code
   });
 
-  it("magic-link requests throttle per IP — the send is refused 429, never silent", async () => {
+  // SEC.2 (ADR-041) — the web-side magic-link limiter is RETIRED: the api owns the shared throttle, so
+  // the web never refuses a send locally. What remains here is the refusal MAPPING — the api's
+  // `rate_limited` (whether it arrives from POST /signup or the proxied sign-in call) renders the same
+  // 429 page the old limiter did; a refusal is never a false "sent".
+  it("the api's send-throttle refusal (beginAuth error) renders the same 429 copy", async () => {
     const app = createWebApp(
       makeDeps(
-        { signupMode: "open", magicLinkThrottle: createIpEmailThrottle({ perIp: 2, perEmail: 100, windowMs: 60_000 }) },
+        { signupMode: "open", beginAuth: async () => ({ error: "rate_limited" }) as AuthOutcome },
         undefined,
         openSignup,
       ),
     );
-    const post = () => app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
-    expect((await post()).status).toBe(200);
-    expect((await post()).status).toBe(200);
-    const res = await post();
+    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
     expect(res.status).toBe(429);
     expect(await res.text()).toContain("Too many attempts");
   });
 
-  it("magic-link requests throttle per email across IPs", async () => {
+  it("a transient auth-call failure is 'unavailable' copy, never a false sent state", async () => {
     const app = createWebApp(
       makeDeps(
-        { signupMode: "open", magicLinkThrottle: createIpEmailThrottle({ perIp: 100, perEmail: 1, windowMs: 60_000 }) },
+        { signupMode: "open", beginAuth: async () => ({ error: "auth_unavailable" }) as AuthOutcome },
         undefined,
         openSignup,
       ),
     );
-    const post = (ip: string) =>
-      app.request("/login", {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": ip },
-        body: new URLSearchParams({ email: "a@b.com", method: "magic_link" }).toString(),
-      });
-    expect((await post("1.1.1.1")).status).toBe(200);
-    expect((await post("2.2.2.2")).status).toBe(429); // same email, fresh IP ⇒ still blocked
+    const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
+    expect(res.status).toBe(400);
+    const html = await res.text();
+    expect(html).not.toContain("Check your email");
+    expect(html).toContain("available right now"); // "Signup isn't available right now…" (apostrophe escaped)
+  });
+
+  it("the resolved browser IP reaches the api admission call (penultimate XFF hop — never the forged first)", async () => {
+    const signup = vi.fn(openSignup);
+    const app = createWebApp(makeDeps({ signupMode: "open" }, undefined, signup));
+    // LB chain shape: <caller-supplied…>, <real client>, <lb frontend> — the forged first hop must
+    // never reach the api; the penultimate (LB-appended) hop is the real client.
+    await app.request("/login", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded", "x-forwarded-for": "6.6.6.6, 198.51.100.7, 35.0.0.1" },
+      body: new URLSearchParams({ email: "a@b.com", method: "magic_link" }).toString(),
+    });
+    expect(signup).toHaveBeenCalledWith({ email: "a@b.com", method: "magic_link", clientIp: "198.51.100.7" });
   });
 
   it("an api-side 429 (account-creation throttle) propagates as the rate-limit copy", async () => {
@@ -325,6 +336,42 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     const res = await app.request("/login", { method: "POST", ...form({ email: "a@b.com", method: "magic_link" }) });
     expect(res.status).toBe(429);
     expect(await res.text()).toContain("Too many attempts");
+  });
+
+  // SEC.2 — a verify/callback refusal lands on GET /login?error=<code> (the api's errorCallbackURL
+  // channel); the bare form would otherwise be a silent failure. Admission codes map to their copy;
+  // better-auth protocol codes get a truthful generic, never the invite-invalid line.
+  it("GET /login?error=invite_required renders the invite copy at 400", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }));
+    const res = await app.request("/login?error=invite_required");
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("An invitation code is required");
+  });
+
+  it("GET /login?error=rate_limited renders the throttle copy; INVALID_TOKEN gets the link copy", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }));
+    const limited = await app.request("/login?error=rate_limited");
+    expect(await limited.text()).toContain("Too many attempts");
+    const stale = await app.request("/login?error=INVALID_TOKEN");
+    expect(stale.status).toBe(400);
+    expect(await stale.text()).toContain("no longer valid");
+  });
+
+  it("GET /login?error=<oauth protocol code> renders the generic line, not invite-invalid copy", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }));
+    const res = await app.request("/login?error=unable_to_get_user_info");
+    expect(res.status).toBe(400);
+    const html = await res.text();
+    expect(html).toContain("available right now");
+    expect(html).not.toContain("code isn");
+  });
+
+  it("GET /login stays clean at 200 without the param", async () => {
+    const app = createWebApp(makeDeps({ signupMode: "open" }));
+    const res = await app.request("/login");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).not.toContain("Too many attempts");
   });
 
   it("a run-sheet 403 with error=email_unverified renders the verification notice (not the suspension one)", async () => {
@@ -346,6 +393,46 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(html).not.toContain("payment dispute");
     expect(html).not.toContain("Your run has started");
   });
+});
+
+// SEC.2 (PR-U1 form half) — the DOM-order half of N2.invite, proven deterministically: under open
+// mode email leads both forms and the invite field lives inside a closed <details>; invite mode
+// keeps the code first + required. Playwright's live pass is the journey; this pins the markup.
+describe("SEC.2 — form order: email leads in open mode on BOTH forms", () => {
+  for (const path of ["/signup", "/login"]) {
+    it(`open mode ${path}: email precedes code, and the code input sits inside <details>`, async () => {
+      const app = createWebApp(makeDeps({ signupMode: "open" }));
+      const res = await app.request(path);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      const emailAt = html.indexOf('name="email"');
+      const codeAt = html.indexOf('name="code"');
+      const detailsAt = html.indexOf("<details");
+      const detailsEnd = html.indexOf("</details>");
+      expect(emailAt).toBeGreaterThanOrEqual(0);
+      expect(codeAt).toBeGreaterThanOrEqual(0);
+      expect(emailAt).toBeLessThan(codeAt); // the self-serve path leads
+      expect(emailAt).toBeLessThan(detailsAt); // email is never inside the disclosure
+      expect(codeAt).toBeGreaterThan(detailsAt);
+      expect(codeAt).toBeLessThan(detailsEnd); // the code input lives inside the closed details
+    });
+
+    it(`invite mode ${path}: the code is required, first, and bare (no disclosure)`, async () => {
+      const app = createWebApp(makeDeps({ signupMode: "invite" }));
+      const res = await app.request(path);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      const formAt = html.indexOf(`action="${path}"`);
+      expect(formAt).toBeGreaterThanOrEqual(0);
+      const body = html.slice(formAt);
+      const codeAt = body.indexOf('name="code" required');
+      const emailAt = body.indexOf('name="email"');
+      expect(codeAt).toBeGreaterThanOrEqual(0); // required attr on the code input
+      expect(emailAt).toBeGreaterThanOrEqual(0);
+      expect(codeAt).toBeLessThan(emailAt); // invite-first ordering
+      expect(body.slice(0, codeAt)).not.toContain("<details"); // bare — not behind a disclosure
+    });
+  }
 });
 
 describe("AC2 — project rows derive from the state function", () => {

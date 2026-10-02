@@ -3,10 +3,12 @@
 // scoring; the ticket's abuse control is deliberately this and only this. The clock is injected so the
 // window boundary is deterministic under test.
 //
-// In-memory by design: the beta runs a handful of Cloud Run instances and the limiter is per-instance
-// (an attacker behind N instances gets N× the window — accepted for beta; a shared store is D-PRB.13-1,
-// scheduled with the prod bring-up). The limiter is fail-open on its own internals (a buggy limiter must
-// not take signup down) but the ROUTES treat `allowed:false` as a hard 429.
+// SEC.2 — the store is now shared: `attempt` is ASYNC and counts through a `ThrottleStore` seam so every
+// Cloud Run instance counts against ONE Memorystore Redis (D-PRB.13-1 closed; ADR-039). The in-memory
+// implementation below is kept for tests and for the documented degraded path (a Redis outage fails
+// over to per-instance limits — never unlimited, never fail-closed; ADR-039).
+
+import { sha256Hex } from "./sha256.js";
 
 export interface ThrottleVerdict {
   readonly allowed: boolean;
@@ -19,8 +21,9 @@ export interface IpEmailThrottle {
    * Record one attempt under (ip, email). `allowed:false` when EITHER dimension is over its limit for the
    * current window; `retryAfterSec` is the time until the blocking window resets. Every attempt counts —
    * blocked attempts do not extend the window (fixed windows reset on schedule, not on last-hit).
+   * ASYNC (SEC.2): the counting backend may be a remote store.
    */
-  attempt(ip: string, email?: string): ThrottleVerdict;
+  attempt(ip: string, email?: string): Promise<ThrottleVerdict>;
 }
 
 export interface IpEmailThrottleOptions {
@@ -32,6 +35,8 @@ export interface IpEmailThrottleOptions {
   readonly windowMs: number;
   /** Injected clock (default `Date.now`) so tests control the window boundary. */
   readonly now?: () => number;
+  /** SEC.2 — Redis key namespace (`rl` default); the deploy binds `rl:signup` / `rl:auth`. */
+  readonly keyPrefix?: string;
 }
 
 export function createIpEmailThrottle(opts: IpEmailThrottleOptions): IpEmailThrottle {
@@ -60,13 +65,141 @@ export function createIpEmailThrottle(opts: IpEmailThrottleOptions): IpEmailThro
   }
 
   return {
-    attempt(ip: string, email?: string): ThrottleVerdict {
-      const ipKey = `ip:${ip.trim() || "unknown"}`;
-      const emailKey = email?.trim() ? `em:${email.trim().toLowerCase()}` : undefined;
-      const ipVerdict = hit(ipKey);
-      const emailVerdict = emailKey ? hit(emailKey) : { allowed: true };
-      if (!ipVerdict.allowed) return ipVerdict;
-      return emailVerdict;
+    async attempt(ip, email) {
+      const ipHit = hit(`ip:${ip.trim() || "unknown"}`);
+      if (!email) return ipHit;
+      const emHit = hit(`em:${email.trim().toLowerCase()}`);
+      // Either dimension over → blocked; the retry hint is the SOONER-resetting blocking window.
+      if (!ipHit.allowed && !emHit.allowed)
+        return { allowed: false, retryAfterSec: Math.min(ipHit.retryAfterSec!, emHit.retryAfterSec!) };
+      if (!ipHit.allowed) return ipHit;
+      return emHit;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- shared store (SEC.2, ADR-039)
+
+/**
+ * The counter seam a shared throttle counts through. ONE round-trip-shaped operation: atomically
+ * increment `key` and — when this increment created the key — set its TTL to `windowMs` (an anchored
+ * fixed window, the same semantics the in-memory impl uses). Returns the post-increment count and the
+ * remaining TTL. Implementations THROW on backend failure; the caller's degraded policy owns fallback.
+ * `key` arrives already hashed (the throttle hashes identifiers — keys never carry a raw IP/email,
+ * invariant #10).
+ */
+export interface ThrottleStore {
+  incrWithTtl(key: string, windowMs: number): Promise<{ count: number; ttlMs: number }>;
+}
+
+/**
+ * The deterministic in-process `ThrottleStore` — the "shared-store fake" the spec calls for when no
+ * Redis is configured in the test env. Two throttle instances over ONE MemoryThrottleStore share the
+ * count, exactly like two Cloud Run instances over one Redis; handing each its own store reproduces
+ * the pre-SEC.2 per-instance hole (the test that fails when the shared store is removed).
+ */
+export function createMemoryThrottleStore(now: () => number = Date.now): ThrottleStore {
+  const keys = new Map<string, { count: number; expiresAt: number }>();
+  return {
+    async incrWithTtl(key, windowMs) {
+      const t = now();
+      let k = keys.get(key);
+      if (!k || k.expiresAt <= t) {
+        k = { count: 0, expiresAt: t + windowMs };
+        keys.set(key, k);
+      }
+      k.count += 1;
+      return { count: k.count, ttlMs: Math.max(0, k.expiresAt - t) };
+    },
+  };
+}
+
+/**
+ * A Redis `ThrottleStore` (INCR + PEXPIRE + PTTL as one EVAL — atomic, one round trip, and the
+ * conditional-expire closes the crash-between-INCR-and-PEXPIRE forever-key hole). The client seam is
+ * ioredis-shaped (`eval(script, numKeys, key, arg)`) but structural — the api binds the real client.
+ */
+export interface RedisEvalClient {
+  eval(script: string, numKeys: number, ...args: (string | number)[]): Promise<unknown>;
+}
+
+const INCR_WINDOW_LUA = `local n = redis.call("INCR", KEYS[1])
+local ttl = redis.call("PTTL", KEYS[1])
+if ttl < 0 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+  ttl = tonumber(ARGV[1])
+end
+return {n, ttl}`;
+
+export function createRedisThrottleStore(client: RedisEvalClient): ThrottleStore {
+  return {
+    async incrWithTtl(key, windowMs) {
+      const res = (await client.eval(INCR_WINDOW_LUA, 1, key, windowMs)) as [number, number];
+      return { count: Number(res[0]), ttlMs: Number(res[1]) };
+    },
+  };
+}
+
+/** sha256(ip|normalized-email), truncated — throttle keys carry no raw identifiers (invariant #10). */
+function keyFor(prefix: string, dim: "ip" | "em", value: string): string {
+  const id = dim === "em" ? value.trim().toLowerCase() : value;
+  return `${prefix}:${dim}:${sha256Hex(id).slice(0, 24)}`;
+}
+
+/**
+ * The shared-store throttle: same dual-dimension fixed-window verdicts as `createIpEmailThrottle`,
+ * counted through `store`. Keys are `keyPrefix:ip|em:sha256(id)` so the underlying store never sees a
+ * raw identifier. Backend failures PROPAGATE — wrap with `createFallbackIpEmailThrottle` at the
+ * composition boundary.
+ */
+export function createSharedIpEmailThrottle(
+  store: ThrottleStore,
+  opts: IpEmailThrottleOptions,
+): IpEmailThrottle {
+  const prefix = opts.keyPrefix ?? "rl";
+  async function hit(dim: "ip" | "em", id: string): Promise<ThrottleVerdict> {
+    const { count, ttlMs } = await store.incrWithTtl(keyFor(prefix, dim, id), opts.windowMs);
+    const max = dim === "ip" ? opts.perIp : opts.perEmail;
+    if (count > max) return { allowed: false, retryAfterSec: Math.max(1, Math.ceil(ttlMs / 1000)) };
+    return { allowed: true };
+  }
+  return {
+    async attempt(ip, email) {
+      const ipHit = await hit("ip", ip.trim() || "unknown");
+      if (!email) return ipHit;
+      const emHit = await hit("em", email);
+      if (!ipHit.allowed && !emHit.allowed)
+        return { allowed: false, retryAfterSec: Math.min(ipHit.retryAfterSec!, emHit.retryAfterSec!) };
+      if (!ipHit.allowed) return ipHit;
+      return emHit;
+    },
+  };
+}
+
+/**
+ * ADR-039 — the Redis-failure posture, expressed in code: try the shared counter; on ANY backend
+ * failure fall back to `fallback` (a per-instance in-memory limiter over the same options) — degraded
+ * per-instance limits, NEVER unlimited and NEVER fail-closed. `onDegraded` fires at most once per
+ * process (the "log once per instance" rule — the line carries no email/IP, just the failure kind);
+ * the fallback persists for the instance's life once tripped (flapping back and forth would let a
+ * shaky backend reset the in-memory window repeatedly).
+ */
+export function createFallbackIpEmailThrottle(
+  shared: IpEmailThrottle,
+  fallback: IpEmailThrottle,
+  opts: { onDegraded?: (err: unknown) => void } = {},
+): IpEmailThrottle {
+  let degraded = false;
+  return {
+    async attempt(ip, email) {
+      if (degraded) return fallback.attempt(ip, email);
+      try {
+        return await shared.attempt(ip, email);
+      } catch (err) {
+        degraded = true;
+        opts.onDegraded?.(err);
+        return fallback.attempt(ip, email);
+      }
     },
   };
 }

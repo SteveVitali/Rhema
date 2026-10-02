@@ -252,11 +252,15 @@ export interface DataSource {
    * 2026-09-16). Invite mode requires `code`; open mode treats it as optional. The api owns admission —
    * invite consume happens there at creation; a returning account resolves `created:false`. Pre-auth: no
    * session is forwarded.
+   * SEC.2 (ADR-040) — `clientIp` is the resolved browser IP the live impl stamps into the trusted
+   * `x-rhema-client-ip` channel (verified OIDC token) so the api's shared throttle keys the REAL caller,
+   * not the web instance.
    */
   signup(req: {
     email: string;
     code?: string;
     method?: string;
+    clientIp?: string;
     /** P1.17 — the §15.3 funnel intent (entry + src + the device-local hold flag) persisted at
      *  account creation. */
     intent?: SignupIntent;
@@ -1027,8 +1031,17 @@ export function parseSseReplay(text: string): FeedEventRow[] {
   return out;
 }
 
-/** The production data source: the typed api client over the api base URL. */
-export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSource {
+/**
+ * The production data source: the typed api client over the api base URL.
+ * SEC.2 (ADR-040) — `stampInternal` mints the web→api trusted headers for a resolved browser IP
+ * (`x-rhema-client-ip` + the OIDC `x-rhema-internal-token`); unset ⇒ no stamp (local dev posture —
+ * the api keys the throttle on the penultimate XFF hop).
+ */
+export function apiDataSource(
+  baseUrl: string,
+  fetchImpl?: typeof fetch,
+  stampInternal?: (clientIp: string) => Promise<Record<string, string> | undefined>,
+): DataSource {
   const f = fetchImpl ?? fetch;
   const client = (session: SessionHeaders) =>
     createApiClient({ baseUrl, fetch: f, headers: session });
@@ -1075,7 +1088,15 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
     checkInvite: (code, email) =>
       createApiClient({ baseUrl, fetch: fetchImpl }).checkInvite(code, email),
     // PRB.13 — the api's account-creation path (pre-auth; the api throttles per source IP + email).
-    signup: (req) => createApiClient({ baseUrl, fetch: fetchImpl }).signup(req),
+    // SEC.2 — the resolved browser IP rides the trusted stamp (ADR-040), so a web-mediated signup lands
+    // in the REAL caller's bucket, not the web instance's shared one. `clientIp` is a transport key —
+    // it never enters the wire body.
+    signup: async (req) => {
+      const { clientIp, ...body } = req;
+      return createApiClient({ baseUrl, fetch: fetchImpl }).signup(body, {
+        headers: (clientIp && stampInternal ? await stampInternal(clientIp) : undefined) ?? {},
+      });
+    },
     // PRB.20 — the import golden path (D-PRB.02-1): preview = presign→PUT→convert Job→§5.3 payload;
     // create replays the same quarantine key into import/create (no second upload).
     previewImport: async (session, input) => {

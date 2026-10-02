@@ -117,21 +117,41 @@ const N2: StepFn = async (ctx) => {
   void email;
 };
 
-/** N2.invite (RED, SEC.2) — under open mode the invite field is not the first field. */
+/** N2.invite (RED→GREEN, SEC.2) — under open mode the invite field is not the first field on
+ *  EITHER form (`/signup` + `/login`): email leads, the code sits behind the "Have an invitation
+ *  code?" disclosure (a closed `<details>` hides its input from `input:visible`). */
 const N2_INVITE: StepFn = async (ctx) => {
   const { context, page } = await ctx.anon();
-  await gotoOk(page, `${ctx.webBaseUrl}/signup`);
-  const code = page.locator('form[action="/signup"] input[name="code"]');
-  if (await code.count()) {
+  for (const path of ["/signup", "/login"]) {
+    await gotoOk(page, `${ctx.webBaseUrl}${path}`);
+    const code = page.locator(`form[action="${path}"] input[name="code"]`);
+    if ((await code.count()) === 0) {
+      throw new Error(`${path} renders no invitation-code field at all`);
+    }
     const required = await code.first().getAttribute("required");
     if (required === null) {
-      // open mode — the email field must come first.
-      const first = page.locator('form[action="/signup"] input:visible').first();
+      // open mode — the email field must come first, and the code input must sit inside a
+      // (closed) <details> disclosure — never bare on the form.
+      const first = page.locator(`form[action="${path}"] input:visible`).first();
       const name = await first.getAttribute("name");
       if (name !== "email") {
         throw new Error(
-          `open-mode signup's first field is "${name}", not "email" (invite still first)`,
+          `open-mode ${path}'s first field is "${name}", not "email" (invite still first)`,
         );
+      }
+      const inDetails = await code.first().evaluate((el) => el.closest("details") !== null);
+      if (!inDetails) {
+        throw new Error(`open-mode ${path}'s invite field is not behind the disclosure`);
+      }
+    } else {
+      // invite mode — the code stays required, first, and visible.
+      if (!(await code.first().isVisible())) {
+        throw new Error(`invite-mode ${path}'s required code field is not visible`);
+      }
+      const first = page.locator(`form[action="${path}"] input:visible`).first();
+      const name = await first.getAttribute("name");
+      if (name !== "code") {
+        throw new Error(`invite-mode ${path}'s first field is "${name}", not "code"`);
       }
     }
   }

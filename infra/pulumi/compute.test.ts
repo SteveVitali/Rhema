@@ -52,3 +52,23 @@ describe("ECON.1 — the debit-mode flag is deploy config on BOTH consumers", ()
     expect(SRC.match(/\{ name: "DEBIT_MODE", value: cfg\.debitMode \}/g)).toHaveLength(2);
   });
 });
+
+describe("SEC.2 — the trusted client-IP channel is deploy config on BOTH ends (ADR-040)", () => {
+  it("the web mints for INTERNAL_AUTH_AUDIENCE and the api verifies it + pins the caller SA", () => {
+    // Both services must carry the SAME audience (the api origin) or the stamp never verifies; the
+    // api additionally pins `INTERNAL_CALLER_SA` so only the web runtime SA's tokens authorize the
+    // `x-rhema-client-ip` claim. All three are plain env strings — ambient OIDC, never a secret.
+    expect(SRC.match(/\{ name: "INTERNAL_AUTH_AUDIENCE", value: apiOrigin \}/g)).toHaveLength(2);
+    expect(SRC).toContain('{ name: "INTERNAL_CALLER_SA", value: iam.serviceAccounts["web"].email }');
+  });
+
+  it("prod web is LB-only ingress — the penultimate-XFF premise depends on it", () => {
+    // `forwardedClientIp` reads the SECOND-to-last XFF hop as the LB-attested client; that premise is
+    // true only when the LB is the sole entry path. A direct run.app hit appends just the client hop,
+    // so "penultimate" would be caller-controlled — and the web would stamp it through the trusted
+    // OIDC channel. Prod web therefore must NOT keep INGRESS_TRAFFIC_ALL; non-prod does (no public
+    // DNS fronts those stages' LBs).
+    expect(SRC).toContain('svc === "web" && cfg.kind !== "prod"');
+    expect(SRC).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
+  });
+});
