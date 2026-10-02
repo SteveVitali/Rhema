@@ -74,7 +74,10 @@ function cardRound(n: number): number {
   return Math.round(n / 10) * 10;
 }
 
-/** The low→high tier sweep for one shape — `null` when either endpoint is unpriced. */
+/** The low→high tier sweep for one shape — `null` when either endpoint is unpriced. The range
+ *  rounds OUTWARD (low floors, high ceils to the nearest 10): the printed range must always
+ *  contain the raw figures it brackets — a nearest-10 low could print ABOVE the true Base figure
+ *  (EST.1's N4 caught a live 3-credit leak: card "2,610–11,730" vs the sheet's real 2,607). */
 function tierRange(
   price: SurfacePricer | undefined,
   args: Omit<SurfaceEstimateArgs, "modelTier">,
@@ -82,7 +85,7 @@ function tierRange(
   const low = price?.estimate({ ...args, modelTier: "base" });
   const high = price?.estimate({ ...args, modelTier: "frontier" });
   if (low == null || high == null) return null;
-  return { low: cardRound(low), high: cardRound(high) };
+  return { low: Math.floor(low / 10) * 10, high: Math.ceil(high / 10) * 10 };
 }
 
 const STANDARD = "standard" as const;

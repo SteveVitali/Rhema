@@ -221,8 +221,10 @@ const N4: StepFn = async (ctx) => {
   const priced = cards.filter((card) => /credits/.test(card.text) && card.words > 0);
   if (priced.length === 0) throw new Error("no protocol-card estimates rendered");
 
-  // a real draft so the sheet + Timeline have something to price (≤300-word fixture).
-  const slug = await createScratchProject(page, ctx, "n4", PAID_FIXTURE);
+  // a real draft so the sheet + Timeline have something to price (≤300-word fixture). The draft
+  // entry is preview-first (pending → meta-refresh → preview → Create) — the synchronous
+  // scratch-entry helper can never land it, so this leg rides the real two-step ingest.
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("n4"), PAID_FIXTURE);
 
   // 2 — sheet ≡ card: the sheet priced at the card's own typical words must equal the card figure.
   for (const card of priced) {
@@ -252,19 +254,27 @@ const N4: StepFn = async (ctx) => {
   }
 
   // 4 — sheet ∈ pricing card's Review range at the card's labelled shape (Base leg exact ± rounding).
-  await gotoOk(page, `${ctx.webBaseUrl}/pricing`);
-  const costCards = await page.$$eval("[data-cost-card][data-words]", (els) =>
+  // The §15.2 cost cards live on the MARKETING page — /pricing redirects a signed-in session to
+  // /app, so this leg reads the page the way the new visitor sees it: an anonymous context.
+  const anon = await ctx.anon();
+  await gotoOk(anon.page, `${ctx.webBaseUrl}/pricing`);
+  const costCards = await anon.page.$$eval("[data-cost-card][data-words]", (els) =>
     els.map((el) => ({
       key: el.getAttribute("data-cost-card") ?? "?",
       words: Number(el.getAttribute("data-words") ?? "0"),
       claims: Number(el.getAttribute("data-claims") ?? "0"),
-      rows: [...el.querySelectorAll("dl div")].map((r) => r.textContent?.trim() ?? ""),
+      // dt/dd read separately — textContent concatenates them ("Review2,610…"), which breaks a
+      // ^Review\b match on the boundary between 'w' and a digit.
+      rows: [...el.querySelectorAll("dl div")].map((r) => ({
+        label: r.querySelector("dt")?.textContent?.trim() ?? "",
+        value: r.querySelector("dd")?.textContent?.trim() ?? "",
+      })),
     })),
   );
   const first = costCards.find((card) => card.words > 0);
   if (!first) throw new Error("no pricing cost cards rendered");
-  const reviewRow = first.rows.find((r) => /^Review\b/.test(r) && !/fact-check/.test(r));
-  const range = reviewRow ? /(\d[\d,]*)[–-](\d[\d,]*)\s*cr/.exec(reviewRow) : null;
+  const reviewRow = first.rows.find((r) => /^Review/.test(r.label) && !/fact-check/i.test(r.label));
+  const range = reviewRow ? /(\d[\d,]*)\s*[–-]\s*(\d[\d,]*)\s*cr/.exec(reviewRow.value) : null;
   if (!range) throw new Error(`pricing card ${first.key} renders no Review range`);
   const lo = Number(range[1]!.replace(/,/g, ""));
   const hi = Number(range[2]!.replace(/,/g, ""));
@@ -274,8 +284,10 @@ const N4: StepFn = async (ctx) => {
     slug,
     `words=${first.words}&claims=${first.claims}&rigor=standard&tier=base`,
   );
-  if (Math.abs(base.credits - lo) > 5) {
-    throw new Error(`sheet Base figure ${base.credits} ≠ pricing card ${first.key} low ${lo} (±5 rounding)`);
+  // The card's range rounds OUTWARD (low floors / high ceils to 10): the printed low IS
+  // floor(raw/10)·10 and the bracket always contains the sheet's figure.
+  if (Math.floor(base.credits / 10) * 10 !== lo) {
+    throw new Error(`sheet Base figure ${base.credits} floors to ${Math.floor(base.credits / 10) * 10}, not pricing card ${first.key} low ${lo}`);
   }
   if (!(lo <= base.credits && base.credits <= hi)) {
     throw new Error(`sheet figure ${base.credits} outside pricing card ${first.key} range ${lo}–${hi}`);

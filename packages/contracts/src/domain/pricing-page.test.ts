@@ -69,6 +69,10 @@ const PRICE = fixturePricer();
 // the literal assertions pin only the PUBLISHED constants' shape).
 
 const cardRound = (n: number) => Math.round(n / 10) * 10;
+// EST.1 (N4 live catch): a printed RANGE must round outward — the low floors, the high ceils —
+// so the card's bracket always contains the raw figure (a nearest-10 low can sit above it).
+const cardFloor = (n: number) => Math.floor(n / 10) * 10;
+const cardCeil = (n: number) => Math.ceil(n / 10) * 10;
 
 describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
   it("a Review's credits recompute from reading terms + per-verified-claim constants", () => {
@@ -89,6 +93,21 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
       for (const row of card.rows) {
         expect(row.range!.low).toBeLessThan(row.range!.high);
         expect(row.range!.low).toBeGreaterThan(0);
+      }
+      for (const row of card.rows.filter((r) => r.key !== "full_round")) {
+        // outward rounding: the printed bracket always CONTAINS the raw Base/Frontier endpoints.
+        const args = {
+          workflow: (row.key === "review_no_fact_check" ? "review" : row.key) as "draft",
+          rigor: "standard",
+          inputs: { words: card.words, claims: card.claims },
+          ...(row.key === "review_no_fact_check" ? { toggles: { fact_check: false } } : {}),
+        };
+        const baseRaw = PRICE.estimate({ ...args, modelTier: "base" })!;
+        const frontierRaw = PRICE.estimate({ ...args, modelTier: "frontier" })!;
+        expect(row.range!.low, `${card.key}/${row.key} low`).toBe(cardFloor(baseRaw));
+        expect(row.range!.low, `${card.key}/${row.key} low ≤ raw`).toBeLessThanOrEqual(baseRaw);
+        expect(row.range!.high, `${card.key}/${row.key} high`).toBe(cardCeil(frontierRaw));
+        expect(row.range!.high, `${card.key}/${row.key} high ≥ raw`).toBeGreaterThanOrEqual(frontierRaw);
       }
       // and the full-round row IS the per-tier sum, not a hand-typed total.
       expect(card.fullRoundByTier.base).toBe(
@@ -143,7 +162,9 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
     const vc = voiceProfileCard(PRICE);
     const t = PRICING.costCardTerms.voiceProfile;
     expect(vc.words).toBe(PRICING.costCardTerms.voiceCorpusWords);
-    expect(vc.range!.low).toBe(cardRound((t.intercept + t.perWord * vc.words) * PRICING.modelTierMultipliers.base));
+    const vcBase = (t.intercept + t.perWord * vc.words) * PRICING.modelTierMultipliers.base;
+    expect(vc.range!.low).toBe(cardFloor(vcBase));
+    expect(vc.range!.low).toBeLessThanOrEqual(vcBase);
 
     const qr = quickReviewLine(PRICE);
     expect(qr.wordCap).toBe(PRICING.costCardTerms.quickReview.wordCap);

@@ -51,7 +51,9 @@ function resolvedFor(workflow: "review" | "revise" | "draft" = "review") {
   return r;
 }
 
-const cardRound = (n: number) => Math.round(n / 10) * 10;
+// EST.1: the card's printed RANGE rounds outward — low floors, high ceils (the nearest-10 low could
+// otherwise print above the true Base figure, the leak N4 caught live on prod).
+const cardFloor = (n: number) => Math.floor(n / 10) * 10;
 
 describe("EST.1 — one estimate everywhere, over the wire (REQ-SPEC-32(b))", () => {
   it("GET /protocols: every card's figure IS surfaceEstimate at the caller's resolved rigor/tier", async () => {
@@ -169,6 +171,8 @@ describe("EST.1 — one estimate everywhere, over the wire (REQ-SPEC-32(b))", ()
     });
     const loBody = (await lo.json()) as { estimateCredits: number };
     const reviewRow = essay.rows.find((r) => r.key === "review")!;
-    expect(reviewRow.range!.low).toBe(cardRound(loBody.estimateCredits));
+    expect(reviewRow.range!.low).toBe(cardFloor(loBody.estimateCredits));
+    // and the printed bracket contains the raw figure — the AC N4 walks live.
+    expect(reviewRow.range!.low).toBeLessThanOrEqual(loBody.estimateCredits);
   });
 });
