@@ -13,7 +13,7 @@
 import * as Y from "yjs";
 import type { ContentStore, DeliveryEventAppender, SqlExecutor } from "@rhema/mirror";
 import { saveManualRevision } from "@rhema/mirror";
-import { docToCanonicalMarkdown } from "./ydoc.js";
+import { docToCanonicalMarkdown } from "@rhema/editor";
 import { draftLock } from "./auth.js";
 import type { CollabDb } from "./sql.js";
 import type { DocRuntime, ProvenanceStash } from "./doc-state.js";

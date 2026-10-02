@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -27,6 +27,8 @@ export const revisionElement = <RevisionPage />;
 export const editorElement = <EditorPage />;
 // P1.02 — the Page (the schema-first editor surface; /p/:project/v/:v, /v/working).
 export const pageElement = <PagePage />;
+// P1.08 — the §5.8 generalized compare (/p/:project/v/:n/diff/:m; three read-only layouts).
+export const compareElement = <ComparePage />;
 export const exportElement = <ExportPage />;
 export const voicesElement = <VoicesPage />;
 export const voiceNewElement = <VoiceNewPage />;
@@ -58,6 +60,8 @@ export const routes: readonly AppRoute[] = [
   // P1.02 — the Page routes: /v/working (the editable head), /v/:n (a versioned draft), and
   // /a/:artifactId (a non-draft artifact rendered read-only).
   { path: "/p/:project/v/:v", public: false, element: pageElement },
+  // P1.08 — the §5.8 compare route (deeper than /v/:v — no ambiguity; ?layout=side|inline|moves).
+  { path: "/p/:project/v/:n/diff/:m", public: false, element: compareElement },
   { path: "/p/:project/a/:artifactId", public: false, element: pageElement },
   // P1.07 — the palette's free-form obligation (REQ-OBJ-10): the row-creation path.
   { path: "/p/:project/obligations/new", public: false, element: obligationNewElement },

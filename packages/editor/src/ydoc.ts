@@ -1,12 +1,15 @@
-// The Page doc's Yjs ⟷ canonical-markdown bridge (P1.03). The shared Y.XmlFragment lives at the
-// `prosemirror` key (the y-prosemirror default — the client's ySyncPlugin binds the same fragment).
-// Seeding converts canonical markdown → PM doc → a Y.Doc whose state becomes `live_docs.y_state`;
-// materialization runs the other direction through the SAME `docToMarkdown` the Page's schema-first
-// serializer owns, so the stored markdown is byte-identical to the HTTP save path's output.
+// The Page doc's Yjs ⟷ canonical-markdown bridge (P1.03; moved from @rhema/collab in P1.08 so the
+// api's restore-preview/apply path reuses it). The shared Y.XmlFragment lives at the `prosemirror`
+// key (the y-prosemirror default — the client's ySyncPlugin binds the same fragment). Seeding
+// converts canonical markdown → PM doc → a Y.Doc whose state becomes `live_docs.y_state`;
+// materialization runs the other direction through the SAME `docToMarkdown` the Page's
+// schema-first serializer owns, so the stored markdown is byte-identical to the HTTP save path's.
 
 import * as Y from "yjs";
 import { prosemirrorToYDoc, yDocToProsemirror } from "y-prosemirror";
-import { docToMarkdown, markdownToDoc, pageSchema } from "@rhema/editor";
+import { docToMarkdown } from "./pm-to-md.js";
+import { markdownToDoc } from "./md-to-pm.js";
+import { pageSchema } from "./schema.js";
 
 /** The Y.XmlFragment key the ySyncPlugin binds (the y-prosemirror convention). */
 export const PAGE_FRAGMENT = "prosemirror";

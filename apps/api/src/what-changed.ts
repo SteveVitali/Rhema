@@ -13,6 +13,7 @@ import {
   buildChangedSince,
   buildWhatChangedView,
   diffMarkdown,
+  type BlockDiff,
   type ChangedSince,
   type DiffHunk,
   type ObligationLineInput,
@@ -43,6 +44,30 @@ interface CorrRow {
   run_id: string | null;
   prior_review_id: string | null;
   artifact_ids: string[] | null;
+}
+
+/** Read + schema-check a response correspondence's frozen `response-ledger.json` (§5.7), or null. */
+async function loadResponseLedger(
+  exec: SqlExecutor,
+  store: ContentStore,
+  artifactIds: string[] | null,
+): Promise<ResponseLedgerSidecar | null> {
+  if (!artifactIds || artifactIds.length === 0) return null;
+  const ledgerVersion = (
+    await exec.query(
+      `select av.content_sha256 from artifact_versions av join artifacts a on a.id = av.artifact_id
+        where av.id = any($1::text[]) and a.mirror_path like '%response-ledger.json'
+        order by av.ordinal desc limit 1`,
+      [artifactIds],
+    )
+  ).rows[0] as { content_sha256: string } | undefined;
+  if (!ledgerVersion) return null;
+  const bytes = await store.get(ledgerVersion.content_sha256);
+  if (!bytes) return null;
+  const parsed = responseLedgerSidecarSchema.safeParse(
+    JSON.parse(Buffer.from(bytes).toString("utf8")),
+  );
+  return parsed.success ? parsed.data : null;
 }
 
 async function utf8OfVersion(store: ContentStore, versionId: string | null, exec: SqlExecutor): Promise<string | null> {
@@ -94,26 +119,7 @@ export async function loadWhatChanged(
   const reviewId = reviewCorr?.id ?? null;
 
   // The frozen ledger: the response's `response-ledger.json` artifact (immutable at delivery — §5.7).
-  let ledger: ResponseLedgerSidecar | null = null;
-  if (corr.artifact_ids && corr.artifact_ids.length > 0) {
-    const ledgerVersion = (
-      await exec.query(
-        `select av.content_sha256 from artifact_versions av join artifacts a on a.id = av.artifact_id
-          where av.id = any($1::text[]) and a.mirror_path like '%response-ledger.json'
-          order by av.ordinal desc limit 1`,
-        [corr.artifact_ids],
-      )
-    ).rows[0] as { content_sha256: string } | undefined;
-    if (ledgerVersion) {
-      const bytes = await store.get(ledgerVersion.content_sha256);
-      if (bytes) {
-        const parsed = responseLedgerSidecarSchema.safeParse(
-          JSON.parse(Buffer.from(bytes).toString("utf8")),
-        );
-        if (parsed.success) ledger = parsed.data;
-      }
-    }
-  }
+  const ledger = await loadResponseLedger(exec, store, corr.artifact_ids);
 
   // The diffed versions: vN = the base draft's promoted head (the version the response was delivered
   // against); v(N+1) = the draft this response created (the run's reserved nextDraftId, else the newest
@@ -146,20 +152,54 @@ export async function loadWhatChanged(
   const afterMd = nextDraft ? await utf8OfVersion(store, nextDraft.promoted_version_id, exec) : null;
   const diff = diffMarkdown(beforeMd ?? "", afterMd ?? "");
 
+  const view = await assembleWhatChangedView(exec, {
+    projectId: args.projectId,
+    runId: corr.run_id,
+    reviewId,
+    ledger,
+    diff,
+  });
+  return {
+    ok: true,
+    responseId: corr.id,
+    reviewId,
+    beforeN: base.n,
+    afterN: nextDraft?.n ?? null,
+    view,
+  };
+}
+
+/**
+ * The ledger→view assembly shared by the response-scoped projector and the generalized version-pair
+ * compare (P1.08): ledger entries joined to review findings, obligation discharge lines keyed by move
+ * ordinal (OBL-<i> numbers the project's obligations by creation order), and the REQ-OBJ-6 summary
+ * strip computed from obligation ROWS (transitions on the producing run + the project's still-live
+ * remainder). `ledger: null` ⇒ every hunk lands Unlinked (the coherence-read caption lives in copy).
+ */
+export async function assembleWhatChangedView(
+  exec: SqlExecutor,
+  args: {
+    projectId: string;
+    runId: string | null;
+    reviewId: string | null;
+    ledger: ResponseLedgerSidecar | null;
+    diff: BlockDiff;
+  },
+): Promise<WhatChangedView> {
   // Entries: the ledger's own rows, with the review's finding rows resolved for ids/titles/severity. The
   // ledger stays the join's source of truth for anchors (the discharge evidence is §11.3 anchor-verbatim —
   // it never denormalized onto the disposition row).
-  const findingRows = reviewId
+  const findingRows = args.reviewId
     ? (((
         await exec.query(
           `select id, ordinal, title, severity from findings where correspondence_id = $1`,
-          [reviewId],
+          [args.reviewId],
         )
       ).rows as Array<{ id: string; ordinal: number; title: string; severity: string }>) ?? [])
     : [];
   const findingByOrdinal = new Map(findingRows.map((f) => [f.ordinal, f]));
 
-  const entries: WhatChangedEntryInput[] = (ledger?.entries ?? []).map((e) => {
+  const entries: WhatChangedEntryInput[] = (args.ledger?.entries ?? []).map((e) => {
     const f = findingByOrdinal.get(e.findingOrdinal);
     return {
       findingOrdinal: e.findingOrdinal,
@@ -173,9 +213,6 @@ export async function loadWhatChanged(
     };
   });
 
-  // Obligation discharge lines, keyed by move ordinal: the entry's finding → its obligation (root or
-  // lineage edge) → the row's post-routing state + verification. "OBL-<i>" numbers the project's
-  // obligations by creation order (stable within a round).
   const projectObligations = (
     await exec.query(
       `select id from revision_obligations where project_id = $1 order by created_at, id`,
@@ -213,15 +250,18 @@ export async function loadWhatChanged(
     });
   }
 
-  // The summary strip — computed from obligation ROWS (REQ-OBJ-6): addressed/discharged/mooted moves this
-  // response routed (transitions on its run), rebutted rows, and the project's still-live remainder.
-  const routed = (
-    await exec.query(
-      `select to_state, count(distinct obligation_id)::int as n from obligation_transitions
-        where run_id = $1 group by to_state`,
-      [corr.run_id],
-    )
-  ).rows as Array<{ to_state: string; n: number }>;
+  // The summary strip — computed from obligation ROWS (REQ-OBJ-6): addressed/discharged/mooted moves
+  // the producing run routed, rebutted rows, and the project's still-live remainder. A pair with no
+  // linking response carries no run ⇒ addressed/rebutted are 0 and the strip still names stillOpen.
+  const routed = args.runId
+    ? ((
+        await exec.query(
+          `select to_state, count(distinct obligation_id)::int as n from obligation_transitions
+            where run_id = $1 group by to_state`,
+          [args.runId],
+        )
+      ).rows as Array<{ to_state: string; n: number }>)
+    : [];
   const nOf = (s: string) => routed.find((r) => r.to_state === s)?.n ?? 0;
   const addressed = nOf("addressed") + nOf("discharged") + nOf("mooted");
   const rebutted = nOf("rebutted");
@@ -233,9 +273,9 @@ export async function loadWhatChanged(
     )
   ).rows[0] as { n: number };
 
-  const view = buildWhatChangedView(diff, {
+  return buildWhatChangedView(args.diff, {
     entries,
-    moves: (ledger?.moves ?? []).map((m) => ({
+    moves: (args.ledger?.moves ?? []).map((m) => ({
       ordinal: m.ordinal,
       title: m.title,
       ...(m.type != null ? { type: m.type } : {}),
@@ -244,14 +284,6 @@ export async function loadWhatChanged(
     obligationLines,
     strip: { addressed, rebutted, stillOpen: stillOpen.n },
   });
-  return {
-    ok: true,
-    responseId: corr.id,
-    reviewId,
-    beforeN: base.n,
-    afterN: nextDraft?.n ?? null,
-    view,
-  };
 }
 
 /** The hunk a comment attaches to — resolved server-side so the Guidance anchor names a real hunk id. */
@@ -261,6 +293,203 @@ export function findHunk(view: WhatChangedView, hunkId: string): DiffHunk | null
     if (h) return h;
   }
   return view.unlinked.hunks.find((x) => x.id === hunkId) ?? null;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// the generalized compare projector (P1.08; §5.8 — /v/:n/diff/:m over ANY draft pair)
+// ---------------------------------------------------------------------------------------------------------------------
+
+export interface VersionDraftMeta {
+  readonly draftId: string;
+  readonly n: number;
+  readonly origin: string;
+  readonly state: string;
+  readonly frozenAt: string | null;
+  readonly createdAt: string;
+  readonly claimsPendingVerification: boolean;
+}
+
+export interface VersionDiffResult {
+  readonly ok: true;
+  /** the response correspondence this pair answers, when one links the two drafts — else null
+   *  (every hunk lands Unlinked: the coherence-read caption lives in copy). */
+  readonly responseId: string | null;
+  readonly reviewId: string | null;
+  readonly before: VersionDraftMeta;
+  readonly after: VersionDraftMeta;
+  /** the raw block diff — the side-by-side layout's data (the view carries hunks for inline/moves). */
+  readonly diff: BlockDiff;
+  readonly view: WhatChangedView;
+}
+export type VersionDiffOutcome = VersionDiffResult | { readonly ok: false; readonly reason: string };
+
+interface DraftRow {
+  id: string;
+  n: number;
+  origin: string;
+  state: string;
+  promoted_version_id: string | null;
+  base_draft_id: string | null;
+  frozen_at: Date | null;
+  created_at: Date;
+  claims_pending_verification: boolean;
+}
+
+/** `/v/:v` ref → draft row: 'working' = the working head; an integer = that version's draft. */
+async function resolveDraftRef(
+  exec: SqlExecutor,
+  projectId: string,
+  ref: string,
+): Promise<DraftRow | undefined> {
+  const cols = `id, n, origin, state, promoted_version_id, base_draft_id, frozen_at, created_at,
+    claims_pending_verification`;
+  if (ref === "working") {
+    return (
+      (await exec.query(
+        `select ${cols} from drafts where project_id = $1 and state = 'working' order by n desc limit 1`,
+        [projectId],
+      )).rows[0] as DraftRow | undefined
+    );
+  }
+  const n = Number(ref);
+  if (!Number.isInteger(n) || n < 1) return undefined;
+  return (
+    (await exec.query(
+      `select ${cols} from drafts where project_id = $1 and n = $2`,
+      [projectId, n],
+    )).rows[0] as DraftRow | undefined
+  );
+}
+
+function draftMeta(d: DraftRow): VersionDraftMeta {
+  return {
+    draftId: d.id,
+    n: d.n,
+    origin: d.origin,
+    state: d.state,
+    frozenAt: d.frozen_at ? new Date(d.frozen_at).toISOString() : null,
+    createdAt: new Date(d.created_at).toISOString(),
+    claimsPendingVerification: d.claims_pending_verification,
+  };
+}
+
+/** A draft's diffable markdown: its promoted head, else its base's (the editor's working-head rule). */
+async function draftMarkdown(
+  exec: SqlExecutor,
+  store: ContentStore,
+  d: DraftRow,
+): Promise<string> {
+  const versionId =
+    d.promoted_version_id ??
+    (d.base_draft_id
+      ? ((
+          await exec.query("select promoted_version_id from drafts where id = $1", [d.base_draft_id])
+        ).rows[0] as { promoted_version_id: string | null } | undefined)?.promoted_version_id ?? null
+      : null);
+  return (await utf8OfVersion(store, versionId, exec)) ?? "";
+}
+
+/** The draft a `response` correspondence produced: its run's reserved `nextDraftId`, else the newest
+ *  draft based on the reviewed one. */
+async function responseProducedDraftId(
+  exec: SqlExecutor,
+  corr: { draft_id: string; run_id: string | null },
+  projectId: string,
+): Promise<string | null> {
+  const nextDraftId = corr.run_id
+    ? ((
+        await exec.query(`select inputs->>'nextDraftId' as id from runs where id = $1`, [corr.run_id])
+      ).rows[0] as { id: string | null } | undefined)?.id
+    : null;
+  if (nextDraftId) return nextDraftId;
+  return (
+    (
+      await exec.query(
+        `select id from drafts where base_draft_id = $1 and project_id = $2 and id <> $1
+          order by n desc limit 1`,
+        [corr.draft_id, projectId],
+      )
+    ).rows[0] as { id: string } | undefined
+  )?.id ?? null;
+}
+
+/**
+ * The §5.8 compare projector over an arbitrary draft pair (`/v/:n/diff/:m` — `m` may be `working`).
+ * Direction normalizes to `before = lower n`: `/v/2/diff/3` and `/v/3/diff/2` answer the same pair.
+ * When a `response` correspondence links the two drafts (it reviewed the before-draft and produced
+ * the after-draft), its frozen ledger joins the hunks exactly as `loadWhatChanged` does; otherwise
+ * `entries: []` lands every hunk Unlinked — including human-revision pairs, which carry no ledger.
+ */
+export async function loadVersionDiff(
+  exec: SqlExecutor,
+  store: ContentStore,
+  args: { projectId: string; beforeRef: string; afterRef: string },
+): Promise<VersionDiffOutcome> {
+  const a = await resolveDraftRef(exec, args.projectId, args.beforeRef);
+  const b = await resolveDraftRef(exec, args.projectId, args.afterRef);
+  if (!a || !b) return { ok: false, reason: "not_found" };
+  const [before, after] = a.n <= b.n ? [a, b] : [b, a];
+
+  // The linking response: a `response` corr on the before-draft whose produced draft is the
+  // after-draft. Same join the response-scoped projector computes, just inverted.
+  const responses = (
+    await exec.query(
+      `select id, run_id, draft_id, prior_review_id, artifact_ids from correspondence_items
+        where project_id = $1 and kind = 'response' and draft_id = $2
+        order by delivered_at desc`,
+      [args.projectId, before.id],
+    )
+  ).rows as Array<{
+    id: string;
+    run_id: string | null;
+    draft_id: string;
+    prior_review_id: string | null;
+    artifact_ids: string[] | null;
+  }>;
+  let linked: (typeof responses)[number] | null = null;
+  for (const r of responses) {
+    if ((await responseProducedDraftId(exec, r, args.projectId)) === after.id) {
+      linked = r;
+      break;
+    }
+  }
+
+  const [beforeMd, afterMd] = await Promise.all([
+    draftMarkdown(exec, store, before),
+    draftMarkdown(exec, store, after),
+  ]);
+  const diff = diffMarkdown(beforeMd, afterMd);
+
+  const ledger = linked ? await loadResponseLedger(exec, store, linked.artifact_ids) : null;
+  const reviewId = linked
+    ? (linked.prior_review_id ??
+      ((
+        await exec.query(
+          `select id from correspondence_items
+            where project_id = $1 and kind = 'review' and id <> $2
+            order by delivered_at desc limit 1`,
+          [args.projectId, linked.id],
+        )
+      ).rows[0] as { id: string } | undefined)?.id ??
+      null)
+    : null;
+
+  const view = await assembleWhatChangedView(exec, {
+    projectId: args.projectId,
+    runId: linked?.run_id ?? null,
+    reviewId,
+    ledger,
+    diff,
+  });
+  return {
+    ok: true,
+    responseId: linked?.id ?? null,
+    reviewId,
+    before: draftMeta(before),
+    after: draftMeta(after),
+    diff,
+    view,
+  };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

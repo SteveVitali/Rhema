@@ -111,3 +111,18 @@ export {
   FrozenBanner,
   CancelRunModal,
 } from "./ide-states.js";
+
+// P1.08 — §5.8 (version rail + the three-layout compare) and §5.13 (the Files pane's typed artifact
+// browser). Server-rendered, text-agnostic; all copy arrives via labels from apps/web's COPY table.
+export { VersionRail } from "./version-rail.js";
+export type {
+  VersionRailProps,
+  VersionRailLabels,
+  RailVersion,
+  RestorePointRow,
+  RestorePreviewData,
+} from "./version-rail.js";
+export { CompareView } from "./compare.js";
+export type { CompareProps, CompareLabels, CompareLayout } from "./compare.js";
+export { FilesPane } from "./files-pane.js";
+export type { FilesPaneProps, FilesPaneLabels, FileRowView, FileSectionView } from "./files-pane.js";

@@ -19,6 +19,10 @@ import type {
   WhatChangedDto,
   TimelineDto,
   RunReportDto,
+  VersionRailDto,
+  VersionDiffDto,
+  RestorePointDto,
+  FilesDto,
 } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
@@ -174,6 +178,9 @@ export interface PageData {
     };
     readonly themeUrl?: string;
     readonly paperThemeUrl?: string;
+    /** P1.08 — the §5.13 Files pane's typed sections (GET /projects/:id/files; best-effort — absent ⇒
+     *  the pane shows its empty state). */
+    readonly files?: FilesDto;
   };
   readonly conversion?:
     | {
@@ -266,6 +273,30 @@ export interface PageData {
     readonly readOnly?: boolean;
     /** P1.03 — the collab WSS base the island connects to (`wss://<host>/collab`; env COLLAB_WS_URL). */
     readonly collabWsUrl?: string;
+    /**
+     * P1.08 — the §5.8 version rail over the Page (REQ-IDE-32): the chips' read model, the
+     * restore-point dropdown for this draft's live doc, the `?restore=<id>` preview card, and the
+     * `?restored=<n>` notice. Absent ⇒ the rail hides.
+     */
+    readonly rail?: {
+      readonly data: VersionRailDto;
+      readonly currentN: number;
+      readonly points: readonly RestorePointDto[];
+      readonly preview?: { readonly point: RestorePointDto; readonly view: WhatChangedDto["view"] };
+      readonly restoredN?: number;
+    };
+  };
+  /**
+   * P1.08 — the §5.8 compare page (`/p/:project/v/:n/diff/:m`; REQ-IDE-33): the server-projected
+   * pair + the picked layout. `commentedHunkId` echoes a saved hunk comment (→ Guidance).
+   */
+  readonly compare?: {
+    readonly slug: string;
+    readonly n: string;
+    readonly m: string;
+    readonly layout: "side" | "inline" | "moves";
+    readonly data: VersionDiffDto;
+    readonly commentedHunkId?: string;
   };
   // ---- PRB.10 — Quick Voice (§9.2–§9.6) ----
   /** the library list (GET /voices): every persona + its shared pill + sample count. */

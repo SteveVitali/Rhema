@@ -53,9 +53,9 @@ export async function seedRealProjects(db: MigrationDb): Promise<void> {
     );
     // two draft versions (multi-round history): v1 frozen, v2 working.
     await db.query(
-      `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path)
-       values ($1,$2,$3,'draft','shared','drafts/v1.md') on conflict do nothing`,
-      [`${p.id}_art1`, WS, p.id],
+      `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ($1,$2,$3,'draft','shared','drafts/v1.md',$4) on conflict do nothing`,
+      [`${p.id}_art1`, WS, p.id, `${p.id}_av1`],
     );
     await db.query(
       `insert into artifact_versions (id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by, immutable)
@@ -76,9 +76,9 @@ export async function seedRealProjects(db: MigrationDb): Promise<void> {
     // no store bytes, repointed to real prose by live-prepare-fixture.ts like `<proj>_av1`. A working draft's
     // head is mutable (immutable=false).
     await db.query(
-      `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path)
-       values ($1,$2,$3,'draft','shared','drafts/v2.md') on conflict do nothing`,
-      [`${p.id}_art2`, WS, p.id],
+      `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ($1,$2,$3,'draft','shared','drafts/v2.md',$4) on conflict do nothing`,
+      [`${p.id}_art2`, WS, p.id, `${p.id}_av2`],
     );
     await db.query(
       `insert into artifact_versions (id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by, immutable)

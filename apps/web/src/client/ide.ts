@@ -775,10 +775,15 @@ function main(): void {
         }
         break;
       }
-      case "compare-previous":
+      case "compare-previous": {
         e.preventDefault();
-        openPalette("/compare ");
+        // P1.08 (§5.8) — on a versioned Page the rail stamps the compare-previous link; follow it
+        // (the /v/:prev/diff/:n route). Elsewhere the palette's /compare verb stays the fallback.
+        const link = document.querySelector<HTMLAnchorElement>("[data-compare-previous]");
+        if (link?.href) window.location.assign(link.href);
+        else openPalette("/compare ");
         break;
+      }
       case "triage": {
         e.preventDefault();
         // §5.7 triage mode (⌘⇧T): on a dossier the sectioned queue is the server-rendered

@@ -16,7 +16,7 @@
 import type { Extension } from "@hocuspocus/server";
 import { authenticateConnection, resolveDraftBinding, AuthRefusal } from "./auth.js";
 import { createDocRuntime, type DocRuntime, type ProvenanceStash } from "./doc-state.js";
-import { markdownToUpdate } from "./ydoc.js";
+import { markdownToUpdate } from "@rhema/editor";
 import { markRestorePoint, storeDocument, type MaterializeDeps } from "./materialize.js";
 import type { CollabDb } from "./sql.js";
 

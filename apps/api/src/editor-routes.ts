@@ -24,6 +24,7 @@ import { projectFindingsOntoMarkdown, type FindingProjectionResult } from "@rhem
 import { mootObligation, findingObligationState } from "@rhema/obligations";
 import { saveManualRevision, sha256Hex, type ContentStore, type SqlExecutor } from "@rhema/mirror";
 import type { Actor, Anchor } from "@rhema/contracts";
+import { artifactKindSchema, artifactPolicy } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import type { RunApiDeps } from "./run-routes.js";
 import { upsertProjectSearchDoc } from "./search.js";
@@ -701,6 +702,10 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
         | { id: string; kind: string; mirror_path: string; version_id: string; ordinal: number; media_type: string; block_id_map: unknown }
         | undefined;
       if (!row) return null;
+      // P1.08 / REQ-VIS-3: an H-level kind has NO route — a direct /a/:artifactId request refuses
+      // (it is absent, not locked). I kinds DO render — the Files pane links to them from Advanced.
+      const kindParsed = artifactKindSchema.safeParse(row.kind);
+      if (kindParsed.success && artifactPolicy[kindParsed.data].level === "H") return null;
       if (row.media_type !== "text/markdown") return { notMarkdown: true as const };
       const text = await versionText(store, tx, row.version_id);
       if (!text) return null;

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ARTIFACT_KINDS } from "./enums.js";
 import {
   ARTIFACT_KINDS_FROM_8_2,
+  BROWSER_SECTIONS,
   artifactPolicy,
   artifactPolicySchema,
+  browserSectionFor,
   levelCounts,
   policyFor,
 } from "./artifact-policy.js";
@@ -63,5 +65,39 @@ describe("artifactPolicy — REQ-SPEC-14 contract test", () => {
 
   it("policyFor rejects an unknown kind", () => {
     expect(() => policyFor("not_a_kind" as never)).toThrow();
+  });
+});
+
+// P1.08 / §5.13 — the Files pane's section map: every artifact kind has exactly one nominal section
+// (H kinds included — the section is where the sealed count renders; the row never does).
+describe("browserSectionFor — §5.13 coverage", () => {
+  it("every ArtifactKind maps to exactly one section", () => {
+    for (const kind of ARTIFACT_KINDS) {
+      expect(BROWSER_SECTIONS).toContain(browserSectionFor(kind));
+    }
+  });
+
+  it("the §5.13 section set is the seven sections in table order", () => {
+    expect([...BROWSER_SECTIONS]).toEqual([
+      "outline",
+      "drafts",
+      "rounds",
+      "research",
+      "voice",
+      "assets",
+      "advanced",
+    ]);
+  });
+
+  it("H kinds still carry a nominal section (sealed counts), and only the five §5.13-hidden kinds are H", () => {
+    const hidden = ARTIFACT_KINDS.filter((k) => artifactPolicy[k].level === "H");
+    expect([...hidden].sort()).toEqual(
+      ["consolidation_notes", "corpus_note", "holdout_note", "run_transcript", "sidecar"].sort(),
+    );
+    for (const k of hidden) expect(browserSectionFor(k)).not.toBeNull();
+  });
+
+  it("unknown kinds are unlisted (null), never leaked", () => {
+    expect(browserSectionFor("not_a_kind")).toBeNull();
   });
 });

@@ -514,6 +514,145 @@ export interface HunkCommentDto {
 }
 
 // ---------------------------------------------------------------------------------------------------------
+// P1.08 — the generalized compare (§5.8): `/v/:n/diff/:m` over ANY draft pair, the version rail, the
+// restore-point browse/preview/apply, and the §5.13 Files pane read models.
+// ---------------------------------------------------------------------------------------------------------
+
+/** Draft meta on a compare pair endpoint (both sides carry it). */
+export interface VersionDraftMetaDto {
+  readonly draftId: string;
+  readonly n: number;
+  readonly origin: string;
+  readonly state: string;
+  readonly frozenAt: string | null;
+  readonly createdAt: string;
+  readonly claimsPendingVerification: boolean;
+}
+
+/** The full block diff (the side-by-side layout's data). */
+export interface BlockDiffDto {
+  readonly hunks: DiffHunkDto[];
+  readonly unchanged: number;
+  readonly beforeBlocks: DiffBlockDto[];
+  readonly afterBlocks: DiffBlockDto[];
+}
+
+/** GET /projects/:id/v/:n/diff/:m — the pair + the joined (or all-Unlinked) What-changed view. */
+export interface VersionDiffDto {
+  readonly ok: true;
+  /** the response correspondence this pair answers, when one links the drafts — else null. */
+  readonly responseId: string | null;
+  readonly reviewId: string | null;
+  readonly before: VersionDraftMetaDto;
+  readonly after: VersionDraftMetaDto;
+  readonly diff: BlockDiffDto;
+  readonly view: WhatChangedDto["view"];
+}
+
+/** GET /projects/:id/versions — the version rail read model (§5.8). */
+export interface VersionRailDto {
+  readonly workingN: number | null;
+  /** the project-level ⚑ chip — blocking/major obligations only (REQ-OBJ-6). */
+  readonly chip: { readonly open: number; readonly addressed: number };
+  readonly outline: { readonly artifactId: string; readonly createdAt: string | null; readonly words: number | null } | null;
+  readonly drafts: readonly {
+    readonly draftId: string;
+    readonly n: number;
+    readonly origin: string;
+    readonly state: string;
+    readonly frozen: boolean;
+    readonly frozenAt: string | null;
+    readonly createdAt: string;
+    readonly words: number | null;
+    readonly reviewed: boolean;
+    readonly answered: boolean;
+    readonly claimsPendingVerification: boolean;
+    readonly obligations: { readonly open: number; readonly addressed: number };
+  }[];
+}
+
+/** One Files-pane row (§5.13) — SE/SR/I only; H kinds arrive as a section's `sealedCount`. */
+export interface FileRowDto {
+  readonly artifactId: string;
+  readonly kind: string;
+  readonly label: string;
+  readonly level: "SE" | "SR" | "I";
+  readonly editMode: string;
+  readonly lock: "editable" | "immutable" | "inspect";
+  readonly readOnly: boolean;
+  readonly words: number | null;
+  readonly createdAt: string | null;
+  readonly provenance: {
+    readonly actor: "you" | "system" | "agent";
+    readonly userId?: string;
+    readonly seat?: string;
+    readonly runId?: string;
+    readonly workflow?: string;
+    readonly phase?: string;
+  };
+  readonly draftRef?: { readonly n: number; readonly state: string };
+  readonly freshness?: { readonly subjectDraftN: number; readonly stale: boolean };
+}
+
+/** A §5.13 typed section: `rows` are the default tree (SE/SR), `advancedRows` the I-level links
+ *  behind the disclosure, `sealedCount` the H-kind count (never rows). */
+export interface FileSectionDto {
+  readonly key: string;
+  readonly rows: FileRowDto[];
+  readonly advancedRows: FileRowDto[];
+  readonly sealedCount: number;
+}
+
+/** GET /projects/:id/files — the Files pane. */
+export interface FilesDto {
+  readonly sections: FileSectionDto[];
+}
+
+/** A restore point in the §5.8 grouped dropdown. */
+export interface RestorePointDto {
+  readonly id: string;
+  readonly kind: string;
+  readonly cause: string;
+  readonly label: string | null;
+  readonly createdAt: string;
+  readonly group: "named" | "earlier_today" | "yesterday" | "before_review" | "earlier";
+  readonly beforeReviewN?: number;
+  /** older-than-today ⇒ sits behind the Advanced disclosure. */
+  readonly advanced: boolean;
+}
+
+/** GET …/restore-points — the grouped list for the working head's live doc. */
+export interface RestorePointsDto {
+  readonly draftId: string;
+  readonly liveDocId: string | null;
+  readonly points: RestorePointDto[];
+}
+
+/** GET …/restore-points/:rp/preview — the point's content diffed against the current head. */
+export interface RestorePreviewDto {
+  readonly ok: true;
+  readonly point: {
+    readonly id: string;
+    readonly kind: string;
+    readonly cause: string;
+    readonly label: string | null;
+    readonly createdAt: string;
+  };
+  readonly view: WhatChangedDto["view"];
+}
+
+/** POST …/restore-points/:rp/restore — the undoable apply (undoPointId = the pre-restore snapshot). */
+export interface RestoreApplyDto {
+  readonly ok: true;
+  readonly draftId: string;
+  readonly draftN: number;
+  readonly forked: boolean;
+  readonly restorePointId: string | null;
+  readonly undoPointId: string | null;
+  readonly restoredFrom: string;
+}
+
+// ---------------------------------------------------------------------------------------------------------
 // PRB.16 — the delivered-review dossier read (PRB.04's deferred live binding): `GET …/review/:runId/dossier`
 // assembles the reading surface's data from the delivered rows — never a client-side reconstruction.
 // ---------------------------------------------------------------------------------------------------------
@@ -1291,6 +1430,38 @@ export interface ApiClient {
   ): Promise<BibliographyImportDto>;
   /** P1.02 — the read-only Page read for a non-draft artifact (`/a/:artifactId`). */
   getArtifactPage(projectId: string, artifactId: string, init?: RequestInitLite): Promise<EditorDocDto>;
+  // ---- P1.08 — §5.8 versions/compare/restore + the §5.13 Files pane ----
+  /** The version rail read model (every origin, flags, the ⚑ chip). */
+  getVersions(projectId: string, init?: RequestInitLite): Promise<VersionRailDto>;
+  /** The generalized compare: any draft pair (`m` may be `working`), server-projected. */
+  getVersionDiff(projectId: string, n: string, m: string, init?: RequestInitLite): Promise<VersionDiffDto>;
+  /** A comment on a compare hunk → `Guidance{source:'inline_comment'}` for the next Revise. */
+  commentOnCompareHunk(
+    projectId: string,
+    n: string,
+    m: string,
+    hunkId: string,
+    text: string,
+    init?: RequestInitLite,
+  ): Promise<HunkCommentDto>;
+  /** The §5.13 Files pane — typed sections; default rows carry no I/H kinds. */
+  getFiles(projectId: string, init?: RequestInitLite): Promise<FilesDto>;
+  /** The §5.8-grouped restore points for a draft's live doc. */
+  listRestorePoints(projectId: string, draftId: string, init?: RequestInitLite): Promise<RestorePointsDto>;
+  /** The point's reconstructed content diffed against the current head (all-Unlinked view). */
+  previewRestorePoint(
+    projectId: string,
+    draftId: string,
+    pointId: string,
+    init?: RequestInitLite,
+  ): Promise<RestorePreviewDto>;
+  /** The undoable restore apply — writes a pre-restore snapshot, then saveManualRevision. */
+  applyRestorePoint(
+    projectId: string,
+    draftId: string,
+    pointId: string,
+    init?: RequestInitLite,
+  ): Promise<RestoreApplyDto>;
   /** The debounced autosave — forks a frozen head to v(N+1) `human_revision` on first save (REQ-DATA-24).
    *  Throws `ApiError(409)` while a run holds the head (read-only during runs, §6.3). */
   saveEditorDraft(
@@ -1706,6 +1877,52 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       return json<EditorDocDto>(
         `/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(artifactId)}/page`,
         { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async getVersions(projectId, init): Promise<VersionRailDto> {
+      return json<VersionRailDto>(
+        `/projects/${encodeURIComponent(projectId)}/versions`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async getVersionDiff(projectId, n, m, init): Promise<VersionDiffDto> {
+      return json<VersionDiffDto>(
+        `/projects/${encodeURIComponent(projectId)}/v/${encodeURIComponent(n)}/diff/${encodeURIComponent(m)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async commentOnCompareHunk(projectId, n, m, hunkId, text, init): Promise<HunkCommentDto> {
+      return json<HunkCommentDto>(
+        `/projects/${encodeURIComponent(projectId)}/v/${encodeURIComponent(n)}/diff/${encodeURIComponent(m)}/hunks/${encodeURIComponent(hunkId)}/comments`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({ text }),
+        },
+      );
+    },
+    async getFiles(projectId, init): Promise<FilesDto> {
+      return json<FilesDto>(
+        `/projects/${encodeURIComponent(projectId)}/files`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async listRestorePoints(projectId, draftId, init): Promise<RestorePointsDto> {
+      return json<RestorePointsDto>(
+        `/projects/${encodeURIComponent(projectId)}/drafts/${encodeURIComponent(draftId)}/restore-points`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async previewRestorePoint(projectId, draftId, pointId, init): Promise<RestorePreviewDto> {
+      return json<RestorePreviewDto>(
+        `/projects/${encodeURIComponent(projectId)}/drafts/${encodeURIComponent(draftId)}/restore-points/${encodeURIComponent(pointId)}/preview`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async applyRestorePoint(projectId, draftId, pointId, init): Promise<RestoreApplyDto> {
+      return json<RestoreApplyDto>(
+        `/projects/${encodeURIComponent(projectId)}/drafts/${encodeURIComponent(draftId)}/restore-points/${encodeURIComponent(pointId)}/restore`,
+        { method: "POST", headers: init?.headers as Record<string, string> | undefined },
       );
     },
     async saveEditorDraft(projectId, draftId, markdown, init): Promise<EditorSaveDto> {

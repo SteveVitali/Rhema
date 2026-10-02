@@ -30,7 +30,8 @@
     "@rhema/findings-core": "workspace:*",
     "@rhema/hooks": "workspace:*",
     "@rhema/protocols": "workspace:*",
-    "@google-cloud/storage": "8.0.1"
+    "@google-cloud/storage": "8.0.1",
+    "yjs": "^13.6.21"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17"

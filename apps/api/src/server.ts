@@ -16,7 +16,7 @@ import {
   RUN_JOBS,
 } from "@rhema/orchestrator";
 import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB } from "@rhema/ledger";
-import { createGcsContentStore } from "@rhema/mirror";
+import { createGcsContentStore, createGcsRestoreBlobStore } from "@rhema/mirror";
 import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
 import {
   PgPoolTxRunner,
@@ -148,6 +148,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   // path writes content-addressed markdown there); hoist so `store` (write-back overlays) and `contentStore`
   // (import) share one binding.
   const artifactsStore = await createGcsContentStore({ bucketName: env.objectsBucket });
+  // P1.08 — the restore/ blob store for the version-rail's preview/restore routes (the same objects
+  // bucket the collab service writes its update chains into).
+  const restoreBlobs = await createGcsRestoreBlobStore(env.objectsBucket);
   const deps: ApiDeps & BetaApiDeps = {
     txRunner,
     eventWriter: new SqlEventWriter(bus), // post-commit user-event fan-out over Redis
@@ -166,6 +169,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     store: artifactsStore,
     // a per-run workspace-bound store for delivery reads (a run is single-tenant; D-P0.09-1).
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
+    // P1.08 — the restore-blob store for `restore/`-keyed points (the undo snapshot + Yjs chains).
+    restoreBlobs,
     // PRB.20 — the live ingestion bindings (D-PRB.02-1). `contentStore` is the imported-draft byte sink;
     // `importUploads` + `importConverter` are the presign/convert legs — BOTH env vars gate the mount, so a
     // partial deploy config leaves import unmounted rather than half-wired (fail-closed).

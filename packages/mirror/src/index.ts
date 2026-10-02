@@ -18,3 +18,4 @@ export * from "./freeze.js";
 export * from "./delivery.js";
 export * from "./manual-trace.js";
 export * from "./manual-revision.js";
+export * from "./restore.js";

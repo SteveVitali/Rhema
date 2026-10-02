@@ -109,6 +109,9 @@ importers:
       pg-boss:
         specifier: 12.30.0
         version: 12.30.0
+      yjs:
+        specifier: ^13.6.21
+        version: 13.6.33
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.2.17
@@ -829,6 +832,9 @@ importers:
       '@rhema/protocols':
         specifier: workspace:*
         version: link:../protocols
+      yjs:
+        specifier: ^13.6.21
+        version: 13.6.33
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.2.17

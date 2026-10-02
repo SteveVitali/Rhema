@@ -69,6 +69,11 @@ export interface IdeShellProps {
   readonly initialView?: ViewMode;
   /** the source editor's file link (the Advanced-tier Files row — §5.1 progressive disclosure). */
   readonly sourceHref?: string;
+  /**
+   * P1.08 — the §5.13 Files pane (typed sections, provenance badges, lock icons, freshness notes,
+   * sealed counts). Supersedes the strip list when set; absent ⇒ the strip renders exactly as before.
+   */
+  readonly filesBody?: ReactNode;
   readonly hasFindings?: boolean;
   /** margin content (the finding rows the cards/ticks summarize) — absent ⇒ Margin hides. */
   readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
@@ -198,17 +203,21 @@ export function IdeShell(props: IdeShellProps): ReactNode {
             <button type="button" data-ide-files-toggle aria-label={L.files.close} style={{ marginLeft: "auto" }}>×</button>
           </div>
           <div className="ide-files-body">
-            <ul>
-              <li data-current>{project.title}</li>
-              {/* the Source file row is an Advanced-tier control (§5.1 progressive disclosure —
-                  "view.source" is not in the View menu; CSS hides it until data-advanced="1"). */}
-              {props.sourceHref ? (
-                <li data-tier="advanced">
-                  <a href={props.sourceHref}>{L.files.sourceFile}</a>
-                </li>
-              ) : null}
-            </ul>
-            <p style={{ fontSize: 12 }}>{L.files.empty}</p>
+            {props.filesBody ?? (
+              <>
+                <ul>
+                  <li data-current>{project.title}</li>
+                  {/* the Source file row is an Advanced-tier control (§5.1 progressive disclosure —
+                      "view.source" is not in the View menu; CSS hides it until data-advanced="1"). */}
+                  {props.sourceHref ? (
+                    <li data-tier="advanced">
+                      <a href={props.sourceHref}>{L.files.sourceFile}</a>
+                    </li>
+                  ) : null}
+                </ul>
+                <p style={{ fontSize: 12 }}>{L.files.empty}</p>
+              </>
+            )}
           </div>
         </aside>
         <button type="button" className="ide-handle" data-ide-handle="files" aria-hidden="true" tabIndex={-1} />
