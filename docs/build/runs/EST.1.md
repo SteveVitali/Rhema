@@ -128,12 +128,91 @@ the N4 journey leg additionally needs JOURNEY.1's H7 prerequisites (test mailbox
 Recorded as **D-EST.1-1** (`docs/tickets/DEFERRALS.md`) with the exact verify steps; the in-repo
 proxies (deterministic PGlite 400 + cross-surface parity + N4 green-by-code-review) are cited there.
 
+## Stage B — executed live 2026-10-02 (continuation; D-EST.1-1 → DONE)
+
+**Correction first:** the deferral rationale was wrong — `gcloud`/`pulumi` authorization is live in
+this environment (RES.1/RES.2/BILL.3/ECON.1 all ran `pulumi up` from it under the standing ADR-013
+authorization), the JOURNEY.1 mailbox + `is_test` tenant pattern was already standing, and the
+IAP-tunnel DB pattern needs no extra grant. Every leg ran:
+
+- **Migration `0050_est1_durations.sql`** — `check-additive-migrations --newer-than 0049` clean,
+  applied via `scripts/live/prod-migrate-seed.mjs` over the existing IAP tunnel
+  (`127.0.0.1:15433` → `10.46.0.3:5432`, `rhema-prod-proxy-893r`); **50 migrations recorded**;
+  `cost_observations.duration_ms` + `cost_card_cells.p10/p50/p95_ms` verified live.
+- **Deploy:** Cloud Build `ac90bacb` (`est1-c3eafa5`, chain tip `c3eafa5`) deployed as **update 105**
+  (`prod:c3eafa527d39…` provenance row). The N4 live leg then surfaced finding **F-EST.1-1** (below);
+  the fix shipped as tip `5534d93` — Cloud Build `d0f09768` (`est1-5534d93`, api/web/worker),
+  `pulumi preview` **6 updates / 146 unchanged / zero stateful replace-or-delete / $0 monthly delta**
+  → `pulumi up` **update 106** (`prod:5534d93aeac1d4…`). `/healthz` `gitSha` = `5534d93…` on api AND
+  web; `deployments` row stamped (`protocols_version 0.4.0+…`, rate table 2026-10-02).
+- **Live invalid-tier 400 (D-DEF.3-2 live addendum):** `POST /projects/01M3Y3YSA1F14VAJVWGD7Y6QQY/
+  estimates` with `modelTier:"standard"` on the funded `test+jfaab4b8a0e57n4` tenant →
+  **`HTTP 400 {"error":"invalid_model_tier"}`**; `estimate_cache` **1→1** rows, `usage_records`
+  **4,638→4,638** — nothing written. Same-shape control (`modelTier:"base"`) → HTTP 200, 1,521 cr
+  provisional + duration band, proving the session/project path is real.
+- **N4 journey green on prod** — `docs/build/reports/2026-10-02_EST.1-n4f/report.json` + `N4.png`:
+  `outcome:pass`, provenance match on `5534d93…`, 0 console errors, 0 failed requests, $0 spend.
+  (Earlier attempts n4c–n4e are kept as the live-debug trail: unfunded tenant → `ctx.anon()` fix →
+  dt/dd parse fix → the real F-EST.1-1 range defect.)
+
+### Live finding F-EST.1-1 — pricing-card ranges could exclude the figure they bracket
+
+`tierRange` rounded BOTH endpoints nearest-10, so a raw Base figure of 2,607 cr printed a card low of
+"2,610" — the sheet's own price sat **outside** the card's stated range by 3 credits. N4 caught it
+live (`sheet figure 2607 outside pricing card essay range 2610–11730`); the deterministic suite
+missed it because the test had pinned nearest-10 rather than the containment contract. **Fix
+(commit `5534d93`):** ranges round outward — `low = floor(raw/10)·10`, `high = ceil(raw/10)·10`;
+point figures keep nearest-10. Tests now pin `low == floor(rawBase)` / `high == ceil(rawFrontier)` /
+containment; the N4 walk asserts `floor(raw/10)·10 === printed low`. Deployed in update 106; N4 then
+passed live.
+
+### Live finding F-EST.1-2 — the sheet's toggle PREFILL laundered seed `true`s into "explicit" levers
+
+The paid leg above surfaced it: the essay protocol's seed `phase_defaults` are all-true, and
+`buildSheet` copied them straight into the rendered toggle state — under **Quick** (whose preset
+disables `discourse`/`second_read`) the boxes rendered **checked**, the form POSTed `toggle.*=on`,
+and the launch's "explicit lever wins in both directions" rule froze them ON. The estimator priced
+Quick while the frozen manifest ran the extra phases — the F-ECON.1-1 shape, re-entered through the
+web prefill instead of the stored-override path. **Fix (this commit):** the prefill applies the
+launch route's own disable-only clamp — a seed/stored `true` that contradicts the rigor preset is
+dropped before it can render checked; a seed/stored value may still turn a preset-ON phase OFF, and
+`?toggle.x=on` still wins explicitly. Regression: `server.test.ts` "the Quick sheet's toggle PREFILL
+drops seed/stored trues the preset disables" (essay all-true ctx → discourse/second_read unchecked,
+fact_check checked, `?toggle.discourse=on` still honored).
+
+### Paid leg — ONE Quick/Base run on the 267-word planted-error excerpt
+
+Cell choice: `quick|base` — ECON.1's Standard/Base leg on this same fixture metered **$6.60**
+(over this ticket's ≤$5 cap); the Quick/Base cell metered $3.43 (I4). The tier is the user-selected
+**Base** via the sheet's `modelTier` select — the explicit lever is what the ticket requires frozen.
+
+- Tenant `test+jfaab4b8a0e57n4` (`is_test`, 8,000-cr promo grant `01M3Y3CEZ06DEEQPNXZ17HSVDY` —
+  balance line showed "6,642 left after the cap" = 8,010 − 1,368).
+- Project `est1paid-muqvcc5q` — excerpt pasted through the real two-step draft ingest (pending →
+  preview → Create).
+- **Sheet showed** (`/p/est1paid-muqvcc5q/run?workflow=review`, rigor `quick`, tier `base`):
+  `912 credits · cap 1,368 · 6,642 left after the cap` · `≈ $9.12 · never more than $13.68` ·
+  `~28–53 min` — the ONE surface figure the user saw before clicking Run.
+- **Run `01M3Y5HJPC3SAQ1TGPVBATB1HE` frozen at launch:** `model_tier=base`, `rigor=quick`,
+  `estimate_credits=912` (== shown), `cap_credits=2,736` = shown 1,368 × **2 — the REQ-SPEC-24.5
+  platform circuit breaker was tripped** (absorbed overruns past threshold; `circuitBreakerState`
+  doubles the new-run cap). Observation, not a defect: the sheet's "cap" line is the pre-breaker
+  figure; the frozen cap is the platform-scaled one — recorded honestly, surfaced for a future
+  "cap shown vs frozen" display note.
+- **Outcome:** `failed` — `phase_blocked`, `phase-result blocked [sdk=success]` at the **discourse**
+  phase (intake/craft/verification done). **Frozen inputs told the story:** `claim_cap:5`,
+  `verification:true`, **`discourse:true`, `second_read:true`** — two phases Quick's preset
+  disables were frozen ON, so the run executed discourse on a Quick-priced sheet (F-EST.1-2 below).
+  Metered `list_cost_usd` (source=`proxy`): **$2.5144** across 66 rows / 345 cr (`spent_credits`
+  345 of 912 est / 2,736 cap). Settlement: all 221 committed debits refunded, 345 cr absorbed as
+  platform fault — **net user charge $0**; the leg stays under the ≤$5 Stage-B cap on the meter.
+
 ## Verification evidence (this run)
 
 - `pnpm turbo build lint typecheck` — **135/135 tasks green** (final pass after the test-harness
   updates; an intermediate run caught only an unused import in `launch-surface.test.ts`).
-- `pnpm test` — **full suite green: 414 test files / 3,951 tests passed (6 skipped, 0 failed)** on the
-  final post-fix run (411 s). Earlier full runs surfaced **15 failures across 7 files**, all stale
+- `pnpm test` — **full suite green: 414 test files / 3,952 tests passed (6 skipped, 0 failed)** on the
+  final post-F-EST.1-2 run (238 s; +1 for the new prefill regression). Earlier full runs surfaced **15 failures across 7 files**, all stale
   assertions quoting the retired modelled pricer, the all-off claims default, or pre-N4 registry
   baselines: `contracts/pricing-page.test.ts` + `public-claims.test.ts` (now inject a test-local
   fixture pricer — contracts is a leaf and cannot import `surfacePricer()`; the REAL pricer's parity
@@ -161,6 +240,10 @@ proxies (deterministic PGlite 400 + cross-surface parity + N4 green-by-code-revi
 
 ## Current blockers / watch list
 
+- **F-EST.1-2 residual:** prod still runs the `5534d93` web image (update 106) — essay-protocol Quick
+  sheets there still prefill `discourse`/`second_read` checked. The fix is on the branch tip and a
+  follow-up deploy is owed; until it lands, a Quick Review launched from an essay project can freeze
+  those phases on again (the failure mode run `01M3Y5HJPC3SAQ1TGPVBATB1HE` hit).
 - Debit-mode flip state at Stage B (record which mode prod is in — ECON.1's operator pause).
 - JOURNEY.1 H7 prerequisites (test mailbox + funded tenant) gate the live journey legs.
 - The estimate route's `claims` refine path uses the egress proxy — the claim pre-pass leg depends on

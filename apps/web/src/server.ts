@@ -65,6 +65,7 @@ import {
 import {
   buildRunSheetView,
   resolveSheetConfig,
+  sheetProfile,
   surfaceEstimate,
   type ToggleKey,
   type ToggleState,
@@ -5327,6 +5328,22 @@ function buildSheet(
     if (typeof pv === "boolean") toggles[toggleKey] = pv;
     const v = ctx?.project?.protocolOverrides?.phaseDefaults?.[stored];
     if (typeof v === "boolean") toggles[toggleKey] = v;
+  }
+  // EST.1 (F-EST.1-2; ECON.1 §6.5 conformance on the SHEET side): seed/stored `true`s may only
+  // DISABLE relative to the selected rigor's preset — a `true` the preset already turns off would
+  // otherwise render a CHECKED box that submits back as an "explicit" lever and wins at launch
+  // (the F-ECON.1-1 shape laundered through this prefill — observed live on run
+  // 01M3Y5HJPC3SAQ1TGPVBATB1HE: Quick froze discourse:true/second_read:true and ran the phase).
+  // A `?toggle.x=on` lever below still wins in both directions.
+  const rigorToggleDefaults = (() => {
+    try {
+      return sheetProfile(workflow).rigorDefaults[rigor]?.toggles ?? {};
+    } catch {
+      return {};
+    }
+  })();
+  for (const key of Object.keys(toggles) as ToggleKey[]) {
+    if (toggles[key] === true && rigorToggleDefaults[key] === false) delete toggles[key];
   }
   for (const key of ["fact_check", "discourse", "second_read", "repair_research", "gap_check"] as const) {
     if (query[`toggle.${key}`] === "on") toggles[key] = true;

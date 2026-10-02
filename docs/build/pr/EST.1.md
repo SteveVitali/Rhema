@@ -71,11 +71,37 @@ arithmetic on unscaled rates.
 - Migration `0050` additive-linted; `check:licenses`/`check:protocol-markers`/`check:no-cookies`
   green; `check-build-memory.sh` clean (7 pre-existing warnings).
 
-## Stage B (operator-gated; not run in this build)
+## Stage B — executed on prod 2026-10-02 (D-EST.1-1 → DONE)
 
-`pulumi preview`/`up` (migration 0050 is additive — `check-additive-migrations` clean), the live
-invalid-tier 400 leg, the N4 journey walk + screenshots (needs JOURNEY.1's mailbox/tenant
-prerequisites — HUMAN-H7), and at most ONE paid run ≤$5 on the ≤300-word fixture at user-selected
-Base tier. Owed as **D-EST.1-1** (`docs/tickets/DEFERRALS.md`). Registry: N4's `expected` is
-flipped to `green` in this PR per the owning-ticket rule — a live pass confirms; a live failure
-surfaces as `fail`.
+The earlier "operator-gated" deferral was wrong — the same environment deployed RES.1/RES.2/BILL.3/
+ECON.1 under the standing ADR-013 authorization, and every leg ran here:
+
+- **Migration `0050`** applied to prod Cloud SQL over the IAP tunnel after the additive lint
+  (`--newer-than 0049` clean); 50 migrations recorded.
+- **Deploy:** Cloud Build `ac90bacb` (`est1-c3eafa5`) then `d0f09768` (`est1-5534d93`) for the
+  live finding below; `pulumi preview` 6 updates / 146 unchanged / **zero stateful replace/delete**
+  / $0 monthly delta → `pulumi up` updates **105** (`prod:c3eafa5`) and **106** (`prod:5534d93`);
+  `/healthz` `gitSha` matches the tip on api + web; `deployments` rows stamped.
+- **Live `invalid_model_tier`:** `POST /projects/:id/estimates` `modelTier:"standard"` →
+  `HTTP 400 {"error":"invalid_model_tier"}` on a real test tenant; `estimate_cache` 1→1 and
+  `usage_records` 4,638→4,638 — nothing written (the D-DEF.3-2 live addendum).
+- **N4 journey: green on prod** (`docs/build/reports/2026-10-02_EST.1-n4f/`) — protocol cards ≡
+  sheet ≡ Timeline chip ≡ pricing-card bracket, provenance match, 0 console errors.
+- **Paid leg:** one run at user-selected **Quick/Base** on the ≤300-word planted-error excerpt —
+  `01M3Y5HJPC3SAQ1TGPVBATB1HE`, `estimate_credits=912` == the sheet figure; it failed
+  `phase-blocked` at discourse because of F-EST.1-2 below and settled **platform-fault** (net user
+  charge $0; metered proxy `$2.5144`, under the ≤$5 cap). Full ledger in `runs/EST.1.md` § Stage B.
+  Quick was the honest cell: Standard/Base metered $6.60 on this same fixture in ECON.1's I1 leg —
+  over this ticket's cap.
+- **Live finding F-EST.1-1 (fixed, deployed in update 106):** the pricing cards' low→high tier
+  ranges used nearest-10 rounding, so a 2,607 cr Base figure rendered inside a "2,610 – 11,730 cr"
+  bracket it didn't actually fall in. Ranges now round outward (low floors, high ceils); tests pin
+  the containment contract. Caught by N4 live, not by the deterministic suite — the suite had
+  pinned the wrong convention.
+- **Live finding F-EST.1-2 (fixed at branch tip, follow-up deploy owed):** the run sheet's toggle
+  prefill copied seed/stored `phase_defaults` verbatim, so an essay protocol's all-true defaults
+  rendered `discourse`/`second_read` **checked under Quick** and submitted them back as "explicit"
+  levers — the paid run froze and ran two phases Quick's preset disables while pricing Quick. The
+  prefill now applies the launch's disable-only clamp (seed/stored `true`s may only turn a
+  preset-on phase OFF; `?toggle.x=` still wins). Regression test in `server.test.ts`; prod's web
+  image (`5534d93`) predates the fix — see the run ledger's watch list.

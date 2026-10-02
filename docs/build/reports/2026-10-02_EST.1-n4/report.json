@@ -1,0 +1,37 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "a97b9d7840bc",
+  "startedAt": "2026-10-02T10:34:36.970Z",
+  "finishedAt": "2026-10-02T10:35:32.957Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "c3eafa527d3941354e64f6c6b8c1584230b3522e",
+    "observed": {
+      "web": "c3eafa527d3941354e64f6c6b8c1584230b3522e",
+      "api": "c3eafa527d3941354e64f6c6b8c1584230b3522e"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 45005,
+      "error": "page.waitForURL: Timeout 15000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================",
+      "screenshot": "N4.png"
+    }
+  ],
+  "passed": false
+}

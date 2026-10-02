@@ -652,6 +652,79 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     expect(seen).toEqual([{}]); // no claim survives — Quick's rigor defaults govern
   });
 
+  it("EST.1 (F-EST.1-2) — the Quick sheet's toggle PREFILL drops seed/stored trues the preset disables", async () => {
+    // The live finding: the essay seed's all-true `phase_defaults` prefilled discourse/second_read
+    // CHECKED under a Quick rigor; the checked boxes then submitted as `toggle.*=on` — "explicit"
+    // levers the launch honors in both directions — so run 01M3Y5HJPC3SAQ1TGPVBATB1HE froze
+    // `discourse:true, second_read:true` and RAN discourse on a Quick-priced sheet (the F-ECON.1-1
+    // shape via the prefill). Now the prefill applies the same disable-only rule the launch does:
+    // a `true` contradicting the rigor preset is dropped before it can render checked.
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      getRunSheetContext: async () => ({
+        project: {
+          protocol: "essay",
+          venue: null,
+          approvalPolicy: "named",
+          rigor: "standard",
+          modelTier: null,
+          protocolChanged: false,
+          protocolVersion: 1,
+          memoConfidentiality: false,
+          protocolDefaults: {
+            essay: {
+              phaseDefaults: {
+                verification: true,
+                discourse: true,
+                secondRead: true,
+                grounding: true,
+                audit: true,
+              },
+              stage: null,
+            },
+          },
+        },
+        protocols: [],
+        headDraft: { id: "d_1", n: 1, state: "ready", words: 600, sha256: null },
+        sections: [],
+        openObligations: 0,
+        reviewScopeLine: null,
+        reviseScopeLine: null,
+        standingNotes: 0,
+        entitlement: null,
+        dontAskUnder: 0,
+        activeRuns: [],
+        blockedBy: null,
+      }),
+    };
+    const app = createWebApp(deps);
+    const html = await (
+      await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=quick")
+    ).text();
+    const checked = (key: string) =>
+      new RegExp(`name="toggle\\.${key.replace(".", "\\.")}"[^>]*checked`).test(html) ||
+      new RegExp(`checked[^>]*name="toggle\\.${key.replace(".", "\\.")}"`).test(html);
+    expect(checked("discourse"), "seed discourse:true must not render checked under Quick").toBe(
+      false,
+    );
+    expect(
+      checked("second_read"),
+      "seed secondRead:true must not render checked under Quick",
+    ).toBe(false);
+    expect(checked("fact_check"), "Quick keeps fact-check on — the preset's own true").toBe(true);
+    // the user's explicit lever still wins in both directions.
+    const htmlOn = await (
+      await app.request(
+        "/p/the-politics-of-visibility/run?workflow=review&rigor=quick&toggle.discourse=on",
+      )
+    ).text();
+    expect(
+      /name="toggle\.discourse"[^>]*checked|checked[^>]*name="toggle\.discourse"/.test(htmlOn),
+      "?toggle.discourse=on still renders checked under Quick",
+    ).toBe(true);
+  });
+
   it("PRB.23 — no sentinel ⇒ no toggles sent (rigor defaults apply server-side)", async () => {
     const seen: (Readonly<Record<string, boolean>> | undefined)[] = [];
     const deps = makeDeps({ session: () => ({}) });
