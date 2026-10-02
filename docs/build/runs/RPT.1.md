@@ -6,7 +6,7 @@
   REQ-GROWTH-11 (usage half), REQ-SPEC-32(a) (display half); absorbs BL-57 = PR-E4/PR-R3 during+after;
   annotates D-P0.08-2's intra-phase half).
 - Base: `stevevitali/est-1-one-estimate-everywhere` @ `29213dc` (append-only check base).
-- Branch: `stevevitali/rpt-1-live-meter-and-run-report`. Stacked PR, mergePolicy=OPERATOR, never merge.
+- Branch: `stevevitali/rpt-1-live-meter-and-run-report`. Stacked **PR #90** (base `stevevitali/est-1-one-estimate-everywhere` @ `29213dc`), mergePolicy=OPERATOR, never merge. Impl commit `a3f50bf`.
 - **Harness:** Devin CLI (Cognition agentic coding CLI), Anthropic Claude.
 - Design review: `docs/readouts/gate-2026-09-29-design-review.md` — execution-watch meter static,
   report vs ledger contradictions, "0 min" durations, empty Advanced, Showcase-as-real-usage.
