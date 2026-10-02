@@ -23,6 +23,7 @@ import {
   RUN_DELIVER_JOB,
   runBillingPeriodTick,
   sweepExpiredTrials,
+  sweepTrialSpend,
   sweepAutoReload,
   weeklyEstimatorRefit,
   harvestCostObservations,
@@ -225,7 +226,7 @@ export interface WorkerFullBillingDeps extends WorkerBillingDeps {
 
 export async function handleBillingPeriodTick(
   deps: WorkerFullBillingDeps,
-): Promise<PeriodTickResult & { expiredTrials: number }> {
+): Promise<PeriodTickResult & { expiredTrials: number; trialSpend: { day: string; paused: boolean } }> {
   const now = deps.clock.now();
   const subDeps: SubDeps = {
     ids: deps.ids,
@@ -239,7 +240,23 @@ export async function handleBillingPeriodTick(
   };
   const tick = await runBillingPeriodTick(deps.systemExec, subDeps, now);
   const trials = await sweepExpiredTrials(deps.systemExec, subDeps, now);
-  return { ...tick, expiredTrials: trials.expired };
+  // ACT.1 — the reconciled daily trial-COGS tally rides this system-pool sweep (REQ-SPEC-30: the
+  // aggregate read never serves a user request). On a `$50/day` trip the kill switch pauses new
+  // unlocks until UTC rollover; a trip alerts through the same sink the reconcile uses.
+  const trialSpend = await sweepTrialSpend(deps.systemExec, now);
+  if (trialSpend.paused) {
+    const alert: AlertSink = deps.alert ?? ((a) => console.error("[worker] billing alert:", JSON.stringify(a)));
+    await alert({
+      kind: "trial_daily_ceiling",
+      reportKey: `trial-spend:${trialSpend.day}`,
+      detail: JSON.stringify({
+        day: trialSpend.day,
+        projectedCredits: trialSpend.projectedCredits,
+        reconciledCredits: trialSpend.reconciledCredits,
+      }),
+    });
+  }
+  return { ...tick, expiredTrials: trials.expired, trialSpend: { day: trialSpend.day, paused: trialSpend.paused } };
 }
 
 export async function handleAutoReloadSweep(deps: WorkerFullBillingDeps): Promise<unknown> {

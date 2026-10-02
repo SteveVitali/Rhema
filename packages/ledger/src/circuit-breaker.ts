@@ -39,13 +39,18 @@ export async function circuitBreakerState(
 ): Promise<CircuitBreakerState> {
   const threshold = opts.thresholdPct ?? DEFAULT_ABSORBED_THRESHOLD_PCT;
   const since = new Date(now.getTime() - (opts.windowMs ?? DEFAULT_WINDOW_MS));
+  // ACT.1 (ADR-014 §1): a trial-entitlement run's burn is the "trial" absorbed class — a deliberate,
+  // separately-bounded subsidy (the $50/day kill switch), NOT cap-overrun drift. Excluding it keeps
+  // the breaker measuring what it exists for: estimator drift on charged runs. The entitlement's own
+  // $15/run bound already lives in the claim path.
   const row = (
     await exec.query(
       `select
          coalesce(sum(case when kind = 'adjustment' and reason = 'absorbed' then credits else 0 end), 0)::int as absorbed,
          coalesce(sum(case when kind = 'debit' then credits when kind = 'adjustment' and reason = 'absorbed' then credits else 0 end), 0)::int as gross
-       from credit_ledger
-       where at >= $1 and at <= $2`,
+       from credit_ledger cl
+       where at >= $1 and at <= $2
+         and not exists (select 1 from runs r where r.id = cl.run_id and r.entitlement_id is not null)`,
       [since, now],
     )
   ).rows[0] as { absorbed: number; gross: number };

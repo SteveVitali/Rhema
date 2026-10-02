@@ -6,6 +6,7 @@ import type { ModelTier, PlanTier } from "../vocab.js";
 import type { PublicClaimId } from "./public-claims.js";
 import { PUBLIC_CLAIM_IDS } from "./public-claims.js";
 import { PLAN_TIERS } from "../vocab.js";
+import { TRIAL_AUDIENCES, type TrialAudience } from "./trial.js";
 import pricingJson from "./pricing.json" with { type: "json" };
 
 export type BillingCycle = "monthly" | "annual";
@@ -43,16 +44,37 @@ export interface PlanSpec {
 
 export interface TrialSpec {
   windowDays: number;
+  /**
+   * ACT.1 (ADR-014 §5) — `true` marks the interim terms: `wordCap` is the derived bound under the
+   * provisional absorbed-COGS ceiling (`capCeilingUsd`), restored to the original §14.3 figure by
+   * ECON.2 once measured p90 list COGS meets the restore condition. `false` ⇒ restored terms.
+   */
+  interim: boolean;
+  /**
+   * ACT.1 — who the trial claim + first-spend unlock serve: `off` | `test_tenants` (JOURNEY.1's
+   * flagged `is_test` workspaces only) | `everyone` (the operator's go-live flip).
+   */
+  audience: TrialAudience;
   entitlement: { kind: "review"; wordCap: number; rigor: "standard"; modelTier: ModelTier };
+  /** ACT.1 — the provisional absorbed-COGS ceiling (USD/run, metered list) `wordCap` derived under. */
+  capCeilingUsd: number;
   pocketCredits: number;
   upgradePromoCredits: number;
   projects: number;
   concurrency: number;
   voice: "quick_voice_only";
   draftPreviewCredits: number;
+  /** ACT.1 — the daily trial-COGS kill switch in USD/day of proxy-metered list COGS (ADR-014). */
+  dailyCeilingUsd: number;
+  /** derived at load: `ceil(dailyCeilingUsd × platformRate × 100)` — the proxy-credit counter unit. */
   dailySpendCeilingCredits: number;
+  /** derived at load from `includedNoteFmt` — the generated figure-carrying note. */
   includedNote: string;
+  /** the `{cap}`/`{pocket}` template — never literal figures (a digit fails validation). */
+  includedNoteFmt: string;
+  /** derived at load from `postTrialNoteFmt` (`{chatCredits}` = the Free daily chat allowance). */
   postTrialNote: string;
+  postTrialNoteFmt: string;
   eligibilityLine: string;
 }
 
@@ -127,6 +149,35 @@ function assert(cond: boolean, msg: string): asserts cond {
   if (!cond) throw new Error(`pricing.json: ${msg}`);
 }
 
+const TRIAL_AUDIENCE_VALUES = TRIAL_AUDIENCES;
+
+const fmtTemplate = (tpl: string, vars: Record<string, string>): string =>
+  tpl.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
+
+/**
+ * ACT.1 — materialize the derived trial fields before validation: the claim notes render from the
+ * `{cap}`/`{pocket}`/`{chatCredits}` templates and the daily counter converts the USD ceiling into
+ * proxy-metered credits (`usd × platformRate × 100` — the egress proxy meters $1 list COGS as 140
+ * credits). No figure a user reads is hand-typed in the JSON note fields.
+ */
+function materialize(rawPub: PricingPublication): PricingPublication {
+  const t = rawPub.trial;
+  const freeDailyChat = rawPub.plans.free.dailyChatCredits ?? 0;
+  const num = (n: number) => n.toLocaleString("en-US");
+  return {
+    ...rawPub,
+    trial: {
+      ...t,
+      dailySpendCeilingCredits: Math.ceil(t.dailyCeilingUsd * rawPub.platformRate * 100),
+      includedNote: fmtTemplate(t.includedNoteFmt, {
+        cap: num(t.entitlement.wordCap),
+        pocket: num(t.pocketCredits),
+      }),
+      postTrialNote: fmtTemplate(t.postTrialNoteFmt, { chatCredits: num(freeDailyChat) }),
+    },
+  };
+}
+
 // Structural validation at module load — a malformed pricing.json fails any process that imports it.
 function validate(p: PricingPublication): PricingPublication {
   assert(p.usdPerCredit === 0.01, "1 credit = $0.01 (§14.2)");
@@ -154,7 +205,31 @@ function validate(p: PricingPublication): PricingPublication {
   }
   assert(p.trial.windowDays === 14 && p.trial.pocketCredits === 150 && p.trial.upgradePromoCredits === 800,
     "trial constants (14d, 150-credit pocket, 800-credit promo)");
-  assert(p.trial.entitlement.wordCap === 6000, "trial word cap 6,000");
+  // ACT.1 (ADR-014) — the interim cap is DERIVED under the provisional ceiling: it may sit anywhere
+  // between the operator floor (1,500) and the original §14.3 promise (6,000) — never wider, never
+  // below the floor without the operator naming a new ceiling (a `below_floor` derivation pauses).
+  assert(
+    p.trial.entitlement.wordCap >= 1500 && p.trial.entitlement.wordCap <= 6000,
+    `trial word cap ${p.trial.entitlement.wordCap} outside [1500, 6000]`,
+  );
+  assert(p.trial.interim === true, "trial.interim — ECON.2 clears this at the §14.3 restore");
+  assert(
+    (TRIAL_AUDIENCE_VALUES as readonly string[]).includes(p.trial.audience),
+    `trial.audience must be one of ${TRIAL_AUDIENCE_VALUES.join("|")}`,
+  );
+  assert(p.trial.capCeilingUsd > 0, "trial.capCeilingUsd required");
+  assert(p.trial.dailyCeilingUsd > 0, "trial.dailyCeilingUsd required");
+  assert(p.trial.dailySpendCeilingCredits > 0, "trial.dailySpendCeilingCredits derived");
+  // No hand-typed figure may sit inside the note templates — the claim renders generated figures
+  // only (REQ-SPEC-32(b)): the templates must carry their placeholders and zero digit characters.
+  for (const [field, tpl, holes] of [
+    ["includedNoteFmt", p.trial.includedNoteFmt, ["{cap}", "{pocket}"]],
+    ["postTrialNoteFmt", p.trial.postTrialNoteFmt, ["{chatCredits}"]],
+    ["eligibilityLine", p.trial.eligibilityLine, []],
+  ] as const) {
+    for (const hole of holes) assert(tpl.includes(hole), `trial.${field} must carry ${hole}`);
+    assert(!/\d/.test(tpl.replace(/\{\w+\}/g, "")), `trial.${field} embeds a literal figure`);
+  }
   const packs = p.topUpPacks.map((t) => `${t.usd}:${t.credits}`).join(",");
   assert(packs === "10:1000,50:5250,200:22000", "top-up packs 1000/5250/22000");
   // P1.17 — the cost-card derivation inputs must exist and be sane (the page derives from them).
@@ -172,7 +247,7 @@ function validate(p: PricingPublication): PricingPublication {
   return p;
 }
 
-export const PRICING: PricingPublication = validate(raw);
+export const PRICING: PricingPublication = validate(materialize(raw));
 
 export function planOf(tier: PlanTier | string): PlanSpec {
   return PRICING.plans[tier as PlanTier] ?? PRICING.plans.free;

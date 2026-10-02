@@ -72,7 +72,9 @@ export interface ReconcileMeasurement {
 }
 
 export interface ReconcileAlert {
-  readonly kind: "usage_drift" | "balance_divergence";
+  // ACT.1 — `trial_daily_ceiling`: the $50/day trial-COGS kill switch tripped (the period-tick
+  // sweep's `sweepTrialSpend` — pauses new trial unlocks until UTC rollover).
+  readonly kind: "usage_drift" | "balance_divergence" | "trial_daily_ceiling";
   readonly reportKey: string;
   readonly driftPct?: number;
   readonly proxyUsd?: number;

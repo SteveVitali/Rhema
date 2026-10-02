@@ -233,6 +233,14 @@ export const COPY = {
     stageLabel: "Stage",
     wholeDraftPrefix: "Whole draft:",
     includedLabel: "Included",
+    // ACT.1 — the trial refusal notices (§14.3; REQ-SPEC-8): deny / challenge / paused each render
+    // honest copy and create no run. The word-cap + shape refusals are plain facts of the claim.
+    trialDenied: "This device has already had its included Review — add credits to run.",
+    trialCeiling: "The included-Review quota is full for today — try again tomorrow, or add credits.",
+    trialPhoneChallenge: "Before your included Review can start, we need to verify this device — a quick phone check is on the way.",
+    entitlementUnavailable: "The included Review isn't available on this account — add credits to run.",
+    trialWordCapFmt: "Your included Review covers up to {cap} words — this draft runs the first {cap}; shorter scope or add credits to run it all.",
+    trialShape: "The included Review is Standard rigor on Base — switch the levers back or add credits to run your way.",
     // EST.1 — the model-tier select + plan-clamp notice (§6.5's tier choice, REQ-IDE-13 amended) and
     // the unmeasured-inputs estimate state (fail closed — "—", never a fabricated figure).
     modelTierLabel: "Model tier",
@@ -1440,6 +1448,8 @@ export const COPY = {
     subscribeCta: "Choose {tier}",
     monthlyLabel: "Monthly",
     annualLabel: "Annual −15%",
+    // PR-U6 — the ladder's annual price reads "$X/mo billed annually" (never the "$/mo Annual" concat).
+    annualBillingLabel: "billed annually",
     manageCta: "Manage billing",
     manageNote: "Payment methods, invoices and receipts live in the Stripe portal.",
     cancelCta: "Cancel plan",
@@ -2152,6 +2162,8 @@ export const COPY = {
     freePostNote: "After the window: keep your workspace, buy runs with top-ups.",
     waitlistCta: "Join the waitlist",
     startCta: "Start free",
+    // PR-U6/ACT.1 — a paid card's CTA names its plan ("Start Writer"), never a generic affordance.
+    startPlanCtaFmt: "Start {plan}",
     signInCta: "Sign in",
     includedCreditsLabel: "included credits / mo",
     coversLabel: "What it covers",

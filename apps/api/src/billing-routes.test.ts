@@ -195,7 +195,8 @@ describe("GET /billing/plans — the pricing.json publication", () => {
     expect(body.version).toBe(PRICING.version);
     expect(Object.keys(body.plans)).toEqual(["free", "writer", "studio", "studio_max", "team"]);
     expect(body.plans["team"]?.waitlist).toBe(true);
-    expect(body.trial.entitlement.wordCap).toBe(6000);
+    // ACT.1 — the published cap IS the config (the interim 2,800 under the $15 ceiling).
+    expect(body.trial.entitlement.wordCap).toBe(PRICING.trial.entitlement.wordCap);
     expect(body.topUpPacks).toHaveLength(3);
     // HOT.1 — the claims gate is server-side: hidden claims transmit null on the DTO itself.
     // EST.1 — `plans.whatItCovers` ships ENABLED: the gated lines transmit the COMPUTED coverage

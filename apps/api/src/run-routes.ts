@@ -56,6 +56,8 @@ import {
   capFromEstimate,
   projectProtocolOverridesSchema,
   CURRENT_RATE_TABLE_VERSION,
+  PRICING,
+  trialAudienceAllows,
 } from "@rhema/contracts";
 import {
   effectivePlanTier,
@@ -467,6 +469,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
 
       // the trial entitlement run — the unlock gate is the §14.3 identity-before-spend boundary.
       if (body.entitlementId) {
+        // ACT.1 — the go-live audience gates the unlock itself: `test_tenants` serves JOURNEY.1's
+        // flagged workspaces only (operator-set `is_test`, never user-settable); a POST from an
+        // uncovered audience is refused by name. The everyone-flip is the operator's pause.
+        const wsTest = (
+          await tx.query("select is_test from workspaces where id = $1", [principal.workspaceId])
+        ).rows[0] as { is_test: boolean } | undefined;
+        if (!trialAudienceAllows(PRICING.trial.audience, wsTest?.is_test === true)) {
+          return { error: "entitlement_unavailable" as const };
+        }
         const ent = await trialEntitlementFor(tx, principal.billingAccountId);
         if (!ent || ent.id !== body.entitlementId)
           return { error: "entitlement_unavailable" as const };
@@ -495,15 +506,24 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         } else if (ent.state !== "unused") {
           return { error: "entitlement_unavailable" as const };
         }
-        // the entitlement IS a Review ≤6,000 words on Standard/Base — a run shaped otherwise is not it.
-        if (workflow !== "review" || body.rigor !== "standard" || body.modelTier !== "base") {
+        // the entitlement IS the configured shape — Review at Standard rigor on Base (ACT.1: the
+        // gate reads the same config the claims render from, never a second copy).
+        if (
+          workflow !== PRICING.trial.entitlement.kind ||
+          body.rigor !== PRICING.trial.entitlement.rigor ||
+          body.modelTier !== PRICING.trial.entitlement.modelTier
+        ) {
           return {
             error: "trial_shape" as const,
             detail: "the included Review is Standard rigor on Base",
           };
         }
         const words = (body.inputSnapshot as { wordCount?: number } | undefined)?.wordCount ?? 0;
-        if (words > ent.wordCap) return { error: "trial_word_cap" as const, wordCap: ent.wordCap };
+        // ACT.1 (ADR-042) — the cap is read from CONFIG at claim time, never the entitlement row's
+        // frozen-at-signup value: an existing `locked` row follows config with no data backfill.
+        const configWordCap = PRICING.trial.entitlement.wordCap;
+        if (words > configWordCap)
+          return { error: "trial_word_cap" as const, wordCap: configWordCap };
       }
       return null;
     });

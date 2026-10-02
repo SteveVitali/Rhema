@@ -328,6 +328,18 @@ export interface CreateRunDto {
   readonly corrKind?: string;
   readonly corrK?: number;
   /**
+   * ACT.1 (§14.3; REQ-SPEC-8) — the included-Review claim: the trial entitlement's row id the sheet
+   * rendered. The api verifies it against the account's current row, runs the first-spend unlock
+   * gate on a `locked` row, and holds/debits against the entitlement (zero credits).
+   */
+  readonly entitlementId?: string;
+  /**
+   * ACT.1 (REQ-GROWTH-10) — the browser's device fingerprint (the web host's `rhema_fp` cookie
+   * value). The api stores only a salted SHA-256 (`rhema:trial:`) — never the raw value; the web
+   * host keeps it HttpOnly so no script can exfiltrate it.
+   */
+  readonly fingerprint?: string;
+  /**
    * P1.13 — the `figure` workflow's facts (§7.5): the verbatim visualize request, the entry point's
    * provenance seeds, and (iterate) the existing figure id. The api mints/verifies the row — a
    * client-invented figureId 404s.
@@ -1144,6 +1156,8 @@ export interface PrincipalDto {
   readonly userId: string;
   readonly workspaceId: string;
   readonly billingAccountId: string;
+  /** ACT.1 — true when the workspace is a JOURNEY.1 flagged test tenant (operator-set `is_test`). */
+  readonly isTest?: boolean;
 }
 
 /** GET /billing/usage — the level-1 usage glance: balance + the account's recent runs' spend. */
@@ -1173,7 +1187,8 @@ export interface UsageDto {
 export interface BillingPlanDto {
   readonly display: string;
   readonly monthlyUsd: number;
-  readonly annualMonthlyUsd: number;
+  /** PR-U6/ACT.1 — `null` on Team (waitlist, no annual cycle); guarded, never compared bare. */
+  readonly annualMonthlyUsd: number | null;
   readonly includedCreditsMonthly: number;
   readonly dailyChatCredits: number | null;
   readonly concurrency: number;
@@ -1189,6 +1204,8 @@ export interface BillingPlanDto {
   readonly dailyRunCeiling?: number;
   readonly priorityQueue?: boolean;
   readonly waitlist?: boolean;
+  /** ACT.1 — Team is per-seat: the price line renders `/seat/mo`. */
+  readonly perSeat?: boolean;
   readonly seatsIncluded?: number;
   /** HOT.1 — null while the plan's coverage line is a hidden claim (the api redacts it server-side). */
   readonly whatItCovers: string | null;

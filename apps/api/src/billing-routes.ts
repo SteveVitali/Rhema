@@ -39,6 +39,7 @@ import {
   priceCents,
   topUpPack,
   visiblePlansPublication,
+  claimsForAudience,
   PLAN_TIERS,
   type PlanTier,
   type PurchaseMode,
@@ -289,8 +290,17 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   // ---- the plan ladder (REQ-GROWTH-4/7/8): the pricing.json publication the web renders. HOT.1 —
   // `visiblePlansPublication` applies the claims gate server-side: a hidden claim's text transmits as
   // null on the DTO, so no client can render what the config has disabled. -------------------------
-  app.get("/billing/plans", (c) => {
-    const visible = visiblePlansPublication(undefined, surfacePricer());
+  app.get("/billing/plans", async (c) => {
+    // ACT.1 — the claims gate resolves per AUDIENCE: the trial claim renders only for workspaces the
+    // `trial.audience` flag covers (is_test under `test_tenants`); everyone else's DTO carries the
+    // gated fields as null. `isTestWorkspace` fails closed (a read error hides the claim).
+    const principal = deps.principal(c);
+    const isTest = principal
+      ? await deps.txRunner
+          .run(principal.workspaceId, (tx) => isTestWorkspace(tx, principal.workspaceId))
+          .catch(() => false)
+      : false;
+    const visible = visiblePlansPublication(claimsForAudience(undefined, isTest), surfacePricer());
     return c.json({
       version: PRICING.version,
       issuedAt: PRICING.issuedAt,

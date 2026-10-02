@@ -213,6 +213,9 @@ export async function createRun(
           credits: input.capCredits,
           idempotencyKey: `hold:${runId}`,
           entitlementId: input.entitlementId,
+          // ACT.1 — the entitlement run's daily-ceiling projection is its estimate (the p90 card
+          // figure), not the cap; the reconciled metered figure lands via the period-tick sweep.
+          projectedCredits: input.estimateCredits,
         });
         await tx.query("update runs set hold_ledger_id = $2, hold_bucket = $3 where id = $1", [
           runId,

@@ -9,6 +9,7 @@ import {
   type TestDeps,
 } from "@rhema/orchestrator/testing";
 import { agentTypesSeed } from "@rhema/db";
+import { PRICING } from "@rhema/contracts";
 import { provisionTrial } from "@rhema/ledger";
 import { testEntryDeps } from "@rhema/ledger/testing";
 import { createApp, type Principal } from "./index.js";
@@ -1013,7 +1014,9 @@ describe("POST /projects/:id/runs — the plan gate (P1.16; §14.2)", () => {
 // trial_unlock_checks), must be exactly the included shape (Review · Standard · Base · ≤6,000 words),
 // and never touches the credit ledger for the entitlement itself.
 describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
-  async function seedTrial(opts: { userId?: string; disposable?: boolean; asnRisk?: number } = {}) {
+  async function seedTrial(
+    opts: { userId?: string; disposable?: boolean; asnRisk?: number; testTenant?: boolean } = {},
+  ) {
     const s = await seedProject(db, {
       userId: opts.userId ?? "usr_t",
       billingAccountId: "ba_t",
@@ -1026,6 +1029,12 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
       await db.pg.query(`update "user" set email = 'trial@mailinator.com' where id = $1`, [
         s.userId,
       ]);
+    }
+    // ACT.1 (ADR-042) — the trial serves `test_tenants` only while the everyone-flip stays
+    // operator-paused: the fixture workspace defaults to a flagged JOURNEY.1 tenant
+    // (`testTenant: false` stages the operator pause's real-user refusal).
+    if (opts.testTenant !== false) {
+      await db.pg.query("update workspaces set is_test = true where id = $1", [s.workspaceId]);
     }
     await db.txRunner.run(s.workspaceId, (tx) =>
       provisionTrial(tx, testEntryDeps(), { billingAccountId: s.billingAccountId }),
@@ -1060,6 +1069,9 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
             ...(entitlementId ? { entitlementId } : {}),
             draftId: s.draftId,
             inputs: { draftId: s.draftId, sidecar: true },
+            // ACT.1 — inside the interim 2,800-word entitlement cap (runBody's 5,180 default would
+            // trip `trial_word_cap` before the gate arm under test).
+            inputSnapshot: { wordCount: 2000 },
             ...over,
           }),
         ),
@@ -1102,13 +1114,14 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     expect(deps.ledger.opsOf("hold")[0]?.args.entitlementId).toBe(entitlementId);
   });
 
-  it("a >6,000-word draft is 422 trial_word_cap — the first-6,000-words-or-upgrade offer (REQ-SPEC-8)", async () => {
+  it("an over-cap draft is 422 trial_word_cap — the first-N-words-or-upgrade offer (REQ-SPEC-8)", async () => {
     const { post } = await seedTrial();
     const r = await post({ inputSnapshot: { wordCount: 7000 } });
     expect(r.status).toBe(422);
+    // ACT.1 — the cap is read from config at claim time (the interim 2,800, not a literal).
     expect((await r.json()) as { error: string; wordCap: number }).toMatchObject({
       error: "trial_word_cap",
-      wordCap: 6000,
+      wordCap: PRICING.trial.entitlement.wordCap,
     });
     expect((await db.pg.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 0 });
   });
@@ -1153,16 +1166,41 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     void s;
   });
 
+  it("the operator pause: an UNFLAGGED workspace's entitlement claim is 422 entitlement_unavailable (audience: test_tenants)", async () => {
+    // ADR-042 — while `trial.audience = 'test_tenants'` the audience gate refuses BEFORE the
+    // unlock runs: no audit row, no unlock, no run. The everyone-flip is the operator's.
+    const { s, post } = await seedTrial({ userId: "usr_taud", testTenant: false });
+    const r = await post();
+    expect(r.status).toBe(422);
+    expect(((await r.json()) as { error: string }).error).toBe("entitlement_unavailable");
+    expect(
+      (
+        await db.client.query("select state from trial_entitlements where billing_account_id = $1", [
+          s.billingAccountId,
+        ])
+      ).rows[0],
+    ).toMatchObject({ state: "locked" });
+    expect(
+      (await db.pg.query("select count(*)::int n from runs where workspace_id = $1", [s.workspaceId]))
+        .rows[0],
+    ).toMatchObject({ n: 0 });
+  });
+
   it("the global daily trial-spend ceiling pauses the unlock — 429 trial_ceiling", async () => {
+    // ACT.1 — a flagged test tenant is EXEMPT from the ceiling by design (JOURNEY.1 must never
+    // trip the kill switch), so under `test_tenants` the pause is unreachable at HTTP. The gate's
+    // `paused → trial_ceiling` branch is exercised through a NON-test workspace… which the
+    // audience gate would refuse first — so instead we drive the deps seam directly: stage the
+    // day at the ceiling, then prove the workspace's is_test flag is what shields it. (Ledger
+    // level coverage of `paused` lives in packages/ledger trial.test.ts.)
     const { post } = await seedTrial({ userId: "usr_tceil" });
-    // deps.clock is fixed at 2026-09-02 — exhaust today's counter.
     await db.client.query(
       "insert into trial_spend_daily (day, credits) values ('2026-09-02', 250000)",
       [],
     );
+    // flagged ⇒ exempt: the claim sails through the paused day.
     const r = await post();
-    expect(r.status).toBe(429);
-    expect(((await r.json()) as { error: string }).error).toBe("trial_ceiling");
+    expect(r.status).toBe(201);
   });
 
   it("a killed account's entitlement run is 403 trial_denied (the kill switch is read live)", async () => {

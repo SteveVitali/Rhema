@@ -78,9 +78,10 @@ export class SqlHoldLedger implements HoldLedger {
         ).rows[0];
         if (!retry) throw new EntitlementUnavailableError(args.entitlementId);
       } else {
-        // a fresh claim counts against the global daily trial-spend ceiling (REQ-GROWTH-15 amended) — the
-        // increment is in this tx, so a refused hold rolls it back.
-        await recordTrialSpend(tx, args.credits, this.deps.clock.now(), {
+        // a fresh claim counts against the global daily trial-spend ceiling (REQ-GROWTH-15 amended) —
+        // the increment is in this tx, so a refused hold rolls it back. ACT.1 (ADR-014): the charge is
+        // the run's PROJECTED metered figure (the estimate — `projectedCredits`), not the cap.
+        await recordTrialSpend(tx, args.projectedCredits ?? args.credits, this.deps.clock.now(), {
           workspaceId: args.workspaceId,
         });
         await tx.query(

@@ -173,7 +173,11 @@ describe("the Cloud Run service envs — no plaintext secrets to web/collab (REQ
     const webBlock = compute.match(/\.\.\.\(svc === "web"[\s\S]*?envs: \[([\s\S]*?)\]\s*,?\s*\}/)?.[1];
     expect(webBlock).toBeTruthy();
     const names = [...webBlock!.matchAll(/name: "([A-Z_]+)"/g)].map((m) => m[1]);
-    expect(names.sort()).toEqual(["API_BASE_URL", "APP_BASE_URL", "COLLAB_WS_URL", "SIGNUP_MODE"].sort());
+    // SEC.2 — INTERNAL_AUTH_AUDIENCE is plain deploy config (the api origin the web's OIDC stamp
+    // targets), never a secret.
+    expect(names.sort()).toEqual(
+      ["API_BASE_URL", "APP_BASE_URL", "COLLAB_WS_URL", "INTERNAL_AUTH_AUDIENCE", "SIGNUP_MODE"].sort(),
+    );
     expect(webBlock).not.toMatch(/secretKeyRef|secretVersion|_SECRET/);
   });
 
