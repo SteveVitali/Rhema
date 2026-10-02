@@ -1,7 +1,7 @@
 # EST.1 — One estimate everywhere (and a tier the user can choose)
 
 - **Ticket:** `docs/tickets/67_EST.1__one-estimate-everywhere.md` (seq 67, round 3, money)
-- **Branch:** `stevevitali/est-1-one-estimate-everywhere` · **base:** `stevevitali/econ-1-charge-what-we-meter` @ `762f4c2` · **PR:** #89 (stacked; OPERATOR merge policy — never merged by the agent)
+- **Branch:** `stevevitali/est-1-one-estimate-everywhere` · **base:** `stevevitali/econ-1-charge-what-we-meter` @ `762f4c2` · **PR:** #89 (stacked; OPERATOR merge policy — never merged by the agent) · **impl commit:** `35dd40b`
 - **Depends on:** ECON.1 (calibration store, cap derivation, corrected §6.5 presets — consume, never re-derive)
 - **Absorbs:** BL-57 (PR-E1/PR-E3), BL-58 (PR-E2), BL-11(a) (D-DEF.3-2), BL-12 (X-lever-matrix-flake)
 - **Spend:** ≤ $5 metered (aim ≈ $3), at most ONE paid run (≤300-word fixture, user-selected Base tier)
