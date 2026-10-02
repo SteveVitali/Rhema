@@ -147,6 +147,133 @@ the LEDGER charge is the short figure.
 - `cost-cards` tests: fold/derive/capFor, admissibility, band bucketing, idempotent re-fold.
 - `estimator-refit` tests: multiplier floor/ceiling, in-sample reach computation.
 
+## Stage B — deploy + migration (2026-10-02)
+
+- **Migration:** `0049_cost_calibration.sql` applied to prod via `scripts/live/prod-migrate-seed.mjs`
+  over the IAP tunnel — additive-migration gate linted it (`--newer-than 0048`, pass) before apply;
+  49 migrations recorded. Live shape verified: `cost_observations` is tenant-scoped RLS (1 policy);
+  `cost_card_cells` / `cap_calibration_reports` / `estimator_cells` are non-tenant platform
+  aggregates (aggregates + ids only, invariant #10).
+- **Build:** Cloud Build `6cffe99c` — the four diffed services (`run-task`, `api`, `web`, `worker`)
+  built natively on amd64, tag `econ1-13e8b95`, `_GIT_SHA=13e8b95` (chain tip). Digests pinned in
+  `infra/pulumi/Pulumi.prod.yaml`.
+- **Preview:** `pulumi preview --stack prod` — 6 updates, 146 unchanged, **zero stateful
+  replace/delete** (api/web/worker template+scaling; fetcher/collab/export scaling-only drift).
+- **Up:** `pulumi up` update 103 (1m2s). `/healthz` provenance on api + web reports
+  `gitSha:"13e8b95"` — the chain tip. Deployed env verified: `DEBIT_MODE=committed` on api AND
+  worker (the flag ships dark — ADR-031); `RUN_TASK_IMAGE_DIGEST` = the new run-task digest;
+  `ANTHROPIC_ADMIN_KEY_SECRET` already bound (the nightly `usage.reconcile` report source is live).
+- **Provenance row:** `deployments` `prod:13e8b956d635c3025a3e582add7c627d353f374b`
+  (2026-10-02T05:31:48Z; `protocols_version 0.4.0+ec61156725a895ab`, rate table 2026-10-02).
+- **Test tenant:** `test+jrn-a@rhema.tools` (workspace `01M3V0VJ74HQXDPWPW2V8125S4`, `is_test`,
+  trial_active/writer). Funded via `admin-cli house-grant` — 8,000cr promo expiring 2026-11-01
+  (ledger `01M3XHQ0JVQN03E61XT70NVNGX`, audit `01M3XHQ0PRDNH0JHJ7EAT8FVF4`); the account's
+  spendable buckets were 1,122cr (promo 962 + trial_pocket 150 + daily 10) vs the Standard/Base
+  hold requirement (~5.7k). Approval policy set to `run_to_completion` for the instrumented legs
+  (the I1 run itself was created under `named` — its `approve_scope` gate was approved through the
+  real `/runs/:id/gates/:gid` route).
+- **Notice dry run (read-only, $0):** `meteredNoticeRecipients` on prod returns **2 recipients** —
+  the operator account (`14stevevitali@gmail.com`, `subscription+topup`) and a legacy pre-is_test
+  probe account (`prb16-probe-…@rhema.tools`, `topup`); every `is_test` workspace (incl. jrn-a) is
+  excluded. Template renders credits/cap/top-up/plan vocabulary, effective-date placeholder, no
+  "you will be billed" phrasing. Nothing sent; no flip.
+- **Reconcile leg (`usage.reconcile`, 2026-10-02T05:49Z):** enqueued on prod via pg-boss
+  (`job 5fa8aeba-5a57-4850-9ef0-525cc189f3e3`) — the REQ-SPEC-24.1 **balance assertion ran live and
+  passed** (`balances ok`), but the report/window arms skipped: the worker boot logged
+  `ANTHROPIC admin key is a placeholder — Usage & Cost report pull unconfigured`. Verified directly:
+  `rhema-prod-anthropic-admin-key` has exactly one version (created 2026-09-17) whose value is the
+  seeded placeholder `sk-ant-admin_P…` (the earlier session's "real admin key" read was a prefix
+  collision — `sk-ant-admin_P` vs a real `sk-ant-admin01…`; no real admin key exists in the
+  project — every populated `*-anthropic-api-key` is a `sk-ant-api…` workspace key, which the
+  Usage & Cost API refuses 401 per STB.4). → the report-pull arm is **HUMAN-H7 pending**; recorded as
+  `D-ECON.1-1` in DEFERRALS.
+
 ## Stage B legs — live spend log
 
-(to be appended per leg)
+| leg | cell | run | state | metered (proxy) | list $ | committed | notes |
+|---|---|---|---|---|---|---|---|
+| I1 | review/standard/base · xs (267w excerpt) | `01M3XHQHWJWCP8VXDAVCH8B0C5` | **completed** 06:15:57Z | **919 cr** (131 proxy rows) | **$6.5992** | 919 cr (9 debits) | **F5-completed:** hold 5764 → release 4845; debits = proxy Σ = spent_credits = 919 — four-number agreement. Twins: sdk_estimate 937 / sdk_stream 616 (display-only, never read). |
+| F5b | review/standard/base · xs (cancel mid-phase) | `01M3XM5X8DARDRX8YGE5WQQRT4` | **cancelled** 06:25:31Z | **150 cr** (37 proxy rows) | **$1.0825** | 139 cr (2 debits) + 11 absorbed | **F5-cancel:** approved `approve_scope`, pod mid-craft (a2, ~3min), user `POST /runs/:id/stop` → hold 5764 → release 5625. debits 139 + `adjustment{absorbed}` 10 (settle) + 1 (late proxy row 06:26:23 — the D-E late-arrival path) = proxy Σ 150. spent_credits 149 (pre-late-row). No silent burn; no over-debit. |
+| N6 | review/quick/base · s (1029w essay, via UI) | `01M3XN53DEJY0NRJTTK2QDH8Z6` | **completed** 07:15:12Z — `delivery.label=unverified` | **724 cr** (163 proxy rows) | **$5.1992** | 438 debits − 159 platform-fault refund + 445 absorbed | Journey `owed` (expected-red; dossier poll hit the 40-min deadline at 07:14 vs deliver 07:15). Live: 16 searches / 32 fetches metered — RES.1's restore is real (vs the incident's zero); but all 5 checkable claims delivered `unverifiable` — every cited source failed the cited⇒fetched strip (the D-P0.15i-2 class). `claim_cap:5` froze server-side; the `platform_fault:zero_coverage` refund (159cr) + hold release (3046→2608) settled correctly. **Not a clean §6.5 cell:** F-ECON.1-1 ran discourse(61cr)+second_read(23cr) anyway. |
+| I4 | review/quick/base · xs (267w excerpt, post-fix) | `01M3XRNG6E4XVY8VSZ8V3RE0A5` | **completed** 08:01:03Z — `delivery.label=unverified` | **477 cr** (92 proxy rows) | **$3.4315** | 477 debits − 164 platform-fault refund + 164 absorbed | **Clean §6.5 cell:** phases = intake 46 / craft 42 / verification 61 / argument 68 / letter 48 — **no discourse, no second_read** (vs N6's +84cr of disabled phases); `claim_cap:5` frozen, the claim ledger inventories all claims (8 checkable Tier-1/2), only 5 verified. Four-number agreement: Σ debits 477 = proxy Σ 477 = `spent_credits` 477; hold 2124 → release 1647. `platform_fault:zero_coverage` refunded verification's 164cr committed claim + absorbed the 164cr metered residue — committed mode charges 313 net, metered burn honest. Twins: sdk_estimate 431 / sdk_stream 265. |
+
+Cumulative list spend: **$16.31** of the ≤$30 cap (I1 $6.60 + F5b $1.08 + N6 $5.20 + I4 $3.43).
+
+**Committed-mode reading of the cancel leg:** under `debitMode=committed` the user pays the committed
+139 while the meter reads 150 — the 11cr gap is written as `adjustment{reason:'absorbed'}` (D-C/D-E:
+cancel burn + late-arrival absorbed, never silently debited). Under `debitMode=metered` the settle
+would charge the metered 150 (cap-clamped) — the flag stays dark pending the notice window.
+Post-settle note: `runs.spent_credits` re-wrote to 150 once the late proxy row folded — the
+displayed figure converged to the meter exactly.
+
+## Stage B — live finding F-ECON.1-1 (2026-10-02, the N6 walk surfaced it)
+
+**Defect:** the §6.7 layering (`rigor defaults < protocol phase_defaults < stored overrides < sheet
+toggles`, `run-routes.ts`) let the **essay seed's all-true `phase_defaults`** (`discourse:true`,
+`second_read:true`, …) re-enable phases the Quick preset disables. N6's run
+`01M3XN53DEJY0NRJTTK2QDH8Z6` froze `inputs.{discourse:true, second_read:true}` on a `rigor=quick`
+review — priced AND running the two phases §6.5 says a Quick review does not run (the claim_cap:5
+did freeze correctly). This is the same divergence class as D-PRB.21-1, one layer deeper.
+
+**Fix (in-tree, this commit range):** seed/stored phase-defaults may only ever DISABLE relative to
+the rigor preset — a `true` that contradicts a rigor `false` is dropped; the explicit sheet lever
+still wins both ways (regression pinned in `run-routes.test.ts` — essay quick →
+`discourse:false, second_read:false`; memo `discourse:false` still lands; user toggle still
+overrides). Deployed as a follow-up econ1 build; the clean Quick cell is re-legged after.
+
+**Consequence for the N6 leg:** the in-flight run is still valid D-RES.1-2 evidence (the asserts are
+the RES.1 research restore, not toggle conformance) but it is NOT a clean §6.5 Quick cell — recorded
+honestly with its inflated metered cost.
+
+### Follow-up deploy (F-ECON.1-1 fix tip `e264219`, update 104)
+
+- Cloud Build `e1fd8bc4` SUCCESS on `e264219` (tag `econ1-e264219`); digests re-pinned in
+  `Pulumi.prod.yaml` (api/web/worker/run-task; the five untouched services keep bill3 pins).
+- `pulumi preview`: 6 updates, 146 unchanged, **zero stateful replace/delete** (same shape as
+  update 103). `pulumi up` update 104 (1m32s).
+- Provenance: `/healthz` on api + web report `gitSha:"e264219"`; api revision
+  `rhema-prod-api-e745ce0-00056-tkx` (07:34Z) carries `DEBIT_MODE=committed`.
+- **Conformant Quick leg (post-fix):** `01M3XRNG6E4XVY8VSZ8V3RE0A5` on
+  `res1-probe-2026-10-01-2` (267w excerpt) — frozen inputs verified live:
+  `claim_cap:5, discourse:false, second_read:false, verification:true`; estimate 708 / cap 2124.
+  This is the clean §6.5 Quick cell the ticket asks for. Result: completed 08:01:03Z
+  (`delivery.label=unverified`, checkable 8 / covered 0 → `platform_fault:zero_coverage` settle —
+  second consecutive zero-coverage Quick delivery on this fixture, same D-P0.15i-2 cited⇒fetched
+  strip class as N6); four-number agreement in the legs table above.
+- **Provenance row:** `deployments` `prod:e2642192f63236b2ce3c75faf1bdb72b654fe734`
+  (2026-10-02T07:37:05Z; `protocols_version 0.4.0+ec61156725a895ab`, rate table 2026-10-02).
+
+## Stage B — calibration harvest re-run + cap refit (2026-10-02, post-I4)
+
+`econ1-harvest.mts` re-ran against prod with `presetCutover=2026-10-02T07:34:00Z` (the e264219
+conformance deploy; per ADR-032 the cutover is deploy-stamped wall-clock truth) and
+`researchAfter=2026-10-01T12:39:56Z` (RES.1's research restore). Four new observations written —
+one per Stage-B leg — bringing the store to **97 observations**:
+
+| verdict | n | the rows |
+|---|---|---|
+| admissible | **0** | — |
+| `no_proxy_rows` | 21 | pre-metering-history runs |
+| `not_completed` | 58 | cancelled/failed/**platform_fault** — incl. F5b (cancelled), N6 + I4 (`outcome=platform_fault` — RES.2's Unverified deliveries are evidence, never fit input) |
+| `pre_preset_fix` | 18 | incl. I1 — ended 06:15Z, before the §6.5 conformance deploy |
+
+- **`cost_card_cells`:** 43 cells recomputed (`fit_version econ1@2026-10-02`) — every observation
+  feeds a card cell by design (ADR-032: a cancelled run's metered burn is real cost evidence), so
+  the measured cards exist even where admissibility fails. The ECON.1 legs land as
+  `review/standard/base/xs/completed` (919 cr / $6.60), `…/cancelled` (150 cr / $1.08),
+  `review/quick/base/{s,xs}/platform_fault` (724 cr / $5.20; 477 cr / $3.43).
+- **`cap_calibration_reports`: 0 rows.** `refitCapMultipliers` runs only on `admissible`
+  observations and needs `CAP_REFIT_MIN_SAMPLE = 5` per bucket — with zero admissible prod samples
+  the honest result is **no adopted per-bucket multipliers**: deployed caps stay at the modeled
+  REQ-BILL-7 defaults (1.5× hold / 1.35 tighten / 1.25 floor / 2× runtime breaker). The refit
+  machinery is unit-tested and exercised live; the data floor is unmet, not the mechanism. →
+  **D-ECON.1-3** (adoption awaits organic admissible traffic via the weekly
+  `billing.estimator-refit` job).
+- **`estimator_cells`:** the fold's writer is the reconcile `rows` arm
+  (`recalibrate` → `persistEstimatorCell`), which Anthropic's window-only Usage & Cost API never
+  emits — the durable table is loadable on api+worker boot (`loadEstimatorCells` →
+  `setInstrumentedOverride`) but stays empty until a report source yields per-request rows. The
+  estimator keeps its prior instrumented overrides. Same H7 root cause as D-ECON.1-1.
+- **Unmeasured cells:** the spend plan's I2/I2′/I3 Standard cells and every Balanced/Frontier cell
+  stay `derived` (the ticket's own fallback) — spend stopped at $16.31 rather than buying cells a
+  zero-admissible store could not fit anyway. → **D-ECON.1-4**.

@@ -77,3 +77,21 @@ implements the table — Base tier → Haiku research subs, Balanced → Sonnet 
   `D-ECON.1-2` reopens.
 - A Quick review's metered burn exceeds its card's p95 with the cap on — the cap isn't binding the
   phases that matter.
+
+## Addendum — 2026-10-02 (preset precedence, found live by the N6 walk)
+
+The §6.5 preset must bind against **defaults**, not just the user. Live evidence (run
+`01M3XN53DEJY0NRJTTK2QDH8Z6`): the essay protocol seed pins `phase_defaults {discourse:true,
+second_read:true, …}`, and the launch layering (`rigor < protocol < stored < sheet`) let those
+seeded `true`s re-enable both phases on a `rigor=quick` run — priced as Quick's five-phase shape's
+conformance was broken exactly where a user could not see it. The rule is now:
+
+> A seeded protocol's `phase_defaults` and a project's stored phase-defaults may only ever
+> **disable** a phase the rigor preset runs. A `true` that contradicts the preset's `false` is
+> dropped — defaults never outrank a preset. The sheet's explicit per-run toggle is the only
+> layer that may turn a preset-disabled phase back on.
+
+Rationale for the asymmetry: a protocol declaring `discourse:false` (Memo) is a constraint the
+essay shape may not lift; a protocol declaring `discourse:true` (Essay) is already the Standard
+default — the only thing it could ever do is silently un-Quick a Quick run. Pinned in
+`run-routes.test.ts` ("ECON.1 — §6.5 …"); recorded as run-ledger finding F-ECON.1-1.
