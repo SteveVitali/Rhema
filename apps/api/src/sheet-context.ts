@@ -15,6 +15,8 @@ import {
   allowedModelTiers,
   parseUserPrefs,
   projectProtocolOverridesSchema,
+  PRICING,
+  trialAudienceAllows,
   type ModelTier,
   type PlanTier,
   type WorkflowKey,
@@ -102,16 +104,39 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
       ).catch(() => ({ rows: [{ n: 0 }] }))
     ).rows[0] as { n: number };
 
+    // ACT.1 — the sheet must see the entitlement in BOTH pre-claim states (PR-J1: signup provisions
+    // it `locked`; the first Run click's unlock gate moves it `locked→unused`). A row counts only
+    // when the account's trial machine is live (`trial_pending`|`trial_active`), the kill switch is
+    // unset, the window is open, and the workspace sits inside the go-live audience (`is_test` is
+    // operator-set; the everyone-flip is the operator's pause). `wordCap` emits the CONFIG cap —
+    // runs read the cap from config at claim time, never a stale row value (ADR-042).
     const entitlement = (
       await deps.db.query(
-        `select id, kind, word_cap, rigor, model_tier from trial_entitlements
-          where billing_account_id = $1 and state = 'unused' and (expires_at is null or expires_at > now())
-          order by expires_at asc nulls last limit 1`,
-        [principal.billingAccountId],
+        `select e.id, e.kind, e.rigor, e.model_tier, e.state, e.expires_at,
+                b.trial_state, b.trial_killed_at, w.is_test
+           from trial_entitlements e
+           join billing_accounts b on b.id = e.billing_account_id
+           join workspaces w on w.billing_account_id = b.id and w.id = $2
+          where e.billing_account_id = $1
+            and e.state in ('locked','unused')
+            and (e.expires_at is null or e.expires_at > now())
+          order by e.expires_at asc nulls last limit 1`,
+        [principal.billingAccountId, principal.workspaceId],
       )
     ).rows[0] as
-      | { id: string; kind: string; word_cap: number; rigor: string; model_tier: string }
+      | {
+          id: string; kind: string; rigor: string; model_tier: string;
+          state: string; expires_at: string | null;
+          trial_state: string | null; trial_killed_at: string | null; is_test: boolean;
+        }
       | undefined;
+    const claimableEntitlement =
+      entitlement &&
+      entitlement.trial_killed_at == null &&
+      (entitlement.trial_state === "trial_pending" || entitlement.trial_state === "trial_active") &&
+      trialAudienceAllows(PRICING.trial.audience, entitlement.is_test === true)
+        ? entitlement
+        : undefined;
 
     const user = (
       await deps.db.query(`select consent_dont_ask_under, prefs from "user" where id = $1`, [principal.userId]).catch(() => ({ rows: [] }))
@@ -245,8 +270,15 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
       reviewScopeLine: obligations?.reviewScopeLine ?? null,
       reviseScopeLine: obligations?.reviseScopeLine ?? null,
       standingNotes: standing.n,
-      entitlement: entitlement
-        ? { id: entitlement.id, kind: entitlement.kind, wordCap: entitlement.word_cap, rigor: entitlement.rigor, modelTier: entitlement.model_tier }
+      entitlement: claimableEntitlement
+        ? {
+            id: claimableEntitlement.id,
+            kind: claimableEntitlement.kind,
+            // the cap is a CONFIG fact, not the row's frozen-at-signup value (ADR-042).
+            wordCap: PRICING.trial.entitlement.wordCap,
+            rigor: claimableEntitlement.rigor,
+            modelTier: claimableEntitlement.model_tier,
+          }
         : null,
       dontAskUnder: user?.consent_dont_ask_under ?? 0,
       activeRuns: activeRuns.map((r) => ({ id: r.id, workflow: r.workflow, state: r.state, scope: r.scope })),

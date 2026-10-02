@@ -324,10 +324,19 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       );
     }
     // PRB.16 — the resolved session principal, for the driver/operator's "am I signed in" assert.
-    app.get("/session", (c) => {
+    // ACT.1 — `isTest` rides the session so the web's marketing surfaces can serve the
+    // JOURNEY.1 test-audience preview (`?audience=test` renders the gated trial claims to a flagged
+    // tenant, never to anyone else). Fails closed: no db read ⇒ false.
+    app.get("/session", async (c) => {
       const principal = sessionScopedPrincipal(c);
       if (!principal) return c.json({ error: "unauthenticated" }, 401);
-      return c.json(principal);
+      const isTest = deps.db
+        ? await deps.db
+            .query("select is_test from workspaces where id = $1", [principal.workspaceId])
+            .then((r) => (r.rows[0] as { is_test: boolean } | undefined)?.is_test === true)
+            .catch(() => false)
+        : false;
+      return c.json({ ...principal, isTest });
     });
     // PRB.13 — the verified-email run-creation gate (REQ-BETA-19 amended) binds whenever a user lookup
     // exists (`deps.db`): a missing row or `email_verified=false` refuses `POST /projects/:id/runs` 403.

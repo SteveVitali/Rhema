@@ -134,34 +134,56 @@ export async function gateTrialUnlock(
     return { decision: "deny", reason: "window_expired", entitlementId: ent.id, claimable: false };
   }
 
-  // evidence: fingerprint reuse count (accounts already bound to this fingerprint).
+  // evidence: fingerprint reuse count (accounts already bound to this fingerprint). ACT.1 (ADR-042):
+  // a JOURNEY.1 test tenant's binding never counts — `is_test` is operator-set, and counting it
+  // would let a harness tenant burn a real device's trial. Only a KNOWN test tenant is excluded:
+  // every workspace the account owns flagged — an accountless or real-workspace binding still counts
+  // (the rule is unchanged for real users).
   let fingerprintSeen = 0;
   if (args.evidence.fingerprintHash) {
     fingerprintSeen = Number(
       (
         (
           await tx.query(
-            "select count(*)::int as c from billing_accounts where fingerprint_hash = $1 and id <> $2",
+            `select count(*)::int as c from billing_accounts b
+              where b.fingerprint_hash = $1 and b.id <> $2
+                and not (
+                  exists (select 1 from workspaces w where w.billing_account_id = b.id)
+                  and not exists (select 1 from workspaces w
+                                   where w.billing_account_id = b.id and w.is_test = false)
+                )`,
             [args.evidence.fingerprintHash, args.billingAccountId],
           )
         ).rows[0] as { c: number }
       ).c,
     );
   }
-  // the global daily trial-spend ceiling is checked against today's committed counter (the claim itself
-  // increments inside the hold; here we refuse up front when it is already exhausted).
+  // ACT.1 — the requesting workspace's test flag: JOURNEY.1 tenants never count against the global
+  // tally, so a paused day (real-user COGS crossed the $50 ceiling) never blocks them either.
+  const workspaceIsTest = (
+    await tx.query("select is_test from workspaces where id = $1", [args.workspaceId])
+  ).rows[0] as { is_test: boolean } | undefined;
+
+  // the global daily trial-COGS ceiling (ADR-014: $50/day of proxy-metered list COGS) is checked
+  // against today's counter — `credits` holds the claim-time projections (the hold increments it in
+  // its tx), `reconciled_credits` the system-pool sweep's metered recompute, `paused_at` the
+  // persisted trip. A paused day refuses up front; a fresh over-ceiling claim throws in the hold.
   const today = deps.clock.now().toISOString().slice(0, 10);
-  const spentToday = Number(
-    (
-      (
-        await tx.query("select credits::int as c from trial_spend_daily where day = $1", [today])
-      ).rows[0] as { c: number } | undefined
-    )?.c ?? 0,
-  );
+  const dayRow = (
+    await tx.query(
+      "select credits::int as c, reconciled_credits::int as r, paused_at from trial_spend_daily where day = $1",
+      [today],
+    )
+  ).rows[0] as { c: number; r: number; paused_at: string | null } | undefined;
+  const spentToday = Math.max(Number(dayRow?.c ?? 0), Number(dayRow?.r ?? 0));
+  const ceilingExhausted =
+    workspaceIsTest?.is_test === true
+      ? false
+      : dayRow?.paused_at != null || spentToday >= TRIAL.dailySpendCeilingCredits;
 
   const result = decideTrialUnlock(
     { ...args.evidence, fingerprintSeen },
-    { riskThreshold: args.riskThreshold ?? 0.7, ceilingExhausted: spentToday >= TRIAL.dailySpendCeilingCredits },
+    { riskThreshold: args.riskThreshold ?? 0.7, ceilingExhausted },
   );
 
   // the audit row — every decision, every time (REQ-GROWTH-10).
@@ -233,9 +255,16 @@ export async function gateTrialUnlock(
 // ------------------------------------------------------------------ daily spend ceiling (the hold path)
 
 /**
- * Charge a trial run's estimated cost against the global daily ceiling — inside the hold's transaction so
- * a refused hold rolls the increment back (no phantom usage). Throws `TrialCeilingExhaustedError` over the
- * bound. Returns the new day total.
+ * Charge a trial run's PROJECTED metered cost (the run's estimate — the p90 card figure) against the
+ * global daily ceiling — inside the hold's transaction so a refused hold rolls the increment back
+ * (no phantom usage). Throws `TrialCeilingExhaustedError` when the day is paused or the projected
+ * tally crosses the bound. Returns the new day total.
+ *
+ * ACT.1 (ADR-014/042) — the ceiling is $50/day of proxy-metered list COGS
+ * (`TRIAL.dailySpendCeilingCredits` — derived from `trial.dailyCeilingUsd` at config load).
+ * `credits` carries projections booked at claim; `reconciled_credits` is the system-pool sweep's
+ * recomputation (`sweepTrialSpend` — the aggregate never serves a user request, REQ-SPEC-30);
+ * `paused_at` is the sticky trip marker either side can set.
  */
 export async function recordTrialSpend(
   tx: SqlClient,
@@ -263,13 +292,65 @@ export async function recordTrialSpend(
     await tx.query(
       `insert into trial_spend_daily (day, credits) values ($1, $2)
          on conflict (day) do update set credits = trial_spend_daily.credits + $2
-         returning credits::int as c`,
+         returning credits::int as c, reconciled_credits::int as r, paused_at`,
       [day, Math.max(0, Math.trunc(credits))],
     )
-  ).rows[0] as { c: number };
-  const total = Number(row.c);
-  if (total > TRIAL.dailySpendCeilingCredits) throw new TrialCeilingExhaustedError();
+  ).rows[0] as { c: number; r: number; paused_at: string | null };
+  const total = Math.max(Number(row.c), Number(row.r ?? 0));
+  if (row.paused_at != null || total > TRIAL.dailySpendCeilingCredits) {
+    throw new TrialCeilingExhaustedError();
+  }
   return total;
+}
+
+/**
+ * The reconciled daily tally (ACT.1; REQ-SPEC-30) — a SYSTEM-POOL sweep (rides `billing.period-tick`;
+ * the aggregate over `runs` never serves a user request; user paths only ever read/write the compact
+ * `trial_spend_daily` counter row). Recomputes today's non-test entitlement spend as
+ * `Σ greatest(runs.spent_credits, runs.estimate_credits)` — `spent_credits` is the reconciled proxy
+ * meter (`reconcileRunSpend` stamps it at every terminal path), `estimate_credits` is the booked
+ * projection, so a late metered overage lifts the day while an under-running run never un-pauses it.
+ * Writes `reconciled_credits` + stamps `paused_at` once (sticky — the ceiling opens again tomorrow).
+ */
+export async function sweepTrialSpend(
+  exec: SqlClient,
+  now: Date,
+): Promise<{ day: string; projectedCredits: number; reconciledCredits: number; paused: boolean }> {
+  const day = now.toISOString().slice(0, 10);
+  const computed = Number(
+    (
+      (
+        await exec.query(
+          `select coalesce(sum(greatest(r.spent_credits, r.estimate_credits)),0)::int as s
+             from runs r join workspaces w on w.id = r.workspace_id
+            where r.entitlement_id is not null
+              and (r.created_at at time zone 'utc')::date = $1::date
+              and w.is_test = false`,
+          [day],
+        )
+      ).rows[0] as { s: number }
+    ).s,
+  );
+  const row = (
+    await exec.query(
+      `insert into trial_spend_daily (day, credits, reconciled_credits, paused_at)
+         values ($1::date, 0, $2::int, case when $2::int >= $3::int then now() else null end)
+       on conflict (day) do update set
+         reconciled_credits = excluded.reconciled_credits,
+         paused_at = case
+           when trial_spend_daily.paused_at is not null then trial_spend_daily.paused_at
+           when greatest(trial_spend_daily.credits, excluded.reconciled_credits) >= $3::int then now()
+           else null end
+       returning credits::int as c, reconciled_credits::int as r, paused_at`,
+      [day, computed, TRIAL.dailySpendCeilingCredits],
+    )
+  ).rows[0] as { c: number; r: number; paused_at: string | null };
+  return {
+    day,
+    projectedCredits: Number(row.c),
+    reconciledCredits: Number(row.r),
+    paused: row.paused_at != null,
+  };
 }
 
 // ------------------------------------------------------------------ upgrade conversion (§14.3)

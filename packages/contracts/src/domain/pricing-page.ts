@@ -402,45 +402,62 @@ export interface MatrixRow {
   readonly cells: readonly string[];
 }
 
-/** The full §15.2 matrix — rows derived from the plan specs, cells never hand-priced. */
-export function pricingMatrix(): { readonly columns: readonly string[]; readonly rows: readonly MatrixRow[] } {
+/**
+ * The full §15.2 matrix — rows derived from the plan specs, cells never hand-priced.
+ * ACT.1 (PR-U6): the Free column's "Run word cap" cell is the TRIAL entitlement's configured cap
+ * while `trial.firstReviewIncluded` renders for the viewer's audience (the Free column IS the
+ * trial column, §14.2); a row whose every cell is "—" is omitted — no all-dash rows.
+ */
+export function pricingMatrix(
+  claims: PublicClaimsConfig = PUBLIC_CLAIMS,
+): { readonly columns: readonly string[]; readonly rows: readonly MatrixRow[] } {
   const tiers: readonly PlanTier[] = ["free", "writer", "studio", "studio_max", "team"];
   const plans = tiers.map(planOf);
   const cell = (fn: (p: ReturnType<typeof planOf>) => string) => plans.map(fn);
   const credits = (n: number) => (n === 0 ? "—" : n.toLocaleString("en-US"));
+  const trialWordCapCell = publicClaimEnabled("trial.firstReviewIncluded", claims)
+    ? PRICING.trial.entitlement.wordCap.toLocaleString("en-US")
+    : "—";
+  const rows: MatrixRow[] = [
+    { label: "Price (monthly)", cells: cell((p) => (p.monthlyUsd === 0 ? "$0" : `$${p.monthlyUsd}${p.perSeat ? "/seat" : ""}/mo`)) },
+    {
+      label: "Price (annual, per month)",
+      cells: cell((p) => (p.annualMonthlyUsd != null ? `$${p.annualMonthlyUsd}/mo` : "—")),
+    },
+    { label: "Included credits / mo", cells: cell((p) => credits(p.includedCreditsMonthly)) },
+    { label: "Model tiers", cells: cell((p) => p.modelTiers.map((t) => MODEL_TIER_LABELS[t]).join(" · ")) },
+    {
+      label: "Concurrency",
+      cells: cell((p) => (p.concurrency === 0 ? "—" : `${p.concurrency}${p.concurrencyPerSeat ? "/seat" : ""}`)),
+    },
+    { label: "Daily chat credits", cells: cell((p) => (p.dailyChatCredits != null ? String(p.dailyChatCredits) : "—")) },
+    { label: "Top-ups", cells: cell((p) => (p.topUps === true ? "Yes" : p.topUps === "admin" ? "Admin" : "—")) },
+    {
+      label: "Rollover",
+      cells: cell(() =>
+        `≤${PRICING.rollover.balanceCapMultiple}× monthly · expires at reset`,
+      ),
+    },
+    {
+      label: "Run word cap",
+      cells: plans.map((p) =>
+        p === planOf("free") ? trialWordCapCell : p.runWordCap != null ? p.runWordCap.toLocaleString("en-US") : "—",
+      ),
+    },
+    { label: "Daily run ceiling", cells: cell((p) => (p.dailyRunCeiling != null ? String(p.dailyRunCeiling) : "—")) },
+    {
+      label: "Research tools",
+      cells: cell((p) => (p.researchTools ? "Yes" : "—")),
+      },
+    {
+      label: "Support",
+      cells: cell((p) => (p.priorityQueue ? "Priority" : "Standard")),
+    },
+  ];
   return {
     columns: tiers.map((t) => planOf(t).display),
-    rows: [
-      { label: "Price (monthly)", cells: cell((p) => (p.monthlyUsd === 0 ? "$0" : `$${p.monthlyUsd}${p.perSeat ? "/seat" : ""}/mo`)) },
-      {
-        label: "Price (annual, per month)",
-        cells: cell((p) => (p.annualMonthlyUsd != null ? `$${p.annualMonthlyUsd}/mo` : "—")),
-      },
-      { label: "Included credits / mo", cells: cell((p) => credits(p.includedCreditsMonthly)) },
-      { label: "Model tiers", cells: cell((p) => p.modelTiers.map((t) => MODEL_TIER_LABELS[t]).join(" · ")) },
-      {
-        label: "Concurrency",
-        cells: cell((p) => (p.concurrency === 0 ? "—" : `${p.concurrency}${p.concurrencyPerSeat ? "/seat" : ""}`)),
-      },
-      { label: "Daily chat credits", cells: cell((p) => (p.dailyChatCredits != null ? String(p.dailyChatCredits) : "—")) },
-      { label: "Top-ups", cells: cell((p) => (p.topUps === true ? "Yes" : p.topUps === "admin" ? "Admin" : "—")) },
-      {
-        label: "Rollover",
-        cells: cell(() =>
-          `≤${PRICING.rollover.balanceCapMultiple}× monthly · expires at reset`,
-        ),
-      },
-      { label: "Run word cap", cells: cell((p) => (p.runWordCap != null ? p.runWordCap.toLocaleString("en-US") : "—")) },
-      { label: "Daily run ceiling", cells: cell((p) => (p.dailyRunCeiling != null ? String(p.dailyRunCeiling) : "—")) },
-      {
-        label: "Research tools",
-        cells: cell((p) => (p.researchTools ? "Yes" : "—")),
-        },
-      {
-        label: "Support",
-        cells: cell((p) => (p.priorityQueue ? "Priority" : "Standard")),
-      },
-    ],
+    // an all-dash row carries no information (BL-62) — omit it entirely.
+    rows: rows.filter((r) => r.cells.some((c) => c !== "—")),
   };
 }
 
@@ -523,7 +540,7 @@ export function buildPricingPageData(
     cards: PRICING.costCardShapes.map((s) => costCardFigures(price, s)),
     voiceCard: voiceProfileCard(price),
     quickReview: quickReviewLine(price),
-    matrix: pricingMatrix(),
+    matrix: pricingMatrix(claims),
     faq: pricingFaq(price),
     trial: PRICING.trial,
     topUpPacks: PRICING.topUpPacks,

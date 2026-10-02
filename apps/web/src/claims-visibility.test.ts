@@ -3,6 +3,7 @@ import {
   PRICING,
   PUBLIC_CLAIM_COPY,
   PUBLIC_CLAIMS,
+  claimsForAudience,
   planCoverageLine,
   visiblePlansPublication,
   type PublicClaimsConfig,
@@ -33,9 +34,11 @@ const ALL_ON: PublicClaimsConfig = {
 };
 
 /** The /billing/plans DTO the api transmits under `claims` (redacted fields are null while hidden;
- *  enabled coverage lines are the COMPUTED ones — the api injects `surfacePricer()`). */
-function plansDto(claims: PublicClaimsConfig = PUBLIC_CLAIMS): BillingPlansDto {
-  const visible = visiblePlansPublication(claims, surfacePricer());
+ *  enabled coverage lines are the COMPUTED ones — the api injects `surfacePricer()`). ACT.1 —
+ *  the api folds the viewer's audience in FIRST (`claimsForAudience`): `isTest` mirrors
+ *  `workspaces.is_test` under the `test_tenants` posture. */
+function plansDto(claims: PublicClaimsConfig = PUBLIC_CLAIMS, isTest = false): BillingPlansDto {
+  const visible = visiblePlansPublication(claimsForAudience(claims, isTest), surfacePricer());
   return {
     version: String(PRICING.version),
     issuedAt: PRICING.issuedAt,
@@ -81,18 +84,36 @@ describe("the landing + pricing pages hide every gated claim (default config)", 
     expect(html).not.toContain("≈3 essay loops");
   });
 
-  it("flipping the ids on renders the claim text — no copy-table change (ACT.1/EST.1's seam)", async () => {
-    const app = createWebApp(deps({ claims: ALL_ON }));
-    const landing = await (await app.request("/")).text();
+  it("flipping the ids on renders the claim text — the flagged test tenant's ?audience=test preview (ACT.1/EST.1's seam)", async () => {
+    // ACT.1 (ADR-042) — the trial claim renders only inside `trial.audience` ('test_tenants'):
+    // an enabled flag alone doesn't publish it. The preview belongs to a signed-in JOURNEY.1
+    // tenant asking `?audience=test`; everyone else still gets the audience-disabled form.
+    const app = createWebApp(
+      deps(
+        { claims: ALL_ON, session: () => ({}) },
+        {
+          getSessionPrincipal: async () => ({
+            userId: "u_t",
+            workspaceId: "ws_t",
+            billingAccountId: "ba_t",
+            isTest: true,
+          }),
+        },
+      ),
+    );
+    const landing = await (await app.request("/?audience=test")).text();
     expect(landing).toContain(PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote);
     expect(landing).toContain(PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingFaqAnswer);
-    const pricing = await (await app.request("/pricing")).text();
+    const pricing = await (await app.request("/pricing?audience=test")).text();
     expect(pricing).toContain("one included Review");
     // EST.1 — the coverage line is COMPUTED through the shared pricer, not the pricing.json copy.
     const covers = planCoverageLine("writer", surfacePricer());
     expect(covers).not.toBeNull();
     expect(pricing).toContain(covers!);
     expect(pricing).toContain(PRICING.trial.includedNote);
+    // and an anonymous viewer (or the same tenant without the preview flag) still sees none of it.
+    const anon = await (await createWebApp(deps({ claims: ALL_ON })).request("/")).text();
+    expect(anon).not.toContain(PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote);
   });
 });
 
@@ -109,9 +130,11 @@ describe("the billing page renders the DTO the api redacted", () => {
       expect(html).not.toContain(s);
   });
 
-  it("claim-on DTO: the included note + computed coverage lines render", async () => {
+  it("claim-on DTO (a covered audience's transmission): the included note + computed coverage lines render", async () => {
+    // ACT.1 — `isTest: true` is the /billing/plans DTO the api sends a JOURNEY.1 tenant under
+    // `test_tenants`; a real viewer's DTO keeps `includedNote` null while the flip is paused.
     const app = createWebApp(
-      deps({ session: () => ({}) }, { getPlans: async () => plansDto(ALL_ON) }),
+      deps({ session: () => ({}) }, { getPlans: async () => plansDto(ALL_ON, true) }),
     );
     const html = await (await app.request("/settings/billing")).text();
     expect(html).toContain(PRICING.trial.includedNote);

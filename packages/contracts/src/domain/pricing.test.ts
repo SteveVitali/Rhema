@@ -45,19 +45,36 @@ describe("pricing.json (§14.2)", () => {
     expect(planOf("team").concurrency).toBe(3);
   });
 
-  it("pins the trial spec (one Review ≤6,000 words, Standard, Base + 150-credit pocket)", () => {
+  it("pins the trial spec (ACT.1: the Derived interim cap under the $15 absorbed-COGS ceiling)", () => {
     expect(PRICING.trial.windowDays).toBe(14);
     expect(PRICING.trial.entitlement).toEqual({
       kind: "review",
-      wordCap: 6000,
+      // ACT.1 — the largest word cap whose p90 metered list COGS stays under the provisional $15
+      // ceiling (ADR-014 §5): 2,800 fits at ≈$14.95; 2,900 is over at ≈$15.33. The interim marker +
+      // the ceiling are pinned so the restore to the §14.3 figure (6,000) is an ECON.2 act, not drift.
+      wordCap: 2800,
       rigor: "standard",
       modelTier: "base",
     });
+    expect(PRICING.trial.interim).toBe(true);
+    expect(PRICING.trial.capCeilingUsd).toBe(15);
     expect(PRICING.trial.pocketCredits).toBe(150);
     expect(PRICING.trial.upgradePromoCredits).toBe(800);
     expect(PRICING.trial.concurrency).toBe(1);
     expect(PRICING.trial.projects).toBe(3);
     expect(PRICING.trial.voice).toBe("quick_voice_only");
+    // ACT.1 — the $50/day trial-COGS kill switch (proxy-metered list COGS; $1 = 140 credits).
+    expect(PRICING.trial.dailyCeilingUsd).toBe(50);
+    expect(PRICING.trial.dailySpendCeilingCredits).toBe(7000);
+    // the go-live audience is the operator's pause: test tenants only until the everyone-flip.
+    expect(PRICING.trial.audience).toBe("test_tenants");
+    // the generated claims — no literal figure may be typed into the JSON templates.
+    expect(PRICING.trial.includedNote).toBe(
+      "One Review of up to 2,800 words, Standard rigor, Base — on us, plus a 150-credit pocket.",
+    );
+    expect(PRICING.trial.postTrialNote).toBe(
+      "10 credits/day for chat, expiring nightly; no runs.",
+    );
   });
 
   it("pins the top-up packs + 12-month expiry", () => {

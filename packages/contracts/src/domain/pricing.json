@@ -109,16 +109,19 @@
   },
   "trial": {
     "windowDays": 14,
-    "entitlement": { "kind": "review", "wordCap": 6000, "rigor": "standard", "modelTier": "base" },
+    "interim": true,
+    "audience": "test_tenants",
+    "entitlement": { "kind": "review", "wordCap": 2800, "rigor": "standard", "modelTier": "base" },
+    "capCeilingUsd": 15,
     "pocketCredits": 150,
     "upgradePromoCredits": 800,
     "projects": 3,
     "concurrency": 1,
     "voice": "quick_voice_only",
     "draftPreviewCredits": 60,
-    "dailySpendCeilingCredits": 250000,
-    "includedNote": "One Review of up to 6,000 words, Standard rigor, Base — on us, plus a 150-credit pocket.",
-    "postTrialNote": "10 credits/day for chat, expiring nightly; no runs.",
+    "dailyCeilingUsd": 50,
+    "includedNoteFmt": "One Review of up to {cap} words, Standard rigor, Base — on us, plus a {pocket}-credit pocket.",
+    "postTrialNoteFmt": "{chatCredits} credits/day for chat, expiring nightly; no runs.",
     "eligibilityLine": "One trial per person — it unlocks at your first run after a quick device check; no card required."
   },
   "topUpPacks": [

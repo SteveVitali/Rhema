@@ -267,10 +267,13 @@ export function PricingPage(): ReactNode {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "12px", marginTop: "20px" }}>
         {data.plans.map((p) => (
           <div key={p.tier} style={CARD}>
-            <strong style={{ fontSize: "15px" }}>{p.display}{p.perSeat ? ` ${COPY.pricing.perSeatLabel}` : ""}</strong>
+            <strong style={{ fontSize: "15px" }}>{p.display}</strong>
             <div style={{ fontSize: "26px", marginTop: "8px" }}>
               ${annual && p.annualMonthlyUsd != null ? p.annualMonthlyUsd : p.monthlyUsd}
-              <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>/mo</span>
+              {/* PR-U6/ACT.1 — Team is per-seat: `$40/seat/mo`, never a bare `$40/mo`. */}
+              <span style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                {p.perSeat ? "/seat/mo" : "/mo"}
+              </span>
             </div>
             {annual && p.annualSavingsUsdPerYear != null && p.annualSavingsUsdPerYear > 0 ? (
               <div style={{ fontSize: "12px", color: "var(--state-ready)" }}>
@@ -298,7 +301,12 @@ export function PricingPage(): ReactNode {
               {p.waitlist ? (
                 <a href="/signup?intent=team" style={CTA_GHOST}>{COPY.pricing.waitlistCta}</a>
               ) : (
-                <a href="/signup" style={CTA_GHOST}>{COPY.pricing.startCta}</a>
+                /* PR-U6/ACT.1 — a paid plan's CTA names the plan; Free keeps "Start free". */
+                <a href="/signup" style={CTA_GHOST}>
+                  {p.tier === "free"
+                    ? COPY.pricing.startCta
+                    : fmtCopy(COPY.pricing.startPlanCtaFmt, { plan: p.display })}
+                </a>
               )}
             </div>
           </div>

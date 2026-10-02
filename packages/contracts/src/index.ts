@@ -49,6 +49,8 @@ export * from "./domain/pricing-page.js";
 export * from "./domain/public-claims.js";
 export * from "./domain/showcase.js";
 export * from "./domain/trial.js";
+// ACT.1 — the trial claim render model (audience gating, generated note lines, deriveTrialWordCap).
+export * from "./domain/trial-claims.js";
 export * from "./domain/usage.js";
 export * from "./growth-lint.js";
 

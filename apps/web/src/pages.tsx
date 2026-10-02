@@ -5796,14 +5796,17 @@ export function BillingPage(): ReactNode {
 
       <section data-plan-card="true" style={{ margin: "12px 0 20px" }}>
         <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.planHeading}</h3>
-        {sub.trial.state === "trial_active" ? (
-          <p data-trial-state="active" style={{ fontSize: "13px", margin: "4px 0" }}>
-            {/* HOT.1 — the api nulls `includedNote` while `trial.firstReviewIncluded` is hidden;
-                the badge + claim text render together, else the factual window note. */}
+        {sub.trial.state === "trial_active" || sub.trial.state === "trial_pending" ? (
+          <p data-trial-state={sub.trial.state === "trial_pending" ? "pending" : "active"} style={{ fontSize: "13px", margin: "4px 0" }}>
+            {/* HOT.1/ACT.1 — the api nulls `includedNote` while the claim is gated off for this
+                audience; the badge + claim render together, else the factual window note. Pending
+                adds the eligibility line: the entitlement is `locked` until the first run claims it
+                through the device check (§14.3 identity-before-spend). */}
             {plans.trial.includedNote != null ? (
               <>
                 <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "999px", border: "1px solid var(--accent)", color: "var(--accent)" }}>{B.includedBadge}</span>
                 {" "}{plans.trial.includedNote}
+                {sub.trial.state === "trial_pending" ? <>{" "}{plans.trial.eligibilityLine}</> : null}
               </>
             ) : B.trialWindowFmt.replace("{days}", String(plans.trial.windowDays))}
           </p>
@@ -5845,9 +5848,11 @@ export function BillingPage(): ReactNode {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
                 <strong style={{ fontSize: "14px" }}>{plan.display}</strong>
                 <span style={{ fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                  ${plan.monthlyUsd}/mo
-                  {plan.annualMonthlyUsd < plan.monthlyUsd ? (
-                    <span style={{ color: "var(--shell-fg-muted)" }}> · ${plan.annualMonthlyUsd}/mo {B.annualLabel}</span>
+                  {/* PR-U6/ACT.1 — Team is per-seat (`$40/seat/mo`); the annual figure reads
+                      "billed annually", never the "$/mo Annual" concat; null ⇒ no annual offer. */}
+                  ${plan.monthlyUsd}{plan.perSeat ? "/seat/mo" : "/mo"}
+                  {plan.annualMonthlyUsd != null && plan.annualMonthlyUsd < plan.monthlyUsd ? (
+                    <span style={{ color: "var(--shell-fg-muted)" }}> · ${plan.annualMonthlyUsd}/mo {B.annualBillingLabel}</span>
                   ) : null}
                 </span>
               </div>
