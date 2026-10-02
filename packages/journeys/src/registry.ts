@@ -102,7 +102,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "new-visitor",
     asserts: "Add credits / Buy / Choose Writer reach a Stripe-hosted page (no charge)",
     owner: "BILL.3",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   // ---- returning-user journey ---------------------------------------------

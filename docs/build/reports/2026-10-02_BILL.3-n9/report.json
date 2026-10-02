@@ -1,0 +1,37 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "1ac1bc5fe3e7",
+  "startedAt": "2026-10-02T03:29:32.106Z",
+  "finishedAt": "2026-10-02T03:29:43.714Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "28019fcf96f0566c393069ab46084a014d94a600",
+    "observed": {
+      "web": "28019fcf96f0566c393069ab46084a014d94a600",
+      "api": "28019fcf96f0566c393069ab46084a014d94a600"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11548,
+      "error": "N9 billing Choose Writer: Stripe page did not show /Writer/i (url https://checkout.stripe.com/g/pay/cs_live_a1akBqx7HEsimQ7aSsKE409ZRk9wa9VXL5V6UajUnYWZqFl2sIc8URXOLx#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdicyc%2FNiknYnUnPzUpJ2JpJz81KSdkdWxOYHwnPyd1blppbHNgWjA0UERwbW43SElgNkBRVTxWNVAycjNVNEx%2FRn9LTU1rRHc1bFVwTHxVN0pLS2NUZmNgf182X0lycmprVmBidF9id0lzdEpTcEo8bVNgRnBSUWsxT0dSdmFENTV0aUIwXEh8aicpJ2N3amhWYHdzYHcnP3F3cGApJ2dkZm5id2pwa2FGamlqdyc%2FJyZjY2NjY2MnKSdpZHxqcHFRfHVgJz8ndmxrYmlgWmxxYGgnKSdga2RnaWBVaWRmYG1qaWFgd3YnP3F3cGB4JSUl)",
+      "screenshot": "N9.png"
+    }
+  ],
+  "passed": true
+}

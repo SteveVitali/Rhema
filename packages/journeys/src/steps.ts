@@ -226,18 +226,34 @@ async function n9ClickToStripe(
   label: string,
   expected: readonly RegExp[],
 ): Promise<void> {
-  const navigated = page.waitForURL((u) => n9StripeHosted(u.toString()), { timeout: 45_000 });
+  // Settle eagerly: if the click/setup throws before the await attaches, a rejecting waitForURL is
+  // an unhandled rejection when the runner closes contexts (fatal on Node ≥15) — fold it into a
+  // boolean instead.
+  const navigated = page
+    .waitForURL((u) => n9StripeHosted(u.toString()), { timeout: 45_000 })
+    .then(() => true)
+    .catch(() => false);
+  // A control below the fold reads "(no element at point)" from elementFromPoint — scroll first so
+  // the occlusion assert measures a REAL overlay, not a viewport artifact.
+  await control.scrollIntoViewIfNeeded().catch(() => undefined);
   await clickActionable(control, label);
-  try {
-    await navigated;
-  } catch {
+  if (!(await navigated)) {
     throw new Error(`${label}: stayed on ${page.url()} — no Stripe-hosted hand-off`);
   }
   await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => undefined);
   if (!n9StripeHosted(page.url())) {
     throw new Error(`${label}: landed on non-Stripe URL ${page.url()}`);
   }
-  const body = await page.locator("body").innerText({ timeout: 15_000 }).catch(() => "");
+  // checkout/billing/buy are Stripe JS SPAs — domcontentloaded precedes hydration, so a single
+  // innerText read can catch an empty body. Poll until every expected fragment renders (the amount
+  // + product label are what the AC pins) or the window lapses.
+  const deadline = Date.now() + 30_000;
+  let body = "";
+  do {
+    body = await page.locator("body").innerText({ timeout: 10_000 }).catch(() => "");
+    if (expected.every((re) => re.test(body))) break;
+    await page.waitForTimeout(1_000);
+  } while (Date.now() < deadline);
   for (const re of expected) {
     if (!re.test(body)) throw new Error(`${label}: Stripe page did not show ${re} (url ${page.url()})`);
   }
