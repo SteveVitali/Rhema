@@ -84,6 +84,37 @@ describe("buildRunSheetView — the launcher shape (§5.6)", () => {
     expect(v.insufficient!.sentences[2]).toBe("Or ask for more credits.");
   });
 
+  // ACT.1 (§14.3; REQ-BILL-4) — the trial entitlement's `Included` rendering must WIN over a
+  // zero spendable balance: the entitlement IS the funding, so the insufficient-balance panel
+  // suppresses (and the Run control stays enabled — `insufficient: null` is what enables it).
+  // Regression for PR-J1's residual half, caught live by the N5 walk on 2026-10-02: a fresh
+  // trial account (0 credits) saw "cap is more than your spendable balance" over the claim.
+  it("an entitlement-covered run is Included even at zero spendable balance (§14.3)", () => {
+    const v = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "base",
+      inputs: { words: 180 },
+      spendableCredits: 0,
+      entitlement: true,
+      entitlementDetails: {
+        id: "ent_test",
+        kind: "review",
+        rigor: "standard",
+        modelTier: "base",
+        wordCap: 2800,
+      },
+      insufficientMode: "beta",
+    });
+    expect(v.included).toBe(true);
+    expect(v.insufficient).toBeNull();
+    expect(v.consent.needsSecondClick).toBe(false);
+    expect(v.entitlementId).toBe("ent_test");
+    expect(v.entitlementLine).toContain("2,800");
+    expect(JSON.stringify(v.insufficient)).not.toMatch(/spendable/);
+  });
+
   it("carries a per-rigor recompute payload for the no-bundle inline enhancement (§5.6 item 2)", () => {
     const v = buildRunSheetView({
       ...BASE,
