@@ -6,6 +6,7 @@
 - **Branch:** `stevevitali/bill-3-credit-purchase-path`
 - **Base:** `d0456283699e4ff0376e503f53742900a87acfe4` (`stevevitali/res-2-unverified-delivery-and-refund`)
 - **Merge policy:** OPERATOR — stacked on PR #86; not merged by the build.
+- **Harness:** Devin CLI (Cognition agentic coding CLI), Anthropic Claude, interactive subagent session.
 - **Date started:** 2026-10-01
 
 ## Why this ticket is next
@@ -179,10 +180,80 @@ changes (SEC.2).
 
 ## Phase 5 — verification
 
-_(filled at close — commands + counts in the evidence report)_
+- `pnpm turbo build typecheck` — 90 tasks green; `pnpm turbo lint` — 45 tasks green.
+- `pnpm test` (root vitest, whole repo) — 409 files / 3,880 tests pass; 2 failures fixed in-run:
+  `check-additive-migrations.test.mjs` expected-list now names 0048 (the file enum it pins grew by
+  design); `lever-matrix.test.ts` 100 ms perf bound flaked once at 117 ms, re-run 15 ms — pre-existing
+  flake, also flagged as EST.1's row-67 item.
+- `node scripts/check-additive-migrations.mjs --files …/0048_*.sql` — pass (and re-checked by
+  `prod-migrate-seed`'s newer-than-prod gate before applying).
+- Affected new/changed suites: `billing-routes.test.ts`, `billing-failure-matrix.test.ts` (13-state
+  REQ-BILL-16 map + mutation leg), `env.test.ts`, `run-routes.test.ts`, `signup.test.ts` (purchase=open
+  fixture), `billing-pages.test.ts`, `billing-surfaces.test.ts`, `contracts/stripe.test.ts`,
+  `stripe-port.test.ts` (byte-for-byte request pins), `checkout.test.ts`, `stripe.test.ts`,
+  `notifications.test.ts` (checkout:<id> dedup), `internal-api.test.ts`, `auto-reload` suites,
+  `stages.test.ts`/`compute.test.ts` (PURCHASE_MODE wiring).
 
-## Stage B — prod journey evidence
+## Stage B — prod journey evidence — **EXECUTED LIVE 2026-10-02** (prod, `28019fc` images)
 
-_(executed after the image build + `pulumi up` — see below)_
+**Deploy leg ($0 metered).** Migration `0048_checkout_return_viewed.sql` applied to prod Cloud SQL
+2026-10-02T03:12:51Z (`_migrations` row) via the IAP tunnel (`127.0.0.1:15433` → `10.46.0.3`, bastion `rhema-prod-proxy-893r`)
+with `scripts/live/prod-migrate-seed.mjs` — its newer-than-max additive lint re-verified 0048 in-band
+(48 migrations recorded). api+web+worker images built on chain tip `28019fc` (Cloud Build
+`39e6fee5-48c0-40fe-aa64-8f3f6940dfe4`, 4m28s, E2_HIGHCPU_8 — subset config
+`integration/.scratch/cloudbuild-bill3.yaml`), digests pinned in `Pulumi.prod.yaml` (`f5d5412`); the
+six untouched services keep their res2 pins. `pulumi preview --diff`: **6 updates, 146 unchanged, zero
+create/replace/delete** (api/web/worker image+env rolls; fetcher/collab/export carry only a
+GCP-side `scaling` normalization) → `pulumi up` prod = **update 102** (59s), monthly delta $0.
+Provenance: `/healthz` `build.gitSha=28019fcf96f0566c393069ab46084a014d94a600` on **api + web**
+(`scripts/check-deploy-provenance.mjs` PASS); `deployments` row `prod:28019fc…` recorded.
+
+**Purchase-switch polarity.** Deployed env on `rhema-prod-api-e745ce0` reads `PURCHASE_MODE=closed`
+(gcloud describe); every stage in `stages.ts` ships `purchaseMode:"closed"`; the is_test tenant below
+reached Stripe on all four entry points — the switch discriminates, and a non-test workspace fails
+closed (403 `purchase_closed`, zero Stripe calls — `billing-routes.test.ts`; the real-browser
+non-test walk is D-BILL.3-2, it needs a non-test mailbox by design).
+
+**N9 — PASS** (`docs/build/reports/2026-10-02_BILL.3-n9-d/`, nonce `1ac1bc5fe3e7`, 17.1 s,
+provenance match, spend $0 ≤ $5):
+
+- **Choose Writer** (fresh flagged Free tenant `test+j<n9>@rhema.tools`) → `checkout.stripe.com`
+  live-mode Checkout `cs_live_a1akBqx7…`, page shows **Writer / $20**.
+- **Buy 1,000 credits** (jrn-a `test+jrn-a@rhema.tools`) → `checkout.stripe.com` top-up session,
+  page shows **1,000 credits / $10**.
+- **Portal** — honest state asserted: Stripe only mints a `Customer` at Checkout confirmation, so at
+  $0 jrn-a carries no `stripe_customer_id` → no `data-portal-form` mounted, the no-card note renders.
+  The hosted `billing.stripe.com` leg is **D-BILL.3-2** (reachable only after a real purchase).
+- **Run-sheet Add credits** (scratch project on jrn-a, `budget=2147483647` cap-override forces the
+  insufficient-balance panel without spending) → `data-payment-link` origin-checked then clicked →
+  `buy.stripe.com` Payment Link with a $-amount.
+- **CSP:** `consoleErrors` carries zero CSP/`form-action`/`Refused` entries across all four hand-offs
+  (the only console error is a 429 on Stripe's own hcaptcha logo asset — third-party page noise, not a
+  policy violation).
+- **No payment submitted** — every hosted page was left at the form.
+
+**Truthful-afterward DB state** (prod, read-only, ~03:40Z): the five `checkout_sessions` rows Stage B
+created (4 `subscribe` across the iterating runs + 1 `topup`) are all `state='open'` —
+`return_viewed_at`/`pending_email_queued_at` NULL — and will expire via Stripe's 24 h expiry +
+`checkout.session.expired`; `credit_ledger` shows **zero `grant` rows** in the window;
+`notification_deliveries` shows **zero** rows (nothing completed → nothing mailed — the pending-email
+condition's negative leg, live).
+
+**Fixture note (honest):** jrn-a holds a fixture `subscriptions` row `sub_jrna_bill3_fixture`
+(tier `writer`, `status='past_due'`, `renewal_failed_at=NULL`, period −1 d → +29 d, no Stripe ids) —
+the same class as JOURNEY.1's audited house grant: §14.2 mounts Checkout top-ups only for paid tiers,
+and `past_due`+NULL-failure-marker is the shape that leaves the hourly `billing.period-tick` inert (no
+included grant, no warning, no lapse). The past-due banner it renders is the fixture's visible seam.
 
 ## Closeout
+
+- **Deferrals opened:** D-BILL.3-1 (H7: real purchase + live re-verify), D-BILL.3-2 (hosted Portal +
+  pending-email live send + non-test closed-state walk — all need a completed checkout or a non-test
+  mailbox). **Closed:** none owed by this run (BL-09 absorbed, BL-51's code half landed).
+- **Gate decision:** GD-BILL.3-1 asks the operator whether to re-open purchase
+  (`infra/config/stages.ts` prod `purchaseMode:"closed"`→`"open"` + redeploy — one line, no code).
+- **Spend: $0** (deploy + N9 + scans; no metered run, no Stripe charge).
+- **Ledgers:** `LEDGER.md` CURRENT STATE advanced (`lastCompleted: BILL.3`, `nextTicket: ECON.1`,
+  `chainTip: stevevitali/bill-3-credit-purchase-path`), BUILD_INDEX row 93, this file, `pr/BILL.3.md`.
+- **ADRs:** 027 (CSP shape), 028 (switch location/default), 029 (pending-email trigger), 030 (Stripe
+  request contract) — `docs/adr/README.md` regenerated by `build-memory adr-index`.
