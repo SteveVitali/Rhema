@@ -24,7 +24,8 @@ Requirement ids: **REQ-BETA-19** (primary), **REQ-GROWTH-15** (throttle half), *
 (invite machinery), **REQ-ARCH-30** (no secret on web). Absorbs **BL-23** = D-PRB.13-1 +
 D-PRB.01-1 residual + ADR-009's per-instance clause (superseded by ADR-039) + the **PR-U1** form
 half.
-Deferrals: **D-PRB.13-1** annotated (code landed; flips DONE with live cross-instance evidence);
+Deferrals: **D-PRB.13-1 → DONE** (live cross-instance proof — instances `boot-aaf434c0…` +
+`boot-a7527a02…` share one Redis count; 429 trips at combined attempt 6);
 **D-PRB.13-2** annotated (the OAuth `user.create` admission binding it deferred is now landed);
 **D-PRB.01-1** annotated (binding on every path; the real-invite prod consume carries forward as
 **D-SEC.2-1** — a one-off prod write, operator-paused).
@@ -111,8 +112,12 @@ mode unchanged: code first, required, bare.
 - Journeys — `N2.invite` walks `/signup` + `/login` (open ⇒ email first + code in `<details>`;
   invite ⇒ code required/visible/first); flips green with the Stage-B run.
 
-## Stage B evidence
+## Stage B evidence (executed — write-free, $0)
 
-See `docs/build/runs/SEC.2.md` § Stage B — write-free prod legs (empty-email `/signup` 400s → 429
-with `x-rhema-instance` ids from ≥2 instances; bogus invite ⇒ loud refusal + no account), the
-N2.invite journey run + screenshots, and deploy provenance (`/healthz` gitSha, `deployments` row).
+See `docs/build/runs/SEC.2.md` § Evidence report. On prod `fad33a0` (pulumi updates 109/111):
+bogus invite ⇒ `403 unknown` + no account; per-IP leg `400`×10 → `429` at #11 with
+`Retry-After: 3600` (one keep-alive connection — the egress pool rotates IPs per connection);
+per-email leg `403`×5 → `429` at #6; **cross-instance** (`min-instances=2`, rev 00061): a
+fresh-email run alternated `boot-aaf434c0…`/`boot-a7527a02…` 403×5 then `429` at the combined
+sixth request — only a shared count can trip it; magic-link send to the test mailbox 4×200 →
+`429`; **N2.invite green** (provenance match, $0 — `docs/build/reports/2026-10-02_SEC.2-n2invite/`).
