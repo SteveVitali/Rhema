@@ -8,7 +8,8 @@
 
 import type { ReactNode } from "react";
 import { Shell, SectionTitle, DossierView, type DossierLabels } from "@rhema/ui";
-import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled } from "@rhema/contracts";
+import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY } from "@rhema/contracts";
+import { surfacePricer } from "@rhema/run-sheet";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { usePageData } from "./page-data.js";
@@ -62,7 +63,8 @@ const CTA_GHOST = {
 export function LandingPage(): ReactNode {
   const { invite, claims } = usePageData();
   const open = invite?.signupOpen === true;
-  const pricing = buildPricingPageData(claims);
+  // EST.1 — the same estimator-facing API prices the landing figures (never the retired modelled pricer).
+  const pricing = buildPricingPageData(claims, surfacePricer());
   const essayCard = pricing.cards.find((card) => card.key === "essay") ?? pricing.cards[0];
   const reviewRow = essayCard?.rows.find((r) => r.key === "review");
   return (
@@ -238,7 +240,7 @@ export function LandingPage(): ReactNode {
 /** §15.2 — /pricing: the ladder + cost-range cards + matrix + FAQ, all derived (never hand-typed). */
 export function PricingPage(): ReactNode {
   const { pricing: cycle, claims } = usePageData();
-  const data = buildPricingPageData(claims);
+  const data = buildPricingPageData(claims, surfacePricer());
   const annual = cycle?.annual === true;
   return (
     <Shell
@@ -319,7 +321,13 @@ export function PricingPage(): ReactNode {
         <p style={MUTED}>{COPY.pricing.costCardsNote}</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
           {data.cards.map((card) => (
-            <div key={card.key} style={CARD} data-cost-card={card.key}>
+            <div
+              key={card.key}
+              style={CARD}
+              data-cost-card={card.key}
+              data-words={card.words}
+              data-claims={card.claims}
+            >
               <strong>{card.label}</strong>
               <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "4px" }}>
                 {card.words.toLocaleString("en-US")} words · {card.claims} claims
@@ -334,7 +342,14 @@ export function PricingPage(): ReactNode {
               </dl>
               <details style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>
                 <summary>Full round by tier</summary>
-                <div>Base ≈ {card.fullRoundByTier.base.toLocaleString("en-US")} · Balanced ≈ {card.fullRoundByTier.balanced.toLocaleString("en-US")} · Frontier ≈ {card.fullRoundByTier.frontier.toLocaleString("en-US")}</div>
+                <div>
+                  {MODEL_TIERS.map((tier, i) => (
+                    <span key={tier}>
+                      {i > 0 ? " · " : ""}{MODEL_TIER_DISPLAY[tier]} ≈{" "}
+                      {card.fullRoundByTier[tier] != null ? card.fullRoundByTier[tier]!.toLocaleString("en-US") : "—"}
+                    </span>
+                  ))}
+                </div>
               </details>
             </div>
           ))}
@@ -349,9 +364,9 @@ export function PricingPage(): ReactNode {
         <p style={{ ...MUTED, fontSize: "12px", marginTop: "10px" }}>
           {fmtCopy(COPY.pricing.quickLineFmt, {
             cap: data.quickReview.wordCap.toLocaleString("en-US"),
-            quick: data.quickReview.byRigor.quick,
-            standard: data.quickReview.byRigor.standard,
-            fb: data.quickReview.byRigor.full_board,
+            quick: data.quickReview.byRigor.quick?.toLocaleString("en-US") ?? "—",
+            standard: data.quickReview.byRigor.standard?.toLocaleString("en-US") ?? "—",
+            fb: data.quickReview.byRigor.full_board?.toLocaleString("en-US") ?? "—",
           })}
         </p>
       </section>

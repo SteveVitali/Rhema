@@ -11,7 +11,15 @@ import type { ContentStore } from "@rhema/mirror";
 import { runSheetObligations } from "@rhema/obligations";
 import { deriveSections } from "@rhema/commands";
 import { PROTOCOL_CARDS, PROTOCOL_SEEDS } from "@rhema/protocols";
-import { parseUserPrefs, projectProtocolOverridesSchema, type WorkflowKey } from "@rhema/contracts";
+import {
+  allowedModelTiers,
+  parseUserPrefs,
+  projectProtocolOverridesSchema,
+  type ModelTier,
+  type PlanTier,
+  type WorkflowKey,
+} from "@rhema/contracts";
+import { durationCells, effectivePlanTier, sizeBandFor } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import { versionText } from "./editor-routes.js";
@@ -120,6 +128,23 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
       "standard";
     const resolvedModelTier = project.model_tier_default ?? userPrefs.defaultModelTier ?? null;
 
+    // EST.1 — the plan rules the sheet's tier select renders against (the run POST re-enforces them
+    // server-side; this read is display + defaulting). A failed read fails CLOSED to free/Base-only —
+    // the cheaper honest posture (a locked option the user is entitled to reappears on refresh; a
+    // fabricated Balanced tier never does).
+    const planTier: PlanTier = await effectivePlanTier(deps.db, principal.billingAccountId).catch(
+      () => "free" as const,
+    );
+    // EST.1 — the calibrated duration cells for this sheet's workflow + the head draft's size band
+    // (`cost_card_cells` p10..p95 minutes, gate waits excluded — migration 0050). Null ⇒ the shared
+    // per-phase prior governs (the sheet/Timeline/card then agree on the fallback too).
+    const durations =
+      workflow != null
+        ? await durationCells(deps.db, workflow, sizeBandFor({ words: head?.word_count ?? undefined })).catch(
+            () => null,
+          )
+        : null;
+
     const activeRuns = (
       await deps.db.query(
         `select id, workflow, state, scope, lock_set from runs
@@ -198,6 +223,14 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
       // P1.21 — the four §6.7 protocol options the sheet's selector renders (the §5.3 cards' id+name
       // only — bodies stay server-side, REQ-ARCH-33).
       protocols: PROTOCOL_CARDS.map((card) => ({ id: card.id, name: card.name })),
+      // EST.1 — the caller's effective plan + its permitted model tiers (the sheet's tier select locks
+      // to this; the run POST's plan gate stays the enforcer). Plus the calibrated duration cells the
+      // sheet/lever-matrix render (null ⇒ the shared prior).
+      account: {
+        planTier,
+        allowedModelTiers: allowedModelTiers(planTier) as readonly ModelTier[],
+      },
+      durations,
       headDraft: head
         ? {
             id: head.id,

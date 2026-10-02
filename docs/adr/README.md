@@ -39,3 +39,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-031](ADR-031-metered-burn-classification.md) | Burn classification under `debitMode=metered` | ECON.1 | Accepted |
 | [ADR-032](ADR-032-durable-calibration-store.md) | Durable calibration store — schema, size bands, admissibility, derived cells | ECON.1 | Accepted |
 | [ADR-033](ADR-033-quick-claim-cap-mechanism.md) | Quick Review's 5-claim cap — server-frozen input, oracle-bound; findings cap deferred | ECON.1 | Accepted |
+| [ADR-034](ADR-034-surface-estimator-api.md) | The surface-estimator API — one call shape, one figure, every pre-run surface | EST.1 | Accepted |
+| [ADR-035](ADR-035-model-tier-resolution-order.md) | Model-tier default resolution — explicit → project → account → §6.5 notch, plan-clamped | EST.1 | Accepted |
+| [ADR-036](ADR-036-shared-duration-bands-and-lever-matrix-timing.md) | Shared duration bands + the lever-matrix timing method (BL-12) | EST.1 | Accepted |

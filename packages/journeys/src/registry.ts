@@ -61,7 +61,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "the sheet's estimate/duration agree with the protocol card, the Timeline chip and the pricing cost card for the same draft",
     owner: "EST.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {

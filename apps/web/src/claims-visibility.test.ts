@@ -3,9 +3,11 @@ import {
   PRICING,
   PUBLIC_CLAIM_COPY,
   PUBLIC_CLAIMS,
+  planCoverageLine,
   visiblePlansPublication,
   type PublicClaimsConfig,
 } from "@rhema/contracts";
+import { surfacePricer } from "@rhema/run-sheet";
 import type { BillingPlansDto, BillingSubscriptionDto } from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
@@ -30,9 +32,10 @@ const ALL_ON: PublicClaimsConfig = {
   enabled: { "trial.firstReviewIncluded": true, "plans.whatItCovers": true },
 };
 
-/** The /billing/plans DTO the api transmits under `claims` (redacted fields are null while hidden). */
+/** The /billing/plans DTO the api transmits under `claims` (redacted fields are null while hidden;
+ *  enabled coverage lines are the COMPUTED ones — the api injects `surfacePricer()`). */
 function plansDto(claims: PublicClaimsConfig = PUBLIC_CLAIMS): BillingPlansDto {
-  const visible = visiblePlansPublication(claims);
+  const visible = visiblePlansPublication(claims, surfacePricer());
   return {
     version: String(PRICING.version),
     issuedAt: PRICING.issuedAt,
@@ -85,7 +88,10 @@ describe("the landing + pricing pages hide every gated claim (default config)", 
     expect(landing).toContain(PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingFaqAnswer);
     const pricing = await (await app.request("/pricing")).text();
     expect(pricing).toContain("one included Review");
-    expect(pricing).toContain(PRICING.plans.writer.whatItCovers);
+    // EST.1 — the coverage line is COMPUTED through the shared pricer, not the pricing.json copy.
+    const covers = planCoverageLine("writer", surfacePricer());
+    expect(covers).not.toBeNull();
+    expect(pricing).toContain(covers!);
     expect(pricing).toContain(PRICING.trial.includedNote);
   });
 });
@@ -103,12 +109,12 @@ describe("the billing page renders the DTO the api redacted", () => {
       expect(html).not.toContain(s);
   });
 
-  it("claim-on DTO: the included note + coverage lines render", async () => {
+  it("claim-on DTO: the included note + computed coverage lines render", async () => {
     const app = createWebApp(
       deps({ session: () => ({}) }, { getPlans: async () => plansDto(ALL_ON) }),
     );
     const html = await (await app.request("/settings/billing")).text();
     expect(html).toContain(PRICING.trial.includedNote);
-    expect(html).toContain(PRICING.plans.writer.whatItCovers);
+    expect(html).toContain(planCoverageLine("writer", surfacePricer())!);
   });
 });

@@ -11,10 +11,20 @@ import { Hono } from "hono";
 import {
   buildEstimate,
   buildLeverMatrix,
+  surfaceEstimate,
+  WORKFLOW_SHEET_PROFILES,
   type LeverMatrix,
 } from "@rhema/run-sheet";
 import type { EstimatorInputs } from "@rhema/protocols";
-import type { ModelTier, Rigor, WorkflowKey } from "@rhema/contracts";
+import {
+  MODEL_TIERS,
+  RIGORS,
+  type DurationBand,
+  type EstimateWhy,
+  type ModelTier,
+  type Rigor,
+  type WorkflowKey,
+} from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import { showcaseReadOnlyGuard } from "./showcase.js";
@@ -127,9 +137,22 @@ export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const projectId = c.req.param("id");
-    const body = (await c.req.json()) as EstimateBody;
-    if (!body.workflow || !body.rigor || !body.modelTier) {
+    const body = (await c.req.json().catch(() => null)) as EstimateBody | null;
+    if (!body || !body.workflow || !body.rigor || !body.modelTier) {
       return c.json({ error: "workflow, rigor and modelTier required" }, 400);
+    }
+    // EST.1 / D-DEF.3-2 (BL-11a) — CANONICAL validation before anything touches the store or the
+    // estimator: an off-vocab `modelTier` ("standard"), `rigor`, or `workflow` used to flow into the
+    // claim pre-pass → NaN → a 22P02 500. Now a named 400, ahead of the ownership read, the cache,
+    // and the pre-pass — invalid input writes nothing.
+    if (!WORKFLOW_SHEET_PROFILES[body.workflow as WorkflowKey]) {
+      return c.json({ error: "invalid_workflow" }, 400);
+    }
+    if (!(RIGORS as readonly string[]).includes(body.rigor)) {
+      return c.json({ error: "invalid_rigor" }, 400);
+    }
+    if (!(MODEL_TIERS as readonly string[]).includes(body.modelTier)) {
+      return c.json({ error: "invalid_model_tier" }, 400);
     }
     // DEF.2 (F6 hardening) — the project must belong to the caller's workspace: the estimate cache is
     // GLOBAL (tenantless, keyed on the content sha), so without this check an authenticated caller
@@ -157,15 +180,23 @@ export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
 
     const cacheKey = estimateCacheKey(body);
 
+    // EST.1 — the response's duration band + why-decomposition come from `surfaceEstimate` (the SAME
+    // surface API the sheet/protocol card/Timeline consume — ADR-034: one figure, one breakdown).
+    const surfaceFor = (claimCount?: number) =>
+      surfaceEstimate({ ...common, ...(claimCount != null ? { claimCount } : {}) });
+
     // A cached REFINED row short-circuits both intents (the pre-pass COGS is paid once per draft version).
     const cached = deps.estimateCache ? await deps.estimateCache.get(cacheKey) : null;
     if (cached && !cached.provisional) {
+      const surface = surfaceFor(cached.claimCount ?? undefined);
       return respond(c, deps, { projectId, principal }, workflow, body.rigor, {
         estimateCredits: cached.estimateCredits,
         capCredits: cached.capCredits,
         rateTableVersion: cached.rateTableVersion,
         provisional: false,
         ...(cached.claimCount != null ? { claimCount: cached.claimCount } : {}),
+        duration: surface.duration,
+        why: surface.why,
         levers: buildLeverMatrix({ ...common, claimCount: cached.claimCount ?? undefined }),
       });
     }
@@ -197,24 +228,30 @@ export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
             provisional: false,
           });
         }
+        const surface = surfaceFor(count);
         return respond(c, deps, { projectId, principal }, workflow, body.rigor, {
           estimateCredits: refined.estimateCredits,
           capCredits: refined.capCredits,
           rateTableVersion: refined.rateTableVersion,
           provisional: false,
           ...(refined.claimCount != null ? { claimCount: refined.claimCount } : {}),
+          duration: surface.duration,
+          why: surface.why,
           levers: buildLeverMatrix({ ...common, claimCount: count }),
         });
       }
       // budget elapsed → fall through to the provisional figure (the Run button was never blocked).
     }
 
+    const surface = surfaceFor();
     return respond(c, deps, { projectId, principal }, workflow, body.rigor, {
       estimateCredits: provisional.estimateCredits,
       capCredits: provisional.capCredits,
       rateTableVersion: provisional.rateTableVersion,
       provisional: provisional.provisional,
       ...(provisional.claimCount != null ? { claimCount: provisional.claimCount } : {}),
+      duration: surface.duration,
+      why: surface.why,
       levers: buildLeverMatrix(common),
     });
   });
@@ -228,6 +265,10 @@ interface EstimateResponse {
   rateTableVersion: number;
   provisional: boolean;
   claimCount?: number;
+  /** EST.1 — the shared duration band (calibrated cell, else the shared per-phase prior). */
+  duration?: DurationBand;
+  /** EST.1 — the "Why this estimate?" decomposition of `estimateCredits`. */
+  why?: EstimateWhy;
   levers: LeverMatrix;
 }
 

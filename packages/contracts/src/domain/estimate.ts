@@ -7,6 +7,7 @@
 // contracts verbatim — no re-derivation.
 
 import { USD_PER_CREDIT } from "./rates.js";
+import type { DurationBand } from "./durations.js";
 import type { ModelTier, Rigor } from "../vocab.js";
 import type { WorkflowKey } from "../enums.js";
 
@@ -156,24 +157,36 @@ export function resolveInsufficientBalance(args: {
   capCredits: number;
   spendableCredits: number;
   mode?: "full" | "beta";
+  /**
+   * EST.1 — the model tiers the caller's plan permits (§14.6's "switch to Base" advice may only name
+   * tiers the sheet could actually select). Absent ⇒ all tiers selectable (the historical default).
+   */
+  allowedModelTiers?: readonly ModelTier[];
+  /** the tier the run is currently priced at (absent ⇒ treated as already-Base — no Base option). */
+  currentModelTier?: ModelTier;
 }): InsufficientBalanceResolution | null {
   const { capCredits: cap, spendableCredits: bal } = args;
   if (cap <= bal) return null;
   const mode = args.mode ?? "full";
+  // EST.1 — "switch to Base" only appears when the plan actually permits it AND the run isn't already
+  // priced at it (the old fixed sentence advised a Base tier a Free/trial account was already on — or
+  // couldn't pick). When the plan is Base-only the levers sentence names rigor/fact-check only.
+  const allowed = args.allowedModelTiers ?? ["base", "balanced", "frontier"];
+  const canDrop = allowed.includes("base") && args.currentModelTier !== "base";
+  const leverSentence = canDrop
+    ? "Lower the rigor, switch to Base, or turn off fact-check to fit."
+    : "Lower the rigor or turn off fact-check to fit.";
   const third = mode === "beta" ? "Or ask for more credits." : "Or add credits / upgrade.";
   const sentences: [string, string, string] = [
     `This run's cap (${formatCredits(cap)}) is more than your spendable balance (${formatCredits(bal)}).`,
-    "Lower the rigor, switch to Base, or turn off fact-check to fit.",
+    leverSentence,
     third,
   ];
   // Cheapest-fitting first: dropping fact-check usually removes the most credits, then Base, then rigor;
   // adding credits is always last (it costs the user money). The sheet marks the first as primary.
-  const options: ResolutionOption[] = [
-    { action: "turn_off_fact_check", primary: true },
-    { action: "use_base", primary: false },
-    { action: "lower_rigor", primary: false },
-    { action: "add_credits", primary: false },
-  ];
+  const options: ResolutionOption[] = [{ action: "turn_off_fact_check", primary: true }];
+  if (canDrop) options.push({ action: "use_base", primary: false });
+  options.push({ action: "lower_rigor", primary: false }, { action: "add_credits", primary: false });
   return { capCredits: cap, spendableCredits: bal, sentences, options };
 }
 
@@ -216,4 +229,35 @@ export interface Estimate {
   readonly provisional: boolean;
   /** the pre-pass's claim count once refined (absent while provisional / for claim-free workflows). */
   readonly claimCount?: number;
+  /** EST.1 — the shared duration band (calibrated cell, else the shared per-phase prior). */
+  readonly duration?: DurationBand;
+  /** EST.1 — the "Why this estimate?" decomposition (one term per addend, summed subtotal, factors). */
+  readonly why?: EstimateWhy;
+}
+
+/**
+ * EST.1 — one additive line of the "Why this estimate?" block: `quantity` units at `rateCredits`
+ * credits each summing to `credits` (`quantity` is null on the fixed/intercept line — its `credits`
+ * IS the rate).
+ */
+export interface EstimateWhyTerm {
+  readonly label: string;
+  readonly quantity: number | null;
+  /** the quantity's unit noun ("words", "claims", "phases") — absent on the fixed line. */
+  readonly unit?: string;
+  readonly rateCredits: number;
+  readonly credits: number;
+}
+
+/** EST.1 — the decomposition the sheet's "Why this estimate?" block renders: additive terms, their
+ *  subtotal, the multiplicative factors (calibration/metered coverage/tier/rigor), the stated rounding
+ *  to the printed total. Sum-checkable: Σ terms × Π factors ≈ totalCredits within the stated rounding. */
+export interface EstimateWhy {
+  readonly terms: readonly EstimateWhyTerm[];
+  readonly subtotalCredits: number;
+  readonly factors: readonly { label: string; multiplier: number }[];
+  /** the un-rounded figure the estimate ceils (Σ terms × Π factors). */
+  readonly exactCredits: number;
+  /** the printed total — identical to `estimateCredits`. */
+  readonly totalCredits: number;
 }

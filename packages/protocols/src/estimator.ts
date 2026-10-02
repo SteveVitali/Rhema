@@ -110,6 +110,73 @@ export interface EstimatorSpec {
   meteredCoverage?: number;
   /** measured phase-aware cache economics (review 13 F8), recorded when instrumented. */
   cacheEconomics?: CacheEconomics;
+  /**
+   * EST.1 — the provisional claim density (claims per word) the immediate figure derives its claim
+   * count from, when the calibration store publishes one inside this spec (`estimator_cells` JSONB —
+   * ECON.1 folds it like every other measured field). Absent ⇒ the shipped `CLAIMS_PER_WORD` table in
+   * `@rhema/run-sheet`. The cached claim pre-pass always outranks the density once it lands.
+   */
+  claimDensity?: number;
+}
+
+/**
+ * EST.1 — one evaluated term of the parametric form, labelled for the "Why this estimate?" block:
+ * `quantity` units (the matching `EstimatorInputs` field) at `rateCredits` credits each contribute
+ * `credits`. `quantity` is `null` on the intercept — its `credits` IS the rate.
+ */
+export interface EvaluatedTerm {
+  /** the terms-field key (`"intercept"`, `"perWord"`, …). */
+  readonly key: keyof EstimatorTerms;
+  /** the input field the rate multiplies (`"words"`, `"claims"`, …) — `null` on the intercept. */
+  readonly inputKey: keyof EstimatorInputs | null;
+  /** the rendered unit noun ("words", "claims", "phases"). */
+  readonly unit: string;
+  readonly quantity: number | null;
+  readonly rateCredits: number;
+  readonly credits: number;
+}
+
+/** The per-term-key input field + unit noun (display order = canonical form order). */
+const TERM_DIMS: readonly { key: keyof EstimatorTerms; inputKey: keyof EstimatorInputs | null; unit: string }[] = [
+  { key: "intercept", inputKey: null, unit: "fixed" },
+  { key: "perWord", inputKey: "words", unit: "words" },
+  { key: "perClaim", inputKey: "claims", unit: "claims" },
+  { key: "perPhase", inputKey: "phases", unit: "phases" },
+  { key: "perFinding", inputKey: "findings", unit: "findings" },
+  { key: "perMoveWithResearch", inputKey: "movesWithResearch", unit: "researched moves" },
+  { key: "perWordRead", inputKey: "wordsRead", unit: "words read" },
+  { key: "perPieceRead", inputKey: "piecesRead", unit: "pieces read" },
+  { key: "perHoldout", inputKey: "holdouts", unit: "holdouts" },
+  { key: "perSource", inputKey: "sources", unit: "sources" },
+  { key: "perFetchedToken", inputKey: "fetchedTokens", unit: "fetched tokens" },
+  { key: "perThreadToken", inputKey: "threadTokens", unit: "thread tokens" },
+  { key: "perUrlRefetched", inputKey: "urlsRefetched", unit: "URLs re-fetched" },
+  { key: "perIteration", inputKey: "iterations", unit: "iterate turns" },
+  { key: "perDataRow", inputKey: "dataRows", unit: "data rows" },
+];
+
+/**
+ * EST.1 — `evalTerms` decomposed: the non-zero contributions of `t` over `inp`, in canonical order
+ * (an intercept of 0 and a per-X term whose quantity is 0 are omitted — the why-line lists only what
+ * the estimate actually charges for).
+ */
+export function evalTermsDetailed(t: EstimatorTerms, inp: EstimatorInputs): EvaluatedTerm[] {
+  const out: EvaluatedTerm[] = [];
+  for (const d of TERM_DIMS) {
+    const rate = t[d.key] ?? 0;
+    if (rate === 0) continue;
+    const qty = d.inputKey == null ? null : (inp[d.inputKey] ?? 0);
+    if (qty === 0) continue;
+    out.push({
+      key: d.key,
+      inputKey: d.inputKey,
+      unit: d.unit,
+      quantity: qty,
+      rateCredits: rate,
+      credits: qty == null ? rate : rate * qty,
+    });
+  }
+  return out;
 }
 
 export const MODEL_TIER_MULTIPLIERS: Record<ModelTier, number> = { base: 1, balanced: 2.2, frontier: 4.5 };

@@ -168,25 +168,117 @@ const N3: StepFn = async (ctx) => {
   if (ms > 20_000) throw new Error(`preview took ${ms}ms (> 20 s)`);
 };
 
-/** N4 (RED, EST.1) — sheet estimate ≡ protocol card ≡ Timeline chip ≡ pricing card. */
+/** Pull the leading "N credits"/"N cr" figure out of an estimate string. */
+function creditsOf(text: string): number {
+  const m = /(\d[\d,]*)\s*(?:credits?|cr)\b/.exec(text);
+  if (!m) throw new Error(`no credit figure in ${JSON.stringify(text)}`);
+  return Number(m[1]!.replace(/,/g, ""));
+}
+
+/** Pull a "~lo–hi min" duration band out of a string. */
+function bandOf(text: string): { low: number; high: number } | null {
+  const m = /~(\d+)[–-](\d+)\s*min/.exec(text);
+  return m ? { low: Number(m[1]), high: Number(m[2]) } : null;
+}
+
+/** The run sheet's estimate-box figure + band for a lever/inputs override (`?words=`/`?claims=`/`?tier=`/`?rigor=`). */
+async function sheetFigure(
+  page: Page,
+  ctx: StepCtx,
+  slug: string,
+  query: string,
+): Promise<{ credits: number; band: { low: number; high: number } | null }> {
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&${query}`);
+  const creditsLine = (await page.textContent("[data-credits-line]")) ?? "";
+  const credits = creditsOf(creditsLine);
+  const timeLine = (await page.textContent("[data-time-line]")) ?? "";
+  return { credits, band: bandOf(timeLine) };
+}
+
+/**
+ * N4 (EST.1) — one estimate everywhere: sheet ≡ protocol card ≡ Timeline chip ≡ pricing card.
+ *
+ * The contract (REQ-SPEC-32(b)):
+ *  1. each protocol card's "Review ≈ N credits" equals the run sheet's estimate for the card's
+ *     labelled typical length — the SAME surface API at the caller's resolved rigor/tier;
+ *  2. the draft project's sheet estimate/duration equal the Timeline next-step chip's;
+ *  3. a pricing card's Review range brackets the sheet figure at the card's labelled shape —
+ *     the Base-tier sheet equals the card's low within the card's 10-credit rounding.
+ * No substring games: figures are parsed and compared numerically.
+ */
 const N4: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("n4");
+
+  // 1 — the protocol cards' figures at their labelled typical lengths.
   await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  // collect every "≈ N credits" / duration figure on the sheet's protocol cards
-  const cardEstimates = await page.$$eval("[data-protocol-card] .tnum", (els) =>
-    els.map((e) => (e.textContent ?? "").replace(/\s+/g, " ").trim()).filter(Boolean),
+  const cards = await page.$$eval("[data-protocol-card]", (els) =>
+    els.map((el) => ({
+      id: el.getAttribute("data-protocol-card") ?? "?",
+      text: el.querySelector(".tnum")?.textContent?.replace(/\s+/g, " ").trim() ?? "",
+      words: Number(el.querySelector(".tnum")?.getAttribute("data-typical-words") ?? "0"),
+    })),
   );
-  if (cardEstimates.length === 0) throw new Error("no protocol-card estimates rendered");
-  const body = (await page.textContent("body")) ?? "";
-  const sheetEstimate = /\b\d[\d,]*\s+credits?\b/.exec(body)?.[0];
-  if (!sheetEstimate) throw new Error("no sheet-level estimate rendered");
-  // the agreement assertion (EST.1 owns making this true across the four surfaces)
-  const nums = cardEstimates.map((e) => /\d[\d,]*/.exec(e)?.[0] ?? "");
-  if (!nums.every((n) => sheetEstimate.replace(/,/g, "").includes(n.replace(/,/g, "")))) {
-    // not fatal-shape — the step's real contract is exact agreement; EST.1 owns the green flip.
+  const priced = cards.filter((card) => /credits/.test(card.text) && card.words > 0);
+  if (priced.length === 0) throw new Error("no protocol-card estimates rendered");
+
+  // a real draft so the sheet + Timeline have something to price (≤300-word fixture).
+  const slug = await createScratchProject(page, ctx, "n4", PAID_FIXTURE);
+
+  // 2 — sheet ≡ card: the sheet priced at the card's own typical words must equal the card figure.
+  for (const card of priced) {
+    const cardCredits = creditsOf(card.text);
+    const { credits } = await sheetFigure(page, ctx, slug, `words=${card.words}&rigor=standard`);
+    if (credits !== cardCredits) {
+      throw new Error(
+        `protocol card ${card.id} (${card.words}w) says ${cardCredits} cr but the sheet at the same shape says ${credits} cr`,
+      );
+    }
+  }
+
+  // 3 — sheet ≡ Timeline chip ≡ palette for the REAL draft (the chip feeds the palette hint).
+  const sheet = await sheetFigure(page, ctx, slug, "");
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
+  const chip = (await page.textContent("[data-next-step]")) ?? "";
+  if (!/est\./.test(chip)) throw new Error(`the Timeline chip shows no estimate: ${JSON.stringify(chip)}`);
+  const chipCredits = creditsOf(chip);
+  if (chipCredits !== sheet.credits) {
+    throw new Error(`Timeline chip ${chipCredits} cr ≠ sheet ${sheet.credits} cr for the same draft`);
+  }
+  const chipBand = bandOf((await page.textContent("[data-next-step-duration]")) ?? "");
+  if (sheet.band && chipBand && (chipBand.low !== sheet.band.low || chipBand.high !== sheet.band.high)) {
     throw new Error(
-      `sheet estimate "${sheetEstimate}" does not agree with cards ${JSON.stringify(cardEstimates)}`,
+      `Timeline duration ${chipBand.low}–${chipBand.high} min ≠ sheet ${sheet.band.low}–${sheet.band.high} min`,
     );
+  }
+
+  // 4 — sheet ∈ pricing card's Review range at the card's labelled shape (Base leg exact ± rounding).
+  await gotoOk(page, `${ctx.webBaseUrl}/pricing`);
+  const costCards = await page.$$eval("[data-cost-card][data-words]", (els) =>
+    els.map((el) => ({
+      key: el.getAttribute("data-cost-card") ?? "?",
+      words: Number(el.getAttribute("data-words") ?? "0"),
+      claims: Number(el.getAttribute("data-claims") ?? "0"),
+      rows: [...el.querySelectorAll("dl div")].map((r) => r.textContent?.trim() ?? ""),
+    })),
+  );
+  const first = costCards.find((card) => card.words > 0);
+  if (!first) throw new Error("no pricing cost cards rendered");
+  const reviewRow = first.rows.find((r) => /^Review\b/.test(r) && !/fact-check/.test(r));
+  const range = reviewRow ? /(\d[\d,]*)[–-](\d[\d,]*)\s*cr/.exec(reviewRow) : null;
+  if (!range) throw new Error(`pricing card ${first.key} renders no Review range`);
+  const lo = Number(range[1]!.replace(/,/g, ""));
+  const hi = Number(range[2]!.replace(/,/g, ""));
+  const base = await sheetFigure(
+    page,
+    ctx,
+    slug,
+    `words=${first.words}&claims=${first.claims}&rigor=standard&tier=base`,
+  );
+  if (Math.abs(base.credits - lo) > 5) {
+    throw new Error(`sheet Base figure ${base.credits} ≠ pricing card ${first.key} low ${lo} (±5 rounding)`);
+  }
+  if (!(lo <= base.credits && base.credits <= hi)) {
+    throw new Error(`sheet figure ${base.credits} outside pricing card ${first.key} range ${lo}–${hi}`);
   }
 };
 

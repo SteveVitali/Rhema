@@ -44,9 +44,16 @@ import {
   TIER_MODEL,
   type OrchestratorDeps,
 } from "@rhema/orchestrator";
-import { repriceParkedRun } from "@rhema/ledger";
-import { capFromEstimate, rateForModel, rateTableFor, CURRENT_RATE_TABLE_VERSION } from "@rhema/contracts";
-import { buildEstimate } from "@rhema/run-sheet";
+import { repriceParkedRun, durationCells, effectivePlanTier, sizeBandFor } from "@rhema/ledger";
+import {
+  allowedModelTiers,
+  capFromEstimate,
+  parseUserPrefs,
+  rateForModel,
+  rateTableFor,
+  CURRENT_RATE_TABLE_VERSION,
+} from "@rhema/contracts";
+import { resolveSheetConfig, surfaceEstimate } from "@rhema/run-sheet";
 import type { Principal } from "./run-routes.js";
 import type { ContentStore } from "@rhema/mirror";
 import type { GateCardWire } from "@rhema/findings-core";
@@ -173,12 +180,13 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
     const view = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const project = (
         await tx.query(
-          `select id, slug, title, archived_at, deleted_at, accepted_draft_id from projects
+          `select id, slug, title, archived_at, deleted_at, accepted_draft_id, rigor_default, model_tier_default
+             from projects
             where id = $1 and workspace_id = $2`,
           [projectId, principal.workspaceId],
         )
       ).rows[0] as
-        | { id: string; slug: string; title: string; archived_at: string | Date | null; deleted_at: string | Date | null; accepted_draft_id: string | null }
+        | { id: string; slug: string; title: string; archived_at: string | Date | null; deleted_at: string | Date | null; accepted_draft_id: string | null; rigor_default: string | null; model_tier_default: string | null }
         | undefined;
       if (!project || project.deleted_at != null) return { kind: "not_found" } as const;
 
@@ -468,6 +476,12 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
                   ? "start"
                   : state.suggested.action,
       );
+      // EST.1 — the next-step chip's figure goes through the SAME surface API + the SAME default
+      // chain the run sheet opens on (project default → account pref → §6.5 notch, clamped to the
+      // plan), and its duration comes from the calibrated cells / shared prior — never the old
+      // hard-coded Standard/Balanced (BL-57, BL-58). Reads fail soft: a decorative figure missing
+      // renders "—" downstream, never a modelled number.
+      let nextDuration: { lowMinutes: number; highMinutes: number } | null = null;
       if (verb === "review" || verb === "revise" || verb === "draft") {
         try {
           const words =
@@ -479,10 +493,31 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
                   )
                 ).rows[0] as { word_count: number | null } | undefined)?.word_count ?? 0
               : 0;
-          const est = buildEstimate({ workflow: verb, rigor: "standard", modelTier: "balanced", inputs: { words } });
+          const prefsRow = (
+            await tx.query(`select prefs from "user" where id = $1`, [principal.userId])
+          ).rows[0] as { prefs: unknown } | undefined;
+          const planTier = await effectivePlanTier(tx, principal.billingAccountId).catch(() => null);
+          const resolved = resolveSheetConfig({
+            workflow: verb,
+            projectRigorDefault: project.rigor_default,
+            projectModelTierDefault: project.model_tier_default,
+            prefs: parseUserPrefs(prefsRow?.prefs),
+            ...(planTier != null ? { allowedModelTiers: allowedModelTiers(planTier) } : {}),
+          });
+          const durations =
+            (await durationCells(tx, verb, sizeBandFor({ words })).catch(() => null)) ?? undefined;
+          const est = surfaceEstimate({
+            workflow: verb,
+            rigor: resolved.rigor,
+            modelTier: resolved.modelTier,
+            inputs: { words },
+            ...(durations ? { durations } : {}),
+          });
           nextEstimate = est.estimateCredits;
+          nextDuration = est.duration;
         } catch {
           nextEstimate = null; // estimate is decorative — never fail the read over it
+          nextDuration = null;
         }
       }
       return {
@@ -493,6 +528,7 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
           verb,
           label: state.suggested.label,
           estimateCredits: nextEstimate,
+          ...(nextDuration != null ? { duration: nextDuration } : {}),
           headDraftN: head?.n ?? null,
         },
         rounds: rounds.map((r) => ({

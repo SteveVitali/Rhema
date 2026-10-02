@@ -229,6 +229,18 @@ export const COPY = {
     stageLabel: "Stage",
     wholeDraftPrefix: "Whole draft:",
     includedLabel: "Included",
+    // EST.1 — the model-tier select + plan-clamp notice (§6.5's tier choice, REQ-IDE-13 amended) and
+    // the unmeasured-inputs estimate state (fail closed — "—", never a fabricated figure).
+    modelTierLabel: "Model tier",
+    tierLockedSuffix: "(not on your plan)",
+    tierClampedFmt: "{requested} isn't on your plan — priced on {resolved}.",
+    estimatingLabel: "Estimate pending — the draft is still being measured.",
+    resolutionLabels: {
+      turn_off_fact_check: "Turn off fact-check",
+      use_base: "Switch to Base",
+      lower_rigor: "Lower the rigor",
+      add_credits: "Add credits",
+    },
   },
 
   dossier: {

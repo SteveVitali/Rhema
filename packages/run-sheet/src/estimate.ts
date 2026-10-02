@@ -12,8 +12,19 @@ import {
   type Rigor,
   type WorkflowKey,
 } from "@rhema/contracts";
-import { estimateCredits, estimatorSpec, type EstimatorInputs } from "@rhema/protocols";
-import { activePhaseCount, resolveToggles, sheetProfile, type ToggleState } from "./profiles.js";
+import {
+  estimateCredits,
+  estimatorSpec,
+  type EstimatorInputs,
+  type EstimatorSpec,
+} from "@rhema/protocols";
+import {
+  activePhaseCount,
+  resolveToggles,
+  sheetProfile,
+  type ToggleState,
+  type WorkflowSheetProfile,
+} from "./profiles.js";
 
 /**
  * The protocol's typical claim density (claims per word) for the immediate figure, per workflow with a
@@ -46,11 +57,38 @@ export interface BuildEstimateArgs {
   readonly claimCount?: number;
 }
 
+/** The claim density in force for a workflow: the calibrated spec's `claimDensity` (ECON.1's
+ *  `estimator_cells` JSONB) outranks the shipped `CLAIMS_PER_WORD` table (EST.1 — the calibration
+ *  store's density IS part of the cost card the surfaces share). */
+export function claimDensity(workflow: WorkflowKey, spec?: EstimatorSpec): number | undefined {
+  return spec?.claimDensity ?? CLAIMS_PER_WORD[workflow];
+}
+
 /** Derive the provisional claim count for a claim-priced workflow from the word count (§5.6 item 1). */
-export function provisionalClaimCount(workflow: WorkflowKey, words: number | undefined): number | undefined {
-  const density = CLAIMS_PER_WORD[workflow];
+export function provisionalClaimCount(
+  workflow: WorkflowKey,
+  words: number | undefined,
+  spec?: EstimatorSpec,
+): number | undefined {
+  const density = claimDensity(workflow, spec);
   if (density == null) return undefined;
   return Math.max(0, Math.round((words ?? 0) * density));
+}
+
+/** EST.1 — the resolved internals of `buildEstimate`, exposed so the surface API can decompose the
+ *  SAME figure into the "Why this estimate?" terms without a second formula (ADR-034). */
+export interface ResolvedEstimation {
+  readonly estimate: Estimate;
+  readonly spec: EstimatorSpec;
+  readonly profile: WorkflowSheetProfile;
+  /** the toggle set in force (rigor defaults + user overrides). */
+  readonly toggles: ToggleState;
+  /** the estimator inputs AFTER toggle application (the figure's actual inputs). */
+  readonly inputs: EstimatorInputs;
+  /** the addend phase names the estimate included. */
+  readonly enabledAddends: readonly string[] | undefined;
+  /** the estimator variant evaluated (profile's, else the caller's). */
+  readonly variant: string | undefined;
 }
 
 /**
@@ -58,15 +96,18 @@ export function provisionalClaimCount(workflow: WorkflowKey, words: number | und
  * onto the estimator inputs/addends, evaluates the (override-first) estimator spec, and sizes the cap
  * (`ceil(1.5 × estimate)`, breaker-scaled). `provisional` is true until a real claim count is supplied.
  */
-export function buildEstimate(args: BuildEstimateArgs): Estimate {
+export function resolveEstimation(args: BuildEstimateArgs): ResolvedEstimation {
   const profile = sheetProfile(args.workflow);
   const toggles = resolveToggles(profile, args.rigor, args.toggles);
+  const spec = estimatorSpec(args.workflow);
+  if (!spec) throw new Error(`buildEstimate: no estimator spec for "${args.workflow}"`);
 
-  // Resolve the claim count: an explicit refined count, else the caller's input, else the derived density.
+  // Resolve the claim count: an explicit refined count, else the caller's input, else the derived density
+  // (the calibrated spec's `claimDensity` outranks the shipped table).
   let provisional = false;
   let claims = args.claimCount ?? args.inputs.claims;
   if (claims == null) {
-    const derived = provisionalClaimCount(args.workflow, args.inputs.words);
+    const derived = provisionalClaimCount(args.workflow, args.inputs.words, spec);
     if (derived != null) {
       claims = derived;
       provisional = true;
@@ -90,23 +131,34 @@ export function buildEstimate(args: BuildEstimateArgs): Estimate {
   };
 
   const { inputs, enabledAddends } = profile.applyToggles(baseInputs, toggles);
-  const spec = estimatorSpec(args.workflow);
-  if (!spec) throw new Error(`buildEstimate: no estimator spec for "${args.workflow}"`);
+  const variant = args.variant ?? profile.variant;
 
   const estimate = estimateCredits(spec, inputs, {
     tier: args.modelTier,
     rigor: args.rigor,
-    ...(profile.variant ? { variant: profile.variant } : {}),
-    ...(args.variant ? { variant: args.variant } : {}),
+    ...(variant ? { variant } : {}),
     enabledAddends,
   });
   const cap = capFromEstimate(estimate, args.breakerMultiplier ?? 1);
 
   return {
-    estimateCredits: estimate,
-    capCredits: cap,
-    rateTableVersion: CURRENT_RATE_TABLE_VERSION,
-    provisional,
-    ...(claims != null && CLAIMS_PER_WORD[args.workflow] != null ? { claimCount: claims } : {}),
+    estimate: {
+      estimateCredits: estimate,
+      capCredits: cap,
+      rateTableVersion: CURRENT_RATE_TABLE_VERSION,
+      provisional,
+      ...(claims != null && claimDensity(args.workflow, spec) != null ? { claimCount: claims } : {}),
+    },
+    spec,
+    profile,
+    toggles,
+    inputs,
+    enabledAddends,
+    variant,
   };
+}
+
+/** The estimate-only view of `resolveEstimation` (the historical signature every caller keeps). */
+export function buildEstimate(args: BuildEstimateArgs): Estimate {
+  return resolveEstimation(args).estimate;
 }

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { processStripeEvent, signStripePayload, SqlHoldLedger, STRIPE_EVENT_JOB, StripeRequestError, StubStripePort, type CheckoutSessionRequest } from "@rhema/ledger";
-import { PRICING, priceCents, type PurchaseMode } from "@rhema/contracts";
+import { PRICING, priceCents, planCoverageLine, type PurchaseMode } from "@rhema/contracts";
+import { surfacePricer } from "@rhema/run-sheet";
 import { createBillingRoutes } from "./billing-routes.js";
 import { createApp, type Principal } from "./index.js";
 
@@ -197,10 +198,13 @@ describe("GET /billing/plans — the pricing.json publication", () => {
     expect(body.trial.entitlement.wordCap).toBe(6000);
     expect(body.topUpPacks).toHaveLength(3);
     // HOT.1 — the claims gate is server-side: hidden claims transmit null on the DTO itself.
+    // EST.1 — `plans.whatItCovers` ships ENABLED: the gated lines transmit the COMPUTED coverage
+    // (the shared pricer's figure), never the retired pricing.json copy.
     expect(body.trial.includedNote).toBeNull();
-    expect(body.plans["writer"]?.whatItCovers).toBeNull();
-    expect(body.plans["studio"]?.whatItCovers).toBeNull();
-    expect(body.plans["studio_max"]?.whatItCovers).toBeNull();
+    for (const tier of ["writer", "studio", "studio_max"] as const) {
+      expect(body.plans[tier]?.whatItCovers).toBe(planCoverageLine(tier, surfacePricer()));
+      expect(body.plans[tier]?.whatItCovers).not.toBe(PRICING.plans[tier].whatItCovers);
+    }
     expect(body.plans["team"]?.whatItCovers).toContain("Pooled credits");
   });
 });
