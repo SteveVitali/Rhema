@@ -86,11 +86,12 @@ export const MODEL_TIER_MULTIPLIERS: Record<ModelTier, number> = { base: 1, bala
 
 // §6.1 rigor multipliers relative to Standard (PROVISIONAL — replaced by the instrumented runs of §16.3 #1). Only the
 // ported workflows are given values the spec states: Review Quick 0.6× / Full board 1.2×; Revise Quick 0.55× / Full
-// board 1.25×. Draft's multipliers (0.5× / 1.3×) are spec'd but its port defers (§17). Profile voice has no rigor
+// board 1.25×; Draft Quick 0.5× / Full board 1.3× (P1.10 lands the port). Profile voice has no rigor
 // multiplier — Quick Voice is its OWN estimator variant (§9.2), not a Standard-relative scale. Unlisted → 1.0.
 export const RIGOR_MULTIPLIERS: Record<string, Partial<Record<Rigor, number>>> = {
   review: { quick: 0.6, standard: 1, full_board: 1.2 },
   revise: { quick: 0.55, standard: 1, full_board: 1.25 },
+  draft: { quick: 0.5, standard: 1, full_board: 1.3 },
 };
 /** True until the §6.1 rigor multipliers are replaced by measured values (§16.3 #1). */
 export const RIGOR_MULTIPLIERS_PROVISIONAL = true;
@@ -231,6 +232,33 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
   calibrate_voice: {
     workflow: "calibrate_voice",
     base: { intercept: 90, perHoldout: 90 },
+    provisional: true,
+    source: "modeled",
+    version: "modeled-1",
+  },
+  draft: {
+    workflow: "draft",
+    // §12.2 Draft row: `a + b·target_words + c·inherited_claims` (a≈60, b≈0.05, c≈11) at Base/Standard.
+    // PRB.23's per-phase churn term applies on top — the same session physics as the other ported skills.
+    base: { intercept: 60, perWord: 0.05, perClaim: 11, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
+    variants: {
+      // §7.6 / REQ-CHAT-30 — the trial first-section preview ("Draft the first section, ≈60 cr"):
+      // intake → plan → one drafted section → delivery, no grounding churn, no audit. The intercept is
+      // pre-coverage: 48 × 1.25 metered-coverage lands at the spec'd ≈60-cr preview price (Base/Standard).
+      preview: { intercept: 48 },
+    },
+    addends: [
+      // Grounding (Phase 3) is a research-class phase: the bounded web-research burn (PRB.22) PLUS the
+      // research-loop transcript churn (PRB.24 `RESEARCH_LOOP_CHURN_CREDITS` — §12.2 says it applies to
+      // Draft's grounding). Toggled off at Quick rigor (or the sheet's grounding toggle) ⇒ not priced.
+      {
+        phase: "grounding",
+        terms: { intercept: RESEARCH_FLOOR_CREDITS + RESEARCH_LOOP_CHURN_CREDITS, perClaim: RESEARCH_PER_CLAIM_CREDITS },
+      },
+    ],
+    costPerVerifiedClaimBase: 11 + RESEARCH_PER_CLAIM_CREDITS,
+    // PRB.25 — grounding runs the same subagent fan-out + web-search fees the committed channel under-reports.
+    meteredCoverage: METERED_VS_COMMITTED_COVERAGE,
     provisional: true,
     source: "modeled",
     version: "modeled-1",

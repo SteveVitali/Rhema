@@ -81,7 +81,7 @@ function makeHarness(specs: HarnessRunSpec[], outputsFor: (spec: HarnessRunSpec,
     },
     failStep: (args: FailCall) => {
       rec.fails.push(args);
-      return Promise.resolve();
+      return Promise.resolve({ ok: true as const });
     },
     deliver: (args: { delivery: DeliveryArgs }) => {
       rec.delivers.push(args.delivery);

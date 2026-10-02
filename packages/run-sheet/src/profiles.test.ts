@@ -17,7 +17,7 @@ import {
 describe("TOGGLE_OPT_OUT_FLAG — toggle keys map onto the manifest's declared flags", () => {
   it("covers every optOutFlag the sheet workflows declare, and no more", () => {
     const declared = new Set<string>();
-    for (const w of ["review", "revise", "fact_check", "profile_voice"] as const) {
+    for (const w of ["review", "revise", "fact_check", "profile_voice", "draft"] as const) {
       for (const p of WORKFLOW_MANIFESTS[w]?.phases ?? []) {
         if (p.optOutFlag != null) declared.add(p.optOutFlag);
       }
@@ -77,6 +77,6 @@ describe("activePhaseCount — the estimator's `phases` input", () => {
     expect(activePhaseCount("review", t)).toBe(6);
   });
   it("returns undefined for a workflow with no manifest (term contributes 0)", () => {
-    expect(activePhaseCount("draft" as WorkflowKey, {})).toBeUndefined();
+    expect(activePhaseCount("outline" as WorkflowKey, {})).toBeUndefined();
   });
 });

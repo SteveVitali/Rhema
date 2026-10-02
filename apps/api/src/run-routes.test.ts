@@ -384,3 +384,68 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     expect(after.n).toBe(before.n); // the creation transaction rolled back — no abandoned row
   });
 });
+
+describe("POST /projects/:id/runs — Draft (P1.10; REQ-WF-4)", () => {
+  function draftBody(over: Record<string, unknown> = {}) {
+    return runBody({
+      idempotencyKey: "idem-draft-1",
+      workflow: "draft",
+      draftId: seed.draftId, // the OUTLINE the intake phase reads
+      corrKind: "drafting_note",
+      ...over,
+    });
+  }
+
+  it("creates a draft run with server-reserved nextDraftId/nextDraftN frozen into inputs", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(draftBody()),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const row = (
+      await db.pg.query("select workflow, inputs from runs where id = $1", [runId])
+    ).rows[0] as { workflow: string; inputs: Record<string, unknown> };
+    expect(row.workflow).toBe("draft");
+    const ins = row.inputs;
+    expect(ins.draftId).toBe(seed.draftId); // the outline, server-verified against the project
+    expect(typeof ins.nextDraftId).toBe("string");
+    // seed.draftN = 1 → the born-frozen row reserves v2.
+    expect(ins.nextDraftN).toBe(2);
+  });
+
+  it("rejects a draft run with no outline (400 draft_outline_required) — and a foreign outline id", async () => {
+    const noOutline = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(draftBody({ idempotencyKey: "idem-draft-no-outline", draftId: undefined })),
+    });
+    expect(noOutline.status).toBe(400);
+    expect(((await noOutline.json()) as { error: string }).error).toBe("draft_outline_required");
+    const foreign = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(draftBody({ idempotencyKey: "idem-draft-foreign", draftId: "dft_nonexistent" })),
+    });
+    expect(foreign.status).toBe(400);
+  });
+
+  it("preview:true freezes inputs.preview {sections:1} + forces grounding/audit off (the §7.6 ≈60-cr shape)", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(draftBody({ idempotencyKey: "idem-draft-preview", preview: true, rigor: "full_board" })),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const ins = (
+      (await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+        inputs: Record<string, unknown>;
+      }
+    ).inputs;
+    expect(ins.preview).toEqual({ sections: 1 });
+    expect(ins.grounding).toBe(false);
+    expect(ins.audit).toBe(false);
+  });
+});

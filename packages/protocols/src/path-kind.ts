@@ -32,6 +32,7 @@ export const PATH_KIND_RULES: readonly PathRule[] = [
   { re: /(^|\/)00-commissioning-brief\.md$/, kind: "commissioning_brief" },
   { re: /(^|\/)01-voice-brief\.md$/, kind: "voice_brief" },
   { re: /(^|\/)02-structure-plan\.md$/, kind: "structure_plan" },
+  { re: /(^|\/)04-draft-ledger\.md$/, kind: "draft_ledger" },
   { re: /(^|\/)05-consolidation-notes\.md$/, kind: "consolidation_notes" },
   { re: /(^|\/)06-fidelity-audit\.md$/, kind: "fidelity_audit" },
   { re: /(^|\/)v\d+-response-ledger\.md$/, kind: "response_ledger" },

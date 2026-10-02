@@ -459,3 +459,91 @@ describe("readWorkRoots — the persona root joins the harvest map (F22)", () =>
     expect([...filesOnly.keys()]).toEqual(["manifest.md"]);
   });
 });
+
+describe("buildPhaseOutputs — Draft facts (P1.10; REQ-WF-4/5)", () => {
+  const draftWf = WORKFLOW_MANIFESTS.draft!;
+  const planPhase = draftWf.phases.find((p) => p.key === "plan")!;
+  const draftPhase = draftWf.phases.find((p) => p.key === "draft")!;
+  const deliveryPhase = draftWf.phases.find((p) => p.key === "delivery")!;
+
+  const planSidecar = {
+    sidecar: "structure_plan",
+    version: 1,
+    spine: ["c1", "c2", "c3"],
+    sections: [
+      { ref: "I", title: "Opening", targetWords: 700 },
+      { ref: "II", title: "Middle", targetWords: 900 },
+      { ref: "III", title: "Close", targetWords: 400 },
+    ],
+  };
+  const draftLedger = [
+    "# Draft ledger — piece v3",
+    "",
+    "## Sections",
+    "",
+    "| # | Section | Function | Budget | Actual | Status | Claim rows | Deviation |",
+    "|---|---|---|---|---|---|---|---|",
+    "| 1 | Opening | intro | 700 | 720 | verified | C1 | — |",
+    "| 2 | Middle | develop | 900 | 880 | drafted | C2 | — |",
+    "| 3 | Close | land it | 400 | — | planned | — | — |",
+    "",
+  ].join("\n");
+
+  function draftSpec(phase: PhaseManifest, inputs: Record<string, unknown> = {}): HarnessRunSpec {
+    const spec = makeSpec(phase, draftWf, "author");
+    (spec.request as { inputs: Record<string, unknown> }).inputs = inputs;
+    return spec;
+  }
+
+  it("spine_min reads the structure-plan sidecar's spine count", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["agents/author/drafting/v3/02-structure-plan.md", enc("# Plan\n")],
+      [".rhema/structure-plan.json", enc(planSidecar)],
+    ]);
+    const out = buildPhaseOutputs(files, draftSpec(planPhase), "author");
+    expect(out.facts.spineCount).toBe(3);
+    expect(out.facts.sidecarValidates?.["structure-plan.json"]).toBe(true);
+  });
+
+  it("draft_sections_eq_plan counts ledger rows past 'planned' vs the plan's sections", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["drafts/v3.md", enc("# v3\n\nOpening. Middle.\n")],
+      ["agents/author/drafting/v3/04-draft-ledger.md", enc(draftLedger)],
+      [".rhema/structure-plan.json", enc(planSidecar)],
+    ]);
+    const out = buildPhaseOutputs(files, draftSpec(draftPhase), "author");
+    // 2 drafted (verified + drafted), 3 planned sections — the predicate FAILS (2 ≠ 3).
+    expect(out.facts.draftSectionCount).toBe(2);
+    expect(out.facts.planSectionCount).toBe(3);
+  });
+
+  it("a trial preview clamps the expected section count to inputs.preview.sections", () => {
+    const oneSectionLedger = draftLedger.replace("drafted | C2", "planned | —");
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["drafts/v3.md", enc("# v3\n\nOpening only.\n")],
+      ["agents/author/drafting/v3/04-draft-ledger.md", enc(oneSectionLedger)],
+      [".rhema/structure-plan.json", enc(planSidecar)],
+    ]);
+    const out = buildPhaseOutputs(files, draftSpec(draftPhase, { preview: { sections: 1 } }), "author");
+    expect(out.facts.draftSectionCount).toBe(1);
+    expect(out.facts.planSectionCount).toBe(1); // min(3 plan sections, preview 1)
+  });
+
+  it("the delivery dossier folds the Draft grounding ledger (03-claim-ledger.json), not the review 01-", () => {
+    const ledger = { sidecar: "claim_ledger", version: 1, claims: [{ ordinal: 1, text: "c", tier: 2, verdict: "verified", humanAdded: false }] };
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["correspondence/v3-drafting-note.md", enc("# Drafting note\n")],
+      ["agents/author/drafting/v3/03-claim-ledger.md", enc("# Claim ledger\n")],
+      [".rhema/03-claim-ledger.json", enc(ledger)],
+    ]);
+    const out = buildPhaseOutputs(files, draftSpec(deliveryPhase), "author");
+    expect(out.delivery).toBeDefined();
+    expect(out.delivery!.deliveredPaths).toContain("correspondence/v3-drafting-note.md");
+    expect(out.delivery!.claimLedger?.claims).toHaveLength(1);
+    expect(out.delivery!.sidecars.map((s) => s.filename)).toContain("03-claim-ledger.json");
+  });
+});

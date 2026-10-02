@@ -195,11 +195,21 @@ export function parseCutList(json: unknown, markdown?: string): ParseResult<CutL
 export const PARSERS: Record<SidecarFilename, (json: unknown, markdown?: string) => ParseResult<unknown>> = {
   "findings.json": (j) => parseFindings(j),
   "01-claim-ledger.json": (j) => parseClaimLedger(j),
+  "03-claim-ledger.json": (j) => parseClaimLedger(j),
   "rubric.json": (j) => parseRubric(j),
   "response-ledger.json": (j, m) => parseResponseLedger(j, m),
   "structure-plan.json": (j, m) => parseStructurePlan(j, m),
   "cut-list.json": (j, m) => parseCutList(j, m),
 };
+
+// P1.10 — the draft-ledger `## Sections` table parser (the `section.drafted` / `draft_sections_eq_plan`
+// source of truth); markdown, not a sidecar, so it lives beside rather than inside PARSERS.
+export {
+  DRAFTED_STATUSES,
+  draftedSectionCount,
+  parseDraftLedgerSections,
+  type DraftLedgerSection,
+} from "./draft-ledger.js";
 
 /** Dispatch a sidecar by its canonical filename (data-driven, matching SIDECAR_REGISTRY). */
 export function parseSidecar(

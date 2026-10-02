@@ -13,6 +13,7 @@ import { factCheck } from "../manifests/fact_check.js";
 import { profileVoice } from "../manifests/profile_voice.js";
 import { refreshVoice } from "../manifests/refresh_voice.js";
 import { calibrateVoice } from "../manifests/calibrate_voice.js";
+import { draft } from "../manifests/draft.js";
 
 export * from "./manifest-types.js";
 export * from "./estimator.js";
@@ -23,11 +24,12 @@ export * from "./version.js";
 export * from "../parsers/index.js";
 export * from "../serializers/index.js";
 
-export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice };
+export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft };
 
 /** Every workflow manifest this phase ships, keyed by WorkflowKey (§12.2; adding a workflow is a manifest — REQ-ARCH-6). */
 export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> = {
   review,
+  draft,
   revise,
   fact_check: factCheck,
   profile_voice: profileVoice,

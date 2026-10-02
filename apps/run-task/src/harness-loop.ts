@@ -136,6 +136,15 @@ export interface FailCall {
   readonly errorClass: string;
   readonly reason?: string;
 }
+/** The `/steps/:key/fail` reply — `backEdge` when the failure self-report routed a bounded re-plan (the run
+ *  stays `running`; the loop re-fetches the spec and re-runs the reset phase), `gateId` when it escalated to a
+ *  blocking Approval (the run parks `waiting_gate`; the pod exits like any other gate). */
+export interface FailStepResult {
+  readonly ok: boolean;
+  readonly backEdge?: { readonly to: readonly string[]; readonly replans: number };
+  readonly gateId?: string;
+  readonly code?: string;
+}
 
 /** The token-authed internal-api client the harness calls (a `fetch` in prod; the real routes in the G21 test). */
 export interface HarnessApiClient {
@@ -144,7 +153,7 @@ export interface HarnessApiClient {
   fetchRunSpec(): Promise<HarnessRunSpec>;
   harvest(args: HarvestCall): Promise<HarvestReply>;
   commit(args: CommitCall): Promise<{ ok: boolean; state?: string; code?: string }>;
-  failStep(args: FailCall): Promise<void>;
+  failStep(args: FailCall): Promise<FailStepResult>;
   deliver(args: { delivery: DeliveryArgs }): Promise<{ ok: boolean; state?: string }>;
   /** finalize WITHOUT a dossier (a pinned `phase:N` run, or a no-draft workflow) → `finalizing → completed`. */
   finalize(): Promise<{ ok: boolean; state?: string }>;
@@ -266,12 +275,18 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         const reason = outputs.agentError
           ? `${baseReason} — agent error [${outputs.agentError.class}]: ${outputs.agentError.message}`
           : baseReason;
-        await deps.client.failStep({
+        const failed = await deps.client.failStep({
           stepKey: phase.key,
           ordinal: phase.index,
           errorClass,
           reason,
         });
+        // P1.10 / REQ-WF-5 — a `replan` self-report that fit inside ITERATION_CAPS.replan reset the plan's
+        // committed step server-side and kept the run `running`: the loop CONTINUES, and the next
+        // fetchRunSpec hands back the reset phase (with the failure as `inputs.replan` context). At the cap
+        // the server parked `waiting_gate` on a `refusal` Approval — the pod exits like any other gate.
+        if (failed.ok && failed.backEdge) continue;
+        if (failed.ok && failed.gateId) return { kind: "gated", phasesCommitted };
         return { kind: "failed", phasesCommitted, errorClass, reason };
       }
 

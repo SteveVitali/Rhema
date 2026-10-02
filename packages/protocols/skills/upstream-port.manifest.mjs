@@ -6,7 +6,7 @@
 // it, so a ported skill differs from upstream by these edits and nothing else (REQ-SPEC-22: drift is
 // a fork, not a diff). Every op's `category` must be in SANCTIONED_CATEGORIES.
 //
-// Ported skills: editorial-review, respond-to-review, bootstrap-persona. draft-from-outline /
+// Ported skills: editorial-review, respond-to-review, bootstrap-persona, draft-from-outline.
 // outline-from-research / research_burst are deliberately deferred to the full-IDE phase (§17).
 
 export const upstreamRepo = "agent-discourse";
@@ -271,6 +271,121 @@ These are harness-neutral additions; the persona regimen is upstream-verbatim.
       op: "delete",
       category: "q11",
       find: ' Under any mode but `self`, this file is quotation-bound: no\n  extrapolated views, no "would probably argue."',
+    },
+  ],
+
+  // ---------------- draft-from-outline (Draft) ----------------
+  "skills/draft-from-outline/SKILL.md": [
+    {
+      op: "insertAfter",
+      category: "inputs",
+      anchor:
+        '    description: "Default true: run to completion, taking the conservative option on open questions and flagging them in the drafting note. When false, pause once after the structure plan (Phase 2) — the last cheap moment to change the piece\'s shape."',
+      insert: SIX_INPUTS({
+        order: "0, 1, 2, 3, 4, 5, 6, 7",
+        scopeNote:
+          "a subset of the drafting phases (e.g. a one-section preview runs intake → plan → draft on the first planned section only)",
+        sidecarList: "structure-plan.json, 03-claim-ledger.json",
+      }),
+    },
+    {
+      op: "insertAfter",
+      category: "inputs",
+      anchor:
+        "    description: \"Rhema harness (REQ-ARCH-5, REQ-SPEC-4): when true, emit the structured-output sidecar twins of §11.1 under .rhema/ beside each markdown deliverable (structure-plan.json, 03-claim-ledger.json), and write .rhema/phase-result.json {status} at the end of every phase. Absent, the skill runs exactly as upstream.\"",
+      insert: `
+  - name: phase_output
+    required: false
+    description: "Rhema harness (REQ-ARCH-5): the exact dossier file(s) the pinned phase must write — supplied by the harness from the phase manifest so the write target never drifts from the completion oracle. When set, the pinned phase writes precisely these file(s) (comma-separated) before .rhema/phase-result.json."
+  - name: replan
+    required: false
+    description: "Rhema harness (REQ-ARCH-5; §12.2 grounding → plan back-edge): on a re-run of the structure plan after a grounding failure, the failure context the re-plan must metabolize — which claims failed verification and why. The re-planned plan works around them; it never plans on a claim the ledger marked failed."
+  - name: preview
+    required: false
+    description: "Rhema harness (REQ-ARCH-5; §7.6 trial preview): when set (e.g. {sections:1}), the Draft phase writes only the first planned section(s) of drafts/v<N>.md — a bounded first-section preview, not the whole piece. The remaining phases run unchanged over the partial draft."`,
+    },
+    {
+      op: "insertAfter",
+      category: "sidecar",
+      anchor: "the ledger is what makes that free.",
+      insert: `
+
+## Rhema harness inputs and structured output (added at port — REQ-ARCH-5)
+
+These are harness-neutral additions; the drafting regimen is upstream-verbatim.
+
+- \`phase\` runs one phase then stops (\`"N"\` = only phase N; \`"N+"\` = from N to the end), indexed in this skill's own fallback order 0–7 (Delivery is phase \`7\`).
+- \`scope\` narrows the run to a phase subset; \`changed_since\` / \`prior_review\` / \`resume_from\` support re-run and resume paths.
+- \`sidecar: true\` emits the structured-output twins of §11.1 to \`.rhema/\` beside each markdown deliverable — \`structure-plan.json\` (Phase 2) and \`03-claim-ledger.json\` (Phase 3) — and writes \`.rhema/phase-result.json {status}\` at the end of every phase. With \`sidecar\` absent the skill runs exactly as upstream.
+- \`phase_output\` names the exact file(s) the pinned phase must write, supplied by the harness from the phase manifest so the write target never drifts from the completion oracle. Honor it as authoritative.
+- \`replan\` carries the grounding-failure context into a re-run of the structure plan (the §12.2 \`grounding → plan\` back-edge). When present, the plan re-runs around the failed claims — it must not plan on a claim the ledger marked failed, and the re-plan is noted in both the plan and the ledger.
+- \`preview\` bounds the Draft phase to the first planned section(s) (the §7.6 first-section preview); every other phase runs unchanged.
+- Under the harness the Phase-2 \`autonomous=false\` pause is the harness's Approve-plan gate — the plan is committed, the run parks for the human's decision (approve / edit / keep planning / stop), and the gate's edits arrive as a rewritten \`02-structure-plan.md\` (and its \`.json\` twin) at the next phase's materialization. The upstream \`autonomous\` input still governs standalone runs.
+
+### Per-phase artifacts under harness execution (REQ-ARCH-5)
+
+Run one phase at a time (\`phase="N"\`), each phase runs in a fresh context and communicates only through files — write exactly the file(s) \`phase_output\` names (equivalently, the row below for the pinned phase), then \`.rhema/phase-result.json {"status":"done"}\`:
+
+| Phase (fallback order) | \`phase\` | File(s) to write |
+|---|---|---|
+| Intake | \`0\` | \`agents/author/drafting/v<N>/00-commissioning-brief.md\` |
+| Voice | \`1\` | \`agents/author/drafting/v<N>/01-voice-brief.md\` |
+| Structure plan | \`2\` | \`agents/author/drafting/v<N>/02-structure-plan.md\` (+ \`.rhema/structure-plan.json\`) |
+| Grounding | \`3\` | \`agents/author/drafting/v<N>/03-claim-ledger.md\` (+ \`.rhema/03-claim-ledger.json\`) |
+| Draft | \`4\` | \`drafts/v<N>.md\` (+ \`agents/author/drafting/v<N>/04-draft-ledger.md\`) |
+| Consolidation | \`5\` | \`agents/author/drafting/v<N>/05-consolidation-notes.md\` |
+| Fidelity audit | \`6\` | \`agents/author/drafting/v<N>/06-fidelity-audit.md\` |
+| Delivery | \`7\` | \`correspondence/v<N>-drafting-note.md\` |
+
+The pinned phase reads the prior phases' dossier files it needs from the materialized workspace rather than re-deriving them; it never treats the presence of an earlier phase's files, or a stale \`.rhema/phase-result.json\`, as evidence its own phase is done — it produces its declared file regardless.
+
+Drafting is serial under the harness (REQ-WF-4): the Draft phase writes one section at a time in the plan's reading order, recording each in \`04-draft-ledger.md\` as it closes — it never fans sections out to parallel subagents, and no drafting subagent exists to delegate to. When Phase 3 cannot verify claims the plan depends on, it reports \`{"status":"replan"}\` in \`.rhema/phase-result.json\` — the harness re-runs Phase 2 with the failure as input (at most twice; a third failure escalates to a human decision rather than looping).
+
+### Sidecar JSON — the EXACT shape the harness validates (REQ-SPEC-12)
+
+When \`sidecar: true\`, each \`.json\` twin is validated at commit against a strict schema; a shape mismatch fails the phase (\`sidecar_validates\`). Emit **exactly** these structures. Every sidecar carries the envelope keys \`"sidecar"\` and \`"version": 1\`; unknown extra keys are ignored; the listed enum tokens are the accepted values (case / spaces / hyphens are canonicalized to snake_case, and a numeric string like \`"1"\` is accepted for a numeric field).
+
+**\`structure-plan.json\`** (Phase 2) — the spine + the section map:
+
+\`\`\`json
+{
+  "sidecar": "structure_plan",
+  "version": 1,
+  "spine": ["the argument's claims, in order — each a claim, not a topic"],
+  "sections": [
+    { "ref": "I", "title": "Opening — the Minneapolis scene", "targetWords": 700, "purpose": "make the abstraction concrete" }
+  ],
+  "alternativesConsidered": ["the outline's own seven-stage order"],
+  "gaps": ["the counterargument's actual text — a Phase-3 research task"]
+}
+\`\`\`
+
+Required: \`spine\` (string array — the gate requires ≥3 entries) and \`sections\` (one row per section: \`ref\`, \`title\`; \`targetWords\`/\`purpose\`/\`anchor\` optional).
+
+**\`03-claim-ledger.json\`** (Phase 3) — one row per claim in \`03-claim-ledger.md\`, the same \`claim_ledger\` envelope the reviewer's verification ledger uses:
+
+\`\`\`json
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 0,
+      "text": "the claim, quoted from the outline",
+      "tier": 1,
+      "verdict": "verified",
+      "kind": "factual",
+      "sourceCheck": "matches_citation",
+      "sources": [
+        { "url": "https://example.org/x", "normalizedUrl": "https://example.org/x", "accessedAt": "2026-09-09T00:00:00Z", "stance": "supports" }
+      ],
+      "note": "the drafting instruction — use as-is / rescoped / with attribution / do not use"
+    }
+  ]
+}
+\`\`\`
+
+Required per claim row: \`ordinal\` (integer ≥ 0), \`text\`, \`tier\` (1, 2, or 3), \`verdict\`. \`verdict\` ∈ {\`verified\`, \`substantially_accurate\`, \`misleading_in_context\`, \`unsupported\`, \`contradicted\`, \`unverifiable\`, \`verified_against_user_source\`}. \`kind\` ∈ {\`factual\`, \`statistical\`, \`quotation\`, \`interpretive\`, \`normative\`, \`predictive\`}. \`sourceCheck\` ∈ {\`matches_citation\`, \`reputable_list\`, \`from_search\`, \`suspicious_source\`}. A source's \`stance\` ∈ {\`supports\`, \`contradicts\`, \`contextualizes\`}.`,
     },
   ],
 

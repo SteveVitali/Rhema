@@ -22,6 +22,7 @@ const PRIMARY: Record<string, string> = {
   "editorial-review": "review",
   "respond-to-review": "revise",
   "bootstrap-persona": "profile_voice",
+  "draft-from-outline": "draft",
 };
 
 const manifests = Object.values(WORKFLOW_MANIFESTS) as WorkflowManifest[];
@@ -33,6 +34,16 @@ for (const m of manifests) (bySkill.get(m.skill) ?? bySkill.set(m.skill, []).get
 function skillPhaseNumbers(md: string): Set<string> {
   const out = new Set<string>();
   for (const m of md.matchAll(/^## Phase (\S+)\b/gm)) out.add(m[1]!);
+  return out;
+}
+/** Upstream terminal `## Delivery` steps are UNNUMBERED (draft-from-outline numbers 0–6 then
+ *  "## Delivery"). When the manifests declare exactly one skillPhase beyond the numbered set and the
+ *  heading exists, that phase's heading is `## Delivery` — count it satisfied. (Renaming the heading
+ *  still turns the check red.) */
+function skillPhaseNumbersWithDelivery(md: string, unionPhases: Set<string>): Set<string> {
+  const out = skillPhaseNumbers(md);
+  const missing = [...unionPhases].filter((sp) => !out.has(sp));
+  if (missing.length === 1 && /^## Delivery\b/m.test(md)) out.add(missing[0]!);
   return out;
 }
 function skillSidecars(md: string): Set<string> {
@@ -62,7 +73,11 @@ function fencedMdFilenames(md: string): string[] {
       continue;
     }
     if (!inFence) continue;
-    for (const m of line.matchAll(/[A-Za-z0-9_./()+-]+\.md/g)) out.add(m[0]);
+    // normalizeVersionTokens on the LINE first so `v<N>-drafting-note.md` extracts as
+    // `v1-drafting-note.md` (the `<`/`>` chars aren't filename chars, so the token would otherwise
+    // truncate to `-drafting-note.md` and never classify). Pure placeholders like `<piece-slug>.md`
+    // still don't extract — as before.
+    for (const m of normalizeVersionTokens(line).matchAll(/[A-Za-z0-9_./()+-]+\.md/g)) out.add(m[0]);
   }
   return [...out];
 }
@@ -85,8 +100,9 @@ function violations(skill: string, md: string, ms: WorkflowManifest[]): string[]
   );
 
   // 1. phase headings ↔ manifest skillPhases
-  if (!setEq(skillPhaseNumbers(md), unionPhases)) {
-    v.push(`phase headings ${[...skillPhaseNumbers(md)].sort()} ≠ manifest skillPhases ${[...unionPhases].sort()}`);
+  const numbered = skillPhaseNumbersWithDelivery(md, unionPhases);
+  if (!setEq(numbered, unionPhases)) {
+    v.push(`phase headings ${[...numbered].sort()} ≠ manifest skillPhases ${[...unionPhases].sort()}`);
   }
   // 2. sidecar names ↔ manifest ↔ registry ↔ parsers
   if (!setEq(skillSidecars(md), unionSidecars)) {

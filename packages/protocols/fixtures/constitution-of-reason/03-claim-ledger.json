@@ -1,0 +1,43 @@
+{
+  "sidecar": "claim_ledger",
+  "version": 1,
+  "claims": [
+    {
+      "ordinal": 9,
+      "text": "Kaesberg et al. found that deliberation improved calibration across the sampled groups.",
+      "tier": 1,
+      "verdict": "substantially_accurate",
+      "kind": "statistical",
+      "note": "C9 — the gloss goes slightly beyond what the study licenses; narrow the claim.",
+      "url": "https://link.springer.com/",
+      "normalizedUrl": "link.springer.com",
+      "accessedAt": "2026-08-19T00:00:00Z",
+      "sourceCheck": "matches_citation",
+      "humanAdded": false,
+      "anchor": {
+        "blockId": "p-calibration-1",
+        "quote": "deliberation improved calibration",
+        "startOffset": 118,
+        "endOffset": 151,
+        "confidence": 0.9
+      }
+    },
+    {
+      "ordinal": 1,
+      "text": "Scholastic disputation formalized the practice of arguing both sides of a question.",
+      "tier": 2,
+      "verdict": "verified",
+      "kind": "factual",
+      "humanAdded": false
+    },
+    {
+      "ordinal": 37,
+      "text": "Scholasticism was, in essence, a training regime for the disciplined mind.",
+      "tier": 3,
+      "verdict": "unverifiable",
+      "kind": "interpretive",
+      "note": "C37 — Tier 3 pure characterization; skipped with reason (not a matter of verification).",
+      "humanAdded": false
+    }
+  ]
+}

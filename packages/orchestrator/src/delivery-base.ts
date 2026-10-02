@@ -35,6 +35,11 @@ export interface DeliveryBaseResolution {
    *  / `vN-response-ledger.md` naming (independent of the base: a manual-revision run's base is the divergent
    *  head while its correspondence still names the REVIEWED draft's ordinal). */
   readonly reviewedDraftN: number | null;
+  /**
+   * P1.10 — the ordinal the run's NEW draft will take (a Draft run's reserved `inputs.nextDraftN`). Drives
+   * `v(N+1)` expansion when there is no base draft (a Draft authors its own `drafts/v(N+1).md`).
+   */
+  readonly newDraftN?: number;
 }
 
 interface DraftRow {
@@ -87,6 +92,17 @@ export async function resolveDeliveryBase(
     typeof (inputs.manualRevision as { baseDraftId?: unknown } | undefined)?.baseDraftId === "string"
       ? ((inputs.manualRevision as { baseDraftId: string }).baseDraftId as string)
       : null;
+
+  // P1.10 — a Draft run authors its own draft: there is no base to freeze, but the reserved
+  // `inputs.nextDraftN` must reach `declaredWritableArtifacts` so `v(N+1)` resolves to the ordinal
+  // the run's `drafts/vN.md` + `correspondence/vN-drafting-note.md` will land at.
+  if (args.workflow === "draft") {
+    const nextDraftN =
+      typeof inputs.nextDraftN === "number" && Number.isInteger(inputs.nextDraftN)
+        ? (inputs.nextDraftN as number)
+        : null;
+    return { base: null, reviewedDraftN, ...(nextDraftN != null ? { newDraftN: nextDraftN } : {}) };
+  }
 
   if (args.workflow !== "revise") {
     // a non-revise run (Review/fact_check) delivers only on its explicit draft — unchanged behavior.
