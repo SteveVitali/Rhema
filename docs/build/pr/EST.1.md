@@ -98,10 +98,13 @@ ECON.1 under the standing ADR-013 authorization, and every leg ran here:
   bracket it didn't actually fall in. Ranges now round outward (low floors, high ceils); tests pin
   the containment contract. Caught by N4 live, not by the deterministic suite — the suite had
   pinned the wrong convention.
-- **Live finding F-EST.1-2 (fixed at branch tip, follow-up deploy owed):** the run sheet's toggle
-  prefill copied seed/stored `phase_defaults` verbatim, so an essay protocol's all-true defaults
-  rendered `discourse`/`second_read` **checked under Quick** and submitted them back as "explicit"
-  levers — the paid run froze and ran two phases Quick's preset disables while pricing Quick. The
-  prefill now applies the launch's disable-only clamp (seed/stored `true`s may only turn a
-  preset-on phase OFF; `?toggle.x=` still wins). Regression test in `server.test.ts`; prod's web
-  image (`5534d93`) predates the fix — see the run ledger's watch list.
+- **Live finding F-EST.1-2 (fixed and deployed — update 107):** the run sheet's toggle prefill
+  copied seed/stored `phase_defaults` verbatim, so an essay protocol's all-true defaults rendered
+  `discourse`/`second_read` **checked under Quick** and submitted them back as "explicit" levers —
+  the paid run froze and ran two phases Quick's preset disables while pricing Quick. The prefill
+  now applies the launch's disable-only clamp (seed/stored `true`s may only turn a preset-on phase
+  OFF; `?toggle.x=` still wins). Regression test in `server.test.ts`. Shipped: Cloud Build
+  `ade340d7` (`est1-67b1844`, web only) → `pulumi up` **update 107** (6 upd / 0 replace / 0 delete);
+  web `/healthz` `gitSha=67b1844`, `deployments` row stamped; live smoke on the same project:
+  Quick renders `fact_check` checked + `discourse`/`second_read` unchecked, Standard renders all
+  three checked.

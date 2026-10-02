@@ -144,7 +144,11 @@ IAP-tunnel DB pattern needs no extra grant. Every leg ran:
   the fix shipped as tip `5534d93` — Cloud Build `d0f09768` (`est1-5534d93`, api/web/worker),
   `pulumi preview` **6 updates / 146 unchanged / zero stateful replace-or-delete / $0 monthly delta**
   → `pulumi up` **update 106** (`prod:5534d93aeac1d4…`). `/healthz` `gitSha` = `5534d93…` on api AND
-  web; `deployments` row stamped (`protocols_version 0.4.0+…`, rate table 2026-10-02).
+  web; `deployments` row stamped (`protocols_version 0.4.0+…`, rate table 2026-10-02). The paid leg
+  then surfaced F-EST.1-2 (below): **update 107** shipped the web-only fix — Cloud Build `ade340d7`
+  (`est1-67b1844`, web only), preview 6 updates / 0 replace / 0 delete → `pulumi up` 107
+  (`prod:67b1844cf5be…`), web `/healthz` `gitSha=67b1844…` (api stays `5534d93…` — image unchanged),
+  `deployments` row stamped, live smoke verified the corrected prefill.
 - **Live invalid-tier 400 (D-DEF.3-2 live addendum):** `POST /projects/01M3Y3YSA1F14VAJVWGD7Y6QQY/
   estimates` with `modelTier:"standard"` on the funded `test+jfaab4b8a0e57n4` tenant →
   **`HTTP 400 {"error":"invalid_model_tier"}`**; `estimate_cache` **1→1** rows, `usage_records`
@@ -173,12 +177,15 @@ The paid leg above surfaced it: the essay protocol's seed `phase_defaults` are a
 disables `discourse`/`second_read`) the boxes rendered **checked**, the form POSTed `toggle.*=on`,
 and the launch's "explicit lever wins in both directions" rule froze them ON. The estimator priced
 Quick while the frozen manifest ran the extra phases — the F-ECON.1-1 shape, re-entered through the
-web prefill instead of the stored-override path. **Fix (this commit):** the prefill applies the
-launch route's own disable-only clamp — a seed/stored `true` that contradicts the rigor preset is
-dropped before it can render checked; a seed/stored value may still turn a preset-ON phase OFF, and
-`?toggle.x=on` still wins explicitly. Regression: `server.test.ts` "the Quick sheet's toggle PREFILL
-drops seed/stored trues the preset disables" (essay all-true ctx → discourse/second_read unchecked,
-fact_check checked, `?toggle.discourse=on` still honored).
+web prefill instead of the stored-override path. **Fix (tip `67b1844`, deployed as update 107):**
+the prefill applies the launch route's own disable-only clamp — a seed/stored `true` that
+contradicts the rigor preset is dropped before it can render checked; a seed/stored value may still
+turn a preset-ON phase OFF, and `?toggle.x=on` still wins explicitly. Regression: `server.test.ts`
+"the Quick sheet's toggle PREFILL drops seed/stored trues the preset disables" (essay all-true ctx
+→ discourse/second_read unchecked, fact_check checked, `?toggle.discourse=on` still honored).
+**Verified live post-deploy:** the same essay project's sheet at `rigor=quick` now renders
+`{fact_check:checked, discourse:unchecked, second_read:unchecked}` and at `rigor=standard` all
+three checked — read-only smoke, zero spend.
 
 ### Paid leg — ONE Quick/Base run on the 267-word planted-error excerpt
 
@@ -240,10 +247,10 @@ Cell choice: `quick|base` — ECON.1's Standard/Base leg on this same fixture me
 
 ## Current blockers / watch list
 
-- **F-EST.1-2 residual:** prod still runs the `5534d93` web image (update 106) — essay-protocol Quick
-  sheets there still prefill `discourse`/`second_read` checked. The fix is on the branch tip and a
-  follow-up deploy is owed; until it lands, a Quick Review launched from an essay project can freeze
-  those phases on again (the failure mode run `01M3Y5HJPC3SAQ1TGPVBATB1HE` hit).
+- ~~F-EST.1-2 residual~~ **resolved 2026-10-02:** web rebuilt at `67b1844` (Cloud Build `ade340d7`,
+  `est1-67b1844`), pinned `web@sha256:f3a31bb9…`, `pulumi up` **update 107** (6 updates / 0
+  replace / 0 delete), `/healthz` web `gitSha=67b1844`, `deployments` row stamped, live smoke
+  confirms Quick no longer prefills `discourse`/`second_read` checked.
 - Debit-mode flip state at Stage B (record which mode prod is in — ECON.1's operator pause).
 - JOURNEY.1 H7 prerequisites (test mailbox + funded tenant) gate the live journey legs.
 - The estimate route's `claims` refine path uses the egress proxy — the claim pre-pass leg depends on
