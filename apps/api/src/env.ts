@@ -123,6 +123,14 @@ export interface ApiEnv {
    */
   readonly identityHeaders?: boolean;
   /**
+   * SEC.2 (ADR-040) — the audience the web service mints OIDC ID tokens for (`INTERNAL_AUTH_AUDIENCE`)
+   * and the web runtime SA's email (`INTERNAL_CALLER_SA`). Both set ⇒ the api trusts the
+   * `x-rhema-client-ip` stamp behind a verified token; unset ⇒ the penultimate XFF hop governs (the
+   * stamped header is then ignored). Plain deploy config — audience/SA identity are not secrets.
+   */
+  readonly internalAuthAudience?: string;
+  readonly internalCallerSa?: string;
+  /**
    * PRB.20 — the user-content GCS bucket (`USER_CONTENT_BUCKET`): where quarantine presigned PUTs land and
    * the convert Job's converted-result objects are read back. Required (with `convertJob`) to mount the
    * import routes; unset ⇒ import stays unmounted rather than half-wired.
@@ -234,6 +242,12 @@ export function readApiEnv(): ApiEnv {
       : {}),
     // PRB.16 — the identity-header shim: NEVER on prod (client-forgeable); dev/preview only.
     ...(process.env.IDENTITY_HEADERS === "true" ? { identityHeaders: true } : {}),
+    // SEC.2 (ADR-040) — the trusted web→api client-IP channel: the agreed OIDC audience + the web
+    // runtime SA's email (both plain config; the channel is authenticated by the token itself).
+    ...(process.env.INTERNAL_AUTH_AUDIENCE
+      ? { internalAuthAudience: process.env.INTERNAL_AUTH_AUDIENCE }
+      : {}),
+    ...(process.env.INTERNAL_CALLER_SA ? { internalCallerSa: process.env.INTERNAL_CALLER_SA } : {}),
     // PRB.20 — the live ingestion binding config (both must be set for the import routes to mount).
     ...(process.env.USER_CONTENT_BUCKET ? { userContentBucket: process.env.USER_CONTENT_BUCKET } : {}),
     ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),

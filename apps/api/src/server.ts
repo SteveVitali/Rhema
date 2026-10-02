@@ -5,6 +5,7 @@
 // unit-tested in-process, so this file is wiring only (it is not exercised offline — it needs a live deploy).
 
 import { serve } from "@hono/node-server";
+import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { Redis } from "ioredis";
 import { PgBoss } from "pg-boss";
@@ -28,6 +29,7 @@ import {
   loadRs256KeysFromSecretManager,
   createSecretAccessor,
   fetchGceMetadataIdToken,
+  fetchGceMetadataInstanceId,
   createStorageV4SignedUrlProvider,
   createGcsV4GetPresigner,
   createGcsObjects,
@@ -43,10 +45,19 @@ import {
   resolveSessionPrincipal,
   sessionScopedPrincipal,
   sessionTokenFromCookieHeader,
+  createInviteGate,
   type ApiDeps,
   type BetaApiDeps,
 } from "./index.js";
-import { provisionPersonalAccount } from "./signup.js";
+import {
+  createFallbackIpEmailThrottle,
+  createIpEmailThrottle,
+  createRedisThrottleStore,
+  createSharedIpEmailThrottle,
+} from "@rhema/contracts";
+import { provisionPersonalAccount, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
+import { MAGIC_LINK_THROTTLE_DEFAULTS } from "./auth.js";
+import { createGcpOidcVerifier } from "./gcp-oidc.js";
 import { createShowcaseSeeder } from "./showcase.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
 import type { SqlClient } from "./invite.js";
@@ -75,6 +86,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
 
   const clock = systemClock;
   const ids = randomUlids();
+  // SEC.2 — the serving-instance id stamped on `x-rhema-instance` (Stage-B evidence: the cross-instance
+  // throttle leg records WHICH instances served the 400→429 sequence). The metadata `instance/id` when
+  // the runtime has it; a per-boot UUID otherwise (off-GCP the header still discriminates processes).
+  const instanceId = (await fetchGceMetadataInstanceId()) ?? `boot-${randomUUID()}`;
 
   const access = await createSecretAccessor();
   const keys = await loadRs256KeysFromSecretManager(access, {
@@ -113,6 +128,37 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   };
   const queue = new PgBossQueue(boss);
 
+  // SEC.2 (D-PRB.13-1 closed; ADR-039/040) — the signup + magic-link throttles share the Redis store:
+  // one bucket per (ip|email) across ALL api instances (an atomic INCR+PEXPIRE Lua — no check-then-set
+  // race). ADR-039's outage posture is `createFallbackIpEmailThrottle`: a store failure degrades to the
+  // per-instance map for the rest of the process — never unlimited, never fail-closed on signup — and
+  // logs ONCE per instance with the error KIND only (no emails/IPs in the log line, invariant #10).
+  const throttleStore = createRedisThrottleStore(redis);
+  const degraded = (label: string) => (err: unknown) =>
+    console.error(
+      `[api] ${label} throttle degraded to per-instance limits (store unavailable):`,
+      err instanceof Error ? err.message : err,
+    );
+  const signupThrottle = createFallbackIpEmailThrottle(
+    createSharedIpEmailThrottle(throttleStore, { ...SIGNUP_THROTTLE_DEFAULTS, keyPrefix: "rl:signup" }),
+    createIpEmailThrottle({ ...SIGNUP_THROTTLE_DEFAULTS }),
+    { onDegraded: degraded("signup") },
+  );
+  const magicLinkThrottle = createFallbackIpEmailThrottle(
+    createSharedIpEmailThrottle(throttleStore, { ...MAGIC_LINK_THROTTLE_DEFAULTS, keyPrefix: "rl:magiclink" }),
+    createIpEmailThrottle({ ...MAGIC_LINK_THROTTLE_DEFAULTS }),
+    { onDegraded: degraded("magic-link") },
+  );
+  // SEC.2 (ADR-040) — the trusted client-IP channel: the web stamps `x-rhema-client-ip` and proves it
+  // with its runtime SA's OIDC token (`x-rhema-internal-token`). The verifier checks the signature
+  // against Google's JWKS + iss/aud/exp/the caller SA — unset ⇒ the stamp is never honored.
+  const verifyInternalToken = env.internalAuthAudience
+    ? createGcpOidcVerifier({
+        audience: env.internalAuthAudience,
+        ...(env.internalCallerSa ? { email: env.internalCallerSa } : {}),
+      })
+    : undefined;
+
   // PRB.16 — Better Auth mounts only when all three secrets are configured (Secret-Manager NAMES, values
   // loaded at boot). `baseURL` is the APP origin: the web service proxies `/api/auth/*` server-side, so
   // the OAuth callback (`<app>/api/auth/callback/google`) and every auth cookie live on `rhema.tools`.
@@ -142,6 +188,22 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           });
         },
         {
+          // SEC.2 (REQ-BETA-19 amended) — the SAME admission boundary POST /signup enforces, on every
+          // Better Auth creation path: `user.create.before` throttles + mode/invite-checks (throwing a
+          // named APIError — no rows left behind), `create.after` consumes the invite at creation, and
+          // `hooks.before` throttles + pre-gates the magic-link SEND so a direct /api/auth call cannot
+          // bypass the /login limit or enqueue mail for an unadmitted email.
+          admission: {
+            mode: env.signupMode,
+            inviteGate: createInviteGate(rawDb),
+            knownUser: async (email) => {
+              const r = await rawDb.query(`select id from "user" where email = $1`, [email.toLowerCase()]);
+              return r.rows.length > 0;
+            },
+            accountThrottle: signupThrottle,
+            magicLinkThrottle,
+            ...(verifyInternalToken ? { verifyInternalToken } : {}),
+          },
           // self-serve paths that never pass through POST /signup provision the same account rows here
           // (a session principal needs the personal-workspace membership row to resolve) — and P1.17's
           // Showcase seed rides the same provision (§15.4, the $0 fixture dossier).
@@ -302,12 +364,18 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
     // stays D-PRB.01-3's leg (PRB.16).
     signupMode: env.signupMode,
+    // SEC.2 — the SHARED account-creation throttle (Redis; D-PRB.13-1) + the trusted web→api
+    // client-IP channel verifier (ADR-040).
+    signupThrottle,
+    ...(verifyInternalToken ? { verifyInternalToken } : {}),
     // BILL.3 — `purchase.mode` (ADR-028): stage-config-driven, default closed; the is_test allowlist is
     // evaluated per request inside the billing routes.
     purchaseMode: env.purchaseMode,
     // JOURNEY.1 — test-mailbox flagging + the healthz provenance field.
     ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
     ...(env.buildGitSha ? { buildGitSha: env.buildGitSha } : {}),
+    // SEC.2 — the `x-rhema-instance` marker (Stage-B cross-instance evidence).
+    instanceId,
     // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
     // telemetry emitters to the same validated + opt-out-honoring writer the billing telemetry uses.
     // finding.disposed (D-PRB.05-1 leg b) + run.estimated (D-PRB.03-1's emit leg). A telemetry write is

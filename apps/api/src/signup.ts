@@ -19,12 +19,16 @@
 // an unverified account (run-routes.ts's `userEmailVerified` gate).
 //
 // Abuse control is the ticket's beta-grade throttle: account creation is throttled per source IP and per
-// email before any invite or provisioning work runs; over-limit answers 429 + Retry-After. The throttle is
-// the shared fixed-window `IpEmailThrottle` (per-instance, in-memory — the shared-store follow-up is
-// D-PRB.13-1).
+// email before any invite or provisioning work runs; over-limit answers 429 + Retry-After. SEC.2 replaced
+// the per-instance map with the SHARED Redis store (`createSharedIpEmailThrottle` over
+// `createRedisThrottleStore`, wrapped in `createFallbackIpEmailThrottle` for the Redis-outage degrade —
+// ADR-039), so two api instances count the same bucket (D-PRB.13-1 closed). The bucket key is the
+// LB-appended XFF hop or the web-stamped `x-rhema-client-ip` behind a verified OIDC token — never the
+// caller-controlled first hop (ADR-040).
 
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { resolveClientIp } from "@rhema/contracts";
 import type { SignupMode, IpEmailThrottle } from "@rhema/contracts";
 import type { SqlClient, InviteGate, InviteRejectReason } from "./invite.js";
 import type { IdFactory, Clock } from "@rhema/orchestrator";
@@ -267,14 +271,24 @@ export interface SignupApiDeps extends SignupPolicyDeps {
   readonly txRunner: { run<T>(workspaceId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> };
   /** P1.17 — the Showcase seed bound to txRunner (+ the content store when the deploy has one). */
   readonly showcaseSeed?: (workspaceId: string, ownerId: string) => Promise<unknown>;
+  /**
+   * SEC.2 (ADR-040) — verify the web service's OIDC token so its stamped `x-rhema-client-ip` is
+   * trusted. Unset ⇒ the stamped header is never honored (local/dev posture: the penultimate XFF hop
+   * is the whole rule).
+   */
+  readonly verifyInternalToken?: (token: string) => Promise<boolean>;
 }
 
-/** The deploy's default account-creation throttle — beta-grade (D-PRB.13-1: per-instance, in-memory). */
+/** The deploy's default account-creation throttle — beta-grade. */
 export const SIGNUP_THROTTLE_DEFAULTS = { perIp: 10, perEmail: 5, windowMs: 3_600_000 } as const;
 
-/** The source IP the LB forwarded (first XFF hop); absent ⇒ every headerless caller shares "unknown". */
-function clientIp(c: Context): string {
-  return c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+/**
+ * The source IP the throttle keys on (SEC.2): the web-stamped `x-rhema-client-ip` when the request
+ * also carries a VERIFIED internal OIDC token; otherwise the penultimate (LB-appended) XFF hop —
+ * never the caller-controlled first hop, and absent headers collapse to the shared "unknown" bucket.
+ */
+function clientIp(c: Context, deps: SignupApiDeps): Promise<string> {
+  return resolveClientIp(c.req.raw.headers, deps.verifyInternalToken ?? (async () => false));
 }
 
 function statusForReason(reason: SignupRejectReason): 400 | 403 {
@@ -314,7 +328,7 @@ export function createSignupRoutes(deps: SignupApiDeps): Hono {
         }
       : undefined;
 
-    const verdict = deps.throttle.attempt(clientIp(c), email || undefined);
+    const verdict = await deps.throttle.attempt(await clientIp(c, deps), email || undefined);
     if (!verdict.allowed) {
       c.header("retry-after", String(verdict.retryAfterSec ?? 60));
       return c.json({ error: "rate_limited" }, 429);

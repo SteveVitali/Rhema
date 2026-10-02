@@ -44,3 +44,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-036](ADR-036-shared-duration-bands-and-lever-matrix-timing.md) | Shared duration bands + the lever-matrix timing method (BL-12) | EST.1 | Accepted |
 | [ADR-037](ADR-037-intra-phase-meter-source-and-cadence.md) | Intra-phase meter source and cadence — the heartbeat reads the proxy ledger | RPT.1 | Accepted |
 | [ADR-038](ADR-038-metered-vs-charged-difference-wording.md) | Metered ≠ charged — the difference is stated per reason, in controlled sentences | RPT.1 | Accepted |
+| [ADR-039](ADR-039-shared-throttle-store-and-outage-fallback.md) | The signup/magic-link throttle counts in one shared Redis store; an outage degrades to a finite per-instance limiter — never unlimited, never fail-closed | SEC.2 (signup admission on every path + a throttle shared across instances) | Accepted |
+| [ADR-040](ADR-040-trusted-client-ip-channel.md) | The client-IP key is the LB-attested penultimate XFF hop, or the web's OIDC-stamped `x-rhema-client-ip` — never the caller-controlled first hop | SEC.2 | Accepted |
+| [ADR-041](ADR-041-api-is-the-throttle-authority.md) | The api is the single throttle + admission authority — the web-side magic-link limiter is retired | SEC.2 | Accepted |

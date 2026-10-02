@@ -466,18 +466,42 @@ export function SignupPage(): ReactNode {
             {signup?.error ? (
               <p role="alert" style={{ color: "var(--sev-blocking)", fontSize: "13px" }}>{signup.error}</p>
             ) : null}
+            {/* SEC.2 (PR-U1 form half): under `open` the EMAIL field leads and the invitation code sits
+                behind a disclosure — never the first focusable field. `invite` mode keeps the code
+                first + required. Hidden intent inputs carry no focus order. */}
             <form method="post" action="/signup">
               <input type="hidden" name="entry" value={entry ?? ""} />
               <input type="hidden" name="src" value={signup?.src ?? ""} />
               <input type="hidden" name="held" value={signup?.held === true ? "1" : ""} />
-              <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
-                {open ? COPY.signup.codeLabelOptional : COPY.signup.codeLabel}
-                <input name="code" required={!open} defaultValue={signup?.code ?? ""} style={fieldStyle} />
-              </label>
-              <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px", display: "block" }}>
-                {COPY.signup.emailLabel}
-                <input name="email" type="email" required defaultValue={signup?.email ?? ""} placeholder={COPY.signup.emailPlaceholder} style={fieldStyle} />
-              </label>
+              {open ? (
+                <>
+                  <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                    {COPY.signup.emailLabel}
+                    <input name="email" type="email" required defaultValue={signup?.email ?? ""} placeholder={COPY.signup.emailPlaceholder} style={fieldStyle} />
+                  </label>
+                  {/* a re-rendered code opens the disclosure so the typed value stays visible. */}
+                  <details open={!!signup?.code} style={{ marginTop: "12px" }}>
+                    <summary style={{ fontSize: "13px", color: "var(--shell-fg-muted)", cursor: "pointer" }}>
+                      {COPY.signup.codeToggle}
+                    </summary>
+                    <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "8px", display: "block" }}>
+                      {COPY.signup.codeLabelOptional}
+                      <input name="code" defaultValue={signup?.code ?? ""} style={fieldStyle} />
+                    </label>
+                  </details>
+                </>
+              ) : (
+                <>
+                  <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                    {COPY.signup.codeLabel}
+                    <input name="code" required defaultValue={signup?.code ?? ""} style={fieldStyle} />
+                  </label>
+                  <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px", display: "block" }}>
+                    {COPY.signup.emailLabel}
+                    <input name="email" type="email" required defaultValue={signup?.email ?? ""} placeholder={COPY.signup.emailPlaceholder} style={fieldStyle} />
+                  </label>
+                </>
+              )}
               <div style={{ marginTop: "16px" }}>
                 <button type="submit" name="method" value="magic_link" style={{ ...CTA, border: "none", cursor: "pointer", width: "100%" }}>
                   {COPY.signup.continueEmail}

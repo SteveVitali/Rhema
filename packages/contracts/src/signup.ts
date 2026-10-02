@@ -13,3 +13,11 @@ export type SignupMode = (typeof SIGNUP_MODES)[number];
 export function parseSignupMode(raw: string | undefined | null): SignupMode {
   return raw === "open" ? "open" : "invite";
 }
+
+/**
+ * SEC.2 — the query/body param that carries a supplied invite code through the Better Auth flows
+ * (`rhema_ic`): on the magic-link link's `callbackURL`, and on the OAuth leg in `additionalData`
+ * (promoted into the state's trusted `serverContext` by the api only behind a verified internal
+ * token — ADR-040). Shared so the web stamps and the api reads the same name.
+ */
+export const INVITE_CODE_PARAM = "rhema_ic";

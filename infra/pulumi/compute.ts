@@ -422,7 +422,15 @@ export function createCompute(args: ComputeArgs): Compute {
       // prod is protected, so a dev/preview stack tears down cleanly to honor the cost-conscious mandate.
       deletionProtection: cfg.kind === "prod",
       // `web` is internet-facing; everything else is reachable only via the internal/LB path.
-      ingress: svc === "web" ? "INGRESS_TRAFFIC_ALL" : "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
+      // SEC.2 (ADR-040) — prod's web is LB-only too: the penultimate-XFF client-IP derivation holds
+      // ONLY when every request crossed the external LB (a direct run.app hit lets the caller control
+      // the second-to-last hop, which the OIDC stamp would then carry upstream as "trusted"). Non-prod
+      // keeps INGRESS_TRAFFIC_ALL — no public DNS fronts those stages' LBs, so run.app is how they're
+      // reached (the stamped-IP channel is inert there anyway: INTERNAL_AUTH_AUDIENCE is unset).
+      ingress:
+        svc === "web" && cfg.kind !== "prod"
+          ? "INGRESS_TRAFFIC_ALL"
+          : "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
       template: {
         serviceAccount: iam.serviceAccounts[svc].email,
         scaling: {
@@ -550,6 +558,12 @@ export function createCompute(args: ComputeArgs): Compute {
                     { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
                     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
+                    // SEC.2 (ADR-040) — the trusted web→api client-IP channel: the api verifies the
+                    // web runtime SA's OIDC token (signature vs Google's JWKS + iss/aud/exp + the
+                    // pinned caller SA) before honoring `x-rhema-client-ip`. Audience = the api
+                    // origin; both are plain deploy config, never secrets.
+                    ...(apiOrigin ? [{ name: "INTERNAL_AUTH_AUDIENCE", value: apiOrigin }] : []),
+                    { name: "INTERNAL_CALLER_SA", value: iam.serviceAccounts["web"].email },
                     // JOURNEY.1 — the test-mailbox flagging config (a deploy constant, not a
                     // secret): workspaces provisioned for test@rhema.tools / test+<tag>@rhema.tools
                     // are flagged is_test at creation (SLO/trial exclusion + the purge sweep).
@@ -620,6 +634,10 @@ export function createCompute(args: ComputeArgs): Compute {
                   envs: [
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
                     ...(apiOrigin ? [{ name: "API_BASE_URL", value: apiOrigin }] : []),
+                    // SEC.2 (ADR-040) — the audience the web mints its OIDC ID token for when it stamps
+                    // `x-rhema-client-ip` on server-side api calls (the metadata server ambient
+                    // credential — no secret). Unset ⇒ no stamp (local dev posture).
+                    ...(apiOrigin ? [{ name: "INTERNAL_AUTH_AUDIENCE", value: apiOrigin }] : []),
                     // PRB.16 — the app's own public origin: the OAuth/magic-link `callbackURL` base the
                     // web's auth proxy builds (it must equal the api's trusted origin — the app host).
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),

@@ -28,6 +28,8 @@ export const COPY = {
     noteOpen: "Create an account or sign in — an invitation code is optional.",
     codeLabel: "Invitation code",
     codeLabelOptional: "Invitation code (optional)",
+    // SEC.2 (PR-U1 form half) — the open-mode disclosure the optional code field lives behind.
+    codeToggle: "Have an invitation code?",
     codePlaceholder: "Enter your code",
     emailLabel: "Email",
     emailPlaceholder: "you@example.com",
@@ -46,6 +48,8 @@ export const COPY = {
     emailRequiredSelfServe: "Enter your email to get a sign-in link.",
     errorRateLimited: "Too many attempts — wait a few minutes and try again.",
     errorSignupUnavailable: "Signup isn't available right now — try again shortly.",
+    // SEC.2 — a magic-link verify refusal/expired-token redirect lands on /login?error=…
+    errorLinkInvalid: "That sign-in link is no longer valid — request a new one.",
   },
 
   projects: {
@@ -2176,6 +2180,8 @@ export const COPY = {
     emailPlaceholder: "you@example.com",
     codeLabel: "Invitation code",
     codeLabelOptional: "Invitation code (optional)",
+    // SEC.2 (PR-U1 form half) — the open-mode disclosure the optional code field lives behind.
+    codeToggle: "Have an invitation code?",
     continueEmail: "Email me a sign-in link",
     continueGoogle: "Continue with Google",
     orDivider: "or",

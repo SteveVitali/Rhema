@@ -46,10 +46,15 @@ function app(mode: "invite" | "open", over: { signupThrottle?: IpEmailThrottle }
   });
 }
 
-function postSignup(a: ReturnType<typeof app>, body: Record<string, unknown>, ip = "203.0.113.10") {
+function postSignup(
+  a: ReturnType<typeof app>,
+  body: Record<string, unknown>,
+  ip = "203.0.113.10",
+  headers: Record<string, string> = {},
+) {
   return a.request("/signup", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-forwarded-for": ip },
+    headers: { "content-type": "application/json", "x-forwarded-for": ip, ...headers },
     body: JSON.stringify(body),
   });
 }
@@ -187,6 +192,83 @@ describe("account-creation throttle (AC3 — per IP + per email, 429)", () => {
     expect((await postSignup(a, { email: "v@x.test" }, "2.2.2.2")).status).toBe(200); // idempotent retry
     const res = await postSignup(a, { email: "v@x.test" }, "3.3.3.3");
     expect(res.status).toBe(429);
+  });
+});
+
+// SEC.2 (ADR-040) — the throttle bucket key: the LB-appended XFF hop or the web's OIDC-stamped
+// `x-rhema-client-ip`; the caller-controlled FIRST XFF hop is never trusted.
+describe("client-IP trust (SEC.2 — a forged XFF first hop cannot reset the bucket)", () => {
+  it("rotating the forged first XFF hop stays in the SAME bucket (the penultimate hop keys)", async () => {
+    const a = app("open", { signupThrottle: throttle({ perIp: 2 }) });
+    const post = (forged: string) =>
+      postSignup(a, { email: `f${forged}@x.test`.replace(/\./g, "") }, "ignored", {
+        "x-forwarded-for": `${forged}, 203.0.113.10, 35.0.0.1`, // forged first, real client, LB
+      });
+    expect((await post("6.6.6.1")).status).toBe(201);
+    expect((await post("6.6.6.2")).status).toBe(201);
+    expect((await post("6.6.6.3")).status).toBe(429); // all three shared the 203.0.113.10 bucket
+  });
+
+  it("the verified web stamp keys the bucket on `x-rhema-client-ip`, not the XFF chain", async () => {
+    const verify = async (token: string) => token === "good-token";
+    const a = createApp({
+      ...deps,
+      principal: () => null,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle({ perIp: 2 }),
+      verifyInternalToken: verify,
+    });
+    const post = (xff: string) =>
+      postSignup(a, { email: `s${Math.random()}@x.test` }, "ignored", {
+        "x-forwarded-for": xff,
+        "x-rhema-client-ip": "198.51.100.42", // the web-stamped real browser IP
+        "x-rhema-internal-token": "good-token",
+      });
+    // three different XFF chains — all carry the same verified stamp ⇒ ONE bucket.
+    expect((await post("1.1.1.1, 35.0.0.1")).status).toBe(201);
+    expect((await post("2.2.2.2, 35.0.0.1")).status).toBe(201);
+    expect((await post("3.3.3.3, 35.0.0.1")).status).toBe(429);
+  });
+
+  it("a forged stamp without a valid token is ignored — the XFF penultimate hop governs", async () => {
+    const verify = async () => false; // the token never verifies
+    const a = createApp({
+      ...deps,
+      principal: () => null,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle({ perIp: 2 }),
+      verifyInternalToken: verify,
+    });
+    const post = () =>
+      postSignup(a, { email: `x${Math.random()}@x.test` }, "ignored", {
+        "x-forwarded-for": "9.9.9.9, 203.0.113.10, 35.0.0.1",
+        "x-rhema-client-ip": "5.5.5.5", // forged — ignored without a valid token
+        "x-rhema-internal-token": "forged-token",
+      });
+    expect((await post()).status).toBe(201);
+    expect((await post()).status).toBe(201);
+    expect((await post()).status).toBe(429); // the 203.0.113.10 bucket — NOT the forged 5.5.5.5
+  });
+});
+
+describe("x-rhema-instance (SEC.2 — the Stage-B cross-instance evidence marker)", () => {
+  it("responses carry the serving instance id when bound; absent dep ⇒ no header", async () => {
+    const withId = createApp({
+      ...deps,
+      principal: () => null,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle(),
+      instanceId: "cr-0000000000000000001",
+    });
+    const hit = await postSignup(withId, { email: `i${Math.random()}@x.test` });
+    expect(hit.headers.get("x-rhema-instance")).toBe("cr-0000000000000000001");
+    // unset ⇒ never a fabricated id
+    const without = app("open");
+    const res2 = await postSignup(without, { email: `j${Math.random()}@x.test` });
+    expect(res2.headers.get("x-rhema-instance")).toBeNull();
   });
 });
 

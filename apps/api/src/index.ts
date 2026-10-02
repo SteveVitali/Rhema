@@ -209,12 +209,24 @@ export interface BetaApiDeps {
    */
   signupThrottle?: IpEmailThrottle;
   /**
+   * SEC.2 (ADR-040) — verify the web service's OIDC token so its stamped `x-rhema-client-ip` is trusted
+   * as the throttle bucket key. Unset ⇒ the stamp is never honored (the penultimate XFF hop governs).
+   */
+  verifyInternalToken?: (token: string) => Promise<boolean>;
+  /**
    * JOURNEY.1 (REQ-SPEC-29; ADR-020) — the configured test mailbox (`TEST_MAILBOX`). Accounts created for
    * a matching address (`test@…`/`test+<tag>@…`) get a flagged `workspaces.is_test` at provisioning.
    */
   testMailbox?: string;
   /** JOURNEY.1 — the image-baked deploy SHA surfaced on `/healthz` (`RHEMA_BUILD_GIT_SHA`). */
   buildGitSha?: string;
+  /**
+   * SEC.2 (Stage-B evidence) — the serving instance's id, stamped as `x-rhema-instance` on every
+   * response so a write-free cross-instance throttle leg can prove ≥2 Cloud Run instances served it
+   * (the live deploy binds the metadata `instance/id`, falling back to a per-boot UUID). Unset ⇒ no
+   * header — never a fabricated id.
+   */
+  instanceId?: string;
   /**
    * PRB.16 — the Better Auth handler mounted at `/api/auth/*`. The deploy's `baseURL` is the APP origin
    * (the SSR web service proxies `/api/auth/*` server-side, so auth cookies plant host-only on
@@ -272,6 +284,14 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     c.res.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
     c.res.headers.set("X-Content-Type-Options", "nosniff");
   });
+  // SEC.2 — the serving-instance marker (see ApiDeps.instanceId): a random/opaque id, no topology leak.
+  if (deps?.instanceId) {
+    const instanceId = deps.instanceId;
+    app.use("*", async (c, next) => {
+      await next();
+      c.res.headers.set("x-rhema-instance", instanceId);
+    });
+  }
   // PRB.16 — request middleware FIRST (before every route): resolve the session principal into the ALS
   // context the `principal` seams + scoped `db` read, then apply the mutation Origin allowlist.
   if (deps?.sessionResolver || deps?.identityHeaders) {
@@ -440,6 +460,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           }),
           // JOURNEY.1 — test-mailbox flagging at provisioning.
           ...(deps.testMailbox ? { testMailbox: deps.testMailbox } : {}),
+          // SEC.2 (ADR-040) — trust the web-stamped client IP only behind a verified OIDC token.
+          ...(deps.verifyInternalToken ? { verifyInternalToken: deps.verifyInternalToken } : {}),
         }),
       );
       // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the

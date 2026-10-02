@@ -71,6 +71,7 @@ export * from "./analytics.js";
 // signup admission mode + the beta-grade abuse throttle (PRB.13; REQ-BETA-19 amended 2026-09-16)
 export * from "./signup.js";
 export * from "./rate-limit.js";
+export * from "./client-ip.js";
 
 // purchase admission mode + the Stripe-hosted redirect surface (BILL.3; REQ-BILL-16; §14.6)
 export * from "./purchase.js";
