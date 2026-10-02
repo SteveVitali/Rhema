@@ -11,7 +11,7 @@ import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
-import { PRICING, trialIncludedNote } from "@rhema/contracts";
+import { PRICING, PUBLIC_CLAIM_COPY, trialIncludedNote } from "@rhema/contracts";
 
 /** The committed ≤300-word paid fixture (one planted false claim for N6). Loaded at module init. */
 const PAID_FIXTURE = readFileSync(
@@ -492,8 +492,12 @@ const N9: StepFn = async (ctx) => {
  *  the run must run to DELIVERY — the "no cap death" half the pre-ACT.1 version never waited for. */
 const N5: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("n5");
-  // the paid fixture rides the real new-project sheet (a paste-ingested draft, not a file upload)
-  const slug = await createScratchProject(page, ctx, "PAID", PAID_FIXTURE);
+  // the paid fixture rides the real new-project sheet (a paste-ingested draft, not a file
+  // upload). The draft entry is deliberately preview-first (§5.3) — pending → conversion
+  // preview → Create — so it needs createDraftProject's preview-aware wait, never the
+  // synchronous scratch helper's 15 s redirect (the pre-ACT.1 N5's own "launch navigation
+  // timed out" debt was this same wrong-helper bug at the draft entry).
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("PAID"), PAID_FIXTURE);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
   const body = (await page.textContent("body")) ?? "";
   if (!/included/i.test(body)) throw new Error('trial Review surface shows no "Included" line');
@@ -1030,19 +1034,34 @@ const C1: StepFn = async (ctx) => {
     }
   }
   // — the covered audience's preview: a signed-in test tenant sees config-equal claims.
+  // Per §15.1/§15.2 the landing carries the claim TEXT (the hero note + the FAQ answer — the
+  // spec copy carries no figure), while /pricing carries the generated figures: the derived
+  // word cap, the pocket, and the generated includedNote. The assertions match
+  // claims-visibility.test.ts's deterministic contract exactly — "claims equal the config",
+  // surface by surface.
   const { page } = await ctx.returningUser("a");
-  for (const path of ["/?audience=test", "/pricing?audience=test"]) {
-    await gotoOk(page, `${ctx.webBaseUrl}${path}`);
-    const body = (await page.textContent("body")) ?? "";
-    if (!body.includes(cap)) {
-      throw new Error(`${path} test-audience render lacks the configured ${cap}-word cap`);
-    }
-  }
   const landing = await gotoOk(page, `${ctx.webBaseUrl}/?audience=test`)
     .then(() => page.textContent("body"))
     .then((b) => b ?? "");
-  if (!landing.includes(pocket)) {
-    throw new Error(`landing test-audience render lacks the ${pocket}-credit pocket figure`);
+  for (const claim of [
+    PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote,
+    PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingFaqAnswer,
+  ]) {
+    if (!landing.toLowerCase().includes(claim.toLowerCase())) {
+      throw new Error(`/?audience=test render lacks the config claim text: "${claim}"`);
+    }
+  }
+  const pricing = await gotoOk(page, `${ctx.webBaseUrl}/pricing?audience=test`)
+    .then(() => page.textContent("body"))
+    .then((b) => b ?? "");
+  for (const [label, figure] of [
+    ["word cap", cap],
+    ["pocket", pocket],
+    ["includedNote", generated],
+  ] as const) {
+    if (!pricing.includes(figure)) {
+      throw new Error(`/pricing?audience=test render lacks the configured ${label} "${figure}"`);
+    }
   }
 };
 

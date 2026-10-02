@@ -457,13 +457,19 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   // EST.1 — the resolution may only advise tiers the plan permits ("switch to Base" needs Base
   // selectable AND not already priced — §14.6's levers sentence reads the plan rules too).
   const allowedModelTiers = args.allowedModelTiers ?? MODEL_TIERS;
-  const insufficient = resolveInsufficientBalance({
-    capCredits: effectiveCapCredits,
-    spendableCredits: args.spendableCredits,
-    ...(args.insufficientMode ? { mode: args.insufficientMode } : {}),
-    allowedModelTiers,
-    currentModelTier: args.modelTier,
-  });
+  // §14.3/ACT.1 — an entitlement-covered run never renders the insufficient-balance panel and
+  // never disables its Run control: the Included box replaces it (PR-J1's residual half — a
+  // 0-spendable trial account still saw "cap is more than your spendable balance" over an
+  // Included claim, proven live on the N5 walk 2026-10-02). The entitlement IS the funding.
+  const insufficient = args.entitlement
+    ? null
+    : resolveInsufficientBalance({
+        capCredits: effectiveCapCredits,
+        spendableCredits: args.spendableCredits,
+        ...(args.insufficientMode ? { mode: args.insufficientMode } : {}),
+        allowedModelTiers,
+        currentModelTier: args.modelTier,
+      });
 
   const claims = estimate.claimCount;
 
