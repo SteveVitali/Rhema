@@ -254,9 +254,15 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // STB.4 — `stripeApiBaseUrl` points the port at a test-mode edge when configured (default api.stripe.com).
     ...(stripeKey
       ? {
+          // BILL.3 — `automatic_tax` stays off until the operator activates a Tax registration
+          // (STRIPE_AUTOMATIC_TAX=true on the api); the port never presumes it.
           stripe: env.stripeApiBaseUrl
-            ? new FetchStripePort(stripeKey, env.stripeApiBaseUrl)
-            : new FetchStripePort(stripeKey),
+            ? new FetchStripePort(stripeKey, env.stripeApiBaseUrl, {
+                ...(env.stripeAutomaticTax ? { automaticTax: true } : {}),
+              })
+            : new FetchStripePort(stripeKey, undefined, {
+                ...(env.stripeAutomaticTax ? { automaticTax: true } : {}),
+              }),
         }
       : {}),
     ...(env.appBaseUrl ? { appBaseUrl: env.appBaseUrl } : {}),
@@ -278,6 +284,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // /signup, the verified-email run gate) mount when `db` is bound — the live tenant binding itself
     // stays D-PRB.01-3's leg (PRB.16).
     signupMode: env.signupMode,
+    // BILL.3 — `purchase.mode` (ADR-028): stage-config-driven, default closed; the is_test allowlist is
+    // evaluated per request inside the billing routes.
+    purchaseMode: env.purchaseMode,
     // JOURNEY.1 — test-mailbox flagging + the healthz provenance field.
     ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
     ...(env.buildGitSha ? { buildGitSha: env.buildGitSha } : {}),

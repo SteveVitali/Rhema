@@ -62,6 +62,28 @@ describe("readApiEnv — PRB.13 signup.mode (REQ-BETA-19 amended 2026-09-16)", (
   });
 });
 
+describe("readApiEnv — BILL.3 purchase + Stripe request switches", () => {
+  it("PURCHASE_MODE unset or unknown ⇒ closed; only the literal 'open' re-opens", () => {
+    expect(readApiEnv().purchaseMode).toBe("closed");
+    for (const bad of ["OPEN", "true", "1"]) {
+      process.env.PURCHASE_MODE = bad;
+      expect(readApiEnv().purchaseMode, `for ${JSON.stringify(bad)}`).toBe("closed");
+    }
+    process.env.PURCHASE_MODE = "open";
+    expect(readApiEnv().purchaseMode).toBe("open");
+  });
+
+  it("STRIPE_AUTOMATIC_TAX only opts in at the literal 'true' (default off)", () => {
+    expect(readApiEnv().stripeAutomaticTax).toBeUndefined();
+    for (const bad of ["1", "TRUE", "yes"]) {
+      process.env.STRIPE_AUTOMATIC_TAX = bad;
+      expect(readApiEnv().stripeAutomaticTax, `for ${JSON.stringify(bad)}`).toBeUndefined();
+    }
+    process.env.STRIPE_AUTOMATIC_TAX = "true";
+    expect(readApiEnv().stripeAutomaticTax).toBe(true);
+  });
+});
+
 describe("readApiEnv — PRB.16 auth binding (D-P0.01-3)", () => {
   it("the auth secret names + client id are optional and pass through verbatim", () => {
     const env = readApiEnv();

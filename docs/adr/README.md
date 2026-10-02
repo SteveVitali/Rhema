@@ -32,3 +32,7 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-024](ADR-024-platform-fault-refund-class.md) | The platform-fault refund class — `platform_fault:<cause>` reasons and the REQ-SPEC-24(6) carve-out | RES.2 | Accepted |
 | [ADR-025](ADR-025-delivery-label-persistence-and-scope.md) | The delivery label persists on `runs.delivery`; *Unverified* is Review-scoped in v1 | RES.2 | Accepted |
 | [ADR-026](ADR-026-test-tenant-unverified-forcing.md) | The *Unverified* forcing flag is test-tenant-only and budget-shaped | RES.2 | Accepted |
+| [ADR-027](ADR-027-stripe-form-action-allowlist.md) | CSP `form-action` allows exactly the Stripe-hosted origins from one shared constant | BILL.3 | Accepted |
+| [ADR-028](ADR-028-purchase-mode-switch.md) | `purchase.mode` is a fail-closed stage-config switch with an `is_test` allowlist | BILL.3 | Accepted |
+| [ADR-029](ADR-029-pending-checkout-email-trigger.md) | The pending-checkout email triggers on `return_viewed_at`, sent post-commit at open→completed | BILL.3 (absorbs BL-09) | Accepted |
+| [ADR-030](ADR-030-stripe-checkout-request-contract.md) | Checkout sessions scope `customer_update` to `customer` and ship `automatic_tax` opt-in | BILL.3 | Accepted |

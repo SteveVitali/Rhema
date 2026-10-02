@@ -2,7 +2,7 @@
 // injects (Cloud Run env + Secret Manager secret refs) into a typed config. Fail-fast on a missing required
 // var — a half-configured api must not start and silently mis-route runs.
 
-import { parseSignupMode, type SignupMode } from "@rhema/contracts";
+import { parsePurchaseMode, parseSignupMode, type PurchaseMode, type SignupMode } from "@rhema/contracts";
 
 export interface ApiEnv {
   readonly port: number;
@@ -81,6 +81,20 @@ export interface ApiEnv {
    * unset/unknown ⇒ `invite` — the flag fails closed.
    */
   readonly signupMode: SignupMode;
+  /**
+   * BILL.3 — `purchase.mode` (ADR-028; `PURCHASE_MODE`): `closed` (default, and the value on every
+   * stage until the operator re-opens) ⇒ `/billing/checkout` refuses `purchase_closed` for real users
+   * and the web renders the paused note; JOURNEY.1 `is_test` workspaces are allowlisted so the N9
+   * purchase journey still exercises the real Stripe pages. Unset/unknown ⇒ `closed` — fail-closed,
+   * never fail open.
+   */
+  readonly purchaseMode: PurchaseMode;
+  /**
+   * BILL.3 — `STRIPE_AUTOMATIC_TAX=true` sends `automatic_tax[enabled]` on Checkout sessions; valid
+   * only after the operator activates a Tax registration Stripe-side (paused under BL-33/HUMAN-H7).
+   * Unset ⇒ sessions carry `enabled=false` — never a presuming request shape.
+   */
+  readonly stripeAutomaticTax?: boolean;
   /**
    * PRB.16 — the Better Auth binding (D-P0.01-3): the signing secret's Secret-Manager NAME and the Google
    * OAuth client id + secret NAME (values loaded at boot; never plaintext env). All three must be present
@@ -189,6 +203,10 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.EXPORT_SERVICE_URL ? { exportServiceUrl: process.env.EXPORT_SERVICE_URL } : {}),
     // PRB.13 — signup mode; unknown/unset parses to `invite` (never fail open).
     signupMode: parseSignupMode(process.env.SIGNUP_MODE),
+    // BILL.3 — purchase mode; unknown/unset parses to `closed` (never fail open), and the
+    // Checkout automatic-tax opt (off until the operator activates a Tax registration).
+    purchaseMode: parsePurchaseMode(process.env.PURCHASE_MODE),
+    ...(process.env.STRIPE_AUTOMATIC_TAX === "true" ? { stripeAutomaticTax: true } : {}),
     // PRB.16 — Better Auth secret NAMES (values load from Secret Manager at boot). The Google OAuth
     // client id is public deploy config; its SECRET is a secret name like the rest.
     ...(process.env.BETTER_AUTH_SECRET_NAME

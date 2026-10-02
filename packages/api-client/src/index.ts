@@ -1049,6 +1049,10 @@ export interface BillingBalanceDto {
   /** PRB.19 (F32) — the authenticated account's id; the web composes `client_reference_id` onto the
    *  Payment-Link redirect from it so a Stripe-originated checkout joins this account. */
   readonly billingAccountId?: string;
+  /** BILL.3 — the purchase switch for THIS account (`closed` ⇒ purchase surfaces render the paused
+   *  note; JOURNEY.1 test workspaces report `open` while the deploy's mode is closed). Absent ⇒ the
+   *  caller treats it as closed (fail-closed against an older api). */
+  readonly purchase?: "open" | "closed";
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -1212,6 +1216,8 @@ export interface CheckoutStatusDto {
   readonly state: "open" | "completed" | "expired";
   readonly kind: string;
   readonly returnTo: string | null;
+  /** session creation instant — the web stops the open-state poll at §14.6's 30 s webhook-lag bound. */
+  readonly createdAt: string;
 }
 
 /** GET /billing/subscription — the plan card's read model (sub + trial + auto-reload + Stripe link). */
@@ -1239,6 +1245,8 @@ export interface BillingSubscriptionDto {
     readonly monthlyCapUsd: number | null;
   };
   readonly hasStripeCustomer: boolean;
+  /** BILL.3 — the purchase switch for this account; absent ⇒ closed (fail-closed). */
+  readonly purchase?: "open" | "closed";
 }
 
 /** PUT /billing/auto-reload — the opt-in charge path's settings (REQ-BILL-17). */

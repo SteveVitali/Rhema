@@ -510,3 +510,56 @@ describe("§5.11 delivery rules", () => {
     expect(mailJobs()).toHaveLength(2);
   });
 });
+
+describe("BILL.3 — the tagged pending-checkout trial_payment leg", () => {
+  it("keys the delivery by checkout:<sessionId>, sends exactly one mail, and deep-links back to returnTo", async () => {
+    const payload: NotificationJobPayload = {
+      type: "trial_payment",
+      workspaceId: seed.workspaceId,
+      userId: seed.userId,
+      billingAccountId: seed.billingAccountId,
+      reason: "Your top-up landed — the credits are in",
+      tag: "checkout:cs_pending_1",
+      openPath: "/p/my-project/run",
+    };
+    expect(await handleNotifyJob(deps, payload)).toMatchObject({
+      action: "mailed",
+      eventType: "trial_payment",
+    });
+    expect(mailJobs()).toHaveLength(1);
+    await deliverAll();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain("Your top-up landed — the credits are in");
+    expect(sent[0]!.html).toContain("https://app.test/p/my-project/run");
+
+    // A replayed notify job hits the same notification_deliveries dedup key — no second mail. The Inbox
+    // leg is deliberately an idempotent upsert (a repeated event can refresh the collapsed row).
+    expect(await handleNotifyJob(deps, payload)).toMatchObject({ action: "inbox", eventType: "trial_payment" });
+    expect(mailJobs()).toHaveLength(1);
+
+    const inbox = (
+      await db.client.query(
+        "select payload from inbox_items where user_id = $1 and payload->>'type' = 'trial_payment' order by created_at desc limit 1",
+        [seed.userId],
+      )
+    ).rows[0] as { payload: { type: string; href: string } };
+    expect(inbox.payload.href).toBe("/p/my-project/run");
+    expect(inbox.payload.type).toBe("trial_payment");
+  });
+
+  it("honors only an in-app openPath — an external value falls back to the billing deep link", async () => {
+    const payload: NotificationJobPayload = {
+      type: "trial_payment",
+      workspaceId: seed.workspaceId,
+      userId: seed.userId,
+      billingAccountId: seed.billingAccountId,
+      reason: "Your plan is active — the checkout finished",
+      tag: "checkout:cs_external",
+      openPath: "https://evil.example/pay",
+    };
+    expect(await handleNotifyJob(deps, payload)).toMatchObject({ action: "mailed" });
+    await deliverAll();
+    expect(sent[0]!.html).toContain("https://app.test/settings/billing");
+    expect(sent[0]!.html).not.toContain("evil.example");
+  });
+});

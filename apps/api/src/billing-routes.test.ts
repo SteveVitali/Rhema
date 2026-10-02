@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
-import { processStripeEvent, signStripePayload, SqlHoldLedger, STRIPE_EVENT_JOB, StubStripePort, type CheckoutSessionRequest } from "@rhema/ledger";
-import { PRICING, priceCents } from "@rhema/contracts";
+import { processStripeEvent, signStripePayload, SqlHoldLedger, STRIPE_EVENT_JOB, StripeRequestError, StubStripePort, type CheckoutSessionRequest } from "@rhema/ledger";
+import { PRICING, priceCents, type PurchaseMode } from "@rhema/contracts";
 import { createBillingRoutes } from "./billing-routes.js";
 import { createApp, type Principal } from "./index.js";
 
@@ -43,6 +43,9 @@ function app(over: Partial<Parameters<typeof createBillingRoutes>[0]> = {}) {
     ids: deps.ids,
     stripeWebhookSecret: SECRET,
     paymentLinkUrl: "https://buy.stripe.com/test_beta",
+    // BILL.3 — the historical purchase-path tests exercise the open mode; the closed default + the
+    // is_test allowlist get their own assertions below.
+    purchaseMode: "open",
     ...over,
   });
 }
@@ -122,6 +125,7 @@ describe("GET /billing/balance", () => {
       clawbackDebt: 0,
       paymentLinkUrl: "https://buy.stripe.com/test_beta",
       billingAccountId: BA, // PRB.19 (F32) — the web pins client_reference_id from it
+      purchase: "open", // BILL.3 — the purchase switch, surfaced for the paused surfaces
     });
   });
 
@@ -241,6 +245,53 @@ describe("POST /billing/checkout — subscribe", () => {
     expect((await post(app({ appBaseUrl: "https://app.test" }), { kind: "subscribe", plan: "writer" })).status).toBe(503);
     expect(stripe.calls).toHaveLength(0);
   });
+
+  it("keeps the Stripe failure class truthful: 4xx → stripe_rejected, 5xx/network → stripe_unavailable", async () => {
+    const rejected = new StubStripePort();
+    rejected.createCheckoutSession = async () => {
+      throw new StripeRequestError(
+        "/v1/checkout/sessions", 400,
+        "`customer_update` can only be used with `customer` or `customer_account`.",
+        "invalid_request_error",
+      );
+    };
+    const res = await post(app({ stripe: rejected, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "writer",
+    });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "stripe_rejected" });
+
+    const unavailable = new StubStripePort();
+    unavailable.createCheckoutSession = async () => {
+      throw new StripeRequestError("/v1/checkout/sessions", 503, "Stripe is unavailable", "api_error");
+    };
+    const res2 = await post(app({ stripe: unavailable, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "writer",
+    });
+    expect(res2.status).toBe(503);
+    expect(await res2.json()).toEqual({ error: "stripe_unavailable" });
+
+    const transport = new StubStripePort();
+    transport.createCheckoutSession = async () => {
+      throw new StripeRequestError("/v1/checkout/sessions", 0, "fetch failed");
+    };
+    const res3 = await post(app({ stripe: transport, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "writer",
+    });
+    expect(res3.status).toBe(503);
+    expect(await res3.json()).toEqual({ error: "stripe_unavailable" });
+  });
+
+  it("does not relabel an internal failure as billing-unavailable", async () => {
+    const broken = new StubStripePort();
+    broken.createCheckoutSession = async () => {
+      throw new Error("not a StripeRequestError");
+    };
+    const res = await post(app({ stripe: broken, appBaseUrl: "https://app.test" }), {
+      kind: "subscribe", plan: "writer",
+    });
+    expect(res.status).toBe(500);
+  });
 });
 
 describe("POST /billing/checkout — top-up bounds (§14.2)", () => {
@@ -294,6 +345,97 @@ describe("POST /billing/checkout — top-up bounds (§14.2)", () => {
     expect(res.status).toBe(200);
     const req = stripe.calls.at(-1)!.args as CheckoutSessionRequest;
     expect(req.require3ds).toBe(true); // $100 already attempted today + $200 > $200/day
+  });
+});
+
+describe("the purchase switch (BILL.3; REQ-BILL-16)", () => {
+  const post = (a: ReturnType<typeof app>, body: unknown) =>
+    a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+
+  it("defaults closed: subscribe, top-up, auto-reload setup/configure, and portal make no Stripe call and answer purchase_closed", async () => {
+    const stripe = new StubStripePort();
+    // `purchaseMode` deliberately absent — the dep is fail-closed, exactly like a missing PURCHASE_MODE.
+    const closed = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: undefined });
+    await db.pg.query("update billing_accounts set stripe_customer_id = 'cus_closed' where id = $1", [BA]);
+
+    expect((await post(closed, { kind: "subscribe", plan: "writer" })).status).toBe(403);
+    const topup = await post(closed, { kind: "topup", packId: "topup_10" });
+    expect(topup.status).toBe(403);
+    expect(await topup.json()).toEqual({ error: "purchase_closed" });
+    const autoReload = await post(closed, { kind: "auto_reload_setup", packId: "topup_10" });
+    expect(autoReload.status).toBe(403);
+    expect(await autoReload.json()).toEqual({ error: "purchase_closed" });
+    const portal = await closed.request("/billing/portal", { method: "POST" });
+    expect(portal.status).toBe(403);
+    expect(await portal.json()).toEqual({ error: "purchase_closed" });
+    const configure = await closed.request("/billing/auto-reload", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true, thresholdCredits: 100, packId: "topup_10", monthlyCapUsd: 50 }),
+    });
+    expect(configure.status).toBe(403);
+    expect(await configure.json()).toEqual({ error: "purchase_closed" });
+    // …but opting OUT is a safety-off, not a purchase — the closed switch never traps a configured
+    // account into charges it cannot cancel.
+    const disable = await closed.request("/billing/auto-reload", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: false }),
+    });
+    expect(disable.status).toBe(200);
+    expect(stripe.calls).toHaveLength(0);
+
+    const balance = await closed.request("/billing/balance");
+    const balanceBody = (await balance.json()) as { purchase: string; paymentLinkUrl?: string };
+    expect(balanceBody.purchase).toBe("closed");
+    expect(balanceBody.paymentLinkUrl).toBeUndefined(); // closed means the link is never surfaced
+
+    // The paused refusal wins even when Stripe config is absent — the user-facing state is closed,
+    // not "billing unavailable". (Open/test-tenant callers still get `stripe_unconfigured` below.)
+    const unconfigured = app({ appBaseUrl: "https://app.test", purchaseMode: "closed" });
+    const res = await post(unconfigured, { kind: "subscribe", plan: "writer" });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "purchase_closed" });
+  });
+
+  it("an unknown mode fails closed; a JOURNEY.1 test workspace is allowlisted on every api entry point", async () => {
+    const stripe = new StubStripePort();
+    const bogus = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: "bogus" as PurchaseMode });
+    expect((await post(bogus, { kind: "subscribe", plan: "writer" })).status).toBe(403);
+    expect(stripe.calls).toHaveLength(0);
+
+    await db.pg.query("update workspaces set is_test = true where id = $1", [WS]);
+    await db.pg.query("update billing_accounts set stripe_customer_id = 'cus_test' where id = $1", [BA]);
+    const closed = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: "closed" });
+    for (const body of [
+      { kind: "subscribe", plan: "writer" },
+      { kind: "topup", packId: "topup_10" },
+      { kind: "auto_reload_setup", packId: "topup_10" },
+    ]) {
+      const res = await post(closed, body);
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { url: string }).url).toContain("checkout.stripe.test");
+    }
+    const portal = await closed.request("/billing/portal", { method: "POST" });
+    expect(portal.status).toBe(200);
+    expect(((await portal.json()) as { url: string }).url).toContain("billing.stripe.test");
+    expect(stripe.calls).toHaveLength(4);
+    const balance = await closed.request("/billing/balance");
+    const balanceBody = (await balance.json()) as { purchase: string; paymentLinkUrl?: string };
+    expect(balanceBody).toMatchObject({ purchase: "open", paymentLinkUrl: "https://buy.stripe.com/test_beta" });
+  });
+
+  it("the allowlist crosses only the switch — a Free test tenant still gets topups_require_plan", async () => {
+    const stripe = new StubStripePort();
+    await db.pg.query("update workspaces set is_test = true where id = $1", [WS]);
+    await db.pg.query("delete from subscriptions where billing_account_id = $1", [BA]); // → Free
+    const closed = app({ stripe, appBaseUrl: "https://app.test", purchaseMode: "closed" });
+    const res = await post(closed, { kind: "topup", packId: "topup_10" });
+    expect(res.status).toBe(402);
+    expect(await res.json()).toEqual({ error: "topups_require_plan" });
+    expect(stripe.calls).toHaveLength(0);
   });
 });
 
@@ -375,9 +517,38 @@ describe("GET /billing/checkout-sessions/:id — the return-poll read (REQ-BILL-
     const { sessionId } = (await created.json()) as { sessionId: string };
     const res = await a.request(`/billing/checkout-sessions/${sessionId}`);
     expect(res.status).toBe(200);
-    const session = (await res.json()) as { state: string; kind: string; returnTo: string | null };
+    const session = (await res.json()) as {
+      state: string;
+      kind: string;
+      returnTo: string | null;
+      createdAt: string;
+    };
     expect(session).toMatchObject({ state: "open", kind: "subscribe" });
+    expect(session.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    // The open view stamped the pending-email precondition (0048), tenant-scoped.
+    expect(
+      (await db.client.query("select return_viewed_at from checkout_sessions where id = $1", [sessionId]))
+        .rows[0],
+    ).toMatchObject({ return_viewed_at: expect.any(Date) });
     expect((await a.request("/billing/checkout-sessions/cs_nope")).status).toBe(404);
+  });
+
+  it("a foreign workspace gets 404 and never stamps the pending-view marker", async () => {
+    const stripe = new StubStripePort();
+    const a = app({ stripe, appBaseUrl: "https://app.test" });
+    const created = await a.request("/billing/checkout", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "subscribe", plan: "studio" }),
+    });
+    const { sessionId } = (await created.json()) as { sessionId: string };
+    const foreign = app({
+      principal: () => ({ userId: USER, workspaceId: "01JQ0000000000000000000WS2", billingAccountId: BA }),
+    });
+    expect((await foreign.request(`/billing/checkout-sessions/${sessionId}`)).status).toBe(404);
+    expect(
+      (await db.client.query("select return_viewed_at from checkout_sessions where id = $1", [sessionId]))
+        .rows[0],
+    ).toMatchObject({ return_viewed_at: null });
   });
 });
 

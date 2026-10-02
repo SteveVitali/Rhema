@@ -180,6 +180,12 @@ export interface BetaApiDeps {
   /** P1.16 — the app origin Checkout success/cancel URLs bounce through (e.g. `https://rhema.tools`). */
   appBaseUrl?: string;
   /**
+   * BILL.3 — `purchase.mode` (ADR-028; REQ-BILL-16): `closed` (default/unset ⇒ fail-closed) ⇒
+   * `/billing/checkout` refuses `purchase_closed` for real users; JOURNEY.1 `is_test` workspaces are
+   * allowlisted. `open` re-opens purchase to real users (the operator's switch).
+   */
+  purchaseMode?: import("@rhema/contracts").PurchaseMode;
+  /**
    * PRB.08 — the `finding.disposed` analytics emitter (REQ-BETA-6). Now that the beta has a real analytics
    * sink (`analytics_events`, 0020), the live deploy binds this to `recordAnalyticsEvent`; unset ⇒ no row.
    */
@@ -331,6 +337,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ...(deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
         ...(deps.stripe ? { stripe: deps.stripe } : {}),
         ...(deps.appBaseUrl ? { appBaseUrl: deps.appBaseUrl } : {}),
+        // BILL.3 — the purchase switch (ADR-028; unset ⇒ fail-closed in the route deps too).
+        ...(deps.purchaseMode ? { purchaseMode: deps.purchaseMode } : {}),
       }),
     );
     // PRB.06 — What-changed + hunk-comment routes (session-authed; the readable store seam is optional).

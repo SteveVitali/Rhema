@@ -11,7 +11,7 @@
 // group→egress firewall. The abstract facts (no internet reachability for the sandbox; per-run caps;
 // versioned isolated buckets) are provider-independent and carry over verbatim.
 
-import type { SignupMode } from "@rhema/contracts";
+import type { PurchaseMode, SignupMode } from "@rhema/contracts";
 
 export type StageKind = "dev" | "preview" | "prod";
 
@@ -196,6 +196,14 @@ export interface StageConfig {
    */
   signupMode: SignupMode;
   /**
+   * BILL.3 — `purchase.mode` (ADR-028; REQ-BILL-16), deployed to the api as `PURCHASE_MODE` (a mode
+   * string — never a secret). `closed` refuses Checkout session mints for real users
+   * (`purchase_closed`); JOURNEY.1 `is_test` workspaces stay allowlisted so the N9 journey exercises
+   * the real Stripe pages. Every stage ships `closed` — the operator re-opens by flipping this field
+   * in a commit (auditable), never by a flag that could fail open.
+   */
+  purchaseMode: PurchaseMode;
+  /**
    * PRB.15 — the stage's public serving surface (undefined off prod: previews keep the
    * `${stack}.rhema.dev` placeholder and never need real DNS). The Pulumi program builds the managed
    * cert's SAN list + the URL map's host rules from this block — the numbers the tests assert are the
@@ -250,6 +258,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     maxUsdPerRun: 10,
     allowsProductionSecrets: false,
     signupMode: "invite", // PRB.13 — dev keeps the private-beta invite gate (open is prod-only)
+    purchaseMode: "closed", // BILL.3 — purchase stays closed everywhere until the operator re-opens (ADR-028)
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
@@ -261,6 +270,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     maxUsdPerRun: 3, // REQ-ARCH-38
     allowsProductionSecrets: false, // REQ-ARCH-38
     signupMode: "invite", // PRB.13 — previews never self-serve
+    purchaseMode: "closed", // BILL.3 — never a real purchase on a preview
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
   },
   prod: {
@@ -276,6 +286,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     maxUsdPerRun: 100,
     allowsProductionSecrets: true,
     signupMode: "open", // PRB.15 — self-serve paid beta on prod (REQ-BETA-19 amended)
+    purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
   },

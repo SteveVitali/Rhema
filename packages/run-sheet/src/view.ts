@@ -208,6 +208,12 @@ export interface RunSheetView {
   /** PRB.08 — the final-month beta-plan offer's link (copy + link only — no subscription machinery). Set only
    *  when the deploy configured it (the final-month window is an ops decision, not code). */
   readonly planOfferUrl?: string;
+  /**
+   * BILL.3 — the purchase switch is closed for this account (`purchase_mode=closed` and not a flagged
+   * test workspace): the exhaustion panel renders the paused note instead of the add-credits button —
+   * never a checkout hand-off that the api would refuse.
+   */
+  readonly purchaseClosed?: boolean;
 }
 
 /** The data the inline progressive-enhancement script uses to recompute the estimate box on a Rigor change
@@ -285,6 +291,8 @@ export interface BuildRunSheetViewArgs {
   readonly suspended?: boolean;
   /** PRB.08 — the final-month beta-plan offer link (copy + link only). */
   readonly planOfferUrl?: string;
+  /** BILL.3 — purchase is closed for this account (the exhaustion panel shows the paused line). */
+  readonly purchaseClosed?: boolean;
 }
 
 /** The "Why this estimate?" breakdown ("21 claims × 24 cr ≈ 500 · 5,180 words ≈ 60"). Approximate by design. */
@@ -496,7 +504,11 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
         : {}),
     leverMatrix,
     idempotencyKey: args.idempotencyKey,
-    ...(args.paymentLinkUrl && !args.suspended ? { paymentLinkUrl: args.paymentLinkUrl } : {}),
+    // BILL.3 — a closed purchase mode strips the Payment Link from the view even when configured.
+    ...(args.paymentLinkUrl && !args.suspended && !args.purchaseClosed
+      ? { paymentLinkUrl: args.paymentLinkUrl }
+      : {}),
+    ...(args.purchaseClosed ? { purchaseClosed: true } : {}),
     ...(args.suspended ? { suspended: true } : {}),
     ...(args.planOfferUrl ? { planOfferUrl: args.planOfferUrl } : {}),
     recompute: {

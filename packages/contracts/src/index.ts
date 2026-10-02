@@ -70,6 +70,10 @@ export * from "./analytics.js";
 export * from "./signup.js";
 export * from "./rate-limit.js";
 
+// purchase admission mode + the Stripe-hosted redirect surface (BILL.3; REQ-BILL-16; §14.6)
+export * from "./purchase.js";
+export * from "./stripe.js";
+
 // the quarantine-upload wire contract (REQ-ARCH-24; §13.3; PRB.20 — moved from @rhema/convert so the api's
 // presign route + the web upload flow share the key shape without pulling the parser deps)
 export * from "./upload.js";

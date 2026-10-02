@@ -129,6 +129,11 @@ export interface RunApiDeps extends OrchestratorDeps {
    * Unset ⇒ the risk arm is inert (fingerprint + disposable-domain checks still run).
    */
   asnRiskScorer?(c: { req: { header(name: string): string | undefined } }): Promise<number | undefined>;
+  /**
+   * BILL.3 (REQ-BILL-16) — the server-side estimator seam. Deploy binds nothing and gets `buildEstimate`;
+   * tests bind a failing implementation to prove the sheet workflow refuses before a run row can start.
+   */
+  readonly estimateBuilder?: typeof buildEstimate;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -317,7 +322,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     let capCredits = body.capCredits;
     try {
       const snap = body.inputSnapshot ?? {};
-      const derived = buildEstimate({
+      const derived = (deps.estimateBuilder ?? buildEstimate)({
         workflow,
         rigor: body.rigor,
         modelTier: body.modelTier,

@@ -187,11 +187,31 @@ async function checkoutSessionRow(args: {
   cycle?: string;
   packId?: string;
   stripeSessionId: string;
+  /** BILL.3 — the pending-email legs: the session's owner + return page + the poll's marker. */
+  userId?: string;
+  returnTo?: string;
+  returnViewedAt?: Date;
+  pendingEmailQueuedAt?: Date;
 }) {
   await db.client.query(
-    `insert into checkout_sessions (id, workspace_id, billing_account_id, kind, plan, cycle, pack_id, state, created_at, stripe_session_id)
-     values ($1,$2,$3,$4,$5,$6,$7,'open',$8,$9)`,
-    [args.id, WS, BA, args.kind, args.plan ?? null, args.cycle ?? null, args.packId ?? null, NOW, args.stripeSessionId],
+    `insert into checkout_sessions
+       (id, workspace_id, billing_account_id, user_id, kind, plan, cycle, pack_id, return_to, state, created_at, stripe_session_id, return_viewed_at, pending_email_queued_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,'open',$10,$11,$12,$13)`,
+    [
+      args.id,
+      WS,
+      BA,
+      args.userId ?? null,
+      args.kind,
+      args.plan ?? null,
+      args.cycle ?? null,
+      args.packId ?? null,
+      args.returnTo ?? null,
+      NOW,
+      args.stripeSessionId,
+      args.returnViewedAt ?? null,
+      args.pendingEmailQueuedAt ?? null,
+    ],
   );
 }
 
@@ -455,5 +475,210 @@ describe("processStripeEvent — invoice + subscription arms (P1.16; §14.6)", (
     });
     expect(out.kind).toBe("unresolved");
     expect((await stripeEventRow("evt_inv_orphan"))!.processed_at).toBeNull();
+  });
+});
+
+// ---- BILL.3 — the pending-checkout email (REQ-BILL-16 webhook lag; ADR-029) + the expired arm -----------
+// The /billing/return page promises "we'll email you when it lands". The promise holds ONLY when the
+// user actually waited on the open page: `return_viewed_at` (0048, stamped by the tenant poll) gates the
+// send; the open→completed transition + the `checkout:<sessionId>` tag make it exactly-once under replay.
+
+describe("processStripeEvent — the pending-checkout email (BILL.3)", () => {
+  function notifySpy() {
+    const calls: {
+      type: string; workspaceId: string; userId?: string; billingAccountId?: string;
+      reason: string; tag?: string; openPath?: string;
+    }[] = [];
+    return {
+      calls,
+      deps: { ...deps(), notify: async (p: (typeof calls)[number]) => { calls.push(p); } } as StripeEventDeps,
+    };
+  }
+
+  it("completion AFTER the open view → exactly one mail, tagged checkout:<sessionId>, linked to returnTo", async () => {
+    await checkoutSessionRow({
+      id: "chk_mail", kind: "topup", packId: "topup_10", stripeSessionId: "cs_mail_1",
+      userId: USER, returnTo: "/p/my-project/run", returnViewedAt: NOW,
+    });
+    const spy = notifySpy();
+    await insertStripeEvent(db.client, {
+      id: "evt_mail_1", type: "checkout.session.completed",
+      payload: { id: "evt_mail_1", type: "checkout.session.completed", data: { object: { id: "cs_mail_1", payment_intent: "pi_m1", metadata: { checkout_session_id: "chk_mail" } } } },
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, spy.deps, "evt_mail_1");
+    expect(out.kind).toBe("topup_granted");
+    expect(spy.calls).toHaveLength(1);
+    expect(spy.calls[0]).toMatchObject({
+      type: "trial_payment",
+      workspaceId: WS,
+      userId: USER,
+      billingAccountId: BA,
+      tag: "checkout:chk_mail",
+      openPath: "/p/my-project/run",
+    });
+    expect(spy.calls[0]!.reason).toBe("Your top-up landed — the credits are in");
+
+    // a webhook replay (new event id, same session) finds state=completed → NO second mail.
+    await insertStripeEvent(db.client, {
+      id: "evt_mail_2", type: "checkout.session.completed",
+      payload: { id: "evt_mail_2", type: "checkout.session.completed", data: { object: { id: "cs_mail_1", payment_intent: "pi_m1", metadata: { checkout_session_id: "chk_mail" } } } },
+      receivedAt: NOW,
+    });
+    const replay = await processStripeEvent(db.client, spy.deps, "evt_mail_2");
+    expect(replay.kind).toBe("ignored");
+    expect(spy.calls).toHaveLength(1);
+    expect(
+      (
+        await db.client.query(
+          "select pending_email_queued_at is not null as queued from checkout_sessions where id = 'chk_mail'",
+        )
+      ).rows[0],
+    ).toEqual({ queued: true });
+  });
+
+  it("a notify enqueue failure stays retryable: the completed row carries no queued marker and a worker retry mails once", async () => {
+    await checkoutSessionRow({
+      id: "chk_retry", kind: "topup", packId: "topup_10", stripeSessionId: "cs_retry_1",
+      userId: USER, returnTo: "/app/settings/billing", returnViewedAt: NOW,
+    });
+    const calls: { tag?: string }[] = [];
+    let fail = true;
+    const retryDeps = {
+      ...deps(),
+      notify: async (p: { tag?: string }) => {
+        if (fail) throw new Error("pg-boss unavailable");
+        calls.push(p);
+      },
+    } as StripeEventDeps;
+    await insertStripeEvent(db.client, {
+      id: "evt_retry", type: "checkout.session.completed",
+      payload: { id: "evt_retry", type: "checkout.session.completed", data: { object: { id: "cs_retry_1", payment_intent: "pi_r1", metadata: { checkout_session_id: "chk_retry" } } } },
+      receivedAt: NOW,
+    });
+    await expect(processStripeEvent(db.client, retryDeps, "evt_retry")).rejects.toThrow("pg-boss unavailable");
+    expect(calls).toHaveLength(0);
+    expect(
+      (await db.client.query("select state, pending_email_queued_at from checkout_sessions where id = 'chk_retry'"))
+        .rows[0],
+    ).toMatchObject({ state: "completed", pending_email_queued_at: null });
+    // the event row stays unprocessed, so the worker's retry path is live (not a silently dropped mail).
+    expect((await stripeEventRow("evt_retry"))!.processed_at).toBeNull();
+
+    fail = false;
+    await processStripeEvent(db.client, retryDeps, "evt_retry");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ tag: "checkout:chk_retry" });
+    expect(
+      (await db.client.query("select pending_email_queued_at is not null as queued from checkout_sessions where id = 'chk_retry'"))
+        .rows[0],
+    ).toEqual({ queued: true });
+  });
+
+  it("a viewed session already stamped pending_email_queued_at completes the grant but skips the second enqueue", async () => {
+    await checkoutSessionRow({
+      id: "chk_queued", kind: "topup", packId: "topup_10", stripeSessionId: "cs_queued_1",
+      userId: USER, returnTo: "/app/settings/billing", returnViewedAt: NOW, pendingEmailQueuedAt: NOW,
+    });
+    const spy = notifySpy();
+    await insertStripeEvent(db.client, {
+      id: "evt_queued", type: "checkout.session.completed",
+      payload: { id: "evt_queued", type: "checkout.session.completed", data: { object: { id: "cs_queued_1", payment_intent: "pi_q1", metadata: { checkout_session_id: "chk_queued" } } } },
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, spy.deps, "evt_queued");
+    expect(out.kind).toBe("topup_granted");
+    expect(spy.calls).toHaveLength(0);
+    expect((await readBalances(db, BA)).topup.available).toBe(1000);
+  });
+
+  it("completion BEFORE the open view → grant lands but NO mail (the user never saw pending)", async () => {
+    await checkoutSessionRow({
+      id: "chk_nomail", kind: "topup", packId: "topup_10", stripeSessionId: "cs_nomail_1",
+      userId: USER, returnTo: "/app/settings/billing", // no returnViewedAt
+    });
+    const spy = notifySpy();
+    await insertStripeEvent(db.client, {
+      id: "evt_nomail", type: "checkout.session.completed",
+      payload: { id: "evt_nomail", type: "checkout.session.completed", data: { object: { id: "cs_nomail_1", payment_intent: "pi_m2", metadata: { checkout_session_id: "chk_nomail" } } } },
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, spy.deps, "evt_nomail");
+    expect(out.kind).toBe("topup_granted");
+    expect(spy.calls).toHaveLength(0);
+    expect((await readBalances(db, BA)).topup.available).toBe(1000);
+  });
+
+  it("a subscribe completion after view mails with the plan copy", async () => {
+    await checkoutSessionRow({
+      id: "chk_submail", kind: "subscribe", plan: "writer", cycle: "monthly", stripeSessionId: "cs_submail",
+      userId: USER, returnTo: "/app/settings/billing", returnViewedAt: NOW,
+    });
+    const spy = notifySpy();
+    await insertStripeEvent(db.client, {
+      id: "evt_submail", type: "checkout.session.completed",
+      payload: { id: "evt_submail", type: "checkout.session.completed", data: { object: {
+        id: "cs_submail", subscription: "sub_mail_1", customer: "cus_mail",
+        metadata: { checkout_session_id: "chk_submail" } } } },
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, spy.deps, "evt_submail");
+    expect(out.kind).toBe("subscription_activated");
+    expect(spy.calls).toHaveLength(1);
+    expect(spy.calls[0]!.reason).toBe("Your plan is active — the checkout finished");
+    expect(spy.calls[0]!.tag).toBe("checkout:chk_submail");
+  });
+
+  it("a checkout row without a userId never mails (no recipient)", async () => {
+    await checkoutSessionRow({
+      id: "chk_nouser", kind: "topup", packId: "topup_10", stripeSessionId: "cs_nouser",
+      returnTo: "/app", returnViewedAt: NOW, // viewed, but no owner — nothing to mail to
+    });
+    const spy = notifySpy();
+    await insertStripeEvent(db.client, {
+      id: "evt_nouser", type: "checkout.session.completed",
+      payload: { id: "evt_nouser", type: "checkout.session.completed", data: { object: { id: "cs_nouser", payment_intent: "pi_m3", metadata: { checkout_session_id: "chk_nouser" } } } },
+      receivedAt: NOW,
+    });
+    await processStripeEvent(db.client, spy.deps, "evt_nouser");
+    expect(spy.calls).toHaveLength(0);
+  });
+});
+
+describe("processStripeEvent — checkout.session.expired (BILL.3)", () => {
+  it("expires our open row so the return poll renders the honest state; replay no-ops", async () => {
+    await checkoutSessionRow({ id: "chk_exp", kind: "topup", packId: "topup_10", stripeSessionId: "cs_exp_1" });
+    const out = await emit("evt_exp_1", "checkout.session.expired", {
+      id: "cs_exp_1",
+      metadata: { checkout_session_id: "chk_exp" },
+    });
+    expect(out.kind).toBe("ignored");
+    expect(
+      (await db.client.query("select state from checkout_sessions where id = 'chk_exp'")).rows[0],
+    ).toMatchObject({ state: "expired" });
+    // a replay is still ignored (no state churn, no grant attempt).
+    const replay = await emit("evt_exp_2", "checkout.session.expired", {
+      id: "cs_exp_1",
+      metadata: { checkout_session_id: "chk_exp" },
+    });
+    expect(replay.kind).toBe("ignored");
+    // and a Payment-Link session (no row) is simply ignored.
+    const orphan = await emit("evt_exp_3", "checkout.session.expired", { id: "cs_unrelated" });
+    expect(orphan.kind).toBe("ignored");
+  });
+});
+
+describe("processStripeEvent — the customer id backfill (BILL.3)", () => {
+  it("a Payment-Link purchase with a customer mints stripe_customer_id → the Portal unlocks", async () => {
+    await insertStripeEvent(db.client, {
+      id: "evt_pl_cus", type: "checkout.session.completed",
+      payload: checkoutPayload({ customer: "cus_pl_1" }),
+      receivedAt: NOW,
+    });
+    const out = await processStripeEvent(db.client, deps(), "evt_pl_cus");
+    expect(out.kind).toBe("topup_granted");
+    expect(
+      (await db.client.query("select stripe_customer_id from billing_accounts where id = $1", [BA])).rows[0],
+    ).toMatchObject({ stripe_customer_id: "cus_pl_1" });
   });
 });

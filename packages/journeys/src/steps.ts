@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
 
@@ -195,20 +195,121 @@ const N8: StepFn = async (ctx) => {
   if (!/v\d+|version/i.test(body)) throw new Error("no version fork surface after edit");
 };
 
-/** N9 (RED, BILL.3) — Add credits / Buy / Choose Writer reach a Stripe-hosted page (no charge). */
-const N9: StepFn = async (ctx) => {
-  const { page } = await ctx.returningUser("a");
-  await gotoOk(page, `${ctx.webBaseUrl}/app/settings/billing`);
-  const ctas = page.locator('button:has-text("Add credits"), a:has-text("Add credits"), button:has-text("Buy"), a:has-text("Buy"), button:has-text("Choose Writer"), a:has-text("Choose Writer")');
-  if ((await ctas.count()) === 0) throw new Error("no billing CTA on /app/settings/billing");
-  const cta = ctas.first();
-  await assertActionable(cta, "billing CTA");
-  const nav = page.waitForURL(/stripe\.com|checkout/i, { timeout: 12_000 }).catch(() => null);
-  await cta.click();
-  const hit = await nav;
-  if (!hit && !/stripe\.com|checkout/i.test(page.url())) {
-    throw new Error(`billing CTA did not reach a Stripe-hosted page (landed ${page.url()})`);
+/** N9 (BILL.3; REQ-BILL-16) — every purchase entry point on the flagged test tenant reaches a
+ *  Stripe-hosted page: billing Choose Writer (Checkout subscribe), billing Buy 1,000 credits
+ *  (Checkout top-up), billing Manage billing & invoices (Portal), and run-sheet Add credits
+ *  (Payment Link). Each click asserts the hosted URL, the amount/label the user expects, and that
+ *  the navigation produced no CSP/form-action console violation. No hosted payment form is filled
+ *  or submitted. */
+const N9_STRIPE_HOSTS = new Set(["buy.stripe.com", "checkout.stripe.com", "billing.stripe.com"]);
+const N9_CSP_ERROR = /Content Security Policy|form-action|Refused to (?:send form data|load)/i;
+
+function n9StripeHosted(url: string): boolean {
+  try {
+    return N9_STRIPE_HOSTS.has(new URL(url).hostname);
+  } catch {
+    return false;
   }
+}
+
+function n9AssertNoCspViolation(ctx: StepCtx, label: string): void {
+  const violations = ctx.consoleErrors.filter((m) => N9_CSP_ERROR.test(m));
+  if (violations.length > 0) {
+    throw new Error(`${label}: CSP console violation after hosted hand-off — ${violations.join(" | ")}`);
+  }
+}
+
+async function n9ClickToStripe(
+  ctx: StepCtx,
+  page: Page,
+  control: Locator,
+  label: string,
+  expected: readonly RegExp[],
+): Promise<void> {
+  const navigated = page.waitForURL((u) => n9StripeHosted(u.toString()), { timeout: 45_000 });
+  await clickActionable(control, label);
+  try {
+    await navigated;
+  } catch {
+    throw new Error(`${label}: stayed on ${page.url()} — no Stripe-hosted hand-off`);
+  }
+  await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => undefined);
+  if (!n9StripeHosted(page.url())) {
+    throw new Error(`${label}: landed on non-Stripe URL ${page.url()}`);
+  }
+  const body = await page.locator("body").innerText({ timeout: 15_000 }).catch(() => "");
+  for (const re of expected) {
+    if (!re.test(body)) throw new Error(`${label}: Stripe page did not show ${re} (url ${page.url()})`);
+  }
+  n9AssertNoCspViolation(ctx, label);
+}
+
+const N9: StepFn = async (ctx) => {
+  const webBase = ctx.webBaseUrl.replace(/\/$/, "");
+
+  // Entry 1 — Billing → Choose Writer on a FREE flagged test tenant (subscribe is the Free user's
+  // Checkout entry; the paid tenant below has no "Choose Writer" button once it is already Writer).
+  const { page: subscribePage } = await ctx.freshUser("n9");
+  await gotoOk(subscribePage, `${webBase}/app/settings/billing`);
+  await subscribePage.selectOption("form[data-subscribe-form='writer'] select[name='cycle']", "monthly");
+  await n9ClickToStripe(
+    ctx,
+    subscribePage,
+    subscribePage.locator("form[data-subscribe-form='writer'] button[type='submit']"),
+    "N9 billing Choose Writer",
+    [/Writer/i, /\$20(?:\.00)?/],
+  );
+
+  // Entries 2–4 — the funded paid test tenant (jrn-a): top-up, Portal, and the run-sheet Payment Link.
+  const { page } = await ctx.returningUser("a"); // flagged by workspaces.is_test too
+  await gotoOk(page, `${webBase}/app/settings/billing`);
+
+  // Entry 2 — Billing → Buy 1,000 credits: Checkout top-up session, $10 / 1,000 credits.
+  await n9ClickToStripe(
+    ctx,
+    page,
+    page.locator("form[data-topup-form='topup_10'] button[type='submit']"),
+    "N9 billing Buy 1,000 credits",
+    [/1,?000/i, /\$10(?:\.00)?/],
+  );
+
+  // Entry 3 — Billing → Portal's honest precondition: the Portal needs a `stripe_customer_id`, which
+  // only a COMPLETED checkout mints (Stripe creates the Customer at session confirmation — a real
+  // payment, operator-paused under HUMAN-H7). At $0 the test tenant has none, so the portal form must
+  // NOT mount and the honest "no card on file" note renders instead. The hosted-portal leg itself is
+  // carried in D-BILL.3-1 (it is only reachable after a real purchase).
+  await gotoOk(page, `${webBase}/app/settings/billing`);
+  if ((await page.locator("form[data-portal-form]").count()) !== 0) {
+    // A customer-bearing tenant reaches the hosted portal — keep the assertion honest both ways.
+    await n9ClickToStripe(
+      ctx,
+      page,
+      page.locator("form[data-portal-form] button[type='submit']"),
+      "N9 billing Portal",
+      [/Writer|invoice|payment method|billing/i],
+    );
+  } else {
+    const body = (await page.textContent("body")) ?? "";
+    if (!/no card on file/i.test(body)) {
+      throw new Error("N9 billing Portal: no portal form AND no honest no-card note rendered");
+    }
+  }
+
+  // Entry 4 — run sheet → Add credits: the PRB.19 Payment Link path. A deliberately huge cap renders
+  // the exhausted panel without paying for a run; the button's data URL is itself origin-checked
+  // before the click so a tampered/non-Stripe link fails before navigation.
+  const slug = await createScratchProject(page, ctx, "N9CREDITS");
+  await gotoOk(page, `${webBase}/p/${slug}/run?workflow=review&rigor=quick&budget=2147483647`);
+  const addCredits = page.locator("button[data-payment-link]");
+  const paymentLink = await addCredits.getAttribute("data-payment-link");
+  if (!paymentLink || !n9StripeHosted(paymentLink)) {
+    throw new Error(`N9 run-sheet Add credits: non-Stripe Payment Link ${paymentLink ?? "(missing)"}`);
+  }
+  await n9ClickToStripe(ctx, page, addCredits, "N9 run-sheet Add credits", [/\$\d+(?:\.\d{2})?/]);
+
+  // Leave the last opened page on the Stripe-hosted landing so the runner's N9.png evidence is the
+  // hosted payment page itself, not an app page.
+  n9AssertNoCspViolation(ctx, "N9");
 };
 
 /** N5 (RED, ACT.1; paid) — trial Review shows *Included* and delivers without a cap death.

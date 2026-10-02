@@ -18,6 +18,8 @@ export interface AutoReloadDeps extends EntryDeps {
     workspaceId: string;
     userId?: string;
     reason: string;
+    tag?: string;
+    openPath?: string;
   }) => Promise<void>;
 }
 

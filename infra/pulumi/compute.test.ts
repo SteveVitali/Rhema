@@ -38,3 +38,9 @@ describe("HOT.1 — LB request logging on every external backend service (BL-65)
     });
   }
 });
+
+describe("BILL.3 — the purchase switch is deploy config on the api", () => {
+  it("injects PURCHASE_MODE from the stage fact (a mode string, never a secret)", () => {
+    expect(SRC).toContain('{ name: "PURCHASE_MODE", value: cfg.purchaseMode }');
+  });
+});

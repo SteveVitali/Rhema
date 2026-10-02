@@ -541,6 +541,26 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     expect(row.cap_credits).toBe(5915);
   });
 
+  it("BILL.3 — an estimator outage refuses the sheet run 503 and starts no run row", async () => {
+    const unavailable = createApp({
+      ...deps,
+      principal: () => principal(),
+      estimateBuilder: () => {
+        throw new Error("estimator down");
+      },
+    });
+    const before = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    const r = await unavailable.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-est-down", modelTier: "base" })),
+    });
+    expect(r.status).toBe(503);
+    expect(await r.json()).toEqual({ error: "estimate_unavailable" });
+    const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    expect(after.n).toBe(before.n); // §14.6: a money figure was not server-derived ⇒ nothing starts
+  });
+
   // D-P0.11-1 / REQ-SPEC-24.5 — a tripped circuit breaker scales the NEW run's server-derived cap by the
   // `capMultiplier` (deploy binds the seam to `circuitBreakerState`; a 2× trip doubles the safety band while
   // the estimator re-fits). Unbound ⇒ 1× (fixtures and a breaker-less deploy stay unchanged).

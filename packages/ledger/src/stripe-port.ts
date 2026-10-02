@@ -82,27 +82,74 @@ export class StubStripePort implements StripePort {
 }
 
 /**
+ * A failed Stripe API call (BILL.3): carries the HTTP status + Stripe's `error.type`/`error.code` so the
+ * api can CLASSIFY instead of collapsing — a 4xx `invalid_request_error` (bad request shape; the request
+ * contract is ours) maps to `stripe_rejected` while a 5xx / network failure maps to `stripe_unavailable`.
+ * Message content stays Stripe's (log-side only — never rendered to the user).
+ */
+export class StripeRequestError extends Error {
+  constructor(
+    readonly path: string,
+    readonly status: number,
+    message: string,
+    readonly stripeType?: string,
+    readonly stripeCode?: string,
+  ) {
+    super(`stripe ${path} failed: ${message}`);
+    this.name = "StripeRequestError";
+  }
+  /** True when Stripe refused the REQUEST (4xx) — a shape/contract failure, not an outage. */
+  get rejected(): boolean {
+    return this.status >= 400 && this.status < 500;
+  }
+}
+
+/**
  * The live REST port — Stripe's form-encoded API over fetch (Node ≥ 20). Bound by the api only when
  * `STRIPE_SECRET_KEY` is configured; absent ⇒ checkout routes refuse with `stripe_unconfigured` (never a
  * silent fallback that pretends a real session exists).
+ *
+ * `automaticTax` (default OFF) sends `automatic_tax[enabled]=true` — valid only once the account's Tax
+ * registration is activated Stripe-side (an operator act; BL-33/HUMAN-H7 stays paused). BILL.3 ships it
+ * default-off: prod's error chain showed the request contract must carry only what the account is
+ * configured for.
  */
 export class FetchStripePort implements StripePort {
   constructor(
     private readonly secretKey: string,
     private readonly baseUrl = "https://api.stripe.com",
+    private readonly opts: { automaticTax?: boolean } = {},
   ) {}
 
   private async post(path: string, params: Record<string, string>): Promise<Record<string, unknown>> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${this.secretKey}`,
-        "content-type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams(params).toString(),
-    });
-    const body = (await res.json()) as Record<string, unknown> & { error?: { message?: string } };
-    if (!res.ok) throw new Error(`stripe ${path} failed: ${body.error?.message ?? res.status}`);
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${this.secretKey}`,
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(params).toString(),
+      });
+    } catch (err) {
+      // DNS/TLS/reset — Stripe never answered. Status 0 keeps `rejected:false`, so the api maps this
+      // to `stripe_unavailable`; a raw transport throw must never look like a request-shape refusal.
+      throw new StripeRequestError(path, 0, err instanceof Error ? err.message : String(err));
+    }
+    const body = (await res.json().catch(() => null)) as
+      | (Record<string, unknown> & { error?: { message?: string; type?: string; code?: string } })
+      | null;
+    if (!res.ok) {
+      throw new StripeRequestError(
+        path,
+        res.status,
+        body?.error?.message ?? String(res.status),
+        body?.error?.type,
+        body?.error?.code,
+      );
+    }
+    if (body == null) throw new StripeRequestError(path, res.status, "unparseable Stripe response");
     return body;
   }
 
@@ -116,12 +163,23 @@ export class FetchStripePort implements StripePort {
       "metadata[billing_account_id]": req.billingAccountId,
       "metadata[workspace_id]": req.workspaceId,
       client_reference_id: req.billingAccountId,
-      // Stripe Tax seam (§14.2): automatic tax on the address Checkout collects.
-      "automatic_tax[enabled]": "true",
-      "customer_update[address]": "auto",
+      // Stripe Tax seam (§14.2): enabled only when the operator activated a Tax registration (the
+      // `automaticTax` option) — otherwise the session is tax-free, never a fabricated charge.
+      "automatic_tax[enabled]": this.opts.automaticTax === true ? "true" : "false",
     };
-    if (req.customerId) params.customer = req.customerId;
-    else if (req.customerEmail) params.customer_email = req.customerEmail;
+    // BILL.3 (prod finding): `customer_update` is only valid WITH `customer`/`customer_account` —
+    // sending it beside `customer_email` 400s the whole session (`customer_update can only be used
+    // with customer`), which is exactly why every prod checkout returned "no checkout URL".
+    if (req.customerId) {
+      params.customer = req.customerId;
+      params["customer_update[address]"] = "auto";
+    } else {
+      if (req.customerEmail) params.customer_email = req.customerEmail;
+      // payment-mode guest checkout: mint the Customer so `session.customer` resolves on the webhook
+      // (the account can then reach the Portal). Not a subscription-mode param — Stripe always makes
+      // a customer there.
+      if (req.kind !== "subscribe") params.customer_creation = "always";
+    }
     if (req.require3ds) params["payment_method_options[card][request_three_d_secure]"] = "any";
     if (req.pack) {
       params["line_items[0][price_data][currency]"] = "usd";
