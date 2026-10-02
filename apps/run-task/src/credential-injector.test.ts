@@ -5,6 +5,7 @@ import { startCredentialInjector, type CredentialInjector } from "./credential-i
 import {
   PHASE_CLASS_HEADER,
   PROXY_CREDENTIAL_HEADER,
+  STEP_HEADER,
   injectProxyCredential,
   stampPhaseClass,
   validateProxyRequest,
@@ -136,6 +137,35 @@ describe("startCredentialInjector (D-P0.15f-2 — the harness-side credential pa
     phaseClass = undefined;
     await fetch(`${injector.url}/v1/messages`, { method: "POST", body: "{}" });
     expect(upstream.received.headers[PHASE_CLASS_HEADER]).toBeUndefined();
+  });
+
+  it("RPT.1 — stamps `x-rhema-step: step:<key>` per request and drops any agent-supplied copy", async () => {
+    upstream = await startFakeUpstream();
+    let stepKey: string | undefined = "checking_claims";
+    injector = await startCredentialInjector({
+      credential: CREDENTIAL,
+      upstreamBaseUrl: upstream.url,
+      stepKey: () => stepKey,
+    });
+
+    // the agent's forged step attribution is replaced, never trusted (misattribution would corrupt the
+    // Level-4 drill-down the report builds on `usage_records.step_id`).
+    await fetch(`${injector.url}/v1/messages`, {
+      method: "POST",
+      headers: { [STEP_HEADER]: "step:editors_letter" }, // the agent claiming a different phase
+      body: "{}",
+    });
+    expect(upstream.received.headers[STEP_HEADER]).toBe("step:checking_claims");
+
+    // the phase boundary flips the stamp live on the NEXT request.
+    stepKey = "editors_letter";
+    await fetch(`${injector.url}/v1/messages`, { method: "POST", body: "{}" });
+    expect(upstream.received.headers[STEP_HEADER]).toBe("step:editors_letter");
+
+    // no step bound → the header is absent (usage rows land unattributed rather than misattributed).
+    stepKey = undefined;
+    await fetch(`${injector.url}/v1/messages`, { method: "POST", body: "{}" });
+    expect(upstream.received.headers[STEP_HEADER]).toBeUndefined();
   });
 });
 

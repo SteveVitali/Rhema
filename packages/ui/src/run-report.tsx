@@ -8,7 +8,8 @@ import type { ReactNode } from "react";
 import type {
   RunReportView,
   RunReportAdvancedView,
-  ReportFlagKey,
+  ReportFlag,
+  ReportDifference,
   PhaseStatus,
 } from "@rhema/findings-core";
 
@@ -28,8 +29,18 @@ export interface RunReportLabels {
   /** seat split line, e.g. (seat, credits, share) => "editor — 300 cr (73%)". */
   readonly seatSplitLine: (seat: string, credits: number, share: number) => string;
   readonly flagsHeading: string;
-  /** resolve a flag key to its sentence (the copy table words each controlled key). */
-  readonly flagLabel: (key: ReportFlagKey) => string;
+  /** resolve a flag to its sentence (the copy table words each controlled key, interpolating the
+   *  server-computed figures the flag carries — RPT.1). */
+  readonly flagLabel: (flag: ReportFlag) => string;
+  /**
+   * RPT.1 (§14.4/§14.5; REQ-SPEC-32) — the metered-vs-charged reconciliation lines, one per reasoned
+   * difference ("you were not charged for the overrun", "…covered by your trial", per-refund lines).
+   * Rendered under the estimate line; the metered figure itself rides `meteredLine`.
+   */
+  readonly meteredLine?: (metered: number, charged: number) => string;
+  readonly differenceLabel?: (d: ReportDifference) => string;
+  /** RPT.1 (§15.3) — the worked-example banner on a Showcase-seeded run's report. */
+  readonly workedExampleLabel?: string;
   /** "Claims verified" line, e.g. (checked, verified, perClaim) => "56 checked · 41 verified · 10 cr each". */
   readonly claimsLine: (checked: number, verified: number, perVerified: number | null) => string;
   readonly driversHeading: string;
@@ -85,9 +96,33 @@ export function RunReport({
   return (
     <article id="report" data-run-report={view.runId} style={{ fontSize: "14px" }}>
       <h2 style={{ fontSize: "18px" }}>{L.heading}</h2>
+      {/* RPT.1 (§15.3) — a Showcase-seeded run's report announces itself a worked example. */}
+      {view.workedExample === true && L.workedExampleLabel != null ? (
+        <p data-worked-example style={{ fontSize: "13px", color: "var(--state-running)", fontWeight: 600 }}>
+          {L.workedExampleLabel}
+        </p>
+      ) : null}
       <p data-estimate-line style={{ fontVariantNumeric: "tabular-nums", color: "var(--shell-fg)" }}>
         {L.estimateLine(view.spentCredits, view.estimateCredits, view.estimateRatio)}
       </p>
+      {/* RPT.1 — the metered figure + each reasoned metered-vs-charged difference (§14.4 wording). */}
+      {L.meteredLine && view.meteredCredits !== view.spentCredits ? (
+        <p data-metered-line style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+          {L.meteredLine(view.meteredCredits, view.spentCredits)}
+        </p>
+      ) : null}
+      {view.differences.length > 0 && L.differenceLabel != null ? (
+        <ul data-differences style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+          {view.differences.map((d, i) => {
+            const diffLabel = L.differenceLabel;
+            return (
+              <li key={i} data-difference={d.key} style={{ padding: "2px 0" }}>
+                {diffLabel?.(d)}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
       {view.refundedCredits > 0 && L.refundLine ? (
         <p data-refund style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{L.refundLine(view.refundedCredits)}</p>
       ) : null}
@@ -141,8 +176,8 @@ export function RunReport({
         <>
           <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)" }}>{L.flagsHeading}</h3>
           <ul data-flags style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "13px" }}>
-            {view.flags.map((f) => (
-              <li key={f} data-flag={f} style={{ padding: "2px 0" }}>
+            {view.flags.map((f, i) => (
+              <li key={i} data-flag={f.key} style={{ padding: "2px 0" }}>
                 {L.flagLabel(f)}
               </li>
             ))}

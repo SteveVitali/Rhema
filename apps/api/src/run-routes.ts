@@ -9,6 +9,7 @@ import type { DecisionAction, WorkflowKey } from "@rhema/contracts";
 import {
   createRun,
   heartbeat,
+  beginStep,
   postEvents,
   commitStep,
   failStep,
@@ -1220,6 +1221,26 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           attempt: run.attempt,
           workspaceId: run.workspaceId,
           events: body.events ?? [],
+        }),
+      );
+    });
+  });
+
+  // RPT.1 — the phase's real start fact (§5.5/§14.5): the pod calls it as the phase's work begins;
+  // it upserts the step row running + emits `step.started`, so the card's phase flips live and the
+  // committed row carries a real ended−started duration. Token-authed + attempt-fenced, idempotent.
+  internal.post("/runs/:id/steps/:key/begin", (c) => {
+    const run = c.get("run");
+    return guard(c, async () => {
+      const body = (await c.req.json().catch(() => ({}))) as { ordinal?: number; of?: number };
+      return c.json(
+        await beginStep(deps, {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+          stepKey: c.req.param("key"),
+          ordinal: body.ordinal ?? 0,
+          of: body.of ?? 1,
         }),
       );
     });

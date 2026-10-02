@@ -59,21 +59,76 @@ export type ReportFlagKey =
   | "under_estimate"
   | "retries";
 
+/**
+ * RPT.1 (§14.5 "flags, computed server-side") — a flag carries the reconciled figure(s) its templated
+ * sentence interpolates: the named phase, a 0–100 share, a spent/estimate ratio, or a count. Copy
+ * holds the sentence template per key; the UI fills only these numbers — no client-computed claims.
+ */
+export interface ReportFlag {
+  readonly key: ReportFlagKey;
+  /** the phase the sentence names (the phase the share/tier belongs to), when it names one. */
+  readonly phase?: string;
+  /** a count the sentence cites — verified claims, or the extra attempts behind `retries`. */
+  readonly count?: number;
+  /** the 0–100 spend share the sentence cites (the cost-share flags). */
+  readonly sharePct?: number;
+  /** the spent/estimate ratio the sentence cites (the estimate flags). */
+  readonly ratio?: number;
+}
+
+/**
+ * RPT.1 (§14.4/§14.5; Manifest #14, REQ-SPEC-32) — one reasoned reconciliation line between the
+ * METERED burn (Σ usage_records source='proxy') and the CHARGED figure (Σ debits − Σ refunds). Every
+ * credit on a report is charged, refunded, absorbed, or labelled with its reason — never an
+ * unexplained gap, and never an implied charge that did not happen (Manifest #7).
+ */
+export type ReportDifferenceKey =
+  /** metered burn ran past the cap — "you were not charged for the overrun" (the §14.4 precedent). */
+  | "cap"
+  /** metered burn the platform absorbed (cap-clamp residue, failed-run absorb, settle residue). */
+  | "absorbed"
+  /** charged credits later returned — one row per ledger refund (carrying the ledger's reason text). */
+  | "refund"
+  /** metered burn covered by the run's entitlement (e.g. the trial's included review). */
+  | "entitlement"
+  /** charged on the committed step figures — a pre-flip/modelled-debit run, or the claim-floor charge. */
+  | "committed"
+  /** the sdk's own token estimate diverged from the proxy meter — a display-only cross-check. */
+  | "cross_check";
+
+export interface ReportDifference {
+  readonly key: ReportDifferenceKey;
+  /** the credits the line explains (refund = credits returned; cross_check = the sdk figure compared). */
+  readonly credits: number;
+  /** free-text attribution when the ledger carries one (refund reasons); bounded, never prompt text. */
+  readonly reason?: string;
+}
+
 /** The Level-3 report head — what the §5.5 "Run report" link opens. */
 export interface RunReportView {
   readonly runId: string;
   readonly workflow: string;
   readonly state: RunState;
   readonly estimateCredits: number;
+  /**
+   * RPT.1 (REQ-BILL-6/9) — the CHARGED figure: Σ ledger debits − Σ refunds for this run. The report
+   * equals the ledger; the committed step claim alone is never presented as "cost".
+   */
   readonly spentCredits: number;
+  /** RPT.1 — the METERED figure: Σ usage_records(source='proxy') — the §12.7 meter of record. */
+  readonly meteredCredits: number;
+  /** RPT.1 — the reasoned metered-vs-charged reconciliation (empty when they match exactly). */
+  readonly differences: readonly ReportDifference[];
   readonly capCredits: number;
   readonly refundedCredits: number;
+  /** RPT.1 (§15.3) — a Showcase-seeded run marks its report a worked example, never real usage. */
+  readonly workedExample?: boolean;
   /** estimate→actual as a fraction (>1 overran); null when no estimate exists. */
   readonly estimateRatio: number | null;
   readonly phases: readonly ReportPhase[];
   /** credits by seat (the seat split), largest first. */
   readonly seatSplit: readonly { seat: string; credits: number; share: number }[];
-  readonly flags: readonly ReportFlagKey[];
+  readonly flags: readonly ReportFlag[];
   /** claims checked × verified and the run's cost-per-verified-claim (null when the run checked none). */
   readonly claims: { readonly checked: number; readonly verified: number; readonly creditsPerVerified: number | null } | null;
   /** "What drove it" — the top cost drivers as controlled keys + a numeric detail. */
@@ -113,9 +168,21 @@ export interface BuildReportInput {
   readonly workflow: string;
   readonly state: RunState;
   readonly estimateCredits: number;
+  /** RPT.1 — the CHARGED figure: Σ credit_ledger debits − Σ refunds for this run (the route reads the
+   *  ledger inside the report tx; `runs.spent_credits` is the committed claim, not the charge). */
   readonly spentCredits: number;
   readonly capCredits: number;
   readonly refundedCredits: number;
+  /** RPT.1 — the ledger refund rows behind `refundedCredits` (each becomes a `refund` difference line). */
+  readonly refunds?: readonly { credits: number; reason: string | null }[];
+  /** RPT.1 — Σ `adjustment` credits the platform absorbed for this run (cap-clamp + residue). */
+  readonly absorbedCredits?: number;
+  /** RPT.1 — the run's charge was covered by an entitlement (runs.entitlement_id set). */
+  readonly entitlement?: boolean;
+  /** RPT.1 — the sdk's own committed-usage estimate (display-only cross-check vs the proxy meter). */
+  readonly sdkEstimateCredits?: number;
+  /** RPT.1 — a Showcase-seeded run (§15.3): the report labels itself a worked example. */
+  readonly workedExample?: boolean;
   /** every manifest phase for the workflow — including rigor-disabled ones (they report "off", REQ-IDE-12). */
   readonly phases: readonly { key: string; ordinal: number; status: PhaseStatus; seat?: string | null }[];
   readonly steps: readonly ReportStepRow[];
@@ -130,9 +197,10 @@ export interface BuildReportInput {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
-/** The report's flags — each a deterministic predicate over the rows (§14.5's flag list). */
-export function reportFlags(input: BuildReportInput): ReportFlagKey[] {
-  const flags: ReportFlagKey[] = [];
+/** The report's flags — each a deterministic predicate over the rows (§14.5's flag list), carrying the
+ *  reconciled figures its templated sentence interpolates (RPT.1). */
+export function reportFlags(input: BuildReportInput): ReportFlag[] {
+  const flags: ReportFlag[] = [];
   const phaseCredits = new Map<string, number>();
   const phaseSearchFetch = new Map<string, { searches: number; fetches: number }>();
   for (const u of input.usage) {
@@ -152,20 +220,31 @@ export function reportFlags(input: BuildReportInput): ReportFlagKey[] {
   const total = Math.max(1, input.spentCredits);
 
   // fact_check_dominated — verification phases carried the majority of spend.
-  const verify = [...phaseCredits.entries()]
-    .filter(([k]) => /fact|verify|verification|claim/i.test(k))
-    .reduce((a, [, c]) => a + c, 0);
-  if (verify / total > 0.5) flags.push("fact_check_dominated");
+  const verifyEntries = [...phaseCredits.entries()].filter(([k]) => /fact|verify|verification|claim/i.test(k));
+  const verify = verifyEntries.reduce((a, [, c]) => a + c, 0);
+  if (verify / total > 0.5) {
+    flags.push({
+      key: "fact_check_dominated",
+      sharePct: Math.round((verify / total) * 100),
+      ...(verifyEntries[0] ? { phase: verifyEntries[0][0] } : {}),
+      ...(input.claims != null && input.claims.verified > 0 ? { count: input.claims.verified } : {}),
+    });
+  }
 
   // long_draft — the drafting phase took a large share (long piece / heavy synthesis).
-  const draftCredits = [...phaseCredits.entries()]
-    .filter(([k]) => /draft|writing|write/i.test(k))
-    .reduce((a, [, c]) => a + c, 0);
-  if (draftCredits / total > 0.4) flags.push("long_draft");
+  const draftEntries = [...phaseCredits.entries()].filter(([k]) => /draft|writing|write/i.test(k));
+  const draftCredits = draftEntries.reduce((a, [, c]) => a + c, 0);
+  if (draftCredits / total > 0.4) {
+    flags.push({
+      key: "long_draft",
+      sharePct: Math.round((draftCredits / total) * 100),
+      ...(draftEntries[0] ? { phase: draftEntries[0][0] } : {}),
+    });
+  }
 
   // discourse_map — the discourse-mapping phase ran (it is off below Standard).
   const discourse = input.steps.find((s) => /discourse|field/i.test(s.phase) && s.state === "done");
-  if (discourse) flags.push("discourse_map");
+  if (discourse) flags.push({ key: "discourse_map", phase: discourse.phase });
 
   // second_read_model — the second read ran on a model tier different from the run's default.
   const secondRead = input.steps.find((s) => /second/i.test(s.phase) && s.state === "done");
@@ -173,20 +252,90 @@ export function reportFlags(input: BuildReportInput): ReportFlagKey[] {
     const tiers = new Set(
       input.usage.filter((u) => u.phase === secondRead.phase).map((u) => u.modelTier),
     );
-    if ([...tiers].some((t) => t !== input.modelTier)) flags.push("second_read_model");
+    if ([...tiers].some((t) => t !== input.modelTier)) {
+      flags.push({ key: "second_read_model", phase: secondRead.phase });
+    }
   }
 
   // over_estimate / under_estimate — actual vs the run's estimate (§14.5's estimate-vs-actual flags).
   if (input.estimateCredits > 0) {
     const ratio = input.spentCredits / input.estimateCredits;
-    if (ratio <= 0.6) flags.push("over_estimate");
-    else if (ratio > 1.1) flags.push("under_estimate");
+    if (ratio <= 0.6) flags.push({ key: "over_estimate", ratio: round(ratio) });
+    else if (ratio > 1.1) flags.push({ key: "under_estimate", ratio: round(ratio) });
   }
 
-  // retries — any step needed more than one attempt.
-  if (input.steps.some((s) => s.attempt > 1)) flags.push("retries");
+  // retries — extra attempts, with the count and the phase(s) they landed on.
+  const retried = input.steps.filter((s) => s.attempt > 1);
+  if (retried.length > 0) {
+    flags.push({
+      key: "retries",
+      count: retried.reduce((a, s) => a + (s.attempt - 1), 0),
+      phase: retried.map((s) => s.phase).join(","),
+    });
+  }
 
   return flags;
+}
+
+/**
+ * The metered-vs-charged reconciliation (RPT.1; §14.4 precedent). `metered` is Σ proxy usage;
+ * `charged` is Σ debits − Σ refunds. A positive gap is attributed to the entitlement, then the cap
+ * (charged already sits at the cap), then recorded absorbed adjustments; any residue is charged on the
+ * committed figures (`committed` covers both directions: a claim-floor charge and a pre-flip run).
+ * Refunds are listed per row; the sdk estimate cross-check reports only divergence.
+ */
+export function reportDifferences(input: BuildReportInput, metered: number): ReportDifference[] {
+  const charged = input.spentCredits;
+  const out: ReportDifference[] = [];
+
+  // The gap the report must explain is `metered − charged` (charged = Σ debits − Σ refunds — the
+  // ledger's own absorb arithmetic is net-of-refund, so a refunded failure books the WHOLE metered
+  // burn). Attribution order: the cap (the above-cap metered burn is never chargeable), the recorded
+  // absorbed adjustments, then the refund rows themselves (they explain their own slice), then any
+  // residue the committed figures carried (`committed` covers both directions below).
+  if (input.entitlement && metered > charged) {
+    out.push({ key: "entitlement", credits: metered - charged });
+  } else {
+    let gap = metered - charged;
+    if (gap > 0) {
+      if (input.capCredits > 0 && charged >= input.capCredits && metered > input.capCredits) {
+        const capPart = metered - input.capCredits;
+        out.push({ key: "cap", credits: capPart });
+        gap -= capPart;
+      }
+      const absorbed = input.absorbedCredits ?? 0;
+      if (gap > 0 && absorbed > 0) {
+        const a = Math.min(absorbed, gap);
+        out.push({ key: "absorbed", credits: a });
+        gap -= a;
+      }
+      if (gap > 0 && input.refundedCredits > 0) {
+        gap = Math.max(0, gap - input.refundedCredits); // the refund rows below carry this slice
+      }
+      if (gap > 0) {
+        // metered burn never debited and not otherwise attributed — the committed figures carried
+        // the charge instead (a pre-flip/modelled-debit run, or settle residue).
+        out.push({ key: "committed", credits: gap });
+      }
+    } else if (gap < 0) {
+      // charged above the meter — the committed step claim exceeded the metered burn (a pre-flip or
+      // claim-floor charge). The difference is stated, never silently folded into the headline.
+      out.push({ key: "committed", credits: charged - metered });
+    }
+  }
+
+  for (const r of input.refunds ?? []) {
+    if (r.credits > 0) {
+      out.push({ key: "refund", credits: r.credits, ...(r.reason ? { reason: r.reason } : {}) });
+    }
+  }
+
+  const sdk = input.sdkEstimateCredits;
+  if (sdk != null && metered > 0 && Math.abs(sdk - metered) / metered > 0.02) {
+    out.push({ key: "cross_check", credits: sdk });
+  }
+
+  return out;
 }
 
 /**
@@ -238,7 +387,11 @@ export function buildRunReport(input: BuildReportInput): RunReportView {
     .map(([seat, credits]) => ({ seat, credits, share: round(credits / totalSeat) }))
     .sort((a, b) => b.credits - a.credits);
 
+  // RPT.1 — the metered figure is the proxy aggregate (the `usage` rows are contractually proxy-sourced;
+  // the route's WHERE pins it — a sdk_* row folded in would double-count, AC's immunity check).
+  const meteredCredits = input.usage.reduce((a, u) => a + u.credits, 0);
   const flags = reportFlags(input);
+  const differences = reportDifferences(input, meteredCredits);
 
   // "What drove it" — the two largest phase shares by name, then the fired flags.
   const drivers: { key: ReportFlagKey | "phase_share" | "within_estimate"; phase?: string; share?: number }[] = phases
@@ -247,11 +400,11 @@ export function buildRunReport(input: BuildReportInput): RunReportView {
     .sort((a, b) => b.credits - a.credits)
     .slice(0, 2)
     .map((p) => ({ key: "phase_share" as const, phase: p.key, share: round(p.credits / Math.max(1, input.spentCredits)) }));
-  for (const f of flags) drivers.push({ key: f });
+  for (const f of flags) drivers.push({ key: f.key });
   if (drivers.length === 0) drivers.push({ key: "within_estimate" });
 
   // Suggested guidance — one controlled key per fired flag the copy table words for the next round.
-  const suggestedGuidance = flags.map((f) => `guidance.${f}`);
+  const suggestedGuidance = flags.map((f) => `guidance.${f.key}`);
 
   const claims =
     input.claims != null && input.claims.checked > 0
@@ -272,6 +425,9 @@ export function buildRunReport(input: BuildReportInput): RunReportView {
     capCredits: input.capCredits,
     refundedCredits: input.refundedCredits,
     estimateRatio: input.estimateCredits > 0 ? round(input.spentCredits / input.estimateCredits) : null,
+    meteredCredits,
+    differences,
+    ...(input.workedExample === true ? { workedExample: true } : {}),
     phases,
     seatSplit,
     flags,

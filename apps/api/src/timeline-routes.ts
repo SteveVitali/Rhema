@@ -320,6 +320,27 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
             ).rows as { run_id: string; refunded: number }[]);
       const refundByRun = new Map(refunds.map((r) => [r.run_id, r.refunded]));
 
+      // RPT.1 (REQ-IDE-11) — a NON-terminal run's SSR meter shows the latest emitted `usage.tick`
+      // (which carries the intra-phase provisional proxy-metered figure), not just the committed
+      // `runs.spent_credits` — a first paint mid-phase is then already correct, and the SSE patch
+      // takes it from there. Terminal runs render committed/final figures.
+      const liveIds = runs.filter((r) => !TERMINAL.has(r.state)).map((r) => r.id);
+      const latestTick =
+        liveIds.length === 0
+          ? []
+          : ((
+              await tx.query(
+                `select distinct on (run_id) run_id,
+                        (payload->>'spentCredits')::int as spent,
+                        coalesce((payload->>'provisional')::boolean, false) as provisional,
+                        (payload->>'capCredits')::int as cap
+                   from run_events where run_id = any($1::text[]) and type = 'usage.tick'
+                   order by run_id, seq desc`,
+                [liveIds],
+              )
+            ).rows as { run_id: string; spent: number; provisional: boolean; cap: number }[]);
+      const tickByRun = new Map(latestTick.map((t) => [t.run_id, t]));
+
       // queue position for queued runs (1 + non-terminal runs created earlier)
       const queuePos = new Map<string, number>();
       for (const r of runs) {
@@ -392,12 +413,18 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
             ]
           : [];
         const phases = phasesForRun(r.workflow, inputs, runSteps, r.state);
+        // RPT.1 — the latest tick is the card's live figure when it moved past the committed total;
+        // its `provisional` marker labels the meter (the committed figure wins ties).
+        const tick = tickByRun.get(r.id);
+        const meterSpent = tick != null && tick.spent > r.spent_credits ? tick.spent : r.spent_credits;
+        const meterProvisional = tick != null && tick.spent > r.spent_credits && tick.provisional;
         const card = buildRunCardView({
           runId: r.id,
           state: r.state,
           phases,
-          spentCredits: r.spent_credits,
+          spentCredits: meterSpent,
           capCredits: r.cap_credits,
+          ...(meterProvisional ? { provisional: true } : {}),
           refundedCredits: refundByRun.get(r.id) ?? 0,
           ...(r.started_at != null
             ? {
@@ -577,13 +604,14 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       const run = (
         await tx.query(
           `select r.id, r.project_id, r.workflow, r.state, r.estimate_credits, r.cap_credits,
-                  r.spent_credits, r.model_tier, r.inputs, r.rate_table_version, p.slug as project_slug
+                  r.spent_credits, r.model_tier, r.inputs, r.rate_table_version, r.entitlement_id,
+                  p.slug as project_slug, coalesce(p.showcase, false) as showcase
              from runs r left join projects p on p.id = r.project_id
             where r.id = $1 and r.workspace_id = $2`,
           [runId, principal.workspaceId],
         )
       ).rows[0] as
-        | { id: string; project_id: string | null; project_slug: string | null; workflow: string; state: RunState; estimate_credits: number; cap_credits: number; spent_credits: number; model_tier: string; inputs: Record<string, unknown> | string; rate_table_version: number | null }
+        | { id: string; project_id: string | null; project_slug: string | null; workflow: string; state: RunState; estimate_credits: number; cap_credits: number; spent_credits: number; model_tier: string; inputs: Record<string, unknown> | string; rate_table_version: number | null; entitlement_id: string | null; showcase: boolean }
         | undefined;
       if (!run) return { kind: "not_found" } as const;
 
@@ -612,7 +640,12 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
                   sum(coalesce(u.cache_read_tokens, 0))::bigint as cache_read_tokens,
                   sum(coalesce(u.cache_write_tokens, 0))::bigint as cache_write_tokens,
                   array_agg(u.provider_request_id) filter (where u.provider_request_id is not null) as provider_request_ids
-             from usage_records u left join steps s on s.id = u.step_id
+             from usage_records u
+             left join steps s on s.run_id = u.run_id
+               -- RPT.1: the proxy rows the pod stamps step:<key> (x-rhema-step) AND the orchestrator's
+               -- step_<id> form both resolve; without the former every drill-down row sat unattributed
+               -- (the "Advanced is empty" defect — join never matched).
+               and (u.step_id = s.id or u.step_id = 'step:' || s.phase)
             where u.run_id = $1 and u.source = 'proxy'
             group by s.phase, u.role, u.subagent_label, u.model, u.model_tier
             order by s.phase nulls last, u.role`,
@@ -634,13 +667,41 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         provider_request_ids: string[] | null;
       }[];
 
-      const refunds = (
+      // RPT.1 (REQ-BILL-6/9; §14.4) — the report's "cost" is the LEDGER, not the committed claim:
+      // charged = Σ debit − Σ refund; absorbed = Σ adjustment(reason='absorbed'); each refund row
+      // carries its ledger reason into the reconciliation lines. `runs.spent_credits` stays the
+      // committed-claim figure — the report never presents it as the charge.
+      const ledgerRows = (
         await tx.query(
-          `select coalesce(sum((payload->>'credits')::int), 0)::int as refunded
-             from run_events where run_id = $1 and type = 'cost.refunded'`,
+          `select kind, reason, credits::int as credits
+             from credit_ledger where run_id = $1 and kind in ('debit','refund','adjustment')`,
           [runId],
         )
-      ).rows[0] as { refunded: number } | undefined;
+      ).rows as { kind: string; reason: string | null; credits: number }[];
+      let debited = 0;
+      let refundedTotal = 0;
+      let absorbedCredits = 0;
+      const refundRows: { credits: number; reason: string | null }[] = [];
+      for (const l of ledgerRows) {
+        if (l.kind === "debit") debited += l.credits;
+        else if (l.kind === "refund") {
+          refundedTotal += l.credits;
+          refundRows.push({ credits: l.credits, reason: l.reason });
+        } else if (l.reason === "absorbed") absorbedCredits += l.credits;
+      }
+      // RPT.1 — the sdk's own figure of record for the display-only cross-check line (§12.7's twin;
+      // never summed into any total).
+      const sdkEstimate = Number(
+        (
+          (
+            await tx.query(
+              `select coalesce(sum(credits), 0)::int as n from usage_records
+                 where run_id = $1 and source = 'sdk_estimate'`,
+              [runId],
+            )
+          ).rows[0] as { n: number }
+        ).n,
+      );
 
       const claims = (
         await tx.query(
@@ -700,9 +761,16 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         workflow: run.workflow,
         state: run.state,
         estimateCredits: run.estimate_credits,
-        spentCredits: run.spent_credits,
+        // RPT.1 — charged = Σ ledger debits − Σ refunds (the report equals the ledger, REQ-BILL-6).
+        // `run.spent_credits` (the committed claim) is deliberately NOT the headline.
+        spentCredits: debited - refundedTotal,
         capCredits: run.cap_credits,
-        refundedCredits: refunds?.refunded ?? 0,
+        refundedCredits: refundedTotal,
+        refunds: refundRows,
+        absorbedCredits,
+        entitlement: run.entitlement_id != null,
+        sdkEstimateCredits: sdkEstimate > 0 ? sdkEstimate : undefined,
+        ...(run.showcase ? { workedExample: true } : {}),
         phases,
         steps: reportSteps,
         usage: reportUsage,

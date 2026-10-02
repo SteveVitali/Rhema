@@ -16,6 +16,7 @@ import {
   presentedAgentId,
   presentedCredential,
   presentedPhaseClass,
+  presentedStep,
 } from "./credential.js";
 import {
   buildRequestFetchLogRow,
@@ -444,6 +445,9 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
           agentId,
           id: newId(),
           ts: nowIso(),
+          // RPT.1 (§14.5 Level 4) — the harness-stamped step key (`x-rhema-step`, agent-forge-proof via
+          // the credential injector) attributes this metered burn to the phase that made it.
+          stepId: presentedStep(req.headers),
           // the provider's per-request id — the usage.reconcile join key (REQ-BILL-13).
           providerRequestId: headerValue(upstream.headers, "request-id") ?? null,
         });

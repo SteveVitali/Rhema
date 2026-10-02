@@ -5,6 +5,7 @@ import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb
 import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
   audit,
+  beginStep,
   commitStep,
   failRun,
   failStep,
@@ -1095,5 +1096,169 @@ describe("DEF.2/F5 — committed vs metered: incremental debits + terminal settl
     expect(settles.map((o) => (o.args as { credits: number }).credits)).toEqual([25]);
     expect((settles[0]!.args as { idempotencyKey: string }).idempotencyKey).toBe("debit:run1:settle:1");
     expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// RPT.1 — the intra-phase meter (heartbeat-carried provisional usage.tick), the phase's real start
+// (beginStep), and truthful committed durations (server-derived ended−started).
+
+describe("RPT.1 — beginStep + the live intra-phase meter (REQ-IDE-11; §12.7; Manifest #10)", () => {
+  const seedUsage = (id: string, runId: string, credits: number, stepId = "step:intake") =>
+    db.client.query(
+      `insert into usage_records(id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role,
+         provider, model, model_tier, rate_table_version, list_cost_usd, credits, source)
+       values ($1, now(), $2, $3, $4, 1, $5, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, $6, 'proxy')`,
+      [id, seed.workspaceId, seed.billingAccountId, runId, stepId, credits],
+    );
+  // the heartbeat's tick dedupe reads the DURABLE run_events rows — so tests bind the SqlEventWriter
+  // (the in-memory writer would never back the "last tick" read) and read ticks back off the table.
+  const sqlDeps = (): TestDeps => ({ ...deps, eventWriter: new SqlEventWriter() });
+  const usageTicks = async (runId: string) =>
+    (
+      (await db.client.query(
+        "select payload from run_events where run_id = $1 and type = 'usage.tick' order by seq",
+        [runId],
+      )).rows as { payload: string | { spentCredits: number; capCredits: number; provisional?: boolean } }[]
+    ).map((r) => (typeof r.payload === "string" ? JSON.parse(r.payload) : r.payload));
+
+  it("beats emit ascending provisional usage.tick payloads as proxy rows land mid-phase", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running", capCredits: 840 });
+    await beginStep(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3 });
+
+    // three metered proxy responses land inside ONE phase — each beat publishes the new total.
+    await seedUsage("ur_1", "run1", 12);
+    await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    await seedUsage("ur_2", "run1", 18);
+    await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    await seedUsage("ur_3", "run1", 25);
+    await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+
+    const ticks = await usageTicks("run1");
+    expect(ticks.map((t) => t.spentCredits)).toEqual([12, 30, 55]); // strictly ascending, ≥3
+    expect(ticks.every((t) => t.provisional === true)).toBe(true);
+    expect(ticks.every((t) => t.capCredits === 840)).toBe(true);
+
+    // a beat with no new metered usage appends NOTHING (the meter is dedup'd, not noisy).
+    const before = (await usageTicks("run1")).length;
+    await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    expect((await usageTicks("run1")).length).toBe(before);
+
+    // the committed figure replaces the provisional one: after commit the tick loses its marker.
+    await commitStep(d, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3,
+      credits: 55, result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "advance" },
+    });
+    await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    const last = (await usageTicks("run1")).at(-1)!;
+    expect(last.provisional).toBe(false);
+    expect(last.spentCredits).toBe(55);
+  });
+
+  it("the provisional figure never exceeds the cap line", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running", capCredits: 40 });
+    await seedUsage("ur_1", "run1", 90); // metered past the cap — the clamp keeps the tick at 40
+    await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    expect((await usageTicks("run1")).at(-1)!.spentCredits).toBe(40);
+  });
+
+  it("no tick emits on the first beat (provisioning → running) or for a missing run", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "provisioning" });
+    const res = await heartbeat(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId });
+    expect(res.state).toBe("running");
+    expect(await usageTicks("run1")).toHaveLength(0);
+  });
+
+  it("beginStep stamps steps.state='running' + emits step.started once; a duplicate is a no-op", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    const t0 = deps.clock.now();
+    const res = await beginStep(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3 });
+    expect(res.ok).toBe(true);
+    const row = (await db.client.query("select state, started_at, ended_at from steps where run_id = 'run1' and ordinal = 0")).rows[0] as {
+      state: string; started_at: Date; ended_at: Date | null;
+    };
+    expect(row.state).toBe("running");
+    expect(new Date(row.started_at).getTime()).toBe(t0.getTime());
+    expect(row.ended_at).toBeNull();
+    const started = (await db.client.query(
+      "select payload from run_events where run_id = 'run1' and type = 'step.started'",
+    )).rows;
+    expect(started).toHaveLength(1);
+    expect((started[0] as { payload: { phase: string; ordinal: number; of: number } }).payload).toMatchObject(
+      { phase: "intake", ordinal: 0, of: 3 },
+    );
+
+    // a second begin while running: no re-stamp, no duplicate event.
+    deps.clock.advance(5_000);
+    await beginStep(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3 });
+    const after = (await db.client.query("select started_at from steps where run_id = 'run1' and ordinal = 0")).rows[0] as { started_at: Date };
+    expect(new Date(after.started_at).getTime()).toBe(t0.getTime());
+    expect((await db.client.query("select 1 from run_events where run_id = 'run1' and type = 'step.started'")).rows).toHaveLength(1);
+  });
+
+  it("beginStep fences a stale attempt (REQ-RUN-15)", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running", currentAttempt: 2 });
+    await expect(
+      beginStep(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3 }),
+    ).rejects.toBeInstanceOf(StaleTaskError);
+  });
+
+  it("a committed step's ended_at − started_at is the phase's real duration; step.finished carries it", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await beginStep(d, { runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3 });
+    deps.clock.advance(2 * 60_000); // the phase ran 2 minutes
+    await commitStep(d, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3,
+      credits: 12, result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "advance" },
+    });
+    const row = (await db.client.query(
+      "select extract(epoch from (ended_at - started_at)) * 1000 as ms from steps where run_id = 'run1' and ordinal = 0",
+    )).rows[0] as { ms: number };
+    expect(Math.round(row.ms)).toBe(120_000);
+    const finished = (await db.client.query(
+      "select payload from run_events where run_id = 'run1' and type = 'step.finished'",
+    )).rows[0] as { payload: { phase: string; durationMs?: number } };
+    expect(finished.payload).toMatchObject({ phase: "intake", durationMs: 120_000 });
+  });
+
+  it("a commit WITHOUT a begin stamps now for both ends → equal timestamps → no durationMs (renders —)", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await commitStep(d, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3,
+      credits: 12, result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "advance" },
+    });
+    const row = (await db.client.query(
+      "select started_at, ended_at from steps where run_id = 'run1' and ordinal = 0",
+    )).rows[0] as { started_at: Date; ended_at: Date };
+    expect(new Date(row.ended_at).getTime()).toBe(new Date(row.started_at).getTime()); // legacy shape
+    const finished = (await db.client.query(
+      "select payload from run_events where run_id = 'run1' and type = 'step.finished'",
+    )).rows[0] as { payload: { durationMs?: number } };
+    expect(finished.payload.durationMs).toBeUndefined();
+  });
+
+  it("the caller-measured durationMs is the fallback when no begin row exists", async () => {
+    const d = sqlDeps();
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await commitStep(d, {
+      runId: "run1", attempt: 1, workspaceId: seed.workspaceId, stepKey: "intake", ordinal: 0, of: 3,
+      credits: 12, durationMs: 90_000,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "advance" },
+    });
+    const row = (await db.client.query(
+      "select extract(epoch from (ended_at - started_at)) * 1000 as ms from steps where run_id = 'run1' and ordinal = 0",
+    )).rows[0] as { ms: number };
+    expect(Math.round(row.ms)).toBe(90_000); // started_at back-derived → a real span, not equal stamps
   });
 });

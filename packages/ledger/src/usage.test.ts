@@ -189,3 +189,82 @@ describe("usageLevel4 — the Advanced drill-down", () => {
     expect(rows[0]!.credits).toBe(632); // the meter of record — never 632+553+440+631
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// RPT.1 — Showcase exclusion (§15.3; REQ-GROWTH-11's usage half): the seeded worked-example run leaves
+// every ordinary usage surface — MTD spend, the project rollup, the CSV — while its own report still
+// serves under the worked-example label. And the pod-stamped `step:<key>` attribution joins L4.
+
+describe("RPT.1 — the Showcase run leaves ordinary usage history", () => {
+  it("a showcase project's run never appears in the account MTD total, the project rollup, or the CSV", async () => {
+    await db.pg.query(
+      `insert into projects (id, workspace_id, owner_id, title, slug, showcase)
+       values ('prj_show', $1, $2, 'Showcase', 'showcase', true)`,
+      [WS, USR],
+    );
+    // the seeded Showcase run's fixture figures (3,860 cr) — cap sized so the REQ-BILL-3 clamp holds.
+    await seedRun(db, {
+      runId: "run_show",
+      workspaceId: WS,
+      projectId: "prj_show",
+      capCredits: 10_000,
+    });
+    await seedRun(db, { runId: "run_1", workspaceId: WS, projectId: PRJ });
+    await db.pg.query("update runs set spent_credits = 3860 where id = 'run_show'");
+    await db.pg.query("update runs set spent_credits = 120 where id = 'run_1'");
+    await inTx((tx) =>
+      tx.query(
+        `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key)
+         values ('led_show',$1,$2,'debit',3860,'included','run_show','run','d:show'),
+                ('led_real',$1,$2,'debit',120,'included','run_1','run','d:real')`,
+        [WS, BA],
+      ),
+    );
+
+    const l1 = await usageLevel1(db.client, BA, WS, NOW);
+    expect(l1.monthToDateCredits).toBe(120); // the worked example's 3,860 never enters spend
+
+    const real = await usageLevel2(db.client, WS, PRJ);
+    expect(real.runs.map((r) => r.runId)).toEqual(["run_1"]);
+    const showcase = await usageLevel2(db.client, WS, "prj_show");
+    expect(showcase.runs).toHaveLength(0); // the seeded run is not usage history
+    expect(showcase.totalCredits).toBe(0);
+
+    const csv = await usageCsv(db.client, BA, WS);
+    expect(csv.map((r) => r.runId)).toEqual(["run_1"]);
+    expect(csv.some((r) => r.runId === "run_show")).toBe(false);
+  });
+});
+
+describe("RPT.1 — the Level-4 step attribution join", () => {
+  it("a pod-stamped `step:<key>` resolves the phase the orchestrator row does", async () => {
+    await seedRun(db, { runId: "run_l4b", workspaceId: WS, projectId: PRJ, workflow: "review" });
+    await inTx(async (tx) => {
+      await tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_l4b','run_l4b','checking_claims',2,'done',100,1,now(),now()+interval '2 minutes')`,
+      );
+      for (const [id, stepId, credits] of [
+        ["u_step_a", "st_l4b", 60],               // the orchestrator's own step id
+        ["u_step_b", "step:checking_claims", 40], // the pod-stamped form (x-rhema-step)
+        ["u_step_c", null, 5],                    // unattributed — falls back to the role label
+      ] as const) {
+        await tx.query(
+          `insert into usage_records
+             (id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+              model_tier, rate_table_version, input_tokens, output_tokens, list_cost_usd, credits, source)
+           values ($1, now(), $2, $3, 'run_l4b', 1, $4, 'verifier', 'anthropic', 'm', 'base', 1,
+                   100, 50, 0.1, $5, 'proxy')`,
+          [id, WS, BA, stepId, credits],
+        );
+      }
+    });
+    const rows = await usageLevel4(db.client, WS, "run_l4b");
+    expect(rows).toHaveLength(3);
+    const byId = rows.reduce((s, r) => s + r.credits, 0);
+    expect(byId).toBe(105);
+    const attributed = rows.filter((r) => r.phase === "checking_claims");
+    expect(attributed.reduce((s, r) => s + r.credits, 0)).toBe(100); // both forms resolve the phase
+    expect(rows.find((r) => r.credits === 5)!.phase).toBe("verifier"); // the unattributed fallback
+  });
+});

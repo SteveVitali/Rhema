@@ -61,6 +61,16 @@ export function createHarnessApiClient(cfg: HarnessApiClientConfig): HarnessApiC
       return (await res.json()) as HarnessRunSpec;
     },
 
+    // RPT.1 — the phase's real start fact (steps.state='running' + step.started). Best-effort upstream
+    // in the loop; the commit's measured durationMs is the fallback when a begin call never lands.
+    async beginStep(args: { stepKey: string; ordinal: number; of: number }) {
+      const { status } = await postJson(`/steps/${encodeURIComponent(args.stepKey)}/begin`, {
+        ordinal: args.ordinal,
+        of: args.of,
+      });
+      return { ok: status >= 200 && status < 300 };
+    },
+
     async harvest(args: HarvestCall) {
       const { json } = await postJson<{ producedVersionIds?: string[]; byPath?: Record<string, string>; provisionalCredits?: number }>(
         `/steps/${encodeURIComponent(args.stepKey)}/harvest`,
@@ -88,6 +98,7 @@ export function createHarnessApiClient(cfg: HarnessApiClientConfig): HarnessApiC
           of: args.of,
           producedVersionIds: args.producedVersionIds,
           credits: args.credits,
+          ...(args.durationMs != null ? { durationMs: args.durationMs } : {}),
           result: args.result,
           next: args.next,
         },

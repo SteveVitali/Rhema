@@ -204,3 +204,59 @@ describe("etaBandForPhases (ledger K4 — the running card's ≈ low–high min 
     expect(etaBandForPhases(phases(["done", "done", "off"]), [{ durationMs: 60000 }])).toBeNull();
   });
 });
+
+// -------------------------------------------------------------------------------------------------------------------
+// RPT.1 — the provisional meter (REQ-IDE-11; REQ-SPEC-32(a)): a mid-phase proxy-metered `usage.tick`
+// moves the card's spent figure AND marks it provisional; the committed tick / `cost.final` clears it.
+
+describe("the provisional meter (RPT.1)", () => {
+  it("a provisional usage.tick moves spent and marks the card provisional", () => {
+    const stream: RunEventLike[] = [
+      { type: "run.state_changed", payload: { from: "queued", to: "running" } },
+      { type: "step.started", payload: { phase: "reading_the_piece", ordinal: 1, of: 7 } },
+      { type: "usage.tick", payload: { spentCredits: 60, capCredits: 840, provisional: true } },
+      { type: "usage.tick", payload: { spentCredits: 120, capCredits: 840, provisional: true } },
+    ];
+    const input = deriveRunCardInput("run_1", stream, { phaseKeys: PHASES, capCredits: 840 });
+    expect(input.spentCredits).toBe(120); // the latest tick wins
+    expect(input.provisional).toBe(true);
+    const view = buildRunCardView(input);
+    expect(view.provisional).toBe(true);
+    expect(view.creditFraction).toBeCloseTo(120 / 840, 5);
+  });
+
+  it("a non-provisional tick clears the marker; cost.final is never provisional", () => {
+    const settled: RunEventLike[] = [
+      { type: "usage.tick", payload: { spentCredits: 120, capCredits: 840, provisional: true } },
+      { type: "usage.tick", payload: { spentCredits: 120, capCredits: 840 } }, // the committed catch-up
+    ];
+    expect(deriveRunCardInput("run_1", settled, {}).provisional).toBe(false);
+    const fin: RunEventLike[] = [
+      { type: "usage.tick", payload: { spentCredits: 120, capCredits: 840, provisional: true } },
+      { type: "cost.final", payload: { spentCredits: 120, capCredits: 840 } },
+    ];
+    expect(deriveRunCardInput("run_1", fin, {}).provisional).toBe(false);
+  });
+
+  it("an explicit `provisional` opt wins over a stale stream reading (SSR override)", () => {
+    const view = buildRunCardView({
+      runId: "r",
+      state: "running",
+      phases: [],
+      spentCredits: 100,
+      capCredits: 840,
+      provisional: true,
+    });
+    expect(view.provisional).toBe(true);
+  });
+
+  it("step.finished's durationMs lands on the phase row (and absence stays absent — the '—' render)", () => {
+    const stream: RunEventLike[] = [
+      { type: "step.finished", payload: { phase: "reading_the_piece", ordinal: 1, of: 7, credits: 120, durationMs: 120000 } },
+      { type: "step.finished", payload: { phase: "checking_claims", ordinal: 2, of: 7, credits: 300 } },
+    ];
+    const input = deriveRunCardInput("run_1", stream, { phaseKeys: PHASES });
+    expect(input.phases.find((p) => p.key === "reading_the_piece")?.durationMs).toBe(120000);
+    expect(input.phases.find((p) => p.key === "checking_claims")?.durationMs).toBeUndefined();
+  });
+});

@@ -88,7 +88,7 @@ describe("buildRunReport — Level 3 (§14.5)", () => {
     expect(view.drivers[1]).toMatchObject({ key: "phase_share", phase: "reading_the_piece" });
     expect(view.drivers.some((d) => d.key === "fact_check_dominated")).toBe(true);
     // every fired flag yields a controlled guidance key
-    for (const f of view.flags) expect(view.suggestedGuidance).toContain(`guidance.${f}`);
+    for (const f of view.flags) expect(view.suggestedGuidance).toContain(`guidance.${f.key}`);
   });
 
   it("the Level-3 view carries NO token or provider-id fields (privacy — those are Level-4 only)", () => {
@@ -101,9 +101,9 @@ describe("buildRunReport — Level 3 (§14.5)", () => {
 
 describe("reportFlags — the §14.5 flag predicates", () => {
   it("fact_check_dominated when verification phases carry >50% of spend", () => {
-    expect(reportFlags(input())).toContain("fact_check_dominated"); // 300/520 = 58%
+    expect(reportFlags(input()).map((f) => f.key)).toContain("fact_check_dominated"); // 300/520 = 58%
     const dominated = reportFlags(input({ usage: [usage({ credits: 60 })], steps: input().steps, spentCredits: 520 }));
-    expect(dominated).not.toContain("fact_check_dominated");
+    expect(dominated.map((f) => f.key)).not.toContain("fact_check_dominated");
   });
 
   it("long_draft when drafting phases carry >40% of spend", () => {
@@ -115,7 +115,7 @@ describe("reportFlags — the §14.5 flag predicates", () => {
         claims: null,
       }),
     );
-    expect(flags).toContain("long_draft");
+    expect(flags.map((f) => f.key)).toContain("long_draft");
   });
 
   it("discourse_map fires only when the discourse phase committed done", () => {
@@ -124,8 +124,8 @@ describe("reportFlags — the §14.5 flag predicates", () => {
         steps: [...input().steps, { phase: "mapping_the_field", ordinal: 3, state: "done", credits: 10, durationMs: 1, attempt: 1 }],
       }),
     );
-    expect(flags).toContain("discourse_map");
-    expect(reportFlags(input())).not.toContain("discourse_map"); // off phase — no done step
+    expect(flags.map((f) => f.key)).toContain("discourse_map");
+    expect(reportFlags(input()).map((f) => f.key)).not.toContain("discourse_map"); // off phase — no done step
   });
 
   it("second_read_model when the second read metered on a different model tier", () => {
@@ -136,7 +136,7 @@ describe("reportFlags — the §14.5 flag predicates", () => {
         usage: [...input().usage, usage({ phase: "second_read", modelTier: "frontier", credits: 50 })],
       }),
     );
-    expect(flags).toContain("second_read_model");
+    expect(flags.map((f) => f.key)).toContain("second_read_model");
     // same tier → no flag
     const same = reportFlags(
       input({
@@ -145,22 +145,22 @@ describe("reportFlags — the §14.5 flag predicates", () => {
         usage: [...input().usage, usage({ phase: "second_read", modelTier: "balanced", credits: 50 })],
       }),
     );
-    expect(same).not.toContain("second_read_model");
+    expect(same.map((f) => f.key)).not.toContain("second_read_model");
   });
 
   it("over_estimate / under_estimate on the actual÷estimate ratio; retries on any retried step", () => {
-    expect(reportFlags(input({ estimateCredits: 1000, spentCredits: 500 }))).toContain("over_estimate"); // 0.5
-    expect(reportFlags(input({ estimateCredits: 400, spentCredits: 520 }))).toContain("under_estimate"); // 1.3
-    expect(reportFlags(input({ estimateCredits: 500, spentCredits: 520 }))).not.toContain("over_estimate");
-    expect(reportFlags(input({ estimateCredits: 500, spentCredits: 520 }))).not.toContain("under_estimate");
+    expect(reportFlags(input({ estimateCredits: 1000, spentCredits: 500 })).map((f) => f.key)).toContain("over_estimate"); // 0.5
+    expect(reportFlags(input({ estimateCredits: 400, spentCredits: 520 })).map((f) => f.key)).toContain("under_estimate"); // 1.3
+    expect(reportFlags(input({ estimateCredits: 500, spentCredits: 520 })).map((f) => f.key)).not.toContain("over_estimate");
+    expect(reportFlags(input({ estimateCredits: 500, spentCredits: 520 })).map((f) => f.key)).not.toContain("under_estimate");
     const retried = input({
       steps: [
         ...input().steps,
         { phase: "second_read", ordinal: 5, state: "done", credits: 50, durationMs: 1, attempt: 2 },
       ],
     });
-    expect(reportFlags(retried)).toContain("retries");
-    expect(reportFlags(input())).not.toContain("retries");
+    expect(reportFlags(retried).map((f) => f.key)).toContain("retries");
+    expect(reportFlags(input()).map((f) => f.key)).not.toContain("retries");
   });
 });
 
@@ -181,5 +181,114 @@ describe("buildRunReportAdvanced — Level 4", () => {
       providerRequestIds: ["req_a", "req_b"],
     });
     expect(view.rows[1]!.phase).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// RPT.1 — the reconciled report (§14.4/§14.5; REQ-SPEC-32(a); Manifest #7/#14): spent = Σ debits − Σ
+// refunds (the charged figure), the seat split/metered line is the proxy meter ONLY, and every
+// metered-vs-charged gap carries its reason. Worked-example (§15.3) labels a Showcase-seeded run.
+
+describe("RPT.1 — the reconciled report (§14.4; REQ-SPEC-32)", () => {
+  it("metered = Σ the input usage rows (the route's WHERE pins source='proxy'); charged = debited − refunded", () => {
+    const view = buildRunReport(input({ spentCredits: 520 }));
+    expect(view.meteredCredits).toBe(520); // 120 + 300 + 100
+    expect(view.spentCredits).toBe(520);
+    expect(view.differences).toEqual([]); // metered == charged — no lines
+  });
+
+  it("under-cap fixture — charged equals metered, no difference rows, no absorbed claim", () => {
+    const view = buildRunReport(input({ spentCredits: 520, capCredits: 840 }));
+    expect(view.differences).toEqual([]);
+    expect(view.estimateRatio).toBeCloseTo(520 / 840, 2);
+  });
+
+  it("capped fixture — metered ran past the cap: the overrun row explains metered − cap (§14.4 'our error')", () => {
+    // metered 1,040 (the proxy counted it all); debits stopped at the 840 cap; the 200 residue was
+    // booked adjustment(absorbed). charged = 840; gap = 200, attributed cap then absorbed.
+    const cappedUsage = [
+      usage({ phase: "reading_the_piece", seat: "reviewer", credits: 120 }),
+      usage({ phase: "checking_claims", seat: "verifier", credits: 820, searches: 12, fetches: 40 }),
+      usage({ phase: "editors_letter", seat: "editor", credits: 100 }),
+    ];
+    const view = buildRunReport(
+      input({ spentCredits: 840, capCredits: 840, absorbedCredits: 200, usage: cappedUsage }),
+    );
+    expect(view.meteredCredits).toBe(1040);
+    expect(view.spentCredits).toBe(840);
+    // gap = 200; charged is AT the cap and metered is past it → the cap row explains all 200.
+    expect(view.differences).toEqual([{ key: "cap", credits: 200 }]);
+  });
+
+  it("refunded fixture — each ledger refund row becomes its own reasoned line", () => {
+    const view = buildRunReport(
+      input({
+        spentCredits: 470, // debited 520, refunded 50 → charged 470
+        refundedCredits: 50,
+        refunds: [{ credits: 50, reason: "metered_over_debit" }],
+      }),
+    );
+    expect(view.spentCredits).toBe(470);
+    expect(view.refundedCredits).toBe(50);
+    // metered (520) − charged (470) = 50 — the refund row explains it, with its ledger reason.
+    expect(view.differences).toEqual([{ key: "refund", credits: 50, reason: "metered_over_debit" }]);
+    // and a refund WITHOUT a ledger reason still renders a line
+    const bare = buildRunReport(
+      input({ spentCredits: 470, refundedCredits: 50, refunds: [{ credits: 50, reason: null }] }),
+    );
+    expect(bare.differences).toEqual([{ key: "refund", credits: 50 }]);
+  });
+
+  it("failed-run fixture — debits refunded AND the residue absorbed: both reasons land", () => {
+    // metered 520; committed 300 debited → refunded on failure → charged 0; absorb booked the
+    // metered-uncharged 520. charged = 0; gap = 520 = absorbed 520 (cap untouched).
+    const view = buildRunReport(
+      input({
+        spentCredits: 0,
+        refundedCredits: 300,
+        refunds: [{ credits: 300, reason: "platform_fault:delivery" }],
+        absorbedCredits: 520,
+      }),
+    );
+    expect(view.spentCredits).toBe(0);
+    expect(view.differences).toEqual([
+      { key: "absorbed", credits: 520 },
+      { key: "refund", credits: 300, reason: "platform_fault:delivery" },
+    ]);
+  });
+
+  it("trial-entitlement fixture — the entitlement line explains the whole metered-vs-charged gap", () => {
+    const view = buildRunReport(input({ spentCredits: 0, entitlement: true }));
+    expect(view.differences).toEqual([{ key: "entitlement", credits: 520 }]);
+  });
+
+  it("pre-flip committed fixture — charged above the meter is stated, never silently folded in", () => {
+    // committed-mode charge 634 vs a 632 metered burn (the 01M3SK62… shape).
+    const almostEqual = [
+      usage({ phase: "reading_the_piece", seat: "reviewer", credits: 120 }),
+      usage({ phase: "checking_claims", seat: "verifier", credits: 412 }),
+      usage({ phase: "editors_letter", seat: "editor", credits: 100 }),
+    ];
+    const view = buildRunReport(input({ spentCredits: 634, usage: almostEqual }));
+    expect(view.meteredCredits).toBe(632);
+    expect(view.differences).toEqual([{ key: "committed", credits: 2 }]);
+  });
+
+  it("the sdk_estimate cross-check reports divergence as display-only, never sums into totals", () => {
+    const view = buildRunReport(input({ sdkEstimateCredits: 553 })); // vs metered 520 — 6% divergent
+    expect(view.meteredCredits).toBe(520);
+    expect(view.differences).toContainEqual({ key: "cross_check", credits: 553 });
+    // within ±2% → no line
+    const quiet = buildRunReport(input({ sdkEstimateCredits: 528 }));
+    expect(quiet.differences.some((d) => d.key === "cross_check")).toBe(false);
+  });
+
+  it("flags carry the figures their sentences interpolate; workedExample marks the view", () => {
+    const view = buildRunReport(input({ workedExample: true }));
+    expect(view.workedExample).toBe(true);
+    const fcd = view.flags.find((f) => f.key === "fact_check_dominated");
+    expect(fcd).toMatchObject({ sharePct: 58, phase: "checking_claims", count: 50 });
+    // and a Showcase-unmarked run carries no label
+    expect(buildRunReport(input()).workedExample).toBeUndefined();
   });
 });

@@ -56,18 +56,28 @@ interface Recorder {
   readonly harvests: HarvestCall[];
   readonly fails: FailCall[];
   readonly delivers: DeliveryArgs[];
+  /** RPT.1 — the per-phase begin calls (step key + ordinal) in call order. */
+  readonly begins: { stepKey: string; ordinal: number; of: number }[];
+  /** the interleaved call order across seams ("begin:<key>" / "runPhase:<key>") — ordering assertions. */
+  readonly calls: string[];
   finalizeCount: number;
   runPhaseGuidance: (string | undefined)[];
 }
 
 /** A scripted in-process api client + runPhase driver — the seams the pod loop calls. */
 function makeHarness(specs: HarnessRunSpec[], outputsFor: (spec: HarnessRunSpec, guidance?: string) => PhaseRunOutputs) {
-  const rec: Recorder = { commits: [], harvests: [], fails: [], delivers: [], finalizeCount: 0, runPhaseGuidance: [] };
+  const rec: Recorder = { commits: [], harvests: [], fails: [], delivers: [], begins: [], calls: [], finalizeCount: 0, runPhaseGuidance: [] };
   let specIdx = 0;
   let versionCounter = 0;
 
   const client: HarnessApiClient = {
     fetchRunSpec: () => Promise.resolve(specs[specIdx++]!),
+    // RPT.1 — the phase's real start fact (the server's beginStep stamps steps.started_at).
+    beginStep: (args) => {
+      rec.begins.push(args);
+      rec.calls.push(`begin:${args.stepKey}`);
+      return Promise.resolve({ ok: true });
+    },
     harvest: (args: HarvestCall) => {
       rec.harvests.push(args);
       const byPath: Record<string, string> = {};
@@ -95,6 +105,7 @@ function makeHarness(specs: HarnessRunSpec[], outputsFor: (spec: HarnessRunSpec,
 
   const runPhase = (spec: HarnessRunSpec, opts: { guidance?: string }) => {
     rec.runPhaseGuidance.push(opts.guidance);
+    rec.calls.push(`runPhase:${spec.request.phase.key}`);
     return Promise.resolve(outputsFor(spec, opts.guidance));
   };
 
@@ -129,6 +140,44 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(rec.delivers).toHaveLength(1);
     expect(rec.delivers[0]!.deliveredVersionIds.length).toBe(1);
     expect(rec.commits.every((c) => c.credits === 7)).toBe(true); // the provisional credits from harvest
+  });
+
+  it("RPT.1 — begins each phase before its runPhase call and commits the measured durationMs", async () => {
+    const letter = { ...byKey("letter"), index: OF - 1 };
+    const specs = [makeSpec(byKey("craft")), makeSpec(letter, { delivery: DELIVERY_FACTS })];
+    const dossier: WorkDeliveryContent = {
+      deliveredPaths: ["correspondence/editors-letter.md"],
+      sidecars: [],
+      coversAllObligations: true,
+    };
+    const { rec, client, runPhase } = makeHarness(specs, (spec) =>
+      spec.request.phase.key === "letter"
+        ? completeOutputs(
+            { letterSectionsComplete: true, rubricDimensionCount: 8, sidecarValidates: { "findings.json": true, "rubric.json": true } },
+            { versions: [{ path: "correspondence/editors-letter.md", root: "project", kind: "letter", namespace: "editor", sha256: "s", bytes: Buffer.from("L"), wordCount: 1 }], delivery: dossier },
+          )
+        : completeOutputs(NONEMPTY("04-craft-notes.md")),
+    );
+    let t = 1_000;
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1", now: () => new Date((t += 5_000)) });
+    expect(res.kind).toBe("delivered");
+    // begin lands BEFORE the phase's model traffic for every phase (the card's live phase flip).
+    expect(rec.begins.map((b) => b.stepKey)).toEqual(["craft", "letter"]);
+    expect(rec.calls).toEqual(["begin:craft", "runPhase:craft", "begin:letter", "runPhase:letter"]);
+    // the commit carries the pod-measured span (the server prefers its own begin row when present).
+    expect(rec.commits.every((c) => typeof c.durationMs === "number" && c.durationMs >= 0)).toBe(true);
+  });
+
+  it("RPT.1 — a beginStep-less client still commits (the seam is optional for old wiring)", async () => {
+    const spec = makeSpec({ ...byKey("verification"), index: 2 }, { stopAfterPhase: true });
+    const { rec, client, runPhase } = makeHarness([spec], () =>
+      completeOutputs({ claimRowCount: 3, inventoryCount: 2, sidecarValidates: { "01-claim-ledger.json": true } }),
+    );
+    delete client.beginStep; // a client that predates the seam
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res).toEqual({ kind: "stopped", phasesCommitted: 1 });
+    expect(rec.begins).toHaveLength(0);
+    expect(typeof rec.commits[0]!.durationMs).toBe("number");
   });
 
   it("opens the approve_scope gate after intake and exits (no delivery); a resume then delivers", async () => {

@@ -1340,7 +1340,14 @@ const R = COPY.review;
 const runCardLabels: RunCardLabels = {
   phaseLabel: (k) => R.phaseLabel[k] ?? k,
   stateLabel: (s) => R.runStateLabel[s] ?? s,
-  creditsLabel: (spent, cap) => `${spent.toLocaleString("en-US")} / ${cap.toLocaleString("en-US")} cr`,
+  // RPT.1 (REQ-SPEC-32(a)) — a provisional mid-phase metered reading renders the ≈ marker; the SSE
+  // patch in ide.ts re-renders the SAME `card.meter`/`card.meterProvisional` templates (copy.ts) so
+  // SSR and live rows never diverge.
+  creditsLabel: (spent, cap, provisional) =>
+    fmt(COPY.feed.templates[provisional === true ? "card.meterProvisional" : "card.meter"]!, {
+      spentCredits: spent.toLocaleString("en-US"),
+      capCredits: cap.toLocaleString("en-US"),
+    }),
   etaLabel: (lo, hi) => `~${lo}–${hi} min`,
   offLabel: R.offLabel,
   counterLabel: (_key, value, of) => (of != null ? `${value} / ${of}` : String(value)),
@@ -1428,9 +1435,19 @@ const reportLabels: RunReportLabels = {
   seatLabel: (seat) => (seat != null ? (RP.seatLabel[seat] ?? seat) : "—"),
   offLabel: R.offLabel,
   phaseDetail: (credits, durationMs, searches, fetches) => {
+    // RPT.1 — truthful durations: a real sub-minute phase renders seconds (never "0 min"); a legacy
+    // row whose commit wrote started_at = ended_at (duration 0) renders the "—" the AC words — it has
+    // no duration to claim, and it must not borrow one.
     const base =
       durationMs != null
-        ? fmt(RP.phaseDetailDurationFmt, { credits: credits.toLocaleString("en-US"), n: Math.round(durationMs / 60000) })
+        ? durationMs === 0
+          ? fmt(RP.phaseDetailDurationUnknownFmt, { credits: credits.toLocaleString("en-US") })
+          : durationMs < 60_000
+            ? fmt(RP.phaseDetailDurationSecFmt, {
+                credits: credits.toLocaleString("en-US"),
+                n: Math.max(1, Math.round(durationMs / 1000)),
+              })
+            : fmt(RP.phaseDetailDurationFmt, { credits: credits.toLocaleString("en-US"), n: Math.round(durationMs / 60000) })
         : fmt(RP.phaseDetailFmt, { credits: credits.toLocaleString("en-US") });
     const tail = searches > 0 || fetches > 0 ? ` · ${searches + fetches}` : "";
     return base + tail;
@@ -1439,7 +1456,30 @@ const reportLabels: RunReportLabels = {
   seatSplitLine: (seat, credits, share) =>
     fmt(RP.seatSplitFmt, { seat: RP.seatLabel[seat] ?? seat, credits: credits.toLocaleString("en-US"), pct: Math.round(share * 100) }),
   flagsHeading: RP.flagsHeading,
-  flagLabel: (key) => RP.flagLabel[key] ?? key,
+  // RPT.1 — flags render the server-computed figures through their templated sentences (§14.5).
+  flagLabel: (flag) => {
+    const key =
+      flag.key === "fact_check_dominated" && flag.count == null ? "fact_check_dominated_noClaims" : flag.key;
+    return fmt(RP.flagLabel[key] ?? flag.key, {
+      pct: flag.sharePct ?? "",
+      // retries may carry a comma-joined phase list — translate each controlled key.
+      phase: flag.phase != null ? flag.phase.split(",").map((k) => R.phaseLabel[k] ?? k).join(", ") : "",
+      n: flag.count ?? "",
+      ratio: flag.ratio ?? "",
+    }).replace(/\s+\)/g, ")").trim();
+  },
+  meteredLine: (metered, charged) =>
+    fmt(RP.meteredFmt, { metered: metered.toLocaleString("en-US"), charged: charged.toLocaleString("en-US") }),
+  differenceLabel: (d) => {
+    if (d.key === "refund") {
+      const reason = d.reason != null ? (RP.refundReasonLabel[d.reason] ?? null) : null;
+      return reason != null
+        ? fmt(RP.differenceFmt["refund"] ?? "{n} cr", { n: d.credits.toLocaleString("en-US"), reason })
+        : fmt(RP.differenceFmt["refundNoReason"] ?? "{n} cr", { n: d.credits.toLocaleString("en-US") });
+    }
+    return fmt(RP.differenceFmt[d.key] ?? "{n} cr", { n: d.credits.toLocaleString("en-US") });
+  },
+  workedExampleLabel: RP.workedExample,
   claimsLine: (checked, verified, perVerified) =>
     perVerified != null
       ? fmt(RP.claimsFmt, { checked, verified, per: perVerified.toLocaleString("en-US") })

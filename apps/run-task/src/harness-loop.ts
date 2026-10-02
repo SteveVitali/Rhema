@@ -145,6 +145,9 @@ export interface CommitCall {
   readonly of: number;
   readonly producedVersionIds: readonly string[];
   readonly credits: number;
+  /** RPT.1 — the pod-measured phase wall-clock span (begin→commit); the begin row's `started_at`
+   *  wins when present, this is the fallback for a step that committed without one. */
+  readonly durationMs?: number;
   readonly result: {
     readonly status: "done";
     readonly sdkSubtype: string;
@@ -174,6 +177,10 @@ export interface HarnessApiClient {
   /** first beat: take `provisioning → running` (§12.4 step 5) + refresh the token; returns cancel state. */
   heartbeat?(): Promise<{ ok: boolean; cancelRequested?: boolean; state?: string }>;
   fetchRunSpec(): Promise<HarnessRunSpec>;
+  /** RPT.1 — stamp the phase's real start (steps.state='running' + `step.started`); absent ⇒ the
+   *  old wiring (a client that predates the seam) — the commit's measured durationMs then carries
+   *  the timing fallback. */
+  beginStep?(args: { stepKey: string; ordinal: number; of: number }): Promise<{ ok: boolean }>;
   harvest(args: HarvestCall): Promise<HarvestReply>;
   commit(args: CommitCall): Promise<{ ok: boolean; state?: string; code?: string }>;
   failStep(args: FailCall): Promise<FailStepResult>;
@@ -287,6 +294,14 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         }
       }
 
+      // RPT.1 — stamp the phase's real start before its model traffic: the server's beginStep upsert
+      // marks the step `running` (card phase flips live) and fixes `started_at`, so the committed row's
+      // ended−started is the true phase duration. Best-effort: a transient failure must not block the
+      // phase (the commit's measured durationMs then carries the timing).
+      const phaseStartedMs = now().getTime();
+      await (deps.client.beginStep?.({ stepKey: phase.key, ordinal: phase.index, of: spec.request.of }) ??
+        Promise.resolve()).catch(() => undefined);
+
       // run the phase; re-run ONCE (guided) on a re-runnable incomplete verdict (mirror runPhase).
       let outputs = await deps.runPhase(spec, {});
       let verdict = evaluateOracle(
@@ -381,6 +396,8 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         of: spec.request.of,
         producedVersionIds: harvested.producedVersionIds,
         credits: harvested.provisionalCredits,
+        // RPT.1 — the pod-measured phase span; the begin row's `started_at` wins when it exists.
+        durationMs: Math.max(0, now().getTime() - phaseStartedMs),
         result: {
           status: "done",
           sdkSubtype: outputs.subtype,

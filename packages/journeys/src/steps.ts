@@ -24,6 +24,13 @@ const PLANTED_ESSAY = readFileSync(
   "utf8",
 );
 
+/** RPT.1 — the committed ≤300-word fixture (the planted-error excerpt). R6 drives a Quick/Base
+ *  Review on it while it watches the card's meter move inside a phase. */
+const PLANTED_EXCERPT = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../fixtures/planted-error-excerpt.md"),
+  "utf8",
+);
+
 // ---------------------------------------------------------------- helpers
 
 /** Bundle-parity leg (PR-J4): every served /assets/*.js came back 200 with a JS content-type, and
@@ -745,12 +752,149 @@ const R5: StepFn = async (ctx) => {
   if (!fileOk) throw new Error("export produced no download/200 response");
 };
 
-/** R6 (RED, RPT.1; paid) — the run card's meter moves; report spent = Σ debits. */
+/** R6 (RED, RPT.1; paid) — the run card's meter moves *inside a single phase* (≥ 2 distinct spent
+ *  values under one `running` phase row, at least one rendered provisional "≈"), and the delivered
+ *  run report's charged figure equals the card's committed meter — the user-visible half of "spent =
+ *  Σ debits" (the read-only ledger cross-check is recorded in the RPT.1 run ledger by the operator).
+ *  The report's phases must render real durations (no "0 min", no unexplained silence) and the
+ *  `?advanced=1` disclosure must list per-request rows (the "Advanced is empty" defect). */
 const R6: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
-  await gotoOk(page, `${ctx.webBaseUrl}/usage`);
-  const body = (await page.textContent("body")) ?? "";
-  if (!/credit|usd|\$/i.test(body)) throw new Error("usage surface shows no meter");
+  const slug = await createDraftProject(
+    page,
+    ctx.webBaseUrl,
+    ctx.marker("R6EXCERPT"),
+    PLANTED_EXCERPT,
+  );
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
+  // Quick/Base unattended (the same launch ceremony as N6 — see its comment for the collapsed row).
+  const rigor = page.locator('input[name="rigor"][value="quick"]');
+  if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
+  const auto = page.locator('input[name="autoRun"]');
+  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
+    if (!(await auto.isVisible())) {
+      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
+      if ((await summary.count()) > 0) await summary.first().click();
+    }
+    await auto.check();
+  }
+  const runBtn = page.locator('button[data-run-button="true"]').first();
+  await assertActionable(runBtn, "Review launch");
+  await runBtn.click();
+  await page.waitForLoadState("domcontentloaded");
+  const alert = page.locator('p[role="alert"]').first();
+  if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
+    throw new Error(`run launch refused: ${(await alert.textContent())?.trim()}`);
+  }
+
+  // The live run card mounts on the project page's Timeline rail. The SSE patch updates
+  // [data-credits] and [data-phase-status] in place; a periodic reload keeps the sample honest when
+  // the stream stalls (SSR reads the latest usage.tick) and picks up the terminal state, which the
+  // patch never touches (data-run-state only re-renders).
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
+  const cardSel = "[data-run-card]";
+  await page.locator(cardSel).first().waitFor({ state: "attached", timeout: 90_000 });
+  const runId = (await page.locator(cardSel).first().getAttribute("data-run-card")) ?? "";
+  if (!runId) throw new Error("the run card carries no data-run-card id");
+
+  const TERMINAL = new Set(["completed", "completed_partial", "failed", "cancelled"]);
+  const readingsByPhase = new Map<string, Set<number>>();
+  let provisionalSeen = false;
+  let finalSpent: number | null = null;
+  const deadline = Date.now() + 40 * 60_000;
+  let lastReload = 0;
+  while (Date.now() < deadline) {
+    if (Date.now() - lastReload > 25_000) {
+      await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+      lastReload = Date.now();
+    }
+    const card = page.locator(cardSel).first();
+    if ((await card.count()) > 0) {
+      const state = (await card.getAttribute("data-run-state")) ?? "";
+      const creditEl = card.locator("[data-credits]").first();
+      const meterText = ((await creditEl.textContent().catch(() => "")) ?? "").trim();
+      // "12 / 300 cr" or the provisional "≈ 12 / 300 cr".
+      const meterMatch = /(\d[\d,]*)\s*\/\s*(\d[\d,]*)\s*cr/i.exec(meterText);
+      const spent = meterMatch?.[1] != null ? Number(meterMatch[1].replace(/,/g, "")) : null;
+      const running = card.locator('[data-phase-status="running"]').first();
+      const runningPhase =
+        (await running.count()) > 0 ? await running.getAttribute("data-phase") : null;
+      if (runningPhase != null && spent != null) {
+        const set = readingsByPhase.get(runningPhase) ?? new Set<number>();
+        set.add(spent);
+        readingsByPhase.set(runningPhase, set);
+        if ((await creditEl.getAttribute("data-provisional")) != null || meterText.includes("≈")) {
+          provisionalSeen = true;
+        }
+      }
+      if (TERMINAL.has(state)) {
+        finalSpent = spent;
+        break;
+      }
+    }
+    await new Promise((res) => setTimeout(res, 2_000));
+  }
+  const movedWithinPhase = [...readingsByPhase.values()].some((v) => v.size >= 2);
+  if (!movedWithinPhase) {
+    throw new Error(
+      `the card's meter never advanced within a single phase (readings ${JSON.stringify(
+        Object.fromEntries([...readingsByPhase.entries()].map(([k, v]) => [k, [...v]])),
+      )})`,
+    );
+  }
+  if (!provisionalSeen) {
+    throw new Error("the meter moved but never rendered a provisional (≈) reading");
+  }
+  if (finalSpent == null) throw new Error("the run did not reach a terminal state within 40 min");
+
+  // The report (§14.5 Level 3): its charged figure is Σ ledger debits − refunds. The card's terminal
+  // meter is the committed/metered figure — charged ≤ committed always (a metered-mode refund can
+  // only lower it), and equality is required when the run carried no refund line.
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/r/${runId}?advanced=1`);
+  await page.locator("[data-run-report]").first().waitFor({ state: "attached", timeout: 60_000 });
+  const estimateLine = (await page.locator("[data-estimate-line]").textContent()) ?? "";
+  const spentMatch = /(\d[\d,]*)\s*cr spent/i.exec(estimateLine);
+  if (spentMatch?.[1] == null) {
+    throw new Error(`the report shows no spent figure: "${estimateLine}"`);
+  }
+  const reportSpent = Number(spentMatch[1].replace(/,/g, ""));
+  const meteredLine = (await page.locator("[data-metered-line]").textContent().catch(() => null)) ?? "";
+  const meteredMatch = /(\d[\d,]*)\s*cr metered\s*·\s*(\d[\d,]*)\s*cr charged/i.exec(meteredLine);
+  if (meteredMatch?.[2] != null && Number(meteredMatch[2].replace(/,/g, "")) !== reportSpent) {
+    throw new Error(
+      `the report contradicts itself: "…${meteredMatch[2]} cr charged" beside "${reportSpent} cr spent"`,
+    );
+  }
+  const hasRefundLine = (await page.locator("[data-refund]").count()) > 0;
+  if (reportSpent > finalSpent) {
+    throw new Error(
+      `report spent ${reportSpent} exceeds the card's committed meter ${finalSpent} — a charge no meter recorded`,
+    );
+  }
+  if (reportSpent < finalSpent && !hasRefundLine) {
+    throw new Error(
+      `report spent ${reportSpent} < the card's committed meter ${finalSpent} with no refund line explaining the gap`,
+    );
+  }
+  // Every difference row renders its reasoned sentence — never a bare key.
+  const diffs = page.locator("[data-difference]");
+  for (let i = 0; i < (await diffs.count()); i++) {
+    const text = ((await diffs.nth(i).textContent()) ?? "").trim();
+    if (text.length < 10 || /^[a-z_]+$/.test(text)) {
+      throw new Error(`a difference row renders a bare key: "${text}"`);
+    }
+  }
+  // Truthful durations: no committed phase may render "0 min" (real work takes time; a legacy
+  // equal-timestamps row renders "—" instead — the two must never confuse).
+  const phaseRows = await page.locator("[data-report-phase]").allTextContents();
+  if (phaseRows.some((t) => /·\s*0\s*min\b/.test(t))) {
+    throw new Error(`a phase still renders "0 min": ${phaseRows.join(" | ")}`);
+  }
+  // Level 4 (?advanced=1) — the per-request rows must exist for a metered run.
+  if ((await page.locator("[data-usage-row]").count()) === 0) {
+    throw new Error("?advanced=1 returned no Level-4 usage rows");
+  }
+  assertBundleParity(ctx);
 };
 
 /** R7 (RED, RUN.1) — an informational gate does not block; labels match behaviour. */
