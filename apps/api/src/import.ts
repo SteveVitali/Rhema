@@ -17,21 +17,23 @@ import { upsertProjectSearchDoc } from "./search.js";
 // `origin=human_upload`, storing the normalized bytes in the content store. Conversion NEVER runs in `api`
 // (the F41 split): the api calls the convert service through the injected `Converter` seam.
 
-/** The convert-service seam: quarantine key → ConversionResult. Real impl runs the convert Cloud Run Job;
- *  tests fake it. */
+/** The convert-service seam: quarantine key → ConversionResult. Prod impl is ONB.1's composite —
+ * the warm `convert-svc` Cloud Run service first, the convert Job as fallback (ADR-044); tests fake it. */
 export interface Converter {
   /**
    * Convert the quarantined upload → its ConversionResult, or `null` while still converting. `waitMs`
-   * bounds how long the call waits on a cold conversion (a live cold Job runs ~2.5–4 min — PRB.21: a
-   * bounded call returns `null` = pending and the caller retries; unset ⇒ wait to the runner's full bound).
+   * bounds how long the call waits on a cold conversion (the warm service answers in well under the
+   * bound for text formats; a Job fallback can still run minutes — a bounded call returns `null` =
+   * pending and the caller retries; unset ⇒ wait to the runner's full bound).
    */
   preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null>;
 }
 
 /**
- * The per-request preview wait bound (PRB.21). The prod HTTPS LB's backend timeout bounds a single
- * request well under a cold Job's ~2.5–4 min — the api holds at most this long, then answers 202 and the
- * caller retries (read-back cache / the in-flight marker make a retry ~190 ms and never re-run the Job).
+ * The per-request preview wait bound (PRB.21, kept under ONB.1). The prod HTTPS LB's backend timeout
+ * bounds a single request; the warm service answers inside this window for text formats, and a Job
+ * fallback still answers 202 `pending` for the caller to retry (read-back-first makes a retry a
+ * cache read, never a second conversion).
  */
 const IMPORT_PREVIEW_WAIT_MS = 25_000;
 
@@ -192,6 +194,18 @@ export interface ImportApiDeps {
   readonly uploads?: ImportUploadDeps;
   /** for the `draft.imported` analytics write (PRB.12); defaults to wall-clock when unset. */
   readonly clock?: { now(): Date };
+  /**
+   * ONB.1 (REQ-ARCH-34) — the presign→preview-ready clock for `import_preview_p95_s`. `claim(key)`
+   * is called at presign AND at the first preview call (idempotent first-seen wins); `release(key)`
+   * clears the stamp once the ready sample is written. Unset ⇒ the sample falls back to the preview
+   * call's own elapsed.
+   */
+  readonly timing?: {
+    claim(quarantineKey: string): Promise<number | null>;
+    release(quarantineKey: string): Promise<void>;
+  };
+  /** ONB.1 — injectable wall clock for the latency sample (defaults to `Date.now`). */
+  readonly now?: () => number;
 }
 
 /**
@@ -230,6 +244,9 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
         workspaceId: principal.workspaceId,
         uploadId: deps.ids(),
       });
+      // ONB.1 — `import_preview_p95_s` is presign→preview-ready: stamp the key's first-seen time.
+      // Idempotent (the NX stamp wins); a tracker failure must never fail a presign.
+      await deps.timing?.claim(upload.key).catch(() => undefined);
       return c.json(upload);
     });
   }
@@ -249,8 +266,27 @@ export function createImportRoutes(deps: ImportApiDeps): Hono {
     // marker make a retry cheap and idempotent (never a second `jobs:run`).
     const want = (body as { waitMs?: unknown }).waitMs;
     const waitMs = typeof want === "number" && Number.isFinite(want) ? Math.min(Math.max(want, 0), IMPORT_PREVIEW_WAIT_MS) : undefined;
+    // ONB.1 — `import_preview_p95_s` (REQ-ARCH-34) is presign→preview-ready. The presign route stamps
+    // the key first; this claim is the backstop for keys minted before the feature or outside presign —
+    // first-seen wins either way. On the ready hop the elapsed is sampled into `slo_samples`
+    // (workspace-scoped; the probe excludes `workspaces.is_test`) and the stamp released so a stray
+    // re-poll never double-counts. Telemetry is non-fatal: it can never fail a preview.
+    const callStart = deps.now ? deps.now() : Date.now();
+    const firstSeen = await deps.timing?.claim(key).catch(() => undefined);
     const result = await deps.converter.preview(key, waitMs != null ? { waitMs } : undefined);
     if (result == null) return c.json({ pending: true, quarantineKey: key }, 202);
+    const elapsed = Math.max(0, Math.round((deps.now ? deps.now() : Date.now()) - (firstSeen ?? callStart)));
+    // The sample is awaited (single indexed insert — µs against the multi-second conversion it
+    // measures) but never fatal: a missing/partial slo_samples migration just drops the row.
+    // `detail` carries the format KIND (invariant #10 — durations + kinds, never text or names)
+    // so the p95 probe can scope to the text formats the SLO covers.
+    await deps.db
+      .query(
+        `insert into slo_samples (signal, value_ms, workspace_id, detail) values ('import_preview_ms', $1, $2, $3)`,
+        [elapsed, principal.workspaceId, result.sourceFormat],
+      )
+      .catch(() => undefined);
+    await deps.timing?.release(key).catch(() => undefined);
     return c.json({ preview: result });
   };
   app.post("/import/preview", preview);

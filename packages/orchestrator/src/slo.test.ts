@@ -184,6 +184,37 @@ describe("probeSlos — test-tenant exclusion (JOURNEY.1)", () => {
     }
     expect(reading(await probeSlos(db.client), "event_delivery_latency_p95_s").status).not.toBe("breach");
   });
+
+  it("ONB.1 — import_preview_ms samples drive import_preview_p95_s; detail scopes to text formats; test tenants out", async () => {
+    expect(reading(await probeSlos(db.client), "import_preview_p95_s").status).toBe("empty");
+    // 10 text-format samples at 5 s → p95 = 5 s ≤ 40 → ok
+    for (let i = 0; i < 10; i++) {
+      await db.client.query(
+        `insert into slo_samples (signal, value_ms, workspace_id, detail) values ('import_preview_ms', 5000, $1, 'md')`,
+        [seed.workspaceId],
+      );
+    }
+    let r = reading(await probeSlos(db.client), "import_preview_p95_s");
+    expect(r.status).toBe("ok");
+    expect(r.value).toBe(5);
+    // a slow PDF through the same route is out of the SLO's scope — never a breach
+    await db.client.query(`delete from slo_samples`, []);
+    for (let i = 0; i < 10; i++) {
+      await db.client.query(
+        `insert into slo_samples (signal, value_ms, workspace_id, detail) values ('import_preview_ms', 240000, $1, 'pdf')`,
+        [seed.workspaceId],
+      );
+    }
+    expect(reading(await probeSlos(db.client), "import_preview_p95_s").status).toBe("empty");
+    // a 60 s text-format preview breaches the 40 s alert threshold
+    await db.client.query(`update slo_samples set detail = 'docx'`, []);
+    r = reading(await probeSlos(db.client), "import_preview_p95_s");
+    expect(r.status).toBe("breach");
+    expect(r.value).toBe(240);
+    // a flagged (JOURNEY.1) tenant's import never counts
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    expect(reading(await probeSlos(db.client), "import_preview_p95_s").status).toBe("empty");
+  });
 });
 
 // RES.2 (REQ-SPEC-31(3)) — an Unverified delivery is never a success: it stays in the rate's

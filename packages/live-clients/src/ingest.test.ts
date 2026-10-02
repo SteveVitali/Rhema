@@ -3,6 +3,8 @@ import {
   createGcsV4SignedUrlProvider,
   createFetcherServicePort,
   createConvertJobPreview,
+  createConvertServicePreview,
+  createImportPreviewTracker,
   type ConvertJobArgs,
   type RestFetchLike,
   type GcsObjectsLike,
@@ -389,5 +391,188 @@ describe("createFetcherServicePort", () => {
     const res = await createFetcherServicePort("https://f", f).get("https://x/");
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toContain("unreachable");
+  });
+});
+
+describe("createConvertServicePreview (ONB.1 / ADR-044 — the warm service-first path)", () => {
+  const SVC = "https://convert-svc-abc-uc.a.run.app";
+
+  const fallback = () => {
+    const calls: { key: string; waitMs?: number }[] = [];
+    return {
+      calls,
+      preview: async (key: string, opts?: { waitMs?: number }) => {
+        calls.push({ key, waitMs: opts?.waitMs });
+        return RESULT;
+      },
+    };
+  };
+
+  it("read-back-first: a converted object answers without ever calling the service", async () => {
+    const objects = fakeObjects({ [`converted/ws1/u1.json`]: JSON.stringify(RESULT) });
+    const fetchImpl = fakeFetch(() => ({ status: 500, body: {} }));
+    const fb = fallback();
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects, fallback: fb, fetchImpl, tokenFor: async () => "tok",
+    });
+    expect(await c.preview(KEY)).toEqual(RESULT);
+    expect(fetchImpl.calls).toHaveLength(0);
+    expect(fb.calls).toHaveLength(0);
+  });
+
+  it("POSTs {quarantineKey} with an OIDC bearer minted for the service URL and returns the preview", async () => {
+    const objects = fakeObjects();
+    const fetchImpl = fakeFetch((url) => {
+      expect(url).toBe(`${SVC}/convert`);
+      return { status: 200, body: { preview: RESULT, convertedKey: "converted/ws1/u1.json" } };
+    });
+    let audience = "";
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects, fallback: fallback(), fetchImpl,
+      tokenFor: async (aud) => { audience = aud; return "idtok"; },
+      signalFor: () => new AbortController().signal,
+    });
+    expect(await c.preview(KEY, { waitMs: 5_000 })).toEqual(RESULT);
+    expect(audience).toBe(SVC);
+    const body = JSON.parse(fetchImpl.calls[0]!.body ?? "{}");
+    expect(body).toEqual({ quarantineKey: KEY });
+  });
+
+  it("a 5xx falls back to the Job path (the resilience leg)", async () => {
+    const objects = fakeObjects();
+    const fetchImpl = fakeFetch(() => ({ status: 503, body: "deadline" }));
+    const fb = fallback();
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects, fallback: fb, fetchImpl, tokenFor: async () => "t",
+    });
+    expect(await c.preview(KEY)).toEqual(RESULT);
+    expect(fb.calls).toEqual([{ key: KEY, waitMs: undefined }]);
+  });
+
+  it("a transport error falls back to the Job path", async () => {
+    const objects = fakeObjects();
+    const f = (async () => { throw new Error("connect ECONNREFUSED"); }) as unknown as RestFetchLike;
+    const fb = fallback();
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects, fallback: fb, fetchImpl: f, tokenFor: async () => "t",
+    });
+    expect(await c.preview(KEY)).toEqual(RESULT);
+    expect(fb.calls).toHaveLength(1);
+  });
+
+  it("a client timeout re-reads converted/ then reports pending — the service write still lands", async () => {
+    const objects = fakeObjects(); // no converted object yet — the service is still writing
+    const f = (async () => {
+      const e = new Error("timed out") as Error & { name: string };
+      e.name = "TimeoutError";
+      throw e;
+    }) as unknown as RestFetchLike;
+    const fb = fallback();
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects, fallback: fb, fetchImpl: f, tokenFor: async () => "t",
+    });
+    expect(await c.preview(KEY)).toBeNull(); // pending — the caller's next poll resolves
+    expect(fb.calls).toHaveLength(0); // a timeout is NOT a failure — never double-converts
+  });
+
+  it("a client timeout that finds the converted write answers it immediately", async () => {
+    const objects = fakeObjects({ [`converted/ws1/u1.json`]: JSON.stringify(RESULT) });
+    const f = (async () => {
+      const e = new Error("aborted") as Error & { name: string };
+      e.name = "AbortError";
+      throw e;
+    }) as unknown as RestFetchLike;
+    // a cache hit short-circuits before the fetch — so make the read miss once then hit:
+    // simplest faithful shape: first download 404s (cold), the post-abort re-read finds it.
+    let reads = 0;
+    const flipping: GcsObjectsLike = {
+      file: (_name: string) => ({
+        download: async () => {
+          reads++;
+          if (reads === 1) {
+            const e = new Error("No such object") as Error & { code: number };
+            e.code = 404;
+            throw e;
+          }
+          return [new TextEncoder().encode(JSON.stringify(RESULT))] as const;
+        },
+      }),
+    };
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects: flipping, fallback: fallback(), fetchImpl: f, tokenFor: async () => "t",
+    });
+    expect(await c.preview(KEY)).toEqual(RESULT);
+    void objects;
+  });
+
+  it("a 4xx refuses loud — the Job would fail identically, so no fallback run", async () => {
+    const objects = fakeObjects();
+    const fetchImpl = fakeFetch(() => ({ status: 422, body: "conversion_failed" }));
+    const fb = fallback();
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects, fallback: fb, fetchImpl, tokenFor: async () => "t",
+    });
+    await expect(c.preview(KEY)).rejects.toThrow("convert-svc refused (422)");
+    expect(fb.calls).toHaveLength(0);
+  });
+
+  it("a malformed quarantine key throws before any fetch or fallback", async () => {
+    const fetchImpl = fakeFetch(() => ({ status: 200, body: {} }));
+    const fb = fallback();
+    const c = createConvertServicePreview({
+      serviceUrl: SVC, objects: fakeObjects(), fallback: fb, fetchImpl, tokenFor: async () => "t",
+    });
+    await expect(c.preview("not-a-key")).rejects.toThrow("invalid_quarantine_key");
+    expect(fetchImpl.calls).toHaveLength(0);
+    expect(fb.calls).toHaveLength(0);
+  });
+});
+
+describe("createImportPreviewTracker (ONB.1 — the presign→preview-ready clock)", () => {
+  const fakeRedis = () => {
+    const store = new Map<string, string>();
+    const sets: { key: string; args: unknown[] }[] = [];
+    return {
+      store,
+      sets,
+      set: async (key: string, value: string, ...args: unknown[]) => {
+        sets.push({ key, args });
+        if (args.includes("NX") && store.has(key)) return null;
+        store.set(key, value);
+        return "OK";
+      },
+      get: async (key: string) => store.get(key) ?? null,
+      del: async (key: string) => { store.delete(key); return 1; },
+    };
+  };
+
+  it("first-seen wins: two claims return the ORIGINAL stamp (the NX write is idempotent)", async () => {
+    const r = fakeRedis();
+    let now = 1_000;
+    const t = createImportPreviewTracker(r, () => now);
+    expect(await t.claim(KEY)).toBe(1_000);
+    now = 5_000;
+    expect(await t.claim(KEY)).toBe(1_000); // the presign stamp survives the preview call
+  });
+
+  it("release clears the stamp — the next claim stamps fresh", async () => {
+    const r = fakeRedis();
+    let now = 1_000;
+    const t = createImportPreviewTracker(r, () => now);
+    await t.claim(KEY);
+    await t.release(KEY);
+    now = 9_000;
+    expect(await t.claim(KEY)).toBe(9_000);
+  });
+
+  it("a Redis failure degrades to null — telemetry never breaks the request", async () => {
+    const dead = {
+      set: async () => { throw new Error("redis down"); },
+      get: async () => { throw new Error("redis down"); },
+      del: async () => { throw new Error("redis down"); },
+    };
+    const t = createImportPreviewTracker(dead, () => 42);
+    expect(await t.claim(KEY)).toBeNull();
+    await expect(t.release(KEY)).resolves.toBeUndefined();
   });
 });

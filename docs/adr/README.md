@@ -49,3 +49,7 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-041](ADR-041-api-is-the-throttle-authority.md) | The api is the single throttle + admission authority — the web-side magic-link limiter is retired | SEC.2 | Accepted |
 | [ADR-042](ADR-042-trial-entitlement-config-and-spend-tally.md) | The trial entitlement's numbers live in typed config — the word cap is DERIVED, the claim reads config at claim time, and the daily kill switch is projected + reconciled | ACT.1 | Accepted |
 | [ADR-043](ADR-043-trial-audience-and-claim-render-model.md) | The trial's go-live is an audience flag, and every claim renders through the audience fold | ACT.1 | Accepted |
+| [ADR-044](ADR-044-warm-convert-svc-service-topology.md) | The interactive preview leg is a warm `convert-svc` Cloud Run service; the Job stays for batch + fallback | ONB.1 | Accepted |
+| [ADR-045](ADR-045-h1-to-title-normalization.md) | A document's leading H1 is the title — extracted at convert, defaulted at create, never demoted to a body H2 | ONB.1 | Accepted |
+| [ADR-046](ADR-046-unresolved-figure-inerting.md) | An unresolved relative figure becomes a warning + an inert placeholder — never a live URL | ONB.1 | Accepted |
+| [ADR-047](ADR-047-held-draft-consumed-handshake.md) | The held draft dies only to a token-matched consumed marker or an explicit Discard — never to a page view | ONB.1 | Accepted |

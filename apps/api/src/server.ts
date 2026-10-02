@@ -35,7 +35,9 @@ import {
   createGcsObjects,
   createGcsBlobStore,
   createConvertJobPreview,
+  createConvertServicePreview,
   createFetcherServicePort,
+  createImportPreviewTracker,
 } from "@rhema/live-clients";
 import {
   createApp,
@@ -306,12 +308,26 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
       : {}),
     ...(env.userContentBucket && env.convertJob
       ? {
-          importConverter: createConvertJobPreview({
-            job: env.convertJob,
-            bucket: env.userContentBucket,
-            objects: await createGcsObjects(env.userContentBucket),
-            ...(env.convertJobRoot ? { mountPath: env.convertJobRoot } : {}),
-          }),
+          importConverter: await (async () => {
+            const objects = await createGcsObjects(env.userContentBucket!);
+            const job = createConvertJobPreview({
+              job: env.convertJob!,
+              bucket: env.userContentBucket!,
+              objects,
+              ...(env.convertJobRoot ? { mountPath: env.convertJobRoot } : {}),
+            });
+            // ONB.1 (ADR-044) — the warm convert-svc is the interactive preview path (≤20 s for the
+            // text formats); the Job is the fallback + the batch leg. Unset ⇒ the pre-ONB.1
+            // Job-only posture. The OIDC hop mints per request like the fetcher/export calls.
+            return env.convertServiceUrl
+              ? createConvertServicePreview({
+                  serviceUrl: env.convertServiceUrl,
+                  objects,
+                  fallback: job,
+                  tokenFor: (aud) => fetchGceMetadataIdToken(aud),
+                })
+              : job;
+          })(),
         }
       : {}),
     // P1.15 — the ingestion seams: the fetcher service is the ONLY remote-egress path (invoker-gated;
@@ -324,6 +340,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     ...(env.userContentBucket
       ? { ingestBlobs: await createGcsBlobStore(env.userContentBucket) }
       : {}),
+    // ONB.1 — the presign→preview-ready clock for `import_preview_p95_s` (REQ-ARCH-34): the first-seen
+    // stamp lives in Redis so it survives multi-instance polling; telemetry failures degrade to the
+    // call's own elapsed, never to a 500.
+    importPreviewTiming: createImportPreviewTracker(redis),
     ...(systemExec ? { circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })) } : {}),
     // PRB.08 billing: the system-scoped exec for the `stripe_events` intake (a system table — the restricted
     // user pool must not own it), the webhook secret, and the beta Payment Link.

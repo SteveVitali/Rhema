@@ -29,12 +29,23 @@ export async function runConvertFile(inputPath: string, outputPath?: string): Pr
 
 if (process.argv[1] && process.argv[1].endsWith("main.js")) {
   const [input, output] = process.argv.slice(2);
-  if (!input) {
+  // ONB.1 (ADR-044) — `--serve` runs the warm convert SERVICE (the interactive preview leg; the
+  // Job's per-execution `<input> [output]` shape stays the batch path). The user-content root is
+  // CONVERT_ROOT (the deploy's gcsfuse mount, `/usercontent`); PORT is the Cloud Run listener.
+  if (input === "--serve") {
+    const { serveConvert } = await import("./server.js");
+    const port = Number(process.env.PORT ?? 8080);
+    const root = process.env.CONVERT_ROOT ?? "/usercontent";
+    void serveConvert({ root, port }).then(({ port: bound }) =>
+      console.log(`[convert] serving on :${bound} (root ${root})`),
+    );
+  } else if (!input) {
     console.error("usage: convert <input> [output]");
     process.exit(2);
+  } else {
+    runConvertFile(input, output).catch((e) => {
+      console.error(`convert failed: ${String((e as Error)?.message ?? e)}`);
+      process.exit(1);
+    });
   }
-  runConvertFile(input, output).catch((e) => {
-    console.error(`convert failed: ${String((e as Error)?.message ?? e)}`);
-    process.exit(1);
-  });
 }

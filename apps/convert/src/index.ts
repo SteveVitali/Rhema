@@ -11,6 +11,9 @@ export { assertSafeArchive, MAX_TOTAL_UNCOMPRESSED } from "./decompression-guard
 export { convertDocx, convertHtml, convertPdf, convertText } from "./converters.js";
 export type { ConverterOutput } from "./converters.js";
 export { servingHeadersFor, RENDERED_ALLOWLIST, USERCONTENT_ORIGIN } from "./serving.js";
+// ONB.1 (ADR-044) — the warm-service mode: the same pipeline behind a bounded HTTP surface.
+export { createConvertService, serveConvert } from "./server.js";
+export type { ConvertServiceDeps } from "./server.js";
 // PRB.20 — the upload wire contract moved to @rhema/contracts (the api's presign route shares it; the
 // parser deps must never reach the api image, REQ-ARCH-23). Re-exported here so the surface is stable.
 export {

@@ -53,6 +53,40 @@ describe("ECON.1 — the debit-mode flag is deploy config on BOTH consumers", ()
   });
 });
 
+describe("ONB.1 — the warm convert-svc keeps every §12.1/§13.3 isolation property (ADR-044)", () => {
+  it("is a Cloud Run Service on the SAME convert image + SA + /usercontent mount as the Job, `--serve`d", () => {
+    expect(SRC).toContain('new gcp.cloudrunv2.Service(name("convert-svc")');
+    expect(SRC).toContain('serviceAccount: iam.serviceAccounts["convert"].email');
+    expect(SRC).toContain('args: ["--serve"]');
+    expect(SRC).toContain('{ name: "CONVERT_ROOT", value: "/usercontent" }');
+    // the conditioned converted/-only write comes from iam.ts's convert SA — never re-granted here
+    // (a second bucket grant would be a finding).
+  });
+
+  it("is invoker-gated + internal-ingress only, warm on prod, scale-to-zero off prod", () => {
+    expect(SRC).toContain('new gcp.cloudrunv2.ServiceIamMember(name("api-invokes-convert-svc")');
+    expect(SRC).toContain('name: convertSvc.name');
+    expect(SRC).toContain('role: "roles/run.invoker"');
+    // The service block must carry NO vpcAccess (the §12.1 posture the Job already runs under —
+    // the extract covers the convertSvc literal through the services-loop marker).
+    const svcStart = SRC.indexOf('new gcp.cloudrunv2.Service(name("convert-svc")');
+    const svcEnd = SRC.indexOf("--- Cloud Run services", svcStart);
+    const block = SRC.slice(svcStart, svcEnd);
+    expect(block).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
+    expect(block).not.toContain("vpcAccess:"); // the property — a comment may name the posture
+    expect(block).toContain('minInstanceCount: cfg.kind === "prod" ? 1 : 0');
+    // no DB credential, no secrets — the env is exactly CONVERT_ROOT + PORT
+    expect(block).not.toContain("DATABASE_URL");
+    expect(block).not.toContain("secretKeyRef");
+    expect(block).not.toContain("_SECRET");
+  });
+
+  it("the api carries CONVERT_SERVICE_URL (service-first composite; the Job stays the fallback)", () => {
+    expect(SRC).toContain('{ name: "CONVERT_SERVICE_URL", value: convertSvc.uri }');
+    expect(SRC).toContain('name: "CONVERT_JOB"'); // the Job env is still mounted — the fallback leg
+  });
+});
+
 describe("SEC.2 — the trusted client-IP channel is deploy config on BOTH ends (ADR-040)", () => {
   it("the web mints for INTERNAL_AUTH_AUDIENCE and the api verifies it + pins the caller SA", () => {
     // Both services must carry the SAME audience (the api origin) or the stamp never verifies; the

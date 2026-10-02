@@ -1758,6 +1758,9 @@ export function createWebApp(deps: WebDeps): Hono {
       venue: str("venue") || null,
       personaId: str("personaId") || null,
       startVersion: Number.isInteger(sv) && sv >= 1 ? sv : null,
+      // ONB.1 — the held draft's client-side token, echoed back on the create redirect (`?hc=`):
+      // the island deletes the IndexedDB hold ONLY when the echoed token matches its record.
+      heldToken: str("heldToken") || null,
     };
   };
 
@@ -1783,6 +1786,7 @@ export function createWebApp(deps: WebDeps): Hono {
     if (form.venue) p.set("venue", form.venue);
     if (form.personaId) p.set("personaId", form.personaId);
     if (form.startVersion != null) p.set("startVersion", String(form.startVersion));
+    if (form.heldToken) p.set("heldToken", form.heldToken);
     if (sourceLabel) p.set("src", sourceLabel);
     return `/app/new/preview?${p.toString()}`;
   };
@@ -1814,7 +1818,7 @@ export function createWebApp(deps: WebDeps): Hono {
       entry,
       defaultProtocolId: null,
       askProtocol: false,
-      form: { title: "", protocolId: null, venue: null, personaId: null, startVersion: null },
+      form: { title: "", protocolId: null, venue: null, personaId: null, startVersion: null, heldToken: null },
       // P1.17 — `?held=1` marks a landing drop-zone hold to claim (the script hydrates the file input).
       ...(c.req.query("held") === "1" ? { held: true } : {}),
     });
@@ -1833,12 +1837,12 @@ export function createWebApp(deps: WebDeps): Hono {
       : "scratch";
     const picks = newProjectForm(form);
     const sheet = await loadNewProjectSheet(session);
-    if (!picks.title) {
-      return renderNewProject(c, c.req.path, sheet, {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: "A title is required.",
-      }, undefined);
-    }
     if (entry === "scratch") {
+      if (!picks.title) {
+        return renderNewProject(c, c.req.path, sheet, {
+          entry, defaultProtocolId: null, askProtocol: false, form: picks, error: "A title is required.",
+        }, undefined);
+      }
       let created;
       try {
         created = await deps.dataSource.createProject(session, {
@@ -1852,7 +1856,7 @@ export function createWebApp(deps: WebDeps): Hono {
       }
       return c.redirect(`/p/${created.slug}?created=scratch`);
     }
-    // Upload entries — presign → quarantine PUT → convert Job → the preview leg (the PRB.20 path,
+    // Upload entries — presign → quarantine PUT → convert → the preview leg (the PRB.20 path,
     // workspace-scoped: no project exists yet).
     const file = form.file;
     const bytes =
@@ -1884,7 +1888,14 @@ export function createWebApp(deps: WebDeps): Hono {
         error: "The conversion could not start — try again.",
       });
     }
+    // ONB.1 — the title default chain: an explicitly typed title wins; then the document's own
+    // leading H1 (`preview.title`); then the filename stem. Paste has no default — still required.
+    const resolvedTitle =
+      picks.title ||
+      (out.status === "ready" ? out.preview.title : undefined) ||
+      (fileName ? fileName.replace(/\.[^.]+$/, "").trim() : "");
     if (out.status === "pending") {
+      // the title default resolves on the READY hop (the poll GET re-runs it with preview.title).
       return renderNewProject(c, c.req.path, sheet, {
         entry, defaultProtocolId: null, askProtocol: false, form: picks,
         pending: { quarantineKey: out.quarantineKey, sourceLabel },
@@ -1892,8 +1903,13 @@ export function createWebApp(deps: WebDeps): Hono {
         autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, out.quarantineKey, picks, sourceLabel) },
       });
     }
+    if (!resolvedTitle) {
+      return renderNewProject(c, c.req.path, sheet, {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: "A title is required.",
+      }, undefined);
+    }
     return renderNewProject(c, c.req.path, sheet, {
-      entry, defaultProtocolId: null, askProtocol: false, form: picks,
+      entry, defaultProtocolId: null, askProtocol: false, form: { ...picks, title: resolvedTitle },
       preview: {
         quarantineKey: out.quarantineKey,
         sourceLabel,
@@ -1936,8 +1952,12 @@ export function createWebApp(deps: WebDeps): Hono {
         autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, qk, picks, sourceLabel) },
       });
     }
+    // ONB.1 — the same default chain as the POST: typed title → the document's H1 → the filename stem.
+    const resolvedTitle =
+      picks.title || out.preview.title || sourceLabel.replace(/\.[^.]+$/, "").trim();
+    if (!resolvedTitle) return c.redirect(`/app/new?entry=${entry}`);
     return renderNewProject(c, c.req.path, sheet, {
-      entry, defaultProtocolId: null, askProtocol: false, form: picks,
+      entry, defaultProtocolId: null, askProtocol: false, form: { ...picks, title: resolvedTitle },
       preview: {
         quarantineKey: qk,
         sourceLabel,
@@ -1997,6 +2017,10 @@ export function createWebApp(deps: WebDeps): Hono {
       q.set("cn", String(created.conversionNotes.warnings));
       q.set("cu", String(created.conversionNotes.unconverted));
     }
+    // ONB.1 — the held-draft consumed handshake: the token the island stamped into the form echoes on
+    // the success redirect. The landing island on the landing page renders `data-held-consumed` —
+    // a hold is deleted ONLY when the echoed token matches its record (server-confirmed consumption).
+    if (picks.heldToken) q.set("hc", picks.heldToken);
     const action = typeof form.action === "string" ? form.action : "create";
     if (action === "fix_now" && entry === "draft" && created.draftN != null) {
       return c.redirect(`/p/${created.slug}/v/${created.draftN}?${q.toString()}`);
@@ -3054,6 +3078,9 @@ export function createWebApp(deps: WebDeps): Hono {
           // create landing (?created=scratch|outline|draft → the next-step card; cn/cu carry the
           // conversion's warning/unconverted counts onto the Conversion-notes line).
           ...(c.req.query("rename") === "1" ? { rename: true } : {}),
+          // ONB.1 — `?hc=<token>` echoes the consumed hold token; the page renders the
+          // `data-held-consumed` marker the landing island matches against before deleting.
+          ...(c.req.query("hc") ? { heldConsumed: c.req.query("hc") } : {}),
           ...(["scratch", "outline", "draft"].includes(c.req.query("created") ?? "")
             ? {
                 created: {
@@ -4452,7 +4479,14 @@ export function createWebApp(deps: WebDeps): Hono {
             ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
           },
         })),
-        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        project: {
+          title: row.title,
+          pill: row.state.pill,
+          slug,
+          headDraftId: row.headDraftId,
+          // ONB.1 — the consumed-hold marker (`?hc=`) rides the fix-now landing too.
+          ...(c.req.query("hc") ? { heldConsumed: c.req.query("hc") } : {}),
+        },
         compact: phone,
         page: {
           slug,

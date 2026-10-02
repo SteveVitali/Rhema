@@ -101,6 +101,8 @@ export interface PageData {
       readonly venue: string | null;
       readonly personaId: string | null;
       readonly startVersion: number | null;
+      /** ONB.1 — the held-draft token the island stamped in (echoed on the create redirect). */
+      readonly heldToken: string | null;
     };
     /** a validation error from the last POST. */
     readonly error?: string;
@@ -161,6 +163,11 @@ export interface PageData {
     readonly headDraftId?: string | null;
     /** P1.04 — `?rename=1` renders the row-action's inline title form. */
     readonly rename?: boolean;
+    /**
+     * ONB.1 — `?hc=<token>` echoes the held draft's token after a create consumed it: the page renders
+     * `data-held-consumed` and the landing island deletes the hold only on a matching token.
+     */
+    readonly heldConsumed?: string;
     /**
      * P1.04 — the create landing (`?created=<entry>`): the §5.3 next-step card renders at the top —
      * scratch → the Chat note, outline → Draft v1, draft → Review vN. `notes` carries the conversion's

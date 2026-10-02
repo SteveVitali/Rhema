@@ -254,6 +254,8 @@ export interface RestFetchLike {
     readonly method?: string;
     readonly headers?: Record<string, string>;
     readonly body?: string;
+    /** ONB.1 — a caller-side timeout for the convert-svc hop (the real fetch honors AbortSignal). */
+    readonly signal?: AbortSignal;
   }): Promise<{
     readonly ok: boolean;
     readonly status: number;
@@ -535,6 +537,179 @@ export function createConvertJobPreview(args: ConvertJobArgs): {
       if (!result) throw new Error("convert_output_missing"); // job done but no converted object — fail loud
       await clearMarker(mKey);
       return result;
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The warm convert service (ONB.1 / ADR-044) — the ≤20 s preview path
+// ---------------------------------------------------------------------------
+
+export interface ConvertServiceArgs {
+  /** The convert-svc Cloud Run URL (`CONVERT_SERVICE_URL`), invoker-gated. */
+  readonly serviceUrl: string;
+  /** Bucket-bound object reader for `converted/` readback — same read-back-first contract. */
+  readonly objects: GcsObjectsLike;
+  /** The Job converter — the fallback when the service errors (keeps every prior guarantee). */
+  readonly fallback: { preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null> };
+  /** The deadline a service call may never exceed when `waitMs` is unset (default 60 s). */
+  readonly serviceTimeoutMs?: number;
+  readonly fetchImpl?: RestFetchLike;
+  /** OIDC token mint for the api→service hop (fetchGceMetadataIdToken in prod). */
+  readonly tokenFor?: (audience: string) => Promise<string>;
+  /** Injectable for tests (defaults to AbortSignal.timeout). */
+  readonly signalFor?: (ms: number) => AbortSignal;
+}
+
+interface ConvertServiceResponse {
+  readonly preview?: ConversionResult;
+  readonly convertedKey?: string;
+  readonly error?: string;
+  readonly message?: string;
+}
+
+/**
+ * Service-first Converter (ONB.1 / ADR-044): the warm `convert-svc` Cloud Run service runs the
+ * SAME convertBytes the Job runs — quarantine key in through the request, `converted/<ws>/<id>.json`
+ * out through the mounted bucket (the replay contract is unchanged). Ordering:
+ *
+ *   1. `converted/` read-back — a converted upload never re-converts (cache hit ~ms).
+ *   2. POST /convert — bounded by `opts.waitMs` (the caller's request budget) or
+ *      `serviceTimeoutMs`. A client timeout returns `null` = pending: the service still finishes
+ *      and writes `converted/`, so the caller's next poll is a read-back hit.
+ *   3. `fallback` — a 5xx / transport error / bad payload drops to the Job path, which keeps the
+ *      §12.1 batch topology alive as the resilience leg. A deterministic 4xx (invalid key,
+ *      decompression limit, conversion failure) THROWS — re-running the Job would fail the same
+ *      way, and the error surface matches the pre-ONB.1 contract.
+ */
+export function createConvertServicePreview(args: ConvertServiceArgs): {
+  preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null>;
+} {
+  const root = args.serviceUrl.replace(/\/+$/, "");
+  const fetchImpl: RestFetchLike = args.fetchImpl ?? (fetch as unknown as RestFetchLike);
+  const tokenFor = args.tokenFor ?? (() => fetchGceMetadataAccessToken());
+  const signalFor = args.signalFor ?? ((ms: number) => AbortSignal.timeout(ms));
+  const timeoutMs = args.serviceTimeoutMs ?? 60_000;
+
+  async function readResult(key: string): Promise<ConversionResult | null> {
+    try {
+      const [buf] = await args.objects.file(convertedResultKey(key)).download();
+      const text = typeof buf === "string" ? buf : Buffer.from(buf).toString("utf8");
+      return conversionResultSchema.parse(JSON.parse(text));
+    } catch (e) {
+      const code = (e as { code?: number | string }).code;
+      if (code === 404 || code === "404" || /not.?found|no such object/i.test(String((e as Error)?.message ?? e))) {
+        return null;
+      }
+      throw e;
+    }
+  }
+
+  return {
+    async preview(quarantineKey: string, opts?: { waitMs?: number }): Promise<ConversionResult | null> {
+      const parsed = parseQuarantineKey(quarantineKey);
+      if (!parsed) throw new Error("invalid_quarantine_key");
+
+      const cached = await readResult(quarantineKey);
+      if (cached) return cached;
+
+      const budget = opts?.waitMs != null ? Math.max(opts.waitMs, 1) : timeoutMs;
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      headers["authorization"] = `Bearer ${await tokenFor(root)}`;
+
+      let res;
+      try {
+        res = await fetchImpl(`${root}/convert`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ quarantineKey }),
+          signal: signalFor(budget),
+        });
+      } catch (e) {
+        // AbortError / timeout — the service may still be converting (its converted/ write is the
+        // replay). Re-read once, then report pending; the caller's next poll resolves either way.
+        const name = (e as { name?: string }).name;
+        if (name === "AbortError" || name === "TimeoutError" || /abort|timeout|timed out/i.test(String((e as Error)?.message ?? e))) {
+          return readResult(quarantineKey);
+        }
+        // transport error — the service is unreachable; the Job is the resilience leg.
+        console.warn(`[ingest] convert-svc unreachable, falling back to the Job: ${String((e as Error)?.message ?? e).slice(0, 160)}`);
+        return args.fallback.preview(quarantineKey, opts);
+      }
+
+      if (res.ok) {
+        const body = (await res.json().catch(() => null)) as ConvertServiceResponse | null;
+        if (body?.preview) return conversionResultSchema.parse(body.preview);
+        // a 200 without the result is a contract violation — read the write-through once, else Job.
+        const again = await readResult(quarantineKey);
+        if (again) return again;
+        throw new Error("convert-svc returned no preview");
+      }
+
+      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      if (res.status >= 400 && res.status < 500) {
+        // deterministic refusal — the Job would convert identically and fail identically; surface it.
+        throw new Error(`convert-svc refused (${res.status}): ${detail}`);
+      }
+      console.warn(`[ingest] convert-svc ${res.status}, falling back to the Job: ${detail}`);
+      return args.fallback.preview(quarantineKey, opts);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The import-preview latency clock (ONB.1 — `import_preview_p95_s`, REQ-ARCH-34)
+// ---------------------------------------------------------------------------
+
+/**
+ * The slice of ioredis the tracker needs — `set` with NX+EX for the first-seen stamp, `get`/`del`.
+ * Structural so tests fake it in memory.
+ */
+export interface ImportPreviewClock {
+  set(key: string, value: string, ...args: unknown[]): Promise<unknown>;
+  get(key: string): Promise<string | null>;
+  del(key: string): Promise<unknown>;
+}
+
+export interface ImportPreviewTiming {
+  /**
+   * Record the first-seen epoch ms for a quarantine key (idempotent — an existing stamp wins).
+   * `/import/presign` calls it first (the ticket's clock is presign→preview-ready); `/import/preview`
+   * calls it again — a key minted before this feature or presigned elsewhere still gets a stamp at
+   * its first preview call. Resolves the stored stamp. Errors degrade to `null` (the caller falls
+   * back to the call's own elapsed) — telemetry never breaks the request.
+   */
+  claim(quarantineKey: string): Promise<number | null>;
+  /** Clear the stamp after the ready sample is written (one sample per upload, not per poll). */
+  release(quarantineKey: string): Promise<void>;
+}
+
+/**
+ * The Redis-backed presign→preview-ready clock (ONB.1). `SET rhema:ipr:<key> <epochMs> NX EX 900`
+ * makes the FIRST sight of a key durable across api instances + the pending-poll hops (an
+ * in-memory map would lose the stamp on a retry landing on another instance); the 15-minute TTL
+ * matches the `converting/` marker's — a stamp that outlives its upload is reaped by Redis.
+ */
+export function createImportPreviewTracker(
+  redis: ImportPreviewClock,
+  now: () => number = Date.now,
+): ImportPreviewTiming {
+  const key = (qk: string) => `rhema:ipr:${qk}`;
+  return {
+    async claim(quarantineKey) {
+      try {
+        const stamp = String(now());
+        const res = await redis.set(key(quarantineKey), stamp, "EX", 900, "NX");
+        if (res === "OK" || res === true) return Number(stamp);
+        const existing = await redis.get(key(quarantineKey));
+        const n = existing != null ? Number(existing) : NaN;
+        return Number.isFinite(n) ? n : Number(stamp);
+      } catch {
+        return null;
+      }
+    },
+    async release(quarantineKey) {
+      await redis.del(key(quarantineKey)).catch(() => undefined);
     },
   };
 }

@@ -1,4 +1,4 @@
-import { normalizeMarkdown, detectCounts } from "@rhema/markdown";
+import { normalizeMarkdown, detectCounts, extractLeadingTitle, inertUnresolvedImages, uniqueUnresolved } from "@rhema/markdown";
 import { conversionResultSchema } from "@rhema/contracts";
 import type { ConversionResult, ConversionWarning, UnconvertedBlock, Anchor } from "@rhema/contracts";
 import { sniffFormat, isZipContainer } from "./sniff.js";
@@ -79,14 +79,35 @@ export async function convertBytes(bytes: Uint8Array, opts: ConvertOptions = {})
     return `<!-- rhema:unconverted id="${id}" -->\n${raw}\n<!-- /rhema:unconverted -->`;
   });
 
-  const markdown = normalizeMarkdown(withBlocks);
+  // ONB.1 — the two document fixups, BEFORE the canonical normalize pass:
+  //  1. `extractLeadingTitle` — a document-leading H1 is the document's title (§9.5: front-matter,
+  //     never a body heading). It comes out as `title` and is REMOVED so the demote pass cannot
+  //     leave a duplicated H2 at the top (PR-R5).
+  //  2. `inertUnresolvedImages` — a figure target nothing can resolve (any non-`https?`/`data:` URL;
+  //     the upload carries no sibling files) is rewritten to the inert empty-URL placeholder, so
+  //     the Page never emits a live `<img src>` that 404s. Each is an `image_dropped` warning
+  //     (REQ-INGEST-7) and degrades a `clean` verdict to `partial`.
+  const titled = extractLeadingTitle(withBlocks);
+  const inerted = inertUnresolvedImages(titled.markdown);
+  const unresolved = uniqueUnresolved(inerted.unresolved);
+
+  const markdown = normalizeMarkdown(inerted.markdown);
   const counts = detectCounts(markdown);
 
-  const warnings: ConversionWarning[] = out.warnings.map((w) => ({
-    kind: w.kind,
-    message: w.message,
-    anchor: w.blockId ? anchorForBlock(w.blockId, rawById.get(w.blockId) ?? "") : null,
-  }));
+  const warnings: ConversionWarning[] = [
+    ...out.warnings.map((w) => ({
+      kind: w.kind,
+      message: w.message,
+      anchor: w.blockId ? anchorForBlock(w.blockId, rawById.get(w.blockId) ?? "") : null,
+    })),
+    ...unresolved.map(
+      (u): ConversionWarning => ({
+        kind: "image_dropped",
+        message: `${u.name} wasn't included — add it or remove the reference`,
+        anchor: null,
+      }),
+    ),
+  ];
   const unconverted: UnconvertedBlock[] = out.unconverted.map((u) => ({
     blockId: u.blockId,
     raw: u.raw,
@@ -96,10 +117,14 @@ export async function convertBytes(bytes: Uint8Array, opts: ConvertOptions = {})
   return conversionResultSchema.parse({
     sourceFormat: format,
     markdown,
+    ...(titled.title ? { title: titled.title } : {}),
     counts,
     warnings,
     unconverted,
-    quality: out.quality,
-    qualityNotes: [...out.qualityNotes],
+    quality: unresolved.length > 0 && out.quality === "clean" ? "partial" : out.quality,
+    qualityNotes: [
+      ...out.qualityNotes,
+      ...unresolved.map((u) => `unresolved figure reference: ${u.name}`),
+    ],
   });
 }

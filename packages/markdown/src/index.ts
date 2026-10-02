@@ -10,3 +10,6 @@ export { wordCount, detectCounts, renderCountLine } from "./counts.js";
 export { assembleImportedDoc } from "./frontmatter.js";
 export { CANONICAL_STRINGIFY_OPTIONS, canonicalProcessor, parseCanonical, stringifyCanonical } from "./profile.js";
 export type { FrontMatterInput, ImportSource, ImportedDocument } from "./frontmatter.js";
+// ONB.1 — the import-time document fixups (leading-H1 title extraction + unresolved-figure inerting).
+export { extractLeadingTitle, inertUnresolvedImages, uniqueUnresolved } from "./import-doc.js";
+export type { UnresolvedImageRef } from "./import-doc.js";

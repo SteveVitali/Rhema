@@ -81,6 +81,13 @@ export const conversionResultSchema = z
     sourceFormat: convertSourceFormatSchema,
     /** The canonical (normalized) Rhema Markdown body — idempotent on a second normalize pass (REQ-DATA-9d). */
     markdown: z.string(),
+    /**
+     * ONB.1 — the document's own title, extracted when the converted body's FIRST block is an H1
+     * (§9.5's "title lives in front-matter, never a body heading"). The H1 is REMOVED from the body —
+     * it must not reappear as a demoted H2. The project-create paths use it as the title default
+     * (an explicitly typed title still wins). Absent when the document leads with anything else.
+     */
+    title: z.string().min(1).optional(),
     counts: conversionCountsSchema,
     warnings: z.array(conversionWarningSchema),
     unconverted: z.array(unconvertedBlockSchema),

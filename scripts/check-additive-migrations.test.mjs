@@ -104,6 +104,7 @@ describe("collectFiles — the base selection", () => {
       "packages/db/migrations/0049_cost_calibration.sql",
       "packages/db/migrations/0050_est1_durations.sql",
       "packages/db/migrations/0051_trial_spend_reconcile.sql",
+      "packages/db/migrations/0052_slo_samples_detail.sql",
     ]);
   });
 
