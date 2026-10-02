@@ -47,7 +47,14 @@ import {
 } from "@rhema/contracts";
 import { buildRunSheetView, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
-import { applySeverityBudget, filterFindings, parseFindingFilters } from "@rhema/findings-core";
+import {
+  applySeverityBudget,
+  filterFindings,
+  parseFindingFilters,
+  // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
+  decodeGateEditFields,
+} from "@rhema/findings-core";
+import { GATE_KINDS, type GateKind } from "@rhema/contracts";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
@@ -169,7 +176,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // than a bare 500 (the session cookie may be expired while still present).
   app.onError((err, c) => {
     if (err instanceof ApiError && err.status === 401) return c.redirect("/login");
-    console.error("[web] unhandled route error:", err instanceof Error ? err.message : err);
+    console.error("[web] unhandled route error:", err instanceof Error ? (err.stack ?? err.message) : err);
     return c.text("internal error", 500);
   });
 
@@ -917,10 +924,20 @@ export function createWebApp(deps: WebDeps): Hono {
     const rows = await deps.dataSource.listProjects(session);
     const row = rows.find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const [gates, decisions, approvalOverrides, projectVoice] = await Promise.all([
+    const [gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice] = await Promise.all([
       deps.dataSource.listGates(session, row.id).catch(() => []),
       deps.dataSource.listDecisions(session, row.id).catch(() => []),
       deps.dataSource.getApprovalOverrides(session, row.id).catch(() => ({}) as Record<string, number | null>),
+      // P1.09 — the full §6.4 settings read (policy + per-kind grid + standing guidance). Optional
+      // seam: absent ⇒ the page falls back to the PRB.05 opt-in form.
+      Promise.resolve()
+        .then(() => deps.dataSource.getApprovalSettings?.(session, row.id))
+        .catch(() => undefined),
+      // P1.09 — the user's dismissed explainers (the first-approval explainer mounts once, §5.11).
+      Promise.resolve()
+        .then(() => deps.dataSource.getExplainers?.(session))
+        .then((e) => e?.dismissed ?? [])
+        .catch(() => []),
       // PRB.10 — the voice picker: the project's linked-voice facts + the selectable personas (§9.6).
       // (Deferred inside .then so a data source missing the voice seam degrades to no-picker, not a 500.)
       Promise.all([
@@ -1030,6 +1047,8 @@ export function createWebApp(deps: WebDeps): Hono {
         dwellSurface: "project",
         decisions,
         approvalOverrides,
+        ...(approvalSettings ? { approvalSettings } : {}),
+        explainersDismissed,
         ...(projectVoice ? { projectVoice } : {}),
         compact: isPhoneRequest(c),
         ...(derror
@@ -1077,7 +1096,88 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/p/${slug}`);
   });
 
+  // ---- P1.09 — the Approvals settings surface (§6.4 item 3; REQ-SPEC-1) + standing guidance (§6.5;
+  // REQ-GATE-10) + the one-time explainers (§5.11). Plain forms; the api re-validates everything. ----
+  app.post("/p/:project/settings/approvals", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const policy =
+      form.policy === "named" || form.policy === "wait_each" || form.policy === "run_to_completion"
+        ? form.policy
+        : undefined;
+    // the per-kind grid: "" = project default (no override), "wait" = remove (null), else ms.
+    const overrides: Record<string, number | null> = {};
+    for (const kind of GATE_KINDS) {
+      const v = form[`ov_${kind}`];
+      if (typeof v !== "string") continue;
+      if (v === "wait") overrides[kind] = null;
+      else if (v !== "" && Number.isFinite(Number(v)) && Number(v) > 0) overrides[kind] = Number(v);
+    }
+    try {
+      await deps.dataSource.putApprovalSettings?.(session, row.id, {
+        ...(policy ? { policy } : {}),
+        overrides,
+      });
+      return c.redirect(`/p/${slug}?approvals=saved`);
+    } catch (e) {
+      // an illegal override (REQ-SPEC-1) re-renders with the notice, never a silent write.
+      if (e instanceof ApiError && e.status === 422) return c.redirect(`/p/${slug}?approvals=invalid`);
+      throw e;
+    }
+  });
+
+  app.post("/p/:project/guidance", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const body = typeof form.body === "string" ? form.body.trim() : "";
+    const workflows =
+      typeof form.workflows === "string" && form.workflows.trim() !== ""
+        ? form.workflows.split(",").map((w) => w.trim()).filter((w) => w !== "")
+        : undefined;
+    if (body !== "") {
+      await deps.dataSource.createProjectGuidance?.(session, row.id, {
+        body,
+        ...(workflows && workflows.length > 0 ? { workflows } : {}),
+      });
+    }
+    return c.redirect(`/p/${slug}`);
+  });
+
+  // Retire (§6.5; REQ-GATE-10): active=false, never deleted. "Edit" = retire + the Add form posts the
+  // replacement (the settings section composes the two).
+  app.post("/p/:project/guidance/:gid/retire", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    await deps.dataSource.retireGuidance?.(session, row.id, c.req.param("gid"));
+    return c.redirect(`/p/${slug}`);
+  });
+
+  // the one-time inline explainer's dismiss (§5.11/§6.4 — once per user, never a modal).
+  app.post("/p/:project/explainers/:name/dismiss", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    await deps.dataSource.dismissExplainer?.(session, c.req.param("name")).catch(() => undefined);
+    return c.redirect(`/p/${slug}`);
+  });
+
   // PRB.05 — a gate card's decision (§6.4). The card's action buttons POST here; the api resolves/holds.
+  // P1.09: the card's structured `ed.*` fields decode into the edits payload (server-side applies them
+  // to the sidecar — the client sends deltas, never the base document), and `ed.runOverride` is the
+  // per-run deadline pick ("this run only", REQ-SPEC-1-validated at the api).
   app.post("/p/:project/gates/:gid", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
@@ -1088,10 +1188,26 @@ export function createWebApp(deps: WebDeps): Hono {
     const action = typeof form.action === "string" ? form.action : "";
     const guidance = typeof form.guidance === "string" && form.guidance.trim() !== "" ? form.guidance : undefined;
     const standing = form.standing === "true" || form.standing === "on";
+    const edits = decodeGateEditFields(form as Record<string, unknown>);
+    const hasEdits = Object.values(edits).some((v) => (Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0));
+    // the per-run override ("this run only"): resolve the gate's kind from the open-gates read so the
+    // posted value can never name a different kind's override.
+    let overrides: Record<string, number | null> | undefined;
+    const runOverride = typeof form["ed.runOverride"] === "string" ? form["ed.runOverride"] : "";
+    if (runOverride !== "") {
+      const gate = (await deps.dataSource.listGates(session, row.id).catch(() => [])).find(
+        (g) => g.id === c.req.param("gid"),
+      );
+      if (gate && (GATE_KINDS as readonly string[]).includes(gate.kind)) {
+        overrides = { [gate.kind as GateKind]: runOverride === "wait" ? null : Number(runOverride) };
+      }
+    }
     await deps.dataSource.decideGate(session, row.id, c.req.param("gid"), {
       action: action === "wait" ? "wait" : (action as "approve" | "approve_autonomous" | "keep_planning" | "stop"),
       ...(guidance != null ? { guidance } : {}),
       ...(standing ? { standingRule: true } : {}),
+      ...(hasEdits ? { edits } : {}),
+      ...(overrides ? { overrides } : {}),
     });
     return c.redirect(`/p/${slug}`);
   });
@@ -1403,6 +1519,9 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(str("venue") ? { venue: str("venue") } : {}),
         ...(str("stage") ? { stage: str("stage") } : {}),
         ...(str("approval") ? { approvalPolicy: str("approval") as "named" | "wait_each" | "run_to_completion" } : {}),
+        // P1.09 (§5.6/§6.4) — the sheet's "this run only, autonomously" check posts `autoProceedRun`;
+        // the api freezes runs.gates_off on THIS run only (the project policy is untouched).
+        ...(form.autoRun === "on" ? { autoProceedRun: true } : {}),
         ...(row.headDraftId ? { draftId: row.headDraftId } : {}),
         corrKind: workflow === "review" || workflow === "fact_check" ? workflow : undefined,
         corrK: 1,

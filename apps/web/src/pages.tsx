@@ -19,6 +19,7 @@ import {
   BalanceChip,
   DispositionControls,
   GateCard,
+  ApprovalRow,
   TriageLedger,
   DecisionsList,
   WhatChangedView,
@@ -43,6 +44,7 @@ import {
   type PageEditorLabels,
   type DispositionControlsLabels,
   type GateCardLabels,
+  type ApprovalRowLabels,
   type TriageLedgerLabels,
   type DecisionsListLabels,
   type TriageLedgerRow,
@@ -87,9 +89,13 @@ import {
   LIVE_OBLIGATION_STATES,
   type TrustChipLabels,
   type DoNothingOutcome,
+  // P1.09 — the §6.4 surface helpers: the Needs-you ordering + the decision-record view.
+  needsYouOrder,
+  type GateDecisionView,
+  type GateCardModel,
 } from "@rhema/findings-core";
-import type { EditorDocDto, GateCardDto, VoiceStatusDto } from "@rhema/api-client";
-import { CHECKABLE_CLAIM_KINDS, type ClaimKind, type FindingView } from "@rhema/contracts";
+import type { EditorDocDto, GateCardDto, ApprovalSettingsDto, VoiceStatusDto } from "@rhema/api-client";
+import { CHECKABLE_CLAIM_KINDS, GATE_DEFAULTS, type ClaimKind, type FindingView, type GateKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { feedLabelMapsJson } from "./feed-labels.js";
@@ -146,6 +152,14 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
             timelineLabels,
             timelineCardLabels: runCardLabels,
             timelineHrefs: timelineHrefs(slug),
+            // P1.09 — the waiting run mounts the IDENTICAL §6.4 card the Needs-you row expands to
+            // (same DTO, same render path; its decision lines ride the run card itself).
+            renderGateCard: (run) =>
+              run.gate
+                ? gateCardFor(run.gate as GateCardDto, slug, data.compact ?? false, undefined, {
+                    decisions: (run.card as { decisions?: readonly GateDecisionView[] }).decisions,
+                  })
+                : undefined,
           }
         : {})}
       {...(ide.feed
@@ -512,9 +526,35 @@ export function ProjectsPage(): ReactNode {
 /** Auth-gated: the flat project view (the studio editing surface is P1.01) + the Needs-you gate cards
  *  and the Decisions list (PRB.05 — the beta Inbox stand-in, §5.7/§6.4). */
 export function ProjectPage(): ReactNode {
-  const { project, gates = [], decisions = [], approvalOverrides = {}, compact, triage, projectVoice, page } = usePageData();
+  const {
+    project,
+    gates = [],
+    decisions = [],
+    approvalOverrides = {},
+    approvalSettings,
+    explainersDismissed,
+    ide,
+    compact,
+    triage,
+    projectVoice,
+    page,
+  } = usePageData();
   const slug = project?.slug ?? "";
   const triageOptedIn = typeof approvalOverrides.approve_triage === "number";
+  // P1.09 — the §5.11 ordering: blocked-on-you first by soonest deadline, waiting next, informational last.
+  const orderedGates = needsYouOrder(gates);
+  // the run's permanent decision records ride the Timeline read (server-projected) — the Needs-you
+  // card renders the same lines its run card does (§6.4 item 8).
+  const decisionsByRun = new Map<string, readonly GateDecisionView[]>();
+  for (const r of [
+    ...(ide?.timelineView?.rounds ?? []).flatMap((round) => round.runs),
+    ...(ide?.timelineView?.ungrouped ?? []),
+  ]) {
+    const ds = (r.card as { decisions?: readonly GateDecisionView[] }).decisions;
+    if (ds && ds.length > 0) decisionsByRun.set(r.runId, ds);
+  }
+  // the one-time explainer (§5.11) mounts on the first Approval card until dismissed.
+  const showExplainer = !(explainersDismissed ?? []).includes("approvals");
   return (
     <IdeFrame>
       {/* P1.01 — the project overview IS the IDE's Page surface. An empty project (no draft head) renders
@@ -589,16 +629,44 @@ export function ProjectPage(): ReactNode {
           <PageSurface />
         </div>
       ) : null}
-      {gates.length > 0 ? (
+      {orderedGates.length > 0 ? (
         <section data-needs-you="true" style={{ marginTop: "20px" }}>
           <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 10px" }}>
             {COPY.gates.heading}
           </h2>
-          {gates.map((g) => gateCardFor(g, slug, compact ?? false, triage?.dispositionError))}
+          {/* P1.09 — the §5.11 approval rows: kind + artifact + deadline/waiting + do-nothing on the
+              row; expanding mounts the IDENTICAL §6.4 card (read before approving). */}
+          {orderedGates.map((g, i) => {
+            const model = gateCardModel(g, compact ?? false);
+            return (
+              <ApprovalRow
+                key={g.id}
+                gateId={g.id}
+                model={model}
+                {...(g.artifactTitle != null
+                  ? {
+                      artifact: {
+                        title: g.artifactTitle,
+                        ...(g.artifactId != null ? { href: `/p/${slug}/a/${g.artifactId}` } : {}),
+                      },
+                    }
+                  : {})}
+                labels={approvalRowLabels}
+                card={gateCardFor(g, slug, compact ?? false, triage?.dispositionError, {
+                  ...(decisionsByRun.has(g.runId) ? { decisions: decisionsByRun.get(g.runId) } : {}),
+                  explainer: i === 0 && showExplainer,
+                })}
+              />
+            );
+          })}
         </section>
       ) : null}
-      {/* §6.4 R3 — the per-project approve_triage 24-h opt-in (waits by default). */}
-      {project ? (
+      {/* P1.09 — the §6.4 item 3 approval settings: the policy pick + the per-kind deadline grid +
+          the standing-guidance manager (§6.5; REQ-GATE-10). Falls back to the PRB.05 opt-in when the
+          settings read is absent. */}
+      {project && approvalSettings ? (
+        <ApprovalSettingsSection slug={slug} settings={approvalSettings} />
+      ) : project ? (
         <form
           method="post"
           action={`/p/${slug}/approval-overrides`}
@@ -1012,6 +1080,7 @@ const runSheetLabels: RunSheetLabels = {
   // P1.06 — the §5.6 collapsed-row fields + the §14.3 trial badge + the §7.2 scope comparison line.
   approvalsLabel: COPY.runSheet.approvals,
   approvalsDisplay: COPY.runSheet.approvalDisplay,
+  autoRunLabel: COPY.runSheet.autoRunLabel,
   capLabel: COPY.runSheet.capLabel,
   dontAskLabel: COPY.runSheet.dontAskLabel,
   guidanceLabel: COPY.runSheet.guidanceLabel,
@@ -1119,6 +1188,8 @@ const runCardLabels: RunCardLabels = {
   walkthroughPendingLabel: COPY.steer.walkthroughPending,
   walkthroughFailedLabel: COPY.steer.walkthroughFailed,
   reportLabel: COPY.steer.report,
+  // P1.09 (§6.4 item 8; REQ-RUN-5/6) — the permanent approval-decision lines under the run card.
+  decisionLabel: (d) => decisionLine(d),
 };
 
 // ---- P1.05 — the Timeline pane + the run report (§5.5/§14.5) ----
@@ -1339,7 +1410,83 @@ const gateCardLabels: GateCardLabels = {
   standingLabel: G.standingLabel,
   informationalNote: G.informationalNote,
   escalationNote: G.escalationNote,
+  // ---- P1.09 — the structured bodies, decision record, per-run override (§6.4 items 3/4/8) ----
+  factsHeading: G.factsHeading,
+  factLine: (key, value) =>
+    `${G.factLabel[key] ?? key}: ${typeof value === "number" ? value.toLocaleString("en-US") : String(value ?? "—")}`,
+  exceedsCapLine: G.exceedsCapLine,
+  scopeFieldsHeading: G.scopeFieldsHeading,
+  scopeFieldLabel: (field) => G.scopeFieldLabel[field] ?? field,
+  plan: {
+    spineHeading: G.plan.spineHeading,
+    sectionsHeading: G.plan.sectionsHeading,
+    alternativesHeading: G.plan.alternativesHeading,
+    gapsHeading: G.plan.gapsHeading,
+    orderLabel: G.plan.orderLabel,
+    strikeLabel: G.plan.strikeLabel,
+    notePlaceholder: G.plan.notePlaceholder,
+    addClaimLabel: G.plan.addClaimLabel,
+    addClaimPlaceholder: G.plan.addClaimPlaceholder,
+    addNotePlaceholder: G.plan.addNotePlaceholder,
+    targetWordsLabel: G.plan.targetWordsLabel,
+    purposeLabel: G.plan.purposeLabel,
+    apparatusLabel: G.plan.apparatusLabel,
+  },
+  thesisLabel: G.thesisLabel,
+  cutList: {
+    heading: G.cutList.heading,
+    targetLine: (targetWords) => fmt(G.cutList.targetFmt, { n: targetWords.toLocaleString("en-US") }),
+    protectLabel: G.cutList.protectLabel,
+    wordsLabel: (words) => fmt(G.cutList.wordsFmt, { n: words.toLocaleString("en-US") }),
+  },
+  decisionsHeading: G.decisionsHeading,
+  decisionLabel: (decision) => decisionLine(decision),
 };
+
+/** The permanent decision line (§6.4 item 8): "approved by you at 14:02 · with 3 changes". Shared by the
+ *  gate card's record list and the run card's decision lines — one wording, both surfaces. */
+function decisionLine(d: GateDecisionView): string {
+  return fmt(G.decisionLineFmt, {
+    action: G.decisionActionLabel[d.action] ?? d.action,
+    actor: G.decisionActorLabel[d.byActor] ?? d.byActor,
+    time: d.at.slice(11, 16),
+    changes: d.changes != null && d.changes > 0 ? fmt(G.decisionChangesFmt, { n: d.changes }) : "",
+  });
+}
+
+const approvalRowLabels: ApprovalRowLabels = {
+  kindLabel: (kind) => G.kindLabel[kind] ?? kind,
+  deadlineLine: (absolute, remaining) => fmt(G.deadlineFmt, { absolute, remaining }),
+  waitingLine: G.waitingLine,
+  doNothingLine: (outcome: DoNothingOutcome) => G.doNothingLine[outcome],
+  openLabel: `${G.rowOpenLabel} ▸`,
+  artifactLabel: G.rowArtifactLabel,
+};
+
+/**
+ * The card's "This run only" deadline select (§6.4; REQ-SPEC-1): options legal for the kind only —
+ * spend/refusal kinds get no control; wait-default kinds may ADD a ≥2 h deadline; defaulted kinds may
+ * remove (→ wait) or lengthen. `ed.runOverride` posts `"" | "wait" | <ms>`.
+ */
+function runOverrideFor(kind: GateKind): { label: string; options: { value: string; label: string }[] } | undefined {
+  const def = GATE_DEFAULTS[kind];
+  if (def.neverAutoProceed) return undefined;
+  const options: { value: string; label: string }[] = [{ value: "", label: G.thisRunDefault }];
+  if (def.deadlineMs == null) {
+    options.push(
+      { value: String(2 * 60 * 60 * 1000), label: fmt(COPY.approvals.overrideHoursFmt, { n: 2 }) },
+      { value: String(24 * 60 * 60 * 1000), label: G.thisRun24h },
+      { value: String(72 * 60 * 60 * 1000), label: G.thisRun72h },
+    );
+  } else {
+    options.push({ value: "wait", label: G.thisRunWait });
+    options.push({
+      value: String(def.deadlineMs * 2),
+      label: fmt(COPY.approvals.overrideHoursFmt, { n: Math.round((def.deadlineMs * 2) / 3600000) }),
+    });
+  }
+  return { label: G.thisRunLabel, options };
+}
 
 const triageLedgerLabels: TriageLedgerLabels = {
   dispositionLabel: (kind) => (kind ? T.verbLabel[kind] ?? kind : G.undecidedLabel),
@@ -1540,14 +1687,9 @@ function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: Re
   };
 }
 
-/** A gate card model for the Needs-you surface (§6.4) — built from the api's GateCardDto. */
-function gateCardFor(
-  gate: GateCardDto,
-  slug: string,
-  compact: boolean,
-  error?: { findingId: string; message: string },
-): ReactNode {
-  const model = buildGateCard(
+/** The §6.4 card model from a GateCardDto — shared by the Needs-you row and the Timeline card. */
+function gateCardModel(gate: GateCardDto, compact: boolean): GateCardModel {
+  return buildGateCard(
     {
       kind: gate.kind as Parameters<typeof buildGateCard>[0]["kind"],
       onExpiry: gate.onExpiry as Parameters<typeof buildGateCard>[0]["onExpiry"],
@@ -1564,6 +1706,158 @@ function gateCardFor(
     new Date(),
     compact ? "phone" : "full",
   );
+}
+
+const AP = COPY.approvals;
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/** The override options one kind's select offers — only legal values (REQ-SPEC-1, mirrored from the
+ *  api's `defaults` rows; the server re-validates everything the form posts). */
+function overrideOptions(def: { deadlineMs: number | null; overridable: boolean }): { value: string; label: string }[] {
+  const opts: { value: string; label: string }[] = [
+    { value: "", label: AP.overrideDefaultOpt },
+    { value: "wait", label: AP.overrideWaitOpt },
+  ];
+  if (def.deadlineMs == null) {
+    // a wait-default kind may ADD a ≥ 2 h deadline.
+    for (const h of [2, 24, 72]) opts.push({ value: String(h * HOUR_MS), label: fmt(AP.overrideHoursFmt, { n: h }) });
+  } else {
+    opts.push({ value: String(def.deadlineMs * 2), label: fmt(AP.overrideHoursFmt, { n: Math.round((def.deadlineMs * 2) / HOUR_MS) }) });
+  }
+  return opts;
+}
+
+/**
+ * P1.09 — the Approvals settings section (§6.4 item 3 + §6.5): the three policy values verbatim with
+ * their consequences, the per-kind deadline-override grid bound to REQ-SPEC-1's rules (spend/refusal
+ * kinds show "always waits for you" — no control), and standing-guidance management (list / retire /
+ * replace / add — retired never deleted).
+ */
+function ApprovalSettingsSection({ slug, settings }: { slug: string; settings: ApprovalSettingsDto }): ReactNode {
+  const kindLabel = (kind: string) => G.kindLabel[kind] ?? kind;
+  const defaultText = (deadlineMs: number | null): string =>
+    deadlineMs == null ? AP.overrideWaitOpt : `${fmt(AP.overrideHoursFmt, { n: Math.round(deadlineMs / HOUR_MS) })}`;
+  return (
+    <section data-approval-settings="true" style={{ marginTop: "20px", maxWidth: "68ch" }}>
+      <h2 style={{ fontSize: "15px", fontWeight: 600, color: "var(--shell-fg)", margin: "0 0 10px" }}>
+        {AP.heading}
+      </h2>
+      <form method="post" action={`/p/${slug}/settings/approvals`} style={{ padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px" }}>
+        <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
+          <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{AP.policyLegend}</legend>
+          {(["named", "wait_each", "run_to_completion"] as const).map((p) => (
+            <label key={p} data-policy={p} style={{ display: "block", fontSize: "13px", color: "var(--shell-fg)", marginTop: "6px" }}>
+              <input type="radio" name="policy" value={p} defaultChecked={settings.policy === p} />{" "}
+              {AP.policyLabel[p]}
+              <span style={{ display: "block", marginLeft: "20px", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                {AP.policyNote[p]}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset style={{ border: "none", margin: "12px 0 0", padding: 0 }}>
+          <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{AP.overridesHeading}</legend>
+          <table data-override-grid="true" style={{ marginTop: "6px", borderCollapse: "collapse", fontSize: "12px" }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "2px 12px 2px 0", color: "var(--shell-fg-faint)" }}>{AP.overrideKindColumn}</th>
+                <th style={{ textAlign: "left", padding: "2px 12px 2px 0", color: "var(--shell-fg-faint)" }}>{AP.overrideDefaultColumn}</th>
+                <th style={{ textAlign: "left", padding: "2px 0", color: "var(--shell-fg-faint)" }}>{AP.overrideColumn}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {settings.defaults.map((d) => {
+                const current = settings.overrides[d.kind];
+                const value = current === undefined ? "" : current === null ? "wait" : String(current);
+                return (
+                  <tr key={d.kind} data-override-row={d.kind}>
+                    <td style={{ padding: "3px 12px 3px 0", color: "var(--shell-fg)" }}>{kindLabel(d.kind)}</td>
+                    <td style={{ padding: "3px 12px 3px 0", color: "var(--shell-fg-muted)" }}>{defaultText(d.deadlineMs)}</td>
+                    <td style={{ padding: "3px 0" }}>
+                      {d.overridable ? (
+                        <select name={`ov_${d.kind}`} defaultValue={value} style={{ fontSize: "12px" }}>
+                          {overrideOptions(d).map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span data-never-override="true" style={{ color: "var(--shell-fg-faint)" }}>{AP.overrideNeverLabel}</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </fieldset>
+        <button type="submit" style={{ marginTop: "10px", fontSize: "12px" }}>{AP.saveLabel}</button>
+      </form>
+
+      {/* §6.5 standing guidance — listed with its narrowing + created date; Retire flips active=false
+          (never deleted); "replace" posts a retire + a new rule (the edit path). */}
+      <div data-standing-guidance="true" style={{ marginTop: "14px", padding: "10px 14px", border: "1px solid var(--shell-border)", borderRadius: "8px" }}>
+        <h3 style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{AP.standingHeading}</h3>
+        {settings.standing.length === 0 ? (
+          <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0" }}>{AP.standingEmpty}</p>
+        ) : (
+          <ul style={{ margin: "4px 0", paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "6px" }}>
+            {settings.standing.map((g) => (
+              <li key={g.id} data-guidance={g.id} style={{ fontSize: "13px", color: "var(--shell-fg)" }}>
+                {g.body}
+                <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>
+                  {g.workflows.length > 0 ? g.workflows.join(", ") : AP.standingAllWorkflows} · {g.createdAt.slice(0, 10)}
+                </span>
+                <form method="post" action={`/p/${slug}/guidance/${g.id}/retire`} style={{ display: "inline", marginLeft: "8px" }}>
+                  <button type="submit" data-retire="true" style={{ fontSize: "11px" }}>{AP.standingRetireLabel}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form method="post" action={`/p/${slug}/guidance`} style={{ marginTop: "8px", display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
+          <input type="text" name="body" required placeholder={AP.standingAddPlaceholder} style={{ flex: "1 1 240px", fontSize: "13px", padding: "6px 10px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }} />
+          <input type="text" name="workflows" aria-label={AP.standingWorkflowsLabel} placeholder={AP.standingAllWorkflows} style={{ fontSize: "12px", padding: "5px 8px", borderRadius: "7px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", width: "140px" }} />
+          <button type="submit" style={{ fontSize: "12px" }}>{AP.standingAddLabel}</button>
+        </form>
+        {settings.retired.length > 0 ? (
+          <details data-retired-guidance="true" style={{ marginTop: "10px" }}>
+            <summary style={{ fontSize: "12px", color: "var(--shell-fg-faint)", cursor: "pointer" }}>{AP.retiredHeading} ({settings.retired.length})</summary>
+            <ul style={{ margin: "6px 0 0", paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+              {settings.retired.map((g) => (
+                <li key={g.id} data-guidance={g.id} style={{ fontSize: "12px", color: "var(--shell-fg-faint)", textDecoration: "line-through" }}>
+                  {g.body}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * P1.09 — THE gate card (§6.4): one render path for the Needs-you ApprovalRow sheet AND the Timeline's
+ * run-card mount — the "identical card" contract. Structured fields post `ed.*` through the decision
+ * form; `decisions` render the permanent record; `explainer` mounts the one-time inline explainer.
+ */
+function gateCardFor(
+  gate: GateCardDto,
+  slug: string,
+  compact: boolean,
+  error?: { findingId: string; message: string },
+  opts?: {
+    readonly decisions?: readonly GateDecisionView[];
+    /** true ⇒ the one-time inline explainer mounts on this card (the first undismissed approval). */
+    readonly explainer?: boolean;
+  },
+): ReactNode {
+  const model = gateCardModel(gate, compact);
+  const labels: GateCardLabels = opts?.explainer
+    ? { ...gateCardLabels, explainer: G.explainer }
+    : gateCardLabels;
+  const runOverride = compact ? undefined : runOverrideFor(gate.kind as GateKind);
   const rows: TriageLedgerRow[] | undefined = gate.triage?.rows.map((r) => ({
     findingId: r.findingId,
     ordinal: r.ordinal,
@@ -1587,9 +1881,21 @@ function gateCardFor(
       compact={compact}
       formAction={`/p/${slug}/gates/${gate.id}`}
       activityUrl={`/p/${slug}/gates/${gate.id}/activity`}
-      labels={gateCardLabels}
-      {...(gate.artifactTitle != null ? { artifact: { title: gate.artifactTitle } } : {})}
+      labels={labels}
+      {...(gate.artifactTitle != null
+        ? {
+            artifact: {
+              title: gate.artifactTitle,
+              // the read-before-approve sheet links the artifact's Page (P1.02's read-only read).
+              ...(gate.artifactId != null ? { href: `/p/${slug}/a/${gate.artifactId}` } : {}),
+            },
+          }
+        : {})}
       hasEscalations={hasEscalations}
+      {...(gate.structured != null ? { structured: gate.structured } : {})}
+      {...(opts?.decisions != null ? { decisions: opts.decisions } : {})}
+      {...(opts?.explainer ? { explainerDismissAction: `/p/${slug}/explainers/approvals/dismiss` } : {})}
+      {...(runOverride ? { runOverride } : {})}
     >
       {rows != null ? (
         <TriageLedger

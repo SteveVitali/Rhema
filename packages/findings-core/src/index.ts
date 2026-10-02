@@ -21,6 +21,7 @@ export * from "./deadline.js";
 export * from "./trust-chip.js";
 export * from "./triage.js";
 export * from "./gate-card.js";
+export * from "./gate-edits.js";
 export * from "./decisions.js";
 export * from "./what-changed.js";
 export * from "./manual-revision.js";

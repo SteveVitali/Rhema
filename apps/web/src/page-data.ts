@@ -3,6 +3,7 @@ import type { ProjectGroupView, ProjectRowView, VoiceGroupView, FeedRow } from "
 import type { RunSheetView } from "@rhema/run-sheet";
 import type {
   ApprovalOverridesDto,
+  ApprovalSettingsDto,
   BulkPreviewDto,
   DecisionItemDto,
   EditorDocDto,
@@ -247,6 +248,17 @@ export interface PageData {
   readonly pretriage?: { readonly triaged: number; readonly total: number };
   /** PRB.05 — the project's approval-deadline overrides (§6.4 R3; approve_triage 24-h opt-in). */
   readonly approvalOverrides?: ApprovalOverridesDto;
+  /**
+   * P1.09 — the full approval-settings read (`GET /projects/:id/settings/approvals`): the policy, the
+   * per-kind override grid (with the R3 defaults it annotates), and standing guidance. Absent ⇒ the
+   * project page falls back to the PRB.05 opt-in form.
+   */
+  readonly approvalSettings?: ApprovalSettingsDto;
+  /**
+   * P1.09 — the user's dismissed one-time inline explainers (§5.11/§6.4). The first Approval card
+   * mounts the explainer when `"approvals"` is absent here.
+   */
+  readonly explainersDismissed?: readonly string[];
   /** PRB.06 — the What-changed read for a delivered response (the revision page; §5.8). */
   readonly revision?: { readonly slug: string; readonly data: WhatChangedDto; readonly commentedHunkId?: string };
   /** PRB.07 — the source editor (§5.4/§6.3): the doc + lock + projected rail the SSR page renders. */

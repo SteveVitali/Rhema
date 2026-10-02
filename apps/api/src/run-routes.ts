@@ -371,6 +371,16 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     });
 
     if (res.ok) {
+      // P1.09 (§5.6) — the sheet's "this run only, autonomously" per-run override: freeze
+      // `runs.gates_off` at creation so every named gate on THIS run skips by policy (the project
+      // policy is untouched). A flag write never fails the launch; a deduped replay re-asserts it.
+      if (body.autoProceedRun === true) {
+        await deps.txRunner
+          .run(principal.workspaceId, (tx) =>
+            tx.query(`update runs set gates_off = true where id = $1`, [res.runId]),
+          )
+          .catch(() => undefined);
+      }
       // Pre-triage guidance (REQ-IDE-28): a run-scope record the Revise phase delivers verbatim — the
       // user's rows are authoritative ("you pre-triaged N of M"); agent triage may add rows, never override.
       if (pretriage && !res.deduped) {
@@ -749,6 +759,12 @@ interface CreateRunBody {
   /** the sheet's Approvals choice — persists as the project's `approval_policy` (§5.6: Approvals is a
    *  project default the sheet edits; per-run gate behavior follows the project policy). */
   approvalPolicy?: "named" | "wait_each" | "run_to_completion";
+  /**
+   * P1.09 (§5.6; REQ-GATE-3) — the per-run override at launch: "this run only, autonomously" freezes
+   * `runs.gates_off` (the same flag "Approve and run autonomously" sets mid-run). Named gates then
+   * skip by policy for this run; spend/refusal/continue_rounds gates still open (REQ-SPEC-1).
+   */
+  autoProceedRun?: boolean;
 }
 interface EventBody {
   type: Parameters<typeof postEvents>[1]["events"][number]["type"];

@@ -64,6 +64,8 @@ import type {
   RestorePointsDto,
   RestorePreviewDto,
   RestoreApplyDto,
+  ApprovalSettingsDto,
+  ExplainersDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -262,6 +264,34 @@ export interface DataSource {
     projectId: string,
     overrides: ApprovalOverridesDto,
   ): Promise<void>;
+  // ---- P1.09 — the §6.4 approval-policy surface + standing guidance + explainers ----
+  /** `GET /projects/:id/settings/approvals` — policy + overrides + R3 defaults + standing guidance. */
+  getApprovalSettings?(session: SessionHeaders, projectId: string): Promise<ApprovalSettingsDto>;
+  /** `PUT /projects/:id/settings/approvals` — save policy and/or overrides (422 on an illegal one). */
+  putApprovalSettings?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { policy?: "named" | "wait_each" | "run_to_completion"; overrides?: ApprovalOverridesDto },
+  ): Promise<ApprovalSettingsDto>;
+  /** `PUT /projects/:id/runs/:runId/gate-overrides` — the per-run override ("this run only"). */
+  setRunGateOverrides?(
+    session: SessionHeaders,
+    projectId: string,
+    runId: string,
+    req: { overrides?: ApprovalOverridesDto; gatesOff?: boolean },
+  ): Promise<{ ok: true }>;
+  /** `POST /projects/:id/guidance` — add a standing-guidance rule from the settings surface (§6.5). */
+  createProjectGuidance?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { body: string; workflows?: readonly string[] },
+  ): Promise<{ ok: true; guidanceId: string }>;
+  /** `POST /projects/:id/guidance/:gid/retire` — standing guidance retires, never deletes. */
+  retireGuidance?(session: SessionHeaders, projectId: string, guidanceId: string): Promise<{ ok: true }>;
+  /** `GET /settings/explainers` — the user's dismissed one-time inline explainers (§5.11/§6.4). */
+  getExplainers?(session: SessionHeaders): Promise<ExplainersDto>;
+  /** `POST /settings/explainers/:name/dismiss` — mark the one-time explainer seen. */
+  dismissExplainer?(session: SessionHeaders, name: string): Promise<{ ok: true }>;
   /** PRB.06 — the What-changed read for a delivered response (§5.8 move cards + Inline hunks). */
   getWhatChanged(session: SessionHeaders, projectId: string, responseId: string): Promise<WhatChangedDto>;
   /** PRB.06 — a hunk comment → a Guidance row the next Revise consumes (§6.5). */
@@ -626,6 +656,19 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getApprovalOverrides(projectId),
     setApprovalOverrides: (session, projectId, overrides) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setApprovalOverrides(projectId, overrides),
+    // P1.09 — the §6.4 approval-policy surface + standing guidance + explainers.
+    getApprovalSettings: (session, projectId) =>
+      client(session).getApprovalSettings(projectId),
+    putApprovalSettings: (session, projectId, req) =>
+      client(session).putApprovalSettings(projectId, req),
+    setRunGateOverrides: (session, projectId, runId, req) =>
+      client(session).setRunGateOverrides(projectId, runId, req),
+    createProjectGuidance: (session, projectId, req) =>
+      client(session).createProjectGuidance(projectId, req),
+    retireGuidance: (session, projectId, guidanceId) =>
+      client(session).retireGuidance(projectId, guidanceId),
+    getExplainers: (session) => client(session).getExplainers(),
+    dismissExplainer: (session, name) => client(session).dismissExplainer(name),
     getWhatChanged: (session, projectId, responseId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getWhatChanged(projectId, responseId),
     commentOnHunk: (session, projectId, responseId, hunkId, text) =>

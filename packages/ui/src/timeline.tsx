@@ -115,11 +115,13 @@ function RunRow({
   labels,
   cardLabels,
   hrefs,
+  renderGateCard,
 }: {
   run: TimelineRun;
   labels: TimelineLabels;
   cardLabels: RunCardLabels;
   hrefs?: TimelineHrefs;
+  renderGateCard?: (run: TimelineRun) => ReactNode;
 }): ReactNode {
   return (
     <li data-timeline-run={run.runId} style={{ marginBottom: "10px" }}>
@@ -128,7 +130,12 @@ function RunRow({
           {labels.runLineLabel(run.workflow, run.createdAt)}
         </p>
       ) : null}
-      <RunCard view={run.card as RunCardView} labels={cardLabels} hrefs={cardHrefs(run.runId, hrefs)} />
+      <RunCard
+        view={run.card as RunCardView}
+        labels={cardLabels}
+        hrefs={cardHrefs(run.runId, hrefs)}
+        {...(renderGateCard && run.gate ? { gateCard: renderGateCard(run) } : {})}
+      />
     </li>
   );
 }
@@ -139,11 +146,18 @@ export function TimelinePane({
   labels,
   cardLabels,
   hrefs,
+  renderGateCard,
 }: {
   view: TimelineViewWire;
   labels: TimelineLabels;
   cardLabels: RunCardLabels;
   hrefs?: TimelineHrefs;
+  /**
+   * P1.09 (§6.4) — renders the waiting run's full approve-with-deadline card (the app builds it from
+   * `run.gate`, the same DTO the Needs-you surface consumes). Absent ⇒ waiting runs keep their
+   * label + link.
+   */
+  renderGateCard?: (run: TimelineRun) => ReactNode;
 }): ReactNode {
   const next = view.nextStep;
   const nextLabel = labels.nextStepLabel(next.verb, next.headDraftN);
@@ -191,7 +205,7 @@ export function TimelinePane({
           <CollapsedSummary parts={round.parts} labels={labels} />
           <ul style={{ listStyle: "none", margin: "8px 0", padding: 0 }}>
             {round.runs.map((run) => (
-              <RunRow key={run.runId} run={run} labels={labels} cardLabels={cardLabels} hrefs={hrefs} />
+              <RunRow key={run.runId} run={run} labels={labels} cardLabels={cardLabels} hrefs={hrefs} {...(renderGateCard ? { renderGateCard } : {})} />
             ))}
           </ul>
           {round.anchor ? <VersionChip n={round.anchor.n} labels={labels} hrefs={hrefs} /> : null}
@@ -207,7 +221,7 @@ export function TimelinePane({
       {view.ungrouped.length > 0 ? (
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {view.ungrouped.map((run) => (
-            <RunRow key={run.runId} run={run} labels={labels} cardLabels={cardLabels} hrefs={hrefs} />
+            <RunRow key={run.runId} run={run} labels={labels} cardLabels={cardLabels} hrefs={hrefs} {...(renderGateCard ? { renderGateCard } : {})} />
           ))}
         </ul>
       ) : null}

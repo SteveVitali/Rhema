@@ -12,6 +12,8 @@ import type {
   RunReportView,
   RunReportAdvancedView,
   TimelineDraft,
+  GateCardWire,
+  GateStructuredEdits,
 } from "@rhema/findings-core";
 
 export const PACKAGE_NAME = "@rhema/api-client" as const;
@@ -226,6 +228,11 @@ export interface CreateRunDto {
   readonly guidance?: string;
   /** the sheet's Approvals choice → the project's `approval_policy` (§5.6). */
   readonly approvalPolicy?: "named" | "wait_each" | "run_to_completion";
+  /**
+   * P1.09 (§5.6; REQ-GATE-3) — the per-run override: "this run only, autonomously" freezes
+   * `runs.gates_off` at creation (the same flag "Approve and run autonomously" sets mid-run).
+   */
+  readonly autoProceedRun?: boolean;
   /** the reader's correspondence kind + variant slot (the corr lock discriminator). */
   readonly corrKind?: string;
   readonly corrK?: number;
@@ -370,23 +377,12 @@ export interface TriageRowDto {
   };
 }
 
-/** A gate card's facts (§6.4) — what the shared `GateCard` renders. */
-export interface GateCardDto {
-  readonly id: string;
-  readonly runId: string;
-  readonly kind: string;
-  readonly workflow: string;
-  readonly artifactVersionId?: string;
-  readonly artifactTitle?: string;
-  readonly openedAt: string;
-  readonly deadlineAt?: string;
-  readonly presenceDeadlineAt?: string;
-  readonly pausedWhileReading: boolean;
-  readonly held: boolean;
-  readonly blocking: boolean;
-  readonly onExpiry: string;
-  readonly spentCredits: number;
-  readonly capCredits: number;
+/**
+ * A gate card's facts (§6.4) — what the shared `GateCard` renders. P1.09: the shape is the shared
+ * `GateCardWire` (findings-core) so the session gate list AND the Timeline's per-run `gate` carry the
+ * identical fields — one card, every surface.
+ */
+export interface GateCardDto extends GateCardWire {
   readonly remainingEstimateCredits?: number;
   /** approve_triage only — the response-ledger rows the card approves (escalation-pinned). */
   readonly triage?: { readonly rows: TriageRowDto[] };
@@ -406,6 +402,14 @@ export interface GateDecisionDto {
   readonly guidance?: string;
   /** "…and remember this for this project" → a standing guidance rule (REQ-GATE-10). */
   readonly standingRule?: boolean;
+  /**
+   * P1.09 (§6.4 item 4) — the structured edits the card's `ed.*` fields carried: row edits applied to
+   * the artifact's sidecar server-side (→ `edits.rows` → the write-back overlay), labeled `values`
+   * recorded on the decision + composed into the edit summary.
+   */
+  readonly edits?: GateStructuredEdits & { readonly rows?: unknown };
+  /** P1.09 — per-run gate-timing overrides riding the resolution (validated like project overrides). */
+  readonly overrides?: ApprovalOverridesDto;
 }
 
 /** Pre-triage facts for the Revise sheet ("you pre-triaged N of M") + the seeded user ledger rows. */
@@ -421,6 +425,42 @@ export interface PretriageDto {
  *  24-h opt-in (`{ approve_triage: 86400000 }` → proceed_as_proposed). Server-validates with
  *  `approvalOverridesSchema`. */
 export type ApprovalOverridesDto = Record<string, number | null>;
+
+// ---- P1.09 — the approval-policy settings surface + standing-guidance management + explainers (§6.4) ----
+
+/** A standing-guidance row as the settings surface lists it (§6.5 — retired, never deleted). */
+export interface StandingGuidanceDto {
+  readonly id: string;
+  readonly body: string;
+  readonly workflows: readonly string[];
+  readonly active: boolean;
+  readonly createdAt: string;
+}
+
+/** `GET /projects/:id/settings/approvals` — the policy + per-kind overrides + standing guidance. */
+export interface ApprovalSettingsDto {
+  /** the project's approval policy — one of the three §6.4 values. */
+  readonly policy: "named" | "wait_each" | "run_to_completion";
+  /** per-kind deadline overrides (REQ-SPEC-1 — add ≥2 h to wait-default, lengthen/remove otherwise). */
+  readonly overrides: ApprovalOverridesDto;
+  /** the R3 defaults per kind, for the override grid's baseline column. */
+  readonly defaults: readonly {
+    readonly kind: string;
+    readonly deadlineMs: number | null;
+    readonly onExpiry: string;
+    /** true = the kind never takes an override (spend/refusal/partial — REQ-SPEC-1). */
+    readonly overridable: boolean;
+  }[];
+  /** active standing guidance (project-scope). */
+  readonly standing: readonly StandingGuidanceDto[];
+  /** retired standing guidance (audit — retired, never deleted). */
+  readonly retired: readonly StandingGuidanceDto[];
+}
+
+/** `GET /settings/explainers` — which one-time inline explainers the user has dismissed. */
+export interface ExplainersDto {
+  readonly dismissed: readonly string[];
+}
 
 // ---------------------------------------------------------------------------------------------------------
 // PRB.06 — What-changed (§5.8): the server-joined revision read (move cards + Inline hunks + obligation
@@ -1220,6 +1260,8 @@ export interface TimelineRunDto {
   readonly subjectN: number | null;
   readonly producedN: number | null;
   readonly card: RunCardView;
+  /** P1.09 — the waiting run's full approval card DTO (the Timeline mounts the identical card). */
+  readonly gate?: GateCardDto;
 }
 
 /** One round card: `vN` anchor → the runs that consumed it → the `v(N+1)` it produced. */
@@ -1404,6 +1446,34 @@ export interface ApiClient {
   getApprovalOverrides(projectId: string, init?: RequestInitLite): Promise<ApprovalOverridesDto>;
   /** Set the project's approval-deadline overrides — validated server-side (REQ-SPEC-1 rules). */
   setApprovalOverrides(projectId: string, overrides: ApprovalOverridesDto, init?: RequestInitLite): Promise<void>;
+  // ---- P1.09 — the approval-policy surface (§6.4 R3; REQ-SPEC-1) ----
+  /** `GET /projects/:id/settings/approvals` — policy + overrides + R3 defaults + standing guidance. */
+  getApprovalSettings(projectId: string, init?: RequestInitLite): Promise<ApprovalSettingsDto>;
+  /** `PUT /projects/:id/settings/approvals` — save the policy and/or overrides (422 on an illegal one). */
+  putApprovalSettings(
+    projectId: string,
+    req: { policy?: "named" | "wait_each" | "run_to_completion"; overrides?: ApprovalOverridesDto },
+    init?: RequestInitLite,
+  ): Promise<ApprovalSettingsDto>;
+  /** `PUT /projects/:id/runs/:runId/gate-overrides` — the per-run override (§6.4; "this run only"). */
+  setRunGateOverrides(
+    projectId: string,
+    runId: string,
+    req: { overrides?: ApprovalOverridesDto; gatesOff?: boolean },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
+  /** `POST /projects/:id/guidance` — add a standing-guidance rule from the settings surface (§6.5). */
+  createProjectGuidance(
+    projectId: string,
+    req: { body: string; workflows?: readonly string[] },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; guidanceId: string }>;
+  /** `POST /projects/:id/guidance/:gid/retire` — standing guidance retires, never deletes. */
+  retireGuidance(projectId: string, guidanceId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** `GET /settings/explainers` — the user's dismissed one-time inline explainers. */
+  getExplainers(init?: RequestInitLite): Promise<ExplainersDto>;
+  /** `POST /settings/explainers/:name/dismiss` — mark the one-time explainer seen (§5.11/§6.4). */
+  dismissExplainer(name: string, init?: RequestInitLite): Promise<{ ok: true }>;
   /** The delivered-review dossier (§5.7; PRB.04's live binding) — assembled server-side from delivered rows. */
   getDossier(projectId: string, runId: string, init?: RequestInitLite): Promise<DossierDto>;
   /** The server-joined What-changed read for a delivered response (§5.8; PRB.06). */
@@ -1820,6 +1890,66 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "PUT",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ overrides }),
+      });
+    },
+    // ---- P1.09 — the approval-policy surface (§6.4 R3; REQ-SPEC-1) ----
+    async getApprovalSettings(projectId, init): Promise<ApprovalSettingsDto> {
+      return json<ApprovalSettingsDto>(
+        `/projects/${encodeURIComponent(projectId)}/settings/approvals`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async putApprovalSettings(projectId, req, init): Promise<ApprovalSettingsDto> {
+      return json<ApprovalSettingsDto>(
+        `/projects/${encodeURIComponent(projectId)}/settings/approvals`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async setRunGateOverrides(projectId, runId, req, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(runId)}/gate-overrides`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async createProjectGuidance(projectId, req, init): Promise<{ ok: true; guidanceId: string }> {
+      return json<{ ok: true; guidanceId: string }>(
+        `/projects/${encodeURIComponent(projectId)}/guidance`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async retireGuidance(projectId, guidanceId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/projects/${encodeURIComponent(projectId)}/guidance/${encodeURIComponent(guidanceId)}/retire`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: "{}",
+        },
+      );
+    },
+    async getExplainers(init): Promise<ExplainersDto> {
+      return json<ExplainersDto>(`/settings/explainers`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async dismissExplainer(name, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/settings/explainers/${encodeURIComponent(name)}/dismiss`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
       });
     },
     async getDossier(projectId, runId, init): Promise<DossierDto> {

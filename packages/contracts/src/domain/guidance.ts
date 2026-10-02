@@ -18,6 +18,7 @@ export const GUIDANCE_SOURCES = [
   "queued_message", //   a note for the next phase (REQ-RUN-18)
   "chat_promote", //     promoted from an Assistant turn
   "interview", //        Interview-me
+  "settings", //         P1.09 — a standing rule added from the project's Approvals settings (§6.5)
 ] as const;
 export type GuidanceSource = (typeof GUIDANCE_SOURCES)[number];
 export const guidanceSourceSchema = z.enum(GUIDANCE_SOURCES);

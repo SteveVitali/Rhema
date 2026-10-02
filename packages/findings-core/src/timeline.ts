@@ -7,6 +7,7 @@
 
 import type { RunState } from "@rhema/contracts";
 import type { RunCardView } from "./run-card.js";
+import type { GateCardWire } from "./gate-card.js";
 
 /** A draft version row the timeline needs (the `vN` chips + round anchors). */
 export interface TimelineDraft {
@@ -31,6 +32,11 @@ export interface TimelineRun {
   readonly producedN: number | null;
   /** the run's card view, already built from whitelisted facts (REQ-IDE-11). */
   readonly card: RunCardView;
+  /**
+   * P1.09 (§6.4) — the run's UNRESOLVED approval as the full card DTO, so the Timeline renders the
+   * identical approve-with-deadline card the Needs-you surface mounts (same fields, same anatomy).
+   */
+  readonly gate?: GateCardWire;
 }
 
 /** One round: its subject `vN` chip plus the runs that consumed vN (oldest → newest, top → bottom). */

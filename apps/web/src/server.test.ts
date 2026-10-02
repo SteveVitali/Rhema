@@ -1514,6 +1514,66 @@ describe("P1.05 — timeline, run page, steering", () => {
     expect(html).toContain('/p/the-politics-of-visibility/r/run_tl');
   });
 
+  it("P1.09 — a waiting run mounts the IDENTICAL gate card inline + its permanent decision lines (§6.4)", async () => {
+    const WAITING_RUN = {
+      runId: "run_wait",
+      workflow: "draft",
+      state: "waiting_gate" as const,
+      createdAt: "2026-09-02T08:00:00Z",
+      subjectN: 1,
+      producedN: null,
+      card: {
+        ...CARD,
+        runId: "run_wait",
+        state: "waiting_gate" as const,
+        // P1.09 — the run's permanent decision record (§6.4 item 8; REQ-RUN-5/6).
+        decisions: [
+          {
+            id: "gate_done",
+            gateId: "gate_done",
+            kind: "approve_plan",
+            action: "approve",
+            byActor: "user",
+            presence: false,
+            at: "2026-09-02T09:00:00Z",
+            changes: 3,
+          },
+        ],
+      },
+      // P1.09 — the open gate DTO the run card expands into the §6.4 card (the same DTO the
+      // Needs-you row renders — one render path, identical anatomy).
+      gate: {
+        id: "gate_wait",
+        runId: "run_wait",
+        kind: "approve_plan",
+        workflow: "draft",
+        openedAt: "2026-09-02T08:30:00Z",
+        deadlineAt: "2026-09-03T08:30:00Z",
+        pausedWhileReading: false,
+        held: false,
+        blocking: true,
+        onExpiry: "proceed_conservative",
+        spentCredits: 120,
+        capCredits: 840,
+        artifactTitle: "02-structure-plan",
+      },
+    };
+    const timeline = {
+      ...TIMELINE,
+      rounds: [{ ...TIMELINE.rounds[0]!, runs: [WAITING_RUN, ...TIMELINE.rounds[0]!.runs] }],
+    };
+    const app = createWebApp(p105Deps({ getTimeline: async () => timeline as never }));
+    const html = await (await app.request("/p/the-politics-of-visibility")).text();
+    // the run card mounts the identical card (same component, same data-gate-card anatomy).
+    expect(html).toContain('data-run-card="run_wait"');
+    expect(html).toContain('data-gate-card="approve_plan"');
+    expect(html).toContain('action="/p/the-politics-of-visibility/gates/gate_wait"');
+    // the decision line rides the run card — the "with N changes" record (REQ-RUN-5).
+    expect(html).toContain('data-run-decisions');
+    expect(html).toContain('data-decision="gate_done"');
+    expect(html).toMatch(/with 3 changes|3 changes/);
+  });
+
   it("an active run opens the Desk on the live feed with replayed rows + the same-origin events URL", async () => {
     const live: ProjectRow[] = [
       { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },

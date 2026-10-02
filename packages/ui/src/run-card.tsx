@@ -5,6 +5,7 @@ import type {
   PhaseStatus,
   FeedDensity,
   RunCardAction,
+  GateDecisionView,
 } from "@rhema/findings-core";
 
 // The run card + live feed (§5.5; REQ-IDE-11/12/14; P1.05 §6.5 steering). The card renders ONLY the
@@ -64,6 +65,12 @@ export interface RunCardLabels {
   readonly walkthroughFailedLabel?: string;
   /** the run report link label (§14.5). */
   readonly reportLabel?: string;
+  /**
+   * P1.09 (§6.4 item 8; REQ-RUN-5/6) — the permanent approval-decision line ("approved by you at
+   * 14:32 · with 3 changes" / "auto-continued at the deadline" / "skipped by your Run-to-completion
+   *  policy"). One per recorded decision on the run.
+   */
+  readonly decisionLabel?: (decision: GateDecisionView) => string;
 }
 
 /** The POST/GET targets a card's actions submit to (web-supplied; absent ⇒ that affordance hides). */
@@ -149,10 +156,17 @@ export function RunCard({
   view,
   labels,
   hrefs,
+  gateCard,
 }: {
   view: RunCardView;
   labels: RunCardLabels;
   hrefs?: RunCardHrefs;
+  /**
+   * P1.09 (§6.4) — the identical approve-with-deadline card mounted under a `waiting_gate` run card
+   * (the Timeline renders the same `GateCard` the Needs-you rows expand to). Absent ⇒ the card keeps
+   * its waiting-gate label + link only.
+   */
+  gateCard?: ReactNode;
 }): ReactNode {
   const actionHref = (a: RunCardAction): string | undefined => {
     switch (a) {
@@ -285,6 +299,20 @@ export function RunCard({
             {labels.actionLabel?.("note") ?? "note"}
           </button>
         </form>
+      ) : null}
+      {/* P1.09 — the identical §6.4 approval card inline on the waiting run (same fields, same
+          anatomy as the Needs-you sheet's card). */}
+      {gateCard ?? null}
+      {/* P1.09 — the permanent decision record (§6.4 item 8): one line per resolved approval.
+          `view` crosses a cast DTO boundary (timeline.tsx) — a pre-P1.09 card may lack `decisions`. */}
+      {(view.decisions?.length ?? 0) > 0 && labels.decisionLabel ? (
+        <ul data-run-decisions style={{ listStyle: "none", margin: "10px 0 0", padding: "8px 0 0", borderTop: "1px solid var(--shell-border)", fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "2px" }}>
+          {view.decisions.map((d) => (
+            <li key={d.id} data-decision={d.id} data-action={d.action} data-by={d.byActor}>
+              {labels.decisionLabel!(d)}
+            </li>
+          ))}
+        </ul>
       ) : null}
     </section>
   );

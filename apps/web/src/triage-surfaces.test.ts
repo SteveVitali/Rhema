@@ -360,3 +360,202 @@ describe("the Revise sheet's pre-triage line (REQ-IDE-28)", () => {
     expect(await review.text()).not.toContain('data-pretriage-line="true"');
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// P1.09 — the full §6.4 approval surface on the web: the Needs-you ApprovalRow list (one <details> per
+// gate, the IDENTICAL card inside), the §5.11 ordering, the one-time explainer, the Approvals settings
+// section, the structured `ed.*` decode on the decide POST, and the per-run "autonomously" flag.
+
+const GATE_DEADLINE: GateCardDto = {
+  id: "gate_dl",
+  runId: "run_d",
+  kind: "approve_plan",
+  workflow: "draft",
+  openedAt: "2026-09-16T11:00:00Z",
+  deadlineAt: "2026-09-17T10:00:00Z",
+  pausedWhileReading: false,
+  held: false,
+  blocking: true,
+  onExpiry: "proceed_conservative",
+  spentCredits: 120,
+  capCredits: 840,
+};
+
+const GATE_INFO: GateCardDto = {
+  id: "gate_info",
+  runId: "run_i",
+  kind: "approve_scope",
+  workflow: "review",
+  openedAt: "2026-09-16T09:00:00Z",
+  pausedWhileReading: false,
+  held: false,
+  blocking: false,
+  onExpiry: "proceed_as_proposed",
+  spentCredits: 100,
+  capCredits: 840,
+};
+
+const SETTINGS = {
+  policy: "named" as const,
+  overrides: { approve_triage: 24 * 60 * 60 * 1000 },
+  defaults: [
+    { kind: "approve_plan", deadlineMs: 24 * 60 * 60 * 1000, onExpiry: "proceed_conservative", overridable: true },
+    { kind: "approve_triage", deadlineMs: null, onExpiry: "wait", overridable: true },
+    { kind: "confirm_cost", deadlineMs: null, onExpiry: "cancel", overridable: false },
+  ],
+  standing: [
+    { id: "gdn_1", body: "Always ask before apparatus over 1,000 words.", workflows: ["draft"], active: true, createdAt: "2026-09-10T00:00:00Z" },
+  ],
+  retired: [
+    { id: "gdn_0", body: "An old rule.", workflows: [], active: false, createdAt: "2026-09-01T00:00:00Z" },
+  ],
+};
+
+describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => {
+  it("each Needs-you row is a <details> ApprovalRow mounting the IDENTICAL card anatomy", async () => {
+    const app = createWebApp(makeDeps({ listGates: async () => [GATE] }));
+    const html = await (await app.request(`/p/${SLUG}`)).text();
+    expect(html).toContain('data-approval-row="gate_1"');
+    expect(html).toContain("<details"); // SSR/no-JS — the row expands natively
+    expect(html).toContain('data-approval-sheet="true"');
+    expect(html).toContain('data-gate-card="approve_triage"');
+    // the row itself carries kind + do-nothing on the summary (§5.11 — read before approving).
+    expect(html).toContain('data-row-do-nothing="true"');
+    expect(html).toContain('data-row-deadline="true"');
+  });
+
+  it("orders rows §5.11: deadline-bearing first (soonest), waiting next, informational last", async () => {
+    const app = createWebApp(
+      makeDeps({ listGates: async () => [GATE_INFO, GATE_DEADLINE, GATE] }),
+    );
+    const html = await (await app.request(`/p/${SLUG}`)).text();
+    const order = [...html.matchAll(/data-approval-row="([^"]+)"/g)].map((m) => m[1]);
+    expect(order).toEqual(["gate_dl", "gate_1", "gate_info"]);
+  });
+
+  it("the one-time explainer mounts on the first Approval card until dismissed (§5.11)", async () => {
+    const fresh = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: [] }) }));
+    const html = await (await fresh.request(`/p/${SLUG}`)).text();
+    expect(html).toContain('data-gate-explainer="true"');
+    expect(html).toContain(`action="/p/${SLUG}/explainers/approvals/dismiss"`);
+
+    const seen = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: ["approvals"] }) }));
+    expect(await (await seen.request(`/p/${SLUG}`)).text()).not.toContain('data-gate-explainer');
+  });
+
+  it("the explainer dismiss POST hits the api seam and bounces back", async () => {
+    const dismissExplainer = vi.fn(async () => ({ ok: true as const }));
+    const app = createWebApp(makeDeps({ dismissExplainer }));
+    const res = await app.request(`/p/${SLUG}/explainers/approvals/dismiss`, { method: "POST", ...form({}) });
+    expect(res.status).toBe(302);
+    expect(dismissExplainer).toHaveBeenCalledWith(expect.anything(), "approvals");
+  });
+
+  it("the Approvals settings section renders the policy radios + per-kind grid + standing guidance", async () => {
+    const app = createWebApp(makeDeps({ getApprovalSettings: async () => SETTINGS }));
+    const html = await (await app.request(`/p/${SLUG}`)).text();
+    expect(html).toContain('data-approval-settings="true"');
+    for (const p of ["named", "wait_each", "run_to_completion"]) {
+      expect(html).toContain(`data-policy="${p}"`);
+    }
+    expect(html).toContain('name="policy" checked="" value="named"'); // the current pick renders checked
+    // the standing row lists with a Retire affordance; the retired row shows in the audit list.
+    expect(html).toContain("Always ask before apparatus over 1,000 words.");
+    expect(html).toContain(`action="/p/${SLUG}/guidance/gdn_1/retire"`);
+    expect(html).toContain("An old rule.");
+  });
+
+  it("POST /p/:slug/settings/approvals decodes the grid → policy + per-kind overrides", async () => {
+    const putApprovalSettings = vi.fn(async () => SETTINGS);
+    const app = createWebApp(makeDeps({ putApprovalSettings }));
+    const res = await app.request(`/p/${SLUG}/settings/approvals`, {
+      method: "POST",
+      ...form({
+        policy: "wait_each",
+        ov_approve_plan: "wait", // remove → wait
+        ov_approve_triage: String(6 * 60 * 60 * 1000), // add 6 h
+        ov_confirm_cost: "", // spend kind — no control posts, ignored if it did
+      }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/p/${SLUG}?approvals=saved`);
+    expect(putApprovalSettings).toHaveBeenCalledWith(expect.anything(), "proj_pv", {
+      policy: "wait_each",
+      overrides: { approve_plan: null, approve_triage: 6 * 60 * 60 * 1000 },
+    });
+  });
+
+  it("standing guidance add/retire forms forward to the api (§6.5)", async () => {
+    const createProjectGuidance = vi.fn(async () => ({ ok: true as const, guidanceId: "gdn_2" }));
+    const retireGuidance = vi.fn(async () => ({ ok: true as const }));
+    const app = createWebApp(makeDeps({ createProjectGuidance, retireGuidance }));
+    const add = await app.request(`/p/${SLUG}/guidance`, {
+      method: "POST",
+      ...form({ body: "Prefer two-sentence paragraphs.", workflows: "draft, revise" }),
+    });
+    expect(add.status).toBe(302);
+    expect(createProjectGuidance).toHaveBeenCalledWith(expect.anything(), "proj_pv", {
+      body: "Prefer two-sentence paragraphs.",
+      workflows: ["draft", "revise"],
+    });
+    const retire = await app.request(`/p/${SLUG}/guidance/gdn_1/retire`, { method: "POST", ...form({}) });
+    expect(retire.status).toBe(302);
+    expect(retireGuidance).toHaveBeenCalledWith(expect.anything(), "proj_pv", "gdn_1");
+  });
+
+  it("the decide POST decodes the card's ed.* fields into edits + the per-run override", async () => {
+    const decideGate = vi.fn(async () => {});
+    const app = createWebApp(makeDeps({ decideGate, listGates: async () => [GATE_DEADLINE] }));
+    const res = await app.request(`/p/${SLUG}/gates/gate_dl`, {
+      method: "POST",
+      ...form({
+        action: "approve",
+        "ed.note": "trimmed the middle",
+        "ed.spine.0.ord": "2",
+        "ed.spine.1.strike": "1",
+        "ed.spine.new.text": "Costs follow attention.",
+        "ed.sec.0.targetWords": "900",
+        "ed.runOverride": "wait",
+      }),
+    });
+    expect(res.status).toBe(302);
+    expect(decideGate).toHaveBeenCalledWith(
+      expect.anything(),
+      "proj_pv",
+      "gate_dl",
+      expect.objectContaining({
+        action: "approve",
+        edits: expect.objectContaining({
+          note: "trimmed the middle",
+          spine: expect.arrayContaining([
+            { index: 0, order: 2 },
+            { index: 1, strike: true },
+          ]),
+          newClaims: [{ text: "Costs follow attention." }],
+          sections: [{ index: 0, targetWords: 900 }],
+        }),
+        // "this run only" resolved against the gate's REAL kind — never a client-named one.
+        overrides: { approve_plan: null },
+      }),
+    );
+  });
+
+  it("the run sheet's 'this run only, autonomously' posts autoProceedRun to createRun", async () => {
+    const createRun = vi.fn(async () => ({ runId: "run_auto", state: "queued" as const, deduped: false }));
+    const app = createWebApp(makeDeps({ createRun }));
+    const res = await app.request(`/p/${SLUG}/run`, {
+      method: "POST",
+      ...form({
+        workflow: "review", rigor: "standard", idempotencyKey: "idem_auto",
+        estimateCredits: "560", capCredits: "840", modelTier: "balanced",
+        autoRun: "on",
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(createRun).toHaveBeenCalledWith(
+      expect.anything(),
+      "proj_pv",
+      expect.objectContaining({ autoProceedRun: true }),
+    );
+  });
+});
