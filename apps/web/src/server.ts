@@ -3499,13 +3499,24 @@ export function createWebApp(deps: WebDeps): Hono {
     // explicit OFF reach the server). The resolved set is sent to the api, which freezes it into
     // the run's inputs (phase opt-out flags) and prices the SAME set — before this, the estimate
     // priced rigor defaults while the pod ran every manifest phase regardless.
+    //
+    // ECON.1 (§6.5) — the checkboxes render for ONE rigor and never re-render when the rigor radio
+    // changes (the inline script repaints the estimate box only). `toggleRigor` marks the rendered
+    // rigor: a submitted set whose marker no longer matches the submitted rigor is a STALE claim —
+    // the boxes describe another notch's defaults (Standard's checked discourse/second_read riding a
+    // Quick submit was the 2026-09-30 incident). Drop it entirely: the api then derives the
+    // submitted rigor's own defaults — presets are server-derived unless the user changed a toggle
+    // under Advanced for the SAME rigor the sheet rendered.
+    const renderedRigor = str("toggleRigor");
     const toggleKeys = str("toggleKeys").split(",").filter(Boolean);
     const toggles: Record<string, boolean> = {};
     const toggleQuery: Record<string, string> = {};
-    for (const key of toggleKeys) {
-      const on = str(`toggle.${key}`) === "on";
-      toggles[key] = on;
-      toggleQuery[`toggle.${key}`] = on ? "on" : "off";
+    if (toggleKeys.length > 0 && renderedRigor === rigor) {
+      for (const key of toggleKeys) {
+        const on = str(`toggle.${key}`) === "on";
+        toggles[key] = on;
+        toggleQuery[`toggle.${key}`] = on ? "on" : "off";
+      }
     }
     const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
     const view = buildSheet({ workflow, rigor, ...toggleQuery }, billing, deps.betaPlanOfferUrl);

@@ -281,6 +281,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // seven phases while being priced for five (D-PRB.21-1 divergence).
     let resolvedToggles: ToggleState | undefined;
     let phaseFlags: Record<string, boolean> = {};
+    // ECON.1 (§6.5; ADR-033) — the rigor notch's server-authored claim cap (Quick Review: five
+    // load-bearing claims); frozen into the run inputs so the oracle + budgets bound on it too.
+    let claimCap: number | undefined;
     try {
       const profile = sheetProfile(workflow);
       // Layering: rigor defaults < the seeded protocol's phase_defaults < the project's stored
@@ -297,6 +300,7 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       }
       resolvedToggles = resolveToggles(profile, body.rigor, overrides);
       phaseFlags = phaseFlagsForToggles(workflow, resolvedToggles);
+      claimCap = profile.rigorDefaults[body.rigor]?.claimCap;
     } catch {
       // not a beta-sheet workflow — no toggle semantics; the 1.5× floor below still applies.
     }
@@ -493,6 +497,17 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // false`; the flags also ride the phase prompt's `key=value` lines, so the ported skill
     // sees its declared opt-out inputs too (the flags ARE the SKILL.md frontmatter inputs).
     inputs = { ...inputs, ...phaseFlags };
+    // ECON.1 (§6.5; ADR-033) — freeze the claim cap (server-authored; wins over any client key) so the
+    // verification phase's `claim_rows_gte_inventory` oracle and the claim-scaled web budgets bound on
+    // the same "five load-bearing claims" the estimate priced. A fact_check-off toggle drops it, and a
+    // rigor with no cap STRIPS the key — a client-supplied claim_cap could otherwise make a Standard
+    // run's oracle pass on one checked claim.
+    if (claimCap != null && resolvedToggles?.fact_check !== false) {
+      inputs = { ...inputs, claim_cap: claimCap };
+    } else {
+      const { claim_cap: _dropped, ...rest } = inputs as { claim_cap?: unknown } & Record<string, unknown>;
+      inputs = rest;
+    }
     let pretriage: { triaged: number; total: number } | null = null;
     // PRB.06: prior_review is a SERVER-resolved fact (never client-trusted — a crafted input cannot point a
     // response at the wrong dossier, and a re-review's changed_since is computed from the store's bytes).

@@ -44,3 +44,11 @@ describe("BILL.3 — the purchase switch is deploy config on the api", () => {
     expect(SRC).toContain('{ name: "PURCHASE_MODE", value: cfg.purchaseMode }');
   });
 });
+
+describe("ECON.1 — the debit-mode flag is deploy config on BOTH consumers", () => {
+  it("injects DEBIT_MODE from the stage fact on api + worker (a mode string, never a secret)", () => {
+    // api's run paths and the worker's settle/cancel paths must read ONE stage fact — a divergent
+    // pair would charge differently by which process happened to settle the run.
+    expect(SRC.match(/\{ name: "DEBIT_MODE", value: cfg\.debitMode \}/g)).toHaveLength(2);
+  });
+});

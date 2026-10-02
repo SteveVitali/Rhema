@@ -190,7 +190,7 @@ export async function usageLevel4(exec: SqlClient, workspaceId: string, runId: s
               u.input_tokens::int as it, u.output_tokens::int as ot, u.cache_read_tokens::int as crt,
               u.cache_write_tokens::int as cwt, u.searches, u.fetches, u.credits, u.provider_request_id
          from usage_records u left join steps s on s.id = u.step_id
-        where u.run_id = $1 and u.workspace_id = $2
+        where u.run_id = $1 and u.workspace_id = $2 and u.source = 'proxy' -- ECON.1 D-A: meter of record only
         order by u.ts`,
       [runId, workspaceId],
     )

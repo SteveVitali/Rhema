@@ -11,7 +11,7 @@
 // group→egress firewall. The abstract facts (no internet reachability for the sandbox; per-run caps;
 // versioned isolated buckets) are provider-independent and carry over verbatim.
 
-import type { PurchaseMode, SignupMode } from "@rhema/contracts";
+import type { DebitMode, PurchaseMode, SignupMode } from "@rhema/contracts";
 
 export type StageKind = "dev" | "preview" | "prod";
 
@@ -204,6 +204,16 @@ export interface StageConfig {
    */
   purchaseMode: PurchaseMode;
   /**
+   * ECON.1 — `debit.mode` (REQ-SPEC-32(a); ADR-031), deployed to the api AND the worker as
+   * `DEBIT_MODE` (a mode string — never a secret). `committed` keeps the launched charge semantics
+   * (commits debit max(pod claim, metered catch-up); the settle only tops up); `metered` charges
+   * exactly the proxy meter `min(metered, cap)` on every charging terminal path. Every stage ships
+   * `committed` — the operator flips the stage fact to `metered` in a commit (auditable) ONLY after
+   * the calibrated caps deploy and the paid-account notice goes out (the ADR-013-paused flip;
+   * `docs/ops/playbooks/metered-debit-flip.md`). Unset/unknown env parses `committed` — fail-closed.
+   */
+  debitMode: DebitMode;
+  /**
    * PRB.15 — the stage's public serving surface (undefined off prod: previews keep the
    * `${stack}.rhema.dev` placeholder and never need real DNS). The Pulumi program builds the managed
    * cert's SAN list + the URL map's host rules from this block — the numbers the tests assert are the
@@ -259,6 +269,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     allowsProductionSecrets: false,
     signupMode: "invite", // PRB.13 — dev keeps the private-beta invite gate (open is prod-only)
     purchaseMode: "closed", // BILL.3 — purchase stays closed everywhere until the operator re-opens (ADR-028)
+    debitMode: "committed", // ECON.1 — the metered flip is operator-paused; ship dark (ADR-031)
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
@@ -271,6 +282,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     allowsProductionSecrets: false, // REQ-ARCH-38
     signupMode: "invite", // PRB.13 — previews never self-serve
     purchaseMode: "closed", // BILL.3 — never a real purchase on a preview
+    debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
   },
   prod: {
@@ -287,6 +299,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     allowsProductionSecrets: true,
     signupMode: "open", // PRB.15 — self-serve paid beta on prod (REQ-BETA-19 amended)
     purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
+    debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
   },

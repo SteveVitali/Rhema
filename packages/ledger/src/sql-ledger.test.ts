@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { InsufficientBalanceError, type SqlClient } from "@rhema/orchestrator";
+import {
+  InsufficientBalanceError,
+  absorbMeteredGap,
+  meteredCredits,
+  refundMeteredExcess,
+  resettleRun,
+  settleMeteredDebit,
+  type SqlClient,
+} from "@rhema/orchestrator";
 import { SqlHoldLedger } from "./sql-ledger.js";
 import {
   createLedgerTestDb,
@@ -242,5 +250,97 @@ describe("SqlHoldLedger.absorb — the platform-COGS record (DEF.2/F5; REQ-SPEC-
     );
     expect(again.ledgerId).toBe(res.ledgerId);
     expect(((await readLedgerRows(db, "run1")) as { kind: string }[]).filter((r) => r.kind === "adjustment")).toHaveLength(1);
+  });
+});
+
+// -------------------------------------------------------------------------------------------------------
+// ECON.1 — REQ-BILL-3 fault injection under BOTH debit modes: a run whose proxy meter inflates 3× past the
+// cap must still settle to debits == cap, the overrun booked adjustment(absorbed), never a credit past the
+// cap (the DB trigger would fire). `committed` and `metered` agree on the cap — the modes differ in WHO
+// keeps the excess, never in whether the user can be charged past it.
+
+async function seedProxyUsage(runId: string, credits: number): Promise<void> {
+  await db.client.query(
+    `insert into usage_records(id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider,
+                               model, model_tier, rate_table_version, list_cost_usd, credits, source)
+     values ($1, now(), $2, $3, $4, 1, 'editor', 'anthropic', 'm', 'base', 1, $5, $6, 'proxy')`,
+    [`u_${runId}`, WS, BA, runId, (credits / 140).toFixed(4), credits],
+  );
+}
+
+async function capFixture(runId: string, metered: number): Promise<void> {
+  await seedBalances(db, { billingAccountId: BA, balances: { included: 5000 } });
+  await seedRun(db, { runId, workspaceId: WS, state: "running", capCredits: 840, holdLedgerId: `h_${runId}` });
+  const led = ledger();
+  await inTx((tx) => led.hold(tx, { billingAccountId: BA, workspaceId: WS, runId, credits: 840, idempotencyKey: `hold:${runId}` }));
+  await seedProxyUsage(runId, metered);
+}
+
+function sums(rows: { kind: string; reason: string | null; credits: number }[]) {
+  return {
+    debited: rows.filter((r) => r.kind === "debit").reduce((s, r) => s + r.credits, 0),
+    refunded: rows.filter((r) => r.kind === "refund").reduce((s, r) => s + r.credits, 0),
+    absorbed: rows.filter((r) => r.kind === "adjustment" && r.reason === "absorbed").reduce((s, r) => s + r.credits, 0),
+  };
+}
+
+describe("REQ-BILL-3 × debitMode (ECON.1) — the 3×-inflation settle clamps at cap under both modes", () => {
+  it("committed: the metered settle debits exactly cap − debited; the overrun absorbs; Σ debits = cap", async () => {
+    await capFixture("run_c", 2520); // 3× the 840 cap metered by the proxy
+    const led = ledger();
+    const r = await inTx((tx) =>
+      resettleRun(tx, { ledger: led, debitMode: "committed" }, {
+        runId: "run_c", workspaceId: WS, billingAccountId: BA, state: "completed", attempt: 1,
+      }),
+    );
+    expect(r.debited).toBe(2520); // requested the full gap — the LEDGER clamped the write to cap
+    const s = sums(await readLedgerRows(db, "run_c") as { kind: string; reason: string | null; credits: number }[]);
+    expect(s.debited).toBe(840); // == cap: the claim settled min(metered, cap)
+    expect(s.absorbed).toBe(1680); // the clamped overrun booked absorbed (writeDebit's own leg)
+    expect(s.refunded).toBe(0);
+    expect(s.debited).toBeLessThanOrEqual(840); // Σ debits ≤ cap — always
+  });
+
+  it("metered: identical charge at cap — the above-cap overrun absorbs, no over-debit refund fires", async () => {
+    await capFixture("run_m", 2520);
+    const led = ledger();
+    const r = await inTx((tx) =>
+      resettleRun(tx, { ledger: led, debitMode: "metered" }, {
+        runId: "run_m", workspaceId: WS, billingAccountId: BA, state: "completed", attempt: 1,
+      }),
+    );
+    const s = sums(await readLedgerRows(db, "run_m") as { kind: string; reason: string | null; credits: number }[]);
+    expect(s.debited).toBe(840);
+    expect(s.absorbed).toBe(1680);
+    expect(s.refunded).toBe(0); // debited ≤ metered ⇒ refundMeteredExcess is a no-op
+    expect(r.refunded).toBe(0);
+  });
+
+  it("metered: a settled-then-inflated run refunds the over-debit AND clamps the catch-up at cap", async () => {
+    // phase commits debited 900 under committed floor semantics (the pod claim exceeded the meter);
+    // the meter then settled at 632 — under `metered` the 268 excess returns to the user, and the
+    // cap trigger never fires (refunds lower net debited before any further debit).
+    await seedBalances(db, { billingAccountId: BA, balances: { included: 5000 } });
+    await seedRun(db, { runId: "run_od", workspaceId: WS, state: "running", capCredits: 840, holdLedgerId: "h_od" });
+    const led = ledger();
+    await inTx((tx) => led.hold(tx, { billingAccountId: BA, workspaceId: WS, runId: "run_od", credits: 840, idempotencyKey: "hold:run_od" }));
+    // cap-clamped commit (900 asked → 840 charged + 60 absorbed) — the floor's shape on a slow meter.
+    await inTx((tx) =>
+      led.debit(tx, { billingAccountId: BA, workspaceId: WS, runId: "run_od", credits: 900, idempotencyKey: "debit:run_od:craft:1" }),
+    );
+    await seedProxyUsage("run_od", 632);
+    const excess = await inTx((tx) =>
+      refundMeteredExcess(tx, { ledger: led }, { runId: "run_od", workspaceId: WS, billingAccountId: BA, attempt: 1 }),
+    );
+    expect(excess).toBe(208); // debited 840 − metered 632 → the user's money returns (ADR-031)
+    const s = sums(await readLedgerRows(db, "run_od") as { kind: string; reason: string | null; credits: number }[]);
+    expect(s.debited - s.refunded).toBe(632); // net charge = the metered figure exactly
+    expect(await inTx((tx) => meteredCredits(tx, "run_od", 1))).toBe(632);
+    // the absorb path then books nothing more: the metered burn was fully paid.
+    expect(
+      await inTx((tx) =>
+        absorbMeteredGap(tx, { ledger: led }, { runId: "run_od", workspaceId: WS, billingAccountId: BA }),
+      ),
+    ).toBe(0);
   });
 });

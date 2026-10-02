@@ -26,7 +26,17 @@ export interface RigorDefault {
   readonly toggles: ToggleState;
   /** Full board's second read uses a DIFFERENT model family (§6.5). Purely informational on the sheet. */
   readonly secondReadDifferentModel?: boolean;
+  /**
+   * §6.5's "five load-bearing claims": the maximum claim count this rigor notch prices, budgets, and
+   * oracles for. Server-authored (the client-supplied or density-derived count is clamped to it in
+   * `buildEstimate`; the same number freezes into `inputs.claim_cap` at run creation so the completion
+   * oracle's `claim_rows_gte_inventory` and the egress-proxy claim-scaled budgets bound on it too).
+   */
+  readonly claimCap?: number;
 }
+
+/** §6.5 — Quick Review fact-checks "the five load-bearing claims". ECON.1 owns this constant. */
+export const QUICK_REVIEW_CLAIM_CAP = 5;
 
 export interface WorkflowSheetProfile {
   readonly workflow: WorkflowKey;
@@ -108,7 +118,11 @@ const REVIEW: WorkflowSheetProfile = {
   workflow: "review",
   toggles: ["fact_check", "discourse", "second_read"],
   rigorDefaults: {
-    quick: { modelTier: "base", toggles: { fact_check: true, discourse: false, second_read: false } },
+    quick: {
+      modelTier: "base",
+      toggles: { fact_check: true, discourse: false, second_read: false },
+      claimCap: QUICK_REVIEW_CLAIM_CAP,
+    },
     standard: { modelTier: "balanced", toggles: { fact_check: true, discourse: true, second_read: true } },
     full_board: {
       modelTier: "frontier",

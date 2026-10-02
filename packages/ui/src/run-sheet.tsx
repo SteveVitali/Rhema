@@ -187,6 +187,13 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
           submits no field, so the run POST cannot otherwise distinguish "user turned it off"
           from "not on this sheet": the server resolves each listed key as on/off. */}
       <input type="hidden" name="toggleKeys" value={view.toggleDeltas.map((d) => d.toggle).join(",")} />
+      {/* ECON.1 (§6.5) — the rigor these checkboxes were RENDERED for. The Advanced toggles do not
+          re-render on a rigor switch (the inline script only repaints the estimate box), so a form
+          rendered for Standard can submit checked discourse/second_read boxes under a Quick radio —
+          the incident shape. The run POST drops the whole toggle set when the submitted rigor no
+          longer matches this marker, and the api derives the submitted rigor's defaults instead:
+          presets are server-derived unless the user changed a toggle for THAT rigor's render. */}
+      <input type="hidden" name="toggleRigor" value={view.rigor} />
 
       {/* title line: "Review v2 · 5,180 words · 21 claims" + the §7.2 scope pills (P1.06 — the typed
           @scope renders as human labels; the grammar syntax never reaches the surface). */}

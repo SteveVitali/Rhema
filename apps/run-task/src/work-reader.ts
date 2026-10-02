@@ -243,6 +243,8 @@ function factsForPhase(
         const ledger = readJson<{ claims?: unknown[]; inventoryCount?: number }>(files, p.artifact.replace(/\.md$/, ".json")) ?? readJson<{ claims?: unknown[]; inventoryCount?: number }>(files, "01-claim-ledger.json");
         facts.claimRowCount = ledger?.claims?.length ?? 0;
         facts.inventoryCount = ledger?.inventoryCount ?? 0; // the inventory count is carried on the ledger sidecar
+        // ECON.1 (§6.5) — the rigor's frozen claim cap ("five load-bearing claims" for Quick Review).
+        if (typeof inputs?.claim_cap === "number") facts.claimCap = inputs.claim_cap;
         break;
       }
       case "rubric_dimensions_complete": {

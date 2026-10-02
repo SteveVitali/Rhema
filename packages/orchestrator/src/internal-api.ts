@@ -63,7 +63,9 @@ import {
   incrementalMeteredDebit,
   netDebitedCredits,
   reconcileRunSpend,
+  refundMeteredExcess,
   settleMeteredDebit,
+  type DebitMode,
 } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
@@ -126,6 +128,15 @@ export interface OrchestratorDeps {
    * atomically; settlement simply waits for a bound caller.
    */
   settleUnverified?(args: UnverifiedSettleArgs): Promise<unknown>;
+  /**
+   * ECON.1 (REQ-SPEC-32(a); ADR-031) — the debit mode. `committed` (default; `DEBIT_MODE` env unset) keeps
+   * the launched semantics: commits charge max(pod claim, metered catch-up) and the settle only tops up.
+   * `metered` charges exactly the proxy meter `min(metered, cap)`: commits debit the metered remainder
+   * only, `finalizeRun` refunds any over-debit (`metered_over_debit`), and a user-cancelled run settles to
+   * metered instead of release-only. Shipped dark — the deploy keeps `committed` until the calibrated
+   * caps + operator flip gate land.
+   */
+  readonly debitMode?: DebitMode;
 }
 
 /** The settlement parameters for one Unverified delivery (RES.2) — passed to `deps.settleUnverified`. */
@@ -928,7 +939,13 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       // next boundary instead of leaking it (STB.3's committed-vs-metered divergence). `args.credits`
       // remains the floor and the whole story where no proxy rows exist; P0.11's `debit` still enforces
       // min(actual, cap − Σ) under the run-row lock. idempotent on (run, step, attempt).
-      const debitCredits = await incrementalMeteredDebit(tx, args.runId, args.attempt, args.credits);
+      const debitCredits = await incrementalMeteredDebit(
+        tx,
+        args.runId,
+        args.attempt,
+        args.credits,
+        deps.debitMode ?? "committed",
+      );
       if (debitCredits > 0) {
         const ba = (
           await tx.query("select w.billing_account_id from runs r join workspaces w on w.id=r.workspace_id where r.id=$1", [
@@ -1348,6 +1365,17 @@ export async function finalizeRun(
         billingAccountId: args.billingAccountId,
         attempt: curAttempt.current_attempt,
       });
+      // ECON.1 — `debitMode=metered`: the charge is exactly the meter (ADR-031). The pod-claim floor in
+      // `incrementalMeteredDebit` can over-debit (634 vs 632 on 01M3SK62…); under metered the excess is
+      // the user's — returned here, still inside the hold, before the release.
+      if (deps.debitMode === "metered") {
+        await refundMeteredExcess(tx, deps, {
+          runId: args.runId,
+          workspaceId: args.workspaceId,
+          billingAccountId: args.billingAccountId,
+          attempt: curAttempt.current_attempt,
+        });
+      }
     }
     if (args.holdLedgerId) {
       await deps.ledger.release(tx, {

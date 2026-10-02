@@ -39,6 +39,11 @@ describe("checkWeeklySpendCap", () => {
     expect(capture.sql).toContain("w.is_test = true");
     expect((capture.params?.[0] as Date).toISOString()).toBe("2026-09-28T00:00:00.000Z");
   });
+  it("ECON.1 D-A: sums only the proxy meter — sdk/provider twins never inflate the weekly figure", async () => {
+    const capture: { sql?: string; params?: unknown[] } = {};
+    await checkWeeklySpendCap({ db: fakeDb(0, capture) });
+    expect(capture.sql).toContain("u.source = 'proxy'");
+  });
   it("no DB seam ⇒ reports unknown spend (the caller attests a fresh leg)", async () => {
     const r = await checkWeeklySpendCap({});
     expect(r.weeklyMeteredUsd).toBeNull();

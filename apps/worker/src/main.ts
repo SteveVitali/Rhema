@@ -20,9 +20,9 @@ import {
   type SqlClient,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
-import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery } from "@rhema/ledger";
+import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery, persistEstimatorCell, loadEstimatorCells } from "@rhema/ledger";
 import { SqlObligationHook } from "@rhema/obligations";
-import { recordInstrumentedFold, type InstrumentedMeasurement } from "@rhema/protocols";
+import { recordInstrumentedFold, setInstrumentedOverride, type EstimatorSpec, type InstrumentedMeasurement } from "@rhema/protocols";
 import { createGcsContentStore } from "@rhema/mirror";
 import {
   PgPoolTxRunner,
@@ -249,6 +249,17 @@ export async function startWorker(): Promise<void> {
     query: (sql, params) => systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
   };
 
+  // ECON.1 — boot-load the durable estimator cells into the override map: a folded spec survives a
+  // worker restart and the estimating path sees the same calibrated numbers the reconcile fold wrote.
+  // Non-fatal on a read failure — the shipped modeled base still prices.
+  try {
+    for (const cell of await loadEstimatorCells(systemExec)) {
+      setInstrumentedOverride(cell.workflow, cell.spec as EstimatorSpec);
+    }
+  } catch (err) {
+    console.warn("[worker] estimator_cells load failed — modeled estimators govern:", err);
+  }
+
   // PRB.08 billing bindings: the provider Usage & Cost report source (admin key from Secret Manager — unset
   // on preview stages, where usage.reconcile then skips the report pull and still runs the balance
   // assertion), the ops alert sink, and the estimator-recalibration fold (@rhema/protocols — server-side
@@ -329,6 +340,11 @@ export async function startWorker(): Promise<void> {
     launcher,
     config,
     systemExec,
+    // ECON.1 — `DEBIT_MODE` (default `committed`); the metered-debit flag rides the run paths.
+    debitMode: env.debitMode,
+    // ECON.1 — the harvest's admissibility cutovers (unset ⇒ predicates inert; see docs/ops/ flip runbook).
+    ...(env.calibrationPresetCutover ? { calibrationPresetCutover: env.calibrationPresetCutover } : {}),
+    ...(env.calibrationResearchAfter ? { calibrationResearchAfter: env.calibrationResearchAfter } : {}),
     // PRB.19 (live F35): the `run.deliver` withheld-delivery re-drive folds a `response` ledger into
     // obligation routing exactly like the api's inline POST path — without the hook wired here, a
     // re-driven response delivered with its obligations unrouted (prod run 01M2VDHN… routed post-hoc).
@@ -354,8 +370,16 @@ export async function startWorker(): Promise<void> {
       ),
     // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override
     // flips the workflow's `provisional` once real reports land).
+    // ECON.1 — the fold ALSO persists to `estimator_cells` (durable: a restart/API boot reloads it via
+    // `loadEstimatorCells` → `setInstrumentedOverride`; the process map was never the source of truth).
     recalibrate: (m) => {
-      recordInstrumentedFold(m.workflow, m as InstrumentedMeasurement);
+      const folded = recordInstrumentedFold(m.workflow, m as InstrumentedMeasurement);
+      void persistEstimatorCell(systemExec, {
+        workflow: m.workflow,
+        spec: folded,
+        measuredAt: new Date(typeof m.measuredAt === "string" ? m.measuredAt : m.measuredAt),
+        runsBehind: folded.runsBehind ?? [],
+      }).catch(() => {});
     },
     contentStoreFor: (workspaceId: string) => createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
     ...(notificationConfig ? { notifications: notificationConfig } : {}),

@@ -239,7 +239,7 @@ async function turnUsage(deps: ChatApiDeps, runId: string): Promise<TurnUsage & 
     await deps.db.query(
       `select coalesce(sum(searches),0)::int as searches, coalesce(sum(fetches),0)::int as fetches,
               coalesce(sum(credits),0)::int as credits
-         from usage_records where run_id = $1`,
+         from usage_records where run_id = $1 and source = 'proxy'`, // ECON.1 D-A: meter of record only — the sdk twins measure the same tokens
       [runId],
     )
   ).rows[0] as { searches: number; fetches: number; credits: number } | undefined;
@@ -250,7 +250,10 @@ async function turnUsage(deps: ChatApiDeps, runId: string): Promise<TurnUsage & 
 async function workspaceSpend(deps: ChatApiDeps, workspaceId: string): Promise<number> {
   const row = (
     await deps.db.query(
-      `select coalesce(sum(credits),0)::int as c from usage_records where workspace_id = $1`,
+      // ECON.1 D-A: `source='proxy'` (meter of record — sdk twin rows double-count) and run-scoped
+      // rows only (`claim_prepass` COGS has no run_id and is never charged to the workspace).
+      `select coalesce(sum(credits),0)::int as c from usage_records
+         where workspace_id = $1 and source = 'proxy' and run_id is not null`,
       [workspaceId],
     )
   ).rows[0] as { c: number } | undefined;

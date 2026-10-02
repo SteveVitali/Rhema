@@ -25,6 +25,9 @@ import {
   sweepExpiredTrials,
   sweepAutoReload,
   weeklyEstimatorRefit,
+  harvestCostObservations,
+  recomputeCostCards,
+  refitCapMultipliers,
   type ProviderUsageReport,
   type ReconcileAlert,
   type ReconcileMeasurement,
@@ -36,6 +39,7 @@ import {
   type SubDeps,
 } from "@rhema/ledger";
 import { deliverRun, NOTIFY_QUEUE, type DeliverRunArgs, type DeliverRunDeps } from "@rhema/orchestrator";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { WorkerLedgerDeps } from "./ledger-jobs.js";
 
 /** The `stripe.event` job payload (sent by the api's webhook intake). */
@@ -209,6 +213,14 @@ export const BILLING_REFIT_JOB = "billing.estimator-refit" as const;
 export interface WorkerFullBillingDeps extends WorkerBillingDeps {
   /** the Stripe port auto-reload charges through (unset ⇒ the sweep is a logged skip — never a fake charge). */
   readonly stripe?: StripePort;
+  /**
+   * ECON.1 admissibility cutovers (ticket §4): `calibrationPresetCutover` = the §6.5 conformance
+   * deploy's timestamp (pre-cutover runs are evidence, never cap-fit input); `calibrationResearchAfter`
+   * = RES.1's research-restore deploy timestamp (research-bearing runs ended earlier are
+   * `pre_res1_research`). Both optional — unset ⇒ the predicate does not fire.
+   */
+  readonly calibrationPresetCutover?: Date;
+  readonly calibrationResearchAfter?: Date;
 }
 
 export async function handleBillingPeriodTick(
@@ -251,6 +263,24 @@ export async function handleAutoReloadSweep(deps: WorkerFullBillingDeps): Promis
   }, deps.clock.now());
 }
 
-export function handleEstimatorRefit(deps: WorkerFullBillingDeps): Promise<unknown> {
-  return weeklyEstimatorRefit(deps.systemExec, { ids: deps.ids, clock: deps.clock }, deps.clock.now());
+export async function handleEstimatorRefit(deps: WorkerFullBillingDeps): Promise<unknown> {
+  const now = deps.clock.now();
+  const global_ = await weeklyEstimatorRefit(deps.systemExec, { ids: deps.ids, clock: deps.clock }, now);
+  // ECON.1 — the durable calibration loop rides the same weekly job: harvest the trailing metered legs
+  // into cost_observations, recompute the cost-card cells, and write the per-bucket cap reports (the
+  // REQ-BILL-7 1.5→1.35 refit, floor 1.25, breaker 2× runtime-preserved; the ≤10% in-sample cap-reach
+  // the report row asserts). `researchWorkflows` comes from the manifests (any research-class phase) so
+  // the RES.1 cutover predicate only gates the workflows research actually touches.
+  const researchWorkflows = Object.values(WORKFLOW_MANIFESTS)
+    .filter((m) => m.phases.some((p) => p.phaseClass === "research"))
+    .map((m) => m.workflow);
+  const harvested = await harvestCostObservations(deps.systemExec, deps.ids, {
+    source: "production",
+    researchWorkflows,
+    ...(deps.calibrationPresetCutover ? { presetCutover: deps.calibrationPresetCutover } : {}),
+    ...(deps.calibrationResearchAfter ? { researchAfter: deps.calibrationResearchAfter } : {}),
+  });
+  const cells = await recomputeCostCards(deps.systemExec, `econ1@${now.toISOString().slice(0, 10)}`, now);
+  const reports = await refitCapMultipliers(deps.systemExec, { ids: deps.ids }, now);
+  return { global: global_, calibration: { harvested, cells, buckets: reports.length } };
 }

@@ -309,6 +309,35 @@ describe("GET /runs/:id/report (§14.5)", () => {
     });
   });
 
+  it("ECON.1 D-A: the Level-4 buckets count ONLY the proxy meter — sdk twin rows never double-count", async () => {
+    // reproduces the 01M3SK62… incident shape: proxy 632 + sdk_estimate 553 + sdk_stream 440 must
+    // read 632, not 1,625 (all three sources meter the SAME tokens).
+    await seedReportedRun();
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      for (const [id, source, credits] of [
+        ["ur_rep_sdk_e", "sdk_estimate", 553],
+        ["ur_rep_sdk_s", "sdk_stream", 440],
+      ] as const) {
+        await tx.query(
+          `insert into usage_records
+             (id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+              model_tier, rate_table_version, input_tokens, output_tokens, list_cost_usd, credits, source)
+           values ($1, now(), $2, $3, 'run_rep', 1, 'st_rep_1', 'verifier', 'anthropic',
+                   'claude-sonnet-4-6', 'balanced', 1, 4000, 500, 0.5, $4, $5)`,
+          [id, seed.workspaceId, seed.billingAccountId, credits, source],
+        );
+      }
+    });
+    const res = await app.request("/runs/run_rep/report?advanced=1");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      advancedView: { rows: { credits: number; inputTokens: number }[] };
+    };
+    const total = body.advancedView.rows.reduce((s, r) => s + r.credits, 0);
+    expect(total).toBe(300); // the proxy meter — not 300 + 553 + 440 = 1,293
+    expect(body.advancedView.rows).toHaveLength(1); // sdk twins are not shown as separate buckets
+  });
+
   it("404s a missing run; 401s unauthenticated", async () => {
     expect((await app.request("/runs/run_missing/report")).status).toBe(404);
     const anon = createApp({ ...deps, principal: () => null, db: sql });

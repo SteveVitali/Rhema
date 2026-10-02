@@ -133,7 +133,9 @@ async function seedFixture() {
   await db.pg.query(
     `insert into usage_records(id, ts, workspace_id, billing_account_id, run_id, role, provider, model, model_tier,
                                rate_table_version, list_cost_usd, credits, source)
-       values ('u_1','2026-09-03T11:00:00Z',$1,$2,$3,'writer','anthropic','m','balanced',1,3.10,500,'proxy')`,
+       values ('u_1','2026-09-03T11:00:00Z',$1,$2,$3,'writer','anthropic','m','balanced',1,3.10,500,'proxy'),
+              -- ECON.1 D-A: sdk twins carry list_cost too — the COGS read must not double-count them
+              ('u_2','2026-09-03T11:00:00Z',$1,$2,$3,'writer','anthropic','m','balanced',1,2.90,470,'sdk_estimate')`,
     [WS, BA, RUN1],
   );
 

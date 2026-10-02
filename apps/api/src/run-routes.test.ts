@@ -180,11 +180,29 @@ describe("POST /projects/:id/runs", () => {
     expect(row.inputs.verification).toBe(true);
     expect(row.inputs.discourse).toBe(false);
     expect(row.inputs.second_read).toBe(false);
-    // the estimate was re-derived from the SAME resolved set (quick review, 5 active phases):
-    // (40 + 0.012×5180 + 24×21 + 5×100 churn) + (200 + 16×21 research incl. PRB.24 loop churn)
-    // = 1642.16, ×1.25 PRB.25 coverage ×0.6 → 1232; cap 1848.
-    expect(row.estimate_credits).toBe(1232);
-    expect(row.cap_credits).toBe(1848);
+    // ECON.1 §6.5 — Quick's server-authored claim cap freezes into the run inputs: the five
+    // load-bearing claims the verification oracle must cover and the claim-scaled budgets bound on.
+    expect(row.inputs.claim_cap).toBe(5);
+    // the estimate was re-derived from the SAME resolved set (quick review, 5 active phases, the
+    // density-derived 21 claims clamped to the cap): (40 + 0.012×5180 + 24×5 + 5×100 churn) +
+    // (200 + 16×5 research) = 1002.16, ×1.25 PRB.25 coverage ×0.6 → 752; cap 1128.
+    expect(row.estimate_credits).toBe(752);
+    expect(row.cap_credits).toBe(1128);
+  });
+
+  it("ECON.1 §6.5 — claim_cap is server-authored: standard freezes none, and a client key cannot set one", async () => {
+    // Standard rigor has no cap: a smuggled `inputs.claim_cap` is STRIPPED (it could otherwise make
+    // the oracle pass a Standard review on one checked claim).
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-cap-1", inputs: { draftId: seed.draftId, sidecar: true, claim_cap: 1 } }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    expect(row.inputs.claim_cap).toBeUndefined();
   });
 
   it("PRB.23 — submitted toggle overrides win over rigor defaults (explicit off survives)", async () => {

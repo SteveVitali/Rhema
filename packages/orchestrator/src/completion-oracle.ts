@@ -104,6 +104,12 @@ export interface PredicateFacts {
   readonly nonempty?: Readonly<Record<string, boolean>>;
   readonly claimRowCount?: number;
   readonly inventoryCount?: number;
+  /**
+   * ECON.1 (§6.5) — the rigor notch's server-frozen claim cap (`inputs.claim_cap`; Quick Review: 5).
+   * `claim_rows_gte_inventory` passes when the ledger covers `min(inventory, cap)` claims — a Quick
+   * review is COMPLETE once its five load-bearing claims are checked, not when all 23 inventoried are.
+   */
+  readonly claimCap?: number;
   readonly letterSectionsComplete?: boolean;
   readonly rubricDimensionCount?: number;
   /** the second read's producer query id, and the orchestrator-launched scoped query id it must equal. */
@@ -149,14 +155,18 @@ export function createFactsEvaluator(facts: PredicateFacts): PredicateEvaluator 
         const hit = p.artifacts.find((a) => facts.nonempty?.[a] === true);
         return pass(p, hit != null, hit != null ? `nonempty: ${hit}` : "none of the declared paths non-empty");
       }
-      case "claim_rows_gte_inventory":
+      case "claim_rows_gte_inventory": {
+        // ECON.1 — the required row count is the inventory, clamped by the rigor's claim cap.
+        const required =
+          facts.inventoryCount == null
+            ? undefined
+            : Math.min(facts.inventoryCount, facts.claimCap ?? facts.inventoryCount);
         return pass(
           p,
-          facts.claimRowCount != null &&
-            facts.inventoryCount != null &&
-            facts.claimRowCount >= facts.inventoryCount,
-          `${facts.claimRowCount} ≥ ${facts.inventoryCount}`,
+          facts.claimRowCount != null && required != null && facts.claimRowCount >= required,
+          `${facts.claimRowCount} ≥ ${required}${facts.claimCap != null ? ` (capped; inventory ${facts.inventoryCount})` : ""}`,
         );
+      }
       case "letter_sections_complete":
         return pass(p, facts.letterSectionsComplete === true);
       case "rubric_dimensions_complete":

@@ -22,3 +22,4 @@ export * from "./personas.js";
 export * from "./benchmark.js"; // P0.13: §18 benchmark enclave, corpus, gold set, waves, run-ledger join
 export * from "./ai-use.js"; // PRB.11: append-only AI-use statement additions (§8.4 REQ-VIS-10)
 export * from "./account-export.js"; // P1.18: account_exports (REQ-ACCT-3 zip job + link state)
+export * from "./cost-calibration.js"; // ECON.1: the durable calibration store (0049)

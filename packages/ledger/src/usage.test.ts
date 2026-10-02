@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { SqlClient } from "@rhema/orchestrator";
 import { planOf } from "@rhema/contracts";
-import { usageLevel0, usageLevel1, usageLevel2, usageCsv, usageCsvText } from "./usage.js";
+import { usageLevel0, usageLevel1, usageLevel2, usageLevel4, usageCsv, usageCsvText } from "./usage.js";
 import { activateSubscription } from "./subscriptions.js";
 import { provisionTrial, gateTrialUnlock } from "./trial.js";
 import { grant } from "./entries.js";
@@ -155,5 +155,37 @@ describe("usageCsv — the §14.5 export", () => {
     expect(text).toContain("run_1");
     // quoting: a comma-bearing field is quoted
     expect(usageCsvText([{ ...rows[0]!, project: 'A "quoted", project' }])).toContain('"A ""quoted"", project"');
+  });
+});
+
+describe("usageLevel4 — the Advanced drill-down", () => {
+  it("ECON.1 D-A: counts only source='proxy' rows — sdk/provider_report twins never double-count", async () => {
+    await seedRun(db, { runId: "run_l4", workspaceId: WS, projectId: PRJ, workflow: "review" });
+    await inTx(async (tx) => {
+      await tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_l4','run_l4','verification',2,'done',100,1,now(),now())`,
+      );
+      // the incident shape: 632 proxy + 553 sdk_estimate + 440 sdk_stream = a 1,625 display figure
+      // where only 632 was ever the metered charge.
+      for (const [id, source, credits] of [
+        ["u_l4_p", "proxy", 632],
+        ["u_l4_e", "sdk_estimate", 553],
+        ["u_l4_s", "sdk_stream", 440],
+        ["u_l4_r", "provider_report", 631],
+      ] as const) {
+        await tx.query(
+          `insert into usage_records
+             (id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+              model_tier, rate_table_version, input_tokens, output_tokens, list_cost_usd, credits, source)
+           values ($1, now(), $2, $3, 'run_l4', 1, 'st_l4', 'editor', 'anthropic', 'm', 'base', 1,
+                   100, 50, 0.1, $4, $5)`,
+          [id, WS, BA, credits, source],
+        );
+      }
+    });
+    const rows = await usageLevel4(db.client, WS, "run_l4");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.credits).toBe(632); // the meter of record — never 632+553+440+631
   });
 });

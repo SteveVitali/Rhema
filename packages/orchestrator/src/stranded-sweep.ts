@@ -31,7 +31,7 @@ import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { WorkflowKey } from "@rhema/contracts";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
-import { reconcileRunSpend } from "./spend.js";
+import { reconcileRunSpend, resettleRun } from "./spend.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
 import type { OrchestratorDeps } from "./internal-api.js";
 import type { SqlClient } from "./tx.js";
@@ -63,7 +63,8 @@ export type StrandedSweepOutcome =
   | { readonly kind: "queued_reenqueued"; readonly runId: string; readonly workspaceId: string; readonly attempt: number }
   | { readonly kind: "gate_rearmed"; readonly gateId: string; readonly runId: string; readonly workspaceId: string }
   | { readonly kind: "preflight_alerted"; readonly runId: string; readonly workspaceId: string }
-  | { readonly kind: "unverified_settled"; readonly runId: string; readonly workspaceId: string };
+  | { readonly kind: "unverified_settled"; readonly runId: string; readonly workspaceId: string }
+  | { readonly kind: "metered_resettled"; readonly runId: string; readonly workspaceId: string };
 
 interface StuckRow {
   readonly id: string;
@@ -269,6 +270,52 @@ export async function sweepStrandedRuns(
     } catch {
       // a settlement leg failed — the markers stay unset and the next pass retries. One bad run must
       // never wedge the rest of the sweep.
+    }
+  }
+
+  // ---- Leg F (ECON.1 D-E): late-arriving proxy rows re-settle recently-terminal runs. -------------
+  // The egress proxy flushes usage asynchronously — rows can land AFTER the terminal settle ran
+  // (`01M3DQ4A…` reconciled to spent=0 then metered 6; `01M3DJ5V…` froze spent at 182 of 185). A
+  // terminal run whose metered total exceeds `debited − refunded + absorbed` has residue: re-run the
+  // settle inside its tenant tx. Idempotent by construction (`greatest` reconcile + fresh-gap absorb +
+  // keyed settle/refund rows), so re-passing an already-settled run is a cheap no-op — the scan is
+  // windowed to 72h because the flush lag is minutes, not days.
+  const meteredResidue = (
+    await deps.systemExec.query(
+      `select r.id, r.workspace_id, r.state, r.current_attempt, w.billing_account_id
+         from runs r join workspaces w on w.id = r.workspace_id
+        where r.state in ('completed','cancelled','failed')
+          and r.ended_at > now() - interval '72 hours'
+          and (
+            select coalesce(sum(u.credits), 0) from usage_records u
+             where u.run_id = r.id and u.source = 'proxy'
+          ) > (
+            select coalesce(sum(case l.kind when 'debit' then l.credits when 'refund' then -l.credits else 0 end), 0)
+              from credit_ledger l where l.run_id = r.id and l.kind in ('debit','refund')
+          ) + (
+            select coalesce(sum(l2.credits), 0) from credit_ledger l2
+             where l2.run_id = r.id and l2.kind = 'adjustment' and l2.reason = 'absorbed'
+          )
+        order by r.ended_at`,
+      [],
+    )
+  ).rows as {
+    id: string; workspace_id: string; state: string; current_attempt: number; billing_account_id: string;
+  }[];
+  for (const row of meteredResidue) {
+    try {
+      await deps.txRunner.run(row.workspace_id, (tx) =>
+        resettleRun(tx, deps, {
+          runId: row.id,
+          workspaceId: row.workspace_id,
+          billingAccountId: row.billing_account_id,
+          state: row.state,
+          attempt: row.current_attempt,
+        }),
+      );
+      outcomes.push({ kind: "metered_resettled", runId: row.id, workspaceId: row.workspace_id });
+    } catch {
+      // one run's residue must never wedge the sweep — it re-surfaces on the next pass.
     }
   }
 

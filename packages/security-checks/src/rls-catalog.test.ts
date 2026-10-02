@@ -122,6 +122,9 @@ const NON_TENANT = new Set([
   // system stores / registries / internals
   "_migrations", "agent_types", "protocols", "deployments", "acquisition_events",
   "estimate_cache", "estimator_config", "estimator_fits", "stripe_events",
+  // ECON.1 (0049) — the calibration aggregates/cells are cross-tenant platform data (no tenant key);
+  // the raw evidence rows stay tenant-scoped (cost_observations is RLS-forced above).
+  "cost_card_cells", "cap_calibration_reports", "estimator_cells",
   "proxy_credentials", "proxy_allowlists",
   // the benchmark enclave (isolated system surface)
   "benchmark_arm_configs", "benchmark_arm_runs", "benchmark_consequence_log",
@@ -137,9 +140,9 @@ const NON_TENANT = new Set([
 /** The enforced tenant set — workspace_id + FORCE RLS + the uniform policy. */
 const EXPECTED_RLS_FORCED = new Set([
   "account_exports", "ai_use_additions", "analytics_events", "artifacts", "auto_reload_events",
-  "checkout_sessions", "credit_ledger", "email_action_tokens", "notification_deliveries",
-  "personas", "project_search_docs", "projects", "run_event_seq", "run_events", "runs",
-  "timeline_events", "trial_restorations", "usage_records",
+  "checkout_sessions", "cost_observations", "credit_ledger", "email_action_tokens",
+  "notification_deliveries", "personas", "project_search_docs", "projects", "run_event_seq",
+  "run_events", "runs", "timeline_events", "trial_restorations", "usage_records",
 ]);
 
 describe("the tenancy census (REQ-ARCH-25/26 — every table classified, exhaustively)", () => {
@@ -300,6 +303,12 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   deployments: "-",
   estimator_config: "-",
   estimator_fits: "-",
+  // ECON.1 (0049) — the calibration store is read-only for the user role: the API serves cost cards /
+  // estimator cells override-first; only the system pool writes (system-owned tables, no insert grant).
+  cost_card_cells: "s",
+  cap_calibration_reports: "s",
+  estimator_cells: "s",
+  cost_observations: "s", // tenant evidence rows — RLS scopes a user read to its own workspace
   acquisition_events: "i", // pre-auth funnel beacon — api inserts through the raw client (0037)
   slo_samples: "i", // api writes autosave_save_ms / event_delivery_ms inside tenant txs (0042)
   benchmark_arm_configs: "-",
