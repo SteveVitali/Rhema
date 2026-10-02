@@ -36,3 +36,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-028](ADR-028-purchase-mode-switch.md) | `purchase.mode` is a fail-closed stage-config switch with an `is_test` allowlist | BILL.3 | Accepted |
 | [ADR-029](ADR-029-pending-checkout-email-trigger.md) | The pending-checkout email triggers on `return_viewed_at`, sent post-commit at open→completed | BILL.3 (absorbs BL-09) | Accepted |
 | [ADR-030](ADR-030-stripe-checkout-request-contract.md) | Checkout sessions scope `customer_update` to `customer` and ship `automatic_tax` opt-in | BILL.3 | Accepted |
+| [ADR-031](ADR-031-metered-burn-classification.md) | Burn classification under `debitMode=metered` | ECON.1 | Accepted |
+| [ADR-032](ADR-032-durable-calibration-store.md) | Durable calibration store — schema, size bands, admissibility, derived cells | ECON.1 | Accepted |
+| [ADR-033](ADR-033-quick-claim-cap-mechanism.md) | Quick Review's 5-claim cap — server-frozen input, oracle-bound; findings cap deferred | ECON.1 | Accepted |

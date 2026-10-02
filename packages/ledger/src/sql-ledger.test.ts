@@ -5,7 +5,6 @@ import {
   meteredCredits,
   refundMeteredExcess,
   resettleRun,
-  settleMeteredDebit,
   type SqlClient,
 } from "@rhema/orchestrator";
 import { SqlHoldLedger } from "./sql-ledger.js";

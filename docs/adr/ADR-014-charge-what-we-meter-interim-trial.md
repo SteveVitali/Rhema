@@ -15,6 +15,17 @@ actual cost against the hold. Prod does not do that:
 - **The 2026-09-22 D-PRB.16-5 ruling** ("cap-meter-only: uncommitted burn does not debit") normalized the gap. The
   platform absorbs roughly 60–70% of every run.
 
+> **Correction note (2026-10-02, ECON.1 ground truth):** the 1,625 figure was NOT the meter of record. The
+> seat-level L4 query summed `usage_records` across **all** sources — `proxy` 632 + `sdk_estimate` 553 +
+> `sdk_stream` 440 = 1,625 — triple-counting the same tokens (divergence path D-A; fixed with `source='proxy'`
+> filters). The run was debited **634** against a proxy meter of **632** — already metered within the
+> pod-claim-floor's +2. The premise's direction stands (the committed-vs-metered divergence is real — D-B/C/D/E
+> in the run ledger: completed-run under-debit `01M36663…` −134cr pre-DEF.2; cancelled/failed unbooked burn;
+> late-arriving rows; the floor over-debit) but the specific "charged 632 against a 1,625 meter" framing was
+> wrong — the gap on *completed* runs is the display defect handed to RPT.1, not a missing debit. STB.3's
+> cancelled-run residue and the non-completed classes remain real absorbed burn this ADR governs.
+> See `docs/build/runs/ECON.1.md` § Deliverable 1 and ADR-031 for the burn classification.
+
 That same Quick run executed discourse and the second read, which §6.5's Quick preset turns off. Its cost therefore
 overstates Quick and misstates the preset (PR-E6).
 
