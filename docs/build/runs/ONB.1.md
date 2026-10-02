@@ -176,3 +176,7 @@
   delta + live egress probe → N1/N3 journeys (mailbox exists; flagged test tenant) → flip the
   registry flags + commit screenshots. All of it is operator/environment work beyond this
   session's reach → `D-ONB.1-1`, `D-ONB.1-2` in `docs/tickets/DEFERRALS.md`.
+- 2026-10-02 — **Closeout.** PR **#93** opened (`gh`, stacked on ACT.1's branch, OPERATOR merge
+  policy); `docs/build/pr/ONB.1.md` is the body; BUILD_INDEX row 99; LEDGER advanced
+  (nextTicket → EDIT.1, chainTip → `stevevitali/onb-1-import-latency-held-draft`); DEFERRALS
+  gains the ONB.1 section; `check-build-memory` 0 violations.
