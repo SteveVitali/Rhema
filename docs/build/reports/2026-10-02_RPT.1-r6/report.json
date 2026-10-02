@@ -1,0 +1,36 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "d010a76f3347",
+  "startedAt": "2026-10-02T15:09:31.014Z",
+  "finishedAt": "2026-10-02T15:49:18.301Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "b75581c",
+    "observed": {
+      "web": "b75581c50c7cb4bec281950ff2c1dab79b4de721",
+      "api": "b75581c50c7cb4bec281950ff2c1dab79b4de721"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": null,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2387246,
+      "screenshot": "R6.png"
+    }
+  ],
+  "passed": true
+}

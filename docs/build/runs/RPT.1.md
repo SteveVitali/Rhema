@@ -125,3 +125,71 @@
 - `D-RPT.1-1` — the deployed-stage R6 leg (run + ledger cross-check + screenshots + the
   expected-red→green flip) rides Stage B.
 
+## Stage B — deployed-stage execution (2026-10-02)
+
+- **Deploy.** No migrations vs `29213dc` (`git diff 29213dc --name-only packages/db/migrations/` →
+  empty). Cloud Build `bfe78701-7c4a-4f21-a391-c7f1233710fe` (tag `rpt1-b75581c`, SUCCESS, 6m40s);
+  digests pinned in `infra/pulumi/Pulumi.prod.yaml` — api `f3edc839`, web `b4abadca`, worker
+  `e08fa062`, egress-proxy `cb639623`, run-task `52bffc84` (short prefixes; the full digest
+  set is in the `deployments` row). `pulumi preview`: 7 updates + 1 `InstanceTemplate`
+  replacement (the proxy MIG rolls its template on any image change — compute, not stateful data);
+  `pulumi up` **update 108** converged (7 updated, 1 replaced, 144 unchanged). The replacement
+  proxy instance briefly reported `IP_IN_USE_BY_ANOTHER_RESOURCE`, then reached RUNNING/HEALTHY
+  (`rhema-prod-proxy-h6fc`, MIG `rhema-prod-proxy-mig-34ea26a`). Pre-existing Pulumi warning about
+  the undefined `alloydbCluster` stack output persists (cosmetic).
+- **Provenance.** `GET https://api.rhema.tools/healthz` and `https://rhema.tools/healthz` both
+  report `gitSha = b75581c50c7cb4bec281950ff2c1dab79b4de721`; `deployments` row
+  `prod:b75581c50c7cb4bec281950ff2c1dab79b4de721` recorded via IAP tunnel with all nine image
+  digests + `protocols_version 0.4.0+ec61156725a895ab` (deployed_at 14:59:13Z). Tunnel closed after
+  evidence collection.
+- **Journey R6 — GREEN.** `rhema-journeys` run nonce `d010a76f3347`, 15:09:31Z → 15:49:18Z,
+  `passed:true`, R6 outcome `ready-to-flip`, 0 console errors, 0 failed requests, provenance match
+  on both surfaces. Test tenant `01M3YJGDX7Q1GZNY88DKPH854E` (`is_test=true`, keyless DWD via
+  `rhema-journeys@`, mailbox `test@rhema.tools`), funded with 4,000 promo credits before launch.
+  Run `01M3YJSH728XTQ3NH03AYYB1Z7` — Quick/Base Review on `planted-error-excerpt.md`
+  (≤300 words), estimate 588 cr, cap 1,764 cr, state `completed` at 15:49:12Z.
+  Evidence: `docs/build/reports/2026-10-02_RPT.1-r6/{report.json,R6.png}`.
+- **Intra-phase meter (the headline fix).** 54 `usage.tick` events on the run, 49
+  `provisional:true`. Inside the single still-running `intake` phase the card's committed figure
+  climbed 11 → 25 → 30 → 35 → 38 → 55 (seq 5–10, 15:13:33Z–15:14:53Z, ~20 s cadence); craft,
+  verification, argument, and letter each produced their own ascending in-phase sequences (full
+  distinct list: 11,25,30,35,38,55,49,58,68,91,84,102,110,121,140,143,213,242,266,274,285,294,308,
+  403,456,459,463,492,498,504,509,516,520,543,548,555,569,160,578,584,609,201,617,622,633,643,667,
+  681,696,702,712,719,732 — the dips are committed-claim ticks at step boundaries). Journey
+  asserted ≥2 distinct spent values under one `running` phase + ≥1 `≈` provisional render: PASS.
+- **Phase durations.** `step.finished.durationMs`: intake 179,902 ms · craft 129,992 ms ·
+  verification 238,569 ms (attempt 2 — see hiccup) · argument 164,248 ms · letter 401,649 ms.
+  Report renders real durations; journey asserted no `· 0 min` phase row: PASS.
+- **Report ↔ ledger (read-only cross-check via IAP tunnel).** `credit_ledger` for the run:
+  hold 1,764 → debits 58 (intake) + 35 (craft) + 97 (verification) + 41 (argument) + 123 (letter)
+  = **354**; refund **97** (`platform_fault:zero_coverage`, verification phase); absorbed
+  adjustments 382 + 97 = **479**; release 1,410. **Charged = Σ debits − Σ refunds = 257 cr** — the
+  report's "…cr spent" figure equals it and `[data-metered-line]`'s charged component agrees
+  (journey-asserted). Metered = Σ `usage_records(source='proxy')` = **736 cr / $5.313222 list**
+  across 151 rows; the 736 → 257 gap renders as reasoned difference rows (absorbed + refund), not
+  a bare key. Seat split: `editor`/base only, proxy-sourced (sdk twins 305 est / 242 stream never
+  summed). `?advanced=1` Level-4 rows populated (153 of 161 usage rows carry a resolvable
+  `step_id`/`step:<phase>` attribution; 8 pre-step rows unattributed by design).
+- **Showcase legs.** Prod holds ≥10 seeded `showcase` projects, each with a completed
+  `spent_credits=3,860` run and **zero** `usage_records` — including the test workspace's own
+  (`01M3YJGDYCPAW0SGT1B9XDM4T2`); the L1/L2/CSV + `/billing/usage` predicates
+  (`packages/ledger/src/usage.ts`, `apps/api/src/billing-routes.ts`) exclude `projects.showcase`
+  runs, and `getRunReport` emits `workedExample` on theirs (`timeline-routes.ts:773` +
+  `copy.ts:1947`). Verified by predicate + data shape; no showcase row can reach a usage surface.
+- **Hiccup (honest).** At 15:33:32Z the run went `orphaned` (`heartbeat_stale` — a ~3.5-min silence
+  inside verification), the reaper resumed it (`reaper_resume`, "resumed from the last completed
+  phase"), and verification re-ran as attempt 2 (15:35:46Z–15:39:45Z). The duplicated phase is
+  exactly what the `platform_fault:zero_coverage` refund + `absorbed` adjustments reconcile on the
+  report — the difference machinery earned its keep on a real fault.
+- **Spend log.** Test-tenant funding grant: 4,000 promo credits. Metered proxy list-cost for the
+  run: **$5.31** — **over the ticket's ≤$3 leg cap** (the orphaned verification re-run ≈$1
+  duplicated burn + a 6.7-min letter phase at Quick/Base rates pushed it past). Charged
+  net-of-refund: **257 credits** (the ledger figure the user actually pays). The over-cap is on
+  the metered-list-cost measure only; it is recorded here rather than hidden, and the run was
+  allowed to finish because cancelling mid-verification would have destroyed the report leg the
+  ticket exists to prove (RES.2's $7.27-vs-$3 precedent: complete, record, flag). Every later
+  `RPT.1`-class live leg should prefer a rigor whose phases can't double on a reaper resume.
+- **Close.** `registry.ts` R6 `expected: "red" → "green"`; D-RPT.1-1 flipped DONE in
+  `docs/tickets/DEFERRALS.md`; screenshot + `report.json` committed under
+  `docs/build/reports/2026-10-02_RPT.1-r6/`.
+

@@ -68,13 +68,18 @@ stay behind the Level-4 fold).
 filter `projects.showcase`; a Showcase project's own report still serves, labelled "Worked example —
 the seeded Showcase run; these are illustrative figures, not your usage."
 
-**Journey R6 (implemented; live leg pending).** `packages/journeys/src/steps.ts` R6 launches a
-Quick/Base Review on the ≤300-word planted-error excerpt, polls the card's meter inside a running
-phase (≥2 distinct spent values + ≥1 provisional reading required), then reconciles the report
-(charged ≤ committed meter, equality absent a refund; reasoned differences; no "0 min"; Advanced
-rows present). The deployed-stage leg — the run, the read-only ledger Σ-debits cross-check recorded
-in the run ledger, committed screenshots, and the `expected: red → green` flip — is
-**D-RPT.1-1** (Stage B, ≤$3 metered).
+**Journey R6 (live-verified green on prod, 2026-10-02).** `packages/journeys/src/steps.ts` R6 ran
+against the deployed `b75581c` stage on the flagged `is_test` tenant: run
+`01M3YJSH728XTQ3NH03AYYB1Z7` (Quick/Base on the ≤300-word planted-error excerpt) completed;
+54 `usage.tick` events (49 provisional) advanced the card's meter *inside* single phases (intake:
+11→25→30→35→38→55); the report reconciled to the ledger (spent 257 = debits 354 − refund 97,
+with the 736-cr metered gap reasoned as absorbed + `platform_fault:zero_coverage`); every phase
+rendered a real duration (180 s / 130 s / 239 s / 164 s / 402 s — no "0 min"); `?advanced=1` listed
+per-request rows; `passed:true`, `ready-to-flip`, registry flipped to `expected:"green"`. Evidence:
+`docs/build/reports/2026-10-02_RPT.1-r6/`. Honest note: metered list-cost came to **$5.31** vs the
+leg's ≤$3 cap — the verification step orphaned on a stale heartbeat, the reaper resumed it, and the
+re-run plus a long letter phase doubled the burn; net charged was 257 cr. Recorded in
+`docs/build/runs/RPT.1.md` § Stage B.
 
 ## Traceability
 
@@ -97,5 +102,8 @@ in the run ledger, committed screenshots, and the `expected: red → green` flip
   counts and credits only — no protocol text in payloads).
 - `node docs/build/tools/check-append-only.mjs --base 29213dc` — OK; `check-build-memory.sh` — no
   violations.
-- **Stage B** (deploy + R6 on prod ≤$3, ledger cross-check, screenshots, red→green flip): pending —
-  `D-RPT.1-1`. Deploy is additive-only (no migrations); `pulumi preview` is a pre-merge no-cost read.
+- **Stage B — DONE (2026-10-02).** `b75581c` deployed via Pulumi update 108 (additive; no
+  migrations; the proxy instance-template rolled as part of the MIG image update — compute only).
+  Provenance `prod:b75581c50c7cb4bec281950ff2c1dab79b4de721` on api + web `/healthz`; `deployments`
+  row recorded. R6 **green** on prod (see above); `D-RPT.1-1` closed DONE. Metered $5.31 vs the ≤$3
+  leg cap — recorded honestly in `runs/RPT.1.md` § Stage B (orphan/reaper re-run; net charged 257 cr).

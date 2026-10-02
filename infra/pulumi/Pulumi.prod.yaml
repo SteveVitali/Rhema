@@ -197,9 +197,20 @@ config:
   # longer render a rigor-disabled phase checked and submit back as an "explicit" lever —
   # the shape that froze discourse+second_read onto Quick run 01M3Y5HJPC3SAQ1TGPVBATB1HE).
   # api/worker keep their est1-5534d93 digests (no diff'd runtime code in them at this tip).
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:aa428db390b7269494aa7629f1a7352dd6e61feba0125e3427f62a9b9f338319","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:f3a31bb928050c1c449f45356943696072b1c2dddefa95cb612513c2917ed498","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:49391bed12595de1db2c7f10ea277b5ab79ff7669433bc2336d9311c8a84fdef","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:320794449c58cd2548ec4f4803315602a6d659400fb6ca841ce1c4ca83eaadf1
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:92cb2ad26435632621310197891b9ba6b3a7385ead2625e84d95b42e5399477d
+  # RPT.1 Stage-B (build rhema:rpt1-b75581c, Cloud Build bfe78701, 2026-10-02, chain-tip SHA
+  # b75581c — stacks on the EST.1 deploy): api + web + worker + egress-proxy + run-task rebuilt
+  # on the RPT.1 tip. Carries: the heartbeat-emitted provisional `usage.tick` (the intra-phase
+  # meter — api), fenced `beginStep` + real phase durations (api + run-task), the reconciled
+  # run report (spent = Σ debits − refunds, proxy-only seat split, reasoned differences,
+  # server-computed flags, workedExample label — api + web), `x-rhema-step` usage attribution
+  # (run-task stamps it; egress-proxy parses/stamps `usage_records.step_id`), the populated
+  # `?advanced=1` drill-down (`step:<phase>` join — api + web), and the Showcase exclusion from
+  # every usage surface incl. the worker-run archive CSV (api + web + worker).
+  # fetcher/convert/export/collab consume only the additive optional `provisional` field on the
+  # usage.tick contract — no diff'd runtime code; they keep their pins.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f3edc83915bc32d24a2d746086755ab4c228d5949e4142e7f0d708524adba3d6","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:b4abadca456de2c7ddffaf0cec86fa9297a665b259ccf248194d0a5fa7101dcd","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e08fa06297638b1350bf4beba6075ee5a6c45fc2b1e27456185ad26a41d99a7a","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:52bffc84169e5f85870a6b49e24acf139d7ea85999fbd926dd3a53beac984da6
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
