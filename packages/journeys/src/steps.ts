@@ -509,6 +509,17 @@ const N5: StepFn = async (ctx) => {
   // the Run form must carry the entitlement row id — absent ⇒ the claim posts a paid hold instead.
   const ent = await page.locator('input[type="hidden"][name="entitlementId"]').count();
   if (ent === 0) throw new Error("the Run form carries no hidden entitlementId field");
+  // "This run only — run it to completion" (per-run gates_off): the leg is unattended; without it the
+  // Review parks at approve_scope waiting on a named approver (the 2026-10-02 first green attempt
+  // starved its 40-min delivery poll exactly there — run 01M3Z55G8VAQEVRKF2RXEJA1G0).
+  const auto = page.locator('input[name="autoRun"]');
+  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
+    if (!(await auto.isVisible())) {
+      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
+      if ((await summary.count()) > 0) await summary.first().click();
+    }
+    await auto.check();
+  }
   // launch the Standard/Base Review — the one bounded paid run of the weekly leg.
   const launch = page
     .locator(

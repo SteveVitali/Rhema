@@ -315,3 +315,63 @@ stateful replace/delete) → `pulumi up`. Then, on JOURNEY.1 flagged tenants onl
 N5 (≤300-word fixture, ~$5–7) → C1 ($0) → one near-cap trial Review on a claim-light fixture
 (est ≈$12.9 list, expected ~$5–7 metered). Stop at ≤$12 cumulative; dropped legs become
 `D-ACT.1-n` rows.
+
+### 2026-10-02 — Stage B executed at `5ce9d84` (update 113)
+
+**Deploy.** `0051_trial_spend_reconcile.sql` applied to prod via
+`scripts/live/prod-migrate-seed.mjs` over the IAP tunnel (`[migrate] applied
+0051_trial_spend_reconcile.sql` / `51 migrations recorded`). First build at `80c1e4f` went out as
+Pulumi **update 112** and immediately surfaced a live defect (below); the fix shipped as `5ce9d84`
+(Cloud Build `eb03dd18-4bfb-4a74-95b6-bb4dd902ff3c`) and went out as Pulumi **update 113** —
+6 updates, 0 replace/delete, nothing created. `check-deploy-provenance` PASS: api + web both report
+`5ce9d848a7a2f04b066a9f26c2cf60ee7fd093e4`; a `deployments` row records all pinned digests
+(api `75101869…`, web `2e13ed0b…`, worker `983b1e1e…`).
+
+**Live defect found & fixed (the point of Stage B).** On `80c1e4f` a flagged tenant's run sheet
+rendered the *insufficient-balance* panel — "cap (2,277) is more than your spendable balance (0)" —
+despite carrying a valid hidden `entitlementId`: `run-sheet/src/view.ts` resolved
+`insufficient` independently of `included`, and the UI rendered the paywall first. `5ce9d84` makes a
+qualifying entitlement suppress the insufficient resolution (regression test in
+`run-sheet/src/view.test.ts`; 156 tests green in the affected suites).
+
+**N5 — delivered.** Fresh flagged tenant `test+j0220c2d0eb47n5@rhema.tools` (real magic-link leg),
+draft project `jrn-0220c2d0eb47-paid`, run `01M3Z55G8VAQEVRKF2RXEJA1G0` — Review / Standard / Base.
+Sheet asserted: *Included* line carrying the **2,800** config cap, hidden `entitlementId`,
+`rhema_fp` minted. DB: `trial_unlock_checks` `allow`/`ok` (fingerprint unseen, domain clean),
+entitlement `01M3Z532GKY5WE3JXPBGP1F17G` `word_cap=2800` → `consumed`, `hold_bucket=trial_pocket`
+(no credit hold), entitlement hold → no debit. The journey's own 40-min delivery poll timed out
+("owed") because the run parked at the non-blocking `approve_scope` gate — a named-approval wait the
+harness didn't exercise; approving it via `POST /p/:slug/gates/:gid` (the real user path) resumed the
+run, which `completed` 21:54Z and serves its dossier (`N5-dossier.png`, HTTP 200) — **no cap
+death**. The N5 step now checks the per-run `autoRun` control (same as N6) so unattended legs don't
+park; registry flipped `expected: "green"`. Report `docs/build/reports/2026-10-02_ACT.1-n5/` +
+`delivery-evidence.json`.
+
+**C1 — green.** `ready-to-flip` on `5ce9d84`: anonymous `/` + `/pricing` carry no trial claim;
+the flagged-tenant `?audience=test` render carries the config-derived 2,800-word figures.
+Report `docs/build/reports/2026-10-02_ACT.1-c1/`; registry flipped.
+
+**Near-cap — delivered.** `test+jrn-a@rhema.tools`, project `act1-nearcap-2026-10-02`, run
+`01M3Z5JC49WFVSXP6NSVTEVN8P` on a ≈2,700-word claim-light fixture. Same entitlement path
+(`entitlementId 01M3YJGDXDYFDK8JZ5943N6FBF`, `trial_pocket` hold, `unlock allow/ok`), one
+`approve_scope` gate approved, run `completed` 22:37Z, dossier 200 (`nearcap-dossier.png`),
+`cap_credits=6270` vs `spent_credits=1273` — delivered well under cap. Note: jrn-a's stored
+entitlement row carries `word_cap=6000` (minted under an earlier config generation); the rendered
+sheet showed the live 2,800 figure — recorded honestly, entitlement binding itself is the load-bearing
+assertion.
+
+**Spend log (metered `list_cost_usd`, `usage_records source='proxy'`):**
+
+| leg | run | list USD |
+| --- | --- | --- |
+| N5 trial Review | `01M3Z55G8VAQEVRKF2RXEJA1G0` | $4.81 |
+| near-cap trial Review | `01M3Z5JC49WFVSXP6NSVTEVN8P` | $9.21 |
+| C1 | — | $0 |
+| **ACT.1 Stage-B total** | | **$14.02** |
+
+Residual: $14.02 exceeds the ≤$12 cumulative target by ≈$2 — the near-cap launch committed before
+N5's metered actuals were visible; each leg's own ceiling held (near-cap $9.21 < $15). Recorded in
+D-ACT.1-2. `trial_spend_daily` for 2026-10-02 reads `credits=0, reconciled_credits=0, paused_at=null`
+(reconciliation lands on the daily job — no pause fired, as expected under the $50/day ceiling).
+RES.2 restore was not exercised — both deliveries succeeded, so the exactly-once restore stays covered
+by `unverified-settle.test.ts` alone (honest non-event, not a claim).
