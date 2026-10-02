@@ -155,7 +155,9 @@ const N2_INVITE: StepFn = async (ctx) => {
       }
     }
   }
-  await context.close();
+  // Leave the page open on /login — the runner's post-step screenshot is the evidence PNG
+  // (it closes every context itself).
+  void context;
 };
 
 /** N1 (RED, ONB.1) — the drop-zone holds a dropped draft across sign-in and later page loads. */
