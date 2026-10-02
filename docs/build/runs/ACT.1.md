@@ -290,6 +290,10 @@
 **Deferrals:** D-ACT.1-1 (ASN scorer binding — operator credential), D-ACT.1-2 (Stage B legs),
 D-ACT.1-3 (everyone-flip — diff below). D-P1.16-1 leg (h) annotated.
 
+**PR:** #92 (`stevevitali/act-1-trial-entitlement` → `stevevitali/sec-2-signup-admission-throttle`;
+body = `docs/build/pr/ACT.1.md`). **Do not merge** — merge policy OPERATOR; the operator merges
+the stack bottom-up later.
+
 ## The everyone-flip (D-ACT.1-3 — operator's diff, recorded for GATE DECISIONS)
 
 ```diff
