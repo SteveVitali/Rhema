@@ -39,13 +39,29 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
-import { buildEstimate, phaseFlagsForToggles, resolveToggles, sheetProfile, type ToggleKey, type ToggleState } from "@rhema/run-sheet";
+import {
+  buildEstimate,
+  phaseFlagsForToggles,
+  resolveToggles,
+  sheetProfile,
+  type ToggleKey,
+  type ToggleState,
+} from "@rhema/run-sheet";
 import { PROTOCOL_SEEDS } from "@rhema/protocols";
 import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
-import { capFromEstimate, projectProtocolOverridesSchema, CURRENT_RATE_TABLE_VERSION } from "@rhema/contracts";
-import { effectivePlanTier, gateTrialUnlock, trialEntitlementFor, recordAnalyticsEvent } from "@rhema/ledger";
+import {
+  capFromEstimate,
+  projectProtocolOverridesSchema,
+  CURRENT_RATE_TABLE_VERSION,
+} from "@rhema/contracts";
+import {
+  effectivePlanTier,
+  gateTrialUnlock,
+  trialEntitlementFor,
+  recordAnalyticsEvent,
+} from "@rhema/ledger";
 import { planOf, modelTierAllowed, effectiveConcurrency } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
@@ -128,7 +144,9 @@ export interface RunApiDeps extends OrchestratorDeps {
    * the request context (headers carry the client IP in deploy); returns a [0,1] risk score or undefined.
    * Unset ⇒ the risk arm is inert (fingerprint + disposable-domain checks still run).
    */
-  asnRiskScorer?(c: { req: { header(name: string): string | undefined } }): Promise<number | undefined>;
+  asnRiskScorer?(c: {
+    req: { header(name: string): string | undefined };
+  }): Promise<number | undefined>;
   /**
    * BILL.3 (REQ-BILL-16) — the server-side estimator seam. Deploy binds nothing and gets `buildEstimate`;
    * tests bind a failing implementation to prove the sheet workflow refuses before a run row can start.
@@ -161,12 +179,18 @@ function codeForError(e: unknown): string {
  * re-classifies — a seed of `none` is the REFUSE-default, never an approval). The run's committed
  * `provenance.json` overwrites this at finalize.
  */
-function seededFigureProvenance(fig: NonNullable<CreateRunBody["figure"]>): Record<string, unknown> {
+function seededFigureProvenance(
+  fig: NonNullable<CreateRunBody["figure"]>,
+): Record<string, unknown> {
   const refs = fig.sourceRefs ?? {};
   const base = { computedBy: "drafter" as const, verification: "unverified" as const };
   if (refs.insisted === true) return { kind: "none", refs: [], ...base };
   if (typeof refs.url === "string" && refs.url !== "") {
-    return { kind: "fetched", refs: [{ url: refs.url, accessedAt: new Date().toISOString() }], ...base };
+    return {
+      kind: "fetched",
+      refs: [{ url: refs.url, accessedAt: new Date().toISOString() }],
+      ...base,
+    };
   }
   if (typeof refs.assetId === "string" && refs.assetId !== "") {
     return { kind: "asset_upload", refs: [{ assetId: refs.assetId }], ...base };
@@ -175,7 +199,10 @@ function seededFigureProvenance(fig: NonNullable<CreateRunBody["figure"]>): Reco
     return { kind: "claim_ledger", refs: refs.claimIds.map((claimId) => ({ claimId })), ...base };
   }
   if (refs.typedRows != null) return { kind: "user_typed", refs: [], ...base };
-  if (typeof refs.selectionText === "string" && refs.selectionText !== "" || fig.entryPoint === "selection") {
+  if (
+    (typeof refs.selectionText === "string" && refs.selectionText !== "") ||
+    fig.entryPoint === "selection"
+  ) {
     return { kind: "selection", refs: [], ...base };
   }
   return { kind: "none", refs: [], ...base };
@@ -195,7 +222,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     }
     const projectId = c.req.param("id");
     const body = (await c.req.json()) as CreateRunBody;
-    if (!body.idempotencyKey || !body.workflow) return c.json({ error: "idempotencyKey and workflow required" }, 400);
+    if (!body.idempotencyKey || !body.workflow)
+      return c.json({ error: "idempotencyKey and workflow required" }, 400);
     const workflow = body.workflow as WorkflowKey;
 
     // P1.04 — §6.3: archived projects are read-only (runs block); soft-deleted rows are gone. The check
@@ -246,8 +274,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // override layer — below the project's stored overrides. The launch resolves the effective protocol
     // the same way the scope card does: an explicit `body.protocol` lever, else the project's pin.
     const resolvedProtocolId =
-      ((typeof body.protocol === "string" && body.protocol) || gateRow?.protocol_id || null)
-        ?.toLowerCase() ?? null;
+      (
+        (typeof body.protocol === "string" && body.protocol) ||
+        gateRow?.protocol_id ||
+        null
+      )?.toLowerCase() ?? null;
     const protocolSeed = PROTOCOL_SEEDS.find((p) => p.id === resolvedProtocolId);
     const protocolToggleDefaults: ToggleState = {};
     if (protocolSeed?.phase_defaults) {
@@ -290,6 +321,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // overrides < the sheet's explicit toggles — `resolveToggles` spreads `overrides` last, so the
       // merged defaults seed the override set and a sheet lever still wins (P1.22 W10).
       const overrides: ToggleState = { ...protocolToggleDefaults, ...storedToggleDefaults };
+      // ECON.1 (§6.5; ADR-033) — seed/stored DEFAULTS may only DISABLE a phase the rigor preset
+      // runs; a `true` here must never silently re-enable a phase the preset disables (the essay
+      // seed's all-true `phase_defaults` re-enabled discourse + second_read on every Quick Review
+      // until 2026-10-02 — priced as Quick, run as Standard-lite). A user's explicit sheet toggle
+      // (applied below) still wins in both directions.
+      const rigorToggleDefaults = profile.rigorDefaults[body.rigor]?.toggles ?? {};
+      for (const key of Object.keys(overrides) as ToggleKey[]) {
+        if (overrides[key] === true && rigorToggleDefaults[key] === false) delete overrides[key];
+      }
       for (const key of profile.toggles) {
         const v = body.toggles?.[key];
         if (typeof v === "boolean") overrides[key] = v;
@@ -351,7 +391,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       if (resolvedToggles != null) {
         return c.json({ error: "estimate_unavailable" }, 503);
       }
-      if (estimateCredits != null) capCredits = Math.max(capCredits ?? 0, capFromEstimate(estimateCredits));
+      if (estimateCredits != null)
+        capCredits = Math.max(capCredits ?? 0, capFromEstimate(estimateCredits));
     }
 
     // Circuit breaker (REQ-SPEC-24.5; D-P0.11-1): when absorbed cap-overruns have drifted past threshold in the
@@ -386,7 +427,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       }
       // the model-tier gate (REQ-PERSONA-5/REQ-DATA-42): inside the trial window the tier is pinned Base.
       if (inTrial && body.modelTier !== "base") return { error: "trial_base_only" as const };
-      if (!modelTierAllowed(tier, body.modelTier)) return { error: "model_tier_requires_upgrade" as const };
+      if (!modelTierAllowed(tier, body.modelTier))
+        return { error: "model_tier_requires_upgrade" as const };
 
       // concurrency: the account's live runs vs the plan's concurrent cap.
       const limit = effectiveConcurrency(tier, inTrial && account?.trial_state !== "trial_used");
@@ -425,7 +467,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // the trial entitlement run — the unlock gate is the §14.3 identity-before-spend boundary.
       if (body.entitlementId) {
         const ent = await trialEntitlementFor(tx, principal.billingAccountId);
-        if (!ent || ent.id !== body.entitlementId) return { error: "entitlement_unavailable" as const };
+        if (!ent || ent.id !== body.entitlementId)
+          return { error: "entitlement_unavailable" as const };
         if (ent.state === "locked") {
           const user = (
             await tx.query(`select email from "user" where id = $1`, [principal.userId])
@@ -444,7 +487,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
               ...(deps.asnRiskScorer ? { asnRisk: await deps.asnRiskScorer(c) } : {}),
             },
           });
-          if (outcome.decision === "challenge") return { error: "phone_challenge_required" as const };
+          if (outcome.decision === "challenge")
+            return { error: "phone_challenge_required" as const };
           if (outcome.decision === "paused") return { error: "trial_ceiling" as const };
           if (!outcome.claimable) return { error: "trial_denied" as const, reason: outcome.reason };
         } else if (ent.state !== "unused") {
@@ -452,7 +496,10 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         }
         // the entitlement IS a Review ≤6,000 words on Standard/Base — a run shaped otherwise is not it.
         if (workflow !== "review" || body.rigor !== "standard" || body.modelTier !== "base") {
-          return { error: "trial_shape" as const, detail: "the included Review is Standard rigor on Base" };
+          return {
+            error: "trial_shape" as const,
+            detail: "the included Review is Standard rigor on Base",
+          };
         }
         const words = (body.inputSnapshot as { wordCount?: number } | undefined)?.wordCount ?? 0;
         if (words > ent.wordCap) return { error: "trial_word_cap" as const, wordCap: ent.wordCap };
@@ -463,7 +510,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       const status: 402 | 403 | 422 | 429 =
         planGate.error === "upgrade_required" || planGate.error === "model_tier_requires_upgrade"
           ? 402
-          : planGate.error === "concurrency_limit" || planGate.error === "daily_run_ceiling" || planGate.error === "trial_ceiling"
+          : planGate.error === "concurrency_limit" ||
+              planGate.error === "daily_run_ceiling" ||
+              planGate.error === "trial_ceiling"
             ? 429
             : planGate.error === "trial_denied" || planGate.error === "phone_challenge_required"
               ? 403
@@ -473,13 +522,17 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // emission can't race the response on a single-connection driver; a failure is non-fatal.
       try {
         await deps.txRunner.run(principal.workspaceId, (tx) =>
-          recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
-            userId: principal.userId,
-            workspaceId: principal.workspaceId,
-            projectId,
-            event: "paywall.shown",
-            props: { location: planGate.error },
-          }),
+          recordAnalyticsEvent(
+            tx,
+            { ids: deps.ids, clock: deps.clock },
+            {
+              userId: principal.userId,
+              workspaceId: principal.workspaceId,
+              projectId,
+              event: "paywall.shown",
+              props: { location: planGate.error },
+            },
+          ),
         );
       } catch {
         /* analytics must never block the gate's response */
@@ -505,7 +558,10 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (claimCap != null && resolvedToggles?.fact_check !== false) {
       inputs = { ...inputs, claim_cap: claimCap };
     } else {
-      const { claim_cap: _dropped, ...rest } = inputs as { claim_cap?: unknown } & Record<string, unknown>;
+      const { claim_cap: _dropped, ...rest } = inputs as { claim_cap?: unknown } & Record<
+        string,
+        unknown
+      >;
       inputs = rest;
     }
     let pretriage: { triaged: number; total: number } | null = null;
@@ -516,7 +572,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     //   · Review: a re-review carries `priorReviewId` + `changedSince` (the vN→v(N+1) block diff the Editor
     //     reads first; human-edited blocks arrive as `humanAdded`/`unverifiable` placeholders, REQ-DATA-25).
     if (workflow === "revise") {
-      const pre = await deps.txRunner.run(principal.workspaceId, (tx) => loadPretriage(tx, projectId));
+      const pre = await deps.txRunner.run(principal.workspaceId, (tx) =>
+        loadPretriage(tx, projectId),
+      );
       if (pre.correspondenceId != null) inputs = { ...inputs, priorReviewId: pre.correspondenceId };
       inputs = { ...inputs, nextDraftId: deps.ids("dft") };
       if (pre.correspondenceId != null && pre.entries.length > 0) {
@@ -543,14 +601,18 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // `body.draftId`) or a P1.12 outline artifact (`body.outlineArtifactId` — the promoted
       // `agents/author/outline/<slug>.md`). One is required; both are server-resolved.
       const hasDraftRow = typeof body.draftId === "string" && body.draftId !== "";
-      const hasOutlineArtifact = typeof body.outlineArtifactId === "string" && body.outlineArtifactId !== "";
+      const hasOutlineArtifact =
+        typeof body.outlineArtifactId === "string" && body.outlineArtifactId !== "";
       if (!hasDraftRow && !hasOutlineArtifact) {
         return c.json({ error: "draft_outline_required" }, 400);
       }
       if (hasDraftRow) {
         const outline = (
           await deps.txRunner.run(principal.workspaceId, (tx) =>
-            tx.query(`select id from drafts where id = $1 and project_id = $2`, [body.draftId, projectId]),
+            tx.query(`select id from drafts where id = $1 and project_id = $2`, [
+              body.draftId,
+              projectId,
+            ]),
           )
         ).rows[0] as { id: string } | undefined;
         if (!outline) return c.json({ error: "draft_outline_required" }, 400);
@@ -568,7 +630,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
               [body.outlineArtifactId, projectId],
             ),
           )
-        ).rows[0] as { id: string; mirror_path: string; head_version_id: string | null } | undefined;
+        ).rows[0] as
+          { id: string; mirror_path: string; head_version_id: string | null } | undefined;
         if (!outline) return c.json({ error: "draft_outline_required" }, 400);
         inputs = {
           ...inputs,
@@ -579,7 +642,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       }
       const nextN = (
         await deps.txRunner.run(principal.workspaceId, (tx) =>
-          tx.query(`select coalesce(max(n),0)+1 as n from drafts where project_id = $1`, [projectId]),
+          tx.query(`select coalesce(max(n),0)+1 as n from drafts where project_id = $1`, [
+            projectId,
+          ]),
         )
       ).rows[0] as { n: number };
       inputs = {
@@ -599,12 +664,22 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         };
       }
     } else if (workflow === "review") {
-      const store = deps.contentStoreFor ? await deps.contentStoreFor(principal.workspaceId) : deps.store;
+      const store = deps.contentStoreFor
+        ? await deps.contentStoreFor(principal.workspaceId)
+        : deps.store;
       if (store) {
         const seed = await deps.txRunner.run(principal.workspaceId, (tx) =>
-          computeReReviewSeed(tx, store, { projectId, ...(body.draftId != null ? { headDraftId: body.draftId } : {}) }),
+          computeReReviewSeed(tx, store, {
+            projectId,
+            ...(body.draftId != null ? { headDraftId: body.draftId } : {}),
+          }),
         );
-        if (seed) inputs = { ...inputs, priorReviewId: seed.priorReviewId, changedSince: seed.changedSince };
+        if (seed)
+          inputs = {
+            ...inputs,
+            priorReviewId: seed.priorReviewId,
+            changedSince: seed.changedSince,
+          };
       }
     } else if (workflow === "figure") {
       // P1.13 (§7.5; REQ-VIZ-1/2/9) — the figure id is a SERVER-minted/verified fact: a first
@@ -684,8 +759,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // label a no-voice piece carries (REQ-PERSONA-20).
     const voiceFacts = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       const p = (
-        await tx.query(`select persona_id, persona_profile_snapshot_id from projects where id = $1`, [projectId])
-      ).rows[0] as { persona_id: string | null; persona_profile_snapshot_id: string | null } | undefined;
+        await tx.query(
+          `select persona_id, persona_profile_snapshot_id from projects where id = $1`,
+          [projectId],
+        )
+      ).rows[0] as
+        { persona_id: string | null; persona_profile_snapshot_id: string | null } | undefined;
       if (!p?.persona_id) return { mode: "ad_hoc" as const };
       let snapshotId = p.persona_profile_snapshot_id;
       let snapshotAt: string | null = null;
@@ -729,10 +808,16 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // channel as pre-triage). The sheet's Approvals choice persists to the project policy (§5.6).
     const scopeRefs = body.scope ? parseScopes(body.scope) : [];
     const guidanceText = body.guidance?.trim();
-    if (body.approvalPolicy && ["named", "wait_each", "run_to_completion"].includes(body.approvalPolicy)) {
+    if (
+      body.approvalPolicy &&
+      ["named", "wait_each", "run_to_completion"].includes(body.approvalPolicy)
+    ) {
       await deps.txRunner
         .run(principal.workspaceId, (tx) =>
-          tx.query(`update projects set approval_policy = $2 where id = $1`, [projectId, body.approvalPolicy]),
+          tx.query(`update projects set approval_policy = $2 where id = $1`, [
+            projectId,
+            body.approvalPolicy,
+          ]),
         )
         .catch(() => undefined); // a settings write never blocks a run create
     }
@@ -747,16 +832,29 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       .run(
         principal.workspaceId,
         async (tx) =>
-          (await tx.query(`select protocol_id, venue, protocol_changed_at from projects where id = $1`, [projectId])).rows[0] as
-            | { protocol_id: string | null; venue: string | null; protocol_changed_at: string | Date | null }
+          (
+            await tx.query(
+              `select protocol_id, venue, protocol_changed_at from projects where id = $1`,
+              [projectId],
+            )
+          ).rows[0] as
+            | {
+                protocol_id: string | null;
+                venue: string | null;
+                protocol_changed_at: string | Date | null;
+              }
             | undefined,
       )
       .catch(() => undefined);
     const scopeBlocking =
       body.rigor === "full_board" ||
       (workflow === "review" && projectScope?.protocol_changed_at != null) ||
-      (typeof body.protocol === "string" && body.protocol !== "" && body.protocol !== (projectScope?.protocol_id ?? null)) ||
-      (typeof body.venue === "string" && body.venue !== "" && body.venue !== (projectScope?.venue ?? ""));
+      (typeof body.protocol === "string" &&
+        body.protocol !== "" &&
+        body.protocol !== (projectScope?.protocol_id ?? null)) ||
+      (typeof body.venue === "string" &&
+        body.venue !== "" &&
+        body.venue !== (projectScope?.venue ?? ""));
     inputs = {
       ...inputs,
       scopeBlocking,
@@ -793,14 +891,14 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     }
     if (userSources.length > 0 || effectiveProtocol === "memo") {
       const existingPolicy =
-        inputs.urlPolicy != null && typeof inputs.urlPolicy === "object" && !Array.isArray(inputs.urlPolicy)
+        inputs.urlPolicy != null &&
+        typeof inputs.urlPolicy === "object" &&
+        !Array.isArray(inputs.urlPolicy)
           ? (inputs.urlPolicy as Record<string, unknown>)
           : {};
       const userSourceDomains = [
         ...new Set(
-          userSources
-            .map((s) => userSourceDomain(s.url))
-            .filter((d): d is string => d != null),
+          userSources.map((s) => userSourceDomain(s.url)).filter((d): d is string => d != null),
         ),
       ];
       inputs = {
@@ -908,20 +1006,32 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // post-commit + singleton-keyed on the runId, so a duplicate/replay is a no-op. A deduped replay
       // already enqueued it; an `awaiting_consent` run enqueues on the later consent transition, not here.
       if (res.state === "queued" && !res.deduped) {
-        await deps.queue.send(RUN_JOBS.start, { runId: res.runId, workspaceId: principal.workspaceId }, { singletonKey: res.runId });
+        await deps.queue.send(
+          RUN_JOBS.start,
+          { runId: res.runId, workspaceId: principal.workspaceId },
+          { singletonKey: res.runId },
+        );
       }
-      return c.json({ runId: res.runId, state: res.state, deduped: res.deduped }, res.deduped ? 200 : 201);
+      return c.json(
+        { runId: res.runId, state: res.state, deduped: res.deduped },
+        res.deduped ? 200 : 201,
+      );
     }
     // PRB.21 / D-PRB.20-1 — one non-terminal run per project: the second click 409s carrying the active
     // run's id; the web sheet re-renders its in-progress state (a link to the run's surface), never an error.
-    if (res.reason === "run_in_progress") return c.json({ error: res.reason, runId: res.activeRunId }, 409);
-    if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
+    if (res.reason === "run_in_progress")
+      return c.json({ error: res.reason, runId: res.activeRunId }, 409);
+    if (res.reason === "insufficient_balance")
+      return c.json({ error: res.reason, required: res.required }, 402);
     // REQ-SPEC-24.7 (PRB.08): a chargeback-suspended account takes no new runs — 403, never a silent queue.
     if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403);
     // P1.16 (§14.3): a trial-entitlement refusal — the ledger's name distinguishes the daily ceiling (429)
     // from an unavailable/killed entitlement (403).
     if (res.reason === "entitlement_unavailable") {
-      return c.json({ error: res.reason, detail: res.detail }, res.detail === "TrialCeilingExhaustedError" ? 429 : 403);
+      return c.json(
+        { error: res.reason, detail: res.detail },
+        res.detail === "TrialCeilingExhaustedError" ? 429 : 403,
+      );
     }
     return c.json({ error: res.reason, detail: res.error.message }, 422);
   });
@@ -946,7 +1056,8 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       edits: body.edits,
     });
     if (!res.ok) {
-      if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
+      if (res.reason === "insufficient_balance")
+        return c.json({ error: res.reason, required: res.required }, 402);
       if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403); // REQ-SPEC-24.7
       return c.json({ error: res.reason }, 404);
     }
@@ -964,18 +1075,27 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             )
           ).rows[0] as { kind: string; project_id: string | null } | undefined;
           if (g?.kind !== "approve_outline") return;
-          await recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
-            userId: principal.userId,
-            workspaceId: principal.workspaceId,
-            ...(g.project_id ? { projectId: g.project_id } : {}),
-            runId: c.req.param("id"),
-            event: "outline.approved",
-            props: {},
-          });
+          await recordAnalyticsEvent(
+            tx,
+            { ids: deps.ids, clock: deps.clock },
+            {
+              userId: principal.userId,
+              workspaceId: principal.workspaceId,
+              ...(g.project_id ? { projectId: g.project_id } : {}),
+              runId: c.req.param("id"),
+              event: "outline.approved",
+              props: {},
+            },
+          );
         })
         .catch(() => undefined);
     }
-    return c.json({ resolved: true, state: res.state, overlayVersionIds: res.overlayVersionIds, guidanceId: res.guidanceId });
+    return c.json({
+      resolved: true,
+      state: res.state,
+      overlayVersionIds: res.overlayVersionIds,
+      guidanceId: res.guidanceId,
+    });
   });
 
   // record presence / reading activity on an open gate (§6.4 item 1/2; REQ-SPEC-18) — server-side deadline state.
@@ -983,7 +1103,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const body = (await c.req.json()) as { activity: GateActivity };
-    const res = await recordGateActivity(deps, { gateId: c.req.param("gid"), workspaceId: principal.workspaceId, activity: body.activity });
+    const res = await recordGateActivity(deps, {
+      gateId: c.req.param("gid"),
+      workspaceId: principal.workspaceId,
+      activity: body.activity,
+    });
     return c.json(res);
   });
 
@@ -991,7 +1115,10 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
   app.post("/runs/:id/gates/:gid/hold", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const res = await holdGate(deps, { gateId: c.req.param("gid"), workspaceId: principal.workspaceId });
+    const res = await holdGate(deps, {
+      gateId: c.req.param("gid"),
+      workspaceId: principal.workspaceId,
+    });
     return c.json(res);
   });
 
@@ -1007,7 +1134,10 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     await next();
   });
 
-  const guard = async (c: { json: (b: unknown, s?: number) => Response }, fn: () => Promise<Response>): Promise<Response> => {
+  const guard = async (
+    c: { json: (b: unknown, s?: number) => Response },
+    fn: () => Promise<Response>,
+  ): Promise<Response> => {
     try {
       return await fn();
     } catch (e) {
@@ -1019,7 +1149,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
 
   internal.get("/runs/:id/hydration", (c) => {
     const run = c.get("run");
-    return guard(c, async () => c.json(await hydration(deps, { runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId })));
+    return guard(c, async () =>
+      c.json(
+        await hydration(deps, {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+        }),
+      ),
+    );
   });
 
   // The server-authored harness run spec (D-P0.15c-6): the phase request + hydration manifest + derived server
@@ -1037,7 +1175,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           {
             ...deps,
             ...(deps.contentStoreFor
-              ? { figureClaimsMount: figureClaimsMountProvider(deps.contentStoreFor, run.workspaceId) }
+              ? {
+                  figureClaimsMount: figureClaimsMountProvider(
+                    deps.contentStoreFor,
+                    run.workspaceId,
+                  ),
+                }
               : {}),
           },
           {
@@ -1045,7 +1188,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             attempt: run.attempt,
             workspaceId: run.workspaceId,
             ...(deps.runSpecConfig?.skillsDir ? { skillsDir: deps.runSpecConfig.skillsDir } : {}),
-            ...(deps.runSpecConfig?.maxUsdPerRun != null ? { maxUsdPerRun: deps.runSpecConfig.maxUsdPerRun } : {}),
+            ...(deps.runSpecConfig?.maxUsdPerRun != null
+              ? { maxUsdPerRun: deps.runSpecConfig.maxUsdPerRun }
+              : {}),
           },
         ),
       ),
@@ -1054,7 +1199,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
 
   internal.put("/runs/:id/heartbeat", (c) => {
     const run = c.get("run");
-    return guard(c, async () => c.json(await heartbeat(deps, { runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId })));
+    return guard(c, async () =>
+      c.json(
+        await heartbeat(deps, {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+        }),
+      ),
+    );
   });
 
   internal.post("/runs/:id/events", (c) => {
@@ -1152,7 +1305,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // Existing callers that pass them explicitly (tests) are honored unchanged.
       const money =
         body.billingAccountId && body.spentCredits != null && body.capCredits != null
-          ? { billingAccountId: body.billingAccountId, spentCredits: body.spentCredits, capCredits: body.capCredits, holdLedgerId: body.holdLedgerId }
+          ? {
+              billingAccountId: body.billingAccountId,
+              spentCredits: body.spentCredits,
+              capCredits: body.capCredits,
+              holdLedgerId: body.holdLedgerId,
+            }
           : await resolveRunMoney(deps, run.workspaceId, run.runId);
       const res = await deliverRun(deliverDeps, {
         billingAccountId: money.billingAccountId,
@@ -1181,9 +1339,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           // PRB.10 — the voice facts frozen at creation (inputs.voice) stamp the delivered note: the
           // profile snapshot id + its build date the note was written against (REQ-PERSONA-17), and the
           // 'linked' | 'ad_hoc' mode (REQ-PERSONA-20). Server truth — never the pod's dossier.
-          const voice = (ins.voice ?? null) as
-            | { mode?: string; personaId?: string; profileSnapshotId?: string | null; snapshotAt?: string | null }
-            | null;
+          const voice = (ins.voice ?? null) as {
+            mode?: string;
+            personaId?: string;
+            profileSnapshotId?: string | null;
+            snapshotAt?: string | null;
+          } | null;
           return {
             ...body.delivery,
             runId: run.runId,
@@ -1197,8 +1358,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             ...(typeof voice?.profileSnapshotId === "string"
               ? { personaProfileSnapshotId: voice.profileSnapshotId }
               : {}),
-            ...(typeof voice?.snapshotAt === "string" ? { personaSnapshotAt: voice.snapshotAt } : {}),
-            ...(voice?.mode === "linked" || voice?.mode === "ad_hoc" ? { voiceMode: voice.mode } : {}),
+            ...(typeof voice?.snapshotAt === "string"
+              ? { personaSnapshotAt: voice.snapshotAt }
+              : {}),
+            ...(voice?.mode === "linked" || voice?.mode === "ad_hoc"
+              ? { voiceMode: voice.mode }
+              : {}),
           };
         })(),
       });
@@ -1251,7 +1416,14 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     const run = c.get("run");
     return guard(c, async () => {
       const body = (await c.req.json()) as Parameters<typeof audit>[1]["rows"];
-      return c.json(await audit(deps, { runId: run.runId, attempt: run.attempt, workspaceId: run.workspaceId, rows: body }));
+      return c.json(
+        await audit(deps, {
+          runId: run.runId,
+          attempt: run.attempt,
+          workspaceId: run.workspaceId,
+          rows: body,
+        }),
+      );
     });
   });
 
@@ -1454,7 +1626,11 @@ function verdictContextFromLedger(claimLedger: DeliveryArgs["claimLedger"]): Ver
     if (c.url) citationDomains.add(registrableDomain(c.url));
     for (const s of c.sources ?? []) if (s.url) citationDomains.add(registrableDomain(s.url));
   }
-  return { citationDomains, reputableDomains: new Set<string>(), searchResultDomains: new Set<string>() };
+  return {
+    citationDomains,
+    reputableDomains: new Set<string>(),
+    searchResultDomains: new Set<string>(),
+  };
 }
 
 /** Resolve a run's delivery money facts from server truth (the run row + its workspace's billing account). */
@@ -1462,7 +1638,12 @@ async function resolveRunMoney(
   deps: RunApiDeps,
   workspaceId: string,
   runId: string,
-): Promise<{ billingAccountId: string; spentCredits: number; capCredits: number; holdLedgerId?: string }> {
+): Promise<{
+  billingAccountId: string;
+  spentCredits: number;
+  capCredits: number;
+  holdLedgerId?: string;
+}> {
   return deps.txRunner.run(workspaceId, async (tx) => {
     const row = (
       await tx.query(
@@ -1471,7 +1652,12 @@ async function resolveRunMoney(
         [runId],
       )
     ).rows[0] as
-      | { spent_credits: number; cap_credits: number; hold_ledger_id: string | null; billing_account_id: string }
+      | {
+          spent_credits: number;
+          cap_credits: number;
+          hold_ledger_id: string | null;
+          billing_account_id: string;
+        }
       | undefined;
     if (!row) throw new Error(`deliver: run ${runId} not found`);
     return {

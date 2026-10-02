@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createOrchestratorTestDb, seedProject, seedRun, seedGate, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
+import {
+  createOrchestratorTestDb,
+  seedProject,
+  seedRun,
+  seedGate,
+  makeDeps,
+  type OrchestratorTestDb,
+  type TestDeps,
+} from "@rhema/orchestrator/testing";
 import { agentTypesSeed } from "@rhema/db";
 import { provisionTrial } from "@rhema/ledger";
 import { testEntryDeps } from "@rhema/ledger/testing";
@@ -13,7 +21,11 @@ let deps: TestDeps;
 let seed: Awaited<ReturnType<typeof seedProject>>;
 let app: ReturnType<typeof createApp>;
 
-const principal = (): Principal => ({ userId: seed.userId, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId });
+const principal = (): Principal => ({
+  userId: seed.userId,
+  workspaceId: seed.workspaceId,
+  billingAccountId: seed.billingAccountId,
+});
 
 beforeEach(async () => {
   db = await createOrchestratorTestDb();
@@ -105,7 +117,9 @@ describe("POST /projects/:id/runs", () => {
     expect(b2.error).toBe("run_in_progress");
     expect(b2.runId).toBe(runId);
     // exactly one run row + one hold (the in-memory ledger records the coupling point).
-    expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 1 });
+    expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({
+      n: 1,
+    });
     expect(deps.ledger.opsOf("hold")).toHaveLength(1);
   });
 
@@ -113,14 +127,24 @@ describe("POST /projects/:id/runs", () => {
     const res = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(runBody({ modelProfile: { tier: "balanced", overrides: [{ phaseClass: "research", provider: "openai" }] } })),
+      body: JSON.stringify(
+        runBody({
+          modelProfile: {
+            tier: "balanced",
+            overrides: [{ phaseClass: "research", provider: "openai" }],
+          },
+        }),
+      ),
     });
     expect(res.status).toBe(422);
   });
 
   it("401 without a principal", async () => {
     const anon = createApp({ ...deps, principal: () => null });
-    const res = await anon.request(`/projects/${seed.projectId}/runs`, { method: "POST", body: "{}" });
+    const res = await anon.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      body: "{}",
+    });
     expect(res.status).toBe(401);
   });
 
@@ -145,7 +169,9 @@ describe("POST /projects/:id/runs", () => {
     });
     expect(blocked.status).toBe(403);
     expect(await blocked.json()).toEqual({ error: "email_unverified" });
-    expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 1 }); // only the unbound one
+    expect((await db.client.query("select count(*)::int n from runs")).rows[0]).toMatchObject({
+      n: 1,
+    }); // only the unbound one
 
     // PRB.21 — the gate-0 run is still `queued` (non-terminal); land it terminal so this create passes
     // the one-active-run guard and exercises the verified branch alone.
@@ -168,11 +194,17 @@ describe("POST /projects/:id/runs", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        runBody({ idempotencyKey: "idem-tgl-1", rigor: "quick", modelTier: "base", modelProfile: { tier: "base" } }),
+        runBody({
+          idempotencyKey: "idem-tgl-1",
+          rigor: "quick",
+          modelTier: "base",
+          modelProfile: { tier: "base" },
+        }),
       ),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs, estimate_credits, cap_credits from runs")).rows[0] as {
+    const row = (await db.client.query("select inputs, estimate_credits, cap_credits from runs"))
+      .rows[0] as {
       inputs: Record<string, unknown>;
       estimate_credits: number;
       cap_credits: number;
@@ -197,11 +229,16 @@ describe("POST /projects/:id/runs", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        runBody({ idempotencyKey: "idem-cap-1", inputs: { draftId: seed.draftId, sidecar: true, claim_cap: 1 } }),
+        runBody({
+          idempotencyKey: "idem-cap-1",
+          inputs: { draftId: seed.draftId, sidecar: true, claim_cap: 1 },
+        }),
       ),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.claim_cap).toBeUndefined();
   });
 
@@ -210,10 +247,14 @@ describe("POST /projects/:id/runs", () => {
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(runBody({ idempotencyKey: "idem-tgl-2", toggles: { fact_check: false } })),
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-tgl-2", toggles: { fact_check: false } }),
+      ),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.verification).toBe(false);
     expect(row.inputs.discourse).toBe(true);
     expect(row.inputs.second_read).toBe(true);
@@ -224,11 +265,16 @@ describe("POST /projects/:id/runs", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        runBody({ idempotencyKey: "idem-tgl-3", inputs: { draftId: seed.draftId, sidecar: true, verification: false } }),
+        runBody({
+          idempotencyKey: "idem-tgl-3",
+          inputs: { draftId: seed.draftId, sidecar: true, verification: false },
+        }),
       ),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     // standard defaults keep verification on — the crafted input was overridden.
     expect(row.inputs.verification).toBe(true);
   });
@@ -253,7 +299,11 @@ describe("POST /projects/:id/runs", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        runBody({ idempotencyKey: "idem-dd-2", inputs: { sidecar: true }, draftId: "dft_not_this_project" }),
+        runBody({
+          idempotencyKey: "idem-dd-2",
+          inputs: { sidecar: true },
+          draftId: "dft_not_this_project",
+        }),
       ),
     });
     expect(r.status).toBe(201);
@@ -285,17 +335,19 @@ describe("POST /projects/:id/runs", () => {
   it("P1.22 — stored protocol_overrides.phaseDefaults resolve into the launched run's phase flags", async () => {
     // The settings page stored verification off (§6.7 safe-field edit); a launch that omits toggles
     // must honor it — the refusal half was already enforced; this is the consumption half.
-    await db.client.query(
-      `update projects set protocol_overrides = $1 where id = $2`,
-      [JSON.stringify({ phaseDefaults: { verification: false, secondRead: false } }), seed.projectId],
-    );
+    await db.client.query(`update projects set protocol_overrides = $1 where id = $2`, [
+      JSON.stringify({ phaseDefaults: { verification: false, secondRead: false } }),
+      seed.projectId,
+    ]);
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-1" })),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     // stored verification:false + secondRead:false → verification/second_read flags off; discourse
     // keeps the standard rigor default (untouched by the stored blob).
     expect(row.inputs.verification).toBe(false);
@@ -304,48 +356,54 @@ describe("POST /projects/:id/runs", () => {
   });
 
   it("P1.22 — a sheet toggle lever still wins over the stored override", async () => {
-    await db.client.query(
-      `update projects set protocol_overrides = $1 where id = $2`,
-      [JSON.stringify({ phaseDefaults: { verification: false } }), seed.projectId],
-    );
+    await db.client.query(`update projects set protocol_overrides = $1 where id = $2`, [
+      JSON.stringify({ phaseDefaults: { verification: false } }),
+      seed.projectId,
+    ]);
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-2", toggles: { fact_check: true } })),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.verification).toBe(true); // the explicit lever beat the stored default
   });
 
   it("P1.22 — stored stage + length freeze into inputs; body stage wins over stored", async () => {
-    await db.client.query(
-      `update projects set protocol_overrides = $1 where id = $2`,
-      [JSON.stringify({ stage: "near_final", length: 7000 }), seed.projectId],
-    );
+    await db.client.query(`update projects set protocol_overrides = $1 where id = $2`, [
+      JSON.stringify({ stage: "near_final", length: 7000 }),
+      seed.projectId,
+    ]);
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-3" })),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.stage).toBe("near_final");
     expect(row.inputs.lengthTarget).toBe(7000);
   });
 
   it("P1.22 — a malformed stored overrides blob is ignored, never a launch failure", async () => {
-    await db.client.query(
-      `update projects set protocol_overrides = $1 where id = $2`,
-      [JSON.stringify({ stage: "bogus", phaseDefaults: "not-an-object", length: -1 }), seed.projectId],
-    );
+    await db.client.query(`update projects set protocol_overrides = $1 where id = $2`, [
+      JSON.stringify({ stage: "bogus", phaseDefaults: "not-an-object", length: -1 }),
+      seed.projectId,
+    ]);
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-4" })),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.stage).toBeUndefined();
     expect(row.inputs.lengthTarget).toBeUndefined();
     expect(row.inputs.verification).toBe(true); // untouched — standard defaults
@@ -354,14 +412,18 @@ describe("POST /projects/:id/runs", () => {
   it("P1.22 — the seeded protocol's own phase_defaults layer below the project overrides (Memo discourse off)", async () => {
     // No stored overrides at all — the memo protocol's `discourse:false` (§6.7) must reach the frozen
     // phase flags on its own: the launch resolves the project's pinned protocol, not just its overrides.
-    await db.client.query(`update projects set protocol_id = 'memo' where id = $1`, [seed.projectId]);
+    await db.client.query(`update projects set protocol_id = 'memo' where id = $1`, [
+      seed.projectId,
+    ]);
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-5" })),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.discourse).toBe(false); // the protocol default — never a stored override
     expect(row.inputs.verification).toBe(true); // untouched rigor default
   });
@@ -377,7 +439,9 @@ describe("POST /projects/:id/runs", () => {
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-6" })),
     });
     expect(r.status).toBe(201);
-    let row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    let row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.discourse).toBe(true); // the stored override lifted the memo default
 
     await db.client.query("update runs set state = 'completed'", []); // free the run_in_progress gate
@@ -387,29 +451,123 @@ describe("POST /projects/:id/runs", () => {
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-7", toggles: { discourse: false } })),
     });
     expect(r2.status).toBe(201);
-    row = (await db.client.query("select inputs from runs where id <> (select min(id) from runs)")).rows[0] as {
+    row = (await db.client.query("select inputs from runs where id <> (select min(id) from runs)"))
+      .rows[0] as {
       inputs: Record<string, unknown>;
     };
     expect(row.inputs.discourse).toBe(false); // the explicit lever beat project + protocol
   });
 
+  it("ECON.1 — §6.5: seed/stored phase_defaults may only DISABLE relative to the rigor preset (essay all-true defaults must not re-enable discourse/second_read on Quick)", async () => {
+    // The essay seed pins phase_defaults {discourse:true, second_read:true, …} — under Standard they
+    // are redundant; under Quick they must NOT lift the preset's `false` (the 2026-10-02 N6 walk
+    // froze discourse:true on a Quick run — priced Quick, ran the extra phases).
+    await db.client.query(`update projects set protocol_id = 'essay' where id = $1`, [
+      seed.projectId,
+    ]);
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({
+          idempotencyKey: "idem-ov-quick",
+          rigor: "quick",
+          modelTier: "base",
+          modelProfile: { tier: "base" },
+        }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    let row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    expect(row.inputs.discourse).toBe(false);
+    expect(row.inputs.second_read).toBe(false);
+    expect(row.inputs.verification).toBe(true); // fact-check stays on under Quick
+    expect(row.inputs.claim_cap).toBe(5); // the Quick claim cap freezes regardless
+
+    // …and a stored project default of `discourse:true` likewise cannot beat the Quick preset —
+    // only the sheet's explicit per-run lever can.
+    await db.client.query("update runs set state = 'completed'", []);
+    await db.client.query(`update projects set protocol_overrides = $1 where id = $2`, [
+      JSON.stringify({ phaseDefaults: { discourse: true, secondRead: true } }),
+      seed.projectId,
+    ]);
+    const r2 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({
+          idempotencyKey: "idem-ov-quick2",
+          rigor: "quick",
+          modelTier: "base",
+          modelProfile: { tier: "base" },
+        }),
+      ),
+    });
+    expect(r2.status).toBe(201);
+    row = (await db.client.query("select inputs from runs where id <> (select min(id) from runs)"))
+      .rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    expect(row.inputs.discourse).toBe(false);
+    expect(row.inputs.second_read).toBe(false);
+
+    // The explicit sheet lever still wins in both directions — a deliberate per-run choice is not a
+    // preset violation.
+    await db.client.query("update runs set state = 'completed'", []);
+    const r3 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({
+          idempotencyKey: "idem-ov-quick3",
+          rigor: "quick",
+          modelTier: "base",
+          modelProfile: { tier: "base" },
+          toggles: { discourse: true },
+        }),
+      ),
+    });
+    expect(r3.status).toBe(201);
+    row = (await db.client.query("select inputs from runs order by id desc limit 1")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
+    expect(row.inputs.discourse).toBe(true); // the user's explicit Advanced lever stands
+    expect(row.inputs.second_read).toBe(false);
+  });
+
   it("P1.22 — the protocol's own stage default freezes when nothing overrides it (Op-ed near_final)", async () => {
-    await db.client.query(`update projects set protocol_id = 'op-ed' where id = $1`, [seed.projectId]);
+    await db.client.query(`update projects set protocol_id = 'op-ed' where id = $1`, [
+      seed.projectId,
+    ]);
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(runBody({ idempotencyKey: "idem-ov-8" })),
     });
     expect(r.status).toBe(201);
-    const row = (await db.client.query("select inputs from runs")).rows[0] as { inputs: Record<string, unknown> };
+    const row = (await db.client.query("select inputs from runs")).rows[0] as {
+      inputs: Record<string, unknown>;
+    };
     expect(row.inputs.stage).toBe("near_final"); // §6.7 op-ed row — normalized spelling, `infer` never freezes
   });
 });
 
 describe("internal run API — token auth + fencing", () => {
   it("a valid run token drives the first heartbeat (provisioning → running)", async () => {
-    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "provisioning" });
-    const token = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "provisioning",
+    });
+    const token = deps.tokens.mint({
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      seat: "harness",
+    });
     const res = await app.request("/internal/runs/run1/heartbeat", {
       method: "PUT",
       headers: { authorization: `Bearer ${token}` },
@@ -425,8 +583,18 @@ describe("internal run API — token auth + fencing", () => {
   });
 
   it("a commit from a superseded attempt → 409 stale_task", async () => {
-    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running", currentAttempt: 2 });
-    const staleToken = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      state: "running",
+      currentAttempt: 2,
+    });
+    const staleToken = deps.tokens.mint({
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      seat: "harness",
+    });
     const res = await app.request("/internal/runs/run1/steps/intake/commit", {
       method: "POST",
       headers: { authorization: `Bearer ${staleToken}`, "content-type": "application/json" },
@@ -443,15 +611,31 @@ describe("internal run API — token auth + fencing", () => {
   });
 
   it("403 when the token's run does not match the path", async () => {
-    const token = deps.tokens.mint({ runId: "other", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
-    const res = await app.request("/internal/runs/run1/heartbeat", { method: "PUT", headers: { authorization: `Bearer ${token}` } });
+    const token = deps.tokens.mint({
+      runId: "other",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      seat: "harness",
+    });
+    const res = await app.request("/internal/runs/run1/heartbeat", {
+      method: "PUT",
+      headers: { authorization: `Bearer ${token}` },
+    });
     expect(res.status).toBe(403);
   });
 
   it("413 when a POST events batch exceeds the 250-event limit (§12.5)", async () => {
     await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running" });
-    const token = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
-    const events = Array.from({ length: 251 }, () => ({ type: "usage.tick", payload: { spentCredits: 1, capCredits: 10 } }));
+    const token = deps.tokens.mint({
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      seat: "harness",
+    });
+    const events = Array.from({ length: 251 }, () => ({
+      type: "usage.tick",
+      payload: { spentCredits: 1, capCredits: 10 },
+    }));
     const res = await app.request("/internal/runs/run1/events", {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
@@ -463,21 +647,42 @@ describe("internal run API — token auth + fencing", () => {
 
   it("GET /runspec returns the server-authored spec token-authed (D-P0.15c-6), 401 without a token", async () => {
     // the seat's tool set comes from agent_types (the run spec reads it for the hook policy).
-    await agentTypesSeed({ exec: (sql) => db.pg.exec(sql), query: (sql, params) => db.pg.query(sql, params as unknown[]) });
+    await agentTypesSeed({
+      exec: (sql) => db.pg.exec(sql),
+      query: (sql, params) => db.pg.query(sql, params as unknown[]),
+    });
     await db.pg.query(
       `insert into agent_instances(id, project_id, type_key, namespace) values ('ai_e',$1,'editor','agent:editor')
          on conflict (project_id, type_key) do nothing`,
       [seed.projectId],
     );
-    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, workflow: "review", state: "running", agentInstanceId: "ai_e" });
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "running",
+      agentInstanceId: "ai_e",
+    });
 
     const noAuth = await app.request("/internal/runs/run1/runspec");
     expect(noAuth.status).toBe(401);
 
-    const token = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
-    const res = await app.request("/internal/runs/run1/runspec", { headers: { authorization: `Bearer ${token}` } });
+    const token = deps.tokens.mint({
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      seat: "harness",
+    });
+    const res = await app.request("/internal/runs/run1/runspec", {
+      headers: { authorization: `Bearer ${token}` },
+    });
     expect(res.status).toBe(200);
-    const spec = (await res.json()) as { request: { skill: string; phase: { skillPhase: string } }; skillsDir: string; hookPolicyInput: { seat: string } };
+    const spec = (await res.json()) as {
+      request: { skill: string; phase: { skillPhase: string } };
+      skillsDir: string;
+      hookPolicyInput: { seat: string };
+    };
     expect(spec.request.skill).toBe("editorial-review");
     expect(spec.request.phase.skillPhase).toBe("0");
     expect(spec.hookPolicyInput.seat).toBe("editor");
@@ -487,8 +692,18 @@ describe("internal run API — token auth + fencing", () => {
 
 describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)", () => {
   it("resolves an approval, returns queued, and 404s an unknown gate", async () => {
-    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
-    await seedGate(db, { gateId: "gate1", runId: "run1", kind: "approve_plan", onExpiry: "proceed_conservative" });
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "waiting_gate",
+    });
+    await seedGate(db, {
+      gateId: "gate1",
+      runId: "run1",
+      kind: "approve_plan",
+      onExpiry: "proceed_conservative",
+    });
 
     const ok = await app.request("/runs/run1/gates/gate1", {
       method: "POST",
@@ -496,7 +711,10 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
       body: JSON.stringify({ action: "approve" }),
     });
     expect(ok.status).toBe(200);
-    expect((await ok.json()) as { resolved: boolean; state: string }).toMatchObject({ resolved: true, state: "queued" });
+    expect((await ok.json()) as { resolved: boolean; state: string }).toMatchObject({
+      resolved: true,
+      state: "queued",
+    });
 
     const missing = await app.request("/runs/run1/gates/nope", {
       method: "POST",
@@ -507,23 +725,60 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
   });
 
   it("409 when the gate is already resolved (idempotent second click)", async () => {
-    await seedRun(db, { runId: "run2", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
-    await seedGate(db, { gateId: "gate2", runId: "run2", kind: "approve_plan", onExpiry: "proceed_conservative" });
+    await seedRun(db, {
+      runId: "run2",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "waiting_gate",
+    });
+    await seedGate(db, {
+      gateId: "gate2",
+      runId: "run2",
+      kind: "approve_plan",
+      onExpiry: "proceed_conservative",
+    });
     const body = JSON.stringify({ action: "approve" });
-    const first = await app.request("/runs/run2/gates/gate2", { method: "POST", headers: { "content-type": "application/json" }, body });
+    const first = await app.request("/runs/run2/gates/gate2", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
     expect(first.status).toBe(200);
-    const second = await app.request("/runs/run2/gates/gate2", { method: "POST", headers: { "content-type": "application/json" }, body });
+    const second = await app.request("/runs/run2/gates/gate2", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
     expect(second.status).toBe(409);
   });
 
   it("401 without a principal; activity + hold routes respond", async () => {
     const anon = createApp({ ...deps, principal: () => null });
-    const unauth = await anon.request("/runs/run3/gates/g/hold", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const unauth = await anon.request("/runs/run3/gates/g/hold", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
     expect(unauth.status).toBe(401);
 
-    await seedRun(db, { runId: "run3", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
-    await seedGate(db, { gateId: "gate3", runId: "run3", kind: "approve_plan", onExpiry: "proceed_conservative", deadlineAt: new Date("2026-09-03T00:00:00Z") });
-    const hold = await app.request("/runs/run3/gates/gate3/hold", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    await seedRun(db, {
+      runId: "run3",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "waiting_gate",
+    });
+    await seedGate(db, {
+      gateId: "gate3",
+      runId: "run3",
+      kind: "approve_plan",
+      onExpiry: "proceed_conservative",
+      deadlineAt: new Date("2026-09-03T00:00:00Z"),
+    });
+    const hold = await app.request("/runs/run3/gates/gate3/hold", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
     expect(hold.status).toBe(200);
     expect((await hold.json()) as { held: boolean }).toEqual({ held: true });
   });
@@ -548,7 +803,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const row = (await db.pg.query("select estimate_credits, cap_credits from runs where id = $1", [runId])).rows[0] as {
+    const row = (
+      await db.pg.query("select estimate_credits, cap_credits from runs where id = $1", [runId])
+    ).rows[0] as {
       estimate_credits: number;
       cap_credits: number;
     };
@@ -567,7 +824,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
         throw new Error("estimator down");
       },
     });
-    const before = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    const before = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as {
+      n: number;
+    };
     const r = await unavailable.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -575,7 +834,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     });
     expect(r.status).toBe(503);
     expect(await r.json()).toEqual({ error: "estimate_unavailable" });
-    const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as {
+      n: number;
+    };
     expect(after.n).toBe(before.n); // §14.6: a money figure was not server-derived ⇒ nothing starts
   });
 
@@ -583,17 +844,27 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
   // `capMultiplier` (deploy binds the seam to `circuitBreakerState`; a 2× trip doubles the safety band while
   // the estimator re-fits). Unbound ⇒ 1× (fixtures and a breaker-less deploy stay unchanged).
   it("a tripped circuit breaker doubles the new run's cap (capMultiplier consumed at creation)", async () => {
-    const tripped = createApp({ ...deps, principal: () => principal(), circuitBreaker: async () => ({ capMultiplier: 2 }) });
+    const tripped = createApp({
+      ...deps,
+      principal: () => principal(),
+      circuitBreaker: async () => ({ capMultiplier: 2 }),
+    });
     const r = await tripped.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        runBody({ idempotencyKey: "idem-breaker", modelTier: "base", inputSnapshot: { wordCount: 8000, claimCount: 45 } }),
+        runBody({
+          idempotencyKey: "idem-breaker",
+          modelTier: "base",
+          inputSnapshot: { wordCount: 8000, claimCount: 45 },
+        }),
       ),
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const row = (await db.pg.query("select estimate_credits, cap_credits from runs where id = $1", [runId])).rows[0] as {
+    const row = (
+      await db.pg.query("select estimate_credits, cap_credits from runs where id = $1", [runId])
+    ).rows[0] as {
       estimate_credits: number;
       cap_credits: number;
     };
@@ -605,7 +876,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
   // AC4 (run path) — insufficient balance returns 402 and creates NO run row (never billed; §5.6 item 6, §14.6).
   it("insufficient balance → 402 and no run row is created", async () => {
     deps.ledger.primeInsufficient();
-    const before = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    const before = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as {
+      n: number;
+    };
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -614,7 +887,9 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     expect(r.status).toBe(402);
     const body = (await r.json()) as { error: string; required: number };
     expect(body.error).toBe("insufficient_balance");
-    const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
+    const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as {
+      n: number;
+    };
     expect(after.n).toBe(before.n); // the creation transaction rolled back — no abandoned row
   });
 });
@@ -625,37 +900,62 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
 describe("POST /projects/:id/runs — the plan gate (P1.16; §14.2)", () => {
   it("a free account's non-chat run is 402 upgrade_required — never a silent run", async () => {
     const free = await seedProject(db, {
-      userId: "usr_free", billingAccountId: "ba_free", workspaceId: "ws_free", projectId: "prj_free",
-      draftN: 1, plan: null,
+      userId: "usr_free",
+      billingAccountId: "ba_free",
+      workspaceId: "ws_free",
+      projectId: "prj_free",
+      draftN: 1,
+      plan: null,
     });
     const gated = createApp({
       ...deps,
-      principal: () => ({ userId: free.userId, workspaceId: free.workspaceId, billingAccountId: free.billingAccountId }),
+      principal: () => ({
+        userId: free.userId,
+        workspaceId: free.workspaceId,
+        billingAccountId: free.billingAccountId,
+      }),
     });
     const r = await gated.request(`/projects/${free.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(runBody({ idempotencyKey: "idem-free-1", inputs: { draftId: free.draftId }, draftId: free.draftId })),
+      body: JSON.stringify(
+        runBody({
+          idempotencyKey: "idem-free-1",
+          inputs: { draftId: free.draftId },
+          draftId: free.draftId,
+        }),
+      ),
     });
     expect(r.status).toBe(402);
     expect(((await r.json()) as { error: string }).error).toBe("upgrade_required");
-    const runs = (await db.pg.query("select count(*)::int as n from runs where workspace_id = 'ws_free'")).rows[0] as { n: number };
+    const runs = (
+      await db.pg.query("select count(*)::int as n from runs where workspace_id = 'ws_free'")
+    ).rows[0] as { n: number };
     expect(runs.n).toBe(0);
   });
 
   it("a free account's chat on a paid model tier is 402 model_tier_requires_upgrade", async () => {
     const free = await seedProject(db, {
-      userId: "usr_free2", billingAccountId: "ba_free2", workspaceId: "ws_free2", projectId: "prj_free2",
+      userId: "usr_free2",
+      billingAccountId: "ba_free2",
+      workspaceId: "ws_free2",
+      projectId: "prj_free2",
       plan: null,
     });
     const gated = createApp({
       ...deps,
-      principal: () => ({ userId: free.userId, workspaceId: free.workspaceId, billingAccountId: free.billingAccountId }),
+      principal: () => ({
+        userId: free.userId,
+        workspaceId: free.workspaceId,
+        billingAccountId: free.billingAccountId,
+      }),
     });
     const r = await gated.request(`/projects/${free.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(runBody({ idempotencyKey: "idem-free-2", workflow: "chat_turn", modelTier: "balanced" })),
+      body: JSON.stringify(
+        runBody({ idempotencyKey: "idem-free-2", workflow: "chat_turn", modelTier: "balanced" }),
+      ),
     });
     expect(r.status).toBe(402);
     expect(((await r.json()) as { error: string }).error).toBe("model_tier_requires_upgrade");
@@ -663,19 +963,44 @@ describe("POST /projects/:id/runs — the plan gate (P1.16; §14.2)", () => {
 
   it("a concurrency-bound plan 429s at the cap (Writer: 2 live runs)", async () => {
     const w = await seedProject(db, {
-      userId: "usr_w", billingAccountId: "ba_w", workspaceId: "ws_w", projectId: "prj_w",
-      draftN: 1, plan: "writer",
+      userId: "usr_w",
+      billingAccountId: "ba_w",
+      workspaceId: "ws_w",
+      projectId: "prj_w",
+      draftN: 1,
+      plan: "writer",
     });
-    await seedRun(db, { runId: "run_w1", workspaceId: w.workspaceId, projectId: w.projectId, state: "running" });
-    await seedRun(db, { runId: "run_w2", workspaceId: w.workspaceId, projectId: w.projectId, state: "queued" });
+    await seedRun(db, {
+      runId: "run_w1",
+      workspaceId: w.workspaceId,
+      projectId: w.projectId,
+      state: "running",
+    });
+    await seedRun(db, {
+      runId: "run_w2",
+      workspaceId: w.workspaceId,
+      projectId: w.projectId,
+      state: "queued",
+    });
     const gated = createApp({
       ...deps,
-      principal: () => ({ userId: w.userId, workspaceId: w.workspaceId, billingAccountId: w.billingAccountId }),
+      principal: () => ({
+        userId: w.userId,
+        workspaceId: w.workspaceId,
+        billingAccountId: w.billingAccountId,
+      }),
     });
     const r = await gated.request(`/projects/${w.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(runBody({ idempotencyKey: "idem-w-1", modelTier: "base", inputs: { draftId: w.draftId }, draftId: w.draftId })),
+      body: JSON.stringify(
+        runBody({
+          idempotencyKey: "idem-w-1",
+          modelTier: "base",
+          inputs: { draftId: w.draftId },
+          draftId: w.draftId,
+        }),
+      ),
     });
     expect(r.status).toBe(429);
     expect(((await r.json()) as { error: string }).error).toBe("concurrency_limit");
@@ -698,20 +1023,31 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
       plan: null,
     });
     if (opts.disposable) {
-      await db.pg.query(`update "user" set email = 'trial@mailinator.com' where id = $1`, [s.userId]);
+      await db.pg.query(`update "user" set email = 'trial@mailinator.com' where id = $1`, [
+        s.userId,
+      ]);
     }
     await db.txRunner.run(s.workspaceId, (tx) =>
       provisionTrial(tx, testEntryDeps(), { billingAccountId: s.billingAccountId }),
     );
     const entitlement = (
-      await db.client.query("select id from trial_entitlements where billing_account_id = $1", [s.billingAccountId])
+      await db.client.query("select id from trial_entitlements where billing_account_id = $1", [
+        s.billingAccountId,
+      ])
     ).rows[0] as { id: string };
     const tapp = createApp({
       ...deps,
-      principal: () => ({ userId: s.userId, workspaceId: s.workspaceId, billingAccountId: s.billingAccountId }),
+      principal: () => ({
+        userId: s.userId,
+        workspaceId: s.workspaceId,
+        billingAccountId: s.billingAccountId,
+      }),
       ...(opts.asnRisk !== undefined ? { asnRiskScorer: async () => opts.asnRisk } : {}),
     });
-    const post = (over: Record<string, unknown> = {}, entitlementId: string | undefined = entitlement.id) =>
+    const post = (
+      over: Record<string, unknown> = {},
+      entitlementId: string | undefined = entitlement.id,
+    ) =>
       tapp.request(`/projects/${s.projectId}/runs`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -736,16 +1072,22 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     const r = await post();
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const run = (
-      await db.pg.query("select entitlement_id, state from runs where id = $1", [runId])
-    ).rows[0] as { entitlement_id: string | null; state: string };
+    const run = (await db.pg.query("select entitlement_id, state from runs where id = $1", [runId]))
+      .rows[0] as { entitlement_id: string | null; state: string };
     expect(run).toMatchObject({ entitlement_id: entitlementId, state: "queued" });
     // the §14.3 unlock ran: account active, the audited allow decision, the 150-credit pocket granted.
     expect(
-      (await db.client.query("select trial_state from billing_accounts where id = $1", [s.billingAccountId])).rows[0],
+      (
+        await db.client.query("select trial_state from billing_accounts where id = $1", [
+          s.billingAccountId,
+        ])
+      ).rows[0],
     ).toMatchObject({ trial_state: "trial_active" });
     const checks = (
-      await db.client.query("select decision from trial_unlock_checks where billing_account_id = $1", [s.billingAccountId])
+      await db.client.query(
+        "select decision from trial_unlock_checks where billing_account_id = $1",
+        [s.billingAccountId],
+      )
     ).rows as { decision: string }[];
     expect(checks.map((c) => c.decision)).toEqual(["allow"]);
     expect(
@@ -764,7 +1106,7 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     const { post } = await seedTrial();
     const r = await post({ inputSnapshot: { wordCount: 7000 } });
     expect(r.status).toBe(422);
-    expect(((await r.json()) as { error: string; wordCap: number })).toMatchObject({
+    expect((await r.json()) as { error: string; wordCap: number }).toMatchObject({
       error: "trial_word_cap",
       wordCap: 6000,
     });
@@ -784,10 +1126,17 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     expect(r.status).toBe(403);
     expect(((await r.json()) as { error: string }).error).toBe("trial_denied");
     expect(
-      (await db.client.query("select trial_state from billing_accounts where id = $1", [s.billingAccountId])).rows[0],
+      (
+        await db.client.query("select trial_state from billing_accounts where id = $1", [
+          s.billingAccountId,
+        ])
+      ).rows[0],
     ).toMatchObject({ trial_state: "trial_denied" });
     const checks = (
-      await db.client.query("select decision, reason from trial_unlock_checks where billing_account_id = $1", [s.billingAccountId])
+      await db.client.query(
+        "select decision, reason from trial_unlock_checks where billing_account_id = $1",
+        [s.billingAccountId],
+      )
     ).rows as { decision: string; reason: string }[];
     expect(checks[0]).toMatchObject({ decision: "deny", reason: "disposable_domain" });
   });
@@ -798,9 +1147,8 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     expect(r.status).toBe(403);
     expect(((await r.json()) as { error: string }).error).toBe("phone_challenge_required");
     expect(
-      (
-        await db.client.query("select state from trial_entitlements where id = $1", [entitlementId])
-      ).rows[0],
+      (await db.client.query("select state from trial_entitlements where id = $1", [entitlementId]))
+        .rows[0],
     ).toMatchObject({ state: "locked" });
     void s;
   });
@@ -808,7 +1156,10 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
   it("the global daily trial-spend ceiling pauses the unlock — 429 trial_ceiling", async () => {
     const { post } = await seedTrial({ userId: "usr_tceil" });
     // deps.clock is fixed at 2026-09-02 — exhaust today's counter.
-    await db.client.query("insert into trial_spend_daily (day, credits) values ('2026-09-02', 250000)", []);
+    await db.client.query(
+      "insert into trial_spend_daily (day, credits) values ('2026-09-02', 250000)",
+      [],
+    );
     const r = await post();
     expect(r.status).toBe(429);
     expect(((await r.json()) as { error: string }).error).toBe("trial_ceiling");
@@ -816,10 +1167,12 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
 
   it("a killed account's entitlement run is 403 trial_denied (the kill switch is read live)", async () => {
     const { s, post } = await seedTrial({ userId: "usr_tkill" });
-    await db.client.query("update billing_accounts set trial_killed_at = now() where id = $1", [s.billingAccountId]);
+    await db.client.query("update billing_accounts set trial_killed_at = now() where id = $1", [
+      s.billingAccountId,
+    ]);
     const r = await post();
     expect(r.status).toBe(403);
-    expect(((await r.json()) as { error: string; reason: string })).toMatchObject({
+    expect((await r.json()) as { error: string; reason: string }).toMatchObject({
       error: "trial_denied",
       reason: "killed",
     });
@@ -829,11 +1182,13 @@ describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
     const { entitlementId, post } = await seedTrial({ userId: "usr_tused" });
     // the first claim consumed the entitlement; the account is still inside the window (trial_active
     // — trial concurrency, not the post-window free floor).
+    await db.client.query("update trial_entitlements set state = 'consumed' where id = $1", [
+      entitlementId,
+    ]);
     await db.client.query(
-      "update trial_entitlements set state = 'consumed' where id = $1",
-      [entitlementId],
+      "update billing_accounts set trial_state = 'trial_active' where id = 'ba_t'",
+      [],
     );
-    await db.client.query("update billing_accounts set trial_state = 'trial_active' where id = 'ba_t'", []);
     const r = await post();
     expect(r.status).toBe(422);
     expect(((await r.json()) as { error: string }).error).toBe("entitlement_unavailable");
@@ -859,9 +1214,8 @@ describe("POST /projects/:id/runs — Draft (P1.10; REQ-WF-4)", () => {
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const row = (
-      await db.pg.query("select workflow, inputs from runs where id = $1", [runId])
-    ).rows[0] as { workflow: string; inputs: Record<string, unknown> };
+    const row = (await db.pg.query("select workflow, inputs from runs where id = $1", [runId]))
+      .rows[0] as { workflow: string; inputs: Record<string, unknown> };
     expect(row.workflow).toBe("draft");
     const ins = row.inputs;
     expect(ins.draftId).toBe(seed.draftId); // the outline, server-verified against the project
@@ -874,14 +1228,18 @@ describe("POST /projects/:id/runs — Draft (P1.10; REQ-WF-4)", () => {
     const noOutline = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(draftBody({ idempotencyKey: "idem-draft-no-outline", draftId: undefined })),
+      body: JSON.stringify(
+        draftBody({ idempotencyKey: "idem-draft-no-outline", draftId: undefined }),
+      ),
     });
     expect(noOutline.status).toBe(400);
     expect(((await noOutline.json()) as { error: string }).error).toBe("draft_outline_required");
     const foreign = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(draftBody({ idempotencyKey: "idem-draft-foreign", draftId: "dft_nonexistent" })),
+      body: JSON.stringify(
+        draftBody({ idempotencyKey: "idem-draft-foreign", draftId: "dft_nonexistent" }),
+      ),
     });
     expect(foreign.status).toBe(400);
   });
@@ -890,7 +1248,9 @@ describe("POST /projects/:id/runs — Draft (P1.10; REQ-WF-4)", () => {
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(draftBody({ idempotencyKey: "idem-draft-preview", preview: true, rigor: "full_board" })),
+      body: JSON.stringify(
+        draftBody({ idempotencyKey: "idem-draft-preview", preview: true, rigor: "full_board" }),
+      ),
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
@@ -922,37 +1282,45 @@ describe("POST /projects/:id/runs — Figure (P1.13; §7.5)", () => {
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(figureBody({}, { entryPoint: "chat", sourceRefs: { claimIds: ["v2/41"] } })),
+      body: JSON.stringify(
+        figureBody({}, { entryPoint: "chat", sourceRefs: { claimIds: ["v2/41"] } }),
+      ),
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const run = (
-      await db.pg.query("select workflow, inputs from runs where id = $1", [runId])
-    ).rows[0] as { workflow: string; inputs: Record<string, unknown> };
+    const run = (await db.pg.query("select workflow, inputs from runs where id = $1", [runId]))
+      .rows[0] as { workflow: string; inputs: Record<string, unknown> };
     expect(run.workflow).toBe("figure");
     expect(typeof run.inputs.figureId).toBe("string"); // server-minted
     expect(run.inputs.entryPoint).toBe("chat");
     expect(run.inputs.request).toBe("a chart of the visibility scores");
     // the minted row carries the claim_ledger seed (the honesty step re-classifies at finalize)
     const fig = (
-      await db.pg.query("select spec_kind, provenance from figures where id = $1", [run.inputs.figureId])
+      await db.pg.query("select spec_kind, provenance from figures where id = $1", [
+        run.inputs.figureId,
+      ])
     ).rows[0] as { spec_kind: string; provenance: { kind: string; refs: { claimId: string }[] } };
     expect(fig.provenance.kind).toBe("claim_ledger");
     expect(fig.provenance.refs[0]!.claimId).toBe("v2/41");
   });
 
-  it("the insist path seeds kind:\"none\" — the REFUSE-default, never an approval", async () => {
+  it('the insist path seeds kind:"none" — the REFUSE-default, never an approval', async () => {
     const r = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(figureBody({ idempotencyKey: "idem-fig-insist" }, { sourceRefs: { insisted: true } })),
+      body: JSON.stringify(
+        figureBody({ idempotencyKey: "idem-fig-insist" }, { sourceRefs: { insisted: true } }),
+      ),
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as { inputs: { figureId: string } }).inputs;
-    const fig = (
-      await db.pg.query("select provenance from figures where id = $1", [ins.figureId])
-    ).rows[0] as { provenance: { kind: string; verification: string } };
+    const ins = (
+      (await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+        inputs: { figureId: string };
+      }
+    ).inputs;
+    const fig = (await db.pg.query("select provenance from figures where id = $1", [ins.figureId]))
+      .rows[0] as { provenance: { kind: string; verification: string } };
     expect(fig.provenance.kind).toBe("none");
     expect(fig.provenance.verification).toBe("unverified");
   });
@@ -967,7 +1335,9 @@ describe("POST /projects/:id/runs — Figure (P1.13; §7.5)", () => {
     const invented = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(figureBody({ idempotencyKey: "idem-fig-inv" }, { figureId: "01ARZ3NDEKTSV4RRFFQ69G5FFF" })),
+      body: JSON.stringify(
+        figureBody({ idempotencyKey: "idem-fig-inv" }, { figureId: "01ARZ3NDEKTSV4RRFFQ69G5FFF" }),
+      ),
     });
     expect(invented.status).toBe(404);
     expect(((await invented.json()) as { error: string }).error).toBe("figure_not_found");
@@ -982,18 +1352,25 @@ describe("POST /projects/:id/runs — Figure (P1.13; §7.5)", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        figureBody({ idempotencyKey: "idem-fig-iter" }, { figureId: "01ARZ3NDEKTSV4RRFFQ69G5FBF", priorVersion: 1 }),
+        figureBody(
+          { idempotencyKey: "idem-fig-iter" },
+          { figureId: "01ARZ3NDEKTSV4RRFFQ69G5FBF", priorVersion: 1 },
+        ),
       ),
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
-      inputs: { figureId: string; priorVersion: number };
-    }).inputs;
+    const ins = (
+      (await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+        inputs: { figureId: string; priorVersion: number };
+      }
+    ).inputs;
     expect(ins.figureId).toBe("01ARZ3NDEKTSV4RRFFQ69G5FBF");
     expect(ins.priorVersion).toBe(1);
     // no new figures row was minted
-    const count = await db.pg.query("select count(*)::int n from figures where project_id = $1", [seed.projectId]);
+    const count = await db.pg.query("select count(*)::int n from figures where project_id = $1", [
+      seed.projectId,
+    ]);
     expect((count.rows[0] as { n: number }).n).toBe(1);
   });
 });
@@ -1025,9 +1402,14 @@ describe("POST /projects/:id/runs — memo user_sources (P1.21; REQ-WF-8)", () =
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
-      inputs: Record<string, unknown> & { user_sources: unknown[]; urlPolicy: Record<string, unknown> };
-    }).inputs;
+    const ins = (
+      (await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+        inputs: Record<string, unknown> & {
+          user_sources: unknown[];
+          urlPolicy: Record<string, unknown>;
+        };
+      }
+    ).inputs;
     expect(ins.user_sources).toEqual([
       { name: "Q3 board metrics", text: "ARR grew 12% while churn fell to 4%." },
       { name: "Internal wiki", url: "https://wiki.acme.test/pages/headcount" },
@@ -1046,9 +1428,11 @@ describe("POST /projects/:id/runs — memo user_sources (P1.21; REQ-WF-8)", () =
     });
     expect(r.status).toBe(201);
     const { runId } = (await r.json()) as { runId: string };
-    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
-      inputs: { urlPolicy: Record<string, unknown> };
-    }).inputs;
+    const ins = (
+      (await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+        inputs: { urlPolicy: Record<string, unknown> };
+      }
+    ).inputs;
     expect(ins.urlPolicy.fetchUserDataForbidden).toBe(true);
     expect(ins.user_sources).toBeUndefined();
   });
