@@ -90,6 +90,21 @@ export function claimUrlViews(claim: Claim, fetchLog: FetchLog): ClaimUrlView[] 
   return out;
 }
 
+/**
+ * P1.07 — the same cited⇒fetched stamping for a FINDING's `evidence.urls` (§5.7 evidence block;
+ * REQ-IDE-25). Each URL gets `fetched` iff its normalized form is in the proxy log.
+ */
+export function evidenceUrlViews(
+  evidence: { readonly urls: readonly { readonly url: string; readonly accessed: string }[] } | undefined,
+  fetchLog: FetchLog,
+): ClaimUrlView[] {
+  if (evidence == null) return [];
+  return evidence.urls.map((u) => {
+    const normalizedUrl = normalizeUrl(u.url);
+    return { url: u.url, normalizedUrl, accessedAt: u.accessed, fetched: fetchLog.has(normalizedUrl) };
+  });
+}
+
 export interface ClaimSummary {
   readonly total: number;
   readonly byVerdict: Partial<Record<ClaimVerdict, number>>;

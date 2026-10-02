@@ -157,8 +157,9 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
     const res = await app.request(`/p/${SLUG}/review/run_1`);
     expect(res.status).toBe(200);
     const html = await res.text();
-    // two finalized findings carry the form; the provisional one does not.
-    expect(html.match(/data-disposition-form="true"/g)).toHaveLength(2);
+    // two finalized findings carry the form on EACH of the three §5.7 surfaces (body list + Margin
+    // card + Desk row = 2×3); the provisional one does not (P1.07 — one model, three surfaces).
+    expect(html.match(/data-disposition-form="true"/g)).toHaveLength(6);
     expect(html).toContain(`action="/p/${SLUG}/review/run_1/findings/f_1/disposition"`);
     for (const verb of ["accept", "adapt", "rebut", "defer", "escalate"]) {
       expect(html).toContain(`data-verb="${verb}"`);

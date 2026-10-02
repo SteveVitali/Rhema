@@ -113,6 +113,8 @@ interface FindingSourceRow {
   id: string;
   title: string;
   severity: string;
+  kind: string;
+  suggestion: { replacement: string } | null;
   anchor: Anchor | null;
   reviewed_n: number;
   corr_kind: string;
@@ -124,6 +126,9 @@ export interface EditorFindingDto {
   readonly findingId: string;
   readonly title: string;
   readonly severity: string;
+  /** P1.07 — the kind hue (§5.7) + the suggestion the "suggestions inline" toggle previews. */
+  readonly kind: string;
+  readonly suggestion: { replacement: string } | null;
   /** e.g. "from Review of v2" — the finding is a PROJECTION of the source review, not a re-file. */
   readonly sourceLabel: string;
   readonly anchor: Anchor;
@@ -144,6 +149,8 @@ function findingsDto(rows: FindingSourceRow[], markdown: string): EditorFindingD
       findingId: f.id,
       title: f.title,
       severity: f.severity,
+      kind: f.kind,
+      suggestion: f.suggestion ?? null,
       sourceLabel: `from ${f.corr_kind === "review" ? "Review" : f.corr_kind} of v${f.reviewed_n}`,
       anchor: p.anchor,
       method: p.method,
@@ -283,7 +290,7 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
           : head.id;
       const findingRows = (
         await tx.query(
-          `select f.id, f.title, f.severity, f.anchor, d.n as reviewed_n, ci.kind as corr_kind
+          `select f.id, f.title, f.severity, f.kind, f.suggestion, f.anchor, d.n as reviewed_n, ci.kind as corr_kind
              from findings f
              join drafts d on d.id = f.draft_id
              join correspondence_items ci on ci.id = f.correspondence_id

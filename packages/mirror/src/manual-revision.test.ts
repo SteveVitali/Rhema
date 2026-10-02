@@ -274,6 +274,44 @@ describe("saveManualRevision (PRB.07)", () => {
     expect(evs.filter((e) => e.type === "revision.move_traced")).toHaveLength(0);
   });
 
+  it("P1.07 — an Apply save marks the spliced block `suggestion_applied` with the finding's run (REQ-SPEC-6)", async () => {
+    // a finding filed on the frozen v1 with a suggestion — the Apply splice rewrites its block.
+    const runId = testDeps(310).ids("run");
+    const corr = testDeps(311).ids("corr");
+    await db.exec.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at, artifact_ids)
+       values ($1,$2,'review',$3,$4,1, now(), '{}')`,
+      [corr, proj.projectId, frozenDraftId, runId],
+    );
+    const findingId = testDeps(312).ids("fnd");
+    await db.exec.query(
+      `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body)
+       values ($1,$2,$3,1,'issue','note','editor','Tighten','body')`,
+      [findingId, corr, frozenDraftId],
+    );
+
+    const md = "# MR\n\nThe suggestion's replacement sentence.\n";
+    const splicedBlock = splitMarkdownBlocks(md).find((b) => b.text.includes("replacement"))!;
+    const r = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: frozenDraftId,
+      markdown: md,
+      userId: USER,
+      appliedSuggestions: [{ blockId: splicedBlock.blockId, runId, findingId }],
+    });
+    expect(r.ok && r.changed).toBe(true);
+    if (!r.ok) return;
+
+    const pm = (
+      await db.exec.query("select spans from provenance_maps where draft_version_id = $1", [r.versionId])
+    ).rows[0] as { spans: { blockId: string; source: { kind: string; runId?: string; findingId?: string } }[] };
+    const mark = pm.spans.find((s) => s.blockId === splicedBlock.blockId);
+    expect(mark?.source).toEqual({ kind: "suggestion_applied", runId, findingId });
+    // the untouched block keeps its normal (human-or-inherited) source.
+    expect(pm.spans.find((s) => s.blockId !== splicedBlock.blockId)?.source.kind).not.toBe("suggestion_applied");
+  });
+
   it("rejects a non-frozen, non-human-revision draft (a working agent head is not editable here)", async () => {
     await db.exec.query("update drafts set state = 'working' where id = $1", [frozenDraftId]);
     const r = await saveManualRevision(db.exec, deps, {

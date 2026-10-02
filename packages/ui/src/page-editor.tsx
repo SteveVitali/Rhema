@@ -27,6 +27,9 @@ export interface PageFindingView {
   readonly quote: string | null;
   readonly lost: boolean;
   readonly anchor?: unknown;
+  /** P1.07 — the kind hue + the suggestion preview the decoration layer emits (§5.7). */
+  readonly kind?: string;
+  readonly suggestion?: { replacement: string } | null;
 }
 
 /** A queued proposal card (agent-origin in-place change awaiting the human's accept/reject). */
@@ -368,7 +371,14 @@ export function PageEditor(props: PageEditorProps): ReactNode {
       {/* the projected findings' anchors — the island re-resolves span decorations on every edit */}
       <script type="application/json" data-page-findings="1">
         {JSON.stringify(
-          props.findings.map((f) => ({ findingId: f.findingId, severity: f.severity, anchor: f.anchor ?? null, lost: f.lost })),
+          props.findings.map((f) => ({
+            findingId: f.findingId,
+            severity: f.severity,
+            anchor: f.anchor ?? null,
+            lost: f.lost,
+            ...(f.kind ? { kind: f.kind } : {}),
+            ...(f.suggestion ? { suggestion: f.suggestion } : {}),
+          })),
         ).replace(/</g, "\\u003c")}
       </script>
 

@@ -16,6 +16,9 @@ export interface FindingCardLabels {
   readonly provisionalLabel: string;
   /** shown on a disposed card (read-only), e.g. (kind) => "You accepted this". */
   readonly dispositionLabel?: (kind: string, applied?: boolean) => string;
+  /** P1.07 — the evidence block's labels (§5.7): the verdict chip + per-URL "fetched ✓". */
+  readonly fetchedLabel?: string;
+  readonly accessedLabel?: (accessed: string) => string;
 }
 
 export interface FindingCardProps {
@@ -28,10 +31,18 @@ export interface FindingCardProps {
    * frozen). PRB.04 (reading surfaces) never passes this — so a provisional card shows no controls, always.
    */
   readonly controls?: ReactNode;
+  /**
+   * P1.07 — the claim-finding evidence block (§5.7): the verdict chip + every `sources[]` URL with its
+   * "fetched ✓" mark (the caller stamps `fetched` from the run's proxy fetch log — REQ-IDE-25).
+   */
+  readonly evidence?: {
+    readonly verdictLabel?: string;
+    readonly urls: readonly { readonly url: string; readonly fetched: boolean; readonly accessedAt?: string }[];
+  };
 }
 
 /** A single read-only finding card (§5.7). */
-export function FindingCard({ view, labels, obligation, controls }: FindingCardProps): ReactNode {
+export function FindingCard({ view, labels, obligation, controls, evidence }: FindingCardProps): ReactNode {
   const provisional = view.provisional;
   const showControls = controls != null && canDispose({ provisional: view.provisional, disposition: view.disposition ?? null });
   return (
@@ -70,6 +81,26 @@ export function FindingCard({ view, labels, obligation, controls }: FindingCardP
       </div>
       <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--paper-fg)" }}>{view.title}</div>
       <div style={{ color: "var(--paper-fg-muted)", fontSize: "13px", marginTop: "2px" }}>{view.body}</div>
+      {evidence ? (
+        <div data-finding-evidence="true" style={{ marginTop: "6px", fontSize: "12px" }}>
+          {evidence.verdictLabel != null ? (
+            <span data-evidence-verdict="true" style={{ fontWeight: 600, color: "var(--paper-fg)", marginRight: "6px" }}>
+              {evidence.verdictLabel}
+            </span>
+          ) : null}
+          <ul style={{ listStyle: "none", padding: 0, margin: "4px 0 0" }}>
+            {evidence.urls.map((u) => (
+              <li key={u.url} style={{ color: "var(--paper-fg-muted)", padding: "1px 0" }}>
+                <a href={u.url} style={{ color: "var(--accent)" }}>{u.url}</a>
+                {u.accessedAt != null && labels.accessedLabel ? <> · {labels.accessedLabel(u.accessedAt)}</> : null}
+                {u.fetched && labels.fetchedLabel ? (
+                  <> <span data-fetched-chip="true" style={{ fontSize: "11px", color: "var(--state-ready)" }}>{labels.fetchedLabel} ✓</span></>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {view.disposition && labels.dispositionLabel ? (
         <div data-disposition={view.disposition.kind} style={{ marginTop: "6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
           {labels.dispositionLabel(view.disposition.kind, view.disposition.applied)}
@@ -111,7 +142,7 @@ export function ConflictRow({ conflict, labels }: { conflict: ReconciliationConf
 export interface FindingsListLabels extends FindingCardLabels, ConflictRowLabels {
   readonly conflictsHeading?: string;
   readonly rejectedHeading?: string;
-  /** the promote affordance on a collapsed rejected finding (label only; the action is PRB.05). */
+  /** the promote affordance on a collapsed rejected finding. */
   readonly promoteLabel?: string;
 }
 
@@ -127,10 +158,17 @@ export interface FindingsListProps {
    * reason chips). Rendered only when `canDispose` permits (never on provisional or frozen cards).
    */
   readonly controlsFor?: (view: FindingView) => ReactNode;
+  /**
+   * P1.07 — the promote affordance's POST action for a rejected row ("I want to address this anyway" →
+   * a user-origin ledger row; REQ-IDE-26). Absent ⇒ the label renders without the form (read-only).
+   */
+  readonly promoteActionFor?: (view: FindingView) => string;
+  /** P1.07 — the claim-finding evidence block per card (verdict chip + fetched-stamped URLs). */
+  readonly evidenceFor?: (view: FindingView) => FindingCardProps["evidence"];
 }
 
 /** The list-first findings surface: grouped cards (Whole piece heads the list), conflict rows, rejected group. */
-export function FindingsList({ groups, conflicts, collapsedRejected, labels, obligationFor, controlsFor }: FindingsListProps): ReactNode {
+export function FindingsList({ groups, conflicts, collapsedRejected, labels, obligationFor, controlsFor, promoteActionFor, evidenceFor }: FindingsListProps): ReactNode {
   return (
     <div data-findings-list="true">
       {conflicts && conflicts.length > 0 ? (
@@ -148,7 +186,7 @@ export function FindingsList({ groups, conflicts, collapsedRejected, labels, obl
         <section key={g.key} data-group={g.key} style={{ marginBottom: "16px" }}>
           <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--paper-fg-muted)" }}>{g.label}</h3>
           {g.findings.map((v) => (
-            <FindingCard key={v.id} view={v} labels={labels} obligation={obligationFor?.(v)} controls={controlsFor?.(v)} />
+            <FindingCard key={v.id} view={v} labels={labels} obligation={obligationFor?.(v)} controls={controlsFor?.(v)} {...(evidenceFor ? { evidence: evidenceFor(v) } : {})} />
           ))}
         </section>
       ))}
@@ -164,7 +202,17 @@ export function FindingsList({ groups, conflicts, collapsedRejected, labels, obl
               {v.reconciliation === "rejected" ? (
                 <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "2px" }}>{v.body}</div>
               ) : null}
-              {labels.promoteLabel ? <span data-promotable="true" style={{ fontSize: "12px", color: "var(--accent)" }}>{labels.promoteLabel}</span> : null}
+              {labels.promoteLabel ? (
+                promoteActionFor ? (
+                  <form method="post" action={promoteActionFor(v)} style={{ display: "inline" }}>
+                    <button type="submit" data-promotable="true" style={{ fontSize: "12px", color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                      {labels.promoteLabel}
+                    </button>
+                  </form>
+                ) : (
+                  <span data-promotable="true" style={{ fontSize: "12px", color: "var(--accent)" }}>{labels.promoteLabel}</span>
+                )
+              ) : null}
             </div>
           ))}
         </section>

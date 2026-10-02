@@ -54,6 +54,10 @@ import type {
   TimelineDto,
   RunReportDto,
   RunSheetContextDto,
+  ApplyResultDto,
+  FindingResolveDto,
+  BulkPreviewDto,
+  BulkResultDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -115,6 +119,10 @@ export interface DossierData {
   readonly runId: string;
   readonly projectTitle: string;
   readonly versionLabel: string;
+  /** P1.07 — the run's rigor drives the §5.7 severity budget (Quick's 40-finding rendered cap). */
+  readonly rigor?: string;
+  /** P1.07 — the reviewed draft the Apply path splices (its working head when forked). */
+  readonly reviewedDraftId?: string;
   /** P1.06 — a scoped run's dossier label (§7.2 scope chips, e.g. "§III"); absent on whole-draft runs. */
   readonly scopeLabels?: readonly string[];
   readonly openObligations: number;
@@ -186,6 +194,43 @@ export interface DataSource {
     findingId: string,
     req: RecordDispositionDto,
   ): Promise<DispositionDto>;
+  /** P1.07 — Apply (REQ-SPEC-6): splice the suggestion into the working head + accept·applied.
+   *  Optional like the other live-write seams: a fixture without it renders Apply disabled. */
+  applyFinding?(session: SessionHeaders, projectId: string, findingId: string): Promise<ApplyResultDto>;
+  /** P1.07 — promote a reconciliation-rejected finding to the main list (REQ-IDE-26). */
+  promoteFinding?(
+    session: SessionHeaders,
+    projectId: string,
+    findingId: string,
+  ): Promise<{ ok: true; findingId: string; obligationId?: string }>;
+  /** P1.07 — "Add to obligations" on any finding (REQ-OBJ-9). */
+  addFindingToObligations?(
+    session: SessionHeaders,
+    projectId: string,
+    findingId: string,
+  ): Promise<{ ok: true; obligationId: string }>;
+  /** P1.07 — the palette's free-form obligation (REQ-OBJ-10; `source: 'user'`). */
+  createObligation?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { title: string; severity?: "blocking" | "major" | "minor" | "note" },
+  ): Promise<{ ok: true; obligationId: string }>;
+  /** P1.07 — the shared deep link: resolve a finding to its dossier run + anchor. */
+  resolveFinding?(session: SessionHeaders, projectId: string, findingId: string): Promise<FindingResolveDto>;
+  /** P1.07 — the consolidated bulk preview (§5.7) before any writes. */
+  previewBulkFindings?(
+    session: SessionHeaders,
+    projectId: string,
+    runId: string,
+    req: { action: BulkPreviewDto["action"]; section?: string },
+  ): Promise<BulkPreviewDto>;
+  /** P1.07 — dispatch a previewed bulk action (`only` = the checklist's checked subset). */
+  applyBulkFindings?(
+    session: SessionHeaders,
+    projectId: string,
+    runId: string,
+    req: { action: BulkPreviewDto["action"]; section?: string; only?: string[] },
+  ): Promise<BulkResultDto>;
   /** PRB.05 — the open gate cards for the project's runs (the Needs-you surface). */
   listGates(session: SessionHeaders, projectId: string): Promise<GateCardDto[]>;
   /** PRB.05 — a gate card's decision (approve / wait / stop / …). */
@@ -510,6 +555,22 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       }),
     recordDisposition: (session, projectId, findingId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordDisposition(projectId, findingId, req),
+    // P1.07 — the findings surface writes: Apply, promote, Add-to-obligations, the deep-link resolve,
+    // and the one-preview bulk actions (§5.7; REQ-SPEC-6, REQ-IDE-26, REQ-OBJ-9).
+    applyFinding: (session, projectId, findingId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).applyFinding(projectId, findingId),
+    promoteFinding: (session, projectId, findingId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).promoteFinding(projectId, findingId),
+    addFindingToObligations: (session, projectId, findingId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addFindingToObligations(projectId, findingId),
+    createObligation: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createObligation(projectId, req),
+    resolveFinding: (session, projectId, findingId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).resolveFinding(projectId, findingId),
+    previewBulkFindings: (session, projectId, runId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).previewBulkFindings(projectId, runId, req),
+    applyBulkFindings: (session, projectId, runId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).applyBulkFindings(projectId, runId, req),
     listGates: (session, projectId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listGates(projectId),
     decideGate: (session, projectId, gateId, req) =>

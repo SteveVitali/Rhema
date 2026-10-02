@@ -15,6 +15,7 @@ import { createEstimateRoutes, type EstimateApiDeps } from "./estimate-routes.js
 import { createSseRoutes, type SseApiDeps } from "./sse-routes.js";
 import { createShellRoutes } from "./project-list.js";
 import { createTriageRoutes, type TriageApiDeps } from "./triage-routes.js";
+import { createFindingRoutes, type FindingApiDeps } from "./finding-routes.js";
 import { createRevisionRoutes, type RevisionApiDeps } from "./revision-routes.js";
 import { createDossierRoutes, type DossierApiDeps } from "./dossier-routes.js";
 import { createEditorRoutes, type EditorApiDeps } from "./editor-routes.js";
@@ -98,6 +99,8 @@ export {
 } from "./import.js";
 export { createTriageRoutes, loadPretriage } from "./triage-routes.js";
 export type { TriageApiDeps } from "./triage-routes.js";
+export { createFindingRoutes } from "./finding-routes.js";
+export type { FindingApiDeps } from "./finding-routes.js";
 export { createRevisionRoutes } from "./revision-routes.js";
 export type { RevisionApiDeps } from "./revision-routes.js";
 export { createEditorRoutes } from "./editor-routes.js";
@@ -326,6 +329,9 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the
       // same deps the run API uses (txRunner for the atomic write + obligation routing).
       app.route("/", createTriageRoutes({ ...(deps as TriageApiDeps), db }));
+      // P1.07 — the findings surface (§5.7): Apply (REQ-SPEC-6), promote, "Add to obligations" (REQ-OBJ-9),
+      // the deep-link resolve, and the one-preview bulk actions — all through the same shared write path.
+      app.route("/", createFindingRoutes({ ...(deps as FindingApiDeps), db }));
       // PRB.07 — the source editor (document read, autosave, note→Guidance, cancel-run, revise-with-edits).
       app.route("/", createEditorRoutes({ ...(deps as EditorApiDeps), db }));
       // PRB.11 — export (md/txt/docx via the ExportRunner seam — pandoc stays in the export image) + the

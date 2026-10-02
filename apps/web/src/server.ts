@@ -18,6 +18,7 @@ import {
   voicesElement,
   voiceNewElement,
   voiceDetailElement,
+  obligationNewElement,
   settingsElement,
   usageElement,
   runReportElement,
@@ -45,6 +46,7 @@ import {
 } from "@rhema/contracts";
 import { buildRunSheetView, sheetProfile, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
+import { applySeverityBudget, filterFindings, parseFindingFilters } from "@rhema/findings-core";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
@@ -232,6 +234,9 @@ export function createWebApp(deps: WebDeps): Hono {
           path: `#finding-${f.id}`,
           keywords: [f.id, f.severity, f.kind],
         })),
+        // P1.07 — REQ-OBJ-10: the palette's free-form obligation lands on the row-creation form
+        // (`source: 'user'`, standing — the same write "Add to obligations" takes).
+        { label: "New obligation…", path: `/p/${row.slug}/obligations/new`, keywords: ["obligation", "new", "add", "track"] },
       ],
       recentRuns: (opts.timelineView?.rounds ?? [])
         .flatMap((r) => r.runs)
@@ -1501,11 +1506,50 @@ export function createWebApp(deps: WebDeps): Hono {
     if (dossier.findings.some((f) => f.origin === "second_read")) {
       emit(session, "secondread.opened", {}, { projectId: row.id, runId });
     }
+    // P1.07 — the findings-surface view state (§5.7): shared filters (sev/kind/disp/sec/url/sug/obl),
+    // triage mode (?triage=1), the consolidated bulk preview (?bulk=<action>[&bsec]), a dispatch
+    // result (?bulkdone), and the notice a bounced finding POST re-renders (?applied/?promoted/?obligated/?ferr).
+    const filters: Record<string, string | undefined> = {
+      sev: c.req.query("sev"), kind: c.req.query("kind"), disp: c.req.query("disp"),
+      sec: c.req.query("sec"), url: c.req.query("url"), sug: c.req.query("sug"), obl: c.req.query("obl"),
+    };
+    const filteredRows = filterFindings(
+      applySeverityBudget([...dossier.findings], dossier.rigor),
+      parseFindingFilters(filters),
+    );
+    const bulkAction = c.req.query("bulk");
+    const bulkPreview = bulkAction != null && deps.dataSource.previewBulkFindings != null
+      ? await deps.dataSource
+          .previewBulkFindings(session, row.id, runId, {
+            action: bulkAction as "apply_notes" | "defer_minor" | "accept_section",
+            ...(c.req.query("bsec") != null ? { section: c.req.query("bsec")! } : {}),
+          })
+          .catch(() => null)
+      : null;
+    const bulkDone = c.req.query("bulkdone");
+    const notice = (() => {
+      const applied = c.req.query("applied");
+      if (applied != null) return { kind: "applied" as const, findingId: applied };
+      const promoted = c.req.query("promoted");
+      if (promoted != null) return { kind: "promoted" as const, findingId: promoted };
+      const obligated = c.req.query("obligated");
+      if (obligated != null) return { kind: "obligated" as const, findingId: obligated };
+      const ferr = c.req.query("ferr");
+      if (ferr != null) {
+        return {
+          kind: "error" as const,
+          findingId: ferr,
+          message: c.req.query("fmsg") ?? "The finding action did not complete.",
+        };
+      }
+      return undefined;
+    })();
     return c.html(renderDocument(c.req.path, dossierElement, {
       // P1.01 — the dossier IS the IDE's flagship reading surface: its findings feed the Margin
       // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
+      // P1.07 — the ticks echo the SHARED filtered list (the same set the Margin/Desk render).
       ...(await ideContext(c, session, row, {
-        findings: dossier.findings.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
+        findings: filteredRows.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
         ...(timeline
           ? { timelineView: timeline, runNextHref: `/p/${slug}/run` }
           : { timeline: [{ id: runId, label: dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
@@ -1513,6 +1557,21 @@ export function createWebApp(deps: WebDeps): Hono {
       })),
       project: { title: dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
       dossier,
+      dossierView: {
+        filters,
+        triage: c.req.query("triage") === "1",
+        ...(bulkPreview != null
+          ? {
+              bulk: {
+                action: bulkAction!,
+                ...(c.req.query("bsec") != null ? { section: c.req.query("bsec")! } : {}),
+                preview: bulkPreview,
+              },
+            }
+          : {}),
+        ...(bulkDone != null ? { bulkDone: { count: Number(bulkDone) || 0, skipped: Number(c.req.query("bulkskip") ?? "0") || 0 } } : {}),
+        ...(notice != null ? { notice } : {}),
+      },
       compact: isPhoneRequest(c),
       dwellSurface: "dossier",
       ...(savedFindingId ? { triage: { savedFindingId } } : {}),
@@ -1679,6 +1738,189 @@ export function createWebApp(deps: WebDeps): Hono {
   };
   app.post("/p/:project/review/:runId/findings/:fid/disposition", dispositionHandler);
   app.post("/p/:project/findings/:fid/disposition", dispositionHandler);
+
+  // ---- P1.07 — the findings-surface writes (§5.7; REQ-SPEC-6/REQ-IDE-26/REQ-OBJ-9). All plain form
+  // POSTs: Apply splices the suggestion (free, no run), promote lifts a rejected row, Add-to-obligations
+  // files a user-sourced obligation. A bounced write redirects back with `ferr=<findingId>` so the
+  // dossier re-renders the notice line. ----
+  const findingActionHandler =
+    (
+      act: (session: SessionHeaders, projectId: string, findingId: string) => Promise<unknown>,
+      notice: "applied" | "promoted" | "obligated",
+    ) =>
+    async (c: Context) => {
+      const session = deps.session(c);
+      if (!session) return c.redirect("/login");
+      const slug = c.req.param("project") ?? "";
+      const runId = c.req.param("runId") ?? "";
+      const findingId = c.req.param("fid") ?? "";
+      const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+      if (!row || findingId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      const form = (await c.req.parseBody().catch(() => ({}))) as Record<string, unknown>;
+      const nextRaw = typeof form["next"] === "string" ? form["next"] : "";
+      const back = safeBack(nextRaw, runId !== "" ? `/p/${slug}/review/${runId}` : `/p/${slug}`);
+      try {
+        await act(session, row.id, findingId);
+      } catch (e) {
+        if (e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 422)) {
+          const sep = back.includes("?") ? "&" : "?";
+          const msg =
+            e.status === 409
+              ? "This finding's disposition is frozen — the ledger locked at delivery."
+              : e.status === 422
+                ? "The suggestion can't be applied — its anchor no longer resolves."
+                : "The finding wasn't found.";
+          return c.redirect(`${back}${sep}ferr=${encodeURIComponent(findingId)}&fmsg=${encodeURIComponent(msg)}`);
+        }
+        throw e;
+      }
+      const sep = back.includes("?") ? "&" : "?";
+      return c.redirect(`${back}${sep}${notice}=${encodeURIComponent(findingId)}#finding-${encodeURIComponent(findingId)}`);
+    };
+
+  const callApply = (s: SessionHeaders, p: string, f: string) => {
+    const fn = deps.dataSource.applyFinding;
+    return fn == null ? Promise.reject(new ApiError(404, "finding-write")) : fn(s, p, f);
+  };
+  const callPromote = (s: SessionHeaders, p: string, f: string) => {
+    const fn = deps.dataSource.promoteFinding;
+    return fn == null ? Promise.reject(new ApiError(404, "finding-write")) : fn(s, p, f);
+  };
+  const callObligate = (s: SessionHeaders, p: string, f: string) => {
+    const fn = deps.dataSource.addFindingToObligations;
+    return fn == null ? Promise.reject(new ApiError(404, "finding-write")) : fn(s, p, f);
+  };
+
+  app.post("/p/:project/review/:runId/findings/:fid/apply", findingActionHandler(callApply, "applied"));
+  app.post("/p/:project/findings/:fid/apply", findingActionHandler(callApply, "applied"));
+  app.post("/p/:project/review/:runId/findings/:fid/promote", findingActionHandler(callPromote, "promoted"));
+  app.post("/p/:project/findings/:fid/promote", findingActionHandler(callPromote, "promoted"));
+  app.post("/p/:project/review/:runId/findings/:fid/obligations", findingActionHandler(callObligate, "obligated"));
+  app.post("/p/:project/findings/:fid/obligations", findingActionHandler(callObligate, "obligated"));
+
+  // ---- P1.07 — the palette's free-form obligation (REQ-OBJ-10). GET renders the one-field form
+  //      (the palette row + the Desk's "New obligation" land here); POST files `source: 'user'`
+  //      and returns to `next` with the `obligation` notice. ----
+  app.get("/p/:project/obligations/new", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const back = safeBack(c.req.query("next") ?? "", `/p/${slug}`);
+    return c.html(renderDocument(c.req.path, obligationNewElement, {
+      obligationNew: { slug, projectTitle: row.title, back },
+    }));
+  });
+  app.post("/p/:project/obligations", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = (await c.req.parseBody().catch(() => ({}))) as Record<string, unknown>;
+    const title = typeof form["title"] === "string" ? form["title"].trim() : "";
+    const severity = typeof form["severity"] === "string" ? form["severity"] : "";
+    const back = safeBack(typeof form["next"] === "string" ? form["next"] : "", `/p/${slug}`);
+    if (title === "") {
+      return c.html(renderDocument(c.req.path, obligationNewElement, {
+        obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.required },
+      }), 422);
+    }
+    if (deps.dataSource.createObligation == null) {
+      return c.html(renderDocument(c.req.path, obligationNewElement, {
+        obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.failed },
+      }), 503);
+    }
+    try {
+      await deps.dataSource.createObligation(session, row.id, {
+        title,
+        severity: (["blocking", "major", "minor", "note"] as const).includes(severity as never)
+          ? (severity as "blocking" | "major" | "minor" | "note")
+          : "minor",
+      });
+    } catch (e) {
+      if (e instanceof ApiError && e.status < 500) {
+        return c.html(renderDocument(c.req.path, obligationNewElement, {
+          obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.failed },
+        }), 422);
+      }
+      throw e;
+    }
+    const sep = back.includes("?") ? "&" : "?";
+    return c.redirect(`${back}${sep}obligation=new`);
+  });
+
+  // ---- P1.07 — the one-preview bulk actions (§5.7; REQ-IDE-29 amended). bulk-preview bounces to the
+  // GET with `?bulk=<action>` (the page renders the consolidated checklist + the single diff); bulk
+  // dispatches the CHECKED subset (`only[]` — unchecked rows are never written). ----
+  app.post("/p/:project/review/:runId/findings/bulk-preview", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const runId = c.req.param("runId") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const action = typeof form["action"] === "string" ? (form["action"] as string) : "";
+    const section = typeof form["section"] === "string" ? (form["section"] as string) : "";
+    if (!["apply_notes", "defer_minor", "accept_section"].includes(action)) {
+      return c.redirect(`/p/${slug}/review/${runId}`);
+    }
+    const q = `bulk=${encodeURIComponent(action)}${section !== "" ? `&bsec=${encodeURIComponent(section)}` : ""}`;
+    return c.redirect(`/p/${slug}/review/${runId}?${q}#findings`);
+  });
+
+  app.post("/p/:project/review/:runId/findings/bulk", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const runId = c.req.param("runId") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const action = typeof form["action"] === "string" ? (form["action"] as string) : "";
+    const section = typeof form["section"] === "string" ? (form["section"] as string) : "";
+    const only = form["only"] == null ? undefined
+      : Array.isArray(form["only"]) ? (form["only"] as string[]).filter((s): s is string => typeof s === "string")
+      : typeof form["only"] === "string" ? [form["only"] as string] : undefined;
+    const back = `/p/${slug}/review/${runId}`;
+    if (!["apply_notes", "defer_minor", "accept_section"].includes(action) || deps.dataSource.applyBulkFindings == null) {
+      return c.redirect(back);
+    }
+    try {
+      const result = await deps.dataSource.applyBulkFindings(session, row.id, runId, {
+        action: action as "apply_notes" | "defer_minor" | "accept_section",
+        ...(section !== "" ? { section } : {}),
+        ...(only != null ? { only } : {}),
+      });
+      return c.redirect(`${back}?bulkdone=${result.count}&bulkskip=${result.skipped.length}#findings`);
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        return c.redirect(`${back}?ferr=bulk&fmsg=${encodeURIComponent("The bulk action did not complete — the ledger may be frozen.")}#findings`);
+      }
+      throw e;
+    }
+  });
+
+  // ---- P1.07 — the shared deep link (§5.7): /p/:project/f/:fid resolves to the finding's dossier
+  //      anchor — the same href the Margin card, Desk row, and palette row land on. ----
+  app.get("/p/:project/f/:fid", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project") ?? "";
+    const findingId = c.req.param("fid") ?? "";
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row || findingId === "" || deps.dataSource.resolveFinding == null) {
+      return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
+    const resolved = await deps.dataSource.resolveFinding(session, row.id, findingId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!resolved) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.redirect(`/p/${slug}/review/${resolved.runId}#${resolved.anchor}`);
+  });
 
   // PRB.06 — the What-changed page (§5.8): what changed and why for a delivered response. GET renders the
   // server-joined view; the hunk comment POST lands a Guidance row for the next Revise (§6.5).

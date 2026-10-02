@@ -72,6 +72,16 @@ export interface IdeShellProps {
   readonly hasFindings?: boolean;
   /** margin content (the finding rows the cards/ticks summarize) — absent ⇒ Margin hides. */
   readonly findings?: readonly { id: string; severity: string; kind: string; excerpt: string }[];
+  /**
+   * P1.07 — the Margin's full surface (MarginSurface: cards/chips/suggestions), superseding the flat
+   * `findings` excerpt cards when set. The ticks still render from `findings` (the minimized echo).
+   */
+  readonly marginBody?: ReactNode;
+  /**
+   * P1.07 — the Desk's Findings tab body (FindingsDesk: the screen-reader table + filters + triage
+   * queue), superseding the flat `findings` table when set.
+   */
+  readonly deskFindingsBody?: ReactNode;
   /** the Timeline's run rows (the round log; P1.09 owns the full log — this renders what it's given). */
   readonly timeline?: readonly { id: string; label: string; state: string; href?: string }[];
   /**
@@ -217,11 +227,12 @@ export function IdeShell(props: IdeShellProps): ReactNode {
               <a key={f.id} className="ide-tick" href={`#finding-${f.id}`} aria-label={f.excerpt}
                  title={f.excerpt} style={{ background: `var(--sev-${f.severity})` }} />
             ))}
-            {findings.map((f) => (
-              <div key={`card-${f.id}`} id={`finding-${f.id}`} data-finding-id={f.id} className="ide-fcard" style={{ borderLeftColor: `var(--sev-${f.severity})` }}>
-                {f.excerpt}
-              </div>
-            ))}
+            {props.marginBody ??
+              findings.map((f) => (
+                <div key={`card-${f.id}`} id={`finding-${f.id}`} data-finding-id={f.id} className="ide-fcard" style={{ borderLeftColor: `var(--sev-${f.severity})` }}>
+                  {f.excerpt}
+                </div>
+              ))}
           </aside>
         </div>
 
@@ -291,9 +302,11 @@ export function IdeShell(props: IdeShellProps): ReactNode {
               <p>{props.activeRun ? props.activeRun.state : L.desk.emptyFeed}</p>
             )}
           </div>
-          {/* The Desk findings table IS the screen-reader surface (§5.9 a11y) — a real <table>. */}
+          {/* The Desk findings table IS the screen-reader surface (§5.9 a11y) — a real <table>.
+              P1.07: `deskFindingsBody` carries the full FindingsDesk (filters + triage queue + bulk
+              actions); the flat table remains the fallback for callers without finding rows. */}
           <div data-desk-panel="findings">
-            {findings.length === 0 ? (
+            {props.deskFindingsBody ?? (findings.length === 0 ? (
               <EmptyFindings label={L.desk.emptyFindings} />
             ) : (
               <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
@@ -316,7 +329,7 @@ export function IdeShell(props: IdeShellProps): ReactNode {
                   ))}
                 </tbody>
               </table>
-            )}
+            ))}
           </div>
           <div data-desk-panel="claims">
             <p>{L.desk.emptyClaims}</p>

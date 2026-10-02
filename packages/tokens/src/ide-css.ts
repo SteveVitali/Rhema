@@ -50,9 +50,22 @@ export function ideCss(): string {
     `[data-theme="light"] .ide-page .paper { box-shadow: 0 1px 2px rgba(30,34,40,0.08), 0 4px 14px rgba(30,34,40,0.07); }`,
     `.ide-margin { flex: 0 0 ${B.marginPx}px; width: ${B.marginPx}px; border-left: 1px solid var(--shell-border); overflow: auto; padding: var(--s3); transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease; }`,
     ".ide[data-margin='ticks'] .ide-margin, .ide-margin[data-mode='ticks'] { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
+    // View › Finding cards collapses the surface to ticks-only (§5.7) — the cards hide, the tick echo stays.
+    ".ide[data-margin='ticks'] .ide-margin [data-margin-surface] { display: none; }",
     ".ide[data-margin='hidden'] .ide-margin { display: none; }",
     ".ide-margin .ide-tick { display: block; width: 8px; height: 8px; border-radius: 2px; margin: 0 auto 10px; }",
     ".ide-margin .ide-fcard { border: 1px solid var(--shell-border); border-left-width: 3px; border-radius: var(--radius-1); padding: var(--s2); margin-bottom: var(--s2); font-size: 12px; background: var(--shell-surface); }",
+    // P1.07 — the Margin surface: cards carry data-margin-card; crowded paragraphs collapse to one
+    // stacked chip (details.ide-mchip, expands on focus — §5.7 clustering). Linked selection paints
+    // the focused card/row on all three surfaces at once.
+    ".ide-margin [data-margin-card] { border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: var(--s1); margin-bottom: var(--s2); background: var(--shell-surface); }",
+    ".ide-margin [data-margin-card]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }",
+    ".ide-margin [data-margin-card][data-selected='true'], [data-desk-row][data-selected='true'] { outline: 2px solid var(--accent); outline-offset: -1px; }",
+    "[data-desk-row][data-selected='true'] td { background: var(--shell-raised); }",
+    ".ide-margin .ide-mchip { font-size: 12px; }",
+    ".ide-margin .ide-mchip > summary { cursor: pointer; }",
+    "[data-desk-row][data-rejected='true'] td { opacity: 0.72; }",
+    "[data-triage-mode] [data-triage-section] table { margin-bottom: var(--s2); }",
 
     // ---- Timeline (pane | overlay | sheet | hidden) ----
     `.ide-timeline { flex: 0 0 var(--timeline-w, ${B.timelinePx}px); width: var(--timeline-w, ${B.timelinePx}px); background: var(--shell-surface); border-left: 1px solid var(--shell-border); overflow: auto; transition: flex-basis var(--dur-pane) ease, width var(--dur-pane) ease, transform var(--dur-pane) ease; display: flex; flex-direction: column; }`,
@@ -197,12 +210,36 @@ export function ideCss(): string {
     ".rm-page-host .rm-frontmatter, .rm-page-preview .rm-frontmatter, .rm-page-host .rm-link-def, .rm-page-preview .rm-link-def, .rm-page-host .rm-html-block, .rm-page-preview .rm-html-block { color: var(--shell-fg-faint); font-size: 0.85em; border-left: 2px solid var(--shell-border); padding-left: var(--s2); margin: 0 0 0.8em; white-space: pre-wrap; }",
     ".rm-page-host .rm-footnote-def, .rm-page-preview .rm-footnote-def { font-size: 0.88em; color: var(--shell-fg-muted); border-top: 1px solid var(--paper-rule, var(--shell-border)); padding-top: var(--s1); }",
     ".rm-page-host .rm-footnote-def::before, .rm-page-preview .rm-footnote-def::before { content: '[' attr(data-fn) '] '; color: var(--shell-fg-faint); }",
-    ".rm-page .rm-finding { border-bottom: 2px solid var(--sev-minor); }",
+    // §5.7 (P1.07): underline WEIGHT encodes severity — blocking solid 2 px, major solid 1.5 px, minor
+    // dotted, note faint — and HUE encodes the finding kind. `--fm-hue` defaults to the severity color
+    // (callers without a kind keep the old look); `.rm-kind-*` re-hues the mark. Decorations are
+    // aria-hidden in the a11y contract — the Desk table is the screen-reader surface.
+    ".rm-page .rm-finding { border-bottom: 1.5px solid var(--sev-minor); }",
+    ".rm-page .rm-finding-blocking, .rm-page .rm-finding-critical { border-bottom: 2px solid var(--sev-blocking, var(--sev-major)); }",
     ".rm-page .rm-finding-major { border-bottom-color: var(--sev-major); }",
-    ".rm-page .rm-finding-blocking, .rm-page .rm-finding-critical { border-bottom-color: var(--sev-blocking, var(--sev-major)); }",
+    ".rm-page .rm-finding-minor { border-bottom-style: dotted; }",
+    ".rm-page .rm-finding-note { border-bottom-width: 1px; border-bottom-color: var(--sev-note); }",
+    ".rm-page .rm-kind-claim { border-bottom-color: var(--kind-claim); }",
+    ".rm-page .rm-kind-discourse { border-bottom-color: var(--kind-discourse); }",
+    ".rm-page .rm-kind-argument { border-bottom-color: var(--kind-argument); }",
+    ".rm-page .rm-kind-structure { border-bottom-color: var(--kind-structure); }",
+    ".rm-page .rm-kind-craft { border-bottom-color: var(--kind-craft); }",
+    ".rm-page .rm-kind-voice { border-bottom-color: var(--kind-voice); }",
+    ".rm-page .rm-kind-continuity { border-bottom-color: var(--kind-continuity); }",
+    // suggestion preview (View › Show suggestions inline): a soft wash on the span; the replacement
+    // itself renders as an inserted-text widget the island appends (read-only — Apply owns the bytes).
+    ".rm-page .rm-suggestion-preview { background: color-mix(in srgb, var(--kind-craft) 16%, transparent); border-radius: 2px; }",
+    ".rm-page .rm-suggestion-replacement { color: var(--sev-minor); background: color-mix(in srgb, var(--sev-minor) 14%, transparent); border-radius: 2px; padding: 0 2px; }",
     ".rm-page .rm-finding-block { box-shadow: inset 3px 0 0 var(--sev-minor); }",
     ".rm-page .rm-finding-block.rm-finding-major { box-shadow: inset 3px 0 0 var(--sev-major); }",
     ".rm-page .rm-finding-block.rm-finding-blocking, .rm-page .rm-finding-block.rm-finding-critical { box-shadow: inset 3px 0 0 var(--sev-blocking, var(--sev-major)); }",
+    ".rm-page .rm-finding-block.rm-kind-claim { box-shadow: inset 3px 0 0 var(--kind-claim); }",
+    ".rm-page .rm-finding-block.rm-kind-discourse { box-shadow: inset 3px 0 0 var(--kind-discourse); }",
+    ".rm-page .rm-finding-block.rm-kind-argument { box-shadow: inset 3px 0 0 var(--kind-argument); }",
+    ".rm-page .rm-finding-block.rm-kind-structure { box-shadow: inset 3px 0 0 var(--kind-structure); }",
+    ".rm-page .rm-finding-block.rm-kind-craft { box-shadow: inset 3px 0 0 var(--kind-craft); }",
+    ".rm-page .rm-finding-block.rm-kind-voice { box-shadow: inset 3px 0 0 var(--kind-voice); }",
+    ".rm-page .rm-finding-block.rm-kind-continuity { box-shadow: inset 3px 0 0 var(--kind-continuity); }",
     ".rm-page .rm-proposal-target { box-shadow: inset 3px 0 0 var(--accent); }",
     // the Authorship overlay (View menu; REQ-POS-8): a left-edge tint per block — read-only decorations.
     ".rm-page .rm-author-agent { box-shadow: inset 3px 0 0 var(--accent); }",

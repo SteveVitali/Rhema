@@ -100,7 +100,8 @@ export function parseLetterSections(markdown: string): LetterSectionOut[] {
 
 // ---------------------------------------------------------------- row → domain mapping
 
-interface FindingRow {
+/** Exported for the P1.07 finding routes — the same row shape the dossier read maps. */
+export interface FindingRow {
   id: string;
   correspondence_id: string;
   draft_id: string;
@@ -118,7 +119,8 @@ interface FindingRow {
   letter_section: Finding["letterSection"] | null;
 }
 
-interface DispositionRow {
+/** Exported for the P1.07 finding routes — the same row shape the dossier read maps. */
+export interface DispositionRow {
   id: string;
   finding_id: string;
   kind: DispositionState["kind"];
@@ -152,7 +154,8 @@ interface ClaimRow {
   extra: Claim["extra"] | null;
 }
 
-function toFinding(r: FindingRow): Finding {
+/** Row → canonical Finding (exported for the P1.07 finding routes' preview/dispatch reads). */
+export function toFinding(r: FindingRow): Finding {
   return {
     id: r.id,
     correspondenceId: r.correspondence_id,
@@ -173,7 +176,8 @@ function toFinding(r: FindingRow): Finding {
   };
 }
 
-function toDispositionState(r: DispositionRow): DispositionState {
+/** Row → disposition read state (exported for the P1.07 finding routes). */
+export function toDispositionState(r: DispositionRow): DispositionState {
   return {
     kind: r.kind,
     ...(r.rationale != null ? { rationale: r.rationale } : {}),
@@ -263,7 +267,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       const run = (
         await tx.query(
           `select id, workflow, state, cap_credits, current_attempt, estimate_credits,
-                  spent_credits, paused_at, walkthrough, scope
+                  spent_credits, paused_at, walkthrough, scope, rigor
              from runs where id = $1`,
           [runId],
         )
@@ -279,6 +283,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
             paused_at: string | Date | null;
             walkthrough: { status?: string; text?: string } | null;
             scope: unknown;
+            rigor: string | null;
           }
         | undefined;
       if (!run) return null;
@@ -480,6 +485,10 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         runId,
         projectTitle: corr.project_title,
         versionLabel: `Review of v${corr.draft_n ?? 1}`,
+        // P1.07 — the run's rigor drives the §5.7 severity budget (Quick's 40-finding rendered cap).
+        rigor: run.rigor ?? "standard",
+        // P1.07 — the reviewed draft: the Apply path's splice target (its working head when forked).
+        reviewedDraftId: corr.draft_id,
         ...(scopeLabels.length > 0 ? { scopeLabels } : {}),
         openObligations,
         addressedObligations,

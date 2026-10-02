@@ -3,6 +3,7 @@ import type { ProjectGroupView, ProjectRowView, VoiceGroupView, FeedRow } from "
 import type { RunSheetView } from "@rhema/run-sheet";
 import type {
   ApprovalOverridesDto,
+  BulkPreviewDto,
   DecisionItemDto,
   EditorDocDto,
   ExportDialogDto,
@@ -212,6 +213,18 @@ export interface PageData {
   };
   /** the delivered-review dossier the reading surfaces render (PRB.04). */
   readonly dossier?: DossierData;
+  /**
+   * P1.07 — the dossier's findings-surface view state (§5.7): the shared filters echoed from the GET
+   * params, triage mode (`?triage=1`), the one consolidated bulk preview (`?bulk=<action>`), a dispatch
+   * result line, and the notice a bounced Apply/promote/obligations POST re-renders with.
+   */
+  readonly dossierView?: {
+    readonly filters: Record<string, string | undefined>;
+    readonly triage: boolean;
+    readonly bulk?: { readonly action: string; readonly section?: string; readonly preview: BulkPreviewDto };
+    readonly bulkDone?: { readonly count: number; readonly skipped: number };
+    readonly notice?: { readonly kind: "applied" | "promoted" | "obligated" | "error"; readonly findingId: string; readonly message?: string };
+  };
   /** PRB.05 — per-request shell state for the triage surfaces. */
   readonly triage?: {
     /** a disposition-validation error from the last POST (re-rendered under the finding card). */
@@ -259,6 +272,13 @@ export interface PageData {
   readonly voices?: readonly VoiceListRowDto[];
   /** the §9.2 creation sheet's per-request state (a validation error re-renders with the error). */
   readonly voiceNew?: { readonly error?: string };
+  /** P1.07 — the palette's free-form obligation form (REQ-OBJ-10): `back` is where POST/Cancel returns. */
+  readonly obligationNew?: {
+    readonly slug: string;
+    readonly projectTitle: string;
+    readonly back: string;
+    readonly error?: string;
+  };
   /** the voice detail page's full read + any post-action notice. */
   readonly voice?: {
     readonly detail: VoiceDetailDto;
