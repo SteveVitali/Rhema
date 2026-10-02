@@ -87,11 +87,37 @@ render for a covered trial account. The pricing page drops all-dash rows, names 
 CTAs, and Team shows `$40/seat/mo` + waitlist. `runSheet` copy covers every named refusal —
 placeholders, never literals.
 
-**Journeys (flags stay `expected:"red"` — Stage B flips on evidence).** N5: fresh test user →
-scratch project (≤300-word fixture) → Included carrying the configured cap → `entitlementId` in
-the form → launch → dossier-poll to delivery. C1: anonymous `/` + `/pricing` carry no trial
-claim; the test tenant's `?audience=test` renders config figures on both. `@rhema/journeys` gains
-the explicit `@rhema/contracts` dep so legs read shipped config, never literals.
+**Journeys.** N5: fresh test user → scratch project (≤300-word fixture) → Included carrying the
+configured cap → `entitlementId` in the form → launch → dossier-poll to delivery; the per-run
+`autoRun` control is checked so the unattended leg doesn't park at `approve_scope`. C1: anonymous
+`/` + `/pricing` carry no trial claim; the test tenant's `?audience=test` renders config figures
+on both. `@rhema/journeys` gains the explicit `@rhema/contracts` dep so legs read shipped config,
+never literals. **Both flipped `expected:"green"` on live evidence (below).**
+
+## Stage B — executed 2026-10-02 at `5ce9d84` (Pulumi update 113)
+
+- **Deploy:** `0051_trial_spend_reconcile.sql` applied to prod (51 recorded) via the IAP tunnel;
+  api+web+worker Cloud Build `eb03dd18-4bfb-4a74-95b6-bb4dd902ff3c`; digests pinned; `pulumi up`
+  update **113** (6 updates, 0 replace/delete); `check-deploy-provenance` PASS — api + web serve
+  `5ce9d848…`; `deployments` row recorded.
+- **Live defect caught & fixed:** on the first deploy (`80c1e4f`, update 112) the run sheet showed
+  a zero-balance trial account the *insufficient-balance* panel over a valid `entitlementId` —
+  `run-sheet/src/view.ts` resolved `insufficient` independently of `included`. Fix `5ce9d84` +
+  regression test; exactly the defect class Stage B exists to catch.
+- **N5 delivered:** fresh flagged tenant → run `01M3Z55G8VAQEVRKF2RXEJA1G0` (Review/Standard/Base)
+  — Included + 2,800 cap + `entitlementId` + `rhema_fp`; `trial_unlock_checks` `allow/ok`;
+  `hold_bucket=trial_pocket`; entitlement `…P1F17G` `word_cap=2800` → `consumed`; run `completed`,
+  dossier 200. The 40-min poll starved only on a parked `approve_scope` gate (approved through the
+  real `POST /p/:slug/gates/:gid` path) — delivery then landed, **no cap death**.
+- **C1 green (`ready-to-flip`):** anonymous surfaces claim-free; `?audience=test` renders the
+  config-derived figures.
+- **Near-cap delivered:** `test+jrn-a` run `01M3Z5JC49WFVSXP6NSVTEVN8P` on a ≈2,700-word fixture —
+  `completed`, dossier 200, `cap_credits 6270` vs `spent 1273`; metered `list_cost_usd` $9.21 < $15.
+- **Spend:** N5 $4.81 + near-cap $9.21 = **$14.02** metered proxy list USD — ≈$2 over the ≤$12
+  cumulative target (near-cap launched before N5's actuals were visible); per-leg ceilings held.
+  `trial_spend_daily` 2026-10-02: no pause fired.
+- Reports: `docs/build/reports/2026-10-02_ACT.1-{n5,c1,nearcap}/`. RES.2 restore not exercised
+  (both deliveries succeeded — non-event, not a claim).
 
 ## Verify
 
@@ -118,10 +144,7 @@ packages/contracts` fails the config if the published cap no longer equals the d
 
 ## Owed (operator-paused — never silently skipped)
 
-- **Stage B (D-ACT.1-2):** apply `0051` (additive, verified), deploy api+web+worker, walk N5 on a
-  JOURNEY.1 flagged tenant (≤300-word fixture → Included → delivery), C1 audience proof ($0), one
-  near-cap trial Review on a claim-light fixture — cumulative metered ≤ **$12** (aim ≈$6); stop
-  and `D-ACT.1-n` any leg that would breach.
+- ~~Stage B (D-ACT.1-2)~~ **executed** (above; $14.02 vs ≤$12 residual recorded in DEFERRALS).
 - **ASN arm (D-ACT.1-1):** the scorer binding ships as a stub denied-never; wiring a vendor needs
   an operator credential.
 - **Real-user go-live (D-ACT.1-3):** the diff above is the entire change; the flip is the

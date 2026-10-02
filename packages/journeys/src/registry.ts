@@ -70,7 +70,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "new-visitor",
     asserts: "the trial Review shows *Included* and runs to delivery without a cap death",
     owner: "ACT.1",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {
@@ -163,7 +163,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "both",
     asserts: "landing/pricing/trial claims equal the entitlement config and the estimator",
     owner: "ACT.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   // ---- two-tenant isolation ----------------------------------------------------
