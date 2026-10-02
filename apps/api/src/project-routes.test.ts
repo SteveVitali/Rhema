@@ -138,6 +138,43 @@ describe("POST /projects — the three-entry create (§5.3)", () => {
     expect(rows.find((r) => r.id === project.id)?.state.key).toBe("outlined");
   });
 
+  it("ONB.1 (REQ-GROWTH-1) — the document's leading H1 is the title default when none was typed; a typed title still wins", async () => {
+    const titled: ConversionResult = { ...RESULT, title: "The Document's Own Heading" };
+    const converter: Converter = { preview: async () => titled };
+    // no typed title at all → the conversion's extracted H1 names the project
+    const res = await app({ converter }).request(
+      "/projects",
+      post({ entry: "draft", quarantineKey: quarantineKey(seed.workspaceId, "u_h1") }),
+    );
+    expect(res.status).toBe(201);
+    const { project } = (await res.json()) as { project: { id: string; slug: string } };
+    const row = (
+      await db.pg.query(`select title from projects where id=$1`, [project.id])
+    ).rows[0] as { title: string };
+    expect(row.title).toBe("The Document's Own Heading");
+    expect(project.slug).toBe("the-document-s-own-heading"); // slugify drops the apostrophe
+    // a typed title beats the H1 — the author's choice is authoritative
+    const res2 = await app({ converter }).request(
+      "/projects",
+      post({ title: "My Typed Title", entry: "draft", quarantineKey: quarantineKey(seed.workspaceId, "u_h2") }),
+    );
+    expect(res2.status).toBe(201);
+    const { project: p2 } = (await res2.json()) as { project: { id: string } };
+    const row2 = (
+      await db.pg.query(`select title from projects where id=$1`, [p2.id])
+    ).rows[0] as { title: string };
+    expect(row2.title).toBe("My Typed Title");
+  });
+
+  it("ONB.1 — a draft entry with NO title anywhere still 422s (the H1 default needs a conversion that produced one)", async () => {
+    const untitled: Converter = { preview: async () => RESULT }; // RESULT.title is absent
+    const res = await app({ converter: untitled }).request(
+      "/projects",
+      post({ entry: "draft", quarantineKey: quarantineKey(seed.workspaceId, "u_nt") }),
+    );
+    expect(res.status).toBe(422);
+  });
+
   it("a still-converting key → 409 conversion_pending; another tenant's key → 403", async () => {
     const pending: Converter = { preview: async () => null };
     const res = await app({ converter: pending }).request(
