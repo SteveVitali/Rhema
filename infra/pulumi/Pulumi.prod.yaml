@@ -208,7 +208,16 @@ config:
   # every usage surface incl. the worker-run archive CSV (api + web + worker).
   # fetcher/convert/export/collab consume only the additive optional `provisional` field on the
   # usage.tick contract — no diff'd runtime code; they keep their pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f3edc83915bc32d24a2d746086755ab4c228d5949e4142e7f0d708524adba3d6","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:b4abadca456de2c7ddffaf0cec86fa9297a665b259ccf248194d0a5fa7101dcd","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e08fa06297638b1350bf4beba6075ee5a6c45fc2b1e27456185ad26a41d99a7a","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
+  # SEC.2 Stage-B (build rhema:sec2-fad33a0, Cloud Build 41826f9a, 2026-10-02, chain-tip SHA
+  # fad33a0 — stacks on the RPT.1 deploy): api + web rebuilt. Carries: admission on every
+  # creation path (POST /signup + user.create.before + the magic-link send gate — api), the
+  # shared Redis throttle with the finite per-instance outage fallback (api), the OIDC-stamped
+  # trusted client-IP channel + penultimate-XFF rule (api + web), the retired web limiter +
+  # errorCallbackURL error mapping (web), email-first forms with the invite code behind a
+  # disclosure (web), and the x-rhema-instance evidence marker (api). worker/run-task/
+  # egress-proxy/fetcher/convert/export/collab have no diff'd runtime code — they keep their
+  # RPT.1 digests.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:ff473936cd9e2811ae23af99b4bb6d88b52ef55ede6678a9374e46ffaeb43df1","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:a91f121f904c5eada51fe3270f7d4eaca2db47b2b85e4e29b6434a198ecd7b18","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e08fa06297638b1350bf4beba6075ee5a6c45fc2b1e27456185ad26a41d99a7a","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
   rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:52bffc84169e5f85870a6b49e24acf139d7ea85999fbd926dd3a53beac984da6
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
   rhema:proxyBaseUrl: http://10.8.16.4:8443

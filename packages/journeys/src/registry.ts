@@ -42,9 +42,10 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
   {
     id: "N2.invite",
     journey: "new-visitor",
-    asserts: "the invite field is not the first field under open mode (SEC.2's sub-assertion of N2)",
+    asserts:
+      "under open mode the email field leads BOTH /signup and /login and the invite field sits behind the disclosure (SEC.2's sub-assertion of N2)",
     owner: "SEC.2",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {

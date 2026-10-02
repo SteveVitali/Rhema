@@ -1,0 +1,38 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "1f88be9d5cd0",
+  "startedAt": "2026-10-02T18:28:39.697Z",
+  "finishedAt": "2026-10-02T18:28:43.299Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "fad33a0718c8ab94d6f5b1ac18cca6c31899a6f7",
+    "observed": {
+      "web": "fad33a0718c8ab94d6f5b1ac18cca6c31899a6f7",
+      "api": "fad33a0718c8ab94d6f5b1ac18cca6c31899a6f7"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N2.invite",
+      "journey": "new-visitor",
+      "owner": "SEC.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 3537,
+      "screenshot": "N2.invite.png"
+    }
+  ],
+  "passed": true
+}

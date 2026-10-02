@@ -197,9 +197,9 @@
 | AC4 forged XFF | `client-ip.test.ts` (penultimate rule; stamped ignored w/o token; honored w/ verified); `signup.test.ts` (rotating forged first hop ⇒ same bucket; forged stamp ignored) | ✅ deterministic |
 | AC5 direct magic-link 429 | `auth.test.ts` — over per-email ⇒ 429 + spy `sendMagicLink` never called; over per-IP same | ✅ deterministic; live leg = AC7 |
 | AC6 Redis outage | `rate-limit.test.ts` — store throw ⇒ fallback enforces, `onDegraded` once, log line carries no email/IP; sticky degrade doesn't reset the window | ✅ deterministic |
-| AC7 live prod leg | `x-rhema-instance` header machinery + tests landed; awaiting Stage B deploy | ⏳ Stage B |
-| AC8 N2 form half | `steps.ts` extended to both forms; `server.test.ts` DOM-order pins (email first, code in `<details>`; invite-mode required/first/bare); registry still `red` pending live run | ⏳ Stage B |
-| AC9 universal gate | ADR-039/040/041 written + index regenerated; DEFERRALS annotated (D-PRB.13-1/-2, D-PRB.01-1) + D-SEC.2-1 added; LEDGER/BUILD_INDEX/PR body pending at commit | ⏳ at close |
+| AC7 live prod leg | prod `fad33a0` (update 109): bogus invite ⇒ 403 `unknown` + no account; per-IP leg 10× `400` → `429` @ #11 w/ `Retry-After: 3600` (keep-alive pinned — the egress pool rotates IPs across connections); per-email leg `403`×5 → `429` @ #6; **cross-instance**: `min-instances=2` (rev 00061), ids `boot-aaf434c0…` + `boot-a7527a02…`, bogus-code run 403×5 alternating instances → **429 at combined attempt 6** — a per-instance store could never trip (≤3 per side); magic-link test mailbox 4×`200` → `429` | ✅ live ($0, write-free) |
+| AC8 N2 form half | `N2.invite` PASS on prod (provenance match, $0) — open-mode asserts (email first, code in `<details>`) walked live on `/signup` + `/login`; invite-mode order pinned deterministically in `server.test.ts` DOM asserts; registry flipped `red→green`; screenshot + report committed | ✅ live |
+| AC9 universal gate | turbo build lint typecheck 135/135; suites: api+contracts+api-client 726, web 421, journeys 29, infra+live-clients green; ADR-039/040/041 + regenerated index; D-PRB.13-1 **DONE** (live cross-instance evidence below), D-PRB.01-1 residual → D-SEC.2-1 (operator-paused), D-PRB.13-2 annotated; LEDGER/BUILD_INDEX/PR body at close | ✅ |
 
 ## Evidence log
 - baseline: `pnpm turbo build` 28/28 ok; `vitest` signup+auth+invite+showcase+web.server+contracts.signup
@@ -211,4 +211,46 @@
 - Pre-existing base failure fixed: `registry.test.ts` green baseline missed R6's RPT.1 flip.
 
 ## Evidence report
-(Stage B — pending deploy)
+
+### Stage B — deployed-stage execution (2026-10-02, write-free legs, $0)
+
+- **Deploy.** No migrations vs `5eeb392`. Cloud Build `41826f9a` (tag `sec2-fad33a0`); digests
+  pinned in `infra/pulumi/Pulumi.prod.yaml` — api `ff473936`, web `a91f121f` (the other seven
+  services keep their RPT.1 pins — no diff'd runtime code). `pulumi preview`: no stateful
+  replace/delete, $0 delta → `pulumi up` **update 109** → api revision `…-00060`. `deployments`
+  row `prod:fad33a0718c8ab94d6f5b1ac18cca6c31899a6f7` written via IAP tunnel (18:14:51Z);
+  `/healthz` `build.gitSha` = `fad33a0…` on api + web.
+- **Bogus invite (open mode).** `POST /signup` with a made-up code ⇒ `403 {"error":"unknown"}` +
+  `x-rhema-instance` — loud named refusal, no account, before any write.
+- **Per-IP leg.** 14 rapid empty-email `/signup` calls initially produced a spread of `400`s with no
+  `429` — investigation showed the external egress **IP pool rotates per connection**, so each
+  request landed in a fresh penultimate-XFF bucket (correct behavior — the limiter honestly keyed
+  distinct LB-attested IPs; Redis showed one key per IP). Re-run over **one keep-alive connection**
+  (pinned egress IP): attempts 1–10 ⇒ `400 email_required`, attempt **11** ⇒ `429 rate_limited` +
+  `Retry-After: 3600`. The window math is exactly perIp=10/h.
+- **Per-email leg.** Bogus-code requests carrying one email ⇒ `403`×5 then `429 rate_limited` at
+  combined attempt 6 — the email dimension trips regardless of IP rotation.
+- **Cross-instance leg (D-PRB.13-1's live assert).** Temp `min-instances=2` via gcloud → revision
+  `00061`; monitoring confirmed 2 active instances. Request waves then spread over
+  `boot-aaf434c0-e75d-4df8-afb4-4cbc33440378` + `boot-a7527a02-ea44-49df-9e37-1805da8af38d`
+  (recorded off `x-rhema-instance`). Fresh-email bogus-code sequence:
+  `403 aaf4` / `403 a752` / `403 aaf4` / `403 a752` / `403 a752` → **`429 aaf4`** at combined
+  attempt 6, `429`×2 after on both ids. A per-instance counter could never have tripped — neither
+  instance saw more than 3 requests; only the shared Redis count explains the refusal. Reverted:
+  `--min-instances 1` → revision `00062`; `pulumi refresh` + `up` (**update 111**) removed the
+  gcloud client annotations; preview residual is only the pre-existing `-scaling` zero-block
+  normalization noise present on all six services; `/healthz` 200 post-reconcile.
+- **Magic-link send leg (test mailbox only, H7).** Direct `POST /api/auth/sign-in/magic-link` to
+  `test@rhema.tools`: 4× `200` then `429 rate_limited` from the SEC.2 guard (perEmail=4/1h — the
+  retired web limit's port). A later hit returned Better Auth's own lower-level limiter response —
+  the named guard runs first, before mail enqueue.
+- **N2.invite journey — GREEN.** `rhema-journeys` run nonce `1f88be9d5cd0`, 18:28:39Z → 18:28:43Z,
+  `$0 ≤ $5`, provenance `expected == observed == fad33a0…` on both surfaces. The step walks
+  `/signup` + `/login`: open mode ⇒ first visible input `email`, code input inside `<details>`;
+  invite mode ⇒ code `required`/visible/first (deterministically pinned in `server.test.ts`; prod
+  runs open mode per the gate answer). Evidence committed:
+  `docs/build/reports/2026-10-02_SEC.2-n2invite/report.json` + `N2.invite.png`.
+  `registry.ts` `N2.invite` flipped `red→green`; `registry.test.ts` green baseline updated (it now
+  also carries R6's RPT.1 flip — a pre-existing base failure fixed in this run).
+- **Redis key hygiene spot-check (IAP tunnel → Memorystore).** `rl:signup:*` keys are
+  SHA-256-truncated hashes — no raw IP/email at rest (Inv #10).
