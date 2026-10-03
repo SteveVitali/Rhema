@@ -37,8 +37,9 @@ profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
   mount options=(rw,bind) /work/** -> /tmp/scoped-stash/**,
   mount options=(ro,bind) /work/** -> /tmp/scoped-stash/**,
   mount options=(ro,remount,bind) -> /tmp/scoped-stash/**,
-  # 3) the /work tmpfs overmount (type-tagged; the nosuid,nodev,size=64m cap rides in the data arg).
-  mount options=(rw) fstype=tmpfs -> /work/,
+  # 3) the /work tmpfs overmount. nosuid/nodev are MOUNT FLAGS in the request (only size=64m rides in
+  # the data arg), so they must sit in the rule's option set — F-SEC3-5: a bare `options=(rw)` denies.
+  mount options=(rw,nosuid,nodev) fstype=tmpfs -> /work/,
   # 4) scoped binds: each stash file → /work/scoped/<role>/<name>, then the ro remount.
   mount options=(rw,bind) /tmp/scoped-stash/** -> /work/scoped/**,
   mount options=(ro,bind) /tmp/scoped-stash/** -> /work/scoped/**,
@@ -52,14 +53,19 @@ profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
   /usr/bin/unshare ix,
   /usr/bin/mount ix,
   /app/package.json r,
+  /app/dist/ r,
   /app/dist/** r,
   /app/node_modules/** rm,            # .js reads + mmap'd .node addons (never ix — no child exec from deps)
   /app/vendor/** r,
   /app/vendor/** ix,                  # the vendored native claude binary — the SDK's own subprocess
+  # dir-granule: stageSkills() READDIRs /app/skills to enumerate what it stages — `/**` alone denied
+  # the dir read live (audit 2026-10-03, intake 0-events / missing phase-result — F-SEC3-5).
+  /app/skills/ r,
   /app/skills/** r,
   /etc/passwd r,
   /etc/group r,
   /etc/nsswitch.conf r,
+  /etc/host.conf r,                   # glibc resolver order file — the audit DENIED it live (F-SEC3-5)
   /etc/resolv.conf r,
   /etc/hosts r,
   /etc/hostname r,
@@ -68,10 +74,20 @@ profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
   # work roots: /work (the tmpfs target + scoped root), /tmp (the stash — mountpoint creation needs
   # write), /config, and the harness-only secret mount (read — never write). Nothing under /work execs:
   # the interpreters are the five ix rules above.
+  # dir-granule rules — `/**` does not grant write on the dir itself, and the runner mkdir's
+  # /tmp/scoped-stash/<role>, /work/scoped/<role> (inside the tmpfs overmount) and binds /config/hook.sock.
+  /work/ rw,
   /work/** rwkl,
+  /tmp/ rw,
   /tmp/** rwkl,
+  /config/ rw,
   /config/** rwk,
-  /var/run/rhema/harness/* r,
+  # the harness-only secret mount (read — never write). A k8s Secret volume is a SYMLINK FARM —
+  # `run-token -> ..data/run-token -> ..<timestamped-dir>/run-token` — and AppArmor resolves the
+  # link, so the rule must name the resolved depth, not the single component. F-SEC3-5: a bare
+  # `harness/*` denied the token read at live runtime (EACCES, claims.4-era pod log).
+  /var/run/rhema/harness/ r,
+  /var/run/rhema/harness/** r,
   # procfs/sysfs reads the node runtime + the runner's /proc/self/status checks need.
   @{PROC}/** r,
   /sys/** r,
@@ -81,11 +97,26 @@ profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
   /dev/random r,
   /dev/urandom r,
   /dev/pts/** rw,
+  /dev/ptmx rw,
   /dev/shm/** rwkl,
+  # signals — the kubelet's SIGTERM/SIGKILL arrives from an UNCONFINED peer; without `receive
+  # peer=unconfined` graceful shutdown denies (same tuple docker-default carries). Same-profile
+  # send+receive covers dumb-init's signal forwarding and node's child kills.
+  signal (receive) peer=unconfined,
+  signal (send,receive) peer=rhema-run-task,
   # the egress-proxy socket + DNS the harness opens. The pod's only route is the proxy — the
   # network boundary lives in the pod egress policy, not in this profile.
   network inet stream,
   network inet6 stream,
   network inet dgram,
   network inet6 dgram,
+  # netlink raw — libuv's interface enumeration and the Bun runtime's pool threads both open
+  # NETLINK_ROUTE sockets at startup; the live audit showed repeated `create` denials from
+  # `libuv-worker` + `Bun Pool` comms and the query returned 0 events (F-SEC3-5). Writes still
+  # gate on CAP_NET_ADMIN, which the pod does not hold.
+  network netlink raw,
+  # the PreToolUse hook daemon (harness) ↔ agent hook client is an AF_UNIX stream socket under
+  # /config (hook-daemon.ts). AF_UNIX socket(2)/bind/connect/accept are mediated by `unix` rules,
+  # not `network inet` — F-SEC3-5. `type=stream` only; no datagram/seqpacket endpoint exists.
+  unix type=stream,
 }

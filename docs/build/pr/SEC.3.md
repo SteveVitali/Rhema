@@ -94,6 +94,40 @@ Stacks on `stevevitali/def-4-ledger-integrity-refund-window` (PR #100, `OPERATOR
   live `second_read` (≤$5) for the pod-log `uid=` evidence and the
   `second_read_producer_checked`/`boundary.attested` verdicts.
 
+## Stage-B live findings (all fixed on this branch)
+
+- **F-SEC3-1** — first pod died at the entrypoint on `setpriv --bounding-set`
+  (`CAPBSET_DROP` needs `CAP_SETPCAP`, which the pod deliberately lacks; the
+  bounding set was already exactly the add list, so the flag was a no-op).
+  Flag removed; the Docker probe posture now mirrors the pod exactly.
+- **F-SEC3-2** — the identity lines the ticket added immediately showed the
+  agent's `capEff` carrying the harness's ambient four-cap set (ambient caps
+  survive `execve`; `CAP_SETUID` in the model's hands is a kernel path back
+  to uid 10001 → the harness token). Both model-side drops now carry
+  `--inh-caps -all --ambient-caps -all --no-new-privs`; live line now reads
+  `capEff=none`.
+- **F-SEC3-3** — a *product* bug the run surfaced (not the image): a prior
+  review's delivered `correspondence/review/1/second-read.json` was
+  basename-resolved as this run's producer marker and failed delivery
+  validation (`producer`, refunded 340 cr — the DEF.4 window working live).
+  `work-reader` now resolves the marker only at `.rhema/`-rooted keys.
+- **F-SEC3-4** — deployment gap: the first pod spec read
+  `appArmorProfile: Unconfined` because the deployed **worker** image
+  predated this branch's launcher/env plumbing (`RUN_TASK_IMAGE_DIGEST`
+  plumbing is older, which is why the image pin worked). Rebuilt the worker
+  on this branch, pinned its digest, `pulumi up` — the next pod launches
+  under `Localhost/rhema-run-task`.
+- **F-SEC3-5** — the first real `Localhost` admission exposed four
+  live-mediation gaps the parser can't see (audit stream is the node's
+  `journalctl`, not dmesg/Cloud Logging): the Secret volume's `..data`
+  symlink farm needed `harness/**` (AppArmor resolves links); `/**` doesn't
+  grant `r`/`w` on the dir itself (`stageSkills` readdir + runner mkdirs);
+  glibc's `/etc/host.conf`; and `network netlink raw` for libuv + the
+  **Bun**-runtime `claude` binary's NETLINK_ROUTE sockets. The tmpfs rule
+  also gained `nosuid,nodev` (mount flags, not data). Loader digest
+  `1e03e6bf…` enforced; attempt 2 of run `01M41AE99M49Q5HNG4M9S6106Q` ran a
+  real model phase under the enforced profile (intake committed, 24 events).
+
 ## Deferrals
 
 - **D-P0.06-3 — flipped to DONE-in-code.** The distroless rebuild + static

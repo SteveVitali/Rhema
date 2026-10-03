@@ -65,6 +65,26 @@ scoped to exactly the harness supervisor that needs it, and the kernel legs in
 `privsep-check.js` prove `CapEff=CapAmb=CapInh=0` inside the dropped agent (the scoped argv
 carries the identical tuple, goldened in `scoped-runner.test.ts`).
 
+**Amended 2026-10-03 (F-SEC3-5):** the first REAL `Localhost` admission proved the allowlist's
+compile-clean rules still missed live mediations the parser cannot see (run `01M41AE99M49…`,
+node `journalctl` AVC stream — GKE routes denials to the host journal, not the pod). Four
+additions, all evidence-backed: (1) a k8s Secret volume is a **symlink farm**
+(`run-token -> ..data/run-token -> ..<ts>/run-token`) and AppArmor resolves links, so the
+secret mount needs `harness/**` (plus the dir rule) rather than `harness/*`; (2) `/**` does
+not grant `r`/`w` on the dir itself — `stageSkills()`'s readdir of `/app/skills/` denied and
+wedged the intake query (0 events, `artifact_missing`), so dir-granule rules sit beside every
+glob the runtime readdir's or mkdir's under; (3) `/etc/host.conf` for glibc's resolver; (4)
+`network netlink raw` — libuv's interface enumeration and the **Bun** runtime's pool threads
+(the vendored `claude` binary is bun-compiled) open NETLINK_ROUTE sockets at startup; writes
+stay gated on CAP_NET_ADMIN which the pod does not hold. The tmpfs rule also gained
+`nosuid,nodev` in its option set — they are mount FLAGS in the request (only `size=` is data),
+so a bare `(rw)` rule would have denied the overmount. `unix type=stream`, the
+docker-default-style `signal (receive) peer=unconfined` + same-profile pair, and `/dev/ptmx`
+were added at the same rev (the latter two already ride `abstractions/base`, but the profile
+reads self-contained with them explicit). Methodology note for the next profile change:
+`kubectl debug node/<node> --profile=sysadmin -- chroot /host journalctl` is the audit
+source; Cloud Logging does not carry kernel AVCs.
+
 ## Alternatives considered
 - **`file,`-style broad profile (allow all files, scope only mounts):** rejected — the file
   rules are cheap to name and the harness secret mount gets a *read-only* profile rule under a

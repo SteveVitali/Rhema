@@ -222,9 +222,9 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
   de-flagged identically, and the docker test's `--cap-add SETPCAP` removed — the probe posture is
   now the pod's posture EXACTLY, which is the class of drift this leg exists to catch. ADR-076
   amended; Dockerfile comment + ledger record it.
-- The k8s admission path itself proved fine: the pod scheduled under `Localhost` with no
-  container-create error — the loader had the profile enforced before the pod landed (the apply
-  order held).
+- ~~The k8s admission path itself proved fine~~ — corrected by F-SEC3-4: the pod's spec carried
+  `type: Unconfined`, not `Localhost` (the deployed worker image predated the launcher
+  plumbing). The loader order was never exercised by an admission until the F-SEC3-4 fix.
 - **Deploy evidence so far:** Cloud Build `843e2958` (sha `3415436`) → run-task
   `@sha256:3c2799ff…`, apparmor-loader `@sha256:37e9b0f9…`; loader DS rolled out 1/1 on
   `rhema-prod-run-task-pool-647f9f4`, log `profile rhema-run-task loaded+enforced`; `pulumi up`
@@ -267,8 +267,8 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
 ### F-SEC3-3 — a prior round's delivered `second-read.json` poisoned delivery validation (product bug, live)
 - **Live evidence:** run `01M416S2XP7FN37PR3FGZ1SXBX` — all five pod phases `done`
   (`predicatesPassed:true`, hook allow/deny lines flowing, run-task image
-  `@sha256:2997ca6c…` under the enforced `rhema-run-task` Localhost profile; the pod's
-  `appArmorProfile` admission proves the loader's ordering held) — then `finalizing → failed`
+  `@sha256:2997ca6c…` — note the pod ran `Unconfined`, not `Localhost`: F-SEC3-4 below) —
+  then `finalizing → failed`
   with `failure={code:validation,message:"producer"}` and `cost.refunded 340`.
 - **Root cause (pre-existing oracle bug, not the image):** the run had `second_read:false`
   (quick rigor opts the phase out — ordinals 3/4 correctly skipped), but the seat tree was
@@ -285,3 +285,65 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
   twin can never impersonate this run's producer claim. Two regression tests pin both
   directions (stale marker ignored; real seat marker crosses). The fix ships inside the
   run-task image — the dossier is pod-computed.
+
+### F-SEC3-4 — the worker image was not rebuilt: the AppArmor config chain was inert
+- **Live evidence:** run `01M418EWWWZGSVHEHXSPRWT777`'s pod spec showed
+  `securityContext.appArmorProfile: {type: Unconfined}` even though the worker's live env
+  carried `RUN_TASK_APPARMOR_TYPE=Localhost` + `…_LOCALHOST_PROFILE=rhema-run-task` (verified
+  on the Cloud Run revision) and update 137 had converged.
+- **Root cause (deployment, not code):** the deployed worker image (`070c67fc…`, built at the
+  DEF.4 tip) predates this branch's `env.ts`/`main.ts`/`k8s-launcher.ts` AppArmor plumbing —
+  the env vars parsed on the OLD code are dropped, and the old launcher still hardcodes the
+  F-StageB-5 `Unconfined` stopgap. `RUN_TASK_IMAGE_DIGEST` worked because that plumbing
+  predates SEC.3. `cloudbuild-sec3.yaml` builds run-task + the loader only — the worker was
+  never part of the image set.
+- **Consequence:** no SEC.3 pod has run under `Localhost` yet — the first pod's "Localhost
+  admission held" inference was wrong; the profile's real admission + scoped-mount verdict is
+  exactly what the next bounded run must capture (it is the ticket's central claim).
+- **Fix executed:** worker Cloud Build `c3d1f107-a482-43a5-bdc0-1d8fa2141833` (tag
+  `sec3-73718cd`) → worker `@sha256:4c4efebe4939381e104f532f1e1a581901e4fccda0df9ae7559c287c1eed03f1`
+  pinned in `serviceImages`; `pulumi up` **update 138** converged (worker revision carries
+  `RUN_TASK_APPARMOR_TYPE=Localhost` + `…_LOCALHOST_PROFILE=rhema-run-task` + the new digest
+  pin + the SEC.3 launcher code). Run-task `sec3-73718cd` = `@sha256:419f8e86…` (update 137).
+- **F-SEC3-2 live confirmation (same pod):** run `01M418EWWWZGSVHEHXSPRWT777` (new run-task
+  image, launched before the worker rebuild — `Unconfined`) shows
+  `[harness] identity uid=10001 … capEff=setgid,setuid,sys_chroot,sys_admin` and
+  `[agent-entry] identity uid=10002 … capEff=none` — the agent drop strips every capability
+  vector exactly as the kernel legs proved; the ambient model is now scoped to the harness.
+
+### F-SEC3-5 — the first real `Localhost` admission surfaced four live-mediation gaps the parser could not see
+- **Live evidence:** with the worker rebuilt (F-SEC3-4), run `01M419Q5GBRW8M04F2PYK9NMGA`'s pod
+  was the first to actually run `type: Localhost, localhostProfile: rhema-run-task`. The harness
+  died instantly: `EACCES …/harness/run-token`. A second attempt (`01M41AE99M49Q5HNG4M9S6106Q`)
+  cleared the token read but the intake query returned `success` with **0 events** and no
+  `.rhema/phase-result.json` (`artifact_missing`).
+- **Root cause (four gaps, all confirmed in the node's `journalctl` AVC stream — the audit log is
+  host-side, not in dmesg):**
+  1. **k8s Secret symlink farm** — a Secret volume materializes `run-token ->
+     ..data/run-token -> ..<ts>/run-token`; AppArmor resolves links, so `harness/*` never
+     matched. Fixed with `harness/ r` + `harness/** r`.
+  2. **Dir-granule reads** — `/**` does not grant `r` on the dir itself; `stageSkills()`'s
+     readdir of `/app/skills/` was DENIED → skills never staged → the SDK query emitted
+     nothing. Added `/app/skills/ r`, `/app/dist/ r`, plus `w` on `/work/`, `/tmp/`,
+     `/config/` for the runner's mkdirs.
+  3. **`/etc/host.conf`** — glibc's resolver read was denied (benign but loud). Added.
+  4. **NETLINK_ROUTE** — `libuv-worker` (node) and `Bun Pool` threads (the vendored `claude`
+     binary is bun-compiled) open `family=netlink sock_type=raw` sockets at startup;
+     repeated denials plausibly wedged the subprocess. Added `network netlink raw`
+     (mutations still gate on CAP_NET_ADMIN, which the pod does not hold).
+- **Also hardened in the same rev:** the tmpfs rule now lists `nosuid,nodev` in its option set
+  (mount FLAGS, not data — only `size=64m` rides the data arg), `unix type=stream` for the
+  hook socket, `signal (receive) peer=unconfined` for kubelet SIGTERM (docker-default's
+  tuple), and `/dev/ptmx`. `abstractions/base` turned out to already carry unix/signal, but
+  the explicit rules are kept so the profile reads self-contained.
+- **Fix executed:** loader image `sec3-fsec35b` =
+  `@sha256:1e03e6bf835766bb5147b23b21174ea124330b6855c1c0d492e57e6489d05c46` rolled via
+  `kubectl set image` (DaemonSet converged, `profile rhema-run-task loaded+enforced`).
+  `apparmor_parser -Q` validates the file in the loader image before every ship;
+  `apparmor.test.ts`'s tmpfs pin updated to `(rw,nosuid,nodev)`.
+- **Outcome:** attempt 2 (`a2-jhmdh`) admitted `Localhost/rhema-run-task` (pod spec),
+  printed both identity lines, bound the credential injector, and ran a REAL model phase —
+  hook allow/deny lines streamed for drafts/correspondence reads. The run is second_read:true
+  with the scoped producer leg still to come.
+- **Spend note:** attempt-1 pods died before any model call (0 credits); cancelled stale
+  runs `01M418EWWW…` (118cr) + `01M419Q5…` (0cr) via the API to free the concurrency cap.

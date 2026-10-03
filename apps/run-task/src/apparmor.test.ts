@@ -41,8 +41,9 @@ describe("SEC.3 — the rhema-run-task AppArmor profile", () => {
     expect(profile).toMatch(/^ {2}mount options=\(rw,bind\) \/work\/\*\* -> \/tmp\/scoped-stash\/\*\*,$/m);
     expect(profile).toMatch(/^ {2}mount options=\(ro,bind\) \/work\/\*\* -> \/tmp\/scoped-stash\/\*\*,$/m);
     expect(profile).toMatch(/^ {2}mount options=\(ro,remount,bind\) -> \/tmp\/scoped-stash\/\*\*,$/m);
-    // 3) the /work tmpfs overmount — fstype-tagged so no other tmpfs target is granted.
-    expect(profile).toMatch(/^ {2}mount options=\(rw\) fstype=tmpfs -> \/work\/,$/m);
+    // 3) the /work tmpfs overmount — fstype-tagged; nosuid,nodev are mount FLAGS in the request
+    // (only size=64m is data), so they must sit in the option set (F-SEC3-5).
+    expect(profile).toMatch(/^ {2}mount options=\(rw,nosuid,nodev\) fstype=tmpfs -> \/work\/,$/m);
     // 4) stash → scoped-root binds + ro remounts.
     expect(profile).toMatch(/^ {2}mount options=\(rw,bind\) \/tmp\/scoped-stash\/\*\* -> \/work\/scoped\/\*\*,$/m);
     expect(profile).toMatch(/^ {2}mount options=\(ro,bind\) \/tmp\/scoped-stash\/\*\* -> \/work\/scoped\/\*\*,$/m);
@@ -96,11 +97,13 @@ describe("SEC.3 — the F-StageB-5 regression guard", () => {
   it("the removed profile type appears in NO tracked non-doc file", () => {
     // git grep exits 1 on NO MATCHES (the expected case) — only ≥2 is a real error. `--untracked`
     // keeps the sweep stage-independent; the needle is concatenated so this file does not self-match.
+    // CASE-SENSITIVE: the k8s enum is capitalized — lowercase `unconfined` is a legitimate
+    // *peer label* (`signal (receive) peer=unconfined` in the profile itself, F-SEC3-5).
     const r = spawnSync(
       "git",
       [
-        "-C", REPO, "grep", "-l", "-i", "--untracked",
-        "unconfi" + "ned",
+        "-C", REPO, "grep", "-l", "--untracked",
+        "Unconfi" + "ned",
         "--", ":(exclude)*.md", ":(exclude)docs/**",
       ],
       { encoding: "utf8" },
