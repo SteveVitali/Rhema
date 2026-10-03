@@ -44,6 +44,13 @@ profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
   mount options=(rw,bind) /tmp/scoped-stash/** -> /work/scoped/**,
   mount options=(ro,bind) /tmp/scoped-stash/** -> /work/scoped/**,
   mount options=(ro,remount,bind) -> /work/scoped/**,
+  # 5) util-linux ≥2.40's NEW mount API — `mount --bind -o ro` is open_tree clone →
+  #    mount_setattr(ro) → move_mount. move_mount audits as `mount` flags="rw, move" on the DEST
+  #    (live AVC 2026-10-03: `cannot mount … read-only` on the stash bind — F-SEC3-5); the ro
+  #    setattr audits ⊆ the remount rules above. The tmpfs attach takes the same move_mount leg.
+  mount options=(rw,move) -> /tmp/scoped-stash/**,
+  mount options=(rw,move) -> /work/scoped/**,
+  mount options=(rw,move) -> /work/,
   # every other mount(2) shape is denied by the absence of a matching rule.
 
   # ── the run-task binaries + files. Distroless has no shell; everything execs by absolute argv. ──

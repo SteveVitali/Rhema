@@ -341,9 +341,19 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
   `kubectl set image` (DaemonSet converged, `profile rhema-run-task loaded+enforced`).
   `apparmor_parser -Q` validates the file in the loader image before every ship;
   `apparmor.test.ts`'s tmpfs pin updated to `(rw,nosuid,nodev)`.
-- **Outcome:** attempt 2 (`a2-jhmdh`) admitted `Localhost/rhema-run-task` (pod spec),
-  printed both identity lines, bound the credential injector, and ran a REAL model phase —
-  hook allow/deny lines streamed for drafts/correspondence reads. The run is second_read:true
-  with the scoped producer leg still to come.
+- **Second live gap (same finding, mount leg):** attempt 2 then reached the `second_read`
+  scoped producer and died at the FIRST stash bind — `mount: /tmp/scoped-stash/second-reader/v2.md:
+  cannot mount /work/project/drafts/v2.md read-only`. The node AVC named the shape:
+  `operation="mount" … flags="rw, move"` on the DEST — the vendored util-linux ≥2.40 takes the
+  NEW mount API for `mount --bind -o ro` (open_tree clone → mount_setattr(ro) → move_mount),
+  and `move_mount` audits as a `move`-flagged mount the old `bind`/`remount` tuples never
+  named. Added `mount options=(rw,move) -> /tmp/scoped-stash/**`, `-> /work/scoped/**`, and
+  `-> /work/` (the tmpfs attach takes the same leg); the ro `mount_setattr` audits ⊆ the
+  existing remount rules. Loader `sec3-fsec35c` = `@sha256:4b186a27…` enforced.
+- **Outcome so far:** attempt 2 (`a2-jhmdh`) admitted `Localhost/rhema-run-task` (pod spec),
+  printed both identity lines, bound the credential injector, and ran REAL model phases —
+  intake (24 events, `00-piece-brief.md`, done), craft (done), verification (claim-ledger
+  self-corrected on the in-pod retry, `sidecarValidates:true`, done). Spend at the
+  second_read failure: 180cr. Attempt 3 is the scoped-leg rerun under the `move` rules.
 - **Spend note:** attempt-1 pods died before any model call (0 credits); cancelled stale
   runs `01M418EWWW…` (118cr) + `01M419Q5…` (0cr) via the API to free the concurrency cap.

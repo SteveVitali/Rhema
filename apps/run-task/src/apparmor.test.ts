@@ -48,6 +48,11 @@ describe("SEC.3 — the rhema-run-task AppArmor profile", () => {
     expect(profile).toMatch(/^ {2}mount options=\(rw,bind\) \/tmp\/scoped-stash\/\*\* -> \/work\/scoped\/\*\*,$/m);
     expect(profile).toMatch(/^ {2}mount options=\(ro,bind\) \/tmp\/scoped-stash\/\*\* -> \/work\/scoped\/\*\*,$/m);
     expect(profile).toMatch(/^ {2}mount options=\(ro,remount,bind\) -> \/work\/scoped\/\*\*,$/m);
+    // 5) util-linux ≥2.40's new mount API: move_mount audits as flags="rw, move" on the DEST
+    //    (live AVC — F-SEC3-5). Covers the stash binds, the scoped binds, and the tmpfs attach.
+    expect(profile).toMatch(/^ {2}mount options=\(rw,move\) -> \/tmp\/scoped-stash\/\*\*,$/m);
+    expect(profile).toMatch(/^ {2}mount options=\(rw,move\) -> \/work\/scoped\/\*\*,$/m);
+    expect(profile).toMatch(/^ {2}mount options=\(rw,move\) -> \/work\/,$/m);
   });
 
   it("denies every mount shape it does not name — the allowlist is closed", () => {

@@ -81,7 +81,12 @@ stay gated on CAP_NET_ADMIN which the pod does not hold. The tmpfs rule also gai
 so a bare `(rw)` rule would have denied the overmount. `unix type=stream`, the
 docker-default-style `signal (receive) peer=unconfined` + same-profile pair, and `/dev/ptmx`
 were added at the same rev (the latter two already ride `abstractions/base`, but the profile
-reads self-contained with them explicit). Methodology note for the next profile change:
+reads self-contained with them explicit). (5) util-linux ≥2.40's **new mount API**: the live
+AVC showed `mount --bind -o ro` decomposes to open_tree clone → mount_setattr(ro) →
+`move_mount`, and move_mount audits as `mount` `flags="rw, move"` on the destination — the
+`bind`/`remount` tuples never see it. `mount options=(rw,move)` rules now cover the stash
+dest, the scoped root, and `/work/` (the tmpfs attach is a move_mount too); the ro setattr
+audits ⊆ the remount rules. Methodology note for the next profile change:
 `kubectl debug node/<node> --profile=sysadmin -- chroot /host journalctl` is the audit
 source; Cloud Logging does not carry kernel AVCs.
 
