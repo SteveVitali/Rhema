@@ -121,7 +121,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "returning",
     asserts: "a chat turn answers; Send is clickable at 1440×900 and at phone width",
     owner: "RUN.1",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {
@@ -145,7 +145,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "returning",
     asserts: "an informational gate does not block; labels match behaviour",
     owner: "RUN.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   // ---- phone-width reader ---------------------------------------------------

@@ -256,8 +256,20 @@ config:
   # connected-hook stateless, the rhema.fork broadcast before closeConnections, ULID minting, and
   # the human-editable working-head set (collab). run-task/worker/fetcher/convert/export/
   # egress-proxy have no diff'd runtime code — they keep their pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:204e343053262b714aa462e7c9c1e0c1d8f1d1e5e427f41783f5633b2a8192a0","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:3ebda8b149670c9f4297b94e958dfa76d1edbcce9a36cab20833c8448927b640","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e7564619ff468a3a9031aef9b60d0aa6e4b4d45439e540f539c6ffab0ac818f0","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:fb62d20693f7cce76fd31109a25e4494cb135766496480f03dd6d216c5c062ba","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:73f4620fff49267ef3f1789b0ba34de06270444cc6015867fbcf46d0c5aa7be3"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:52bffc84169e5f85870a6b49e24acf139d7ea85999fbd926dd3a53beac984da6
+  # RUN.1 Stage-B (tag run1, Cloud Build 8e0392e3, 2026-10-03, chain-tip SHA 8ce4038 —
+  # stacks on the EDIT.1 deploy): api + web + worker + run-task rebuilt. Carries: the
+  # informational-gate execution path (shared resolveGatePolicy; approve_scope default
+  # informational never parks; CommitNext.then advance/finalize; harness-loop continue —
+  # orchestrator compiled into api + worker + run-task; ADR-050), the truthful chat write
+  # proxy (classified ApiError statuses preserved, 502 chat_upstream_error/chat_unavailable,
+  # 503 chat_not_wired, structured no-content logging on every chat write route — web;
+  # ADR-051), the pinned chat composer above footer.ide-statusbar (ui/tokens → web), the
+  # approval-override sheet-context + informational Needs-you/Timeline split (api + web),
+  # and the worker WALKTHROUGH_MODEL_KEY_SECRET env wiring + testable model-key loader
+  # (worker; ADR-052). fetcher/convert/export/collab/egress-proxy have no diff'd runtime
+  # code — they keep their pins.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:3c28536202bca21cfecdad87a738f52651fae286b113426e89ff602fdf6bed11","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:12bfcfd2d3c455664749285f6db97e533569be6fd5ec911922c7226037078ee8","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:aa61021045f23598b50967782e6e60b076718078206b7934bd9d90beabdcc9e9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:fb62d20693f7cce76fd31109a25e4494cb135766496480f03dd6d216c5c062ba","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:73f4620fff49267ef3f1789b0ba34de06270444cc6015867fbcf46d0c5aa7be3"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:c3611e37476ed901dc783acda8d4faa16472ad94612f68f1348bf9272baa1657
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
