@@ -53,7 +53,14 @@ export async function openHumanRevision(exec: SqlExecutor, args: HumanRevisionAr
   const base = baseRes.rows[0] as { n: number; state: string } | undefined;
   if (!base) throw new Error(`draft ${args.frozenDraftId} not found`);
   if (base.state !== "frozen") throw new Error(`draft ${args.frozenDraftId} must be frozen before a human revision`);
-  const n = base.n + 1;
+  // v(N+1) = the next version NUMBER, not base.n+1 — a stale mid-lineage base (an earlier frozen vK
+  // typed on while later frozen drafts stand and no working head does) would otherwise collide on
+  // (project_id, n). The child still records THIS draft as its base — the rail's lineage stays honest.
+  const n = (
+    (await exec.query("select coalesce(max(n), 0) + 1 as n from drafts where project_id = $1", [
+      args.projectId,
+    ])).rows[0] as { n: number }
+  ).n;
   await exec.query(
     `insert into drafts(id, project_id, n, origin, state, base_draft_id, created_at)
      values ($1,$2,$3,'human_revision','working',$4,$5)`,

@@ -1,15 +1,15 @@
 {
   "tool": "rhema-journeys",
-  "nonce": "ba630b7796bf",
-  "startedAt": "2026-10-03T01:06:48.730Z",
-  "finishedAt": "2026-10-03T01:07:30.267Z",
+  "nonce": "1a6b787f98a1",
+  "startedAt": "2026-10-03T01:30:41.361Z",
+  "finishedAt": "2026-10-03T01:32:24.077Z",
   "webBaseUrl": "https://rhema.tools",
   "apiBaseUrl": "https://api.rhema.tools",
   "provenance": {
-    "expected": "7935d4f88ac98547a4bf3ee107a23bcfb19d2365",
+    "expected": "170722bc087297d68547b803211c6306ce2fbe80",
     "observed": {
-      "web": "7935d4f88ac98547a4bf3ee107a23bcfb19d2365",
-      "api": "7935d4f88ac98547a4bf3ee107a23bcfb19d2365"
+      "web": "170722bc087297d68547b803211c6306ce2fbe80",
+      "api": "170722bc087297d68547b803211c6306ce2fbe80"
     },
     "match": true
   },
@@ -28,8 +28,8 @@
       "outcome": "owed",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 41485,
-      "error": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-page-view]') to be visible\n",
+      "durationMs": 102547,
+      "error": "import: the fork banner never flipped to \"Editing vN\" (the fork/rebind loop did not land)",
       "screenshot": "N8.png"
     }
   ],

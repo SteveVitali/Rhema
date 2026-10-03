@@ -273,3 +273,67 @@ fork"); ADR-048 names it and D-EDIT.1-1's Stage B records the observed first-typ
 
 Deploy chain-tip → `pnpm journeys N8 --stage prod` → my-first-project HTTP legs → WebKit CSP
 leg → flip N8 `red→green` with report + screenshots under `docs/build/reports/`.
+
+### 2026-10-03 — deploy + N8 progress note
+
+- Deploys so far: Cloud Builds `3c31a8c8` / `979ed4e0` / `cf3c9e0c` / `b233d877` → Pulumi updates
+  116, 118, 119 (each 7 updates, 0 creates/replaces/deletes); provenance PASS at `170722bc` for
+  api+web. `deployments` provenance rows refreshed via the admin credential path (the app role
+  cannot write `deployments`).
+- **N8-found defect #1** — the no-confirm assertion counted *hidden* `role="dialog"` shells (IDE
+  drawer, cheatsheet). `steps.ts` now inspects visible dialogs only.
+- **N8-found defect #2** (`170722b`) — `dispatchTransaction` re-entered the overridden
+  `view.dispatch` → `RangeError: Maximum call stack size exceeded` inside the Yjs observer. Fixed
+  (`installOriginDispatch` applies the tr directly); regression tests in
+  `apps/web/src/client/page-dispatch.test.ts`.
+- **N8-found defect #3** (`70d327f`) — with console errors gone, N8 still failed `the fork banner
+  never flipped to "Editing vN"` and the journey project stayed frozen v1 (prod DB: `n=1,
+  human_upload, frozen`, no child). Collab Cloud Logging showed the fork dying server-side:
+  `Caught error during storeDocumentHooks … ZodError: "id must be a 26-char Crockford-base32
+  ULID" path ["draftId"]` at `parseRunEvent` inside `saveManualRevision`. Root cause: the collab
+  composition root's `ids` dep minted `dft_<24-hex>` (`apps/collab/src/server.ts`), which the
+  `draft.forked` payload's `idSchema` rejects — the whole store hook threw, the typed update sat
+  in memory, no child. Tests masked it (the fixture's `ids` stub is ULID-shaped). Fix: prod `ids:
+  randomUlids()` + a wiring-guard test pinning the factory to `idSchema`. Collab suite 14/14.
+- **N8-found defect #4** (`446aa11`, migration `0053`) — after the ULID fix the fork got *further*
+  and died on Postgres `42501`: `permission denied for table provenance_maps`. saveManualRevision
+  writes the block map as `insert … on conflict do update`; 0028 granted `rhema_collab`
+  select+insert only, and the conflict branch requires UPDATE. Grant shipped as additive migration
+  0053 (applied to prod via prod-migrate-seed); `migrate.test.ts` gained a `has_table_privilege`
+  matrix pinning every grant the collab store/sweep paths need (PGlite masks ACLs at DML time, but
+  the catalog check is honest).
+- **N8-found defect #5** (`8376ac1`) — after 0053 the fork *landed* (prod DB: v2 human_revision
+  working + draft.forked/revision.move_traced + materialized version) yet the banner still never
+  flipped. Root cause: `instance.closeConnections(documentName)` sends an in-band CLOSE *message*
+  but leaves the WebSocket open — the provider marks itself unauthenticated yet never reconnects,
+  so `onAuthenticate` never re-runs and the `frozen_fork` refusal (the client's rebind signal)
+  never arrives. Fix: the store broadcasts `rhema.fork {draftId, draftN}` out-of-band before the
+  close (same payload the refusal carries); locked/showcase/not-editable early-outs broadcast
+  `rhema.readonly`. StoreOutcome gained `draftN`; the client handles `rhema.fork` in `onStateless`;
+  a deterministic test drives `onStoreDocument` on a frozen head and captures the broadcast.
+- Cloud Builds `41f72b2e` (SHA `70d327f…` → Pulumi update 120, provenance PASS) then `c8437775`
+  (SHA `8376ac1…`) submitted for the repin+redeploy; N8 re-walk pending.
+- **N8-found defect #6** — the update-121 deploy got leg A green end-to-end (frozen import →
+  rhema.fork stateless → rebind → `Editing v2` banner → synced → persisted marker) but leg B's
+  duplicate fallback died at `pill never reached synced — observed readonly · "read-only" on
+  01M3ZSG89S2EE8QJBFZH9DRT97 v2`. Prod DB showed that head is `origin='duplicate', state='working'`
+  — the row action copies draft state verbatim, so a showcase copy's open head is `duplicate` —
+  and every editability gate read `origin === 'human_revision'`. The pill was *truthful*: the
+  attach was read-only. Fix (ADR-048, 2026-10-03 amendment): one `HUMAN_EDITABLE_DRAFT_ORIGINS`
+  set (`human_revision`/`human_upload`/`duplicate`) in `@rhema/contracts`, consulted by collab
+  auth (writable attach), `saveManualRevision` (in-place save), the mobile block-patch guard,
+  `manual-trace`, and `computeReReviewSeed`'s `humanEdit`. Same class, second half: the
+  frozen-base child lookups (`base_draft_id = $1 and origin='human_revision'`) missed `duplicate`
+  heads AND deep lineages — a stale-base save could have attempted a second working draft against
+  `one_working_head_per_project`; they now resolve the project's working head (human-editable →
+  `frozen_fork` rebind/route, agent → read-only/`not_editable`, none → fork), and
+  `openHumanRevision` numbers the child `max(n)+1` so a stale-base fork can't collide on
+  `(project_id, n)`. `resolveEditorHead`'s stale-base follow widened the same way; the findings
+  rail keys on `base_draft_id` instead of the human_revision origin so a dup head inherits its
+  base's findings. The N8 rail assertion relaxes to the human-editable set (the copy's chip stays
+  `duplicate` — honest provenance). Deterministic: mirror 4 new (dup in-place, dup route,
+  stale-base fork `max(n)+1`, agent head `not_editable`), collab 3 new (dup writable + in-place
+  store, dup frozen_fork rebind, agent read-only), api 1 new (dup head GET/save/stale resolve);
+  mirror 342, api+web+collab+ui+tokens 1082, turbo typecheck/lint/build 135 tasks all green.
+- `apps/web/src/client/page.ts`: `onFork` now also stamps `root.dataset.draftN` — the root's
+  bound-version attribute stays truthful after a rebind (the N8 pill diagnostics read it).

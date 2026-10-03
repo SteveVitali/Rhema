@@ -419,7 +419,7 @@ const N4: StepFn = async (ctx) => {
  * EDIT.1 — the shared "type → fork → sync → reload" flow (§5.4/§5.10; REQ-IDE-32/IDE-43):
  * open a versioned Page URL, mount the ProseMirror island, type the run marker, and wait for the
  * §5.4 fork banner + the ONE sync pill to reach "synced ✓" — then reload `/v/working` and assert
- * the working human_revision chip + the persisted marker. `openPath` is the LOCKED version's URL
+ * the working human-authored chip + the persisted marker. `openPath` is the LOCKED version's URL
  * (`/v/<frozenN>` or `/v/working`); the typing itself performs the fork/rebind — never a confirm.
  */
 async function n8TypeForkSave(
@@ -472,18 +472,35 @@ async function n8TypeForkSave(
       );
     });
   // the ONE pill truthfully reaches synced ✓
-  await page.waitForSelector('[data-sync-pill][data-sync-state="synced"]', { timeout: 90_000 });
+  try {
+    await page.waitForSelector('[data-sync-pill][data-sync-state="synced"]', { timeout: 90_000 });
+  } catch {
+    // diagnostics: the pill's observed state + the bound draft (the rebind's target) ride the error
+    const pillState = await page
+      .locator("[data-sync-pill]")
+      .first()
+      .evaluate((el) => `${el.getAttribute("data-sync-state")} · "${el.textContent}"`)
+      .catch(() => "(pill missing)");
+    const bound = await page
+      .locator("[data-page-root]")
+      .evaluate((el) => `${el.getAttribute("data-draft-id")} v${el.getAttribute("data-draft-n")}`)
+      .catch(() => "(root missing)");
+    throw new Error(`${label}: pill never reached synced — observed ${pillState} on ${bound}`);
+  }
   const pillText = await page.locator("[data-sync-pill]").textContent();
   if (!/synced/i.test(pillText ?? "")) throw new Error(`${label}: pill text "${pillText}" ≠ synced`);
 
-  // reload the editable head: the working human_revision chip is on the rail and the edit persisted
+  // reload the editable head: a WORKING human-authored chip is on the rail and the edit persisted —
+  // `human_revision` for the forked legs (import, reviewed), `duplicate` for the showcase-copy leg
+  // (the copy's open head edits in place — `one_working_head_per_project` makes a fork impossible).
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
   await page.waitForSelector("[data-page-view]", { timeout: 30_000 });
   const workingChip = page.locator(
-    'li[data-version-chip][data-state="working"][data-origin="human_revision"]',
+    'li[data-version-chip][data-state="working"]' +
+      ':is([data-origin="human_revision"],[data-origin="duplicate"],[data-origin="human_upload"])',
   );
   if ((await workingChip.count()) === 0) {
-    throw new Error(`${label}: no working human_revision chip on the rail after reload`);
+    throw new Error(`${label}: no working human-editable chip on the rail after reload`);
   }
   const body = (await page.textContent("body")) ?? "";
   if (!body.includes(markerText)) {

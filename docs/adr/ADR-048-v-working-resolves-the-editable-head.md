@@ -50,3 +50,36 @@ working head exists.
   (`showcaseReadOnlyGuard`), collab attaches read-only, materialization refuses, and SSR renders
   the Page read-only with no collab wire.
 - No working copies are introduced — REQ-IDE-44/REQ-DATA-27 stay amended to 1.x.
+
+## Amended 2026-10-03 — the human-editable working set + head routing
+
+The N8 `frozen-dup` leg (duplicating the Showcase) caught the first draft of this decision
+under-reading: the copy's open head is `origin='duplicate'` + `state='working'` (the row action
+copies draft state verbatim — the Showcase's own v2 is seeded that way), and every gate that read
+`origin === 'human_revision'` attached it **read-only**: collab auth refused writes,
+`saveManualRevision` answered `not_editable`, the stale-base child lookups missed it, and the
+mobile block-patch guard 409'd. The pill therefore never reached `synced` on a duplicated project —
+the exact "duplicate/frozen projects are recoverable and editable" AC.
+
+The rule is now expressed once — `HUMAN_EDITABLE_DRAFT_ORIGINS` (`human_revision`, `human_upload`,
+`duplicate`) in `@rhema/contracts` — and every layer consults it:
+
+- **A working human-authored head is the editable surface, period.** `one_working_head_per_project`
+  makes a fork structurally impossible (the child would be a *second* working draft), so a
+  `duplicate` head — the §15.4 "duplicate to play" copy — saves **in place**; its `origin` stays
+  `duplicate` (creation provenance) while `artifact_versions.created_by` + the block map record the
+  human edits. `manual-trace` and `computeReReviewSeed`'s `humanEdit` flag now see it the same way.
+- **A frozen base routes to the project's ONE working head, not just its own direct child.** The
+  lookups in `saveManualRevision`, collab auth, and `resolveEditorHead` used to search
+  `base_draft_id = $1 and origin='human_revision'` — missing `duplicate` heads and deep lineages
+  (v1 frozen → v2 frozen → v3 working), where a stale-base save would instead have attempted a
+  second working draft and died on the unique index. A frozen head now resolves the project's
+  working row; human-editable → the collab socket refuses `frozen_fork` and the client rebinds /
+  the save routes; agent-origin → read-only/`not_editable`; none → `openHumanRevision` forks.
+- **`openHumanRevision` numbers the child `max(n)+1`, not `base.n+1`.** REQ-DATA-24's "v(N+1)" is
+  the next version *number*; a stale mid-lineage base (later frozen drafts standing, no working
+  head) would otherwise collide on `(project_id, n)`.
+
+Working agent-sourced origins (`drafted_from_outline`, `response_to_review`, `imported`, `cut`)
+remain `not_editable` through this path — they are run surfaces, not the person's editor. No working
+copies are introduced (still 1.x).

@@ -204,6 +204,48 @@ describe("POST …/save — the debounced autosave (AC1/AC5; no Save verb)", () 
   });
 });
 
+describe("EDIT.1 — a duplicated project's working 'duplicate' head is the editable surface", () => {
+  // REQ-PROD-8's row action copies draft state verbatim (§15.4 "duplicate to play"): the copy's head
+  // lands `duplicate`/`working`. It is human-authored — the old `origin === 'human_revision'` gates
+  // left it read-only/409 (the N8 frozen-dup leg). Saves land in place; the frozen base routes to it.
+  it("GET serves it with the base's findings; save lands in place; the stale base resolves to it", async () => {
+    await seedReviewedHead(); // v1 'agent' frozen + its review findings
+    const verId = (
+      (await db.pg.query("select promoted_version_id from drafts where id = $1", [draftId]))
+        .rows[0] as { promoted_version_id: string }
+    ).promoted_version_id;
+    const dupId = deps.ids("dft");
+    await db.pg.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'duplicate','working',$3,$4)`,
+      [dupId, seed.projectId, verId, draftId],
+    );
+
+    // the doc read serves the working dup head — findings follow its base (the draft the review
+    // READ), the same inheritance a human_revision child gets.
+    const res = await app.request(`/projects/${seed.projectId}/editor/${dupId}`);
+    expect(res.status).toBe(200);
+    const doc = (await res.json()) as { draftId: string; state: string; findings: unknown[] };
+    expect(doc).toMatchObject({ draftId: dupId, state: "working" });
+    expect(doc.findings).toHaveLength(2);
+
+    // the save lands in place — the copy's head IS the editable surface (a fork is impossible:
+    // `one_working_head_per_project` already has its working row).
+    const r = await post(`/projects/${seed.projectId}/editor/${dupId}/save`, { markdown: EDITED_MD });
+    expect(r.status).toBe(200);
+    const s = (await r.json()) as { draftId: string; draftN: number; forked: boolean };
+    expect(s).toMatchObject({ draftId: dupId, draftN: 2, forked: false });
+
+    // …and a stale save/read addressed to the frozen v1 routes to the dup head — the ONE working
+    // head — instead of 404ing or attempting a second working draft.
+    const r2 = await post(`${url("")}/save`, { markdown: `${EDITED_MD}\nVia the base.\n` });
+    expect(r2.status).toBe(200);
+    expect(((await r2.json()) as { draftId: string }).draftId).toBe(dupId);
+    const stale = await app.request(url(""));
+    expect(((await stale.json()) as { draftId: string }).draftId).toBe(dupId);
+  });
+});
+
 describe("POST …/note — the one note field becomes Guidance (REQ-DATA-41 beta)", () => {
   it("captures a project-scope guidance row narrowed to revise", async () => {
     await seedReviewedHead();

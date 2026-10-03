@@ -161,6 +161,7 @@ async function main(): Promise<void> {
           const baseN = draftN;
           rebase(fork.draftId); // rebase owns the session rebind (URL + dataset + provider)
           draftN = fork.draftN;
+          root.dataset["draftN"] = String(draftN);
           showForkBanner(root, fork.draftN, baseN);
         },
         onReadOnly: () => {

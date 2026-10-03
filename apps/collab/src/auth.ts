@@ -17,6 +17,7 @@ import {
 } from "@rhema/db";
 import type { SqlExecutor } from "@rhema/mirror";
 import { editorLockForRuns, HOLDING_STATES, type EditorLock } from "@rhema/orchestrator";
+import { isHumanEditableDraftOrigin } from "@rhema/contracts";
 import type { CollabDb } from "./sql.js";
 
 /** The connection context every later hook sees (Hocuspocus merges onAuthenticate's return). */
@@ -192,27 +193,37 @@ export async function authenticateConnection(
           readOnly: true,
         };
       }
-      // Write intent on a frozen head. Two cases, both preserving "FIRST EDIT forks v(N+1)" —
-      // merely opening the /v/:n page must never mint a draft:
-      //  • a working human_revision child already exists ⇒ the client's offline edits belong on it;
-      //    refuse with the `frozen_fork` payload and the client rebinds `draft:<childId>` (the
-      //    child's live doc was seeded from this base's y_state at fork time, so the pending
-      //    updates merge without a resync).
-      //  • no child yet ⇒ attach writable; the first debounced STORE materializes through
-      //    saveManualRevision, which performs the fork and lands the edits on v(N+1) — then the
-      //    store hook closes the connections and this same rebind path runs.
-      const child = (
+      // Write intent on a frozen head. Three cases, all preserving "FIRST EDIT lands on the working
+      // head" — merely opening the /v/:n page must never mint a draft:
+      //  • the project already HAS a working human head ⇒ the client's offline edits belong on it;
+      //    refuse with the `frozen_fork` payload and the client rebinds `draft:<headId>`. The head
+      //    needn't be this base's direct human_revision child — a duplicated project's `duplicate`
+      //    working head and a deep lineage's open grandchild are the same "the head follows itself"
+      //    surface (a fork here would mint a second working draft — the unique index forbids it).
+      //  • the open head is in-flight agent/seed work ⇒ read-only attach; it isn't the editor's
+      //    surface and a human save has nowhere to land.
+      //  • no working head at all ⇒ attach writable; the first debounced STORE materializes through
+      //    saveManualRevision, which performs the v(N+1) fork — then the store hook closes the
+      //    connections and this same rebind path runs.
+      const working = (
         await tx.query(
-          `select id, n from drafts
-            where base_draft_id = $1 and origin = 'human_revision' and state = 'working'
-            order by n desc limit 1`,
-          [binding.draftId],
+          `select id, n, origin from drafts where project_id = $1 and state = 'working'`,
+          [binding.projectId],
         )
-      ).rows[0] as { id: string; n: number } | undefined;
-      if (child) {
+      ).rows[0] as { id: string; n: number; origin: string } | undefined;
+      if (working && isHumanEditableDraftOrigin(working.origin)) {
         throw new AuthRefusal(
-          JSON.stringify({ code: FORK_REASON_CODE, draftId: child.id, draftN: child.n }),
+          JSON.stringify({ code: FORK_REASON_CODE, draftId: working.id, draftN: working.n }),
         );
+      }
+      if (working) {
+        return {
+          userId: principal.userId,
+          workspaceId: principal.workspaceId,
+          projectId: binding.projectId,
+          draftId: binding.draftId,
+          readOnly: true,
+        };
       }
       return {
         userId: principal.userId,
@@ -223,9 +234,10 @@ export async function authenticateConnection(
       };
     }
 
-    // A working head that isn't a human revision (an in-flight agent draft, a seed) is not the
+    // A working head that isn't human-authored (an in-flight agent draft, a seed) is not the
     // editor's surface — saveManualRevision's `not_editable` rule, expressed as a read-only attach.
-    const writable = binding.origin === "human_revision";
+    // `duplicate` (a project copy's open head) and `human_upload` edit in place like human_revision.
+    const writable = isHumanEditableDraftOrigin(binding.origin);
     return {
       userId: principal.userId,
       workspaceId: principal.workspaceId,

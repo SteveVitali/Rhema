@@ -324,6 +324,78 @@ describe("collab service (P1.03)", () => {
     expect(ro.readOnly).toBe(true);
   });
 
+  // EDIT.1 — the N8 frozen-dup leg: duplicating the Showcase lands a `duplicate`/`working` head
+  // (draft state copies verbatim). It is a HUMAN-authored open head — the old
+  // `origin === 'human_revision'` gate attached it read-only and the pill never reached synced.
+  it("a working 'duplicate' head (a project copy) attaches writable and materializes in place", async () => {
+    await fx.exec.query("update drafts set origin = 'duplicate' where id = $1", [DRAFT]);
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DRAFT}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(false);
+
+    const conn = await openDoc(fx);
+    try {
+      const md = BASE_MD + "\nTyped on the copy.\n";
+      typeAll(conn.document!, md);
+      const outcome = await storeNow(fx, conn.document!);
+      expect(outcome).toMatchObject({ locked: false, forked: false, changed: true, draftId: DRAFT, draftN: 1 });
+      const live = (
+        await fx.exec.query("select md_sha256 from live_docs where id = $1", [fx.liveDocId])
+      ).rows[0] as { md_sha256: string };
+      expect(live.md_sha256).toBe(sha256Hex(md));
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("a frozen base while a 'duplicate' working head stands refuses write intent with frozen_fork", async () => {
+    // the showcase copy's rail: v1 frozen + v2 `duplicate` working — typing on v1's doc rebinds to
+    // v2 (a fork would mint a second working draft; `one_working_head_per_project` forbids it).
+    const DUP2 = uid(30);
+    await fx.exec.query("update drafts set state = 'frozen', origin = 'duplicate' where id = $1", [DRAFT]);
+    await fx.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'duplicate','working',$3,$4)`,
+      [DUP2, PROJ, AV, DRAFT],
+    );
+    await expect(
+      authenticateConnection({ db: fx.db, ids, clock }, {
+        documentName: `draft:${DRAFT}`,
+        cookieHeader: null,
+        token: TOKEN,
+        intent: null,
+      }),
+    ).rejects.toSatisfy(
+      (e: unknown) =>
+        e instanceof AuthRefusal &&
+        (JSON.parse(e.reason) as { code: string; draftId: string }).code === FORK_REASON_CODE &&
+        (JSON.parse(e.reason) as { draftId: string }).draftId === DUP2,
+    );
+    // the working dup head itself attaches writable — the rebind lands on the editable surface.
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DUP2}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(false);
+  });
+
+  it("a working agent-origin head (in-flight work) still attaches read-only", async () => {
+    await fx.exec.query("update drafts set origin = 'drafted_from_outline' where id = $1", [DRAFT]);
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DRAFT}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(true);
+  });
+
   // EDIT.1 — the N8 prod walk: the store-side fork LANDED (v2 in the DB) yet the client's §5.4
   // banner never flipped. hocuspocus's closeConnections sends an in-band CLOSE but leaves the
   // socket open, so the provider never re-auths — the frozen_fork refusal it re-points on never
@@ -614,6 +686,86 @@ describe("collab service (P1.03)", () => {
       (nodeServer as http.Server).close();
     }
   }, 15_000);
+
+  // EDIT.1 — the full N8 loop at the protocol level: a real provider types on a frozen head, the
+  // debounced store forks, `rhema.fork` reaches the open connection (the CLOSE message alone never
+  // re-auths — the prod walk proved it), and a rebind provider to the child syncs the same Y.Doc.
+  it("the frozen→v(N+1) loop lands end-to-end: rhema.fork stateless → rebind provider syncs", async () => {
+    await fx.exec.query("update drafts set state = 'frozen' where id = $1", [DRAFT]);
+    const nodeServer = serve({ fetch: fx.service.app.fetch, port: 0 });
+    const wss = new WebSocketServer({ noServer: true });
+    (nodeServer as http.Server).on("upgrade", (req, socket, head) =>
+      wss.handleUpgrade(req, socket, head, (ws) => fx.service.handleUpgrade(ws, req)),
+    );
+    await new Promise<void>((resolve) => {
+      if ((nodeServer as http.Server).listening) resolve();
+      else nodeServer.once("listening", () => resolve());
+    });
+    const port = (nodeServer.address() as AddressInfo).port;
+    const url = `ws://127.0.0.1:${port}/collab`;
+
+    const doc = new Y.Doc();
+    const parent = new HocuspocusProvider({
+      url,
+      name: `draft:${DRAFT}`,
+      token: TOKEN,
+      WebSocketPolyfill: WebSocket,
+      document: doc,
+    });
+    const forkMsg = new Promise<{ draftId: string; draftN: number }>((resolve, reject) => {
+      parent.on("stateless", ({ payload }: { payload: string }) => {
+        try {
+          const m = JSON.parse(payload) as { type?: string; draftId?: string; draftN?: number };
+          if (m.type === "rhema.fork" && m.draftId) resolve({ draftId: m.draftId, draftN: m.draftN ?? 0 });
+        } catch { /* foreign stateless */ }
+      });
+      parent.on("authenticationFailed", (e: { reason: string }) => reject(new Error(e.reason)));
+      setTimeout(() => reject(new Error("rhema.fork never arrived")), 12_000);
+    });
+    const child = new Promise<HocuspocusProvider>((resolve) => {
+      void forkMsg.then(({ draftId }) => {
+        parent.destroy();
+        resolve(
+          new HocuspocusProvider({
+            url,
+            name: `draft:${draftId}`,
+            token: TOKEN,
+            WebSocketPolyfill: WebSocket,
+            document: doc,
+          }),
+        );
+      });
+    });
+    let childProvider: HocuspocusProvider | null = null;
+    try {
+      // wait for the initial attach, then the keystroke IS the fork trigger (2 s debounced store)
+      await new Promise<void>((resolve, reject) => {
+        parent.on("synced", () => resolve());
+        setTimeout(() => reject(new Error("initial sync timeout")), 8000);
+      });
+      doc.getXmlFragment("prosemirror");
+      typeAll(doc, BASE_MD + "\nFirst write forks.\n");
+
+      const { draftId, draftN } = await forkMsg;
+      expect(draftId).not.toBe(DRAFT);
+      expect(draftN).toBe(2);
+
+      childProvider = await child;
+      await new Promise<void>((resolve, reject) => {
+        childProvider!.on("synced", () => resolve());
+        childProvider!.on("authenticationFailed", (e: { reason: string }) =>
+          reject(new Error(e.reason)),
+        );
+        setTimeout(() => reject(new Error("rebound provider never synced")), 8000);
+      });
+      expect(docToCanonicalMarkdown(childProvider.document)).toContain("First write forks.");
+    } finally {
+      parent.destroy();
+      childProvider?.destroy();
+      doc.destroy();
+      (nodeServer as http.Server).close();
+    }
+  }, 30_000);
 
   it("resumes a reconnected provider from the persisted y_state (kill/reconnect)", async () => {
     // persist a post-edit state directly (the y-indexeddb half is client-runtime; this proves the
