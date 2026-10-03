@@ -83,3 +83,10 @@ The rule is now expressed once — `HUMAN_EDITABLE_DRAFT_ORIGINS` (`human_revisi
 Working agent-sourced origins (`drafted_from_outline`, `response_to_review`, `imported`, `cut`)
 remain `not_editable` through this path — they are run surfaces, not the person's editor. No working
 copies are introduced (still 1.x).
+
+## Revisit trigger
+
+Reopen if a draft kind appears that must be *frozen and directly editable in place* (no lazy
+`human_revision` fork — e.g. a legal-hold draft that humans patch under a different audit rule),
+or if `one_working_head_per_project` ever relaxes to multiple working heads — the resolver's
+"the ONE working head" premise and the stale-base rebind protocol would both need re-deciding.

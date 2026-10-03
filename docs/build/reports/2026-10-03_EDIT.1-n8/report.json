@@ -1,15 +1,15 @@
 {
   "tool": "rhema-journeys",
-  "nonce": "1a6b787f98a1",
-  "startedAt": "2026-10-03T01:30:41.361Z",
-  "finishedAt": "2026-10-03T01:32:24.077Z",
+  "nonce": "46b3b6960e86",
+  "startedAt": "2026-10-03T03:05:53.923Z",
+  "finishedAt": "2026-10-03T03:06:21.299Z",
   "webBaseUrl": "https://rhema.tools",
   "apiBaseUrl": "https://api.rhema.tools",
   "provenance": {
-    "expected": "170722bc087297d68547b803211c6306ce2fbe80",
+    "expected": "76e00c50f3e458e8dce1b963f5845435f2fa627b",
     "observed": {
-      "web": "170722bc087297d68547b803211c6306ce2fbe80",
-      "api": "170722bc087297d68547b803211c6306ce2fbe80"
+      "web": "76e00c50f3e458e8dce1b963f5845435f2fa627b",
+      "api": "76e00c50f3e458e8dce1b963f5845435f2fa627b"
     },
     "match": true
   },
@@ -25,11 +25,10 @@
       "owner": "EDIT.1",
       "expected": "red",
       "paid": false,
-      "outcome": "owed",
+      "outcome": "ready-to-flip",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 102547,
-      "error": "import: the fork banner never flipped to \"Editing vN\" (the fork/rebind loop did not land)",
+      "durationMs": 27303,
       "screenshot": "N8.png"
     }
   ],

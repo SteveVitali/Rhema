@@ -269,7 +269,7 @@ fork"); ADR-048 names it and D-EDIT.1-1's Stage B records the observed first-typ
   registry green-baseline set still enforces N8 red).
 - `pnpm turbo typecheck` → **90/90**; `pnpm turbo lint` → **45/45**; `pnpm turbo build` → **45/45**.
 
-## Stage B (D-EDIT.1-1 — OPEN; operator-gated, recorded in DEFERRALS)
+## Stage B (D-EDIT.1-1 — DONE except the Safari sub-leg → D-EDIT.1-2)
 
 Deploy chain-tip → `pnpm journeys N8 --stage prod` → my-first-project HTTP legs → WebKit CSP
 leg → flip N8 `red→green` with report + screenshots under `docs/build/reports/`.
@@ -337,3 +337,43 @@ leg → flip N8 `red→green` with report + screenshots under `docs/build/report
   mirror 342, api+web+collab+ui+tokens 1082, turbo typecheck/lint/build 135 tasks all green.
 - `apps/web/src/client/page.ts`: `onFork` now also stamps `root.dataset.draftN` — the root's
   bound-version attribute stays truthful after a rebind (the N8 pill diagnostics read it).
+
+### 2026-10-03 — Stage B complete: deploy update 122, N8 FLIPPED, my-first-project legs green
+
+- **Deploy** — Cloud Build `730ad630` tag `edit1` (SHA `76e00c5`) built api/web/collab/worker/
+  fetcher/convert/export/egress-proxy/run-task; api+web+collab digests pinned in
+  `infra/pulumi/Pulumi.prod.yaml`. `pulumi preview`: 7 updates / 0 creates / 0 replaces / 0
+  deletes (incl. pre-existing scaling diffs) → `pulumi up` **update 122**. Provenance PASS at
+  `76e00c50f3e458e8dce1b963f5845435f2fa627b` on both `rhema.tools` + `api.rhema.tools`
+  (`scripts/check-deploy-provenance.mjs`); `deployments` row recorded
+  (`prod:76e00c5…`, `protocols_version=0.4.0+ec61156725a895ab`, 4 protocol seeds). One standing
+  warning, non-fatal: `Undefined value (alloydbCluster) will not show as a stack output`.
+- **N8 — `ready-to-flip` → FLIPPED green on prod** (report
+  `docs/build/reports/2026-10-03_EDIT.1-n8/report.json`, `N8.png`; nonce `46b3b6960e86`,
+  27,303 ms, provenance match, spend $0 ≤ $5, zero console errors / failed requests). Leg A —
+  fresh import → `/v/working` → Page island mount → typed marker → `Editing vN` banner →
+  `data-sync-state="synced"` → reload → working `human_revision` chip + persisted marker, ONE
+  `[data-sync-pill]`, no visible confirm. Leg B — duplicate fallback on jrn-a
+  (`showcase-copy-3`): the `duplicate`-origin working head edits **in place** (defect-#6 fix),
+  pill `synced`, marker persists. `registry.ts` N8 flipped `red→green`; the registry baseline
+  test updated and green.
+- **my-first-project HTTP legs — both 200** (authed as the owner `01M2V3PM0W…`). No live
+  operator session existed, so the leg minted a 2-hour `session` row over the system-role IAP
+  tunnel (the STB.2 session-row pattern, extended one step) and **deleted it after the legs** —
+  `delete from session` rowCount=1, no residual. `GET /p/my-first-project` → 200 (210 KB).
+  `GET /p/my-first-project/v/working` → **200** — the ticket's motivating defect, previously
+  404-shaped. The project has 8 drafts, all `frozen` (7× `human_upload` + v8
+  `drafted_from_outline`), no working head; the page now renders the frozen v8 head as the
+  editable target: `data-draft-id="01M3E8F8YNNT68ST3QV4FQ5WY6"`, `data-draft-n="8"`,
+  `data-state="frozen"`, `data-origin="drafted_from_outline"`, `data-readonly="0"` on the
+  editor affordances, `data-sync-pill` present, `data-page-banner="version"`. No one-off SQL
+  repair was needed — the resolver fixes the shape.
+- **WebKit CSP leg — ATTEMPTED, not runnable in this environment → D-EDIT.1-2 (operator/HUMAN).**
+  Playwright `webkit_mac14_arm64_special-2251` on macOS 14.4 arm64: browser launches but
+  `newPage()` hangs >55 s in both headless and headed modes (WebKitWebProcess never spawns —
+  environment-level, reproduced on a bare `goto rhema.tools` with no storageState). Real Safari
+  path: `safaridriver -p 4444` serves `/status ready:true` but session creation is refused —
+  "Allow Remote Automation" in Safari's Develop menu is off and enabling it needs the operator's
+  GUI/sudo. Recorded as the residual deferral D-EDIT.1-2; the `connect-src wss://` source is
+  engine-independent and N8's Chromium walk proves the connect end-to-end, so this is
+  verification coverage, not a code dependency.

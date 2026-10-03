@@ -25,9 +25,9 @@ describe("the journey step registry", () => {
       expect(["red", "green"]).toContain(s.expected);
     }
   });
-  it("the green baseline is {N2, R5} + carried greens {N7, R1, X1} + owner-flipped {N9 (BILL.3), N4 (EST.1), R6 (RPT.1), N5 + C1 (ACT.1), N1 + N3 (ONB.1)}", () => {
+  it("the green baseline is {N2, R5} + carried greens {N7, R1, X1} + owner-flipped {N9 (BILL.3), N4 (EST.1), R6 (RPT.1), N5 + C1 (ACT.1), N1 + N3 (ONB.1), N8 (EDIT.1)}", () => {
     const green = STEP_REGISTRY.filter((s) => s.expected === "green").map((s) => s.id).sort();
-    expect(green).toEqual(["C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N9", "R1", "R5", "R6", "X1"]);
+    expect(green).toEqual(["C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "R1", "R5", "R6", "X1"]);
   });
   it("every registry row has a wired implementation", () => {
     for (const s of STEP_REGISTRY) {

@@ -47,3 +47,10 @@ correct in Chromium, historically inconsistent in WebKit (the journey harness is
 - The explicit `wss://` source makes the collab connect engine-independent; the WebKit
   *verification* leg stays a deferral row (harness limitation), the CSP control removes the
   underlying ambiguity it would have probed.
+
+## Revisit trigger
+
+Reopen if a second persistent save-state surface is ever designed (per-block indicators, a
+history drawer with its own sync affordance), or if the collab protocol gains reauthentication
+without a reconnect — the out-of-band `rhema.fork`/`rhema.readonly` messages were the fix for
+`closeConnections` leaving the provider half-open and would fold into a real re-auth flow.
