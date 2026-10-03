@@ -1421,6 +1421,11 @@ async function pillTextOverlap(page: Page): Promise<string | null> {
     if (pr.width === 0 || pr.height === 0) return null;
     for (const other of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
       if (other === el || el.contains(other) || other.contains(el)) continue;
+      // Chromium keeps layout boxes for children of a CLOSED <details> (content-visibility),
+      // so getBoundingClientRect is nonzero for elements that are neither painted nor
+      // hittable — exclude them (the <summary> itself stays live).
+      const closed = other.closest("details:not([open])");
+      if (closed && !closed.querySelector(":scope > summary")?.contains(other)) continue;
       const ownText = Array.from(other.childNodes).some(
         (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "",
       );
@@ -1612,18 +1617,30 @@ const P1: StepFn = async (ctx) => {
     await assertAxeClean(page, `phone /p/${slug}`);
     await page.screenshot({ path: join(ctx.outDir, "p1-project-390.png"), fullPage: true });
 
-    // The Page's sync pill at phone width (ADR-069): in-flow, covering no text.
+    // The Page's sync pill at phone width (ADR-069 + §10.1): /v/working is an EDITOR surface —
+    // phone requests land on the project page (or the §10.1 note) and the editor never mounts,
+    // so no pill exists to float. If a mounted editor ever reaches phone again, its pill must
+    // be there AND in-flow; a fixed/sticky pill anywhere is the regression this leg guards.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
-    await assertNoOverflow(page, `/p/${slug}/v/working @390×844`);
+    const pillLanded = new URL(page.url()).pathname;
+    await assertNoOverflow(page, `phone ${pillLanded} (via /v/working)`);
     const pill = page.locator("[data-sync-pill]").first();
-    if ((await pill.count()) === 0) throw new Error("/v/working @390: no sync pill rendered");
-    const pos = await pill.evaluate((el) => getComputedStyle(el).position);
-    if (pos === "fixed" || pos === "sticky") {
-      throw new Error(`sync pill is position:${pos} — floats over body text at phone width`);
+    const editorMounted = (await page.locator("[data-page-mount]").count()) > 0;
+    if (editorMounted && (await pill.count()) === 0) {
+      throw new Error(`phone ${pillLanded}: the page editor mounted without its sync pill`);
     }
-    const overlapped = await pillTextOverlap(page);
-    if (overlapped) throw new Error(`sync pill covers text at phone width: ${overlapped}`);
-    await assertAxeClean(page, `phone /p/${slug}/v/working`);
+    if ((await pill.count()) > 0) {
+      const pos = await pill.evaluate((el) => getComputedStyle(el).position);
+      if (pos === "fixed" || pos === "sticky") {
+        throw new Error(`sync pill is position:${pos} — floats over body text at phone width`);
+      }
+      const overlapped = await pillTextOverlap(page);
+      if (overlapped) throw new Error(`sync pill covers text at phone width: ${overlapped}`);
+    }
+    if (pillLanded !== `/p/${slug}` && !editorMounted && (await page.locator("[data-phone-blocked]").count()) === 0) {
+      throw new Error(`/v/working @390 landed on ${pillLanded} with neither the project page nor the §10.1 note`);
+    }
+    await assertAxeClean(page, `phone ${pillLanded} (via /v/working)`);
     await page.screenshot({ path: join(ctx.outDir, "p1-pill-390.png"), fullPage: true });
 
     // The run sheet at phone width — the §10.1 note, never the run form.
@@ -1669,13 +1686,29 @@ const P1: StepFn = async (ctx) => {
     await page.screenshot({ path: join(ctx.outDir, "p1-app-new-1440.png"), fullPage: true });
 
     // The Page's pill at 1440 — in-flow, disjoint from the status bar AND the open-desk composer.
+    // The pill only exists where the editor mounts; draft-less /v/working redirects to /p/:slug
+    // (EDIT.1), so walk the project list until one serves a mounted editor.
     await gotoOk(page, `${ctx.webBaseUrl}/app`);
-    await followProjectLink(page, ctx);
-    const slug = /^\/p\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1];
-    if (!slug) throw new Error(`no project slug on ${page.url()}`);
-    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
-    const pill = page.locator("[data-sync-pill]").first();
-    if ((await pill.count()) === 0) throw new Error("/v/working @1440: no sync pill rendered");
+    const candidates = await page
+      .locator('a[href^="/p/"]')
+      .evaluateAll((els) => [
+        ...new Set(
+          els
+            .map((e) => e.getAttribute("href") ?? "")
+            .filter((h) => /^\/p\/[^/?]+$/.test(h)),
+        ),
+      ]);
+    let pill: Locator | null = null;
+    for (const h of candidates.slice(0, 12)) {
+      await gotoOk(page, `${ctx.webBaseUrl}${h}/v/working`);
+      if (!/\/v\//.test(new URL(page.url()).pathname)) continue; // redirected — no working head
+      await page.waitForSelector("[data-sync-pill]", { timeout: 10_000 }).catch(() => null);
+      if ((await page.locator("[data-sync-pill]").count()) > 0) {
+        pill = page.locator("[data-sync-pill]").first();
+        break;
+      }
+    }
+    if (!pill) throw new Error("no project in the first 12 renders the mounted-editor sync pill at 1440");
     // open the Desk on chat (pane state is attr-driven: the island would set exactly this).
     await page.evaluate(() => {
       const ide = document.querySelector<HTMLElement>(".ide");
@@ -1708,7 +1741,7 @@ const P1: StepFn = async (ctx) => {
     }
     const desktopOverlap = await pillTextOverlap(page);
     if (desktopOverlap) throw new Error(`sync pill covers text at desktop: ${desktopOverlap}`);
-    await assertNoOverflow(page, `/p/${slug}/v/working @1440×900`);
+    await assertNoOverflow(page, `${new URL(page.url()).pathname} @1440×900`);
     await page.screenshot({ path: join(ctx.outDir, "p1-pill-1440.png"), fullPage: true });
   }
 };

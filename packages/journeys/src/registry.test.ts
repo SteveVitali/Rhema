@@ -26,10 +26,11 @@ describe("the journey step registry", () => {
       expect(["red", "green"]).toContain(s.expected);
     }
   });
-  it("the green baseline is {N2, R5} + carried greens {N7, R1, X1} + owner-flipped {N9 (BILL.3), N4 (EST.1), R6 (RPT.1), N5 + C1 (ACT.1), N1 + N3 (ONB.1), N8 (EDIT.1), R4 + R7 (RUN.1)} + UX.1's {N10, R8}", () => {
+  it("the green baseline is {N2, R5} + carried greens {N7, R1, X1} + owner-flipped {N9 (BILL.3), N4 (EST.1), R6 (RPT.1), N5 + C1 (ACT.1), N1 + N3 (ONB.1), N8 (EDIT.1), R4 + R7 (RUN.1)} + UX.1's {N10, R8} + UX.2's {P1}", () => {
     const green = STEP_REGISTRY.filter((s) => s.expected === "green").map((s) => s.id).sort();
     expect(green).toEqual(
-      ["C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "R1", "R4", "R5", "R6", "R7", "R8", "X1"].sort(),
+      // P1 flipped red→green on prod proof (UX.2 Stage B, nonce 4ff89a27d950 @6723784).
+      ["C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "X1"].sort(),
     );
   });
   it("every registry row has a wired implementation", () => {

@@ -1,15 +1,15 @@
 {
   "tool": "rhema-journeys",
-  "nonce": "53aa9ff08a20",
-  "startedAt": "2026-10-03T12:24:28.708Z",
-  "finishedAt": "2026-10-03T12:24:31.973Z",
+  "nonce": "4ff89a27d950",
+  "startedAt": "2026-10-03T12:48:09.049Z",
+  "finishedAt": "2026-10-03T12:48:16.708Z",
   "webBaseUrl": "https://rhema.tools",
   "apiBaseUrl": "https://api.rhema.tools",
   "provenance": {
-    "expected": "993920c319b8330a122926a16d1451a4ebe8bd49",
+    "expected": "6723784c2a3b4aa449fc237c7aaddca254ab4f00",
     "observed": {
-      "web": "993920c319b8330a122926a16d1451a4ebe8bd49",
-      "api": "993920c319b8330a122926a16d1451a4ebe8bd49"
+      "web": "6723784c2a3b4aa449fc237c7aaddca254ab4f00",
+      "api": "6723784c2a3b4aa449fc237c7aaddca254ab4f00"
     },
     "match": true
   },
@@ -25,11 +25,10 @@
       "owner": "UX.2",
       "expected": "red",
       "paid": false,
-      "outcome": "owed",
+      "outcome": "ready-to-flip",
       "consoleErrors": [],
       "failedRequests": [],
-      "durationMs": 3201,
-      "error": "phone /p/slo-1-latency-probe-doc: 1 WCAG-AA violation(s): target-size ×1 [.ide-phone-only > .chat-desk[data-chat=\"1\"][data-chat-thread=\"01M40VJ7GM2KEB6BX6ETEXM0T3\"] > .chat-body > .chat-threads[role=\"navigation\"][aria-label=\"Threads\"] > ul > li > a[data-chat-thread-link=\"01M40VJ7GM2KEB6BX6ETEXM0T3\"][aria-current=\"true\"]]",
+      "durationMs": 7579,
       "screenshot": "P1.png"
     }
   ],

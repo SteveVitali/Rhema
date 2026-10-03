@@ -291,9 +291,15 @@ config:
   # (ADR-066), the phone ≥44-px action/target floor (ADR-067), the in-flow sync pill (ADR-069),
   # and the faint-tier AA retune (ADR-070 — axe color-contrast fix on the first P1 leg);
   # axe-core rides the journeys harness only — no image change class (ADR-068). No migrations.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f709df16886ae1b6228e3e667be0ea34e865b2f6b205aa0abdf737419b74a0dc","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:c8b36d90ca0cf9057e5591b0dfd05e911c61af1d83e1bb1d0fdb2ef5cb941fbf","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:879a9dcfe876924afe6da04c51b67d72ede3763903aae77076284c288b1d72f3","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ac297d119c6b640e1ea1998729cfe7c02c54fba86b00cfeff0b2725b82f732ce","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:bb56f4e50560030ee268f198ba3830dd7782add569d924546cb296152605d397","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:cccaf76d4aa3bcd2c4fcee8f439821e9a6deee097fd886dd758b82de2e38111e","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:cfd3760b6a874241c2335671f1e022e3c142ff81f3ddab2207df9bba2180644c"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:a75a9d22cd60d451bd47f881d54e0bf66488e523376124469da57cf568be033d
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:f9e55a55f38a6a807b9fa72c6dcf6ebcdee31b101034e95fb3265ec19e94b7e5
+  # UX.2 Stage-B iteration 3 (tag ux2c, Cloud Build 511ddeb5, 2026-10-03, chain-tip SHA 6723784 —
+  # stacks on the ux2b deploy): all nine images rebuilt on the tip. Carries the remaining live-axe
+  # fixes a prod pre-flight sweep surfaced: the desk's × moved out of role=tablist into
+  # .ide-desk-head (aria-required-children), programmatic names on the ov_* override + /app
+  # groupBy/protocol/sort selects (select-name), and the compact-chat thread-link/chip ≥44-px
+  # phone floor (target-size — the one finding the last P1 run hit). No migrations.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:42312749a63a111b6b9d876cf7d7b9a20e747f68f59c5dfbe895e751c86f12c6","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:9059e2f44001c5336503ef3f4302f14bebd47c95c4af481f1f182a09deec2722","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:3133bfed5590880abddbf36665f779b4997bbe6eafa16e70d7e22b7773e48fb9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:5a18a7739014f953f6b0e760253ac51727e70b1b8723e7c01c40ca705415223e","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:2a6fd042c52ac54fffe0975fc26c2d79efc94e1f766a4443f3f0bfd8f0af7299","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:93853b8de694a9b2d357260db633e21149fdc56e1857c846cb919aa6c745d94f","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:f24978a841b7338bd05832e403e17c8881d19804f542af663ea0f20c657b0878"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:af0da9e474076d511a4d0b687c8c416e6fd66c6338562e2a8c720aa2bc87aee1
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:603b926fba7e589dc2b509b558e211780ed01ee821ba786a29c5ba2bec5f05bf
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

@@ -128,8 +128,42 @@
 
 ## 4 — Stage B
 
-_(deploy + P1 + screenshots)_
+- `ux2b` build → Pulumi update 132 (9 image updates + proxy template rotation) deployed
+  `993920c`; provenance OK on both healthz; deployment row recorded (IAP tunnel re-established
+  after proxy rotation).
+- P1 prod run #1 → CSP blocked `addScriptTag`; fix: evaluate axe source via CDP.
+- P1 prod run #2 → axe `color-contrast ×1` (`footer > span`): `--shell-fg-faint` was ~3.3:1.
+  Retuned faint tiers to AA (dark `#868d97`, light `#646b74`, pinned `#9a948a`/`#6d6659`) +
+  contrast tests + ADR-070; redeployed.
+- P1 prod run #3 → axe `target-size ×1`: compact chat thread links (`padding: 2px 8px`) < 24px.
+- **Pre-flight sweep** (cached `jrn-a` session + local axe against prod, all touched surfaces)
+  found three more classes rather than discovering them one deploy at a time:
+  1. `aria-required-children` — desk close × was a non-tab child of `role=tablist` → moved out
+     into a new `.ide-desk-head` flex row (tablist is now a pure tab container).
+  2. `select-name` — `ov_*` override selects (×8, /v/working) and the /app groupBy/protocol/sort
+     selects (×3) had visual labels but no programmatic names → `aria-label` added.
+  3. compact-chat targets → `.ide-phone-only` media block now covers `.chat-threads a` and
+     `[data-chat-chip]` at ≥44px.
+- `ux2c` build `511ddeb5` of `6723784` → all nine digests pinned → `pulumi preview` 9 updates +
+  1 proxy-template replacement, no stateful → `pulumi up` **update 133** → healthz provenance
+  `6723784c2a3b4aa449fc237c7aaddca254ab4f00` on api+web → IAP tunnel re-established
+  (`rhema-prod-proxy-c519`) → `deployments` row `prod:6723784…` (`0.4.0+ec61156725a895ab`).
+- P1 prod run #4 (`4ff89a27d950`): the phone `/v/working` leg exposed a **test-side** assumption —
+  `/v/working` 302s to `/p/:slug` on phone (§10.1) and also when a project has no working head
+  (EDIT.1 draft-less redirect). Fixed the leg to assert the honest contract: no pill may float
+  wherever the request lands; the mounted-editor pill must exist + sit in-flow. The desktop leg
+  now walks the project list for a mounted editor (first-12) instead of assuming the first
+  project has a working head, and `pillTextOverlap` excludes closed-`<details>` children
+  (Chromium keeps layout boxes for unpainted content-visibility subtrees — false positive on the
+  restore menu).
+- P1 prod run #5 — **GREEN** on prod at `6723784`, provenance matched, $0 spend, zero console
+  errors/failed requests; screenshots `p1-pricing-390 / p1-project-390 / p1-pill-390 /
+  p1-runsheet-390 / p1-app-new-1440 / p1-pill-1440` in `docs/build/reports/UX.2/`.
+  `registry.ts` P1 `red → green`.
 
 ## 5 — Deferrals / closeout
 
-_(annotations + rows)_
+- `D-P1.19-2` annotated: the ≤768-px geometry legs it mapped onto P1 are now PROVEN on prod
+  (no overflow at 390/320, ≥44-px primaries, §10.1 set absent, axe AA clean); its interactive
+  gate/disposition/chat/email-deep-link legs remain HUMAN (real-device) as before.
+- No new deferrals: every ticket obligation is verified in-repo or live on prod.
