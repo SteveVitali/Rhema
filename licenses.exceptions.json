@@ -66,6 +66,21 @@
       "license": "Apache-2.0",
       "rationale": "PDF rendering in the `export` container; separate process. Apache-2.0 is permissive but recorded here because it is a system binary, not an npm dep, so the automated npm scan cannot see it."
     },
+    "util-linux": {
+      "type": "system-binary",
+      "license": "GPL-2.0-or-later",
+      "rationale": "SEC.3 — the three applets (setpriv, unshare, mount) are statically built from the pinned upstream tarball and vendored into the distroless run-task image; invoked as SEPARATE PROCESSES by absolute argv — no linking into our TypeScript. GPL copyleft is not triggered by separate-process invocation (the pandoc precedent). Source is fetched from kernel.org, SHA-256-pinned at build."
+    },
+    "libcap-ng": {
+      "type": "system-binary",
+      "license": "LGPL-2.1-or-later",
+      "rationale": "SEC.3 — statically linked into the vendored util-linux setpriv (Alpine ships no libcap-ng .a, so it is built static from the pinned upstream source). Static linkage into a GPL-2.0 binary yields a GPL-2.0 whole anyway; the binary is a separate process, never linked into our TypeScript. SHA-256-pinned at build."
+    },
+    "dumb-init": {
+      "type": "system-binary",
+      "license": "MIT",
+      "rationale": "SEC.3 — the static PID-1 init in the distroless run-task image (reaper + signal forwarder; the equivalent-approved tini substitute, ADR-074). Permissive, but recorded because it is a system binary built from the pinned upstream source — the npm scan cannot see it."
+    },
     "fonts": {
       "type": "asset",
       "license": "OFL-1.1 / vendor-specific",

@@ -33,6 +33,14 @@ export interface WorkerEnv {
   readonly internalApiUrl: string;
   readonly proxyBaseUrl: string;
   /**
+   * SEC.3 — the run-task container's AppArmor profile type + Localhost profile name, verbatim k8s
+   * values forwarded to the launcher (`GkeLauncherConfig.appArmor`). Unset ⇒ the launcher's default
+   * (`Localhost` / `rhema-run-task`). Rollback to the previous profile posture is a pulumi-config
+   * flip on these two keys, never a code revert.
+   */
+  readonly runTaskAppArmorType?: string;
+  readonly runTaskAppArmorLocalhostProfile?: string;
+  /**
    * Cloud Run → GKE auth (D-P0.15e-3): the GKE public endpoint + base64 cluster CA. When both are set the
    * launcher builds its KubeConfig from them + a per-launch metadata OAuth token (the Cloud Run worker has no
    * in-cluster kubeconfig); unset ⇒ the ambient kubeconfig (`loadFromDefault`, for an in-cluster/local run).
@@ -155,6 +163,10 @@ export function readWorkerEnv(): WorkerEnv {
     systemDatabaseUrl: required("SYSTEM_DATABASE_URL"), // SEC.1 — required; no fallback to DATABASE_URL
     ...(process.env.GKE_ENDPOINT ? { gkeEndpoint: process.env.GKE_ENDPOINT } : {}),
     ...(process.env.GKE_CA_DATA ? { gkeCaData: process.env.GKE_CA_DATA } : {}),
+    ...(process.env.RUN_TASK_APPARMOR_TYPE ? { runTaskAppArmorType: process.env.RUN_TASK_APPARMOR_TYPE } : {}),
+    ...(process.env.RUN_TASK_APPARMOR_LOCALHOST_PROFILE
+      ? { runTaskAppArmorLocalhostProfile: process.env.RUN_TASK_APPARMOR_LOCALHOST_PROFILE }
+      : {}),
     ...(process.env.ANTHROPIC_ADMIN_KEY_SECRET
       ? { anthropicAdminKeySecret: process.env.ANTHROPIC_ADMIN_KEY_SECRET }
       : {}),

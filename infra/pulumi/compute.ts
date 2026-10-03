@@ -69,6 +69,13 @@ export interface ComputeArgs {
   emailFrom?: pulumi.Input<string>;
   /** the digest-pinned run-task image the worker launches as the two-uid GKE Job. */
   runTaskImageDigest?: pulumi.Input<string>;
+  /**
+   * SEC.3 — the run-task pod's `appArmorProfile.type`, a verbatim k8s enum value (`Localhost` ships;
+   * the previous profile type is the rollback). Paired with `runTaskAppArmorLocalhostProfile`.
+   */
+  runTaskAppArmorType?: pulumi.Input<string>;
+  /** SEC.3 — the Localhost profile name (`rhema-run-task`) the apparmor-loader DaemonSet installs. */
+  runTaskAppArmorLocalhostProfile?: pulumi.Input<string>;
   /** the api's internal URL the worker + pod reach (`API_INTERNAL_URL`). */
   internalApiUrl?: pulumi.Input<string>;
   /**
@@ -359,6 +366,12 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
     ...(args.runTaskImageDigest ? [{ name: "RUN_TASK_IMAGE_DIGEST", value: args.runTaskImageDigest }] : []),
+    // SEC.3 — the pod's AppArmor profile type + Localhost name (verbatim k8s enum values; a rollback
+    // to the previous profile posture is a config flip, never a code revert).
+    ...(args.runTaskAppArmorType ? [{ name: "RUN_TASK_APPARMOR_TYPE", value: args.runTaskAppArmorType }] : []),
+    ...(args.runTaskAppArmorLocalhostProfile
+      ? [{ name: "RUN_TASK_APPARMOR_LOCALHOST_PROFILE", value: args.runTaskAppArmorLocalhostProfile }]
+      : []),
     // The internal api URL defaults to the prod api origin when domains exist; `rhema:internalApiUrl`
     // still overrides (dev/previews have no real api host until the LB is up).
     ...(args.internalApiUrl || apiOrigin

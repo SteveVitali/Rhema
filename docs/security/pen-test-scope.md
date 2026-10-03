@@ -26,7 +26,7 @@ smokes).
 | web (`rhema.tools`) | SSR surfaces; CSP nonce scheme; auth flow; sheet launch params | injected `<script>` in user-controlled fields; CSP bypass attempts |
 | usercontent (`usercontent.rhema.tools` + `*.`) | object GET/PUT; quarantine keys | cookie theft (none exist — assert it); content-type confusion; path traversal `quarantine/a/../b` |
 | egress proxy | `web_fetch`/`web_search` through a live run | the §12.8 channel: query smuggling, n-gram evasion, domain-cap evasion |
-| run-task sandbox | GKE Job, two-uid split, read-only rootfs, tmpfs mounts | shell escape → forge audit/fetch-log/event rows; spend outside the meter; read `/run/secrets` |
+| run-task sandbox | GKE Job, two-uid split, distroless image (no shell/pkg manager, static applets), read-only rootfs, tmpfs mounts, Localhost `rhema-run-task` AppArmor profile (mount allow-list; SEC.3) | shell escape → forge audit/fetch-log/event rows; spend outside the meter; read `/var/run/rhema/harness`; mount/unshare beyond the profile's scoped-runner sequence (profile allows only propagation-private on `/`, the `/work` tmpfs overmount, and `/tmp/scoped-stash` ↔ `/work/scoped` ro binds) |
 | fetcher + convert | URL fetches (SSRF, robots, rate limit), no-network convert Job | SSRF via crafted URLs; convert egress attempt |
 | tenancy | cross-workspace reads/writes on every route; RLS bypass via connection pooling | the pooled two-tenant test's live counterpart |
 | ingest | API/MCP key rotation (LIVE_KEYS), credential-handling paths | planted secrets; key material in logs |

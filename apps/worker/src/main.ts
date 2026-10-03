@@ -189,6 +189,18 @@ export async function startWorker(): Promise<void> {
     // Cloud Run → GKE auth (D-P0.15e-3): endpoint + CA present ⇒ metadata-token KubeConfig; absent ⇒ loadFromDefault.
     ...(env.gkeEndpoint ? { gkeEndpoint: env.gkeEndpoint } : {}),
     ...(env.gkeCaData ? { gkeCaData: env.gkeCaData } : {}),
+    // SEC.3 — the AppArmor profile type/name the pod spec emits (default Localhost rhema-run-task in
+    // the launcher; the deploy config carries the verbatim k8s enum so rollback is a config flip).
+    ...(env.runTaskAppArmorType
+      ? {
+          appArmor: {
+            type: env.runTaskAppArmorType,
+            ...(env.runTaskAppArmorLocalhostProfile
+              ? { localhostProfile: env.runTaskAppArmorLocalhostProfile }
+              : {}),
+          },
+        }
+      : {}),
   };
   // Cold-launch robustness (D-P0.15e-3 / live P0.15h): the FIRST launch on a fresh Cloud Run instance builds the
   // GKE launcher (dynamic `@kubernetes/client-node` import + a metadata-token KubeConfig) and makes its first

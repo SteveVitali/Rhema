@@ -109,10 +109,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: pnpm exec vitest run integration
-      # The two-uid privilege-separation image (D-P0.06-2): the vitest test builds Dockerfile.privsep-test and runs
-      # it with `--cap-add SYS_ADMIN` (uid `agent` denied the secrets file; scoped mount-namespace isolation). It
-      # SKIPS where Docker is unavailable; this Linux runner has it.
-      - name: two-uid privsep image kernel legs (D-P0.06-2)
+      # The two-uid privilege-separation kernel legs (D-P0.06-2 → SEC.3): the vitest test builds the
+      # PRODUCTION distroless image and runs privsep-check.js inside it under the pod's exact cap set —
+      # uid `agent` denied the secrets file, the harness→agent drop (+CAP_SETGID/no-nnp negative controls),
+      # scoped mount-namespace isolation, and the distroless shape (no shell, no package manager, static
+      # applets, uids 10001–10006). It SKIPS where Docker is unavailable; this Linux runner has it.
+      - name: two-uid privsep PRODUCTION-image kernel legs (D-P0.06-2, SEC.3)
+        env:
+          RHEMA_DOCKER_TESTS: "1"
         run: pnpm exec vitest run apps/run-task/src/privsep.docker.test.ts
 
   images:
@@ -145,6 +149,18 @@ jobs:
             echo "$svc digest: $digest"
             DIGESTS[$svc]=$digest
           done
+          # SEC.3 — the apparmor-loader image: the DaemonSet artifact that keeps `rhema-run-task`
+          # loaded on every sandbox node. Built here (not in the svc loop — it is node infra, not a
+          # deployed service) so the provenance artifact stays the service-image map; its digest is
+          # recorded separately for the deploy's envsubst.
+          docker build -f infra/k8s/apparmor/Dockerfile.loader \
+            -t "rhema/apparmor-loader:${{ github.sha }}" .
+          echo "apparmor-loader digest: $(docker image inspect rhema/apparmor-loader:${{ github.sha }} --format '{{ index .Id }}')"
+          # SEC.3 — the profile must COMPILE, not just exist: run the shipped parser's -Q (compile,
+          # no kernel load — needs no privilege) over the committed profile. A grammar slip that
+          # would wedge every run pod at container-create fails the pipeline here instead.
+          docker run --rm --entrypoint apparmor_parser \
+            "rhema/apparmor-loader:${{ github.sha }}" -Q /etc/apparmor.d/rhema-run-task
           echo "image scan (Trivy) + registry digest pinning: wired here; enforced from P0.06"
           # Assemble the pinned-digest map and record provenance {git_sha, image_digests, ...}.
           json="{"

@@ -1,0 +1,209 @@
+# SEC.3 — Run-task confinement: distroless image + a tight AppArmor profile (run ledger)
+
+- **Status:** IN PROGRESS (Stage A — implementation landed + locally verified; Stage B pending)
+- **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
+- **Ticket:** `docs/tickets/79_SEC.3__run-task-confinement.md` (manifest row 79)
+- **Branch:** `stevevitali/sec-3-run-task-confinement` — base `stevevitali/def-4-ledger-integrity-refund-window`
+  at `1d6039ebb230fd0ea74eaab7dc162fc710d7db6b` (DEF.4 / PR #100, unmerged, OPERATOR policy)
+- **Goal:** replace the Phase-0 `node:22-bookworm-slim` run-task stand-in with a shell-less distroless
+  image carrying statically vendored `setpriv`/`unshare`/`mount` + a static init, port the scoped
+  runner + privsep check to TypeScript entries, replace `appArmorProfile: Unconfined` with a
+  least-privilege `Localhost` profile loaded on every sandbox node, and prove it on the production
+  image + one bounded live second_read run.
+- **Spend cap:** Stage B ≤ **$5** metered, aim ≈$3 (round-3 cumulative entering: **$61.22**)
+- **ADRs:** ADR-074 (distroless base + applet sourcing + init), ADR-075 (profile-loading mechanism),
+  ADR-076 (profile allow-list + `allowPrivilegeEscalation` verdict)
+
+## 0 — Context load
+
+- DEFERRALS read first: **D-P0.06-3** (production image hardening — OPEN, this ticket closes it),
+  **D-P0.15f-1** (two-uid cap model — DONE; literal `uid=` print caveat this ticket discharges),
+  **D-P1.22-2(a)** (live two-uid pod-log caveat — annotate with direct evidence).
+- Anchors confirmed at build time:
+  - `privsep-check.sh` lives at `apps/run-task/docker/privsep-check.sh` (156 lines).
+  - `unshareArgv` is `unshare --mount --propagation private -- setpriv --reuid 0 --regid 0
+    --clear-groups -- <runnerArgv>` (engine `buildScopedLaunchSpec`) — **no user namespace**; the
+    ruid-0 wrap is F-StageB-6 load-bearing.
+  - Scoped uids 10003–10006 need passwd entries (F-StageB-7).
+  - F-StageB-5: containerd's `cri-containerd.apparmor.d` denies mount(2)/propagation change
+    regardless of `CAP_SYS_ADMIN` → the Localhost profile must allow the propagation change on `/`
+    + tmpfs + the stash/scoped binds, and nothing wider.
+  - macOS Docker Desktop has no AppArmor → profile legs assert behavior by reading
+    `/proc/self/attr/current` inside the selftest; CI `integration` provides the authoritative
+    confined/denied legs.
+- Live cluster confirmed: `rhema-prod-run-task-gke` (zonal us-central1-a), sandbox pool
+  `rhema-prod-run-task-pool-647f9f4`, 1 node, COS, kernel 6.12.94, containerd 2.2.7, kubelet
+  v1.35.8 (`appArmorProfile` GA). `runs` ns live. **No node-pool replacement needed** — a loader
+  DaemonSet does not touch the pool; the pause condition is not triggered.
+- Image publish path: `cloudbuild.yaml` steps build every `apps/*/Dockerfile` and push
+  `${_AR}/<svc>:${_TAG}`; digests get pinned in `Pulumi.prod.yaml` (`rhema:runTaskImageDigest`,
+  `rhema:serviceImages`).
+
+## 1 — Design decisions (to be ADR'd)
+
+1. **Base:** `gcr.io/distroless/nodejs22-debian12` (verified: node v22.22.0 at
+   `/nodejs/bin/node`, empty `/usr/bin`, existing root/nonroot passwd to overwrite). Multi-stage:
+   `builder` (pnpm deploy bundle, bookworm — unchanged) → `toolsmith` (alpine:3.21 — static
+   libcap-ng + util-linux 2.40.4 `setpriv`/`unshare`/`mount` via `make LDFLAGS="-all-static"`;
+   static `dumb-init` from single .c source) → `assert` (distroless + all COPYs + exec-assert via
+   node `accessSync(X_OK)` — distroless has a runtime but no shell) → `runtime` (scratch-ish copy
+   of assert output). Verified empirically: alpine source build produces `statically linked`
+   binaries; alpine's `libcap-ng-dev` ships no `.a` → libcap-ng 0.8.5 built static first.
+2. **ENTRYPOINT:** pure argv `[init, --, setpriv, --reuid 10001, --regid 10001, --clear-groups,
+   --bounding-set -all,+setuid,+setgid,+sys_admin,+sys_chroot, --inh-caps <same>, --ambient-caps
+   <same>, --, node, /app/dist/harness-main.js]` — byte-identical flag set to entrypoint.sh.
+   init = `dumb-init` (MIT, single .c, static — equivalent approved init; ADR'd vs tini).
+3. **scoped-runner TS:** `apps/run-task/src/scoped-runner.ts` → `/app/dist/scoped-runner.js`.
+   `runnerArgv` becomes `[<node-abs>, SCOPED_RUNNER, spec]` (node via `process.execPath` at
+   buildScopedPhasePlan callsite → `process.execPath` is the harness's own node). Mount ops via
+   `spawnSync("/usr/bin/mount", …)`; fs ops via `node:fs` (no `env`/`cp`/`chmod` binaries needed).
+   Child env = the same 8-key `env -i` set (7 ALLOWED_AGENT_ENV_KEYS + `HOME` scoped to the jail —
+   F-StageB-7's documented single addition).
+4. **AppArmor profile** `rhema-run-task` at `infra/k8s/apparmor/rhema-run-task`: `file,` (DAC +
+   RO-rootfs do the file boundary — same as cri-containerd default), `network,`, capability
+   `sys_admin/setuid/setgid/sys_chroot`, mount allows ONLY: `make-rprivate → /`,
+   `tmpfs(rw) → /work/`, `bind /work/** → /tmp/scoped-stash/**/`, `bind /tmp/scoped-stash/** →
+   /work/scoped/**/`, `bind /work/** → /work/**/` (selftest RO-bind leg), `ro,remount,bind →`
+   the same three target classes, `umount → /work/**/` + `/tmp/scoped-stash/**/` (cleanup).
+5. **Loader:** minimal privileged DaemonSet (`50-apparmor-loader-daemonset.yaml`, kube-system,
+   nodeSelector sandbox pool) running `apparmor_parser -r` in a 5-min loop, profile delivered via
+   a ConfigMap applied from the committed file by `infra/k8s/apply.sh`. Loader image
+   `apps/apparmor-loader/Dockerfile` = debian-slim + `apparmor` package (parser) — published to
+   our AR (sandbox pool has no internet; AR over Private Google Access). vs security-profiles-
+   operator: rejected — a CRD controller + webhook fleet sized for a single fixed profile, with
+   off-registry images to mirror (ADR-075).
+6. **Launcher:** `GkeLauncherConfig.appArmor?: { type; localhostProfile? }`, default
+   `{ type: "Localhost", localhostProfile: "rhema-run-task" }`; the type is forwarded verbatim
+   from deploy config (`rhema:runTaskAppArmorType` → worker `RUN_TASK_APPARMOR_TYPE` env) so
+   rollback is config-only — no k8s enum literal beyond the Localhost default ever lives in tree.
+7. **allowPrivilegeEscalation:** stays `true` — under `no_new_privs` execve() clears the ambient
+   set, so `setpriv --ambient-caps → exec node` leaves the harness capless → the harness→agent
+   drop EPERMs. Privsep selftest gains a leg proving exactly this (ambient-cap drop under
+   `--no-new-privs` fails). ADR-076 records the verdict.
+8. **privsep-selftest.ts** → `/app/dist/privsep-selftest.js`: ports every privsep-check leg
+   (AC1, D-P0.15f-1 + negative control, AC4 + ruid-gate F-StageB-6, P0.15h EROFS) plus:
+   reads `/proc/self/attr/current`; under `rhema-run-task` asserts scoped sequence + an
+   out-of-scope `/etc` bind denied; under a runtime-default enforced profile asserts the scoped
+   sequence fails (F-StageB-5 reproduced); `PRIVSEP_EXPECT_PROFILE` hard-fails on mismatch;
+   `--ns-body` subcommand runs the in-namespace mount sequence (all-node, no shell).
+9. **Image layout:** `/usr/bin/{setpriv,unshare,mount,dumb-init}` (static),
+   `/etc/passwd`/`/etc/group` static files for 0/10001–10006, `/app` bundle, `/app/skills`,
+   vendored SDK + claude at `/app/vendor/…`, `/work`, `/run/secrets`, `/tmp` mountpoints.
+   `/usr/bin/env` is NOT shipped (env -i → spawnSync env object).
+10. **uid log lines:** `identity.ts` → `[harness] identity uid=10001 gid=10001 … capEff=…` and
+    `[agent-entry] identity uid=10002 …` at main() head + `[scoped-runner]` identity line —
+    no secrets/paths/env values (uids, gids, cap-name summary only).
+
+## 2 — Test matrix
+
+| # | Behavior | Test | Layer |
+|---|----------|------|-------|
+| 1 | manifest emits Localhost rhema-run-task, caps/ro-rootfs/caps-add unchanged | k8s-launcher.test.ts (update) | unit |
+| 2 | `appArmor` config override → verbatim type; default → Localhost rhema-run-task | k8s-launcher.test.ts (new) | unit |
+| 3 | no `Unconfined` literal in non-doc tracked files | security-checks sweep test (new) | unit |
+| 4 | loader DS: nodeSelector = sandbox pool template var, priv ctx, AR image ref, ConfigMap source | infra manifests test (new, security-checks) | unit |
+| 5 | scoped-runner TS: mount plan → exec order (stash→tmpfs→binds→spec copy→setpriv argv) | scoped-runner.test.ts (new, fake spawn/fs) | unit |
+| 6 | scoped-runner child env = 8 keys, placeholder-only key, no token/credential | scoped-runner.test.ts | unit |
+| 7 | unshareArgv carries `[node, scoped-runner.js, spec]` tail | scoped-phase.test.ts (update) | unit |
+| 8 | DEF.4 guidance-in-prompt preserved | scoped-phase.test.ts (unchanged, re-run) | unit |
+| 9 | privsep-check legs ported (AC1, f-1 ±setgid, AC4, ro-bind EROFS, ruid gate) | privsep.docker.test.ts on REAL image | docker |
+| 10 | NEW: apparmor legs (profile-allow / out-of-scope deny / runtime-default deny / nnp-breaks-ambient) | same | docker+CI |
+| 11 | image has no /bin/sh|bash|apt|dpkg|env; applets static (no INTERP) | image-filesystem test over built image | docker+CI |
+| 12 | CI integration: apparmor_parser load → confined + runtime-default selftest legs | ci.yml update | CI |
+| 13 | uid lines in harness-main/agent-entry main() | identity.test.ts (new) | unit |
+| 14 | license exceptions: util-linux GPL-2.0, dumb-init MIT, libcap-ng MIT | check:licenses + exceptions json | unit |
+| 15 | loader pinned to sandbox pool + imagePullPolicy + profile name consistency | infra manifests test | unit |
+| 16 | D-P0.06-3 flip evidence = this row + image legs | DEFERRALS edit | docs |
+
+## 3 — Stage-A landed (amendments to §1 as built; 2026-09-30)
+
+Sections §1/§2 record the PLAN; the build corrected four points — recorded here rather than rewritten:
+
+- **§1.4 → profile is a mount ALLOW-LIST, not `file,`-only.** The shipped profile
+  (`infra/k8s/apparmor/rhema-run-task`) names the four capabilities and exactly eight mount rules:
+  propagation-private on `/` (the `unshare --mount --propagation private` change), the typed tmpfs
+  overmount `fstype=tmpfs → /work/`, `/work/** → /tmp/scoped-stash/**` stash binds (rw+ro+ro-remount
+  variants — `mount --bind -o ro` is two syscalls; `/**` because the stash target is a FILE two
+  components deep), and `/tmp/scoped-stash/** → /work/scoped/**` scoped binds. The selftest's own
+  ro-bind leg (P0.15h) runs at the pod level, not under the profile's file allow — no extra mount
+  rule needed. `apparmor.test.ts` pins the rules verbatim + asserts the closed-allowlist property.
+- **§1.5 → the loader bakes the profile INTO its image, not a ConfigMap.**
+  `infra/k8s/apparmor/Dockerfile.loader` (ubuntu:24.04 + `apparmor` package) COPYs the committed
+  profile to `/etc/apparmor.d/` so the shipped policy is bytewise what `apparmor.test.ts` pins and
+  what `apparmor_parser -Q` compiles in the `images` CI job. `loader-entrypoint.sh` mounts
+  securityfs, `apparmor_parser -r -W`, verifies `rhema-run-task (enforce)` in
+  `/sys/kernel/security/apparmor/profiles`, then re-applies hourly. The DaemonSet
+  (`50-apparmor-loader-daemonset.yaml`, kube-system, sandbox-pool selector, `tolerations: Exists`,
+  `priorityClassName: system-node-critical`) pins `${APPARMOR_LOADER_IMAGE}` by digest via
+  `apply.sh` envsubst — same pattern as the image prewarmer.
+- **§1.7 → the nnp premise was WRONG; corrected empirically.** `setpriv … --ambient-caps X
+  --no-new-privs -- node` shows `CapAmb` intact with `NoNewPrivs: 1` — ambient capabilities SURVIVE
+  execve under nnp (nnp gates file-cap/setuid escalation, not the ambient prctl raise — which also
+  works under nnp). The ADR-076 verdict stays `allowPrivilegeEscalation: true`, but the reasoning is
+  corrected: the flag is a **no-op under CAP_SYS_ADMIN** (k8s semantics) and the ambient-cap launch
+  does not depend on exec-escalation — the selftest's nnp leg asserts the drop SUCCEEDS under nnp,
+  proving that. The model's process still carries `--no-new-privs` from its own drop.
+- **§1.9 → the selftest runs INSIDE the production image.** `privsep-check.js` +
+  `privsep-ns-body.js` (the in-namespace half that reuses the runner's `applyMountPlan` on a real
+  `buildScopedLaunchSpec` spec — the kernel legs exercise the production tuples, not a re-typed
+  copy). `privsep.docker.test.ts` builds `apps/run-task/Dockerfile` and `docker run`s the pod's
+  posture (`--read-only`, tmpfs `/tmp|/work|/config`, `cap-drop ALL` + the four caps + `SETPCAP` for
+  the outer probe's `--bounding-set` — the pod's uid-0 exec carries SETPCAP in CapBnd as the DEF.1
+  live entrypoint proved; docker strips it from the effective set without the add).
+- **Local verification (this session, Docker Desktop):** production image built (vendored SDK +
+  native `claude` present); `privsep-check.js` = **ALL 18 LEGS PASSED** inside the production image
+  — AC1 EACCES, harness→agent drop, −SETGID negative control, nnp-ambient leg, AC4 real-chain
+  namespace isolation + ruid gate + scoped-uid EROFS, P0.15h EROFS, no shell / no package manager /
+  4 static applets (ELF PT_INTERP parse) / passwd+group uids 10001–10006 / EROFS rootfs probe; the
+  real ENTRYPOINT ran `dumb-init → setpriv → node harness-main` printing
+  `[harness] identity uid=10001 … capEff=setgid,setuid,sys_chroot,sys_admin`; the AppArmor profile
+  **compiled** under `apparmor_parser -Q` in the built loader image.
+- **`/run/secrets` in §1.9 was stale** — the harness secret mount is `/var/run/rhema/harness`
+  (HARNESS_SECRET_MOUNT); the profile allows `r` on it.
+- **passwd/group keep the base's `nobody`/`nonroot`** entries alongside uids 10001–10006 so
+  getpwnam() resolves for anything expecting the stock distroless users.
+- **Prewarmer fix:** `40-image-prepull-daemonset.yaml`'s `/bin/sleep` does not exist in distroless →
+  `/nodejs/bin/node -e 'setInterval(() => {}, 1e9)'`.
+
+## 4 — Self-review findings (2026-09-30, second pass over the full diff)
+
+- **REAL BUG: `dumb-init` path vs the AppArmor exec rule.** The image installed the init at
+  `/sbin/dumb-init` while the profile (and `apparmor.test.ts`) named `/usr/bin/dumb-init ix` — under
+  the Localhost profile the container's FIRST exec (the ENTRYPOINT itself) would have denied, so
+  every run pod would have failed container-create. No deterministic leg caught it because the
+  Docker VM has no AppArmor module — exactly the Stage-B landmine the profile exists to prevent.
+  Fix: the init now ships at `/usr/bin/dumb-init` (one location for all four applets); Dockerfile,
+  ENTRYPOINT, `privsep-check.js` static-ELF leg, and the ledger layout note all moved. Image
+  rebuilt; the full production-image leg re-ran **green (54 s)** including the new leg below.
+- **NEW LEG: the shipped ENTRYPOINT argv.** `privsep.docker.test.ts` now also `docker run`s the
+  image with NO `--entrypoint` override — `dumb-init → setpriv(ambient four caps) → node
+  harness-main.js` — and asserts `[harness] identity uid=10001` in the output. The init's exec,
+  the ambient-cap drop, and the harness's own identity print are all proven against the shipped
+  argv, not just the applets in isolation.
+- **`git grep` sweep trap closed.** The `Unconfined` regression sweep originally ran tracked-only —
+  the new files were `??` and would have been missed until commit, at which point the test file's
+  own needle + the profile's comment would have self-matched. The needle is now concatenated
+  (`"unconfi"+"ned"` so the test cannot match itself), the profile comment reworded, and the grep
+  carries `--untracked` so the sweep is stage-independent. Live `git grep` after the fix: zero hits.
+- **Stale comments swept:** `scoped-phase.ts` still claimed the runner env "needs PATH to resolve
+  node/mount/env" — only the outer `unshare` head resolves via PATH; every exec inside the runner
+  is absolute. Comment corrected.
+- **Docs:** `docs/security/pen-test-scope.md` row updated (distroless image + Localhost profile +
+  the profile's mount allow-list as the explicit target), `OPERATIONAL_READINESS.md` rows 2/7/11
+  flipped off the `Unconfined` posture. ADR-074/075/076 written + `adr-index` regenerated
+  (generated file, not hand-edited). `DEFERRALS.md` D-P0.06-3 flipped to DONE-in-code with the
+  leg inventory; the live leg is this ticket's Stage B.
+
+### Full verification re-run (post-review)
+`turbo build lint typecheck` **135/135** · `check:licenses` 610 pkgs OK · `check:protocol-markers`
+OK · `check-build-memory` **0 violations** · affected vitest suite **38 files / 332 pass / 1 skip**
+· production-image docker leg **green** · loader image `apparmor_parser -Q` **PARSE OK**.
+
+## 5 — Remaining (Phase 6 + Stage B)
+Commit → push → PR (body at `docs/build/pr/SEC.3.md`) → Stage B: build+push the loader image to
+the prod AR repo, apply `50-apparmor-loader-daemonset.yaml` BEFORE the worker config rolls
+(order constraint in `apply.sh`), build+push the production run-task image and pin its digest in
+`Pulumi.prod.yaml`, `pulumi up`, then ONE bounded live `second_read` (≤$5) capturing the pod-log
+`uid=` lines (harness 10001 / agent 10002 / scoped 10003), the node's `rhema-run-task (enforce)`
+line, `second_read_producer_checked`, and `boundary.attested` violations = 0 — the evidence that
+fully closes D-P0.06-3 and D-P1.22-2(a).

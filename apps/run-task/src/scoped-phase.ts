@@ -5,7 +5,7 @@
 // that deny is the correct boundary, kept). This module is the harness half of the launch order the
 // server ships on `HarnessRunSpec.scopedLaunch`:
 //
-//   1. `buildScopedPhasePlan` assembles the `unshare`/`scoped-runner.sh` launch spec
+//   1. `buildScopedPhasePlan` assembles the `unshare`/`scoped-runner.js` launch spec
 //      (`@rhema/engine` `buildScopedLaunchSpec`) + the query block the runner hands `scoped-query.js`;
 //   2. `runScopedPhase` spawns the unshared runner (injected for tests), captures the scoped query's
 //      result JSON on stdout, and writes the produced artifact + the `.rhema/second-read.json` marker
@@ -21,8 +21,12 @@
 import { buildScopedLaunchSpec, PROXY_PLACEHOLDER_ANTHROPIC_API_KEY } from "@rhema/engine";
 import type { HarnessRunSpec, ScopedPhaseLaunch } from "@rhema/orchestrator";
 
-/** The runner script baked into the run-task image (`apps/run-task/Dockerfile` COPYs it to /app). */
-export const SCOPED_RUNNER = "/app/scoped-runner.sh";
+/**
+ * The scoped runner baked into the run-task image — SEC.3: `docker/scoped-runner.sh` is gone (the
+ * distroless image has no shell); the runner is the compiled `dist/scoped-runner.js`, exec'd under the
+ * harness's own node (`runnerNode`, default `process.execPath`) inside the private mount namespace.
+ */
+export const SCOPED_RUNNER = "/app/dist/scoped-runner.js";
 
 /** The result JSON `scoped-query.js` prints on stdout (the only channel that crosses the namespace). */
 export interface ScopedQueryResult {
@@ -56,8 +60,13 @@ export interface ScopedPhaseArgs {
   readonly runId: string;
   /** the seat `agent` uid — the scoped query runs at `agentUid + roleOffset` (§12.6 distinct uid). */
   readonly agentUid: number;
-  /** where the runner script lives in the image (default `/app/scoped-runner.sh`). */
+  /** where the runner lives in the image (default `/app/dist/scoped-runner.js`). */
   readonly runnerScript?: string;
+  /**
+   * the node binary the unshared runner execs (default `process.execPath` — the harness's own node;
+   * `/nodejs/bin/node` in the distroless image). Absolute: the namespace has no PATH guarantee.
+   */
+  readonly runnerNode?: string;
   /**
    * DEF.4 (BL-11(b); REQ-DATA-17) — the guided-retry's predicate-failure text. It is appended to the
    * scoped query's PROMPT (the only channel the scoped query reads), never to `inputs` — a scoped
@@ -72,7 +81,7 @@ export interface ScopedPhaseOutcome {
   readonly produced: boolean;
 }
 
-/** The serialized spec file `scoped-runner.sh` + `scoped-query.js` consume. */
+/** The serialized spec file `scoped-runner.js` + `scoped-query.js` consume. */
 export interface ScopedQueryFile {
   readonly query: {
     readonly prompt: string;
@@ -101,7 +110,7 @@ export function scopedPromptWithGuidance(prompt: string, guidance?: string): str
  */
 export function buildScopedPhasePlan(
   launch: ScopedPhaseLaunch,
-  args: { agentUid: number; specPath: string; runnerScript?: string; guidance?: string },
+  args: { agentUid: number; specPath: string; runnerScript?: string; runnerNode?: string; guidance?: string },
 ): { readonly unshareArgv: readonly string[]; readonly specJson: string } {
   const scoped = buildScopedLaunchSpec({
     role: launch.role,
@@ -110,7 +119,9 @@ export function buildScopedPhasePlan(
     inputs: launch.role === "second-reader" ? { draft: launch.files[0] } : {},
     agentUid: args.agentUid,
     producerQueryId: launch.producerQueryId,
-    runnerArgv: [args.runnerScript ?? SCOPED_RUNNER, args.specPath],
+    // SEC.3 — the runner is a node entry now: `<node> <scoped-runner.js> <spec>` is the argv tail the
+    // ruid-0 setpriv wrap execs inside the namespace (same position the shell runner occupied).
+    runnerArgv: [args.runnerNode ?? process.execPath, args.runnerScript ?? SCOPED_RUNNER, args.specPath],
     // the pod rootfs is read-only and `/run` holds only the read-only secrets mount — the default
     // `/run/scoped-stash` would EROFS. `/tmp` is the fsGroup-writable emptyDir and sits OUTSIDE the
     // `/work` overmount, so the stashed binds survive it (they are what the scoped root re-binds).
@@ -132,8 +143,9 @@ export function buildScopedPhasePlan(
  * The env the unshared RUNNER starts with (harness-side machinery — `unshare` runs as the harness uid,
  * then `setpriv --reuid 0` re-escalates the runner to real uid 0 inside the new namespace because
  * util-linux `mount` gates on the real uid, not ambient CAP_SYS_ADMIN; the model's process still drops
- * to the scoped uid). Needs PATH to resolve `node`/`mount`/`env`. The MODEL's process gets a strictly
- * scrubbed subset: `scoped-runner.sh` re-derives it with `env -i` at the uid drop, forwarding only the
+ * to the scoped uid). Needs PATH only to resolve the OUTER `unshare` (the argv head — every exec inside
+ * the runner is absolute: setpriv/mount/node). The MODEL's process gets a strictly
+ * scrubbed subset: scoped-runner.js re-derives it with the `env -i`-equivalent spawn env at the uid drop, forwarding only the
  * REQ-SPEC-10 allowlist keys below (`ANTHROPIC_API_KEY` is the NON-SECRET placeholder the proxy strips —
  * never a real credential). No run token / api URL / credential is ever in scope.
  */
@@ -163,6 +175,7 @@ export async function runScopedPhase(
     agentUid: args.agentUid,
     specPath,
     runnerScript: args.runnerScript,
+    ...(args.runnerNode !== undefined ? { runnerNode: args.runnerNode } : {}),
     ...(args.guidance !== undefined ? { guidance: args.guidance } : {}),
   });
   await deps.mkdir(args.configDir);

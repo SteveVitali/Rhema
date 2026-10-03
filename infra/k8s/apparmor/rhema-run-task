@@ -1,0 +1,91 @@
+# SEC.3 — the run-task container's least-privilege AppArmor profile (`profile rhema-run-task`),
+# loaded on every sandbox-pool node by infra/k8s/apparmor-loader.yaml and referenced by the pod's
+# securityContext.appArmorProfile { type: Localhost, localhostProfile: rhema-run-task }.
+#
+# F-StageB-5 — the DEF.1 live run proved containerd's RuntimeDefault profile denies mount(2)
+# OUTRIGHT regardless of CAP_SYS_ADMIN, so the scoped runner's `unshare -m` propagation change and
+# its tmpfs/bind sequence could never apply (the pod ran with no profile as the stopgap). This profile is
+# the inverse: it names EVERY mount the scoped runner needs and denies the rest, plus the ambient
+# cap set the two-uid launch requires (SETUID/SETGID for the drops, SYS_ADMIN for unshare+mount,
+# SYS_CHROOT for the scoped root).
+#
+# AppArmor mount-rule grammar (man apparmor.d): `mount options=(...) [fstype=T] src -> dst,`.
+# The rule's option list is the allowed set — a mount request is granted when its flags are a
+# subset of the rule's options AND source/dest match. Each rule below mirrors ONE argv the
+# scoped runner emits (packages/engine/src/scoped-subagent.ts → mountsArgv), so a new mount
+# flag in code needs a matching rule here — the deterministic test pins the tuple.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
+  include <abstractions/base>
+
+  # ── capabilities — exactly the pod's add-set (securityContext.capabilities). ──
+  capability setuid,
+  capability setgid,
+  capability sys_admin,
+  capability sys_chroot,
+
+  # ── the scoped runner's mounts (scoped-subagent.ts → mountPlan argv; scoped-runner.js re-issues
+  #    them inside the private mount ns). `mount --bind -o ro` is TWO syscalls (bind, then ro
+  #    remount — util-linux 2.40 may use the atomic mount_setattr path, so both shapes are listed).
+  # 1) `unshare --mount --propagation private` → recursive propagation-private on the ns root.
+  mount options=(private,rprivate) -> /,
+  # 2) stash binds: each enumerated /work file → /tmp/scoped-stash/<role>/<name> (the stash sits
+  #    OUTSIDE the /work overmount on the writable /tmp emptyDir — scoped-phase.ts). `**` — the
+  #    stash target is a FILE under the role dir, two components deep.
+  mount options=(rw,bind) /work/** -> /tmp/scoped-stash/**,
+  mount options=(ro,bind) /work/** -> /tmp/scoped-stash/**,
+  mount options=(ro,remount,bind) -> /tmp/scoped-stash/**,
+  # 3) the /work tmpfs overmount (type-tagged; the nosuid,nodev,size=64m cap rides in the data arg).
+  mount options=(rw) fstype=tmpfs -> /work/,
+  # 4) scoped binds: each stash file → /work/scoped/<role>/<name>, then the ro remount.
+  mount options=(rw,bind) /tmp/scoped-stash/** -> /work/scoped/**,
+  mount options=(ro,bind) /tmp/scoped-stash/** -> /work/scoped/**,
+  mount options=(ro,remount,bind) -> /work/scoped/**,
+  # every other mount(2) shape is denied by the absence of a matching rule.
+
+  # ── the run-task binaries + files. Distroless has no shell; everything execs by absolute argv. ──
+  /nodejs/bin/node ix,
+  /usr/bin/dumb-init ix,
+  /usr/bin/setpriv ix,
+  /usr/bin/unshare ix,
+  /usr/bin/mount ix,
+  /app/package.json r,
+  /app/dist/** r,
+  /app/node_modules/** rm,            # .js reads + mmap'd .node addons (never ix — no child exec from deps)
+  /app/vendor/** r,
+  /app/vendor/** ix,                  # the vendored native claude binary — the SDK's own subprocess
+  /app/skills/** r,
+  /etc/passwd r,
+  /etc/group r,
+  /etc/nsswitch.conf r,
+  /etc/resolv.conf r,
+  /etc/hosts r,
+  /etc/hostname r,
+  /etc/ssl/** r,                      # the CA bundle the harness's TLS to api/proxy verifies against
+  /usr/share/zoneinfo/** r,
+  # work roots: /work (the tmpfs target + scoped root), /tmp (the stash — mountpoint creation needs
+  # write), /config, and the harness-only secret mount (read — never write). Nothing under /work execs:
+  # the interpreters are the five ix rules above.
+  /work/** rwkl,
+  /tmp/** rwkl,
+  /config/** rwk,
+  /var/run/rhema/harness/* r,
+  # procfs/sysfs reads the node runtime + the runner's /proc/self/status checks need.
+  @{PROC}/** r,
+  /sys/** r,
+  /dev/null rw,
+  /dev/zero rw,
+  /dev/full rw,
+  /dev/random r,
+  /dev/urandom r,
+  /dev/pts/** rw,
+  /dev/shm/** rwkl,
+  # the egress-proxy socket + DNS the harness opens. The pod's only route is the proxy — the
+  # network boundary lives in the pod egress policy, not in this profile.
+  network inet stream,
+  network inet6 stream,
+  network inet dgram,
+  network inet6 dgram,
+}

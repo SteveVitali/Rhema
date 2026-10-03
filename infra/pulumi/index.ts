@@ -62,6 +62,10 @@ const collabDatabaseUrl = rhemaConfig.getSecret("collabDatabaseUrl");
 const alloydbPassword = rhemaConfig.getSecret("alloydbPassword");
 const emailFrom = rhemaConfig.get("emailFrom");
 const runTaskImageDigest = rhemaConfig.get("runTaskImageDigest");
+// SEC.3 — the run-task pod's appArmorProfile (type + Localhost profile name). `Localhost`/
+// `rhema-run-task` ship as the deploy config; a rollback flips these two keys, never code.
+const runTaskAppArmorType = rhemaConfig.get("runTaskAppArmorType");
+const runTaskAppArmorLocalhostProfile = rhemaConfig.get("runTaskAppArmorLocalhostProfile");
 const internalApiUrl = rhemaConfig.get("internalApiUrl");
 const proxyBaseUrl = rhemaConfig.get("proxyBaseUrl");
 // PRB.16 — the Google OAuth client ID (plain deploy config — the SECRET is the `google-oauth-client-secret`
@@ -134,6 +138,8 @@ const compute = createCompute({
   ...(collabDatabaseUrl ? { collabDatabaseUrl } : {}),
   ...(emailFrom ? { emailFrom } : {}),
   ...(runTaskImageDigest ? { runTaskImageDigest } : {}),
+  ...(runTaskAppArmorType ? { runTaskAppArmorType } : {}),
+  ...(runTaskAppArmorLocalhostProfile ? { runTaskAppArmorLocalhostProfile } : {}),
   ...(internalApiUrl ? { internalApiUrl } : {}),
   ...(proxyBaseUrl ? { proxyBaseUrl } : {}),
   ...(googleOauthClientId ? { googleOauthClientId } : {}),

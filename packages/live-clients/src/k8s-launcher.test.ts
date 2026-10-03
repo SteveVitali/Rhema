@@ -15,6 +15,7 @@ import {
   runSecretName,
   HARNESS_GID,
   HARNESS_SECRET_MOUNT,
+  RUN_TASK_APPARMOR_PROFILE,
   RUN_TOKEN_FILE,
   type FetchLike,
   type GkeLauncherConfig,
@@ -92,13 +93,33 @@ describe("buildRunTaskJobManifest", () => {
     expect(podSpec.securityContext).toEqual({ fsGroup: HARNESS_GID });
     const csc = container.securityContext as { readOnlyRootFilesystem: boolean; capabilities: { add: string[]; drop: string[] }; allowPrivilegeEscalation: boolean };
     expect(csc.readOnlyRootFilesystem).toBe(true);
+    // SEC.3 (ADR-076): allowPrivilegeEscalation stays true — a no-op under CAP_SYS_ADMIN (k8s semantic),
+    // and the ambient-cap launch doesn't rely on exec-escalation (ambient survives nnp exec — privsep leg).
     expect(csc.allowPrivilegeEscalation).toBe(true);
     // SETUID/SETGID for the harness→agent uid drop; SYS_ADMIN for unshare/mount; SYS_CHROOT for the scoped runner.
     expect(csc.capabilities.add).toEqual(expect.arrayContaining(["SETUID", "SETGID", "SYS_ADMIN", "SYS_CHROOT"]));
     expect(csc.capabilities.drop).toEqual(["ALL"]);
-    // DEF.1 Stage-B: containerd's default AppArmor profile denies mount(2) outright (SYS_ADMIN
-    // notwithstanding) — the scoped-subagent namespace needs mount, so the container runs unconfined.
-    expect((csc as { appArmorProfile?: { type: string } }).appArmorProfile).toEqual({ type: "Unconfined" });
+    // SEC.3: Localhost confinement — the `rhema-run-task` profile (loaded on every sandbox node by the
+    // apparmor-loader DaemonSet) allows exactly the scoped runner's mount sequence and nothing wider.
+    expect((csc as { appArmorProfile?: { type: string; localhostProfile?: string } }).appArmorProfile).toEqual({
+      type: "Localhost",
+      localhostProfile: RUN_TASK_APPARMOR_PROFILE,
+    });
+  });
+
+  it("SEC.3 — the appArmor deploy-config override is forwarded verbatim (rollback = config flip)", () => {
+    const rollbackCfg: GkeLauncherConfig = {
+      ...config,
+      appArmor: { type: "RuntimeDefault" },
+    };
+    const job = buildRunTaskJobManifest(rollbackCfg, spec);
+    const c = ((job.spec.template as { spec: Record<string, unknown> }).spec.containers as Array<Record<string, unknown>>)[0]!;
+    expect(c.securityContext).toMatchObject({ appArmorProfile: { type: "RuntimeDefault" } });
+    // a named Localhost override carries the profile name through verbatim too.
+    const named: GkeLauncherConfig = { ...config, appArmor: { type: "Localhost", localhostProfile: "custom-profile" } };
+    const job2 = buildRunTaskJobManifest(named, spec);
+    const c2 = ((job2.spec.template as { spec: Record<string, unknown> }).spec.containers as Array<Record<string, unknown>>)[0]!;
+    expect(c2.securityContext).toMatchObject({ appArmorProfile: { type: "Localhost", localhostProfile: "custom-profile" } });
   });
 
   it("mounts the harness secret read-only at the harness-only path and points env at the files", () => {

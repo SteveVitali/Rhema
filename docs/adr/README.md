@@ -79,3 +79,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-071](ADR-071-refund-window-fairness-rule.md) | the §14.4 refund window — one automatic refund per account per UTC calendar quarter; every refundable state is terminal | DEF.4 | Accepted |
 | [ADR-072](ADR-072-reconcile-write-order.md) | `reconcileBalances` repairs by ledger-append-then-counter-fold — never an intermediate counter write | DEF.4 | Accepted |
 | [ADR-073](ADR-073-scoped-retry-guidance-channel.md) | guided-retry guidance crosses into the scoped second read on the prompt channel only | DEF.4 | Accepted |
+| [ADR-074](ADR-074-distroless-run-task-image.md) | run-task ships a distroless Node-22 image with statically vendored util-linux applets + a static dumb-init | SEC.3 | Accepted |
+| [ADR-075](ADR-075-apparmor-profile-loader.md) | the rhema-run-task AppArmor profile is loaded by a minimal privileged DaemonSet, not security-profiles-operator | SEC.3 | Accepted |
+| [ADR-076](ADR-076-apparmor-allowlist-and-privilege-escalation.md) | the rhema-run-task profile allow-lists exactly the scoped mount sequence, and allowPrivilegeEscalation stays true as a no-op | SEC.3 | Accepted |

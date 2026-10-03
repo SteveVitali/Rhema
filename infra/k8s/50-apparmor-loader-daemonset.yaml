@@ -1,0 +1,58 @@
+# SEC.3 (ADR-075) — the apparmor-loader DaemonSet: one privileged loader pod on EVERY sandbox-pool
+# node, keeping the `rhema-run-task` profile loaded in the node's kernel AppArmor module. Without
+# it, a run pod scheduled on a node whose policy table lacks the name fails at kubelet admission
+# (`localhostProfile` unknown → container create error), so the loader must be Ready BEFORE the
+# Localhost profile type is enabled on the worker config — apply order matters (see apply.sh).
+#
+# Why a raw privileged DaemonSet and not security-profiles-operator: SPO is a CRD + webhook +
+# webhook-cert machinery for a feature we need in exactly one profile on one node pool — the
+# operator's attack surface exceeds the profile's. The loader is a 9-line image (apparmor +
+# the committed profile file), digest-pinned through the stack's own Artifact Registry repo.
+#
+# ${APPARMOR_LOADER_IMAGE}: the digest-pinned ref the images job built + pushed
+#   (`<region>-docker.pkg.dev/<project>/<repo>/apparmor-loader@sha256:…`). ${RUN_TASK_NODEPOOL}:
+#   the sandbox pool's real k8s name — same placeholder as the prewarmer.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: apparmor-loader
+  # kube-system, not `runs`: the loader is NODE infrastructure (it writes kernel policy), not a
+  # run workload — and the runs NetworkPolicy must not scope it.
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: apparmor-loader
+    app.kubernetes.io/part-of: rhema
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: apparmor-loader
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: apparmor-loader
+    spec:
+      # every sandbox-pool node — the SAME selector the run Jobs pin to.
+      nodeSelector:
+        cloud.google.com/gke-nodepool: ${RUN_TASK_NODEPOOL}
+      # tolerate the sandbox pool's taints so the loader lands wherever a run pod can.
+      tolerations:
+        - operator: Exists
+      priorityClassName: system-node-critical
+      containers:
+        - name: loader
+          image: ${APPARMOR_LOADER_IMAGE}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            # privileged: writing /sys/kernel/security/apparmor/.load needs CAP_MAC_ADMIN +
+            # the host's apparmorfs; there is no narrower grant for policy load.
+            privileged: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+      # the loader needs no SA token (it talks only to the kernel, never the API server).
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 5
