@@ -1,0 +1,66 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "4f0fe0966cea",
+  "startedAt": "2026-10-03T07:12:36.851Z",
+  "finishedAt": "2026-10-03T07:14:30.280Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752",
+    "observed": {
+      "web": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752",
+      "api": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 39443,
+      "error": "page.textContent: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-credits-line]')\n",
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31368,
+      "error": "no reviewed-frozen head and no Showcase dossier on the returning tenant — the locked-version leg has no substrate",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://364c2c86b7c1.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://c96b8c6b1601.w.hcaptcha.com/logo.png net::ERR_ABORTED"
+      ],
+      "durationMs": 42382,
+      "error": "N9 billing Buy 1,000 credits: not in the DOM",
+      "screenshot": "N9.png"
+    }
+  ],
+  "passed": false
+}

@@ -1,0 +1,37 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "12ba6d52d389",
+  "startedAt": "2026-10-03T07:16:01.999Z",
+  "finishedAt": "2026-10-03T07:16:41.381Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752",
+    "observed": {
+      "web": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752",
+      "api": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 39315,
+      "error": "page.textContent: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-credits-line]')\n",
+      "screenshot": "N4.png"
+    }
+  ],
+  "passed": false
+}

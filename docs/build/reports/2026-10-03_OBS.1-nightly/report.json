@@ -1,0 +1,252 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "38dff16403e6",
+  "startedAt": "2026-10-03T07:07:56.929Z",
+  "finishedAt": "2026-10-03T07:11:04.903Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752",
+    "observed": {
+      "web": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752",
+      "api": "3c3d7a792487dbf4f74bbf5ad1c3b1498e40f752"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N1",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 9576,
+      "screenshot": "N1.png"
+    },
+    {
+      "id": "N2",
+      "journey": "new-visitor",
+      "owner": "JOURNEY.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6098,
+      "screenshot": "N2.png"
+    },
+    {
+      "id": "N2.invite",
+      "journey": "new-visitor",
+      "owner": "SEC.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 356,
+      "screenshot": "N2.invite.png"
+    },
+    {
+      "id": "N3",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://rhema.tools/assets/landing.js net::ERR_ABORTED"
+      ],
+      "durationMs": 12826,
+      "screenshot": "N3.png"
+    },
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 39125,
+      "error": "page.textContent: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-credits-line]')\n",
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N5",
+      "journey": "new-visitor",
+      "owner": "ACT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N6",
+      "journey": "new-visitor",
+      "owner": "RES.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N7",
+      "journey": "both",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 10717,
+      "screenshot": "N7.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 45950,
+      "error": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('[role=\"status\"]') to be visible\n",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 46070,
+      "error": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('[role=\"status\"]') to be visible\n",
+      "screenshot": "N9.png"
+    },
+    {
+      "id": "R1",
+      "journey": "returning",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2149,
+      "screenshot": "R1.png"
+    },
+    {
+      "id": "R4",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R5",
+      "journey": "returning",
+      "owner": "JOURNEY.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [
+        "POST https://rhema.tools/p/showcase-copy-4/export net::ERR_ABORTED"
+      ],
+      "durationMs": 4671,
+      "screenshot": "R5.png"
+    },
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "green",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R7",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2972,
+      "screenshot": "R7.png"
+    },
+    {
+      "id": "P1",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 344,
+      "error": "/: sub-44px primary actions: button Hold my text (21px)",
+      "screenshot": "P1.png"
+    },
+    {
+      "id": "C1",
+      "journey": "both",
+      "owner": "ACT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1493,
+      "screenshot": "C1.png"
+    },
+    {
+      "id": "X1",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 4647,
+      "screenshot": "X1.png"
+    }
+  ],
+  "passed": false
+}
