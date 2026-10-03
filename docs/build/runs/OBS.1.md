@@ -1,5 +1,6 @@
 # OBS.1 — Observability: the api listener leak, structured error logs, 5xx reporting (run ledger)
 
+- **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/74_OBS.1__observability.md`
 - **Branch:** `stevevitali/obs-1-observability`, stacked on RUN.1 `dc55282`
   (`stevevitali/run-1-run-and-chat-defects`, PR #95 — open, `OPERATOR` merge policy, **not merged**).

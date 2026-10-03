@@ -47,3 +47,10 @@ field); the query set and timestamps are recorded in the run ledger.
   revert is self-verifying.
 - If the api is later bound to additional byte stores, the procedure stays valid — any
   bucket-scoped env var works.
+
+## Revisit trigger
+
+Revisit if a future ticket adds a sanctioned fault-injection surface (e.g., a Chaos/ops toolkit
+behind IAP), or if the observability ticket set later requires sustained error-rate generation
+rather than a single traceable event — at that point a purpose-built, operator-gated fault path
+may beat ad-hoc env misconfiguration.

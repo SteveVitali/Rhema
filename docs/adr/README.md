@@ -58,3 +58,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-050](ADR-050-informational-gates-never-park.md) | One gate-policy resolution — informational gates open their card but never park the run | RUN.1 | Accepted |
 | [ADR-051](ADR-051-chat-turn-project-lock-and-truthful-proxy.md) | Chat turns keep the project lock; the web proxy passes every refusal through truthfully | RUN.1 | Accepted |
 | [ADR-052](ADR-052-walkthrough-model-key-on-worker.md) | The worker accesses the provider key secret for walkthrough generation (named exception) | RUN.1 | Accepted |
+| [ADR-053](ADR-053-observability-log-contract.md) | The structured error log contract — allowlisted fields, route templates, request/trace ids | OBS.1 | Accepted |
+| [ADR-054](ADR-054-5xx-alert-threshold.md) | 5xx alerting keys the LB-observed count, fires on any occurrence | OBS.1 | Accepted |
+| [ADR-055](ADR-055-prod-5xx-provocation.md) | provoke the one verification 5xx by env-misconfiguration, not a deployed fault route | OBS.1 | Accepted |
