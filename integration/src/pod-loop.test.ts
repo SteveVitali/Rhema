@@ -109,8 +109,11 @@ async function setup() {
 }
 
 describe("pod loop over the real api routes (P0.15e; D-P0.15d-4)", () => {
-  it("runs intake, harvests + commits, and opens the approve_scope gate (the pod then exits)", async () => {
+  it("runs intake, harvests + commits, and opens a BLOCKING approve_scope gate (the pod then exits)", async () => {
     const h = await setup();
+    // RUN.1 — the seeded project defaults to `named` (approve_scope informational, non-parking).
+    // This test drives the blocking leg: Wait-for-me-each parks the run on the same phase's gate.
+    await h.db.client.query("update projects set approval_policy='wait_each' where id=$1", [h.seed.projectId]);
     const runId = await h.createRun();
     const client = makeApiLoopClient(h.api, runId, h.token(runId));
 
@@ -147,6 +150,65 @@ describe("pod loop over the real api routes (P0.15e; D-P0.15d-4)", () => {
     expect((state.rows[0] as { state: string }).state).toBe("waiting_gate");
     const versions = await h.db.client.query("select v.id from artifact_versions v join artifacts a on a.id=v.artifact_id where a.mirror_path='00-piece-brief.md'");
     expect(versions.rows.length).toBe(1); // the harvest route persisted the brief
+
+    await h.db.close();
+  });
+
+  it("RUN.1 — an INFORMATIONAL approve_scope gate opens without parking; the pod rides through to the next phase", async () => {
+    const h = await setup(); // seeded project defaults to `named` → approve_scope is informational (blocking:false)
+    const runId = await h.createRun();
+    const client = makeApiLoopClient(h.api, runId, h.token(runId));
+
+    // intake → informational gate (card opens, run keeps moving) → craft commits (advance) →
+    // claim_ledger intentionally fails artifact_nonempty (the loop needs a bounded exit; the point is the
+    // pod committed a SECOND phase — proof the informational gate did not park the pod).
+    const runPhase = (phaseKey: string): Promise<PhaseRunOutputs> => {
+      if (phaseKey === "intake") {
+        return Promise.resolve({
+          subtype: "success", usage: emptyUsage(), phaseResult: { status: "done" },
+          versions: [version("00-piece-brief.md", "brief")],
+          facts: { thesisPresent: true, inventoryPresent: true },
+        });
+      }
+      if (phaseKey === "craft") {
+        return Promise.resolve({
+          subtype: "success", usage: emptyUsage(), phaseResult: { status: "done" },
+          versions: [version("04-craft-notes.md", "notes")],
+          facts: { nonempty: { "04-craft-notes.md": true } },
+        });
+      }
+      // verification (3rd active phase): no artifacts produced → its nonempty predicates fail → bounded exit.
+      return Promise.resolve({
+        subtype: "success", usage: emptyUsage(), phaseResult: { status: "done" },
+        versions: [],
+        facts: {},
+      });
+    };
+    const seen: string[] = [];
+    const res = await runCommitLoop({
+      client,
+      runPhase: (spec) => {
+        seen.push(spec.request.phase.key);
+        return runPhase(spec.request.phase.key);
+      },
+      workspaceId: h.seed.workspaceId,
+      preflight: async () => ({ ok: true }),
+    });
+
+    expect(res.kind).toBe("failed"); // verification's bounded exit — the loop kept moving past the gate
+    // verification fails artifact_missing (a re-runnable class) → the loop retries it once with guidance
+    // before reporting failure — seen carries it twice.
+    expect(seen).toEqual(["intake", "craft", "verification", "verification"]); // the pod rode THROUGH the gate
+    const steps = await h.db.client.query("select phase, state from steps where run_id=$1 order by ordinal", [runId]);
+    expect(steps.rows).toEqual([
+      { phase: "intake", state: "done" },
+      { phase: "craft", state: "done" },
+      { phase: "verification", state: "failed" },
+    ]);
+    const gate = await h.db.client.query("select kind, blocking, resolved_at from gates where run_id=$1", [runId]);
+    expect(gate.rows[0]).toMatchObject({ kind: "approve_scope", blocking: false, resolved_at: null });
+    const state = await h.db.client.query("select state from runs where id=$1", [runId]);
+    expect((state.rows[0] as { state: string }).state).not.toBe("waiting_gate");
 
     await h.db.close();
   });

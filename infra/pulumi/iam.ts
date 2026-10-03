@@ -52,7 +52,10 @@ export function createIam(args: IamArgs): Iam {
       member: pulumi.interpolate`serviceAccount:${sa.email}`,
     });
 
-  // The egress-proxy is the SOLE reader of the provider key (REQ-ARCH-31).
+  // The egress-proxy is the sole reader of the provider key FOR MODEL TRAFFIC (REQ-ARCH-31): every
+  // model call from a run pod egresses through the proxy's injection header. Two narrow operator-side
+  // exceptions read the same key directly — the worker's `ingest.reconstruct` + walkthrough generator
+  // (below; ADR-052) — never web/collab/run-task.
   grantSecret("proxy-reads-anthropic", secrets.anthropicApiKey, serviceAccounts["egress-proxy"]);
   // The proxy also verifies run tokens — it needs the signing key's PUBLIC half. We store the keypair in
   // one secret and let the proxy read it (it uses only the JWK public component); the api signs with it.
@@ -80,8 +83,10 @@ export function createIam(args: IamArgs): Iam {
   grantSecret("worker-mints-email-action", secrets.emailActionSecret, serviceAccounts["worker"]);
   grantSecret("worker-reads-resend", secrets.resendApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-anthropic-admin", secrets.anthropicAdminKey, serviceAccounts["worker"]);
-  // P1.15 — `ingest.reconstruct` (and P1.05's walkthrough) resolve the provider key from Secret
-  // Manager at boot; the operator-gated reconstruction spend is metered per job (§9.5).
+  // P1.15 — `ingest.reconstruct` resolves the provider key from Secret Manager at boot (metered per
+  // job, §9.5). RUN.1/ADR-052 — the walkthrough generator reads the SAME version (the worker's
+  // `WALKTHROUGH_MODEL_KEY_SECRET` env names it — compute.ts): a bounded operator-side call outside
+  // the run-pod egress path. REQ-ARCH-31's sole-reader rule still holds for model traffic.
   grantSecret("worker-reads-anthropic", secrets.anthropicApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-ops-webhook", secrets.opsAlertWebhookUrl, serviceAccounts["worker"]);
   // SEC.1 — api + worker mount the `rhema_app_login` DATABASE_URL via Cloud Run secretKeyRef

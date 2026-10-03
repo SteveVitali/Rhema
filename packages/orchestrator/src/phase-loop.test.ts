@@ -297,7 +297,7 @@ describe("AC1: full FakeEngine lifecycle traversal — every transition event-pa
       of: 2,
       credits: 60,
       result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
-      next: { kind: "gate", gateKind: "approve_scope", blocking: false, onExpiry: "proceed_as_proposed" },
+      next: { kind: "gate", gateKind: "approve_scope", blocking: true, onExpiry: "proceed_as_proposed" },
     });
     expect(c1).toMatchObject({ ok: true, state: "waiting_gate" });
 

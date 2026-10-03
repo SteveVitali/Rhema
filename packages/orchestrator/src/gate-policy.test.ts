@@ -63,6 +63,20 @@ describe("resolveGatePolicy (§6.4; REQ-GATE-3; REQ-SPEC-1)", () => {
     if (spend.action === "open") expect(spend.deadlineAt).toBeNull();
   });
 
+  // RUN.1 (ADR-050) — `approve_scope: null` is the explicit "the scope card WAITS FOR ME" opt-in:
+  // the kind's informational default has no deadline to remove, so the only legal override's "wait"
+  // reads as a BLOCKING wait. Every surface (sheet line, Needs-you row, the park itself) derives
+  // from this one resolution.
+  it("approve_scope: null override opts IN to a blocking wait (the card waits for you)", () => {
+    const project = resolveGatePolicy("approve_scope", { policy: "named", now: NOW, overrides: { approve_scope: null } });
+    expect(project).toMatchObject({ action: "open", blocking: true, onExpiry: "wait" });
+    if (project.action === "open") expect(project.deadlineAt).toBeNull();
+
+    // a run-level null layers identically ("this run only").
+    const run = resolveGatePolicy("approve_scope", { policy: "named", now: NOW, runOverrides: { approve_scope: null } });
+    expect(run).toMatchObject({ action: "open", blocking: true, onExpiry: "wait" });
+  });
+
   it("applies a lengthen override (approve_plan 24 h → 48 h) and a remove override (→ wait)", () => {
     const lengthened = resolveGatePolicy("approve_plan", { policy: "named", now: NOW, overrides: { approve_plan: 48 * 3600_000 } });
     if (lengthened.action === "open") expect(lengthened.deadlineAt).toEqual(new Date(NOW.getTime() + 48 * 3600_000));

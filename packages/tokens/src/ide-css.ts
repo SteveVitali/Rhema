@@ -83,6 +83,14 @@ export function ideCss(): string {
     // the active tab's panel is attribute-driven
     ".ide-desk [data-desk-panel] { display: none; }",
     ".ide[data-desk-tab='chat'] [data-desk-panel='chat'], .ide[data-desk-tab='feed'] [data-desk-panel='feed'], .ide[data-desk-tab='findings'] [data-desk-panel='findings'], .ide[data-desk-tab='claims'] [data-desk-panel='claims'] { display: block; }",
+    // RUN.1 — the chat panel is a flex column pinned to the drawer's full height: `.chat-body` scrolls
+    // and `.chat-composer` is `flex:0 0 auto` at the drawer's bottom edge — the Send button can never
+    // slide under `footer.ide-statusbar` again (the desk body's own scroll no longer carries it).
+    ".ide[data-desk-tab='chat'] .ide-desk [data-desk-panel='chat'] { display: flex; flex-direction: column; height: 100%; min-height: 0; }",
+    ".chat-desk { display: flex; flex-direction: column; height: 100%; min-height: 0; }",
+    ".chat-desk .chat-body { flex: 1 1 auto; min-height: 0; }",
+    ".ide-desk .chat-desk .chat-body { overflow-y: auto; }",
+    ".chat-desk .chat-composer { flex: 0 0 auto; margin-top: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--shell-border); }",
 
     // ---- Status bar ----
     `.ide-statusbar { flex: 0 0 ${B.statusBarPx}px; display: flex; align-items: center; gap: var(--s4); padding: 0 var(--s3); font-size: 12px; color: var(--shell-fg-muted); background: var(--shell-surface); border-top: 1px solid var(--shell-border); font-variant-numeric: tabular-nums; }`,

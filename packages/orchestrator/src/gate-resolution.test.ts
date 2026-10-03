@@ -140,6 +140,62 @@ describe("gate resolution — the conditional-update mechanics (§12.4 step 7; R
   });
 });
 
+// RUN.1 (ADR-050) — an informational gate (blocking:false) never parks: its resolution records the
+// decision but performs NO resume (the run is already moving), and a `stop` steps the live run
+// through `cancelling` so the pod quiesces at a tool-batch boundary.
+describe("RUN.1 — informational-gate resolution on a moving run", () => {
+  let db: OrchestratorTestDb;
+  let deps: TestDeps;
+  let ws: string;
+
+  beforeEach(async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedProject(db);
+    ws = seed.workspaceId;
+    deps = makeDeps(db);
+  });
+  afterEach(() => db.close());
+
+  it("approving an informational gate on a RUNNING run records the decision and resumes nothing", async () => {
+    await seedRun(db, { runId: "run_i", workspaceId: ws, projectId: "prj_seed", state: "running" });
+    await seedGate(db, { gateId: "g_i", runId: "run_i", kind: "approve_scope", onExpiry: "wait", blocking: false });
+    const r = await resolveGate(deps, { runId: "run_i", gateId: "g_i", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: true, resolved: true, state: "running" });
+    expect((await readDecision(db, "g_i"))!.by_actor).toBe("user");
+    const state = (await db.client.query("select state from runs where id='run_i'", [])).rows[0] as { state: string };
+    expect(state.state).toBe("running"); // never touched — the run was already moving
+    expect(deps.queue.ofName(RUN_JOBS.resume)).toHaveLength(0); // no resume enqueued
+  });
+
+  it("stop on an informational gate steps running → cancelling and flags the live task", async () => {
+    await seedRun(db, { runId: "run_ic", workspaceId: ws, projectId: "prj_seed", state: "running", currentAttempt: 1 });
+    await seedGate(db, { gateId: "g_ic", runId: "run_ic", kind: "approve_scope", onExpiry: "wait", blocking: false });
+    // a live pod has a heartbeat on record — the cancel flag rides it out to the next beat.
+    await deps.heartbeats.beat({ runId: "run_ic", attempt: 1, workspaceId: ws, at: deps.clock.now() });
+    const r = await resolveGate(deps, { runId: "run_ic", gateId: "g_ic", workspaceId: ws, userId: "usr_seed", action: "stop" });
+    expect(r).toMatchObject({ ok: true, resolved: true, state: "cancelling" });
+    expect((await readDecision(db, "g_ic"))!.action).toBe("stop");
+    const beat = await deps.heartbeats.get("run_ic");
+    expect(beat?.cancelRequested).toBe(true); // the pod quiesces at the next tool-batch boundary
+  });
+
+  it("a blocking gate on a running run still refuses as not_waiting (unchanged guard)", async () => {
+    await seedRun(db, { runId: "run_bw", workspaceId: ws, projectId: "prj_seed", state: "running" });
+    await seedGate(db, { gateId: "g_bw", runId: "run_bw", kind: "approve_plan", onExpiry: "wait", blocking: true });
+    const r = await resolveGate(deps, { runId: "run_bw", gateId: "g_bw", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: true, resolved: false, reason: "not_waiting" });
+  });
+
+  it("a pre-RUN.1 parked informational gate self-heals — resolves through the legacy resume path", async () => {
+    await seedRun(db, { runId: "run_old", workspaceId: ws, projectId: "prj_seed", state: "waiting_gate", currentAttempt: 1 });
+    await seedGate(db, { gateId: "g_old", runId: "run_old", kind: "approve_scope", onExpiry: "wait", blocking: false });
+    const r = await resolveGate(deps, { runId: "run_old", gateId: "g_old", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: true, resolved: true });
+    const state = (await db.client.query("select state from runs where id='run_old'", [])).rows[0] as { state: string };
+    expect(state.state).not.toBe("waiting_gate"); // queued or finalizing — parked no longer
+  });
+});
+
 // A guard the property test relies on: the never-auto-proceed set is exactly the spend/refusal kinds.
 it("GATE_KINDS covers twelve kinds", () => {
   expect(GATE_KINDS).toHaveLength(12);

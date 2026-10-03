@@ -13,6 +13,7 @@ import { deriveSections } from "@rhema/commands";
 import { PROTOCOL_CARDS, PROTOCOL_SEEDS } from "@rhema/protocols";
 import {
   allowedModelTiers,
+  approvalOverridesSchema,
   parseUserPrefs,
   projectProtocolOverridesSchema,
   PRICING,
@@ -53,7 +54,7 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
 
     const project = (
       await deps.db.query(
-        `select id, title, protocol_id, protocol_version, venue, approval_policy, persona_id,
+        `select id, title, protocol_id, protocol_version, venue, approval_policy, approval_overrides, persona_id,
                 rigor_default, model_tier_default, protocol_changed_at, protocol_overrides
            from projects where id = $1 and workspace_id = $2 and deleted_at is null`,
         [projectId, principal.workspaceId],
@@ -66,6 +67,7 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
           protocol_version: number | null;
           venue: string | null;
           approval_policy: string;
+          approval_overrides: unknown;
           persona_id: string | null;
           rigor_default: string | null;
           model_tier_default: string | null;
@@ -208,6 +210,13 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
         memoConfidentiality: project.protocol_id === "memo",
         venue: project.venue,
         approvalPolicy: project.approval_policy,
+        // RUN.1 (ADR-050) — the project's validated per-kind gate overrides so the sheet's scope line
+        // resolves from the SAME policy the runtime parks on (`resolveGatePolicy`). An invalid map
+        // fails safe to {} — the defaults then apply, mirroring loadGatePolicyFacts.
+        approvalOverrides: (() => {
+          const parsed = approvalOverridesSchema.safeParse(project.approval_overrides ?? {});
+          return parsed.success ? parsed.data : {};
+        })(),
         // P1.20 (§14.7) — the resolved rigor/tier defaults the sheet opens on (a `?rigor=`/`?tier=`
         // query lever still overrides) + the §6.7 "protocol changed" marker for the scope card.
         rigor: resolvedRigor,

@@ -55,3 +55,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-047](ADR-047-held-draft-consumed-handshake.md) | The held draft dies only to a token-matched consumed marker or an explicit Discard — never to a page view | ONB.1 | Accepted |
 | [ADR-048](ADR-048-v-working-resolves-the-editable-head.md) | `/v/working` resolves the editable head — working head, else the highest-n draft as the lazy-fork source | EDIT.1 | Accepted |
 | [ADR-049](ADR-049-one-sync-indicator-and-attach-time-readonly.md) | One sync indicator — the Page's `[data-sync-pill]`; read-only reaches the client at attach | EDIT.1 | Accepted |
+| [ADR-050](ADR-050-informational-gates-never-park.md) | One gate-policy resolution — informational gates open their card but never park the run | RUN.1 | Accepted |
+| [ADR-051](ADR-051-chat-turn-project-lock-and-truthful-proxy.md) | Chat turns keep the project lock; the web proxy passes every refusal through truthfully | RUN.1 | Accepted |
+| [ADR-052](ADR-052-walkthrough-model-key-on-worker.md) | The worker accesses the provider key secret for walkthrough generation (named exception) | RUN.1 | Accepted |
