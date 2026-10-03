@@ -53,7 +53,8 @@ export function resolveCommand(command: ParsedCommand, ctx: ResolveContext): Com
   const spec = verbSpec(command.verb);
   if (!spec) return { kind: "disabled", reason: `Unknown verb “${command.verb}”.` };
   if (spec.phase === "one_x") {
-    return { kind: "disabled", reason: spec.disabledReason ?? `${spec.label} is a 1.x workflow — not yet available.` };
+    // UX.1 — no build-vocabulary in a user-facing reason: the fallback is honest + product-shaped.
+    return { kind: "disabled", reason: spec.disabledReason ?? `${spec.label} isn't available yet.` };
   }
 
   if (spec.workflow) {

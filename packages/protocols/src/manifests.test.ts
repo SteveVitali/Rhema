@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { AGENT_TYPE_KEYS, WORKFLOW_KEYS, SIDECAR_REGISTRY } from "@rhema/contracts";
+import { AGENT_TYPE_KEYS, WORKFLOW_KEYS, LAUNCHED_WORKFLOW_KEYS, SIDECAR_REGISTRY } from "@rhema/contracts";
 import { WORKFLOW_MANIFESTS, review, revise, draft } from "./index.js";
 import type { PhaseManifest, WorkflowManifest } from "./manifest-types.js";
 
@@ -65,6 +65,12 @@ describe("phase manifests (§12.2)", () => {
         "revise",
       ].sort(),
     );
+  });
+
+  it("UX.1 (ADR-061) — the shipped manifests ARE the launched-workflow list, one for one", () => {
+    // @rhema/contracts' LAUNCHED_WORKFLOW_KEYS is the single source every surface reads; a manifest
+    // added or pulled here without the contracts row updating fails this build.
+    expect(Object.keys(WORKFLOW_MANIFESTS).sort()).toEqual([...LAUNCHED_WORKFLOW_KEYS].sort());
   });
 
   for (const m of all) {

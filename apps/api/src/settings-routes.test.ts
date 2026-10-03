@@ -206,6 +206,20 @@ describe("GET|PUT /settings/preferences — the user.prefs blob", () => {
     expect((await put("/settings/preferences", { defaultModelTier: "opus" })).status).toBe(422);
     expect((await put("/settings/preferences", { approvalPolicy: "yolo" })).status).toBe(422);
   });
+
+  it("UX.1 — a rigor override keyed on an UNLAUNCHED workflow is rejected; launched keys + deletes pass", async () => {
+    // §6.2 enumerates every workflow key; only the shipped manifest set may carry an override.
+    for (const unlaunched of ["cut_to_length", "line_edit", "titles", "abstract", "reverse_outline", "steelman", "interview", "run_rounds", "map_the_field", "compose_voice"]) {
+      const res = await put("/settings/preferences", { rigorByWorkflow: { [unlaunched]: "quick" } });
+      expect(res.status, `${unlaunched} must be rejected`).toBe(422);
+    }
+    // every launched key accepts
+    for (const launched of ["review", "draft", "revise", "fact_check", "profile_voice", "refresh_voice", "calibrate_voice", "research_burst", "chat_turn", "outline", "figure", "reseed_charter"]) {
+      expect((await put("/settings/preferences", { rigorByWorkflow: { [launched]: "standard" } })).status, `${launched} must be accepted`).toBe(200);
+    }
+    // a null on an unlaunched key is a DELETE (pruning a stale pref stays legal)
+    expect((await put("/settings/preferences", { rigorByWorkflow: { cut_to_length: null } })).status).toBe(200);
+  });
 });
 
 describe("support access (REQ-VIS-11) — the 72-h grant + user-visible log", () => {

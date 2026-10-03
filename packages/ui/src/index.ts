@@ -6,7 +6,7 @@ export const PACKAGE_NAME = "@rhema/ui" as const;
 
 export { Pill, Chip, FetchedUrlChip, ActionLink, severityColor } from "./primitives.js";
 export type { Tone, Severity } from "./primitives.js";
-export { Shell, SectionTitle } from "./shell.js";
+export { Shell, PageTitle, SectionTitle } from "./shell.js";
 export { ProjectList, ProjectRow, ProjectGroupList, VoiceGroupList } from "./project-list.js";
 export type {
   ProjectRowView,

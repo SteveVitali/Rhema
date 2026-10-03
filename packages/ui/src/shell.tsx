@@ -65,9 +65,17 @@ export function Shell({
   );
 }
 
-/** A quiet section heading for the flat shell. */
-export function SectionTitle({ children }: { children: ReactNode }): ReactNode {
+/** The one page-level heading for the flat shell (UX.1 — exactly one `<h1>` per document). */
+export function PageTitle({ children }: { children: ReactNode }): ReactNode {
   return (
     <h1 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 16px", color: "var(--shell-fg)" }}>{children}</h1>
+  );
+}
+
+/** A quiet section heading — `<h2>` (UX.1): it used to render `<h1>`, which put a second page-level
+ *  heading on every document the landing's hero or a section strip carried. */
+export function SectionTitle({ children }: { children: ReactNode }): ReactNode {
+  return (
+    <h2 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 16px", color: "var(--shell-fg)" }}>{children}</h2>
   );
 }

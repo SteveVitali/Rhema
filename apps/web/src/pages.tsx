@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import {
   Shell,
-  SectionTitle,
+  PageTitle,
   Chip,
   ProjectRow,
   ProjectGroupList,
@@ -119,7 +119,7 @@ import {
   RIGORS,
   RIGOR_DISPLAY,
   APPROVAL_POLICIES,
-  WORKFLOW_KEYS,
+  USER_LAUNCHED_WORKFLOW_KEYS,
   NOTIFICATION_EVENT_TYPES,
   NOTIFICATION_MATRIX,
   ACCOUNT_DELETION_CONFIRMATION,
@@ -292,7 +292,7 @@ export function InvitePage(): ReactNode {
   const open = invite?.signupOpen === true;
   return (
     <Shell brand={COPY.brand} tagline={COPY.tagline} nav={<a href="/login">{open ? COPY.invite.signInCtaOpen : COPY.invite.signInCta}</a>} footer={footer()}>
-      <SectionTitle>{COPY.invite.heading}</SectionTitle>
+      <PageTitle>{open ? COPY.invite.headingOpen : COPY.invite.heading}</PageTitle>
       <p style={{ fontSize: "16px", lineHeight: 1.6, color: "var(--shell-fg)", maxWidth: "68ch" }}>{COPY.invite.lede}</p>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px" }}>{open ? COPY.invite.accessNoteOpen : COPY.invite.accessNote}</p>
 
@@ -346,7 +346,7 @@ export function LoginPage(): ReactNode {
   return (
     <Shell brand={COPY.brand} footer={footer()}>
       <div style={{ maxWidth: "380px", margin: "0 auto" }}>
-        <SectionTitle>{COPY.login.heading}</SectionTitle>
+        <PageTitle>{COPY.login.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{open ? COPY.login.noteOpen : COPY.login.note}</p>
 
         {login?.error ? (
@@ -473,7 +473,7 @@ export function ProjectsPage(): ReactNode {
       }
       footer={footer()}
     >
-      <SectionTitle>{COPY.projects.heading}</SectionTitle>
+      <PageTitle>{COPY.projects.heading}</PageTitle>
       {/* the controls bar: search, Group-by (persisted), the Voice filter chips, the Archived
           affordance — every control is a plain link or form (no client JS). */}
       <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginBottom: "14px" }}>
@@ -678,7 +678,7 @@ export function ProjectPage(): ReactNode {
         />
         )
       ) : null}
-      <SectionTitle>{project?.title ?? ""}</SectionTitle>
+      <PageTitle>{project?.title ?? ""}</PageTitle>
       {project?.rename && compact !== true ? (
         // P1.04 — the row action's Rename: an inline title form posting to /p/:slug/rename.
         // P1.19 — §10.1 ✗: a configuration control — suppressed on phone width.
@@ -920,7 +920,7 @@ export function ImportPage(): ReactNode {
   const slug = project?.slug ?? "";
   return (
     <IdeFrame>
-      <SectionTitle>{COPY.import.heading}</SectionTitle>
+      <PageTitle>{COPY.import.heading}</PageTitle>
       {/* P1.19 — §10.1 ✗: ingestion never renders on phone width. */}
       {compact === true ? <PhoneBlockedNote /> : null}
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.import.lede}</p>
@@ -951,7 +951,7 @@ export function ImportPreviewPage(): ReactNode {
   const slug = conversion?.projectSlug ?? "";
   return (
     <IdeFrame>
-      <SectionTitle>{COPY.import.previewHeading}</SectionTitle>
+      <PageTitle>{COPY.import.previewHeading}</PageTitle>
       {/* P1.19 — §10.1 ✗: ingestion never renders on phone width. */}
       {compact === true ? <PhoneBlockedNote /> : null}
       {conversion?.created ? (
@@ -1011,7 +1011,7 @@ export function NewProjectPage(): ReactNode {
         <p style={{ margin: "0 0 6px" }}>
           <a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>
         </p>
-        <SectionTitle>{COPY.newProject.heading}</SectionTitle>
+        <PageTitle>{COPY.newProject.heading}</PageTitle>
         <PhoneBlockedNote />
       </IdeFrame>
     );
@@ -1032,7 +1032,7 @@ export function NewProjectPage(): ReactNode {
       <p style={{ margin: "0 0 6px" }}>
         <a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>
       </p>
-      <SectionTitle>{COPY.newProject.heading}</SectionTitle>
+      <PageTitle>{COPY.newProject.heading}</PageTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.newProject.lede}</p>
       {/* exactly three entry cards — each selects the sheet's entry (§5.3; no fourth exists). */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", margin: "16px 0" }}>
@@ -1326,7 +1326,7 @@ export function RunSheetPage(): ReactNode {
   const slug = runSheet?.slug ?? "";
   return (
     <IdeFrame>
-      <SectionTitle>{COPY.runSheet.heading}</SectionTitle>
+      <PageTitle>{COPY.runSheet.heading}</PageTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.runSheet.lede}</p>
       {pretriage && runSheet?.view.workflow === "revise" ? (
         <p data-pretriage-line="true" style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "8px" }}>
@@ -2340,7 +2340,7 @@ export function DossierPage(): ReactNode {
   if (!dossier) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{R.heading}</SectionTitle>
+        <PageTitle>{R.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{R.notReviewed}</p>
       </Shell>
     );
@@ -2430,7 +2430,7 @@ export function DossierPage(): ReactNode {
         </div>
       ) : null}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <SectionTitle>{dossier.projectTitle}</SectionTitle>
+        <PageTitle>{dossier.projectTitle}</PageTitle>
         <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>
         {/* P1.06 — a scoped run's dossier carries its scope pills (the same chips the sheet showed). */}
         {(dossier.scopeLabels ?? []).map((s) => (
@@ -2671,14 +2671,14 @@ export function RunReportPage(): ReactNode {
   if (!runReport) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{RP.heading}</SectionTitle>
+        <PageTitle>{RP.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{RP.emptyRun}</p>
       </Shell>
     );
   }
   return (
     <IdeFrame>
-      <SectionTitle>{RP.heading}</SectionTitle>
+      <PageTitle>{RP.heading}</PageTitle>
       <div style={{ margin: "16px 0" }}>
         <RunReport
           view={runReport.report.report}
@@ -2701,7 +2701,7 @@ export function RunReportPage(): ReactNode {
 export function NotFoundPage(): ReactNode {
   return (
     <Shell brand={COPY.brand} footer={footer()}>
-      <SectionTitle>{COPY.notFound.heading}</SectionTitle>
+      <PageTitle>{COPY.notFound.heading}</PageTitle>
       <p style={{ color: "var(--shell-fg-muted)" }}>{COPY.notFound.body}</p>
       <p>
         <a href="/">{COPY.notFound.home}</a>
@@ -2745,7 +2745,7 @@ export function RevisionPage(): ReactNode {
   if (!revision) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{V.heading}</SectionTitle>
+        <PageTitle>{V.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
       </Shell>
     );
@@ -2853,7 +2853,7 @@ export function ComparePage(): ReactNode {
   if (compact === true) {
     return (
       <IdeFrame>
-        <SectionTitle>{CP.heading}</SectionTitle>
+        <PageTitle>{CP.heading}</PageTitle>
         <PhoneBlockedNote />
       </IdeFrame>
     );
@@ -2861,7 +2861,7 @@ export function ComparePage(): ReactNode {
   if (!compare) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{CP.heading}</SectionTitle>
+        <PageTitle>{CP.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{CP.notFound}</p>
       </Shell>
     );
@@ -2921,7 +2921,7 @@ export function EditorPage(): ReactNode {
   if (compact === true) {
     return (
       <IdeFrame>
-        <SectionTitle>{E.notFound}</SectionTitle>
+        <PageTitle>{E.notFound}</PageTitle>
         <PhoneBlockedNote />
       </IdeFrame>
     );
@@ -2929,7 +2929,7 @@ export function EditorPage(): ReactNode {
   if (!editor) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{E.notFound}</SectionTitle>
+        <PageTitle>{E.notFound}</PageTitle>
       </Shell>
     );
   }
@@ -3129,7 +3129,7 @@ export function PagePage(): ReactNode {
   if (!page) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{E.notFound}</SectionTitle>
+        <PageTitle>{E.notFound}</PageTitle>
       </Shell>
     );
   }
@@ -3216,7 +3216,7 @@ export function VoicesPage(): ReactNode {
   const total = (voices?.voices ?? []).length;
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-      <SectionTitle>{VC.listHeading}</SectionTitle>
+      <PageTitle>{VC.listHeading}</PageTitle>
       {/* P1.19 — §10.1 ✗: new voice is a building surface — never offered on phone width. */}
       {compact === true ? null : (
       <p>
@@ -3258,14 +3258,14 @@ export function VoiceNewPage(): ReactNode {
   if (compact === true) {
     return (
       <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
-        <SectionTitle>{VC.new.heading}</SectionTitle>
+        <PageTitle>{VC.new.heading}</PageTitle>
         <PhoneBlockedNote />
       </Shell>
     );
   }
   return (
     <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
-      <SectionTitle>{VC.new.heading}</SectionTitle>
+      <PageTitle>{VC.new.heading}</PageTitle>
       {voiceNew?.error ? (
         <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{voiceNew.error}</p>
       ) : null}
@@ -3345,7 +3345,7 @@ export function ObligationNewPage(): ReactNode {
   const slug = obligationNew?.slug ?? "";
   return (
     <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{obligationNew?.projectTitle ?? "Project"}</a>} footer={footer()}>
-      <SectionTitle>{COPY.obligation.heading}</SectionTitle>
+      <PageTitle>{COPY.obligation.heading}</PageTitle>
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>{COPY.obligation.lede}</p>
       {obligationNew?.error ? (
         <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{obligationNew.error}</p>
@@ -3759,7 +3759,7 @@ export function VoiceDetailPage(): ReactNode {
   const holdout = d?.holdout;
   return (
     <Shell brand={COPY.brand} nav={<a href="/voices">{VC.detail.backToList}</a>} footer={footer()}>
-      <SectionTitle>{d?.persona.display_name ?? ""}</SectionTitle>
+      <PageTitle>{d?.persona.display_name ?? ""}</PageTitle>
       {d?.persona.byline ? <p style={{ color: "var(--shell-fg-muted)", fontSize: "13px", marginTop: "-6px" }}>{d.persona.byline}</p> : null}
       {d && d.members && d.members.length > 0 ? (
         <p data-composed-from="true" style={{ color: "var(--shell-fg-muted)", fontSize: "12px", marginTop: "2px" }}>
@@ -4151,7 +4151,7 @@ export function VoiceReseedPage(): ReactNode {
   const preview = voiceReseed?.preview;
   return (
     <Shell brand={COPY.brand} nav={<a href={`/p/${slug}`}>{VC.detail.backToList}</a>} footer={footer()}>
-      <SectionTitle>{VC.detail.reseedPreviewCta}</SectionTitle>
+      <PageTitle>{VC.detail.reseedPreviewCta}</PageTitle>
       {/* P1.19 — §10.1 ✗: diffs + voice-building actions never render on phone width. */}
       {compact === true ? <PhoneBlockedNote /> : null}
       {voiceReseed?.error ? (
@@ -4201,7 +4201,7 @@ export function ExportPage(): ReactNode {
   const statement = dialog?.statement;
   return (
     <IdeFrame>
-      <SectionTitle>{COPY.export.heading}</SectionTitle>
+      <PageTitle>{COPY.export.heading}</PageTitle>
       <p style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
         {COPY.export.lede}
       </p>
@@ -4431,7 +4431,7 @@ export function SettingsPage(): ReactNode {
   const section = settings?.section ?? "account";
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-      <SectionTitle>{S.heading}</SectionTitle>
+      <PageTitle>{S.heading}</PageTitle>
       <SettingsNav active={section} />
       <div style={{ maxWidth: "640px" }}>
         {settings?.saved ? (
@@ -4587,7 +4587,7 @@ function PreferencesSection(): ReactNode {
           <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg-muted)" }}>{S.rigorByWorkflowHeading}</legend>
           <p style={settingsNoteStyle}>{S.rigorByWorkflowNote}</p>
           <div data-rigor-by-workflow="true" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            {WORKFLOW_KEYS.map((w) => (
+            {USER_LAUNCHED_WORKFLOW_KEYS.map((w) => (
               <label key={w} style={{ ...settingsRowStyle, justifyContent: "space-between" }}>
                 <span>{humanizeKey(w)}</span>
                 <select name={`rigor_${w}`} defaultValue={p.rigorByWorkflow?.[w] ?? ""} style={{ fontSize: "12px" }}>
@@ -5063,7 +5063,7 @@ export function ProjectSettingsPage(): ReactNode {
   if (!ps) {
     return (
       <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-        <SectionTitle>{S.heading}</SectionTitle>
+        <PageTitle>{S.heading}</PageTitle>
         <p style={settingsNoteStyle}>{COPY.billing.stripeDownNote}</p>
       </Shell>
     );
@@ -5082,7 +5082,7 @@ export function ProjectSettingsPage(): ReactNode {
       }
       footer={footer()}
     >
-      <SectionTitle>{p.title} — {S.heading}</SectionTitle>
+      <PageTitle>{p.title} — {S.heading}</PageTitle>
       {p.protocolChangedAt ? (
         <p data-protocol-changed="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>
           {S.changedNote}
@@ -5215,7 +5215,7 @@ export function UsagePage(): ReactNode {
   const credits = (n: number) => `${n.toLocaleString()} ${COPY.usage.creditsSuffix}`;
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-      <SectionTitle>{COPY.usage.heading}</SectionTitle>
+      <PageTitle>{COPY.usage.heading}</PageTitle>
       {usageAccount ? (
         <section data-usage-account="true">
           <p style={{ fontSize: "14px", margin: "12px 0" }} data-usage-plan="true">
@@ -5336,7 +5336,7 @@ export function OutlinePage(): ReactNode {
   if (!outline) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{O.heading}</SectionTitle>
+        <PageTitle>{O.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{O.notFound}</p>
       </Shell>
     );
@@ -5344,7 +5344,7 @@ export function OutlinePage(): ReactNode {
   const editable = outline.editable && compact !== true;
   return (
     <Shell brand={COPY.brand} footer={footer()}>
-      <SectionTitle>{O.heading}</SectionTitle>
+      <PageTitle>{O.heading}</PageTitle>
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
         <a href={`/p/${outline.slug}`} style={{ color: "var(--accent)" }}>{O.backToProject}</a>
         {outline.draftEstimateCredits != null ? (
@@ -5403,7 +5403,7 @@ export function OutlinePromotePage(): ReactNode {
   if (!outlinePromotion) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{P.heading}</SectionTitle>
+        <PageTitle>{P.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{P.notFound}</p>
       </Shell>
     );
@@ -5411,7 +5411,7 @@ export function OutlinePromotePage(): ReactNode {
   const { promotion: f } = outlinePromotion;
   return (
     <Shell brand={COPY.brand} footer={footer()}>
-      <SectionTitle>{P.heading}</SectionTitle>
+      <PageTitle>{P.heading}</PageTitle>
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
         <a href={`/p/${outlinePromotion.slug}`} style={{ color: "var(--accent)" }}>{P.backToProject}</a>
       </p>
@@ -5487,14 +5487,14 @@ export function FiguresPanePage(): ReactNode {
   if (!figures) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{F.heading}</SectionTitle>
+        <PageTitle>{F.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{F.empty}</p>
       </Shell>
     );
   }
   return (
     <Shell brand={COPY.brand} footer={footer()}>
-      <SectionTitle>{F.heading}</SectionTitle>
+      <PageTitle>{F.heading}</PageTitle>
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
         <a href={`/p/${figures.slug}`} style={{ color: "var(--accent)" }}>{F.backToProject}</a>
         <a href={`/p/${figures.slug}/visualize`} data-new-figure="true" style={{ color: "var(--accent)", marginLeft: "12px" }}>{F.newLabel}</a>
@@ -5534,7 +5534,7 @@ export function FigureCardPage(): ReactNode {
   if (!figure) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{COPY.figuresPage.heading}</SectionTitle>
+        <PageTitle>{COPY.figuresPage.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{COPY.visualize.notFound}</p>
       </Shell>
     );
@@ -5545,7 +5545,7 @@ export function FigureCardPage(): ReactNode {
   const declined = card.versions.find((v) => v.renderStatus === "declined");
   return (
     <Shell brand={COPY.brand} footer={footer()}>
-      <SectionTitle>{card.title || F.untitled}</SectionTitle>
+      <PageTitle>{card.title || F.untitled}</PageTitle>
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
         <a href={`/p/${slug}/figures`} style={{ color: "var(--accent)" }}>{F.backToFigures}</a>
         {figure.saved ? <span data-saved-note="true" style={{ marginLeft: "12px" }}>{COPY.outlinePage.savedNote}</span> : null}
@@ -5704,14 +5704,14 @@ export function VisualizePage(): ReactNode {
   if (!visualize) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{V.heading}</SectionTitle>
+        <PageTitle>{V.heading}</PageTitle>
         <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
       </Shell>
     );
   }
   return (
     <Shell brand={COPY.brand} footer={footer()}>
-      <SectionTitle>{V.heading}</SectionTitle>
+      <PageTitle>{V.heading}</PageTitle>
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
         <a href={`/p/${visualize.slug}`} style={{ color: "var(--accent)" }}>{V.backToProject}</a>
       </p>
@@ -5781,7 +5781,7 @@ export function BillingPage(): ReactNode {
   if (!billing) {
     return (
       <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-        <SectionTitle>{B.heading}</SectionTitle>
+        <PageTitle>{B.heading}</PageTitle>
         <SettingsNav active="billing" />
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }} data-billing-down="true">{B.stripeDownNote}</p>
       </Shell>
@@ -5795,7 +5795,7 @@ export function BillingPage(): ReactNode {
   const current = sub.tier;
   return (
     <Shell brand={COPY.brand} nav={<a href="/app">{COPY.project.backToList}</a>} footer={footer()}>
-      <SectionTitle>{B.heading}</SectionTitle>
+      <PageTitle>{B.heading}</PageTitle>
       <SettingsNav active="billing" />
       <div style={{ maxWidth: "640px" }}>
 
@@ -5997,7 +5997,7 @@ export function BillingReturnPage(): ReactNode {
   const back = checkoutReturn?.returnTo ?? "/app/settings/billing";
   return (
     <Shell brand={COPY.brand} nav={<a href="/app/settings/billing">{B.nav}</a>} footer={footer()}>
-      <SectionTitle>{B.returnHeading}</SectionTitle>
+      <PageTitle>{B.returnHeading}</PageTitle>
       <p data-checkout-state={state} style={{ fontSize: "14px", margin: "12px 0" }}>
         {state === "completed"
           ? B.returnDone
@@ -6024,14 +6024,14 @@ export function ProjectUsagePage(): ReactNode {
   if (!usageProject) {
     return (
       <Shell brand={COPY.brand} footer={footer()}>
-        <SectionTitle>{P.heading}</SectionTitle>
+        <PageTitle>{P.heading}</PageTitle>
         <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.notFound.body}</p>
       </Shell>
     );
   }
   return (
     <Shell brand={COPY.brand} nav={<a href={`/p/${encodeURIComponent(usageProject.slug)}`}>{P.backToProject}</a>} footer={footer()}>
-      <SectionTitle>{P.heading} — {usageProject.projectName}</SectionTitle>
+      <PageTitle>{P.heading} — {usageProject.projectName}</PageTitle>
       <p style={{ fontSize: "14px", margin: "12px 0" }} data-project-usage-total="true">
         {P.totalFmt
           .replace("{n}", usageProject.totalCredits.toLocaleString())
@@ -6100,6 +6100,14 @@ export function InboxPage(): ReactNode {
     marginBottom: "8px",
   } as const;
   const metaStyle = { fontSize: "12px", color: "var(--shell-fg-faint)", margin: "4px 0 0" } as const;
+  // UX.1 — every row names its project (the read model joins `projectTitle`; account-level rows
+  // legitimately carry none — a missing title renders no meta line rather than a fabricated one).
+  const projectMeta = (it: { projectTitle?: string | null }): ReactNode =>
+    it.projectTitle ? (
+      <p style={metaStyle} data-inbox-project="true">
+        {it.projectTitle}
+      </p>
+    ) : null;
   return (
     <Shell
       brand={COPY.brand}
@@ -6111,9 +6119,12 @@ export function InboxPage(): ReactNode {
       }
       footer={footer()}
     >
-      <SectionTitle>{COPY.inbox.heading}</SectionTitle>
+      <PageTitle>{COPY.inbox.heading}</PageTitle>
+      {/* UX.1 — the count IS the rendered waiting rows (the Needs-you list below). The api's badge
+          count stays the nav badge's semantics (open approvals + decisions); it can never disagree
+          with this line because this line IS `blocked.length`. */}
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 16px" }} data-inbox-badge="true">
-        {fmt(COPY.inbox.badgeLine, { n: inbox?.badge ?? blocked.length })}
+        {fmt(COPY.inbox.badgeLine, { n: blocked.length })}
       </p>
       {items.length === 0 ? (
         <p data-inbox-empty="true" style={{ fontSize: "14px", color: "var(--shell-fg-muted)", maxWidth: "68ch" }}>
@@ -6143,6 +6154,7 @@ export function InboxPage(): ReactNode {
                   <summary style={{ fontSize: "14px", color: "var(--shell-fg)", cursor: "pointer" }}>
                     {it.title}
                   </summary>
+                  {projectMeta(it)}
                   <div style={{ marginTop: "8px" }}>
                     {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
                     <p style={metaStyle}>
@@ -6165,6 +6177,7 @@ export function InboxPage(): ReactNode {
               return (
                 <div key={it.id} data-inbox-row={it.id} data-inbox-kind="decision" style={rowStyle}>
                   <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 6px" }}>{it.title}</p>
+                  {projectMeta(it)}
                   <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>{it.decision.text}</p>
                   <DecisionsList
                     items={[
@@ -6186,6 +6199,7 @@ export function InboxPage(): ReactNode {
             return (
               <div key={it.id} data-inbox-row={it.id} style={rowStyle}>
                 <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: 0 }}>{it.title}</p>
+                {projectMeta(it)}
                 <a href={it.href} style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
               </div>
             );
@@ -6199,6 +6213,7 @@ export function InboxPage(): ReactNode {
           {unread.map((it) => (
             <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} style={{ ...rowStyle, borderLeft: "3px solid var(--accent)" }}>
               <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
+              {projectMeta(it)}
               {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
               <p style={{ display: "flex", gap: "14px", margin: 0 }}>
                 <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
@@ -6220,6 +6235,7 @@ export function InboxPage(): ReactNode {
           {read.map((it) => (
             <div key={it.id} data-inbox-row={it.id} data-inbox-type={it.type} style={{ ...rowStyle, opacity: 0.8 }}>
               <p style={{ fontSize: "14px", color: "var(--shell-fg-muted)", margin: "0 0 4px" }}>{it.title}</p>
+              {projectMeta(it)}
               {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-faint)", margin: "0 0 6px" }}>{it.body}</p> : null}
               <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
             </div>
@@ -6233,6 +6249,7 @@ export function InboxPage(): ReactNode {
           {voices.map((it) => (
             <div key={it.id} data-inbox-row={it.id} data-inbox-type="voice_stale" style={rowStyle}>
               <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
+              {projectMeta(it)}
               {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
               <a href={it.href} style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
             </div>

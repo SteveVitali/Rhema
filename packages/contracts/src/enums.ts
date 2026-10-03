@@ -335,6 +335,44 @@ export const WORKFLOW_KEYS = [
 export type WorkflowKey = (typeof WORKFLOW_KEYS)[number];
 export const workflowKeySchema = z.enum(WORKFLOW_KEYS);
 
+/**
+ * UX.1 (ADR-061) — the single source of truth for "this workflow actually launches today": the keys
+ * @rhema/protocols ships a `WORKFLOW_MANIFESTS` entry for. Preferences, the palette, and every other
+ * user-facing surface expose ONLY these; the settings api rejects rigor overrides keyed anywhere else.
+ * `@rhema/protocols`' manifests.test pins this list to the shipped manifests one-for-one — a new
+ * workflow's manifest without a row here (or a stale row after a manifest is pulled) fails the build,
+ * so the list can never drift from what the engine can actually run. `reseed_charter` launches only
+ * as the adopt hatch's system-side run — it is launchable but is NOT a user-selectable row, so the
+ * preferences surface filters it through `USER_LAUNCHED_WORKFLOW_KEYS`.
+ */
+export const LAUNCHED_WORKFLOW_KEYS = [
+  "review",
+  "draft",
+  "revise",
+  "fact_check",
+  "profile_voice",
+  "refresh_voice",
+  "calibrate_voice",
+  "research_burst",
+  "chat_turn",
+  "outline",
+  "figure",
+  "reseed_charter",
+] as const satisfies readonly WorkflowKey[];
+export type LaunchedWorkflowKey = (typeof LAUNCHED_WORKFLOW_KEYS)[number];
+export const launchedWorkflowKeySchema = z.enum(LAUNCHED_WORKFLOW_KEYS);
+const LAUNCHED_SET: ReadonlySet<string> = new Set(LAUNCHED_WORKFLOW_KEYS);
+/** Membership test over the launched set (the settings api's rigor-override gate). */
+export function isLaunchedWorkflow(key: string): key is LaunchedWorkflowKey {
+  return LAUNCHED_SET.has(key);
+}
+
+/** Workflows a person can pick/override directly — `reseed_charter` launches only as the adopt
+ *  hatch's system run, so it never appears as a user-facing rigor row or verb. */
+export const USER_LAUNCHED_WORKFLOW_KEYS = LAUNCHED_WORKFLOW_KEYS.filter(
+  (k) => k !== "reseed_charter",
+) as readonly LaunchedWorkflowKey[];
+
 export const RUN_STATES = [
   "created",
   "awaiting_consent",

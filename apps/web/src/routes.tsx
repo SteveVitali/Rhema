@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
 import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, ProjectSettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, InboxPage, NotFoundPage } from "./pages.js";
-import { LandingPage, PricingPage, SignupPage } from "./marketing.js";
+import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. P1.17 lands the public funnel: `/` is the §15.1 landing, `/pricing` renders
@@ -21,6 +21,10 @@ export const loginElement = <LoginPage />;
 export const landingElement = <LandingPage />;
 export const pricingElement = <PricingPage />;
 export const signupElement = <SignupPage />;
+// UX.1 — the public Showcase surface (manifest invariant 13: signed-out = static sample; a signed-in
+// viewer WITHOUT a showcase project renders the same static sample with app-flavored chrome).
+export const showcaseElement = <ShowcasePage />;
+export const showcaseSignedInElement = <ShowcasePage signedIn />;
 export const projectsElement = <ProjectsPage />;
 export const projectElement = <ProjectPage />;
 // P1.04 — the §5.3 new-project sheet (three entries: scratch / outline / draft).
@@ -73,6 +77,7 @@ export const routes: readonly AppRoute[] = [
   { path: "/pricing", public: true, element: pricingElement },
   { path: "/signup", public: true, element: signupElement },
   { path: "/login", public: true, element: loginElement },
+  { path: "/showcase", public: true, element: showcaseElement },
   { path: "/app", public: false, element: projectsElement },
   // P1.04 — the new-project sheet (§5.3): ?entry=scratch|outline|draft picks the entry.
   { path: "/app/new", public: false, element: newProjectElement },

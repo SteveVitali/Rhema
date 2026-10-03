@@ -25,11 +25,15 @@ describe("⌘K palette model (§5.12; REQ-CHAT-28)", () => {
     }
   });
 
-  it("lists every table verb; 1.x verbs are marked and resolve disabled", () => {
+  it("lists only the shipped verbs — unlaunched verbs never render in the palette (UX.1)", () => {
     const [run] = buildPalette(DATA);
-    const cut = run!.rows.find((r) => r.id === "verb:cut")!;
-    expect(cut.hint).toBe("1.x");
-    expect(cut.action.kind).toBe("disabled");
+    // UX.1 (ADR-061) — `phase:"one_x"` rows used to sit in the palette disabled with a "1.x" hint
+    // (an internal roadmap term in user-facing chrome). The palette advertises only what launches.
+    expect(run!.rows.find((r) => r.id === "verb:cut")).toBeUndefined();
+    for (const row of run!.rows) expect(row.hint).not.toBe("1.x");
+    // ...but the verb still exists: typing `/cut` by hand resolves to an honest disabled row.
+    const typed = paletteModel(DATA, "/cut");
+    expect(typed.commandRow?.resolution?.kind).toBe("disabled");
     // MVP verbs route to the sheet (cost-bearing) or navigate (free export/compare) — never a run POST
     for (const row of run!.rows) {
       // P1.13 — /visualize owns its dedicated §7.5 sheet route; the rest take the generic /run sheet.

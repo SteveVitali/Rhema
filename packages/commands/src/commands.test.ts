@@ -171,10 +171,18 @@ describe("resolution — four surfaces, one identical sheet (REQ-CHAT-22/25)", (
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 
-  it("a 1.x verb parses but resolves disabled-with-reason", () => {
+  it("a not-yet-shipped verb parses but resolves disabled with honest copy (UX.1 — no '1.x' in the reason)", () => {
     const res = resolveCommand(parsed("/cut --target 900"), ctx);
     expect(res.kind).toBe("disabled");
-    if (res.kind === "disabled") expect(res.reason).toMatch(/1\.x/);
+    if (res.kind === "disabled") {
+      expect(res.reason).toBe("Cut to length isn't available yet.");
+      expect(res.reason).not.toMatch(/1\.x/); // internal roadmap term must never reach the user
+    }
+    // every one_x row in the table carries a disabledReason free of the build term
+    for (const spec of VERB_TABLE.filter((s) => s.phase === "one_x")) {
+      expect(spec.disabledReason, spec.verb).toMatch(/isn't available yet\./);
+      expect(spec.disabledReason, spec.verb).not.toMatch(/1\.x/);
+    }
   });
 
   it("export navigates to the export surface; compare needs two versions", () => {

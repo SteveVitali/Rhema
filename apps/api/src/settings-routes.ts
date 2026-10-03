@@ -31,6 +31,7 @@ import {
   ACCOUNT_DELETION_CONFIRMATION,
   SUPPORT_ACCESS_TTL_MS,
   deletionGraceEndsAt,
+  isLaunchedWorkflow,
   parseUserPrefs,
   projectSettingsPatchSchema,
   supportGrantActive,
@@ -460,6 +461,14 @@ export function createSettingsRoutes(deps: SettingsApiDeps): Hono {
     const parsed = userPrefsSchema.safeParse(cleaned);
     if (!parsed.success) return c.json({ error: "invalid_preferences" }, 422);
     const patch = parsed.data;
+    // UX.1 (ADR-061) — a rigor override may only name a LAUNCHED workflow: the enum accepts every
+    // §6.2 key (the stored blob keeps parsing them for back-compat), but a write keyed on an
+    // unlaunched workflow describes a preference nothing can honor — reject the whole patch, 422.
+    // Nulls never reach this check (they're collected as deletes above), so pruning a stale
+    // unlaunched key stays allowed.
+    if (patch.rigorByWorkflow && !Object.keys(patch.rigorByWorkflow).every(isLaunchedWorkflow)) {
+      return c.json({ error: "invalid_preferences" }, 422);
+    }
     const user = await loadUser(deps.db, principal.userId);
     if (!user) return c.json({ error: "not_found" }, 404);
     const current = parseUserPrefs(user.prefs);
