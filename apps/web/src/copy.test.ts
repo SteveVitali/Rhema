@@ -86,6 +86,45 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
     expect(lintCopy({ bad: "writes like you — unlimited, better than Pro" }).length).toBeGreaterThan(0);
   });
 
+  // UX.1 (ADR-059) — the build-jargon lint lives HERE, over `collectCopyStrings()`: every user-facing
+  // chrome string is a leaf of COPY, so scanning the table is scanning every surface. The terms are
+  // internal build vocabulary a reader should never see: roadmap labels ("1.x", "Phase N", "later
+  // pass"), fixture-talk, "lands here" promises for unshipped work, and "private beta"/"beta" claims
+  // outside the invite-mode strings (the only context where the closed-program wording is TRUE).
+  describe("UX.1 — no build vocabulary in user-facing copy (ADR-059)", () => {
+    const JARGON: readonly { term: RegExp; label: string }[] = [
+      { term: /fixture/i, label: "fixture" },
+      { term: /\b1\.x\b/i, label: "1.x" },
+      { term: /later pass/i, label: "later pass" },
+      { term: /lands here/i, label: "lands here" },
+      { term: /\bphase\s+\d/i, label: "phase <n>" },
+      { term: /\bbeta\b/i, label: "beta" },
+      { term: /coming soon/i, label: "coming soon" },
+    ];
+    /** The ONLY keys where closed-program wording stays true — invite mode's gate copy. */
+    const INVITE_MODE_KEYS = new Set(["invite.heading", "login.note"]);
+
+    it("no leaf carries a build-jargon term", () => {
+      const hits: string[] = [];
+      for (const [key, value] of collectCopyStrings()) {
+        for (const { term, label } of JARGON) {
+          if (INVITE_MODE_KEYS.has(key) && (label === "beta" || label === "1.x")) continue;
+          if (term.test(value)) hits.push(`${key} → ${label} (${value})`);
+        }
+      }
+      expect(hits).toEqual([]);
+    });
+
+    it("the invite-mode keys are the only closed-program copy left — and they still work", () => {
+      const keys = new Set(collectCopyStrings().map(([k]) => k));
+      for (const k of INVITE_MODE_KEYS) expect(keys.has(k)).toBe(true);
+      // open-mode alternates exist so the mode-true render never falls back to invite copy
+      expect(keys.has("invite.headingOpen")).toBe(true);
+      expect(keys.has("invite.accessNoteOpen")).toBe(true);
+      expect(keys.has("login.noteOpen")).toBe(true);
+    });
+  });
+
   it("collectCopyStrings walks every string leaf", () => {
     const pairs = collectCopyStrings();
     const keys = pairs.map(([k]) => k);

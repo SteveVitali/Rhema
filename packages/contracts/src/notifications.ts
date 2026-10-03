@@ -373,13 +373,18 @@ export const INBOX_COPY: Record<
   run_finished: {
     // RES.2 — `deliveryLabel` carries the run-level label ("Unverified"); it reads above the rest of the
     // row copy, the same slot it occupies on the run card + dossier (above the verdict).
+    // UX.1 (ADR-063) — a `completed_partial` run never claims it "finished": the partial flag rewords
+    // the title so the row says exactly what happened (kept results, not a completed deliverable).
     params: z.object({
       projectTitle: title2.optional(),
       workflowLabel: label2.optional(),
       deliveryLabel: label2.optional(),
+      partial: z.boolean().optional(),
     }),
-    render: ((p: { projectTitle?: string; workflowLabel?: string; deliveryLabel?: string }) => ({
-      title: `${p.workflowLabel ?? "Run"} finished — the deliverable is ready`,
+    render: ((p: { projectTitle?: string; workflowLabel?: string; deliveryLabel?: string; partial?: boolean }) => ({
+      title: p.partial
+        ? `${p.workflowLabel ?? "Run"} stopped early — the kept results are ready`
+        : `${p.workflowLabel ?? "Run"} finished — the deliverable is ready`,
       ...(p.deliveryLabel
         ? {
             body: `${p.deliveryLabel} — claims could not be checked; research credits refunded.${p.projectTitle ? ` · ${p.projectTitle}` : ""}`,
@@ -397,9 +402,14 @@ export const INBOX_COPY: Record<
     })) as never,
   },
   run_cancelled_recovered: {
+    // UX.1 (ADR-063) — "Run recovered" named nothing; the honest version says the run stalled and
+    // the system restarted it (a heartbeat-stale orphan requeue is exactly that).
     params: z.object({ variant: z.enum(["cancelled", "recovered"]), projectTitle: title2.optional() }),
     render: ((p: { variant: "cancelled" | "recovered"; projectTitle?: string }) => ({
-      title: p.variant === "cancelled" ? "Run was cancelled by the system" : "Run recovered",
+      title:
+        p.variant === "cancelled"
+          ? "Run was cancelled by the system"
+          : "Run stalled — restarted automatically",
       ...(p.projectTitle ? { body: p.projectTitle } : {}),
     })) as never,
   },

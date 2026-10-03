@@ -250,3 +250,55 @@ describe("§15.3 — signup intent + the precedence redirect", () => {
     expect(events.some((e) => e.event === "email.verified")).toBe(true);
   });
 });
+
+// UX.1 (ADR-062) — the public /showcase route: signed-out renders the static sample; signed-in
+// resolves to the workspace's own Showcase (never another tenant's); a signed-in account with no
+// Showcase gets the static sample with app-flavored chrome.
+describe("UX.1 — GET /showcase", () => {
+  it("signed-out renders the static read-only sample dossier with its own document meta", async () => {
+    const res = await createWebApp(makeDeps()).request("/showcase");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("<title>Showcase · Rhēma</title>");
+    expect(html).toContain("The Politics of Visibility");
+    expect(html).toContain('meta name="description"');
+    expect(html.match(/<h1[\s>]/g)!.length).toBe(1);
+    expect(html).not.toContain("private beta");
+  });
+
+  it("signed-in with a Showcase project 302s onto the dossier (the showcase artifact)", async () => {
+    const deps = makeDeps(
+      { session: () => ({}) },
+      { getShowcaseEntry: async () => SHOWCASE_ENTRY },
+    );
+    const res = await createWebApp(deps).request("/showcase", { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/showcase/review/run_sc");
+  });
+
+  it("signed-in with a Showcase that has no review run yet lands on the project page", async () => {
+    const deps = makeDeps(
+      { session: () => ({}) },
+      {
+        getShowcaseEntry: async () => ({
+          showcase: { ...SHOWCASE_ENTRY.showcase, reviewRunId: null },
+          intent: null,
+        }),
+      },
+    );
+    const res = await createWebApp(deps).request("/showcase", { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/showcase");
+  });
+
+  it("signed-in with NO Showcase entry renders the static sample with app-flavored chrome — never a 404", async () => {
+    const deps = makeDeps(
+      { session: () => ({}) },
+      { getShowcaseEntry: async () => ({ showcase: null, intent: null }) },
+    );
+    const res = await createWebApp(deps).request("/showcase");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("The Politics of Visibility");
+  });
+});

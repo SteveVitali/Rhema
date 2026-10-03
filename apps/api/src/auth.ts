@@ -35,6 +35,13 @@ export interface AuthSecrets {
 export type SendMagicLink = (args: { email: string; url: string; token: string }) => Promise<void>;
 
 /**
+ * UX.1 — the magic-link token lifetime, in SECONDS, configured on the plugin AND read by the email
+ * template (one constant feeds both — the "expires in" line can never disagree with the gate).
+ * 15 minutes: long enough for a slow mailbox, short enough to bound a forwarded link.
+ */
+export const MAGIC_LINK_EXPIRES_SECONDS = 15 * 60;
+
+/**
  * PRB.16 — provisioning seam for self-serve paths that never pass through `POST /signup` (Google OAuth,
  * magic link on a returning-but-never-provisioned account): the api binds `onUserCreate` to the same
  * personal-workspace + billing-account + membership rows `admitSignup` writes, so a session always
@@ -368,6 +375,9 @@ export function createAuth(
     },
     plugins: [
       magicLink({
+        // UX.1 — the configured expiry the email template quotes (MAGIC_LINK_EXPIRES_SECONDS is the
+        // single value both sides read).
+        expiresIn: MAGIC_LINK_EXPIRES_SECONDS,
         sendMagicLink: async ({ email, url, token }) => {
           await sendMagicLink({ email, url, token });
         },

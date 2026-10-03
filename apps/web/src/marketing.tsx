@@ -7,7 +7,7 @@
 // JS (the file input's label links to /signup; landing.js adds the client-side hold).
 
 import type { ReactNode } from "react";
-import { Shell, SectionTitle, DossierView, type DossierLabels } from "@rhema/ui";
+import { Shell, PageTitle, SectionTitle, DossierView, type DossierLabels } from "@rhema/ui";
 import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled, MODEL_TIERS, MODEL_TIER_DISPLAY } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import { COPY } from "./copy.js";
@@ -254,7 +254,7 @@ export function PricingPage(): ReactNode {
       }
       footer={<span>{COPY.footer}</span>}
     >
-      <SectionTitle>{COPY.pricing.heading}</SectionTitle>
+      <PageTitle>{COPY.pricing.heading}</PageTitle>
       <p style={MUTED}>{COPY.pricing.lede}</p>
       <p style={MUTED}>{fmtCopy(COPY.pricing.annualSavingLine, { pct: data.annualSavingsPct })}</p>
       <p style={{ fontSize: "14px" }}>
@@ -461,7 +461,7 @@ export function SignupPage(): ReactNode {
   return (
     <Shell brand={COPY.brand} footer={<span>{COPY.footer}</span>}>
       <div style={{ maxWidth: "380px", margin: "0 auto" }}>
-        <SectionTitle>{signup?.sent ? COPY.signup.sentHeading : COPY.signup.heading}</SectionTitle>
+        <PageTitle>{signup?.sent ? COPY.signup.sentHeading : COPY.signup.heading}</PageTitle>
         {signup?.sent ? (
           <>
             <p role="status" style={{ color: "var(--state-ready)", fontSize: "13px" }}>{COPY.login.linkSent}</p>
@@ -545,6 +545,42 @@ export function SignupPage(): ReactNode {
           />
         </section>
       ) : null}
+    </Shell>
+  );
+}
+
+/**
+ * UX.1 — `/showcase` (manifest invariant 13): the signed-OUT leg renders this page — the static,
+ * read-only sample dossier (SAMPLE_DOSSIER, the same board read the landing and signup pages embed).
+ * Signed-in visitors never reach this component: the server redirects them to their own Showcase
+ * project's dossier (the api's session-bound `GET /showcase`). `signedIn` only swaps the CTAs.
+ */
+export function ShowcasePage({ signedIn = false }: { signedIn?: boolean } = {}): ReactNode {
+  const C = COPY.showcase;
+  return (
+    <Shell
+      brand={COPY.brand}
+      tagline={COPY.tagline}
+      nav={
+        <>
+          <a href="/pricing" style={{ fontSize: "13px" }}>{COPY.landing.pricing.cta}</a>
+          <a href={signedIn ? "/app" : "/signup"} style={{ fontSize: "13px" }}>
+            {signedIn ? COPY.project.backToList : C.signUpCta}
+          </a>
+        </>
+      }
+      footer={<span>{COPY.footer}</span>}
+    >
+      <PageTitle>{C.pageHeading}</PageTitle>
+      <p style={{ fontSize: "16px", lineHeight: 1.6, color: "var(--shell-fg)", maxWidth: "68ch" }}>{C.pageLede}</p>
+      <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{C.readOnlyNote}</p>
+      <DossierView
+        title={SAMPLE_DOSSIER.projectTitle}
+        letter={SAMPLE_DOSSIER.letter}
+        claims={SAMPLE_DOSSIER.claims}
+        findings={SAMPLE_DOSSIER.findings}
+        labels={dossierLabels}
+      />
     </Shell>
   );
 }

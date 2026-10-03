@@ -96,16 +96,18 @@ export function buildPalette(data: PaletteData): PaletteSection[] {
       action: resolution,
     });
   }
+  // UX.1 — the palette exposes ONLY launchable verbs: `phase:"one_x"` rows used to render disabled
+  // with a "1.x" hint (an internal roadmap term in user-facing chrome). A verb typed by hand still
+  // resolves to an honest `disabled` row via resolveCommand — the list just stops advertising it.
   for (const spec of VERB_TABLE) {
-    const resolution =
-      spec.phase === "one_x"
-        ? ({ kind: "disabled", reason: spec.disabledReason ?? `${spec.label} is a 1.x workflow — not yet available.` } as const)
-        : resolveCommand({ verb: spec.verb, scopes: [], levers: {}, chips: [] }, { projectSlug: data.projectSlug });
+    if (spec.phase === "one_x") continue;
     run.push({
       id: `verb:${spec.verb}`,
       label: spec.label,
-      ...(spec.phase === "one_x" ? { hint: "1.x" } : {}),
-      action: resolution,
+      action: resolveCommand(
+        { verb: spec.verb, scopes: [], levers: {}, chips: [] },
+        { projectSlug: data.projectSlug },
+      ),
     });
   }
 

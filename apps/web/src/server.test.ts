@@ -211,6 +211,26 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(html).not.toContain("an invitation code is required");
   });
 
+  it("UX.1 — open mode never says 'private beta' anywhere; invite mode keeps the closed-program copy", async () => {
+    // open mode: /login, /invite, /signup, /, /pricing, /showcase — none carry the closed-program claim.
+    const open = createWebApp(makeDeps({ signupMode: "open" }));
+    for (const path of ["/login", "/invite", "/signup", "/", "/pricing", "/showcase"]) {
+      const res = await open.request(path);
+      expect(res.status, path).toBe(200);
+      const html = await res.text();
+      expect(html, `${path} must not claim 'private beta'`).not.toMatch(/private beta/i);
+      expect(html, `${path} must not leak '1.x'`).not.toMatch(/\b1\.x\b/);
+      expect(html).not.toMatch(/Access is by invitation/i);
+    }
+    // invite mode: /invite + /login still carry the honest closed-program wording.
+    const invite = createWebApp(makeDeps({ signupMode: "invite" }));
+    const inv = await (await invite.request("/invite")).text();
+    expect(inv).toContain("private beta");
+    expect(inv).toContain("Access is by invitation");
+    const log = await (await invite.request("/login")).text();
+    expect(log).toContain("an invitation code is required");
+  });
+
   it("GET / redirects a viewer whose session still resolves — no redundant re-login", async () => {
     const app = createWebApp(
       makeDeps({ session: () => ({ cookie: "__Host-rhema.session_token=tok.sig" }) }),

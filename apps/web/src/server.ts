@@ -37,8 +37,11 @@ import {
   billingReturnElement,
   projectUsageElement,
   inboxElement,
+  showcaseElement,
+  showcaseSignedInElement,
   notFoundElement,
 } from "./routes.js";
+import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedRowsFor } from "./feed-labels.js";
@@ -60,6 +63,7 @@ import {
   figureIdFromRef,
   STRIPE_HOSTED_ORIGINS,
   isStripeHostedRedirect,
+  isLaunchedWorkflow,
 } from "@rhema/contracts";
 import {
   buildRunSheetView,
@@ -405,6 +409,16 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/healthz", (c) =>
     c.json({ ok: true, service: "web", build: { gitSha: deps.buildGitSha ?? null } }),
   );
+
+  // UX.1 — the favicon endpoints every document head links to (inline SVG brand mark; the .ico path
+  // serves the same SVG — browsers honor the content type, not the extension).
+  const favicon = (c: Context) => {
+    c.header("content-type", "image/svg+xml");
+    c.header("cache-control", "public, max-age=86400");
+    return c.body(FAVICON_SVG);
+  };
+  app.get("/favicon.ico", favicon);
+  app.get("/favicon.svg", favicon);
 
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
@@ -1490,7 +1504,7 @@ export function createWebApp(deps: WebDeps): Hono {
   const invite = async (c: Context) =>
     (await signedIn(c))
       ? c.redirect("/app")
-      : c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
+      : c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }, { origin: new URL(c.req.url).origin }));
   app.get("/invite", invite);
 
   // P1.17 — the pre-auth funnel beacons. `landing.viewed` fires server-side on the landing GET
@@ -1534,7 +1548,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const preview = c.req.query("audience") === "test" && isTest;
     if (!preview && (await signedIn(c))) return c.redirect("/app");
     landingBeacon("landing.viewed", c, c.req.query("src") ? { src: c.req.query("src") } : undefined);
-    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen }, claims }));
+    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen }, claims }, { origin: new URL(c.req.url).origin }));
   });
 
   // P1.17 (§15.2) — /pricing: the derived page model (the annual toggle re-renders prices and shows
@@ -1543,10 +1557,15 @@ export function createWebApp(deps: WebDeps): Hono {
     const { claims, isTest } = await audienceClaims(c);
     if (!(c.req.query("audience") === "test" && isTest) && (await signedIn(c))) return c.redirect("/app");
     return c.html(
-      renderDocument(c.req.path, pricingElement, {
-        pricing: { annual: c.req.query("cycle") === "annual" },
-        claims,
-      }),
+      renderDocument(
+        c.req.path,
+        pricingElement,
+        {
+          pricing: { annual: c.req.query("cycle") === "annual" },
+          claims,
+        },
+        { origin: new URL(c.req.url).origin },
+      ),
     );
   });
 
@@ -1566,7 +1585,12 @@ export function createWebApp(deps: WebDeps): Hono {
     status: 200 | 400 | 429 = 200,
   ) =>
     c.html(
-      renderDocument(c.req.path, signupElement, { signup: { ...signup, signupOpen } }),
+      renderDocument(
+        c.req.path,
+        signupElement,
+        { signup: { ...signup, signupOpen } },
+        { origin: new URL(c.req.url).origin },
+      ),
       status,
     );
 
@@ -1663,6 +1687,27 @@ export function createWebApp(deps: WebDeps): Hono {
     return renderSignup(c, { sent: true, email, entry, src, held }, 200);
   });
 
+  // UX.1 — `/showcase` (manifest invariant 13): a SIGNED-IN viewer resolves to their own Showcase —
+  // the api's session-bound GET /showcase names the project slug + dossier run, and the route 302s
+  // onto the dossier (the showcase artifact) or the project page when no review run exists yet. A
+  // signed-OUT visitor — or a signed-in account with no Showcase — gets the static, read-only sample
+  // page; no other tenant's project can ever render here.
+  app.get("/showcase", async (c) => {
+    const session = deps.session(c);
+    const authed = session ? await deps.dataSource.checkSession(session).catch(() => false) : false;
+    if (session && authed) {
+      const entry = await Promise.resolve()
+        .then(() => deps.dataSource.getShowcaseEntry?.(session))
+        .catch(() => undefined);
+      const sc = entry?.showcase;
+      if (sc) {
+        return c.redirect(sc.reviewRunId ? `/p/${sc.slug}/review/${sc.reviewRunId}` : `/p/${sc.slug}`);
+      }
+      return c.html(renderDocument(c.req.path, showcaseSignedInElement, {}, { origin: new URL(c.req.url).origin }));
+    }
+    return c.html(renderDocument(c.req.path, showcaseElement, {}, { origin: new URL(c.req.url).origin }));
+  });
+
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).
   app.get("/login", async (c) => {
@@ -1672,7 +1717,12 @@ export function createWebApp(deps: WebDeps): Hono {
     // refusal out of any cache-key equivalence with the clean form.
     const err = loginQueryErrorFor(c.req.query("error"), signupOpen);
     return c.html(
-      renderDocument(c.req.path, loginElement, { login: { signupOpen, ...(err ? { error: err } : {}) } }),
+      renderDocument(
+        c.req.path,
+        loginElement,
+        { login: { signupOpen, ...(err ? { error: err } : {}) } },
+        { origin: new URL(c.req.url).origin },
+      ),
       err ? 400 : 200,
     );
   });
@@ -1690,7 +1740,15 @@ export function createWebApp(deps: WebDeps): Hono {
       email?: string;
     }, status: 200 | 400 | 429) =>
       // every re-render carries the mode flag — an error page must keep the open-mode copy.
-      c.html(renderDocument(c.req.path, loginElement, { login: { ...login, signupOpen } }), status);
+      c.html(
+        renderDocument(
+          c.req.path,
+          loginElement,
+          { login: { ...login, signupOpen } },
+          { origin: new URL(c.req.url).origin },
+        ),
+        status,
+      );
 
     // invite mode: no code ⇒ no auth request is ever made (the PRB.01 gate, preserved verbatim).
     if (!signupOpen && !code.trim()) {
@@ -2424,6 +2482,10 @@ export function createWebApp(deps: WebDeps): Hono {
     for (const [k, v] of Object.entries(form)) {
       if (!k.startsWith("rigor_") || k === "rigor_default") continue;
       const wf = k.slice("rigor_".length);
+      // UX.1 — only LAUNCHED workflows may carry an override: the api 422s an unlaunched key, so a
+      // crafted form field would poison the whole save. Drop it here (same shape as the enum
+      // fallbacks below — unknown input resolves to nothing, never a lie).
+      if (!isLaunchedWorkflow(wf)) continue;
       rigorByWorkflow[wf] = v === "quick" || v === "standard" || v === "full_board" ? v : null;
     }
     prefs.rigorByWorkflow = rigorByWorkflow;

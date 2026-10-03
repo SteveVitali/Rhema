@@ -223,13 +223,15 @@ describe("the suspended account (REQ-SPEC-24.7)", () => {
   });
 });
 
-describe("the final-month beta-plan offer (REQ-BETA-15 — copy + link only)", () => {
+describe("the final-month offer line (REQ-BETA-15 — copy + link only)", () => {
   it("renders only when the deploy configured the link; no subscription machinery", async () => {
     const app = createWebApp(makeDeps({ planOfferUrl: "https://rhema.example/beta-plan" }));
     const res = await app.request(`/p/${SLUG}/run?words=5180`);
     const html = await res.text();
     expect(html).toContain("data-plan-offer");
-    expect(html).toContain("Founding users keep the beta rate");
+    // UX.1 — the offer text makes no pricing claim; it points at the config-derived pricing page.
+    expect(html).toContain("Plans and credit packs are listed on the pricing page.");
+    expect(html).not.toContain("beta rate");
     expect(html).toContain('href="https://rhema.example/beta-plan"');
 
     const without = createWebApp(makeDeps({}));
