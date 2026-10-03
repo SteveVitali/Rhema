@@ -24,6 +24,32 @@ import type { PhaseRunOutputs, WorkDeliveryContent } from "./harness-loop.js";
 import { AGENT_RESULT_FILENAME, type AgentResultFile } from "./agent-entry.js";
 
 const PHASE_RESULT_PATH = ".rhema/phase-result.json";
+// The scoped second-read producer marker — `runScopedPhase` writes it at the launch order's
+// `markerPath` (`agents/<seat>/.rhema/second-read.json`); it is a THIS-RUN control file. A PRIOR
+// review's delivered `correspondence/review/<n>/second-read.json` marker is hydrated into /work too,
+// and resolveKey's basename cascade resolved it as "the" marker — its stale producerQueryId then
+// fails `checkSecondReadProducer` (not in this run's subagent_launches → `producer` delivery
+// rejection, live run 01M416S2XP7FN37PR3FGZ1SXBX), and on a failed launch it could falsely satisfy
+// the predicate. The real marker ALWAYS ends `/.rhema/second-read.json` — a correspondence artifact
+// never does (F-SEC3-3).
+const SECOND_READ_MARKER_PATH = ".rhema/second-read.json";
+
+/** Parse the second-read producer marker: the exact `.rhema/second-read.json` key or a key ending
+ *  `/.rhema/second-read.json` (the seat-scoped markerPath). Never the basename cascade — a delivered
+ *  `correspondence/review/N/second-read.json` is not a producer claim for this run. */
+function readSecondReadMarker<T>(files: ReadonlyMap<string, Uint8Array>): T | null {
+  const suffix = `/${SECOND_READ_MARKER_PATH}`;
+  const key = files.has(SECOND_READ_MARKER_PATH)
+    ? SECOND_READ_MARKER_PATH
+    : [...files.keys()].filter((k) => k.endsWith(suffix)).sort((a, b) => a.length - b.length)[0];
+  const bytes = key ? files.get(key) : undefined;
+  if (!bytes) return null;
+  try {
+    return JSON.parse(Buffer.from(bytes).toString("utf8")) as T;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Resolve a completion-predicate artifact path to the actual `/work` key (K5 / D-P0.06-1, diagnosed live). The
@@ -256,7 +282,9 @@ function factsForPhase(
         facts.letterSectionsComplete = (textOf(files, p.artifact)?.trim().length ?? 0) > 0;
         break;
       case "second_read_producer_checked": {
-        const marker = readJson<{ producerQueryId?: string; expectedProducerQueryId?: string }>(files, ".rhema/second-read.json");
+        // marker read (F-SEC3-3): a prior review's delivered `correspondence/**/second-read.json`
+        // marker must never satisfy — or poison — THIS run's producer check.
+        const marker = readSecondReadMarker<{ producerQueryId?: string; expectedProducerQueryId?: string }>(files);
         facts.secondReadProducerQueryId = marker?.producerQueryId ?? null;
         facts.expectedProducerQueryId = marker?.expectedProducerQueryId ?? null;
         break;
@@ -369,7 +397,9 @@ function dossierForPhase(files: ReadonlyMap<string, Uint8Array>, phase: PhaseMan
     undefined;
   const findings = readJson<WorkDeliveryContent["findings"]>(files, "findings.json") ?? undefined;
   const rubric = readJson<WorkDeliveryContent["rubric"]>(files, "rubric.json") ?? undefined;
-  const secondRead = readJson<{ producerQueryId?: string }>(files, ".rhema/second-read.json");
+  // marker read (F-SEC3-3): only the marker `runScopedPhase` wrote THIS run may set the delivery's
+  // `secondReadProducerQueryId` — a prior round's delivered `second-read.json` is not a producer claim.
+  const secondRead = readSecondReadMarker<{ producerQueryId?: string }>(files);
   return {
     deliveredPaths,
     sidecars,

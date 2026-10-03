@@ -263,3 +263,25 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
   `CapEff=CapAmb=CapInh=0 && NoNewPrivs=1` inside the dropped agent and that a
   `setpriv --reuid 10001` attempt from the dropped agent EPERMs — both PASS. The agent-denied
   legs (AC1, P0.15h) now exec the REAL `buildAgentLaunch` argv, not a re-typed copy.
+
+### F-SEC3-3 — a prior round's delivered `second-read.json` poisoned delivery validation (product bug, live)
+- **Live evidence:** run `01M416S2XP7FN37PR3FGZ1SXBX` — all five pod phases `done`
+  (`predicatesPassed:true`, hook allow/deny lines flowing, run-task image
+  `@sha256:2997ca6c…` under the enforced `rhema-run-task` Localhost profile; the pod's
+  `appArmorProfile` admission proves the loader's ordering held) — then `finalizing → failed`
+  with `failure={code:validation,message:"producer"}` and `cost.refunded 340`.
+- **Root cause (pre-existing oracle bug, not the image):** the run had `second_read:false`
+  (quick rigor opts the phase out — ordinals 3/4 correctly skipped), but the seat tree was
+  hydrated with a PRIOR review's delivered `correspondence/review/1/second-read.json`.
+  `dossierForPhase`'s `readJson(files, ".rhema/second-read.json")` walked `resolveKey`'s
+  basename cascade and resolved THAT stale marker, so the dossier carried a
+  `secondReadProducerQueryId` from a different run — `checkSecondReadProducer` found no
+  matching `subagent_launches` row for this run and rejected the delivery. The same cascade
+  could have falsely SATISFIED `second_read_producer_checked` on a failed launch — the worse
+  direction of the same bug.
+- **Fix (this branch):** `work-reader.ts` gains `readSecondReadMarker` — the marker resolves
+  only at `.rhema/second-read.json` or a `*/.rhema/second-read.json` suffix (the launch
+  order's seat-scoped `markerPath`), never the bare basename, so a delivered correspondence
+  twin can never impersonate this run's producer claim. Two regression tests pin both
+  directions (stale marker ignored; real seat marker crosses). The fix ships inside the
+  run-task image — the dossier is pod-computed.
