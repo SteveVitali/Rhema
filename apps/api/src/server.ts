@@ -387,6 +387,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // BILL.3 — `purchase.mode` (ADR-028): stage-config-driven, default closed; the is_test allowlist is
     // evaluated per request inside the billing routes.
     purchaseMode: env.purchaseMode,
+    // DEF.4 — `refundWindow.mode` (ADR-07x): stage-config-driven, default off; the is_test
+    // allowlist for `test_tenants` is evaluated per request inside the timeline routes.
+    refundWindowMode: env.refundWindowMode,
     // JOURNEY.1 — test-mailbox flagging + the healthz provenance field.
     ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
     ...(env.buildGitSha ? { buildGitSha: env.buildGitSha } : {}),

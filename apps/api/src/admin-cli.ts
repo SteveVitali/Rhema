@@ -8,6 +8,7 @@
 //   node dist/admin-cli.js suspend      --billing-account acct_… [--note …]
 //   node dist/admin-cli.js reinstate    --billing-account acct_… [--note …]
 //   node dist/admin-cli.js wtp          --workspace ws_… --amount 49 [--source interview]
+//   node dist/admin-cli.js refund-review --request urr_… --workspace ws_… (--approve|--deny) [--note …]
 //
 // Every mutation is an ORDINARY ledger row (`promo` bucket for house credits, `expire` for a void — never a
 // direct balance UPDATE) plus its audit row in the same transaction (admin.ts). The workspace the ledger row
@@ -28,9 +29,18 @@ import {
   renderBetaDashboard,
   killTrial,
   reconcileBalances,
+  decideRefundReview,
   type EntryDeps,
 } from "@rhema/ledger";
-import { systemClock, randomUlids, RUN_JOBS, type SqlClient, type Queue } from "@rhema/orchestrator";
+import {
+  systemClock,
+  randomUlids,
+  RUN_JOBS,
+  SqlEventWriter,
+  type EventWriter,
+  type SqlClient,
+  type Queue,
+} from "@rhema/orchestrator";
 import { logSupportAccess } from "./settings-routes.js";
 
 export interface AdminCliDeps extends EntryDeps {
@@ -46,6 +56,12 @@ export interface AdminCliDeps extends EntryDeps {
    * CLI prints their ids so the operator can re-drive them by hand.
    */
   readonly queue?: Queue;
+  /**
+   * DEF.4 — the run-events writer `refund-review --approve` emits `cost.refunded` through (the same
+   * whitelisted event the user path writes). Unset ⇒ an approved refund still lands its ledger rows +
+   * audit; the event append is dropped (never a silent money row — the request row IS the audit).
+   */
+  readonly eventWriter?: EventWriter;
   readonly out?: (line: string) => void;
 }
 
@@ -71,6 +87,10 @@ const USAGE = `rhema admin — operator billing actions (every action is audited
 
   house-grant  --billing-account <id> --credits <n> --expires <YYYY-MM-DD> [--workspace <id>] [--note <s>]
   house-void   --billing-account <id> [--credits <n>] [--workspace <id>] [--note <s>]
+  refund-review --request <id> --workspace <id> (--approve|--deny) [--note <s>]
+                 (DEF.4 — the §14.4 review verb: SYSTEM-pool decision on a 'pending_review'
+                  user_refund_requests row — approve runs the same per-phase refund episode the
+                  auto-allowance path would + emits cost.refunded; deny closes without moving money)
   suspend      --billing-account <id> [--workspace <id>] [--note <s>]
   reinstate    --billing-account <id> [--workspace <id>] [--note <s>]
   trial-kill   --billing-account <id> [--workspace <id>] [--note <s>]
@@ -299,6 +319,54 @@ export async function runAdminCli(argv: string[], deps: AdminCliDeps): Promise<n
         );
         return 0;
       }
+      case "refund-review": {
+        // DEF.4 (REQ-SPEC-24(6); REQ-SPEC-30) — the operator decision on a second-in-quarter refund
+        // request. `txRunner` IS the system pool here (admin-cli runs on SYSTEM_DATABASE_URL); the
+        // request row's every write carries the explicit workspace predicate, and the approve path
+        // runs the identical refund episode the auto-allowance would (the shared episode key dedupes).
+        const requestId = flag(rest, "request");
+        const approve = rest.includes("--approve");
+        const deny = rest.includes("--deny");
+        if (!requestId || !workspaceArg || approve === deny) return (out(USAGE), 2);
+        if (approve && !deps.eventWriter) {
+          out("error: refund-review --approve needs an event writer (cost.refunded would not emit)");
+          return 1;
+        }
+        const res = await decideRefundReview(
+          {
+            txRunner: deps.txRunner,
+            eventWriter: deps.eventWriter ?? new SqlEventWriter(),
+            ids: deps.ids,
+            clock: deps.clock,
+          },
+          {
+            requestId,
+            workspaceId: workspaceArg,
+            approve,
+            actor: deps.operatorId,
+            ...(note !== undefined ? { note } : {}),
+          },
+        );
+        switch (res.kind) {
+          case "approved":
+            out(`approved ${requestId} — refunded ${res.credits} credits (cost.refunded emitted)`);
+            return 0;
+          case "denied":
+            out(`denied ${requestId} — request closed, no credits moved`);
+            return 0;
+          case "nothing_to_refund":
+            out(`closed ${requestId} — every debit was already refunded; nothing left`);
+            return 0;
+          case "already_decided":
+            out(`already decided: ${requestId} is '${res.state}'`);
+            return 1;
+          case "not_found":
+            out(`not found: no refund request ${requestId} in workspace ${workspaceArg}`);
+            return 1;
+        }
+        // every kind arm above returns — reaching here means an unhandled decision result.
+        return 1;
+      }
       case "beta-report": {
         // PRB.12 — the weekly REQ-PROD-16 readout: refresh the domain→stream projection for the window
         // (idempotent — mat:* dedupe keys make a re-run a no-op), then render every REQ-BETA-18 gate
@@ -355,6 +423,9 @@ export async function main(): Promise<void> {
       queue: new PgBossQueue(boss),
       ids: randomUlids(),
       clock: systemClock,
+      // DEF.4 — the approve path's cost.refunded lands in `run_events` in-tx like every other append;
+      // no Redis bus on the CLI (the SSE wakeup is a best-effort no-op — the tail re-polls Postgres).
+      eventWriter: new SqlEventWriter(),
     });
     process.exit(code);
   } finally {

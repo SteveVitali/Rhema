@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createOrchestratorTestDb, seedProject, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
+import { createOrchestratorTestDb, seedProject, seedRun, type OrchestratorTestDb } from "@rhema/orchestrator/testing";
 import { testEntryDeps } from "@rhema/ledger/testing";
 import { runAdminCli, type AdminCliDeps } from "./admin-cli.js";
+import { InMemoryEventWriter } from "@rhema/orchestrator";
 
 // PRB.08 — the operator billing CLI (REQ-BETA-14). Driven in-process over PGlite (the live `main()` just
 // binds DATABASE_URL + RHEMA_OPERATOR_ID): every verb is an ordinary ledger row + an audit row, idempotent
@@ -95,5 +96,85 @@ describe("rhema admin (operator CLI)", () => {
     expect(await run(["house-grant", "--billing-account", BA])).toBe(2); // missing credits/expires
     expect(await run(["frobnicate"])).toBe(2);
     expect(await run(["house-void", "--billing-account", "ba_nonexistent"])).toBe(1); // no workspace
+  });
+});
+
+describe("refund-review (DEF.4 — the §14.4 operator verb; REQ-SPEC-30)", () => {
+  // The live CLI's txRunner IS the system pool (PgPoolTxRunner on SYSTEM_DATABASE_URL) — the
+  // user-serving role holds no UPDATE on user_refund_requests, by design.
+  const sysRun = (argv: string[], eventWriter?: InstanceType<typeof InMemoryEventWriter>) =>
+    runAdminCli(argv, {
+      ...testEntryDeps(),
+      txRunner: db.systemTxRunner,
+      systemExec: db.client,
+      operatorId: "op_steve",
+      ...(eventWriter ? { eventWriter } : {}),
+      out: (s) => lines.push(s),
+    });
+
+  async function seedPendingRequest(requestId: string, runId: string): Promise<void> {
+    await db.client.query(
+      "insert into credit_balances(billing_account_id, bucket, available, held) values ($1,'included',5000,0)",
+      [BA],
+    );
+    await seedRun(db, { runId, workspaceId: WS, state: "completed" });
+    await db.client.query(
+      "insert into steps(id, run_id, phase, ordinal, state) values ($1,$2,'craft',1,'done')",
+      [`st_${runId}`, runId],
+    );
+    await db.client.query(
+      `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, phase_id, source, idempotency_key)
+       values ($1,$2,$3,'debit',160,'included',$4,$5,'phase',$6)`,
+      [`led_${runId}`, WS, BA, runId, `st_${runId}`, `debit:${runId}`],
+    );
+    await db.client.query(
+      `insert into user_refund_requests
+         (id, workspace_id, billing_account_id, run_id, user_id, state, credits, quarter, requested_at)
+       values ($1,$2,$3,$4,$5,'pending_review',160,'2026Q3',now())`,
+      [requestId, WS, BA, runId, USER],
+    );
+  }
+
+  it("--approve runs the same refund episode: user_window rows, decided request row, cost.refunded", async () => {
+    await seedPendingRequest("urr_a", "run_ra");
+    const eventWriter = new InMemoryEventWriter();
+    const code = await sysRun(
+      ["refund-review", "--request", "urr_a", "--workspace", WS, "--approve", "--note", "goodwill"],
+      eventWriter,
+    );
+    expect(code).toBe(0);
+    expect(lines.at(-1)).toContain("approved urr_a — refunded 160 credits");
+    const req = (
+      await db.client.query(
+        "select state, decision, decided_by, note from user_refund_requests where id = 'urr_a'",
+      )
+    ).rows[0] as { state: string; decision: string; decided_by: string; note: string };
+    expect(req).toEqual({ state: "refunded", decision: "admin_approve", decided_by: "op_steve", note: "goodwill" });
+    const refund = (
+      await db.client.query("select kind, reason, credits from credit_ledger where run_id = 'run_ra' and kind = 'refund'")
+    ).rows[0] as { kind: string; reason: string; credits: number };
+    expect(refund).toEqual({ kind: "refund", reason: "user_window", credits: 160 });
+    expect(eventWriter.forRun("run_ra").map((e) => e.type)).toContain("cost.refunded");
+  });
+
+  it("--deny closes the request without moving money; a re-decision exits 1 already-decided", async () => {
+    await seedPendingRequest("urr_d", "run_rd");
+    const code = await sysRun(["refund-review", "--request", "urr_d", "--workspace", WS, "--deny"], new InMemoryEventWriter());
+    expect(code).toBe(0);
+    expect(lines.at(-1)).toContain("denied urr_d");
+    const req = (
+      await db.client.query("select state, decision from user_refund_requests where id = 'urr_d'")
+    ).rows[0] as { state: string; decision: string };
+    expect(req).toEqual({ state: "denied", decision: "admin_deny" });
+    expect((await db.client.query("select count(*)::int n from credit_ledger where run_id = 'run_rd' and kind = 'refund'")).rows[0]).toEqual({ n: 0 });
+    expect(await sysRun(["refund-review", "--request", "urr_d", "--workspace", WS, "--approve"], new InMemoryEventWriter())).toBe(1);
+    expect(lines.at(-1)).toContain("already decided");
+  });
+
+  it("usage errors exit 2; a missing request exits 1", async () => {
+    expect(await sysRun(["refund-review", "--request", "urr_x", "--workspace", WS])).toBe(2); // no verdict flag
+    expect(await sysRun(["refund-review", "--request", "urr_x", "--approve"], new InMemoryEventWriter())).toBe(2); // no --workspace
+    expect(await sysRun(["refund-review", "--request", "urr_ghost", "--workspace", WS, "--deny"], new InMemoryEventWriter())).toBe(1);
+    expect(lines.at(-1)).toContain("not found");
   });
 });

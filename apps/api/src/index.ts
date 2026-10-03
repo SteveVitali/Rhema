@@ -187,6 +187,12 @@ export interface BetaApiDeps {
    */
   purchaseMode?: import("@rhema/contracts").PurchaseMode;
   /**
+   * DEF.4 — `refundWindow.mode` (REQ-SPEC-29): `off` (default/unset ⇒ fail-closed) ⇒
+   * `POST /runs/:id/refund` refuses `refund_closed` and the report renders no refund block;
+   * `test_tenants` admits JOURNEY.1 `is_test` workspaces only; `open` admits everyone.
+   */
+  refundWindowMode?: import("@rhema/contracts").RefundWindowMode;
+  /**
    * PRB.08 — the `finding.disposed` analytics emitter (REQ-BETA-6). Now that the beta has a real analytics
    * sink (`analytics_events`, 0020), the live deploy binds this to `recordAnalyticsEvent`; unset ⇒ no row.
    */
