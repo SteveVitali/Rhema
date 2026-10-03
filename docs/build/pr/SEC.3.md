@@ -12,7 +12,7 @@ Stacks on `stevevitali/def-4-ledger-integrity-refund-window` (PR #100, `OPERATOR
 > manager, no `env`**, every launcher is compiled argv, the scoped runner's
 > mount sequence is enforced by a per-node `rhema-run-task` AppArmor profile
 > (the `Unconfined` stopgap is gone), and the privsep self-test runs inside the
-> production image it ships — all 18 legs green.
+> production image it ships — all 20 legs green.
 
 - **Distroless image (ADR-074).** `apps/run-task/Dockerfile` is a four-stage
   build whose runtime is `gcr.io/distroless/nodejs22-debian12`. A toolsmith
@@ -31,13 +31,19 @@ Stacks on `stevevitali/def-4-ledger-integrity-refund-window` (PR #100, `OPERATOR
   §12.6 mount plan in `node:fs` + `execFile`) and `dist/privsep-check.js`.
   The model's env is the same eight-key allowlist applied via `env`
   replacement — no `PATH` is needed anywhere because every exec is absolute.
-- **Two-uid separation, same as DEF.1 proved.** Harness uid/gid **10001**,
-  agent uid/gid **10002**, scoped roles **10003–10006**. The scoped launch
-  keeps the load-bearing ruid-0 hop (`unshare --mount → setpriv --reuid 0 →
-  scoped-runner.js`) because util-linux `mount` keys off the *real* uid;
-  the scoped query itself drops `--no-new-privs` to its distinct uid. New
-  `uid=` log lines print `[label] identity uid=… gid=… capEff=…` from
-  `/proc/self/status` — direct evidence, not inference.
+- **Two-uid separation, hardened past DEF.1 (F-SEC3-2).** Harness uid/gid
+  **10001**, agent uid/gid **10002**, scoped roles **10003–10006**. The scoped
+  launch keeps the load-bearing ruid-0 hop (`unshare --mount → setpriv --reuid
+  0 → scoped-runner.js`) because util-linux `mount` keys off the *real* uid.
+  New `uid=` log lines print `[label] identity uid=… gid=… capEff=…` from
+  `/proc/self/status` — and they immediately paid off live: the agent's line
+  showed it had **inherited the harness's ambient four-cap set** (ambient caps
+  survive `execve` of unmarked binaries), i.e. `CAP_SETUID` in the model's
+  hands — a kernel path back to uid 10001 and the harness token. Both drops
+  (`buildAgentLaunch`, `scopedChildArgv`) now carry
+  `--inh-caps -all --ambient-caps -all --no-new-privs`: the model's processes
+  hold **zero** capability vectors, kernel-proven in the privsep legs
+  (`CapEff=CapAmb=CapInh=0`, `NoNewPrivs=1`, a setuid-back attempt EPERMs).
 - **AppArmor `rhema-run-task` (ADR-075, ADR-076).** The launcher emits
   `localhostProfile: rhema-run-task` — `Unconfined` is gone from every tracked
   non-document file. The profile grants the four capabilities and **exactly**
@@ -65,10 +71,11 @@ Stacks on `stevevitali/def-4-ledger-integrity-refund-window` (PR #100, `OPERATOR
   and writing `false` would claim a control the kernel isn't applying. The
   model's own `setpriv` drop still carries `--no-new-privs` where it matters.
 - **Self-test now runs the production image.** `privsep.docker.test.ts` deleted
-  the separate `Dockerfile.privsep-test` stand-in: 18 legs `docker run` the
+  the separate `Dockerfile.privsep-test` stand-in: 20 legs `docker run` the
   shipped image in the pod's posture — harness reads the secret, agent EACCES,
   the 10001→10002 ambient-cap drop (plus a −SETGID negative leg and a
-  nnp+ambient leg), the AC4 scoped-namespace chain end-to-end (enumerated file
+  nnp+ambient leg), the F-SEC3-2 cap-clear legs (empty capability sets +
+  setuid-back EPERM), the AC4 scoped-namespace chain end-to-end (enumerated file
   present, out-of-set file absent at the kernel, ro binds reject writes), no
   `sh`/`apt`/`env`, and static-ELF verification of all four applets.
 
@@ -79,7 +86,7 @@ Stacks on `stevevitali/def-4-ledger-integrity-refund-window` (PR #100, `OPERATOR
   scoped-phase, k8s-launcher Localhost + cap assertions, identity, AppArmor
   policy pinning, `Unconfined` sweep) · `check:licenses` 610 pkgs OK ·
   `check:protocol-markers` OK · `check-build-memory` **0 violations**.
-- **Docker (production image):** `privsep.docker.test.ts` — **all 18 legs
+- **Docker (production image):** `privsep.docker.test.ts` — **all 20 legs
   green** in ~64 s; AppArmor loader image builds and `apparmor_parser -Q`
   compiles the profile clean (cache warning only — local kernel lacks the 2.4
   compat patch).

@@ -91,13 +91,15 @@ describe("runScopedRunner — the mount-plan sequence (§12.6)", () => {
       "copy /config/scoped-spec.json /work/scoped/second-reader/.scoped-spec.json",
       "chmod /work/scoped/second-reader/.scoped-spec.json 0644",
       // 4) the uid drop + scoped query
-      `spawn ${SETPRIV_BIN} --reuid 10003 --regid 10003 --clear-groups --no-new-privs -- /nodejs/bin/node ${SCOPED_QUERY} /work/scoped/second-reader/.scoped-spec.json --cwd /work/scoped/second-reader`,
+      `spawn ${SETPRIV_BIN} --reuid 10003 --regid 10003 --clear-groups --inh-caps -all --ambient-caps -all --no-new-privs -- /nodejs/bin/node ${SCOPED_QUERY} /work/scoped/second-reader/.scoped-spec.json --cwd /work/scoped/second-reader`,
     ]);
   });
 });
 
 describe("scopedChildArgv — the uid drop (golden)", () => {
-  it("is setpriv --reuid <scoped> --regid <scoped> --clear-groups --no-new-privs -- <node> <query> <spec> --cwd <root>", () => {
+  it("is setpriv --reuid <scoped> --regid <scoped> --clear-groups --inh-caps -all --ambient-caps -all --no-new-privs -- <node> <query> <spec> --cwd <root>", () => {
+    // F-SEC3-2: the cap clears are load-bearing — ambient survives execve, so without them the scoped
+    // model process would inherit the launch chain's CAP_SETUID (a kernel path back to the harness uid).
     expect(scopedChildArgv(SPEC, "/nodejs/bin/node")).toEqual([
       SETPRIV_BIN,
       "--reuid",
@@ -105,6 +107,10 @@ describe("scopedChildArgv — the uid drop (golden)", () => {
       "--regid",
       "10003",
       "--clear-groups",
+      "--inh-caps",
+      "-all",
+      "--ambient-caps",
+      "-all",
       "--no-new-privs",
       "--",
       "/nodejs/bin/node",

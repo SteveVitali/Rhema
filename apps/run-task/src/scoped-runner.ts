@@ -116,6 +116,14 @@ export function scopedChildArgv(spec: ScopedRunnerSpecFile, nodeBin: string): re
     "--regid",
     String(spec.uid),
     "--clear-groups",
+    // F-SEC3-2 — ambient caps survive execve of unmarked binaries, so without the explicit clear the
+    // scoped model process would inherit whatever ambient/inheritable set arrived down the
+    // unshare → ruid-0 wrap chain (including CAP_SETUID — a kernel path back to the harness uid).
+    // The scoped query needs NO capability vector; nnp makes the empty set unregainable.
+    "--inh-caps",
+    "-all",
+    "--ambient-caps",
+    "-all",
     "--no-new-privs",
     "--",
     nodeBin,

@@ -10,6 +10,9 @@
 //                setresgid EPERM; the dropped agent is still denied the file; the drop FAILS without
 //                CAP_SETGID (negative control); and FAILS under --no-new-privs (ADR-076 — proves the
 //                ambient-cap model needs allowPrivilegeEscalation: true).
+//   F-SEC3-2   — the agent's production drop (real buildAgentLaunch argv) strips ambient+inheritable
+//                caps and pins no-new-privs: CapEff=CapAmb=CapInh=0 and a setuid-back attempt fails,
+//                so the model's process holds no kernel path back to the harness uid/token.
 //   AC4        — the REAL launch chain (harness+ambient → unshare --mount --propagation private →
 //                setpriv --reuid 0 → privsep-ns-body.js) applies the REAL buildScopedLaunchSpec mount
 //                plan: the scoped root holds exactly the enumerated file, an out-of-set read fails at
@@ -25,6 +28,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { buildScopedLaunchSpec } from "@rhema/engine";
+import { buildAgentLaunch } from "./bootstrap.js";
 
 const SETPRIV = "/usr/bin/setpriv";
 const UNSHARE = "/usr/bin/unshare";
@@ -60,6 +64,19 @@ function check(name: string, fn: () => boolean): void {
 const dropTo = (uid: number, child: readonly string[]) => [
   "--reuid", String(uid), "--regid", String(uid), "--clear-groups", "--", ...child,
 ];
+// The agent drop exercises the REAL `buildAgentLaunch` tuple (F-SEC3-2: uid drop + group clear +
+// ambient/inheritable clear + no-new-privs), not a re-typed copy — same discipline as the AC4 leg's
+// `buildScopedLaunchSpec`. `.argv` already carries the absolute setpriv path and the `--` separator.
+const agentDropArgv = (child: readonly string[]) =>
+  buildAgentLaunch({
+    runId: "privsep-selftest", proxyBaseUrl: "http://127.0.0.1:1", configDir: "/work/.config",
+    agentUid: AGENT, agentGid: AGENT, cwd: "/work/project", command: child,
+  }).argv;
+/** exec the production agent-drop tuple; returns the child's exit code. */
+const agentDrop = (child: readonly string[]): number => {
+  const argv = agentDropArgv(child);
+  return run(argv[0]!, argv.slice(1));
+};
 /** node -e probe that reads (or writes) a path; exit 0 on success. */
 const READ_PROBE = (p: string) => [NODE, "-e", `require("node:fs").readFileSync(${JSON.stringify(p)})`];
 
@@ -73,8 +90,8 @@ run(SETPRIV, dropTo(HARNESS, [
     `fs.writeFileSync(${JSON.stringify(SECRETS)},'{"runToken":"jwt.X","proxyCredential":"cred.X"}')`,
 ]));
 check("AC1: harness reads the secrets file", () => run(SETPRIV, dropTo(HARNESS, READ_PROBE(SECRETS))) === 0);
-check("AC1: uid agent is denied the harness secrets file (EACCES)", () =>
-  run(SETPRIV, dropTo(AGENT, READ_PROBE(SECRETS))) !== 0);
+check("AC1: uid agent (production drop tuple) is denied the harness secrets file (EACCES)", () =>
+  agentDrop(READ_PROBE(SECRETS)) !== 0);
 
 // ---------- D-P0.15f-1 — the harness→agent setpriv drop (the two-uid launch) ----------
 // The entrypoint drops root→harness retaining ambient SETUID+SETGID (+SYS_ADMIN,+SYS_CHROOT); the
@@ -86,7 +103,7 @@ const harnessDrop = (capset: string, child: readonly string[], extra: readonly s
   run(SETPRIV, [
     "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
     "--inh-caps", capset, "--ambient-caps", capset, ...extra,
-    "--", SETPRIV, ...dropTo(AGENT, child),
+    "--", ...agentDropArgv(child),
   ]);
 check(
   "D-P0.15f-1: harness (ambient CAP_SETUID+SETGID) drops to agent uid 10002 (no setresgid EPERM)",
@@ -111,6 +128,26 @@ check(
     harnessDrop(HARNESS_AMBIENT, [
       NODE, "-e", `if(process.getuid()!==${AGENT})process.exit(1)`,
     ], ["--no-new-privs"]) === 0,
+);
+// F-SEC3-2 — the agent must carry NO capability vector. Ambient caps survive execve of unmarked
+// binaries, so without the production tuple's explicit `-all` clears the model's process would
+// inherit the harness's ambient CAP_SETUID — a kernel-level path back to uid 10001 and the
+// harness token. The nnp pin makes the empty set unregainable for the agent's whole subtree.
+const CAPS_PROBE =
+  `const l=require("node:fs").readFileSync("/proc/self/status","utf8").split("\\n");` +
+  `const f=(k)=>parseInt(l.find(x=>x.startsWith(k+":")).split(/\\s+/)[1],16);` +
+  `const n=l.find(x=>x.startsWith("NoNewPrivs:")).split(/\\s+/)[1];` +
+  `process.exit(f("CapEff")===0&&f("CapAmb")===0&&f("CapInh")===0&&n==="1"?0:1)`;
+check(
+  "F-SEC3-2: the agent's production drop leaves CapEff=CapAmb=CapInh=0 and NoNewPrivs=1",
+  () => harnessDrop(HARNESS_AMBIENT, [NODE, "-e", CAPS_PROBE]) === 0,
+);
+check(
+  "F-SEC3-2: the dropped agent cannot setuid back to harness uid 10001 (no CAP_SETUID — the uid boundary holds at the kernel)",
+  () =>
+    harnessDrop(HARNESS_AMBIENT, [
+      SETPRIV, "--reuid", String(HARNESS), "--regid", String(HARNESS), "--", NODE, "-e", "process.exit(0)",
+    ]) !== 0,
 );
 
 // ---------- AC4 — the input-scoped mount namespace, through the REAL launch chain ----------
@@ -165,9 +202,7 @@ run(MOUNT, ["-o", "remount,ro,bind", "/work/ro-mnt"]); // MS_RDONLY on the bind
 check(
   "P0.15h: uid agent cannot write a read-only bind mount (EROFS) — the boundary is a true zero at the kernel",
   () =>
-    run(SETPRIV, dropTo(AGENT, [
-      NODE, "-e", `require("node:fs").writeFileSync("/work/ro-mnt/00-piece-brief.md","x")`,
-    ])) !== 0,
+    agentDrop([NODE, "-e", `require("node:fs").writeFileSync("/work/ro-mnt/00-piece-brief.md","x")`]) !== 0,
 );
 // no umount applet is vendored — the bind dies with the container; nothing to clean up.
 

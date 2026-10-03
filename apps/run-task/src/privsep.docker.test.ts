@@ -61,7 +61,7 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
         { cwd: repoRoot, stdio: "pipe" },
       ).toString();
 
-      expect(out).toContain("AC1: uid agent is denied the harness secrets file (EACCES)");
+      expect(out).toContain("AC1: uid agent (production drop tuple) is denied the harness secrets file (EACCES)");
       // D-P0.15f-1: the two-uid launch path — harness (ambient CAP_SETUID+SETGID) drops to agent uid
       // 10002 with no setresgid EPERM; the dropped agent still cannot read the file; the drop fails
       // without CAP_SETGID and under --no-new-privs (the negative controls; ADR-076).
@@ -69,6 +69,10 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
       expect(out).toContain("D-P0.15f-1: agent (via the harness drop) is denied the harness secrets file (EACCES)");
       expect(out).toContain("D-P0.15f-1: without CAP_SETGID the harness→agent --regid drop fails as expected");
       expect(out).toContain("SEC.3: the ambient-cap drop survives exec under no_new_privs");
+      // F-SEC3-2: the model's process carries NO capability vector — the production drop tuple strips
+      // ambient+inheritable and pins no-new-privs, so a setuid-back attempt to the harness uid fails.
+      expect(out).toContain("F-SEC3-2: the agent's production drop leaves CapEff=CapAmb=CapInh=0 and NoNewPrivs=1");
+      expect(out).toContain("F-SEC3-2: the dropped agent cannot setuid back to harness uid 10001");
       // AC4: the scoped namespace through the REAL launch chain + REAL mount plan — exact file set,
       // out-of-set ENOENT, ro-bind EROFS, and the ruid-0 gate (F-StageB-6).
       expect(out).toContain("AC4: harness-uid mount is refused without the ruid-0 wrap");

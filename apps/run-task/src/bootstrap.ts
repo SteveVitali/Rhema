@@ -3,8 +3,10 @@
 // The task starts as uid `harness` (holds the token, the proxy credential, the hook daemon, the audit
 // writer). It then launches the SDK process as uid `agent` with a SCRUBBED env and drops privileges
 // irreversibly. `buildAgentLaunch` produces that launch spec as data: the drop-privileges argv
-// (`setpriv --reuid agent --regid agent --clear-groups`), the scrubbed env (via @rhema/engine, asserted
-// secret-free), and the cwd. run-task executes it; the deterministic test asserts the spec (uid drop, scrubbed
+// (`setpriv --reuid agent --regid agent --clear-groups --inh-caps -all --ambient-caps -all
+// --no-new-privs` — F-SEC3-2: ambient caps survive execve, so without the explicit clears the model's
+// process would inherit the harness's CAP_SETUID and a kernel path back to the harness uid/token), the
+// scrubbed env (via @rhema/engine, asserted secret-free), and the cwd. run-task executes it; the deterministic test asserts the spec (uid drop, scrubbed
 // env). The in-image proof that the RUNNING agent uid cannot read the secrets file / socket is the integration
 // test recorded in DEFERRALS.
 
@@ -68,6 +70,17 @@ export function buildAgentLaunch(input: AgentLaunchInput): AgentLaunch {
     "--regid",
     String(input.agentGid),
     "--clear-groups",
+    // SEC.3 / F-SEC3-2 — ambient capabilities survive execve of unmarked binaries, so the entrypoint's
+    // ambient four-cap set (needed by the HARNESS for the scoped unshare/mount launches and the uid
+    // drops) would propagate verbatim into the agent's node process — handing the model CAP_SETUID
+    // (a kernel-level path back to uid 10001 → the harness token). The agent launches no namespace or
+    // mount children (the harness supervisor owns `runScopedPhase`), so it needs NO capability vector:
+    // clear the ambient + inheritable sets before exec, and pin no-new-privs so nothing can be regained.
+    "--inh-caps",
+    "-all",
+    "--ambient-caps",
+    "-all",
+    "--no-new-privs",
     "--",
     ...input.command,
   ];

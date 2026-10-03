@@ -55,6 +55,16 @@ which is why the ticket calls the pod the hardest boundary. The `true` flag is d
 no-op so a future tightening pass does not mistake it for live machinery; if `CAP_SYS_ADMIN` is
 ever dropped (e.g. a userns-based runner), the flag should flip to `false` the same day.
 
+**Amended 2026-10-03 (F-SEC3-2):** the same ambient-survives-execve property this ADR relies on
+for the HARNESS also propagated the four-cap set into the AGENT's process — the live pod's own
+`[agent-entry] identity … capEff=…` line showed it. `CAP_SETUID` in the model's hands is a
+kernel path back to uid 10001 and the harness token, so `buildAgentLaunch` and
+`scopedChildArgv` now append `--inh-caps -all --ambient-caps -all` (with `--no-new-privs`,
+which the scoped drop already carried and the agent drop now does too): the ambient model is
+scoped to exactly the harness supervisor that needs it, and the kernel legs in
+`privsep-check.js` prove `CapEff=CapAmb=CapInh=0` inside the dropped agent (the scoped argv
+carries the identical tuple, goldened in `scoped-runner.test.ts`).
+
 ## Alternatives considered
 - **`file,`-style broad profile (allow all files, scope only mounts):** rejected — the file
   rules are cheap to name and the harness secret mount gets a *read-only* profile rule under a

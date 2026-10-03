@@ -232,3 +232,34 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
   `…_LOCALHOST_PROFILE=rhema-run-task`, `RUN_TASK_IMAGE_DIGEST=…3c2799ff…` (verified on the live
   Cloud Run revision). Run `01M41693MPHWEJG63Q2XYN13PH` dispatched on the operator's workspace
   (cap 500 cr = $5 hard bound); first attempt failed at F-SEC3-1 above — rebuilt below.
+
+### Deploy correction (F-SEC3-1 fix) — second build + update 136
+- The F-SEC3-1 fix (no `--bounding-set`) was committed as `e868b9a`, rebuilt via Cloud Build
+  `cbc2cb21-7dd2-46a7-9f94-0c05d74fc9b2` → run-task `@sha256:2997ca6cd04ab275514b2ab9b2ada60a3ac581ca8ff99acabda64b0f82c16efc`,
+  loader `@sha256:e680b099ca7532f5b24a8da559a9dd6484354b5c0dec7cfa20baf27885f3abbe` (loader
+  rebuilt because it is tagged from the same build invocation; the profile bytes are unchanged).
+- `pulumi up` update 136 pinned `RUN_TASK_IMAGE_DIGEST=…2997ca6c…`; loader DS rolled
+  `@sha256:e680b099…` on the sandbox pool (preview
+  `https://app.pulumi.com/14stevevitali-gmail-com/rhema/prod/previews/37f188fd-4cd3-4fc3-99d9-c7ffd8e5881b`).
+- Replacement run `01M416S2XP7FN37PR3FGZ1SXBX` dispatched on the same bounded workspace.
+
+### F-SEC3-2 — the ambient cap set propagated into the model's processes (identity-line find)
+- **Live evidence:** the second pod's own identity lines showed
+  `[agent-entry] identity uid=10002 … capEff=setgid,setuid,sys_chroot,sys_admin` — ambient
+  capabilities survive `execve` of unmarked binaries, so the entrypoint's ambient four-cap set
+  (raised for the HARNESS, which owns the scoped `unshare`/`mount` launches and the uid drops)
+  propagated verbatim through `setpriv → node` into the agent's process. With `CAP_SETUID`
+  effective the model's process could `setresuid(10001)` — a kernel-level path back to the
+  harness uid and therefore the harness token; the two-uid boundary rested on the env scrub +
+  0600 perms alone. The scoped child's `--no-new-privs` drop had the same gap (ambient clear
+  was implicit, not asserted). Pre-existing in the Phase-0 ambient model — surfaced now only
+  because SEC.3's new identity logging prints `capEff`.
+- **Fix (this branch, kernel-proven):** `buildAgentLaunch` now appends
+  `--inh-caps -all --ambient-caps -all --no-new-privs` to the drop argv (bootstrap.ts);
+  `scopedChildArgv` gained the same clears (scoped-runner.ts). The agent needs NO capability
+  vector — `runScopedPhase` is spawned by the harness supervisor, never the agent — and nnp
+  makes the empty set unregainable for the agent's whole subtree.
+- **Proof:** two new privsep legs on the PRODUCTION image assert
+  `CapEff=CapAmb=CapInh=0 && NoNewPrivs=1` inside the dropped agent and that a
+  `setpriv --reuid 10001` attempt from the dropped agent EPERMs — both PASS. The agent-denied
+  legs (AC1, P0.15h) now exec the REAL `buildAgentLaunch` argv, not a re-typed copy.
