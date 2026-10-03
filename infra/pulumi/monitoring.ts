@@ -22,6 +22,8 @@ export interface MonitoringArgs {
   readonly project: pulumi.Input<string>;
   /** the api Cloud Run service name (for the availability Slo's monitored-service labels). */
   readonly apiServiceName?: pulumi.Input<string>;
+  /** the worker Cloud Run service name (for the `[slo] *` log-metric filters — see below). */
+  readonly workerServiceName?: pulumi.Input<string>;
   /** the api service's region (Cloud Run serviceLabel `location`). */
   readonly region: pulumi.Input<string>;
   /** the ops webhook URL (Pulumi secret config) — the channel exists only when set. */
@@ -64,6 +66,14 @@ export function createMonitoring(args: MonitoringArgs): {
 } {
   const { stack, project, region } = args;
 
+  // Cloud Run services are Pulumi-AUTONAMED — `rhema-prod-worker` deploys as e.g.
+  // `rhema-prod-worker-cbdaf0f`, and THAT full name is the `service_name` resource label on every
+  // log line + run.googleapis.com metric. Any filter naming the base string silently matches
+  // nothing: the violations counter, the weekly metrics, the api-availability Slo and the dashboard's
+  // api tiles all read zero until the real name is threaded through (found on prod at SLO.1 close).
+  const workerServiceName = args.workerServiceName ?? `rhema-${stack}-worker`;
+  const apiServiceName = args.apiServiceName ?? `rhema-${stack}-api`;
+
   // The notification channel — only when the webhook URL is configured (unseeded stages still get the
   // policies; they record incidents, they just don't page).
   let notificationChannel: gcp.monitoring.NotificationChannel | undefined;
@@ -82,10 +92,7 @@ export function createMonitoring(args: MonitoringArgs): {
   const sloViolationsMetric = new gcp.logging.Metric(`rhema-${stack}-slo-violations`, {
     name: "rhema_slo_violations",
     project,
-    filter:
-      'resource.type="cloud_run_revision" AND ' +
-      'resource.labels.service_name="rhema-' + stack + '-worker" AND ' +
-      'textPayload:"[slo] violation"',
+    filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] violation"`,
     metricDescriptor: {
       metricKind: "DELTA",
       valueType: "INT64",
@@ -107,10 +114,7 @@ export function createMonitoring(args: MonitoringArgs): {
   const sloWeeklyMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly`, {
     name: "rhema_slo_weekly",
     project,
-    filter:
-      'resource.type="cloud_run_revision" AND ' +
-      'resource.labels.service_name="rhema-' + stack + '-worker" AND ' +
-      'textPayload:"[slo] weekly {"',
+    filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] weekly {"`,
     metricDescriptor: {
       metricKind: "DELTA",
       valueType: "INT64",
@@ -128,10 +132,7 @@ export function createMonitoring(args: MonitoringArgs): {
   const sloWeeklyValueMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly-value`, {
     name: "rhema_slo_weekly_value",
     project,
-    filter:
-      'resource.type="cloud_run_revision" AND ' +
-      'resource.labels.service_name="rhema-' + stack + '-worker" AND ' +
-      'textPayload:"[slo] weekly {"',
+    filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] weekly {"`,
     metricDescriptor: {
       metricKind: "DELTA",
       valueType: "DISTRIBUTION",
@@ -296,33 +297,45 @@ export function createMonitoring(args: MonitoringArgs): {
 
   // API availability — a Cloud Run request-based SLO on the api service (the §13.5 99.9%/month row;
   // measured platform-side, `api_availability_monthly_pct` is unmeasured at the DB layer on purpose).
-  const apiService = new gcp.monitoring.GenericService(`rhema-${stack}-api-svc`, {
-    serviceId: `api-${stack}`,
-    basicService: {
-      serviceType: "CLOUD_RUN",
-      serviceLabels: {
-        service_name: args.apiServiceName ?? `rhema-${stack}-api`,
-        location: region,
+  // `deleteBeforeReplace`: the serviceId is the resource's physical name — a create-replacement of a
+  // renamed monitored service would collide. Deleting a monitored service cascade-deletes its SLOs,
+  // so the Slo below carries `deletedWith` to be recreated in lockstep (one `up`, no orphan).
+  const apiService = new gcp.monitoring.GenericService(
+    `rhema-${stack}-api-svc`,
+    {
+      serviceId: `api-${stack}`,
+      basicService: {
+        serviceType: "CLOUD_RUN",
+        serviceLabels: {
+          service_name: apiServiceName,
+          location: region,
+        },
       },
     },
-  });
-  const apiAvailabilitySlo = new gcp.monitoring.Slo(`rhema-${stack}-api-availability`, {
-    service: apiService.serviceId,
-    sloId: `api-availability-${stack}`,
-    displayName: "API availability 99.9% monthly (§13.5)",
-    goal: 0.999,
-    calendarPeriod: "MONTH",
-    requestBasedSli: {
-      goodTotalRatio: {
-        // good: 2xx/3xx/4xx; total: all requests. 5xx burns the budget (error-budget burn >2x alerts).
-        goodServiceFilter:
-          'metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision" ' +
-          'AND metric.labels.response_code_class!="5xx"',
-        totalServiceFilter:
-          'metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision"',
+    { deleteBeforeReplace: true },
+  );
+  const apiAvailabilitySlo = new gcp.monitoring.Slo(
+    `rhema-${stack}-api-availability`,
+    {
+      service: apiService.serviceId,
+      sloId: `api-availability-${stack}`,
+      displayName: "API availability 99.9% monthly (§13.5)",
+      goal: 0.999,
+      calendarPeriod: "MONTH",
+      requestBasedSli: {
+        goodTotalRatio: {
+          // good: 2xx/3xx/4xx; total: all requests. 5xx burns the budget (error-budget burn >2x alerts).
+          // Scoped to the api service — an unscoped filter would fold every Cloud Run service's
+          // request count into the api's availability (the pre-SLO.1 filters did exactly that).
+          goodServiceFilter: pulumi.interpolate`metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision" AND resource.labels.service_name="${apiServiceName}" AND metric.labels.response_code_class!="5xx"`,
+          totalServiceFilter: pulumi.interpolate`metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision" AND resource.labels.service_name="${apiServiceName}"`,
+        },
       },
     },
-  });
+    // deletedWith pairs the replace with the monitored service's (GCP cascade-deletes SLOs with
+    // their service); deleteBeforeReplace avoids an sloId collision on the replacement create.
+    { deletedWith: apiService, deleteBeforeReplace: true },
+  );
 
   // The §13.5 dashboard — one widget per probe signal's breach counter + the api request latency/error
   // tiles + the availability SLO tile (select_slo_health over the Slo resource, name interpolated after
@@ -332,7 +345,7 @@ export function createMonitoring(args: MonitoringArgs): {
     // Built via pulumi.all + JSON.stringify (not a hand-escaped interpolate template): the provider
     // validates dashboard_json at plan time, and a serialized Output inside a raw string literal
     // produced invalid JSON live (update 75 preview: "invalid character 'l' after object key:value").
-    dashboardJson: pulumi.all([apiAvailabilitySlo.name]).apply(([sloName]) =>
+    dashboardJson: pulumi.all([apiAvailabilitySlo.name, apiServiceName]).apply(([sloName, apiName]) =>
       JSON.stringify({
         displayName: `rhema-${stack} — §13.5 SLOs`,
         gridLayout: {
@@ -415,7 +428,7 @@ export function createMonitoring(args: MonitoringArgs): {
                   {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
-                        filter: `metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.labels.service_name="rhema-${stack}-api"`,
+                        filter: `metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.labels.service_name="${apiName}"`,
                         aggregation: {
                           alignmentPeriod: "60s",
                           perSeriesAligner: "ALIGN_RATE",
@@ -436,7 +449,7 @@ export function createMonitoring(args: MonitoringArgs): {
                   {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
-                        filter: `metric.type="run.googleapis.com/request_latencies" resource.type="cloud_run_revision" resource.labels.service_name="rhema-${stack}-api"`,
+                        filter: `metric.type="run.googleapis.com/request_latencies" resource.type="cloud_run_revision" resource.labels.service_name="${apiName}"`,
                         aggregation: {
                           alignmentPeriod: "60s",
                           perSeriesAligner: "ALIGN_PERCENTILE_95",

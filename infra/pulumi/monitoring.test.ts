@@ -100,7 +100,9 @@ describe("SLO.1 weekly-review metrics (REQ-ARCH-34)", () => {
 
   it("counts every `[slo] weekly` reading on the worker, labelled by signal + status (an empty/unmeasured/error status is visible, never absent)", () => {
     expect(weeklyBlock).toContain('name: "rhema_slo_weekly"');
-    expect(weeklyBlock).toContain('resource.labels.service_name="rhema-');
+    // The filter threads the AUTONAMED worker service name (rhema-prod-worker-cbdaf0f), not the
+    // literal Pulumi base name — a literal filter silently matches zero log entries.
+    expect(weeklyBlock).toContain('resource.labels.service_name="${workerServiceName}"');
     expect(weeklyBlock).toContain('textPayload:"[slo] weekly {"');
     expect(weeklyBlock).toContain('metricKind: "DELTA"');
     expect(weeklyBlock).toContain('key: "signal"');
