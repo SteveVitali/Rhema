@@ -120,7 +120,7 @@ describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/demo#chat");
     expect(postChatTurn).toHaveBeenCalledWith(
-      { cookie: "__Host-rhema.session_token=tok" },
+      expect.objectContaining({ cookie: "__Host-rhema.session_token=tok" }),
       "proj_1",
       "thr_1",
       expect.objectContaining({ message: "hi", modelTier: "balanced" }),
@@ -277,12 +277,14 @@ describe("RUN.1 — the chat proxy's truthful error path", () => {
     expect(res.status).toBe(402);
     expect((await res.json()) as { error: string }).toEqual({ error: "insufficient_balance" });
     expect(lastLog()).toMatchObject({
-      msg: "chat upstream refused",
-      route: "chat/turns",
+      severity: "WARNING",
+      msg: "chat_upstream_refused",
+      route: "/p/:project/chat/turns",
       upstreamStatus: 402,
       upstreamCode: "insufficient_balance",
     });
-    expect(String(lastLog().requestId)).toBeTruthy();
+    // OBS.1 — the logged id is the REQUEST's id (echoed on the response), not a call-local UUID.
+    expect(String(lastLog().requestId)).toBe(res.headers.get("x-rhema-request-id"));
   });
 
   it("an api 409 (a live run conflicts) passes through as 409 run_in_progress", async () => {
@@ -311,7 +313,7 @@ describe("RUN.1 — the chat proxy's truthful error path", () => {
     });
     expect(res.status).toBe(502);
     expect((await res.json()) as { error: string }).toEqual({ error: "chat_upstream_error" });
-    expect(lastLog()).toMatchObject({ level: "error", upstreamStatus: 503 });
+    expect(lastLog()).toMatchObject({ severity: "ERROR", upstreamStatus: 503, status: 502 });
   });
 
   it("a dropped connection (a non-ApiError throw) is 502 chat_unavailable", async () => {
@@ -326,7 +328,12 @@ describe("RUN.1 — the chat proxy's truthful error path", () => {
     });
     expect(res.status).toBe(502);
     expect((await res.json()) as { error: string }).toEqual({ error: "chat_unavailable" });
-    expect(lastLog()).toMatchObject({ msg: "chat upstream unreachable", route: "chat/turns" });
+    expect(lastLog()).toMatchObject({
+      severity: "ERROR",
+      msg: "chat_upstream_unreachable",
+      route: "/p/:project/chat/turns",
+      status: 502,
+    });
   });
 
   it("an unbound data-source seam is 503 chat_not_wired — never a mystery 502", async () => {
@@ -338,7 +345,12 @@ describe("RUN.1 — the chat proxy's truthful error path", () => {
     });
     expect(res.status).toBe(503);
     expect((await res.json()) as { error: string }).toEqual({ error: "chat_not_wired" });
-    expect(lastLog()).toMatchObject({ msg: "chat seam unbound", route: "chat/turns" });
+    expect(lastLog()).toMatchObject({
+      severity: "ERROR",
+      msg: "chat_seam_unbound",
+      route: "/p/:project/chat/turns",
+      status: 503,
+    });
   });
 
   it("a FORM post gets the same truthful failure — no redirect eats the refusal", async () => {

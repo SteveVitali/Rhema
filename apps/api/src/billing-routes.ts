@@ -10,7 +10,7 @@
 // Secrets: the webhook signing secret arrives injected (Secret Manager at deploy) — never an env var on
 // web/collab, never in the repo.
 
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import type { SqlClient, Queue, IdFactory } from "@rhema/orchestrator";
 import {
   verifyStripeSignature,
@@ -46,6 +46,7 @@ import {
 } from "@rhema/contracts";
 import { surfacePricer } from "@rhema/run-sheet";
 import type { Principal } from "./run-routes.js";
+import { logApiRouteError } from "./observability.js";
 
 export interface BillingApiDeps {
   /** session principal (same seam run-routes uses). */
@@ -84,27 +85,35 @@ function safeReturnToPath(v: unknown): string | undefined {
 
 /**
  * BILL.3 — classify a failed Stripe call into the stable code the web maps to truthful copy:
- * a 4xx from Stripe is OUR request's fault (`stripe_rejected` — "Stripe refused that checkout",
- * logged with the session id); a 5xx or a network throw is `stripe_unavailable`. Anything that isn't
- * a StripeRequestError re-throws (an internal bug stays a 500 — never relabeled as billing trouble).
+ * a 4xx from Stripe is OUR request's fault (`stripe_rejected` — "Stripe refused that checkout"),
+ * a 5xx or a network throw is `stripe_unavailable`. Anything that isn't a StripeRequestError
+ * re-throws (an internal bug stays a 500 — never relabeled as billing trouble). OBS.1 — the one
+ * log line is the caller's allowlisted structured line (status/upstreamStatus/upstreamCode carry
+ * what the old text line did — Stripe type/code + status).
  */
-function stripeFailure(
-  kind: "checkout" | "portal",
-  err: unknown,
-  log: (msg: string) => void,
-): { error: string; status: 502 | 503 } {
+function stripeFailure(err: unknown): { error: string; status: 502 | 503 } {
   if (err instanceof StripeRequestError) {
-    const sessionId = (err as StripeRequestError & { checkoutSessionId?: string }).checkoutSessionId;
-    log(
-      `[api] billing ${kind} refused: status=${err.status} type=${err.stripeType ?? "-"} code=${err.stripeCode ?? "-"}` +
-        (sessionId ? ` session=${sessionId}` : ""),
-    );
-    // a 4xx is our request's shape at fault (rejected, logged); a 5xx from Stripe is THEIR outage.
+    // a 4xx is our request's shape at fault (rejected); a 5xx from Stripe is THEIR outage.
     return err.rejected ? { error: "stripe_rejected", status: 502 } : { error: "stripe_unavailable", status: 503 };
   }
   // Anything else is an internal/db bug, not Stripe trouble: rethrow so it stays a 500 instead of
   // collapsing into the billing-unavailable class (BILL.3's truthful-failure rule).
   throw err;
+}
+
+/** OBS.1 — the ONE structured line for a Stripe-mediated 5xx (kind joins msg; ids stay out). */
+function logStripeFailure(
+  c: Context,
+  kind: "checkout" | "portal",
+  err: unknown,
+  status: number,
+): void {
+  logApiRouteError(c, err, {
+    status,
+    upstreamStatus: err instanceof StripeRequestError ? err.status : null,
+    upstreamCode: err instanceof StripeRequestError ? (err.stripeCode ?? null) : null,
+    msg: `stripe_${kind}_failed`,
+  });
 }
 
 export function createBillingRoutes(deps: BillingApiDeps): Hono {
@@ -368,7 +377,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
         }
         return c.json({ sessionId: out.sessionId, url: out.url });
       } catch (err) {
-        const f = stripeFailure("checkout", err, (m) => console.error(m));
+        const f = stripeFailure(err); logStripeFailure(c, "checkout", err, f.status);
         return c.json({ error: f.error }, f.status);
       }
     }
@@ -446,7 +455,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
         }
         return c.json({ sessionId: out.sessionId, url: out.url });
       } catch (err) {
-        const f = stripeFailure("checkout", err, (m) => console.error(m));
+        const f = stripeFailure(err); logStripeFailure(c, "checkout", err, f.status);
         return c.json({ error: f.error }, f.status);
       }
     }
@@ -485,7 +494,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       });
       return c.json({ url: ref.url });
     } catch (err) {
-      const f = stripeFailure("portal", err, (m) => console.error(m));
+      const f = stripeFailure(err); logStripeFailure(c, "portal", err, f.status);
       return c.json({ error: f.error }, f.status);
     }
   });

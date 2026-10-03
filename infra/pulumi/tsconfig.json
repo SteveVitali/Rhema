@@ -13,5 +13,8 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["*.ts", "../config/stages.ts", "../config/retention.ts"]
+  "include": ["*.ts", "../config/stages.ts", "../config/retention.ts"],
+  "//5": "OBS.1 — *.test.ts are vitest source-assertion files (import.meta under a commonjs program",
+  "//6": "tsconfig fails tsc); they are not part of the program the CLI compiles. Exclude them.",
+  "exclude": ["*.test.ts"]
 }

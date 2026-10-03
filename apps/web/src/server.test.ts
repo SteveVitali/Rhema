@@ -1233,7 +1233,7 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
       body: JSON.stringify({ appTheme: "light" }),
     });
     expect(ok.status).toBe(200);
-    expect(setTheme).toHaveBeenCalledWith(SESSION, "light");
+    expect(setTheme).toHaveBeenCalledWith(expect.objectContaining(SESSION), "light");
     const bad = await app.request("/ide/theme", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1252,7 +1252,7 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
       body: JSON.stringify({ paperTheme: "dark" }),
     });
     expect(ok.status).toBe(200);
-    expect(setPaperTheme).toHaveBeenCalledWith(SESSION, "proj_pv", "dark");
+    expect(setPaperTheme).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv", "dark");
     const bad = await app.request("/p/the-politics-of-visibility/paper-theme", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1294,7 +1294,7 @@ describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/app/settings/preferences?saved=1");
-    expect(setTheme).toHaveBeenCalledWith(SESSION, "auto");
+    expect(setTheme).toHaveBeenCalledWith(expect.objectContaining(SESSION), "auto");
   });
 
   it("a bad theme value is refused (no write) but still redirects — the form is progressive enhancement", async () => {
@@ -1435,7 +1435,7 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     const res = await app.request("/p/the-politics-of-visibility/restore", { method: "POST" });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/app?deleted=1");
-    expect(restoreProject).toHaveBeenCalledWith(SESSION, "proj_pv");
+    expect(restoreProject).toHaveBeenCalledWith(expect.objectContaining(SESSION), "proj_pv");
   });
 
   it("POST /app/grouping persists the per-user pref and returns home", async () => {
@@ -1444,7 +1444,7 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     const res = await app.request("/app/grouping", { method: "POST", ...form({ groupBy: "voice" }) });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/app");
-    expect(setProjectGrouping).toHaveBeenCalledWith(SESSION, "voice");
+    expect(setProjectGrouping).toHaveBeenCalledWith(expect.objectContaining(SESSION), "voice");
   });
 
   it("GET /app/new renders exactly three entry cards + the protocol/venue/Voice pickers", async () => {
@@ -1482,7 +1482,7 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/my-essay?created=scratch");
     expect(createProject).toHaveBeenCalledWith(
-      SESSION,
+      expect.objectContaining(SESSION),
       expect.objectContaining({ title: "My Essay", entry: "scratch", protocolId: "essay" }),
     );
   });
@@ -1535,7 +1535,7 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(res.headers.get("location")).toContain("/p/my-essay/v/3?created=draft");
     expect(res.headers.get("location")).toContain("cn=1");
     expect(createProject).toHaveBeenCalledWith(
-      SESSION,
+      expect.objectContaining(SESSION),
       expect.objectContaining({
         title: "My Essay", entry: "draft", protocolId: "essay", venue: "n+1",
         personaId: "per_self", startVersion: 3, quarantineKey: "quarantine/ws1/up_new",
@@ -1867,24 +1867,24 @@ describe("P1.05 — timeline, run page, steering", () => {
     const pause = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", { method: "POST", ...form({}) });
     expect(pause.status).toBe(302);
     expect(pause.headers.get("location")).toBe("/p/the-politics-of-visibility");
-    expect(pauseRun).toHaveBeenCalledWith(SESSION, "run_tl");
+    expect(pauseRun).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
 
     const resume = await app.request("/p/the-politics-of-visibility/r/run_tl/resume", {
       method: "POST",
       ...form({ note: "go easy" }),
     });
     expect(resume.headers.get("location")).toBe("/p/the-politics-of-visibility");
-    expect(resumeRun).toHaveBeenCalledWith(SESSION, "run_tl", "go easy");
+    expect(resumeRun).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl", "go easy");
 
     const note = await app.request("/p/the-politics-of-visibility/r/run_tl/note", {
       method: "POST",
       ...form({ text: "check §2" }),
     });
-    expect(postRunNote).toHaveBeenCalledWith(SESSION, "run_tl", "check §2");
+    expect(postRunNote).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl", "check §2");
     expect(note.status).toBe(302);
 
     const stop = await app.request("/p/the-politics-of-visibility/r/run_tl/stop", { method: "POST", ...form({}) });
-    expect(stopRun).toHaveBeenCalledWith(SESSION, "run_tl");
+    expect(stopRun).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
     expect(stop.status).toBe(302);
   });
 
@@ -1917,7 +1917,7 @@ describe("P1.05 — timeline, run page, steering", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("text/event-stream");
     expect(await res.text()).toBe(sse);
-    expect(streamRunEvents).toHaveBeenCalledWith(SESSION, "run_live", { after: "0" });
+    expect(streamRunEvents).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_live", { after: "0" });
     // upstream down → 502, never an empty page
     const down = createWebApp(
       p105Deps({ streamRunEvents: async () => { throw new ApiError(502, "down"); } }),

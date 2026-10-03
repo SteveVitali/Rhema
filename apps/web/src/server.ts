@@ -71,13 +71,20 @@ import {
 } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
 import {
+  logWebRouteError,
+  requestContext as obsRequestContext,
+  requestLogContext,
+  webOnError,
+  withRequestId,
+} from "./observability.js";
+import {
   applySeverityBudget,
   filterFindings,
   parseFindingFilters,
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
+import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { CLIENT_ENTRIES } from "../client-entries.mjs";
@@ -141,6 +148,11 @@ export interface WebDeps {
   readonly claims?: PublicClaimsConfig;
   /** JOURNEY.1 (REQ-ARCH-39) — the image-baked deploy SHA surfaced on `/healthz` (`RHEMA_BUILD_GIT_SHA`). */
   readonly buildGitSha?: string;
+  /**
+   * OBS.1 — the GCP project id for the `logging.googleapis.com/trace` join field (deploy binds
+   * `GOOGLE_CLOUD_PROJECT`). Unset ⇒ the trace field is omitted; requestId still propagates.
+   */
+  readonly gcpProject?: string;
 }
 
 /**
@@ -274,6 +286,18 @@ function loginQueryErrorFor(code: string | undefined, open: boolean): string | u
 
 export function createWebApp(deps: WebDeps): Hono {
   const app = new Hono();
+  // OBS.1 (ADR-053) — request correlation FIRST: resolve/echo the request id (the LB's trace id when
+  // the hop carried one, else minted), stash the Cloud Logging trace field, and normalize non-Error
+  // throws so EVERY failure reaches `onError` (a non-Error throw otherwise escapes `app.fetch` to a
+  // silent bare 500 — the "5xx with no app log line" defect).
+  app.use("*", obsRequestContext(deps.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT));
+  // OBS.1 — stamp the resolved request id on the forwarded session headers once: every api-client
+  // call (chat, SSE proxy, dossier, …) then carries `x-rhema-request-id` to the api unchanged.
+  const innerSession = deps.session;
+  deps = {
+    ...deps,
+    session: (c: Context) => withRequestId(innerSession(c), c),
+  };
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
 
   // P1.22 (§13.3 audit; REQ-ARCH-24) — the web shell's Content-Security-Policy, stamped per response.
@@ -369,11 +393,12 @@ export function createWebApp(deps: WebDeps): Hono {
   };
 
   // PRB.16 — an api-side 401 on a data call means the session is gone/invalid: land on /login rather
-  // than a bare 500 (the session cookie may be expired while still present).
+  // than a bare 500 (the session cookie may be expired while still present). OBS.1 — everything else
+  // is exactly ONE structured error line (allowlisted fields, route TEMPLATE, message-stripped stack)
+  // and a bare 500 whose only reference is the request id.
   app.onError((err, c) => {
     if (err instanceof ApiError && err.status === 401) return c.redirect("/login");
-    console.error("[web] unhandled route error:", err instanceof Error ? (err.stack ?? err.message) : err);
-    return c.text("internal error", 500);
+    return webOnError(err, c);
   });
 
   // JOURNEY.1 (REQ-ARCH-39) — the provenance check's network-reachable SHA (see apps/api /healthz).
@@ -593,43 +618,49 @@ export function createWebApp(deps: WebDeps): Hono {
    * VERBATIM (a 402 stays `{error:"insufficient_balance"}` at 402; a 409 stays `run_in_progress`) —
    * the caller can name the refusal instead of staring at a bare 502. An api 5xx, a dropped
    * connection, or an unbound seam is the only real gateway failure. Every refusal logs ONE
-   * structured line — route + requestId + upstream status/code — and NEVER the user's message text,
-   * the thread's content, or any prompt material (the body arrives in `message`; nothing logs it).
+   * structured line — route TEMPLATE + requestId + upstream status/code — and NEVER the user's
+   * message text, the thread's content, or any prompt material (the body arrives in `message`;
+   * nothing logs it). OBS.1 — the line is the shared allowlisted shape: the request's OWN id (not a
+   * call-local UUID), WARNING for an expected <5xx refusal, ERROR only for a real server fault.
    */
   type ChatCall<T> = { readonly out: T } | { readonly status: number; readonly code: string };
   const chatCall = async <T>(
-    route: string,
+    c: Context,
     fn: () => Promise<T> | undefined,
   ): Promise<ChatCall<T>> => {
-    const requestId = randomUUID();
     try {
       const out = await fn();
       if (out === undefined) {
         // the data-source seam isn't bound — the api would call this `chat_not_wired`.
-        console.error(
-          JSON.stringify({ level: "warn", msg: "chat seam unbound", route, requestId, upstreamStatus: null, upstreamCode: "chat_not_wired" }),
-        );
+        logWebRouteError(c, {
+          status: 503,
+          upstreamCode: "chat_not_wired",
+          msg: "chat_seam_unbound",
+          errorClass: "UnboundSeam",
+        });
         return { status: 503, code: "chat_not_wired" };
       }
       return { out };
     } catch (e) {
       if (e instanceof ApiError) {
         const status = e.status >= 500 ? 502 : e.status;
-        console.error(
-          JSON.stringify({
-            level: status >= 500 ? "error" : "warn",
-            msg: "chat upstream refused",
-            route,
-            requestId,
-            upstreamStatus: e.status,
-            upstreamCode: e.code ?? null,
-          }),
-        );
+        logWebRouteError(c, {
+          status,
+          upstreamStatus: e.status,
+          upstreamCode: e.code ?? null,
+          msg: "chat_upstream_refused",
+          severity: status >= 500 ? "ERROR" : "WARNING",
+          errorClass: errorClass(e),
+          stack: stackForLog(e),
+        });
         return { status, code: status === 502 ? "chat_upstream_error" : (e.code ?? "chat_refused") };
       }
-      console.error(
-        JSON.stringify({ level: "error", msg: "chat upstream unreachable", route, requestId, upstreamStatus: null, upstreamCode: null }),
-      );
+      logWebRouteError(c, {
+        status: 502,
+        msg: "chat_upstream_unreachable",
+        errorClass: errorClass(e),
+        stack: stackForLog(e),
+      });
       return { status: 502, code: "chat_unavailable" };
     }
   };
@@ -667,7 +698,7 @@ export function createWebApp(deps: WebDeps): Hono {
         `/p/${row.slug}/visualize${request ? `?request=${encodeURIComponent(request)}` : ""}`,
       );
     }
-    const res = await chatCall("chat/turns", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.postChatTurn?.(session, row.id, threadId, {
         message,
         ...(typeof body.modelTier === "string" ? { modelTier: body.modelTier } : {}),
@@ -688,7 +719,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const action = body.action;
     if (!threadId || (action !== "run_research" && action !== "first_step" && action !== "edit" && action !== "cancel"))
       return c.json({ error: "threadId + action required" }, 422);
-    const res = await chatCall("chat/plan-decision", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.postChatPlanDecision?.(session, row.id, threadId, {
         action,
         ...(typeof body.runId === "string" ? { runId: body.runId } : {}),
@@ -709,7 +740,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!name) return c.json({ error: "name required" }, 422);
-    const res = await chatCall("chat/threads", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.createChatThread?.(session, row.id, { name }),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -726,7 +757,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const summary = typeof body.summary === "string" ? body.summary.trim() : "";
     if (!threadId || !summary) return c.json({ error: "threadId + summary required" }, 422);
-    const res = await chatCall("chat/pins", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.addChatPin?.(session, row.id, threadId, {
         summary,
         ...(typeof body.kind === "string" ? { kind: body.kind as "fact" | "ref" | "source" } : {}),
@@ -747,7 +778,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     if (!threadId) return c.json({ error: "threadId required" }, 422);
-    const res = await chatCall("chat/pins/remove", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.removeChatPin?.(session, row.id, threadId, c.req.param("pinId")),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -764,7 +795,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const text = typeof body.text === "string" ? body.text.trim() : "";
     if (!threadId || !text) return c.json({ error: "threadId + text required" }, 422);
-    const res = await chatCall("chat/corrections", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.postChatCorrection?.(session, row.id, threadId, { text }),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -783,7 +814,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const ref = typeof body.ref === "string" ? body.ref : "";
     const replacement = typeof body.replacement === "string" ? body.replacement : "";
     if (!ref || !replacement.trim()) return c.json({ error: "ref + replacement required" }, 422);
-    const res = await chatCall("chat/suggestions", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.postChatSuggestion?.(session, row.id, {
         anchor: {
           ref,
@@ -815,7 +846,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const text = typeof body.text === "string" ? body.text : "";
     if (!text.trim()) return c.json({ error: "text required" }, 422);
-    const res = await chatCall("chat/notes", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.postChatNote?.(session, row.id, { text }),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -836,7 +867,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const mediaType = typeof body.mediaType === "string" ? body.mediaType : "";
     if (!quarantineKey || !filename || !mediaType)
       return c.json({ error: "quarantineKey + filename + mediaType required" }, 422);
-    const res = await chatCall("chat/attachments", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.postChatAttachment?.(session, row.id, {
         quarantineKey,
         filename,
@@ -856,7 +887,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = await chatProject(c, session);
     if (!row) return c.json({ error: "project not found" }, 404);
     const threadId = c.req.query("thread") ?? "";
-    const res = await chatCall("chat/turn-status", () =>
+    const res = await chatCall(c, () =>
       deps.dataSource.getChatTurn?.(session, row.id, threadId, c.req.param("runId")),
     );
     if (!("out" in res)) return chatFail(c, res);
@@ -923,7 +954,11 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(str("slug") ? { slug: str("slug") } : {}),
         idempotencyKey: str("idempotencyKey") || randomUUID(),
       });
-      if (!out) return c.html(renderDocument(c.req.path, notFoundElement), 502);
+      if (!out) {
+        // OBS.1 — the promote seam is unbound: a user-visible 502 gets its one structured line.
+        logWebRouteError(c, { status: 502, msg: "outline_promote_unbound", errorClass: "UnboundSeam" });
+        return c.html(renderDocument(c.req.path, notFoundElement), 502);
+      }
       return c.redirect(`/p/${slug}`);
     } catch (e) {
       // a missing thread/turn or a live-run conflict re-renders the sheet with the honest notice —
@@ -934,6 +969,18 @@ export function createWebApp(deps: WebDeps): Hono {
           : e instanceof ApiError && e.status === 409
             ? COPY.promote.notFound
             : COPY.promote.notFound;
+      // OBS.1 — the failure surfaced as a ≥500 page status gets its one structured line (a handled
+      // <500 refusal renders the notice silently — expected, not a server fault).
+      if (!(e instanceof ApiError) || e.status >= 500) {
+        logWebRouteError(c, {
+          status: e instanceof ApiError ? e.status : 502,
+          upstreamStatus: e instanceof ApiError ? e.status : null,
+          upstreamCode: e instanceof ApiError ? (e.code ?? null) : null,
+          msg: "outline_promote_failed",
+          errorClass: errorClass(e),
+          stack: stackForLog(e),
+        });
+      }
       const promotion = await deps.dataSource
         .getOutlinePromotion?.(session, row.id, {
           scope,
@@ -1229,6 +1276,18 @@ export function createWebApp(deps: WebDeps): Hono {
       });
       return c.redirect(`/p/${slug}/figures`);
     } catch (e) {
+      // OBS.1 — a ≥500 page status gets its one structured line; a handled <500 refusal renders the
+      // notice silently (expected, not a server fault).
+      if (!(e instanceof ApiError) || e.status >= 500) {
+        logWebRouteError(c, {
+          status: e instanceof ApiError ? e.status : 502,
+          upstreamStatus: e instanceof ApiError ? e.status : null,
+          upstreamCode: e instanceof ApiError ? (e.code ?? null) : null,
+          msg: "figure_run_failed",
+          errorClass: errorClass(e),
+          stack: stackForLog(e),
+        });
+      }
       return c.html(
         renderDocument(c.req.path, visualizeElement, {
           visualize: {
@@ -1407,9 +1466,14 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // PRB.16 — the Better Auth surface, proxied to the api so the OAuth callback + auth cookies live on
   // this host (the browser never talks to api.rhema.tools; see apps/api/src/auth-context.ts).
+  // OBS.1 — the request id rides through here too, so an auth-call 5xx joins the same trail.
   if (deps.authProxy) {
     const proxy = deps.authProxy;
-    app.all("/api/auth/*", (c) => proxy(c.req.raw));
+    app.all("/api/auth/*", (c) => {
+      const headers = new Headers(c.req.raw.headers);
+      headers.set(REQUEST_ID_HEADER, requestLogContext(c).requestId);
+      return proxy(new Request(c.req.raw, { headers }));
+    });
   }
 
   // A viewer with a live session never needs the public pages — send them straight to the app.
@@ -4149,9 +4213,35 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(c.req.query("after") ? { after: c.req.query("after")! } : {}),
         ...(c.req.header("last-event-id") ? { lastEventId: c.req.header("last-event-id")! } : {}),
       })
-      .catch(() => null);
+      .catch((e: unknown) => {
+        // OBS.1 — a dropped/refused upstream is no longer a silent 502: ONE structured line with
+        // the request's id + the error class (the throw itself carries no user text into the log).
+        logWebRouteError(c, {
+          status: 502,
+          msg: "sse_upstream_unreachable",
+          errorClass: errorClass(e),
+          stack: stackForLog(e),
+        });
+        return null;
+      });
     if (!upstream || upstream.body == null) {
+      // OBS.1 — an upstream NON-ok response that resolves still answers 502 here: the USER-VISIBLE
+      // 502 is the error line's status/severity (a misclassified 4xx→502 is itself worth the trail).
+      // The 404 pass-through is the expected "no such run" — not a server fault, no line.
+      if (upstream && upstream.status !== 404) {
+        logWebRouteError(c, { status: 502, upstreamStatus: upstream.status, msg: "sse_upstream_refused" });
+      }
       return c.json({ error: "upstream_unavailable" }, upstream?.status === 404 ? 404 : 502);
+    }
+    if (!upstream.ok) {
+      // OBS.1 — a resolved non-ok upstream passes its status through: ≥500 is the one ERROR line
+      // (the api's own line shares the requestId), an expected <500 refusal a WARNING.
+      logWebRouteError(c, {
+        status: upstream.status,
+        upstreamStatus: upstream.status,
+        msg: "sse_upstream_refused",
+        severity: upstream.status >= 500 ? "ERROR" : "WARNING",
+      });
     }
     return new Response(upstream.body, {
       status: upstream.status,

@@ -41,6 +41,7 @@ import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js
 import { createChatRoutes, type ChatApiDeps } from "./chat-routes.js";
 import { createOutlineRoutes, type OutlineApiDeps } from "./outline-routes.js";
 import { createFigureRoutes, type FigureApiDeps } from "./figure-routes.js";
+import { apiOnError, instrumentReads, requestContext } from "./observability.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
@@ -228,6 +229,11 @@ export interface BetaApiDeps {
    */
   instanceId?: string;
   /**
+   * OBS.1 — the GCP project id for the `logging.googleapis.com/trace` join field (deploy binds
+   * `GOOGLE_CLOUD_PROJECT`). Unset ⇒ the trace field is omitted; requestId still propagates.
+   */
+  gcpProject?: string;
+  /**
    * PRB.16 — the Better Auth handler mounted at `/api/auth/*`. The deploy's `baseURL` is the APP origin
    * (the SSR web service proxies `/api/auth/*` server-side, so auth cookies plant host-only on
    * `rhema.tools`). Unset ⇒ the auth surface 404s (pre-PRB.16 prod posture).
@@ -283,7 +289,35 @@ export interface BetaApiDeps {
  *  `deps.db` (a SqlClient) to also mount the beta shell's project-list route (PRB.01) and — with a converter +
  *  content store — the draft-import routes (PRB.02). */
 export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
+  // OBS.1 — funnel-level degraded-read instrumentation (ADR-053): db.query, the content/blob stores
+  // and txRunner.run bump the request-scoped counter on ANY rejection, so a `.catch(() => null)`
+  // that degrades a <500 answer still leaves its `degraded_reads` trail. A failure the route lets
+  // throw lands in onError instead — the bump is simply never emitted.
+  if (deps) {
+    // `innerStoreFor` binds the ORIGINAL factory — referencing `deps.contentStoreFor` inside the
+    // closure below would self-recurse once `deps` is rebound.
+    const innerStoreFor = deps.contentStoreFor;
+    deps = {
+      ...deps,
+      ...(deps.db ? { db: instrumentReads(deps.db, ["query"]) } : {}),
+      ...(deps.contentStore ? { contentStore: instrumentReads(deps.contentStore, ["get", "put"]) } : {}),
+      ...(deps.restoreBlobs ? { restoreBlobs: instrumentReads(deps.restoreBlobs, ["get", "put", "delete"]) } : {}),
+      ...(deps.ingestBlobs ? { ingestBlobs: instrumentReads(deps.ingestBlobs, ["read", "write"]) } : {}),
+      ...(deps.txRunner ? { txRunner: instrumentReads(deps.txRunner, ["run"]) } : {}),
+      ...(innerStoreFor
+        ? {
+            contentStoreFor: (workspaceId: string) => instrumentReads(innerStoreFor(workspaceId), ["get", "put"]),
+          }
+        : {}),
+    };
+  }
   const app = new Hono();
+  // OBS.1 (ADR-053) — request correlation FIRST: every later middleware/route/onError line joins the
+  // same requestId + the LB's trace when the hop carried one, and every response echoes the id.
+  app.use("*", requestContext(deps?.gcpProject ?? process.env.GOOGLE_CLOUD_PROJECT));
+  // OBS.1 — every unhandled route error produces exactly ONE structured line (allowlisted fields,
+  // route TEMPLATE not path, message-stripped stack) and a bare 500 carrying only the requestId.
+  app.onError(apiOnError);
   // P1.22 (§13.3 audit) — the api is a JSON surface, never a browsing context: pin the strictest CSP
   // (`default-src 'none'; frame-ancestors 'none'`) + nosniff on EVERY response so any route that ever
   // returns renderable content (an export, an error page) still cannot execute script or be framed.

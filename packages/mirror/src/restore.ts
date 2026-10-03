@@ -14,6 +14,7 @@
 // The sweeper itself stays in @rhema/collab (it owns the hourly cron seam).
 
 import * as Y from "yjs";
+import { createGcsBytesTransport } from "@rhema/contracts";
 import type { SqlExecutor } from "./sql.js";
 
 /** The object-store seam restore blobs ride (GCS in prod; in-memory in tests). Keys are verbatim. */
@@ -177,10 +178,26 @@ export class GcsRestoreBlobStore implements RestoreBlobStore {
 /**
  * Construct a live `GcsRestoreBlobStore` for the objects bucket. Dynamically imports
  * `@google-cloud/storage` so the package's pure tests never load it.
+ *
+ * OBS.1 — byte ops use the plain-fetch `createGcsBytesTransport` (see content-store-gcs.ts):
+ * the library `file.download()`/`save()`/`delete()` path is the teeny-request PassThrough
+ * listener leak. `Storage` remains only for ADC (`authClient.getRequestHeaders`).
  */
 export async function createGcsRestoreBlobStore(bucketName: string): Promise<GcsRestoreBlobStore> {
   const { Storage } = await import("@google-cloud/storage");
   const storage = new Storage();
-  const bucket = storage.bucket(bucketName) as unknown as GcsRestoreBucketLike;
-  return new GcsRestoreBlobStore(bucket);
+  const bucket = createGcsBytesTransport({
+    getAuthHeaders: (url) => storage.authClient.getRequestHeaders(url),
+  }).bucket(bucketName);
+  const gcsBucket: GcsRestoreBucketLike = {
+    file: (name) => {
+      const f = bucket.file(name);
+      return {
+        download: async (): Promise<[Buffer]> => [Buffer.from((await f.download())[0])],
+        save: (data: Buffer) => f.save(data),
+        delete: (opts?: { ignoreNotFound?: boolean }) => f.delete({ ignoreNotFound: opts?.ignoreNotFound ?? true }),
+      };
+    },
+  };
+  return new GcsRestoreBlobStore(gcsBucket);
 }

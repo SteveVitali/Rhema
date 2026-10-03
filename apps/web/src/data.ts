@@ -137,6 +137,7 @@ import type {
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
 import type { LetterSection } from "@rhema/ui";
+import { noteDegradedUpstream } from "./observability.js";
 
 // The web shell's data seam. SSR loaders never touch the DB directly — they call the api through this
 // interface (the real impl forwards the viewer's session). Injected so route handlers are unit-testable with
@@ -1042,7 +1043,21 @@ export function apiDataSource(
   fetchImpl?: typeof fetch,
   stampInternal?: (clientIp: string) => Promise<Record<string, string> | undefined>,
 ): DataSource {
-  const f = fetchImpl ?? fetch;
+  // OBS.1 — every api call (and the quarantine PUT) funnels through this one fetch: an upstream
+  // 5xx or transport drop bumps the request-scoped degraded counter even when a route swallows the
+  // failure into a degraded page (`.catch(() => null)`). <5xx responses are ordinary answers, not
+  // degradation.
+  const baseFetch = fetchImpl ?? fetch;
+  const f: typeof fetch = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    try {
+      const res = await baseFetch(url, init);
+      if (res.status >= 500) noteDegradedUpstream();
+      return res;
+    } catch (e) {
+      noteDegradedUpstream();
+      throw e;
+    }
+  }) as typeof fetch;
   const client = (session: SessionHeaders) =>
     createApiClient({ baseUrl, fetch: f, headers: session });
   const projectIdFor = async (session: SessionHeaders, slug: string): Promise<string> => {
@@ -1072,28 +1087,28 @@ export function apiDataSource(
   };
   return {
     checkSession: async (session) => {
-      const res = await (fetchImpl ?? fetch)(`${baseUrl}/session`, { headers: session });
+      const res = await f(`${baseUrl}/session`, { headers: session });
       return res.ok;
     },
     listProjects: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProjects(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listProjects(),
     // PRB.16 — the delivered-review dossier read IS wired now (PRB.04's deferred live binding): the api's
     // dossier endpoint assembles the reading-surface data from the delivered rows server-side.
     getDossier: async (session, { projectSlug, runId }) => {
-      const client = createApiClient({ baseUrl, fetch: fetchImpl, headers: session });
+      const client = createApiClient({ baseUrl, fetch: f, headers: session });
       const row = (await client.listProjects()).find((r) => r.slug === projectSlug);
       if (!row) throw new ApiError(404, `project ${projectSlug}`);
       return client.getDossier(row.id, runId);
     },
     checkInvite: (code, email) =>
-      createApiClient({ baseUrl, fetch: fetchImpl }).checkInvite(code, email),
+      createApiClient({ baseUrl, fetch: f }).checkInvite(code, email),
     // PRB.13 — the api's account-creation path (pre-auth; the api throttles per source IP + email).
     // SEC.2 — the resolved browser IP rides the trusted stamp (ADR-040), so a web-mediated signup lands
     // in the REAL caller's bucket, not the web instance's shared one. `clientIp` is a transport key —
     // it never enters the wire body.
     signup: async (req) => {
       const { clientIp, ...body } = req;
-      return createApiClient({ baseUrl, fetch: fetchImpl }).signup(body, {
+      return createApiClient({ baseUrl, fetch: f }).signup(body, {
         headers: (clientIp && stampInternal ? await stampInternal(clientIp) : undefined) ?? {},
       });
     },
@@ -1119,61 +1134,61 @@ export function apiDataSource(
     // the api's run-creation lifecycle needs a live worker to EXECUTE (D-P0.08-1), but creating the row +
     // hold is the deployed api's job. Session forwarded so the api resolves the principal.
     createRun: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createRun(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createRun(projectId, req),
     // P1.06 — the run sheet's single context read + the consent-pref write + the palette's search.
     getRunSheetContext: (session, projectId, args) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).runSheetContext(projectId, args),
+      createApiClient({ baseUrl, fetch: f, headers: session }).runSheetContext(projectId, args),
     setConsentPref: (session, dontAskUnder) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setConsentPref(dontAskUnder),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setConsentPref(dontAskUnder),
     searchPalette: (session, q, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).searchProjects(q, undefined, {
+      createApiClient({ baseUrl, fetch: f, headers: session }).searchProjects(q, undefined, {
         ...(projectId ? { projectId } : {}),
       }),
     recordDisposition: (session, projectId, findingId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordDisposition(projectId, findingId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).recordDisposition(projectId, findingId, req),
     // P1.07 — the findings surface writes: Apply, promote, Add-to-obligations, the deep-link resolve,
     // and the one-preview bulk actions (§5.7; REQ-SPEC-6, REQ-IDE-26, REQ-OBJ-9).
     applyFinding: (session, projectId, findingId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).applyFinding(projectId, findingId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).applyFinding(projectId, findingId),
     promoteFinding: (session, projectId, findingId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).promoteFinding(projectId, findingId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).promoteFinding(projectId, findingId),
     addFindingToObligations: (session, projectId, findingId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addFindingToObligations(projectId, findingId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).addFindingToObligations(projectId, findingId),
     createObligation: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createObligation(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createObligation(projectId, req),
     resolveFinding: (session, projectId, findingId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).resolveFinding(projectId, findingId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).resolveFinding(projectId, findingId),
     previewBulkFindings: (session, projectId, runId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).previewBulkFindings(projectId, runId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).previewBulkFindings(projectId, runId, req),
     applyBulkFindings: (session, projectId, runId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).applyBulkFindings(projectId, runId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).applyBulkFindings(projectId, runId, req),
     listGates: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listGates(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listGates(projectId),
     decideGate: (session, projectId, gateId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).decideGate(projectId, gateId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).decideGate(projectId, gateId, req),
     recordGateActivity: (session, projectId, gateId, activity) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordGateActivity(projectId, gateId, activity),
+      createApiClient({ baseUrl, fetch: f, headers: session }).recordGateActivity(projectId, gateId, activity),
     listDecisions: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listDecisions(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listDecisions(projectId),
     answerDecision: (session, projectId, decisionId, answer) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).answerDecision(projectId, decisionId, answer),
+      createApiClient({ baseUrl, fetch: f, headers: session }).answerDecision(projectId, decisionId, answer),
     // P1.19 — the Inbox reads/writes ride the api's session-authed routes (the api owns the ordering,
     // the badge rule, and the read receipts — web never re-derives them).
-    getInbox: (session) => createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getInbox(),
+    getInbox: (session) => createApiClient({ baseUrl, fetch: f, headers: session }).getInbox(),
     getInboxBadge: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getInboxBadge(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getInboxBadge(),
     markInboxItemRead: (session, itemId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).markInboxItemRead(itemId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).markInboxItemRead(itemId),
     markInboxAllRead: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).markInboxAllRead(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).markInboxAllRead(),
     markInboxRunRead: (session, runId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).markInboxRunRead(runId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).markInboxRunRead(runId),
     getPretriage: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPretriage(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getPretriage(projectId),
     getApprovalOverrides: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getApprovalOverrides(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getApprovalOverrides(projectId),
     setApprovalOverrides: (session, projectId, overrides) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setApprovalOverrides(projectId, overrides),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setApprovalOverrides(projectId, overrides),
     // P1.09 — the §6.4 approval-policy surface + standing guidance + explainers.
     getApprovalSettings: (session, projectId) =>
       client(session).getApprovalSettings(projectId),
@@ -1188,203 +1203,203 @@ export function apiDataSource(
     getExplainers: (session) => client(session).getExplainers(),
     dismissExplainer: (session, name) => client(session).dismissExplainer(name),
     getWhatChanged: (session, projectId, responseId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getWhatChanged(projectId, responseId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getWhatChanged(projectId, responseId),
     commentOnHunk: (session, projectId, responseId, hunkId, text) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).commentOnHunk(projectId, responseId, hunkId, text),
+      createApiClient({ baseUrl, fetch: f, headers: session }).commentOnHunk(projectId, responseId, hunkId, text),
     getEditorDoc: (session, projectId, draftId, opts) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getEditorDoc(projectId, draftId, { opts }),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getEditorDoc(projectId, draftId, { opts }),
     resolveEditorDraft: (session, projectId, v) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).resolveEditorDraft(projectId, v),
+      createApiClient({ baseUrl, fetch: f, headers: session }).resolveEditorDraft(projectId, v),
     getBibliography: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getBibliography(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getBibliography(projectId),
     importBibliography: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).importBibliography(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).importBibliography(projectId, req),
     getArtifactPage: (session, projectId, artifactId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getArtifactPage(projectId, artifactId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getArtifactPage(projectId, artifactId),
     // P1.08 — the version rail, the generalized compare + hunk comments, the Files pane, and the
     // restore-point browse/preview/apply (§5.8, §5.13).
     getVersions: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVersions(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getVersions(projectId),
     getVersionDiff: (session, projectId, n, m) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVersionDiff(projectId, n, m),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getVersionDiff(projectId, n, m),
     commentOnCompareHunk: (session, projectId, n, m, hunkId, text) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).commentOnCompareHunk(projectId, n, m, hunkId, text),
+      createApiClient({ baseUrl, fetch: f, headers: session }).commentOnCompareHunk(projectId, n, m, hunkId, text),
     getFiles: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getFiles(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getFiles(projectId),
     listRestorePoints: (session, projectId, draftId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listRestorePoints(projectId, draftId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listRestorePoints(projectId, draftId),
     previewRestorePoint: (session, projectId, draftId, pointId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).previewRestorePoint(projectId, draftId, pointId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).previewRestorePoint(projectId, draftId, pointId),
     applyRestorePoint: (session, projectId, draftId, pointId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).applyRestorePoint(projectId, draftId, pointId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).applyRestorePoint(projectId, draftId, pointId),
     saveEditorDraft: (session, projectId, draftId, markdown, meta) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveEditorDraft(projectId, draftId, markdown, { meta }),
+      createApiClient({ baseUrl, fetch: f, headers: session }).saveEditorDraft(projectId, draftId, markdown, { meta }),
     postEditorNote: (session, projectId, draftId, text) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postEditorNote(projectId, draftId, text),
+      createApiClient({ baseUrl, fetch: f, headers: session }).postEditorNote(projectId, draftId, text),
     cancelEditorRun: (session, projectId, draftId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelEditorRun(projectId, draftId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).cancelEditorRun(projectId, draftId),
     reviseWithEdits: (session, projectId, draftId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).reviseWithEdits(projectId, draftId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).reviseWithEdits(projectId, draftId),
     getBillingBalance: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getBillingBalance(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getBillingBalance(),
     recordExhaustedPrompt: (session, actionTaken) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).recordExhaustedPrompt(actionTaken),
+      createApiClient({ baseUrl, fetch: f, headers: session }).recordExhaustedPrompt(actionTaken),
     // ---- PRB.10 — Quick Voice ----
     listVoices: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoices(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listVoices(),
     createVoice: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createVoice(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createVoice(req),
     getVoice: (session, personaId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoice(personaId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getVoice(personaId),
     addVoiceSample: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceSample(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).addVoiceSample(personaId, req),
     setVoiceSampleIncluded: (session, personaId, itemId, included) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setVoiceSampleIncluded(personaId, itemId, included),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setVoiceSampleIncluded(personaId, itemId, included),
     saveVoiceSeed: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).saveVoiceSeed(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).saveVoiceSeed(personaId, req),
     estimateVoice: (session, personaId, tier) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).estimateVoice(personaId, tier),
+      createApiClient({ baseUrl, fetch: f, headers: session }).estimateVoice(personaId, tier),
     buildVoice: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).buildVoice(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).buildVoice(personaId, req),
     cancelVoiceRun: (session, runId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelVoiceRun(runId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).cancelVoiceRun(runId),
     getProjectVoice: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getProjectVoice(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getProjectVoice(projectId),
     setProjectVoice: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setProjectVoice(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setProjectVoice(projectId, req),
     // ---- P1.14 — the full Voices workspace ----
     listVoiceGroups: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoiceGroups(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listVoiceGroups(),
     addVoiceSampleUrl: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceSampleUrl(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).addVoiceSampleUrl(personaId, req),
     getVoiceUpdatePlan: (session, personaId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoiceUpdatePlan(personaId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getVoiceUpdatePlan(personaId),
     updateVoice: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).updateVoice(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).updateVoice(personaId, req),
     addVoiceCorrection: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceCorrection(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).addVoiceCorrection(personaId, req),
     forkVoice: (session, personaId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).forkVoice(personaId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).forkVoice(personaId),
     // ---- P1.15 — the §9.5 Samples tab ----
     listVoiceConnections: (session, personaId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoiceConnections(personaId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listVoiceConnections(personaId),
     createVoiceConnection: (session, personaId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createVoiceConnection(personaId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createVoiceConnection(personaId, req),
     discoverVoiceConnection: (session, personaId, connectionId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).discoverVoiceConnection(personaId, connectionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).discoverVoiceConnection(personaId, connectionId),
     confirmVoiceConnection: (session, personaId, connectionId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).confirmVoiceConnection(personaId, connectionId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).confirmVoiceConnection(personaId, connectionId, req),
     syncVoiceConnection: (session, personaId, connectionId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).syncVoiceConnection(personaId, connectionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).syncVoiceConnection(personaId, connectionId),
     syncAllVoiceConnections: (session, personaId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).syncAllVoiceConnections(personaId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).syncAllVoiceConnections(personaId),
     patchVoiceConnection: (session, personaId, connectionId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).patchVoiceConnection(personaId, connectionId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).patchVoiceConnection(personaId, connectionId, req),
     removeVoiceConnection: (session, personaId, connectionId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).removeVoiceConnection(personaId, connectionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).removeVoiceConnection(personaId, connectionId),
     linkVoiceExportZip: async (session, personaId, bytes) => {
       // The quarantine leg (D-PRB.02-1): presign → PUT → link the export-zip source by key.
       const quarantineKey = await uploadKey(session, { bytes });
-      return createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createVoiceConnection(
+      return createApiClient({ baseUrl, fetch: f, headers: session }).createVoiceConnection(
         personaId,
         { provider: "substack_export", quarantineKey },
       );
     },
     getVoiceSample: (session, personaId, itemId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoiceSample(personaId, itemId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getVoiceSample(personaId, itemId),
     listVoiceSampleVersions: (session, personaId, itemId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoiceSampleVersions(personaId, itemId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listVoiceSampleVersions(personaId, itemId),
     reconstructVoiceSample: (session, personaId, itemId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).reconstructVoiceSample(personaId, itemId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).reconstructVoiceSample(personaId, itemId, req),
     deleteVoice: (session, personaId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).deleteVoice(personaId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).deleteVoice(personaId),
     adoptProjectVoice: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).adoptProjectVoice(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).adoptProjectVoice(projectId, req),
     forkProjectVoice: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).forkProjectVoice(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).forkProjectVoice(projectId, req),
     getVoiceReseedPreview: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoiceReseedPreview(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getVoiceReseedPreview(projectId),
     decideRunGate: (session, runId, gateId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).decideRunGate(runId, gateId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).decideRunGate(runId, gateId, req),
     // ---- PRB.11 — export + the AI-use statement ----
     getExportDialog: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getExportDialog(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getExportDialog(projectId),
     exportProject: (session, projectId, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).exportProject(projectId, req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).exportProject(projectId, req),
     getAiUseStatement: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getAiUseStatement(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getAiUseStatement(projectId),
     downloadAiUseStatement: (session, projectId, format) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).downloadAiUseStatement(projectId, format),
+      createApiClient({ baseUrl, fetch: f, headers: session }).downloadAiUseStatement(projectId, format),
     appendAiUseAddition: (session, projectId, sentence) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).appendAiUseAddition(projectId, sentence),
+      createApiClient({ baseUrl, fetch: f, headers: session }).appendAiUseAddition(projectId, sentence),
     // ---- P1.18 — the whole-account zip ----
     getAccountExportState: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getAccountExportState(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getAccountExportState(),
     requestAccountExport: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).requestAccountExport(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).requestAccountExport(),
     getAccountExportDownloadUrl: (session, exportId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getAccountExportDownloadUrl(exportId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getAccountExportDownloadUrl(exportId),
     importAccountExport: (session, zipBytes) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).importAccountExport(zipBytes),
+      createApiClient({ baseUrl, fetch: f, headers: session }).importAccountExport(zipBytes),
     // ---- PRB.12 — analytics + privacy + usage ----
     postAnalyticsEvent: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postAnalyticsEvent(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).postAnalyticsEvent(req),
     // ---- P1.17 — the acquisition funnel + the Showcase precedence read ----
     postAcquisitionEvent: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).postAcquisitionEvent(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).postAcquisitionEvent(req),
     recordLandingEvent: (req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl }).recordLandingEvent(req, {
+      createApiClient({ baseUrl, fetch: f }).recordLandingEvent(req, {
         headers: req.ip ? { "x-forwarded-for": req.ip } : {},
       }),
     getShowcaseEntry: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getShowcase(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getShowcase(),
     getPrivacySettings: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPrivacySettings(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getPrivacySettings(),
     setAnalyticsOptOut: (session, analyticsOptOut) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setAnalyticsOptOut(analyticsOptOut),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setAnalyticsOptOut(analyticsOptOut),
     getUsage: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsage(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getUsage(),
     // ---- P1.16 — billing, full ----
     getPlans: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getPlans(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getPlans(),
     startCheckout: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).startCheckout(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).startCheckout(req),
     createBillingPortalSession: (session, returnTo) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createBillingPortalSession(returnTo),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createBillingPortalSession(returnTo),
     getSubscription: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getSubscription(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getSubscription(),
     cancelSubscription: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).cancelSubscription(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).cancelSubscription(),
     changePlan: (session, tier, cycle) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).changePlan(tier, cycle),
+      createApiClient({ baseUrl, fetch: f, headers: session }).changePlan(tier, cycle),
     getCheckoutSession: (session, sessionId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getCheckoutSession(sessionId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getCheckoutSession(sessionId),
     setAutoReload: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setAutoReload(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setAutoReload(req),
     joinTeamWaitlist: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).joinTeamWaitlist(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).joinTeamWaitlist(req),
     getUsageAccount: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsageAccount(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getUsageAccount(),
     getUsageProject: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsageProject(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getUsageProject(projectId),
     getUsageRunAdvanced: (session, runId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getUsageRunAdvanced(runId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getUsageRunAdvanced(runId),
     downloadUsageCsv: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).downloadUsageCsv(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).downloadUsageCsv(),
     getRatesPublication: () =>
-      createApiClient({ baseUrl, fetch: fetchImpl }).getRates(),
+      createApiClient({ baseUrl, fetch: f }).getRates(),
     // ---- P1.01 — theme policy ----
     getSessionPrincipal: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getSession(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getSession(),
     getTheme: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getTheme(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getTheme(),
     setTheme: (session, appTheme) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setTheme(appTheme),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setTheme(appTheme),
     setPaperTheme: (session, projectId, paperTheme) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setPaperTheme(projectId, paperTheme),
+      createApiClient({ baseUrl, fetch: f, headers: session }).setPaperTheme(projectId, paperTheme),
     // ---- P1.04 — the workspace home + the §5.3 new-project flow ----
     createProject: (session, req) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createProject(req),
+      createApiClient({ baseUrl, fetch: f, headers: session }).createProject(req),
     // The workspace-scoped preview leg: presign → PUT to quarantine → POST /import/preview. Replaying a
     // `quarantineKey` polls the SAME conversion (no re-upload, no duplicate Job).
     previewWorkspaceImport: async (session, input) => {
@@ -1397,35 +1412,35 @@ export function apiDataSource(
       return { status: "ready", preview: out.preview, quarantineKey };
     },
     renameProject: async (session, projectId, title) => {
-      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).renameProject(projectId, title);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).renameProject(projectId, title);
     },
     duplicateProject: (session, projectId) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).duplicateProject(projectId),
+      createApiClient({ baseUrl, fetch: f, headers: session }).duplicateProject(projectId),
     archiveProject: async (session, projectId) => {
-      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).archiveProject(projectId);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).archiveProject(projectId);
     },
     unarchiveProject: async (session, projectId) => {
-      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).unarchiveProject(projectId);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).unarchiveProject(projectId);
     },
     deleteProject: async (session, projectId) => {
-      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).deleteProject(projectId);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).deleteProject(projectId);
     },
     restoreProject: async (session, projectId) => {
-      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).restoreProject(projectId);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).restoreProject(projectId);
     },
     listDeletedProjects: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProjects(undefined, {
+      createApiClient({ baseUrl, fetch: f, headers: session }).listProjects(undefined, {
         scope: "deleted",
       }),
     searchProjects: (session, q) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).searchProjects(q),
+      createApiClient({ baseUrl, fetch: f, headers: session }).searchProjects(q),
     getProjectGrouping: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getProjectGrouping(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).getProjectGrouping(),
     setProjectGrouping: async (session, groupBy) => {
-      await createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).setProjectGrouping(groupBy);
+      await createApiClient({ baseUrl, fetch: f, headers: session }).setProjectGrouping(groupBy);
     },
     listProtocolCards: (session) =>
-      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listProtocolCards(),
+      createApiClient({ baseUrl, fetch: f, headers: session }).listProtocolCards(),
     // ---- P1.05 — the Timeline round log, the run report, §6.5 steering ----
     getTimeline: async (session, projectSlug) => {
       const projectId = await projectIdFor(session, projectSlug);

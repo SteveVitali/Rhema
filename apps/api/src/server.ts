@@ -394,6 +394,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // JOURNEY.1 — test-mailbox flagging + the healthz provenance field.
     ...(env.testMailbox ? { testMailbox: env.testMailbox } : {}),
     ...(env.buildGitSha ? { buildGitSha: env.buildGitSha } : {}),
+    // OBS.1 — the Cloud Logging trace join field (`projects/<p>/traces/<t>` on every error line).
+    ...(process.env.GOOGLE_CLOUD_PROJECT ? { gcpProject: process.env.GOOGLE_CLOUD_PROJECT } : {}),
     // SEC.2 — the `x-rhema-instance` marker (Stage-B cross-instance evidence).
     instanceId,
     // PRB.08 — the analytics sink exists now (analytics_events, 0020): bind the api's two deferred
