@@ -53,6 +53,8 @@ export const SLO_ALERT_SIGNALS = [
 
 export function createMonitoring(args: MonitoringArgs): {
   sloViolationsMetric: gcp.logging.Metric;
+  sloWeeklyMetric: gcp.logging.Metric;
+  sloWeeklyValueMetric: gcp.logging.Metric;
   lb5xxMetric: gcp.logging.Metric;
   route5xxMetric: gcp.logging.Metric;
   dashboard: gcp.monitoring.Dashboard;
@@ -92,6 +94,52 @@ export function createMonitoring(args: MonitoringArgs): {
     },
     labelExtractors: {
       // textPayload shape: `[slo] violation {"signal":"key",...}` — extract the signal value.
+      signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
+    },
+  });
+
+  // SLO.1 / REQ-ARCH-34 — the weekly review's log-based metrics. The `slo.review.weekly` cron logs one
+  // `[slo] weekly {"signal":…,"status":…,"value":…}` line per reading; `rhema_slo_weekly` counts them by
+  // signal + status (an `empty`/`unmeasured`/`error` status is VISIBLE on the tile — never silently
+  // absent) and `rhema_slo_weekly_value` distributions the numeric value (a null value — an empty or
+  // unmeasured reading — extracts nothing, correctly recording no point). The `[slo] weekly-summary`
+  // rollup line is the one-glance row; both are what the docs/ops/slo-review.md weekly checklist reads.
+  const sloWeeklyMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly`, {
+    name: "rhema_slo_weekly",
+    project,
+    filter:
+      'resource.type="cloud_run_revision" AND ' +
+      'resource.labels.service_name="rhema-' + stack + '-worker" AND ' +
+      'textPayload:"[slo] weekly {"',
+    metricDescriptor: {
+      metricKind: "DELTA",
+      valueType: "INT64",
+      unit: "1",
+      labels: [
+        { key: "signal", valueType: "STRING", description: "the §13.5 signal key" },
+        { key: "status", valueType: "STRING", description: "ok|breach|empty|unmeasured|error" },
+      ],
+    },
+    labelExtractors: {
+      signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
+      status: 'REGEXP_EXTRACT(textPayload, "\\"status\\":\\"([a-z_]+)\\"")',
+    },
+  });
+  const sloWeeklyValueMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly-value`, {
+    name: "rhema_slo_weekly_value",
+    project,
+    filter:
+      'resource.type="cloud_run_revision" AND ' +
+      'resource.labels.service_name="rhema-' + stack + '-worker" AND ' +
+      'textPayload:"[slo] weekly {"',
+    metricDescriptor: {
+      metricKind: "DELTA",
+      valueType: "DISTRIBUTION",
+      unit: "1",
+      labels: [{ key: "signal", valueType: "STRING", description: "the §13.5 signal key" }],
+    },
+    valueExtractor: 'REGEXP_EXTRACT(textPayload, "\\"value\\":([0-9.eE+-]+)")',
+    labelExtractors: {
       signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
     },
   });
@@ -404,6 +452,55 @@ export function createMonitoring(args: MonitoringArgs): {
                 },
               },
             },
+            {
+              // SLO.1 / REQ-ARCH-34 — the weekly-review tile: every `[slo] weekly` reading's status,
+              // grouped. An `empty`/`unmeasured`/`error` bar is an honest "not measured" flag; a
+              // `breach` bar is the budget-breach the ops runbook's weekly checklist acts on.
+              title: "weekly SLO review — readings by status",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_slo_weekly" resource.type="cloud_run_revision"',
+                        aggregation: {
+                          alignmentPeriod: "86400s",
+                          perSeriesAligner: "ALIGN_COUNT",
+                          groupByFields: ["metric.label.status"],
+                        },
+                      },
+                    },
+                    plotType: "STACKED_BAR",
+                  },
+                ],
+                yAxis: { label: "readings", scale: "LINEAR" },
+              },
+            },
+            {
+              // SLO.1 — the weekly readout's measured values per signal (one point per signal per
+              // week; mean over a 7-day alignment collapses the single weekly sample to itself).
+              title: "weekly SLO review — measured value by signal",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_slo_weekly_value" resource.type="cloud_run_revision"',
+                        aggregation: {
+                          alignmentPeriod: "604800s",
+                          perSeriesAligner: "ALIGN_MEAN",
+                          groupByFields: ["metric.label.signal"],
+                        },
+                      },
+                    },
+                    plotType: "LINE",
+                  },
+                ],
+                yAxis: { label: "value", scale: "LINEAR" },
+              },
+            },
           ],
         },
       }),
@@ -412,6 +509,8 @@ export function createMonitoring(args: MonitoringArgs): {
 
   return {
     sloViolationsMetric,
+    sloWeeklyMetric,
+    sloWeeklyValueMetric,
     lb5xxMetric,
     route5xxMetric,
     dashboard,

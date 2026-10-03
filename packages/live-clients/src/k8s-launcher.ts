@@ -178,6 +178,12 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
             {
               name: "run-task",
               image,
+              // SLO.1 (§13.5 run-start lever) — pin IfNotPresent EXPLICITLY: the image is digest-
+              // pinned, so a cached layer on the warm pool node is bytewise-identical and a re-pull
+              // can only waste start latency (the pull is the dominant cold-start stage on a fresh
+              // digest). The digest — never a mutable tag — is what pins correctness, so skipping
+              // the re-pull loses nothing; k8s's tag-oriented default heuristic is irrelevant.
+              imagePullPolicy: "IfNotPresent",
               env,
               // The Phase-0 stand-in image (bookworm-slim) starts as ROOT under tini ONLY so its entrypoint can
               // drop root → harness (uid 10001) → agent (uid 10002) via setpriv, then unshare/mount the scoped-

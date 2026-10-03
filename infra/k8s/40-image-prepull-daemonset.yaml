@@ -1,0 +1,57 @@
+# The run-task image pre-warmer (SLO.1; §13.5 run-start lever; ADR-058). One sleeper pod per sandbox
+# node running the CURRENT digest-pinned run-task image under `sleep`: the kubelet pulls the image to
+# start it, so every node's containerd cache already holds the digest when a real run Job lands — and
+# the Job's explicit `imagePullPolicy: IfNotPresent` (k8s-launcher.ts) then starts the pod with NO
+# pull. This removes the dominant cold-start stage (the multi-hundred-MB first pull per digest per
+# node) from queued→running for $0 of extra compute — the pod sleeps, requests nothing but a stub
+# floor, and sits under the same podSelector-{} egress-deny NetworkPolicy (it needs no egress at all).
+#
+# RE-APPLY ON EVERY run-task image bump: ${RUN_TASK_IMAGE} is the full `repo@sha256:…` ref the deploy
+# pins (the worker's run-task image config). A stale digest warms nothing harmful — the run pod simply
+# pulls on land as before — but the lever only works when the digests match. See apply.sh.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: run-task-image-prewarm
+  namespace: runs
+  labels:
+    app.kubernetes.io/name: run-task-image-prewarm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: run-task-image-prewarm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: run-task-image-prewarm
+    spec:
+      # the SAME node pool the run Jobs pin to — a sleeper anywhere else warms nothing.
+      nodeSelector:
+        cloud.google.com/gke-nodepool: ${RUN_TASK_NODEPOOL}
+      # never evict a queued run pod for the sleeper: minimal requests, near-BestEffort.
+      terminationGracePeriodSeconds: 1
+      containers:
+        - name: prewarm
+          image: ${RUN_TASK_IMAGE}
+          imagePullPolicy: IfNotPresent
+          # /bin/sleep exists on the bookworm-slim run-task image; even if a future distroless swap
+          # (SEC.3) drops it, the kubelet pulls the image BEFORE exec — a CrashLoopBackOff sleeper
+          # still warms the cache, which is the pod's entire job.
+          command: ["/bin/sleep", "infinity"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      # no volumes, no service account tokens to mount, no egress needed — the NetworkPolicy already
+      # denies everything; the sleeper's whole job is to hold image layers on disk.
+      automountServiceAccountToken: false

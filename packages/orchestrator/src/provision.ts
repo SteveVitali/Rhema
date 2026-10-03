@@ -161,6 +161,13 @@ export async function provisionRun(
   launcher: JobLauncher,
   args: ProvisionArgs,
 ): Promise<ProvisionResult> {
+  // SLO.1 — stage attribution for the §13.5 run-start budget (queued→running): `slo_samples`
+  // `run_start_stage_ms` rows decompose the worker-side slice into `admit_mint` (lock-set admission +
+  // the queued→provisioning transition + token/credential mint) and `job_launch` (the GKE Secret+Job
+  // create loop). The remaining stage — pod schedule + image pull + runtime boot → first heartbeat —
+  // is `to='running'.at − to='provisioning'.at − job_launch` (event-derivable; see slo.ts comments).
+  // Awaited-but-caught on success only: telemetry never fails a launch.
+  const provisionStartedAt = deps.clock.now().getTime();
   const admit = await admitRun(deps, args);
   if (!admit.admitted) return { ok: false, reason: "not_admitted", admit };
 
@@ -199,6 +206,7 @@ export async function provisionRun(
   });
 
   // launch the GKE Job with backoff.
+  const launchStartedAt = deps.clock.now().getTime();
   let lastErr: unknown;
   for (let i = 1; i <= MAX_LAUNCH_ATTEMPTS; i++) {
     try {
@@ -212,6 +220,22 @@ export async function provisionRun(
         runToken: token,
         proxyCredential: credential,
       });
+      // SLO.1 — both stage samples land on success (a failed launch's spans are diagnostic noise;
+      // the stranded sweep + failure path already carry that signal). Awaited-but-caught: a ~ms
+      // indexed insert is noise against the pod-boot budget, keeps the write ordered before the
+      // caller's next tx (the PGlite single-wire tests serialize on it), and a telemetry failure
+      // still never fails a launch.
+      const nowMs = deps.clock.now().getTime();
+      await deps.txRunner
+        .run(args.workspaceId, (tx) =>
+          tx.query(
+            `insert into slo_samples (signal, value_ms, workspace_id, run_id, detail) values
+               ('run_start_stage_ms', $1, $3, $4, 'admit_mint'),
+               ('run_start_stage_ms', $2, $3, $4, 'job_launch')`,
+            [launchStartedAt - provisionStartedAt, nowMs - launchStartedAt, args.workspaceId, args.runId],
+          ),
+        )
+        .catch(() => undefined);
       return { ok: true, runId: args.runId, attempt, token, credential, jobId };
     } catch (e) {
       lastErr = e;
