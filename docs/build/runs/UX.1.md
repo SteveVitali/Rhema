@@ -1,6 +1,7 @@
 # UX.1 — Public-ready copy, route metadata/brand, and one showcase path (run ledger)
 
-- **Status:** IN PROGRESS
+- **Status:** DONE — Stage A + Stage B executed (deploy, provenance, journeys, real mailbox read)
+- **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/76_UX.1__copy-ia-brand.md`
 - **Branch:** `stevevitali/ux-1-copy-ia-brand`, stacked on SLO.1 `c3d776c`
   (`stevevitali/slo-1-prod-slo-remediation` — PR #97 open, `OPERATOR` merge policy, **not merged**).
@@ -156,3 +157,67 @@ added to the pin).
   magic-link-email 9/9, orchestrator notifications 13/13, protocols manifests 77/77, commands 41/41,
   ide 30/30, journeys 29/29.
 - ADRs ADR-059…064 written; `adr-index.sh` regenerated `docs/adr/README.md` (never hand-edited).
+
+## 3.5 — Self-review / gap analysis
+
+- Self-review pass over the diff found no copy bypasses: every user-facing string change routes
+  through `copy.ts` (the linted module) or the contracts notifications map; no JSX authored new
+  literal claims. The `/favicon.ico` route deliberately serves the SVG bytes (content-type wins
+  over extension — documented in `pr/UX.1.md` risks).
+- Repair-driven edits recorded honestly: `billing-surfaces.test.ts` (neutral offer copy),
+  `check-additive-migrations.test.mjs` (0054 pin — pre-existing staleness, not UX.1 code).
+- Gaps carried: none on UX.1 ACs. The nightly-fleet journey sweep on this SHA is scheduler-owned
+  (D-OBS.1-3 clause); Lighthouse/axe stays HUMAN under D-P1.17-2. `docs/adr/README.md` regenerated.
+
+## 4 — Stage B — executed 2026-10-03 (ADR-013 standing authorization)
+
+1. **Images** — Cloud Build `df4dbeb4-b898-4ad-a98c-810994c5e946` (tag `ux1`, chain tip `4d2906f`)
+   SUCCESS. Digests: api `sha256:146b972e…96baee`, web `sha256:426c5557…01b823d9`; the seven other
+   services kept prior pins (worker `44569797`, fetcher `da402e3f`, convert `fb62d206`,
+   export `1cc61f11`, collab `c9f06626`, egress-proxy `cb639623`, run-task `884bcc44`).
+2. **Pulumi** — preview: 7 updates / 0 creates / 0 replaces / 0 deletes (image bumps +
+   `-scaling` template reconciliation; pre-existing `alloydbCluster` undefined-output warning).
+   `pulumi up` prod **update 130**: 7 updated, 153 unchanged, ≈$0.
+3. **Provenance** — `check-deploy-provenance.mjs --expect 4d2906f` PASS:
+   `rhema.tools/healthz` + `api.rhema.tools/healthz` both report `build.gitSha=4d2906f`.
+   `deployments` row `prod:4d2906f748ce0d41c7cc7318d9d139da8f1b73c6` written via the IAP tunnel
+   (`127.0.0.1:15433`) with all nine digests + `protocols_version=0.4.0+ec61156725a895ab`
+   (operator `postgres` creds — `deployments` is revoked from `rhema_app` by migration 0045;
+   `rhema_app_login` correctly permission-denied, verified live).
+   Note: `record-deployment.mjs`'s error path crashes `util.inspect` on Node 25 (cosmetic —
+   the write itself is what matters; the driver ran `recordDeployment` directly for a clean log).
+4. **Journeys** — `node packages/journeys/dist/cli.js --stage prod --steps N2,N10,R8
+   --expect-sha 4d2906f --out docs/build/reports/UX.1` → **N2 PASS** (JOURNEY.1 — real magic-link
+   signup through the Gmail DWD mailbox), **N10 PASS** (UX.1 — every public route: distinct branded
+   title, description/OG/Twitter/favicon link, exactly one `<h1>`, no `private beta`/`1.x`/
+   `coming soon`; `/favicon.svg` 200; signed-out `/showcase` renders the sample dossier),
+   **R8 PASS** (UX.1 — signed-in `/showcase` resolves honestly, Preferences lists only launched
+   workflows, Inbox badge === Needs-you row count with per-row project names). Provenance match;
+   $0 spend. Evidence: `docs/build/reports/UX.1/{report.json,N2.png,N10.png,R8.png}`
+   (nonce `48f564dba9ef`).
+5. **Real mailbox read** — the N2 send was fetched from `test@rhema.tools` via the keyless Gmail
+   DWD client and content-verified (evidence `docs/build/reports/UX.1/mail-evidence.json`):
+   - Subject `Your Rhēma sign-in link · 4ab364f8f48b` — branded, unique nonce, **token-free**.
+   - Body carries `Rhēma` ×5 (macron'd, never bare `Rhema`), an HTML button + paste-URL fallback,
+     "this link expires in 15 minutes" (config-derived `MAGIC_LINK_EXPIRES_SECONDS=900`), and
+     "Didn't request this? Ignore this email — nothing was signed in."
+   - `token=` appears only inside `magic-link/verify` URLs (4 URL occurrences; never in subject or
+     body text).
+6. **Manual route sweep** — `/invite` → 200, `<title>Welcome · Rhēma</title>` (distinct), one
+   `<h1>`, description meta, zero banned strings; `/favicon.ico` + `/favicon.svg` both 200 with
+   image content types. Titles verified distinct across `/`, `/invite`, `/login`, `/signup`,
+   `/pricing`, `/showcase`.
+
+## 5 — Deferrals / closeout
+
+- **Annotated:** `D-P1.17-2` — UX.1's Stage B supplies the route-meta/journey legs it named
+  (N10 covers the meta/h1/copy surface on prod); Lighthouse/axe + funnel-metric legs stay HUMAN —
+  row stays PARTIAL under its own owners, not flipped by this run.
+- **No new deferrals opened.** Every UX.1 leg executed on prod (deploy + provenance + journeys +
+  real mailbox read). The nightly-fleet sweep on `4d2906f` is scheduler-owned (D-OBS.1-3 clause).
+- The §0 note's `D-P0.22-1`/`D-JOURNEY.1-1` handles don't exist verbatim in DEFERRALS.md — the
+  intended rows are the Resend-deliverability thread (closed DONE under D-P0.01-3, RCN.1) and the
+  JOURNEY.1 mailbox/env readiness (live on this host — the mailbox leg itself just ran). Recorded
+  here so the ledger stays honest.
+- Merge policy OPERATOR — PR opened, not merged.
+- Spend: $0 (all legs $0-class; journeys report `spend $0 ≤ $5`).
