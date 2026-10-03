@@ -1,6 +1,7 @@
 # DEF.4 — Ledger integrity closeout + the §14.4 user refund window (run ledger)
 
-- **Status:** STAGE A COMPLETE — Stage B operator-gated (D-DEF.4-1/-2/-3)
+- **Status:** STAGE A COMPLETE + STAGE B DEPLOYED — R9 owed (weekly spend-guard refusal,
+  D-DEF.4-1 stays open for the journey leg only)
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/78_DEF.4__ledger-integrity-refund-window.md` (manifest row 78)
 - **Branch:** `stevevitali/def-4-ledger-integrity-refund-window`, stacked on UX.2 `2966dd2`
@@ -11,8 +12,8 @@
   7-day refund window, one automatic refund per billing account per UTC calendar quarter, a
   review path for the second request, classes disjoint from `platform_fault:*`, flag-off at
   ship.
-- **Spend:** $0 to date (deterministic legs only). Stage B budget: ≤ $3 total (R9 journey on a
-  flagged test tenant). Round-3 cumulative entering: **$61.22**.
+- **Spend:** **$0 total** — the deploy was infra-only and R9 was refused by the weekly spend
+  guard pre-dispatch (no run ever launched). Round-3 cumulative entering: **$61.22**.
 - **ADRs:** ADR-071 (the §14.4 fairness rule made concrete — eligible states, calendar-quarter
   allowance, terminal-state resume discharge, flag posture), ADR-072 (the reconcile write-order
   mechanism — ledger-append-then-counter-fold), ADR-073 (guidance crosses into the scoped second
@@ -104,7 +105,43 @@ reconcile ordering mechanism; scoped-guidance channel rule).
 
 ## 6 — Closeout state
 
-Stage A complete and green. Stage B is operator-gated per the standing ADR-013 path:
-deploy + R9 (≤$3) + the prod read-only checks ride D-DEF.4-1/-2; `REFUND_WINDOW_MODE` ships
-`off` on prod (the evidence deploy may use `test_tenants`); `open` awaits the product ruling
-(D-DEF.4-3). R9 flips `expected: red→green` only on deployed evidence.
+Stage A complete and green. Stage B ran 2026-10-03 under the standing ADR-013 authorization:
+
+- **Deploy.** Commit `b909fe9` (incl. the `REFUND_WINDOW_MODE` stage fact — dev/preview `off`,
+  prod `test_tenants`, API-env injection + IaC tests). Subset Cloud Build `56454b5f` (tag
+  `def4`) built the four changed images at `b909fe9…`: api `b6e97406…`, web `18083512…`,
+  worker `070c67fc…`, run-task `d8114c12…` — digests pinned in `infra/pulumi/Pulumi.prod.yaml`.
+  `pulumi preview` → 7 update / 0 create / **0 replace / 0 delete** (api/web/worker image +
+  env bumps; 4 no-op scaling normalizations) → `pulumi up` **update 134** (1m18s).
+- **Migration.** `0055_refund_window.sql` applied through the IAP tunnel
+  (`rhema-prod-proxy-c519` → `127.0.0.1:15433`) via `scripts/live/prod-migrate-seed.mjs`:
+  additive-lint pass inside the runner, `55 migrations recorded`, protocol seed no-op.
+- **Prod reads (post-migration).** `credit_balances_held_nonnegative` **convalidated**;
+  `_migrations` max = 0055; `user_refund_requests` present + empty with `tenant_isolation`
+  policy and `rhema_app` grants **SELECT+INSERT only** (UPDATE deliberately withheld); zero
+  negative-`held` counters; `assertBalances` over **71 billing accounts → 0 divergences**.
+- **Provenance.** `check-deploy-provenance.mjs --expect b909fe9…` **PASS** on
+  `api.rhema.tools` + `rhema.tools` (`/healthz` `build.gitSha`); `deployments` row
+  `prod:b909fe9a802867064317b57ea573c018e6d83332` recorded (`protocols_version
+  0.4.0+ec61156725a895ab`, full digest map). `REFUND_WINDOW_MODE=test_tenants` verified on the
+  live api revision (`gcloud run services describe`) — flag-off for every non-`is_test`
+  workspace, exactly the ticket's Stage-B posture.
+- **Leg G live (D-DEF.4-2's seeded path).** Seeded `user_refund_requests` row
+  `urr_1K411Q664EPU3TM8DA7` — `pending_review`, workspace `01M3YJGDX7Q1GZNY88DKPH854E`
+  (jrn-a, `is_test`), run `01M40G5F1NBXGCK00RDSGDVPGM` (completed chat_turn, 19 net debits),
+  quarter `2026Q4`, note marks it evidence-only → **deny on review**. The stranded sweep's
+  leg G paged ops once: `alerted_at` stamped **14:14:27Z** on the next 1-minute pass —
+  send-then-mark live on the deployed worker (`systemTxRunner` + `OPS_ALERT_WEBHOOK_URL`
+  bound). The seed cannot consume the allowance (the count reads `state='refunded'` only)
+  and its `unique(run_id)` anchors a run nobody will re-request.
+- **R9 — owed, honestly recorded.** `rhema-journeys --stage prod --steps R9 --paid
+  --expect-sha b909fe9…` was **refused pre-dispatch** by the measured weekly spend guard:
+  `weekly metered spend $58.08 has reached the $5 cap` (ISO week of 2026-09-28 — flagged
+  test-tenant proxy spend, accumulated by this week's prior Stage-B legs). Zero spend; no
+  run launched. R9 stays `expected: "red"` in `registry.ts` — it flips only on the journey
+  evidence. Next window: ISO-week reset **Mon 2026-10-05 00:00 UTC**, or an
+  operator-authorized override. D-DEF.4-1 stays OPEN for the journey leg only; the deploy
+  half is done.
+- **Spend:** **$0** this ticket (the seeded row moves no money; the guard refusal launched
+  nothing). `open` still awaits the BL-30 product ruling (D-DEF.4-3) — prod runs
+  `test_tenants`, which admits no real user.
