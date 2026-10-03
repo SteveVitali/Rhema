@@ -105,6 +105,17 @@ describe("the Page — /p/:project/v/:v SSR (P1.02)", () => {
     expect(html).toContain("data-page-findings");
   });
 
+  it("the data-page-* embeds are RAW parseable JSON — entity-escaping kills the island (EDIT.1, found on the N8 prod walk)", async () => {
+    const app = createWebApp(makeDeps());
+    const html = await (await app.request("/p/the-piece/v/working")).text();
+    for (const sel of ["data-page-doc", "data-page-prov", "data-page-findings"]) {
+      const m = new RegExp(`<script[^>]*${sel}[^>]*>([\\s\\S]*?)</script>`).exec(html);
+      expect(m, `${sel} embed missing`).toBeTruthy();
+      expect(m![1]).not.toContain("&quot;");
+      expect(() => JSON.parse(m![1]!) as unknown, `${sel} embed is not raw JSON`).not.toThrow();
+    }
+  });
+
   it("renders /v/2 (a versioned draft) through the same surface", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/p/the-piece/v/2");

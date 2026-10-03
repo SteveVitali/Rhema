@@ -1,0 +1,37 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "ba630b7796bf",
+  "startedAt": "2026-10-03T01:06:48.730Z",
+  "finishedAt": "2026-10-03T01:07:30.267Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "7935d4f88ac98547a4bf3ee107a23bcfb19d2365",
+    "observed": {
+      "web": "7935d4f88ac98547a4bf3ee107a23bcfb19d2365",
+      "api": "7935d4f88ac98547a4bf3ee107a23bcfb19d2365"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 41485,
+      "error": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-page-view]') to be visible\n",
+      "screenshot": "N8.png"
+    }
+  ],
+  "passed": true
+}
