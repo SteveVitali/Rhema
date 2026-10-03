@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, NotFoundPage } from "./pages.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
 // the full IDE arrives. There is deliberately NO /pricing, /plans, /signup or /billing route — the beta is
@@ -40,6 +40,9 @@ export const settingsElement = <SettingsPage />;
 export const usageElement = <UsagePage />;
 // P1.05 — the run report (§14.5 levels 3–4; the Timeline card's "Run report" link lands here).
 export const runReportElement = <RunReportPage />;
+// P1.12 — the unlocked outline editor + the promotion sheet (§7.3).
+export const outlineElement = <OutlinePage />;
+export const outlinePromoteElement = <OutlinePromotePage />;
 export const notFoundElement = <NotFoundPage />;
 
 export const routes: readonly AppRoute[] = [
@@ -63,6 +66,10 @@ export const routes: readonly AppRoute[] = [
   // P1.08 — the §5.8 compare route (deeper than /v/:v — no ambiguity; ?layout=side|inline|moves).
   { path: "/p/:project/v/:n/diff/:m", public: false, element: compareElement },
   { path: "/p/:project/a/:artifactId", public: false, element: pageElement },
+  // P1.12 — the outline surface (§7.3): the durable editor + the promotion sheet (the Promote click
+  // is the consent — it creates the `outline` run; the chat `/outline` verb lands here too).
+  { path: "/p/:project/outline", public: false, element: outlineElement },
+  { path: "/p/:project/outline/promote", public: false, element: outlinePromoteElement },
   // P1.07 — the palette's free-form obligation (REQ-OBJ-10): the row-creation path.
   { path: "/p/:project/obligations/new", public: false, element: obligationNewElement },
   // PRB.11 — the export dialog (format choice, the never-blocking obligation line, the AI-use attach

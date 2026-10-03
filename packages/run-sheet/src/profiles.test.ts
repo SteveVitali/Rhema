@@ -77,6 +77,9 @@ describe("activePhaseCount — the estimator's `phases` input", () => {
     expect(activePhaseCount("review", t)).toBe(6);
   });
   it("returns undefined for a workflow with no manifest (term contributes 0)", () => {
-    expect(activePhaseCount("outline" as WorkflowKey, {})).toBeUndefined();
+    expect(activePhaseCount("compose_voice" as WorkflowKey, {})).toBeUndefined();
+  });
+  it("outline counts its 4 declared phases", () => {
+    expect(activePhaseCount("outline", {})).toBe(4);
   });
 });

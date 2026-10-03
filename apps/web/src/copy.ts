@@ -514,6 +514,41 @@ export const COPY = {
       apparatusLabel: "Apparatus budget (credits)",
     },
     thesisLabel: "Thesis — name your pick",
+    // P1.12 — the Approve-outline spine-and-sections labels (the shared editor's copy — the unlocked
+    // outline editor uses the same table below under `outlinePage`).
+    outline: {
+      thesisLabel: "Thesis",
+      venueLabel: "Venue",
+      targetLengthLabel: "Target length (words)",
+      protocolLabel: "Protocol",
+      voiceLabel: "Voice",
+      spineHeading: "Spine",
+      sectionsHeading: "Sections",
+      alternativesHeading: "Alternatives considered",
+      gapsHeading: "Gaps only you can fill",
+      sourcesHeading: "Sources",
+      orderLabel: "#",
+      strikeLabel: "strike",
+      notePlaceholder: "note",
+      addClaimLabel: "Add a claim",
+      addClaimPlaceholder: "claim text",
+      addNotePlaceholder: "why",
+      addClaimSectionLabel: "in section",
+      targetWordsLabel: "target words",
+      functionLabel: "function",
+      entryLabel: "entry state",
+      exitLabel: "exit state",
+      moveLabel: "→ section",
+      unverifiedBadge: "[unverified]",
+      provenanceBadge: {
+        thread: "from thread",
+        source: "from source",
+        user_typed: "you typed",
+        generated: "generated",
+      } as Record<"thread" | "source" | "user_typed" | "generated", string>,
+      answerLabel: "Answer",
+      answerPlaceholder: "your answer lands as a claim",
+    },
     cutList: {
       heading: "Proposed cuts",
       targetFmt: "target {n} words",
@@ -938,6 +973,35 @@ export const COPY = {
     creditsSuffix: "cr",
   },
 
+  // P1.12 — the unlocked outline editor + the promotion sheet (§7.3). The structured rows' copy lives
+  // in `gates.outline` — one table feeds the gate card AND this page.
+  outlinePage: {
+    heading: "Outline",
+    backToProject: "Back to the project",
+    saveLabel: "Save",
+    savedNote: "Saved — a new version.",
+    savingNote: "Saving…",
+    saveFailedNote: "Save failed — try again.",
+    deleteLabel: "Delete outline",
+    citedNote: "A draft cites this outline — it can't be deleted.",
+    notFound: "This project has no outline yet.",
+    draftEstimateFmt: "Draft ≈{n} credits",
+  },
+  promote: {
+    heading: "Promote to an outline",
+    backToProject: "Back to the project",
+    promoteLabel: "Promote",
+    scopeLabel: { thread: "this thread", turn: "this turn", research: "all Assistant research" } as Record<string, string>,
+    sourcesFmt: "{n} source notes will copy to your research folder.",
+    urlsFmt: "{n} URLs will be re-fetched — a failed fetch lands [unverified].",
+    estimateFmt: "Estimate {estimate} credits · cap {cap}",
+    existingNote: "An outline already exists at this name — the promote lands as a new version.",
+    slugLabel: "Outline name",
+    slugHint: "lowercase letters, digits, dashes",
+    startedFmt: "The outline run started — its approval lands in Needs you.",
+    notFound: "That thread or turn wasn't found.",
+  },
+
   // P1.01 — the §5.1 IDE shell's chrome: rail, Files pane, Margin, Timeline, Desk, status bar, the View
   // menu, and the theme/paper controls. Canonical nouns only (Appendix D.2): "Files", never "Browser";
   // the view values are Write / Read / Focus; "Source" is not a View-menu entry.
@@ -1229,6 +1293,7 @@ export const COPY = {
       "draft.forked": "Draft v{n} forked",
       "revision.move_traced": "{hunkCount} changes traced",
       "rereview.lineage": "{carried} carried · {closed} closed · {new} new",
+      "outline.approved": "Outline approved — {slug}",
     } as Record<string, string>,
     // enum maps the templates resolve through — {kind}, {verdict}, {to}, {passed}, {severity}.
     gateKind: {

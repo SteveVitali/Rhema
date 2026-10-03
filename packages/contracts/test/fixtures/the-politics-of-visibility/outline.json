@@ -1,0 +1,96 @@
+{
+  "sidecar": "outline",
+  "version": 1,
+  "thesis": "Visibility is not a neutral good — it is a governance technology whose costs fall unevenly.",
+  "venue": "Public essay",
+  "targetLength": 2400,
+  "provenance": {
+    "threadId": "01JEXAMPLE0000000000000T",
+    "scope": "thread",
+    "runId": "01JEXAMPLE0000000000000R",
+    "generatedAt": "2026-09-20T14:05:00Z",
+    "urls": [
+      { "url": "https://example.org/visibility-paper", "fetchedAt": "2026-09-20T14:02:00Z" },
+      { "url": "https://example.org/missing-page", "unverified": true }
+    ]
+  },
+  "spine": ["c1", "c3", "c2", "c4", "c5"],
+  "sections": [
+    {
+      "ref": "I",
+      "title": "The promise of visibility",
+      "targetWords": 600,
+      "function": "Set up the commonplace the essay complicates",
+      "entry": "The reader treats being seen as uncomplicatedly empowering",
+      "exit": "The reader suspects visibility has a price list",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Contemporary platforms frame visibility as the default route to recognition.",
+          "provenance": { "kind": "thread", "turnId": "01JEXAMPLE0000000000000U" }
+        },
+        {
+          "id": "c3",
+          "text": "Visibility regimes distribute the burden of being seen unevenly across groups.",
+          "provenance": {
+            "kind": "source",
+            "url": "https://example.org/visibility-paper",
+            "notePath": "agents/assistant/research/sources/01JEXAMPLE0000000000000C.md"
+          }
+        }
+      ]
+    },
+    {
+      "ref": "II",
+      "title": "What the ledger hides",
+      "targetWords": 900,
+      "function": "Carry the main argument",
+      "entry": "Visibility is a demand before it is a gift",
+      "exit": "The reader can name who audits whom",
+      "claims": [
+        {
+          "id": "c2",
+          "text": "The demand to be visible doubles as a demand to be legible to power.",
+          "provenance": {
+            "kind": "source",
+            "url": "https://example.org/missing-page",
+            "notePath": "agents/assistant/research/sources/01JEXAMPLE0000000000000D.md"
+          },
+          "unverified": true
+        },
+        {
+          "id": "c4",
+          "text": "Opting out of visibility is itself read as a political act.",
+          "provenance": { "kind": "generated" }
+        }
+      ]
+    },
+    {
+      "ref": "III",
+      "title": "Selective opacity",
+      "targetWords": 900,
+      "function": "Resolve toward a usable stance",
+      "entry": "The reader accepts the audit asymmetry",
+      "exit": "The reader holds a criterion for when to refuse the stage",
+      "claims": [
+        {
+          "id": "c5",
+          "text": "Strategic opacity is a defensible posture, not a retreat.",
+          "provenance": { "kind": "user_typed" }
+        }
+      ]
+    }
+  ],
+  "alternativesConsidered": [
+    "A historical genealogy of surveillance — rejected: the thread's material is normative, not archival.",
+    "A platform-critique frame — rejected: it narrows the argument to one industry."
+  ],
+  "gaps": [
+    {
+      "id": "g1",
+      "needed": "A first-person example of refusing visibility that only the author can supply",
+      "relatedClaimId": "c5",
+      "sectionRef": "III"
+    }
+  ]
+}

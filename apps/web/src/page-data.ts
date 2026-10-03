@@ -25,7 +25,9 @@ import type {
   RestorePointDto,
   FilesDto,
   ChatPanelDto,
+  OutlinePromotionDto,
 } from "@rhema/api-client";
+import type { GateOutlineView } from "@rhema/findings-core";
 import type { DossierData } from "./data.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
@@ -368,6 +370,39 @@ export interface PageData {
     readonly slug: string;
     readonly runId: string;
     readonly report: RunReportDto;
+  };
+  /**
+   * P1.12 — the unlocked outline editor (`/p/:slug/outline`; §7.3): the shared spine-and-sections
+   * rows (the same view shape the Approve-outline card renders), the autosave/delete form actions,
+   * the server-computed Draft estimate line, and the citation fact (a cited outline can't delete).
+   */
+  readonly outline?: {
+    readonly slug: string;
+    readonly editable: boolean;
+    /** the autosave form's POST action (`/p/:slug/outline` — decodes `ed.*` → PATCH edit). */
+    readonly saveAction: string;
+    readonly deleteAction: string;
+    /** the live Draft estimate line ("Draft ≈N credits"), recomputed on every render/save. */
+    readonly draftEstimateCredits?: number;
+    readonly outline: GateOutlineView;
+    /** a draft cites this outline — DELETE answers the notice instead of removing it. */
+    readonly cited: boolean;
+    readonly notice?: string;
+    readonly saved?: boolean;
+  };
+  /** P1.12 — the promotion sheet (`/p/:slug/outline/promote`): the api's verbatim facts + the picks
+   *  the POST replays. The Promote click is the consent — it creates the `outline` run. */
+  readonly outlinePromotion?: {
+    readonly slug: string;
+    readonly projectTitle: string;
+    readonly promotion: OutlinePromotionDto;
+    /** the scope/thread/turn the form's hidden fields replay. */
+    readonly scope: "thread" | "turn" | "research";
+    readonly threadId?: string;
+    readonly turnId?: string;
+    readonly notice?: string;
+    /** set after a successful Promote click — the run started. */
+    readonly started?: { readonly runId: string; readonly slug: string };
   };
   /** the page's dwell-heartbeat surface label — set ⇒ renderDocument emits the beacon script (REQ-BETA-10). */
   readonly dwellSurface?: string;

@@ -34,6 +34,7 @@ import {
   VersionRail,
   CompareView,
   FilesPane,
+  OutlineSections,
   ChatDesk,
   type ChatDeskLabels,
   type VersionRailLabels,
@@ -1389,6 +1390,38 @@ const dispositionLabels: DispositionControlsLabels = {
   appliedNote: T.appliedNote,
 };
 
+/** P1.12 — the shared spine-and-sections labels: the Approve-outline card AND the unlocked outline
+ *  editor render the same component with the same copy (one table, both surfaces). */
+export const outlineLabels = {
+  thesisLabel: G.outline.thesisLabel,
+  venueLabel: G.outline.venueLabel,
+  targetLengthLabel: G.outline.targetLengthLabel,
+  protocolLabel: G.outline.protocolLabel,
+  voiceLabel: G.outline.voiceLabel,
+  spineHeading: G.outline.spineHeading,
+  sectionsHeading: G.outline.sectionsHeading,
+  alternativesHeading: G.outline.alternativesHeading,
+  gapsHeading: G.outline.gapsHeading,
+  sourcesHeading: G.outline.sourcesHeading,
+  orderLabel: G.outline.orderLabel,
+  strikeLabel: G.outline.strikeLabel,
+  notePlaceholder: G.outline.notePlaceholder,
+  addClaimLabel: G.outline.addClaimLabel,
+  addClaimPlaceholder: G.outline.addClaimPlaceholder,
+  addNotePlaceholder: G.outline.addNotePlaceholder,
+  addClaimSectionLabel: G.outline.addClaimSectionLabel,
+  targetWordsLabel: G.outline.targetWordsLabel,
+  functionLabel: G.outline.functionLabel,
+  entryLabel: G.outline.entryLabel,
+  exitLabel: G.outline.exitLabel,
+  moveLabel: G.outline.moveLabel,
+  unverifiedBadge: G.outline.unverifiedBadge,
+  provenanceBadge: (kind: "thread" | "source" | "user_typed" | "generated") =>
+    G.outline.provenanceBadge[kind] ?? kind,
+  answerLabel: G.outline.answerLabel,
+  answerPlaceholder: G.outline.answerPlaceholder,
+} as const;
+
 const gateCardLabels: GateCardLabels = {
   kindLabel: (kind) => G.kindLabel[kind] ?? kind,
   approveLabel: (kind) => (kind === "approve_triage" ? G.approveLabel.approve_triage : G.approveLabel.default),
@@ -1436,6 +1469,9 @@ const gateCardLabels: GateCardLabels = {
     apparatusLabel: G.plan.apparatusLabel,
   },
   thesisLabel: G.thesisLabel,
+  // P1.12 — the Approve-outline spine-and-sections labels (the standalone outline editor reuses the
+  // same COPY.gates.outline table via `outlineLabels` below).
+  outline: outlineLabels,
   cutList: {
     heading: G.cutList.heading,
     targetLine: (targetWords) => fmt(G.cutList.targetFmt, { n: targetWords.toLocaleString("en-US") }),
@@ -3204,6 +3240,131 @@ export function UsagePage(): ReactNode {
           )}
         </>
       ) : null}
+    </Shell>
+  );
+}
+
+/**
+ * P1.12 — the unlocked outline editor (`/p/:slug/outline`; §7.3): the SAME spine-and-sections rows the
+ * Approve-outline card renders, wrapped in the autosave form (the island debounces `ed.*` submits to
+ * the save action; the Save button is the no-JS path). Phone-width (`editable:false`) is read-only.
+ * Provenance + `[unverified]` badges are DATA — the page never offers a control that strips them.
+ */
+export function OutlinePage(): ReactNode {
+  const { outline, compact } = usePageData();
+  const O = COPY.outlinePage;
+  if (!outline) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{O.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{O.notFound}</p>
+      </Shell>
+    );
+  }
+  const editable = outline.editable && compact !== true;
+  return (
+    <Shell brand={COPY.brand} footer={footer()}>
+      <SectionTitle>{O.heading}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <a href={`/p/${outline.slug}`} style={{ color: "var(--accent)" }}>{O.backToProject}</a>
+        {outline.draftEstimateCredits != null ? (
+          <span data-draft-estimate="true" style={{ marginLeft: "12px" }}>
+            {fmt(O.draftEstimateFmt, { n: outline.draftEstimateCredits.toLocaleString("en-US") })}
+          </span>
+        ) : null}
+        {outline.saved ? (
+          <span data-saved-note="true" style={{ marginLeft: "12px", color: "var(--sev-ok, var(--shell-fg-muted))" }}>{O.savedNote}</span>
+        ) : null}
+        {outline.notice ? (
+          <span data-notice="true" style={{ marginLeft: "12px", color: "var(--sev-major)" }}>{outline.notice}</span>
+        ) : null}
+      </p>
+      <form
+        method="post"
+        action={outline.saveAction}
+        data-outline-editor="true"
+        data-autosave="true"
+        data-label-saving={O.savingNote}
+        data-label-saved={O.savedNote}
+        data-label-failed={O.saveFailedNote}
+      >
+        <OutlineSections outline={outline.outline} editable={editable} labels={outlineLabels} />
+        {editable ? (
+          <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
+            <button type="submit" style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 500 }}>
+              {O.saveLabel}
+            </button>
+          </div>
+        ) : null}
+      </form>
+      {editable && !outline.cited ? (
+        <form method="post" action={outline.deleteAction} style={{ marginTop: "16px" }}>
+          <button type="submit" data-outline-delete="true" style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--sev-major)", background: "transparent", color: "var(--sev-major)", fontSize: "12px" }}>
+            {O.deleteLabel}
+          </button>
+        </form>
+      ) : null}
+      {outline.cited ? (
+        <p data-cited-note="true" style={{ marginTop: "16px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{O.citedNote}</p>
+      ) : null}
+      {editable ? <script defer src="/assets/outline.js"></script> : null}
+    </Shell>
+  );
+}
+
+/**
+ * P1.12 — the promotion sheet (`/p/:slug/outline/promote`; §7.3): the api's verbatim facts — the
+ * scope, the source notes that will copy, the URLs the run re-fetches, the estimate + cap — and the
+ * Promote click that creates the `outline` run (the sheet IS the consent).
+ */
+export function OutlinePromotePage(): ReactNode {
+  const { outlinePromotion } = usePageData();
+  const P = COPY.promote;
+  if (!outlinePromotion) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{P.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{P.notFound}</p>
+      </Shell>
+    );
+  }
+  const { promotion: f } = outlinePromotion;
+  return (
+    <Shell brand={COPY.brand} footer={footer()}>
+      <SectionTitle>{P.heading}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <a href={`/p/${outlinePromotion.slug}`} style={{ color: "var(--accent)" }}>{P.backToProject}</a>
+      </p>
+      {outlinePromotion.started ? (
+        <p data-started="true" style={{ fontSize: "13px", color: "var(--shell-fg)" }}>{P.startedFmt}</p>
+      ) : (
+        <form method="post" action={`/p/${outlinePromotion.slug}/outline/promote`} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "520px" }}>
+          <input type="hidden" name="scope" value={outlinePromotion.scope} />
+          {outlinePromotion.threadId ? <input type="hidden" name="threadId" value={outlinePromotion.threadId} /> : null}
+          {outlinePromotion.turnId ? <input type="hidden" name="turnId" value={outlinePromotion.turnId} /> : null}
+          <p style={{ margin: 0, fontSize: "13px", color: "var(--shell-fg)" }}>
+            {P.scopeLabel[outlinePromotion.scope] ?? outlinePromotion.scope}
+          </p>
+          <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "13px", color: "var(--shell-fg-muted)", display: "flex", flexDirection: "column", gap: "4px" }}>
+            <li data-promotion-sources="true">{fmt(P.sourcesFmt, { n: String(f.sources) })}</li>
+            <li data-promotion-urls="true">{fmt(P.urlsFmt, { n: String(f.urls.length) })}</li>
+            <li data-promotion-estimate="true">{fmt(P.estimateFmt, { estimate: f.estimateCredits.toLocaleString("en-US"), cap: f.capCredits.toLocaleString("en-US") })}</li>
+          </ul>
+          {f.existing ? <p data-existing="true" style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }}>{P.existingNote}</p> : null}
+          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {P.slugLabel}
+            <input type="text" name="slug" defaultValue={f.slug} pattern="[a-z0-9][a-z0-9-]{0,47}" title={P.slugHint} style={{ display: "block", marginTop: "3px", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+          </label>
+          {outlinePromotion.notice ? (
+            <p data-notice="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>{outlinePromotion.notice}</p>
+          ) : null}
+          <div>
+            <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+              {P.promoteLabel}
+            </button>
+          </div>
+        </form>
+      )}
     </Shell>
   );
 }

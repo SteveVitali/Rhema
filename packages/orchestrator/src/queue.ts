@@ -12,6 +12,12 @@ export const RUN_JOBS = {
   deliver: "run.deliver",
   /** P1.05 — the one package-class model call that writes a delivered run's walkthrough (§5.6). */
   walkthrough: "run.walkthrough",
+  /**
+   * P1.12 — completes a run whose LAST phase ended in a gate (Outline's approve_outline): the gate
+   * resolves `waiting_gate → finalizing` (no `run.resume` — there is no uncommitted phase to launch)
+   * and this job runs the delivery consequences + `finalizing → completed` server-side.
+   */
+  finalize: "run.finalize",
 } as const;
 export type RunJobName = (typeof RUN_JOBS)[keyof typeof RUN_JOBS];
 

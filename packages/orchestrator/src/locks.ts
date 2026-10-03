@@ -58,6 +58,10 @@ const WRITER_WORKFLOWS: ReadonlySet<WorkflowKey> = new Set<WorkflowKey>([
   "revise",
   "cut_to_length",
   "line_edit",
+  // P1.12 — the promotion run writes the author-namespace outline subtree (assistant seat →
+  // `ns:write:assistant:<project>`): two concurrent promotions exclude, and the key never collides
+  // with a draft writer's `ns:write:author` (disjoint trees, both allowed live).
+  "outline",
 ]);
 
 /** Persona workflows lock the persona, not the project (§12.4). */

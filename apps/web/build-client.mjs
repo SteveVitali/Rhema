@@ -13,7 +13,7 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 
 await mkdir(new URL("public", import.meta.url), { recursive: true });
 
-for (const entry of ["editor", "ide", "page"]) {
+for (const entry of ["editor", "ide", "page", "outline"]) {
   await build({
     entryPoints: [`${root}src/client/${entry}.ts`],
     bundle: true,

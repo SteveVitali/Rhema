@@ -39,16 +39,19 @@ const EXPECTED: Record<string, { keys: string[]; skillPhases: string[] }> = {
   // (§12.2 Research row); a chat turn is one answer phase.
   research_burst: { keys: ["plan", "fetch", "distill"], skillPhases: ["0", "1", "2"] },
   chat_turn: { keys: ["answer"], skillPhases: ["0"] },
+  // P1.12 — the promotion run (§7.3): harvest → classify → spine → gaps, gated on approve_outline.
+  outline: { keys: ["harvest", "classify", "spine", "gaps"], skillPhases: ["0", "1", "2", "3"] },
 };
 
 describe("phase manifests (§12.2)", () => {
-  it("ships exactly the nine Phase-1 workflows", () => {
+  it("ships exactly the ten Phase-1 workflows", () => {
     expect(Object.keys(WORKFLOW_MANIFESTS).sort()).toEqual(
       [
         "calibrate_voice",
         "chat_turn",
         "draft",
         "fact_check",
+        "outline",
         "profile_voice",
         "refresh_voice",
         "research_burst",
@@ -63,7 +66,7 @@ describe("phase manifests (§12.2)", () => {
       it("is a valid workflow key with a real skill and valid seats/classes", () => {
         expect(WORKFLOW_KEYS).toContain(m.workflow);
         expect(m.skill).toMatch(
-          /^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline|research-burst|chat-turn)$/,
+          /^(editorial-review|respond-to-review|bootstrap-persona|draft-from-outline|research-burst|chat-turn|outline-from-research)$/,
         );
         for (const p of m.phases) {
           expect(JUDGE_SEATS.has(p.seat)).toBe(true);
@@ -131,5 +134,19 @@ describe("phase manifests (§12.2)", () => {
     const plan = draft.phases.find((p) => p.key === "plan")!;
     expect(plan.gateAfter).toBe("approve_plan");
     expect(plan.gateArtifact).toBe("agents/author/drafting/v(N+1)/02-structure-plan.md");
+  });
+
+  it("P1.12 — the outline run's LAST phase gates on approve_outline bound to the slug'd artifact", () => {
+    const m = WORKFLOW_MANIFESTS.outline!;
+    const last = m.phases[m.phases.length - 1]!;
+    expect(last.key).toBe("gaps");
+    expect(last.gateAfter).toBe("approve_outline");
+    expect(last.gateArtifact).toBe("agents/author/outline/<slug>.md");
+    // every phase is the Assistant seat (the sanctioned author-outline conduit is the only author write).
+    for (const p of m.phases) expect(p.seat).toBe("assistant");
+    // the sidecar the oracle + the card read is declared on the gated phase.
+    expect(last.sidecars).toContain("outline.json");
+    const bound = last.completionPredicates.find((p) => p.kind === "outline_spine_bound");
+    expect(bound).toMatchObject({ kind: "outline_spine_bound", min: 5, max: 12 });
   });
 });

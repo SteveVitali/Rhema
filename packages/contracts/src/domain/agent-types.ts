@@ -101,6 +101,11 @@ export const ASSISTANT_AGENT_TYPE: AgentTypeConfig = {
   denies: [
     "agents/author/**",
     "!agents/author/ledgers/**",
+    // P1.12 — the outline conduit (§7.3; REQ-SPEC-15): the Assistant seat runs `outline` and its
+    // declared `agents/author/outline/**` outputs are the SANCTIONED write path into the author
+    // namespace — the deny glob must not swallow them (the mount table grants exactly this subtree
+    // read, and the run's declared outputs readwrite). Nothing else under agents/author/ opens.
+    "!agents/author/outline/**",
     "agents/editor/**",
     "agents/persona_builder/**",
     "HOLDOUT-*",

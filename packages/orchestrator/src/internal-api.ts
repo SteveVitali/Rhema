@@ -41,6 +41,7 @@ import { revokeRunCredentials } from "./credentials.js";
 import { seatForWorkflow } from "./run-shape.js";
 import { preApproveGateByTrial } from "./gate-resolution.js";
 import { resolveDeliveryBase, type DeliveryBaseDraft } from "./delivery-base.js";
+import { applyOutlineApproval } from "./outline-delivery.js";
 import { reconcileRunSpend } from "./spend.js";
 import { MAX_EVENT_BATCH } from "./event-store.js";
 
@@ -421,6 +422,9 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
             // `nextDraftN` (the same value `expandDeclaredPath` derives as baseDraftN + 1).
             baseDraftN: deliveryBase?.n ?? (deliveryResolution.newDraftN != null ? deliveryResolution.newDraftN - 1 : null),
             reviewedDraftN: deliveryResolution.reviewedDraftN,
+            // P1.12 — `<slug>` resolves to the frozen outline slug (the conduit grant into
+            // `agents/author/outline/`); the runspec's `phase_output` uses the same value.
+            slug: typeof inputs["outlineSlug"] === "string" ? (inputs["outlineSlug"] as string) : null,
           })
         : [];
 
@@ -1111,7 +1115,21 @@ export async function failStep(
  */
 export async function finalizeRun(
   deps: OrchestratorDeps,
-  args: { runId: string; workspaceId: string; billingAccountId: string; holdLedgerId?: string; spentCredits: number; capCredits: number; byPhase?: Record<string, number> },
+  args: {
+    runId: string;
+    workspaceId: string;
+    billingAccountId: string;
+    holdLedgerId?: string;
+    spentCredits: number;
+    capCredits: number;
+    byPhase?: Record<string, number>;
+    /**
+     * P1.12 — the workspace-bound content store the Outline approval consequences need (the
+     * source-note copy reads the assistant notes' bytes). Required for `workflow: "outline"`
+     * runs; the `run.finalize` worker job and the bare-finalize route both bind it.
+     */
+    store?: ContentStore;
+  },
 ): Promise<{ ok: true; state: RunState }> {
   await deps.txRunner.run(args.workspaceId, async (tx) => {
     await applyTransition(tx, deps, { runId: args.runId, from: "finalizing", to: "completed" });
@@ -1143,10 +1161,24 @@ export async function finalizeRun(
     // re-derived from mutable persona state) + the artifact ids the committed steps produced. The persona's
     // current_profile_id points at it and active_run_id clears — all inside the finalize transaction.
     const runRow = (
-      await tx.query(`select workflow, persona_id, inputs from runs where id = $1`, [args.runId])
-    ).rows[0] as { workflow: string; persona_id: string | null; inputs: Record<string, unknown> | string } | undefined;
+      await tx.query(`select workflow, persona_id, project_id, inputs from runs where id = $1`, [args.runId])
+    ).rows[0] as
+      | { workflow: string; persona_id: string | null; project_id: string | null; inputs: Record<string, unknown> | string }
+      | undefined;
     const runInputs =
       typeof runRow?.inputs === "string" ? (JSON.parse(runRow.inputs) as Record<string, unknown>) : (runRow?.inputs ?? {});
+    // P1.12 — the Approve-outline consequences (§7.3): the research-note copies +
+    // `outline.approved` event, inside the same transaction as `finalizing → completed`. The
+    // workflow's last phase is gated, so this finalize only ever runs post-approval.
+    if (runRow?.workflow === "outline" && runRow.project_id) {
+      if (!args.store) throw new Error("finalizeRun: outline consequences require a ContentStore");
+      await applyOutlineApproval(tx, { ...deps, store: args.store }, {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        projectId: runRow.project_id,
+        inputs: runInputs,
+      });
+    }
     const snap = (runInputs.snapshot ?? null) as Record<string, unknown> | null;
     if (
       runRow?.persona_id &&
