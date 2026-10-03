@@ -3,8 +3,9 @@
 Ticket: `docs/tickets/73_RUN.1__run-and-chat-defects.md` · run ledger:
 `docs/build/runs/RUN.1.md`
 Stacks on `stevevitali/edit-1-edit-path` (PR #94). **DO NOT MERGE** — merge policy OPERATOR.
-Stage B legs (deploy, R4/R7 journey green, walkthrough regen on `01M3SK62…`) are deferred to the
-operator path — see `D-RUN.1-1` / `D-RUN.1-2` in `docs/tickets/DEFERRALS.md`.
+**Stage B executed 2026-10-03** — deployed at `8ce4038` (Pulumi update 123), R4+R7 journeys
+`ready-to-flip` → `registry.ts` green, walkthrough regen `ready` on `01M3SK62…` — see
+**Stage B evidence** below; `D-RUN.1-1` / `D-RUN.1-2` closed in `docs/tickets/DEFERRALS.md`.
 
 ## Summary
 
@@ -62,3 +63,19 @@ evidence — never claimed green on code alone.
 Pre-existing red folded in: `check-additive-migrations` snapshot missed `0053` (EDIT.1's file);
 `phase-loop`/`g21`/`pod-loop`/`harness-loop` fixtures updated to the blocking leg where the old
 park semantics were under test, with informational-path coverage added alongside.
+
+## Stage B evidence (2026-10-03 — prod, $0.21 metered)
+
+- **Build + deploy.** Cloud Build `8e0392e3` (tag `run1`, chain-tip `8ce4038`, all nine images);
+  `Pulumi.prod.yaml` pins bumped for the diff'd services (api/web/worker/run-task);
+  `pulumi up` prod **update 123** — 7 updated / 148 unchanged, no stateful replace/delete.
+- **Provenance.** `/healthz` `build.gitSha` = `8ce4038050d054022a732ee60bd6ccf120d5bc75` on
+  api + web; worker env live-verified carrying
+  `WALKTHROUGH_MODEL_KEY_SECRET → secretVersion(rhema-prod-anthropic-api-key)`.
+- **Journeys.** `R4` + `R7` both `ready-to-flip` → flipped `red→green` in `registry.ts`.
+  Report + screenshots: `docs/build/reports/2026-10-03_RUN.1-journeys/`. R4's chat turn ran
+  live (run `01M40193G390MZZBP9EVJ0HR4C`, ~31 s, 16cr); two live-surfaced harness fixes
+  shipped here (status-poll thread param; phone scroll-into-view before the occlusion assert).
+- **Walkthrough.** Retry on `01M3SK62YZST272B35CG12K6TW` → HTTP 202 →
+  `runs.walkthrough = {status:"ready", model:"claude-haiku-4-5"}` with real generated text.
+- **Spend.** $0.21 metered (flagged-tenant weekly $49.71 → $49.92) — ≤ $3 bound.

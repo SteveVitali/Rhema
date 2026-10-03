@@ -1054,12 +1054,20 @@ const R4: StepFn = async (ctx) => {
     const turnRow = page.locator("[data-chat-turn]").last();
     await turnRow.waitFor({ state: "attached", timeout: 10_000 }).catch(() => undefined);
     const turnId = await turnRow.getAttribute("data-chat-turn").catch(() => null);
+    // the desk root stamps the ACTIVE thread (data-chat-thread) — the status route keys on it;
+    // an empty ?thread= misses the api's /threads/:tid/turns/:runId path and 404s the whole poll.
+    const threadId =
+      (await page
+        .locator("[data-chat-thread]")
+        .first()
+        .getAttribute("data-chat-thread")
+        .catch(() => null)) ?? "";
     if (turnId) {
       const deadline = Date.now() + 150_000;
       let state = "";
       while (Date.now() < deadline) {
         const r = await page.request.get(
-          `${ctx.webBaseUrl}/p/${slug}/chat/turns/${turnId}?thread=`,
+          `${ctx.webBaseUrl}/p/${slug}/chat/turns/${turnId}?thread=${encodeURIComponent(threadId)}`,
         );
         if (r.ok()) {
           state = ((await r.json()) as { state?: string }).state ?? "";
@@ -1090,6 +1098,9 @@ const R4: StepFn = async (ctx) => {
     const sendP = pp
       .locator('.ide-phone-only form[data-chat-composer] button[type="submit"]')
       .first();
+    // the phone mount is in-flow inside the Page (below the fold) — scroll to it as a reader
+    // would, then assert the centered hit-target is clear of the phonebar/statusbar chrome.
+    await sendP.scrollIntoViewIfNeeded();
     await assertActionable(sendP, "chat Send @390×844");
   } finally {
     await phone.close();

@@ -4,8 +4,8 @@
   gates never block, walkthroughs write.
 - **Branch:** `stevevitali/run-1-run-and-chat-defects` · **PR #95** · stacked on the EDIT.1 tip `76e00c5`
   (`stevevitali/edit-1-edit-path`, PR #94 — unmerged, OPERATOR). Tip `0cd943d`.
-- **Spend:** **$0** so far — Stage A only; Stage B is operator-gated (deploy + R4/R7 + walkthrough
-  regen → D-RUN.1-1/-2).
+- **Spend:** **$0.21** metered (Stage B live legs: 3 chat turns + walkthrough regen) — ≤$3 bound.
+  Stage B DONE 2026-10-03 (deploy + provenance + R4/R7 flips + walkthrough regen).
 - **ADRs:** ADR-050 (one gate-policy resolution — informational gates never park),
   ADR-051 (chat turns keep the project lock; truthful web proxy), ADR-052 (worker walkthrough
   model-key exception).
@@ -122,14 +122,45 @@ post, every-route parametrized case, and a no-message-text-in-logs assertion (17
   `tsc -b` on `infra/pulumi` fails on `import.meta` in the pre-existing test file — the tsconfig
   is `module: commonjs` for the Pulumi CLI; test files are covered by vitest, not that tsc.
 
-## Stage B — DEFERRED (D-RUN.1-1, D-RUN.1-2)
+## Stage B — DONE (2026-10-03; D-RUN.1-1, D-RUN.1-2 closed)
 
-Operator-gated per merge policy OPERATOR; the ticket's live legs are:
+Harness: operator-driven legs under the standing ADR-013 Stage-B authorization (merge policy
+OPERATOR — PR #95 stays open, unmerged).
 
-- deploy at the chain-tip SHA (api + web + worker images; `WALKTHROUGH_MODEL_KEY_SECRET` is a
-  new env on the worker — preview must show it);
-- R4 (chat turn answers; Send actionable 1440×900 + phone) and R7 (informational gate does not
-  block; labels match behaviour) on the deployed stage → `registry.ts` `red→green`;
-- walkthrough regeneration on `01M3SK62YZST272B35CG12K6TW` (Retry → `run.walkthrough` writes a
-  ready record, `lastError` cleared);
-- total metered spend ≤ $3.
+- **Build.** Cloud Build `8e0392e3-4632-4563-b444-48b9658c1a31` (tag `run1`, chain-tip
+  `8ce4038`) — all nine images SUCCESS.
+- **Deploy.** `Pulumi.prod.yaml` pins bumped for the diff'd services only (api/web/worker/run-task;
+  fetcher/convert/export/collab/egress-proxy keep pins — comment block records the mapping).
+  `pulumi preview` → 7 updates, no stateful replace/delete; the only non-template diff was
+  pre-existing `-scaling` drift reconciliation on four services. `pulumi up` prod update **123**
+  → 7 updated / 148 unchanged, 1m18s.
+- **Provenance.** `GET /healthz` on `api.rhema.tools` and `rhema.tools` both report
+  `build.gitSha = 8ce4038050d054022a732ee60bd6ccf120d5bc75`; `gcloud run services describe`
+  confirms the live images are the `run1` digests (api `3c285362`, web `12bfcfd2`, worker
+  `aa610210`) and the worker env now carries
+  `WALKTHROUGH_MODEL_KEY_SECRET=projects/rhema-507501/secrets/rhema-prod-anthropic-api-key/versions/latest`.
+- **Journeys.** `rhema-journeys --stage prod --steps R4,R7 --paid --expect-sha 8ce4038…` →
+  **R4 + R7 both `ready-to-flip`** → `registry.ts` flipped `red→green`. Report + screenshots:
+  `docs/build/reports/2026-10-03_RUN.1-journeys/` (R4.png, R7.png, report.json — provenance
+  match, zero console errors, zero failed requests).
+- **R4 live leg.** The journey's chat turn ran live on prod: run `01M40193G390MZZBP9EVJ0HR4C`
+  (`chat_turn`, project `showcase-copy-3`) — queued→completed in ~31 s, 16 credits spent against
+  the 40-credit §7.1 cap; Send actionable at 1440×900 and in a real mobile-UA context at
+  390×844. Two harness fixes were surfaced by the live leg and shipped in the follow-up
+  commit: (a) the turn-status poll must pass the desk's `data-chat-thread` (an empty
+  `?thread=` 404'd every poll — the DOM stamps the active thread); (b) the phone probe must
+  `scrollIntoViewIfNeeded` before the occlusion assert — the compact composer mounts in-flow
+  inside the Page below the fold, so `elementFromPoint` at its center was off-viewport. Both
+  were journey-harness bugs, not product defects — the deployed surface behaved correctly.
+- **R7 live leg.** The run sheet's scope line resolved to a canonical `resolveScopeGate`
+  string on prod, and the co-occurrence invariant held on every mounted run card (no
+  `[data-informational]` card on a `waiting_gate` run, no informational card + waiting line).
+- **Walkthrough.** `POST /runs/01M3SK62YZST272B35CG12K6TW/walkthrough/retry` → **HTTP 202**
+  `{"status":"requeued"}`; `runs.walkthrough` then persisted
+  `{status:"ready", model:"claude-haiku-4-5", attempts:1, generatedAt:2026-10-03T04:43:52Z}`
+  with a real generated brief — the `walkthrough unconfigured` stub defect is gone under the
+  deployed worker. (Bonus: the R4 chat-turn run's own walkthrough also wrote `ready`.)
+- **Spend.** Flagged-tenant weekly metered $49.71 → $49.92 = **$0.21** for the whole leg
+  (three chat turns @ ~16cr + the walkthrough regen) — far under the $3 bound. The weekly
+  spend-guard cap was read first ($49.71 already metered across all prior Stage-B legs this
+  week); the leg ran under the no-db attestation path with the operator-measured delta above.
