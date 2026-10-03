@@ -75,10 +75,13 @@ describe("ONB.1 — the warm convert-svc keeps every §12.1/§13.3 isolation pro
     expect(block).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
     expect(block).not.toContain("vpcAccess:"); // the property — a comment may name the posture
     expect(block).toContain('minInstanceCount: cfg.kind === "prod" ? 1 : 0');
-    // no DB credential, no secrets — the env is exactly CONVERT_ROOT + PORT
+    // no DB credential, no secrets — the env is exactly CONVERT_ROOT (PORT is platform-reserved:
+    // setting it 400s the revision — live finding on the first convert-svc create; serveConvert
+    // defaults `PORT ?? 8080`)
     expect(block).not.toContain("DATABASE_URL");
     expect(block).not.toContain("secretKeyRef");
     expect(block).not.toContain("_SECRET");
+    expect(block).not.toContain('"PORT"');
   });
 
   it("the api carries CONVERT_SERVICE_URL (service-first composite; the Job stays the fallback)", () => {

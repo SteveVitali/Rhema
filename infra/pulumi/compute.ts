@@ -441,7 +441,8 @@ export function createCompute(args: ComputeArgs): Compute {
           },
           envs: [
             { name: "CONVERT_ROOT", value: "/usercontent" },
-            { name: "PORT", value: "8080" },
+            // PORT is NOT settable — Cloud Run reserves+injects it (400 "reserved env names"),
+            // and serveConvert already defaults `process.env.PORT ?? 8080` to the platform value.
           ],
           volumeMounts: [{ name: "usercontent", mountPath: "/usercontent" }],
         },
