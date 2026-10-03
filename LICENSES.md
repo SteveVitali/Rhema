@@ -49,6 +49,12 @@ GPL-2.0 whole in any case; the binary remains a separate process.
 The PID-1 reaper + signal forwarder in the distroless run-task image — the equivalent-approved tini
 substitute (ADR-074), built static from the SHA-256-pinned upstream source (dumb-init 1.2.5).
 
+### `turborepo-remote-cache` — MIT, deployed container (OPS.2)
+The self-hosted Turborepo remote-cache server (Ducktors) running as the `rhema-prod-turbo-cache`
+Cloud Run service — wrapped exact-pinned `2.14.2` by `apps/turbo-cache` so the root lockfile carries
+the integrity hash (ADR-081). MIT on the allowlist; recorded here as the deployed-container entry
+the OPS.2 ticket requires.
+
 ### Fonts — OFL-1.1 / vendor-specific
 Bundled font files (SIL Open Font License and vendor licences) shipped as assets in the
 export/marketing containers. Redistribution terms are honored per font and enumerated here as fonts

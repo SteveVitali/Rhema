@@ -292,7 +292,7 @@ export function createCompute(args: ComputeArgs): Compute {
     });
   }
 
-  // --- Artifact Registry: the per-stack docker repo the images CI + `cloudbuild.yaml` push to and the
+  // --- Artifact Registry: the per-stack docker repo the images CI + `infra/cloudbuild/image-set.yaml` push to and the
   // runtimes pull from (PRB.15 — was hand-created for dev; IaC'd so `pulumi up prod` is self-contained).
   // `RUN_TASK_IMAGE_REPO` derives from it so the worker's Job spec can never drift from the real repo.
   const imageRepo = new gcp.artifactregistry.Repository(name("images"), {
@@ -504,6 +504,12 @@ export function createCompute(args: ComputeArgs): Compute {
     // gcsfuse mounts user-content at start: the revision must not roll before the convert SA's
     // conditioned read/write grants exist (PermissionDenied → exit 255 — live finding, dev u68).
     dependsOn: containerPrereqs,
+    // OPS.2 — the SERVICE-LEVEL `scaling` block (the v2 API's manual/scalingMode surface) reads back
+    // zeroed on every refresh (`{manualInstanceCount:0, minInstanceCount:0, scalingMode:""}` — the
+    // cosmetic `-scaling` diff every preview showed since STB.1). The program deliberately manages
+    // only `template.scaling`; the readback field is declared unmanaged here so an unchanged tree
+    // previews at 0 updates — this option must never be dropped without re-auditing the field.
+    ignoreChanges: ["scaling"],
   });
 
   // --- OPS.1 (owned decision (b)) — the in-VPC `migrate` Cloud Run JOB on non-prod stages. The DB is
@@ -945,6 +951,11 @@ export function createCompute(args: ComputeArgs): Compute {
       // or reaching GCS/SM through its SA's grants must roll after those resources exist —
       // live finding, dev update 68.
       dependsOn: containerPrereqs,
+      // OPS.2 — same service-level `scaling` readback drift as `convert-svc` above (see that
+      // comment): `{manualInstanceCount:0, minInstanceCount:0, scalingMode:""}` is a readback
+      // artifact the program does not manage (template.scaling is the managed surface).
+      // Declared unmanaged so a no-change preview reports 0 updates.
+      ignoreChanges: ["scaling"],
     });
   }
 

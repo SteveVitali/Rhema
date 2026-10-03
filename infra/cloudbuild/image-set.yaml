@@ -1,0 +1,56 @@
+# OPS.2 — the one committed, parameterized image-set build definition (BL-27; REQ-ARCH-39;
+# the STB.2b/4 ad-hoc helpers retired). This single file serves BOTH the full-set bring-up and the
+# subset rebuilds Stage B used to hand-roll as gitignored `integration/.scratch/cloudbuild-*.yaml`
+# copies — `_SERVICES` takes any comma-separated subset of the canonical set and unknown names fail
+# the build instead of silently skipping an image the deploy would then pin stale.
+#
+#   gcloud builds submit --config infra/cloudbuild/image-set.yaml --project rhema-507501 \
+#     --substitutions _AR=<repo>,_TAG=<tag>,_GIT_SHA=$(git rev-parse HEAD)[,_SERVICES=api,web]
+#
+# <repo> is the stack's Artifact Registry repo the Pulumi program provisions
+# (`us-central1-docker.pkg.dev/rhema-507501/rhema-<stack>`). Reproduce the deployed set by
+# re-running the build at the chain-tip SHA, then pin each `Digest:` line into the stack's
+# `rhema:serviceImages` / `rhema:runTaskImageDigest` / `rhema:proxyImage` config (PROD-BRINGUP §2b).
+substitutions:
+  _AR: us-central1-docker.pkg.dev/rhema-507501/rhema-dev
+  _TAG: dev
+  # JOURNEY.1 — callers pass the built commit (`gcloud builds submit` has no $COMMIT_SHA — that
+  # substitution only exists for repo-connected triggers). Baked into api/web via --build-arg.
+  _GIT_SHA: unknown
+  # The canonical image set — every `apps/<svc>/Dockerfile` the deploy uses (pinned by
+  # infra/config/cloudbuild.test.ts against the on-disk Dockerfile set).
+  _SERVICES: run-task,egress-proxy,api,web,worker,fetcher,convert,export,collab,turbo-cache
+steps:
+  - id: image-set
+    name: gcr.io/cloud-builders/docker
+    # BuildKit is required: the Dockerfiles use `FROM --platform=$TARGETPLATFORM` (manifest-
+    # qualified base pulls for arm64 devs) which classic `docker build` rejects as invalid syntax.
+    env: ["DOCKER_BUILDKIT=1"]
+    entrypoint: sh
+    args:
+      - -ec
+      - |
+        canonical="run-task egress-proxy api web worker fetcher convert export collab turbo-cache"
+        requested=$(printf '%s' "${_SERVICES}" | tr ',' ' ')
+        for svc in $requested; do
+          case " $canonical " in
+            *" $svc "*) ;;
+            *) echo "unknown service in _SERVICES: ${svc}" >&2; exit 1 ;;
+          esac
+        done
+        for svc in $requested; do
+          extra=""
+          # JOURNEY.1 (REQ-ARCH-39) — GIT_SHA bakes the built commit into the image for
+          # /healthz's build.gitSha (the deploy-provenance check). Only api/web consume the ARG.
+          case "$svc" in api|web) extra="--build-arg GIT_SHA=${_GIT_SHA}";; esac
+          echo "=== build ${svc} -> ${_AR}/${svc}:${_TAG}"
+          docker build -f "apps/${svc}/Dockerfile" ${extra} -t "${_AR}/${svc}:${_TAG}" .
+          docker push "${_AR}/${svc}:${_TAG}"
+        done
+# E2_HIGHCPU_8 + 100GB — the pnpm install + turbo build of the whole repo dominates; default
+# disk/e2-medium is tight. Keep this one build definition (not the gitignored copies) — every
+# Stage B rebuilds only the services its diff touches.
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 100
+timeout: 3600s
