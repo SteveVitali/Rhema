@@ -117,12 +117,19 @@ export class RunEventStreamer {
   private last: number;
   private pumping = false;
   private dirty = false;
+  // SLO.1 — the §13.5 event-delivery sample is LIVE-TAIL latency: append → flush for events appended
+  // while this client is attached. The FIRST pump after construction is the catch-up (the connect
+  // backlog, or the `Last-Event-ID` replay after reconnect) — its rows were written while no client was
+  // listening, so their append→flush delta measures the gap, not delivery. `caughtUp` flips only after
+  // that first pump completes; `onFlush` fires solely on post-catch-up passes.
+  private caughtUp = false;
 
   constructor(
     private readonly read: EventReader,
     private readonly sink: SseSink,
     afterSeq = 0,
     // STB.2 / D-P0.08b-3 — per-flush append→flush latency sample (the SLO metric's data path).
+    // SLO.1 — called only for LIVE-TAIL flushes (never the initial catch-up/replay).
     private readonly onFlush?: (sample: FlushSample) => void,
   ) {
     this.last = Number.isFinite(afterSeq) && afterSeq > 0 ? afterSeq : 0;
@@ -146,6 +153,7 @@ export class RunEventStreamer {
     this.pumping = true;
     let emitted = 0;
     let maxDeliveryMs = 0;
+    const wasCatchUp = !this.caughtUp;
     try {
       do {
         this.dirty = false;
@@ -162,8 +170,10 @@ export class RunEventStreamer {
       } while (this.dirty);
     } finally {
       this.pumping = false;
+      // the first pump completes the catch-up — every later pass is the live tail.
+      this.caughtUp = true;
     }
-    if (emitted > 0 && this.onFlush) {
+    if (emitted > 0 && this.onFlush && !wasCatchUp) {
       try {
         this.onFlush({ emitted, maxDeliveryMs, throughSeq: this.last });
       } catch {
@@ -193,7 +203,8 @@ export interface StreamRunEventsOptions {
   readonly pingIntervalMs?: number;
   /** safety re-poll interval — recovers a lost/early wakeup without waiting for reconnect. */
   readonly pollIntervalMs?: number;
-  /** per-flush latency sample hook (STB.2 / D-P0.08b-3) — called once per pump pass that emitted rows. */
+  /** per-flush latency sample hook (STB.2 / D-P0.08b-3; SLO.1) — called once per LIVE-TAIL pump pass
+   *  that emitted rows; the initial catch-up/replay pass never samples. */
   readonly onFlush?: (sample: FlushSample) => void;
 }
 

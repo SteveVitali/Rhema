@@ -787,4 +787,64 @@ describe("collab service (P1.03)", () => {
       await conn2.disconnect();
     }
   });
+
+  // SLO.1 — the §13.5 autosave signal's collab leg: the Page saves through `onStoreDocument`, so a real
+  // (unlocked) store lands one `autosave_save_ms` sample labelled `detail='collab'` — the grant the
+  // api's HTTP save path already held is added for `rhema_collab` in migration 0054. A locked refusal
+  // is not a save and never samples.
+  it("SLO.1 — onStoreDocument lands an autosave_save_ms 'collab' sample; a locked store never samples", async () => {
+    const conn = await openDoc(fx);
+    try {
+      typeAll(conn.document!, BASE_MD + "\nA sampled save.\n");
+      await fx.service.extension.onStoreDocument!({
+        documentName: `draft:${DRAFT}`,
+        document: conn.document!,
+        lastContext: ctx,
+        instance: { closeConnections: () => {} } as never,
+      } as never);
+      // the sample write is fire-and-forget — yield the loop so the scoped insert lands.
+      await new Promise((r) => setTimeout(r, 20));
+      const rows = (
+        await fx.exec.query(
+          `select value_ms, workspace_id, detail from slo_samples where signal = 'autosave_save_ms'`,
+          [],
+        )
+      ).rows as { value_ms: number; workspace_id: string; detail: string }[];
+      expect(rows.length).toBe(1);
+      expect(rows[0]).toMatchObject({ workspace_id: WS, detail: "collab" });
+      expect(rows[0].value_ms).toBeGreaterThanOrEqual(0);
+    } finally {
+      // disconnect ALSO triggers a store pass (hocuspocus flushes on unload) — a legitimate sample
+      // either way; the locked leg below measures a DELTA so that count is irrelevant.
+      await conn.disconnect();
+    }
+
+    // a run holding the head → the store refuses (locked) → NO sample row lands for that pass
+    await fx.exec.query(
+      `insert into runs(id, workspace_id, project_id, workflow, state, inputs, model_profile, model_tier, rigor,
+         estimate_credits, cap_credits, rate_table_version, lock_set)
+       values ($5,$1,$2,'review',$3,'{}'::jsonb,'p','base','standard',0,0,1,$4)`,
+      [WS, PROJ, HOLDING_STATES[1] /* running */, [lockKeys.draftWrite(DRAFT)], RUN],
+    );
+    const conn2 = await openDoc(fx);
+    try {
+      const before = (
+        await fx.exec.query(`select count(*)::int n from slo_samples where signal = 'autosave_save_ms'`, [])
+      ).rows[0] as { n: number };
+      typeAll(conn2.document!, BASE_MD + "\nLocked save.\n");
+      await fx.service.extension.onStoreDocument!({
+        documentName: `draft:${DRAFT}`,
+        document: conn2.document!,
+        lastContext: ctx,
+        instance: { closeConnections: () => {} } as never,
+      } as never);
+      await new Promise((r) => setTimeout(r, 20));
+      const after = (
+        await fx.exec.query(`select count(*)::int n from slo_samples where signal = 'autosave_save_ms'`, [])
+      ).rows[0] as { n: number };
+      expect(after.n).toBe(before.n); // the locked pass wrote no sample
+    } finally {
+      await conn2.disconnect();
+    }
+  });
 });

@@ -118,12 +118,15 @@ export function createSseRoutes(deps: SseApiDeps): Hono {
           // row per flush batch carrying the batch's max append→flush ms (0042; probed by the
           // worker's `slo.probe` sweep as `event_delivery_latency_p95_s`). Fire-and-forget —
           // telemetry never blocks or fails the stream, and a pre-0042 deploy simply drops it.
+          // SLO.1 — `detail='tail'` marks the live-tail sample class: `RunEventStreamer` already
+          // suppresses the catch-up/replay pump, and the probe requires this detail so a stray or
+          // pre-SLO.1 (unmarked) sample can never be read as live delivery latency.
           onFlush: (sample) => {
             void deps.txRunner
               .run(principal.workspaceId, (tx) =>
                 tx.query(
-                  `insert into slo_samples (signal, value_ms, workspace_id, run_id)
-                     values ('event_delivery_ms', $1, $2, $3)`,
+                  `insert into slo_samples (signal, value_ms, workspace_id, run_id, detail)
+                     values ('event_delivery_ms', $1, $2, $3, 'tail')`,
                   [sample.maxDeliveryMs, principal.workspaceId, runId],
                 ),
               )
