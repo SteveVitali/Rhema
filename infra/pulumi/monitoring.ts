@@ -138,6 +138,11 @@ export function createMonitoring(args: MonitoringArgs): {
       unit: "1",
       labels: [{ key: "signal", valueType: "STRING", description: "the §13.5 signal key" }],
     },
+    // GCP 400s a DISTRIBUTION log metric with no explicit buckets (update 127). Explicit bounds
+    // cover the §13.5 scales: ms-class autosave/delivery values up to minute-class latencies.
+    bucketOptions: {
+      exponentialBuckets: { numFiniteBuckets: 14, growthFactor: 2, scale: 0.01 },
+    },
     valueExtractor: 'REGEXP_EXTRACT(textPayload, "\\"value\\":([0-9.eE+-]+)")',
     labelExtractors: {
       signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
