@@ -180,3 +180,106 @@
   policy); `docs/build/pr/ONB.1.md` is the body; BUILD_INDEX row 99; LEDGER advanced
   (nextTicket → EDIT.1, chainTip → `stevevitali/onb-1-import-latency-held-draft`); DEFERRALS
   gains the ONB.1 section; `check-build-memory` 0 violations.
+
+## Stage B — executed 2026-10-02/03 (continuation)
+
+Deploy order was the one Stage A recorded (build → pin → migrate → preview → up), and it earned
+its keep immediately:
+
+- **Lockfile fix first.** The first Cloud Build at `d7c739c` failed in the api image:
+  `ERR_PNPM_OUTDATED_LOCKFILE` — `unist-util-visit` had moved into
+  `packages/markdown`'s direct deps without a lockfile refresh. `pnpm install` regenerated it;
+  committed as **`a3bcde6`** (`ONB.1: lockfile — unist-util-visit is a direct @rhema/markdown
+  dep`). The deploy target is therefore `a3bcde659828b5f7397a58978d74e1572ffb9378`, not
+  `d7c739c`.
+- **Images.** `gcloud builds submit` on the subset config
+  (`integration/.scratch/cloudbuild-onb1.yaml`, tag `onb1`) built api/web/worker/convert at
+  `a3bcde6`; digests pinned in `infra/pulumi/Pulumi.prod.yaml` `serviceImages:` (api
+  `6ce04ab3…`, web `17412062…`, worker `e7564619…`, convert `fb62d206…`; fetcher/export/collab/
+  egress-proxy/run-task unchanged).
+- **Migration.** `0052_slo_samples_detail.sql` applied through the IAP tunnel
+  (`rhema-prod-proxy-h6fc` → `127.0.0.1:15433`) via `scripts/live/prod-migrate-seed.mjs`:
+  prior max 0051 → `[migrate] 52 migrations recorded`; protocol seed no-op.
+- **Pulumi.** Preview: 2 create (`rhema-prod-convert-svc`, `rhema-prod-api-invokes-convert-svc`)
+  / 6 update / **0 replace / 0 delete**; est. ≈$13/mo ≤ $15. `pulumi up` — **update 114 caught
+  a real defect live:** the first `convert-svc` revision create 400'd on the `PORT` env —
+  Cloud Run reserves+injects `PORT`, it is not settable. Fixed in `compute.ts` (env now
+  `CONVERT_ROOT` only; `serveConvert` already defaults `process.env.PORT ?? 8080`; the
+  IaC test now asserts the absence), then **update 115** succeeded (23:50:37→23:52:19Z, 2
+  create / 6 update / 0 replace / 0 delete).
+- **Provenance.** `check-deploy-provenance.mjs --expect a3bcde6…` **PASS** on
+  `api.rhema.tools` + `rhema.tools` (both `/healthz` report `build.gitSha=a3bcde6…`); an
+  unauthenticated request to the convert-svc URL returns 404 (internal ingress + invoker-only,
+  as designed). `deployments` row `prod:a3bcde6…` recorded 23:52:38Z with the full digest map,
+  `protocols_version 0.4.0+ec61156725a895ab`, `rate_table_version 2026-10-02`.
+
+### Timing matrix (preview-only, flagged test tenant, $0 inference)
+
+Harness `integration/.scratch/onb1-preview-timing.mts`: for each leg, POST `/import/presign`
+→ PUT bytes → POST `/import/preview` (`waitMs` 25 s) until `ready`; elapsed = presign-start →
+ready response — the same clock `import_preview_ms` records server-side. Tenant
+`test+jonb1tm@rhema.tools` (`is_test=true` verified via `/session`); **preview-only — no
+`/import/create`, zero project rows, $0 inference**.
+
+| # | fmt | bytes | elapsed (client) | server `import_preview_ms` | notes |
+|---|-----|-------|------------------|----------------------------|-------|
+| 0–16 | md/txt/html/docx ×≈4 | 461–8,409 | 544–1,097 ms | 420–893 ms | batch 1, 23:53:54–23:54:05Z; incl. `planted-error-essay.md` (893/476 ms cold-ish first leg) |
+| 17–20 | txt/html/docx/md | 461–8,409 | 612–922 ms | 477–741 ms | batch 2, **≥15.5 min idle** (00:09:45–00:09:47Z) — warm min=1 held, no cold start |
+
+- **n = 21 ≥ 20**, all four formats, planted-error essay included, **4 legs ≥ 3 after ≥15 min
+  idle**. Client-observed: min 544 ms, max 1,097 ms, **p95 = 922 ms**. Server-side
+  `slo_samples` over the timing tenant: 21 rows, min 420, max 893, **p95 = 736 ms** — both
+  clocks ≪ **20 s** target.
+- `converted/<ws>/<id>.json` objects landed for every leg via the service's gcsfuse mount (the
+  SA's converted-only write grant exercised); Cloud Run request logs show all `POST /convert`
+  HTTP 200 on `rhema-prod-convert-svc-a3874fc` and **zero Job executions** for the batch — the
+  service-first path, not the fallback.
+- SLO-probe shape over non-test tenants (last 30 min): **0 rows** — `is_test` exclusion is
+  live, the flagged traffic cannot pollute `import_preview_p95_s`.
+- Honest notes: the txt fixture's content sniffs as `md` server-side (`sourceFormat=md` on the
+  txt legs — the detector keys on content, not extension; the `txt` format coverage is via the
+  file-extension path on the planted-essay-derived text); html legs return `quality=partial`
+  (the intentionally-unresolved relative `<img>` → `image_dropped` warning — the fidelity leg
+  working live); converted md bodies carry **no** leading H1 (extracted to `title`).
+
+### Egress probe (live, no-network claim)
+
+Batch-1 html legs embedded three canary URLs (webhook.site) as `<link>`, `<script>`, `<img>`
+src. Through the real conversion round-trip on `convert-svc`: **0 recorded requests**. A
+separate manual control request to the same canary recorded 1 hit — the canary itself was
+functional; the converter made no outbound request (matches `server.test.ts`'s no-egress
+round-trip). `compute.ts` ships no `vpcAccess` and no egress-proxy env on the service.
+
+### Measured cost delta
+
+Cloud Monitoring `run.googleapis.com/container/billable_instance_time` on
+`rhema-prod-convert-svc`: ≈**208 active instance-seconds** in the post-deploy window (17
+conversions + startup) — the metric reads active-rate time only (idle min-instance time bills
+under the separate idle SKU, confirmed against the always-on worker which under-reads the same
+way). Active component at that sustained rate ≈ $0.3/mo; realistic bursty preview traffic ≈
+cents. Idle component is the deterministic documented bound — min=1 × (1 vCPU + 1 GiB) ×
+$0.0000025/unit-s × 2,592,000 s/mo = **$12.96/mo**. **Measured delta ≈ $13.2/mo ≤ $15** —
+consistent with the preview estimate.
+
+### Journeys N1 + N3 (live, keyless DWD mailbox, $0)
+
+`pnpm rhema-journeys` against prod at provenance `a3bcde6` (journey run printed
+`FLIP N1 [ONB.1]` / `FLIP N3 [ONB.1]`, `provenance match · spend $0 ≤ $5`):
+
+- **N1** — draft dropped on `/` → held in `rhema-hold` IndexedDB → real magic-link sign-in
+  (same browser context) → two later `/app/new` loads, file attached each time. 10,246 ms,
+  `ready-to-flip` → `N1.png`.
+- **N3** — held draft → project; conversion preview ≤20 s (549 ms `import_preview_ms` row on
+  the journey tenant `01M3ZGNYCB5TC3` at 23:55:13Z); `?hc=` consumed-marker handshake removed
+  the hold. 12,675 ms, `ready-to-flip` → `N3.png`.
+- Report + screenshots: `docs/build/reports/2026-10-03_ONB.1-n1n3/report.json`, `N1.png`,
+  `N3.png` — committed. `registry.ts` flipped N1 + N3 `expected:"red"→"green"` **after** the
+  live passes.
+
+### Stage-B closeout
+
+- `D-ONB.1-1` → **DONE** (deploy, migration 0052, provenance, 21-leg timing p95 922/736 ms,
+  measured ≈$13.2/mo, egress probe 0 hits — all live evidence above).
+- `D-ONB.1-2` → **DONE** (N1 + N3 green on prod, flags flipped, screenshots committed).
+- No genuine residual remains open under ONB.1; the only outstanding work is OPERATOR-owned
+  (PR #93 review/merge — merge policy OPERATOR, never merged from the build env).

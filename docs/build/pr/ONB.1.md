@@ -24,9 +24,8 @@ Discard, never a page view).
 Requirement ids: **REQ-GROWTH-1** (amended — the 20 s clause + hold-until-consumed),
 **REQ-ARCH-23**, **REQ-ARCH-4** (convert has no network), **REQ-ARCH-34** (the new §13.5 row),
 **REQ-INGEST-7** (the unresolved-figure warning).
-Deferrals: **D-ONB.1-1** (Stage B deploy + timing matrix + cost delta + egress probe),
-**D-ONB.1-2** (N1/N3 journey flips + screenshots on the deployed stage). Both need the deployed
-stage; `pulumi preview` is already gate-clean (below).
+Deferrals: **D-ONB.1-1** and **D-ONB.1-2** — both **DONE 2026-10-03** with live Stage-B
+evidence (below).
 
 ## The defects (PR-R4 / PR-R5, 2026-09-30 prod review)
 
@@ -104,9 +103,35 @@ leg records the measured figure.
 
 ## Owed (deferred — never claimed)
 
-- **D-ONB.1-1:** Stage B deploy (Cloud Build → pin digests → apply `0052` → `pulumi up` —
-  a bare up would boot a convert image with no `--serve` mode) + the ≥20 preview-only timing
-  imports (≥3 after ≥15 min idle → p95 ≤ 20 s) + measured cost delta + live egress probe +
-  $0-inference confirmation.
-- **D-ONB.1-2:** N1/N3 `ready-to-flip` on the deployed stage → registry flips + screenshots
-  under `docs/build/reports/`.
+Both originally-open deferrals are now **DONE** with live evidence — nothing under ONB.1
+remains deferred except the OPERATOR merge itself.
+
+## Stage B — executed 2026-10-02/03 (live on prod, $0 inference)
+
+- **Deploy (the honest order held).** First Cloud Build at `d7c739c` failed on
+  `ERR_PNPM_OUTDATED_LOCKFILE` → lockfile fix **`a3bcde6`** → images built tag `onb1` → digests
+  pinned → migration `0052` via IAP tunnel (52 recorded) → preview 2 create/6 update/**0
+  replace/0 delete** → `pulumi up` **update 115** — update 114 caught a real defect live: the
+  first `convert-svc` create 400'd on the reserved `PORT` env (Cloud Run injects it; not
+  settable) → `compute.ts` env trimmed to `CONVERT_ROOT` (`serveConvert` defaults
+  `PORT ?? 8080`; IaC test asserts the absence) → 115 clean.
+  Provenance **PASS**: api+web `/healthz` = `a3bcde659828b5f7397a58978d74e1572ffb9378`;
+  `deployments` row `prod:a3bcde6…` with the digest map. `convert-svc` Ready on `--serve`;
+  unauthenticated probe → 404 (invoker-gated internal).
+- **Timing (D-ONB.1-1).** 21 preview-only imports on flagged tenant `test+jonb1tm@` across
+  md/txt/html/docx incl. `planted-error-essay.md` — no project rows, $0. Client presign→ready
+  544–1,097 ms, **p95 = 922 ms**; server `import_preview_ms` 420–893 ms, **p95 = 736 ms** —
+  ≪ 20 s on both clocks. **4 legs after ≥15 min idle** (612–922 ms — the warm min=1 held, no
+  cold start). `converted/` objects landed via the svc mount; all `POST /convert` 200; **0 Job
+  executions**. Non-test SLO-probe shape: 0 rows (`is_test` exclusion live).
+- **Egress.** Canary-embedded html fixture through the real conversion → **0 requests** (a
+  control hit on the same canary recorded 1 — the canary works; the converter doesn't egress).
+- **Cost delta (measured).** Monitoring `billable_instance_time` ≈208 active instance-s →
+  ≈$0.3/mo active + idle rate-card bound (1 vCPU + 1 GiB @ $0.0000025/s) $12.96/mo → **≈$13.2/mo
+  ≤ $15**, consistent with the preview estimate.
+- **Journeys (D-ONB.1-2).** N1 (10.2 s) + N3 (12.7 s) `ready-to-flip` on prod at `a3bcde6`
+  via the keyless mailbox, spend $0 — hold survived magic-link + two `/app/new` loads (N1);
+  held draft → project, preview ≤20 s, `?hc=` consume handshake (N3). Registry flipped
+  `red→green`; report + `N1.png`/`N3.png` committed under
+  `docs/build/reports/2026-10-03_ONB.1-n1n3/`.
+- Full evidence: `docs/build/runs/ONB.1.md` § Stage B.

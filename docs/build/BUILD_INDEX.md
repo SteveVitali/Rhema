@@ -145,3 +145,24 @@ operator-gated/deferred (DEFERRALS + G1); `fixture-only` = deterministic/integra
   `refundedCredits:0` is correct — the run was trial-pocket funded (no credit-bucket debits to
   refund). **D-RES.2-1 → DONE; D-RES.2-2 → PARTIAL (scan ran; ruling owed); D-RES.2-3 OPEN.**
   Evidence: `runs/RES.2.md` § Stage B + § Historical scan.
+- 2026-10-03 — **correction to row 99 (ONB.1), added at the Stage-B closeout / BUILD_INDEX.md:115** —
+  the "…OPEN + …OPEN" deferral cell is stale from Stage A: **Stage B executed live 2026-10-02/03**
+  and both rows are DONE. Lockfile fix `a3bcde6` (`unist-util-visit` direct `@rhema/markdown` dep —
+  the first `onb1` Cloud Build at `d7c739c` failed `ERR_PNPM_OUTDATED_LOCKFILE`) → images built →
+  digests pinned in `Pulumi.prod.yaml` → migration `0052_slo_samples_detail.sql` applied via the
+  IAP tunnel (52 recorded) → preview 2 create/6 update/**0 replace/0 delete** → `pulumi up`
+  **update 115** — update 114 caught a real defect live (the first `convert-svc` create 400'd on
+  the reserved `PORT` env; `compute.ts` now sets `CONVERT_ROOT` only, IaC test asserts the
+  absence) → 115 clean → `check-deploy-provenance` **PASS** api+web `/healthz` =
+  `a3bcde659828b5f7397a58978d74e1572ffb9378` → `deployments` row `prod:a3bcde6…` w/ digest map.
+  **D-ONB.1-1 → DONE:** 21 preview-only imports on flagged tenant `test+jonb1tm@`
+  (md/txt/html/docx incl. `planted-error-essay.md`; 0 project rows, $0 inference) — client
+  presign→ready 544–1,097 ms **p95 = 922 ms**, server `import_preview_ms` 420–893 ms
+  **p95 = 736 ms** ≪ 20 s; **4 legs ≥15 min idle** (612–922 ms — warm min=1 held, no cold start);
+  `converted/` objects via the svc mount; all `POST /convert` 200, **0 Job executions**; non-test
+  SLO-probe shape 0 rows (`is_test` exclusion live); **egress probe 0 canary hits** (control
+  recorded 1); **measured cost ≈$13.2/mo ≤ $15** (≈208 active instance-s → ≈$0.3/mo + idle
+  rate-card bound $12.96/mo). **D-ONB.1-2 → DONE:** N1 (10.2 s) + N3 (12.7 s) `ready-to-flip` on
+  prod at `a3bcde6` via the keyless DWD mailbox, spend $0 → `registry.ts` flipped `red→green`;
+  `docs/build/reports/2026-10-03_ONB.1-n1n3/` (report.json + N1.png + N3.png). **No OPEN
+  deferrals under ONB.1**; PR #93 merge stays OPERATOR. Evidence: `runs/ONB.1.md` § Stage B.
