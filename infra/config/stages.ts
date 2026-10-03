@@ -84,27 +84,43 @@ export const ALL_SECRET_IDS = [
  */
 export const PROD_REQUIRED_SECRETS: readonly string[] = ALL_SECRET_IDS;
 
-/** The dev secret set — the shared-integration stack serves the full auth/billing/mail surface
- *  (PRB.08/09 live legs run there); only the prod-ops alert sink is prod-only. */
-export const DEV_REQUIRED_SECRETS: readonly string[] = [
-  "anthropic-api-key",
+/**
+ * OPS.1 (REQ-ARCH-30/REQ-SPEC-30) — the non-prod secrets whose VALUES are generated in-program and
+ * materialized as Secret Manager versions by `infra/pulumi/index.ts` itself: `@pulumi/random`
+ * passwords (better-auth, email-action, the postgres bootstrap, the `rhema_app_login`/`rhema_collab`
+ * DSNs, the composed system DSN) and a `@pulumi/tls` RS256 run-token keypair. A fresh `dev`/`pr-<n>`
+ * stack therefore needs NO hand-set `rhema:*DatabaseUrl` config and no two-pass role ceremony — the
+ * migrate Job turns the generated role passwords live (`ALTER ROLE … LOGIN`). Values sit encrypted
+ * in Pulumi state + Secret Manager only; prod NEVER runs this path (its set above is unchanged, and
+ * `system-database-url`'s container is non-prod-only so prod's provisioned set does not drift).
+ */
+export const NONPROD_GENERATED_SECRET_IDS = [
   "run-token-signing-key",
-  "alloydb-password",
   "better-auth-secret",
-  "google-oauth-client-secret",
-  "stripe-secret",
-  "stripe-webhook-secret",
   "email-action-secret",
-  "resend-api-key",
-  "anthropic-admin-key",
+  "alloydb-password",
   "app-database-url",
   "collab-database-url",
+  "system-database-url",
+] as const;
+
+/** The dev secret set (OPS.1 — trimmed 2026-10-04): the shared-integration stack boots on the
+ *  non-production provider key plus the IaC-generated set — no third-party credentials. Stripe /
+ *  Resend / Google-OAuth / admin-key surfaces stay gated OFF on dev (each consumer fails closed with
+ *  a named reason — `stripe_unconfigured`, the mail no-op, `/api/auth/*` 404); a ticket that needs
+ *  one of them live on dev restores the id here AND has the operator seed a version. The ops-alert
+ *  sink stays prod-only. */
+export const DEV_REQUIRED_SECRETS: readonly string[] = [
+  "anthropic-api-key",
+  ...NONPROD_GENERATED_SECRET_IDS,
 ];
 
-/** The preview secret set — previews never carry production secrets (REQ-ARCH-38). */
+/** The preview secret set (OPS.1): the non-production provider key (the dev value, seeded into the
+ *  preview's own `rhema-pr-<n>-anthropic-api-key` container — never `rhema-prod-*`) plus the
+ *  IaC-generated set. Previews never carry production secrets or third-party keys (REQ-ARCH-38). */
 export const PREVIEW_REQUIRED_SECRETS: readonly string[] = [
   "anthropic-api-key",
-  "run-token-signing-key",
+  ...NONPROD_GENERATED_SECRET_IDS,
 ];
 
 /**

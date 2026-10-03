@@ -421,6 +421,9 @@ importers:
       '@rhema/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@rhema/infra':
+        specifier: workspace:*
+        version: link:../../infra
       '@rhema/ingest':
         specifier: workspace:*
         version: link:../../packages/ingest

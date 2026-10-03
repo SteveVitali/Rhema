@@ -76,9 +76,10 @@ describe("ONB.1 — the warm convert-svc keeps every §12.1/§13.3 isolation pro
     expect(SRC).toContain('name: convertSvc.name');
     expect(SRC).toContain('role: "roles/run.invoker"');
     // The service block must carry NO vpcAccess (the §12.1 posture the Job already runs under —
-    // the extract covers the convertSvc literal through the services-loop marker).
+    // the extract covers the convertSvc literal through the OPS.1 migrate-Job marker, which sits
+    // between convert-svc and the services loop).
     const svcStart = SRC.indexOf('new gcp.cloudrunv2.Service(name("convert-svc")');
-    const svcEnd = SRC.indexOf("--- Cloud Run services", svcStart);
+    const svcEnd = SRC.indexOf("OPS.1 (owned decision (b))", svcStart);
     const block = SRC.slice(svcStart, svcEnd);
     expect(block).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
     expect(block).not.toContain("vpcAccess:"); // the property — a comment may name the posture

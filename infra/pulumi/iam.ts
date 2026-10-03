@@ -95,6 +95,15 @@ export function createIam(args: IamArgs): Iam {
   grantSecret("api-reads-appdb", secrets.byId["app-database-url"], serviceAccounts["api"]);
   grantSecret("worker-reads-appdb", secrets.byId["app-database-url"], serviceAccounts["worker"]);
   grantSecret("collab-reads-collabdb", secrets.byId["collab-database-url"], serviceAccounts["collab"]);
+  // OPS.1 — the generated non-prod DSN secrets: api + worker read `system-database-url` (the composed
+  // postgres-role DSN) via secretKeyRef, and the in-VPC migrate Job — running under the worker SA —
+  // reads all three DSNs to drive `ALTER ROLE … LOGIN`. Gated on the container's existence so prod's
+  // IAM surface is untouched (`system-database-url` is a non-prod-only container).
+  if (secrets.byId["system-database-url"]) {
+    grantSecret("api-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["api"]);
+    grantSecret("worker-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["worker"]);
+    grantSecret("worker-reads-collabdb", secrets.byId["collab-database-url"], serviceAccounts["worker"]);
+  }
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
   // artifacts (to materialize /work); the benchmark-enclave bucket is granted to NO product SA here — it

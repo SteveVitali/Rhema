@@ -12,6 +12,12 @@ import { ALL_SECRET_IDS } from "../config/stages";
 export interface SecretsArgs {
   stack: string;
   region: string;
+  /**
+   * OPS.1 — extra secret containers provisioned on top of ALL_SECRET_IDS (the non-prod-only
+   * `system-database-url`, whose absence from ALL_SECRET_IDS keeps prod's provisioned set
+   * byte-identical). Values are written by the program (index.ts) — never operator-seeded.
+   */
+  extraIds?: readonly string[];
 }
 
 export interface Secrets {
@@ -53,6 +59,7 @@ export function createSecrets(args: SecretsArgs): Secrets {
 
   const byId: Record<string, gcp.secretmanager.Secret> = {};
   for (const id of ALL_SECRET_IDS) byId[id] = mk(id);
+  for (const id of args.extraIds ?? []) byId[id] = mk(id);
 
   return {
     anthropicApiKey: byId["anthropic-api-key"],

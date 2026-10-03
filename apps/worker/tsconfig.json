@@ -18,6 +18,9 @@
       "path": "../../packages/db"
     },
     {
+      "path": "../../infra"
+    },
+    {
       "path": "../../packages/ingest"
     },
     {

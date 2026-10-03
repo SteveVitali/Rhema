@@ -94,6 +94,13 @@ export interface ComputeArgs {
   proxyBaseUrl?: pulumi.Input<string>;
   /** the GCS artifacts bucket the run-task harness materializes `/work` from (`OBJECTS_BUCKET`). */
   objectsBucket?: pulumi.Input<string>;
+  /**
+   * OPS.1 (REQ-ARCH-39) — the chain-tip SHA + computed protocols version the non-prod `migrate`
+   * Cloud Run Job records into `deployments`. Unset ⇒ the record leg skips (a bare preview stays
+   * clean); the digest map itself is composed in-program from serviceImages/runTask/proxy pins.
+   */
+  gitSha?: pulumi.Input<string>;
+  protocolsVersion?: pulumi.Input<string>;
 }
 
 export interface Compute {
@@ -120,8 +127,9 @@ export interface Compute {
 // reference its uri — the api never carries pandoc; it POSTs the markdown to the isolated export
 // container.
 // Creation order matters: a service another references by `services[x].uri` must come FIRST
-// (export → api; P1.15 adds fetcher → api + worker for the ingestion egress hop).
-const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "fetcher", "web", "api", "worker", "collab"];
+// (export/fetcher → api + worker; OPS.1 adds api → web so non-prod `API_BASE_URL` + the worker's
+// `API_INTERNAL_URL` can carry the api's real `*.run.app` origin — prod keeps its config/LB paths).
+const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "fetcher", "api", "web", "worker", "collab"];
 
 export function createCompute(args: ComputeArgs): Compute {
   const { stack, cfg, project, region, network, iam, secrets, placeholderImage } = args;
@@ -217,13 +225,16 @@ export function createCompute(args: ComputeArgs): Compute {
   // proxy out-of-band. The firewall's allow-to-proxy-tier rule (network.ts) is independent of this MIG.
   const deployProxyMig = new pulumi.Config("rhema").getBoolean("deployProxyMig") ?? true;
   const proxyPort = "8443";
+  // OPS.1 — hoisted so the worker's `ANTHROPIC_BASE_URL` can resolve to the MIG's reserved internal
+  // IP on stacks that don't set `rhema:proxyBaseUrl` (non-prod self-wiring; prod's config still wins).
+  let proxyIp: gcp.compute.Address | undefined;
   let proxyGroup: gcp.compute.RegionInstanceGroupManager | undefined;
   if (deployProxyMig) {
     // A RESERVED internal IP pinned into the template (surfaced live PRB.15 Stage B, 2026-09-17): the
     // MIG replaces its instance on every template change and a fresh NIC auto-assigns a NEW address —
     // the api/worker's `ANTHROPIC_BASE_URL` (rhema:proxyBaseUrl) would silently dangle at the old IP.
     // High end of the private-app /20 so auto-assigned addresses never collide.
-    const proxyIp = new gcp.compute.Address(name("proxy-ip"), {
+    proxyIp = new gcp.compute.Address(name("proxy-ip"), {
       addressType: "INTERNAL",
       purpose: "GCE_ENDPOINT",
       subnetwork: network.subnets["private-app"].id,
@@ -360,7 +371,24 @@ export function createCompute(args: ComputeArgs): Compute {
       : args.workerDatabaseUrl
         ? [{ name: "DATABASE_URL", value: args.workerDatabaseUrl }]
         : []),
-    ...(args.workerSystemDatabaseUrl ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }] : []),
+    // OPS.1 — the worker's elevated SYSTEM_DATABASE_URL mounts the composed `postgres`-role DSN from
+    // Secret Manager via secretKeyRef on stages that provision `system-database-url` (the generated
+    // non-prod set); the `workerSystemDatabaseUrl` config path stays the prod/operator fallback.
+    ...(requires("system-database-url")
+      ? [
+          {
+            name: "SYSTEM_DATABASE_URL",
+            valueSource: {
+              secretKeyRef: {
+                secret: secrets.byId["system-database-url"].secretId,
+                version: "latest",
+              },
+            },
+          },
+        ]
+      : args.workerSystemDatabaseUrl
+        ? [{ name: "SYSTEM_DATABASE_URL", value: args.workerSystemDatabaseUrl }]
+        : []),
     ...(args.workerRedisUrl ? [{ name: "REDIS_URL", value: args.workerRedisUrl }] : []),
     ...(args.emailFrom ? [{ name: "EMAIL_FROM", value: args.emailFrom }] : []),
     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
@@ -372,12 +400,9 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(args.runTaskAppArmorLocalhostProfile
       ? [{ name: "RUN_TASK_APPARMOR_LOCALHOST_PROFILE", value: args.runTaskAppArmorLocalhostProfile }]
       : []),
-    // The internal api URL defaults to the prod api origin when domains exist; `rhema:internalApiUrl`
-    // still overrides (dev/previews have no real api host until the LB is up).
-    ...(args.internalApiUrl || apiOrigin
-      ? [{ name: "API_INTERNAL_URL", value: args.internalApiUrl ?? apiOrigin! }]
-      : []),
-    ...(args.proxyBaseUrl ? [{ name: "ANTHROPIC_BASE_URL", value: args.proxyBaseUrl }] : []),
+    // OPS.1 — API_INTERNAL_URL + ANTHROPIC_BASE_URL moved into the worker's in-loop envs: the api's
+    // `*.run.app` uri only exists once the loop has created it, and the proxy URL resolves off the
+    // MIG's reserved internal IP when `rhema:proxyBaseUrl` is unset.
     ...(args.objectsBucket ? [{ name: "OBJECTS_BUCKET", value: args.objectsBucket }] : []),
     // JOURNEY.1 — the test-tenant auto-purge window (hours; the hourly `test-tenant.purge` sweep
     // reaps flagged workspaces older than this through account.hard-delete).
@@ -465,6 +490,101 @@ export function createCompute(args: ComputeArgs): Compute {
     },
   });
 
+  // --- OPS.1 (owned decision (b)) — the in-VPC `migrate` Cloud Run JOB on non-prod stages. The DB is
+  // private-IP only, so migrations/seeds run inside the VPC: this Job runs the worker image's
+  // `dist/migrate.js` entry (migrations → `ALTER ROLE … LOGIN` for the generated role passwords → the
+  // preview-safe seed → the `deployments` provenance row) under the worker SA with the three composed
+  // DSNs mounted via secretKeyRef — never plaintext env. Prod keeps its operator-tunnel path
+  // (integration/live-prod-bringup); nothing about prod's migrate flow changes. The worker image is
+  // reused so the Job always carries the SAME built schema/migrations the deploy pins. ---
+  const migrateEnvs: pulumi.Input<gcp.types.input.cloudrunv2.JobTemplateTemplateContainerEnv>[] = [
+    { name: "RHEMA_STAGE", value: stack }, // stageKindFor decides the seed posture (preview → refuse seedRealProjects, REQ-ARCH-38)
+    ...(requires("system-database-url")
+      ? [
+          {
+            name: "SYSTEM_DATABASE_URL",
+            valueSource: {
+              secretKeyRef: { secret: secrets.byId["system-database-url"].secretId, version: "latest" },
+            },
+          },
+        ]
+      : []),
+    ...(requires("app-database-url")
+      ? [
+          {
+            name: "APP_DATABASE_URL",
+            valueSource: {
+              secretKeyRef: { secret: secrets.byId["app-database-url"].secretId, version: "latest" },
+            },
+          },
+        ]
+      : []),
+    ...(requires("collab-database-url")
+      ? [
+          {
+            name: "COLLAB_DATABASE_URL",
+            valueSource: {
+              secretKeyRef: { secret: secrets.byId["collab-database-url"].secretId, version: "latest" },
+            },
+          },
+        ]
+      : []),
+    // REQ-ARCH-39 — the `deployments` provenance row is written by the same Job once the deploy facts
+    // (chain-tip SHA, the digest map incl run-task/proxy, the computed protocols version) are pinned.
+    ...(args.gitSha && args.protocolsVersion
+      ? [
+          { name: "RECORD_DEPLOYMENT", value: "1" },
+          { name: "GIT_SHA", value: args.gitSha },
+          { name: "PROTOCOLS_VERSION", value: args.protocolsVersion },
+          {
+            name: "IMAGE_DIGESTS",
+            value: pulumi
+              .all([
+                pulumi.output(args.serviceImages ?? {}),
+                pulumi.output(args.runTaskImageDigest ?? ""),
+                pulumi.output(args.proxyImage ?? ""),
+              ])
+              .apply(([imgs, runTask, proxy]) =>
+                JSON.stringify({
+                  ...imgs,
+                  ...(runTask ? { "run-task": runTask } : {}),
+                  ...(proxy ? { "egress-proxy": proxy } : {}),
+                }),
+              ),
+          },
+        ]
+      : []),
+  ];
+  const migrateJob =
+    cfg.kind !== "prod"
+      ? new gcp.cloudrunv2.Job(name("migrate"), {
+          location: region,
+          template: {
+            template: {
+              serviceAccount: iam.serviceAccounts["worker"].email,
+              timeout: "900s",
+              maxRetries: 1,
+              vpcAccess: {
+                networkInterfaces: [
+                  { network: network.network.id, subnetwork: network.subnets["private-app"].id },
+                ],
+                egress: "PRIVATE_RANGES_ONLY",
+              },
+              containers: [
+                {
+                  // The image carries no ENTRYPOINT (CMD only), so `args` IS the whole argv —
+                  // the same worker image runs its migrate entry, so the Job always carries the
+                  // deploy's built migrations.
+                  image: imageFor("worker"),
+                  args: ["node", "/app/dist/migrate.js"],
+                  envs: migrateEnvs,
+                },
+              ],
+            },
+          },
+        })
+      : undefined;
+
   // --- Cloud Run services: placeholder image, per-service SA, VPC egress to the private-app tier. ----
   const services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>> = {};
   for (const svc of CLOUD_RUN_SERVICES) {
@@ -516,6 +636,29 @@ export function createCompute(args: ComputeArgs): Compute {
                   },
                   envs: [
                     ...workerEnvs,
+                    // OPS.1 — the api's internal URL + the proxy base URL: on prod these come from
+                    // `rhema:internalApiUrl`/`rhema:proxyBaseUrl` config (and the domains' api origin);
+                    // on non-prod they self-wire to the api service's `*.run.app` uri (created earlier
+                    // in this loop) and the proxy MIG's reserved internal IP. Same in-VPC reachability
+                    // as prod — Cloud Run-to-Cloud Run rides Google's internal path.
+                    ...(args.internalApiUrl || apiOrigin || services["api"]
+                      ? [
+                          {
+                            name: "API_INTERNAL_URL",
+                            value: args.internalApiUrl ?? apiOrigin ?? services["api"]!.uri,
+                          },
+                        ]
+                      : []),
+                    ...(args.proxyBaseUrl || proxyIp
+                      ? [
+                          {
+                            name: "ANTHROPIC_BASE_URL",
+                            value:
+                              args.proxyBaseUrl ??
+                              pulumi.interpolate`http://${proxyIp!.address}:${proxyPort}`,
+                          },
+                        ]
+                      : []),
                     // P1.15 — the ingestion wiring (evaluated here, not in `workerEnvs`, because the
                     // fetcher service + convert Job resources exist only once this loop reaches the
                     // worker). Each unset seam fails closed with a named reason (main.ts).
@@ -667,14 +810,40 @@ export function createCompute(args: ComputeArgs): Compute {
                       : args.apiDatabaseUrl
                         ? [{ name: "DATABASE_URL", value: args.apiDatabaseUrl }]
                         : []),
-                    ...(args.apiSystemDatabaseUrl
-                      ? [{ name: "SYSTEM_DATABASE_URL", value: args.apiSystemDatabaseUrl }]
-                      : []),
+                    // OPS.1 — the api's SYSTEM_DATABASE_URL (the circuit-breaker read + PgBoss) mounts
+                    // the generated `postgres`-role DSN via secretKeyRef on non-prod stages; the
+                    // `apiSystemDatabaseUrl` config path stays the prod fallback.
+                    ...(requires("system-database-url")
+                      ? [
+                          {
+                            name: "SYSTEM_DATABASE_URL",
+                            valueSource: {
+                              secretKeyRef: {
+                                secret: secrets.byId["system-database-url"].secretId,
+                                version: "latest",
+                              },
+                            },
+                          },
+                        ]
+                      : args.apiSystemDatabaseUrl
+                        ? [{ name: "SYSTEM_DATABASE_URL", value: args.apiSystemDatabaseUrl }]
+                        : []),
                     ...(args.apiRedisUrl ? [{ name: "REDIS_URL", value: args.apiRedisUrl }] : []),
                     // DEF.2 (F6) — the estimate claim pre-pass rides the egress proxy (the api holds
                     // no provider key; it presents a purpose-minted credential). Same `rhema:proxyBaseUrl`
                     // the worker hands pods as `ANTHROPIC_BASE_URL`; unset ⇒ estimates stay provisional.
-                    ...(args.proxyBaseUrl ? [{ name: "EGRESS_PROXY_URL", value: args.proxyBaseUrl }] : []),
+                    // OPS.1 — on non-prod the proxy URL self-wires to the MIG's reserved internal IP
+                    // (same in-VPC hop as the worker's ANTHROPIC_BASE_URL below).
+                    ...(args.proxyBaseUrl || proxyIp
+                      ? [
+                          {
+                            name: "EGRESS_PROXY_URL",
+                            value:
+                              args.proxyBaseUrl ??
+                              pulumi.interpolate`http://${proxyIp!.address}:${proxyPort}`,
+                          },
+                        ]
+                      : []),
                   ],
                 }
               : {}),
@@ -713,7 +882,13 @@ export function createCompute(args: ComputeArgs): Compute {
               ? {
                   envs: [
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
-                    ...(apiOrigin ? [{ name: "API_BASE_URL", value: apiOrigin }] : []),
+                    // OPS.1 — prod keeps the LB api origin; non-prod self-wires the api service's
+                    // `*.run.app` uri (created earlier in this loop — export/fetcher/api precede web)
+                    // since there is no public DNS/LB host for the api off prod. The api stays
+                    // internal-ingress: web reaches it over Google's internal path, never the browser.
+                    ...(apiOrigin
+                      ? [{ name: "API_BASE_URL", value: apiOrigin }]
+                      : [{ name: "API_BASE_URL", value: services["api"]!.uri }]),
                     // SEC.2 (ADR-040) — the audience the web mints its OIDC ID token for when it stamps
                     // `x-rhema-client-ip` on server-side api calls (the metadata server ambient
                     // credential — no secret). Unset ⇒ no stamp (local dev posture).
