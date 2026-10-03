@@ -37,13 +37,10 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
         ["build", "-f", "apps/run-task/Dockerfile", "-t", IMAGE, "."],
         { cwd: repoRoot, stdio: "pipe" },
       );
-      // The pod's security posture, mirrored: readOnlyRootFilesystem + tmpfs work dirs + drop-ALL +
-      // the four caps the launcher grants + SETPCAP for the probe's outer setpriv. Why SETPCAP: the
-      // entrypoint's `--bounding-set` narrowing needs CAP_SETPCAP (PR_CAPBSET_DROP); on the real pod
-      // a uid-0 exec recomputes permitted = bounding (containerd does not strip SETPCAP from CapBnd —
-      // the DEF.1 live pod ran the same --bounding-set argv green). Without it here the check's outer
-      // setpriv EPERMs and the "negative" legs pass for the wrong reason. The INNER drops re-narrow to
-      // the production four — the model's side never sees SETPCAP.
+      // The pod's security posture, mirrored EXACTLY: readOnlyRootFilesystem + tmpfs work dirs +
+      // drop-ALL + the four caps the launcher grants — no SETPCAP anywhere (F-SEC3-1, live: the
+      // pod's CapBnd is exactly the add list; the first prod pod proved CAPBSET_DROP EPERMs, so
+      // neither the ENTRYPOINT nor this check narrows the bounding set at all).
       const out = execFileSync(
         "docker",
         [
@@ -57,7 +54,6 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
           "--cap-add", "SETUID",
           "--cap-add", "SETGID",
           "--cap-add", "SYS_CHROOT",
-          "--cap-add", "SETPCAP",
           "-e", "PRIVSEP_EXPECT_RO_ROOTFS=1",
           "--entrypoint", "/nodejs/bin/node",
           IMAGE, "/app/dist/privsep-check.js",
@@ -91,8 +87,8 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
       // SEC.3 — the SHIPPED ENTRYPOINT argv end-to-end: dumb-init → setpriv (the ambient four-cap
       // drop) → /nodejs/bin/node /app/dist/harness-main.js. harness-main fails fast after its
       // identity line (no run token/spec env in the probe container) — that is expected: the leg
-      // asserts the chain reaches node AS uid harness, not that a run starts. SETPCAP is needed
-      // for the same --bounding-set reason as the check run above.
+      // asserts the chain reaches node AS uid harness, not that a run starts. Same exact pod cap
+      // posture as the check run — this leg is what caught the F-SEC3-1 bounding-set EPERM class.
       let entrypointOut = "";
       try {
         entrypointOut = execFileSync(
@@ -104,7 +100,6 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
             "--cap-add", "SETUID",
             "--cap-add", "SETGID",
             "--cap-add", "SYS_CHROOT",
-            "--cap-add", "SETPCAP",
             IMAGE,
           ],
           { cwd: repoRoot, stdio: "pipe" },

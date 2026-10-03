@@ -187,10 +187,15 @@ COPY --from=assert /exec-assert-ok /app/.exec-assert-ok
 # (uid 10001) retaining the ambient capability set (the two-uid drop + scoped mount namespace), then
 # node runs the harness supervisor which launches `agent` (uid 10002) itself. Root does nothing else.
 # Root filesystem is read-only at run time. This argv is entrypoint.sh ported verbatim (SEC.3).
+#
+# NO `--bounding-set` flag (F-SEC3-1, live 2026-10-03): narrowing the bounding set is a no-op here —
+# the pod's CapBnd is already EXACTLY the four caps its securityContext adds — and CAPBSET_DROP needs
+# CAP_SETPCAP, which the pod deliberately does not hold (the profile grants the same four only). The
+# first prod pod failed the entrypoint with `apply bounding set: Operation not permitted`; --inh-caps
+# + --ambient-caps alone carry the launch's privilege model.
 ENTRYPOINT ["/usr/bin/dumb-init", "--", \
             "/usr/bin/setpriv", \
             "--reuid", "10001", "--regid", "10001", "--clear-groups", \
-            "--bounding-set", "-all,+setuid,+setgid,+sys_admin,+sys_chroot", \
             "--inh-caps", "-all,+setuid,+setgid,+sys_admin,+sys_chroot", \
             "--ambient-caps", "-all,+setuid,+setgid,+sys_admin,+sys_chroot", \
             "--", "/nodejs/bin/node", "/app/dist/harness-main.js"]

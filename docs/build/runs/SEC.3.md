@@ -50,8 +50,9 @@
    of assert output). Verified empirically: alpine source build produces `statically linked`
    binaries; alpine's `libcap-ng-dev` ships no `.a` → libcap-ng 0.8.5 built static first.
 2. **ENTRYPOINT:** pure argv `[init, --, setpriv, --reuid 10001, --regid 10001, --clear-groups,
-   --bounding-set -all,+setuid,+setgid,+sys_admin,+sys_chroot, --inh-caps <same>, --ambient-caps
-   <same>, --, node, /app/dist/harness-main.js]` — byte-identical flag set to entrypoint.sh.
+   --inh-caps -all,+setuid,+setgid,+sys_admin,+sys_chroot, --ambient-caps <same>, --, node,
+   /app/dist/harness-main.js]` — entrypoint.sh ported minus `--bounding-set` (F-SEC3-1: the flag
+   was a no-op needing CAP_SETPCAP the pod lacks — see §6).
    init = `dumb-init` (MIT, single .c, static — equivalent approved init; ADR'd vs tini).
 3. **scoped-runner TS:** `apps/run-task/src/scoped-runner.ts` → `/app/dist/scoped-runner.js`.
    `runnerArgv` becomes `[<node-abs>, SCOPED_RUNNER, spec]` (node via `process.execPath` at
@@ -147,9 +148,8 @@ Sections §1/§2 record the PLAN; the build corrected four points — recorded h
   `privsep-ns-body.js` (the in-namespace half that reuses the runner's `applyMountPlan` on a real
   `buildScopedLaunchSpec` spec — the kernel legs exercise the production tuples, not a re-typed
   copy). `privsep.docker.test.ts` builds `apps/run-task/Dockerfile` and `docker run`s the pod's
-  posture (`--read-only`, tmpfs `/tmp|/work|/config`, `cap-drop ALL` + the four caps + `SETPCAP` for
-  the outer probe's `--bounding-set` — the pod's uid-0 exec carries SETPCAP in CapBnd as the DEF.1
-  live entrypoint proved; docker strips it from the effective set without the add).
+  posture (`--read-only`, tmpfs `/tmp|/work|/config`, `cap-drop ALL` + the four caps — exactly the
+  pod's set; the earlier +SETPCAP probe model was corrected by F-SEC3-1, §6).
 - **Local verification (this session, Docker Desktop):** production image built (vendored SDK +
   native `claude` present); `privsep-check.js` = **ALL 18 LEGS PASSED** inside the production image
   — AC1 EACCES, harness→agent drop, −SETGID negative control, nnp-ambient leg, AC4 real-chain
@@ -207,3 +207,28 @@ the prod AR repo, apply `50-apparmor-loader-daemonset.yaml` BEFORE the worker co
 `uid=` lines (harness 10001 / agent 10002 / scoped 10003), the node's `rhema-run-task (enforce)`
 line, `second_read_producer_checked`, and `boundary.attested` violations = 0 — the evidence that
 fully closes D-P0.06-3 and D-P1.22-2(a).
+
+## 6 — Stage B live findings (2026-10-03)
+
+### F-SEC3-1 — the `--bounding-set` flag EPERM'd the entrypoint (live, first pod)
+- The first prod run pod (`run-01m41693…-a1-8dclj`) failed at the entrypoint with
+  `setpriv: apply bounding set: Operation not permitted`. Root cause: `PR_CAPBSET_DROP` needs
+  `CAP_SETPCAP`, which the pod deliberately does not hold — its CapBnd is already EXACTLY the
+  four-caps securityContext add list, so `--bounding-set -all,+four` was a NO-OP that only
+  demanded a capability the profile doesn't grant. The ADR-076 premise that the uid-0 start
+  inherits SETPCAP in CapBnd was wrong for this posture (an earlier inference, not a live fact).
+- **Fix:** the flag removed outright — `--inh-caps` + `--ambient-caps` alone carry the ambient
+  model (same semantic, zero EPERM surface). `privsep-check.js`'s harness-emulation setpriv calls
+  de-flagged identically, and the docker test's `--cap-add SETPCAP` removed — the probe posture is
+  now the pod's posture EXACTLY, which is the class of drift this leg exists to catch. ADR-076
+  amended; Dockerfile comment + ledger record it.
+- The k8s admission path itself proved fine: the pod scheduled under `Localhost` with no
+  container-create error — the loader had the profile enforced before the pod landed (the apply
+  order held).
+- **Deploy evidence so far:** Cloud Build `843e2958` (sha `3415436`) → run-task
+  `@sha256:3c2799ff…`, apparmor-loader `@sha256:37e9b0f9…`; loader DS rolled out 1/1 on
+  `rhema-prod-run-task-pool-647f9f4`, log `profile rhema-run-task loaded+enforced`; `pulumi up`
+  update 135 (7 updates, 0 replaces) → worker carries `RUN_TASK_APPARMOR_TYPE=Localhost`,
+  `…_LOCALHOST_PROFILE=rhema-run-task`, `RUN_TASK_IMAGE_DIGEST=…3c2799ff…` (verified on the live
+  Cloud Run revision). Run `01M41693MPHWEJG63Q2XYN13PH` dispatched on the operator's workspace
+  (cap 500 cr = $5 hard bound); first attempt failed at F-SEC3-1 above — rebuilt below.

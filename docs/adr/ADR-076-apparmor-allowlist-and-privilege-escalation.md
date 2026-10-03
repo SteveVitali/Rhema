@@ -19,11 +19,14 @@ Empirical findings that shaped the answer (verified on the built production imag
   --no-new-privs -- node` shows `CapAmb` intact with `NoNewPrivs: 1` — nnp gates
   setuid/file-capability escalation at exec, not the ambient prctl raise (which itself
   succeeds under nnp). The ambient-cap model therefore does not *rely* on the flag at all.
-- **`PR_CAPBSET_DROP` needs `CAP_SETPCAP`.** The entrypoint's `--bounding-set` narrowing runs
-  at uid 0 at container start; the pod's `add` list omits SETPCAP, yet the DEF.1 live pod ran
-  the same argv green — the uid-0 exec recomputes permitted from the runtime-granted bounding
-  set, which carries SETPCAP. The self-test grants the outer probe SETPCAP to model exactly
-  that posture (and nothing downstream sees it — the entrypoint re-narrows to the four).
+- **`PR_CAPBSET_DROP` needs `CAP_SETPCAP` — and the pod lacks it (F-SEC3-1, live 2026-10-03).**
+  The entrypoint originally carried `--bounding-set -all,+four` as belt-and-braces narrowing.
+  The first prod pod died at the entrypoint: `setpriv: apply bounding set: Operation not
+  permitted`. The k8s bounding set is *already* exactly the securityContext add list (SETUID,
+  SETGID, SYS_ADMIN, SYS_CHROOT — nothing else exists to narrow), and the AppArmor profile
+  grants the same four, so the flag was a no-op that EPERM'd. It was removed outright —
+  `--inh-caps` + `--ambient-caps` alone carry the ambient model. The earlier guess that the
+  uid-0 start inherits a full bounding set was wrong for this posture.
 
 ## Decision
 **Allow-list (closed mount grammar).** `infra/k8s/apparmor/rhema-run-task` grants the four

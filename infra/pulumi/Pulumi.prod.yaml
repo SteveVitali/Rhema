@@ -298,7 +298,10 @@ config:
   # groupBy/protocol/sort selects (select-name), and the compact-chat thread-link/chip ≥44-px
   # phone floor (target-size — the one finding the last P1 run hit). No migrations.
   rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:b6e97406c3edb83eb103f53715f46dc191abf4d9b026c56d54b328805c0ed9aa","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:18083512577dbaa68abbe220390d473569067acd7426a358f36b84cf8d54f903","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:070c67fc5c64f53d1f5de939124e8b27e35074b2826d0770b2d33eec94beb0b9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:5a18a7739014f953f6b0e760253ac51727e70b1b8723e7c01c40ca705415223e","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:2a6fd042c52ac54fffe0975fc26c2d79efc94e1f766a4443f3f0bfd8f0af7299","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:93853b8de694a9b2d357260db633e21149fdc56e1857c846cb919aa6c745d94f","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:f24978a841b7338bd05832e403e17c8881d19804f542af663ea0f20c657b0878"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:d8114c126a311edac140108777c090609d6a6180b94bdd33973a4de33dd191c5
+  # SEC.3 (build sec3-3415436, Cloud Build 843e2958, 2026-10-03, SHA 3415436): the distroless
+  # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
+  # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner.
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:3c2799ff2573eff25ab5384a6d809d01072c778ddea9309e6400df32967b9448
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.

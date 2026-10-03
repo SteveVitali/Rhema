@@ -80,10 +80,12 @@ check("AC1: uid agent is denied the harness secrets file (EACCES)", () =>
 // The entrypoint drops root→harness retaining ambient SETUID+SETGID (+SYS_ADMIN,+SYS_CHROOT); the
 // harness then setprivs to agent. Without ambient CAP_SETGID the --regid setresgid EPERMs — the exact
 // P0.15f bug; the negative control proves the +setgid entry is load-bearing.
+// F-SEC3-1 (live): no --bounding-set — the pod's CapBnd is already exactly the add list, and
+// CAPBSET_DROP needs CAP_SETPCAP the pod deliberately lacks; inh+ambient alone carry the model.
 const harnessDrop = (capset: string, child: readonly string[], extra: readonly string[] = []) =>
   run(SETPRIV, [
     "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
-    "--bounding-set", capset, "--inh-caps", capset, "--ambient-caps", capset, ...extra,
+    "--inh-caps", capset, "--ambient-caps", capset, ...extra,
     "--", SETPRIV, ...dropTo(AGENT, child),
   ]);
 check(
@@ -125,7 +127,7 @@ check(
   () =>
     run(SETPRIV, [
       "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
-      "--bounding-set", HARNESS_AMBIENT, "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
+      "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
       "--", UNSHARE, "--mount", "--propagation", "private", "--",
       MOUNT, "-t", "tmpfs", "-o", "size=1m", "tmpfs", "/work",
     ]) !== 0,
@@ -147,7 +149,7 @@ check(
   () =>
     run(SETPRIV, [
       "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
-      "--bounding-set", HARNESS_AMBIENT, "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
+      "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
       "--", UNSHARE, "--mount", "--propagation", "private", "--",
       SETPRIV, "--reuid", "0", "--regid", "0", "--clear-groups", "--",
       NODE, NS_BODY, SPEC_PATH,
