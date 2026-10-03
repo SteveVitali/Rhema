@@ -314,6 +314,86 @@ describe("collab service (P1.03)", () => {
     expect(ro.readOnly).toBe(true);
   });
 
+  it("the Showcase attaches read-only at auth and never materializes — no fork, no y_state write (§15.4)", async () => {
+    // the real showcase shape: a frozen seeded head on a showcase-flagged project
+    await fx.exec.query("update projects set showcase = true where id = $1", [PROJ]);
+    await fx.exec.query("update drafts set state = 'frozen' where id = $1", [DRAFT]);
+    const yBefore = (
+      await fx.exec.query("select y_state from live_docs where id = $1", [fx.liveDocId])
+    ).rows[0] as { y_state: Buffer };
+
+    // write intent on the worked example ⇒ a read-only attach (NOT the frozen_fork refusal —
+    // a showcase draft must never reach the fork path at all)
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DRAFT}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(true);
+
+    // the store belt: even if updates somehow reach materialization, nothing is written
+    const conn = await openDoc(fx);
+    try {
+      typeAll(conn.document!, "# Title\n\nTampered showcase.\n");
+      const outcome = await storeNow(fx, conn.document!);
+      expect(outcome).toMatchObject({ locked: true, forked: false, changed: false });
+      const children = (
+        await fx.exec.query("select count(*)::int n from drafts where base_draft_id = $1", [DRAFT])
+      ).rows[0] as { n: number };
+      expect(children.n).toBe(0);
+      const yAfter = (
+        await fx.exec.query("select y_state from live_docs where id = $1", [fx.liveDocId])
+      ).rows[0] as { y_state: Buffer };
+      expect(Buffer.compare(yBefore.y_state, yAfter.y_state)).toBe(0);
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("a read-only attach reaches the client as the rhema.readonly stateless at connect", async () => {
+    // hold the head so auth attaches read-only
+    await fx.exec.query(
+      `insert into runs(id, workspace_id, project_id, workflow, state, inputs, model_profile, model_tier, rigor,
+         estimate_credits, cap_credits, rate_table_version, lock_set)
+       values ($5,$1,$2,'review',$3,'{}'::jsonb,'p','base','standard',0,0,1,$4)`,
+      [WS, PROJ, HOLDING_STATES[1] /* running */, [lockKeys.draftWrite(DRAFT)], RUN],
+    );
+    const nodeServer = serve({ fetch: fx.service.app.fetch, port: 0 });
+    const wss = new WebSocketServer({ noServer: true });
+    (nodeServer as http.Server).on("upgrade", (req, socket, head) =>
+      wss.handleUpgrade(req, socket, head, (ws) => fx.service.handleUpgrade(ws, req)),
+    );
+    await new Promise<void>((resolve) => {
+      if ((nodeServer as http.Server).listening) resolve();
+      else nodeServer.once("listening", () => resolve());
+    });
+    const port = (nodeServer.address() as AddressInfo).port;
+
+    const provider = new HocuspocusProvider({
+      url: `ws://127.0.0.1:${port}/collab`,
+      name: `draft:${DRAFT}`,
+      token: TOKEN,
+      WebSocketPolyfill: WebSocket,
+    });
+    const readonlyMsg = new Promise<string>((resolve, reject) => {
+      provider.on("stateless", ({ payload }: { payload: string }) => {
+        if (payload.includes("rhema.readonly")) resolve(payload);
+      });
+      provider.on("authenticationFailed", (e: { reason: string }) => reject(new Error(e.reason)));
+      setTimeout(() => reject(new Error("rhema.readonly never arrived")), 8000);
+    });
+    try {
+      expect(JSON.parse(await readonlyMsg) as { type: string }).toMatchObject({
+        type: "rhema.readonly",
+      });
+    } finally {
+      provider.destroy();
+      wss.close();
+      (nodeServer as http.Server).close();
+    }
+  });
+
   it("reconstructs a document from the daily snapshot + update deltas (byte-identical)", async () => {
     const conn = await openDoc(fx);
     try {

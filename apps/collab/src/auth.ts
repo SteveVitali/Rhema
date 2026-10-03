@@ -51,6 +51,9 @@ export interface DraftBinding {
   readonly state: string;
   readonly liveDocId: string | null;
   readonly lock: EditorLock | null;
+  /** §15.4 — the workspace's read-only worked example (the HTTP guard 409s its saves; the WSS leg
+   *  attaches read-only so no keystroke ever forks the seeded head). */
+  readonly showcase: boolean;
 }
 
 interface DraftRow {
@@ -61,6 +64,7 @@ interface DraftRow {
   state: string;
   live_doc_id: string | null;
   workspace_id: string;
+  showcase: boolean;
 }
 
 /** The §6.3 lock read (same shape as the api's editorLock — HOLDING_STATES + editorLockForRuns). */
@@ -92,7 +96,7 @@ export async function resolveDraftBinding(
 ): Promise<DraftBinding | undefined> {
   const row = (
     await exec.query(
-      `select d.id, d.project_id, d.n, d.origin, d.state, d.live_doc_id, p.workspace_id
+      `select d.id, d.project_id, d.n, d.origin, d.state, d.live_doc_id, p.workspace_id, p.showcase
          from drafts d join projects p on p.id = d.project_id
         where d.id = $1`,
       [draftId],
@@ -109,6 +113,7 @@ export async function resolveDraftBinding(
     state: row.state,
     liveDocId: row.live_doc_id,
     lock,
+    showcase: row.showcase === true,
   };
 }
 
@@ -155,6 +160,19 @@ export async function authenticateConnection(
 
     // A run holds the head (§6.3) — attach read-only; the framework refuses the connection's updates.
     if (binding.lock) {
+      return {
+        userId: principal.userId,
+        workspaceId: principal.workspaceId,
+        projectId: binding.projectId,
+        draftId: binding.draftId,
+        readOnly: true,
+      };
+    }
+
+    // EDIT.1 (§15.4) — the Showcase's drafts attach read-only regardless of state: the worked
+    // example's seeded head must never fork under a keystroke (the api's showcaseReadOnlyGuard
+    // already 409s the HTTP save; this is the same posture on the WSS leg).
+    if (binding.showcase) {
       return {
         userId: principal.userId,
         workspaceId: principal.workspaceId,

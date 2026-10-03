@@ -85,10 +85,10 @@ function setLockBanner(lock: { kind: "writer" | "reader"; workflow: string } | n
   if (lockBannerText) lockBannerText.textContent = template.replace("{workflow}", lock?.workflow ?? "");
 }
 
-/** After a frozen_head fork the version banner reads "v{n} — your revision of v{base}". */
+/** After a frozen_head fork the version banner reads §5.4's "Editing vN · findings from vM follow your text". */
 function showForkBanner(root: HTMLElement, draftN: number, baseN: number): void {
   if (!versionBanner || !versionBannerText) return;
-  const fmt = root.dataset["forkFmt"] ?? "v{n} — your revision of v{base}";
+  const fmt = root.dataset["forkFmt"] ?? "Editing v{n} · findings from v{base} follow your text";
   versionBannerText.textContent = fmt.replace("{n}", String(draftN)).replace("{base}", String(baseN));
   versionBanner.style.display = "flex";
 }

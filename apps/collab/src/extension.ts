@@ -3,6 +3,9 @@
 //
 //   onAuthenticate  — session → tenant → binding (frozen forks refuse with the rebind payload;
 //                     run-locked/non-editable heads attach read-only via connectionConfig)
+//   connected       — EDIT.1: the read-only verdict rides to the client as `rhema.readonly`
+//                     stateless (connectionConfig is server-side only — without this the pill
+//                     says "synced" while the framework silently refuses its updates)
 //   onLoadDocument  — live_docs.y_state, or the promoted version's markdown seeded as the initial
 //                     Yjs state (the doc's canonical floor — never an empty page for a saved draft)
 //   onChange        — append the update to the pending restore delta + mark the doc dirty
@@ -142,6 +145,15 @@ export function createCollabExtension(deps: CollabExtensionDeps): CollabExtensio
       connectionConfig.readOnly = ctx.readOnly;
       // The context every later hook sees; the doc's runtime adopts this user as its author.
       return { ...ctx };
+    },
+
+    async connected({ context, connection }) {
+      // EDIT.1 — a read-only attach (run lock, Showcase draft, non-editable working head) tells
+      // the client immediately: the pill flips to read-only instead of claiming "synced" while
+      // the framework silently drops its updates until the 10 s doc poll catches up.
+      if ((context as { readOnly?: boolean }).readOnly === true) {
+        connection.sendStateless(JSON.stringify({ type: "rhema.readonly" }));
+      }
     },
 
     async onLoadDocument({ documentName, context }) {

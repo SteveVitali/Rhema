@@ -10,6 +10,8 @@ import {
 import { lockKeys } from "@rhema/orchestrator";
 import { InMemoryContentStore } from "@rhema/mirror";
 import { splitMarkdownBlocks } from "@rhema/findings-core";
+import type { ConversionResult } from "@rhema/contracts";
+import { createImportedDraft } from "./import.js";
 import { createApp, type Principal } from "./index.js";
 import type { SqlClient } from "./invite.js";
 
@@ -268,5 +270,115 @@ describe("POST …/revise — 'Revise using your edits' (REQ-DATA-26)", () => {
     expect(run.inputs.priorReviewId).toBeDefined();
     expect(run.inputs.manualRevision.baseDraftId).toBe(headId);
     expect(run.lock_set).toContain(lockKeys.draftRead(headId));
+  });
+});
+
+// EDIT.1 — `resolve working` answers the EDITABLE head (ADR-048): a working head when one exists,
+// else the highest-n draft the project has — a frozen import, a frozen reviewed head, a seeded
+// head — served as the lazy-fork source. The pre-fix resolver (state='working' only) 404'd every
+// import-only project; these cases are the regression.
+describe("GET /projects/:id/editor/resolve/:v — the editable head (EDIT.1)", () => {
+  /** An import-only head through the REAL ingest path — `createImportedDraft` writes the
+   *  `human_upload`/`frozen` v1 (the exact row shape PR-J4's 404 came from). */
+  async function seedImportedHead() {
+    const RESULT: ConversionResult = {
+      sourceFormat: "md",
+      markdown: BASE_MD,
+      counts: { words: 12, footnotes: 0, citationSpans: 0, tables: 0, figures: 0 },
+      warnings: [],
+      unconverted: [],
+      quality: "clean",
+      qualityNotes: [],
+    };
+    const created = await createImportedDraft(
+      { db: sql, contentStore: store, ids: () => deps.ids("imp") },
+      {
+        projectId: seed.projectId,
+        workspaceId: seed.workspaceId,
+        actor: { kind: "user", userId: seed.userId },
+        result: RESULT,
+      },
+    );
+    draftId = created.draftId;
+  }
+
+  it("an import-only project resolves 'working' to its frozen human_upload head (was a 404)", async () => {
+    await seedImportedHead();
+    const res = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { draftId: string; draftN: number; state: string }).toMatchObject({
+      draftId,
+      draftN: 1,
+      state: "frozen",
+    });
+  });
+
+  it("resolving 'working' mints nothing — the lazy fork stays first-write (one draft, frozen bytes intact)", async () => {
+    await seedImportedHead();
+    const before = (await db.pg.query(`select count(*)::int n from drafts where project_id = $1`, [
+      seed.projectId,
+    ])).rows[0] as { n: number };
+    for (const v of ["working", "working"]) await app.request(`/projects/${seed.projectId}/editor/resolve/${v}`);
+    const after = (await db.pg.query(`select count(*)::int n from drafts where project_id = $1`, [
+      seed.projectId,
+    ])).rows[0] as { n: number };
+    expect(after.n).toBe(before.n);
+
+    // and the fork lands at the first save, exactly once, with the import's bytes preserved.
+    const s1 = (await (await post(`${url("")}/save`, { markdown: EDITED_MD })).json()) as {
+      draftId: string;
+      draftN: number;
+      forked: boolean;
+    };
+    expect(s1).toMatchObject({ draftN: 2, forked: true });
+    const rows = (await db.pg.query(
+      `select d.origin, d.state, d.base_draft_id, av.content_sha256
+         from drafts d join artifact_versions av on av.id = d.promoted_version_id
+        where d.project_id = $1 order by d.n`,
+      [seed.projectId],
+    )).rows as { origin: string; state: string; base_draft_id: string | null; content_sha256: string }[];
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ origin: "human_upload", state: "frozen" });
+    expect(rows[1]).toMatchObject({ origin: "human_revision", state: "working", base_draft_id: draftId });
+    expect(rows[0].content_sha256).not.toBe(rows[1].content_sha256);
+  });
+
+  it("an agent-delivered frozen head resolves 'working' the same way (reviewed shape, no child yet)", async () => {
+    await seedReviewedHead(); // origin='agent', state='frozen', with a review correspondence
+    const res = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { draftId: string; state: string }).toMatchObject({
+      draftId,
+      state: "frozen",
+    });
+  });
+
+  it("a working human_revision child wins over the frozen base; numeric resolve stays exact", async () => {
+    await seedImportedHead();
+    const s1 = (await (await post(`${url("")}/save`, { markdown: EDITED_MD })).json()) as {
+      draftId: string;
+    };
+    const res = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
+    expect((await res.json()) as { draftId: string }).toMatchObject({ draftId: s1.draftId });
+    const exact = await app.request(`/projects/${seed.projectId}/editor/resolve/1`);
+    expect((await exact.json()) as { draftId: string; state: string }).toMatchObject({
+      draftId,
+      state: "frozen",
+    });
+  });
+
+  it("a draft-less project 404s 'working' (the web redirects to /p/:slug — not a dead page)", async () => {
+    const res = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
+    expect(res.status).toBe(404);
+  });
+
+  it("the Showcase still refuses a write: resolve reads, save 409s showcase_read_only", async () => {
+    await seedImportedHead();
+    await db.pg.query(`update projects set showcase = true where id = $1`, [seed.projectId]);
+    const res = await app.request(`/projects/${seed.projectId}/editor/resolve/working`);
+    expect(res.status).toBe(200);
+    const blocked = await post(`${url("")}/save`, { markdown: EDITED_MD });
+    expect(blocked.status).toBe(409);
+    expect(((await blocked.json()) as { error: string }).error).toBe("showcase_read_only");
   });
 });

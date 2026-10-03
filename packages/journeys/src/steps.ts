@@ -415,18 +415,174 @@ const N4: StepFn = async (ctx) => {
   }
 };
 
-/** N8 (RED, EDIT.1) — editing a locked version forks to v(N+1) and saves (sync pill). */
-const N8: StepFn = async (ctx) => {
-  const { page } = await ctx.returningUser("a");
-  await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  await followProjectLink(page, ctx);
-  // the locked-version edit affordance → fork to v(N+1)
-  const edit = page.locator('a[href*="/edit/"], button:has-text("Edit")').first();
-  if ((await edit.count()) === 0) throw new Error("no edit affordance on the project page");
-  await edit.click();
-  await page.waitForLoadState("domcontentloaded");
+/**
+ * EDIT.1 — the shared "type → fork → sync → reload" flow (§5.4/§5.10; REQ-IDE-32/IDE-43):
+ * open a versioned Page URL, mount the ProseMirror island, type the run marker, and wait for the
+ * §5.4 fork banner + the ONE sync pill to reach "synced ✓" — then reload `/v/working` and assert
+ * the working human_revision chip + the persisted marker. `openPath` is the LOCKED version's URL
+ * (`/v/<frozenN>` or `/v/working`); the typing itself performs the fork/rebind — never a confirm.
+ */
+async function n8TypeForkSave(
+  ctx: StepCtx,
+  page: Page,
+  slug: string,
+  openPath: string,
+  label: string,
+): Promise<void> {
+  const markerText = ctx.marker(`n8-${label}`).toLowerCase().replace(/[^a-z0-9]/g, "-");
+
+  await gotoOk(page, `${ctx.webBaseUrl}${openPath}`);
+  // the Page island mounts ProseMirror over the SSR preview (page.js via the deferred script)
+  await page.waitForSelector("[data-page-root]", { timeout: 15_000 });
+  await page.waitForSelector("[data-page-view]", { timeout: 30_000 });
+  // the ONE sync indicator — the shell's status bar carries no second sync element (ADR-049)
+  const pillCount = await page.locator("[data-sync-pill]").count();
+  if (pillCount !== 1) throw new Error(`${label}: expected 1 [data-sync-pill], saw ${pillCount}`);
+  if ((await page.locator("footer.ide-statusbar .ide-sync").count()) !== 0) {
+    throw new Error(`${label}: a second sync indicator rides the status bar`);
+  }
+  // no confirm surface may appear anywhere in the fork path
+  const noConfirm = async () => {
+    const dialogs = await page.locator('dialog, [role="dialog"], [role="alertdialog"]').count();
+    if (dialogs > 0) throw new Error(`${label}: a confirm dialog appeared before the fork`);
+  };
+  await noConfirm();
+
+  // type into the live doc — the keystroke IS the fork trigger (2 s debounce + close/re-auth loop)
+  await page.click("[data-page-view]");
+  await page.keyboard.type(` ${markerText}`);
+  await noConfirm();
+
+  // §5.4's banner: "Editing vN · findings from vM follow your text" (the fork/rebind flipped it)
+  await page
+    .waitForFunction(
+      () => /Editing v\d+/.test(
+        document.querySelector('[data-page-banner="version"] span')?.textContent ?? "",
+      ),
+      undefined,
+      { timeout: 90_000 },
+    )
+    .catch(() => {
+      throw new Error(
+        `${label}: the fork banner never flipped to "Editing vN" (the fork/rebind loop did not land)`,
+      );
+    });
+  // the ONE pill truthfully reaches synced ✓
+  await page.waitForSelector('[data-sync-pill][data-sync-state="synced"]', { timeout: 90_000 });
+  const pillText = await page.locator("[data-sync-pill]").textContent();
+  if (!/synced/i.test(pillText ?? "")) throw new Error(`${label}: pill text "${pillText}" ≠ synced`);
+
+  // reload the editable head: the working human_revision chip is on the rail and the edit persisted
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
+  await page.waitForSelector("[data-page-view]", { timeout: 30_000 });
+  const workingChip = page.locator(
+    'li[data-version-chip][data-state="working"][data-origin="human_revision"]',
+  );
+  if ((await workingChip.count()) === 0) {
+    throw new Error(`${label}: no working human_revision chip on the rail after reload`);
+  }
   const body = (await page.textContent("body")) ?? "";
-  if (!/v\d+|version/i.test(body)) throw new Error("no version fork surface after edit");
+  if (!body.includes(markerText)) {
+    throw new Error(`${label}: the typed marker did not persist across a /v/working reload`);
+  }
+}
+
+/** N8 (EDIT.1) — editing a locked version forks to v(N+1) without a confirm and SAVES (sync pill):
+ *
+ *  leg A — the fresh import: a new visitor's paste-imported draft (frozen human_upload v1 — the
+ *  shape PR-J4 caught 404ing at /v/working). The Edit source opens /v/working (200 + mounted
+ *  Page), typing forks v2 with the §5.4 banner, the pill reaches synced ✓, reload shows the edit.
+ *
+ *  leg B — a reviewed version on the returning tenant (jrn-a): a project whose rail carries a
+ *  reviewed-frozen chip gets the same flow (when its lineage already has a working head the edit
+ *  lands on it through the frozen_fork rebind — the same end-state assertions hold). If jrn-a has
+ *  no reviewed head, the fallback is the duplicated Showcase — a frozen review-lineage head
+ *  exercising the identical lock→fork→save path (the Showcase itself stays read-only by design). */
+const N8: StepFn = async (ctx) => {
+  // ---------- leg A — the fresh import ----------
+  const { page } = await ctx.freshUser("n8");
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("n8"), PAID_FIXTURE);
+  // the Edit source IS the /v/working entry — click it, never type the URL
+  const edit = page.locator('a[data-edit-source]').first();
+  if ((await edit.count()) === 0) throw new Error("the project page has no Edit source affordance");
+  await edit.click();
+  await page.waitForURL(/\/v\/working/, { timeout: 15_000 });
+  // a 404 here renders no [data-page-root] — n8TypeForkSave's selector wait is the assertion
+  await n8TypeForkSave(ctx, page, slug, `/p/${slug}/v/working`, "import");
+
+  // ---------- leg B — a reviewed (or frozen-lineage) locked version on jrn-a ----------
+  const { page: ret } = await ctx.returningUser("a");
+  await gotoOk(ret, `${ctx.webBaseUrl}/app`);
+  const allHrefs = await ret.locator('a[href^="/p/"]').evaluateAll((els) =>
+    [...new Set(els.map((e) => (e as HTMLAnchorElement).getAttribute("href") ?? ""))],
+  );
+  const hrefs = allHrefs.filter((h) => /^\/p\/[^/]+$/.test(h));
+  // dossier links can also ride the /app rows directly (latestReviewRunId cards)
+  const dossierHrefs = allHrefs.filter((h) => /^\/p\/[^/]+\/review\/[^/]+/.test(h));
+  let reviewed: { slug: string; frozenN: number } | null = null;
+  let fallbackReviewed: { slug: string; frozenN: number } | null = null;
+  let showcaseDossier: string | null = null;
+  for (const href of hrefs.slice(0, 12)) {
+    await gotoOk(ret, `${ctx.webBaseUrl}${href}`);
+    const slug = href.split("/")[2] ?? "";
+    // a read-only Page (the Showcase, or a head held by a live run) is not a candidate — but a
+    // read-only page's dossier may be the Showcase (the duplicate fallback's substrate)
+    if ((await ret.locator('[data-page-host][data-readonly="1"]').count()) > 0) {
+      const dossierLink = ret.locator('a[href*="/review/"]').first();
+      if (await dossierLink.count()) {
+        const dh = await dossierLink.getAttribute("href");
+        if (dh) {
+          await gotoOk(ret, `${ctx.webBaseUrl}${dh}`);
+          if ((await ret.locator("[data-showcase-banner]").count()) > 0) showcaseDossier = dh;
+        }
+      }
+      continue;
+    }
+    const frozenReviewed = ret.locator(
+      'li[data-version-chip][data-state="frozen"]:has([data-reviewed])',
+    );
+    if ((await frozenReviewed.count()) === 0) continue;
+    const frozenN = Number(
+      (await frozenReviewed.first().getAttribute("data-version-chip")) ?? "0",
+    );
+    const hasWorking = (await ret.locator('li[data-version-chip][data-state="working"]').count()) > 0;
+    // prefer an un-forked reviewed lineage (the literal v(N+1) fork leg); else any reviewed head
+    if (frozenN > 0 && !hasWorking) {
+      reviewed = { slug, frozenN };
+      break;
+    }
+    if (frozenN > 0 && !fallbackReviewed) fallbackReviewed = { slug, frozenN };
+  }
+  // the duplicate fallback's substrate may ride /app directly — probe dossier links for the banner
+  if (!reviewed && !fallbackReviewed && !showcaseDossier) {
+    for (const dh of dossierHrefs.slice(0, 8)) {
+      await gotoOk(ret, `${ctx.webBaseUrl}${dh}`);
+      if ((await ret.locator("[data-showcase-banner]").count()) > 0) {
+        showcaseDossier = dh;
+        break;
+      }
+    }
+  }
+  const target = reviewed ?? fallbackReviewed;
+  if (target) {
+    // the LOCKED version's own URL — typing routes to the lineage's working head (fork or rebind)
+    await n8TypeForkSave(ctx, ret, target.slug, `/p/${target.slug}/v/${target.frozenN}`, "reviewed");
+  } else if (showcaseDossier) {
+    // no reviewed head on jrn-a — duplicate the Showcase into a frozen review-lineage head
+    await gotoOk(ret, `${ctx.webBaseUrl}${showcaseDossier}`);
+    const dup = ret.locator('[data-showcase-banner] form[action$="/duplicate"] button').first();
+    if ((await dup.count()) === 0) throw new Error("the Showcase banner carries no Duplicate affordance");
+    await dup.click();
+    await ret.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
+    const copySlug = /\/p\/([a-z0-9-]+)/i.exec(ret.url())?.[1];
+    if (!copySlug) throw new Error(`showcase duplicate did not land on /p/<slug> (${ret.url()})`);
+    await n8TypeForkSave(ctx, ret, copySlug, `/p/${copySlug}/v/working`, "frozen-dup");
+  } else {
+    throw new Error(
+      "no reviewed-frozen head and no Showcase dossier on the returning tenant — the locked-version leg has no substrate",
+    );
+  }
+  assertBundleParity(ctx);
 };
 
 /** N9 (BILL.3; REQ-BILL-16) — every purchase entry point on the flagged test tenant reaches a

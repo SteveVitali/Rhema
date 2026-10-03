@@ -128,6 +128,25 @@ export async function storeDocument(
       return { stored: true, locked: true, draftId: rt.draftId, sha256: null, forked: false, changed: false, restorePointId: null };
     }
 
+    // EDIT.1 (§15.4) — the Showcase never materializes: auth already attaches its drafts read-only,
+    // but belt the store too (a stale connection, a direct store call, a block patch must not fork
+    // or dirty the seeded worked example — not even its y_state). Report as locked so the caller
+    // closes the connections into a fresh read-only re-auth.
+    const showcase = (
+      await tx.query(`select showcase from projects where id = $1`, [rt.projectId])
+    ).rows[0] as { showcase: boolean } | undefined;
+    if (showcase?.showcase === true) {
+      return {
+        stored: true,
+        locked: true,
+        draftId: rt.draftId,
+        sha256: null,
+        forked: false,
+        changed: false,
+        restorePointId: null,
+      };
+    }
+
     // Materialize through the PRB.07 seam — same canonical serialization, same fork rule.
     const store = deps.storeFor(rt.workspaceId);
     const res = await saveManualRevision(

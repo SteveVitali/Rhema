@@ -86,7 +86,8 @@ export function ideCss(): string {
 
     // ---- Status bar ----
     `.ide-statusbar { flex: 0 0 ${B.statusBarPx}px; display: flex; align-items: center; gap: var(--s4); padding: 0 var(--s3); font-size: 12px; color: var(--shell-fg-muted); background: var(--shell-surface); border-top: 1px solid var(--shell-border); font-variant-numeric: tabular-nums; }`,
-    ".ide-statusbar .ide-sync[data-state='offline'], .ide-statusbar .ide-sync[data-state='queued'] { color: var(--state-needs-you); }",
+    // EDIT.1 — no .ide-sync rule: the Page's [data-sync-pill] is the one indicator (ADR-049); the
+    // status bar no longer carries a second sync element.
 
     // ---- drag handles (Files / Timeline; REQ-IDE-9) ----
     ".ide-handle { flex: 0 0 5px; width: 5px; cursor: col-resize; background: transparent; border: none; padding: 0; }",

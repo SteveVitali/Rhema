@@ -229,8 +229,12 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     return venueCapLabel(words, p.venue, row.maxWords);
   };
 
-  // ---- /v/:n + /v/working draft-ref resolution (P1.02): 'working' → the project's working head;
-  //      a number → that draft. 404 when absent. ----
+  // ---- /v/:n + /v/working draft-ref resolution (P1.02 + EDIT.1/ADR-048): 'working' → the
+  //      project's EDITABLE head — the working head when one exists, else the highest-n draft
+  //      (a frozen reviewed head, a frozen import, a seeded head) served as the lazy-fork
+  //      source: the fork itself stays first-write (saveManualRevision), never open-time. A
+  //      number → that draft exactly (the frozen base keeps answering as itself). 404 when
+  //      absent — for 'working' that means the project has no drafts at all. ----
   app.get("/projects/:id/editor/resolve/:v", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
@@ -240,8 +244,8 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       if (v === "working") {
         return (
           (await tx.query(
-            `select id, n, state, origin from drafts where project_id = $1 and state = 'working'
-             order by n desc limit 1`,
+            `select id, n, state, origin from drafts where project_id = $1
+             order by (state = 'working') desc, n desc limit 1`,
             [c.req.param("id")],
           )).rows[0] as { id: string; n: number; state: string; origin: string } | undefined
         );

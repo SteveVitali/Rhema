@@ -446,9 +446,11 @@ export function PageEditor(props: PageEditorProps): ReactNode {
         </form>
       ) : null}
 
-      {/* the sync pill the island drives (SSR'd so the pill exists before JS) — §5.10's vocabulary:
-          synced ✓ / syncing… / offline · n changes queued / read-only. No Save button, ever. */}
-      <div data-sync-pill data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
+      {/* the ONE sync indicator (EDIT.1/ADR-049 — the shell's status bar no longer carries a second,
+          unfed one). §5.10's vocabulary: synced ✓ / syncing… / offline · n changes queued /
+          read-only. A live region so the state changes announce. No Save button, ever. */}
+      <div data-sync-pill role="status" aria-live="polite"
+           data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
            data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
            data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
            style={{ position: "fixed", bottom: "28px", right: "24px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>

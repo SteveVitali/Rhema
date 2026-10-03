@@ -234,7 +234,6 @@ export interface PageData {
       readonly readMin?: number;
       readonly venueCap?: string;
       readonly credits?: number;
-      readonly sync?: "synced" | "syncing" | "offline";
     };
     readonly themeUrl?: string;
     readonly paperThemeUrl?: string;

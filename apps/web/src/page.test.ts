@@ -98,8 +98,8 @@ describe("the Page — /p/:project/v/:v SSR (P1.02)", () => {
     // the transport URLs — the same /edit/:draftId/* endpoints the beta used
     expect(html).toContain('data-save-url="/p/the-piece/edit/d_2/save"');
     expect(html).toContain('data-doc-url="/p/the-piece/edit/d_2/doc"');
-    // the forked-head version line
-    expect(html).toContain("v2 — your revision of v1");
+    // the forked-head version line (§5.4's verbatim banner — EDIT.1)
+    expect(html).toContain("Editing v2 · findings from v1 follow your text");
     // the provenance + findings sidecars embed as JSON for the island
     expect(html).toContain("data-page-prov");
     expect(html).toContain("data-page-findings");
@@ -153,6 +153,63 @@ describe("the Page — /p/:project/v/:v SSR (P1.02)", () => {
     expect(html).toContain("v2 is frozen");
     // NOT read-only — the first keystroke's autosave forks the human_revision head server-side.
     expect(html).toContain('data-readonly="0"');
+  });
+
+  it("/v/working serves a frozen head EDITABLE — the import-only project resolves + renders (EDIT.1)", async () => {
+    const frozen: EditorDocDto = { ...DOC, draftId: "d_1", draftN: 1, origin: "human_upload", state: "frozen", baseDraftId: null, baseDraftN: null };
+    const app = createWebApp(makeDeps({
+      resolveEditorDraft: async () => ({ draftId: "d_1", draftN: 1, state: "frozen", origin: "human_upload" }),
+      getEditorDoc: async () => frozen,
+    }));
+    const res = await app.request("/p/the-piece/v/working");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-draft-id="d_1"');
+    expect(html).toContain("v1 is frozen");
+    expect(html).toContain('data-readonly="0"'); // the lazy-fork source — typing forks server-side
+    expect(html).toContain('data-collab-url=');
+  });
+
+  it("/v/working on a draft-less project redirects to /p/:slug instead of dead-ending on a 404", async () => {
+    const app = createWebApp(makeDeps({
+      resolveEditorDraft: async () => Promise.reject(new ApiError(404, "/x")),
+    }));
+    const res = await app.request("/p/the-piece/v/working");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-piece");
+    // …while a numeric miss keeps the truthful 404
+    const miss = await app.request("/p/the-piece/v/7");
+    expect(miss.status).toBe(404);
+  });
+
+  it("the CSP's connect-src carries the configured collab wss origin explicitly (EDIT.1 — engine-independent)", async () => {
+    const app = createWebApp({ ...makeDeps(), collabWsUrl: "wss://app.example.test/collab" });
+    const res = await app.request("/p/the-piece/v/working");
+    const csp = res.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("connect-src 'self' wss://app.example.test");
+  });
+
+  it("renders exactly ONE sync indicator — the [data-sync-pill]; the status bar carries no second one", async () => {
+    const app = createWebApp(makeDeps());
+    const html = await (await app.request("/p/the-piece/v/working")).text();
+    expect(html.match(/data-sync-pill/g) ?? []).toHaveLength(1);
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain('class="ide-sync"'); // the shell's dead second indicator is gone
+  });
+
+  it("the Showcase renders its Page read-only (§15.4) — banner + host flag, no edit affordance", async () => {
+    const showcaseProjects: ProjectRow[] = [{ ...PROJECTS[0]!, showcase: true }];
+    const app = createWebApp(makeDeps({ listProjects: async () => showcaseProjects }));
+    const html = await (await app.request("/p/the-piece/v/working")).text();
+    expect(html).toContain('data-readonly="1"');
+    expect(html).toContain("This version is read-only.");
+  });
+
+  it("a stale /edit/:draftId deep link lands on the working child's /v/<n>, not the frozen view", async () => {
+    const app = createWebApp(makeDeps({ getEditorDoc: async () => ({ ...DOC, draftId: "d_9", draftN: 3 }) }));
+    const res = await app.request("/p/the-piece/edit/d_1");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-piece/v/3");
   });
 
   it("renders proposal cards with accept/reject + the agent origin", async () => {

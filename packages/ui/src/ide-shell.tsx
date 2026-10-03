@@ -31,9 +31,6 @@ export interface IdeLabels {
     view: string;
     theme: string;
     paper: string;
-    synced: string;
-    syncing: string;
-    offline: string;
     creditsFmt: string; // "{n} credits"
     versionPrefix: string;
     wordsFmt: string; // "{n} words"
@@ -142,7 +139,6 @@ export interface IdeShellProps {
     readonly readMin?: number;
     readonly venueCap?: string;
     readonly credits?: number;
-    readonly sync?: "synced" | "syncing" | "offline";
   };
   /** same-origin write endpoints the island posts to (web routes forward to the api). */
   readonly themeUrl?: string;
@@ -163,9 +159,6 @@ export function IdeShell(props: IdeShellProps): ReactNode {
   const hasFindings = props.hasFindings ?? findings.length > 0;
   const marginMode = !hasFindings ? "hidden" : "auto"; // findingCards toggle flips auto↔ticks client-side
   const deskOpen = props.activeRun != null; // a live run auto-opens the Desk on the Feed tab (§5.1)
-  const sync = props.status?.sync ?? "synced";
-  const syncLabel =
-    sync === "offline" ? L.statusBar.offline : sync === "syncing" ? L.statusBar.syncing : L.statusBar.synced;
 
   return (
     <div
@@ -365,10 +358,11 @@ export function IdeShell(props: IdeShellProps): ReactNode {
         </div>
       </section>
 
-      {/* Status bar — version / sync / words / reading time / venue cap / credits (§5.1). */}
+      {/* Status bar — version / words / reading time / venue cap / credits (§5.1). The save state
+          lives in the Page's [data-sync-pill] only (EDIT.1/ADR-049 — one indicator; this slot used
+          to render a second, SSR-pinned "Synced" that nothing ever fed). */}
       <footer className="ide-statusbar" aria-label="Status">
         {props.status?.version ? <span>{L.statusBar.versionPrefix}{props.status.version}</span> : null}
-        <span className="ide-sync" data-state={sync} role="status" aria-live="polite">{syncLabel}</span>
         {/* data-status-* slots: the page.js island rewrites them live (per-keystroke meters, P1.02). */}
         {typeof props.status?.words === "number" ? <span className="ide-count" data-status-words data-fmt={L.statusBar.wordsFmt}>{fmt(L.statusBar.wordsFmt, props.status.words)}</span> : null}
         {typeof props.status?.readMin === "number" ? <span className="ide-count" data-status-readmin data-fmt={L.statusBar.readMinFmt}>{fmt(L.statusBar.readMinFmt, props.status.readMin)}</span> : null}

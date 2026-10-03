@@ -93,7 +93,8 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
   {
     id: "N8",
     journey: "both",
-    asserts: "editing a locked version forks to v(N+1) and the edit saves (sync pill)",
+    asserts:
+      "editing a locked version forks to v(N+1) without a confirm and the edit saves (sync pill) — fresh import + a reviewed/frozen head on jrn-a",
     owner: "EDIT.1",
     expected: "red",
     paid: false,

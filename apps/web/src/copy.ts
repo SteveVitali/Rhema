@@ -854,7 +854,8 @@ export const COPY = {
   editor: {
     notFound: "That draft isn't here.",
     versionFmt: "v{n}",
-    versionForkFmt: "v{n} — your revision of v{base}",
+    // EDIT.1 — §5.4's verbatim fork banner ("Editing vN+1 · findings from vN follow your text").
+    versionForkFmt: "Editing v{n} · findings from v{base} follow your text",
     writerLockFmt: "A {workflow} run is writing this draft — editing is locked until it finishes.",
     readerLockFmt: "A {workflow} run is reading the frozen draft — editing is locked until it finishes.",
     cancelRun: "Cancel run to edit",
@@ -878,7 +879,8 @@ export const COPY = {
     revise: "Revise using your edits",
     // P1.02 — the Page (schema-first editor): the strings the Source stopgap never had.
     frozenBannerFmt: "v{n} is frozen — your edits here open a new revision.",
-    forkFmt: "v{n} — your revision of v{base}",
+    // EDIT.1 — the post-fork banner is §5.4's verbatim wording (matches versionForkFmt above).
+    forkFmt: "Editing v{n} · findings from v{base} follow your text",
     readOnlyNote: "This version is read-only.",
     proposalsHeading: "Proposed changes",
     accept: "Accept",
@@ -1694,9 +1696,6 @@ export const COPY = {
       view: "View",
       theme: "Theme",
       paper: "Paper",
-      synced: "Synced",
-      syncing: "Syncing…",
-      offline: "Offline — changes queued",
       creditsFmt: "{n} cr",
       versionPrefix: "",
       wordsFmt: "{n} words",
