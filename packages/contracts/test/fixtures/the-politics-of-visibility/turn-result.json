@@ -1,0 +1,10 @@
+{
+  "sidecar": "turn_result",
+  "version": 1,
+  "status": "done",
+  "replySummary": "Answered against two pinned sources and the v3 draft head.",
+  "searches": 2,
+  "fetches": 4,
+  "artifactReads": 3,
+  "refs": ["draft@v3 ¶4", "agents/assistant/research/notes/01JEXAMPLE0000000000000A.md"]
+}

@@ -23,8 +23,12 @@ export const threads = pgTable("threads", {
   name: text("name"),
   sessionStoreKey: text("session_store_key"),
   briefKey: text("brief_key"),
+  // P1.11 (0033): pins.json blob key, the undeletable-default flag, and the list ordering.
+  pinsKey: text("pins_key"),
+  isDefault: boolean("is_default").notNull().default(false),
   createdBy: text("created_by"),
   archivedAt: timestamp("archived_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const protocols = pgTable(

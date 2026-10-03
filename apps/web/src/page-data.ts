@@ -24,6 +24,7 @@ import type {
   VersionDiffDto,
   RestorePointDto,
   FilesDto,
+  ChatPanelDto,
 } from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
@@ -182,6 +183,15 @@ export interface PageData {
     /** P1.08 — the §5.13 Files pane's typed sections (GET /projects/:id/files; best-effort — absent ⇒
      *  the pane shows its empty state). */
     readonly files?: FilesDto;
+    /**
+     * P1.11 — the Desk Chat read (GET /projects/:id/chat; best-effort — absent ⇒ the Chat tab keeps
+     * its placeholder). `askAbout` prefills the §7.4 anchored composer when the Page offered "Ask
+     * about this draft"; `chatError` re-renders a bounced POST's refusal (the /lineedit|/revise
+     * pointer arrives in the message).
+     */
+    readonly chat?: ChatPanelDto;
+    readonly chatAskAbout?: { readonly ref: string; readonly version?: number; readonly block?: string };
+    readonly chatError?: string;
   };
   readonly conversion?:
     | {

@@ -109,6 +109,11 @@ export const BETA_EMISSION_AUDIT: Record<AnalyticsEventName, EmissionAuditEntry>
   "draft.imported": { status: "emitted", source: "apps/api/src/import.ts" },
   "wtp.recorded": { status: "emitted", source: "packages/ledger/src/stripe.ts" },
   "credits.exhausted_prompt": { status: "emitted", source: "apps/api/src/billing-routes.ts" },
+  // ---- P1.11 — the Assistant activation funnel (REQ-CHAT-30's instrumentation half)
+  "chat.turn_completed": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
+  "chat.plan_card_shown": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
+  "chat.plan_card_decided": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
+  "chat.empty_state_shown": { status: "emitted", source: "apps/api/src/chat-routes.ts" },
 };
 
 /** The audit grouped by status — the report/PR render this verbatim. */

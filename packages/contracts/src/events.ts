@@ -285,6 +285,37 @@ export const RUN_EVENTS = {
     density: "normal",
     payload: z.object({ threadId: idSchema }),
   },
+  // P1.11 (§7.1/REQ-CHAT-10) — the per-turn plan card: the budgets + tier the turn was consented under
+  // (the card IS the consent — ids + counts only, never the message text).
+  "chat.plan_card": {
+    visibility: "user",
+    density: "normal",
+    payload: z.object({
+      threadId: idSchema,
+      capCredits: z.number().int(),
+      searches: z.number().int(),
+      fetches: z.number().int(),
+      modelTier: z.string(),
+    }),
+  },
+  // P1.11 (§7.1/REQ-CHAT-10) — a per-turn cap tripped: the turn pauses with the over-cap card (never
+  // silently proceeds). Emitted from METERED usage (the metered-rows check), not model text.
+  "chat.over_cap": {
+    visibility: "user",
+    density: "summary",
+    payload: z.object({
+      threadId: idSchema,
+      axis: z.enum(["credits", "searches", "fetches"]),
+      used: z.number().int(),
+      budget: z.number().int(),
+    }),
+  },
+  // P1.11 (§7.1/REQ-CHAT-4) — a durable chat source note was written under agents/assistant/research/.
+  "chat.source_saved": {
+    visibility: "user",
+    density: "normal",
+    payload: z.object({ threadId: idSchema.optional(), notePath: boundedText }),
+  },
   "guidance.captured": {
     visibility: "user",
     density: "normal",

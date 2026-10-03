@@ -306,7 +306,14 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
             delivered.rendered + (typeof hyd.inputs.guidance === "string" ? `\n${hyd.inputs.guidance}` : ""),
         }
       : {}),
-    ...(phase.artifacts.length > 0 ? { phase_output: phase.artifacts.join(", ") } : {}),
+    ...(phase.artifacts.length > 0
+      ? {
+          // P1.11 — the `<run>` placeholder in a declared artifact (the assistant's per-run burst
+          // directory `agents/assistant/research/burst-<runId>/`) resolves to THIS run's id so the
+          // prompt names concrete paths, never a template the agent must guess.
+          phase_output: phase.artifacts.map((a) => a.replaceAll("<run>", args.runId)).join(", "),
+        }
+      : {}),
     ...(phase.sidecars.length > 0
       ? {
           sidecar_output: phase.sidecars.join(", "),

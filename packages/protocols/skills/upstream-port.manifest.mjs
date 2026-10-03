@@ -7,10 +7,24 @@
 // a fork, not a diff). Every op's `category` must be in SANCTIONED_CATEGORIES.
 //
 // Ported skills: editorial-review, respond-to-review, bootstrap-persona, draft-from-outline.
-// outline-from-research / research_burst are deliberately deferred to the full-IDE phase (§17).
+// outline-from-research is still deferred to the full-IDE phase (§17). research_burst landed in
+// P1.11 as a RHEMA-AUTHORED skill — it has no upstream pin, so it is declared in `rhemaOwned`
+// below instead of receiving a transform list; the drift checker exempts declared files from
+// pin-diffing and fails if a declared file is also present in the pin (it would need transforms).
 
 export const upstreamRepo = "agent-discourse";
 export const upstreamCommit = "5fef4165042b080c1d4c6becc281dc5ce8860cb3";
+
+/**
+ * Rhema-owned files (P1.11 — REQ-ARCH-5's ownership declaration): files authored in this repo with no
+ * upstream source, exempt from the pin-diff by declaration rather than by silence. Each entry is a
+ * pin-relative path that must EXIST under packages/protocols and must NOT exist in the vendored pin —
+ * a file that appears upstream later must move to `files` with a transform list, not stay here.
+ */
+export const rhemaOwned = [
+  "skills/research-burst/SKILL.md",
+  "skills/chat-turn/SKILL.md",
+];
 
 // The six harness-neutral inputs, shared verbatim across the three skills (REQ-ARCH-5). `sidecar`'s
 // per-skill emission is documented in each skill's harness section (below), not here.

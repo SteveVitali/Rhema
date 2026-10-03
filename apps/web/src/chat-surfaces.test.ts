@@ -1,0 +1,252 @@
+import { describe, it, expect, vi } from "vitest";
+import type { ProjectRow, ChatPanelDto } from "@rhema/api-client";
+import { createWebApp, type WebDeps } from "./server.js";
+import type { DataSource } from "./data.js";
+
+// P1.11 — the Desk Chat surface's web half (§7.1/§7.4): the SSR project page mounts the ChatDesk
+// (threads, composer, tier notches, the empty-state chips) from the api's chat DTO, and the
+// same-origin write routes forward the viewer's session to the api (turn send, plan decision, pin
+// add/remove, correction, suggestion, notes). The web layer never interprets budgets or anchors —
+// it forwards and redirects.
+
+const ROW: ProjectRow = {
+  id: "proj_1",
+  slug: "demo",
+  title: "Demo",
+  state: { key: "draft", pill: "Draft", overlay: null, suggested: { action: "revise", label: "Revise" } },
+};
+
+const CHAT: ChatPanelDto = {
+  threads: [{ id: "thr_1", name: "Project chat", isDefault: true, archived: false }],
+  activeThreadId: "thr_1",
+  turns: [],
+  messages: [],
+  pins: { pins: [], footprint: 0, cap: 12 },
+  sources: [],
+  liveRun: null,
+  emptyState: {
+    page: "quiet",
+    deskTab: "chat",
+    chips: [
+      { id: "research", label: "Research a question", verb: "/research" },
+      { id: "thesis", label: "I have a thesis", verb: "chat" },
+      { id: "interview", label: "Interview me", verb: "chat" },
+      { id: "notes", label: "Paste my notes", verb: "notes" },
+    ],
+    nextStep: { kind: "sheet", label: "Start", href: "/p/demo/sheet?workflow=research_burst" },
+  },
+  budgets: { credits: 40, searches: 5, fetches: 10 },
+  defaultTier: "base",
+};
+
+function makeDeps(chatOverrides: Partial<DataSource> = {}): WebDeps {
+  const session = () => ({ cookie: "__Host-rhema.session_token=tok" });
+  return {
+    session,
+    dataSource: {
+      checkSession: async () => true,
+      listProjects: async () => [ROW],
+      // the /p/:slug handler's other reads — all degrade-friendly stubs.
+      listGates: async () => [],
+      listDecisions: async () => [],
+      getApprovalOverrides: async () => ({}),
+      getApprovalSettings: async () => undefined,
+      getExplainers: async () => ({ dismissed: [] }),
+      getProjectVoice: async () => null,
+      listVoices: async () => [],
+      getTimeline: async () => null,
+      getFiles: async () => undefined,
+      getSessionPrincipal: async () => null,
+      getTheme: async () => null,
+      getChat: async () => CHAT,
+      ...chatOverrides,
+    } as unknown as DataSource,
+  };
+}
+
+const form = (fields: Record<string, string>) => ({
+  body: new URLSearchParams(fields).toString(),
+  headers: { "content-type": "application/x-www-form-urlencoded" },
+});
+const json = (body: unknown) => ({
+  body: JSON.stringify(body),
+  headers: { "content-type": "application/json", accept: "application/json" },
+});
+
+describe("GET /p/:slug — the Desk Chat tab (§7.1)", () => {
+  it("mounts the ChatDesk SSR — composer, tier notches, empty-state chips", async () => {
+    const app = createWebApp(makeDeps());
+    const res = await app.request("/p/demo");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-desk-panel="chat"');
+    expect(html).toContain("data-chat-composer");
+    expect(html).toContain('action="/p/demo/chat/turns"');
+    for (const t of ["base", "balanced", "frontier"]) expect(html).toContain(`data-chat-tier="${t}"`);
+    for (const id of ["research", "thesis", "interview", "notes"])
+      expect(html).toContain(`data-chat-chip="${id}"`);
+  });
+
+  it("degrades to the tab placeholder when the chat read is absent", async () => {
+    const app = createWebApp(makeDeps({ getChat: undefined }));
+    const res = await app.request("/p/demo");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).not.toContain("data-chat-composer");
+  });
+});
+
+describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
+  it("a turn send forwards {message, modelTier} and redirects a form submit", async () => {
+    const postChatTurn = vi.fn(async () => ({
+      runId: "run_1",
+      state: "queued",
+      deduped: false,
+      planCard: {
+        kind: "plan_card" as const,
+        threadId: "thr_1",
+        summary: "s",
+        steps: [],
+        budget: { credits: 40, searches: 5, fetches: 10 },
+        modelTier: "base",
+        actions: [],
+      },
+    }));
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...form({ threadId: "thr_1", message: "hi", modelTier: "balanced" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/demo#chat");
+    expect(postChatTurn).toHaveBeenCalledWith(
+      { cookie: "__Host-rhema.session_token=tok" },
+      "proj_1",
+      "thr_1",
+      expect.objectContaining({ message: "hi", modelTier: "balanced" }),
+    );
+  });
+
+  it("a JSON turn send returns the created-run DTO", async () => {
+    const app = createWebApp(
+      makeDeps({
+        postChatTurn: async () => ({
+          runId: "run_2",
+          state: "queued",
+          deduped: false,
+          planCard: {
+            kind: "plan_card" as const,
+            threadId: "thr_1",
+            summary: "s",
+            steps: [],
+            budget: { credits: 40, searches: 5, fetches: 10 },
+            modelTier: "base",
+            actions: [],
+          },
+        }),
+      }),
+    );
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { runId: string }).runId).toBe("run_2");
+  });
+
+  it("a plan-decision run_research redirects to the research_burst SHEET (never a run create)", async () => {
+    const postChatPlanDecision = vi.fn(async () => ({
+      ok: true as const,
+      action: "run_research",
+      sheet: { kind: "run_sheet", workflow: "research_burst", href: "/p/demo/sheet?workflow=research_burst&threadId=thr_1" },
+    }));
+    const app = createWebApp(makeDeps({ postChatPlanDecision }));
+    const res = await app.request("/p/demo/chat/plan-decision", {
+      method: "POST",
+      ...form({ threadId: "thr_1", action: "run_research" }),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("research_burst");
+  });
+
+  it("pins add/remove and corrections forward with the thread id", async () => {
+    const addChatPin = vi.fn(async () => ({ ok: true as const, pins: [], footprint: 0 }));
+    const removeChatPin = vi.fn(async () => ({ ok: true as const, pins: [], footprint: 0 }));
+    const postChatCorrection = vi.fn(async () => ({ ok: true as const, guidanceId: "g_1" }));
+    const app = createWebApp(makeDeps({ addChatPin, removeChatPin, postChatCorrection }));
+
+    const add = await app.request("/p/demo/chat/pins", {
+      method: "POST",
+      ...form({ threadId: "thr_1", summary: "the venue is NeurIPS" }),
+    });
+    expect(add.status).toBe(302);
+    expect(addChatPin).toHaveBeenCalledWith(
+      expect.anything(),
+      "proj_1",
+      "thr_1",
+      expect.objectContaining({ summary: "the venue is NeurIPS" }),
+    );
+
+    const rm = await app.request("/p/demo/chat/pins/pin_9/remove", {
+      method: "POST",
+      ...form({ threadId: "thr_1" }),
+    });
+    expect(rm.status).toBe(302);
+    expect(removeChatPin).toHaveBeenCalledWith(expect.anything(), "proj_1", "thr_1", "pin_9");
+
+    const corr = await app.request("/p/demo/chat/corrections", {
+      method: "POST",
+      ...json({ threadId: "thr_1", text: "Actually ICML." }),
+    });
+    expect(corr.status).toBe(201);
+    expect(postChatCorrection).toHaveBeenCalledWith(expect.anything(), "proj_1", "thr_1", { text: "Actually ICML." });
+  });
+
+  it("the §7.4 suggestion forwards the anchor verbatim; a refusal re-renders (422 JSON)", async () => {
+    const postChatSuggestion = vi.fn(async () => ({
+      ok: true as const,
+      proposal: {
+        id: "prp_1",
+        label: "s",
+        markdown: "x",
+        kind: "replace" as const,
+        anchor: { ref: "@v3 ¶4", version: 3, block: "¶4" },
+        provenance: "assistant",
+      },
+    }));
+    const app = createWebApp(makeDeps({ postChatSuggestion }));
+    const res = await app.request("/p/demo/chat/suggestions", {
+      method: "POST",
+      ...json({ ref: "@v3 ¶4", version: 3, block: "¶4", replacement: "tighter" }),
+    });
+    expect(res.status).toBe(201);
+    expect(postChatSuggestion).toHaveBeenCalledWith(
+      expect.anything(),
+      "proj_1",
+      expect.objectContaining({
+        anchor: { ref: "@v3 ¶4", version: 3, block: "¶4" },
+        replacement: "tighter",
+      }),
+    );
+  });
+
+  it("the notes chip forwards pasted text to agents/author/notes.md", async () => {
+    const postChatNote = vi.fn(async () => ({ ok: true as const, path: "agents/author/notes.md" }));
+    const app = createWebApp(makeDeps({ postChatNote }));
+    const res = await app.request("/p/demo/chat/notes", {
+      method: "POST",
+      ...form({ text: "my notes" }),
+    });
+    expect(res.status).toBe(302);
+    expect(postChatNote).toHaveBeenCalledWith(expect.anything(), "proj_1", { text: "my notes" });
+  });
+
+  it("unauthenticated posts refuse before any data call", async () => {
+    const app = createWebApp({ dataSource: { listProjects: async () => [ROW] } as DataSource, session: () => null });
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(401);
+  });
+});

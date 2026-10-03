@@ -172,6 +172,19 @@ export const ANALYTICS_EVENTS = {
   }),
   "wtp.recorded": z.object({ source: z.string(), amount: z.number() }),
   "credits.exhausted_prompt": z.object({ action_taken: z.string() }),
+  // P1.11 — the Assistant activation funnel (REQ-CHAT-30's instrumentation half): a turn completed
+  // (with its budget posture), the plan card shown/decided (the card IS the consent), and the
+  // scratch-path empty state rendering (the four chips + next-step card surface).
+  "chat.turn_completed": z.object({
+    over_cap: z.boolean().optional(),
+    searches: z.number().int().optional(),
+    fetches: z.number().int().optional(),
+  }),
+  "chat.plan_card_shown": z.object({}),
+  "chat.plan_card_decided": z.object({
+    action: z.enum(["run", "first_step", "edit", "cancel"]),
+  }),
+  "chat.empty_state_shown": z.object({}),
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;

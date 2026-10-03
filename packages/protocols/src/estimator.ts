@@ -23,6 +23,16 @@ export interface EstimatorTerms {
   perPieceRead?: number;
   perHoldout?: number;
   /**
+   * P1.11 — per-SOURCE credits (`research_burst`'s §12.2 `5·sources` term): the fetch + card write per
+   * planned source inside the burst's source budget.
+   */
+  perSource?: number;
+  /**
+   * P1.11 — per-FETCHED-TOKEN credits (the `0.002·fetched_tokens` term): content the metered egress
+   * path pages into context, bounded by the proxy's per-run fetch budget + `max_content_tokens`.
+   */
+  perFetchedToken?: number;
+  /**
    * PRB.23 — per-ACTIVE-PHASE fixed overhead (`inputs.phases`): the context-churn floor the
    * proxy meters but the parametric form never modeled — every Messages request re-reads the
    * fixed request envelope (tool schemas + skill corpus + roster ≈ 30K tokens; ~16K after the
@@ -263,6 +273,29 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     source: "modeled",
     version: "modeled-1",
   },
+  // ---- P1.11 — the Assistant seat's Rhema-owned workflows (§6.2 Research row; §7.1) ----
+  research_burst: {
+    workflow: "research_burst",
+    // §12.2 Research row, verbatim: `15 + 5·sources + 0.002·fetched_tokens` (Base/Standard). The burst
+    // is a research-loop shape — the same metered-vs-committed coverage the other research workflows
+    // carry (PRB.25); `foldInstrumentedRun` re-derives the residual post-Stage-B.
+    base: { intercept: 15, perSource: 5, perFetchedToken: 0.002, perPhase: CONTEXT_CHURN_PER_PHASE_CREDITS },
+    meteredCoverage: RESEARCH_WORKFLOW_METERED_COVERAGE,
+    provisional: true,
+    source: "modeled",
+    version: "modeled-1",
+  },
+  chat_turn: {
+    workflow: "chat_turn",
+    // §7.1: one bounded turn — a flat modeled intercept + the fetched-content term. The §7.1 per-turn
+    // budgets (≤40 cr / ≤5 searches / ≤10 fetches, enforced on metered rows) are the real ceiling; the
+    // estimate only sizes the run row's cap, which the plan card never exceeds.
+    base: { intercept: 12, perFetchedToken: 0.002 },
+    meteredCoverage: METERED_VS_COMMITTED_COVERAGE,
+    provisional: true,
+    source: "modeled",
+    version: "modeled-1",
+  },
 };
 
 /** The parametric inputs an estimate reads (§12.2). All optional — a term absent from a spec ignores its input. */
@@ -274,6 +307,10 @@ export interface EstimatorInputs {
   wordsRead?: number;
   piecesRead?: number;
   holdouts?: number;
+  /** P1.11 — the planned source count N (research_burst's `5·sources` term; the plan card's lever). */
+  sources?: number;
+  /** P1.11 — tokens the metered fetches page into context (the `0.002·fetched_tokens` term). */
+  fetchedTokens?: number;
   /** PRB.23 — the count of ACTIVE manifest phases under the resolved toggle set (computed by the
    *  sheet from the manifest's opt-out flags — the same phases the pod executes). Feeds the
    *  `perPhase` fixed-overhead term; absent ⇒ that term contributes 0. */
@@ -305,6 +342,8 @@ function evalTerms(t: EstimatorTerms, inp: EstimatorInputs): number {
     (t.perWordRead ?? 0) * (inp.wordsRead ?? 0) +
     (t.perPieceRead ?? 0) * (inp.piecesRead ?? 0) +
     (t.perHoldout ?? 0) * (inp.holdouts ?? 0) +
+    (t.perSource ?? 0) * (inp.sources ?? 0) +
+    (t.perFetchedToken ?? 0) * (inp.fetchedTokens ?? 0) +
     (t.perPhase ?? 0) * (inp.phases ?? 0)
   );
 }

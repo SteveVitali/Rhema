@@ -66,6 +66,15 @@ import type {
   RestoreApplyDto,
   ApprovalSettingsDto,
   ExplainersDto,
+  ChatPanelDto,
+  ChatThreadDto,
+  ChatTurnRequestDto,
+  ChatTurnCreatedDto,
+  ChatTurnStatusDto,
+  ChatPlanDecisionDto,
+  ChatPinsDto,
+  ChatSuggestionDto,
+  ChatAttachmentDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -513,6 +522,78 @@ export interface DataSource {
     runId: string,
     opts?: { after?: string; lastEventId?: string },
   ): Promise<Response>;
+  // ---- P1.11 — the Assistant chat surface (§7.1/§7.4/§7.6; every method session-forwards) ----
+  /** `GET /projects/:id/chat` — the Desk Chat read (threads + ensured default, turns, pins, sources,
+   *  the §7.6 empty-state model, the live-run flag). Optional seam: absent ⇒ the tab's placeholder. */
+  getChat?(session: SessionHeaders, projectId: string, opts?: { thread?: string }): Promise<ChatPanelDto>;
+  /** `POST …/threads/:tid/turns` — send a message; creates the turn's `chat_turn` run. */
+  postChatTurn?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+    req: ChatTurnRequestDto,
+  ): Promise<ChatTurnCreatedDto>;
+  /** `GET …/threads/:tid/turns/:runId` — the turn's status + metered cost strip. */
+  getChatTurn?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+    runId: string,
+  ): Promise<ChatTurnStatusDto>;
+  /** `POST …/threads/:tid/plan-decision` — run_research resolves to the research_burst sheet link. */
+  postChatPlanDecision?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+    req: { runId?: string; action: "run_research" | "first_step" | "edit" | "cancel" },
+  ): Promise<ChatPlanDecisionDto>;
+  /** `POST /projects/:id/chat/threads` — a named thread. */
+  createChatThread?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { name: string },
+  ): Promise<{ thread: ChatThreadDto }>;
+  /** `DELETE /projects/:id/chat/threads/:tid` — the default thread is undeletable (the api's rule). */
+  deleteChatThread?(session: SessionHeaders, projectId: string, threadId: string): Promise<{ ok: true }>;
+  /** `POST …/threads/:tid/pins` — pin a fact/ref/source (≤12; `dropOldest` rotates). */
+  addChatPin?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+    req: { summary: string; kind?: "fact" | "ref" | "source"; ref?: string; dropOldest?: boolean },
+  ): Promise<ChatPinsDto>;
+  /** `DELETE …/threads/:tid/pins/:pinId` — unpin. */
+  removeChatPin?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+    pinId: string,
+  ): Promise<ChatPinsDto>;
+  /** `POST …/threads/:tid/remembers/corrections` — a correction (a Guidance-class note). */
+  postChatCorrection?(
+    session: SessionHeaders,
+    projectId: string,
+    threadId: string,
+    req: { text: string },
+  ): Promise<{ ok: true; guidanceId: string }>;
+  /** `POST /projects/:id/chat/suggestions` — "Ask about this draft" (≤1 paragraph or a refusal). */
+  postChatSuggestion?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { anchor: { ref: string; version?: number; block?: string }; replacement: string },
+  ): Promise<ChatSuggestionDto>;
+  /** `POST /projects/:id/chat/notes` — "Paste my notes" → agents/author/notes.md. */
+  postChatNote?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { text: string },
+  ): Promise<{ ok: true; path: string }>;
+  /** `POST /projects/:id/chat/attachments` — quarantine → convert → an assistant source note. */
+  postChatAttachment?(
+    session: SessionHeaders,
+    projectId: string,
+    req: { quarantineKey: string; filename: string; mediaType: string; threadId?: string; waitMs?: number },
+  ): Promise<ChatAttachmentDto>;
 }
 
 /** A user-visible run event as the feed consumes it (the SSE `data:` payload). */
@@ -838,5 +919,26 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
           },
         },
       ),
+    // P1.11 — the Assistant chat surface (every call session-forwarded; the api owns the rules).
+    getChat: (session, projectId, opts) => client(session).getChat(projectId, opts),
+    createChatThread: (session, projectId, req) => client(session).createChatThread(projectId, req),
+    deleteChatThread: (session, projectId, threadId) =>
+      client(session).deleteChatThread(projectId, threadId),
+    postChatTurn: (session, projectId, threadId, req) =>
+      client(session).postChatTurn(projectId, threadId, req),
+    getChatTurn: (session, projectId, threadId, runId) =>
+      client(session).getChatTurn(projectId, threadId, runId),
+    postChatPlanDecision: (session, projectId, threadId, req) =>
+      client(session).postChatPlanDecision(projectId, threadId, req),
+    addChatPin: (session, projectId, threadId, req) =>
+      client(session).addChatPin(projectId, threadId, req),
+    removeChatPin: (session, projectId, threadId, pinId) =>
+      client(session).removeChatPin(projectId, threadId, pinId),
+    postChatCorrection: (session, projectId, threadId, req) =>
+      client(session).postChatCorrection(projectId, threadId, req),
+    postChatSuggestion: (session, projectId, req) => client(session).postChatSuggestion(projectId, req),
+    postChatNote: (session, projectId, req) => client(session).postChatNote(projectId, req),
+    postChatAttachment: (session, projectId, req) =>
+      client(session).postChatAttachment(projectId, req),
   };
 }

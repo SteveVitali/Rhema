@@ -1302,6 +1302,158 @@ export interface RunReportDto {
   readonly projectSlug?: string | null;
 }
 
+// ---- P1.11 — the Assistant chat DTOs (§7.1/§7.4/§7.6; they mirror the api's chat-routes wire
+// shapes — every number on them is metered, never model prose) ----
+
+export interface ChatThreadDto {
+  readonly id: string;
+  readonly name: string;
+  readonly isDefault: boolean;
+  readonly archived?: boolean;
+}
+
+export interface ChatTurnRowDto {
+  readonly id: string;
+  readonly state: string;
+  readonly created_at: string;
+  readonly spent_credits: number;
+  readonly cap_credits: number;
+  readonly model_tier: string;
+}
+
+export interface ChatMessageDto {
+  readonly mirror_path: string;
+  readonly created_at: string;
+  readonly word_count: number | null;
+}
+
+export interface ChatPinDto {
+  readonly id: string;
+  readonly kind: string;
+  readonly summary: string;
+  readonly ref?: string;
+  readonly pinnedAt?: string;
+}
+
+export interface ChatSourceDto {
+  readonly path: string;
+  readonly kind: string;
+  readonly title?: string;
+  readonly url?: string;
+  readonly unverified?: boolean;
+  readonly words?: number;
+}
+
+export interface ChatBudgetDto {
+  readonly credits: number;
+  readonly searches: number;
+  readonly fetches: number;
+}
+
+/** The §7.6 empty state (quiet Page + Desk on Chat + the four chips + one next-step card). */
+export interface ChatEmptyStateDto {
+  readonly page: "quiet";
+  readonly deskTab: "chat";
+  readonly chips: readonly { readonly id: string; readonly label: string; readonly verb: string }[];
+  readonly nextStep: { readonly kind: string; readonly label: string; readonly href?: string };
+}
+
+export interface ChatPlanCardDto {
+  readonly kind: "plan_card";
+  readonly threadId: string;
+  readonly summary: string;
+  readonly steps: readonly string[];
+  readonly budget: ChatBudgetDto;
+  readonly modelTier: string;
+  readonly actions: readonly string[];
+  readonly researchSheetHref?: string;
+}
+
+export interface ChatPanelDto {
+  readonly threads: readonly ChatThreadDto[];
+  readonly activeThreadId: string;
+  readonly turns: readonly ChatTurnRowDto[];
+  readonly messages: readonly ChatMessageDto[];
+  readonly pins: { readonly pins: readonly ChatPinDto[]; readonly footprint: number; readonly cap: number };
+  readonly sources: readonly ChatSourceDto[];
+  /** a non-chat live run id — while set the assistant reads committed artifacts only (REQ-CHAT-20). */
+  readonly liveRun: string | null;
+  readonly emptyState: ChatEmptyStateDto | null;
+  readonly budgets: ChatBudgetDto;
+  readonly defaultTier: string;
+}
+
+export interface ChatTurnRequestDto {
+  readonly message: string;
+  readonly budget?: Partial<ChatBudgetDto>;
+  readonly modelTier?: string;
+  readonly urlPolicy?: Record<string, unknown>;
+  readonly idempotencyKey?: string;
+}
+
+export interface ChatTurnCreatedDto {
+  readonly runId: string;
+  readonly state: string;
+  readonly deduped: boolean;
+  readonly planCard: ChatPlanCardDto;
+}
+
+/** The metered turn read — the strip's numbers come from usage rows + the run row. */
+export interface ChatTurnStatusDto {
+  readonly runId: string;
+  readonly state: string;
+  readonly strip: {
+    readonly spentCredits: number;
+    readonly capCredits: number;
+    readonly searchesUsed: number;
+    readonly searchesBudget: number;
+    readonly fetchesUsed: number;
+    readonly fetchesBudget: number;
+    readonly workspaceSpent?: number;
+    readonly tier: string;
+  };
+  readonly activity: { readonly searches: number; readonly fetches: number; readonly artifactReads: number; readonly sourcesRead: number };
+  readonly result: { readonly turnResultSha: string } | null;
+}
+
+export interface ChatPlanDecisionDto {
+  readonly ok: true;
+  readonly action: string;
+  readonly state?: string;
+  /** `run_research` resolves to the research_burst SHEET link — the sheet's Run is the run creator. */
+  readonly sheet?: { readonly kind: string; readonly workflow: string; readonly href: string };
+}
+
+export interface ChatPinsDto {
+  readonly ok: true;
+  readonly pins: readonly ChatPinDto[];
+  readonly footprint: number;
+  readonly droppedOldest?: boolean;
+}
+
+export interface ChatRemembersDto {
+  readonly brief: string | null;
+  readonly pins: { readonly pins: readonly ChatPinDto[] };
+  readonly footprint: number;
+}
+
+export type ChatAttachmentDto =
+  | { readonly ok: true; readonly note: { readonly path: string; readonly entry: ChatSourceDto } }
+  | { readonly pending: true; readonly quarantineKey: string };
+
+export interface ChatSuggestionDto {
+  readonly ok: true;
+  readonly proposal: {
+    readonly id: string;
+    readonly label: string;
+    readonly markdown: string;
+    readonly kind: "replace";
+    readonly anchor: { readonly ref: string; readonly version?: number; readonly block?: string };
+    /** always "assistant" — the §7.4 block-provenance tag. */
+    readonly provenance: string;
+  };
+}
+
 export interface ApiClientOptions {
   /** The api base URL (no trailing slash needed). */
   readonly baseUrl: string;
@@ -1652,6 +1804,74 @@ export interface ApiClient {
   stopRun(runId: string, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
   /** POST /runs/:id/walkthrough/retry — re-enqueue the one package-class walkthrough call. */
   retryWalkthrough(runId: string, init?: RequestInitLite): Promise<{ status: string }>;
+
+  // ---- P1.11 — the Assistant chat surface (§7.1/§7.4/§7.6) ----
+  /** GET /projects/:id/chat — the Desk Chat read (threads, turns, pins, sources, the empty state). */
+  getChat(projectId: string, opts?: { thread?: string }, init?: RequestInitLite): Promise<ChatPanelDto>;
+  /** POST /projects/:id/chat/threads — a named thread (the default "Project chat" exists already). */
+  createChatThread(projectId: string, req: { name: string }, init?: RequestInitLite): Promise<{ thread: ChatThreadDto }>;
+  /** DELETE /projects/:id/chat/threads/:tid — archives purge thread files; the default is undeletable. */
+  deleteChatThread(projectId: string, threadId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** POST …/threads/:tid/turns — send a message; creates the turn's `chat_turn` run (plan card = consent). */
+  postChatTurn(
+    projectId: string,
+    threadId: string,
+    req: ChatTurnRequestDto,
+    init?: RequestInitLite,
+  ): Promise<ChatTurnCreatedDto>;
+  /** GET …/threads/:tid/turns/:runId — the turn's status + the metered cost strip. */
+  getChatTurn(
+    projectId: string,
+    threadId: string,
+    runId: string,
+    init?: RequestInitLite,
+  ): Promise<ChatTurnStatusDto>;
+  /** POST …/threads/:tid/plan-decision — run_research returns the research_burst SHEET (never a run). */
+  postChatPlanDecision(
+    projectId: string,
+    threadId: string,
+    req: { runId?: string; action: "run_research" | "first_step" | "edit" | "cancel" },
+    init?: RequestInitLite,
+  ): Promise<ChatPlanDecisionDto>;
+  /** POST …/threads/:tid/pins — pin a fact/ref/source (≤12; `dropOldest` rotates the oldest out). */
+  addChatPin(
+    projectId: string,
+    threadId: string,
+    req: { summary: string; kind?: "fact" | "ref" | "source"; ref?: string; dropOldest?: boolean },
+    init?: RequestInitLite,
+  ): Promise<ChatPinsDto>;
+  /** DELETE …/threads/:tid/pins/:pinId — unpin. */
+  removeChatPin(
+    projectId: string,
+    threadId: string,
+    pinId: string,
+    init?: RequestInitLite,
+  ): Promise<ChatPinsDto>;
+  /** GET …/threads/:tid/remembers — "what the assistant remembers" (brief + pins, read-only). */
+  getChatRemembers(projectId: string, threadId: string, init?: RequestInitLite): Promise<ChatRemembersDto>;
+  /** POST …/threads/:tid/remembers/corrections — a correction lands as a Guidance-class note. */
+  postChatCorrection(
+    projectId: string,
+    threadId: string,
+    req: { text: string },
+    init?: RequestInitLite,
+  ): Promise<{ ok: true; guidanceId: string }>;
+  /** POST /projects/:id/chat/attachments — quarantine key → convert → an assistant source note. */
+  postChatAttachment(
+    projectId: string,
+    req: { quarantineKey: string; filename: string; mediaType: string; threadId?: string; waitMs?: number },
+    init?: RequestInitLite,
+  ): Promise<ChatAttachmentDto>;
+  /** GET /projects/:id/chat/sources — the "Chat sources" list (read-only). */
+  getChatSources(projectId: string, init?: RequestInitLite): Promise<{ sources: ChatSourceDto[] }>;
+  /** POST /projects/:id/chat/suggestions — "Ask about this draft" (≤1 paragraph or a 422 refusal). */
+  postChatSuggestion(
+    projectId: string,
+    req: { anchor: { ref: string; version?: number; block?: string }; replacement: string },
+    init?: RequestInitLite,
+  ): Promise<ChatSuggestionDto>;
+  /** POST /projects/:id/chat/notes — "Paste my notes" → agents/author/notes.md (the scratch path). */
+  postChatNote(projectId: string, req: { text: string }, init?: RequestInitLite): Promise<{ ok: true; path: string }>;
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
@@ -2441,6 +2661,125 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: "{}",
+      });
+    },
+
+    // ---- P1.11 — the Assistant chat surface ----
+    async getChat(projectId, opts, init): Promise<ChatPanelDto> {
+      const qs = opts?.thread ? `?thread=${encodeURIComponent(opts.thread)}` : "";
+      return json<ChatPanelDto>(`/projects/${encodeURIComponent(projectId)}/chat${qs}`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async createChatThread(projectId, req, init): Promise<{ thread: ChatThreadDto }> {
+      return json<{ thread: ChatThreadDto }>(`/projects/${encodeURIComponent(projectId)}/chat/threads`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async deleteChatThread(projectId, threadId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}`,
+        {
+          method: "DELETE",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
+    },
+    async postChatTurn(projectId, threadId, req, init): Promise<ChatTurnCreatedDto> {
+      return json<ChatTurnCreatedDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/turns`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async getChatTurn(projectId, threadId, runId, init): Promise<ChatTurnStatusDto> {
+      return json<ChatTurnStatusDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/turns/${encodeURIComponent(runId)}`,
+        {
+          method: "GET",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
+    },
+    async postChatPlanDecision(projectId, threadId, req, init): Promise<ChatPlanDecisionDto> {
+      return json<ChatPlanDecisionDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/plan-decision`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async addChatPin(projectId, threadId, req, init): Promise<ChatPinsDto> {
+      return json<ChatPinsDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/pins`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async removeChatPin(projectId, threadId, pinId, init): Promise<ChatPinsDto> {
+      return json<ChatPinsDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/pins/${encodeURIComponent(pinId)}`,
+        {
+          method: "DELETE",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
+    },
+    async getChatRemembers(projectId, threadId, init): Promise<ChatRemembersDto> {
+      return json<ChatRemembersDto>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/remembers`,
+        {
+          method: "GET",
+          headers: init?.headers as Record<string, string> | undefined,
+        },
+      );
+    },
+    async postChatCorrection(projectId, threadId, req, init): Promise<{ ok: true; guidanceId: string }> {
+      return json<{ ok: true; guidanceId: string }>(
+        `/projects/${encodeURIComponent(projectId)}/chat/threads/${encodeURIComponent(threadId)}/remembers/corrections`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async postChatAttachment(projectId, req, init): Promise<ChatAttachmentDto> {
+      return json<ChatAttachmentDto>(`/projects/${encodeURIComponent(projectId)}/chat/attachments`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async getChatSources(projectId, init): Promise<{ sources: ChatSourceDto[] }> {
+      return json<{ sources: ChatSourceDto[] }>(`/projects/${encodeURIComponent(projectId)}/chat/sources`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async postChatSuggestion(projectId, req, init): Promise<ChatSuggestionDto> {
+      return json<ChatSuggestionDto>(`/projects/${encodeURIComponent(projectId)}/chat/suggestions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async postChatNote(projectId, req, init): Promise<{ ok: true; path: string }> {
+      return json<{ ok: true; path: string }>(`/projects/${encodeURIComponent(projectId)}/chat/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
       });
     },
   };

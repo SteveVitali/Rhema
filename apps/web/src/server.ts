@@ -204,7 +204,7 @@ export function createWebApp(deps: WebDeps): Hono {
       status?: { version?: string; words?: number; readMin?: number; venueCap?: string; credits?: number; sync?: "synced" | "syncing" | "offline" };
     } = {},
   ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide">> => {
-    const [principal, theme, files] = await Promise.all([
+    const [principal, theme, files, chat] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getSessionPrincipal?.(session))
         .catch(() => null),
@@ -214,6 +214,10 @@ export function createWebApp(deps: WebDeps): Hono {
       // P1.08 — the §5.13 Files pane (best-effort: a missing read hides the pane's rows, not the page).
       Promise.resolve()
         .then(() => deps.dataSource.getFiles?.(session, row.id))
+        .catch(() => undefined),
+      // P1.11 — the Desk Chat read (best-effort: a missing seam degrades to the tab's placeholder).
+      Promise.resolve()
+        .then(() => deps.dataSource.getChat?.(session, row.id))
         .catch(() => undefined),
     ]);
     // P1.06 (§5.12; REQ-CHAT-28) — the ⌘K palette's embedded PaletteData: the state function's next
@@ -286,6 +290,7 @@ export function createWebApp(deps: WebDeps): Hono {
         themeUrl: "/ide/theme",
         paperThemeUrl: `/p/${row.slug}/paper-theme`,
         ...(files ? { files } : {}),
+        ...(chat ? { chat } : {}),
       },
     };
   };
@@ -347,6 +352,228 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.json({ error: "project not found" }, 404);
     const out = await deps.dataSource.setPaperTheme(session, row.id, paperTheme).catch(() => null);
     return c.json({ ok: true, paperTheme, ...(out ? {} : { deferred: true }) });
+  });
+
+  // ---- P1.11 — the Desk Chat write forwards (§7.1) -------------------------------------------
+  // Same-origin posts the ChatDesk forms (and the island) hit; each resolves the slug, forwards the
+  // session to the api's chat route, and answers JSON for the island or a redirect for a no-script
+  // form submit. The api owns every rule — the web layer never interprets budgets or anchors.
+  const chatBody = async (c: Context): Promise<Record<string, unknown>> => {
+    if ((c.req.header("content-type") ?? "").includes("application/json")) {
+      return ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
+    }
+    const form = await c.req.parseBody();
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(form)) if (typeof v === "string") out[k] = v;
+    return out;
+  };
+  const wantsJson = (c: Context) =>
+    (c.req.header("content-type") ?? "").includes("application/json") ||
+    (c.req.header("accept") ?? "").includes("application/json");
+  const chatProject = async (c: Context, session: SessionHeaders) => {
+    const row = (await deps.dataSource.listProjects(session)).find(
+      (r) => r.slug === c.req.param("project"),
+    );
+    return row ?? null;
+  };
+  /** A form POST redirects back to the project page (the Desk reopens on Chat); a JSON call gets the DTO. */
+  const chatReply = (c: Context, slug: string, payload: unknown, status = 200) =>
+    wantsJson(c) ? c.json(payload, status as never) : c.redirect(`/p/${slug}#chat`);
+
+  app.post("/p/:project/chat/turns", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const threadId = typeof body.threadId === "string" ? body.threadId : "";
+    const message = typeof body.message === "string" ? body.message : "";
+    if (!threadId || !message.trim()) return c.json({ error: "threadId + message required" }, 422);
+    const out = await deps.dataSource
+      .postChatTurn?.(session, row.id, threadId, {
+        message,
+        ...(typeof body.modelTier === "string" ? { modelTier: body.modelTier } : {}),
+        ...(typeof body.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
+      })
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  app.post("/p/:project/chat/plan-decision", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const threadId = typeof body.threadId === "string" ? body.threadId : "";
+    const action = body.action;
+    if (!threadId || (action !== "run_research" && action !== "first_step" && action !== "edit" && action !== "cancel"))
+      return c.json({ error: "threadId + action required" }, 422);
+    const out = await deps.dataSource
+      .postChatPlanDecision?.(session, row.id, threadId, {
+        action,
+        ...(typeof body.runId === "string" ? { runId: body.runId } : {}),
+      })
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    // run_research resolves to the SHEET href — the sheet's Run click is the only run creator.
+    if (action === "run_research" && out.sheet?.href && !wantsJson(c)) return c.redirect(out.sheet.href);
+    return chatReply(c, row.slug, out);
+  });
+
+  app.post("/p/:project/chat/threads", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    if (!name) return c.json({ error: "name required" }, 422);
+    const out = await deps.dataSource.createChatThread?.(session, row.id, { name }).catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  app.post("/p/:project/chat/pins", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const threadId = typeof body.threadId === "string" ? body.threadId : "";
+    const summary = typeof body.summary === "string" ? body.summary.trim() : "";
+    if (!threadId || !summary) return c.json({ error: "threadId + summary required" }, 422);
+    const out = await deps.dataSource
+      .addChatPin?.(session, row.id, threadId, {
+        summary,
+        ...(typeof body.kind === "string" ? { kind: body.kind as "fact" | "ref" | "source" } : {}),
+        ...(typeof body.ref === "string" && body.ref ? { ref: body.ref } : {}),
+        ...(body.dropOldest === "true" || body.dropOldest === true ? { dropOldest: true } : {}),
+      })
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  app.post("/p/:project/chat/pins/:pinId/remove", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const threadId = typeof body.threadId === "string" ? body.threadId : "";
+    if (!threadId) return c.json({ error: "threadId required" }, 422);
+    const out = await deps.dataSource
+      .removeChatPin?.(session, row.id, threadId, c.req.param("pinId"))
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out);
+  });
+
+  app.post("/p/:project/chat/corrections", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const threadId = typeof body.threadId === "string" ? body.threadId : "";
+    const text = typeof body.text === "string" ? body.text.trim() : "";
+    if (!threadId || !text) return c.json({ error: "threadId + text required" }, 422);
+    const out = await deps.dataSource
+      .postChatCorrection?.(session, row.id, threadId, { text })
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  // §7.4 — "Ask about this draft": the anchored suggestion. A refusal (over one paragraph) re-renders
+  // with the api's message (it names /lineedit @section / /revise as commands — never run inline).
+  app.post("/p/:project/chat/suggestions", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const ref = typeof body.ref === "string" ? body.ref : "";
+    const replacement = typeof body.replacement === "string" ? body.replacement : "";
+    if (!ref || !replacement.trim()) return c.json({ error: "ref + replacement required" }, 422);
+    const out = await deps.dataSource
+      .postChatSuggestion?.(session, row.id, {
+        anchor: {
+          ref,
+          ...(typeof body.version === "string" && /^\d+$/.test(body.version)
+            ? { version: Number(body.version) }
+            : typeof body.version === "number"
+              ? { version: body.version }
+              : {}),
+          ...(typeof body.block === "string" && body.block ? { block: body.block } : {}),
+        },
+        replacement,
+      })
+      .catch((e: unknown) => e);
+    if (out == null) return c.json({ error: "chat unavailable" }, 502);
+    if (out instanceof Error) {
+      const code = (out as { code?: string }).code;
+      const msg = code === "suggestion_too_large" ? code : "suggestion_failed";
+      return wantsJson(c)
+        ? c.json({ error: msg }, 422)
+        : c.redirect(`/p/${row.slug}#chat`);
+    }
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  // §7.6 — the "Paste my notes" scratch write (lands at agents/author/notes.md — the author intake).
+  app.post("/p/:project/chat/notes", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const text = typeof body.text === "string" ? body.text : "";
+    if (!text.trim()) return c.json({ error: "text required" }, 422);
+    const out = await deps.dataSource.postChatNote?.(session, row.id, { text }).catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  // §7.1 — attachments: the island presigns + PUTs to quarantine first, then posts the key here
+  // (the api converts + lands the source note). A no-script submit with a pasted quarantineKey works too.
+  app.post("/p/:project/chat/attachments", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const body = await chatBody(c);
+    const quarantineKey = typeof body.quarantineKey === "string" ? body.quarantineKey : "";
+    const filename = typeof body.filename === "string" ? body.filename : "";
+    const mediaType = typeof body.mediaType === "string" ? body.mediaType : "";
+    if (!quarantineKey || !filename || !mediaType)
+      return c.json({ error: "quarantineKey + filename + mediaType required" }, 422);
+    const out = await deps.dataSource
+      .postChatAttachment?.(session, row.id, {
+        quarantineKey,
+        filename,
+        mediaType,
+        ...(typeof body.threadId === "string" && body.threadId ? { threadId: body.threadId } : {}),
+      })
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return chatReply(c, row.slug, out, 201);
+  });
+
+  // The island's turn-status poll — JSON only (the metered strip; never model prose).
+  app.get("/p/:project/chat/turns/:runId", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    const row = await chatProject(c, session);
+    if (!row) return c.json({ error: "project not found" }, 404);
+    const threadId = c.req.query("thread") ?? "";
+    const out = await deps.dataSource
+      .getChatTurn?.(session, row.id, threadId, c.req.param("runId"))
+      .catch(() => null);
+    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    return c.json(out);
   });
 
 

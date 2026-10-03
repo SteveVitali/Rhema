@@ -4,7 +4,8 @@
 // / user-excluded domains and the novel-domain cap (§12.8d). The exact per-tier model list is refined as the
 // routing table is instrumented (§16.3); this is the MVP authoring.
 
-import type { ModelTier } from "@rhema/contracts";
+import type { ModelTier, WorkflowKey } from "@rhema/contracts";
+import { ASSISTANT_TURN_BUDGET } from "@rhema/contracts";
 import type { RunAllowlistData, WebToolPolicyData } from "./resolver.js";
 
 /** The Anthropic model ids each tier's phases may request (main + subagent models — §12.3). */
@@ -83,5 +84,86 @@ export function authorWebToolPolicy(args: { readonly claims?: number }): WebTool
     fetchBudget: clampInt(RESEARCH_FETCH_BASE + RESEARCH_FETCH_PER_CLAIM * claims, RESEARCH_FETCH_MIN, RESEARCH_FETCH_MAX),
     searchBudget: clampInt(RESEARCH_SEARCH_BASE + RESEARCH_SEARCH_PER_CLAIM * claims, RESEARCH_SEARCH_BASE, RESEARCH_SEARCH_MAX),
     fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
+  };
+}
+
+// ---------------------------------------------------------- the Assistant bound (P1.11; §7.1/§12.2) ----
+
+/** A research burst's source ceiling — the plan card's N, hard-clamped (§12.2: ≤N sources). */
+export const RESEARCH_BURST_MAX_SOURCES = 20 as const;
+
+/**
+ * The Assistant seat's per-run web bound (§7.1; REQ-CHAT-10). A `chat_turn` run enforces the §7.1
+ * per-turn budgets AT THE PROXY (≤5 searches / ≤10 fetches, consented-shrunk via the frozen `budget`
+ * input — an edited plan can only lower them); a `research_burst` bounds fetches to the plan card's
+ * source count N (clamped to the burst ceiling) with the same count of searches for source
+ * discovery. Returns null for non-assistant workflows so the caller falls back to the claim-scaled
+ * bound. The proxy's `capCredits` still bounds spend; these budgets bound INVOCATIONS.
+ */
+export function authorAssistantWebToolPolicy(args: {
+  readonly workflow: WorkflowKey;
+  /** the run's frozen inputs — the consented per-turn `budget` (chat_turn) or planned `sources` (burst). */
+  readonly inputs?: Record<string, unknown>;
+}): WebToolPolicyData | null {
+  if (args.workflow === "chat_turn") {
+    const b = (args.inputs?.budget ?? {}) as { searches?: unknown; fetches?: unknown };
+    return {
+      search: true,
+      fetch: true,
+      // an edited plan shrinks the bound; the §7.1 numbers are the hard ceiling either way.
+      searchBudget: clampInt(
+        typeof b.searches === "number" ? b.searches : ASSISTANT_TURN_BUDGET.searches,
+        0,
+        ASSISTANT_TURN_BUDGET.searches,
+      ),
+      fetchBudget: clampInt(
+        typeof b.fetches === "number" ? b.fetches : ASSISTANT_TURN_BUDGET.fetches,
+        0,
+        ASSISTANT_TURN_BUDGET.fetches,
+      ),
+      fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
+    };
+  }
+  if (args.workflow === "research_burst") {
+    const sources = clampInt(
+      typeof args.inputs?.sources === "number" ? args.inputs.sources : 5,
+      1,
+      RESEARCH_BURST_MAX_SOURCES,
+    );
+    return {
+      search: true,
+      fetch: true,
+      // the burst's plan decomposes into ≤N fetches; searches bound at the same N for discovery.
+      fetchBudget: sources,
+      searchBudget: sources,
+      fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
+    };
+  }
+  return null;
+}
+
+/**
+ * The run's URL policy (the seat's `allowlist`/`denylist`/`allowlist_plus` choice), read from the
+ * run's FROZEN inputs (`inputs.urlPolicy` — server-validated at creation, never client-trusted at
+ * provision). Returns the allowlist-authoring fields; absent/invalid input yields the empty
+ * denylist-shaped default (`blockedDomains: []`).
+ */
+export function urlPolicyFromInputs(inputs: Record<string, unknown> | null | undefined): Pick<
+  AuthorAllowlistArgs,
+  "blockedDomains" | "allowedDomains" | "knownDomains" | "novelDomainCap"
+> {
+  const p = (inputs?.urlPolicy ?? null) as {
+    blockedDomains?: unknown;
+    allowedDomains?: unknown;
+    knownDomains?: unknown;
+    novelDomainCap?: unknown;
+  } | null;
+  const strList = (v: unknown): string[] | undefined =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : undefined;
+  return {
+    blockedDomains: strList(p?.blockedDomains) ?? [],
+    ...(p?.allowedDomains != null ? { allowedDomains: strList(p.allowedDomains) ?? [] } : {}),
+    ...(p?.knownDomains != null ? { knownDomains: strList(p.knownDomains) ?? [] } : {}),
+    ...(typeof p?.novelDomainCap === "number" ? { novelDomainCap: Math.max(0, Math.round(p.novelDomainCap)) } : {}),
   };
 }

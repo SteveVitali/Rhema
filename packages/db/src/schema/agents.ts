@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 // Agent types & instances — mirrors migrations/0002_schema.sql. Seeded from code (seed/code-seed.ts).
 
@@ -12,6 +12,13 @@ export const agentTypes = pgTable("agent_types", {
   skills: text("skills").array().notNull(),
   defaultModelProfile: text("default_model_profile").notNull(),
   subagents: jsonb("subagents").notNull(),
+  // P1.11 (0033; §7.1): the assistant-shaped fields — the read-deny globs, the thread default
+  // tier, and the hard per-turn budgets (40 cr / 5 searches / 10 fetches on the assistant row).
+  denies: text("denies").array().notNull().default([]),
+  defaultThreadTier: text("default_thread_tier"),
+  perTurnCredits: integer("per_turn_credits"),
+  perTurnSearches: integer("per_turn_searches"),
+  perTurnFetches: integer("per_turn_fetches"),
 });
 
 export const agentInstances = pgTable("agent_instances", {

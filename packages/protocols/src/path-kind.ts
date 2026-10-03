@@ -15,6 +15,18 @@ interface PathRule {
 
 /** Ordered path→kind rules (F11). The JSON structured-output twins all classify as `sidecar`. */
 export const PATH_KIND_RULES: readonly PathRule[] = [
+  // P1.11 (§7.1) — the Assistant's namespace, BEFORE the generic .json rule: a thread's whole bundle
+  // (session transcript, brief.md, pins.json) is `chat_session` state; research source notes and
+  // attachments are `source_note`; everything else under research/ (the per-burst note + ledger +
+  // index.json) is `research_note`. Harvest FAILS a step on an unclassified write, so the seat's
+  // writable tree must classify exhaustively.
+  { re: /(^|\/)agents\/assistant\/threads\//, kind: "chat_session" },
+  { re: /(^|\/)agents\/assistant\/research\/sources\//, kind: "source_note" },
+  { re: /(^|\/)agents\/assistant\/research\/attachments\//, kind: "source_note" },
+  { re: /(^|\/)agents\/assistant\/research\//, kind: "research_note" },
+  // "Paste my notes" (§7.6) — the author seat's intake file.
+  { re: /(^|\/)agents\/author\/notes\.md$/, kind: "source_note" },
+
   // structured-output sidecars (.rhema/*.json and any dossier .json)
   { re: /\.json$/, kind: "sidecar" },
 

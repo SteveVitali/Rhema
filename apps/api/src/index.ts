@@ -34,6 +34,7 @@ import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { createThemeRoutes } from "./theme-routes.js";
 import { createTimelineRoutes } from "./timeline-routes.js";
 import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js";
+import { createChatRoutes, type ChatApiDeps } from "./chat-routes.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
@@ -123,6 +124,8 @@ export type { DossierApiDeps } from "./dossier-routes.js";
 export { createTimelineRoutes } from "./timeline-routes.js";
 export type { TimelineApiDeps } from "./timeline-routes.js";
 export { createApprovalRoutes } from "./approval-routes.js";
+export { createChatRoutes } from "./chat-routes.js";
+export type { ChatApiDeps } from "./chat-routes.js";
 export type { ApprovalApiDeps } from "./approval-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
 export { createThemeRoutes } from "./theme-routes.js";
@@ -343,6 +346,19 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       // P1.09 — the approval-policy settings surface (§6.4 item 3), standing-guidance management
       // (§6.5), the per-run gate override, and the dismissed-explainer prefs (§5.11).
       app.route("/", createApprovalRoutes({ ...(deps as ApprovalApiDeps), db }));
+      // P1.11 — the Assistant chat surface (§7.1): threads CRUD, turns → `chat_turn` runs (the plan
+      // card is the consent), pins + remembers/corrections, attachments → source notes, the §7.4
+      // suggestion shaping, and the §7.6 empty state. Session-authed like the gate routes.
+      app.route(
+        "/",
+        createChatRoutes({
+          ...(deps as unknown as ChatApiDeps),
+          db,
+          ids: deps.ids ?? (() => `id_${randomUUID()}`),
+          ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+          ...(deps.importConverter ? { converter: deps.importConverter } : {}),
+        }),
+      );
       // P1.07 — the findings surface (§5.7): Apply (REQ-SPEC-6), promote, "Add to obligations" (REQ-OBJ-9),
       // the deep-link resolve, and the one-preview bulk actions — all through the same shared write path.
       app.route("/", createFindingRoutes({ ...(deps as FindingApiDeps), db }));
