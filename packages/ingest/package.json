@@ -1,0 +1,28 @@
+{
+  "name": "@rhema/ingest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Connection→DiscoveredItem→Sample provider framework (§9.5, P1.15): the five MVP providers, the sync/diff engine, caps, canonical-Markdown assembly. Pure TS — the network sits behind an injected fetch port bound to the operator-owned fetcher.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/markdown": "workspace:*",
+    "fast-xml-parser": "^5.11.1",
+    "jszip": "^3.10.2"
+  }
+}

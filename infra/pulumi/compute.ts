@@ -110,7 +110,9 @@ export interface Compute {
 // internal + LB-fronted. `export` is created FIRST so the api's EXPORT_SERVICE_URL (PRB.11) can
 // reference its uri — the api never carries pandoc; it POSTs the markdown to the isolated export
 // container.
-const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "web", "api", "worker", "collab", "fetcher"];
+// Creation order matters: a service another references by `services[x].uri` must come FIRST
+// (export → api; P1.15 adds fetcher → api + worker for the ingestion egress hop).
+const CLOUD_RUN_SERVICES: ServiceName[] = ["export", "fetcher", "web", "api", "worker", "collab"];
 
 export function createCompute(args: ComputeArgs): Compute {
   const { stack, cfg, project, region, network, iam, secrets, placeholderImage } = args;
@@ -414,7 +416,24 @@ export function createCompute(args: ComputeArgs): Compute {
                     startupCpuBoost: true,
                     limits: { cpu: "1", memory: "1Gi" },
                   },
-                  envs: workerEnvs,
+                  envs: [
+                    ...workerEnvs,
+                    // P1.15 — the ingestion wiring (evaluated here, not in `workerEnvs`, because the
+                    // fetcher service + convert Job resources exist only once this loop reaches the
+                    // worker). Each unset seam fails closed with a named reason (main.ts).
+                    { name: "FETCHER_SERVICE_URL", value: services["fetcher"]!.uri },
+                    { name: "USER_CONTENT_BUCKET", value: args.buckets["user-content"].name },
+                    {
+                      name: "CONVERT_JOB",
+                      value: pulumi.interpolate`projects/${project}/locations/${region}/jobs/${convertJob.name}`,
+                    },
+                    { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
+                    // The reconstruction key secret NAME — same anthropic-api-key version the
+                    // walkthrough generator may point at (INGEST_MODEL_KEY_SECRET overrides).
+                    ...(requires("anthropic-api-key")
+                      ? [{ name: "INGEST_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }]
+                      : []),
+                  ],
                 }
               : {}),
             // PRB.11 — the api reaches the isolated export container at EXPORT_SERVICE_URL (the export
@@ -426,6 +445,9 @@ export function createCompute(args: ComputeArgs): Compute {
               ? {
                   envs: [
                     { name: "EXPORT_SERVICE_URL", value: services["export"]!.uri },
+                    // P1.15 — the fetcher service is ingestion's only remote-egress hop (the api's
+                    // discover/review fetches ride it; invoker-gated → OIDC per hop).
+                    { name: "FETCHER_SERVICE_URL", value: services["fetcher"]!.uri },
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
                     { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
                     { name: "MAX_USD_PER_RUN", value: String(cfg.maxUsdPerRun) },
@@ -579,6 +601,32 @@ export function createCompute(args: ComputeArgs): Compute {
     role: "roles/run.invoker",
     member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["api"].email}`,
   });
+
+  // P1.15 — api/worker → fetcher service-to-service invoker (same LIVE FINDING 11 pattern): the
+  // fetcher is invoker-gated (internal-only egress guard); each caller mints an OIDC ID token per
+  // hop via `createFetcherServicePort`. Without BOTH halves ingestion's remote fetch 403s.
+  for (const caller of ["api", "worker"] as const) {
+    new gcp.cloudrunv2.ServiceIamMember(name(`${caller}-invokes-fetcher`), {
+      location: region,
+      name: services["fetcher"]!.name,
+      role: "roles/run.invoker",
+      member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts[caller].email}`,
+    });
+  }
+
+  // P1.15 — the worker drives the convert Job for `ingest.sync` re-conversion (the same
+  // jobsExecutorWithOverrides + run.viewer pair the api holds; Job-scoped, never project-scoped).
+  for (const [suffix, role] of [
+    ["runs-convert", "roles/run.jobsExecutorWithOverrides"],
+    ["reads-convert-ops", "roles/run.viewer"],
+  ] as const) {
+    new gcp.cloudrunv2.JobIamMember(name(`worker-${suffix}`), {
+      location: region,
+      name: convertJob.name,
+      role,
+      member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["worker"].email}`,
+    });
+  }
 
   // --- External HTTPS LB + Cloud CDN fronting `web`, the api, and (prod) the cookieless user-content
   // origin. prod gets the real domains + a reserved global IP the operator's DNS records point at.

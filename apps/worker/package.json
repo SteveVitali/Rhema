@@ -22,6 +22,7 @@
   "dependencies": {
     "@rhema/contracts": "workspace:*",
     "@rhema/db": "workspace:*",
+    "@rhema/ingest": "workspace:*",
     "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
     "@rhema/mirror": "workspace:*",

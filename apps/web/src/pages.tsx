@@ -105,6 +105,10 @@ import type {
   VoiceListRowDto,
   VoiceDetailDto,
   ChatPanelDto,
+  VoiceConnectionDto,
+  VoiceConnectionsDto,
+  VoiceSampleDto,
+  VoiceSampleDetailDto,
 } from "@rhema/api-client";
 import { CHECKABLE_CLAIM_KINDS, GATE_DEFAULTS, type ClaimKind, type FindingView, type GateKind } from "@rhema/contracts";
 import { COPY } from "./copy.js";
@@ -3178,6 +3182,218 @@ function VoiceCalibrationTable({ calibration }: { calibration: NonNullable<Voice
   );
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// P1.15 — the Samples tab's ingestion surface (§9.5): the Sources pane (link/discover/confirm/
+// re-sync/settings/remove), the items list's state + quality badges, the sample drawer (preview +
+// version history + the priced reconstruction CTAs), and the voice delete.
+// ---------------------------------------------------------------------------------------------------------
+
+/** One linked source card: provider + handle, counts, the verbatim error line, and the source's
+ *  actions. Items awaiting the confirm step (state 'new') render as a checkbox review form —
+ *  unchecked items stay omitted and are NEVER fetched (REQ-INGEST-4/5). */
+function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConnectionDto; samples: readonly VoiceSampleDto[] }): ReactNode {
+  const pending = samples.filter((s) => s.connection_id === conn.id && s.state === "new" && s.external_id);
+  return (
+    <li data-source={conn.id} data-provider={conn.provider} style={{ border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "8px 12px", fontSize: "13px" }}>
+      <div style={{ display: "flex", gap: "10px", alignItems: "baseline", flexWrap: "wrap" }}>
+        <strong>{conn.provider === "substack" ? "Substack" : conn.provider === "substack_export" ? "Substack export" : conn.provider === "url" ? "URL" : conn.provider}</strong>
+        <span style={{ color: "var(--shell-fg-muted)", fontSize: "12px" }}>{conn.handle ?? ""}</span>
+        <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
+          {fmt(VC.detail.sourceItemsFmt, { included: String(conn.included), items: String(conn.items) })}
+          {" · "}
+          {conn.last_sync_at
+            ? fmt(VC.detail.lastSyncFmt, { at: new Date(conn.last_sync_at).toLocaleString("en-US", { timeZone: "UTC" }) })
+            : VC.detail.neverSynced}
+        </span>
+      </div>
+      {conn.error ? (
+        <p data-source-error="true" style={{ color: "var(--sev-major)", fontSize: "12px", margin: "6px 0 0" }}>{conn.error}</p>
+      ) : null}
+      <div style={{ display: "flex", gap: "8px", marginTop: "6px", flexWrap: "wrap" }}>
+        {conn.provider !== "upload" && conn.provider !== "paste" ? (
+          <form method="post" action={`/v/${pid}/connections/${conn.id}/discover`} style={{ margin: 0 }}>
+            <button type="submit" data-discover="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--shell-fg)", padding: "3px 10px", cursor: "pointer" }}>
+              {VC.detail.discoverCta}
+            </button>
+          </form>
+        ) : null}
+        <form method="post" action={`/v/${pid}/connections/${conn.id}/sync`} style={{ margin: 0 }}>
+          <button type="submit" data-resync="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--shell-fg)", padding: "3px 10px", cursor: "pointer" }}>
+            {VC.detail.resyncCta}
+          </button>
+        </form>
+        <form method="post" action={`/v/${pid}/connections/${conn.id}/remove`} style={{ margin: 0 }}>
+          <button type="submit" data-remove-source="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--sev-major)", padding: "3px 10px", cursor: "pointer" }}>
+            {VC.detail.removeSourceCta}
+          </button>
+        </form>
+      </div>
+      {/* the per-source settings (§9.5 Settings): auto-include + daily auto-sync. */}
+      <form method="post" action={`/v/${pid}/connections/${conn.id}/settings`} style={{ margin: "6px 0 0", display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+        <label style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+          <input type="checkbox" name="autoIncludeNew" defaultChecked={conn.auto_include_new !== false} />
+          {VC.detail.autoIncludeLabel}
+        </label>
+        <label style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+          <input type="checkbox" name="dailySync" defaultChecked={conn.schedule === "daily"} />
+          {VC.detail.dailySyncLabel}
+        </label>
+        <button type="submit" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer" }}>{VC.detail.saveSettingsCta}</button>
+      </form>
+      {/* the review step: 'new' items wait for the confirm click — a checked box includes, an
+          unchecked one omits, and nothing fetches before this posts (REQ-INGEST-4). */}
+      {pending.length > 0 ? (
+        <form method="post" action={`/v/${pid}/connections/${conn.id}/confirm`} data-confirm="true" style={{ marginTop: "8px", borderTop: "1px solid var(--shell-border)", paddingTop: "8px" }}>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "4px" }}>
+            {pending.map((s) => (
+              <li key={s.id} data-review-item={s.external_id ?? s.id} style={{ display: "flex", gap: "8px", alignItems: "baseline", fontSize: "12px" }}>
+                <input type="hidden" name="known" value={s.external_id ?? ""} />
+                <input type="checkbox" name="include" value={s.external_id ?? ""} defaultChecked={s.access === "free"} />
+                <span style={{ flex: 1 }}>{s.title ?? s.external_id ?? s.id}</span>
+                {s.access === "paywalled" ? (
+                  <span style={{ color: "var(--sev-major)" }}>{VC.detail.paywallBadge}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <p style={{ fontSize: "11px", color: "var(--shell-fg-faint)", margin: "6px 0 4px" }}>{VC.detail.confirmNote}</p>
+          <button type="submit" data-confirm-cta="true" style={{ fontSize: "12px", padding: "5px 12px", borderRadius: "6px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontWeight: 600, cursor: "pointer" }}>
+            {VC.detail.confirmCta}
+          </button>
+        </form>
+      ) : null}
+    </li>
+  );
+}
+
+/** The Sources pane — linked providers + the three link flows + "Re-sync all". */
+function VoiceSourcesPane({ pid, connections, samples }: { pid: string; connections?: VoiceConnectionsDto; samples: readonly VoiceSampleDto[] }): ReactNode {
+  const conns = connections?.connections ?? [];
+  return (
+    <section data-sources="true" style={{ marginBottom: "16px" }}>
+      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 6px" }}>{VC.detail.sourcesHeading}</h2>
+      {conns.length === 0 ? (
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.sourcesEmpty}</p>
+      ) : (
+        <>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "8px" }}>
+            {conns.map((cn) => (
+              <VoiceSourceCard key={cn.id} pid={pid} conn={cn} samples={samples} />
+            ))}
+          </ul>
+          <form method="post" action={`/v/${pid}/sync`} style={{ margin: "8px 0 0" }}>
+            <button type="submit" data-resync-all="true" style={{ fontSize: "12px", background: "none", border: "1px solid var(--shell-border)", borderRadius: "6px", color: "var(--shell-fg)", padding: "4px 12px", cursor: "pointer" }}>
+              {VC.detail.resyncAllCta}
+            </button>
+          </form>
+        </>
+      )}
+      {/* the three link flows — no credential field exists anywhere (never-cookies, AC-I-B). */}
+      <div style={{ display: "grid", gap: "8px", marginTop: "10px", fontSize: "12px" }}>
+        <form method="post" action={`/v/${pid}/connections`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <input type="hidden" name="provider" value="substack" />
+          <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
+            {VC.detail.linkSubstackLabel}
+            <input name="handle" placeholder={VC.detail.linkSubstackPlaceholder} style={{ ...fieldStyle, marginTop: "2px" }} />
+          </label>
+          <button type="submit" data-link-substack="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkSubstackCta}</button>
+        </form>
+        <form method="post" action={`/v/${pid}/connections`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <input type="hidden" name="provider" value="url" />
+          <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
+            {VC.detail.linkUrlLabel}
+            <input name="url" type="url" placeholder="https://…" style={{ ...fieldStyle, marginTop: "2px" }} />
+          </label>
+          <button type="submit" data-link-url="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkUrlCta}</button>
+        </form>
+        <form method="post" action={`/v/${pid}/connections`} encType="multipart/form-data" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <input type="hidden" name="provider" value="substack_export" />
+          <label style={{ flex: 1, color: "var(--shell-fg-muted)" }}>
+            {VC.detail.linkExportLabel}
+            <input type="file" name="file" accept=".zip" style={{ display: "block", marginTop: "2px", color: "var(--shell-fg)" }} />
+          </label>
+          <button type="submit" data-link-export="true" style={{ ...submitStyle, width: "auto", padding: "5px 12px", fontSize: "12px" }}>{VC.detail.linkExportCta}</button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+/** The sample drawer (§9.5): state/access + quality verdict with its notes, the canonical preview,
+ *  the version history, and the priced reconstruction CTAs — the estimate rides the button label,
+ *  and the visual tier only appears when the notes flag a scanned/no-text-layer source. */
+function VoiceSampleDrawer({ pid, detail }: { pid: string; detail: VoiceSampleDetailDto }): ReactNode {
+  const head = detail.versions[0];
+  const quality = head?.quality ?? null;
+  const notes = [...(head?.quality_notes ?? [])];
+  const visualOffered =
+    quality === "unreadable" || notes.some((n) => /visual tier|scanned/i.test(n));
+  return (
+    <section data-sample-drawer="true" style={{ border: "1px solid var(--accent)", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }}>
+      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: "0 0 2px" }}>
+        {detail.item.title ?? VC.detail.drawerHeading}
+      </h2>
+      <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>
+        {VC.detail.stateBadge[detail.item.state] ?? detail.item.state}
+        {detail.item.access === "paywalled" ? ` · ${VC.detail.paywallBadge}` : ""}
+        {quality ? ` · ${VC.detail.qualityBadge[quality] ?? quality}` : ""}
+        {detail.item.url ? <> · <a href={detail.item.url} style={{ color: "var(--accent)" }}>{detail.item.url}</a></> : null}
+      </p>
+      {notes.length > 0 ? (
+        <div data-quality-notes="true" style={{ margin: "6px 0" }}>
+          <h3 style={{ fontSize: "12px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "0 0 2px" }}>{VC.detail.qualityNotesHeading}</h3>
+          <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {notes.map((n, i) => (
+              <li key={i}>{n}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {/* the priced reconstruction — text tier always for non-clean; visual only when the notes
+          flag a scanned/no-text-layer source (the opt-in ~180-credit pass). */}
+      {quality && quality !== "clean" && quality !== "reconstructed" ? (
+        <div style={{ display: "flex", gap: "8px", margin: "8px 0", flexWrap: "wrap" }}>
+          <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`} style={{ margin: 0 }}>
+            <input type="hidden" name="tier" value="text" />
+            <button type="submit" data-reconstruct-text="true" style={{ fontSize: "12px", padding: "5px 12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" }}>
+              {VC.detail.reconstructTextCta}
+            </button>
+          </form>
+          {visualOffered ? (
+            <form method="post" action={`/v/${pid}/samples/${detail.item.id}/reconstruct`} style={{ margin: 0 }}>
+              <input type="hidden" name="tier" value="visual" />
+              <button type="submit" data-reconstruct-visual="true" style={{ fontSize: "12px", padding: "5px 12px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" }}>
+                {VC.detail.reconstructVisualCta}
+              </button>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
+      <h3 style={{ fontSize: "12px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "8px 0 2px" }}>{VC.detail.previewHeading}</h3>
+      {detail.document ? (
+        <pre data-sample-preview="true" style={{ fontSize: "12px", whiteSpace: "pre-wrap", maxHeight: "320px", overflow: "auto", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "8px", margin: 0 }}>
+          {detail.document}
+        </pre>
+      ) : (
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{VC.detail.noDocument}</p>
+      )}
+      {detail.versions.length > 0 ? (
+        <>
+          <h3 style={{ fontSize: "12px", fontWeight: 600, color: "var(--shell-fg-muted)", margin: "8px 0 2px" }}>{VC.detail.versionsHeading}</h3>
+          <ul data-sample-versions="true" style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {detail.versions.map((v) => (
+              <li key={v.id} data-version={v.n}>
+                {fmt(VC.detail.versionFmt, { n: String(v.n), quality: v.quality ?? "—" })}
+                {v.word_count != null ? ` · ${v.word_count.toLocaleString("en-US")} w` : ""}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 /** Auth-gated: the voice detail page (§9.5) — five tabs: Overview (pill + diff-of-inputs + the one
  *  verb + gate card + hub), Description (seed editor + corrections ledger + build notes), Samples
  *  (include/omit + the hold-out badge + paste/URL/file), Profile (fixed §9.4 order + calibration
@@ -3274,6 +3490,18 @@ export function VoiceDetailPage(): ReactNode {
                   </ul>
                 </section>
               ) : null}
+              {/* P1.15 — the §9.5 delete: purge-eligible personas schedule voice.purge (the
+                  30-day window); the typed "delete" confirm guards the destructive POST. */}
+              <section data-voice-delete="true" style={{ marginTop: "24px", maxWidth: "68ch", borderTop: "1px solid var(--shell-border)", paddingTop: "12px" }}>
+                <h2 style={{ fontSize: "13px", fontWeight: 600, color: "var(--sev-major)", margin: "0 0 4px" }}>{VC.detail.deleteVoiceHeading}</h2>
+                <p style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{VC.detail.deleteVoiceNote}</p>
+                <form method="post" action={`/v/${pid}/delete`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <input name="confirm" placeholder="delete" style={{ ...fieldStyle, maxWidth: "14ch" }} />
+                  <button type="submit" data-delete-voice="true" style={{ padding: "6px 14px", borderRadius: "8px", border: "1px solid var(--sev-major)", background: "none", color: "var(--sev-major)", fontSize: "13px", cursor: "pointer" }}>
+                    {VC.detail.deleteVoiceCta}
+                  </button>
+                </form>
+              </section>
             </>
           ) : null}
 
@@ -3349,13 +3577,20 @@ export function VoiceDetailPage(): ReactNode {
 
           {tab === "samples" ? (
             <section data-samples="true" style={{ maxWidth: "68ch" }}>
+              {/* P1.15 — the Sources pane: linked providers + the review-confirm step + the three
+                  link flows + Re-sync all. */}
+              <VoiceSourcesPane pid={pid} connections={voice?.connections} samples={d.samples} />
+              {/* the open drawer — `?tab=samples&sample=<itemId>` (§9.5 preview/versions). */}
+              {voice?.sampleDetail ? <VoiceSampleDrawer pid={pid} detail={voice.sampleDetail} /> : null}
               {d.samples.length === 0 ? (
                 <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{VC.detail.samplesEmpty}</p>
               ) : (
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: "6px" }}>
                   {d.samples.map((s) => (
                     <li key={s.id} data-sample={s.id} style={{ display: "flex", gap: "10px", alignItems: "center", fontSize: "13px", border: "1px solid var(--shell-border)", borderRadius: "6px", padding: "6px 10px" }}>
-                      <span style={{ flex: 1 }}>{s.title ?? s.id}</span>
+                      <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} data-sample-open={s.id} style={{ flex: 1, color: "var(--shell-fg)", textDecoration: "none" }}>
+                        {s.title ?? s.id}
+                      </a>
                       {/* the hold-out badge shows ONLY post-reveal (§9.4) — pre-calibration the
                           identity stays server-side; the generic line is on Overview. */}
                       {holdout?.revealed && holdout.itemId === s.id ? (
@@ -3363,9 +3598,26 @@ export function VoiceDetailPage(): ReactNode {
                           {fmt(VC.detail.holdoutRevealedFmt, { title: s.title ?? s.id })}
                         </span>
                       ) : null}
+                      {/* P1.15 — the item's ingest state + paywall + quality verdicts ride the row. */}
+                      {s.state !== "included" ? (
+                        <span data-sample-state={s.state} style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
+                          {VC.detail.stateBadge[s.state] ?? s.state}
+                        </span>
+                      ) : null}
+                      {s.access === "paywalled" ? (
+                        <span data-sample-paywalled="true" style={{ color: "var(--sev-major)", fontSize: "12px" }}>{VC.detail.paywallBadge}</span>
+                      ) : null}
+                      {s.quality && s.quality !== "clean" ? (
+                        <span data-sample-quality={s.quality} style={{ color: "var(--sev-major)", fontSize: "12px" }}>
+                          {VC.detail.qualityBadge[s.quality] ?? s.quality}
+                        </span>
+                      ) : null}
                       <span style={{ color: "var(--shell-fg-faint)", fontSize: "12px" }}>
                         {s.word_count != null ? `${s.word_count.toLocaleString("en-US")} w` : ""}
                       </span>
+                      <a href={`/v/${pid}?tab=samples&sample=${encodeURIComponent(s.id)}`} style={{ fontSize: "12px", color: "var(--accent)", textDecoration: "none" }}>
+                        {VC.detail.viewLabel}
+                      </a>
                       <form method="post" action={`/v/${pid}/samples/${s.id}`} style={{ margin: 0 }}>
                         <button type="submit" name="included" value={s.state === "included" ? "false" : "true"} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer" }}>
                           {s.state === "included" ? VC.detail.omitLabel : VC.detail.includeLabel}

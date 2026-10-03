@@ -3491,10 +3491,20 @@ export function createWebApp(deps: WebDeps): Hono {
       throw e;
     });
     if (!detail) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const [estimate, updatePlan] = await Promise.all([
+    const tab = c.req.query("tab");
+    const sampleId = c.req.query("sample");
+    const [estimate, updatePlan, connections, sampleDetail] = await Promise.all([
       deps.dataSource.estimateVoice(session, personaId, detail.tier === "full" ? "full" : "quick").catch(() => undefined),
       // The diff-of-inputs sheet's pre-computed route (§9.3) — best-effort; the pill alone suffices.
       deps.dataSource.getVoiceUpdatePlan?.(session, personaId).catch(() => undefined),
+      // P1.15 — the Sources pane + the open sample drawer (best-effort; absent ⇒ the tab degrades
+      // to the items list alone).
+      tab === "samples" && deps.dataSource.listVoiceConnections
+        ? deps.dataSource.listVoiceConnections(session, personaId).catch(() => undefined)
+        : undefined,
+      tab === "samples" && sampleId && deps.dataSource.getVoiceSample
+        ? deps.dataSource.getVoiceSample(session, personaId, sampleId).catch(() => undefined)
+        : undefined,
     ]);
     const notice =
       c.req.query("saved") === "1"
@@ -3505,17 +3515,21 @@ export function createWebApp(deps: WebDeps): Hono {
             ? COPY.voice.detail.cancelDone
             : c.req.query("corrected") === "1"
               ? COPY.voice.detail.correctionAdded
-              : c.req.query("build_failed") === "1"
-                ? COPY.voice.new.fullRequired
-                : undefined;
+              : c.req.query("reconstruct") === "queued"
+                ? COPY.voice.detail.reconstructQueued
+                : c.req.query("build_failed") === "1"
+                  ? COPY.voice.new.fullRequired
+                  : undefined;
     return c.html(
       renderDocument(c.req.path, voiceDetailElement, {
         voice: {
           detail,
           ...(estimate ? { estimate } : {}),
           ...(updatePlan ? { updatePlan } : {}),
+          ...(connections ? { connections } : {}),
+          ...(sampleDetail ? { sampleDetail } : {}),
           ...(notice ? { notice } : {}),
-          ...(c.req.query("tab") ? { tab: c.req.query("tab") } : {}),
+          ...(tab ? { tab } : {}),
         },
       }),
     );
@@ -3596,6 +3610,154 @@ export function createWebApp(deps: WebDeps): Hono {
       .setVoiceSampleIncluded(session, personaId, c.req.param("itemId"), included)
       .catch(() => undefined);
     return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // ---- P1.15 — the Sources pane (§9.5): link / discover / confirm / re-sync / settings / remove. ----
+
+  // Link a source. Three provider flows, one route: `provider` selects the shape — a Substack
+  // publication address, a single URL, or a Substack export zip (multipart file → quarantine →
+  // the substack_export connection). There is NO credential field anywhere in the form (AC-I-B).
+  app.post("/v/:persona/connections", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string).trim() : "");
+    const provider = str("provider");
+    try {
+      if (provider === "substack" && str("handle")) {
+        await deps.dataSource.createVoiceConnection(session, personaId, {
+          provider: "substack",
+          handle: str("handle"),
+          ...(form.dailySync ? { dailySync: true } : {}),
+        });
+      } else if (provider === "url" && str("url")) {
+        await deps.dataSource.createVoiceConnection(session, personaId, {
+          provider: "url",
+          url: str("url"),
+        });
+      } else if (provider === "substack_export") {
+        const file = form.file;
+        const bytes =
+          file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
+            ? new Uint8Array(await (file as File).arrayBuffer())
+            : null;
+        if (bytes) {
+          await deps.dataSource.linkVoiceExportZip(session, personaId, bytes);
+        }
+      }
+    } catch {
+      // The link failed — the Sources pane re-renders with the connection's own error line.
+    }
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // The review step: discovery rows land server-side (listing data only — REQ-INGEST-3); the
+  // Samples tab then shows them awaiting the confirm checkboxes.
+  app.post("/v/:persona/connections/:cid/discover", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    await deps.dataSource
+      .discoverVoiceConnection(session, personaId, c.req.param("cid"))
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // The confirm step (REQ-INGEST-4): checked items' externalIds ride `include` (repeatable);
+  // everything the provider listed but the box left unchecked is omitted.
+  app.post("/v/:persona/connections/:cid/confirm", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const cid = c.req.param("cid");
+    const form = await c.req.parseBody({ all: true });
+    const included = new Set(
+      (Array.isArray(form.include) ? form.include : form.include ? [form.include] : [])
+        .filter((v): v is string => typeof v === "string"),
+    );
+    const known = (form.known ? (Array.isArray(form.known) ? form.known : [form.known]) : [])
+      .filter((v): v is string => typeof v === "string");
+    await deps.dataSource
+      .confirmVoiceConnection(session, personaId, cid, {
+        items: known.map((externalId) => ({ externalId, include: included.has(externalId) })),
+      })
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // The manual Re-sync (REQ-INGEST-6) + "Re-sync all".
+  app.post("/v/:persona/connections/:cid/sync", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    await deps.dataSource
+      .syncVoiceConnection(session, personaId, c.req.param("cid"))
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+  app.post("/v/:persona/sync", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    await deps.dataSource.syncAllVoiceConnections(session, personaId).catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // The per-source settings (auto-include new items; daily auto-sync).
+  app.post("/v/:persona/connections/:cid/settings", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    await deps.dataSource
+      .patchVoiceConnection(session, personaId, c.req.param("cid"), {
+        autoIncludeNew: form.autoIncludeNew === "on" || form.autoIncludeNew === "true",
+        dailySync: form.dailySync === "on" || form.dailySync === "true",
+      })
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // Remove — soft-detach the source; the items + versions stay in the corpus.
+  app.post("/v/:persona/connections/:cid/remove", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    await deps.dataSource
+      .removeVoiceConnection(session, personaId, c.req.param("cid"))
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples`);
+  });
+
+  // The priced reconstruction pass (REQ-INGEST-10): the drawer's button IS the opt-in confirm —
+  // its label carried the estimate; the POST sends `confirmed: true` and the api enqueues the
+  // metered worker job (never inline, never inside convert).
+  app.post("/v/:persona/samples/:itemId/reconstruct", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const itemId = c.req.param("itemId");
+    const form = await c.req.parseBody();
+    const tier = form.tier === "visual" ? "visual" : "text";
+    await deps.dataSource
+      .reconstructVoiceSample(session, personaId, itemId, { tier, confirmed: true })
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}?tab=samples&sample=${itemId}&reconstruct=queued`);
+  });
+
+  // Delete the voice (REQ-INGEST-16): the persona vanishes from every read; the purge job cascades.
+  app.post("/v/:persona/delete", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    // The typed-name confirm (the form requires it) — belt, since the api cascade is destructive.
+    if (typeof form.confirm === "string" && form.confirm === "delete") {
+      await deps.dataSource.deleteVoice(session, personaId).catch(() => undefined);
+      return c.redirect("/voices");
+    }
+    return c.redirect(`/v/${personaId}`);
   });
 
   // "Build voice" — a profile_voice{tier} run (§9.2 item 3); the api's gate owns the tier checks.

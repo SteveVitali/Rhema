@@ -3,7 +3,16 @@ import { conversionResultSchema } from "@rhema/contracts";
 import type { ConversionResult, ConversionWarning, UnconvertedBlock, Anchor } from "@rhema/contracts";
 import { sniffFormat, isZipContainer } from "./sniff.js";
 import { assertSafeArchive } from "./decompression-guard.js";
-import { convertDocx, convertHtml, convertPdf, convertText, type ConverterOutput } from "./converters.js";
+import {
+  convertDocx,
+  convertEpub,
+  convertHtml,
+  convertPdf,
+  convertRtf,
+  convertText,
+  convertUnsupported,
+  type ConverterOutput,
+} from "./converters.js";
 
 // The convert entrypoint (§12.1): quarantine bytes → canonical Rhema Markdown + the §5.3 preview payload. No
 // network, no DB — pure byte-to-markdown. A ZIP (docx) is checked by the decompression guard first (a zip-bomb
@@ -37,6 +46,13 @@ async function runConverter(format: ReturnType<typeof sniffFormat>, bytes: Uint8
       return convertDocx(bytes);
     case "pdf":
       return convertPdf(bytes);
+    case "epub":
+      return convertEpub(bytes);
+    case "rtf":
+      return convertRtf(bytes);
+    case "image":
+    case "binary":
+      return convertUnsupported(format);
     case "html":
       return convertHtml(new TextDecoder("utf-8").decode(bytes));
     case "txt":

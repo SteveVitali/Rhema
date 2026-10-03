@@ -95,6 +95,12 @@ export interface ApiEnv {
   readonly convertJob?: string;
   /** PRB.20 — the Job's user-content volume mount path inside the container (`CONVERT_JOB_ROOT`, `/usercontent`). */
   readonly convertJobRoot?: string;
+  /**
+   * P1.15 — the invoker-gated `fetcher` service URL (`FETCHER_SERVICE_URL`): the only egress ingestion
+   * rides (SSRF/robots/rate/content-type). Unset ⇒ ingestion's remote providers fail closed with
+   * `live fetcher not wired` (upload/paste/export still work — they carry their own bytes).
+   */
+  readonly fetcherServiceUrl?: string;
 }
 
 function required(name: string): string {
@@ -161,6 +167,8 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.USER_CONTENT_BUCKET ? { userContentBucket: process.env.USER_CONTENT_BUCKET } : {}),
     ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),
     ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
+    // P1.15 — the fetcher service URL (the api's discovery/review fetches ride it).
+    ...(process.env.FETCHER_SERVICE_URL ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

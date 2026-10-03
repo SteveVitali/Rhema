@@ -7,6 +7,7 @@ export * from "./jobs.js";
 export * from "./run-jobs.js";
 export * from "./run-events-jobs.js";
 export * from "./ledger-jobs.js";
+export * from "./ingest-jobs.js";
 
 /** Queue names this worker owns (§12.1). Handlers are stubbed until P0.08. */
 export const WORKER_QUEUES = [
@@ -15,8 +16,12 @@ export const WORKER_QUEUES = [
   "run.cancel",
   "run.reap",
   "export.job",
-  "ingest.job",
+  "ingest.job", // legacy name kept for compat; P1.15 drives "ingest.sync" below
   "sync.job",
+  "ingest.sync", // §9.5: one connection through discover→diff→fetch→version
+  "ingest.sync.sweep", // daily auto-sync scheduler (schedule='daily' connections)
+  "ingest.reconstruct", // the priced text/visual PDF reconstruction pass
+  "voice.purge", // REQ-INGEST-16 voice-delete cascade
   "mail.send",
   "notify",
   "usage.reconcile",

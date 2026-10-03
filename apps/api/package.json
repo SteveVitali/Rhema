@@ -31,6 +31,7 @@
     "@rhema/figures": "workspace:*",
     "@rhema/findings-core": "workspace:*",
     "@rhema/hooks": "workspace:*",
+    "@rhema/ingest": "workspace:*",
     "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
     "@rhema/markdown": "workspace:*",

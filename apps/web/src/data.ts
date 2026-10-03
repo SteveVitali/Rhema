@@ -99,6 +99,18 @@ import type {
   FigureProposedDto,
   FigureAcceptedDto,
   FigureSpecEditDto,
+  VoiceConnectionsDto,
+  CreateVoiceConnectionDto,
+  CreatedVoiceConnectionDto,
+  DiscoveredVoiceConnectionDto,
+  ConfirmVoiceConnectionDto,
+  VoiceSyncResponseDto,
+  PatchVoiceConnectionDto,
+  VoiceSampleDetailDto,
+  VoiceSampleVersionsDto,
+  ReconstructVoiceSampleDto,
+  ReconstructVoiceSampleResponseDto,
+  DeletedVoiceDto,
 } from "@rhema/api-client";
 import type { ConversionResult, Claim, FindingView, ObligationState } from "@rhema/contracts";
 import type { RunCardInput, RubricRowInput, AccessReportFacts } from "@rhema/findings-core";
@@ -465,6 +477,77 @@ export interface DataSource {
   ): Promise<AddedVoiceCorrectionDto>;
   /** the read-only (house/shared) card's copy becomes your editable persona (§9.1). */
   forkVoice(session: SessionHeaders, personaId: string): Promise<ForkedVoiceDto>;
+  // ---- P1.15 — the §9.5 Samples tab (sources + items + preview + priced reconstruction) ----
+  /** the Sources pane list — linked providers + status + item counts. */
+  listVoiceConnections(session: SessionHeaders, personaId: string): Promise<VoiceConnectionsDto>;
+  /** link a source (substack host | url | export-zip quarantine key). Never a credential (AC-I-B). */
+  createVoiceConnection(
+    session: SessionHeaders,
+    personaId: string,
+    req: CreateVoiceConnectionDto,
+  ): Promise<CreatedVoiceConnectionDto>;
+  /** the review step — discovery rows only, never bodies (REQ-INGEST-3). */
+  discoverVoiceConnection(
+    session: SessionHeaders,
+    personaId: string,
+    connectionId: string,
+  ): Promise<DiscoveredVoiceConnectionDto>;
+  /** persist the reviewed include/omit set, then the fetch pass (REQ-INGEST-4). */
+  confirmVoiceConnection(
+    session: SessionHeaders,
+    personaId: string,
+    connectionId: string,
+    req: ConfirmVoiceConnectionDto,
+  ): Promise<VoiceSyncResponseDto>;
+  /** the manual Re-sync (REQ-INGEST-6). */
+  syncVoiceConnection(
+    session: SessionHeaders,
+    personaId: string,
+    connectionId: string,
+  ): Promise<VoiceSyncResponseDto>;
+  /** "Re-sync all" — one job per live connection. */
+  syncAllVoiceConnections(session: SessionHeaders, personaId: string): Promise<VoiceSyncResponseDto>;
+  /** the per-source settings (auto-include new items; daily auto-sync). */
+  patchVoiceConnection(
+    session: SessionHeaders,
+    personaId: string,
+    connectionId: string,
+    req: PatchVoiceConnectionDto,
+  ): Promise<{ ok: true }>;
+  /** Remove — soft-detach the source; items + versions are retained. */
+  removeVoiceConnection(
+    session: SessionHeaders,
+    personaId: string,
+    connectionId: string,
+  ): Promise<{ ok: true }>;
+  /** the export-zip path end-to-end: presign → PUT the bytes to quarantine → link the source. */
+  linkVoiceExportZip(
+    session: SessionHeaders,
+    personaId: string,
+    bytes: Uint8Array,
+  ): Promise<CreatedVoiceConnectionDto>;
+  /** the sample drawer's preview read — canonical document + listing facts + versions. */
+  getVoiceSample(
+    session: SessionHeaders,
+    personaId: string,
+    itemId: string,
+  ): Promise<VoiceSampleDetailDto>;
+  /** the version-history list (v1..vN newest first). */
+  listVoiceSampleVersions(
+    session: SessionHeaders,
+    personaId: string,
+    itemId: string,
+  ): Promise<VoiceSampleVersionsDto>;
+  /** the priced reconstruction pass (REQ-INGEST-10): the button label shows the estimate; the POST
+   *  carries `confirmed: true`. `tier:'visual'` is the opt-in ~180-credit pass. */
+  reconstructVoiceSample(
+    session: SessionHeaders,
+    personaId: string,
+    itemId: string,
+    req: ReconstructVoiceSampleDto,
+  ): Promise<ReconstructVoiceSampleResponseDto>;
+  /** delete the voice (REQ-INGEST-16) — the purge job cascades owned rows + bytes. */
+  deleteVoice(session: SessionHeaders, personaId: string): Promise<DeletedVoiceDto>;
   /** adopt hatch — pin the refreshed snapshot (+ optional charter reseed) (§9.6; REQ-DATA-30). */
   adoptProjectVoice(
     session: SessionHeaders,
@@ -956,6 +1039,39 @@ export function apiDataSource(baseUrl: string, fetchImpl?: typeof fetch): DataSo
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).addVoiceCorrection(personaId, req),
     forkVoice: (session, personaId) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).forkVoice(personaId),
+    // ---- P1.15 — the §9.5 Samples tab ----
+    listVoiceConnections: (session, personaId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoiceConnections(personaId),
+    createVoiceConnection: (session, personaId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createVoiceConnection(personaId, req),
+    discoverVoiceConnection: (session, personaId, connectionId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).discoverVoiceConnection(personaId, connectionId),
+    confirmVoiceConnection: (session, personaId, connectionId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).confirmVoiceConnection(personaId, connectionId, req),
+    syncVoiceConnection: (session, personaId, connectionId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).syncVoiceConnection(personaId, connectionId),
+    syncAllVoiceConnections: (session, personaId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).syncAllVoiceConnections(personaId),
+    patchVoiceConnection: (session, personaId, connectionId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).patchVoiceConnection(personaId, connectionId, req),
+    removeVoiceConnection: (session, personaId, connectionId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).removeVoiceConnection(personaId, connectionId),
+    linkVoiceExportZip: async (session, personaId, bytes) => {
+      // The quarantine leg (D-PRB.02-1): presign → PUT → link the export-zip source by key.
+      const quarantineKey = await uploadKey(session, { bytes });
+      return createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).createVoiceConnection(
+        personaId,
+        { provider: "substack_export", quarantineKey },
+      );
+    },
+    getVoiceSample: (session, personaId, itemId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).getVoiceSample(personaId, itemId),
+    listVoiceSampleVersions: (session, personaId, itemId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).listVoiceSampleVersions(personaId, itemId),
+    reconstructVoiceSample: (session, personaId, itemId, req) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).reconstructVoiceSample(personaId, itemId, req),
+    deleteVoice: (session, personaId) =>
+      createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).deleteVoice(personaId),
     adoptProjectVoice: (session, projectId, req) =>
       createApiClient({ baseUrl, fetch: fetchImpl, headers: session }).adoptProjectVoice(projectId, req),
     forkProjectVoice: (session, projectId, req) =>

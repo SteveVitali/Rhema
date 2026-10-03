@@ -99,7 +99,7 @@ export async function loadPersona(tx: SqlExecutor, personaId: string): Promise<P
   const res = await tx.query(
     `select id, display_name, slug, byline, mode, kind, provenance, registers, seed_artifact_id, seed_sha256,
             seed_authored_by, seed_updated_at, current_profile_id, active_run_id
-       from personas where id = $1`,
+       from personas where id = $1 and deleted_at is null`,
     [personaId],
   );
   return (res.rows[0] as PersonaRow | undefined) ?? null;
@@ -160,7 +160,7 @@ export async function loadVoiceStatus(
        from discovered_items di
        join connections cn on cn.id = di.connection_id
        join sample_versions sv on sv.id = di.current_sample_id
-      where cn.persona_id = $1 and di.state = 'included'`,
+      where cn.persona_id = $1 and di.state in ('included','removed_remote')`,
     [args.personaId],
   );
   const samples: Record<string, string> = {};

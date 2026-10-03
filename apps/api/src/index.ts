@@ -29,6 +29,7 @@ import { createProjectRoutes } from "./project-routes.js";
 import { createSearchRoutes } from "./search.js";
 import { createSheetContextRoutes } from "./sheet-context.js";
 import { createVoiceRoutes } from "./voice-routes.js";
+import { createIngestRoutes, type IngestApiDeps, type IngestBlobs } from "./ingest-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
 import { createThemeRoutes } from "./theme-routes.js";
@@ -118,6 +119,8 @@ export { createNotificationRoutes } from "./notification-routes.js";
 export type { NotificationApiDeps } from "./notification-routes.js";
 export { createVoiceRoutes } from "./voice-routes.js";
 export type { VoiceApiDeps } from "./voice-routes.js";
+export { createIngestRoutes, INGEST_JOBS, RECONSTRUCT_PRICING } from "./ingest-routes.js";
+export type { IngestApiDeps, IngestBlobs } from "./ingest-routes.js";
 export { loadVoiceStatus, loadPersona, parseSampleSet, personaPhaseCount } from "./voice-status.js";
 export { createExportRoutes, createServiceExportRunner } from "./export-routes.js";
 export type { ExportApiDeps, ExportRunner } from "./export-routes.js";
@@ -205,6 +208,15 @@ export interface BetaApiDeps {
    * those points answer `restore_unavailable` on preview/restore; content-addressed points still work.
    */
   restoreBlobs?: RestoreBlobStore;
+  /**
+   * P1.15 — the ingestion seams (§9.5). `fetcher` is the operator-owned fetcher service port (prod:
+   * the fetcher Cloud Run service; the ONLY egress ingestion rides). `ingestBlobs` is the quarantine
+   * byte seam (export-zip reads + fetched-original writes). Unset ⇒ the routes fail closed (503).
+   */
+  ingestFetcher?: IngestApiDeps["fetcher"];
+  ingestBlobs?: IngestBlobs;
+  /** Test/dev binding — run sync inline in the request rather than queueing `ingest.sync`. */
+  inlineSync?: boolean;
 }
 
 /** Build the api app. Pass `deps` to mount the run-creation, internal run API, and run-event SSE routes; pass
@@ -293,6 +305,23 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
         ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
         ...(deps.importConverter ? { converter: deps.importConverter } : {}),
+      }),
+    );
+    // P1.15 — the ingestion surface (§9.5): connections/sources, discover→confirm→sync, item preview
+    // + versions + raw bytes, the priced reconstruction enqueues, and the voice delete.
+    app.route(
+      "/",
+      createIngestRoutes({
+        principal: deps.principal,
+        txRunner: deps.txRunner,
+        ids: deps.ids,
+        clock: () => deps.clock.now(),
+        ...(deps.queue ? { queue: deps.queue } : {}),
+        ...(deps.ingestFetcher ? { fetcher: deps.ingestFetcher } : {}),
+        ...(deps.ingestBlobs ? { ingestBlobs: deps.ingestBlobs } : {}),
+        ...(deps.importConverter ? { converter: deps.importConverter } : {}),
+        ...(deps.contentStoreFor ? { contentStoreFor: deps.contentStoreFor } : {}),
+        ...(deps.inlineSync ? { inlineSync: true } : {}),
       }),
     );
     // PRB.12 — the analytics client mint (CLIENT_ANALYTICS_EVENTS only — server-owned facts are never

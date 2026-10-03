@@ -59,6 +59,8 @@ export function createFetcherApp(deps: FetcherDeps): Hono {
       contentType: res.contentType,
       bytesBase64: Buffer.from(res.bytes).toString("base64"),
       hops: res.hops,
+      // P1.15 — ETag/Last-Modified feed the url provider's change detection.
+      headers: res.headers,
     });
   });
 

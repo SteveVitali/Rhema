@@ -27,6 +27,8 @@ export const personas = pgTable("personas", {
   seedUpdatedAt: timestamp("seed_updated_at"),
   currentProfileId: text("current_profile_id"),
   activeRunId: text("active_run_id"),
+  // P1.15 — the voice-delete marker (REQ-INGEST-16); voice.purge cascades owned rows.
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const personaMembers = pgTable(
@@ -43,12 +45,16 @@ export const connections = pgTable("connections", {
   personaId: text("persona_id").notNull(),
   provider: text("provider").notNull(),
   handle: text("handle"),
+  /** NEVER a cookie/session token (AC-I-B): the column predates the never-cookies rule and stays
+   *  unused — no provider accepts credential material. Kept for a future 1.x OAuth REFERENCE only. */
   authRef: text("auth_ref"),
   status: text("status"),
   lastSyncAt: timestamp("last_sync_at"),
   schedule: text("schedule"),
   autoIncludeNew: boolean("auto_include_new"),
   error: text("error"),
+  // P1.15 — the Sources pane's Remove: soft-detach; items + versions are retained.
+  removedAt: timestamp("removed_at"),
 });
 
 export const discoveredItems = pgTable("discovered_items", {
@@ -56,6 +62,9 @@ export const discoveredItems = pgTable("discovered_items", {
   connectionId: text("connection_id").notNull(),
   externalId: text("external_id"),
   title: text("title"),
+  // P1.15 — provider-reported listing fields for the items pane (Substack carries both).
+  subtitle: text("subtitle"),
+  byline: text("byline"),
   url: text("url"),
   date: date("date"),
   wordCount: integer("word_count"),
@@ -71,6 +80,8 @@ export const sampleVersions = pgTable("sample_versions", {
   n: integer("n").notNull(),
   contentSha256: text("content_sha256").notNull(),
   originalSha256: text("original_sha256"),
+  // P1.15 — the content-store key the raw source bytes live under (side-by-side preview + re-convert).
+  originalKey: text("original_key"),
   artifactVersionId: text("artifact_version_id"),
   quality: text("quality"),
   qualityNotes: text("quality_notes").array(),

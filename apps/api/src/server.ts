@@ -28,7 +28,9 @@ import {
   fetchGceMetadataIdToken,
   createStorageV4SignedUrlProvider,
   createGcsObjects,
+  createGcsBlobStore,
   createConvertJobPreview,
+  createFetcherServicePort,
 } from "@rhema/live-clients";
 import {
   createApp,
@@ -192,6 +194,16 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
             ...(env.convertJobRoot ? { mountPath: env.convertJobRoot } : {}),
           }),
         }
+      : {}),
+    // P1.15 — the ingestion seams: the fetcher service is the ONLY remote-egress path (invoker-gated;
+    // an OIDC token per hop like the export service — LIVE FINDING 11). `ingestBlobs` reads the
+    // quarantined export zips. Both unset ⇒ remote providers fail closed; upload/paste/export still
+    // work (they carry their own bytes).
+    ...(env.fetcherServiceUrl
+      ? { ingestFetcher: createFetcherServicePort(env.fetcherServiceUrl, fetch, fetchGceMetadataIdToken) }
+      : {}),
+    ...(env.userContentBucket
+      ? { ingestBlobs: await createGcsBlobStore(env.userContentBucket) }
       : {}),
     ...(systemExec ? { circuitBreaker: (now: Date) => circuitBreakerState(systemExec, now).then((s) => ({ capMultiplier: s.capMultiplier })) } : {}),
     // PRB.08 billing: the system-scoped exec for the `stripe_events` intake (a system table — the restricted

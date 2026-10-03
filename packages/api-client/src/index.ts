@@ -1056,6 +1056,11 @@ export interface VoiceSampleDto {
   readonly state: string;
   readonly access: string | null;
   readonly date: string | null;
+  /** P1.15 — the owning connection (the Samples tab's per-source confirm grouping). */
+  readonly connection_id?: string | null;
+  readonly url?: string | null;
+  /** P1.15 — the provider's stable key (the confirm step's include/omit selector). */
+  readonly external_id?: string | null;
   readonly version_id: string | null;
   readonly content_sha256: string | null;
   readonly word_count: number | null;
@@ -1316,6 +1321,153 @@ export interface AddedVoiceCorrectionDto {
 export interface ForkedVoiceDto {
   readonly personaId: string;
   readonly status: VoiceStatusDto | null;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// P1.15 — the ingestion surface (§9.5): the voice's Samples tab — the Sources pane (linked providers),
+// the discover→confirm→sync flow, the items pane, the quality drawer, preview + version history, the
+// priced reconstruction enqueue, and voice delete. NEVER a credential field anywhere (AC-I-B).
+// ---------------------------------------------------------------------------------------------------------
+
+/** A linked source row (GET /voices/:id/connections). */
+export interface VoiceConnectionDto {
+  readonly id: string;
+  readonly provider: "substack" | "substack_export" | "url" | "upload" | "paste" | string;
+  readonly handle: string | null;
+  readonly status: string | null;
+  readonly last_sync_at: string | null;
+  readonly schedule: string | null;
+  readonly auto_include_new: boolean | null;
+  /** The verbatim provider error + remedy line (REQ-INGEST-11); null when healthy. */
+  readonly error: string | null;
+  /** The pane's counts: all discovered items, and the corpus-included ones. */
+  readonly items: number;
+  readonly included: number;
+}
+
+export interface VoiceConnectionsDto {
+  readonly connections: readonly VoiceConnectionDto[];
+}
+
+/** POST /voices/:id/connections — link a source. There is NO credential field (never-cookies). */
+export interface CreateVoiceConnectionDto {
+  readonly provider: "substack" | "substack_export" | "url";
+  /** substack: a publication address (name.substack.com). url: the linked page. */
+  readonly handle?: string;
+  readonly url?: string;
+  /** substack_export: the presigned-upload quarantine key for the export zip. */
+  readonly quarantineKey?: string;
+  readonly autoIncludeNew?: boolean;
+  readonly dailySync?: boolean;
+}
+
+export interface CreatedVoiceConnectionDto {
+  readonly connectionId: string;
+  readonly provider: string;
+  readonly handle: string;
+}
+
+/** A discovery row on the review step — listing data only, NEVER a body (REQ-INGEST-3). */
+export interface DiscoveredItemDto {
+  readonly id: string;
+  readonly external_id: string | null;
+  readonly state: string;
+  readonly title: string | null;
+  readonly url: string | null;
+  readonly date: string | null;
+  readonly word_count: number | null;
+  readonly access: string | null;
+  readonly remote_change_key: string | null;
+}
+
+/** POST /voices/:id/connections/:cid/discover — the review list (each row's `state` is the
+ *  proposed default the confirm screen shows checked/unchecked). */
+export interface DiscoveredVoiceConnectionDto {
+  readonly items: readonly DiscoveredItemDto[];
+}
+
+/** POST …/confirm — the reviewed include/omit set, keyed by externalId. */
+export interface ConfirmVoiceConnectionDto {
+  readonly items: readonly { readonly externalId: string; readonly include: boolean }[];
+}
+
+/** One connection's sync report (the ingest.sync job's result; inline-sync responses carry it). */
+export interface IngestSyncReportDto {
+  readonly connectionId: string;
+  readonly discovered: number;
+  readonly added: number;
+  readonly removedRemote: number;
+  readonly changed: number;
+  readonly newVersions: number;
+  readonly skippedUnchanged: number;
+  readonly errors: readonly { readonly itemId: string | null; readonly message: string; readonly remedy: string }[];
+}
+
+/** confirm/sync responses: `{queued:true}` in prod, `{report}` under the inline test seam. */
+export interface VoiceSyncResponseDto {
+  readonly queued?: boolean | number;
+  readonly report?: IngestSyncReportDto;
+  readonly reports?: readonly (IngestSyncReportDto | { error: string })[];
+}
+
+/** PATCH /voices/:id/connections/:cid — per-source settings. */
+export interface PatchVoiceConnectionDto {
+  readonly autoIncludeNew?: boolean;
+  readonly dailySync?: boolean;
+}
+
+/** A sample_versions row (the version-history list; newest first). */
+export interface SampleVersionDto {
+  readonly id: string;
+  readonly n: number;
+  readonly content_sha256: string;
+  readonly original_sha256: string | null;
+  readonly original_key?: string | null;
+  readonly quality: string | null;
+  readonly quality_notes: readonly string[] | null;
+  readonly word_count: number | null;
+}
+
+/** GET /voices/:id/samples/:itemId — the preview: the canonical document + listing facts + versions. */
+export interface VoiceSampleDetailDto {
+  readonly item: {
+    readonly id: string;
+    readonly external_id: string | null;
+    readonly title: string | null;
+    readonly url: string | null;
+    readonly date: string | null;
+    readonly word_count: number | null;
+    readonly access: string | null;
+    readonly state: string;
+    readonly provider: string;
+    readonly connection_id: string;
+  };
+  readonly versions: readonly SampleVersionDto[];
+  /** The canonical Rhema Markdown document (front matter + normalized body); null when unfetched. */
+  readonly document: string | null;
+}
+
+export interface VoiceSampleVersionsDto {
+  readonly versions: readonly SampleVersionDto[];
+}
+
+/** POST /voices/:id/samples/:itemId/reconstruct — REQ-INGEST-10. confirmed!==true ⇒ the route
+ *  answers 400 with the estimate the drawer shows; confirmed ⇒ 202 + the metered job's enqueue. */
+export interface ReconstructVoiceSampleDto {
+  readonly tier?: "text" | "visual";
+  readonly confirmed?: boolean;
+}
+
+export interface ReconstructVoiceSampleResponseDto {
+  readonly queued?: boolean;
+  readonly estimateCredits: number;
+  readonly capCredits: number;
+}
+
+/** DELETE /voices/:id — stamps deleted_at; the voice.purge job cascades owned rows (REQ-INGEST-16). */
+export interface DeletedVoiceDto {
+  readonly deleted: boolean;
+  readonly personaId: string;
 }
 
 /** POST /projects/:id/voice/adopt — hatch 1: pin the refreshed snapshot (§9.6; REQ-DATA-30). */
@@ -2240,6 +2392,69 @@ export interface ApiClient {
   ): Promise<AddedVoiceCorrectionDto>;
   /** P1.14 — the read-only (house/shared) card's copy becomes your editable persona (§9.1). */
   forkVoice(personaId: string, init?: RequestInitLite): Promise<ForkedVoiceDto>;
+  // ---- P1.15 — the §9.5 ingestion surface (the Samples tab) ----
+  /** The Sources pane list — linked providers + status + per-source item counts. */
+  listVoiceConnections(personaId: string, init?: RequestInitLite): Promise<VoiceConnectionsDto>;
+  /** Link a source (substack | substack_export | url). NEVER accepts a credential (AC-I-B). */
+  createVoiceConnection(
+    personaId: string,
+    req: CreateVoiceConnectionDto,
+    init?: RequestInitLite,
+  ): Promise<CreatedVoiceConnectionDto>;
+  /** The review step — discovery rows only, never bodies (REQ-INGEST-3). */
+  discoverVoiceConnection(
+    personaId: string,
+    connectionId: string,
+    init?: RequestInitLite,
+  ): Promise<DiscoveredVoiceConnectionDto>;
+  /** Persist the reviewed include/omit set, then the fetch pass (REQ-INGEST-4). */
+  confirmVoiceConnection(
+    personaId: string,
+    connectionId: string,
+    req: ConfirmVoiceConnectionDto,
+    init?: RequestInitLite,
+  ): Promise<VoiceSyncResponseDto>;
+  /** The manual Re-sync (REQ-INGEST-6). */
+  syncVoiceConnection(
+    personaId: string,
+    connectionId: string,
+    init?: RequestInitLite,
+  ): Promise<VoiceSyncResponseDto>;
+  /** "Re-sync all" — one job per live connection. */
+  syncAllVoiceConnections(personaId: string, init?: RequestInitLite): Promise<VoiceSyncResponseDto>;
+  /** The per-source settings (auto-include new items; daily auto-sync). */
+  patchVoiceConnection(
+    personaId: string,
+    connectionId: string,
+    req: PatchVoiceConnectionDto,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
+  /** Remove: soft-detach the source — items + versions are retained. */
+  removeVoiceConnection(
+    personaId: string,
+    connectionId: string,
+    init?: RequestInitLite,
+  ): Promise<{ ok: true }>;
+  /** The item preview: canonical document + quality notes + version list (the quality drawer). */
+  getVoiceSample(personaId: string, itemId: string, init?: RequestInitLite): Promise<VoiceSampleDetailDto>;
+  /** The version-history list (v1..vN newest first). */
+  listVoiceSampleVersions(
+    personaId: string,
+    itemId: string,
+    init?: RequestInitLite,
+  ): Promise<VoiceSampleVersionsDto>;
+  /** The ORIGINAL bytes (the side-by-side preview's raw side — a PDF page for pdf.js). */
+  getVoiceSampleRaw(personaId: string, itemId: string, init?: RequestInitLite): Promise<ExportDownloadDto>;
+  /** The priced reconstruction pass (REQ-INGEST-10): omit `confirmed` to read the estimate; pass
+   *  `confirmed: true` to enqueue the metered worker job. `tier:'visual'` is the opt-in ~180-credit pass. */
+  reconstructVoiceSample(
+    personaId: string,
+    itemId: string,
+    req: ReconstructVoiceSampleDto,
+    init?: RequestInitLite,
+  ): Promise<ReconstructVoiceSampleResponseDto>;
+  /** Delete the voice (REQ-INGEST-16): the persona vanishes from every read; the purge job cascades. */
+  deleteVoice(personaId: string, init?: RequestInitLite): Promise<DeletedVoiceDto>;
   /** The project's linked-voice facts (the run-sheet line / picker chip; §9.6). */
   getProjectVoice(projectId: string, init?: RequestInitLite): Promise<ProjectVoiceDto>;
   /** REQ-DATA-32 — pin the project's voice (personaId null ⇒ "No voice" / ad-hoc). P1.14: `register`
@@ -3047,6 +3262,107 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({}),
+      });
+    },
+    // ---- P1.15 — the §9.5 ingestion surface (the Samples tab) ----
+    async listVoiceConnections(personaId, init): Promise<VoiceConnectionsDto> {
+      return json<VoiceConnectionsDto>(`/voices/${encodeURIComponent(personaId)}/connections`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async createVoiceConnection(personaId, req, init): Promise<CreatedVoiceConnectionDto> {
+      return json<CreatedVoiceConnectionDto>(`/voices/${encodeURIComponent(personaId)}/connections`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async discoverVoiceConnection(personaId, connectionId, init): Promise<DiscoveredVoiceConnectionDto> {
+      return json<DiscoveredVoiceConnectionDto>(
+        `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}/discover`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({}),
+        },
+      );
+    },
+    async confirmVoiceConnection(personaId, connectionId, req, init): Promise<VoiceSyncResponseDto> {
+      return json<VoiceSyncResponseDto>(
+        `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}/confirm`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async syncVoiceConnection(personaId, connectionId, init): Promise<VoiceSyncResponseDto> {
+      return json<VoiceSyncResponseDto>(
+        `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}/sync`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify({}),
+        },
+      );
+    },
+    async syncAllVoiceConnections(personaId, init): Promise<VoiceSyncResponseDto> {
+      return json<VoiceSyncResponseDto>(`/voices/${encodeURIComponent(personaId)}/sync`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify({}),
+      });
+    },
+    async patchVoiceConnection(personaId, connectionId, req, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async removeVoiceConnection(personaId, connectionId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(
+        `/voices/${encodeURIComponent(personaId)}/connections/${encodeURIComponent(connectionId)}`,
+        { method: "DELETE", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async getVoiceSample(personaId, itemId, init): Promise<VoiceSampleDetailDto> {
+      return json<VoiceSampleDetailDto>(
+        `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async listVoiceSampleVersions(personaId, itemId, init): Promise<VoiceSampleVersionsDto> {
+      return json<VoiceSampleVersionsDto>(
+        `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}/versions`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async getVoiceSampleRaw(personaId, itemId, init): Promise<ExportDownloadDto> {
+      return download(
+        `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}/raw`,
+        { method: "GET", headers: init?.headers as Record<string, string> | undefined },
+      );
+    },
+    async reconstructVoiceSample(personaId, itemId, req, init): Promise<ReconstructVoiceSampleResponseDto> {
+      return json<ReconstructVoiceSampleResponseDto>(
+        `/voices/${encodeURIComponent(personaId)}/samples/${encodeURIComponent(itemId)}/reconstruct`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+          body: JSON.stringify(req),
+        },
+      );
+    },
+    async deleteVoice(personaId, init): Promise<DeletedVoiceDto> {
+      return json<DeletedVoiceDto>(`/voices/${encodeURIComponent(personaId)}`, {
+        method: "DELETE",
+        headers: init?.headers as Record<string, string> | undefined,
       });
     },
     async adoptProjectVoice(projectId, req, init): Promise<AdoptedProjectVoiceDto> {

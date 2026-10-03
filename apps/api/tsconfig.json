@@ -64,6 +64,9 @@
     },
     {
       "path": "../../packages/measure"
+    },
+    {
+      "path": "../../packages/ingest"
     }
   ],
   "exclude": [

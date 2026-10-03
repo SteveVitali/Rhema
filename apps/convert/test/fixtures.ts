@@ -77,27 +77,46 @@ export async function makeZipBombDocx(): Promise<Uint8Array> {
 
 /** A minimal but VALID single-page PDF with a real text layer ("<text>"), correct xref offsets. */
 export function makePdf(text: string): Uint8Array {
+  return makePdfPages([text]);
+}
+
+/**
+ * A minimal valid multi-page PDF (P1.15 — the §9.5 quality-verdict fixtures). Each page's text is
+ * one `Tj` draw; an empty string is a page with NO text layer (a "scanned image" page). `[]` is a
+ * zero-page document (`empty` verdict).
+ */
+export function makePdfPages(texts: readonly string[]): Uint8Array {
   const enc = (s: string) => new TextEncoder().encode(s);
-  const objects: string[] = [
-    "<</Type/Catalog/Pages 2 0 R>>",
-    "<</Type/Pages/Kids[3 0 R]/Count 1>>",
-    "<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>",
-    "", // filled below (content stream)
-    "<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>",
+  const n = texts.length;
+  const fontId = 3 + 2 * n; // per page i: page object 3+2i, its content stream 4+2i; the font is last
+  const kids = texts.map((_, i) => `${3 + 2 * i} 0 R`).join(" ");
+  const objects: { id: number; body: string }[] = [
+    { id: 1, body: "<</Type/Catalog/Pages 2 0 R>>" },
+    { id: 2, body: `<</Type/Pages/Kids[${kids}]/Count ${n}>>` },
   ];
-  const stream = `BT /F1 24 Tf 72 700 Td (${text.replace(/[()\\]/g, "\\$&")}) Tj ET`;
-  objects[3] = `<</Length ${stream.length}>>\nstream\n${stream}\nendstream`;
+  texts.forEach((text, i) => {
+    const pageId = 3 + 2 * i;
+    const contentId = pageId + 1;
+    const stream = text ? `BT /F1 24 Tf 72 700 Td (${text.replace(/[()\\]/g, "\\$&")}) Tj ET` : "";
+    objects.push({
+      id: pageId,
+      body: `<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents ${contentId} 0 R/Resources<</Font<</F1 ${fontId} 0 R>>>>>>`,
+    });
+    objects.push({ id: contentId, body: `<</Length ${stream.length}>>\nstream\n${stream}\nendstream` });
+  });
+  objects.push({ id: fontId, body: "<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>" });
+  objects.sort((a, b) => a.id - b.id);
 
   let pdf = "%PDF-1.4\n";
-  const offsets: number[] = [];
-  objects.forEach((o, i) => {
-    offsets[i] = pdf.length;
-    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`;
-  });
+  const offsets = new Map<number, number>();
+  for (const o of objects) {
+    offsets.set(o.id, pdf.length);
+    pdf += `${o.id} 0 obj\n${o.body}\nendobj\n`;
+  }
   const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const off of offsets) pdf += `${String(off).padStart(10, "0")} 00000 n \n`;
-  pdf += `trailer<</Size ${objects.length + 1}/Root 1 0 R>>\nstartxref\n${xrefOffset}\n%%EOF`;
+  pdf += `xref\n0 ${fontId + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= fontId; i++) pdf += `${String(offsets.get(i) ?? 0).padStart(10, "0")} 00000 n \n`;
+  pdf += `trailer<</Size ${fontId + 1}/Root 1 0 R>>\nstartxref\n${xrefOffset}\n%%EOF`;
   return enc(pdf);
 }
 

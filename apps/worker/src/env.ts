@@ -68,6 +68,30 @@ export interface WorkerEnv {
    * marks attempts `failed` and the card's Retry stays live.
    */
   readonly walkthroughModelKeySecret?: string;
+  /**
+   * P1.15 — the user-content bucket holding `ingest/<conn>/<item>` bodies + `export/<conn>/<file>`
+   * zips; `voice.purge` also deletes retained bytes under it. Unset ⇒ `ingest.sync` reports
+   * `blob_store_unconfigured` (review metadata still flows through the api).
+   */
+  readonly userContentBucket?: string;
+  /**
+   * P1.15 — the invoker-gated fetcher service URL. Set ⇒ `ingest.sync` rides the real egress guard
+   * (SSRF/robots/rate/content-type). Unset ⇒ the sync job fails closed with `live fetcher not wired`.
+   */
+  readonly fetcherServiceUrl?: string;
+  /**
+   * P1.15 — the provider API key's secret-version NAME `ingest.reconstruct` spends through (a deploy
+   * may point it at the same `anthropic-api-key` version; falls back to WALKTHROUGH_MODEL_KEY_SECRET).
+   * Unset ⇒ reconstruction reports `reconstructor_unconfigured`.
+   */
+  readonly ingestModelKeySecret?: string;
+  /**
+   * P1.15 — the convert Job's full v2 resource name + the bucket mount root (the same pair the api
+   * carries for import/preview). BOTH set ⇒ `ingest.sync` re-converts fetched bodies through the
+   * real Job; unset ⇒ samples keep raw content as markdown (`convert_unconfigured` note).
+   */
+  readonly convertJob?: string;
+  readonly convertJobRoot?: string;
 }
 
 function required(name: string): string {
@@ -112,6 +136,14 @@ export function readWorkerEnv(): WorkerEnv {
     ...(process.env.WALKTHROUGH_MODEL_KEY_SECRET
       ? { walkthroughModelKeySecret: process.env.WALKTHROUGH_MODEL_KEY_SECRET }
       : {}),
+    // P1.15 ingestion wiring — all optional; each unset seam fails closed with a named reason.
+    ...(process.env.USER_CONTENT_BUCKET ? { userContentBucket: process.env.USER_CONTENT_BUCKET } : {}),
+    ...(process.env.FETCHER_SERVICE_URL ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL } : {}),
+    ...((process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET)
+      ? { ingestModelKeySecret: process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET }
+      : {}),
+    ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),
+    ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }
