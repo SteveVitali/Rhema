@@ -6,8 +6,7 @@
 
 import type { SqlClient } from "@rhema/orchestrator";
 import { balanceEffect, type LedgerKind } from "./balance-effect.js";
-import { applyLedgerEntry, type EntryDeps } from "./entries.js";
-import type { HoldBucket } from "./buckets.js";
+import type { EntryDeps } from "./entries.js";
 
 export interface BalanceDivergence {
   readonly billingAccountId: string;
@@ -108,6 +107,13 @@ export async function assertBalances(
 //      charge (the debits DID cost the account; the backfill admits they were reserved, post facto).
 //   2. REWRITE THE COUNTER — `credit_balances` is a denormalized cache of the fold; it is upserted to
 //      the (post-backfill) expected values. Orphan counter rows with no ledger presence go to 0/0.
+//
+// DEF.4 (D-DEF.2-1): the two steps must write in exactly this order WITH the backfill's counter
+// maintenance suppressed — `credit_balances_held_nonnegative` (0044, validated by 0055) rejects any
+// write that leaves `held < 0`, and a CHECK cannot be DEFERRABLE, so the incremental update the
+// canonical `applyLedgerEntry` performs would land an illegal intermediate (−897 + 180 = −717) before
+// step 2. The backfill therefore appends the ledger row only, and each counter row is written once —
+// directly at the post-backfill fold, which is `held = 0` by construction.
 //
 // `apply: false` (the default) is a dry-run — it reports the divergences + planned backfills and writes
 // nothing, so an operator sees the repair plan before executing it. With `apply: true` the writes land
@@ -246,6 +252,14 @@ export async function reconcileBalances(
     }
 
     // apply step 1 — append the backfill holds (idempotent per serialized key).
+    //
+    // DEF.4 / D-DEF.2-1 — these rows must NOT go through `applyLedgerEntry`: that seam maintains the
+    // denormalized counter in the same call (`held += credits`), which on a negative-fold repair writes
+    // an INTERMEDIATE `credit_balances` row — held −897 + 180 = −717 on prod (DEF.2 §F4) — violating
+    // `credit_balances_held_nonnegative` before step 2 can land the fold. A CHECK constraint cannot be
+    // DEFERRABLE, so the fix is ordering: append the ledger rows untouched by a counter write, then
+    // land each divergent counter at its post-backfill fold in the single upsert of step 2 — every
+    // counter write commits a `held >= 0` value, and the ledger stays append-only throughout.
     const backfills: ReconcileBackfill[] = [];
     for (const b of backfillPlans) {
       const prefix = `reconcile:held-backfill:${args.billingAccountId}:${b.bucket}:`;
@@ -259,17 +273,36 @@ export async function reconcileBalances(
           ).rows[0] as { n: number }
         ).n,
       );
-      const res = await applyLedgerEntry(tx, deps, {
-        workspaceId: workspaces[0]!,
-        billingAccountId: args.billingAccountId,
-        kind: "hold",
-        credits: b.credits,
-        bucket: b.bucket as HoldBucket,
-        source: "reconcile",
-        reason: "hold backfill for unheld debit (balances reconcile)",
-        idempotencyKey: `${prefix}${n + 1}`,
-      });
-      backfills.push({ bucket: b.bucket, credits: b.credits, ledgerId: res.ledgerId });
+      const idempotencyKey = `${prefix}${n + 1}`;
+      const ledgerId = deps.ids("led");
+      const inserted = await tx.query(
+        `insert into credit_ledger
+           (id, workspace_id, billing_account_id, kind, credits, bucket, source, reason, idempotency_key, at)
+         values ($1,$2,$3,'hold',$4,$5,'reconcile',$6,$7,$8)
+         on conflict (idempotency_key) do nothing
+         returning id`,
+        [
+          ledgerId,
+          workspaces[0]!,
+          args.billingAccountId,
+          b.credits,
+          b.bucket,
+          "hold backfill for unheld debit (balances reconcile)",
+          idempotencyKey,
+          deps.clock.now(),
+        ],
+      );
+      const row = inserted.rows[0] as { id: string } | undefined;
+      if (row) {
+        backfills.push({ bucket: b.bucket, credits: b.credits, ledgerId: row.id });
+      } else {
+        // the serialized key already exists — a prior apply appended the row (it is already inside
+        // the fold, so the counter rewrite below stays correct); report its id for the audit.
+        const prior = (
+          await tx.query("select id from credit_ledger where idempotency_key = $1", [idempotencyKey])
+        ).rows[0] as { id: string } | undefined;
+        backfills.push({ bucket: b.bucket, credits: b.credits, ledgerId: prior?.id ?? null });
+      }
     }
 
     // apply step 2 — rewrite the divergent counters to the post-backfill fold (upsert; orphans → 0/0).

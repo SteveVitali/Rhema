@@ -138,6 +138,27 @@ export const trialSpendDaily = pgTable("trial_spend_daily", {
   credits: bigint("credits", { mode: "number" }).notNull().default(0),
 });
 
+// DEF.4 (0055; §14.4; REQ-SPEC-24(6)/30/32) — the user refund request: one row per run
+// (unique(run_id) is the replay anchor); 'refunded' rows count against the billing account's
+// quarterly allowance (quarter = 'YYYYQn'). The user role INSERTs/SELECTs only — state transitions
+// ride the admin verb on the system pool; `alerted_at` is the stranded-sweep's send-then-mark page.
+export const userRefundRequests = pgTable("user_refund_requests", {
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id").notNull(),
+  billingAccountId: text("billing_account_id").notNull(),
+  runId: text("run_id").notNull(),
+  userId: text("user_id").notNull(),
+  state: text("state").notNull(), // refunded | pending_review | denied
+  decision: text("decision"), // auto_allowance | admin_approve | admin_deny (null while pending)
+  credits: integer("credits").notNull(),
+  quarter: text("quarter").notNull(),
+  note: text("note"),
+  requestedAt: timestamp("requested_at").notNull().defaultNow(),
+  decidedAt: timestamp("decided_at"),
+  decidedBy: text("decided_by"),
+  alertedAt: timestamp("alerted_at"),
+});
+
 // RES.2 (0047; REQ-SPEC-31(3)) — the platform-fault trial-restore audit row: exactly one per
 // (entitlement, run) restored by `settleUnverifiedDelivery`; append-only (grant select, insert).
 export const trialRestorations = pgTable("trial_restorations", {

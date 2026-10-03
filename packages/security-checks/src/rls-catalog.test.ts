@@ -143,6 +143,7 @@ const EXPECTED_RLS_FORCED = new Set([
   "checkout_sessions", "cost_observations", "credit_ledger", "email_action_tokens",
   "notification_deliveries", "personas", "project_search_docs", "projects", "run_event_seq",
   "run_events", "runs", "timeline_events", "trial_restorations", "usage_records",
+  "user_refund_requests", // DEF.4 (0055) — the §14.4 refund window's request/audit rows
 ]);
 
 describe("the tenancy census (REQ-ARCH-25/26 — every table classified, exhaustively)", () => {
@@ -213,6 +214,7 @@ describe("the two-tenant pooled probe over the full enforced surface (REQ-DATA-4
     { table: "run_event_seq", cols: (w) => ({ c: "run_id, workspace_id", v: [`run_${w}`, w] }) },
     { table: "run_events", cols: (w) => ({ c: "run_id, seq, workspace_id, day, type, payload, density, at", v: [`run_${w}`, 1, w, "2026-09-02", "run.state_changed", "{}", "normal", new Date()] }) },
     { table: "email_action_tokens", cols: (w) => ({ c: "id, workspace_id, gate_id, run_id, user_id, action, expires_at", v: [`eat_${w}`, w, `gate_${w}`, `run_${w}`, `usr_${w}`, "open", new Date()] }) },
+    { table: "user_refund_requests", cols: (w) => ({ c: "id, workspace_id, billing_account_id, run_id, user_id, state, credits, quarter", v: [`urr_${w}`, w, `bill_${w}`, `run_${w}`, `usr_${w}`, "pending_review", 1, "2026Q3"] }) },
   ];
 
   it("isolates every enforced tenant table on one reused connection", async () => {
@@ -348,6 +350,9 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   team_waitlist: "si",
   timeline_events: "si",
   trial_restorations: "si", // RES.2 (0047) — the platform-fault trial-restore audit row; append-only
+  // DEF.4 (0055) — the refund route inserts + reads its own requests; pending→refunded/denied
+  // transitions ride the system-pool admin verb, so UPDATE is deliberately not granted.
+  user_refund_requests: "si",
   trial_spend_daily: "siu",
   trial_unlock_checks: "si",
   // ---- full DML (the ordinary user-serving surface) ------------------------------------------------
