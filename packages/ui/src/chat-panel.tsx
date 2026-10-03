@@ -190,6 +190,11 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
   const tierNotches = ["base", "balanced", "frontier"] as const;
   return (
     <div className="chat-desk" data-chat="1" data-chat-thread={m.activeThreadId}>
+      {/* RUN.1 — the scroll region: everything EXCEPT the composer. Inside the Desk's fixed-height
+          drawer it scrolls (`.chat-body{flex:1;overflow:auto}`) so the composer pins to the drawer's
+          bottom edge and can never slide under `footer.ide-statusbar`; in the phone's page-flow
+          mount the region is unbounded and the composer simply follows the content. */}
+      <div className="chat-body">
       {/* threads — the project-scoped list; the default "Project chat" renders first, undeletable. */}
       <div className="chat-threads" role="navigation" aria-label={L.threadsHeading}>
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -355,52 +360,6 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
         </form>
       ) : null}
 
-      {/* the composer — a real form; the island swaps it for the streaming composer when script runs. */}
-      <form method="post" action={E.turn} className="chat-composer" data-chat-composer>
-        <input type="hidden" name="threadId" value={m.activeThreadId} />
-        <textarea
-          name="message"
-          rows={2}
-          required
-          placeholder={L.composerPlaceholder}
-          aria-label={L.composerPlaceholder}
-          style={{ width: "100%", fontSize: 13 }}
-        />
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button type="submit">{L.send}</button>
-          {/* REQ-CHAT-14 — the tier picker is notch-only (Base/Balanced/Frontier), never model text.
-              P1.19 §10.1 ✗ — rigor/model selection is a config control: it drops at phone width and
-              the turn posts with the thread's current tier. */}
-          {compact !== true ? (
-            <span role="radiogroup" aria-label={L.tierLabel} style={{ display: "inline-flex", gap: 4 }}>
-              {tierNotches.map((t) => (
-                <label key={t} data-chat-tier={t} style={{ fontSize: 12 }}>
-                  <input type="radio" name="modelTier" value={t} defaultChecked={m.tier === t} />{" "}
-                  {L.tiers[t]}
-                </label>
-              ))}
-            </span>
-          ) : null}
-          {/* the per-turn cost strip — metered rows only (REQ-CHAT-9). */}
-          {m.strip ? (
-            <span data-chat-strip style={{ fontSize: 12, color: "var(--shell-fg-muted)", marginLeft: "auto" }}>
-              {fmt(L.strip.creditsFmt, { n: m.strip.spentCredits, m: m.strip.capCredits })} ·{" "}
-              {fmt(L.strip.searchesFmt, { n: m.strip.searchesUsed, m: m.strip.searchesBudget })} ·{" "}
-              {fmt(L.strip.fetchesFmt, { n: m.strip.fetchesUsed, m: m.strip.fetchesBudget })}
-              {m.strip.workspaceSpent != null
-                ? ` · ${fmt(L.strip.workspaceFmt, { n: m.strip.workspaceSpent })}`
-                : ""}
-            </span>
-          ) : (
-            <span data-chat-strip style={{ fontSize: 12, color: "var(--shell-fg-faint)", marginLeft: "auto" }}>
-              {fmt(L.strip.creditsFmt, { n: 0, m: m.budgets.credits })} ·{" "}
-              {fmt(L.strip.searchesFmt, { n: 0, m: m.budgets.searches })} ·{" "}
-              {fmt(L.strip.fetchesFmt, { n: 0, m: m.budgets.fetches })}
-            </span>
-          )}
-        </div>
-      </form>
-
       {/* pins + "what the assistant remembers" (read-only brief; the correction posts a
           Guidance-class note — §7.1). */}
       <details className="chat-remembers" data-chat-remembers>
@@ -472,6 +431,56 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
           </ul>
         )}
       </div>
+      </div>{/* /chat-body */}
+
+      {/* the composer — a real form; the island swaps it for the streaming composer when script runs.
+          RUN.1 — pinned at the drawer's bottom edge (`.chat-composer{flex:0 0 auto}`), it is the LAST
+          child of `.chat-desk` so no amount of transcript/pins scroll ever carries it under
+          `footer.ide-statusbar`. */}
+      <form method="post" action={E.turn} className="chat-composer" data-chat-composer>
+        <input type="hidden" name="threadId" value={m.activeThreadId} />
+        <textarea
+          name="message"
+          rows={2}
+          required
+          placeholder={L.composerPlaceholder}
+          aria-label={L.composerPlaceholder}
+          style={{ width: "100%", fontSize: 13 }}
+        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button type="submit">{L.send}</button>
+          {/* REQ-CHAT-14 — the tier picker is notch-only (Base/Balanced/Frontier), never model text.
+              P1.19 §10.1 ✗ — rigor/model selection is a config control: it drops at phone width and
+              the turn posts with the thread's current tier. */}
+          {compact !== true ? (
+            <span role="radiogroup" aria-label={L.tierLabel} style={{ display: "inline-flex", gap: 4 }}>
+              {tierNotches.map((t) => (
+                <label key={t} data-chat-tier={t} style={{ fontSize: 12 }}>
+                  <input type="radio" name="modelTier" value={t} defaultChecked={m.tier === t} />{" "}
+                  {L.tiers[t]}
+                </label>
+              ))}
+            </span>
+          ) : null}
+          {/* the per-turn cost strip — metered rows only (REQ-CHAT-9). */}
+          {m.strip ? (
+            <span data-chat-strip style={{ fontSize: 12, color: "var(--shell-fg-muted)", marginLeft: "auto" }}>
+              {fmt(L.strip.creditsFmt, { n: m.strip.spentCredits, m: m.strip.capCredits })} ·{" "}
+              {fmt(L.strip.searchesFmt, { n: m.strip.searchesUsed, m: m.strip.searchesBudget })} ·{" "}
+              {fmt(L.strip.fetchesFmt, { n: m.strip.fetchesUsed, m: m.strip.fetchesBudget })}
+              {m.strip.workspaceSpent != null
+                ? ` · ${fmt(L.strip.workspaceFmt, { n: m.strip.workspaceSpent })}`
+                : ""}
+            </span>
+          ) : (
+            <span data-chat-strip style={{ fontSize: 12, color: "var(--shell-fg-faint)", marginLeft: "auto" }}>
+              {fmt(L.strip.creditsFmt, { n: 0, m: m.budgets.credits })} ·{" "}
+              {fmt(L.strip.searchesFmt, { n: 0, m: m.budgets.searches })} ·{" "}
+              {fmt(L.strip.fetchesFmt, { n: 0, m: m.budgets.fetches })}
+            </span>
+          )}
+        </div>
+      </form>
     </div>
   );
 }

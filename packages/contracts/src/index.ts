@@ -22,6 +22,9 @@ export * from "./delivery-label.js";
 export * from "./domain/findings.js";
 export * from "./domain/obligations.js";
 export * from "./domain/gates.js";
+// RUN.1 — the ONE gate-policy resolution (§6.4 item 3; REQ-GATE-3; REQ-SPEC-1/17; ADR-050): the
+// orchestrator's park decision, the run sheet's scope line, and every gate label derive from it.
+export * from "./domain/gate-policy.js";
 export * from "./domain/guidance.js";
 export * from "./domain/conversion.js";
 export * from "./domain/export.js";

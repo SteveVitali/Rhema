@@ -427,7 +427,11 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
         await deps.client.finalize();
         return { kind: "stopped", phasesCommitted };
       }
-      if (next.kind === "gate") return { kind: "gated", phasesCommitted }; //   the pod exits; the worker resumes
+      if (next.kind === "gate" && next.blocking !== false) return { kind: "gated", phasesCommitted }; // the pod exits; the worker resumes
+      // RUN.1 — an informational gate (blocking:false): the card opened server-side; the run keeps
+      // moving. The pod takes `next.then` — advance continues the phase loop; finalize falls into the
+      // delivery leg below exactly like a last-phase commit.
+      if (next.kind === "gate") next = { kind: next.then === "finalize" ? "finalize" : "advance" };
       if (next.kind === "finalize") {
         // deliver the assembled dossier when the run targets a draft and produced dossier content; else finalize bare.
         if (spec.delivery && outputs.delivery && outputs.delivery.deliveredPaths.length > 0) {

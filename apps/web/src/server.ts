@@ -588,6 +588,55 @@ export function createWebApp(deps: WebDeps): Hono {
   const chatReply = (c: Context, slug: string, payload: unknown, status = 200) =>
     wantsJson(c) ? c.json(payload, status as never) : c.redirect(`/p/${slug}#chat`);
 
+  /**
+   * RUN.1 (BL-55) — the chat proxy's truthful error path. The api's refusal statuses pass through
+   * VERBATIM (a 402 stays `{error:"insufficient_balance"}` at 402; a 409 stays `run_in_progress`) —
+   * the caller can name the refusal instead of staring at a bare 502. An api 5xx, a dropped
+   * connection, or an unbound seam is the only real gateway failure. Every refusal logs ONE
+   * structured line — route + requestId + upstream status/code — and NEVER the user's message text,
+   * the thread's content, or any prompt material (the body arrives in `message`; nothing logs it).
+   */
+  type ChatCall<T> = { readonly out: T } | { readonly status: number; readonly code: string };
+  const chatCall = async <T>(
+    route: string,
+    fn: () => Promise<T> | undefined,
+  ): Promise<ChatCall<T>> => {
+    const requestId = randomUUID();
+    try {
+      const out = await fn();
+      if (out === undefined) {
+        // the data-source seam isn't bound — the api would call this `chat_not_wired`.
+        console.error(
+          JSON.stringify({ level: "warn", msg: "chat seam unbound", route, requestId, upstreamStatus: null, upstreamCode: "chat_not_wired" }),
+        );
+        return { status: 503, code: "chat_not_wired" };
+      }
+      return { out };
+    } catch (e) {
+      if (e instanceof ApiError) {
+        const status = e.status >= 500 ? 502 : e.status;
+        console.error(
+          JSON.stringify({
+            level: status >= 500 ? "error" : "warn",
+            msg: "chat upstream refused",
+            route,
+            requestId,
+            upstreamStatus: e.status,
+            upstreamCode: e.code ?? null,
+          }),
+        );
+        return { status, code: status === 502 ? "chat_upstream_error" : (e.code ?? "chat_refused") };
+      }
+      console.error(
+        JSON.stringify({ level: "error", msg: "chat upstream unreachable", route, requestId, upstreamStatus: null, upstreamCode: null }),
+      );
+      return { status: 502, code: "chat_unavailable" };
+    }
+  };
+  /** The JSON reply a failed chat call returns — identical for form posts (no redirect eats the truth). */
+  const chatFail = (c: Context, res: { status: number; code: string }) =>
+    c.json({ error: res.code }, res.status as never);
+
   app.post("/p/:project/chat/turns", async (c) => {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
@@ -618,15 +667,15 @@ export function createWebApp(deps: WebDeps): Hono {
         `/p/${row.slug}/visualize${request ? `?request=${encodeURIComponent(request)}` : ""}`,
       );
     }
-    const out = await deps.dataSource
-      .postChatTurn?.(session, row.id, threadId, {
+    const res = await chatCall("chat/turns", () =>
+      deps.dataSource.postChatTurn?.(session, row.id, threadId, {
         message,
         ...(typeof body.modelTier === "string" ? { modelTier: body.modelTier } : {}),
         ...(typeof body.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
-      })
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
-    return chatReply(c, row.slug, out, 201);
+      }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    return chatReply(c, row.slug, res.out, 201);
   });
 
   app.post("/p/:project/chat/plan-decision", async (c) => {
@@ -639,13 +688,14 @@ export function createWebApp(deps: WebDeps): Hono {
     const action = body.action;
     if (!threadId || (action !== "run_research" && action !== "first_step" && action !== "edit" && action !== "cancel"))
       return c.json({ error: "threadId + action required" }, 422);
-    const out = await deps.dataSource
-      .postChatPlanDecision?.(session, row.id, threadId, {
+    const res = await chatCall("chat/plan-decision", () =>
+      deps.dataSource.postChatPlanDecision?.(session, row.id, threadId, {
         action,
         ...(typeof body.runId === "string" ? { runId: body.runId } : {}),
-      })
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+      }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     // run_research resolves to the SHEET href — the sheet's Run click is the only run creator.
     if (action === "run_research" && out.sheet?.href && !wantsJson(c)) return c.redirect(out.sheet.href);
     return chatReply(c, row.slug, out);
@@ -659,8 +709,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!name) return c.json({ error: "name required" }, 422);
-    const out = await deps.dataSource.createChatThread?.(session, row.id, { name }).catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    const res = await chatCall("chat/threads", () =>
+      deps.dataSource.createChatThread?.(session, row.id, { name }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     return chatReply(c, row.slug, out, 201);
   });
 
@@ -673,15 +726,16 @@ export function createWebApp(deps: WebDeps): Hono {
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const summary = typeof body.summary === "string" ? body.summary.trim() : "";
     if (!threadId || !summary) return c.json({ error: "threadId + summary required" }, 422);
-    const out = await deps.dataSource
-      .addChatPin?.(session, row.id, threadId, {
+    const res = await chatCall("chat/pins", () =>
+      deps.dataSource.addChatPin?.(session, row.id, threadId, {
         summary,
         ...(typeof body.kind === "string" ? { kind: body.kind as "fact" | "ref" | "source" } : {}),
         ...(typeof body.ref === "string" && body.ref ? { ref: body.ref } : {}),
         ...(body.dropOldest === "true" || body.dropOldest === true ? { dropOldest: true } : {}),
-      })
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+      }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     return chatReply(c, row.slug, out, 201);
   });
 
@@ -693,10 +747,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     if (!threadId) return c.json({ error: "threadId required" }, 422);
-    const out = await deps.dataSource
-      .removeChatPin?.(session, row.id, threadId, c.req.param("pinId"))
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    const res = await chatCall("chat/pins/remove", () =>
+      deps.dataSource.removeChatPin?.(session, row.id, threadId, c.req.param("pinId")),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     return chatReply(c, row.slug, out);
   });
 
@@ -709,10 +764,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const threadId = typeof body.threadId === "string" ? body.threadId : "";
     const text = typeof body.text === "string" ? body.text.trim() : "";
     if (!threadId || !text) return c.json({ error: "threadId + text required" }, 422);
-    const out = await deps.dataSource
-      .postChatCorrection?.(session, row.id, threadId, { text })
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    const res = await chatCall("chat/corrections", () =>
+      deps.dataSource.postChatCorrection?.(session, row.id, threadId, { text }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     return chatReply(c, row.slug, out, 201);
   });
 
@@ -727,8 +783,8 @@ export function createWebApp(deps: WebDeps): Hono {
     const ref = typeof body.ref === "string" ? body.ref : "";
     const replacement = typeof body.replacement === "string" ? body.replacement : "";
     if (!ref || !replacement.trim()) return c.json({ error: "ref + replacement required" }, 422);
-    const out = await deps.dataSource
-      .postChatSuggestion?.(session, row.id, {
+    const res = await chatCall("chat/suggestions", () =>
+      deps.dataSource.postChatSuggestion?.(session, row.id, {
         anchor: {
           ref,
           ...(typeof body.version === "string" && /^\d+$/.test(body.version)
@@ -739,17 +795,15 @@ export function createWebApp(deps: WebDeps): Hono {
           ...(typeof body.block === "string" && body.block ? { block: body.block } : {}),
         },
         replacement,
-      })
-      .catch((e: unknown) => e);
-    if (out == null) return c.json({ error: "chat unavailable" }, 502);
-    if (out instanceof Error) {
-      const code = (out as { code?: string }).code;
-      const msg = code === "suggestion_too_large" ? code : "suggestion_failed";
-      return wantsJson(c)
-        ? c.json({ error: msg }, 422)
-        : c.redirect(`/p/${row.slug}#chat`);
+      }),
+    );
+    if (!("out" in res)) {
+      // §7.4 — an over-paragraph refusal is a caller-correctable 422 (the code names /lineedit·/revise);
+      // every other refusal keeps the api's truthful status + the structured log line.
+      if (res.code === "suggestion_too_large" && !wantsJson(c)) return c.redirect(`/p/${row.slug}#chat`);
+      return chatFail(c, res);
     }
-    return chatReply(c, row.slug, out, 201);
+    return chatReply(c, row.slug, res.out, 201);
   });
 
   // §7.6 — the "Paste my notes" scratch write (lands at agents/author/notes.md — the author intake).
@@ -761,8 +815,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = await chatBody(c);
     const text = typeof body.text === "string" ? body.text : "";
     if (!text.trim()) return c.json({ error: "text required" }, 422);
-    const out = await deps.dataSource.postChatNote?.(session, row.id, { text }).catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+    const res = await chatCall("chat/notes", () =>
+      deps.dataSource.postChatNote?.(session, row.id, { text }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     return chatReply(c, row.slug, out, 201);
   });
 
@@ -779,15 +836,16 @@ export function createWebApp(deps: WebDeps): Hono {
     const mediaType = typeof body.mediaType === "string" ? body.mediaType : "";
     if (!quarantineKey || !filename || !mediaType)
       return c.json({ error: "quarantineKey + filename + mediaType required" }, 422);
-    const out = await deps.dataSource
-      .postChatAttachment?.(session, row.id, {
+    const res = await chatCall("chat/attachments", () =>
+      deps.dataSource.postChatAttachment?.(session, row.id, {
         quarantineKey,
         filename,
         mediaType,
         ...(typeof body.threadId === "string" && body.threadId ? { threadId: body.threadId } : {}),
-      })
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
+      }),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    const out = res.out;
     return chatReply(c, row.slug, out, 201);
   });
 
@@ -798,11 +856,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = await chatProject(c, session);
     if (!row) return c.json({ error: "project not found" }, 404);
     const threadId = c.req.query("thread") ?? "";
-    const out = await deps.dataSource
-      .getChatTurn?.(session, row.id, threadId, c.req.param("runId"))
-      .catch(() => null);
-    if (!out) return c.json({ error: "chat unavailable" }, 502);
-    return c.json(out);
+    const res = await chatCall("chat/turn-status", () =>
+      deps.dataSource.getChatTurn?.(session, row.id, threadId, c.req.param("runId")),
+    );
+    if (!("out" in res)) return chatFail(c, res);
+    return c.json(res.out);
   });
 
   // ---- P1.12 — the Outline surface (§7.3): the promotion sheet, the durable editor, deletion ----
@@ -5640,6 +5698,9 @@ function buildSheet(
     // P1.06 — the collapsed-row rows: the project's approval policy + the user's consent pref.
     // §7.2's `--wait`/`--auto` preset the Approvals pick; `--budget N` presets the editable cap.
     ...(approvalPick ? { approvalPolicy: approvalPick as "named" | "wait_each" | "run_to_completion" } : {}),
+    // RUN.1 (ADR-050) — the project's gate overrides ride so the scope line and the parked gate can
+    // never disagree (approve_scope:null ⇒ "waits for you" on both).
+    ...(ctx?.project?.approvalOverrides ? { projectGateOverrides: ctx.project.approvalOverrides } : {}),
     scopeBlocking,
     ...(protocolChanged ? { protocolChanged: true } : {}),
     ...(ctx?.dontAskUnder != null ? { dontAskUnder: ctx.dontAskUnder } : {}),

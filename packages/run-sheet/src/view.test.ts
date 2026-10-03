@@ -193,4 +193,44 @@ describe("buildRunSheetView — the launcher shape (§5.6)", () => {
     expect(u.protocolChangedLine).toBeUndefined();
     expect(u.scopeApprovalLine).toContain("informational");
   });
+
+  // RUN.1 (ADR-050) — the scope line resolves through the SAME `resolveGatePolicy` the runtime parks
+  // on: a project `approve_scope: null` override is the "waits for you" opt-in, and Run to completion
+  // skips the gate outright. The label can never disagree with the behavior again.
+  it("reads the project's gate overrides — approve_scope:null waits; run_to_completion skips", () => {
+    const waiting = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { words: 5180 },
+      spendableCredits: 100000,
+      projectGateOverrides: { approve_scope: null },
+    });
+    expect(waiting.scopeApprovalLine).toContain("waits for you");
+
+    const skipped = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { words: 5180 },
+      spendableCredits: 100000,
+      approvalPolicy: "run_to_completion",
+    });
+    expect(skipped.scopeApprovalLine).toContain("skipped");
+
+    // the override still loses to Run to completion (the policy skip wins over every named gate).
+    const both = buildRunSheetView({
+      ...BASE,
+      workflow: "review",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { words: 5180 },
+      spendableCredits: 100000,
+      approvalPolicy: "run_to_completion",
+      projectGateOverrides: { approve_scope: null },
+    });
+    expect(both.scopeApprovalLine).toContain("skipped");
+  });
 });

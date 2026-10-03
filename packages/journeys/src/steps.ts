@@ -1026,27 +1026,74 @@ const R1: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
-/** R4 (RED, RUN.1; paid) — a chat turn answers; Send is actionable at 1440×900 and phone width. */
+/** R4 (RED→RUN.1; paid) — a chat turn answers; Send is actionable at 1440×900 and phone width. */
 const R4: StepFn = async (ctx) => {
-  const { page } = await ctx.returningUser("a");
+  const { page, context } = await ctx.returningUser("a");
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   await followProjectLink(page, ctx);
-  const input = page
-    .locator('form[action$="/chat/turns"] input[name="body"], input[name="body"]')
-    .first();
-  if ((await input.count()) === 0) throw new Error("no chat input on the project page");
-  const send = page.locator('form[action$="/chat/turns"] button[type="submit"]').first();
-  await assertActionable(send, "chat Send @1440×900");
+  // RUN.1 — the Desk renders closed unless a run is live (data-desk="closed"); ⌘J opens it (the
+  // × toggle is clipped inside the closed drawer) and a tab click pins the Chat panel.
+  const ide = page.locator(".ide").first();
+  if ((await ide.getAttribute("data-desk")) !== "open") {
+    await page.keyboard.press("Control+j");
+    await page.waitForSelector('.ide[data-desk="open"]', { timeout: 5_000 });
+    await page.locator('[data-ide-desk-tab="chat"]').first().click();
+  }
+  const input = page.locator('.ide-desk form[data-chat-composer] textarea[name="message"]').first();
+  if ((await input.count()) === 0) throw new Error("no chat composer on the project page");
+  const send = page.locator('.ide-desk form[data-chat-composer] button[type="submit"]').first();
+  await assertActionable(send, "chat Send @1440×900"); // RUN.1 — was occluded by footer.ide-statusbar
   await input.fill(`${ctx.marker("CHAT")} — one-word reply please`);
   await send.click();
-  // the turn lands; an answer region renders (the turn's own page or the inline reply)
   await page.waitForLoadState("domcontentloaded");
-  await page.setViewportSize({ width: 390, height: 844 });
-  await assertActionable(
-    page.locator('form[action$="/chat/turns"] button[type="submit"]').first(),
-    "chat Send @390×844",
-  );
+  // the turn's answer: the reloaded transcript carries [data-chat-turn] rows; poll the turn-status
+  // endpoint until the run leaves queued/running (a bounded wait — the paid turn is the point).
+  const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
+  if (slug) {
+    const turnRow = page.locator("[data-chat-turn]").last();
+    await turnRow.waitFor({ state: "attached", timeout: 10_000 }).catch(() => undefined);
+    const turnId = await turnRow.getAttribute("data-chat-turn").catch(() => null);
+    if (turnId) {
+      const deadline = Date.now() + 150_000;
+      let state = "";
+      while (Date.now() < deadline) {
+        const r = await page.request.get(
+          `${ctx.webBaseUrl}/p/${slug}/chat/turns/${turnId}?thread=`,
+        );
+        if (r.ok()) {
+          state = ((await r.json()) as { state?: string }).state ?? "";
+          if (!["queued", "running", "provisioning"].includes(state)) break;
+        }
+        await page.waitForTimeout(4_000);
+      }
+      if (!state) throw new Error(`turn-status poll never returned the turn ${turnId}`);
+      if (["failed", "cancelled"].includes(state)) {
+        throw new Error(`chat turn ${turnId} terminal state ${state} — it did not answer`);
+      }
+    }
+  }
+  // the phone half — a real MOBILE context (the compact mount is UA-driven — `isPhoneRequest` —
+  // a bare viewport resize keeps the desktop mount, whose hidden desk composer then fails the probe).
+  const phone = await ctx.browser.newContext({
+    baseURL: ctx.webBaseUrl,
+    storageState: await context.storageState(),
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  try {
+    const pp = await phone.newPage();
+    await gotoOk(pp, page.url());
+    const sendP = pp
+      .locator('.ide-phone-only form[data-chat-composer] button[type="submit"]')
+      .first();
+    await assertActionable(sendP, "chat Send @390×844");
+  } finally {
+    await phone.close();
+  }
 };
 
 /** R5 (GREEN, JOURNEY.1) — an export downloads (the §13.4 export dialog → file). */
@@ -1251,14 +1298,55 @@ const R6: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
-/** R7 (RED, RUN.1) — an informational gate does not block; labels match behaviour. */
+/** R7 (RED→RUN.1) — an informational gate does not block; labels match behaviour. The free leg
+ *  checks the two surfaces it can read without spend: the run SHEET's scope-approval line (rendered
+ *  from the shared resolveGatePolicy — ADR-050) and every mounted gate card's co-occurrence
+ *  invariant (an informational card never rides a `waiting_gate` run card). A live run with an
+ *  open informational card proves the non-park directly whenever one exists (the paid legs). */
 const R7: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
-  const gate = page.locator('[data-gate-kind="informational"], [data-blocking="false"]').first();
-  if ((await gate.count()) === 0) {
-    throw new Error("no informational gate on the board to probe (or gates render unlabelled)");
+  await followProjectLink(page, ctx);
+  const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
+  if (!slug) throw new Error("no project slug on the landed page");
+
+  // (1) the sheet's scope line is one of the four canonical resolutions — never a hand-written
+  // variant that can disagree with the park decision again.
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review`);
+  const body = (await page.textContent("body")) ?? "";
+  const scopeLines = [
+    "informational; the run proceeds",
+    "waits for you at the scope gate",
+    "blocking gate opens at launch",
+    "skipped under Run to completion",
+  ];
+  if (!scopeLines.some((l) => body.includes(l))) {
+    throw new Error("the run sheet's scope-approval line matches no canonical resolution");
   }
+
+  // (2) the co-occurrence invariant on every run card: an informational gate card
+  //     ([data-informational]) may ride only a NON-waiting run, and a run card's waiting line
+  //     ([data-waiting-gate]) never co-exists with an informational card.
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
+  const bad = await page.evaluate(() => {
+    const out: string[] = [];
+    for (const card of document.querySelectorAll<HTMLElement>("[data-run-card]")) {
+      const informational = card.querySelector('[data-informational="true"]') != null;
+      const waitingLine = card.querySelector("[data-waiting-gate]") != null;
+      const state = card.getAttribute("data-run-state") ?? "";
+      if (informational && state === "waiting_gate") {
+        out.push(`${card.getAttribute("data-run-card")}: informational card on a waiting_gate run`);
+      }
+      if (informational && waitingLine) {
+        out.push(`${card.getAttribute("data-run-card")}: informational card + waiting line`);
+      }
+      if (!informational && card.querySelector('[data-blocking="false"]')) {
+        out.push(`${card.getAttribute("data-run-card")}: non-blocking gate card unlabelled`);
+      }
+    }
+    return out;
+  });
+  if (bad.length > 0) throw new Error(`gate label/behaviour mismatch: ${bad.join(" | ")}`);
 };
 
 // ---------------------------------------------------------------- phone + claims + isolation

@@ -457,9 +457,14 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     if (!(await ownProject(c, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
     const projectId = c.req.param("id");
+    // RUN.1 (ADR-050) — the Needs-you feed carries ACTIONABLE gates only: a blocking gate, or an
+    // informational gate whose run somehow still parks (a pre-RUN.1 row — resolvable here; it
+    // self-heals on the click). An informational gate on a moving run rides the run's Timeline card
+    // instead — it is observability, never a request for input.
     const res = await deps.db.query(
       `${OPEN_GATE_SELECT}
         where r.project_id = $1 and g.resolved_at is null
+          and (g.blocking = true or r.state = 'waiting_gate')
         order by g.opened_at, g.id`,
       [projectId],
     );

@@ -17,7 +17,7 @@ import { InsufficientBalanceError, AccountSuspendedError } from "./ledger.js";
 import { RUN_JOBS } from "./queue.js";
 import { serializeGateOverlay } from "./gate-overlay.js";
 import { captureGuidanceTx } from "./guidance.js";
-import type { RunState } from "./state-machine.js";
+import { canTransition, isTerminal, type RunState } from "./state-machine.js";
 import type { SqlClient } from "./tx.js";
 
 /** Conditional-update resolve (REQ-DATA-35): flip `resolved_at` only if still unresolved. Returns the winner. */
@@ -106,6 +106,32 @@ export async function emitGateResolved(
   await deps.eventWriter.append(tx, { runId, type: "gate.resolved", payload: { action, by }, at: now });
 }
 
+/**
+ * RUN.1 (ADR-050) — resolve every still-open INFORMATIONAL gate (`blocking:false`) on the run inside `tx`.
+ * An informational gate never parked the run — the card rides the run until the letter phase — so at the
+ * final boundary (the letter phase's begin, or any `→ finalizing` transition) the sweep writes each gate's
+ * `Decision{by:'policy', action:'proceed_as_proposed'}` + `gate.resolved` event and closes the row. Never a
+ * state transition: the run is already moving. Idempotent — the conditional resolve makes a replay a no-op.
+ */
+export async function autoResolveOpenInformationalGates(
+  tx: SqlClient,
+  deps: Pick<OrchestratorDeps, "eventWriter">,
+  runId: string,
+  now: Date,
+): Promise<void> {
+  const open = (
+    await tx.query(
+      "select id from gates where run_id = $1 and resolved_at is null and blocking = false for update",
+      [runId],
+    )
+  ).rows as { id: string }[];
+  for (const g of open) {
+    if (!(await conditionalResolve(tx, g.id, now))) continue;
+    await writeDecision(tx, now, { gateId: g.id, by: "policy", action: "proceed_as_proposed" });
+    await emitGateResolved(tx, deps, runId, "proceed_as_proposed", "policy", now);
+  }
+}
+
 // ---------------------------------------------------------------------------- user resolution
 
 export interface GateEdit {
@@ -145,6 +171,7 @@ export type ResolveGateResult =
 
 interface GateRunRow {
   kind: string;
+  blocking: boolean;
   resolved_at: Date | null;
   artifact_version_id: string | null;
   step_id: string | null;
@@ -177,13 +204,16 @@ class ConsentRollback extends Error {
 export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs): Promise<ResolveGateResult> {
   const now = deps.clock.now();
   // A box (not a bare `let`) so TS keeps the type across the tx closure that assigns it.
-  const box: { job: { name: string; payload: Record<string, unknown> } | null } = { job: null };
+  const box: { job: { name: string; payload: Record<string, unknown> } | null; requestCancel: boolean } = {
+    job: null,
+    requestCancel: false,
+  };
 
   const result = await deps.txRunner
     .run(args.workspaceId, async (tx): Promise<ResolveGateResult> => {
       const gr = (
         await tx.query(
-          `select g.kind, g.resolved_at, g.artifact_version_id, g.step_id,
+          `select g.kind, g.blocking, g.resolved_at, g.artifact_version_id, g.step_id,
                   r.state, r.workflow, r.project_id, r.current_attempt, r.current_step_id, r.cap_credits,
                   r.entitlement_id, r.hold_ledger_id, r.inputs, w.billing_account_id
              from gates g join runs r on r.id = g.run_id join workspaces w on w.id = r.workspace_id
@@ -193,7 +223,15 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
       ).rows[0] as GateRunRow | undefined;
       if (!gr) return { ok: false, reason: "not_found" };
       if (gr.resolved_at != null) return { ok: true, resolved: false, reason: "already_resolved" };
-      if (gr.state !== "waiting_gate" && gr.state !== "awaiting_consent") return { ok: true, resolved: false, reason: "not_waiting" };
+
+      // RUN.1 (ADR-050) — an INFORMATIONAL gate (`blocking:false`) never parked this run: it is still
+      // `running` (or parked at ANOTHER — blocking — gate, or finalizing). Resolving records the
+      // decision and its side effects but performs NO resume — the run is already moving. A
+      // `waiting_gate`/`awaiting_consent` run parked at THIS gate falls through to the legacy resume
+      // path, so a pre-RUN.1 parked informational gate self-heals on its first resolution.
+      const parkedAtGate = gr.state === "waiting_gate" || gr.state === "awaiting_consent";
+      const informational = gr.blocking === false && !parkedAtGate;
+      if (!informational && !parkedAtGate) return { ok: true, resolved: false, reason: "not_waiting" };
 
       if (!(await conditionalResolve(tx, args.gateId, now))) return { ok: true, resolved: false, reason: "already_resolved" };
 
@@ -201,6 +239,21 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
       if (args.action === "stop") {
         await writeDecision(tx, now, { gateId: args.gateId, by: "user", action: "stop", presence: args.presence });
         await emitGateResolved(tx, deps, args.runId, "stop", "user", now);
+        if (isTerminal(gr.state)) {
+          // the run already ended — the stop decision stands for the record only.
+          return { ok: true, resolved: true, state: gr.state, overlayVersionIds: [] };
+        }
+        if (gr.state === "running") {
+          // §12.4: a live run steps through `cancelling` so the pod quiesces at a tool-batch boundary
+          // (the heartbeat cancel flag goes out post-commit; the reaper completes the settle).
+          await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "cancelling", reason: "stop" });
+          box.requestCancel = true;
+          return { ok: true, resolved: true, state: "cancelling", overlayVersionIds: [] };
+        }
+        if (!canTransition(gr.state, "cancelled")) {
+          // orphaned / finalizing — no legal cancel edge; the decision stands, the run's owner settles.
+          return { ok: true, resolved: true, state: gr.state, overlayVersionIds: [] };
+        }
         await applyTransition(tx, deps, { runId: args.runId, from: gr.state, to: "cancelled", reason: "stop" });
         if (gr.hold_ledger_id) {
           await deps.ledger.release(tx, {
@@ -276,6 +329,12 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
         overlayVersionIds,
       });
       await emitGateResolved(tx, deps, args.runId, args.action, "user", now);
+
+      // RUN.1 — the informational-gate resolution ends here: the decision + overlays + guidance +
+      // autonomous flag land; the run is already moving, so there is nothing to resume.
+      if (informational) {
+        return { ok: true, resolved: true, state: gr.state, overlayVersionIds, guidanceId };
+      }
 
       // confirm_cost consent → place the hold + first launch (run.start), attempt unchanged.
       if (gr.state === "awaiting_consent") {
@@ -367,6 +426,11 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
       // resume that would find no uncommitted phase.
       const allCommitted = await allActivePhasesCommitted(tx, args.runId, gr.workflow, gr.inputs);
       const to: RunState = allCommitted ? "finalizing" : "queued";
+      if (allCommitted) {
+        // RUN.1 — the last-phase gate resolved into finalizing: close any still-open informational
+        // gates alongside it (their card's ride ends with the run).
+        await autoResolveOpenInformationalGates(tx, deps, args.runId, now);
+      }
       await applyTransition(tx, deps, {
         runId: args.runId,
         from: "waiting_gate",
@@ -387,6 +451,11 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
   // enqueue AFTER commit (pg-boss send is not transactional; a lost/early send is a no-op — singleton-keyed).
   if (result.ok && result.resolved && box.job) {
     await deps.queue.send(box.job.name, box.job.payload, { singletonKey: args.runId });
+  }
+  // RUN.1 — a `stop` on an informational gate moved `running → cancelling`: flag the live task so the
+  // pod quiesces at the next tool-batch boundary (the reaper then completes the settle).
+  if (result.ok && result.resolved && box.requestCancel) {
+    await deps.heartbeats.requestCancel(args.runId).catch(() => undefined);
   }
   return result;
 }
@@ -432,6 +501,10 @@ async function autoResolveGate(
       // phase's gate finalizes the run rather than resuming into no uncommitted phase.
       const allCommitted = await allActivePhasesCommitted(tx, args.runId, gr.workflow, gr.inputs);
       const to: RunState = allCommitted ? "finalizing" : "queued";
+      if (allCommitted) {
+        // RUN.1 — close still-open informational gates as the run heads to finalizing.
+        await autoResolveOpenInformationalGates(tx, deps, args.runId, now);
+      }
       await applyTransition(tx, deps, { runId: args.runId, from: "waiting_gate", to, reason: args.reason, fields: { currentAttempt: nextAttempt } });
       if (allCommitted) {
         box.name = RUN_JOBS.finalize;

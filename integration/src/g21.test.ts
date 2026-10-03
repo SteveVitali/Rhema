@@ -19,7 +19,8 @@ let h: G21Harness;
 beforeEach(async () => { h = await createG21Harness(); });
 afterEach(() => h.close());
 
-const GATE_NEXT = { kind: "gate", gateKind: "approve_scope", blocking: false, onExpiry: "proceed_as_proposed" } as const;
+// RUN.1 (ADR-050) — this fixture drives the BLOCKING leg of the gate path: the human still waits.
+const GATE_NEXT = { kind: "gate", gateKind: "approve_scope", blocking: true, onExpiry: "proceed_as_proposed" } as const;
 
 /** create → provision → heartbeat → (running). Returns the runId + the attempt-1 run token. */
 async function toRunning(): Promise<{ runId: string; token: string; attempt: number }> {

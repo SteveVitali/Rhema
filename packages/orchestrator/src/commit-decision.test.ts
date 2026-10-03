@@ -21,6 +21,22 @@ describe("decideCommitNext", () => {
     if (next.kind === "gate") expect(next.gateKind).toBe("approve_scope");
   });
 
+  // RUN.1 (ADR-050) — `then` carries the transition an informational gate's run takes instead of
+  // parking: "advance" mid-run, "finalize" after the last phase; a BLOCKING gate carries no `then`.
+  it("an informational gate carries then:'advance' mid-run and then:'finalize' on the last phase", () => {
+    const mid = decideCommitNext({ phase: intake, isLastPhase: false, gate: ctx() });
+    expect(mid).toMatchObject({ kind: "gate", blocking: false, then: "advance" });
+    const gatedLast: PhaseManifest = { ...craft, gateAfter: "approve_scope" };
+    const last = decideCommitNext({ phase: gatedLast, isLastPhase: true, gate: ctx() });
+    expect(last).toMatchObject({ kind: "gate", blocking: false, then: "finalize" });
+  });
+
+  it("a blocking gate carries NO then — the run waits for the decision", () => {
+    const next = decideCommitNext({ phase: intake, isLastPhase: false, gate: ctx({ scopeBlocking: true }) });
+    expect(next).toMatchObject({ kind: "gate", blocking: true });
+    if (next.kind === "gate") expect(next.then).toBeUndefined();
+  });
+
   it("a gate skipped by run_to_completion advances instead of gating", () => {
     const next = decideCommitNext({ phase: intake, isLastPhase: false, gate: ctx({ policy: "run_to_completion" }) });
     expect(next.kind).toBe("advance");

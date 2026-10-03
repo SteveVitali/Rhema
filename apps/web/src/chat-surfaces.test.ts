@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import type { ProjectRow, ChatPanelDto } from "@rhema/api-client";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { ApiError, type ProjectRow, type ChatPanelDto } from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
 
@@ -248,5 +248,157 @@ describe("POST /p/:slug/chat/* — session-forwarded writes", () => {
       ...json({ threadId: "thr_1", message: "hi" }),
     });
     expect(res.status).toBe(401);
+  });
+});
+
+// RUN.1 (BL-55) — the 2026-09-30 prod defect: the api's 402 `insufficient_balance` reached the web as
+// a bare 502 `chat unavailable` with no log trail. The proxy now passes refusal statuses/codes
+// through VERBATIM and logs ONE structured line (route + requestId + upstream status/code — never
+// the user's message text).
+describe("RUN.1 — the chat proxy's truthful error path", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const errorSpy = () => vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const lastLog = () => {
+    const calls = vi.mocked(console.error).mock.calls;
+    return JSON.parse(String(calls[calls.length - 1]?.[0] ?? "{}")) as Record<string, unknown>;
+  };
+
+  it("an api 402 passes through as 402 {error:'insufficient_balance'} — and logs the trail", async () => {
+    errorSpy();
+    const postChatTurn = vi.fn(async () => {
+      throw new ApiError(402, "https://api.test/chat/turns", "payment required", "insufficient_balance");
+    });
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(402);
+    expect((await res.json()) as { error: string }).toEqual({ error: "insufficient_balance" });
+    expect(lastLog()).toMatchObject({
+      msg: "chat upstream refused",
+      route: "chat/turns",
+      upstreamStatus: 402,
+      upstreamCode: "insufficient_balance",
+    });
+    expect(String(lastLog().requestId)).toBeTruthy();
+  });
+
+  it("an api 409 (a live run conflicts) passes through as 409 run_in_progress", async () => {
+    errorSpy();
+    const postChatTurn = vi.fn(async () => {
+      throw new ApiError(409, "https://api.test/chat/turns", "conflict", "run_in_progress");
+    });
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(409);
+    expect((await res.json()) as { error: string }).toEqual({ error: "run_in_progress" });
+  });
+
+  it("an api 5xx is the real gateway failure — 502 chat_upstream_error, error-level log", async () => {
+    errorSpy();
+    const postChatTurn = vi.fn(async () => {
+      throw new ApiError(503, "https://api.test/chat/turns", "down");
+    });
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(502);
+    expect((await res.json()) as { error: string }).toEqual({ error: "chat_upstream_error" });
+    expect(lastLog()).toMatchObject({ level: "error", upstreamStatus: 503 });
+  });
+
+  it("a dropped connection (a non-ApiError throw) is 502 chat_unavailable", async () => {
+    errorSpy();
+    const postChatTurn = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    });
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(502);
+    expect((await res.json()) as { error: string }).toEqual({ error: "chat_unavailable" });
+    expect(lastLog()).toMatchObject({ msg: "chat upstream unreachable", route: "chat/turns" });
+  });
+
+  it("an unbound data-source seam is 503 chat_not_wired — never a mystery 502", async () => {
+    errorSpy();
+    const app = createWebApp(makeDeps()); // no postChatTurn bound
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(503);
+    expect((await res.json()) as { error: string }).toEqual({ error: "chat_not_wired" });
+    expect(lastLog()).toMatchObject({ msg: "chat seam unbound", route: "chat/turns" });
+  });
+
+  it("a FORM post gets the same truthful failure — no redirect eats the refusal", async () => {
+    errorSpy();
+    const postChatTurn = vi.fn(async () => {
+      throw new ApiError(402, "https://api.test/chat/turns", "payment required", "insufficient_balance");
+    });
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    const res = await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...form({ threadId: "thr_1", message: "hi" }),
+    });
+    expect(res.status).toBe(402);
+    expect((await res.json()) as { error: string }).toEqual({ error: "insufficient_balance" });
+  });
+
+  it("every chat route keeps the api's truthful status + code (not just /turns)", async () => {
+    errorSpy();
+    const refuse = () => {
+      throw new ApiError(403, "https://api.test/x", "forbidden", "account_suspended");
+    };
+    const app = createWebApp(
+      makeDeps({
+        postChatCorrection: refuse,
+        postChatSuggestion: refuse,
+        postChatNote: refuse,
+        postChatAttachment: refuse,
+        getChatTurn: refuse,
+      } as Partial<DataSource>),
+    );
+    const cases: ReadonlyArray<readonly [string, RequestInit]> = [
+      ["/p/demo/chat/corrections", { method: "POST", ...json({ threadId: "t", text: "fix" }) }],
+      ["/p/demo/chat/suggestions", { method: "POST", ...json({ ref: "v1:p0", replacement: "x" }) }],
+      ["/p/demo/chat/notes", { method: "POST", ...json({ text: "notes" }) }],
+      [
+        "/p/demo/chat/attachments",
+        { method: "POST", ...json({ quarantineKey: "k", filename: "f.pdf", mediaType: "application/pdf" }) },
+      ],
+      ["/p/demo/chat/turns/run_1?thread=t", { method: "GET" }],
+    ];
+    for (const [path, init] of cases) {
+      const res = await app.request(path, init);
+      expect(res.status, path).toBe(403);
+      expect(((await res.json()) as { error: string }).error, path).toBe("account_suspended");
+    }
+  });
+
+  it("the log line never carries the user's message text", async () => {
+    errorSpy();
+    const secret = "the passphrase my notes carry";
+    const postChatTurn = vi.fn(async () => {
+      throw new ApiError(402, "https://api.test/chat/turns", "payment required", "insufficient_balance");
+    });
+    const app = createWebApp(makeDeps({ postChatTurn }));
+    await app.request("/p/demo/chat/turns", {
+      method: "POST",
+      ...json({ threadId: "thr_1", message: secret }),
+    });
+    for (const call of vi.mocked(console.error).mock.calls) {
+      expect(JSON.stringify(call)).not.toContain(secret);
+    }
   });
 });

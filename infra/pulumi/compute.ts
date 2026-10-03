@@ -514,9 +514,16 @@ export function createCompute(args: ComputeArgs): Compute {
                     },
                     { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
                     // The reconstruction key secret NAME — same anthropic-api-key version the
-                    // walkthrough generator may point at (INGEST_MODEL_KEY_SECRET overrides).
+                    // walkthrough generator points at (INGEST_MODEL_KEY_SECRET overrides).
                     ...(requires("anthropic-api-key")
                       ? [{ name: "INGEST_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }]
+                      : []),
+                    // RUN.1 — the walkthrough generator's model key: the same anthropic-api-key secret
+                    // VERSION the proxy reads (worker SA holds secretAccessor — iam.ts `worker-reads-
+                    // anthropic`; ADR-052). Never the value — the worker `access`es the name at boot;
+                    // unset on stages without the provider key ⇒ the failing stub binds.
+                    ...(requires("anthropic-api-key")
+                      ? [{ name: "WALKTHROUGH_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }]
                       : []),
                   ],
                 }
