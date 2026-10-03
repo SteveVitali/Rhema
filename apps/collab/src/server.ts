@@ -10,7 +10,7 @@ import http from "node:http";
 import type { IncomingMessage } from "node:http";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { Hocuspocus } from "@hocuspocus/server";
+import { Hocuspocus, type Extension } from "@hocuspocus/server";
 import { WebSocketServer, type WebSocket } from "ws";
 import { Storage } from "@google-cloud/storage";
 import pg from "pg";
@@ -46,6 +46,8 @@ async function routePrincipal(
 export interface CollabService {
   readonly app: Hono;
   readonly hocuspocus: Hocuspocus<Record<string, unknown>>;
+  /** the mounted extension — a test seam (drive onStoreDocument to observe the fork/readonly broadcasts). */
+  readonly extension: Extension<Record<string, unknown>>;
   readonly runtimes: Map<string, DocRuntime>;
   /** ws.WebSocket → handleConnection — the http server's upgrade hook calls this. */
   readonly handleUpgrade: (ws: WebSocket, req: IncomingMessage) => void;
@@ -141,6 +143,7 @@ export function createCollabService(deps: CollabServiceDeps): CollabService {
   return {
     app,
     hocuspocus,
+    extension,
     runtimes,
     handleUpgrade: (ws, req) => {
       // handleConnection returns the ClientConnection — the integration owns the ws event wiring

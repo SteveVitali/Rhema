@@ -42,6 +42,9 @@ export interface StoreOutcome {
   readonly locked: boolean;
   /** the head the markdown landed on — differs from rt.draftId when the store itself forked. */
   readonly draftId: string;
+  /** that head's version number when materialization ran — the fork broadcast's "Editing vN".
+   *  null on the early-out paths (run lock, showcase belt, not_editable), which never fork. */
+  readonly draftN: number | null;
   readonly sha256: string | null;
   readonly forked: boolean;
   readonly changed: boolean;
@@ -125,7 +128,7 @@ export async function storeDocument(
       if (rt.pendingDelta.length > 0) {
         await flushRestorePoint(tx, deps, rt, doc, { cause: "pre_run" });
       }
-      return { stored: true, locked: true, draftId: rt.draftId, sha256: null, forked: false, changed: false, restorePointId: null };
+      return { stored: true, locked: true, draftId: rt.draftId, draftN: null, sha256: null, forked: false, changed: false, restorePointId: null };
     }
 
     // EDIT.1 (§15.4) — the Showcase never materializes: auth already attaches its drafts read-only,
@@ -140,6 +143,7 @@ export async function storeDocument(
         stored: true,
         locked: true,
         draftId: rt.draftId,
+        draftN: null,
         sha256: null,
         forked: false,
         changed: false,
@@ -175,6 +179,7 @@ export async function storeDocument(
         stored: true,
         locked: true,
         draftId: rt.draftId,
+        draftN: null,
         sha256: null,
         forked: false,
         changed: false,
@@ -224,6 +229,7 @@ export async function storeDocument(
       stored: true,
       locked: false,
       draftId: res.draftId,
+      draftN: res.draftN,
       sha256: res.sha256,
       forked: res.forked,
       changed: res.changed,

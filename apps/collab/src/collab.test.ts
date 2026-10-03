@@ -324,6 +324,49 @@ describe("collab service (P1.03)", () => {
     expect(ro.readOnly).toBe(true);
   });
 
+  // EDIT.1 — the N8 prod walk: the store-side fork LANDED (v2 in the DB) yet the client's §5.4
+  // banner never flipped. hocuspocus's closeConnections sends an in-band CLOSE but leaves the
+  // socket open, so the provider never re-auths — the frozen_fork refusal it re-points on never
+  // arrives. The store must therefore broadcast `rhema.fork` (the child id + n) out-of-band BEFORE
+  // the close. Drive the real extension hook and capture the broadcast.
+  it("onStoreDocument broadcasts rhema.fork (child id + n) before closing the frozen head's connections", async () => {
+    await fx.exec.query("update drafts set state = 'frozen' where id = $1", [DRAFT]);
+    const conn = await openDoc(fx);
+    const broadcasts: string[] = [];
+    const doc = conn.document!;
+    const realBroadcast = (doc as { broadcastStateless?: (p: string) => void }).broadcastStateless?.bind(doc);
+    (doc as { broadcastStateless: (p: string) => void }).broadcastStateless = (p) => {
+      broadcasts.push(p);
+      realBroadcast?.(p);
+    };
+    const closed: string[] = [];
+    try {
+      typeAll(doc, BASE_MD + "\nFirst write forks.\n");
+      await fx.service.extension.onStoreDocument!({
+        documentName: `draft:${DRAFT}`,
+        document: doc,
+        lastContext: ctx,
+        instance: { closeConnections: (name: string) => closed.push(name) } as never,
+      } as never);
+
+      const child = (
+        await fx.exec.query("select id, n from drafts where base_draft_id = $1", [DRAFT])
+      ).rows[0] as { id: string; n: number };
+      const forkMsg = broadcasts
+        .map((b) => JSON.parse(b) as { type?: string; draftId?: string; draftN?: number })
+        .find((m) => m.type === "rhema.fork");
+      expect(forkMsg, "a rhema.fork stateless reaches the live connection").toMatchObject({
+        type: "rhema.fork",
+        draftId: child.id,
+        draftN: child.n,
+      });
+      expect(closed).toEqual([`draft:${DRAFT}`]);
+      expect(fx.service.runtimes.get(`draft:${DRAFT}`)?.draftId).toBe(child.id);
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
   it("the Showcase attaches read-only at auth and never materializes — no fork, no y_state write (§15.4)", async () => {
     // the real showcase shape: a frozen seeded head on a showcase-flagged project
     await fx.exec.query("update projects set showcase = true where id = $1", [PROJ]);

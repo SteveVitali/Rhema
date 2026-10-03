@@ -191,10 +191,21 @@ export function createCollabExtension(deps: CollabExtensionDeps): CollabExtensio
       const headMoved = outcome.draftId !== rt.draftId;
       if (headMoved) rt.draftId = outcome.draftId;
       if (outcome.locked || headMoved) {
-        // The head moved under this document (a run lock landed, or the store itself forked/routed
-        // a frozen base to its working child): close every connection — each client's re-auth
-        // re-resolves the binding (read-only under a lock; the frozen_fork refusal carrying the new
-        // head after a fork).
+        // EDIT.1 — the clients must be TOLD, not just dropped: hocuspocus's closeConnections sends
+        // an in-band CLOSE message but leaves the WebSocket OPEN, so the provider marks itself
+        // unauthenticated yet never re-connects — no re-auth means no frozen_fork refusal and the
+        // frozen→v(N+1) banner never flipped on the live N8 walk (the fork had already landed in
+        // the DB). A stateless carry the head move/lock truthfully BEFORE the close: `rhema.fork`
+        // hands the client its child (id + n — the same payload the auth refusal carries), and a
+        // locked/skipped store reads as the read-only signal. The close still runs for clients that
+        // predate the stateless vocabulary.
+        if (headMoved && outcome.draftN != null) {
+          document.broadcastStateless(
+            JSON.stringify({ type: "rhema.fork", draftId: outcome.draftId, draftN: outcome.draftN }),
+          );
+        } else if (outcome.locked) {
+          document.broadcastStateless(JSON.stringify({ type: "rhema.readonly" }));
+        }
         instance.closeConnections(documentName);
       }
     },
