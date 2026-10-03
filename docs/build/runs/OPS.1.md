@@ -287,3 +287,29 @@ prod-parity digests as dev. Live evidence collected pre-destroy:
   ADR-079 (IaC-generated non-prod secrets — verified; placeholder set extended by
   F-OPS.1-9), ADR-080 (preview journey subset — N10 verified; invite-mode copy gate fixed
   per F-OPS.1-11). adr-index regenerated.
+
+## 8 — Addendum 2026-10-03 21:3xZ (teardown tail + final gates)
+
+- **Correction to §6 F-OPS.1-12 (append-only):** pr-102's serverless reservation did **not**
+  release inside its destroy run. Live sequence: pr-102 destroy pass 1 deleted 127 resources
+  then halted on `private-app` (reservation `serverless-ipv4-cloudrun-1791058478000525364`
+  RESERVED); a second pass (`preview-stack.mjs destroy pr-102 --continue-on-error`) deleted the
+  remaining 57 skeleton resources — leaving exactly `rhema-pr-102-net` + `private-app` in
+  state/GCP — and proved `retainOnDelete` live: the shared `rhema-journeys` SA, gmail API
+  service, and token-creator grant were dropped from state with `[retain]` and verified NOT
+  deleted in GCP.
+- **dev tail finished:** dev's own reservation (`…724160`) released after ~1–2 h; its
+  `private-app` subnet then deleted cleanly. The final `pulumi destroy` also surfaced two
+  pre-OPS.1 hand-created orphans blocking `rhema-dev-net` — `rhema-dev-allow-api-ilb` and
+  `rhema-dev-allow-iap-ssh` firewall rules plus the `rhema-dev-proxy-only` subnet (none in
+  Pulumi state; deleted via gcloud) — and four stale `rhema-dev-stb4-*` secrets from an
+  earlier Stage B run (deleted). dev stack now holds **0 resources**, registered for the next
+  standing-stage `up` (ADR-077 idle posture satisfied at the strongest level).
+- **Final full-suite gate re-run:** `pnpm vitest` — 439 files / 4,392 tests passed, 1 skipped
+  (the earlier four failures were the compute-ingress / walkthrough-env / observability-metric
+  source-slice assumptions fixed in-tree, plus one fetcher SSRF parallel-run flake that passes
+  standalone). `turbo build lint typecheck` 135/135. build-memory check: no violations.
+- **Still pending at addendum time:** pr-102's reservation (≈40 min old vs dev's ~1–2 h);
+  final guarded `destroy` of `net`+`private-app` → `rm pr-102` → orphan enumeration completes
+  when GCP releases it. All three residual objects are zero-cost.
+- **PR:** #102 opened on `stevevitali/ops-1-preview-stages` (SEC.3 base), BUILD_INDEX row 108.
