@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
-import { apiOnError, instrumentReads, requestContext } from "./observability.js";
+import { apiOnError, instrumentReads, instrumentStoreFactory, requestContext } from "./observability.js";
 
 function makeApp(gcpProject?: string) {
   const store = instrumentReads(
@@ -140,6 +140,23 @@ describe("api request-context middleware + onError (OBS.1)", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+  it("instrumentStoreFactory instruments the RESOLVED store, not the factory's promise (prod dossier 500)", async () => {
+    // Regression for the OBS.1 deploy-time defect: wrapping the factory RESULT directly proxied a
+    // Promise — `await` ran `Promise.prototype.then` through the trap with `this` = the proxy and
+    // threw TypeError (`at Proxy.then`). Both factory shapes must yield an instrumented store.
+    for (const factory of [
+      async () => ({ async get(_s: string): Promise<Uint8Array | null> { return new Uint8Array([7]); } }),
+      () => ({ async get(_s: string): Promise<Uint8Array | null> { return new Uint8Array([7]); } }),
+    ]) {
+      const bound = instrumentStoreFactory(factory, ["get", "put"]);
+      const store = await bound("ws-1"); // this await is what TypeError'd in prod
+      expect(store).toBeTruthy();
+      await expect(store!.get("x")).resolves.toEqual(new Uint8Array([7]));
+    }
+    // And a null factory result passes through (the nullable contentStoreFor variants).
+    const boundNull = instrumentStoreFactory(async () => null, ["get"]);
+    await expect(boundNull("ws-1")).resolves.toBeNull();
   });
   it("omits the trace field when no trace hop header arrives", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});

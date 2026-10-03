@@ -41,7 +41,7 @@ import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js
 import { createChatRoutes, type ChatApiDeps } from "./chat-routes.js";
 import { createOutlineRoutes, type OutlineApiDeps } from "./outline-routes.js";
 import { createFigureRoutes, type FigureApiDeps } from "./figure-routes.js";
-import { apiOnError, instrumentReads, requestContext } from "./observability.js";
+import { apiOnError, instrumentReads, instrumentStoreFactory, requestContext } from "./observability.js";
 import { randomUUID } from "node:crypto";
 import type { ContentStore, RestoreBlobStore } from "@rhema/mirror";
 
@@ -306,7 +306,10 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
       ...(deps.txRunner ? { txRunner: instrumentReads(deps.txRunner, ["run"]) } : {}),
       ...(innerStoreFor
         ? {
-            contentStoreFor: (workspaceId: string) => instrumentReads(innerStoreFor(workspaceId), ["get", "put"]),
+            // `contentStoreFor` is a FACTORY: the resolved store gets instrumented, never the
+            // factory's Promise (proxying it broke `await` — `Promise.prototype.then` ran through
+            // the trap with `this` = the proxy → TypeError; the prod dossier 500).
+            contentStoreFor: instrumentStoreFactory(innerStoreFor, ["get", "put"]),
           }
         : {}),
     };

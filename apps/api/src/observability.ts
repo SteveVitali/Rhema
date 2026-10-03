@@ -78,6 +78,23 @@ export function instrumentReads<T extends object>(target: T, methods: readonly s
   });
 }
 
+/**
+ * Instrument a store FACTORY (`contentStoreFor` — its result is `Promise<ContentStore>` on the live
+ * binding but a bare store on some test fakes). The resolved STORE is proxied, never the factory's
+ * return value itself: proxying a Promise makes `await` invoke `Promise.prototype.then` through the
+ * trap with `this` = the proxy → `TypeError` at `Proxy.then` (the prod dossier 500 OBS.1's own
+ * error line caught on deploy). Null/undefined factory results pass through.
+ */
+export function instrumentStoreFactory<F extends (workspaceId: string) => unknown>(
+  factory: F,
+  methods: readonly string[],
+): (workspaceId: string) => Promise<Awaited<ReturnType<F>>> {
+  return (workspaceId: string) =>
+    Promise.resolve(factory(workspaceId)).then((store) =>
+      (store == null ? store : instrumentReads(store as object, methods)) as Awaited<ReturnType<F>>,
+    );
+}
+
 /** The request's resolved correlation context, stashed by `requestContext` middleware. */
 export function requestLogContext(c: Context): RequestLogContext {
   return (
