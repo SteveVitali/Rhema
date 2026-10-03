@@ -75,3 +75,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-067](ADR-067-phone-action-row.md) | The phone action row keeps `<a>` elements styled as ≥44-px button controls — no overflow menu | UX.2 | Accepted |
 | [ADR-068](ADR-068-axe-core-accessibility-checker.md) | axe-core is the WCAG 2.2 AA checker — injected by the journeys harness, MPL-2.0 exception checked in | UX.2 | Accepted |
 | [ADR-069](ADR-069-sync-pill-in-flow.md) | The sync pill renders in flow at the paper's head — `position: fixed` removed | UX.2 | Accepted |
+| [ADR-070](ADR-070-faint-tier-aa-text.md) | `--shell-fg-faint` is a text tier — retuned to AA (≥4.5:1) on every ground | UX.2 | Accepted |

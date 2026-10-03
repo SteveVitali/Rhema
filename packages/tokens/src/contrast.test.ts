@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { contrastRatio } from "./contrast.js";
-import { DARK_VARS, LIGHT_VARS, paperVars } from "./tokens.js";
+import { DARK_VARS, LIGHT_VARS, paperVars, paperScopeVars } from "./tokens.js";
 import type { VarMap } from "./tokens.js";
 
 const fg = (v: VarMap, k: string) => v[k]!;
@@ -32,6 +32,18 @@ describe("§5.9 contrast invariants — dark theme", () => {
     );
     // muted/faint are secondary tiers — AA normal text, not the AAA body rule.
     expectMin([[fg(v, "--shell-fg-muted"), fg(v, "--shell-surface")]], 4.5, "dark shell muted");
+    // UX.2 (ADR-070) — the faint tier IS used for real text (footer, meta lines, gate/run-sheet
+    // captions at 11–13 px) — it must clear AA's 4.5:1 text bar on every shell ground, not the
+    // 3:1 non-text-mark floor (the spec-verbatim #5f6873 failed axe's color-contrast on /pricing).
+    expectMin(
+      [
+        [fg(v, "--shell-fg-faint"), fg(v, "--shell-bg")],
+        [fg(v, "--shell-fg-faint"), fg(v, "--shell-surface")],
+        [fg(v, "--shell-fg-faint"), fg(v, "--shell-raised")],
+      ],
+      4.5,
+      "dark shell faint (text tier)",
+    );
   });
   it("paper body ≥ 10:1 (AAA reading contrast)", () => {
     expectMin([[fg(v, "--paper-fg"), fg(v, "--paper-bg")]], 10, "dark paper");
@@ -59,7 +71,6 @@ describe("§5.9 contrast invariants — dark theme", () => {
   it("non-text marks ≥ 3:1 — kind hues and the faint tier carry meaning", () => {
     expectMin(
       [
-        [fg(v, "--shell-fg-faint"), fg(v, "--shell-surface")],
         [fg(v, "--kind-claim"), fg(v, "--shell-surface")],
         [fg(v, "--kind-discourse"), fg(v, "--shell-surface")],
         [fg(v, "--kind-argument"), fg(v, "--shell-surface")],
@@ -92,6 +103,16 @@ describe("§5.9 contrast invariants — light theme", () => {
     );
     // muted is the spec-verbatim secondary tier (#5c6670) — AA normal text, not the AAA body rule.
     expectMin([[fg(v, "--shell-fg-muted"), fg(v, "--shell-surface")]], 4.5, "light shell muted");
+    // UX.2 (ADR-070) — same text-tier bar on the light grounds (#7a828f failed it at ~3.5:1).
+    expectMin(
+      [
+        [fg(v, "--shell-fg-faint"), fg(v, "--shell-bg")],
+        [fg(v, "--shell-fg-faint"), fg(v, "--shell-surface")],
+        [fg(v, "--shell-fg-faint"), fg(v, "--shell-raised")],
+      ],
+      4.5,
+      "light shell faint (text tier)",
+    );
   });
   it("paper body ≥ 10:1 (AAA reading contrast)", () => {
     expectMin([[fg(v, "--paper-fg"), fg(v, "--paper-bg")]], 10, "light paper");
@@ -118,7 +139,6 @@ describe("§5.9 contrast invariants — light theme", () => {
   it("non-text marks ≥ 3:1", () => {
     expectMin(
       [
-        [fg(v, "--shell-fg-faint"), fg(v, "--shell-surface")],
         [fg(v, "--kind-claim"), fg(v, "--shell-surface")],
         [fg(v, "--kind-discourse"), fg(v, "--shell-surface")],
         [fg(v, "--kind-argument"), fg(v, "--shell-surface")],
@@ -146,5 +166,19 @@ describe("pinned paper (REQ-IDE-38 amended — pinning never blends with the she
     const p = paperVars("dark");
     expectMin([[p["--paper-fg"]!, p["--paper-bg"]!]], 10, "pinned dark");
     expect(contrastRatio(p["--paper-fg-muted"]!, p["--paper-bg"]!)).toBeGreaterThanOrEqual(4.5);
+  });
+  it("the scoped sheet's faint tier clears AA as text (UX.2 / ADR-070)", () => {
+    // `.paper` remaps --shell-fg-faint onto the sheet — meta text there is text, not a mark.
+    for (const mode of ["light", "dark"] as const) {
+      const s = paperScopeVars(mode);
+      expectMin(
+        [
+          [s["--shell-fg-faint"]!, s["--shell-bg"]!],
+          [s["--shell-fg-faint"]!, s["--shell-raised"]!],
+        ],
+        4.5,
+        `paper ${mode} faint`,
+      );
+    }
   });
 });

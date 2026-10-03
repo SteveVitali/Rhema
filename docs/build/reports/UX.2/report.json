@@ -1,0 +1,37 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "5edeb7a13ea5",
+  "startedAt": "2026-10-03T12:06:04.370Z",
+  "finishedAt": "2026-10-03T12:06:05.480Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "9f9462116172efe065b4eac8e2224117d449a054",
+    "observed": {
+      "web": "9f9462116172efe065b4eac8e2224117d449a054",
+      "api": "9f9462116172efe065b4eac8e2224117d449a054"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "P1",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1015,
+      "error": "/pricing @390×844: 1 WCAG-AA violation(s): color-contrast ×1 [footer > span]",
+      "screenshot": "P1.png"
+    }
+  ],
+  "passed": true
+}

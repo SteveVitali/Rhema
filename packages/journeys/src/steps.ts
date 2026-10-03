@@ -1381,7 +1381,9 @@ async function pageOverflowPx(page: Page): Promise<number> {
  * their first targets; there is no severity floor and no rule disabled silently.
  */
 async function assertAxeClean(page: Page, label: string): Promise<void> {
-  await page.addScriptTag({ content: AXE_SOURCE });
+  // CDP evaluation, not a <script> tag: the page's CSP (script-src 'self' 'nonce-…') correctly
+  // refuses addScriptTag({content}); Runtime.evaluate is how an external checker attaches.
+  await page.evaluate(AXE_SOURCE);
   const violations = await page.evaluate(async () => {
     const w = globalThis as unknown as {
       axe?: {
@@ -1507,13 +1509,13 @@ const P1: StepFn = async (ctx) => {
     if (innerScroll <= 0) {
       throw new Error("/pricing: the matrix region does not scroll horizontally at 390px");
     }
-    const caption = await region.evaluate(
-      (el) => document.querySelector(`#${el.getAttribute("aria-labelledby") ?? ""}`)?.textContent,
-    );
+    const caption = await region.evaluate((el) => {
+      const by = el.getAttribute("aria-labelledby");
+      if (by) return document.getElementById(by)?.textContent ?? null;
+      return el.getAttribute("aria-label");
+    });
     if (!caption || caption.trim().length === 0) {
-      // aria-label is an acceptable name too — only fail when NEITHER names the region.
-      const named = await region.evaluate((el) => (el.getAttribute("aria-label") ?? "").trim());
-      if (!named) throw new Error("/pricing: the matrix scroll region has no accessible name");
+      throw new Error("/pricing: the matrix scroll region has no accessible name");
     }
     // keyboard: the region is Tab-reachable, and whatever is focused shows the 2-px focus ring.
     let focusedOnRegion = false;
@@ -1539,14 +1541,25 @@ const P1: StepFn = async (ctx) => {
     }
     if (!focusedOnRegion) throw new Error("/pricing: the matrix region was never Tab-reached in 24 stops");
     void focusedOutlinePx;
-    // REQ-IDE-42 — 200% text resize reflows without page-level horizontal scroll (Chromium `zoom`).
+    // REQ-IDE-42 — 200% text resize: zoom 2× on a DOUBLED viewport keeps the layout at 390 CSS px
+    // while every glyph renders twice as large — the honest WCAG 1.4.4 emulation (zoom on the same
+    // viewport would demand a 195-px layout, stricter than 1.4.10's 320-px floor).
+    await page.setViewportSize({ width: 780, height: 844 });
     await page.evaluate(() => {
       document.body.style.zoom = "2";
     });
-    await assertNoOverflow(page, "/pricing @390w ×200% zoom");
+    const zoomed = await page.evaluate(() => {
+      const doc = document.documentElement;
+      // normalize: layout px = rendered px / 2 while body.zoom is 2.
+      return Math.round((doc.scrollWidth - doc.clientWidth) / 2);
+    });
+    if (zoomed > 1) {
+      throw new Error(`/pricing 390-px layout @200% zoom: horizontal overflow ${zoomed}px`);
+    }
     await page.evaluate(() => {
       document.body.style.zoom = "";
     });
+    await page.setViewportSize(PHONE);
     await assertAxeClean(page, "/pricing @390×844");
     await page.screenshot({ path: join(ctx.outDir, "p1-pricing-390.png"), fullPage: true });
   }

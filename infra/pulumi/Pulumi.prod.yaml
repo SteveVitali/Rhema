@@ -285,15 +285,14 @@ config:
   # resume, live-tail-only event delivery samples 'detail=tail', collab-path autosave
   # 'detail=collab' + migration 0054's rhema_collab grant, delivery-validation∪boundary
   # mirror class, system-cancelled success denominator, per-(run,attempt) proxy-vs-SDK),
-  # the REQ-ARCH-34 weekly review (slo.review.weekly pg-boss queue+cron+boot readout,
-  # rhema_slo_weekly(+_value) log metrics + two dashboard tiles in monitoring.ts), and the
-  # ≤$0 run-start levers (pg-boss useListenNotify+notify:true+0.5s poll floor on
-  # run.start/run.resume, imagePullPolicy:IfNotPresent, run_start_stage_ms attribution;
-  # the image-prewarm DaemonSet rides infra/k8s/apply.sh, not Pulumi). fetcher/convert/
-  # export/egress-proxy have no diff'd runtime code — they keep their pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:146b972e5d7c4e2abeb4953f2d6c453e332b5a9a6bf1d4e82c3a29df1996baee","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:426c555720dccac238978506faf8f6b6a0458ae26b895e3340e1c7fe01b823d9","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:445697970a7f715ffb3ee9965c55dbe1f9cec38ffb492f363458eedc0c2065c4","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:fb62d20693f7cce76fd31109a25e4494cb135766496480f03dd6d216c5c062ba","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:c9f066260b46e1a93499dfdc05a64dd652bdd8a34049f54bc196a680584cea0c"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:884bcc44b2d4d373dc2a1400fbef0c4315745552bec88685d9fc4f67439b1310
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
+  # UX.2 — all nine images rebuilt on chain-tip 9f94621 (stevevitali/ux-2-layout-responsive; tag
+  # `ux2`, Cloud Build d6c008d0). Carries the layout/responsive set: /app/new workspace Shell +
+  # the IdeFrame document invariant (ADR-065), the pricing matrix's labelled scroll region
+  # (ADR-066), the phone ≥44-px action/target floor (ADR-067), the in-flow sync pill (ADR-069);
+  # axe-core rides the journeys harness only — no image change class (ADR-068). No migrations.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:0ddb1838fb3f74ceae7569f26bc6a39eaf6099f60f046f8294df6855469aa543","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:5626343972994f136ffaacda05f78c52336fc156c4b49948bb3af45d800920f7","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:3219c7069e527b42bbb3ae0ab94b45d297dea5e61e6cb32c4c2b80ea1eea001f","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:22e34f5af0d4a5bd61aac6a3a55ee266982d46a52804823cd84194576db787f8","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:03173dd1d4a62da5fea2078508dd1a3a91eebdc3be7f794d031bc48706ad7bbd","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:48b32b8ca42a3649846cdafe24652520d866649414a6a7759ec451804e6280f2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:0037db9a2acf2ef3e4e5ef1df290c93f0673d2c8cdd7034e0e644bdaaed9a299"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:894babc82d6fa0fa5e0f70c62cce6e5d4b12a280e8f158551f9d7015dd39030a
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:3c17857a7b36c01f2074f15d95704747472f870264c9e3b31e0094570d2b9fe5
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

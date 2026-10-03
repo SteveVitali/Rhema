@@ -18,7 +18,11 @@ export const DARK_VARS: VarMap = {
   "--shell-border": "#2a3039",
   "--shell-fg": "#e6e8eb",
   "--shell-fg-muted": "#9aa3ad",
-  "--shell-fg-faint": "#5f6873",
+  // UX.2 (ADR-070; REQ-IDE-42) — the spec-verbatim #5f6873 lands ~3.3:1 on the shell grounds but the
+  // tier is used for real 11–13-px meta text (axe color-contrast fails it on /pricing). #868d97
+  // keeps the faint<muted<fg hierarchy while clearing AA ≥4.5:1 on every shell ground (5.65 bg /
+  // 5.22 surface / 4.78 raised).
+  "--shell-fg-faint": "#868d97",
   "--accent": "#8ab4f8",
   // paper (warm sheet)
   "--paper-bg": "#17161a",
@@ -61,7 +65,9 @@ export const LIGHT_VARS: VarMap = {
   "--shell-border": "#e3e6ea",
   "--shell-fg": "#1a1d21",
   "--shell-fg-muted": "#5c6670",
-  "--shell-fg-faint": "#7a828f",
+  // UX.2 (ADR-070) — same retune as the dark tier: #7a828f was ~3.5:1 on the light grounds; #646b74
+  // clears AA ≥4.5:1 on bg/surface/raised (5.03 / 5.30 / 4.81).
+  "--shell-fg-faint": "#646b74",
   "--accent": "#2b63c9", // spec #2f6fdb lands 4.43:1 on shell-bg — deepened a step so links clear 4.5
   // paper — the warm sheet, light (spec anchors #fffdf8 / #1d1c1a / #e8e4dc).
   "--paper-bg": "#fffdf8",
@@ -108,11 +114,13 @@ export function paperScopeVars(mode: "light" | "dark"): VarMap {
   const paper = mode === "light"
     ? {
         "--shell-raised": "#f5f2ea", // a warm lift on the cream sheet
-        "--shell-fg-faint": "#8a8274",
+        // UX.2 (ADR-070) — #8a8274 on #fffdf8 was ~3.4:1; #6d6659 lands 5.59:1 (5.08 on the lift).
+        "--shell-fg-faint": "#6d6659",
       }
     : {
         "--shell-raised": "#221f24",
-        "--shell-fg-faint": "#7d7870",
+        // UX.2 (ADR-070) — #7d7870 on #17161a was ~3.7:1; #9a948a lands 5.98:1 (5.41 on the lift).
+        "--shell-fg-faint": "#9a948a",
       };
   return {
     "--shell-bg": src["--paper-bg"]!,
