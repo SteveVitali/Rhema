@@ -169,10 +169,13 @@ describe("UX.2 — the phone project page (REQ-MOBILE-3 amended)", () => {
     const css = ideCss();
     // button-styled action links at phone width
     expect(css).toContain(".ide .ide-actions a { min-height: 44px");
-    // the §10.1 inputs that remain — gate answers, decision options, the chat composer's send
+    // the §10.1 inputs that remain — gate answers, decision options, the chat composer's send,
+    // the compact chat's thread links + starter chips (axe target-size flagged these on prod)
     expect(css).toContain("[data-gate-actions] button");
     expect(css).toContain("[data-decision-option]");
     expect(css).toContain(".chat-composer button");
+    expect(css).toContain(".chat-threads a");
+    expect(css).toContain("[data-chat-chip]");
     // the WCAG 2.5.8 floor
     expect(css).toContain(".ide button { min-height: 24px; min-width: 24px; }");
     // the phonebar's links are ≥44-px targets

@@ -505,7 +505,7 @@ export function ProjectsPage(): ReactNode {
         </form>
         <form method="post" action="/app/grouping" style={{ display: "flex", gap: "6px", alignItems: "center", margin: 0 }} data-group-by="true">
           <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.groupByLabel}</label>
-          <select name="groupBy" defaultValue={groupBy} style={{ fontSize: "12px" }}>
+          <select name="groupBy" defaultValue={groupBy} aria-label={COPY.projectHome.groupByLabel} style={{ fontSize: "12px" }}>
             <option value="attention">{COPY.projectHome.groupAttention}</option>
             <option value="voice">{COPY.projectHome.groupVoice}</option>
           </select>
@@ -518,7 +518,7 @@ export function ProjectsPage(): ReactNode {
           {home?.showArchived ? <input type="hidden" name="archived" value="1" /> : null}
           {home?.showDeleted ? <input type="hidden" name="deleted" value="1" /> : null}
           <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.protocolFilterLabel}</label>
-          <select name="protocol" defaultValue={protocolFilter ?? ""} style={{ fontSize: "12px" }}>
+          <select name="protocol" defaultValue={protocolFilter ?? ""} aria-label={COPY.projectHome.protocolFilterLabel} style={{ fontSize: "12px" }}>
             <option value="">{COPY.projectHome.protocolAll}</option>
             {protocols.map((p) => (
               <option key={p.id} value={p.id}>
@@ -527,7 +527,7 @@ export function ProjectsPage(): ReactNode {
             ))}
           </select>
           <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>{COPY.projectHome.sortLabel}</label>
-          <select name="sort" defaultValue={sort} style={{ fontSize: "12px" }}>
+          <select name="sort" defaultValue={sort} aria-label={COPY.projectHome.sortLabel} style={{ fontSize: "12px" }}>
             <option value="recent">{COPY.projectHome.sortRecent}</option>
             <option value="title">{COPY.projectHome.sortTitle}</option>
           </select>
@@ -2182,7 +2182,9 @@ function ApprovalSettingsSection({
                     <td style={{ padding: "3px 12px 3px 0", color: "var(--shell-fg-muted)" }}>{defaultText(d.deadlineMs)}</td>
                     <td style={{ padding: "3px 0" }}>
                       {d.overridable ? (
-                        <select name={`ov_${d.kind}`} defaultValue={value} style={{ fontSize: "12px" }}>
+                        // UX.2 (REQ-IDE-42) — select-name: the row's kind cell is the label's text
+                        // but the control still needs a programmatic name (axe select-name ×8).
+                        <select name={`ov_${d.kind}`} defaultValue={value} aria-label={`${kindLabel(d.kind)} — ${AP.overrideColumn}`} style={{ fontSize: "12px" }}>
                           {overrideOptions(d).map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>
                           ))}

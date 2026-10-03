@@ -1580,9 +1580,9 @@ const P1: StepFn = async (ctx) => {
     await assertTargetSize(page, ".ide-actions a", 44, "project action row");
     await assertTargetSize(
       page,
-      "[data-gate-actions] button, [data-decision-option], .chat-composer button",
+      "[data-gate-actions] button, [data-decision-option], .chat-composer button, .ide-phone-only .chat-threads a, .ide-phone-only [data-chat-chip]",
       44,
-      "gate/decision/composer buttons",
+      "gate/decision/composer/chat buttons + links",
     );
     // WCAG 2.5.8 floor: every OTHER visible control is at least 24px.
     await assertTargetSize(page, "button, [role='button']", 24, "all buttons");

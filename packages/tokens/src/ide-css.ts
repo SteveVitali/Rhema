@@ -76,7 +76,10 @@ export function ideCss(): string {
     // ---- Desk (bottom drawer) ----
     `.ide-desk { flex: 0 0 auto; height: var(--desk-h, ${B.deskHeightPx}px); border-top: 1px solid var(--shell-border); background: var(--shell-surface); display: flex; flex-direction: column; transition: height var(--dur-pane) ease; }`,
     ".ide[data-desk='closed'] .ide-desk { height: 0; border-top: none; overflow: hidden; }",
-    ".ide-desk .ide-desk-tabs { display: flex; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); }",
+    // UX.2 — the desk head wraps the tablist + the (non-tab) close control; the row's padding and
+    // hairline moved here so the tablist stays a pure role=tablist container (aria-required-children).
+    ".ide-desk .ide-desk-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s3); border-bottom: 1px solid var(--shell-border); }",
+    ".ide-desk .ide-desk-tabs { display: flex; gap: var(--s2); flex: 1; min-width: 0; }",
     ".ide-desk .ide-desk-tabs button { background: none; border: none; color: var(--shell-fg-muted); font-size: 12px; padding: 4px 8px; border-radius: var(--radius-1); cursor: pointer; }",
     ".ide-desk .ide-desk-tabs button[aria-selected='true'] { color: var(--shell-fg); background: var(--shell-raised); }",
     ".ide-desk .ide-desk-body { flex: 1; overflow: auto; padding: var(--s3); font-size: 13px; color: var(--shell-fg-muted); }",
@@ -135,7 +138,8 @@ export function ideCss(): string {
     // decision options, the chat composer) are ≥ 44 px, and the project page's surviving action row
     // is button-styled — bordered controls, not bare underlined links, with mis-tap gap.
     "  .ide button { min-height: 24px; min-width: 24px; }",
-    "  .ide [data-gate-actions] button, .ide [data-decision-option], .ide .ide-phone-only .chat-composer button { min-height: 44px; font-size: 15px; }",
+    "  .ide [data-gate-actions] button, .ide [data-decision-option], .ide .ide-phone-only .chat-composer button, .ide .ide-phone-only .chat-threads a, .ide .ide-phone-only [data-chat-chip] { min-height: 44px; font-size: 15px; }",
+    "  .ide .ide-phone-only .chat-threads a, .ide .ide-phone-only [data-chat-chip] { display: inline-flex; align-items: center; }",
     "  .ide .ide-actions a { min-height: 44px; min-width: 44px; padding: 0 var(--s3); border: 1px solid var(--shell-border); border-radius: var(--radius-2); background: var(--shell-raised); color: var(--shell-fg); text-decoration: none; font-size: 15px; }",
     "}",
     ".ide-phonebar { display: none; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--shell-border); background: var(--shell-surface); font-size: 13px; }",
