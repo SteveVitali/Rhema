@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      RUN.1              # row 73 — chat 502 + Send occlusion; gate labels; walkthrough failure
-lastCompleted:   EDIT.1             # 2026-10-03 (Stage A+B live — update 122 @ 76e00c5; N8 green; my-first-project /v/working 200; D-EDIT.1-1 DONE, Safari leg → D-EDIT.1-2)
+nextTicket:      OBS.1              # row 74 — observability
+lastCompleted:   RUN.1              # 2026-10-03 (stacked PR #95 on #94 — chat 502→truthful proxy, informational gates never park, walkthrough wired; Stage B live: update 123 @ 8ce4038, R4+R7 green, walkthrough regen on 01M3SK62…, $0.21)
 blockedOn:       (nothing)          # a REAL block only; gates + operator pauses are not blocks
 pauseRequested:  false
 returnPass:      (none)             # P0.15j/P0.15k done; PRB.18's residual → JOURNEY.1 steps + H7 (BL-32)
