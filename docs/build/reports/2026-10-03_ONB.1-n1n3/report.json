@@ -1,0 +1,50 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "9f486b11e93e",
+  "startedAt": "2026-10-02T23:54:53.620Z",
+  "finishedAt": "2026-10-02T23:55:16.678Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "a3bcde659828b5f7397a58978d74e1572ffb9378",
+    "observed": {
+      "web": "a3bcde659828b5f7397a58978d74e1572ffb9378",
+      "api": "a3bcde659828b5f7397a58978d74e1572ffb9378"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N1",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 10246,
+      "screenshot": "N1.png"
+    },
+    {
+      "id": "N3",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 12675,
+      "screenshot": "N3.png"
+    }
+  ],
+  "passed": true
+}
