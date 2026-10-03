@@ -119,6 +119,14 @@ describe("purchase.mode stage flag (BILL.3; REQ-BILL-16)", () => {
   });
 });
 
+describe("refundWindow.mode stage flag (DEF.4; REQ-SPEC-29; ADR-071)", () => {
+  it("every stage ships test_tenants — closed for every real user; `open` is the operator's commit", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      expect(cfg.refundWindowMode, `stage ${name}`).toBe("test_tenants");
+    }
+  });
+});
+
 describe("debit.mode stage flag (ECON.1; REQ-SPEC-32(a); ADR-031)", () => {
   it("every stage ships committed — the metered flip is the operator's, after notice + calibrated caps", () => {
     for (const [name, cfg] of Object.entries(STAGES)) {
