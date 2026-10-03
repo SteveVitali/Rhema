@@ -76,3 +76,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-068](ADR-068-axe-core-accessibility-checker.md) | axe-core is the WCAG 2.2 AA checker — injected by the journeys harness, MPL-2.0 exception checked in | UX.2 | Accepted |
 | [ADR-069](ADR-069-sync-pill-in-flow.md) | The sync pill renders in flow at the paper's head — `position: fixed` removed | UX.2 | Accepted |
 | [ADR-070](ADR-070-faint-tier-aa-text.md) | `--shell-fg-faint` is a text tier — retuned to AA (≥4.5:1) on every ground | UX.2 | Accepted |
+| [ADR-071](ADR-071-refund-window-fairness-rule.md) | the §14.4 refund window — one automatic refund per account per UTC calendar quarter; every refundable state is terminal | DEF.4 | Accepted |
+| [ADR-072](ADR-072-reconcile-write-order.md) | `reconcileBalances` repairs by ledger-append-then-counter-fold — never an intermediate counter write | DEF.4 | Accepted |
+| [ADR-073](ADR-073-scoped-retry-guidance-channel.md) | guided-retry guidance crosses into the scoped second read on the prompt channel only | DEF.4 | Accepted |
