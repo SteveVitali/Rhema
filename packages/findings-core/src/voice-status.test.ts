@@ -3,17 +3,18 @@ import {
   computeSeedHash,
   sampleSetHash,
   deriveVoiceStatus,
-  BETA_VOICE_STATES,
+  VOICE_STATES,
   VOICE_SURFACES,
   type VoiceSnapshotFacts,
   type VoiceCurrentFacts,
   type VoiceState,
 } from "./voice-status.js";
 
-// PRB.10 — the voice status pill (§9.3; REQ-PERSONA-13/14). AC2's property test: every beta-reachable state
-// × every surface renders identical strings from one fixture snapshot — derivation is surface-blind by
-// construction (the function takes no surface), so the matrix asserts (state × surface) → identical
-// {label, tone} plus the spec's exact pill strings.
+// PRB.10 + P1.14 — the voice status pill (§9.3; REQ-PERSONA-13/14). AC2's property test: every reachable
+// state × every surface renders identical strings from one fixture snapshot — derivation is surface-blind
+// by construction (the function takes no surface), so the matrix asserts (state × surface) → identical
+// {label, tone} plus the spec's exact pill strings. P1.14 removed the beta subset: `VOICE_STATES` is the
+// full eight-state table and the matrix covers every row.
 
 const NOW = new Date("2026-09-16T12:00:00Z");
 
@@ -195,19 +196,23 @@ describe("deriveVoiceStatus (§9.3 precedence)", () => {
 });
 
 describe("AC2 / REQ-PERSONA-14 — the pill is identical on every surface", () => {
-  const EXPECTED: Record<string, { label: string; tone: string; action: string }> = {
+  const EXPECTED: Record<VoiceState, { label: string; tone: string; action: string }> = {
     never_built: { label: "No voice profile", tone: "neutral", action: "build" },
     building: { label: "Building · phase 3 of 4", tone: "running", action: "open_run" },
     seed_changed: { label: "Description changed", tone: "attention", action: "update_voice" },
     samples_changed: { label: "2 samples changed", tone: "attention", action: "update_voice" },
+    aged: { label: "Profile from Jan 1", tone: "attention", action: "update_voice" },
     unfalsified: { label: "Untested voice", tone: "neutral", action: "test" },
+    badly_off: { label: "Tested — badly off", tone: "attention", action: "rebuild" },
+    fresh: { label: "Voice profile current", tone: "ready", action: "none" },
   };
 
-  it("every beta-reachable state × surface pair renders identical strings and tones from one snapshot", () => {
+  it("every one of the eight states × every surface renders identical strings and tones from one snapshot", () => {
     // The function is surface-blind by construction (no surface parameter exists to vary on). The matrix
     // re-derives per surface as each call site does — and asserts byte-identical output, which is the
     // property REQ-PERSONA-14 requires: one function, one fixture, one string.
-    for (const state of BETA_VOICE_STATES) {
+    expect(VOICE_STATES).toHaveLength(8);
+    for (const state of VOICE_STATES) {
       const facts = factsFor(state);
       const rendered = VOICE_SURFACES.map(
         (surface) => [surface, deriveVoiceStatus({ ...facts, now: NOW })] as const,

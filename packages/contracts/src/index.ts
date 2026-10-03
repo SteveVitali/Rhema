@@ -27,6 +27,9 @@ export * from "./domain/export.js";
 // P1.13 — the figure asset contract (§7.5; REQ-VIZ-1…16): provenance/verification, badges, the
 // figure block markdown, export packaging, and the Tier-1 figure-claims Review integration.
 export * from "./domain/figure.js";
+// P1.14 — the prose-measure contract (§9.4; REQ-PERSONA-6/8/9): the deterministic feature set
+// @rhema/measure emits, the within-one-band calibration table + the §16.3 #10 verdict rule.
+export * from "./domain/measure.js";
 
 // per-seat agent-type configuration (§7.1; P1.11 — the Assistant row + per-turn budgets)
 export * from "./domain/agent-types.js";

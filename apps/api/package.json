@@ -34,6 +34,7 @@
     "@rhema/ledger": "workspace:*",
     "@rhema/live-clients": "workspace:*",
     "@rhema/markdown": "workspace:*",
+    "@rhema/measure": "workspace:*",
     "@rhema/mirror": "workspace:*",
     "@rhema/obligations": "workspace:*",
     "@rhema/orchestrator": "workspace:*",

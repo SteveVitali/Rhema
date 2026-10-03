@@ -7,6 +7,11 @@
   "include": [
     "src"
   ],
+  "references": [
+    {
+      "path": "../contracts"
+    }
+  ],
   "exclude": [
     "dist",
     "**/*.test.ts"

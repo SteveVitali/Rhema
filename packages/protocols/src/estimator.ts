@@ -266,6 +266,17 @@ export const ESTIMATORS: Record<string, EstimatorSpec> = {
     source: "modeled",
     version: "modeled-1",
   },
+  // ---- P1.14 — the adopt hatch's optional reseed run (§9.6) ----
+  reseed_charter: {
+    workflow: "reseed_charter",
+    // One bounded rewrite phase: the adopted profile is already in context (the run's mount), so the
+    // run is a small read-profile → rewrite-seeded-block session. No research channel, no churn
+    // multiplier — a single-phase run on a single artifact.
+    base: { intercept: 30 },
+    provisional: true,
+    source: "modeled",
+    version: "modeled-1",
+  },
   draft: {
     workflow: "draft",
     // §12.2 Draft row: `a + b·target_words + c·inherited_claims` (a≈60, b≈0.05, c≈11) at Base/Standard.

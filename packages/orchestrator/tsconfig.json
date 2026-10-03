@@ -10,6 +10,7 @@
     { "path": "../db" },
     { "path": "../engine" },
     { "path": "../figures" },
+    { "path": "../findings-core" },
     { "path": "../hooks" },
     { "path": "../mirror" },
     { "path": "../protocols" }

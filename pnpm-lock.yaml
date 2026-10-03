@@ -85,6 +85,9 @@ importers:
       '@rhema/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
+      '@rhema/measure':
+        specifier: workspace:*
+        version: link:../../packages/measure
       '@rhema/mirror':
         specifier: workspace:*
         version: link:../../packages/mirror
@@ -852,7 +855,11 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
-  packages/measure: {}
+  packages/measure:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/mirror:
     dependencies:
@@ -915,6 +922,9 @@ importers:
       '@rhema/figures':
         specifier: workspace:*
         version: link:../figures
+      '@rhema/findings-core':
+        specifier: workspace:*
+        version: link:../findings-core
       '@rhema/hooks':
         specifier: workspace:*
         version: link:../hooks

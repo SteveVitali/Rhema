@@ -158,11 +158,26 @@ describe("samples (REQ-INGEST-1/4) + the live estimate (REQ-PERSONA-3)", () => {
 });
 
 describe("POST /voices/:id/build — profile_voice{quick}", () => {
-  it("requires at least one sample", async () => {
-    const personaId = await createVoice();
+  it("requires a description or at least one sample (the §9.2 build gate)", async () => {
+    // A bare name with neither seed prose nor corpus has nothing to profile.
+    const res = await post("/voices", { name: "Ada" });
+    expect(res.status).toBe(201);
+    const personaId = ((await res.json()) as { personaId: string }).personaId;
+    const build = await post(`/voices/${personaId}/build`, { tier: "quick" });
+    expect(build.status).toBe(400);
+    expect(((await build.json()) as { error: string }).error).toBe("needs_description_or_sample");
+  });
+
+  it("a description-only voice builds (§9.2: description-or-sample suffices)", async () => {
+    const personaId = await createVoice(); // name + description, zero samples
     const res = await post(`/voices/${personaId}/build`, { tier: "quick" });
-    expect(res.status).toBe(400);
-    expect(((await res.json()) as { error: string }).error).toBe("at least one sample required");
+    expect(res.status).toBe(201);
+    const built = (await res.json()) as { runId: string };
+    const row = (
+      await db.pg.query(`select inputs from runs where id = $1`, [built.runId])
+    ).rows[0] as { inputs: { tier: string; snapshot: { corpus_size_at_build: number } } };
+    expect(row.inputs.tier).toBe("quick");
+    expect(row.inputs.snapshot.corpus_size_at_build).toBe(0);
   });
 
   it("creates a profile_voice run with the §9.3 snapshot facts frozen; a second build is a 409", async () => {
@@ -208,8 +223,11 @@ describe("the shared pill — one projection, every surface (AC5)", () => {
   it("seed edit flips a snapshotted voice to seed_changed on the detail read AND the project chip", async () => {
     const personaId = await createVoice();
     const profileId = await insertProfile(personaId, { corpus_size_at_build: 0 });
+    // The soft lock (§9.6) fires once the project has a draft — the link rides a draft-free
+    // project (the pre-v1 window where voice is freely changeable).
+    const chipProject = await seedProject(db, { projectId: "prj_chip" });
     // Pin the project to the persona; the PATCH resolves the latest profile as the pinned snapshot.
-    const link = await patch(`/projects/${seed.projectId}/voice`, { personaId });
+    const link = await patch(`/projects/${chipProject.projectId}/voice`, { personaId });
     expect(link.status).toBe(200);
     const linked = (await link.json()) as { voiceMode: string; profileSnapshotId: string; status: { state: string } };
     expect(linked.voiceMode).toBe("linked");
@@ -220,7 +238,7 @@ describe("the shared pill — one projection, every surface (AC5)", () => {
     const seedRes = await post(`/voices/${personaId}/seed`, { description: "A different register now." });
     expect((await seedRes.json() as { status: { state: string } }).status.state).toBe("seed_changed");
 
-    const chip = (await (await app.request(`/projects/${seed.projectId}/voice`)).json()) as {
+    const chip = (await (await app.request(`/projects/${chipProject.projectId}/voice`)).json()) as {
       status: { state: string; pill: { label: string } };
     };
     expect(chip.status.state).toBe("seed_changed");
@@ -230,7 +248,7 @@ describe("the shared pill — one projection, every surface (AC5)", () => {
     const projects = (await (await app.request("/projects")).json()) as {
       projects: { id: string; voice: { personaId: string; status: { state: string } } | null }[];
     };
-    const row = projects.projects.find((p) => p.id === seed.projectId);
+    const row = projects.projects.find((p) => p.id === chipProject.projectId);
     expect(row?.voice?.personaId).toBe(personaId);
     expect(row?.voice?.status.state).toBe("seed_changed");
   });
@@ -238,9 +256,16 @@ describe("the shared pill — one projection, every surface (AC5)", () => {
   it("a main run freezes the project's voice facts into inputs.voice (REQ-PERSONA-17)", async () => {
     const personaId = await createVoice();
     const profileId = await insertProfile(personaId);
-    await patch(`/projects/${seed.projectId}/voice`, { personaId });
+    // Link before v1 exists (the soft lock); the run's draft row lands after the pin.
+    const runProject = await seedProject(db, { projectId: "prj_voice_run" });
+    await patch(`/projects/${runProject.projectId}/voice`, { personaId });
+    const draftId = `dft_${runProject.projectId}_1`;
+    await db.pg.query(
+      `insert into drafts(id, project_id, n, origin, state) values ($1,$2,1,'agent','working')`,
+      [draftId, runProject.projectId],
+    );
 
-    const res = await post(`/projects/${seed.projectId}/runs`, {
+    const res = await post(`/projects/${runProject.projectId}/runs`, {
       idempotencyKey: "idem-voice-1",
       workflow: "review",
       modelProfile: { tier: "balanced" },
@@ -249,9 +274,9 @@ describe("the shared pill — one projection, every surface (AC5)", () => {
       estimateCredits: 560,
       capCredits: 840,
       rateTableVersion: 1,
-      inputs: { draftId: seed.draftId, sidecar: true },
+      inputs: { draftId, sidecar: true },
       inputSnapshot: { wordCount: 5180 },
-      draftId: seed.draftId,
+      draftId,
       corrKind: "review",
       corrK: 1,
     });
@@ -295,12 +320,14 @@ describe("the shared pill — one projection, every surface (AC5)", () => {
 
   it("'No voice' (personaId null) unlinks the project — the ad-hoc default", async () => {
     const personaId = await createVoice();
-    await patch(`/projects/${seed.projectId}/voice`, { personaId });
-    const res = await patch(`/projects/${seed.projectId}/voice`, { personaId: null });
+    const p0 = await seedProject(db, { projectId: "prj_unlink" }); // pre-v1: voice freely changeable
+    const link = await patch(`/projects/${p0.projectId}/voice`, { personaId });
+    expect(link.status).toBe(200);
+    const res = await patch(`/projects/${p0.projectId}/voice`, { personaId: null });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { voiceMode: string }).voiceMode).toBe("ad_hoc");
     const p = (
-      await db.pg.query(`select persona_id, persona_profile_snapshot_id from projects where id = $1`, [seed.projectId])
+      await db.pg.query(`select persona_id, persona_profile_snapshot_id from projects where id = $1`, [p0.projectId])
     ).rows[0] as { persona_id: string | null; persona_profile_snapshot_id: string | null };
     expect(p.persona_id).toBeNull();
     expect(p.persona_profile_snapshot_id).toBeNull();

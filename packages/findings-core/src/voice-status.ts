@@ -2,10 +2,9 @@ import { sha256Hex } from "@rhema/contracts";
 
 // The voice status pill — ONE function over the snapshot facts, rendered byte-identically on every surface
 // (§9.3; REQ-PERSONA-13/14). Staleness is computed at READ time from the stored snapshot + the current facts;
-// no "stale" flag is ever persisted. The eight-state precedence table is implemented whole; the beta's
-// reachable subset (never-built / building / untested / seed-changed / samples-changed) is
-// `BETA_VOICE_STATES` — states 5 (`aged`) and 7 (`badly_off`) exist here so the function is correct when the
-// facts produce them, but nothing at beta can create them (P1.14/P1.15 own the full surface).
+// no "stale" flag is ever persisted. The eight-state precedence table is implemented whole — P1.14 made the
+// full surface live (`aged` and `badly_off` are reachable states, not latent rows; `VOICE_STATES` is the
+// complete ordering).
 //
 // Framework-free + DOM-free like the rest of this package; hashing uses @rhema/contracts' isomorphic
 // sha256 (the seed hash is a server-side fact — the mobile client consumes the derived status, never
@@ -53,13 +52,16 @@ export type VoiceState =
   | "badly_off"
   | "fresh";
 
-/** The beta-reachable subset (§9.3 rows 1–4 + 6; PRB.10). `aged`/`badly_off`/`fresh` are computed too. */
-export const BETA_VOICE_STATES: readonly VoiceState[] = [
+/** The full §9.3 state set, in precedence order (P1.14 — the beta subset is gone; every state is live). */
+export const VOICE_STATES: readonly VoiceState[] = [
   "never_built",
   "building",
   "seed_changed",
   "samples_changed",
+  "aged",
   "unfalsified",
+  "badly_off",
+  "fresh",
 ] as const;
 
 /** Every surface the pill renders on (REQ-PERSONA-14) — the property test's surface axis. */

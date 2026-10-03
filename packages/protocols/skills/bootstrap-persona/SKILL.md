@@ -26,7 +26,7 @@ inputs:
     description: "Default true. Run the Phase 4 held-out fidelity test. Disabling leaves the profile unfalsified — its accuracy becomes an assertion, and consuming skills have no measured expectation to check themselves against."
   - name: phase
     required: false
-    description: "Rhema harness (REQ-ARCH-5): run one phase then stop. \"N\" runs only phase N; \"N+\" runs from N to the end; absent, the whole skill runs. Phase indices follow this skill's own fallback order (0, 1, 2, 3, 4, 5)."
+    description: "Rhema harness (REQ-ARCH-5): run one phase then stop. \"N\" runs only phase N; \"N+\" runs from N to the end; absent, the whole skill runs. Phase indices follow this skill's own fallback order (0, 1, 2, 3, 4, 5). The Rhema-owned value \"reseed\" runs only the charter-reseed step (see 'Reseeding the voice charter' below) — it is not one of the upstream six."
   - name: scope
     required: false
     description: "Rhema harness (REQ-ARCH-5): narrow the run to a phase subset — Quick Voice is scope = the census + close-reading + voice-print phases, no positions/calibration."
@@ -345,3 +345,36 @@ profile that knows its own error is usable; one that hides it is not.
    `draft-from-outline` with `persona: <persona-id>` — and state plainly that the
    profile constrains and measures voice rather than reproducing it (the limit is
    in the convention's closing section; do not oversell).
+
+## Phase reseed — Reseeding the voice charter *(Rhema-owned)*
+
+A Rhema-owned step (added at port — P1.14; not one of the upstream six): after a
+project adopts a rebuilt voice profile, the project's voice charter — the
+`agents/author/voice-charter.md` consuming skills load — must be re-seeded from
+the adopted profile so the voice-derived lines track the new truth.
+
+The charter is two halves:
+
+- **the seeded block** — every line above the `## Guidance` heading. These are
+  the voice-derived lines (persona name, byline, register list, the voice-print
+  pointers). Rewrite them from the mounted profile; they are yours to change.
+- **the guidance section** — `## Guidance` and every line under it. These are
+  the project's own edits to the seeded charter. They carry **verbatim** —
+  byte-for-byte, no rewording, no reordering. The artifact kind's edit mode is
+  guidance-only: guidance lines are outside this step's output scope, and the
+  server-side diff the adopt dialog previewed treats any guidance change as a
+  leak.
+
+Steps:
+
+1. Read the adopted profile's `profile/index.md` (mounted read-only) for the
+   persona name, byline, and register list.
+2. Read the current `agents/author/voice-charter.md` if it exists — for its
+   guidance section only.
+3. Write `agents/author/voice-charter.md`: the regenerated seeded block, a blank
+   line, then the guidance section carried verbatim (or none if the charter had
+   none).
+
+If you produce no version, the server's deterministic reseed writes the same
+shape — the seeded lines regenerate from the persona row and the guidance
+carries. Either way, guidance bytes never change.

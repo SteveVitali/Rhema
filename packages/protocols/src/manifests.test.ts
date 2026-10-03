@@ -43,10 +43,12 @@ const EXPECTED: Record<string, { keys: string[]; skillPhases: string[] }> = {
   outline: { keys: ["harvest", "classify", "spine", "gaps"], skillPhases: ["0", "1", "2", "3"] },
   // P1.13 — the Figure run (§7.5/§6.2): data(honesty) → spec → render(request) → caption.
   figure: { keys: ["data", "spec", "render", "caption"], skillPhases: ["0", "1", "2", "3"] },
+  // P1.14 — the adopt hatch's optional reseed (§9.6): one Rhema-owned phase (`phase=reseed`).
+  reseed_charter: { keys: ["reseed"], skillPhases: ["reseed"] },
 };
 
 describe("phase manifests (§12.2)", () => {
-  it("ships exactly the eleven Phase-1 workflows", () => {
+  it("ships exactly the twelve Phase-1 workflows", () => {
     expect(Object.keys(WORKFLOW_MANIFESTS).sort()).toEqual(
       [
         "calibrate_voice",
@@ -58,6 +60,7 @@ describe("phase manifests (§12.2)", () => {
         "profile_voice",
         "refresh_voice",
         "research_burst",
+        "reseed_charter",
         "review",
         "revise",
       ].sort(),

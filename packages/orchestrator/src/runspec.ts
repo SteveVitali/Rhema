@@ -143,11 +143,30 @@ function round2(n: number): number {
 
 // The hook's URL policy (§12.6: persona hold-outs, user exclusions, the calibrator allow-after-prediction) is a
 // DIFFERENT concern from the proxy's domain allowlist (`proxy_allowlists.url_policy`, a `ProxyUrlPolicyData` of
-// blocked/known domains — the proxy is the enforcer of record, defense-in-depth). Deriving the real hook URL
-// policy (a run's persona hold-out URLs + user exclusions) is a §12.6 concern the first green phase-0 Review does
-// not exercise (intake is judge-class — no fetch). Use the empty policy here; wiring the real hold-out policy is
-// a follow-on (it belongs with the persona-holdout / calibrator subagent path, not this assembler).
-const HOOK_URL_POLICY: UrlPolicy = EMPTY_URL_POLICY;
+// blocked/known domains — the proxy is the enforcer of record, defense-in-depth). P1.14: persona runs freeze
+// their real policy into `inputs.urlPolicy` at creation (the hold-out URL is denied to every non-calibrator
+// and opened to the input-scoped calibrator only after its prediction file exists — the hook daemon flips
+// `predictionFileWritten` when it observes that write); every fetch rides the client `fetcher`
+// (`serverFetchDisabled` — there is no credentialed path). Non-persona runs keep the empty policy.
+
+/** Validate + adopt the run's frozen `inputs.urlPolicy` (P1.14); malformed/missing ⇒ EMPTY. */
+function urlPolicyForRun(inputs: Record<string, unknown>): UrlPolicy {
+  const raw = inputs.urlPolicy;
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return EMPTY_URL_POLICY;
+  const p = raw as Record<string, unknown>;
+  const list = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+  return {
+    holdouts: list(p.holdouts),
+    userExclusions: list(p.userExclusions),
+    calibratorAllow: list(p.calibratorAllow),
+    // always frozen false — the hook daemon flips it when the calibrator's prediction file lands
+    // (§12.6 "hold-out allowed only after the prediction file exists"); a stale true would void
+    // the ordering guarantee.
+    predictionFileWritten: false,
+    serverFetchDisabled: p.serverFetchDisabled === true,
+    blockedDomains: list(p.blockedDomains),
+  };
+}
 
 /**
  * Assemble the run spec the harness executes for its current phase (D-P0.15c-6). Uses `hydration()` for the
@@ -385,6 +404,10 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       : {}),
   };
 
+  // P1.14 — the run's REAL URL policy: persona builds carry hold-outs + the calibrator allow-list +
+  // fetcher-only egress; everything else keeps the empty policy (§12.6).
+  const runUrlPolicy = urlPolicyForRun(hyd.inputs);
+
   const request: PhaseRequest = {
     runId: args.runId,
     attempt: args.attempt,
@@ -397,14 +420,14 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     seat,
     maxBudgetUsd,
     maxTurns: DEFAULT_MAX_TURNS,
-    urlPolicy: HOOK_URL_POLICY,
+    urlPolicy: runUrlPolicy,
   };
 
   const hookPolicyInput: HookPolicyInput = {
     seat,
     ...(hyd.personaId ? { personaId: hyd.personaId } : {}),
     tools: facts.tools,
-    urlPolicy: HOOK_URL_POLICY,
+    urlPolicy: runUrlPolicy,
     phase: { key: phase.key, phaseClass: phase.phaseClass, allowsSubagents: phase.allowsSubagents },
     runId: args.runId,
     agentLabel: seat,

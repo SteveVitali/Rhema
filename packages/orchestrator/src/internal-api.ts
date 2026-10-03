@@ -12,6 +12,7 @@ import {
   declaredWritableArtifacts,
   persistHarvest,
   recordMounts,
+  sha256Hex,
   type ContentStore,
   type MirrorManifest,
   type NewVersion,
@@ -21,6 +22,10 @@ import {
 } from "@rhema/mirror";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import { DRAFTED_STATUSES, parseDraftLedgerSections } from "@rhema/protocols";
+// P1.14 — the §16.3 #10 calibration verdict + the §9.5 hold-out leak audit + the charter's
+// seeded/guidance split (the deterministic reseed) — shared with the api surface verbatim.
+import { calibrationVerdict } from "@rhema/contracts";
+import { auditHoldoutLeak, renderCharterSeed, guidanceSection } from "@rhema/findings-core";
 import type { Clock } from "./clock.js";
 import type { IdFactory } from "./ids.js";
 import type { EventWriter } from "./event-writer.js";
@@ -1263,11 +1268,127 @@ export async function finalizeRun(
       );
       const artifactIds = (produced.rows as { artifact_id: string }[]).map((r) => r.artifact_id);
       const profileId = deps.ids("pp");
+
+      // ---- P1.14: the calibration verdict (§16.3 #10 resolved) + the hold-out leak audit (§9.5) ----
+      // The calibration step reports raw measures rows + the blind-check fact in `steps.result`
+      // (`result.calibration = {rows, blindCheckPickedPrediction}`); the SERVER computes
+      // within-one-band + the verdict — the model can't grade its own homework. Absent a report:
+      // 'tested' when a calibration step committed (it ran to completion), else 'untested' —
+      // a skipped/voided calibration must never read as tested.
+      const calStep = (
+        await tx.query(
+          `select result from steps where run_id = $1 and phase = 'calibration' and state = 'done'
+             order by ordinal desc limit 1`,
+          [args.runId],
+        )
+      ).rows[0] as { result: unknown } | undefined;
+      const calResult = (
+        calStep?.result && typeof calStep.result === "object"
+          ? (calStep.result as Record<string, unknown>).calibration
+          : null
+      ) as { blindCheckPickedPrediction?: boolean; rows?: { withinBand?: boolean }[] } | null;
+      let calibrationStatus: string;
+      if (calResult && (calResult.blindCheckPickedPrediction === true || (calResult.rows?.length ?? 0) > 0)) {
+        calibrationStatus = calibrationVerdict({
+          // a row without an explicit withinBand verdict counts as NOT within — absence must
+          // never grade itself a pass (the server, not the model, owns the verdict).
+          rows: (calResult.rows ?? []).map((r) => ({ withinBand: r.withinBand === true })),
+          ...(calResult.blindCheckPickedPrediction === undefined ? {} : { blindCheckPickedPrediction: calResult.blindCheckPickedPrediction }),
+        });
+      } else if (calStep) {
+        calibrationStatus = "tested";
+      } else {
+        const frozen = typeof snap?.calibration_status === "string" ? snap.calibration_status : "untested";
+        calibrationStatus = frozen === "pending" ? "untested" : frozen;
+      }
+
+      // ---- P1.14: the hold-out leak audit (§9.5; REQ-PERSONA-11). A policy-allowed read of the
+      //  hold-out by any non-calibrator label VOIDS calibration — never patches it: status snaps to
+      //  'untested' and the build note carries the flag. ----
+      const holdouts = (runInputs.holdouts ?? null) as
+        | { itemId: string; url: string | null; mirrorPath: string; words: number; revealedAt: string | null }
+        | null;
+      let leakFlag: { kind: string; path: string | null; url: string | null; agent: string | null; at: string | null }[] | null = null;
+      if (holdouts) {
+        const audit = await auditHoldoutLeak(tx, { runId: args.runId, holdout: holdouts });
+        if (audit.leaked) {
+          calibrationStatus = "untested";
+          leakFlag = audit.leaks.map((l) => ({ kind: l.kind, path: l.path, url: l.url, agent: l.agent, at: l.at }));
+        }
+      }
+      // The reveal (§9.4): a tested/voided-tested verdict stamps the hold-out's identity visible —
+      // 'untested' keeps it hidden (a voided audit hides it again until a clean calibration).
+      const holdoutForNote = holdouts
+        ? {
+            ...holdouts,
+            revealedAt:
+              calibrationStatus === "tested" || calibrationStatus === "tested-badly-off"
+                ? (holdouts.revealedAt ?? deps.clock.now().toISOString())
+                : null,
+          }
+        : null;
+
+      // ---- P1.14: profile corrections consume-once (REQ-PERSONA-7). Every unconsumed correction
+      //  for the persona stamps `consumed_by_profile_id = <this build>` and lands in the build
+      //  note's list — it can never silently re-apply to a later build. ----
+      const unconsumed = (
+        await tx.query(
+          `select id, text from profile_corrections where persona_id = $1 and consumed_by_profile_id is null order by at`,
+          [runRow.persona_id],
+        )
+      ).rows as { id: string; text: string }[];
+      if (unconsumed.length > 0) {
+        await tx.query(
+          `update profile_corrections set consumed_by_profile_id = $2
+             where persona_id = $1 and consumed_by_profile_id is null`,
+          [runRow.persona_id, profileId],
+        );
+      }
+
+      // ---- P1.14: the build note (§9.2 "the decisions the build made"): tier, corpus facts, the
+      //  calibration verdict + the §16.3 #10 inputs, the hold-out (with the reveal stamp), the
+      //  consumed corrections, and any leak flag — everything the Overview/Profile tabs read. ----
+      const memberProfileRows = (
+        await tx.query(
+          `select p.current_profile_id from persona_members pm join personas p on p.id = pm.member_id
+             where pm.composite_id = $1`,
+          [runRow.persona_id],
+        )
+      ).rows as { current_profile_id: string | null }[];
+      const memberProfiles = memberProfileRows
+        .map((r) => r.current_profile_id)
+        .filter((x): x is string => x != null);
+      const buildNote = {
+        tier: typeof snap?.tier === "string" ? snap.tier : null,
+        corpusWords: typeof snap?.corpus_size_at_build === "number" ? snap.corpus_size_at_build : null,
+        corpusPieces: snap?.sample_set && typeof snap.sample_set === "object" ? Object.keys(snap.sample_set).length : 0,
+        calibration: {
+          status: calibrationStatus,
+          blindCheckPickedPrediction: calResult?.blindCheckPickedPrediction ?? null,
+          measureRows: calResult?.rows ?? [],
+        },
+        holdouts: holdoutForNote,
+        leaks: leakFlag,
+        consumedCorrections: unconsumed.map((r) => r.id),
+      };
+      const buildNoteBody = [
+        `Voice ${runRow.workflow === "refresh_voice" ? "update" : "build"} (${buildNote.tier ?? "unknown tier"}):`,
+        `${buildNote.corpusPieces} pieces, ${buildNote.corpusWords ?? "?"} words.`,
+        `Calibration: ${calibrationStatus}.`,
+        unconsumed.length > 0 ? `Applied ${unconsumed.length} correction${unconsumed.length === 1 ? "" : "s"} from your description.` : null,
+        leakFlag?.[0]
+          ? `Calibration voided — a hold-out read leaked (${leakFlag[0].kind} by ${leakFlag[0].agent ?? "unknown"}).`
+          : null,
+        holdoutForNote?.revealedAt ? `Held-out piece revealed after calibration.` : holdouts ? `One piece is held back for calibration testing.` : null,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
       await tx.query(
         `insert into persona_profiles
            (id, persona_id, built_by_run_id, built_at, tier, seed_sha256, sample_set_hash, sample_set,
-            corpus_size_at_build, calibration_status, artifact_ids)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+            corpus_size_at_build, calibration_status, artifact_ids, member_profile_ids, build_note)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb)`,
         [
           profileId,
           runRow.persona_id,
@@ -1278,15 +1399,99 @@ export async function finalizeRun(
           typeof snap?.sample_set_hash === "string" ? snap.sample_set_hash : null,
           JSON.stringify(snap?.sample_set ?? {}),
           typeof snap?.corpus_size_at_build === "number" ? snap.corpus_size_at_build : null,
-          // a Quick Voice's resting calibration state is 'untested' (§9.3 row 6 — a fact about the tier).
-          typeof snap?.calibration_status === "string" ? snap.calibration_status : "untested",
+          calibrationStatus,
           artifactIds,
+          memberProfiles,
+          JSON.stringify(buildNote),
         ],
+      );
+      await tx.query(
+        `insert into persona_build_notes (id, persona_id, profile_id, body) values ($1,$2,$3,$4)`,
+        [deps.ids("pbn"), runRow.persona_id, profileId, buildNoteBody],
       );
       await tx.query(
         `update personas set current_profile_id = $2, active_run_id = null where id = $1`,
         [runRow.persona_id, profileId],
       );
+    }
+
+    // P1.14 — the adopt hatch's charter reseed (§9.6; REQ-WF-11): a completed reseed_charter run
+    // writes a NEW head version of `agents/author/voice-charter.md` with the seeded lines
+    // regenerated and the guidance bytes carried VERBATIM (the diff the adopt dialog previewed).
+    // If the pod produced a version the finalize uses it; otherwise the deterministic reseed
+    // writes the same shape — guidance lines are structurally outside both paths' reach.
+    if (runRow?.workflow === "reseed_charter" && runRow.project_id && runRow.persona_id && args.store) {
+      const personaRow = (
+        await tx.query(`select display_name, byline, registers from personas where id = $1`, [runRow.persona_id])
+      ).rows[0] as { display_name: string | null; byline: string | null; registers: string[] | null } | undefined;
+      const charterArt = (
+        await tx.query(
+          `select a.id, a.head_version_id from artifacts a
+            where a.project_id = $1 and a.mirror_path = 'agents/author/voice-charter.md'`,
+          [runRow.project_id],
+        )
+      ).rows[0] as { id: string; head_version_id: string | null } | undefined;
+      const producedCharter = (
+        await tx.query(
+          `select av.id, av.content_sha256, av.s3_key, av.bytes, av.word_count from steps s
+             join artifact_versions av on av.id = any(s.produced_version_ids)
+             join artifacts a on a.id = av.artifact_id
+            where s.run_id = $1 and a.mirror_path = 'agents/author/voice-charter.md'
+            order by s.ordinal desc limit 1`,
+          [args.runId],
+        )
+      ).rows[0] as { id: string; content_sha256: string; s3_key: string; bytes: number; word_count: number | null } | undefined;
+      let currentText = "";
+      if (charterArt?.head_version_id) {
+        const sha = (
+          await tx.query(`select content_sha256 from artifact_versions where id = $1`, [charterArt.head_version_id])
+        ).rows[0] as { content_sha256: string } | undefined;
+        const bytes = sha ? await args.store.get(sha.content_sha256).catch(() => null) : null;
+        if (bytes) currentText = new TextDecoder().decode(bytes);
+      }
+      if (!producedCharter) {
+        // Deterministic reseed: seeded lines regenerate from the adopted voice; guidance carries.
+        const seeded = renderCharterSeed({
+          name: personaRow?.display_name ?? null,
+          byline: personaRow?.byline ?? null,
+          registers: personaRow?.registers ?? null,
+        });
+        const guidance = guidanceSection(currentText);
+        const nextText = guidance ? `${seeded}\n\n${guidance}\n` : `${seeded}\n`;
+        const bytes = new TextEncoder().encode(nextText);
+        const contentSha256 = sha256Hex(bytes);
+        const { key } = await args.store.put(args.workspaceId, contentSha256, bytes);
+        const versionId = deps.ids("av");
+        let artifactId = charterArt?.id;
+        if (!artifactId) {
+          artifactId = deps.ids("art");
+          await tx.query(
+            `insert into artifacts (id, workspace_id, project_id, kind, namespace, mirror_path)
+               values ($1,$2,$3,'voice_charter','project','agents/author/voice-charter.md')`,
+            [artifactId, args.workspaceId, runRow.project_id],
+          );
+        }
+        const ord = (
+          await tx.query(`select coalesce(max(ordinal),0)+1 as n from artifact_versions where artifact_id = $1`, [artifactId])
+        ).rows[0] as { n: string | number };
+        await tx.query(
+          `insert into artifact_versions
+             (id, artifact_id, ordinal, content_sha256, s3_key, bytes, word_count, media_type, created_by, immutable)
+             values ($1,$2,$3,$4,$5,$6,$7,'text/markdown',$8::jsonb,false)`,
+          [
+            versionId,
+            artifactId,
+            Number(ord.n),
+            contentSha256,
+            key,
+            bytes.byteLength,
+            nextText.trim().split(/\s+/).filter(Boolean).length,
+            JSON.stringify({ kind: "run", runId: args.runId, workflow: "reseed_charter" }),
+          ],
+        );
+        await tx.query(`update artifacts set head_version_id = $2 where id = $1`, [artifactId, versionId]);
+      }
+      await tx.query(`update personas set active_run_id = null where id = $1`, [runRow.persona_id]);
     }
   });
   await deps.heartbeats.clear(args.runId);

@@ -18,6 +18,7 @@ import { researchBurst } from "../manifests/research_burst.js";
 import { chatTurn } from "../manifests/chat_turn.js";
 import { outline } from "../manifests/outline.js";
 import { figure } from "../manifests/figure.js";
+import { reseedCharter } from "../manifests/reseed_charter.js";
 
 export * from "./manifest-types.js";
 export * from "./estimator.js";
@@ -28,7 +29,7 @@ export * from "./version.js";
 export * from "../parsers/index.js";
 export * from "../serializers/index.js";
 
-export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft, researchBurst, chatTurn, outline, figure };
+export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft, researchBurst, chatTurn, outline, figure, reseedCharter };
 
 /** Every workflow manifest this phase ships, keyed by WorkflowKey (§12.2; adding a workflow is a manifest — REQ-ARCH-6). */
 export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> = {
@@ -47,4 +48,7 @@ export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> 
   // P1.13 — the Figure run (Rhema-owned; §7.5, §6.2 Figure row). Drafter seat; the render phase's
   // deterministic output is the figure.render worker job, never the pod's.
   figure,
+  // P1.14 — the adopt hatch's optional reseed run (§9.6): one bounded rewrite of the project's
+  // voice-charter seeded block (guidance lines verbatim — the kind's editMode is guidance_only).
+  reseed_charter: reseedCharter,
 };

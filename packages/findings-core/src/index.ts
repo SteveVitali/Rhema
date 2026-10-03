@@ -26,5 +26,12 @@ export * from "./decisions.js";
 export * from "./what-changed.js";
 export * from "./manual-revision.js";
 export * from "./voice-status.js";
+// P1.14 — the Update-voice scope router + diff-of-inputs panel (REQ-SPEC-27), the hold-out spec +
+// leak audit (§9.5), and the fixed §9.4 profile surfaces (section order, approve-sample card, build
+// gates, hold-out reveal) — all pure over the same facts the pill derives.
+export * from "./voice-update.js";
+export * from "./holdout.js";
+export * from "./profile-surface.js";
+export * from "./charter.js";
 export * from "./surface.js";
 export * from "./apply.js";

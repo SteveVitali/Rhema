@@ -19,6 +19,7 @@ import {
   voicesElement,
   voiceNewElement,
   voiceDetailElement,
+  voiceReseedElement,
   obligationNewElement,
   settingsElement,
   usageElement,
@@ -1736,7 +1737,11 @@ export function createWebApp(deps: WebDeps): Hono {
       Promise.all([
         Promise.resolve().then(() => deps.dataSource.getProjectVoice(session, row.id)).catch(() => null),
         Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
-      ]).then(([current, options]) => (current ? { current, options } : undefined)),
+      ]).then(([current, options]) =>
+        current
+          ? { current, options, ...(c.req.query("voice_locked") === "1" ? { locked: true as const } : {}) }
+          : undefined,
+      ),
     ]);
     // a bounced disposition write (a gate row's per-finding override) re-renders with the error under
     // that row's controls — never dropped silently.
@@ -1868,8 +1873,60 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await c.req.parseBody();
     const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : null;
-    await deps.dataSource.setProjectVoice(session, row.id, { personaId }).catch(() => undefined);
+    const register = typeof form.register === "string" && form.register !== "" ? form.register : undefined;
+    const res = await deps.dataSource
+      .setProjectVoice(session, row.id, { personaId, ...(register !== undefined ? { register } : {}) })
+      .then(() => ({ ok: true as const }))
+      .catch((e) => ({ ok: false as const, locked: e instanceof ApiError && e.status === 409 }));
+    // P1.14 — the soft lock (§9.6): a direct voice change after v1 409s; the redirect lands on the
+    // notice that names the two hatches (adopt / fork).
+    if (!res.ok && res.locked) return c.redirect(`/p/${slug}?voice_locked=1`);
     return c.redirect(`/p/${slug}`);
+  });
+
+  // ---- P1.14 — the §9.6 hatches: adopt the refreshed profile (+ optional charter reseed) or fork
+  //  the project under a different voice. The reseed preview is a GET page (the diff before commit). ----
+  app.get("/p/:project/voice/reseed", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const preview = await deps.dataSource.getVoiceReseedPreview(session, row.id).catch(() => null);
+    if (!preview) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(
+      renderDocument(c.req.path, voiceReseedElement, {
+        voiceReseed: { slug, projectId: row.id, preview },
+      }),
+    );
+  });
+
+  app.post("/p/:project/voice/adopt", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const reseed = form.reseed === "true" || form.reseed === "on";
+    await deps.dataSource.adoptProjectVoice(session, row.id, { reseed }).catch(() => undefined);
+    return c.redirect(`/p/${slug}`);
+  });
+
+  app.post("/p/:project/voice/fork", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await c.req.parseBody();
+    const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : "";
+    if (!personaId) return c.redirect(`/p/${slug}`);
+    const forked = await deps.dataSource
+      .forkProjectVoice(session, row.id, { personaId })
+      .catch(() => null);
+    if (!forked) return c.redirect(`/p/${slug}`);
+    return c.redirect(`/p/${forked.slug}`);
   });
 
   // PRB.05 — the per-project approve_triage 24-h opt-in (§6.4 R3): the checkbox writes the
@@ -3330,11 +3387,13 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/p/${slug}/run${new URL(c.req.url).search}`);
   });
 
-  // The voice library (§9.1's "Your voices" group).
+  // The voice library — the §9.1 three-group destination (your voices / house styles / shared).
   app.get("/voices", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    const voices = await deps.dataSource.listVoices(session).catch(() => []);
+    const voices = await deps.dataSource
+      .listVoiceGroups(session)
+      .catch(() => ({ voices: [], groups: { your_voices: [], house_styles: [], shared_with_you: [] } }));
     return c.html(renderDocument(c.req.path, voicesElement, { voices }));
   });
 
@@ -3368,11 +3427,25 @@ export function createWebApp(deps: WebDeps): Hono {
         ? new TextDecoder().decode(await (file as File).arrayBuffer())
         : "";
     const sampleText = (fileText || str("sample_text")).trim();
-    if (intent === "build" && !sampleText) {
+    const sampleUrl = str("sample_url").trim();
+    const tier = str("tier") === "full" ? "full" : "quick";
+    // The sheet's own gate mirrors the api's (shared constants in findings-core): Quick needs a
+    // description or ≥1 sample; Full needs ≥4 samples — the creation sheet attaches at most two
+    // (text/file + URL), so a Full build always lands on the detail page to add the rest.
+    if (intent === "build" && tier === "quick" && !sampleText && !sampleUrl) {
       return c.html(
         renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired } }),
         400,
       );
+    }
+    if (intent === "build" && tier === "full") {
+      const hasCorpus = sampleText !== "" || sampleUrl !== "";
+      if (!hasCorpus) {
+        return c.html(
+          renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.fullRequired } }),
+          400,
+        );
+      }
     }
     const created = await deps.dataSource.createVoice(session, {
       name,
@@ -3388,13 +3461,27 @@ export function createWebApp(deps: WebDeps): Hono {
         })
         .catch(() => undefined);
     }
+    // The fetcher-only URL path (REQ-INGEST-13) — the api fetches; the sheet never does.
+    if (sampleUrl) {
+      await deps.dataSource
+        .addVoiceSampleUrl(session, created.personaId, { url: sampleUrl })
+        .catch(() => undefined);
+    }
     if (intent === "build") {
-      await deps.dataSource.buildVoice(session, created.personaId, { tier: "quick" }).catch(() => undefined);
+      const built = await deps.dataSource
+        .buildVoice(session, created.personaId, { tier })
+        .then(() => true)
+        .catch(() => false);
+      // The api's gate rejected the build (e.g. Full needs ≥4 samples — the sheet carries at most
+      // two) → land on the detail page with the notice instead of a silent drop.
+      if (!built) return c.redirect(`/v/${created.personaId}?build_failed=1`);
     }
     return c.redirect(`/v/${created.personaId}`);
   });
 
-  // The voice detail page (§9.5): status + seed editor + samples + build history + profile artifacts.
+  // The voice detail page (§9.5): five tabs — Overview (pill + diff-of-inputs + gate card),
+  // Description (seed + corrections + build notes), Samples, Profile, Runs. `?tab=` selects;
+  // unknown/absent ⇒ overview.
   app.get("/v/:persona", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
@@ -3404,7 +3491,11 @@ export function createWebApp(deps: WebDeps): Hono {
       throw e;
     });
     if (!detail) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const estimate = await deps.dataSource.estimateVoice(session, personaId, "quick").catch(() => undefined);
+    const [estimate, updatePlan] = await Promise.all([
+      deps.dataSource.estimateVoice(session, personaId, detail.tier === "full" ? "full" : "quick").catch(() => undefined),
+      // The diff-of-inputs sheet's pre-computed route (§9.3) — best-effort; the pill alone suffices.
+      deps.dataSource.getVoiceUpdatePlan?.(session, personaId).catch(() => undefined),
+    ]);
     const notice =
       c.req.query("saved") === "1"
         ? COPY.voice.detail.seedSaved
@@ -3412,10 +3503,20 @@ export function createWebApp(deps: WebDeps): Hono {
           ? COPY.voice.detail.sampleAdded
           : c.req.query("cancelled") === "1"
             ? COPY.voice.detail.cancelDone
-            : undefined;
+            : c.req.query("corrected") === "1"
+              ? COPY.voice.detail.correctionAdded
+              : c.req.query("build_failed") === "1"
+                ? COPY.voice.new.fullRequired
+                : undefined;
     return c.html(
       renderDocument(c.req.path, voiceDetailElement, {
-        voice: { detail, ...(estimate ? { estimate } : {}), ...(notice ? { notice } : {}) },
+        voice: {
+          detail,
+          ...(estimate ? { estimate } : {}),
+          ...(updatePlan ? { updatePlan } : {}),
+          ...(notice ? { notice } : {}),
+          ...(c.req.query("tab") ? { tab: c.req.query("tab") } : {}),
+        },
       }),
     );
   });
@@ -3466,6 +3567,24 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/v/${personaId}?added=1`);
   });
 
+  // P1.14 — the fetcher-only URL ingestion path (REQ-INGEST-13): the api's fetcher is the only
+  // network path; a failed fetch re-renders the Samples tab (the error never becomes a sample).
+  // Registered BEFORE /samples/:itemId — otherwise `url` would be eaten as an item id.
+  app.post("/v/:persona/samples/url", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const url = typeof form.url === "string" ? form.url.trim() : "";
+    const title = typeof form.title === "string" && form.title.trim() !== "" ? form.title.trim() : undefined;
+    if (url) {
+      await deps.dataSource
+        .addVoiceSampleUrl(session, personaId, { url, ...(title ? { title } : {}) })
+        .catch(() => undefined);
+    }
+    return c.redirect(`/v/${personaId}?tab=samples&added=1`);
+  });
+
   // The per-item include/omit toggle (REQ-INGEST-4).
   app.post("/v/:persona/samples/:itemId", async (c) => {
     const session = deps.session(c);
@@ -3476,16 +3595,84 @@ export function createWebApp(deps: WebDeps): Hono {
     await deps.dataSource
       .setVoiceSampleIncluded(session, personaId, c.req.param("itemId"), included)
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}`);
+    return c.redirect(`/v/${personaId}?tab=samples`);
   });
 
-  // "Build voice" / "Update voice" — a profile_voice{tier: quick} run (§9.2 item 3).
+  // "Build voice" — a profile_voice{tier} run (§9.2 item 3); the api's gate owns the tier checks.
   app.post("/v/:persona/build", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const personaId = c.req.param("persona");
-    await deps.dataSource.buildVoice(session, personaId, { tier: "quick" }).catch(() => undefined);
+    const form = await c.req.parseBody();
+    const tier = form.tier === "full" ? "full" : "quick";
+    await deps.dataSource.buildVoice(session, personaId, { tier }).catch(() => undefined);
     return c.redirect(`/v/${personaId}`);
+  });
+
+  // P1.14 — the ONE "Update voice" verb (§9.3; REQ-SPEC-27): no `scope` ⇒ the api's routed scope
+  // (cheapest sufficient); `scope=full_from_quick` is the Quick→Full upgrade the button carries.
+  app.post("/v/:persona/update", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const scope = typeof form.scope === "string" && form.scope !== "" ? form.scope : undefined;
+    const register = typeof form.register === "string" && form.register !== "" ? form.register : undefined;
+    await deps.dataSource
+      .updateVoice(session, personaId, {
+        ...(scope ? { scope: scope as "full_from_quick" } : {}),
+        ...(register ? { register } : {}),
+      })
+      .catch(() => undefined);
+    return c.redirect(`/v/${personaId}`);
+  });
+
+  // P1.14 — the approve_sample card's decision (§9.2/§6.4): run-scoped (the build is a persona run).
+  app.post("/v/:persona/gates/:gid", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const action = typeof form.action === "string" ? form.action : "";
+    const runId = typeof form.runId === "string" ? form.runId : undefined;
+    // The card's form posts the gate id; the run id rides a hidden field so a stale page can't
+    // aim the decision at a different run's gate.
+    if (runId && (action === "approve" || action === "wait" || action === "stop")) {
+      await deps.dataSource.decideRunGate(session, runId, c.req.param("gid"), { action }).catch(() => undefined);
+    }
+    return c.redirect(`/v/${personaId}`);
+  });
+
+  // P1.14 — "Correct this in your description" (§9.4; REQ-PERSONA-7): the blockquote + the
+  // consume-once corrections row write together at the api.
+  app.post("/v/:persona/corrections", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const form = await c.req.parseBody();
+    const text = typeof form.text === "string" ? form.text.trim() : "";
+    const statementRef = typeof form.statementRef === "string" && form.statementRef.trim() !== "" ? form.statementRef.trim() : undefined;
+    const artifactId = typeof form.artifactId === "string" && form.artifactId.trim() !== "" ? form.artifactId.trim() : undefined;
+    if (text) {
+      await deps.dataSource
+        .addVoiceCorrection(session, personaId, {
+          text,
+          ...(statementRef ? { statementRef } : {}),
+          ...(artifactId ? { artifactId } : {}),
+        })
+        .catch(() => undefined);
+    }
+    return c.redirect(`/v/${personaId}?tab=description&corrected=1`);
+  });
+
+  // P1.14 — the house/shared card's Fork (§9.1): the copy becomes your editable persona.
+  app.post("/v/:persona/fork", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const personaId = c.req.param("persona");
+    const forked = await deps.dataSource.forkVoice(session, personaId).catch(() => null);
+    if (!forked) return c.redirect(`/v/${personaId}`);
+    return c.redirect(`/v/${forked.personaId}`);
   });
 
   // Cancel an open build (the detail page's Cancel).
