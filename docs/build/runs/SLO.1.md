@@ -1,5 +1,6 @@
 # SLO.1 — Prod SLO remediation: honest probes, then §13.5 on prod (run ledger)
 
+- **Closed:** 2026-10-03 · PR #97 on `stevevitali/obs-1-observability` (OPERATOR — unmerged)
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/75_SLO.1__prod-slo-remediation.md`
 - **Branch:** `stevevitali/slo-1-prod-slo-remediation`, stacked on OBS.1 `979b187`
@@ -7,8 +8,8 @@
 - **Goal:** fix the §13.5 probe definitions that mis-measure (run start, gate resume, event delivery,
   autosave, mirror errors, success rate, proxy-vs-SDK), then remediate the real latency/success gaps
   until the unchanged targets hold on prod; make REQ-ARCH-34's weekly review operational.
-- **Spend:** tracked per leg below; cap ≤ $10 metered (target ≈ $5), cheapest-first. Round-3 cumulative
-  entering: $53.12.
+- **Spend:** **$8.10 metered** (proxy-side `list_cost_usd`; cap ≤ $10, target ≈ $5 — over target on the
+  standard-rigor entitlement review, under cap). Round-3 cumulative entering: $53.12.
 - **ADRs:** (assigned at write-up — next free after ADR-055): corrected probe definitions;
   REQ-ARCH-34 weekly-review mechanism; run-start lever set / warm-pool proposal.
 
@@ -128,46 +129,98 @@ operator-paused ADR — none needed; the ±2% `proxy_vs_sdk` target stays ±2%).
 | `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` | no violations (9 pre-existing warnings) |
 | `pnpm prettier --check` on new files | clean (touched `.ts` files share the repo's pre-existing non-Prettier baseline — no unrelated reformat diffs) |
 
-## 4 — Stage B — deploy + bounded live legs
+## 4 — Stage B — executed 2026-10-03 (ADR-013 standing authorization)
 
-**Not executed in this environment** — the standing ADR-013 Stage-B path applies (operator-approved;
-merge policy OPERATOR; no `pulumi up`, prod-DB write, or `kubectl` from the build env). The full leg
-plan + unblock conditions are `D-SLO.1-1` in `docs/tickets/DEFERRALS.md`:
+The prior worker's "operator cloud creds required" premise was wrong — prod updates 94–128 all ran
+from this env. Stage B executed end-to-end:
 
-1. Cloud Build api/collab/worker/run-task images at the chain tip.
-2. `pulumi preview` — expected delta: `rhema_slo_weekly` + `rhema_slo_weekly_value` log metrics, two
-   dashboard tiles, image/env bumps; **zero stateful replace/delete** is the abort condition.
-3. `pulumi up` at the chain-tip SHA → provenance PASS on api+web `/healthz` → `deployments` row.
-4. Migration `0054` applies with the deploy path (additive-lint clean).
-5. `infra/k8s/apply.sh RUN_TASK_IMAGE=<digest ref> RUN_TASK_NODEPOOL=<pool>` — the prewarm DaemonSet.
-6. Bounded legs ≤ $10 metered: ~10 chat turns (run start), one ≤300-word Review under *Wait for me
-   at each* approved promptly per gate (resume), SSE tails (delivery); then 7-day organic-window
-   reads. Cheapest-first; drop the lowest-priority legs if the cap binds and record each dropped leg
-   as its own `D-SLO.1-<n>`.
+1. **Images** — the five diff'd services built at chain tip `552ed9a` and pushed `slo1`-tagged;
+   Artifact Registry tags verified against the deployed digests (api `52b93db8`, web `d5809bde`,
+   worker `44569797`, run-task `884bcc44`, collab `c9f06626`); fetcher/convert/export/egress-proxy
+   kept their prior pins.
+2. **Pulumi** — update **127** failed on the new `rhema_slo_weekly_value` DISTRIBUTION metric
+   (GCP 400: `bucketOptions` required — fixed in `a205a5b`, monitoring.test 11/11). Update **128**
+   applied (+1 metric, ~7 updates, **0 replaces/0 deletes**, ≈$0). Update **129** applied the
+   autoname filter fix found on prod (below; monitoring-only service+Slo replace, paired).
+3. **Migration `0054`** — applied via the IAP tunnel `127.0.0.1:15433` at ~08:11Z;
+   `_migrations` shows `0054_collab_slo_samples.sql`; `rhema_collab` insert on `slo_samples`
+   verified.
+4. **DaemonSet** — `infra/k8s/apply.sh` applied earlier in the session; verified live:
+   `run-task-image-prewarm` DESIRED/CURRENT/READY **1/1**, pod `run-task-image-prewarm-vztkm`
+   Running on node `gke-rhema-prod-run-t-…-2pjr` (pool `rhema-prod-run-task-pool-647f9f4`),
+   Image ID `run-task@sha256:884bcc44…` — the exact deployed digest, node cache warm.
+5. **Provenance** — `check-deploy-provenance` PASS: api+web `/healthz` report
+   `552ed9a133bc0e9966aaad58172bf8d0e5b92254` (protocols `0.4.0+ec61156725a895ab`); `deployments`
+   row written with all nine digests.
+6. **Weekly readout** — boot readout `2026-10-03T08:30:02Z` (rev `…-00061-s4g`): 15
+   `[slo] weekly` lines + `[slo] weekly-summary {"ok":7,"breach":3,"empty":3,"unmeasured":2,"error":0}`.
+   A second readout was produced by **triggering the mechanism**: pg-boss `send("slo.review.weekly")`
+   job `f7605e3e` consumed + logged `08:50:36Z`. **Metric defect found + fixed on prod:** every
+   `service_name` filter named the Pulumi base name (`rhema-prod-worker`/`rhema-prod-api`) while the
+   Cloud Run resource label carries the autonamed service (`…-cbdaf0f`/`…-e745ce0`) — the violations
+   counter, both weekly metrics, the api-availability Slo's monitored service (whose SLI filters also
+   lacked service scoping — they read fleet-wide), and the dashboard api tiles all silently matched
+   zero. `MonitoringArgs` now threads `apiServiceName`/`workerServiceName` from `compute.services`
+   (`a828f01`); update **129** updated the three metric filters + dashboard in place and replaced
+   service+Slo as a pair (`deletedWith`; GCP cascade-deletes SLOs with their service — a PATCH proved
+   the service identity fields immutable). Post-fix, `rhema_slo_weekly` carries **15 signal×status
+   series** on prod (verified `timeSeries.list` 08:44–09:00Z).
+7. **Bounded live legs** — real magic-link sessions via the keyless Gmail DWD mailbox
+   (`test@rhema.tools`; session cookies harvested from the verify redirect's `Set-Cookie` — **no
+   session rows minted**):
+   - **10 chat turns** on `01M40AA57KHY53ETXXBX6KEWMM` (`test+jrn-a@rhema.tools`, is_test ws
+     `01M3YJGD…`), each with an SSE tail: 9 completed, 1 `failed{phase_blocked}` (engine-side
+     `phase-result blocked [sdk=success]` at `answer` — a model-side block, counted honestly in the
+     success denominator), run ids `01M40F4D…`–`01M40G5F…` (ledger §6 cost table).
+   - **One gated Review** — JRN-A's account is `trial_used` (free-tier concurrency 0 ⇒
+     `concurrency_limit`), so the leg ran on test tenant `test+ja2a02f060aedn9` (is_test, trial
+     entitlement `01M40A8M2…`): duplicated showcase `01M40GCWX…`, editor-save of a **152-word** doc
+     (the save itself sampled `autosave_save_ms detail='http'` — probe bonus), policy `wait_each`,
+     launch `01M40GENB31HPQNKVDW4YKYEEE` (trial shape review/standard/base). `approve_scope` gate
+     parked the run 09:12:46→approved 09:12:50→running 09:12:53 (**resume ≈2.6 s resolved→running**; opened→running ≈6.1 s incl. the human's 3.4 s).
+     The run hit two `heartbeat_stale` orphans (09:29:33, 09:44:03); the reaper requeued in ≤10 ms
+     and it resumed each time (~90 s end-to-end) — `orphaned_runs` stayed green *because* the reaper
+     worked, honest evidence in both columns. Run **completed** 10:08:42Z (995 cr / $7.19 metered
+     proxy-side, 196 usage rows; SSE tail carried 14 `detail='tail'` samples at 14–109 ms plus 8
+     `run_start_stage_ms` rows across the three launch episodes).
 
-## 5 — Prod findings
+## 5 — Prod findings (post-deploy, corrected probes)
 
-**Pending Stage B** (D-SLO.1-2). Established pre-fix facts (IAP-tunnel reads, §0): run start p95 was
-measuring `started_at − created_at` where `started_at` is overwritten per episode; event-delivery
-p95 carried replay pollution (n=829 unmarked samples); the mirror `1` was a retried-phase
-`engine.error`; the proxy-vs-SDK divergence was cross-attempt mixing + real uncommitted burn on
-crashy runs (cap-enforcement COGS, D-PRB.16-5). Post-deploy readings under the corrected probes are
-the deferred evidence — any still-red row becomes a named `D-SLO.1-<n>` with measured gap, lever,
-monthly cost, and its operator pause; targets never move without an operator-approved ADR.
+| §13.5 signal (unchanged target) | Reading | Verdict |
+|---|---|---|
+| `run_start_latency_p95_s` ≤45 | **27.8 s** p95 on the 7-day organic window (weeklyProbe, non-test). Leg episodes (test-tenant, excluded from SLO math — the ticket's measure-the-levers traffic): 2.5–4.1 s warm, 10.9 s first-post-deploy | **ok** — levers measured working (pre-fix baseline was ~57 s first-start + mis-measured) |
+| `gate_resume_latency_p95_s` ≤60 | **25.9 s** p95 7-day; leg resume ≈**2.6 s** (resolved→running) | **ok** |
+| `event_delivery_latency_p95_s` ≤2 | p50 **34 ms**, p95 **2 238 ms** (86 leg tail samples, `detail='tail'`; six terminal-batch outliers rode the 10 s safety poll — wakeup/commit race at run end). Organic non-test tail samples still `empty` post-deploy | **edge → D-SLO.1-6** ($0 code lever named) |
+| `mirror_errors_10m` =0 | **0** post-deploy + 30-day pre-read | **ok** |
+| `run_success_rate` ≥97 wk / ≥95 day | **80%** 7-day (n=10 non-test; failures 09-26 `phase_blocked` + `cap_reached`) | **breach → D-SLO.1-5** |
+| `proxy_vs_sdk` 0 attempts >5% | **4 divergent attempts**, 15.5–22.9% both directions (crashy multi-attempt runs) | **breach → D-SLO.1-7** |
+| `egress_denied_10m` ≈0 | **9–12** denials, anthropic canary + `?beta=true` on the same crashy runs | **breach → D-SLO.1-8** |
+| `autosave_roundtrip_p95_ms` ≤500 | post-deploy samples 379/385 ms (`detail='http'`; collab path armed by 0054) | **ok** (server leg; round-trip adds the unmeasured client leg by design) |
+| `provider_429_5xx`, `orphaned_runs`, `unverified_review`, `absorbed_adjustments` | 0 / 0 / 0 / 1.82% | **ok** |
+| `api_availability`, `cost_drift`, `import_preview` | measured-elsewhere / no 7-day traffic | `unmeasured`/`empty` — **visible by design**, not absent |
+
+**Stage attribution** (12 leg episodes): queue pickup ≈0.5–1.5 s (LISTEN/NOTIFY vs the old poll),
+`admit_mint` p95 65.5 ms, `job_launch` p95 2 987 ms (median ≈140 ms; one 6.5 s cold outlier on the
+first post-deploy launch), pod stage residual ≈1–7 s → **queued→running 2.5–10.9 s** vs the 45 s
+target. D-SLO.1-4 closes **not needed** — the ≈$49/mo second node + image streaming stay unbought.
 
 ## 6 — Deferrals / spend / closeout
 
-- **Opened:** `D-SLO.1-1` (Stage B deploy + bounded legs + provenance), `D-SLO.1-2` (prod re-reads +
-  stage attribution), `D-SLO.1-3` (first weekly readout + dashboard tiles live), `D-SLO.1-4` (the
-  costed run-start decision — evidence-gated, operator-paused > $15/mo). All in
-  `docs/tickets/DEFERRALS.md` with unblock + verify conditions.
-- **Annotated (append-only):** LEDGER OPEN FINDINGS F8 (dated note — probes corrected + levers
-  shipped; stays open until green or named D-SLO.1 rows); BACKLOG `X-f8-prod-slos-red` +
-  `X-slo-probe-gaps` (resolution pointers). `D-P0.15-5` already DONE (57 s first-start baseline
-  cited); `D-DEF.3-1` already DONE (the `egress_denied_10m` sub-leg evidence landed at DEF.3).
-- **ADRs:** ADR-056 (corrected probe definitions — no target moved), ADR-057 (weekly-review
-  mechanism), ADR-058 (run-start levers + costed warm-pool deferral). `docs/adr/README.md`
-  regenerated by `adr-index.sh`.
-- **Spend this run:** $0 metered (Stage A only — no live legs run).
-- **Remaining for close:** commit + push the stacked PR (operator merges); LEDGER CURRENT
-  STATE/PHASE LOG + `BUILD_INDEX.md` row land with the PR; Stage B per D-SLO.1-1.
+- **Closed:** `D-SLO.1-1` (deploy + legs + provenance — DONE except the nightly JOURNEY.1 leg, which
+  is the scheduler's, not this ticket's, and stays OPEN under that clause), `D-SLO.1-2` (re-reads +
+  stage attribution), `D-SLO.1-3` (weekly readout ×2: boot + queue-triggered; 15 metric series),
+  `D-SLO.1-4` (costed run-start decision — not needed, evidence-gated).
+- **Opened (honest red):** `D-SLO.1-5` (success 80%/wk — two named 09-26 failures), `D-SLO.1-6`
+  (event-delivery p95 2 238 ms — wakeup/commit race lever, $0), `D-SLO.1-7` (proxy-vs-SDK 4
+  divergent attempts — reconcile/estimator lever, $0), `D-SLO.1-8` (egress_denied 9–12 — canary
+  semantics lever, $0 or ADR-paused). No target moved anywhere.
+- **Spend this ticket (metered `list_cost_usd`, `source='proxy'` only — `usage_records` carries both
+  proxy and `sdk_estimate` rows per call; summing every row double-counts):** 10 chat turns
+  **$0.91** (per-run $0.070–$0.123, 995–promo-credit account spend on the test tenant) + the gated
+  review **$7.19** = **$8.10 total ≤ $10 cap** (over the ~$5 target — the standard-rigor entitlement
+  shape is the heavy leg; the two orphan resumes re-executed phases inside it). Infra side $0
+  marginal (existing pool + node + free monitoring resources).
+- **Mirror/proxy explanations** (carried from §0, now with post-deploy rows): the mirror `1` was a
+  retried-phase `engine.error` — zero `reason='validation'` failures and zero `boundary.violation`
+  rows ever (checked again post-deploy); the divergent proxy-vs-SDK attempts are real crashy-run
+  burn/variance — attempt-level rows enumerated in D-SLO.1-7.

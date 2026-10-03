@@ -3,10 +3,11 @@
 Ticket: `docs/tickets/75_SLO.1__prod-slo-remediation.md` · run ledger: `docs/build/runs/SLO.1.md`
 Stacks on `stevevitali/obs-1-observability` (PR #96, itself stacked on RUN.1 PR #95).
 **DO NOT MERGE** — merge policy
-OPERATOR. **Stage A is complete and green; Stage B (deploy, migration 0054, the k8s
-DaemonSet apply, bounded live legs, prod re-reads, first weekly readout) is deferred
-post-PR-review under the standing ADR-013 path as `D-SLO.1-1..4`** — no deploy, prod-DB
-write, or `pulumi up` was run from the build environment.
+OPERATOR. **Stage B executed 2026-10-03 under the standing ADR-013 authorization** —
+`slo1` images at `552ed9a`, `pulumi up` updates **128 + 129**, provenance PASS,
+migration `0054` applied, prewarm DaemonSet live, bounded legs ≈**$8.10 ≤ $10**, first
+weekly readouts produced (boot + queue-triggered), remaining red honestly named
+`D-SLO.1-5..8`.
 
 ## Summary
 
@@ -72,17 +73,30 @@ write, or `pulumi up` was run from the build environment.
 | `check-additive-migrations.mjs --files 0054` | pass (grant only; no DROP/rename/rewrite/role-change) |
 | `check-build-memory.sh .` | no violations |
 
-## Stage B — deferred (D-SLO.1-1..4)
+## Stage B — executed 2026-10-03 (run ledger §4–5)
 
-Deploy (`pulumi preview` → `up`, expected: two log metrics + two dashboard tiles +
-image/env bumps, **zero stateful replace/delete**), migration `0054`, the DaemonSet
-`apply.sh` leg, the bounded live legs (~10 chat turns, one gated Review, SSE tails, ≤$10),
-prod re-reads of every corrected probe, the first produced weekly readout, and the
-costed run-start decision are recorded as `D-SLO.1-1` … `D-SLO.1-4` in
-`docs/tickets/DEFERRALS.md` with unblock conditions and verification steps. Any §13.5 row
-still red on prod after deploy closes only as a named `D-SLO.1-<n>` with the measured
-gap + lever + cost — the compensating control is that the alert policies keep firing
-unchanged.
+- **Deploy:** `slo1`-tagged images at `552ed9a` → update 127 failed on the DISTRIBUTION
+  metric's missing `bucketOptions` (fixed `a205a5b`) → **update 128** (+1/~7/0/0) →
+  **update 129** (`a828f01`: the `service_name` filters named the Pulumi base name —
+  autonamed labels `…-cbdaf0f`/`…-e745ce0` made every worker/api filter silently empty;
+  three log metrics + dashboard updated in place, api service+Slo replaced as a pair).
+- **Migration 0054** applied via IAP tunnel; **`_migrations`=54**; `rhema_collab` insert
+  verified.
+- **DaemonSet** `run-task-image-prewarm` 1/1 on the run-task pool, Image ID = deployed
+  digest `884bcc44`.
+- **Provenance:** api+web `/healthz` = `552ed9a133bc…`; `deployments` row with nine
+  digests.
+- **Bounded legs (real magic-link sessions — DWD mailbox, no minted rows):** 10 chat
+  turns (9 ok / 1 `phase_blocked`), one 152-word gated Review under `wait_each`
+  (completed; `approve_scope` resume 2.6 s resolved→running; two `heartbeat_stale` orphans self-healed by
+  the reaper ≤10 ms). Metered spend **$8.10 ≤ $10**.
+- **Probe re-reads:** run-start 27.8 s ≤45 · gate-resume 25.9 s ≤60 · mirror 0 ·
+  autosave 379 ms — all green on the corrected definitions. **Red, honestly named:**
+  `D-SLO.1-5` success 80%/wk · `D-SLO.1-6` event-delivery tail p95 2 238 ms (terminal
+  wakeup/commit race — $0 lever) · `D-SLO.1-7` proxy-vs-SDK 4 divergent attempts ·
+  `D-SLO.1-8` egress_denied 9–12 (canary semantics). `D-SLO.1-4` closed **not needed**
+  (warm starts 2.5–4 s — the $49/mo node stays unbought). `D-SLO.1-1` DONE except its
+  nightly-JOURNEY.1 clause (scheduler-owned).
 
 ## Requirement IDs
 
