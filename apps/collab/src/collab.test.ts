@@ -17,7 +17,8 @@ import { InMemoryContentStore, sha256Hex, type SqlExecutor } from "@rhema/mirror
 import { markdownToDoc } from "@rhema/editor";
 import { updateYFragment } from "y-prosemirror";
 import { blockContentHash, splitMarkdownBlocks } from "@rhema/findings-core";
-import { HOLDING_STATES, lockKeys } from "@rhema/orchestrator";
+import { HOLDING_STATES, lockKeys, randomUlids } from "@rhema/orchestrator";
+import { idSchema } from "@rhema/contracts";
 import { createCollabService, type CollabService } from "./server.js";
 import { authenticateConnection, AuthRefusal, FORK_REASON_CODE, resolveDraftBinding } from "./auth.js";
 import { storeDocument, markRestorePoint } from "./materialize.js";
@@ -156,6 +157,15 @@ async function storeNow(fx: Fixture, doc: Y.Doc) {
 }
 
 describe("collab service (P1.03)", () => {
+  // EDIT.1 — the prod composition root minted `dft_${uuid}` ids: saveManualRevision's draft.forked
+  // payload validates `idSchema` and a non-ULID child id threw the whole storeDocument hook (N8 prod
+  // walk caught it in the collab logs). The fixture's ULID-shaped stub masked it; pin the prod
+  // factory to the schema it must satisfy.
+  it("the prod ids factory mints 26-char ULIDs the event schemas accept", () => {
+    const minted = randomUlids()("dft");
+    expect(idSchema.safeParse(minted).success).toBe(true);
+  });
+
   let fx: Fixture;
   beforeEach(async () => {
     fx = await boot();

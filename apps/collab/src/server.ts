@@ -22,6 +22,7 @@ import {
   type GcsRestoreBucketLike,
 } from "@rhema/mirror";
 import { blockPatchRequestSchema } from "@rhema/contracts";
+import { randomUlids } from "@rhema/orchestrator";
 import { createCollabDb, type CollabDb } from "./sql.js";
 import { createCollabExtension, type CollabExtensionDeps } from "./extension.js";
 import { sweepRestorePoints, type RestoreBlobStore } from "./restore.js";
@@ -174,7 +175,11 @@ function liveDeps(env: ReturnType<typeof readCollabEnv>): CollabServiceDeps {
     db,
     storeFor,
     blobs,
-    ids: (p) => `${p}_${crypto.randomUUID().replaceAll("-", "").slice(0, 24)}`,
+    // EDIT.1 — real ULIDs, never `${p}_${uuid}`: saveManualRevision's draft.forked event validates
+    // the minted child id against idSchema (26-char Crockford ULID) and a non-ULID id throws the
+    // whole storeDocument hook — the keystroke's fork silently dies server-side (the N8 prod walk
+    // caught it: ZodError in the collab logs, the banner never flipped).
+    ids: randomUlids(),
     clock: { now: () => new Date() },
     eventWriter: {
       // collab materializations carry no runId — saveManualRevision routes every event to the
