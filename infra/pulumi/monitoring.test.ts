@@ -55,7 +55,9 @@ describe("OBS.1 route-5xx alert policy", () => {
   it("fires on count > 0 over the 300s alignment window, on both the LB and app signals", () => {
     expect(policyBlock).toContain('new gcp.monitoring.AlertPolicy(`rhema-${stack}-route-5xx`');
     expect(policyBlock).toContain('metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests"');
-    expect(policyBlock).toContain('resource.type="http_load_balancer"');
+    // logs-based metric time series for an external HTTPS LB land on `l7_lb_rule` ("Application Load
+    // Balancer Rule (Logs-based Metrics)") — NOT the log filter's `http_load_balancer` resource type.
+    expect(policyBlock).toContain('resource.type="l7_lb_rule"');
     expect(policyBlock).toContain('metric.type="logging.googleapis.com/user/rhema_route_5xx_errors"');
     expect(policyBlock).toContain('comparison: "COMPARISON_GT"');
     expect(policyBlock).toContain("thresholdValue: 0");

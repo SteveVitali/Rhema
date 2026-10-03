@@ -268,8 +268,19 @@ config:
   # and the worker WALKTHROUGH_MODEL_KEY_SECRET env wiring + testable model-key loader
   # (worker; ADR-052). fetcher/convert/export/collab/egress-proxy have no diff'd runtime
   # code — they keep their pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:3c28536202bca21cfecdad87a738f52651fae286b113426e89ff602fdf6bed11","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:12bfcfd2d3c455664749285f6db97e533569be6fd5ec911922c7226037078ee8","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:aa61021045f23598b50967782e6e60b076718078206b7934bd9d90beabdcc9e9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:fb62d20693f7cce76fd31109a25e4494cb135766496480f03dd6d216c5c062ba","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:73f4620fff49267ef3f1789b0ba34de06270444cc6015867fbcf46d0c5aa7be3"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:c3611e37476ed901dc783acda8d4faa16472ad94612f68f1348bf9272baa1657
+  # OBS.1 Stage-B (tag obs1, Cloud Build a7834719, 2026-10-03, chain-tip SHA 0db8910 —
+  # stacks on the RUN.1 deploy): api + web + collab + worker + run-task rebuilt. Carries:
+  # the plain-fetch GCS JSON-API byte transport wired at every live binding (the
+  # MaxListenersExceededWarning root fix — teeny-request/node-fetch PassThrough emitter
+  # gone), request/trace-id resolution + forwarding (x-cloud-trace-context → traceparent →
+  # x-rhema-request-id), exactly-one allowlisted structured error line per 5xx (api onError
+  # + fallback sweep; web onError + sweep; degraded_reads WARNING), the two log-based 5xx
+  # metrics + fires-on-any AlertPolicy + dashboard tile (monitoring.ts). fetcher/convert/
+  # export/egress-proxy have no diff'd runtime code — they keep their pins. The deploy also
+  # reconciles the out-of-band NODE_OPTIONS=--trace-warnings diagnostic off the api (not in
+  # the declared spec — deliberate revert, recorded in runs/OBS.1.md).
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:3732d49fe5c5db7f7fda96ed84b6b4e73a1e1e4ec88d1b5fcf6717972de90f8c","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:dda780ffbd7d01eb492d4439e6ab98e3cf9e915574431062da9c83b0efbab45f","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:49c0b12ce6d4049daf2e1efe8babc49db53a2e44a3852c3197faf5174c964046","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:fb62d20693f7cce76fd31109a25e4494cb135766496480f03dd6d216c5c062ba","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:8632cc8b3799be4b2da5343e9ae6eaadfd0f0190dc8bd19e6f7bfd087b34e474"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:46ca4fa1ada86c8be947be323b9756d84e4a7ac83a11eb5e948b17a9e1f0afc8
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app

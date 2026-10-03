@@ -165,6 +165,13 @@ export function createMonitoring(args: MonitoringArgs): {
   // must leave exactly one trail), so the policy fires on count > 0 over the 300s alignment window.
   // On stages without the ops webhook configured it still records incidents unnotified — the trail
   // is the deliverable; paging is H7's.
+  //
+  // `resource.type` here is `l7_lb_rule`, NOT the log filter's `http_load_balancer`: the metric
+  // selects log entries under the LOGGING resource type, but logs-based metric TIME SERIES for an
+  // external HTTPS LB land on the "Application Load Balancer Rule (Logs-based Metrics)" MONITORING
+  // resource `l7_lb_rule` (GCP LB docs, monitoring-resource table). Alert/dashboard queries address
+  // the time series, not the log. (Update 124 proved `http_load_balancer` is not a Monitoring
+  // descriptor — the API 400'd on exactly this field.)
   const route5xxPolicy = new gcp.monitoring.AlertPolicy(`rhema-${stack}-route-5xx`, {
     displayName: `route 5xx errors — LB-observed (${stack})`,
     project,
@@ -175,7 +182,7 @@ export function createMonitoring(args: MonitoringArgs): {
         conditionThreshold: {
           filter:
             'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" AND ' +
-            'resource.type="http_load_balancer"',
+            'resource.type="l7_lb_rule"',
           comparison: "COMPARISON_GT",
           thresholdValue: 0,
           duration: "0s",
@@ -302,7 +309,8 @@ export function createMonitoring(args: MonitoringArgs): {
             },
             {
               // OBS.1 — the LB-observed 5xx count by backend service: the outermost frame of the
-              // trace trail, including 5xxs the app never reached.
+              // trace trail, including 5xxs the app never reached. (`l7_lb_rule` — the
+              // logs-based-metrics monitoring resource; see the alert policy note.)
               title: "LB 5xx requests by backend service",
               xyChart: {
                 dataSets: [
@@ -310,7 +318,7 @@ export function createMonitoring(args: MonitoringArgs): {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
                         filter:
-                          'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" resource.type="http_load_balancer"',
+                          'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" resource.type="l7_lb_rule"',
                         aggregation: {
                           alignmentPeriod: "300s",
                           perSeriesAligner: "ALIGN_COUNT",
