@@ -2,8 +2,8 @@
 
 - **Ticket:** `docs/tickets/73_RUN.1__run-and-chat-defects.md` — chat turns answer, informational
   gates never block, walkthroughs write.
-- **Branch:** `stevevitali/run-1-run-and-chat-defects`, stacked on the EDIT.1 tip `76e00c5`
-  (`stevevitali/edit-1-edit-path`, PR #94 — unmerged, OPERATOR).
+- **Branch:** `stevevitali/run-1-run-and-chat-defects` · **PR #95** · stacked on the EDIT.1 tip `76e00c5`
+  (`stevevitali/edit-1-edit-path`, PR #94 — unmerged, OPERATOR). Tip `0cd943d`.
 - **Spend:** **$0** so far — Stage A only; Stage B is operator-gated (deploy + R4/R7 + walkthrough
   regen → D-RUN.1-1/-2).
 - **ADRs:** ADR-050 (one gate-policy resolution — informational gates never park),
