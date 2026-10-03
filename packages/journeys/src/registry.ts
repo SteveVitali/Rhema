@@ -171,7 +171,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "P1",
     journey: "phone",
     asserts:
-      "project page / run sheet / pricing without horizontal overflow; primary actions are buttons ≥ 44 px",
+      "no horizontal overflow at 390/320 px (pricing matrix scrolls inside its labelled region, never the page); phone controls ≥ 44 px primaries / ≥ 24 px all; §10.1's desktop-only set never renders on phone; the sync pill is in-flow — over no text, the composer, or the status bar; /app/new styled at 1440×900; axe WCAG 2.2 AA clean on every touched surface",
     owner: "UX.2",
     expected: "red",
     paid: false,

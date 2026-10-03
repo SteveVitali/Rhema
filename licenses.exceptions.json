@@ -46,6 +46,11 @@
       "license": "MPL-2.0",
       "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
     },
+    "axe-core": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "The WCAG 2.2 AA checker UX.2 runs inside the journeys harness (ADR-068) — dev/test tooling only, executed by Playwright's page context, never in a shipped client bundle or server image. MPL-2.0 is weak copyleft; used as an unmodified dependency."
+    },
     "elkjs": {
       "type": "npm",
       "license": "EPL-2.0",

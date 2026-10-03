@@ -34,6 +34,8 @@ export interface StepCtx {
   readonly failedRequests: string[];
   /** record an asset response for the bundle-parity check (auto-wired by the runner) */
   readonly assetHits: { url: string; status: number; contentType: string | null }[];
+  /** the run's evidence dir (UX.2 — a multi-surface step commits its own per-width screenshots) */
+  readonly outDir: string;
 }
 
 export type StepFn = (ctx: StepCtx) => Promise<void>;
@@ -151,6 +153,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       consoleErrors,
       failedRequests,
       assetHits,
+      outDir: deps.outDir,
       marker: (name) => marker(deps.nonce, name),
       async anon() {
         const context = await deps.browser.newContext({ baseURL: deps.webBaseUrl });

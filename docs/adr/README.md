@@ -70,3 +70,8 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-062](ADR-062-showcase-route-target.md) | `/showcase` — signed-out visitors get the static sample dossier; signed-in viewers resolve to their own Showcase | UX.1 | Accepted |
 | [ADR-063](ADR-063-inbox-honest-rows.md) | Honest Inbox rows — the waiting count IS the rendered Needs-you rows, partials say "stopped early", recoveries collapse without re-badging | UX.1 | Accepted |
 | [ADR-064](ADR-064-magic-link-email.md) | The branded magic-link email — one template, expiry derived from `expiresIn`, a per-send nonce subject that never carries the token | UX.1 | Accepted |
+| [ADR-065](ADR-065-app-new-workspace-shell.md) | `/app/new` renders in the workspace `Shell`, not the IDE frame — and rendered `.ide` markup is document ground truth | UX.2 | Accepted |
+| [ADR-066](ADR-066-pricing-matrix-contained-scroll.md) | The pricing matrix scrolls inside a labelled, keyboard-focusable region — the page never scrolls sideways | UX.2 | Accepted |
+| [ADR-067](ADR-067-phone-action-row.md) | The phone action row keeps `<a>` elements styled as ≥44-px button controls — no overflow menu | UX.2 | Accepted |
+| [ADR-068](ADR-068-axe-core-accessibility-checker.md) | axe-core is the WCAG 2.2 AA checker — injected by the journeys harness, MPL-2.0 exception checked in | UX.2 | Accepted |
+| [ADR-069](ADR-069-sync-pill-in-flow.md) | The sync pill renders in flow at the paper's head — `position: fixed` removed | UX.2 | Accepted |

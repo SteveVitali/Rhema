@@ -114,6 +114,10 @@ export function themeCss(): string {
     "a { color: var(--accent); }",
     // WCAG 2.2 AA chrome: a 2-px accent focus ring on every keyboard-focused control (REQ-IDE-42).
     ":focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }",
+    // UX.2 — the labelled, keyboard-scrollable container a too-wide data table scrolls inside
+    // (/pricing's matrix): the PAGE never scrolls horizontally (WCAG 1.4.10); the region is
+    // focusable so keyboard users can reach the clipped cells.
+    ".table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }",
     ".tnum { font-variant-numeric: tabular-nums; }",
     // The paper sheet — the reading surface. Font/size resolve from the preset vars so the preset choice
     // (serif|sans) is the ONLY knob; the pinned-light paper sits inset as a sheet (border + shadow below,

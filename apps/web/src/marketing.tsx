@@ -379,10 +379,19 @@ export function PricingPage(): ReactNode {
         </p>
       </section>
 
-      {/* the matrix — Write · Review · Voice · Run · Account rows, derived cells */}
+      {/* the matrix — Write · Review · Voice · Run · Account rows, derived cells.
+          UX.2 (ADR-066) — contained horizontal scroll below the matrix's natural width: the PAGE
+          never scrolls sideways; the table keeps its row↔column mapping inside a named, keyboard-
+          scrollable region (WCAG 1.4.10's data-table exemption + axe's scrollable-region rule). */}
       <section style={SECTION}>
         <SectionTitle>{COPY.pricing.matrixHeading}</SectionTitle>
-        <table style={{ borderCollapse: "collapse", fontSize: "13px", marginTop: "8px" }}>
+        <div
+          className="table-scroll"
+          role="region"
+          aria-label={COPY.pricing.matrixHeading}
+          tabIndex={0}
+        >
+        <table style={{ borderCollapse: "collapse", fontSize: "13px", marginTop: "8px", width: "100%", minWidth: "560px" }}>
           <thead>
             <tr>
               <th style={{ textAlign: "left", padding: "6px 12px 6px 0", borderBottom: "1px solid var(--shell-border)" }} />
@@ -402,6 +411,7 @@ export function PricingPage(): ReactNode {
             ))}
           </tbody>
         </table>
+        </div>
       </section>
 
       {/* top-up packs — derived rows */}

@@ -724,7 +724,10 @@ export function ProjectPage(): ReactNode {
         </section>
       ) : null}
       {project ? (
-        <p style={{ display: "flex", gap: "16px" }}>
+        // UX.2 (ADR-067) — `.ide-actions`: ≥24-px targets everywhere; at phone width the surviving
+        // §10.1 navigations render as bordered ≥ 44-px controls (button-styled links — they are
+        // navigations, so `<a>` stays the correct element).
+        <p className="ide-actions" style={{ display: "flex", gap: "16px" }}>
           {/* P1.19 — §10.1 ✗: import / run start / export are never offered on phone width; the
               reader link stays (the Page mounts read-only at that width). */}
           {compact === true ? null : (
@@ -1004,16 +1007,27 @@ export function ImportPreviewPage(): ReactNode {
  *  Fix-now) on the live PRB.20 quarantine path before anything is created. */
 export function NewProjectPage(): ReactNode {
   const { newProject: np, compact } = usePageData();
+  // UX.2 (ADR-065) — the workspace Shell, not the project IdeFrame: §5.1's seven regions are
+  // per-project surfaces (the round log, the project's Files, the Margin's findings) and no project
+  // exists yet. Until this fix the page rendered IdeFrame markup without `PageData.ide`, so the
+  // document shipped no IDE stylesheet — the stacked, unstyled shell.
+  const sheetShell = (children: ReactNode): ReactNode => (
+    <Shell
+      brand={COPY.brand}
+      tagline={COPY.tagline}
+      nav={<a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>}
+      footer={footer()}
+    >
+      {children}
+    </Shell>
+  );
   // P1.19 — §10.1 ✗: new project never renders its controls on phone width (REQ-SPEC-20).
   if (compact === true) {
-    return (
-      <IdeFrame>
-        <p style={{ margin: "0 0 6px" }}>
-          <a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>
-        </p>
+    return sheetShell(
+      <>
         <PageTitle>{COPY.newProject.heading}</PageTitle>
         <PhoneBlockedNote />
-      </IdeFrame>
+      </>,
     );
   }
   const entry = np?.entry ?? "scratch";
@@ -1027,11 +1041,8 @@ export function NewProjectPage(): ReactNode {
     { key: "outline" as const, title: COPY.newProject.entryOutline, body: COPY.newProject.entryOutlineNote },
     { key: "draft" as const, title: COPY.newProject.entryDraft, body: COPY.newProject.entryDraftNote },
   ];
-  return (
-    <IdeFrame>
-      <p style={{ margin: "0 0 6px" }}>
-        <a href="/app" style={{ fontSize: "13px" }}>{COPY.newProject.backToApp}</a>
-      </p>
+  return sheetShell(
+    <>
       <PageTitle>{COPY.newProject.heading}</PageTitle>
       <p style={{ color: "var(--shell-fg-muted)", fontSize: "14px", maxWidth: "68ch" }}>{COPY.newProject.lede}</p>
       {/* exactly three entry cards — each selects the sheet's entry (§5.3; no fourth exists). */}
@@ -1269,7 +1280,7 @@ export function NewProjectPage(): ReactNode {
       {/* ONB.1 — the drop-zone hold island runs on EVERY /app/new load (not just `?held=1`): a hold
           persists until consumed, so every visit re-hydrates the file input + the Discard control. */}
       {np ? <script src="/assets/landing.js" defer /> : null}
-    </IdeFrame>
+    </>,
   );
 }
 

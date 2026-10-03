@@ -130,12 +130,25 @@ export function ideCss(): string {
     "  .ide .ide-page .paper { flex: 1; width: auto; max-width: none; min-width: 0; border: none; border-radius: 0; box-shadow: none; padding: var(--s4) var(--s4); }",
     "  .ide-phonebar { display: flex !important; }",
     "  .ide .ide-phone-only { display: block; }",
+    // UX.2 (ADR-067; REQ-MOBILE-3 amended, REQ-IDE-42) — the phone target floor: every button is at
+    // least the WCAG 2.5.8 24-px minimum, the §10.1 inputs a reader can still take (gate answers,
+    // decision options, the chat composer) are ≥ 44 px, and the project page's surviving action row
+    // is button-styled — bordered controls, not bare underlined links, with mis-tap gap.
+    "  .ide button { min-height: 24px; min-width: 24px; }",
+    "  .ide [data-gate-actions] button, .ide [data-decision-option], .ide .ide-phone-only .chat-composer button { min-height: 44px; font-size: 15px; }",
+    "  .ide .ide-actions a { min-height: 44px; min-width: 44px; padding: 0 var(--s3); border: 1px solid var(--shell-border); border-radius: var(--radius-2); background: var(--shell-raised); color: var(--shell-fg); text-decoration: none; font-size: 15px; }",
     "}",
     ".ide-phonebar { display: none; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--shell-border); background: var(--shell-surface); font-size: 13px; }",
+    // UX.2 — the phonebar's two links are real targets, not bare 13-px text: ≥ 44 px tall, tappable.
+    ".ide-phonebar a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 var(--s1); }",
     // P1.19 — the badge dot the phonebar's Inbox link carries (the rail's rule is scoped to .ide-rail).
     ".ide-phonebar .ide-badge { position: relative; margin-left: auto; color: var(--shell-fg-muted); text-decoration: none; }",
     ".ide-phonebar .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }",
     ".ide-phone-only { display: none; }",
+    // UX.2 (ADR-067) — the project page's action row: ≥ 24-px targets at every width (WCAG 2.5.8);
+    // the <768 block above lifts them to bordered ≥ 44-px controls.
+    ".ide .ide-actions { display: flex; flex-wrap: wrap; gap: var(--s3); }",
+    ".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }",
 
     // ---- View menu + disclosure popovers ----
     ".ide-menu { position: absolute; z-index: 40; min-width: 220px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: var(--s2); }",
