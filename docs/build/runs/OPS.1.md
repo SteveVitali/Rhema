@@ -1,6 +1,8 @@
 # OPS.1 — Preview stages: `dev` full stack + one `pr-<n>` preview up/destroy (run ledger)
 
-- **Status:** IN PROGRESS — Stage A implementation under way
+- **Status:** DONE — Stage A + Stage B complete (dev full-stack live → destroyed to zero;
+  pr-102 full guarded lifecycle → destroy → `stack rm` → **zero `rhema-pr-102-*` orphans** —
+  see §8 addendum; the only tail was GCP's async serverless-address release, ~95 min)
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/80_OPS.1__preview-stages.md` (manifest row 80)
 - **Branch:** `stevevitali/ops-1-preview-stages` — base `stevevitali/sec-3-run-task-confinement`
@@ -312,4 +314,11 @@ prod-parity digests as dev. Live evidence collected pre-destroy:
 - **Still pending at addendum time:** pr-102's reservation (≈40 min old vs dev's ~1–2 h);
   final guarded `destroy` of `net`+`private-app` → `rm pr-102` → orphan enumeration completes
   when GCP releases it. All three residual objects are zero-cost.
+- **RESOLVED 22:2xZ:** the reservation released ~95 min after the last Cloud Run delete
+  (dev's took ~1–2 h — consistent). Guarded `preview-stack.mjs destroy pr-102` deleted the
+  final subnet+net; `preview-stack.mjs rm pr-102` removed the stack (Pulumi now lists only
+  `dev` @ 0 resources + `prod`). Full GCP enumeration (networks/subnets/firewalls/addresses/
+  Cloud Run svc+jobs/AlloyDB/Redis/GKE/MIGs+templates/LB chain/routers/secrets/buckets/SAs/
+  DNS zones/log metrics/alert policies/AR/custom roles/IAM bindings) → **zero `rhema-pr-102-*`
+  orphans**. Shared journeys SA re-verified (`uniqueId 100664519061217437800`, gmail API on).
 - **PR:** #102 opened on `stevevitali/ops-1-preview-stages` (SEC.3 base), BUILD_INDEX row 108.
