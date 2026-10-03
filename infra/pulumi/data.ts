@@ -86,8 +86,14 @@ export function createData(args: DataArgs): Data {
       instanceId: name("primary"),
       instanceType: "PRIMARY",
       machineConfig: { cpuCount: cfg.database.primaryCpuCount ?? 2 },
-      // A preview instance is created stopped/paused to avoid idle spend; dev/prod stay warm.
-      activationPolicy: cfg.database.paused ? "NEVER" : "ALWAYS",
+      // AlloyDB rejects activationPolicy=NEVER at instance CREATE ("invalid activation policy
+      // NEVER when creating a new instance" — OPS.1 live finding, pr-102 update 3): pause is an
+      // update-only transition. Paused stages therefore create ALWAYS and the runbook flips
+      // NEVER post-up (`gcloud alloydb instances update … --activation-policy=NEVER`);
+      // `ignoreChanges` keeps that out-of-band pause from drifting on the next `up`.
+      activationPolicy: "ALWAYS",
+    }, {
+      ...(cfg.database.paused ? { ignoreChanges: ["activationPolicy"] } : {}),
     });
     databaseHost = alloydbPrimary.ipAddress;
   } else {

@@ -35,9 +35,17 @@ config:
   # DaemonSet lands it via infra/k8s/apply.sh — run after `pulumi up`, same as prod).
   rhema:runTaskAppArmorType: Localhost
   rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
-  # OPS.1 Stage B — the nine-service digest set for the rhema-dev AR repo (filled by the deploy
-  # step; comment kept so the pin shape matches prod's). Until these land the services run the
-  # placeholder and the stack stays a substrate-only bring-up.
-  # rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/api@sha256:…","web":"…","worker":"…","fetcher":"…","convert":"…","export":"…","collab":"…"}'
-  # rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/run-task@sha256:…
-  # rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/egress-proxy@sha256:…
+  # OPS.1 Stage B (2026-10-04) — the nine-service digest set for the rhema-dev AR repo, pinned at
+  # OPS.1 commit 14d75eb. api/web/fetcher/convert/export/collab/run-task/egress-proxy are the
+  # PROD-PARITY manifests — the same image content prod runs (rhema-prod@ops1-tag copies via
+  # `docker buildx imagetools create`; the index digest differs under the rhema-dev repo because
+  # re-tagging re-serializes the OCI index — the layers/config are byte-identical). worker is the
+  # ONLY diff'd image: built at this commit (buildx linux/amd64, tag :ops1) because it must carry
+  # the new dist/migrate.js entry the migrate Job runs.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/api@sha256:72d3d93251a88e2ee1dc5bdcc03300a03c86ad6d7d68d34d5d031e9bddc90097","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/web@sha256:fb320cbaeaa510caf9c1fd2de94c0f1c0a2901426e56abdbd1fe44986b36253d","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/worker@sha256:5ded93bcba38946f9f35eecdcba9f40458ef2e6ef17811dbff86dfe0b7e206d7","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/fetcher@sha256:f05f1762e897df382361fb1a09d2e2851b1e70f27afb6f0f8e4ac110c805e352","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/convert@sha256:d3221100faf035ccf81533eb9cc82380ca5a549585f36c692fef0f6ecc1109fe","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/export@sha256:f6a08dab64233d9740292dbedd03d08cb6517acad5795deecc242ef4f54d0f25","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/collab@sha256:5dbb05f0c8fef5a7c607f76637c95ab2d6e19de6639546212f770b18331a8385"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/run-task@sha256:22f0e3f13020bf89ac3f1425e13a26a80080ec1eb69c17a92cd20747f42222be
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/egress-proxy@sha256:f781264866d2c226e464eeb87261cbf9dd6668d0c83f5f61bc20ad68ae7c5f53
+  # OPS.1 — the migrate Job's deployments-provenance leg (REQ-ARCH-39): the OPS.1 implementation
+  # commit the images carry + `node scripts/compute-protocols-version.mjs` at the same commit.
+  rhema:gitSha: 14d75ebffd520f86f58546bf99e0910736e84112
+  rhema:protocolsVersion: 0.4.0+ec61156725a895ab

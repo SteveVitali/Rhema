@@ -11,6 +11,7 @@
 
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
+import * as tls from "@pulumi/tls";
 import { type StageConfig } from "../config/stages";
 import type { Network } from "./network";
 import { EGRESS_PROXY_TAG, SANDBOX_TAG, GKE_MASTER_CIDR } from "./network";
@@ -101,6 +102,12 @@ export interface ComputeArgs {
    */
   gitSha?: pulumi.Input<string>;
   protocolsVersion?: pulumi.Input<string>;
+  /**
+   * OPS.1 (live finding — dev update 68) — the SM versions the program itself wrote (index.ts).
+   * Every container that mounts `versions/latest` via secretKeyRef must dependsOn them: a
+   * revision starting before its version exists fails "secret …/versions/latest was not found".
+   */
+  secretVersions?: gcp.secretmanager.SecretVersion[];
 }
 
 export interface Compute {
@@ -305,6 +312,11 @@ export function createCompute(args: ComputeArgs): Compute {
   // worker/api eagerly `access` a named secret at boot, so naming a versionless preview secret would
   // crash-loop the service (previews require only the provider + run-token keys — stage facts).
   const requires = (id: string) => cfg.requiredSecrets.includes(id);
+  // OPS.1 (live finding — dev update 68) — ordering prerequisites for containers that consume
+  // grants or versions: the SM versions the program wrote (mounted via `versions/latest`), and
+  // the IAM members (a revision starting before its SA's bucket/secret grant propagates fails at
+  // mount/first-access — the gcsfuse PermissionDenied + "versions/latest was not found" findings).
+  const containerPrereqs: pulumi.Resource[] = [...(args.secretVersions ?? []), ...iam.members];
   const workerEnvs: pulumi.Input<gcp.types.input.cloudrunv2.ServiceTemplateContainerEnv>[] = [
     { name: "K8S_NAMESPACE", value: "runs" },
     { name: "KUBE_SERVICE_ACCOUNT", value: "run-task-ksa" },
@@ -438,7 +450,7 @@ export function createCompute(args: ComputeArgs): Compute {
         ],
       },
     },
-  });
+  }, { dependsOn: containerPrereqs });
 
   // --- ONB.1 (ADR-044): the warm `convert-svc` Cloud Run SERVICE — the §13.5 `import_preview_p95_s`
   // ≤20 s leg for the text formats (md/txt/html/docx); PDFs + ingest.sync re-conversion stay on the
@@ -488,6 +500,10 @@ export function createCompute(args: ComputeArgs): Compute {
       // Same posture as the Job: NO vpcAccess. The process holds no network client and the mount is
       // the platform's — the egress bound is process + IAM level, probed live (run ledger egress leg).
     },
+  }, {
+    // gcsfuse mounts user-content at start: the revision must not roll before the convert SA's
+    // conditioned read/write grants exist (PermissionDenied → exit 255 — live finding, dev u68).
+    dependsOn: containerPrereqs,
   });
 
   // --- OPS.1 (owned decision (b)) — the in-VPC `migrate` Cloud Run JOB on non-prod stages. The DB is
@@ -538,19 +554,23 @@ export function createCompute(args: ComputeArgs): Compute {
           { name: "PROTOCOLS_VERSION", value: args.protocolsVersion },
           {
             name: "IMAGE_DIGESTS",
+            // The deployments-table validator wants the bare `sha256:<hex>` content digest per
+            // service — strip any registry/repo prefix from the refs (live finding, dev migrate
+            // execution 3: "image digest must be a sha256:<64 hex> content digest").
             value: pulumi
               .all([
                 pulumi.output(args.serviceImages ?? {}),
                 pulumi.output(args.runTaskImageDigest ?? ""),
                 pulumi.output(args.proxyImage ?? ""),
               ])
-              .apply(([imgs, runTask, proxy]) =>
-                JSON.stringify({
-                  ...imgs,
-                  ...(runTask ? { "run-task": runTask } : {}),
-                  ...(proxy ? { "egress-proxy": proxy } : {}),
-                }),
-              ),
+              .apply(([imgs, runTask, proxy]) => {
+                const digestOf = (ref: string) => ref.match(/sha256:[0-9a-f]{64}/)?.[0] ?? ref;
+                const digests: Record<string, string> = {};
+                for (const [svc, ref] of Object.entries(imgs)) digests[svc] = digestOf(ref);
+                if (runTask) digests["run-task"] = digestOf(runTask);
+                if (proxy) digests["egress-proxy"] = digestOf(proxy);
+                return JSON.stringify(digests);
+              }),
           },
         ]
       : []),
@@ -559,6 +579,9 @@ export function createCompute(args: ComputeArgs): Compute {
     cfg.kind !== "prod"
       ? new gcp.cloudrunv2.Job(name("migrate"), {
           location: region,
+          // Same v2 default as the services below: the job is non-prod-only anyway, but the flag
+          // must be explicit or `pulumi destroy` 400s mid-teardown (live finding, dev destroy 1).
+          deletionProtection: false,
           template: {
             template: {
               serviceAccount: iam.serviceAccounts["worker"].email,
@@ -582,6 +605,8 @@ export function createCompute(args: ComputeArgs): Compute {
               ],
             },
           },
+        }, {
+          dependsOn: containerPrereqs,
         })
       : undefined;
 
@@ -612,8 +637,12 @@ export function createCompute(args: ComputeArgs): Compute {
       // the second-to-last hop, which the OIDC stamp would then carry upstream as "trusted"). Non-prod
       // keeps INGRESS_TRAFFIC_ALL — no public DNS fronts those stages' LBs, so run.app is how they're
       // reached (the stamped-IP channel is inert there anyway: INTERNAL_AUTH_AUDIENCE is unset).
+      // OPS.1 (F-OPS.1-8) — the api also gets ALL off prod: no LB exists there, the service already
+      // carries a deliberate allUsers invoker grant for smoke/journey reachability, and every
+      // caller (web proxy, worker, runbook curls) would otherwise 404 at the GFE — Cloud
+      // Run-to-Cloud Run over run.app does NOT ride a private path under PRIVATE_RANGES_ONLY egress.
       ingress:
-        svc === "web" && cfg.kind !== "prod"
+        (svc === "web" || svc === "api") && cfg.kind !== "prod"
           ? "INGRESS_TRAFFIC_ALL"
           : "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
       template: {
@@ -911,6 +940,11 @@ export function createCompute(args: ComputeArgs): Compute {
           egress: "PRIVATE_RANGES_ONLY",
         },
       },
+    }, {
+      // Every service mounting secretKeyRef versions (api/worker/collab DATABASE_URLs, OPS_ALERT)
+      // or reaching GCS/SM through its SA's grants must roll after those resources exist —
+      // live finding, dev update 68.
+      dependsOn: containerPrereqs,
     });
   }
 
@@ -1101,7 +1135,23 @@ export function createCompute(args: ComputeArgs): Compute {
             { name: "usercontent", defaultService: userContentBackend.id },
           ],
         }
-      : {}),
+      : {
+          // OPS.1 — non-prod has no real hostnames, so the wildcard matcher carries the same
+          // service split path-first: `/api/*` + `/healthz` reach api (the only way to smoke the
+          // internal-ingress service from outside the VPC), `/collab*` reaches collab, everything
+          // else lands on web. Mirrors the prod "app" matcher's collab carve-out.
+          hostRules: [{ hosts: ["*"], pathMatcher: "all" }],
+          pathMatchers: [
+            {
+              name: "all",
+              defaultService: webBackend.id,
+              pathRules: [
+                { paths: ["/collab", "/collab/*"], service: collabBackend.id },
+                { paths: ["/api", "/api/*", "/healthz"], service: apiBackend.id },
+              ],
+            },
+          ],
+        }),
   });
 
   // Google-managed cert. prod covers the REAL domains (stage facts, amended 2026-09-17): rhema.tools +
@@ -1118,9 +1168,29 @@ export function createCompute(args: ComputeArgs): Compute {
       domains: domains ? [domains.app, domains.api, domains.userContent] : [`${stack}.rhema.dev`],
     },
   });
+  // OPS.1 — the managed cert can never reach ACTIVE on a stage with no real DNS, which would leave
+  // the LB's 443 dead for smoke/journey traffic. On non-prod the program mints a self-signed cert
+  // (Pulumi-state-encrypted key, same story as the generated secrets) and lists it FIRST on the
+  // proxy so `curl -k https://<lb-ip>/…` — and Playwright with ignoreHTTPSErrors — actually
+  // handshake. Prod keeps managed-cert-only.
+  let selfSignedCert: gcp.compute.SSLCertificate | undefined;
+  if (!domains) {
+    const key = new tls.PrivateKey(name("lb-key"), { algorithm: "RSA", rsaBits: 2048 });
+    const selfSigned = new tls.SelfSignedCert(name("lb-self-signed"), {
+      privateKeyPem: key.privateKeyPem,
+      subject: { commonName: `${stack}.rhema.dev` },
+      dnsNames: [`${stack}.rhema.dev`],
+      validityPeriodHours: 24 * 30,
+      allowedUses: ["server_auth", "digital_signature", "key_encipherment"],
+    });
+    selfSignedCert = new gcp.compute.SSLCertificate(name("self-cert"), {
+      certificate: selfSigned.certPem,
+      privateKey: key.privateKeyPem,
+    });
+  }
   const httpsProxy = new gcp.compute.TargetHttpsProxy(name("https-proxy"), {
     urlMap: urlMap.id,
-    sslCertificates: [cert.id],
+    sslCertificates: [...(selfSignedCert ? [selfSignedCert.id] : []), cert.id],
   });
   // A reserved global IPv4 gives the operator ONE stable anycast address for every prod DNS record —
   // without it the forwarding rule's ephemeral IP can churn and silently break DNS.

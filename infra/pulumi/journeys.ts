@@ -29,6 +29,11 @@ export function createJourneys(args: JourneysArgs): void {
     },
     {
       import: `projects/${args.project}/serviceAccounts/rhema-journeys@${args.project}.iam.gserviceaccount.com`,
+      // OPS.1 (live finding — the dev destroy tried to delete the SHARED mailbox SA): every
+      // journeys resource is adopted operator infrastructure, not stack-owned — DWD binds to the
+      // SA's numeric unique_id, so a delete+recreate silently breaks the prod/CI mailbox. Retain
+      // all four on any stack teardown.
+      retainOnDelete: true,
     },
   );
 
@@ -40,12 +45,13 @@ export function createJourneys(args: JourneysArgs): void {
   new gcp.projects.Service(
     "journey-gmail-api",
     { service: "gmail.googleapis.com", disableOnDestroy: false },
+    { retainOnDelete: true },
   );
   new gcp.serviceaccount.IAMMember("ci-journeys-token-creator", {
     serviceAccountId: journeysSa.name,
     role: "roles/iam.serviceAccountTokenCreator",
     member: pulumi.interpolate`principalSet://iam.googleapis.com/projects/${proj.number}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${args.ciRepository}`,
-  });
+  }, { retainOnDelete: true });
 
   // The operator who drives local Stage-B legs with `gcloud auth application-default` needs the same
   // grant (the hand binding exists already — declared here so state and reality agree; the member
@@ -54,5 +60,5 @@ export function createJourneys(args: JourneysArgs): void {
     serviceAccountId: journeysSa.name,
     role: "roles/iam.serviceAccountTokenCreator",
     member: "user:14SteveVitali@gmail.com",
-  });
+  }, { retainOnDelete: true });
 }

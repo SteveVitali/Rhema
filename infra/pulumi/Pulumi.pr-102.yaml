@@ -1,0 +1,11 @@
+config:
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/api@sha256:72d3d93251a88e2ee1dc5bdcc03300a03c86ad6d7d68d34d5d031e9bddc90097","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/web@sha256:fb320cbaeaa510caf9c1fd2de94c0f1c0a2901426e56abdbd1fe44986b36253d","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/worker@sha256:5ded93bcba38946f9f35eecdcba9f40458ef2e6ef17811dbff86dfe0b7e206d7","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/fetcher@sha256:f05f1762e897df382361fb1a09d2e2851b1e70f27afb6f0f8e4ac110c805e352","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/convert@sha256:d3221100faf035ccf81533eb9cc82380ca5a549585f36c692fef0f6ecc1109fe","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/export@sha256:f6a08dab64233d9740292dbedd03d08cb6517acad5795deecc242ef4f54d0f25","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/collab@sha256:5dbb05f0c8fef5a7c607f76637c95ab2d6e19de6639546212f770b18331a8385"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/run-task@sha256:22f0e3f13020bf89ac3f1425e13a26a80080ec1eb69c17a92cd20747f42222be
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-pr-102/egress-proxy@sha256:f781264866d2c226e464eeb87261cbf9dd6668d0c83f5f61bc20ad68ae7c5f53
+  rhema:gitSha: 14d75ebffd520f86f58546bf99e0910736e84112
+  rhema:protocolsVersion: 0.4.0+ec61156725a895ab
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
+  rhema:deployProxyMig: "true"
+  gcp:project: rhema-507501
+  gcp:region: us-central1

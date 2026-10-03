@@ -114,7 +114,9 @@ describe("SEC.2 — the trusted client-IP channel is deploy config on BOTH ends 
     // so "penultimate" would be caller-controlled — and the web would stamp it through the trusted
     // OIDC channel. Prod web therefore must NOT keep INGRESS_TRAFFIC_ALL; non-prod does (no public
     // DNS fronts those stages' LBs).
-    expect(SRC).toContain('svc === "web" && cfg.kind !== "prod"');
+    // OPS.1 (F-OPS.1-8) — the api joins web in the non-prod ALL set: no LB fronts those stages,
+    // the program grants api-public-invoker on purpose, and run.app is the smoke/journey path.
+    expect(SRC).toContain('(svc === "web" || svc === "api") && cfg.kind !== "prod"');
     expect(SRC).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
   });
 });
@@ -128,7 +130,7 @@ describe("RUN.1 — the worker's walkthrough model key is deploy config (ADR-052
     // `isWorker` envs block, so `loadWalkthroughGenerator` can never stub on a deployed stage.
     const workerBlock = SRC.slice(
       SRC.indexOf("...(isWorker"),
-      SRC.indexOf("svc === \"api\""),
+      SRC.indexOf('...(svc === "api"'),
     );
     expect(workerBlock).toContain(
       '{ name: "WALKTHROUGH_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }',

@@ -275,6 +275,12 @@ export function createMonitoring(args: MonitoringArgs): {
     notificationChannels: channels,
     alertStrategy: { autoClose: "1800s" },
     enabled: true,
+  }, {
+    // OPS.1 (live finding — the first dev full-stack up): a fresh log-metric's descriptor takes up
+    // to ~10 min to be usable in alert filters. dependOn orders the policies after the metric
+    // resources; on a cold stack a still-propagating descriptor can still 404 once — rerun `up`
+    // converges (documented in the runbook's preview path).
+    dependsOn: [lb5xxMetric, route5xxMetric],
   });
 
   // One alert policy per probed signal — a breach line is already thresholded by the probe; the policy
@@ -306,6 +312,10 @@ export function createMonitoring(args: MonitoringArgs): {
         notificationChannels: channels,
         alertStrategy: { autoClose: "1800s" },
         enabled: true,
+      }, {
+        // Same propagation guard as route5xxPolicy — the signal filters read
+        // `METRIC.sloViolations`, a fresh descriptor on cold stacks.
+        dependsOn: [sloViolationsMetric],
       }),
   );
 

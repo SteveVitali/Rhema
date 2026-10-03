@@ -114,16 +114,26 @@ const appDbPassword = new random.RandomPassword("rhema-app-login-password", {
   length: 32,
   special: false, // URL-inlined into the DSN — no percent-encoding surface
 });
+// AlloyDB's generated pg_hba is hostssl-only — every DSN below carries `sslmode=require` (the
+// migrate Job's first run failed `no pg_hba.conf entry … no encryption`, dev update 73 finding).
+// pg-connection-string aliases `require` to verify-full semantics, which rejects AlloyDB's
+// self-signed instance cert — `uselibpqcompat=true` restores real libpq `require` (encrypt,
+// no CA pinning — correct for private-IP-only traffic inside the VPC).
 const appDatabaseDsn = pulumi.secret(
-  pulumi.interpolate`postgresql://rhema_app_login:${appDbPassword.result}@${data.databaseHost}:5432/rhema`,
+  pulumi.interpolate`postgresql://rhema_app_login:${appDbPassword.result}@${data.databaseHost}:5432/rhema?sslmode=require&uselibpqcompat=true`,
 );
 // Only version the secret on stages that wire it (requiredSecrets — compute.ts's `requires` gate);
-// a versionless preview container stays empty and harmless.
+// a versionless preview container stays empty and harmless. OPS.1 — every version the program
+// writes is collected: the services/Jobs that mount `versions/latest` must dependsOn them
+// (a revision starting before its version exists fails "secret … was not found" — live finding).
+const secretVersions: gcp.secretmanager.SecretVersion[] = [];
 if (cfg.requiredSecrets.includes("app-database-url")) {
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-app-database-url-v1`, {
-    secret: secrets.byId["app-database-url"].id,
-    secretData: appDatabaseDsn,
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-app-database-url-v1`, {
+      secret: secrets.byId["app-database-url"].id,
+      secretData: appDatabaseDsn,
+    }),
+  );
 }
 export const appDatabaseDsnOutput = appDatabaseDsn;
 
@@ -148,28 +158,34 @@ if (!isProd) {
     special: false,
   });
   const collabDatabaseDsn = pulumi.secret(
-    pulumi.interpolate`postgresql://rhema_collab:${collabDbPassword.result}@${data.databaseHost}:5432/rhema`,
+    pulumi.interpolate`postgresql://rhema_collab:${collabDbPassword.result}@${data.databaseHost}:5432/rhema?sslmode=require&uselibpqcompat=true`,
   );
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-collab-database-url-v1`, {
-    secret: secrets.byId["collab-database-url"].id,
-    secretData: collabDatabaseDsn,
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-collab-database-url-v1`, {
+      secret: secrets.byId["collab-database-url"].id,
+      secretData: collabDatabaseDsn,
+    }),
+  );
   // The composed system DSN — the elevated `postgres` role confined to the audited system seams
   // (worker's SYSTEM_DATABASE_URL, the api's circuit-breaker read, the egress-proxy resolver, the
   // migrate Job). Cloud Run mounts it by secretKeyRef; it is never a plaintext env.
   systemDatabaseDsn = pulumi.secret(
-    pulumi.interpolate`postgresql://postgres:${postgresPassword}@${data.databaseHost}:5432/rhema`,
+    pulumi.interpolate`postgresql://postgres:${postgresPassword}@${data.databaseHost}:5432/rhema?sslmode=require&uselibpqcompat=true`,
   );
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-system-database-url-v1`, {
-    secret: secrets.byId["system-database-url"].id,
-    secretData: systemDatabaseDsn,
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-system-database-url-v1`, {
+      secret: secrets.byId["system-database-url"].id,
+      secretData: systemDatabaseDsn,
+    }),
+  );
   // The `alloydb-password` container mirrors the EFFECTIVE bootstrap password (the operator's config
   // value when set, the generated one otherwise) so operator psql/debug paths keep working.
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-alloydb-password-v1`, {
-    secret: secrets.byId["alloydb-password"].id,
-    secretData: pulumi.secret(pulumi.interpolate`${postgresPassword}`),
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-alloydb-password-v1`, {
+      secret: secrets.byId["alloydb-password"].id,
+      secretData: pulumi.secret(pulumi.interpolate`${postgresPassword}`),
+    }),
+  );
   // The RS256 run-token keypair (SEC.1's single-secret shape — the private PKCS8 PEM; every loader
   // derives the public half via `createPublicKey` at boot). @pulumi/tls keeps the value stable in
   // state across `up`s — generated in-program would rotate the key on every preview.
@@ -177,19 +193,45 @@ if (!isProd) {
     algorithm: "RSA",
     rsaBits: 4096,
   });
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-run-token-signing-key-v1`, {
-    secret: secrets.byId["run-token-signing-key"].id,
-    secretData: pulumi.secret(runTokenKey.privateKeyPemPkcs8),
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-run-token-signing-key-v1`, {
+      secret: secrets.byId["run-token-signing-key"].id,
+      secretData: pulumi.secret(runTokenKey.privateKeyPemPkcs8),
+    }),
+  );
   // The better-auth signing secret + the one-click email-action HMAC — random high-entropy material.
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-better-auth-secret-v1`, {
-    secret: secrets.byId["better-auth-secret"].id,
-    secretData: new random.RandomPassword("rhema-better-auth", { length: 48, special: false }).result,
-  });
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-email-action-secret-v1`, {
-    secret: secrets.byId["email-action-secret"].id,
-    secretData: new random.RandomPassword("rhema-email-action", { length: 48, special: false }).result,
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-better-auth-secret-v1`, {
+      secret: secrets.byId["better-auth-secret"].id,
+      secretData: new random.RandomPassword("rhema-better-auth", { length: 48, special: false }).result,
+    }),
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-email-action-secret-v1`, {
+      secret: secrets.byId["email-action-secret"].id,
+      secretData: new random.RandomPassword("rhema-email-action", { length: 48, special: false }).result,
+    }),
+  );
+  // OPS.1 (F-OPS.1-9 — live finding: the pr-102 worker crash-looped on `anthropic-api-key` "no
+  // versions") — the operator-only secrets get explicit NON-PROD PLACEHOLDER versions so a guarded
+  // preview boots every service with zero out-of-band seeding. The value is deliberately invalid
+  // (any real provider/billing call 401s — which is what $0-inference previews WANT); prod still
+  // refuses to run this block and keeps hand-seeded values only.
+  for (const id of [
+    "anthropic-api-key",
+    "anthropic-admin-key",
+    "resend-api-key",
+    "ops-alert-webhook-url",
+    "stripe-secret",
+    "stripe-webhook-secret",
+    "google-oauth-client-secret",
+    "user-content-signing-key",
+  ] as const) {
+    secretVersions.push(
+      new gcp.secretmanager.SecretVersion(`rhema-${stack}-${id}-placeholder-v1`, {
+        secret: secrets.byId[id].id,
+        secretData: `ops1-nonprod-placeholder-${stack}-not-a-real-key`,
+      }),
+    );
+  }
 }
 const iam = createIam({ stack, project, secrets, buckets: data.buckets });
 // OPS.1 — Memorystore's `redis://<host>:6379` URL carries no credential (private-IP, no AUTH), so the
@@ -237,6 +279,7 @@ const compute = createCompute({
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
+  secretVersions,
 });
 
 // JOURNEY.1 — adopt the journey-mailbox resources (the hand-created DWD service account, the Gmail
