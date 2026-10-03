@@ -441,9 +441,13 @@ async function n8TypeForkSave(
   if ((await page.locator("footer.ide-statusbar .ide-sync").count()) !== 0) {
     throw new Error(`${label}: a second sync indicator rides the status bar`);
   }
-  // no confirm surface may appear anywhere in the fork path
+  // no confirm surface may appear anywhere in the fork path — visible/OPEN dialogs only: the
+  // IDE shell legitimately carries a hidden command drawer + cheatsheet (role="dialog", hidden),
+  // so a raw role count would always trip. A fork-gating confirm is by definition visible.
   const noConfirm = async () => {
-    const dialogs = await page.locator('dialog, [role="dialog"], [role="alertdialog"]').count();
+    const dialogs = await page
+      .locator('dialog[open], [role="alertdialog"]:visible, [role="dialog"]:visible')
+      .count();
     if (dialogs > 0) throw new Error(`${label}: a confirm dialog appeared before the fork`);
   };
   await noConfirm();

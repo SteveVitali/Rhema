@@ -109,6 +109,26 @@ function toBlockSource(v: unknown): BlockSource {
   }
 }
 
+/** Provenance origins (REQ-POS-8): stamp every doc-changing transaction that carries no explicit
+ *  ORIGIN_META with "pasted" (armed by the one-shot paste flag) or "human". Exported for the
+ *  happy-dom regression test — EDIT.1: this hook must apply the tr directly; `view.dispatch`
+ *  inside dispatchTransaction routes back through the hook and blew the stack on the first
+ *  keystroke (the N8 prod walk caught it — latent while the embed bug kept the island dead). */
+export function installOriginDispatch(
+  view: EditorView,
+  opts: { readonly armed: () => boolean; readonly onDocChanged: () => void },
+): void {
+  view.setProps({
+    dispatchTransaction(tr) {
+      if (tr.docChanged && tr.getMeta(ORIGIN_META) == null) {
+        tr.setMeta(ORIGIN_META, opts.armed() ? "pasted" : "human");
+      }
+      view.updateState(view.state.apply(tr));
+      if (tr.docChanged) opts.onDocChanged();
+    },
+  });
+}
+
 async function main(): Promise<void> {
   const root = document.querySelector<HTMLElement>("[data-page-root]");
   const host = root?.querySelector<HTMLElement>("[data-page-host]");
@@ -240,17 +260,11 @@ async function main(): Promise<void> {
     });
   };
 
-  const origDispatch = view.dispatch.bind(view);
-  view.setProps({
-    dispatchTransaction(tr) {
-      if (tr.docChanged && tr.getMeta(ORIGIN_META) == null) {
-        tr.setMeta(ORIGIN_META, pasteArmed ? "pasted" : "human");
-      }
-      origDispatch(tr);
-      if (tr.docChanged) {
-        updateMeters();
-        if (provTimer == null) provTimer = window.setTimeout(flushProvenance, PROV_FLUSH_MS);
-      }
+  installOriginDispatch(view, {
+    armed: () => pasteArmed,
+    onDocChanged: () => {
+      updateMeters();
+      if (provTimer == null) provTimer = window.setTimeout(flushProvenance, PROV_FLUSH_MS);
     },
   });
 
