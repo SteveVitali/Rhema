@@ -22,9 +22,10 @@ import { assertHarnessOnly, NON_OWNER_PERMISSION_MASK } from "@rhema/run-task";
 //      env; the pod env carries only FILE-PATH pointers; the container drops ALL capabilities and adds back
 //      exactly the four the uid-drop + scoped-mount model needs; the pod pins the sandbox node pool.
 //
-//   2. THE CONTAINER CONTRACT — the Dockerfile + entrypoint.sh are read verbatim and asserted to build the
-//      two-uid image (10001 harness / 10002 agent, /run/secrets 0700 harness) and to drop root → harness
-//      with the minimal ambient capability set.
+//   2. THE CONTAINER CONTRACT — the Dockerfile's ENTRYPOINT argv + the static passwd/group are read
+//      verbatim (SEC.3: the distroless image carries no shell scripts) and asserted to build the
+//      two-uid image (10001 harness / 10002 agent, /var/run/rhema/harness 0700 harness) and to drop
+//      root → harness with the minimal ambient capability set.
 //
 //   3. SERVICE-ENV SWEEP — infra/pulumi/compute.ts is read verbatim; the `web` service's env block is
 //      asserted to carry only its non-secret allowlist (no `secretKeyRef`, no `*_SECRET` value pointers),
@@ -128,24 +129,36 @@ describe("the deployed run-task manifests — harness-uid secrets posture (REQ-S
 
 // ---------------------------------------------------------------- the image + entrypoint contract
 
-describe("the run-task image — two-uid contract read off the Dockerfile + entrypoint verbatim", () => {
+describe("the run-task image — two-uid contract read off the Dockerfile + entrypoint argv verbatim", () => {
   const dockerfile = read("apps/run-task/Dockerfile");
-  const entrypoint = read("apps/run-task/docker/entrypoint.sh");
+  // SEC.3: distroless carries no useradd/shell — uids live in the static identity files, and the
+  // ENTRYPOINT is the setpriv argv in the Dockerfile (docker/entrypoint.sh is deleted).
+  const passwd = read("apps/run-task/docker/passwd");
+  const group = read("apps/run-task/docker/group");
 
   it("builds the two unprivileged uids and the harness-only secrets dir", () => {
-    expect(dockerfile).toMatch(/useradd\s+--uid 10001 .*harness/);
-    expect(dockerfile).toMatch(/useradd\s+--uid 10002 .*agent/);
-    expect(dockerfile).toContain("chown harness:harness /run/secrets");
-    expect(dockerfile).toContain("chmod 0700 /run/secrets");
+    expect(passwd).toMatch(/^harness:x:10001:10001:/m);
+    expect(passwd).toMatch(/^agent:x:10002:10002:/m);
+    expect(group).toMatch(/^harness:x:10001:/m);
+    expect(group).toMatch(/^agent:x:10002:/m);
+    expect(dockerfile).toContain("chmod 0700 /img/var/run/rhema/harness");
+    expect(dockerfile).toMatch(/chown -R 10001:10001 .*\/img\/var\/run\/rhema\/harness/);
     // No secret baked into the image: no ENV carrying a token/credential name.
     expect(dockerfile).not.toMatch(/^ENV\s+.*(RUN_TOKEN|PROXY_CREDENTIAL|API_KEY|SECRET)\s*=/m);
   });
 
   it("the entrypoint drops root → harness with exactly the capability set the manifest grants", () => {
-    expect(entrypoint).toContain("--reuid \"$HARNESS_UID\" --regid \"$HARNESS_GID\" --clear-groups");
-    // Drop-all, then the same four caps the pod adds back — no more.
-    expect(entrypoint).toContain("--bounding-set -all,+setuid,+setgid,+sys_admin,+sys_chroot");
-    expect(entrypoint).toContain("--ambient-caps -all,+setuid,+setgid,+sys_admin,+sys_chroot");
+    expect(dockerfile).toContain('"--reuid", "10001", "--regid", "10001", "--clear-groups"');
+    // Drop-all, then the same four caps the pod adds back — no more. No `--bounding-set` (F-SEC3-1):
+    // capbset_drop needs CAP_SETPCAP, which the pod deliberately does not hold.
+    expect(dockerfile).toContain('"--inh-caps", "-all,+setuid,+setgid,+sys_admin,+sys_chroot"');
+    expect(dockerfile).toContain('"--ambient-caps", "-all,+setuid,+setgid,+sys_admin,+sys_chroot"');
+    // Ops lines only — the Dockerfile's own F-SEC3-1 comment names the flag to record why it's absent.
+    const ops = dockerfile
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("#"))
+      .join("\n");
+    expect(ops).not.toContain("--bounding-set");
   });
 });
 

@@ -1,6 +1,8 @@
 # SEC.3 — Run-task confinement: distroless image + a tight AppArmor profile (run ledger)
 
-- **Status:** IN PROGRESS (Stage A — implementation landed + locally verified; Stage B pending)
+- **Status:** DONE — Stage A + Stage B green (run `01M41AE99M49Q5HNG4M9S6106Q` attempt 3 `completed`
+  under `Localhost/rhema-run-task`; scoped producer green; `boundary.attested` 0 violations;
+  net spend 473cr = $4.73 ≤ $5); PR #101 unmerged (OPERATOR policy)
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/79_SEC.3__run-task-confinement.md` (manifest row 79)
 - **Branch:** `stevevitali/sec-3-run-task-confinement` — base `stevevitali/def-4-ledger-integrity-refund-window`
@@ -350,10 +352,48 @@ fully closes D-P0.06-3 and D-P1.22-2(a).
   named. Added `mount options=(rw,move) -> /tmp/scoped-stash/**`, `-> /work/scoped/**`, and
   `-> /work/` (the tmpfs attach takes the same leg); the ro `mount_setattr` audits ⊆ the
   existing remount rules. Loader `sec3-fsec35c` = `@sha256:4b186a27…` enforced.
-- **Outcome so far:** attempt 2 (`a2-jhmdh`) admitted `Localhost/rhema-run-task` (pod spec),
-  printed both identity lines, bound the credential injector, and ran REAL model phases —
-  intake (24 events, `00-piece-brief.md`, done), craft (done), verification (claim-ledger
-  self-corrected on the in-pod retry, `sidecarValidates:true`, done). Spend at the
-  second_read failure: 180cr. Attempt 3 is the scoped-leg rerun under the `move` rules.
+- **Outcome:** attempt 3 ran the full loop to `completed` under the enforced profile — the
+  scoped producer leg executed and `boundary.attested` read 0 violations (evidence section
+  below).
 - **Spend note:** attempt-1 pods died before any model call (0 credits); cancelled stale
   runs `01M418EWWW…` (118cr) + `01M419Q5…` (0cr) via the API to free the concurrency cap.
+
+## Stage B — live evidence (final): run `01M41AE99M49Q5HNG4M9S6106Q`, attempt 3, `completed`
+
+Second_read frozen `true` via `toggles.second_read` (the API resolves the sheet toggle
+server-side — `inputs.second_read` on the F-SEC3-3/4 dispatches was silently ignored; Quick
+rigor defaults it off). The attempt-3 pod (`a3-zn6mj`) ran the full 7-phase loop to `delivered`
+under the enforced profile; `finalizing` → `completed` at 17:27Z — delivery validation passed,
+which IS the `second_read_producer_checked` green (the identical failure mode failed
+`01M416S2XP…` at finalizing).
+
+**Pod-level evidence (kubectl):**
+- Pod spec: `securityContext.appArmorProfile: {type: Localhost, localhostProfile: rhema-run-task}`;
+  image `run-task@sha256:419f8e8691435def1532cead413382d546287da64476d9b29e1e5a54e5a2c318`.
+- `[harness] identity uid=10001 euid=10001 gid=10001 egid=10001 capEff=setgid,setuid,sys_chroot,sys_admin`
+- `[agent-entry] identity uid=10002 euid=10002 gid=10002 egid=10002 capEff=none` (model-side caps cleared)
+- `[scoped-query] identity uid=10003 euid=10003 gid=10003 egid=10003 capEff=none` (scoped role uid)
+- Scoped leg executed inside the private mount namespace: stash binds, `/work` tmpfs overmount,
+  scoped ro binds — **zero mount denials** on the successful leg (node journalctl AVC stream).
+- `[scoped] second-reader → success (exit 0); produced agents/editor/05-second-read.md (1916 chars)`;
+  in-pod facts `secondReadProducerQueryId == expectedProducerQueryId = 01M41BVC7M1S9KTXXJYX0HFZ55`
+  matching `subagent_launches` row attempt:3 `01M41BVC7P1XQ5CP0YTHBC0154`; `.rhema/second-read.json`
+  + `agents/editor/.rhema/second-read.json` markers present.
+
+**DB evidence (run_events/credit_ledger):**
+- `boundary.attested` (seq 282): `{fetches:116, subagents:1, violations:0, denied_count:84,
+  by_top_level:{agents:7, drafts:2, manifest.md:1, correspondence:9, obligations.json:1},
+  paths_touched_count:20}` — **zero boundary violations**.
+- `subagent.started/finished` pairs: researcher×1 (inherit) + second-reader×4 (explicit_files).
+- Steps: intake 64, craft 47, verification 69, second_read 9, argument 57, letter 126 (attempt 3).
+- `cost.final` `{capCredits:1890, spentCredits:640}`; ledger refund `platform_fault:zero_coverage`
+  167cr + hold release 1261cr → **net 473cr = $4.73 ≤ the $5 bound**. (The dispatch's
+  `capCredits:500` request was re-derived server-side to 1890 — the 1.5× repricing; the zero-coverage
+  refund is DEF.4's window working live a second time.)
+- `run.unverified {coveredClaims:0, checkableClaims:6}` — the probe draft's claims were
+  unverifiable; the run still delivered and refunded.
+
+**Ops notes:** the run-task-image-prewarm DaemonSet was re-pinned to the live digest (it still
+referenced `3c2799ff`); its pod stays `Pending` (Insufficient cpu) on the single-node pool while
+a run occupies it — capacity note, not a defect. Audit methodology: kernel AVCs land in the host
+`journalctl` (`kubectl debug node … --profile=sysadmin`), not dmesg/Cloud Logging.

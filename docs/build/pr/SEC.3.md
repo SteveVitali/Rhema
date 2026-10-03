@@ -117,16 +117,28 @@ Stacks on `stevevitali/def-4-ledger-integrity-refund-window` (PR #100, `OPERATOR
   plumbing is older, which is why the image pin worked). Rebuilt the worker
   on this branch, pinned its digest, `pulumi up` — the next pod launches
   under `Localhost/rhema-run-task`.
-- **F-SEC3-5** — the first real `Localhost` admission exposed four
+- **F-SEC3-5** — the first real `Localhost` admission exposed five
   live-mediation gaps the parser can't see (audit stream is the node's
   `journalctl`, not dmesg/Cloud Logging): the Secret volume's `..data`
   symlink farm needed `harness/**` (AppArmor resolves links); `/**` doesn't
   grant `r`/`w` on the dir itself (`stageSkills` readdir + runner mkdirs);
-  glibc's `/etc/host.conf`; and `network netlink raw` for libuv + the
-  **Bun**-runtime `claude` binary's NETLINK_ROUTE sockets. The tmpfs rule
-  also gained `nosuid,nodev` (mount flags, not data). Loader digest
-  `1e03e6bf…` enforced; attempt 2 of run `01M41AE99M49Q5HNG4M9S6106Q` ran a
-  real model phase under the enforced profile (intake committed, 24 events).
+  glibc's `/etc/host.conf`; `network netlink raw` for libuv + the
+  **Bun**-runtime `claude` binary's NETLINK_ROUTE sockets; and `mount
+  options=(rw,move)` for util-linux ≥2.40's new-API `move_mount` leg (the
+  scoped stash binds audited `flags="rw, move"`, denied as
+  `cannot mount … read-only`). The tmpfs rule also gained `nosuid,nodev`
+  (mount flags, not data). Loader `4b186a27…` enforced.
+- **Stage B final (run `01M41AE99M49Q5HNG4M9S6106Q`, attempt 3):**
+  `completed` — pod spec `Localhost/rhema-run-task`; identity lines
+  uid 10001 (harness, 4 ambient caps) / uid 10002 (agent, `capEff=none`) /
+  uid 10003 (`[scoped-query]`, `capEff=none`); the second-reader scoped
+  query ran inside the private mount ns and produced `05-second-read.md`
+  with `secondReadProducerQueryId == expectedProducerQueryId`;
+  `boundary.attested` `{violations:0, fetches:116, denied_count:84}`;
+  `cost.final` 640cr − `platform_fault:zero_coverage` refund 167cr →
+  **net 473cr ($4.73) ≤ $5**. Dispatch note: `second_read` is a server-side
+  *toggle* (`body.toggles`), not an input — earlier dispatches' frozen
+  inputs showed `second_read:false`.
 
 ## Deferrals
 
