@@ -1,0 +1,12 @@
+{
+  "fetchedAt": "2026-10-03T11:15:01.846Z",
+  "to": "test+j48f564dba9efnv@rhema.tools",
+  "from": "hello@rhema.tools",
+  "date": "Sat, 3 Oct 2026 11:14:23 +0000",
+  "subject": "Your Rhēma sign-in link · 4ab364f8f48b",
+  "expiryPhrase": "Sign in to Rhēma Use this link to sign in (this link expires in 15 minutes",
+  "safetyPhrase": "Didn't request this? Ignore this email — nothing was signed in.",
+  "brandMarks": 5,
+  "tokenFreeSubject": true,
+  "tokenLocations": "4 occurrences, all inside magic-link verify URLs"
+}
