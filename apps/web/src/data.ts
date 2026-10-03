@@ -81,6 +81,7 @@ import type {
   ProtocolCardDto,
   TimelineDto,
   RunReportDto,
+  UserRefundResponseDto,
   RunSheetContextDto,
   ApplyResultDto,
   FindingResolveDto,
@@ -788,6 +789,8 @@ export interface DataSource {
   postRunNote(session: SessionHeaders, runId: string, text: string): Promise<{ ok: true; guidanceId: string }>;
   /** `POST /runs/:id/stop` — Stop, keep partials. */
   stopRun(session: SessionHeaders, runId: string): Promise<{ ok: true; state: string }>;
+  /** `POST /runs/:id/refund` — DEF.4's §14.4 refund-window request (200 refunded / 202 review). */
+  requestRefund(session: SessionHeaders, runId: string): Promise<UserRefundResponseDto>;
   /** `POST /runs/:id/walkthrough/retry` — re-enqueue the one package-class walkthrough call. */
   retryWalkthrough(session: SessionHeaders, runId: string): Promise<{ status: string }>;
   /**
@@ -1452,6 +1455,7 @@ export function apiDataSource(
       client(session).resumeRun(runId, note != null ? { note } : undefined),
     postRunNote: (session, runId, text) => client(session).postRunNote(runId, text),
     stopRun: (session, runId) => client(session).stopRun(runId),
+    requestRefund: (session, runId) => client(session).requestRefund(runId),
     retryWalkthrough: (session, runId) => client(session).retryWalkthrough(runId),
     getRunEvents: async (session, runId) => {
       const res = await f(

@@ -2160,6 +2160,27 @@ export interface RunReportDto {
   readonly advancedView?: RunReportAdvancedView;
   /** the owning project's slug (the `/app/usage/r/:run` redirect resolves its /p/ path from it). */
   readonly projectSlug?: string | null;
+  /**
+   * DEF.4 — the §14.4 refund affordance (REQ-SPEC-29): present ONLY while the refundWindow flag
+   * admits the caller's workspace. Absent ⇒ the surface renders no refund control at all.
+   * `credits` is the refundable figure while `eligible`, else the refunded/requested amount.
+   */
+  readonly refundWindow?: RefundWindowBlockDto;
+}
+
+/** The report's refund affordance block — the request row's verdict wins, else the live eligibility. */
+export interface RefundWindowBlockDto {
+  readonly state: "eligible" | "refunded" | "pending_review" | "denied" | "ineligible";
+  readonly credits: number;
+}
+
+/** `POST /runs/:id/refund` — the recorded verdict (200 refunded / 202 pending_review). A refusal
+ *  throws ApiError with `code` = `refund_closed` | `state` | `window_expired` | `entitlement` |
+ *  `nothing_to_refund` | `denied`. */
+export interface UserRefundResponseDto {
+  readonly status: "refunded" | "pending_review";
+  readonly requestId: string;
+  readonly credits: number;
 }
 
 // ---- P1.11 — the Assistant chat DTOs (§7.1/§7.4/§7.6; they mirror the api's chat-routes wire
@@ -3135,6 +3156,8 @@ export interface ApiClient {
   postRunNote(runId: string, text: string, init?: RequestInitLite): Promise<{ ok: true; guidanceId: string }>;
   /** POST /runs/:id/stop — Stop, keep partials. */
   stopRun(runId: string, init?: RequestInitLite): Promise<{ ok: true; state: string }>;
+  /** POST /runs/:id/refund — DEF.4's §14.4 refund-window request (flag-gated; 202 = sent for review). */
+  requestRefund(runId: string, init?: RequestInitLite): Promise<UserRefundResponseDto>;
   /** POST /runs/:id/walkthrough/retry — re-enqueue the one package-class walkthrough call. */
   retryWalkthrough(runId: string, init?: RequestInitLite): Promise<{ status: string }>;
 
@@ -4533,6 +4556,13 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     },
     async stopRun(runId, init): Promise<{ ok: true; state: string }> {
       return json(`/runs/${encodeURIComponent(runId)}/stop`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async requestRefund(runId, init): Promise<UserRefundResponseDto> {
+      return json(`/runs/${encodeURIComponent(runId)}/refund`, {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: "{}",
