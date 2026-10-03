@@ -24,6 +24,8 @@ const FIXTURES: Array<[string, SidecarFilename]> = [
   ["the-politics-of-visibility", "research-result.json"],
   // P1.12 — the outline's structured twin (spine ids + provenance rows + [unverified]).
   ["the-politics-of-visibility", "outline.json"],
+  // P1.13 — the figure card's structured twin (title/caption/alt/sourceLine + provenance kind).
+  ["the-politics-of-visibility", "figure.json"],
   ["structure-of-political-difference", "01-claim-ledger.json"],
   ["constitution-of-reason", "01-claim-ledger.json"],
   ["constitution-of-reason", "03-claim-ledger.json"],

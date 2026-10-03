@@ -219,6 +219,24 @@ describe("ClaimsTable (AC4 / REQ-IDE-25, REQ-OBJ-18/19)", () => {
     expect(html).toContain('data-not-checkable="true"');
     expect(html).toContain("interpretive \u2014 not a matter of verification");
   });
+
+  it("P1.13 — a figure-linked Tier-1 claim carries the card link (§7.5; REQ-VIZ-13)", () => {
+    const html = renderToStaticMarkup(
+      <ClaimsTable
+        rows={[
+          { ordinal: 3, text: "score: 0.71", tier: 1, verdict: "verified", verdictLabel: "Verified", checkable: true, urls: [], figureHref: "/p/slug/figures/fig01", figureLabel: "Figure" },
+        ]}
+        labels={labels}
+      />,
+    );
+    expect(html).toContain('data-figure-claim="true"');
+    expect(html).toContain('href="/p/slug/figures/fig01"');
+    // an ordinary claim renders no figure chip
+    const plain = renderToStaticMarkup(
+      <ClaimsTable rows={[{ ordinal: 4, text: "x", tier: 1, verdict: "verified", verdictLabel: "Verified", checkable: true, urls: [] }]} labels={labels} />,
+    );
+    expect(plain).not.toContain('data-figure-claim');
+  });
 });
 
 // ============================================================ AC5: rubric dot rows + caps, no aggregate

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   Shell,
   SectionTitle,
@@ -1613,6 +1613,17 @@ function findingControlsFor(
         </form>
       ) : null}
       {dispositionControlsFor(view, slug, runId, compact, error)}
+      {/* P1.13 — the craft finding's Visualize action (§7.5's fifth entry point): opens the SAME
+          visualize sheet (entry=craft_finding) with the finding's text as the request seed. */}
+      {view.kind === "craft" ? (
+        <a
+          href={`/p/${slug}/visualize?entry=craft_finding&request=${encodeURIComponent(`${view.title} — ${view.body}`.slice(0, 300))}`}
+          data-visualize-finding={view.id}
+          style={{ fontSize: "12px", color: "var(--accent)" }}
+        >
+          {R.visualizeLabel}
+        </a>
+      ) : null}
       {!opts.hasObligation && !view.provisional ? (
         <form method="post" action={`/p/${slug}/findings/${view.id}/obligations`} style={{ display: "inline" }}>
           <input type="hidden" name="next" value={`/p/${slug}/review/${runId}`} />
@@ -2044,6 +2055,12 @@ export function DossierPage(): ReactNode {
     checkable: checkable(c.kind),
     ...(c.note ? { note: c.note } : {}),
     urls: claimUrlViews(c, fetchLog),
+    // P1.13 — a figure-linked Tier-1 claim (§7.5; REQ-VIZ-13) carries the card link, so the
+    // claims table shows WHICH figure each row verifies (a `none`-provenance figure's claims land
+    // here too — their Unsupported verdict is the ledger row's own field).
+    ...(c.figureId
+      ? { figureHref: `/p/${dossier.slug}/figures/${c.figureId}`, figureLabel: R.figureClaimLabel }
+      : {}),
   }));
 
   const trustChip = buildTrustChip(dossier.accessReport, trustLabels);
@@ -2704,6 +2721,8 @@ function PageSurface(): ReactNode {
         reviseUrl={`${base}/revise`}
         noteSaved={page.noteSaved}
         {...(page.focusFindingId ? { focusFindingId: page.focusFindingId } : {})}
+        figureHrefFor={(figureId) => `/p/${slug}/figures/${figureId}`}
+        editFigureLabel={COPY.figureCard.editFigureLabel}
         labels={pageLabels}
       />
     </>
@@ -3361,6 +3380,322 @@ export function OutlinePromotePage(): ReactNode {
           <div>
             <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
               {P.promoteLabel}
+            </button>
+          </div>
+        </form>
+      )}
+    </Shell>
+  );
+}
+
+// -----------------------------------------------------------------------------------------------------------------
+// P1.13 — the Figures pane, the figure card, and the /visualize sheet (§7.5; REQ-VIZ-1…16).
+// -----------------------------------------------------------------------------------------------------------------
+
+const FIGURE_CHIP_STYLE = {
+  padding: "6px 12px",
+  borderRadius: "8px",
+  border: "1px solid var(--shell-border)",
+  background: "var(--shell-surface)",
+  color: "var(--shell-fg)",
+  fontSize: "12px",
+  cursor: "pointer",
+} as const;
+
+/** The shared row-shell for a figure card field label + input. */
+function figureField(label: string, name: string, value: string, hint?: string): ReactNode {
+  return (
+    <label style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+      {label}
+      <input
+        type="text"
+        name={name}
+        defaultValue={value}
+        title={hint}
+        style={{ display: "block", marginTop: "3px", width: "100%", boxSizing: "border-box", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }}
+      />
+    </label>
+  );
+}
+
+/** P1.13 — the Figures pane (`/p/:slug/figures`; §7.5): every figure card with its honesty badge,
+ *  version, render state, and insert state. */
+export function FiguresPanePage(): ReactNode {
+  const { figures } = usePageData();
+  const F = COPY.figuresPage;
+  if (!figures) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{F.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{F.empty}</p>
+      </Shell>
+    );
+  }
+  return (
+    <Shell brand={COPY.brand} footer={footer()}>
+      <SectionTitle>{F.heading}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <a href={`/p/${figures.slug}`} style={{ color: "var(--accent)" }}>{F.backToProject}</a>
+        <a href={`/p/${figures.slug}/visualize`} data-new-figure="true" style={{ color: "var(--accent)", marginLeft: "12px" }}>{F.newLabel}</a>
+      </p>
+      {figures.items.length === 0 ? (
+        <p data-figures-empty="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{F.empty}</p>
+      ) : (
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+          {figures.items.map((f) => (
+            <li key={f.id} data-figure-row={f.id} style={{ border: "1px solid var(--shell-border)", borderRadius: "10px", padding: "12px 14px", background: "var(--shell-surface)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <a href={`/p/${figures.slug}/figures/${f.id}`} style={{ color: "var(--shell-fg)", fontSize: "14px", fontWeight: 600, textDecoration: "none" }}>
+                  {f.title || f.caption || f.id}
+                </a>
+                <Chip label={f.kind} />
+                {f.badgeText ? <Chip label={f.badgeText} color="var(--sev-major)" /> : null}
+                <Chip label={fmt(F.versionFmt, { n: f.n })} />
+                {f.insertedInDraftId ? <Chip label={F.insertedChip} color="var(--sev-ok, var(--shell-fg-muted))" /> : null}
+                {f.pendingProposal ? <Chip label={F.proposalChip} /> : null}
+                {!f.hasRender && f.specKind !== "table" ? <Chip label={F.renderingChip} /> : null}
+              </div>
+              {f.caption ? <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{f.caption}</p> : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Shell>
+  );
+}
+
+/** P1.13 — the figure card (`/p/:slug/figures/:figureId`; §7.5): the persisted render preview, the
+ *  type chips (0-cr spec edits), the caption/alt/source fields, the Data/Spec/Versions disclosures,
+ *  the provenance panel, and the insert-as-proposal surface (propose → Accept/Reject). */
+export function FigureCardPage(): ReactNode {
+  const { figure } = usePageData();
+  const F = COPY.figureCard;
+  if (!figure) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{COPY.figuresPage.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{COPY.visualize.notFound}</p>
+      </Shell>
+    );
+  }
+  const { card, slug } = figure;
+  const cardBase = `/p/${slug}/figures/${card.id}`;
+  const missing = card.readiness.missing.map((m) => (m === "alt" ? F.missingAlt : F.missingSource));
+  const declined = card.versions.find((v) => v.renderStatus === "declined");
+  return (
+    <Shell brand={COPY.brand} footer={footer()}>
+      <SectionTitle>{card.title || F.untitled}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <a href={`/p/${slug}/figures`} style={{ color: "var(--accent)" }}>{F.backToFigures}</a>
+        {figure.saved ? <span data-saved-note="true" style={{ marginLeft: "12px" }}>{COPY.outlinePage.savedNote}</span> : null}
+        {figure.notice ? <span data-notice="true" style={{ marginLeft: "12px", color: "var(--sev-major)" }}>{figure.notice}</span> : null}
+      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 12px" }}>
+        <Chip label={card.kind} />
+        {card.badgeText ? <Chip label={card.badgeText} color="var(--sev-major)" /> : null}
+        {card.insertedInDraftId ? <Chip label={F.insertedNote} color="var(--sev-ok, var(--shell-fg-muted))" /> : null}
+      </div>
+
+      {/* the preview — the persisted server-side render (never browser-produced); a table shows
+          its markdown source. */}
+      {card.files.svgLight ? (
+        <div data-figure-preview="true" style={{ border: "1px solid var(--shell-border)", borderRadius: "10px", padding: "12px", background: "var(--paper-bg, var(--shell-surface))", overflowX: "auto" }}
+          dangerouslySetInnerHTML={{ __html: card.files.svgLight }} />
+      ) : card.files.tableSource ? (
+        <pre data-figure-preview="true" style={{ border: "1px solid var(--shell-border)", borderRadius: "10px", padding: "12px", background: "var(--shell-surface)", fontSize: "12px", whiteSpace: "pre-wrap" }}>{card.files.tableSource}</pre>
+      ) : (
+        <p data-figure-preview-pending="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>{COPY.figuresPage.renderingChip}</p>
+      )}
+      {declined ? (
+        <p data-declined-note="true" style={{ fontSize: "12px", color: "var(--sev-major)" }}>{fmt(F.declinedFmt, { suggestion: declined.renderError ?? "" })}</p>
+      ) : null}
+
+      {/* the type chips — a vega_lite mark edit is a 0-cr local spec edit (no run, no model call). */}
+      {card.specKind === "vega_lite" ? (
+        <section data-type-chips="true" style={{ marginTop: "14px" }}>
+          <p style={{ margin: "0 0 6px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{F.chipsHeading} <span style={{ color: "var(--shell-fg-faint)" }}>— {F.chipsNote}</span></p>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {(["bar", "line", "point", "area"] as const).map((mark) => (
+              <form key={mark} method="post" action={`${cardBase}/spec-edit`} style={{ display: "inline" }}>
+                <input type="hidden" name="mark" value={mark} />
+                <button type="submit" data-chip={mark} style={FIGURE_CHIP_STYLE}>{mark}</button>
+              </form>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* the card fields — user-authored caption/alt/source line (alt + source gate the insert). */}
+      <form method="post" action={cardBase} data-figure-fields="true" style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "520px" }}>
+        {figureField(F.captionLabel, "caption", card.caption)}
+        {figureField(F.altLabel, "alt", card.alt)}
+        {figureField(F.sourceLabel, "sourceLine", card.sourceLine)}
+        <div>
+          <button type="submit" style={{ padding: "6px 14px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "12px" }}>
+            {COPY.outlinePage.saveLabel}
+          </button>
+        </div>
+      </form>
+
+      {/* provenance — the structured honesty record, never a caption convention. */}
+      <details data-provenance="true" style={{ marginTop: "16px" }}>
+        <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{F.provenanceHeading}</summary>
+        <dl style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)", display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 12px" }}>
+          <dt>kind</dt><dd data-prov-kind="true" style={{ margin: 0 }}>{card.provenance.kind}</dd>
+          <dt>verification</dt><dd data-prov-verification="true" style={{ margin: 0 }}>{card.provenance.verification}</dd>
+          <dt>computedBy</dt><dd style={{ margin: 0 }}>{card.provenance.computedBy}</dd>
+          {card.provenance.refs.map((r, i) => (
+            <Fragment key={i}>
+              <dt>ref</dt>
+              <dd style={{ margin: 0 }}>{r.url ?? r.claimId ?? r.assetId ?? r.transform ?? F.emptyField}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      </details>
+
+      {card.files.dataCsv ? (
+        <details data-figure-data="true" style={{ marginTop: "10px" }}>
+          <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{F.dataHeading}</summary>
+          <pre style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px" }}>{card.files.dataCsv}</pre>
+        </details>
+      ) : null}
+      {card.files.spec ? (
+        <details data-figure-spec="true" style={{ marginTop: "10px" }}>
+          <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{F.specHeading}</summary>
+          <pre style={{ margin: "8px 0 0", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px" }}>{card.files.spec}</pre>
+        </details>
+      ) : null}
+
+      {/* the Versions strip — each iterate's request text + render state + one-click restore. */}
+      <details data-figure-versions="true" style={{ marginTop: "10px" }} open={card.versions.length > 1}>
+        <summary style={{ fontSize: "13px", color: "var(--shell-fg)", cursor: "pointer" }}>{F.versionsHeading}</summary>
+        <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+          {card.versions.map((v) => (
+            <li key={v.n} data-version={v.n} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--shell-fg-muted)", flexWrap: "wrap" }}>
+              <Chip label={`v${v.n}`} />
+              <span>{v.request ?? F.emptyField}</span>
+              <span style={{ color: "var(--shell-fg-faint)" }}>{v.renderStatus}</span>
+              {v.n !== card.versions.at(-1)?.n ? (
+                <form method="post" action={`${cardBase}/versions/${v.n}/restore`} style={{ display: "inline" }}>
+                  <button type="submit" data-restore={v.n} style={{ padding: "2px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "transparent", color: "var(--accent)", fontSize: "12px" }}>
+                    {F.restoreLabel}
+                  </button>
+                </form>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </details>
+
+      {/* the insert surface — a proposal card, never a direct draft write. Accept splices the
+          block in ONE tx (frozen ⇒ fork); Reject keeps the asset. */}
+      <section data-insert="true" style={{ marginTop: "18px", borderTop: "1px solid var(--shell-border)", paddingTop: "12px" }}>
+        <p style={{ margin: "0 0 4px", fontSize: "13px", color: "var(--shell-fg)", fontWeight: 600 }}>{F.insertHeading}</p>
+        <p style={{ margin: "0 0 10px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{F.insertNote}</p>
+        {card.pendingProposal ? (
+          <div data-pending-proposal="true">
+            <p style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>{F.pendingNote}</p>
+            <pre data-proposal-block="true" style={{ margin: "0 0 10px", fontSize: "11px", color: "var(--shell-fg-muted)", whiteSpace: "pre-wrap", border: "1px solid var(--shell-border)", borderRadius: "8px", padding: "10px" }}>{card.pendingProposal.markdown}</pre>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <form method="post" action={`${cardBase}/proposals/accept`} style={{ display: "inline" }}>
+                <button type="submit" data-accept="true" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+                  {F.acceptLabel}
+                </button>
+              </form>
+              <form method="post" action={`${cardBase}/proposals/reject`} style={{ display: "inline" }}>
+                <button type="submit" data-reject="true" style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "transparent", color: "var(--shell-fg)", fontSize: "13px" }}>
+                  {F.rejectLabel}
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : card.insertedInDraftId ? (
+          <p data-inserted-note="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-ok, var(--shell-fg-muted))" }}>{F.insertedNote}</p>
+        ) : card.readiness.ok && figure.headDraftId ? (
+          <form method="post" action={`${cardBase}/propose`} data-propose-form="true" style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "520px" }}>
+            <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+              {F.anchorLabel}
+              <input type="text" name="afterBlockId" style={{ display: "block", marginTop: "3px", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }} />
+            </label>
+            <div>
+              <button type="submit" data-propose="true" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+                {F.proposeLabel}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p data-not-ready="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>
+            {fmt(F.notReadyFmt, { missing: missing.join(" + ") })}
+          </p>
+        )}
+      </section>
+    </Shell>
+  );
+}
+
+/** P1.13 — the `/visualize` sheet (`/p/:slug/visualize`; §7.5 entry points): the verbatim request,
+ *  the spec-kind pick, the honesty note (unsourced numbers are refused — the insist path carries
+ *  the persistent badge), and the estimator figure. The Visualize click creates the `figure` run —
+ *  the sheet IS the consent (REQ-CHAT-25's rule, same as the run/promotion sheets). */
+export function VisualizePage(): ReactNode {
+  const { visualize } = usePageData();
+  const V = COPY.visualize;
+  if (!visualize) {
+    return (
+      <Shell brand={COPY.brand} footer={footer()}>
+        <SectionTitle>{V.heading}</SectionTitle>
+        <p style={{ color: "var(--shell-fg-muted)" }}>{V.notFound}</p>
+      </Shell>
+    );
+  }
+  return (
+    <Shell brand={COPY.brand} footer={footer()}>
+      <SectionTitle>{V.heading}</SectionTitle>
+      <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+        <a href={`/p/${visualize.slug}`} style={{ color: "var(--accent)" }}>{V.backToProject}</a>
+      </p>
+      {visualize.started ? (
+        <p data-started="true" style={{ fontSize: "13px", color: "var(--shell-fg)" }}>{V.startedFmt}</p>
+      ) : (
+        <form method="post" action={`/p/${visualize.slug}/visualize`} data-visualize-form="true" style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "560px" }}>
+          {visualize.figureId ? <input type="hidden" name="figureId" value={visualize.figureId} /> : null}
+          {visualize.priorVersion != null ? <input type="hidden" name="priorVersion" value={String(visualize.priorVersion)} /> : null}
+          {visualize.entryPoint ? <input type="hidden" name="entryPoint" value={visualize.entryPoint} /> : null}
+          {visualize.figureId ? (
+            <p data-iterate-note="true" style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+              {V.iterateLabel} <code>{visualize.figureId}</code>
+            </p>
+          ) : null}
+          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {V.requestLabel}
+            <textarea name="request" required defaultValue={visualize.request} rows={4}
+              style={{ display: "block", marginTop: "3px", width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px", fontFamily: "inherit" }} />
+          </label>
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }}>{V.requestHint}</p>
+          <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+            {V.kindLabel}
+            <select name="specKind" defaultValue={visualize.specKind}
+              style={{ display: "block", marginTop: "3px", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "13px" }}>
+              <option value="">{V.kindAuto}</option>
+              <option value="vega_lite">vega_lite</option>
+              <option value="mermaid">mermaid</option>
+              <option value="table">table</option>
+            </select>
+          </label>
+          <label data-insist="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "flex", gap: "6px", alignItems: "flex-start" }}>
+            <input type="checkbox" name="insist" value="1" style={{ marginTop: "2px" }} />
+            <span>{V.insistLabel}</span>
+          </label>
+          <p data-estimate="true" style={{ margin: 0, fontSize: "13px", color: "var(--shell-fg)" }}>
+            {fmt(V.estimateFmt, { estimate: visualize.estimateCredits.toLocaleString("en-US"), cap: visualize.capCredits.toLocaleString("en-US") })}
+          </p>
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }}>{V.chipNote}</p>
+          {visualize.notice ? (
+            <p data-notice="true" style={{ margin: 0, fontSize: "12px", color: "var(--sev-major)" }}>{visualize.notice}</p>
+          ) : null}
+          <div>
+            <button type="submit" style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "13px", fontWeight: 600 }}>
+              {V.startLabel}
             </button>
           </div>
         </form>

@@ -32,7 +32,8 @@ describe("⌘K palette model (§5.12; REQ-CHAT-28)", () => {
     expect(cut.action.kind).toBe("disabled");
     // MVP verbs route to the sheet (cost-bearing) or navigate (free export/compare) — never a run POST
     for (const row of run!.rows) {
-      if (row.action.kind === "sheet") expect(row.action.path).toContain("/p/demo/run?");
+      // P1.13 — /visualize owns its dedicated §7.5 sheet route; the rest take the generic /run sheet.
+      if (row.action.kind === "sheet") expect(row.action.path).toMatch(/\/p\/demo\/(run|visualize)\?/);
       if (row.action.kind === "navigate") expect(["verb:export", "verb:compare"]).toContain(row.id);
     }
   });

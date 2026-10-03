@@ -144,6 +144,11 @@ export function createFactsEvaluator(facts: PredicateFacts): PredicateEvaluator 
         return pass(p, facts.present?.[p.artifact] === true, "present");
       case "artifact_nonempty":
         return pass(p, facts.nonempty?.[p.artifact] === true, "nonempty");
+      case "any_artifact_nonempty": {
+        // P1.13 — passes when ANY listed artifact is non-empty; the detail names which (or none).
+        const hit = p.artifacts.find((a) => facts.nonempty?.[a] === true);
+        return pass(p, hit != null, hit != null ? `nonempty: ${hit}` : "none of the declared paths non-empty");
+      }
       case "claim_rows_gte_inventory":
         return pass(
           p,

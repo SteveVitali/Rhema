@@ -58,6 +58,27 @@ export function resolveCommand(command: ParsedCommand, ctx: ResolveContext): Com
 
   if (spec.workflow) {
     const query = sheetQueryForCommand(command);
+    // P1.13 — the Figure run launches from its OWN sheet (`/p/:slug/visualize`), not the generic
+    // run sheet: the §7.5 card's fields (request, provenance seeds, iterate id) don't exist on the
+    // run sheet's review/draft form. The scopes map to the sheet's query params verbatim —
+    // selection ⇒ entry=selection; @claim:/@asset: ride the request text (the POST classifies them
+    // into the provenance seed); @figure: names the iterate target; free text ⇒ the request.
+    if (spec.workflow === "figure") {
+      const q: Record<string, string> = {};
+      const requestParts: string[] = [];
+      let entry = "chat";
+      for (const s of command.scopes) {
+        if (s.kind === "selection") entry = "selection";
+        else if (s.kind === "claim") requestParts.push(`@claim:${s.version != null ? `v${s.version}/` : ""}${s.ordinal}`);
+        else if (s.kind === "asset") requestParts.push(`@asset:${s.ref}`);
+        else if (s.kind === "figure") q.figure = s.ref;
+      }
+      if (command.guidance) requestParts.push(command.guidance);
+      if (requestParts.length > 0) q.request = requestParts.join(" ");
+      q.entry = entry;
+      const qs = new URLSearchParams(q).toString();
+      return { kind: "sheet", workflow: spec.workflow, query: q, path: `/p/${ctx.projectSlug}/visualize${qs ? `?${qs}` : ""}` };
+    }
     const qs = new URLSearchParams(query).toString();
     return { kind: "sheet", workflow: spec.workflow, query, path: `/p/${ctx.projectSlug}/run?${qs}` };
   }

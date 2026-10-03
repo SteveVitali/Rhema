@@ -13,6 +13,12 @@ import {
 import { anchorSchema } from "./domain/anchor.js";
 import { claimSourceSchema } from "./domain/claims.js";
 import { FINDING_ORIGIN, FINDING_RECONCILIATION, LETTER_SECTIONS } from "./domain/findings.js";
+import {
+  FIGURE_ALT_MAX,
+  FIGURE_KINDS,
+  FIGURE_PROVENANCE_KINDS,
+  FIGURE_SPEC_KINDS,
+} from "./domain/figure.js";
 
 // The six structured-output sidecar schemas (REQ-SPEC-12). Each is the machine-readable twin of a markdown
 // deliverable, emitted by the ported skill and validated at commit; the rows come from the sidecar, and a
@@ -122,6 +128,10 @@ export const claimRowSchema = z.object({
   sourceCheck: coercedEnum(CLAIM_SOURCE_CHECKS).optional(),
   anchor: anchorSchema.optional(), // §11.3 Anchor verbatim
   humanAdded: z.boolean().default(false),
+  /** P1.13 — a Tier-1 figure claim (§7.5; REQ-VIZ-13): the figure asset the claim came from —
+   *  the delivery's verdict write-back folds every figure claim's verdict into the figure's
+   *  `provenance.verification`. */
+  figureId: z.string().optional(),
 });
 export const claimLedgerSidecarSchema = envelope("claim_ledger").extend({
   claims: z.array(claimRowSchema),
@@ -347,6 +357,28 @@ export const researchResultSidecarSchema = envelope("research_result").extend({
 });
 export type ResearchResultSidecar = z.infer<typeof researchResultSidecarSchema>;
 
+// ---- figure.json (P1.13 — the Figure card's structured twin, emitted by the caption phase) ----
+// The card fields the model authors; provenance/data/anchor are SERVER facts written by the data
+// phase's honesty step + the run's frozen inputs — the sidecar never re-authors them (it carries the
+// classification it was given so a markdown↔sidecar↔asset mismatch is a validation failure).
+export const figureSidecarSchema = envelope("figure").extend({
+  /** the figures row this run iterates (server-minted at run creation; the skill echoes it). */
+  figureId: z.string(),
+  specKind: coercedEnum(FIGURE_SPEC_KINDS),
+  kind: coercedEnum(FIGURE_KINDS),
+  title: z.string().max(280),
+  caption: z.string().max(2000),
+  /** REQ-VIZ-2 — required before insert; ≤250 chars. */
+  alt: z.string().max(FIGURE_ALT_MAX),
+  /** REQ-VIZ-2 — required before insert ("Source: CHES 2019, authors' calculation."). */
+  sourceLine: z.string().max(500),
+  /** the provenance kind the honesty step classified (echo — the asset row is authoritative). */
+  provenanceKind: coercedEnum(FIGURE_PROVENANCE_KINDS),
+  /** the iterate request this version answers ("initial", "make it a bar chart", "chip:bar"). */
+  request: z.string().max(500).optional(),
+});
+export type FigureSidecar = z.infer<typeof figureSidecarSchema>;
+
 /**
  * The sidecar registry: canonical filename → schema, and whether the sidecar is anchor-bearing (REQ-OBJ-16).
  * P0.04's parsers dispatch on this; the structural-sidecar contract test iterates the anchor-bearing set.
@@ -368,6 +400,9 @@ export const SIDECAR_REGISTRY = {
   "research-result.json": { schema: researchResultSidecarSchema, anchorBearing: false },
   // P1.12 — the outline's structured twin (the Approve-outline card + the editor's row base).
   "outline.json": { schema: outlineSidecarSchema, anchorBearing: false },
+  // P1.13 — the figure card's structured twin (caption phase emits; delivery folds into the
+  // figures row). Never anchor-bearing: the figure block's document anchor is a proposal input.
+  "figure.json": { schema: figureSidecarSchema, anchorBearing: false },
 } as const;
 
 export type SidecarFilename = keyof typeof SIDECAR_REGISTRY;
@@ -386,7 +421,7 @@ export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
   "findings.json":
     '{"sidecar":"findings","version":1,"findings":[{"ordinal":<int>,"kind","severity","origin","anchor"|<null>,"title","body","evidence"?{"verdict"?,"urls"?[{url,accessed}]},"suggestion"?{replacement},"rubricDims"?[],"letterSection"?,"carriesObligationId"?}]} — the array field is "findings".',
   "01-claim-ledger.json":
-    '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?}]} — the array field is "claims".',
+    '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?,"figureId"?}]} — the array field is "claims"; "figureId" marks a Tier-1 figure claim (the assets/figures/<id> row it verifies).',
   "03-claim-ledger.json":
     '{"sidecar":"claim_ledger","version":1,"claims":[{"ordinal":<int>,"text","tier","verdict","kind"?,"url"?,"normalizedUrl"?,"accessedAt"?,"note"?,"sources"?[],"sourceCheck"?,"anchor"?,"humanAdded"?}]} — the array field is "claims"; the "note" carries the drafting instruction (use as-is / rescoped / with attribution / do not use).',
   "rubric.json":
@@ -403,4 +438,6 @@ export const SIDECAR_CONTRACT_HINTS: Record<SidecarFilename, string> = {
     '{"sidecar":"research_result","version":1,"status":"done"|"blocked"|"replan","notePath","sources":[{url,"title"?,"notePath"?,"unverified"?}],"fetchedTokens"?<int>} — the array field is "sources".',
   "outline.json":
     '{"sidecar":"outline","version":1,"thesis","venue"?,"targetLength"?<int>,"protocol"?,"voice"?,"provenance"?{"threadId"?,"scope"?,"runId"?,"generatedAt"?,"urls"?[{url,"fetchedAt"?,"unverified"?}]},"spine":<claim-id string[]>,"sections":[{"ref","title","targetWords"?,"function"?,"entry"?,"exit"?,"claims":[{"id","text","provenance":{"kind":"thread"|"source"|"user_typed"|"generated","turnId"?,"url"?,"notePath"?},"unverified"?}]}],"alternativesConsidered"?<string[]>,"gaps"?[{"id","needed","relatedClaimId"?,"sectionRef"?}]} — the array fields are "spine" + "sections".',
+  "figure.json":
+    '{"sidecar":"figure","version":1,"figureId","specKind":"vega_lite"|"mermaid"|"table","kind":"chart"|"diagram"|"table","title","caption","alt"<=250,"sourceLine","provenanceKind":"selection"|"claim_ledger"|"asset_upload"|"fetched"|"user_typed"|"none","request"?} — all fields required except "request"; alt ≤ 250 chars.',
 };

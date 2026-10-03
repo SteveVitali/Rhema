@@ -106,6 +106,12 @@ export interface PageEditorProps {
   readonly noteSaved?: boolean;
   /** the finding to focus (deep-link /f/:findingId → Page) — scrolled + emphasised on mount. */
   readonly focusFindingId?: string;
+  /**
+   * P1.13 — the "Edit figure" affordance's href builder: `asset://fig_<id>` figure blocks render an
+   * Edit link to the figure card (§7.5's fourth entry point). Absent ⇒ no affordance.
+   */
+  readonly figureHrefFor?: (figureId: string) => string;
+  readonly editFigureLabel?: string;
   readonly labels: PageEditorLabels;
 }
 
@@ -178,7 +184,14 @@ function previewInlineAll(children: JsonNode[] | undefined): ReactNode {
   return (children ?? []).map((c, i) => previewInline(c, i));
 }
 
-function previewBlock(n: JsonNode, key: number): ReactNode {
+/** P1.13 — the preview context: the figure card's href builder + the Edit affordance's label. */
+export interface PmPreviewContext {
+  /** `asset://fig_<id>` → the figure card href (the "Edit figure" affordance's target). */
+  readonly figureHrefFor?: (figureId: string) => string;
+  readonly editFigureLabel?: string;
+}
+
+function previewBlock(n: JsonNode, key: number, ctx?: PmPreviewContext): ReactNode {
   switch (n.type) {
     case "front_matter":
       return <pre key={key} className="rm-frontmatter" style={SPAN_STYLE}>{`---\n${String(n.attrs?.["value"] ?? "")}\n---`}</pre>;
@@ -190,7 +203,7 @@ function previewBlock(n: JsonNode, key: number): ReactNode {
       return <Tag key={key}>{previewInlineAll(n.content)}</Tag>;
     }
     case "blockquote":
-      return <blockquote key={key}>{(n.content ?? []).map(previewBlock)}</blockquote>;
+      return <blockquote key={key}>{(n.content ?? []).map((c, i) => previewBlock(c, i, ctx))}</blockquote>;
     case "code_block":
       return (
         <pre key={key} data-lang={String(n.attrs?.["lang"] ?? "")}>
@@ -221,7 +234,7 @@ function previewBlock(n: JsonNode, key: number): ReactNode {
           {item.attrs?.["checked"] != null ? (
             <input type="checkbox" disabled checked={!!item.attrs["checked"]} readOnly style={{ marginRight: "0.4em" }} />
           ) : null}
-          {(item.content ?? []).map(previewBlock)}
+          {(item.content ?? []).map((c, i) => previewBlock(c, i, ctx))}
         </li>
       ));
       return n.attrs?.["ordered"]
@@ -233,18 +246,30 @@ function previewBlock(n: JsonNode, key: number): ReactNode {
     case "footnote_definition":
       return (
         <aside key={key} className="rm-footnote-def" data-fn={String(n.attrs?.["label"] || n.attrs?.["identifier"] || "")}>
-          {(n.content ?? []).map(previewBlock)}
+          {(n.content ?? []).map((c, i) => previewBlock(c, i, ctx))}
         </aside>
       );
-    case "figure":
+    case "figure": {
+      // P1.13 — the "Edit figure" entry point (§7.5): a Rhema figure asset (`asset://fig_<id>`)
+      // renders an Edit affordance that opens the figure card at its current version — the card is
+      // the edit surface; the draft block is only ever re-written by an accepted proposal.
+      const src = String(n.attrs?.["src"] ?? "");
+      const figRef = /^asset:\/\/fig_(\S+)$/.exec(src)?.[1];
+      const editHref = figRef && ctx?.figureHrefFor ? ctx.figureHrefFor(figRef) : null;
       return (
         <figure key={key} className="rm-figure">
-          {n.attrs?.["src"]
+          {n.attrs?.["src"] && !figRef
             ? <img src={String(n.attrs["src"])} alt={String(n.attrs["alt"] ?? "")} />
             : <span className="rm-figure-placeholder">{String(n.attrs?.["alt"] ?? "")}</span>}
           {n.attrs?.["title"] ? <figcaption>{String(n.attrs["title"])}</figcaption> : null}
+          {editHref ? (
+            <figcaption>
+              <a data-edit-figure={figRef} href={editHref}>{ctx?.editFigureLabel ?? "Edit figure"}</a>
+            </figcaption>
+          ) : null}
         </figure>
       );
+    }
     case "link_definition":
       return (
         <pre key={key} className="rm-link-def" style={SPAN_STYLE}>
@@ -259,9 +284,9 @@ function previewBlock(n: JsonNode, key: number): ReactNode {
 }
 
 /** The static read render of a PM doc JSON — every profile construct maps to markup. */
-export function PmPreview({ docJson }: { docJson: unknown }): ReactNode {
+export function PmPreview({ docJson, ctx }: { docJson: unknown; ctx?: PmPreviewContext }): ReactNode {
   const doc = docJson as JsonNode;
-  return <>{(doc?.content ?? []).map(previewBlock)}</>;
+  return <>{(doc?.content ?? []).map((c, i) => previewBlock(c, i, ctx))}</>;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -358,7 +383,12 @@ export function PageEditor(props: PageEditorProps): ReactNode {
       {/* the doc — SSR static render; the island mounts ProseMirror over the same JSON */}
       <div data-page-host className="rm-page-host" data-readonly={readOnly ? "1" : "0"}>
         <div data-page-preview className="rm-page-preview">
-          <PmPreview docJson={props.docJson} />
+          <PmPreview
+            docJson={props.docJson}
+            {...(props.figureHrefFor
+              ? { ctx: { figureHrefFor: props.figureHrefFor, ...(props.editFigureLabel ? { editFigureLabel: props.editFigureLabel } : {}) } }
+              : {})}
+          />
         </div>
       </div>
       <script type="application/json" data-page-doc="1">

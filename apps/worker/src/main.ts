@@ -14,6 +14,7 @@ import {
   randomUlids,
   RUN_JOBS,
   GATE_EXPIRY_QUEUE,
+  FIGURE_RENDER_QUEUE,
   type SqlClient,
 } from "@rhema/orchestrator";
 import { SqlHoldLedger, STRIPE_EVENT_JOB } from "@rhema/ledger";
@@ -34,6 +35,7 @@ import {
   handleRunResume,
   handleRunCancel,
   handleRunFinalize,
+  handleFigureRender,
   handleRunReap,
   handleStrandedSweep,
   handleGateExpiryJob,
@@ -301,6 +303,7 @@ export async function startWorker(): Promise<void> {
     LEDGER_JOBS.sweepParked,
     STRIPE_EVENT_JOB,
     USAGE_RECONCILE_JOB,
+    FIGURE_RENDER_QUEUE, // P1.13 — the deterministic server-side figure render (§12.1)
     "notify",
     "mail.send",
     "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
@@ -382,6 +385,15 @@ export async function startWorker(): Promise<void> {
   // the withheld-delivery re-drive (a chargeback's stash; enqueued by the dispute-won / reinstate path).
   await boss.work<RunDeliverJobPayload>(RUN_JOBS.deliver, async (jobs) => {
     for (const job of jobs) await handleRunDeliver(deps, job.data);
+  });
+
+  // P1.13 — the deterministic figure render (the render step's commit enqueues; the job renders the
+  // committed spec server-side and emits figure.rendered). A render fault throws → pg-boss retries.
+  await boss.work<{ figureId: string; runId: string; workspaceId: string }>(FIGURE_RENDER_QUEUE, async (jobs) => {
+    for (const job of jobs) {
+      const outcome = await handleFigureRender(deps, job.data);
+      console.log(`[worker] figure.render ${job.data.figureId} → ${JSON.stringify(outcome)}`);
+    }
   });
   // REQ-BILL-13 — nightly provider-report reconciliation + the REQ-SPEC-24.1 balance assertion (3:15 UTC).
   await boss.work(USAGE_RECONCILE_JOB, async () => {

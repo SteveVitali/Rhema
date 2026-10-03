@@ -59,3 +59,9 @@ export * from "./walkthrough.js";
 
 // P1.12 — the Approve-outline delivery consequences (§7.3: research-note copies + outline.approved)
 export * from "./outline-delivery.js";
+
+// P1.13 — the Figure run's delivery + the worker-owned `figure.render` job (§7.5; REQ-VIZ-6…9)
+export * from "./figure-delivery.js";
+
+// P1.13 — the figure-claims mount provider a Review/fact_check hydration binds (REQ-VIZ-13)
+export * from "./figure-claims.js";

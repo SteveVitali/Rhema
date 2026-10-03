@@ -16,6 +16,7 @@ import {
   hydration,
   buildHarnessRunSpec,
   deliverRun,
+  figureClaimsMountProvider,
   finalizeRun,
   rateTableCreditRenderer,
   type CreditRenderer,
@@ -112,6 +113,34 @@ function codeForError(e: unknown): string {
   if (e instanceof StaleTaskError) return "stale_task";
   if (e instanceof EventBatchTooLargeError) return "event_batch_too_large";
   return "revoked";
+}
+
+/**
+ * P1.13 — the `figures.provenance` seed a first-visualize run writes (§7.5; REQ-VIZ-4): the
+ * provenance kind the ENTRY POINT implies, as structured data — `selection` for a Page selection,
+ * `claim_ledger` for @claim: refs, `asset_upload` for an @asset: upload, `fetched` for a URL,
+ * `user_typed` for typed rows, `none` for the insist path or no source at all (the honesty step
+ * re-classifies — a seed of `none` is the REFUSE-default, never an approval). The run's committed
+ * `provenance.json` overwrites this at finalize.
+ */
+function seededFigureProvenance(fig: NonNullable<CreateRunBody["figure"]>): Record<string, unknown> {
+  const refs = fig.sourceRefs ?? {};
+  const base = { computedBy: "drafter" as const, verification: "unverified" as const };
+  if (refs.insisted === true) return { kind: "none", refs: [], ...base };
+  if (typeof refs.url === "string" && refs.url !== "") {
+    return { kind: "fetched", refs: [{ url: refs.url, accessedAt: new Date().toISOString() }], ...base };
+  }
+  if (typeof refs.assetId === "string" && refs.assetId !== "") {
+    return { kind: "asset_upload", refs: [{ assetId: refs.assetId }], ...base };
+  }
+  if (Array.isArray(refs.claimIds) && refs.claimIds.length > 0) {
+    return { kind: "claim_ledger", refs: refs.claimIds.map((claimId) => ({ claimId })), ...base };
+  }
+  if (refs.typedRows != null) return { kind: "user_typed", refs: [], ...base };
+  if (typeof refs.selectionText === "string" && refs.selectionText !== "" || fig.entryPoint === "selection") {
+    return { kind: "selection", refs: [], ...base };
+  }
+  return { kind: "none", refs: [], ...base };
 }
 
 export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
@@ -324,6 +353,44 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
         );
         if (seed) inputs = { ...inputs, priorReviewId: seed.priorReviewId, changedSince: seed.changedSince };
       }
+    } else if (workflow === "figure") {
+      // P1.13 (§7.5; REQ-VIZ-1/2/9) — the figure id is a SERVER-minted/verified fact: a first
+      // visualize creates the `figures` row stub here (the asset directory + the pane's card have a
+      // row before the run commits); an iterate reuses the row the body's figureId names — a
+      // client-invented id 404s rather than orphaning an asset directory. The entry-point-provenance
+      // seed lands as the row's provenance; the run's committed provenance.json overwrites it at
+      // finalize (the honesty step re-classifies — REQ-WF-14).
+      const fig = body.figure;
+      if (!fig || typeof fig.request !== "string" || fig.request.trim() === "") {
+        return c.json({ error: "figure.request required" }, 400);
+      }
+      const figureId = fig.figureId ?? deps.ids("fig");
+      const seedResult = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+        const existing = (
+          await tx.query(`select id, provenance from figures where id = $1 and project_id = $2`, [
+            figureId,
+            projectId,
+          ])
+        ).rows[0] as { id: string; provenance: unknown } | undefined;
+        if (fig.figureId != null && !existing) return "missing" as const;
+        if (existing) return "iterate" as const;
+        const provenance = seededFigureProvenance(fig);
+        await tx.query(
+          `insert into figures (id, project_id, spec_kind, provenance) values ($1,$2,$3,$4)`,
+          [figureId, projectId, fig.specKind ?? "vega_lite", JSON.stringify(provenance)],
+        );
+        return "created" as const;
+      });
+      if (seedResult === "missing") return c.json({ error: "figure_not_found" }, 404);
+      inputs = {
+        ...inputs,
+        figureId,
+        entryPoint: fig.entryPoint ?? "chat",
+        request: fig.request,
+        ...(fig.specKind ? { specKind: fig.specKind } : {}),
+        ...(fig.sourceRefs ? { sourceRefs: fig.sourceRefs } : {}),
+        ...(fig.priorVersion != null ? { priorVersion: fig.priorVersion } : {}),
+      };
     }
 
     // PRB.10 — the linked voice freezes into the run's FROZEN inputs at creation (§9.6; REQ-PERSONA-17):
@@ -586,13 +653,24 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     const run = c.get("run");
     return guard(c, async () =>
       c.json(
-        await buildHarnessRunSpec(deps, {
-          runId: run.runId,
-          attempt: run.attempt,
-          workspaceId: run.workspaceId,
-          ...(deps.runSpecConfig?.skillsDir ? { skillsDir: deps.runSpecConfig.skillsDir } : {}),
-          ...(deps.runSpecConfig?.maxUsdPerRun != null ? { maxUsdPerRun: deps.runSpecConfig.maxUsdPerRun } : {}),
-        }),
+        await buildHarnessRunSpec(
+          // P1.13 — bind the figure-claims mount provider when a workspace store is available
+          // (REQ-VIZ-13): a review/fact_check hydration mounts `.rhema/figure-claims.json` for the
+          // reviewed draft's inserted figures. Unbound ⇒ no file (the pre-P1.13 shape).
+          {
+            ...deps,
+            ...(deps.contentStoreFor
+              ? { figureClaimsMount: figureClaimsMountProvider(deps.contentStoreFor, run.workspaceId) }
+              : {}),
+          },
+          {
+            runId: run.runId,
+            attempt: run.attempt,
+            workspaceId: run.workspaceId,
+            ...(deps.runSpecConfig?.skillsDir ? { skillsDir: deps.runSpecConfig.skillsDir } : {}),
+            ...(deps.runSpecConfig?.maxUsdPerRun != null ? { maxUsdPerRun: deps.runSpecConfig.maxUsdPerRun } : {}),
+          },
+        ),
       ),
     );
   });
@@ -859,6 +937,29 @@ interface CreateRunBody {
    * pre-resolves Approve plan `by:'trial'`.
    */
   preview?: boolean | { sections?: number };
+  /**
+   * P1.13 (§7.5; REQ-VIZ-1/2/9) — a `figure` run's facts: the visualize request verbatim, the
+   * entry point that opened it (the provenance seed), the data-source refs the honesty step
+   * classifies, and (iterate) the figure id + the version n this run produces n+1 from.
+   */
+  figure?: {
+    request: string;
+    entryPoint?: "chat" | "selection" | "command" | "edit_block" | "craft_finding";
+    /** iterate runs name the existing project figure; absent ⇒ the api mints the row. */
+    figureId?: string;
+    priorVersion?: number;
+    specKind?: "vega_lite" | "mermaid" | "table";
+    sourceRefs?: {
+      selectionText?: string;
+      claimIds?: string[];
+      assetId?: string;
+      url?: string;
+      /** the user typed/corrected cells inline — user_typed provenance. */
+      typedRows?: unknown;
+      /** the user insisted on unsourced numbers (the refuse→insist path → kind:"none"). */
+      insisted?: boolean;
+    };
+  };
 }
 interface EventBody {
   type: Parameters<typeof postEvents>[1]["events"][number]["type"];

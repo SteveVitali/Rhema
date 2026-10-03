@@ -20,6 +20,8 @@ import {
   sweepStrandedRuns,
   generateWalkthrough,
   finalizeRun,
+  figureRenderJob,
+  type FigureRenderOutcome,
   type GenerateWalkthroughResult,
   type WalkthroughGenerator,
   type OrchestratorDeps,
@@ -309,6 +311,21 @@ export async function handleRunFinalize(
     ...(store ? { store } : {}),
   });
   return { ok: true, state: res.state };
+}
+
+/**
+ * `figure.render` (P1.13; §12.1; REQ-VIZ-6/7/8) — the deterministic server-side render the render
+ * step's commit enqueued. The workspace-bound content store rides `contentStoreFor` (same seam as
+ * `run.finalize`); an unconfigured store skips rather than throws — a render job retrying forever
+ * on a deploy that can't render would burn the queue for nothing.
+ */
+export async function handleFigureRender(
+  deps: WorkerRunDeps,
+  job: { figureId: string; runId: string; workspaceId: string },
+): Promise<FigureRenderOutcome> {
+  const store = deps.contentStoreFor ? await deps.contentStoreFor(job.workspaceId) : undefined;
+  if (!store) return { ok: false, reason: "no content store bound" };
+  return figureRenderJob({ ...deps, store }, job);
 }
 
 /**

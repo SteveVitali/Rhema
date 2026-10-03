@@ -29,6 +29,8 @@ const PRIMARY: Record<string, string> = {
   "chat-turn": "chat_turn",
   // P1.12 — the outline workflow's Rhema-authored skill.
   "outline-from-research": "outline",
+  // P1.13 — the figure workflow's Rhema-authored skill (§7.5).
+  figure: "figure",
 };
 
 const manifests = Object.values(WORKFLOW_MANIFESTS) as WorkflowManifest[];

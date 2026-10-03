@@ -27,7 +27,8 @@ describe("the §7.4 selection popover (REQ-CHAT-21/22)", () => {
     for (const item of items.slice(1, 4)) {
       const r = resolve(item.command!);
       expect(r.kind).toBe("sheet");
-      if (r.kind === "sheet") expect(r.path).toContain("/p/demo/run?");
+      // P1.13 — Visualize owns its dedicated §7.5 sheet route; the other verbs take the generic one.
+      if (r.kind === "sheet") expect(r.path).toMatch(/\/p\/demo\/(run|visualize)\?/);
     }
     for (const item of items.slice(4)) {
       expect(resolve(item.command!).kind).toBe("disabled");

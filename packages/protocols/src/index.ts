@@ -17,6 +17,7 @@ import { draft } from "../manifests/draft.js";
 import { researchBurst } from "../manifests/research_burst.js";
 import { chatTurn } from "../manifests/chat_turn.js";
 import { outline } from "../manifests/outline.js";
+import { figure } from "../manifests/figure.js";
 
 export * from "./manifest-types.js";
 export * from "./estimator.js";
@@ -27,7 +28,7 @@ export * from "./version.js";
 export * from "../parsers/index.js";
 export * from "../serializers/index.js";
 
-export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft, researchBurst, chatTurn, outline };
+export { review, revise, factCheck, profileVoice, refreshVoice, calibrateVoice, draft, researchBurst, chatTurn, outline, figure };
 
 /** Every workflow manifest this phase ships, keyed by WorkflowKey (§12.2; adding a workflow is a manifest — REQ-ARCH-6). */
 export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> = {
@@ -43,4 +44,7 @@ export const WORKFLOW_MANIFESTS: Partial<Record<WorkflowKey, WorkflowManifest>> 
   chat_turn: chatTurn,
   // P1.12 — the Outline promotion run (Rhema-owned like its P1.11 siblings; §7.3, §12.2 row).
   outline,
+  // P1.13 — the Figure run (Rhema-owned; §7.5, §6.2 Figure row). Drafter seat; the render phase's
+  // deterministic output is the figure.render worker job, never the pod's.
+  figure,
 };

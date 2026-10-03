@@ -106,11 +106,20 @@ export const figures = pgTable("figures", {
   specVersionId: text("spec_version_id"),
   dataVersionId: text("data_version_id"),
   renderedVersionId: text("rendered_version_id"),
+  /** P1.13 — the card's headline (the figure.json twin's title). */
+  title: text("title"),
   caption: text("caption"),
   alt: text("alt"),
   sourceLine: text("source_line"),
   provenance: jsonb("provenance"),
   insertedInDraftId: text("inserted_in_draft_id"),
+  /** P1.13 — the open insert-proposal's state (anchor + block markdown + pinned version). */
+  pendingProposal: jsonb("pending_proposal"),
+  /** P1.13 — the run that last produced the figure (the render job's + the card's run link). */
+  latestRunId: text("latest_run_id"),
+  /** P1.13 — the draft artifact version the Accept splice produced (the insertion's pin). */
+  insertedAtVersionId: text("inserted_at_version_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const figureVersions = pgTable("figure_versions", {
@@ -119,5 +128,12 @@ export const figureVersions = pgTable("figure_versions", {
   ordinal: integer("ordinal").notNull(),
   specVersionId: text("spec_version_id"),
   renderedVersionId: text("rendered_version_id"),
+  /** P1.13 — the restore pin (the data.csv version this iteration carried). */
+  dataVersionId: text("data_version_id"),
+  /** P1.13 — the Versions strip's request text ("initial", "chip:bar", "restore:2"). */
+  request: text("request"),
+  /** P1.13 — the render-state the card shows while `figure.render` is in flight. */
+  renderStatus: text("render_status").notNull().default("pending"),
+  renderError: text("render_error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

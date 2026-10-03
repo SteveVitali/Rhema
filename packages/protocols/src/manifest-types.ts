@@ -19,6 +19,9 @@ export type PhaseClass = "research" | "judge" | "generate" | "package";
 export type CompletionPredicate =
   | { kind: "artifact_present"; artifact: string }
   | { kind: "artifact_nonempty"; artifact: string }
+  /** P1.13 — at least ONE of the listed artifacts exists non-empty (the figure spec path varies by
+   *  kind: spec.vl.json | diagram.mmd | table.md). */
+  | { kind: "any_artifact_nonempty"; artifacts: string[] }
   /** claim-ledger rows ≥ the Phase-0 claim inventory count (or an explicit "N of N checked" footer). */
   | { kind: "claim_rows_gte_inventory"; artifact: string }
   /** the editor's letter has every required section. */

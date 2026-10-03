@@ -15,7 +15,7 @@ import type {
   ResponseLedgerSidecar,
   RubricSidecar,
 } from "@rhema/contracts";
-import { parseRunEvent } from "@rhema/contracts";
+import { parseRunEvent, figureProvenanceSchema, verificationFromVerdicts } from "@rhema/contracts";
 import { diffMarkdown, traceRevisionMoves, type MoveTrace } from "@rhema/findings-core";
 import type { SqlExecutor } from "./sql.js";
 import type { SidecarInput } from "./validation.js";
@@ -360,8 +360,8 @@ export async function runDeliveryTransaction(
     const claimUrl = claimUrlUnfetched ? null : (c.url ?? null);
     await exec.query(
       `insert into claims(id, correspondence_id, draft_id, ordinal, text, tier, verdict, kind, url,
-         normalized_url, accessed_at, note, source_check, anchor, human_added)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+         normalized_url, accessed_at, note, source_check, anchor, human_added, figure_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
         claimId,
         correspondenceId,
@@ -378,6 +378,9 @@ export async function runDeliveryTransaction(
         a.sourceCheck ?? c.sourceCheck ?? null,
         c.anchor ? JSON.stringify(c.anchor) : null,
         c.humanAdded ?? false,
+        // P1.13 — a figure-linked Tier-1 claim (§7.5; REQ-VIZ-13): the verdict folds into the
+        // figure's `provenance.verification` below.
+        c.figureId ?? null,
       ],
     );
     for (const [i, s] of keptSources.entries()) {
@@ -393,6 +396,62 @@ export async function runDeliveryTransaction(
       normalizedUrl: claimUrl ? (c.normalizedUrl ?? normalizeUrl(claimUrl)) : null,
       anchor: c.anchor ?? null,
     });
+  }
+
+  // ---- 3b. figure-claim verdict write-back (P1.13; §7.5; REQ-VIZ-13) --------------------------------
+  // Every figure-linked claim's verdict folds into `figures.provenance.verification` — all
+  // verified ⇒ verified; any contradicted ⇒ contradicted; otherwise unverifiable. The row's jsonb
+  // AND the asset's `provenance.json` both update (the asset stays the file-of-record the pane +
+  // the next review read); `kind:"none"`'s `[unverified data]` badge follows `figureBadge()` — a
+  // verified verdict lifts it, a contradicted one replaces it.
+  {
+    const verdictByFigure = new Map<string, ("verified" | "contradicted" | "unverifiable")[]>();
+    for (const a of applied) {
+      const fid = a.claim.figureId;
+      if (!fid) continue;
+      const v =
+        a.verdict === "verified" || a.verdict === "substantially_accurate" || a.verdict === "verified_against_user_source"
+          ? ("verified" as const)
+          : a.verdict === "contradicted" || a.verdict === "misleading_in_context"
+            ? ("contradicted" as const)
+            : ("unverifiable" as const);
+      const list = verdictByFigure.get(fid) ?? [];
+      list.push(v);
+      verdictByFigure.set(fid, list);
+    }
+    for (const [figureId, verdicts] of verdictByFigure) {
+      const verification = verificationFromVerdicts(verdicts);
+      if (!verification) continue;
+      const row = (
+        await exec.query(`select provenance from figures where id = $1 and project_id = $2`, [figureId, args.projectId])
+      ).rows[0] as { provenance: unknown } | undefined;
+      if (!row) continue;
+      const parsed = figureProvenanceSchema.safeParse(row.provenance);
+      const next = parsed.success
+        ? { ...parsed.data, verification }
+        : { kind: "none" as const, refs: [], computedBy: "drafter" as const, verification };
+      await exec.query(`update figures set provenance = $2 where id = $1`, [figureId, JSON.stringify(next)]);
+      // the asset file-of-record: a new provenance.json version carrying the verdict.
+      const provPath = `assets/figures/${figureId}/provenance.json`;
+      const provBytes = new TextEncoder().encode(JSON.stringify(next, null, 2));
+      await persistHarvest(
+        exec,
+        deps.store,
+        deps,
+        { workspaceId: args.workspaceId, projectId: args.projectId, createdBy: { kind: "run", runId: args.runId } },
+        [
+          {
+            path: provPath,
+            root: "project",
+            kind: "figure",
+            namespace: "shared",
+            sha256: sha256Hex(provBytes),
+            bytes: provBytes,
+            wordCount: 0,
+          },
+        ],
+      );
+    }
   }
 
   // ---- 4. findings ---------------------------------------------------------------------------------

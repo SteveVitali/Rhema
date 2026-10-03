@@ -6,6 +6,51 @@
       "license": "Commercial",
       "rationale": "The Agent SDK is a proprietary dependency the whole run model depends on — the largest control concession in the design (Q-3, §12.1 REQ-ARCH-4). Mitigated by the Engine abstraction (REQ-ARCH-7). Hosted under our own brand; never surfaced or marketed as 'Claude Code'."
     },
+    "@resvg/resvg-js": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Server-side SVG→PNG rasterizer in the worker only (P1.13, §7.5 figure render@2x.png — resolves §16.3 #8); weak copyleft used as an unmodified dependency; never in a client bundle."
+    },
+    "@resvg/resvg-js-darwin-arm64": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "@resvg/resvg-js-darwin-x64": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "@resvg/resvg-js-linux-x64-gnu": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "@resvg/resvg-js-linux-x64-musl": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "@resvg/resvg-js-linux-arm64-gnu": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "@resvg/resvg-js-linux-arm64-musl": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "@resvg/resvg-js-win32-x64-msvc": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of @resvg/resvg-js (same package, same use — see that entry): server-side SVG→PNG rasterizer in the worker only, unmodified, never in a client bundle."
+    },
+    "elkjs": {
+      "type": "npm",
+      "license": "EPL-2.0",
+      "rationale": "Transitive dep of beautiful-mermaid (P1.13 Mermaid→SVG layout, packages/figures). EPL-2.0 is weak copyleft; used as an unmodified dependency for diagram layout in the worker only, never in a client bundle."
+    },
     "pandoc": {
       "type": "system-binary",
       "license": "GPL-2.0-or-later",

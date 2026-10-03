@@ -199,14 +199,32 @@ const DRAFT: WorkflowSheetProfile = {
   },
 };
 
+// ---- Figure (§6.2/§7.5; P1.13): no phase toggles — the levers are the request's data shape
+// (iterations × data_rows on the §12.2 `5 + 3·iterations + 2·data_rows/100` form). The preview-
+// before-insert card is the consent (no Approval — §6.4 D5); the estimate reflects REQ-VIZ-16's
+// honesty bands (first render 5–15 cr, iterations 2–8, chip edits 0). ---------------------------------
+const FIGURE: WorkflowSheetProfile = {
+  workflow: "figure",
+  toggles: [],
+  rigorDefaults: {
+    quick: { modelTier: "base", toggles: {} },
+    standard: { modelTier: "balanced", toggles: {} },
+    full_board: { modelTier: "frontier", toggles: {} },
+  },
+  applyToggles(baseInputs) {
+    return { inputs: baseInputs, enabledAddends: [] };
+  },
+};
+
 /** The beta's three verbs + the persona build (REQ-WF-3; §9.2 Quick Voice — PRB.10) + the Draft verb
- *  (P1.10). Other workflows fall through to a caller error. */
+ *  (P1.10) + the Figure verb (P1.13). Other workflows fall through to a caller error. */
 export const WORKFLOW_SHEET_PROFILES: Partial<Record<WorkflowKey, WorkflowSheetProfile>> = {
   review: REVIEW,
   revise: REVISE,
   fact_check: FACT_CHECK,
   profile_voice: PROFILE_VOICE,
   draft: DRAFT,
+  figure: FIGURE,
 };
 
 /** Resolve a workflow's sheet profile; throws for a workflow the beta sheet does not launch. */

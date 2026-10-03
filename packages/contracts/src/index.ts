@@ -24,6 +24,9 @@ export * from "./domain/gates.js";
 export * from "./domain/guidance.js";
 export * from "./domain/conversion.js";
 export * from "./domain/export.js";
+// P1.13 — the figure asset contract (§7.5; REQ-VIZ-1…16): provenance/verification, badges, the
+// figure block markdown, export packaging, and the Tier-1 figure-claims Review integration.
+export * from "./domain/figure.js";
 
 // per-seat agent-type configuration (§7.1; P1.11 — the Assistant row + per-turn budgets)
 export * from "./domain/agent-types.js";

@@ -21,6 +21,10 @@ export const SEAT_BY_WORKFLOW: Partial<Record<WorkflowKey, string>> = {
   outline: "assistant",
   research_burst: "assistant",
   chat_turn: "assistant",
+  // P1.13 — §6.2 Figure row: the visualize run rides the Drafter seat (the asset's spec/data/
+  // provenance commit under `assets/figures/<fig>/` via the declared-output conduit; the
+  // Assistant's `visualize` tool only prepares the run SHEET — it never authors the figure).
+  figure: "author",
 };
 
 export function seatForWorkflow(workflow: WorkflowKey): string {

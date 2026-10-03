@@ -299,6 +299,24 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
           ),
         }
       : {}),
+    // P1.13 — the Figure skill's declared snake_case args bound from the run's frozen camelCase
+    // inputs (the same explicit-mapping shape as the persona block): `figure_id`/`entry_point`/
+    // `request`/`source_refs`/`prior_version` ride the frozen inputs verbatim; `figure_dir` +
+    // `work_dir` are DERIVED server-side (the asset directory the grant covers + the seat's per-run
+    // working dir) — the pod never names its own asset path.
+    ...(hyd.workflow === "figure"
+      ? {
+          figure_id: hyd.inputs.figureId,
+          figure_dir:
+            typeof hyd.inputs.figureId === "string" ? `assets/figures/${hyd.inputs.figureId}/` : undefined,
+          work_dir: `agents/author/figures/${args.runId}/`,
+          entry_point: hyd.inputs.entryPoint,
+          request: hyd.inputs.request,
+          spec_kind: hyd.inputs.specKind,
+          source_refs: hyd.inputs.sourceRefs,
+          prior_version: hyd.inputs.priorVersion,
+        }
+      : {}),
     // delivered guidance lands FIRST (highest precedence), then any frozen `inputs.guidance` seed.
     ...(delivered.rendered
       ? {
@@ -317,7 +335,10 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
             .map((a) =>
               a
                 .replaceAll("<run>", args.runId)
-                .replaceAll("<slug>", typeof hyd.inputs.outlineSlug === "string" ? hyd.inputs.outlineSlug : "outline"),
+                .replaceAll("<slug>", typeof hyd.inputs.outlineSlug === "string" ? hyd.inputs.outlineSlug : "outline")
+                // P1.13 — `<fig>` resolves to the run's figure id (the same server-minted value
+                // `declaredWritableArtifacts` expanded at hydration, so grant and prompt agree).
+                .replaceAll("<fig>", typeof hyd.inputs.figureId === "string" ? hyd.inputs.figureId : "<fig>"),
             )
             .join(", "),
         }

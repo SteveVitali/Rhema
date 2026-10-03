@@ -28,6 +28,7 @@
     "@rhema/db": "workspace:*",
     "@rhema/editor": "workspace:*",
     "@rhema/engine": "workspace:*",
+    "@rhema/figures": "workspace:*",
     "@rhema/findings-core": "workspace:*",
     "@rhema/hooks": "workspace:*",
     "@rhema/ledger": "workspace:*",

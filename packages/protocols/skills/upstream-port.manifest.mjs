@@ -29,6 +29,9 @@ export const rhemaOwned = [
   // P1.12 — scheduled for an upstream port by the ticket, but the vendored pin has no
   // outline-from-research (see the header note); authored here, same declaration rule.
   "skills/outline-from-research/SKILL.md",
+  // P1.13 — the Figure run's skill (§7.5/§6.2 Figure row): Rhema-authored like its P1.11/P1.12
+  // siblings; no upstream pin carries it.
+  "skills/figure/SKILL.md",
 ];
 
 // The six harness-neutral inputs, shared verbatim across the three skills (REQ-ARCH-5). `sidecar`'s

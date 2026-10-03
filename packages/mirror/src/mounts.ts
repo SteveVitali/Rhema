@@ -66,16 +66,21 @@ export function normalizePath(path: string): string {
 
 /** `vN` / `v(N+1)` / `(N+1)` placeholders in declared artifact paths (the same tokens resolveKey compiles).
  *  P1.12 adds `<slug>` — the outline artifact's per-thread slug, expanded from the run's frozen
- *  `inputs.outlineSlug` (one path segment, like `<run>`). */
-const DECLARED_VERSION_TOKEN = /v\(N\+1\)|vN|\(N\+1\)|<slug>/;
+ *  `inputs.outlineSlug` (one path segment, like `<run>`). P1.13 adds `<fig>` — the figure asset's
+ *  server-minted id (`inputs.figureId`), expanded the same way. */
+const DECLARED_VERSION_TOKEN = /v\(N\+1\)|vN|\(N\+1\)|<slug>|<fig>/;
 
 function expandDeclaredPath(
   path: string,
-  ctx: { baseDraftN: number | null; reviewedDraftN: number | null; slug?: string | null },
+  ctx: { baseDraftN: number | null; reviewedDraftN: number | null; slug?: string | null; fig?: string | null },
 ): string[] {
   // `<slug>` resolves from the frozen run input; absent (a non-outline run never declares one) it
-  // falls back to the constant the promotion sheet uses, so grant + phase_output agree.
-  const resolved = path.replaceAll("<slug>", ctx.slug ?? "outline");
+  // falls back to the constant the promotion sheet uses, so grant + phase_output agree. `<fig>` is
+  // the figure run's asset id — absent (a non-figure run never declares one) it stays literal so the
+  // token never grants a wildcard path.
+  const resolved = path
+    .replaceAll("<slug>", ctx.slug ?? "outline")
+    .replaceAll("<fig>", ctx.fig ?? "<fig>");
   if (!DECLARED_VERSION_TOKEN.test(resolved)) return [normalizePath(resolved)];
   // `vN` names the REVIEWED draft's ordinal (v1-response-ledger = the ledger answering review-of-v1) and
   // `v(N+1)`/`(N+1)` names the next draft ordinal. When the delivery base differs from the reviewed draft
@@ -104,7 +109,7 @@ function expandDeclaredPath(
 export function declaredWritableArtifacts(
   seat: AgentTypeKey,
   manifest: WorkflowManifest,
-  ctx: { baseDraftN: number | null; reviewedDraftN: number | null; slug?: string | null },
+  ctx: { baseDraftN: number | null; reviewedDraftN: number | null; slug?: string | null; fig?: string | null },
 ): string[] {
   const granted = new Set<string>();
   for (const phase of manifest.phases) {

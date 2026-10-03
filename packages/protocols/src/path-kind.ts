@@ -27,8 +27,20 @@ export const PATH_KIND_RULES: readonly PathRule[] = [
   // "Paste my notes" (§7.6) — the author seat's intake file.
   { re: /(^|\/)agents\/author\/notes\.md$/, kind: "source_note" },
 
+  // P1.13 (§7.5) — the figure asset directory: spec.vl.json | diagram.mmd | table.md | data.csv |
+  // provenance.json | render*.svg/png | versions/<n>/… — ONE logical `figure` asset (§8.2 shared
+  // row 3). BEFORE the generic `.json` rule: spec.vl.json + provenance.json are asset data, never
+  // structured-output sidecars.
+  { re: /(^|\/)assets\/figures\//, kind: "figure" },
+
   // structured-output sidecars (.rhema/*.json and any dossier .json)
   { re: /\.json$/, kind: "sidecar" },
+
+  // P1.13 — the figure seat's working notes (`agents/author/figures/<run>/NN-*.md`): the asset dir
+  // above already claims `assets/figures/**`; these are the workflow's per-phase working files
+  // (00-data honesty notes, 01-spec-notes, 03-caption) — kind `figure` under the agent:author
+  // namespace. (.json working files classify as `sidecar` via the rule above.)
+  { re: /(^|\/)agents\/author\/figures\//, kind: "figure" },
 
   // shared correspondence dossier
   { re: /(^|\/)editors-letter\.md$/, kind: "editors_letter" },

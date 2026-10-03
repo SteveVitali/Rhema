@@ -139,6 +139,21 @@ export function authorAssistantWebToolPolicy(args: {
       fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
     };
   }
+  // P1.13 — the Figure run's web bound (§7.5): the honesty step's `fetched` provenance path fetches
+  // the declared source URL(s) — a small fixed bound, never the claim-scaled research envelope.
+  // `inputs.sourceCount` (the frozen @asset/@claim/URL refs count) shrinks it; hard ceiling 3
+  // fetches / 2 searches — a figure's data resolution is bounded reading, not a literature review.
+  if (args.workflow === "figure") {
+    const declared =
+      typeof args.inputs?.sourceCount === "number" ? clampInt(args.inputs.sourceCount, 0, 3) : 1;
+    return {
+      search: true,
+      fetch: true,
+      fetchBudget: Math.max(1, declared),
+      searchBudget: Math.min(2, Math.max(1, declared)),
+      fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
+    };
+  }
   return null;
 }
 
