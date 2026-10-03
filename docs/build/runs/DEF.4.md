@@ -4,8 +4,9 @@
   D-DEF.4-1 stays open for the journey leg only)
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Ticket:** `docs/tickets/78_DEF.4__ledger-integrity-refund-window.md` (manifest row 78)
-- **Branch:** `stevevitali/def-4-ledger-integrity-refund-window`, stacked on UX.2 `2966dd2`
-  (`stevevitali/ux-2-layout-responsive` — `OPERATOR` merge policy, **not merged**).
+- **Branch:** `stevevitali/def-4-ledger-integrity-refund-window` — **PR #100** on #99,
+  stacked on UX.2 `2966dd2` (`stevevitali/ux-2-layout-responsive` — `OPERATOR` merge policy,
+  **not merged**).
 - **Goal:** money paths conform to §14.4 — the reconcile repair runs under `held >= 0` with no
   manual DDL, fresh environments validate the same constraint prod convalidated, guided-retry
   feedback reaches the scoped second read, and `refundPhases` gains its user-facing caller: a
