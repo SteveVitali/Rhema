@@ -508,6 +508,30 @@ has exactly one owner.
   (Appendix A.9 note). Approver: operator (2026-09-30; D3 pricing, D4, D5, D6 delegated to Claude's judgment —
   recorded in `docs/build/planning/2026-09-30_planning-ledger.md` and LEDGER GATE DECISIONS). **(ADR-013…017)**
 
+- **2026-09-17 (production domain + prod database engine; §13.1 / §13.3 banners):** *(retro: applied
+  2026-09-17 — the spec banners already carried it; this line backfills the log at REC.2,
+  2026-10-04.)* The production domain is **`rhema.tools`** (one zone): `rhema.app` and
+  `rhemausercontent.com` superseded; web at the apex, api at `api.rhema.tools`, the cookieless
+  user-content origin at `usercontent.rhema.tools` (+ `*.usercontent.rhema.tools`); cookie
+  isolation → host-only `__Host-` cookies. Same date: the prod database engine is **Cloud SQL for
+  PostgreSQL** (`db-g1-small`) for the ~$50/mo prod budget — AlloyDB stays on dev/previews;
+  Memorystore Redis drops to BASIC. Affects §13.1, §13.3, H6, PRB.15. **(ADR-010)**
+- **2026-09-15 → applied 2026-10-04 (GATE G2 deferred — Phase-B UI before the wave-1 LIFT eval;
+  §17 banner):** the §17 benchmark row's "the lift gate read before any UI spend beyond Phase 0"
+  is suspended by operator decision (ledger § GATE DECISIONS 2026-09-15): Phase-B implementation
+  proceeded without the eval. Unchanged: G2 + H2 stay a HARD gate before public launch; no §16.4
+  efficacy/marketing claim ships until LIFT is met (REQ-EVAL-19); REQ-EVAL-16's consequences apply
+  retroactively to UI built meanwhile — UI spend past the deferral is at risk. Annotated in the
+  spec at the §17 banner + the status line. **(ADR-104)**
+- **2026-09-23 → applied 2026-10-04 (GATE G3 read early → PROCEED; §17 addendum + Appendix A.13
+  REQ-BETA-18 note):** the REQ-BETA-18 ≥90-day / ≥15-active-partner window was skipped entirely —
+  G3 read early on operator evidence (the platform live end-to-end on prod, a Review delivered
+  within a derived cap, the measured cost structure) → PROCEED to the full IDE (ledger § GATE
+  DECISIONS 2026-09-23). Caveat recorded: zero partner behavioral data; the thresholds were never
+  evaluated, and the ~$7–10/review cost finding vs the $20/mo WTP stop-threshold would itself have
+  been a pivot signal. Annotated at the §17 addendum banner, the REQ-BETA-18 row marker, the A.13
+  addendum, and the status line. **(ADR-105)**
+
 ## Decomposition decisions (operator may veto; see the session report)
 
 1. Phase-0 port scope = Review/Revise/Fact-check/persona-Quick; Draft/Outline/Research ports

@@ -1,6 +1,6 @@
 # Rhema — Product, UI/UX, and Technical Systems Design Specification
 
-- **Status:** v1.0 — canonical · 2026-09-01 · Q-21…Q-26 **ratified by the operator** (the §16.3 #25–30 recommendations are now decisions; rulings R19–R26 in Appendix B.2 are final) · the v0.3 delta review (`docs/design/19`) is applied in full (Appendix E.5) · amended 2026-09-02 (AWS→GCP + direct Anthropic API — §12 banner), 2026-09-16 (REQ-BETA-19: open self-serve signup + self-serve credit purchase — see the §17 banner and the Appendix A.13 note), and 2026-09-17 (production domain is `rhema.tools` — one zone; `rhema.app`/`rhemausercontent.com` superseded; user-content origin → `usercontent.rhema.tools`, cookie isolation → host-only `__Host-` cookies — see the §13.3 banner; same date: prod database engine → **Cloud SQL for PostgreSQL** for the ~$50/mo prod budget — AlloyDB stays on dev/previews — see the §13.1 + §13.3 banners and ADR-010), and 2026-09-30 (round 3, launch readiness: **REQ-SPEC-29…32 added** — user-journey acceptance, tenant isolation in depth, research integrity, cost truthfulness; **REQ-SPEC-8, REQ-IDE-13, REQ-SPEC-1, REQ-GROWTH-1 amended** — interim trial terms, tier choice on the sheet, gate labels from the defaults table, the 20 s import as an SLO — see the Appendix A.9 note and ADR-013…017) · next step: ticket decomposition per `docs/6_ticket-decomposition-prompt.md` (ledger row O6).
+- **Status:** v1.0 — canonical · 2026-09-01 · Q-21…Q-26 **ratified by the operator** (the §16.3 #25–30 recommendations are now decisions; rulings R19–R26 in Appendix B.2 are final) · the v0.3 delta review (`docs/design/19`) is applied in full (Appendix E.5) · amended 2026-09-02 (AWS→GCP + direct Anthropic API — §12 banner), 2026-09-16 (REQ-BETA-19: open self-serve signup + self-serve credit purchase — see the §17 banner and the Appendix A.13 note), and 2026-09-17 (production domain is `rhema.tools` — one zone; `rhema.app`/`rhemausercontent.com` superseded; user-content origin → `usercontent.rhema.tools`, cookie isolation → host-only `__Host-` cookies — see the §13.3 banner; same date: prod database engine → **Cloud SQL for PostgreSQL** for the ~$50/mo prod budget — AlloyDB stays on dev/previews — see the §13.1 + §13.3 banners and ADR-010), and 2026-09-30 (round 3, launch readiness: **REQ-SPEC-29…32 added** — user-journey acceptance, tenant isolation in depth, research integrity, cost truthfulness; **REQ-SPEC-8, REQ-IDE-13, REQ-SPEC-1, REQ-GROWTH-1 amended** — interim trial terms, tier choice on the sheet, gate labels from the defaults table, the 20 s import as an SLO — see the Appendix A.9 note and ADR-013…017), and 2026-10-04 (reconciliation fold-back, REC.2 — the 2026-09-15 **G2 deferral** and the 2026-09-23 **early G3 read** recorded as §17 banners + the Appendix A.13 addendum; ADR-104/ADR-105) · next step: ticket decomposition per `docs/6_ticket-decomposition-prompt.md` (ledger row O6).
 - **v0.2 → v0.3 delta, one paragraph:** Targeted amendments plus two new units, nothing else moved. (1) **RevisionObligation** becomes a first-class MVP object (§11.7; REQ-OBJ-1…8): blocking/major findings spawn durable debts closed only by a verified move, an argued rebut/defer, or mooting — making REQ-WF-7's carried/closed/new and §6.8's stall detection computed facts (now working for hand-run rounds) and folding `BacklogItem` in; the `ClaimVerdict` vocabulary is frozen, and claims gain `sources[]` stance edges and a `kind` (REQ-OBJ-17…19); a workspace preference profile is staged capture-now/learn-later behind a three-layer Editor firewall (REQ-OBJ-9…14). (2) A new **§18 Evaluation program** (REQ-EVAL-1…20): commissioned gold corpus, steelmanned best-of-two frontier baseline, human-adjudicated scoring, a numeric lift criterion with pre-committed go/no-go consequences. (3) The **authorship-legibility MVP slice** (AI-use statement, block-level provenance appendix and Authorship overlay, write-only span capture) moves from 1.x to MVP (§3.2 row 39; REQ-POS-6…10; ≈1.25–2 PM). (4) **Positioning:** §1.1 gains the category thesis, new §1.6 the competitive-moat statement, §15.1 review-first hero copy; Draft is demoted in narrative only, never in product (REQ-POS-5). (5) **§17** is restructured around a validation-first sequence — Phase 0 → benchmark → Review beta → full IDE → public launch — with its decision rule recorded (Q-22, since ratified). New requirement families `OBJ` / `EVAL` / `POS` / `BETA` are indexed in Appendix A.10–A.13; round-2 rulings R19–R26 in Appendix B.2.
 - **Synthesized from:** `docs/design/2..9` (eight design documents, ~90k words) and, where they defer, `docs/research/2..12` (eleven research notes); binding inputs are the founding prompt (`docs/1_founding-prompt.md`) and the operator decisions register (`docs/2_research-and-design-ledger.md` §Q, Q-1…Q-20).
 - **Supersedes:** every design document for any point on which they disagree. Where this spec and a design document differ, this spec is correct and the difference is recorded in §16 or Appendix B.
@@ -2932,6 +2932,17 @@ No calendar dates (Q-2): sequence and exit criteria only. Every row of the featu
 | **1.x — Named minors** (1.1 first) | **1.1:** BYO keys; passkeys; the mobile app's light edits and "run next with defaults" once the app ships. **1.x:** Cut to length · Line edit · Titles · Abstract · Reverse outline · Interview me · Steelman · Map the field · Run rounds (gated); parallel variants + compare view; Submission pack; Compose voice UI; Medium/RSS/Ghost/WordPress/Google Docs/Notion ingestion; odt/epub/Google Docs export; 10 CSL styles; house styles; sharing roles and read-only dossier links; Team tier; the mobile app (inbox, reader, dispositions, approvals, chat, usage glance, push); Journalism / Creative nonfiction / Technical docs protocols; partial section re-review; parallel section drafting; non-Anthropic models for judge/generate/chat; templates; tags; dossier import; seat profile pages; Source mode (promoted from the beta's CodeMirror edit mode where the beta ran); suggestion marks and the working copy; span-level provenance *marks*, span Authorship overlay and span-granular export (REQ-POS-10 — the AI-use statement, block-level appendix/overlay and span capture shipped at MVP, row 39); section-boundary steering after the spike; the `prosemirror-changeset` in-editor compare; Hocuspocus Redis scaling | round-2 rate ≥ 35%; a 23-finding dossier fully dispositioned on the phone shows the same ledger on the web; Team pooled credits with per-member caps |
 | **2 — Later** | Peer-review simulation, Literature map, Structured dialogue, Translate register / Repackage for venue, Reader test (as labeled forecast); custom protocols and rubric editing; marketing copy as house voice; user-attached knowledge corpora per seat; scheduling; org/workspace entity and SSO; public API; "Send to draft" export targets; Temporal (stage 3) when the first non-linear step graph ships; artifact-store tool surface (stage 4); engine revisit (stage 5) | — |
 
+> **⚑ Amendment — 2026-09-15: GATE G2 (benchmark wave 1 + the LIFT criterion) deferred by
+> operator decision; Phase-B UI proceeded without the eval.** The benchmark row's "the lift gate
+> read before any UI spend beyond Phase 0 (REQ-BETA-20)" is suspended: with the wave-1 eval and
+> its H2 corpus prerequisite deferred for build velocity, the beta/IDE implementation proceeds
+> now. **What is unchanged:** G2 stays a HARD gate before public launch; **no §16.4
+> efficacy/marketing claim ships on any surface until the LIFT criterion is met** (REQ-EVAL-19);
+> and REQ-EVAL-16's pre-committed consequences apply retroactively to UI built meanwhile if a
+> later wave fails — UI spend past this point is at risk. Operator decision — ledger § GATE
+> DECISIONS 2026-09-15; recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments applied and
+> **ADR-104**.
+>
 > **⚑ Amendment — 2026-09-16: the Review beta opens to self-serve signup + self-serve credit
 > purchase.** The beta row's "private, invite-only" (and REQ-BETA-19, Appendix A.13) is amended:
 > the beta is no longer invite-only — a **public self-serve signup** and **self-serve credit
@@ -2945,6 +2956,19 @@ No calendar dates (Q-2): sequence and exit criteria only. Every row of the featu
 > the full-IDE bodies are written — G3 is deferred, not cancelled, and reads on whatever real-world
 > usage exists by then. Operator decision — recorded in `docs/tickets/00_MANIFEST.md` § Spec
 > amendments applied and **ADR-008**.
+>
+> **⚑ Amendment — 2026-09-23 (addendum to the 2026-09-16 banner): GATE G3 was read early on
+> operator evidence → PROCEED.** The REQ-BETA-18 ≥90-day / ≥15-active-partner window was skipped
+> entirely — the beta opened self-serve (above), so the screened partner cohort never existed as
+> designed, and the gate was read on the evidence that existed instead: the platform live
+> end-to-end on prod (signup → ingest → review → deliver → billing), a Review delivered within a
+> derived cap, and the measured cost structure (~$7–10 metered per quick review). **Recorded
+> caveat:** the REQ-BETA-18 thresholds (round-2 rate, accept+adapt, second-import, conversion,
+> stated WTP) were never evaluated — the read is statistically weaker by construction, and the
+> cost/margin finding would itself have been a pivot signal had the gate run as designed. The
+> full-IDE ticket bodies (rows 29–50) unblocked on this read. Operator decision — ledger § GATE
+> DECISIONS 2026-09-23; recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments applied and
+> **ADR-105**.
 
 **Engineering scope, honest estimate** (review 13 §10; senior engineers, agent-assisted implementation, the REQ-SPEC-19 editor cut and no working copy; person-months of engineering effort including verification and eval cost; calendar time not implied):
 
@@ -3605,7 +3629,7 @@ Recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments applied; chain rows
 | REQ-BETA-15 | Behavioral WTP: real purchases via Stripe Payment Links at exhaustion; final-month beta-priced plan offer at the Writer anchor; conversion is a gate metric | 14, 17 | new (Q-22 ratified) | gate readout |
 | REQ-BETA-16 | 20–25 partners in three cohorts (~8, two weeks apart); Essay-led profile; screened for a real in-flight manuscript, quarterly publishing, stated WTP | 17 | new (Q-22 ratified) | cohort roster |
 | REQ-BETA-17 | The partner deal: house credits, direct access, feedback triaged with the five verbs in a visible ledger, price lock, no training/marketing without written consent, deletion on request; partners commit to ≥2 manuscripts × ≥2 rounds, instrumentation, monthly interview, end-of-beta purchase decision | 17 | new (Q-22 ratified) | signed deal per partner |
-| REQ-BETA-18 | Pre-registered behavior gates (proceed / pivot / stop) decided before the beta opens; measured over ≥90 days with ≥15 active partners | 17 | new (Q-22 ratified) | gates registered before open |
+| REQ-BETA-18 | Pre-registered behavior gates (proceed / pivot / stop) decided before the beta opens; measured over ≥90 days with ≥15 active partners **(amended 2026-09-23 — read early on operator evidence → PROCEED without the window; caveat recorded — see the note after this table)** | 17 | new (Q-22 ratified) | gates registered before open |
 | REQ-BETA-19 | The beta is private and capped: no PR, no public pricing page, light-touch no-publish request; the launch moment reserved for the full IDE **(amended 2026-09-16 — open self-serve signup + self-serve credit purchase permitted; see the note after this table)** | 17 | new (Q-22 ratified) | to write (O6) |
 | REQ-BETA-20 | Sequence gates: Phase-0 exit → §18 lift gate → beta open → REQ-BETA-18 gates → full IDE → public launch; each threshold pre-registered before the work behind it starts | 17 | new (Q-22 ratified) | gate registry |
 | REQ-BETA-21 | The beta is a strict subset of Phase-1 epics ordered loop-first (`beta`/`post-beta` tags); exactly two beta-only stopgaps (CodeMirror edit mode → Source mode; flat surfaces → §5 shells); demand-sensitive epics start only after the gates read | 17 | new (Q-22 ratified) | ticket-tag audit |
@@ -3620,6 +3644,16 @@ deferred — users pay their own way). **Kept, verbatim:** no PR, no marketing s
 (REQ-EVAL-19). Stripe Payment Links remain the one real-money channel (REQ-BETA-15); the invite
 machinery stays for partner cohorts. See the §17 amendment banner and **ADR-008**; recorded in
 `docs/tickets/00_MANIFEST.md` § Spec amendments applied.
+
+**Addendum 2026-09-23 — REQ-BETA-18 (and G3's §17 gate).** The gate was **read early on operator
+evidence → PROCEED**: the ≥90-day / ≥15-active-partner window was skipped entirely (the self-serve
+opening above means the partner cohort never existed as designed). Evidence read in lieu of
+partner data: the platform live end-to-end on prod, a Review delivered within a derived cap, and
+the measured cost structure. **Caveat recorded:** the thresholds were never evaluated — the read
+is weaker by construction; the $7–10/review cost finding vs the $20/mo WTP stop-threshold would
+itself have been a pivot signal. The full-IDE ticket bodies (rows 29–50) unblocked. See the §17
+addendum banner and **ADR-105**; recorded in `docs/tickets/00_MANIFEST.md` § Spec amendments
+applied.
 
 ---
 
