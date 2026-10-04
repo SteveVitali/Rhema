@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAgentRoster } from "./roster.js";
+import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass, PHASE_CLASS_MODELS } from "./roster.js";
 
 // The subagent roster from the model profile (§12.2, §12.3). Input-scoped roles carry tools:["Read"] and are
 // launched by the orchestrator; only `researcher` fans out in-query with search/fetch.
@@ -43,5 +43,35 @@ describe("buildAgentRoster (§12.2/§12.3)", () => {
   it("lifts models by tier (Balanced → Opus judges)", () => {
     const r = buildAgentRoster({ tier: "balanced" });
     expect(r["second-reader"].model).toBe("claude-opus-5");
+  });
+});
+
+// ECON.2 L3 (ADR-087; REQ-ARCH-9) — the §12.3 per-phaseClass routing table. Every cell resolves to
+// the §12.3 row's model for that tier; Base has no cheaper in-table route (every class → Sonnet).
+describe("routeModelForPhaseClass (§12.3 verbatim)", () => {
+  const CLASSES = ["research", "judge", "generate", "package"] as const;
+  const EXPECTED: Record<string, Record<string, string>> = {
+    base:     { research: "claude-sonnet-5", judge: "claude-sonnet-5", generate: "claude-sonnet-5", package: "claude-sonnet-5" },
+    balanced: { research: "claude-sonnet-5", judge: "claude-opus-5",   generate: "claude-opus-5",   package: "claude-sonnet-5" },
+    frontier: { research: "claude-opus-5",   judge: "claude-fable-5",  generate: "claude-fable-5",  package: "claude-opus-5" },
+  };
+  for (const tier of ["base", "balanced", "frontier"] as const) {
+    for (const cls of CLASSES) {
+      it(`${tier}/${cls} resolves to its §12.3 cell (${EXPECTED[tier][cls]})`, () => {
+        expect(routeModelForPhaseClass(tier, cls)).toBe(EXPECTED[tier][cls]);
+        expect(PHASE_CLASS_MODELS[tier][cls]).toBe(EXPECTED[tier][cls]);
+      });
+    }
+  }
+  it("judge/generate cells equal mainModelForTier — the classes the flat model already ran", () => {
+    for (const tier of ["base", "balanced", "frontier"] as const) {
+      expect(routeModelForPhaseClass(tier, "judge")).toBe(mainModelForTier(tier));
+      expect(routeModelForPhaseClass(tier, "generate")).toBe(mainModelForTier(tier));
+    }
+  });
+  it("Base resolves no class cheaper than its main model (the table leaves no in-table win)", () => {
+    for (const cls of CLASSES) {
+      expect(routeModelForPhaseClass("base", cls)).toBe(mainModelForTier("base"));
+    }
   });
 });

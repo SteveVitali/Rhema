@@ -6,7 +6,7 @@
 // §12.5 run events plus engine-level result/usage markers the orchestrator needs for the completion oracle
 // and the running-Σ (REQ-SPEC-13; review 13 F4).
 
-import type { EventDensity, EventVisibility, RunEventType } from "@rhema/contracts";
+import type { CogsLevers, EventDensity, EventVisibility, RunEventType } from "@rhema/contracts";
 import type { PhaseManifest } from "@rhema/protocols";
 import type { UrlPolicy } from "@rhema/hooks";
 
@@ -95,6 +95,13 @@ export interface PhaseRequest {
   maxTurns: number;
   /** the run's URL policy (hold-outs) — passed to the hook the engine wires (§12.6). */
   urlPolicy?: UrlPolicy;
+  /**
+   * ECON.2 (REQ-SPEC-32(c); ADR-087) — the run's FROZEN COGS lever set, resolved server-side at
+   * creation and carried verbatim on the spec (never a model-facing prompt input). Absent ⇒ the
+   * pre-ECON.2 options shape, bit for bit: one flat 80 K window, the tier main model on every
+   * phase, ≤5 concurrent researchers, the 1-h cache TTL, the untuned web-tools policy.
+   */
+  levers?: CogsLevers;
 }
 
 /**

@@ -44,6 +44,33 @@ function build() {
   });
 }
 
+// ECON.2 (ADR-087) — a request carrying the frozen lever set + a real phaseClass.
+function reqWithLevers(levers: PhaseRequest["levers"], phaseClass: PhaseManifest["phaseClass"]): PhaseRequest {
+  return {
+    ...req(),
+    phase: { ...req().phase, phaseClass } as PhaseManifest,
+    ...(levers ? { levers } : {}),
+  };
+}
+function buildWith(r: PhaseRequest, tier: "base" | "balanced" | "frontier" = "base") {
+  return buildQueryOptions(r, {
+    proxyBaseUrl: "http://proxy.internal",
+    configDir: "/work/.config",
+    skillsDir: "/opt/skills",
+    tier,
+    hook: () => ({}),
+    sessionStore: { kind: "gcs" },
+    abortController: new AbortController(),
+  });
+}
+const LEVERS = {
+  l1PerPhaseWindow: true,
+  l2FanoutShape: true,
+  l3PhaseRouting: true,
+  l4CacheTtl5m: true,
+  l5ResearchEnvelope: true,
+};
+
 describe("buildQueryOptions (§12.2)", () => {
   const o = build();
 
@@ -130,6 +157,67 @@ describe("buildQueryOptions (§12.2)", () => {
     for (const k of FORBIDDEN_AGENT_ENV_KEYS) expect(k in o.env).toBe(false);
     expect(o.env.ANTHROPIC_BASE_URL).toBe("http://proxy.internal");
     for (const flag of OTEL_CONTENT_FLAGS) expect(o.env[flag]).toBe("0");
+  });
+});
+
+// ECON.2 (ADR-087; REQ-SPEC-32(c)) — each lever flag changes exactly its own knob and nothing else;
+// absent flags reproduce the pre-ECON.2 options shape bit for bit (a removal-catches test per lever).
+describe("buildQueryOptions — the ECON.2 levers", () => {
+  it("L1: per-`phaseClass` autoCompactWindow; off ⇒ the flat 80K everywhere", () => {
+    const off = buildWith(reqWithLevers(undefined, "generate"));
+    expect(off.settings.autoCompactWindow).toBe(80_000);
+    expect(buildWith(reqWithLevers({ ...LEVERS, l1PerPhaseWindow: false }, "generate"))
+      .settings.autoCompactWindow).toBe(80_000);
+    const on = (cls: Parameters<typeof reqWithLevers>[1]) =>
+      buildWith(reqWithLevers(LEVERS, cls)).settings.autoCompactWindow;
+    expect(on("research")).toBe(80_000); // the bounded-batch working-set floor — never tighter
+    expect(on("judge")).toBe(48_000);
+    expect(on("generate")).toBe(120_000);
+    expect(on("package")).toBe(64_000);
+  });
+
+  it("L2: the tuned fan-out drops the concurrent-subagent cap (env + advisory); off ⇒ 5", () => {
+    const off = buildWith(reqWithLevers({ ...LEVERS, l2FanoutShape: false }, "research"));
+    expect(off.maxConcurrentSubagents).toBe(5);
+    expect(off.env.CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION).toBe("5");
+    const on = buildWith(reqWithLevers(LEVERS, "research"));
+    expect(on.maxConcurrentSubagents).toBe(3);
+    expect(on.env.CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION).toBe("3");
+    // an all-off request is still the baseline arm
+    expect(buildWith(reqWithLevers(undefined, "research")).maxConcurrentSubagents).toBe(5);
+  });
+
+  it("L3: §12.3 per-class routing; off ⇒ the flat tier main model", () => {
+    // Base resolves every class to Sonnet — no in-table cheaper route (the ticket's prediction).
+    expect(buildWith(reqWithLevers(LEVERS, "research"), "base").model).toBe("claude-sonnet-5");
+    // Balanced: research + package move Opus→Sonnet; judge/generate stay Opus.
+    expect(buildWith(reqWithLevers(LEVERS, "research"), "balanced").model).toBe("claude-sonnet-5");
+    expect(buildWith(reqWithLevers(LEVERS, "package"), "balanced").model).toBe("claude-sonnet-5");
+    expect(buildWith(reqWithLevers(LEVERS, "judge"), "balanced").model).toBe("claude-opus-5");
+    expect(buildWith(reqWithLevers(LEVERS, "generate"), "balanced").model).toBe("claude-opus-5");
+    // Frontier: research + package move Fable→Opus; judge/generate stay Fable.
+    expect(buildWith(reqWithLevers(LEVERS, "research"), "frontier").model).toBe("claude-opus-5");
+    expect(buildWith(reqWithLevers(LEVERS, "judge"), "frontier").model).toBe("claude-fable-5");
+    // OFF ⇒ flat main model regardless of class.
+    expect(buildWith(reqWithLevers({ ...LEVERS, l3PhaseRouting: false }, "research"), "balanced").model)
+      .toBe("claude-opus-5");
+  });
+
+  it("L4: the ON arm omits ENABLE_PROMPT_CACHING_1H (5-m TTL); off ⇒ the §12.2 1-h env + advisory", () => {
+    const off = buildWith(reqWithLevers({ ...LEVERS, l4CacheTtl5m: false }, "research"));
+    expect(off.cacheControlTtl).toBe("1h");
+    expect(off.env.ENABLE_PROMPT_CACHING_1H).toBe("1");
+    const on = buildWith(reqWithLevers(LEVERS, "research"));
+    expect(on.cacheControlTtl).toBe("5m");
+    expect("ENABLE_PROMPT_CACHING_1H" in on.env).toBe(false);
+  });
+
+  it("the scrubbed env stays within the allowed key set with levers on (REQ-SPEC-10)", () => {
+    const on = buildWith(reqWithLevers(LEVERS, "research"));
+    expect(() => {
+      // assertScrubbed throws on any non-allowlisted key — the lever knobs are all allowlisted.
+      for (const k of FORBIDDEN_AGENT_ENV_KEYS) expect(k in on.env).toBe(false);
+    }).not.toThrow();
   });
 });
 

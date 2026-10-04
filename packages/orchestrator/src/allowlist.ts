@@ -5,7 +5,7 @@
 // routing table is instrumented (§16.3); this is the MVP authoring.
 
 import type { ModelTier, WorkflowKey } from "@rhema/contracts";
-import { ASSISTANT_TURN_BUDGET } from "@rhema/contracts";
+import { ASSISTANT_TURN_BUDGET, COGS_L5_FETCH_MAX_CONTENT_TOKENS, COGS_L5_HEADROOM_SHARE } from "@rhema/contracts";
 import type { RunAllowlistData, WebToolPolicyData } from "./resolver.js";
 
 /** The Anthropic model ids each tier's phases may request (main + subagent models — §12.3). */
@@ -154,8 +154,19 @@ export const CITE_BACKFILL_FETCH_ALLOWANCE = 24 as const;
  * RES.1: half the authored bound is floored to research-class phases (the claim-scaled budget exists FOR
  * verification; reserving half keeps a draft-time browse from starving it while still leaving earlier
  * phases a real allowance).
+ *
+ * ECON.2 L5 (`l5ResearchEnvelope`; ADR-087) — the tuned arm touches ONLY the portion ABOVE the
+ * RES.1 floor: the floor is computed from the UNTUNED budgets and freezes absolute (research's
+ * guarantee is unchanged — the named floor tests stay green unmodified); the non-reserved headroom
+ * (`budget − floor`, the allowance non-research traffic may consume) halves; the per-page context
+ * cap drops 8,000 → 4,000 tokens; CITE.1's backfill allowance stays sized on the UNTUNED budget so
+ * the citation mechanism's rescue capacity is not an L5 casualty. `maxUses` still bounds a call to
+ * a quarter of the run bound — against the tuned budget now, so the wave keeps its shape.
  */
-export function authorWebToolPolicy(args: { readonly claims?: number }): WebToolPolicyData {
+export function authorWebToolPolicy(args: {
+  readonly claims?: number;
+  readonly l5ResearchEnvelope?: boolean;
+}): WebToolPolicyData {
   const claims = Math.max(0, args.claims ?? 0);
   const searchBudget = clampInt(
     RESEARCH_SEARCH_BASE + RESEARCH_SEARCH_PER_CLAIM * claims,
@@ -167,6 +178,24 @@ export function authorWebToolPolicy(args: { readonly claims?: number }): WebTool
     RESEARCH_FETCH_MIN,
     RESEARCH_FETCH_MAX,
   );
+  const floor = authorResearchFloor({ claims, searchBudget, fetchBudget });
+  if (args.l5ResearchEnvelope === true) {
+    // Above-floor headroom only: floor + ceil(headroom × share). floor ≤ budget always holds —
+    // research keeps its whole (smaller) ceiling and its UNTOUCHED absolute reservation.
+    const tunedSearch = floor.searchFloor + Math.ceil((searchBudget - floor.searchFloor) * COGS_L5_HEADROOM_SHARE);
+    const tunedFetch = floor.fetchFloor + Math.ceil((fetchBudget - floor.fetchFloor) * COGS_L5_HEADROOM_SHARE);
+    return {
+      search: true,
+      fetch: true,
+      fetchBudget: tunedFetch,
+      searchBudget: tunedSearch,
+      searchMaxUses: Math.max(1, Math.floor(tunedSearch / RESEARCH_PARALLELISM)),
+      fetchMaxUses: Math.max(1, Math.floor(tunedFetch / RESEARCH_PARALLELISM)),
+      ...floor,
+      backfillFetchBudget: Math.min(fetchBudget, CITE_BACKFILL_FETCH_ALLOWANCE),
+      fetchMaxContentTokens: COGS_L5_FETCH_MAX_CONTENT_TOKENS,
+    };
+  }
   return {
     search: true,
     fetch: true,
@@ -176,7 +205,7 @@ export function authorWebToolPolicy(args: { readonly claims?: number }): WebTool
     // siblings: at most a quarter of the run bound per API call (see RESEARCH_PARALLELISM).
     searchMaxUses: Math.max(1, Math.floor(searchBudget / RESEARCH_PARALLELISM)),
     fetchMaxUses: Math.max(1, Math.floor(fetchBudget / RESEARCH_PARALLELISM)),
-    ...authorResearchFloor({ claims, searchBudget, fetchBudget }),
+    ...floor,
     // CITE.1 — the backfill allowance: bounded at min(fetchBudget, ceiling) so a claim-scaled small
     // run gets a small allowance and no run's mechanism can out-spend its research envelope.
     backfillFetchBudget: Math.min(fetchBudget, CITE_BACKFILL_FETCH_ALLOWANCE),

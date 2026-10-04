@@ -3,10 +3,12 @@
 // var — a half-configured api must not start and silently mis-route runs.
 
 import {
+  parseCogsLeversEnv,
   parseDebitMode,
   parsePurchaseMode,
   parseRefundWindowMode,
   parseSignupMode,
+  type CogsLevers,
   type DebitMode,
   type PurchaseMode,
   type RefundWindowMode,
@@ -184,6 +186,13 @@ export interface ApiEnv {
   /** JOURNEY.1 — the git SHA the image was built from (`RHEMA_BUILD_GIT_SHA`, baked by the Dockerfile
    *  `ARG GIT_SHA`); surfaced on `/healthz` as `build.gitSha` for the deploy-provenance check. */
   readonly buildGitSha?: string;
+  /**
+   * ECON.2 (REQ-SPEC-32(c); ADR-087) — the server DEFAULT COGS lever set (`COGS_LEVERS`, a JSON
+   * object of the five lever keys → booleans). Unset/malformed ⇒ all-off (the pre-ECON.2 pipeline);
+   * the operator flips a key here once the Stage-B measurement adopts its lever. A client's
+   * `inputs.cogsLevers` overrides only on `is_test` workspaces (the measurement arms).
+   */
+  readonly cogsLevers?: CogsLevers;
 }
 
 function required(name: string): string {
@@ -280,6 +289,10 @@ export function readApiEnv(): ApiEnv {
     // JOURNEY.1 — the test-mailbox flagging config + the image-baked build SHA (healthz provenance).
     ...(process.env.TEST_MAILBOX ? { testMailbox: process.env.TEST_MAILBOX } : {}),
     ...(process.env.RHEMA_BUILD_GIT_SHA ? { buildGitSha: process.env.RHEMA_BUILD_GIT_SHA } : {}),
+    // ECON.2 — the COGS lever defaults; malformed JSON fails closed to undefined ⇒ all-off.
+    ...(parseCogsLeversEnv(process.env.COGS_LEVERS)
+      ? { cogsLevers: parseCogsLeversEnv(process.env.COGS_LEVERS) }
+      : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

@@ -45,6 +45,23 @@ describe("buildAgentEnv (REQ-SPEC-10)", () => {
   it("carries none of the forbidden secret keys", () => {
     for (const k of FORBIDDEN_AGENT_ENV_KEYS) expect(k in env).toBe(false);
   });
+
+  it("ECON.2 L4 — `promptCaching1h:false` omits the 1-h key (the ≈5-m CLI default applies); the rest of the scrubbed set is unchanged", () => {
+    const tuned = buildAgentEnv({
+      runId: "run_9",
+      proxyBaseUrl: "http://proxy.internal:8080",
+      configDir: "/work/.config",
+      maxConcurrentSubagents: 3,
+      promptCaching1h: false,
+    });
+    expect("ENABLE_PROMPT_CACHING_1H" in tuned).toBe(false);
+    expect(tuned.CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION).toBe("3");
+    // omitted keys stay within the allowlist (allowed ≠ required) and no secret rode in.
+    expect(() => assertScrubbed(tuned)).not.toThrow();
+    expect(Object.keys(tuned).sort()).toEqual(
+      ALLOWED_AGENT_ENV_KEYS.filter((k) => k !== "ENABLE_PROMPT_CACHING_1H").sort(),
+    );
+  });
 });
 
 describe("assertScrubbed (the last-line guard before execve)", () => {

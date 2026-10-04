@@ -69,6 +69,33 @@ describe("worker run-lifecycle handlers", () => {
     expect(context.webTools?.fetchBudget).toBe(80);
   });
 
+  it("ECON.2 L5 — a frozen inputs.cogsLevers.l5ResearchEnvelope tunes the bound above the floor only", async () => {
+    await seedRun(db, {
+      runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId,
+      workflow: "review", state: "queued", lockSet: [],
+      inputSnapshot: { wordCount: 701, claimCount: 3 },
+    });
+    // the run's FROZEN lever set (resolved at creation) — the worker trusts the freeze verbatim.
+    await db.client.query(
+      `update runs set inputs = '{"cogsLevers":{"l5ResearchEnvelope":true}}'::jsonb where id = 'run1'`, [],
+    );
+    const res = await handleRunStart(deps, { runId: "run1", workspaceId: seed.workspaceId });
+    expect(res.ok).toBe(true);
+    const row = (await db.client.query("select context from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      context: { webTools?: Record<string, number | boolean> } | string;
+    };
+    const context = typeof row.context === "string" ? JSON.parse(row.context) : row.context;
+    // 3 claims ⇒ untuned fetch 24 / search 11; floors 12 / 5 absolute-preserved (UNTUNED half);
+    // budgets = floor + ⌈headroom×0.5⌉ (fetch 12+6=18, search 5+3=8); page cap 4 000; backfill on
+    // the UNTUNED budget (min(24, 24)).
+    expect(context.webTools).toMatchObject({
+      fetchBudget: 18, searchBudget: 8,
+      fetchFloor: 12, searchFloor: 5,
+      fetchMaxContentTokens: 4000,
+      backfillFetchBudget: 24,
+    });
+  });
+
   it("RES.2 — inputs.force_unverified zeroes the research budgets on a TEST workspace only", async () => {
     // the flagged test tenant: the frozen input's flag zeroes search/fetch budgets (floors included) —
     // RES.1's preflight still runs, the run delivers, coverage reads zero.

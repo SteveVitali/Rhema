@@ -8,6 +8,8 @@
 // types (model/effort/tools); only `researcher` fans out in-query. `tools: ["Read"]` on the scoped ones
 // mirrors §12.6 (no Bash, no Write, no fetch except where a skill grants the client `fetcher`).
 
+import type { PhaseClass } from "@rhema/protocols";
+
 /** A subagent definition (per-agent tools/model/effort — §12.2). Structural; the SDK's is a superset. */
 export interface AgentDef {
   description: string;
@@ -41,6 +43,50 @@ const RESEARCH_SUB_MODEL: Record<Tier, string> = {
  *  not fall back to a default that may be off the run's allowlist. */
 export function mainModelForTier(tier: Tier): string {
   return MAIN_MODEL[tier];
+}
+
+/**
+ * ECON.2 L3 (REQ-ARCH-9; ADR-087) — the §12.3 routing table verbatim: the main-context model per
+ * (tier, phaseClass). Today's pipeline runs `mainModelForTier` on EVERY phase — the OFF arm; the ON
+ * arm routes by the manifest's `phaseClass`:
+ *   · research — Base Sonnet (Haiku 4.5 research subagents, unchanged below), Balanced Sonnet,
+ *     Frontier Opus;
+ *   · judge / generate — the tier main (Sonnet / Opus / Fable — identical to `MAIN_MODEL`);
+ *   · package — Base Sonnet, Balanced Sonnet, Frontier Opus.
+ * The manifest has no `chat` phaseClass — a chat_turn phase is `generate`-class and lands on the
+ * §12.3 chat row's model, which is identical to its generate cell anyway. Every id in a cell is
+ * already on the tier's proxy allowlist and priceable — the roster-allowlist alignment test
+ * extends to per-phase ids to keep that true (F4). The scoped-query launches (second-reader,
+ * audits) keep `mainModelForTier` — their §12.6 independence context is a §6.5 preset invariant,
+ * untouched by this lever.
+ */
+export const PHASE_CLASS_MODELS: Readonly<Record<Tier, Readonly<Record<PhaseClass, string>>>> = {
+  base: {
+    research: "claude-sonnet-5",
+    judge: "claude-sonnet-5",
+    generate: "claude-sonnet-5",
+    package: "claude-sonnet-5",
+  },
+  balanced: {
+    research: "claude-sonnet-5",
+    judge: "claude-opus-5",
+    generate: "claude-opus-5",
+    package: "claude-sonnet-5",
+  },
+  frontier: {
+    research: "claude-opus-5",
+    judge: "claude-fable-5",
+    generate: "claude-fable-5",
+    package: "claude-opus-5",
+  },
+};
+
+/**
+ * The §12.3 per-class route for a (tier, phaseClass) — L3's resolved main model. With the lever
+ * off the caller uses `mainModelForTier` instead (the flat pre-ECON.2 shape).
+ */
+export function routeModelForPhaseClass(tier: Tier, phaseClass: PhaseClass): string {
+  return PHASE_CLASS_MODELS[tier][phaseClass];
 }
 
 /** Every model id the roster can request for a tier (main + subagents) — the set the allowlist must cover. */

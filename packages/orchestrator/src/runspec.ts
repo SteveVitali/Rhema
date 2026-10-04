@@ -8,7 +8,7 @@
 // the proxy credential reach only the harness uid via the 0400 Secret mount, never this JSON.
 
 import type { AgentTypeKey, CorrespondenceKind, ModelTier, SidecarFilename, WorkflowKey } from "@rhema/contracts";
-import { MODEL_TIERS, SIDECAR_CONTRACT_HINTS } from "@rhema/contracts";
+import { COGS_FANOUT_BASELINE, COGS_FANOUT_TUNED, MODEL_TIERS, SIDECAR_CONTRACT_HINTS, sanitizeCogsLevers } from "@rhema/contracts";
 import type { PhaseRequest } from "@rhema/engine";
 import { mainModelForTier } from "@rhema/engine";
 import type { MirrorManifest } from "@rhema/mirror";
@@ -385,6 +385,13 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       })
     : { rendered: "", delivered: [] };
 
+  // ECON.2 (REQ-SPEC-32(c); ADR-087) — the run's FROZEN lever set, resolved server-side at creation
+  // into `runs.inputs.cogsLevers`; an absent/malformed value means the pre-ECON.2 shape (all off).
+  // The set rides the PhaseRequest (options applies L1/L3/L4, L2's concurrency lands through the
+  // scrubbed env) — and is STRIPPED from the model-facing `inputs` below so no harness-control
+  // noise reaches the prompt (the frozen record stays on `runs.inputs` + `input_snapshot`).
+  const levers = sanitizeCogsLevers(hyd.inputs.cogsLevers);
+
   // frozen run inputs win over the manifest defaults; `phase` pins the one skill phase to run (REQ-SPEC-13).
   // `phase_output` names the exact artifact(s) this phase must write, taken from the manifest so the agent's
   // write target can never drift from the completion oracle's predicate (residue 1, diagnosed live P0.15g: the
@@ -502,10 +509,12 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     // from returned verdicts and writes the dossier incrementally, so neither the seat's nor any
     // subagent's transcript can grow past one batch. `TRANSCRIPT_COMPACTION_WINDOW_TOKENS`
     // (`options.settings.autoCompactWindow`) is the hard ceiling underneath this instruction.
+    // ECON.2 L2 — the batch size in the contract text comes from the same COGS_FANOUT_* constants
+    // the options layer realizes through `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`, so the
+    // instruction and the enforced cap can never drift apart.
     ...(phase.allowsSubagents
       ? {
-          research_fanout:
-            "Context contract (PRB.24): do NOT run one long research session over the whole claim/topic inventory — every request resends the full session transcript. Fan research out to `researcher` subagents in bounded batches of at most 5 items each. A researcher verifies ONLY its assigned items and returns a compact verdict list (item → verdict → retrieved source URLs) — never pasted page text. Assemble the ledger/report rows yourself from the returned verdicts and write the dossier file incrementally as each batch returns; if a subagent's batch stalls, re-delegate the remaining items in a fresh batch rather than continuing in your own context.",
+          research_fanout: `Context contract (PRB.24): do NOT run one long research session over the whole claim/topic inventory — every request resends the full session transcript. Fan research out to \`researcher\` subagents in bounded batches of at most ${levers.l2FanoutShape ? COGS_FANOUT_TUNED.batchSize : COGS_FANOUT_BASELINE.batchSize} items each. A researcher verifies ONLY its assigned items and returns a compact verdict list (item → verdict → retrieved source URLs) — never pasted page text. Assemble the ledger/report rows yourself from the returned verdicts and write the dossier file incrementally as each batch returns; if a subagent's batch stalls, re-delegate the remaining items in a fresh batch rather than continuing in your own context.`,
         }
       : {}),
     // DEF.1 Stage-B (live rerun 01M3E8F8…, draft attempts 1–5): the ported skill names the ledger's
@@ -535,6 +544,9 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   // fetcher-only egress; everything else keeps the empty policy (§12.6).
   const runUrlPolicy = urlPolicyForRun(hyd.inputs);
 
+  // ECON.2 — the frozen lever set is harness control-plane, never a `key=value` prompt line.
+  delete inputs.cogsLevers;
+
   const request: PhaseRequest = {
     runId: args.runId,
     attempt: args.attempt,
@@ -548,6 +560,7 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     maxBudgetUsd,
     maxTurns: DEFAULT_MAX_TURNS,
     urlPolicy: runUrlPolicy,
+    levers,
   };
 
   const hookPolicyInput: HookPolicyInput = {

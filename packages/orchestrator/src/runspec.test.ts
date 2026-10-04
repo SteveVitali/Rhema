@@ -369,6 +369,69 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(spec.request.inputs.research_fanout).toBeUndefined();
   });
 
+  // ECON.2 (REQ-SPEC-32(c); ADR-087) — the frozen lever set rides `runs.inputs.cogsLevers` onto
+  // `request.levers` (the engine options consume it), is STRIPPED from the model-facing prompt
+  // inputs, and interpolates the L2 batch size into the `research_fanout` contract from the same
+  // constants the options layer enforces — so instruction and cap can never drift.
+  it("ECON.2 — a frozen lever set lands on request.levers and is stripped from the prompt inputs", async () => {
+    const runId = await seedWorkflowRun("run_levers", "review");
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({ cogsLevers: { l1PerPhaseWindow: true, l3PhaseRouting: true, l4CacheTtl5m: true, bogusLever: true } }),
+      ]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.levers).toEqual({
+      l1PerPhaseWindow: true,
+      l2FanoutShape: false,
+      l3PhaseRouting: true,
+      l4CacheTtl5m: true,
+      l5ResearchEnvelope: false,
+    });
+    // harness control-plane never reaches the model: not a `key=value` prompt line.
+    expect(spec.request.inputs.cogsLevers).toBeUndefined();
+  });
+
+  it("ECON.2 — an absent/malformed cogsLevers resolves all-off (the pre-ECON.2 shape)", async () => {
+    const runId = await seedWorkflowRun("run_levers_off", "review");
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.levers).toEqual({
+      l1PerPhaseWindow: false,
+      l2FanoutShape: false,
+      l3PhaseRouting: false,
+      l4CacheTtl5m: false,
+      l5ResearchEnvelope: false,
+    });
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ cogsLevers: "not-an-object" })]),
+    );
+    const spec2 = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec2.request.levers?.l1PerPhaseWindow).toBe(false);
+  });
+
+  it("ECON.2 L2 — the research_fanout batch size interpolates the lever's fan-out shape", async () => {
+    const runId = await seedWorkflowRun("run_l2", "review");
+    const verification = WORKFLOW_MANIFESTS.review!.phases.find((p) => p.key === "verification")!;
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({ phase: verification.skillPhase, cogsLevers: { l2FanoutShape: true } }),
+      ]),
+    );
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(String(spec.request.inputs.research_fanout)).toContain("at most 8"); // COGS_FANOUT_TUNED.batchSize
+    // …and back to the PRB.24 baseline when the lever is off.
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [
+        runId,
+        JSON.stringify({ phase: verification.skillPhase }),
+      ]),
+    );
+    const off = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(String(off.request.inputs.research_fanout)).toContain("at most 5");
+  });
+
   it("F15 — a phase with NO declared sidecars carries no sidecar_contract input", async () => {
     const runId = await seedWorkflowRun("run_no_sc", "revise");
     const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });

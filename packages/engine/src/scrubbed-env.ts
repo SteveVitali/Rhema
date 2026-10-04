@@ -45,6 +45,13 @@ export interface AgentEnvInput {
   configDir: string;
   /** the §12.2 ≤5 concurrent-subagents cap, enforced through the CLI env (PRB.23 — see below). */
   maxConcurrentSubagents: number;
+  /**
+   * ECON.2 L4 (ADR-087) — the prompt-cache TTL choice. `true` (default) sets
+   * `ENABLE_PROMPT_CACHING_1H` (the §12.2 1-h TTL); `false` OMITS the key so the CLI's default
+   * (≈5-min TTL) applies. TTL-only by construction — the vendored CLI assembles the request
+   * prefix's ORDER internally; the harness owns the inputs, not their serialization.
+   */
+  promptCaching1h?: boolean;
 }
 
 /**
@@ -68,7 +75,9 @@ export function buildAgentEnv(input: AgentEnvInput): Record<string, string> {
     ANTHROPIC_API_KEY: PROXY_PLACEHOLDER_ANTHROPIC_API_KEY,
     CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
     CLAUDE_CONFIG_DIR: input.configDir,
-    ENABLE_PROMPT_CACHING_1H: "1", // §12.2's 1-h cache TTL — realized via env (PRB.23)
+    // §12.2's 1-h cache TTL — realized via env (PRB.23). ECON.2 L4's ON arm omits the key so the
+    // CLI's shorter default applies; the measured TTL choice is a lever, not a constant.
+    ...(input.promptCaching1h === false ? {} : { ENABLE_PROMPT_CACHING_1H: "1" }),
     CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION: String(input.maxConcurrentSubagents),
   };
   assertScrubbed(env);
