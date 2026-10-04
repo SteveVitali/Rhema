@@ -6,7 +6,8 @@
 - **Primary requirement:** REQ-SPEC-32(c); REQ-SPEC-8 (restore flip, operator-paused); REQ-BILL-7;
   REQ-GROWTH-4; REQ-ARCH-9.
 - **Branch:** `stevevitali/econ-2-cogs-reduction` — base `stevevitali/cite-1-citation-completeness`
-  @ `685f633608e72b06b7bdb6e96783eaae5bcc9b9b` (PR #104 open; merge policy OPERATOR — not merged by me).
+  @ `685f633608e72b06b7bdb6e96783eaae5bcc9b9b`. **PR #105** stacked on PR #104 (both OPEN,
+  verified via `gh`; merge policy OPERATOR — not merged by me).
 - **Spend:** Stage A $0 (code + read-only prod reads). Stage B ≤ $30 metered, aim ≈$15, cheapest-first —
   **all legs deferred** (see Stage B ledger below).
 - **Round-3 cumulative:** ≈ $71 entering this ticket (pause at ≈$100, hard stop $200 — 2026-09-30 ruling).
