@@ -284,11 +284,17 @@ D-OPS.2-1 actuals reconcile; lever execution is the follow-on ticket.
 
 ## Stage B remainder (live legs at closeout)
 
-- `record-deployment.mjs` provenance row on the chain-tip SHA + the live turbo-cache image digest
-  (DATABASE_URL via IAP tunnel or Cloud SQL proxy; script validates `GIT_SHA` + `IMAGE_DIGESTS` +
-  protocol ≥ `0.4.0+`).
-- 2 same-SHA CI runs with `TURBO_API`/`TURBO_TOKEN` secrets → remote-cache-hit lines for `build`.
-- `gh` repo-admin scope check for the secrets (else D-OPS.2-3).
+- ~~`record-deployment.mjs` provenance row~~ — **DONE 2026-10-03T23:1xZ.** SSH local-forward through
+  the proxy MIG (`gcloud compute ssh rhema-prod-proxy-c519 --tunnel-through-iap -- -L
+  15432:10.46.0.3:5432`), privileged `workerSystemDatabaseUrl` DSN (the `app-database-url` role has
+  `deployments` revoked by 0045 — first attempt failed `42501` as designed; the operator DSN is the
+  correct path per PROD-BRINGUP §8). Row verified by read-back:
+  `prod:ead193c92e36cb1b0b1c85ef52a68f6c0068016c` · `protocols_version=0.4.0+ec61156725a895ab` ·
+  10 image digests incl. `turbo-cache@sha256:b62a2863…`. **AC8 provenance leg PROVEN.**
+- ~~`gh` repo-admin scope~~ — **present.** `secrets.TURBO_TOKEN` set (from SM, never printed);
+  `vars.TURBO_API` set (a *variable* per ci.yml, not a secret — the mistaken secret was deleted).
+  No D-OPS.2-3 needed.
+- 2 same-SHA CI runs → remote-cache-hit lines for `build` (evidence below as runs complete).
 
 ## Evidence report
 
@@ -303,8 +309,8 @@ D-OPS.2-1 actuals reconcile; lever execution is the follow-on ticket.
 | $50 budget alert live + codified | live `gcloud` + preview zero-diff | `billing.ts`, Evidence log |
 | Self-hosted cache live, token-gated, scale-0, ≤$15 delta | live probes + post-up preview | `turbo-cache.ts`, Evidence log |
 | ADR-081/082 + index regenerated | files | `docs/adr/` |
-| CI remote-cache hits ×2 same SHA | **pending push** | Stage B remainder |
-| Provenance row @ chain-tip SHA | **pending commit** | Stage B remainder |
+| CI remote-cache hits ×2 same SHA | **pending CI** (`ead193c`, PR #103) | Stage B remainder |
+| Provenance row @ chain-tip SHA | **live-verified** — `prod:ead193c92e…` + `0.4.0+ec61156725a895ab` | Stage B remainder |
 
 ## Cost-ledger note
 
