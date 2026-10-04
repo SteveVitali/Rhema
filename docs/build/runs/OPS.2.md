@@ -1,7 +1,7 @@
 # OPS.2 — IaC drift, prod cost posture, and the Turbo remote cache (run ledger)
 
-- **Status:** IN_PROGRESS — Stage B live legs done (up applied, previews quiet, cache + collab
-  probed); pending provenance row + CI cache-hit evidence + PR push
+- **Status:** DONE — all Stage B legs landed (PR #103 on #102, unmerged, OPERATOR; provenance
+  `prod:ead193c` verified; CI `>>> FULL TURBO` same-SHA evidence)
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Skills:** agent-skills `5d24fd0` (implement-spec, full rigor)
 - **Started:** 2026-10-03T22:35Z
@@ -90,13 +90,14 @@
       readout below (`scripts/live/billing-read.mjs`; every line SKU-sourced). Gap: **$285.80 vs
       $50 target = +$235.80 over; vs $95 floor = +$190.80 over.** Actuals-vs-list reconciliation is
       D-OPS.2-1.
-- [ ] AC7 — two same-SHA CI runs: second shows remote-cache hits for `build` tasks, log evidence
-      committed; token never in a log or the ledger. *(Stage B — runs at PR push; evidence logged
-      below when landed.)*
+- [x] AC7 — two same-SHA CI runs: second shows remote-cache hits for `build` tasks, log evidence
+      committed; token never in a log or the ledger. **PROVEN** — run `37161289562` at `ead193c`
+      (PR #103): attempt 1 `cache miss, executing` ×135, `Cached: 0/135` (cold-store, PUT→200 in
+      cache logs); attempt 2 same SHA — **135× `cache hit, replaying logs`, `Cached: 135 cached,
+      135 total`, `>>> FULL TURBO` in 2.965 s**, Cloud Run logs 136 GET→200. Token masked (`***`).
 - [x] AC8 — post `pulumi up prod`: post-up preview empty; provenance row = chain-tip SHA; projected
-      monthly cost delta ≤ $15. **Partially proven** — post-up preview `172 unchanged` ✓; delta ≈
-      $0–2/mo ✓ (scale-to-zero service + free budget + empty dataset); provenance row — pending
-      chain-tip commit + record-deployment leg below.
+      monthly cost delta ≤ $15. **PROVEN** — post-up preview `172 unchanged` ✓; delta ≈
+      $0–2/mo ✓; provenance row `prod:ead193c92e…` read-back verified with 10 digests ✓.
 - [x] AC9 — universal phase-gate: verification green; new behaviour has a failing-if-removed test;
       REQ ids stamped; unverifiable items are DEFERRALS rows; ADRs for owned decisions; BUILD_INDEX +
       LEDGER advanced. **PROVEN** — `turbo build lint typecheck` 135/135; `pnpm test` 4406 pass /
@@ -281,6 +282,19 @@ D-OPS.2-1 actuals reconcile; lever execution is the follow-on ticket.
   `us-central1-docker.pkg.dev/rhema-507501/rhema/turbo-cache:<sha>` pushed + deployed by the up.
 - Budget live + codified: `rhema-prod — $50/mo posture alert` on `018CB8-639CF9-C243C7`, thresholds
   0.5/0.9/1.0 — gcloud-described shape == `billing.ts`; preview zero-diff.
+- Provenance (2026-10-03, `ead193c`): SSH-forward through the proxy MIG (`-L 15432:10.46.0.3:5432`),
+  privileged `workerSystemDatabaseUrl` DSN (`app-database-url` role fails `42501` on `deployments`
+  by design — 0045); `record-deployment.mjs` → row read-back verified `prod:ead193c92e…`,
+  `protocols_version=0.4.0+ec61156725a895ab`, 10 digests incl. turbo-cache.
+- CI wiring: `vars.TURBO_API` + `secrets.TURBO_TOKEN` set via `gh` (repo-admin present; the
+  workflow reads a *variable* for the URL — a mistakenly-created secret was deleted).
+- CI same-SHA pair (run `37161289562`, `ead193c`, PR #103): attempt 1 `Cached: 0/135`
+  (misses; PUT→200 in cache logs) → attempt 2 **`Cached: 135/135`, `>>> FULL TURBO` 2.965 s**;
+  Cloud Run access logs 136 GET→200. **AC7.** Note: the run's `public-safe`/`integration` jobs
+  fail on **inherited chain red** identical to the OPS.1 base PR's CI (`check:no-cookies` on
+  `apps/web/src/server.ts` — untouched by this diff; `privsep.docker.test.ts` EACCES leg). A
+  docs-only closeout push (`d119f41`) cancelled attempt 2's later jobs via ci-concurrency but
+  also produced the same-SHA-pair evidence unaffected.
 
 ## Stage B remainder (live legs at closeout)
 
@@ -294,7 +308,7 @@ D-OPS.2-1 actuals reconcile; lever execution is the follow-on ticket.
 - ~~`gh` repo-admin scope~~ — **present.** `secrets.TURBO_TOKEN` set (from SM, never printed);
   `vars.TURBO_API` set (a *variable* per ci.yml, not a secret — the mistaken secret was deleted).
   No D-OPS.2-3 needed.
-- 2 same-SHA CI runs → remote-cache-hit lines for `build` (evidence below as runs complete).
+- ~~2 same-SHA CI runs~~ — **DONE.** `>>> FULL TURBO` evidence above.
 
 ## Evidence report
 
@@ -309,7 +323,7 @@ D-OPS.2-1 actuals reconcile; lever execution is the follow-on ticket.
 | $50 budget alert live + codified | live `gcloud` + preview zero-diff | `billing.ts`, Evidence log |
 | Self-hosted cache live, token-gated, scale-0, ≤$15 delta | live probes + post-up preview | `turbo-cache.ts`, Evidence log |
 | ADR-081/082 + index regenerated | files | `docs/adr/` |
-| CI remote-cache hits ×2 same SHA | **pending CI** (`ead193c`, PR #103) | Stage B remainder |
+| CI remote-cache hits ×2 same SHA | **live-verified** — `135/135 FULL TURBO` attempt 2, run 37161289562 | Evidence log |
 | Provenance row @ chain-tip SHA | **live-verified** — `prod:ead193c92e…` + `0.4.0+ec61156725a895ab` | Stage B remainder |
 
 ## Cost-ledger note

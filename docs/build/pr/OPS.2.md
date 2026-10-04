@@ -67,8 +67,16 @@ Stacks on `stevevitali/ops-1-preview-stages` (PR #102, `OPERATOR` merge policy).
 - Collab: live `pg_roles` + grant census via IAP tunnel; DSN parity by hash.
 - Gates: `turbo build lint typecheck` 135/135 · `pnpm test` 4406 pass / 4 skip
   · licenses 745 pkgs OK · protocol-markers clean · infra batch 68/68.
-- CI cache-hit evidence (two same-SHA runs): see `runs/OPS.2.md` evidence log —
-  `TURBO_API`/`TURBO_TOKEN` are wired; second-run hit lines land with the push.
+- CI cache-hit evidence (two same-SHA runs): run `37161289562` at `ead193c` — attempt 1
+  `Cached: 0/135` (cold-store, artifact PUT→200 in the cache's Cloud Run logs); attempt 2
+  **`Cached: 135/135`, `>>> FULL TURBO` in 2.965 s** (135 `cache hit, replaying logs`; 136
+  GET→200 in the access logs). `TURBO_API` is a repo *variable* + `TURBO_TOKEN` a secret per
+  `ci.yml`; the token never prints (`***` masked).
+- Provenance: `deployments` row `prod:ead193c92e36cb1b0b1c85ef52a68f6c0068016c` (read-back
+  verified; `protocols_version=0.4.0+ec61156725a895ab`; 10 digests incl. turbo-cache).
+- Inherited chain red (not this diff): `public-safe` `check:no-cookies` on
+  `apps/web/src/server.ts` + `integration` `privsep.docker.test.ts` fail identically on the
+  OPS.1 base PR's CI.
 
 ## Deferrals
 
@@ -83,9 +91,9 @@ Stacks on `stevevitali/ops-1-preview-stages` (PR #102, `OPERATOR` merge policy).
 
 ## Gates
 
-Universal phase-gate green; AC1–AC6/AC8/AC9 proven in the run ledger; AC7 (two
-same-SHA CI cache-hit runs) lands with this push — CI reruns record hits for
-`build` tasks; log excerpts go in the run ledger, the token never prints.
+Universal phase-gate green; all ACs proven in the run ledger, incl. AC7 — two
+same-SHA CI runs (`37161289562` attempts 1+2 at `ead193c`) with the second at
+`>>> FULL TURBO` 135/135 remote-cache hits; the token never prints.
 
 ## Spend
 
