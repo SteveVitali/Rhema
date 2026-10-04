@@ -1,6 +1,9 @@
 # CITE.1 — Citation completeness: fetch-then-cite reliability + a measured completeness rate (run ledger)
 
-- **Status:** IN PROGRESS — Stage A (code + tests + $0 read-only baseline)
+- **Status:** Stage A DONE + Stage B PARTIAL — migrations applied + images built/pinned at `5baa666`;
+  **`pulumi up` blocked on an expired Pulumi Cloud credential** (operator login required — D-CITE.1-1);
+  all three paid legs deferred (D-CITE.1-2/-3/-4: deploy prerequisite + weekly spend guard over cap
+  + per-leg caps below measured probe cost). $0 metered this Stage B.
 - **Harness:** Devin CLI (agentic coding subagent); model: Cognition Devin; tier: n/a (build work)
 - **Skills:** agent-skills (implement-spec, full rigor)
 - **Started:** 2026-10-04T00:52:43Z
@@ -206,16 +209,92 @@ min(fetchBudget, 24); its metering makes the insurance cost separately visible t
 
 ## Stage B ledger (per-leg list $; cap ≤ $10 total)
 
-_(pending)_
+Executed 2026-10-04 (chain tip `a2b86ce`; built SHA `5baa666` — the tip's only deltas after the build
+are the image pins + this ledger, which ship in no image).
+
+### Deploy half
+
+| Step | Result |
+|---|---|
+| Migrations `0056`+`0057` via `prod-migrate-seed.mjs` over the IAP tunnel (`rhema-prod-proxy-c519` → `127.0.0.1:15432`) | **APPLIED** — additive-lint passed; `_migrations` = 57; `runs.citation_completeness` + `citation_completeness_daily` verified live (0 rows — nothing delivered since the migration) |
+| Journey step **N11** (CITE.1-owned, AC8) added | commit `5baa666` — registry row (`new-visitor`, paid, `expected:"red"`), `launchQuickReviewToDelivery` doc-param refactor, `fixtures/golden-op-ed.md` committed copy; registry tests 7/7 green |
+| Cloud Build `a1a25956-f419-41ae-b532-f388941fe6e5` (image-set.yaml, `_SERVICES=api,web,worker,run-task,egress-proxy,collab`, `_GIT_SHA=5baa666`, tag `prod`) | **SUCCESS** — api `0df7b7e1`, web `dc619a51`, worker `da8ac0cf`, run-task `53cca280`, egress-proxy `9767f907`, collab `fd026a24` (sha256 prefixes). fetcher/convert/export/turbo-cache carry no diff'd runtime code — pins kept |
+| `Pulumi.prod.yaml` pins | committed `a2b86ce` (deploy comment block records the owed `pulumi up`) |
+| `pulumi preview` / `pulumi up prod` | **BLOCKED — expired Pulumi Cloud credential.** The stored token (`~/.pulumi/credentials.json`, `pul-e8e4…`, validated 2026-10-03T21:35-04:00) returns HTTP 401 on `api.pulumi.com/api/user`; `pulumi stack select/preview` refuse "requires logging in". Fresh `pulumi login` is an operator act — no token source exists on this machine. → **D-CITE.1-1** |
+| `record-deployment.mjs` + `check-deploy-provenance` | owed with the apply (GIT_SHA `5baa666`; tip `a2b86ce` = pins-only delta) |
+
+### Paid legs — all deferred, $0 metered
+
+Weekly spend guard re-measured live over the tunnel 2026-10-04T02:2xZ:
+`select coalesce(sum(u.list_cost_usd),0) from usage_records u join workspaces w on w.id=u.workspace_id
+ where w.is_test and u.ts >= '2026-09-28' and u.source='proxy'` → **$58.07792** (ISO week
+2026-09-28 → cap $5 → `checkWeeklySpendCap` refuses; reset Mon 2026-10-05 00:00 UTC, ~21.6 h out).
+Test tenant funding verified prior session: 7,472 promo credits available, `is_test` flagged — no grant
+needed. Under the operator's "check `journeySpendThisIsoWeek` before dispatching flagged legs"
+instruction, flagged legs refuse while the week reads ≥ $5.
+
+| Leg | Plan | Cap | Outcome |
+|---|---|---|---|
+| 1 | RES.1 probe ×3 on the planted-error essay | ≤$1.50 ea | **DEFERRED → D-CITE.1-2** — deploy prerequisite (D-CITE.1-1); weekly guard over cap; and the measured completing-probe cost ($3.31/$4.17, RES.1 2026-10-01) already exceeds $1.50 — a cap-vs-measure reconciliation is owed even after the reset (caps never raised) |
+| 2 | same probe ×2 on `golden-op-ed.md` | ≤$2 ea | **DEFERRED → D-CITE.1-3** — same three reasons at $2 |
+| 3 | N11 Quick/Base Review e2e on jrn-a + dossier chip evidence + committed screenshot | ≤$4 | **DEFERRED → D-CITE.1-4** — deploy prerequisite + weekly guard over cap; N11 stays `expected:"red"` until it runs |
+| ADR-086 target read (aggregate ≥0.95, per-run ≥0.80) on the Stage-B probe runs | — | **DEFERRED → D-CITE.1-5** — rides the legs; the pre-deploy baseline stands at canonical 1.0 aggregate (40 cited URLs, 0 trulyUnretrieved) but is NOT the Stage-B evidence |
+
+### What was actually verified live (read-only, $0)
+
+- `_migrations` = 57, newest `0057_cite1_citation_completeness.sql`.
+- `runs.citation_completeness` jsonb column present; `citation_completeness_daily` present with the
+  ADR-084 column shape (day/runs/cited/covered/missed/stripped/backfill_ran_runs/backfill_resolved/
+  search_covered/rate/computed_at) — both empty: nothing has delivered since the migration.
+- Weekly flagged-tenant metered spend $58.07792 — the guard's own query, re-run for this ledger.
+
+### Non-regression status (AC7)
+
+Not verifiable live — the legs that would re-prove N6 (planted error Contradicted + fetched source)
+and produce `citation_completeness` rows are deferred. Deterministic evidence stands: the parity fix
+keeps `validateCitedFetched` unchanged (12 tests), the strip path is un-tightened (Path B residual
+preserved by construction), `force_unverified` zeroes the backfill allowance (never an
+Unverified-causing write), and RES.1's floor is untouched (`backfillFetchBudget` is additive). The
+remaining live reads are recorded on the D-rows.
 
 ## Gap table
 
-_(Phase 4)_
+| Item | Expected | Actual | Disposition |
+|---|---|---|---|
+| AC1 baseline | measured + recorded | canonical 1.0 vs legacy 0.675 on 53 runs (§ Baseline) | **met** |
+| AC2 one URL identity | 3-way parity + pre-fix failure | `citation-fetch.test.ts`, `delivery.test.ts`, guard 12 green; `validateCitedFetched` unchanged | **met** (deterministic) |
+| AC3 persistence | counts persisted + system-pool aggregate | `runs.citation_completeness` + `run.citation_completeness` event + `citation_completeness_daily`; PGlite tests green; SEC.1 system-pool lint green | **met** (deterministic); live write owed by any post-deploy delivery |
+| AC4 mechanism | bounded backfill, never the floor | ADR-085 mechanism A; 28 harness-loop + 41 handler + 33 url-policy tests; floor intact | **met** (deterministic) |
+| AC5 pre-registered target | ADR before spend | ADR-086 committed pre-spend (agg ≥0.95 / run ≥0.80) | **met** |
+| AC6 Stage-B legs | ≤$10, cheapest-first, measured vs target | **no legs ran** — deploy credential + weekly guard + cap infeasibility | **D-CITE.1-2..5** |
+| AC7 non-regression | N6 stays Contradicted; coverage ≥ baseline; no CITE.1-caused Unverified | deterministic suite green; live re-proof owed | **D-CITE.1-2/-3/-4** carry it |
+| AC8 journey evidence | CITE.1-owned step + committed screenshot | **N11 wired red** (5baa666); screenshot owed with Leg 3 | **D-CITE.1-4** |
+| deploy | `pulumi up` + provenance + deployments row | images built+pinned; apply blocked on expired Pulumi token | **D-CITE.1-1** |
 
 ## Evidence log
 
-_(Phase 5)_
+- 2026-10-04T02:0xZ — migrations 0056/0057 applied through the IAP tunnel (`prod-migrate-seed.mjs`,
+  additive-lint clean); `_migrations` count verified 57.
+- 2026-10-04 — N11 step + golden-op-ed fixture + registry/test pins (`5baa666`); journeys vitest 7/7,
+  turbo typecheck+lint green.
+- 2026-10-04T02:1xZ — Cloud Build `a1a25956` SUCCESS: six images at `5baa666` (digests in the Stage-B
+  table above); pins committed `a2b86ce`.
+- 2026-10-04T02:2xZ — Pulumi Cloud token verified dead (HTTP 401 `api.pulumi.com/api/user`); deploy
+  recorded as owed (D-CITE.1-1). Weekly spend guard re-measured $58.07792 ≥ $5 (ISO week
+  2026-09-28; reset 2026-10-05T00:00Z).
+- 2026-10-04 — `runs.citation_completeness` / `citation_completeness_daily` verified live-empty
+  (expected — no deliveries since migration).
 
 ## Evidence report
 
-_(Phase 6)_
+Stage A is complete and committed (`4986752` + `5baa666` + `a2b86ce`): canonical cited⇒retrieved URL
+identity shared by guard/scorer/ledger/dossier/scan, search-row retrieval parity with the "Search
+result" label, persisted per-run + daily completeness (0056/0057 applied live), and the ADR-085
+bounded pre-delivery backfill — all deterministic-green (135/135 turbo; full vitest; additive-lint).
+Stage B produced the deployable artifact set and honest deferrals: images built+pinned at `5baa666`
+(Cloud Build `a1a25956`), `pulumi up` blocked on an expired Pulumi Cloud credential (D-CITE.1-1), and
+all three paid legs deferred on the deploy prerequisite + the measured weekly spend guard
+($58.08 ≥ $5 until 2026-10-05 UTC) + per-leg caps below the measured probe cost (D-CITE.1-2..5).
+$0 metered spend this Stage B. The measured completeness owed (ADR-086) rides D-CITE.1-5; the
+pre-deploy baseline (canonical 1.0 aggregate, 0 trulyUnretrieved) is recorded above and in LEDGER
+OPEN FINDINGS (X-citation-completeness).
