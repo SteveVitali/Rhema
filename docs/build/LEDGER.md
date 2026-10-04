@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      CAP.1              # row 86 — next chain row after STB.5b (row 85); 85a is a HUMAN marker
-lastCompleted:   STB.5b             # 2026-10-04 (B16–B19 paid-leg harness committed + green; Stage B SPEND-REFUSED — ISO-week $58.08 ≥ $5 under the system role, exit 3 before browser; $0 metered; defects D-STB.5b-1..3 filed)
+nextTicket:      CAP.2              # row 87 — composed verification; owns the ~60 un-walked-surface PARTIALs CAP.1 routed to it
+lastCompleted:   CAP.1              # 2026-10-04 (474-REQ coverage matrix + gap analysis — verdicts recorded before any runs/* read; 309 MET / 18 MET-DIFFERENTLY / 113 PARTIAL / 33 MISSING / 1 AT-RISK; ADR-089; D-CAP.1-1/-2 opened)
 blockedOn:       (nothing)          # a REAL block only; gates + operator pauses are not blocks — D-ECON.2-1's deploy waits on the same operator `pulumi login` as D-CITE.1-1
 pauseRequested:  false
 returnPass:      (none)             # P0.15j/P0.15k done; PRB.18's residual → JOURNEY.1 steps + H7 (BL-32)
@@ -33,12 +33,12 @@ dispatchTarget:  subagent           # round-3 tickets sized for a one-window sub
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, p0-01) — P0.01's fork point
-chainTip:        stevevitali/stb-5b-bounded-paid-legs  # round 3 stacks here (D1)
+chainTip:        stevevitali/cap-1-capstone-gap-analysis  # round 3 stacks here (D1)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           3
-updatedAt:       2026-10-04         # STB.5b done — BL-16–19 paid legs committed as journey steps; Stage B refused at the weekly guard ($58.08 ≥ $5, system role; app role reads $0 through RLS → D-STB.5b-1); CAP.1 next
+updatedAt:       2026-10-04         # CAP.1 done — independent 474-row verdicts: coverage matrix + gap analysis + completeness test; CAP.2 next (composed verification)
 ```
 
 ## OPEN FINDINGS
