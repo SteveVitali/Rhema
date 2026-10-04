@@ -39,6 +39,7 @@ export * from "./metered-notice.js"; // ECON.1: the paid-account metered-flip no
 export * from "./reprice.js";
 export * from "./unverified-settle.js";
 export * from "./unverified-scan.js";
+export * from "./citation-scan.js"; // CITE.1 — the $0 baseline cited⇒retrieved scan (BL-15)
 export * from "./refund-window.js";
 
 // JOURNEY.1 — the test-tenant flag predicates (REQ-SPEC-29; ADR-020). ACT.1 hooks `isTestWorkspace`.

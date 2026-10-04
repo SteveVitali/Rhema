@@ -17,6 +17,7 @@ import type {
   FindingsSidecar,
   RubricSidecar,
 } from "@rhema/contracts";
+import { normalizeUrl } from "@rhema/contracts";
 import type { ResultSubtype, UsageSnapshot } from "@rhema/engine";
 import type { DeliveryArgs, NewVersion, SidecarInput, VerdictSourceContext } from "@rhema/mirror";
 import {
@@ -37,6 +38,63 @@ import {
 } from "@rhema/orchestrator";
 import { resolveProducedPath } from "./work-reader.js";
 import { describePreflightFailures } from "./research-preflight.js";
+
+/**
+ * CITE.1 (ADR-085) — cap on the missed urls named in the backfill re-entry's instruction. The
+ * dedicated `backfillFetchBudget` is the HARD bound server-side; this just keeps the guidance
+ * short (a flood of misses is a deeper failure the re-entry cannot repair anyway).
+ */
+const BACKFILL_GUIDANCE_MAX_URLS = 24;
+
+/**
+ * CITE.1 mechanism A (ADR-085) — the pre-delivery cited⇒retrieved check + bounded re-entry. Runs
+ * ONCE per pod, after the final phase commits and BEFORE `deliver`:
+ *   1. read the run's retrieved-url set from the token-authed internal route (the SAME canonical
+ *      identity the delivery guard applies — never pod-asserted);
+ *   2. compute the cited urls the set does NOT cover;
+ *   3. on any miss, re-enter the committed final-phase spec ONE extra time with guidance naming the
+ *      missed urls, stamped `phaseClass: "backfill"` — the proxy admits those fetches on the run's
+ *      dedicated `backfillFetchBudget` (never the research budget, never the floor share), meters
+ *      them, and stamps `phase_class='backfill'` on the fetch_log/usage rows of record.
+ * The re-entry's `/work` outputs are DISCARDED — its only effect is the fetch_log rows (the
+ * delivered dossier stays the committed artifacts; the delivery tx then reads a fetch log where the
+ * cited urls exist, so Path B does not strip them). Everything here is best-effort: an unbound seam,
+ * a route failure, or a crashed re-entry degrades to exactly the pre-CITE.1 Path-B strip — never a
+ * regression and never a delivery blocker.
+ */
+async function maybeBackfillCitations(
+  deps: Pick<CommitLoopDeps, "client" | "runPhase">,
+  spec: HarnessRunSpec,
+  outputs: PhaseRunOutputs,
+): Promise<void> {
+  const claimLedger = outputs.delivery?.claimLedger;
+  if (!claimLedger || !deps.client.retrievedUrls) return;
+  const retrieved = await deps.client.retrievedUrls().catch(() => ({ ok: false as const, urls: [] as readonly string[] }));
+  if (!retrieved.ok) return;
+  const retrievedSet = new Set(retrieved.urls);
+  const misses = new Set<string>();
+  for (const claim of claimLedger.claims ?? []) {
+    if (claim.url && !retrievedSet.has(normalizeUrl(claim.url))) misses.add(claim.url);
+    for (const s of claim.sources ?? []) {
+      if (s.url && !retrievedSet.has(normalizeUrl(s.url))) misses.add(s.url);
+    }
+  }
+  if (misses.size === 0) return;
+  const urls = [...misses].slice(0, BACKFILL_GUIDANCE_MAX_URLS);
+  await Promise.resolve()
+    .then(() =>
+      deps.runPhase(spec, {
+        phaseClass: "backfill",
+        guidance:
+          `Cite-completeness check: your claim ledger cites ${misses.size} source URL(s) that were never ` +
+          `retrieved, so they cannot appear in the delivered review. Fetch each of these URLs now with ` +
+          `the fetch tool — one call per URL, no searching: ${urls.join(", ")}. ` +
+          `Do not modify any dossier files.`,
+      }),
+    )
+    .then(() => undefined)
+    .catch(() => undefined);
+}
 
 /** The server-authored preflight manifest (`HarnessRunSpec.researchPreflight`) — RES.1. */
 export type ResearchPreflightSpec = NonNullable<HarnessRunSpec["researchPreflight"]>;
@@ -122,7 +180,15 @@ export interface WorkDeliveryContent {
 /** Runs ONE phase to its terminal result. Prod: spawn `agent-entry` (uid agent) + read `/work`; test: FakeEngine. */
 export type RunPhaseFn = (
   spec: HarnessRunSpec,
-  opts: { readonly guidance?: string },
+  opts: {
+    readonly guidance?: string;
+    /**
+     * CITE.1 (ADR-085) — stamp `x-rhema-phase-class` with this class instead of the spec's own
+     * (`"backfill"` for the bounded pre-delivery fetch re-entry, whose fetches admit only on the
+     * dedicated allowance and are metered/stamped `phase_class='backfill'`).
+     */
+    readonly phaseClass?: string;
+  },
 ) => Promise<PhaseRunOutputs>;
 
 export interface HarvestCall {
@@ -177,6 +243,12 @@ export interface HarnessApiClient {
   /** first beat: take `provisioning → running` (§12.4 step 5) + refresh the token; returns cancel state. */
   heartbeat?(): Promise<{ ok: boolean; cancelRequested?: boolean; state?: string }>;
   fetchRunSpec(): Promise<HarnessRunSpec>;
+  /**
+   * CITE.1 (ADR-085) — the run's retrieved-url set (the delivery guard's join set, canonicalized
+   * server-side). Optional: a client without the seam disables the pre-delivery backfill check —
+   * Path B then runs as before (never a regression).
+   */
+  retrievedUrls?(): Promise<{ ok: boolean; urls: readonly string[] }>;
   /** RPT.1 — stamp the phase's real start (steps.state='running' + `step.started`); absent ⇒ the
    *  old wiring (a client that predates the seam) — the commit's measured durationMs then carries
    *  the timing fallback. */
@@ -435,6 +507,9 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       if (next.kind === "finalize") {
         // deliver the assembled dossier when the run targets a draft and produced dossier content; else finalize bare.
         if (spec.delivery && outputs.delivery && outputs.delivery.deliveredPaths.length > 0) {
+          // CITE.1 — the pre-delivery cited⇒retrieved check + bounded backfill re-entry (ADR-085);
+          // a miss-free ledger (or an unbound seam) skips straight to delivery at zero cost.
+          await maybeBackfillCitations(deps, spec, outputs);
           const delivery = assembleDeliveryArgs(
             spec,
             deps.workspaceId,

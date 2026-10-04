@@ -196,11 +196,16 @@ async function postAudit(args: {
    * read `/work` into the `PhaseRunOutputs` the loop judges + commits. The `/work` layout is reconciled (F3):
    * entries materialize under their mount root and the agent runs in `request.cwd` = `roots.project`.
    */
-  const runOnePhaseInPod = async (spec: HarnessRunSpec, opts: { guidance?: string }): Promise<PhaseRunOutputs> => {
+  const runOnePhaseInPod = async (
+    spec: HarnessRunSpec,
+    opts: { guidance?: string; phaseClass?: string },
+  ): Promise<PhaseRunOutputs> => {
     // RES.1 — stamp this phase's class on every egress request for the duration of the phase (the injector
     // reads `currentPhaseClass` live; the agent cannot forge it — see credential-injector).
     // RPT.1 — `currentStepKey` stamps `x-rhema-step: step:<key>` the same way (Level-4 attribution).
-    currentPhaseClass = spec.request.phase.phaseClass;
+    // CITE.1 — `opts.phaseClass` overrides the stamp ("backfill" for the pre-delivery re-entry — ADR-085);
+    // the step attribution stays the phase's own key.
+    currentPhaseClass = opts.phaseClass ?? spec.request.phase.phaseClass;
     currentStepKey = spec.request.phase.key;
     const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
     // Reconciled /work layout (F3): materialize each manifest entry under its mount root, using the SAME roots

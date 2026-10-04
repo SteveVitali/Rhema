@@ -62,11 +62,13 @@ interface Recorder {
   readonly calls: string[];
   finalizeCount: number;
   runPhaseGuidance: (string | undefined)[];
+  /** CITE.1 — the full runPhase opts (guidance + phaseClass) per call, in order. */
+  runPhaseOpts: { guidance?: string; phaseClass?: string }[];
 }
 
 /** A scripted in-process api client + runPhase driver — the seams the pod loop calls. */
 function makeHarness(specs: HarnessRunSpec[], outputsFor: (spec: HarnessRunSpec, guidance?: string) => PhaseRunOutputs) {
-  const rec: Recorder = { commits: [], harvests: [], fails: [], delivers: [], begins: [], calls: [], finalizeCount: 0, runPhaseGuidance: [] };
+  const rec: Recorder = { commits: [], harvests: [], fails: [], delivers: [], begins: [], calls: [], finalizeCount: 0, runPhaseGuidance: [], runPhaseOpts: [] };
   let specIdx = 0;
   let versionCounter = 0;
 
@@ -103,8 +105,9 @@ function makeHarness(specs: HarnessRunSpec[], outputsFor: (spec: HarnessRunSpec,
     },
   };
 
-  const runPhase = (spec: HarnessRunSpec, opts: { guidance?: string }) => {
+  const runPhase = (spec: HarnessRunSpec, opts: { guidance?: string; phaseClass?: string }) => {
     rec.runPhaseGuidance.push(opts.guidance);
+    rec.runPhaseOpts.push({ ...(opts.guidance !== undefined ? { guidance: opts.guidance } : {}), ...(opts.phaseClass !== undefined ? { phaseClass: opts.phaseClass } : {}) });
     rec.calls.push(`runPhase:${spec.request.phase.key}`);
     return Promise.resolve(outputsFor(spec, opts.guidance));
   };
@@ -596,6 +599,101 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
       });
       expect(res.kind).toBe("completed");
       expect(probes).toBe(0);
+    });
+  });
+
+  // ---- CITE.1 (ADR-085) — mechanism A: the pre-delivery cited⇒retrieved check + bounded re-entry ----
+  describe("CITE.1 — the pre-delivery citation backfill (mechanism A)", () => {
+    const letter = { ...byKey("letter"), index: OF - 1 };
+    const dossierWith = (claims: { url?: string; sources?: { url: string }[] }[]): WorkDeliveryContent => ({
+      deliveredPaths: ["correspondence/editors-letter.md"],
+      sidecars: [],
+      coversAllObligations: true,
+      claimLedger: {
+        sidecar: "claim_ledger",
+        version: 1,
+        claims: claims.map((c, i) => ({ ordinal: i + 1, text: `c${i + 1}`, tier: 2, verdict: "verified", ...c, humanAdded: false })),
+      } as WorkDeliveryContent["claimLedger"],
+    });
+    const letterOutputs = (dossier: WorkDeliveryContent): PhaseRunOutputs =>
+      completeOutputs(
+        { letterSectionsComplete: true, rubricDimensionCount: 8, sidecarValidates: { "findings.json": true, "rubric.json": true } },
+        {
+          versions: [{ path: "correspondence/editors-letter.md", root: "project", kind: "letter", namespace: "editor", sha256: "s", bytes: Buffer.from("L"), wordCount: 1 }],
+          delivery: dossier,
+        },
+      );
+
+    it("re-enters the final phase stamped 'backfill' with the missed urls, then delivers", async () => {
+      // the ledger cites two urls; the retrieved set covers only one → one backfill re-entry.
+      const { rec, client, runPhase } = makeHarness([makeSpec(letter, { delivery: DELIVERY_FACTS })], () =>
+        letterOutputs(dossierWith([{ url: "https://a.example/got" }, { url: "https://b.example/missed" }])),
+      );
+      client.retrievedUrls = () =>
+        Promise.resolve({ ok: true, urls: ["https://a.example/got"] });
+      const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+      expect(res.kind).toBe("delivered");
+      // the committed run + ONE backfill re-entry — the SAME spec re-run, stamped backfill, guidance
+      // naming the missed url; its outputs are discarded (the delivered dossier is the committed one).
+      expect(rec.runPhaseOpts).toHaveLength(2);
+      expect(rec.runPhaseOpts[0]).toEqual({});
+      expect(rec.runPhaseOpts[1]?.phaseClass).toBe("backfill");
+      expect(rec.runPhaseOpts[1]?.guidance).toContain("https://b.example/missed");
+      expect(rec.runPhaseOpts[1]?.guidance).not.toContain("https://a.example/got");
+      expect(rec.delivers).toHaveLength(1);
+    });
+
+    it("skips the re-entry entirely when every cited url is already retrieved", async () => {
+      const { rec, client, runPhase } = makeHarness([makeSpec(letter, { delivery: DELIVERY_FACTS })], () =>
+        letterOutputs(dossierWith([{ url: "https://a.example/got" }])),
+      );
+      client.retrievedUrls = () => Promise.resolve({ ok: true, urls: ["https://a.example/got", "https://x.example/other"] });
+      const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+      expect(res.kind).toBe("delivered");
+      expect(rec.runPhaseOpts).toHaveLength(1); // no re-entry — a miss-free ledger costs nothing
+    });
+
+    it("skips the re-entry when the retrieved-urls seam is unbound or fails (Path B fallback — never a regression)", async () => {
+      // unbound seam.
+      const noSeam = makeHarness([makeSpec(letter, { delivery: DELIVERY_FACTS })], () =>
+        letterOutputs(dossierWith([{ url: "https://b.example/missed" }])),
+      );
+      const res1 = await runCommitLoop({ client: noSeam.client, runPhase: noSeam.runPhase, workspaceId: "ws1" });
+      expect(res1.kind).toBe("delivered");
+      expect(noSeam.rec.runPhaseOpts).toHaveLength(1);
+
+      // a failing route degrades the same way — delivery proceeds to the strip.
+      const failing = makeHarness([makeSpec(letter, { delivery: DELIVERY_FACTS })], () =>
+        letterOutputs(dossierWith([{ url: "https://b.example/missed" }])),
+      );
+      failing.client.retrievedUrls = () => Promise.resolve({ ok: false, urls: [] });
+      const res2 = await runCommitLoop({ client: failing.client, runPhase: failing.runPhase, workspaceId: "ws1" });
+      expect(res2.kind).toBe("delivered");
+      expect(failing.rec.runPhaseOpts).toHaveLength(1);
+    });
+
+    it("a crashed re-entry still delivers (best-effort — the strip stays the residual)", async () => {
+      let calls = 0;
+      const { rec, client, runPhase } = makeHarness([makeSpec(letter, { delivery: DELIVERY_FACTS })], () => {
+        calls += 1;
+        if (calls === 2) throw new Error("backfill phase crashed");
+        return letterOutputs(dossierWith([{ url: "https://b.example/missed" }]));
+      });
+      client.retrievedUrls = () => Promise.resolve({ ok: true, urls: [] });
+      const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+      expect(res.kind).toBe("delivered");
+      expect(rec.delivers).toHaveLength(1);
+    });
+
+    it("a cited url variant the canonical set covers is NOT a miss (guard-identity parity)", async () => {
+      // cited carries the query; the stored retrieved row drops it on canonical read.
+      const { rec, client, runPhase } = makeHarness([makeSpec(letter, { delivery: DELIVERY_FACTS })], () =>
+        letterOutputs(dossierWith([{ url: "https://a.example/p?id=7" }])),
+      );
+      client.retrievedUrls = () => Promise.resolve({ ok: true, urls: ["https://a.example/p"] });
+      const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+      expect(res.kind).toBe("delivered");
+      expect(rec.runPhaseOpts).toHaveLength(1); // canonical parity — no false-positive re-entry
     });
   });
 });

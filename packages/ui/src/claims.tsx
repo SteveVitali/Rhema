@@ -31,6 +31,8 @@ export interface ClaimsTableLabels {
   readonly heading: string;
   readonly tierLabel: (tier: number) => string;
   readonly fetchedLabel: string;
+  /** CITE.1 — the chip label for a url covered only by search-hit rows ("Search result"). */
+  readonly searchResultLabel?: string;
   readonly stanceLabel?: (stance: string) => string;
   readonly kindLabel?: (kind: string) => string;
   /** the REQ-OBJ-19 line for a non-checkable claim, e.g. "interpretive — not a matter of verification". */
@@ -54,7 +56,12 @@ function UrlChip({ view, labels }: { view: ClaimUrlView; labels: ClaimsTableLabe
   return (
     <span data-claim-url={view.normalizedUrl} data-stance={view.stance ?? undefined} data-url-in-log={view.fetched ? "true" : "false"} style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
       {view.fetched ? (
-        <FetchedUrlChip url={view.url} host={host} fetchedLabel={labels.fetchedLabel} />
+        <FetchedUrlChip
+          url={view.url}
+          host={host}
+          fetchedLabel={view.retrievedBy === "search" ? (labels.searchResultLabel ?? labels.fetchedLabel) : labels.fetchedLabel}
+          retrievedBy={view.retrievedBy}
+        />
       ) : (
         <Chip label={host} href={view.url} title={view.url} />
       )}

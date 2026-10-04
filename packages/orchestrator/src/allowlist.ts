@@ -139,6 +139,15 @@ function clampInt(n: number, lo: number, hi: number): number {
 }
 
 /**
+ * CITE.1 (ADR-085) — the backfill allowance ceiling: the run-total web_fetch bound the
+ * `backfill`-class re-entry may spend. It is a SEPARATE budget line — never `fetchBudget`, never the
+ * RES.1 floor — sized to cover a ledger's whole cited-url set on the worst manifest (a full Review
+ * cites tens of urls; the bound is generous at 24 because misses after it lands still get Path-B
+ * stripped). The named floor-intact test in `url-policy.test.ts`/`allowlist.test.ts` pins it.
+ */
+export const CITE_BACKFILL_FETCH_ALLOWANCE = 24 as const;
+
+/**
  * Author the run's `webTools` policy from the claim count (the input snapshot's `claimCount`, or the
  * density-derived provisional count). Claims scale the budgets; every run is bounded even at claims=0 —
  * verification still does baseline reading, and a missing count must not mean unbounded research.
@@ -168,6 +177,9 @@ export function authorWebToolPolicy(args: { readonly claims?: number }): WebTool
     searchMaxUses: Math.max(1, Math.floor(searchBudget / RESEARCH_PARALLELISM)),
     fetchMaxUses: Math.max(1, Math.floor(fetchBudget / RESEARCH_PARALLELISM)),
     ...authorResearchFloor({ claims, searchBudget, fetchBudget }),
+    // CITE.1 — the backfill allowance: bounded at min(fetchBudget, ceiling) so a claim-scaled small
+    // run gets a small allowance and no run's mechanism can out-spend its research envelope.
+    backfillFetchBudget: Math.min(fetchBudget, CITE_BACKFILL_FETCH_ALLOWANCE),
     fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
   };
 }
@@ -206,6 +218,8 @@ export function authorAssistantWebToolPolicy(args: {
         0,
         ASSISTANT_TURN_BUDGET.fetches,
       ),
+      // CITE.1 — a non-verification workflow never stamps `backfill`: zero the allowance explicitly.
+      backfillFetchBudget: 0,
       fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
     };
   }
@@ -224,6 +238,8 @@ export function authorAssistantWebToolPolicy(args: {
       // RES.1 — the burst runs a judge-class triage BEFORE its research phase; floor half the source
       // bound so triage browsing can never starve the research pass it precedes.
       ...authorResearchFloor({ searchBudget: sources, fetchBudget: sources }),
+      // CITE.1 — a non-verification workflow never stamps `backfill`: zero the allowance explicitly.
+      backfillFetchBudget: 0,
       fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
     };
   }
@@ -239,6 +255,8 @@ export function authorAssistantWebToolPolicy(args: {
       fetch: true,
       fetchBudget: Math.max(1, declared),
       searchBudget: Math.min(2, Math.max(1, declared)),
+      // CITE.1 — a non-verification workflow never stamps `backfill`: zero the allowance explicitly.
+      backfillFetchBudget: 0,
       fetchMaxContentTokens: FETCH_MAX_CONTENT_TOKENS,
     };
   }

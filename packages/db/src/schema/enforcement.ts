@@ -27,6 +27,9 @@ export const fetchLog = pgTable("fetch_log", {
   bytes: integer("bytes"),
   decision: text("decision").notNull(),
   denyReason: text("deny_reason"),
+  // CITE.1 (0056): the harness-stamped `x-rhema-phase-class` (`research`/`preflight`/`backfill`, else
+  // NULL) — the stamp the completeness record's `backfilled` ids and the mechanism-cost delta read.
+  phaseClass: text("phase_class"),
 });
 
 export const provenanceMaps = pgTable("provenance_maps", {

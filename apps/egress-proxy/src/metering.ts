@@ -40,6 +40,12 @@ export interface UsageRecordRow {
   /** The provider's per-request id (the `request-id` response header) — the nightly `usage.reconcile` job's
    *  join key against the provider's Usage & Cost report (PRB.08; REQ-BILL-13). */
   readonly providerRequestId: string | null;
+  /**
+   * CITE.1 — the harness-stamped phase class (`x-rhema-phase-class`: `research`/`preflight`/`backfill`,
+   * else NULL) on the row of record: the column the mechanism's per-run metered delta reads
+   * (`where phase_class = 'backfill'`) and the attribution ECON.2 costs the pipeline with.
+   */
+  readonly phaseClass: string | null;
 }
 
 export interface MeteredResult {
@@ -63,6 +69,8 @@ export function meterResponse(input: {
   ts?: string;
   stepId?: string;
   providerRequestId?: string | null;
+  /** CITE.1 — the request's harness-stamped phase class (folded onto the row of record). */
+  phaseClass?: string | null;
 }): MeteredResult {
   const { ctx, usage, model, agentId } = input;
   const table = rateTableFor(ctx.rateTableVersion);
@@ -97,6 +105,7 @@ export function meterResponse(input: {
     credits: Math.round(credits),
     source: "proxy",
     providerRequestId: input.providerRequestId ?? null,
+    phaseClass: input.phaseClass ?? null,
   };
   return { row, platformCredits: credits, listCostUsd: listUsd };
 }

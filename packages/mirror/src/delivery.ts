@@ -29,6 +29,7 @@ import {
   applyVerdictSourceChecks,
   checkSecondReadProducer,
   normalizeUrl,
+  registrableDomain,
   validateCitedFetched,
   validateSidecars,
   type VerdictSourceContext,
@@ -173,11 +174,38 @@ export interface DeliveryArgs {
   readonly voiceMode?: "linked" | "ad_hoc";
 }
 
+/**
+ * CITE.1 (REQ-VIS-9; ADR-084/085) — the per-run citation-completeness record the mirror computes at
+ * delivery from the SAME join `validateCitedFetched` enforces. Persisted under
+ * `runs.delivery.citation_completeness` and emitted as `run.citation_completeness` (internal — counts
+ * and normalized-url identifiers only).
+ */
+export interface CitationCompleteness {
+  /** distinct canonical urls the claim ledger cited (claim.url ∪ sources[].url, pre-strip). */
+  readonly cited: number;
+  /** cited urls the run's fetch log covers — post-backfill (the delivered rate's numerator). */
+  readonly covered: number;
+  /** `cited − covered` — urls Path B had to strip. */
+  readonly missed: number;
+  /** occurrence-level strip count (a url missed by several claims counts once here, per-source there). */
+  readonly stripped: number;
+  /** the canonical urls Path B stripped (identifiers only — the unfetched urls themselves). */
+  readonly missedUrls: readonly string[];
+  /** whether any cited url's coverage came through the mechanism-A backfill phase class. */
+  readonly backfillRan: boolean;
+  /** cited urls covered only via backfill traffic (the mechanism's rescue count). */
+  readonly backfillResolved: number;
+  /** cited urls whose coverage rests on `search` rows — snippet evidence, not a page fetch. */
+  readonly searchCovered: number;
+}
+
 export interface DeliveryResult {
   readonly correspondenceId: string;
   readonly downgradedClaimOrdinals: readonly number[];
   /** Path B (ADR-006): count of unfetched cited urls stripped from the persisted ledger at delivery. */
   readonly strippedCitations: number;
+  /** CITE.1 — the measured cited⇒retrieved record (see {@link CitationCompleteness}). */
+  readonly citationCompleteness?: CitationCompleteness;
   readonly accessReport: AccessReport;
   readonly accessReportVersionId: string;
   /** the version ids of the dossier copies published under `correspondence/<kind>/<ordinal>/` (F12). */
@@ -218,19 +246,55 @@ const CORRESPONDENCE_DOSSIER_KINDS: ReadonlySet<string> = new Set([
   "sidecar",
 ]);
 
-/** The set of normalized urls the proxy actually fetched for a run (the fetch log of record). */
-async function fetchedNormalizedUrls(exec: SqlExecutor, runId: string): Promise<Set<string>> {
+/**
+ * The run's retrieval evidence, keyed by URL identity (the fetch log of record). Each entry is the
+ * CANONICAL guard-normalized url (CITE.1 / ADR-083: BOTH sides of the join share `normalizeUrl` — the
+ * stored `normalized_url` is the proxy's richer form, so it is re-normalized on read; a legacy row with
+ * no `normalized_url` falls back to normalizing `url`) plus the log KIND that covered it — `'search'`
+ * for a url surfaced only as a search-result link, `'fetch'` for a fetched page — so the completeness
+ * record and the §12.8(c) search-domain provenance see the same union the guard accepts.
+ */
+export interface RetrievedEvidence {
+  /** canonical urls the run retrieved at all — the cited⇒fetched join set (fetch ∪ search rows). */
+  readonly urls: Set<string>;
+  /** canonical urls covered by ≥1 `fetch` row (a page the proxy actually retrieved). */
+  readonly fetchedUrls: Set<string>;
+  /** canonical urls covered by ≥1 `search` row (a hit the run's searches surfaced — snippet evidence). */
+  readonly searchUrls: Set<string>;
+  /** canonical urls whose covering rows were backfill-class traffic (CITE.1 mechanism A). */
+  readonly backfilledUrls: Set<string>;
+  /** canonical urls covered ONLY by `search` rows (never by a `fetch` row this run). */
+  readonly searchOnlyUrls: Set<string>;
+}
+
+async function retrievedEvidence(exec: SqlExecutor, runId: string): Promise<RetrievedEvidence> {
   const res = await exec.query(
-    `select normalized_url, url from fetch_log
-      where run_id = $1 and kind in ('fetch','search') and decision in ('allow','success','ok')`,
+    `select normalized_url, url, kind, phase_class from fetch_log
+      where run_id = $1 and kind in ('fetch','search') and decision in ('allow','success','ok')
+        and url is not null`,
     [runId],
   );
-  const out = new Set<string>();
-  for (const r of res.rows as { normalized_url: string | null; url: string | null }[]) {
-    if (r.normalized_url) out.add(r.normalized_url);
-    else if (r.url) out.add(normalizeUrl(r.url));
+  const urls = new Set<string>();
+  const fetchedUrls = new Set<string>();
+  const searchUrls = new Set<string>();
+  const backfilledUrls = new Set<string>();
+  for (const r of res.rows as {
+    normalized_url: string | null;
+    url: string | null;
+    kind: string;
+    phase_class: string | null;
+  }[]) {
+    const raw = r.normalized_url ?? r.url;
+    if (!raw) continue;
+    const norm = normalizeUrl(raw);
+    urls.add(norm);
+    if (r.kind === "fetch") fetchedUrls.add(norm);
+    else if (r.kind === "search") searchUrls.add(norm);
+    if (r.phase_class === "backfill") backfilledUrls.add(norm);
   }
-  return out;
+  const searchOnlyUrls = new Set<string>();
+  for (const u of urls) if (!fetchedUrls.has(u)) searchOnlyUrls.add(u);
+  return { urls, fetchedUrls, searchUrls, backfilledUrls, searchOnlyUrls };
 }
 
 /**
@@ -250,8 +314,15 @@ export async function runDeliveryTransaction(
   if (!sidecarResult.ok) throw new DeliveryValidationError("sidecar", sidecarResult.failures);
 
   const claims = args.claimLedger?.claims ?? [];
-  // The proxy fetch log of record — used by both the cited⇒fetched policy below and the strip in step 3.
-  const fetched = claims.length > 0 ? await fetchedNormalizedUrls(exec, args.runId) : new Set<string>();
+  // The proxy fetch log of record — used by the cited⇒fetched policy below, the strip in step 3, the
+  // §12.8(c) search-domain provenance, and the CITE.1 completeness record persisted in step 5. BOTH
+  // sides of the join share `normalizeUrl` (ADR-083 — canonical on read; the stored `normalized_url`
+  // keeps the proxy's richer form).
+  const evidence: RetrievedEvidence =
+    claims.length > 0
+      ? await retrievedEvidence(exec, args.runId)
+      : { urls: new Set(), fetchedUrls: new Set(), searchUrls: new Set(), backfilledUrls: new Set(), searchOnlyUrls: new Set() };
+  const fetched = evidence.urls;
   const isFetched = (url: string): boolean => fetched.has(normalizeUrl(url));
 
   if (args.secondReadProducerQueryId !== undefined) {
@@ -268,9 +339,44 @@ export async function runDeliveryTransaction(
   const citedMisses = claims.length > 0 ? validateCitedFetched(claims, fetched).misses : [];
   const unfetchedOrdinals = new Set(citedMisses.map((m) => m.claimOrdinal));
 
+  // CITE.1 (ADR-084/085) — the measured completeness record, computed on the SAME join set the guard
+  // reads (the measurement authority is `validateCitedFetched`; this is its per-run persistence).
+  // `covered`/`missed` are POST-backfill (the fetch log already carries the mechanism's rows). A cited
+  // url a `search` row covers counts covered at rate level (snippet retrieval IS retrieved evidence)
+  // and is recorded separately in `searchCovered`.
+  const citedUrls = new Set<string>();
+  for (const c of claims) {
+    if (c.url) citedUrls.add(normalizeUrl(c.url));
+    for (const s of c.sources ?? []) if (s.url) citedUrls.add(normalizeUrl(s.url));
+  }
+  const coveredUrls = new Set<string>();
+  const missedUrls = new Set<string>();
+  for (const u of citedUrls) (fetched.has(u) ? coveredUrls : missedUrls).add(u);
+  const backfilledCites = new Set<string>();
+  const searchCoveredCites = new Set<string>();
+  for (const u of citedUrls) {
+    if (evidence.backfilledUrls.has(u)) backfilledCites.add(u);
+    if (evidence.searchUrls.has(u)) searchCoveredCites.add(u);
+  }
+
   // verdict source check — a DOWNGRADE at commit, not a hard failure (§12.8(c)) — composed with the cited⇒fetched
-  // downgrade above (a claim with an unfetched citation is likewise downgraded).
-  const applied = applyVerdictSourceChecks(claims, args.verdictContext).map((a) =>
+  // downgrade above (a claim with an unfetched citation is likewise downgraded). CITE.1 (ADR-084) —
+  // `searchResultDomains` is now populated from the fetch log's url-bearing `search` rows (the live
+  // refinement D-P0.15-2 deferred): a Tier-1 verdict sourced from a domain the run's own search results
+  // reached earns the §12.8(c) `from_search` sourceCheck instead of `suspicious_source`.
+  const searchDomains = new Set<string>();
+  for (const u of evidence.searchUrls) {
+    const d = registrableDomain(u);
+    if (d) searchDomains.add(d);
+  }
+  const verdictCtx: VerdictSourceContext =
+    searchDomains.size === 0
+      ? args.verdictContext
+      : {
+          ...args.verdictContext,
+          searchResultDomains: new Set([...args.verdictContext.searchResultDomains, ...searchDomains]),
+        };
+  const applied = applyVerdictSourceChecks(claims, verdictCtx).map((a) =>
     unfetchedOrdinals.has(a.claim.ordinal) && a.verdict !== "unverifiable"
       ? { claim: a.claim, verdict: "unverifiable" as const, sourceCheck: "suspicious_source" as const, downgraded: true }
       : a,
@@ -894,10 +1000,25 @@ export async function runDeliveryTransaction(
   const written = parseRunEvent("artifact.written", { kind: "access_report", mirrorPath: reportPath, versionId: persistedReport.versionId });
   await deps.eventWriter.append(exec, { runId: args.runId, type: written.type, payload: written.payload, at: now });
 
+  const citationCompleteness: CitationCompleteness | undefined =
+    citedUrls.size > 0
+      ? {
+          cited: citedUrls.size,
+          covered: coveredUrls.size,
+          missed: missedUrls.size,
+          stripped: strippedCitations,
+          missedUrls: [...missedUrls],
+          backfillRan: evidence.backfilledUrls.size > 0,
+          backfillResolved: backfilledCites.size,
+          searchCovered: searchCoveredCites.size,
+        }
+      : undefined;
+
   return {
     correspondenceId,
     downgradedClaimOrdinals,
     strippedCitations,
+    citationCompleteness,
     accessReport,
     accessReportVersionId: persistedReport.versionId,
     dossierVersionIds,

@@ -61,6 +61,16 @@ export function createHarnessApiClient(cfg: HarnessApiClientConfig): HarnessApiC
       return (await res.json()) as HarnessRunSpec;
     },
 
+    // CITE.1 (ADR-085) — the run's retrieved-url set (the guard's join set, canonicalized server-side).
+    // The pre-delivery backfill check reads it; best-effort — a transient failure means no re-entry,
+    // which is exactly Path B's pre-CITE.1 outcome (never a regression).
+    async retrievedUrls(): Promise<{ ok: boolean; urls: string[] }> {
+      const res = await fetch(runUrl("/retrieved-urls"), { headers: authHeaders() });
+      if (!res.ok) return { ok: false, urls: [] };
+      const json = (await res.json().catch(() => ({}))) as { urls?: string[] };
+      return { ok: true, urls: json.urls ?? [] };
+    },
+
     // RPT.1 — the phase's real start fact (steps.state='running' + step.started). Best-effort upstream
     // in the loop; the commit's measured durationMs is the fallback when a begin call never lands.
     async beginStep(args: { stepKey: string; ordinal: number; of: number }) {

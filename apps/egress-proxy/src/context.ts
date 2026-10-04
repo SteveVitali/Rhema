@@ -92,6 +92,13 @@ export interface WebToolPolicy {
   readonly searchFloor?: number;
   readonly fetchFloor?: number;
   /**
+   * CITE.1 (ADR-085) — the backfill allowance: a run-total web_fetch bound for `x-rhema-phase-class:
+   * backfill` traffic (the harness's bounded pre-delivery citation re-entry). It is a SEPARATE budget
+   * line — never drawn from `fetchBudget`, and a backfill request can never touch the `fetchFloor`
+   * share RES.1 reserves for verification. Default `DEFAULT_BACKFILL_FETCH_BUDGET`.
+   */
+  readonly backfillFetchBudget?: number;
+  /**
    * `max_content_tokens` set on every web_fetch tool — the per-page context truncation (PRB.22). Fetched
    * pages used to enter context wholesale (6.65M cache-read tokens on one 701-word review); this caps each
    * page's ingress (default `DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS`).

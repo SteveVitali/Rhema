@@ -125,6 +125,9 @@ const NON_TENANT = new Set([
   // ECON.1 (0049) — the calibration aggregates/cells are cross-tenant platform data (no tenant key);
   // the raw evidence rows stay tenant-scoped (cost_observations is RLS-forced above).
   "cost_card_cells", "cap_calibration_reports", "estimator_cells",
+  // CITE.1 (0057) — the cross-tenant citation-completeness rollup: counts + rates only, written by
+  // the worker's system-pool sweep; a reported signal, never a tenant row (ADR-084).
+  "citation_completeness_daily",
   "proxy_credentials", "proxy_allowlists",
   // the benchmark enclave (isolated system surface)
   "benchmark_arm_configs", "benchmark_arm_runs", "benchmark_consequence_log",
@@ -333,6 +336,9 @@ const USER_ROLE_GRANTS: Record<string, string> = {
   benchmark_wave_drafts: "-",
   benchmark_wave_reports: "-",
   benchmark_waves: "-",
+  // CITE.1 (0057) — the cross-tenant rollup: written ONLY by the worker's system-pool sweep
+  // (cite.completeness.daily); the user role has no business reading raw aggregates (ADR-084).
+  citation_completeness_daily: "-",
   // ---- partial grants (append-only / read-write mixes the product surface earned) -----------------
   account_exports: "siu",
   admin_actions: "si", // the user-triggered support-access grant writes the audit row (settings-routes)

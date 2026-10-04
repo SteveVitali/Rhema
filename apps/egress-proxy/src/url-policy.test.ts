@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_BACKFILL_FETCH_BUDGET,
   DEFAULT_WEB_FETCH_BUDGET,
   DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
   DEFAULT_WEB_FETCH_MAX_USES,
@@ -78,6 +79,7 @@ describe("resolveServerWebToolConfig (P0.15i)", () => {
       searchFloor: 0,
       fetchFloor: 0,
       fetchMaxContentTokens: DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
+      backfillFetchBudget: DEFAULT_BACKFILL_FETCH_BUDGET,
     });
   });
 
@@ -92,6 +94,7 @@ describe("resolveServerWebToolConfig (P0.15i)", () => {
       searchFloor: 0,
       fetchFloor: 0,
       fetchMaxContentTokens: 4000,
+      backfillFetchBudget: DEFAULT_BACKFILL_FETCH_BUDGET,
     });
   });
 
@@ -370,5 +373,48 @@ describe("ensureServerWebTools — RES.1 research floor + preflight bypass (REQ-
     const config = resolveServerWebToolConfig({ searchBudget: 10, fetchBudget: 6 });
     const { body } = ensureServerWebTools(bareBody(), config, { searches: 0, fetches: 0 });
     expect(webToolGrantsOf(body)).toEqual({ searches: 10, fetches: 6 });
+  });
+});
+
+describe("ensureServerWebTools — CITE.1 backfill admission (ADR-085)", () => {
+  const bareBody = () => ({ model: "claude-sonnet-5", messages: [{ role: "user", content: "fetch these urls" }] });
+
+  it("a backfill request fetches on the DEDICATED allowance — never the exhausted research budget", () => {
+    // fetchBudget 1 fully spent + a floor of 8: a research request would see NOTHING. The backfill
+    // admission draws `backfillFetchBudget − backfillUsed` — a separate line.
+    const config = resolveServerWebToolConfig({ fetchBudget: 1, fetchFloor: 8, searchBudget: 24, backfillFetchBudget: 6 });
+    const { body } = ensureServerWebTools(bareBody(), config, { fetches: 1, searches: 0 }, { backfill: true });
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    const fetch = tools.find((t) => serverName(t) === "web_fetch")!;
+    // 6 − 1 used ⇒ 5 (below the per-call cap); a research-budget read would have been ≤ 0 (tool dropped).
+    expect(fetch["max_uses"]).toBe(5);
+    // …and the floor is never subtracted for it: 6 − 8 would be ≤ 0 (the proof the floor is intact —
+    // the mechanism cannot spend the reserved share, it just also cannot be charged against it).
+  });
+
+  it("a backfill request carries NO search grant (discovery is not its job)", () => {
+    const config = resolveServerWebToolConfig({ searchBudget: 24, backfillFetchBudget: 4 });
+    const { body } = ensureServerWebTools(bareBody(), config, { fetches: 0, searches: 0 }, { backfill: true });
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.some((t) => serverName(t) === "web_search")).toBe(false);
+    expect(tools.some((t) => serverName(t) === "web_fetch")).toBe(true);
+  });
+
+  it("the allowance clamps per call AND exhausts at the budget (never widened past the cap)", () => {
+    const config = resolveServerWebToolConfig({ backfillFetchBudget: 3 });
+    const { body } = ensureServerWebTools(bareBody(), config, { fetches: 2, searches: 0 }, { backfill: true });
+    const tools = (body as { tools: Record<string, unknown>[] }).tools;
+    expect(tools.find((t) => serverName(t) === "web_fetch")!["max_uses"]).toBe(1); // 3 − 2
+    // exhausted ⇒ the fetch tool drops entirely; the re-entry's remaining misses degrade to the strip.
+    const { body: exhausted } = ensureServerWebTools(bareBody(), config, { fetches: 3, searches: 0 }, { backfill: true });
+    const eTools = (exhausted as { tools?: Record<string, unknown>[] }).tools ?? [];
+    expect(eTools.some((t) => serverName(t) === "web_fetch")).toBe(false);
+  });
+
+  it("a run disabled for fetch gets NO backfill grant either (the mechanism never widens policy)", () => {
+    const config = resolveServerWebToolConfig({ fetch: false, backfillFetchBudget: 6 });
+    const { body } = ensureServerWebTools(bareBody(), config, { fetches: 0, searches: 0 }, { backfill: true });
+    const tools = (body as { tools?: Record<string, unknown>[] }).tools ?? [];
+    expect(tools.some((t) => serverName(t) === "web_fetch")).toBe(false);
   });
 });

@@ -34,6 +34,13 @@ export const DEFAULT_WEB_FETCH_MAX_USES = 15 as const;
 export const DEFAULT_WEB_SEARCH_BUDGET = 24 as const;
 export const DEFAULT_WEB_FETCH_BUDGET = 48 as const;
 export const DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS = 8000 as const;
+/**
+ * CITE.1 (ADR-085) — the fail-safe bound for `backfill`-class traffic when the run's policy carries
+ * no explicit `backfillFetchBudget`. Small by design: the re-entry's instruction names the missed
+ * urls (a ledger cites at most tens), and this is a bound, not a target — Path B still strips any
+ * residual miss at delivery.
+ */
+export const DEFAULT_BACKFILL_FETCH_BUDGET = 24 as const;
 
 /** A run's cumulative server web-tool use so far (history + metered responses), for budget enforcement. */
 export interface WebToolUsage {
@@ -102,6 +109,12 @@ export interface ServerWebToolConfig {
    */
   readonly searchFloor: number;
   readonly fetchFloor: number;
+  /**
+   * CITE.1 (ADR-085) — the dedicated web_fetch allowance for `backfill`-class requests: a separate
+   * budget line, never drawn from `fetchBudget`/`fetchFloor` (the RES.1 floor stays intact — the
+   * named test in `url-policy.test.ts` pins it).
+   */
+  readonly backfillFetchBudget: number;
   /** Per-page context truncation applied to every web_fetch tool (`max_content_tokens`). */
   readonly fetchMaxContentTokens: number;
 }
@@ -126,6 +139,7 @@ export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): S
     fetchBudget: policy?.fetchBudget ?? DEFAULT_WEB_FETCH_BUDGET,
     searchFloor: Math.min(policy?.searchFloor ?? 0, policy?.searchBudget ?? DEFAULT_WEB_SEARCH_BUDGET),
     fetchFloor: Math.min(policy?.fetchFloor ?? 0, policy?.fetchBudget ?? DEFAULT_WEB_FETCH_BUDGET),
+    backfillFetchBudget: policy?.backfillFetchBudget ?? DEFAULT_BACKFILL_FETCH_BUDGET,
     fetchMaxContentTokens: policy?.fetchMaxContentTokens ?? DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS,
   };
 }
@@ -137,10 +151,16 @@ export function resolveServerWebToolConfig(policy: WebToolPolicy | undefined): S
  *  - `bypassBudget`: the harness's own preflight probe (`x-rhema-phase-class: preflight`). A probe must
  *    reach the tools even on a budget-exhausted resume — its whole job is proving tool reachability —
  *    so its `max_uses` grant is bounded by the per-call cap alone (the probe declares `max_uses: 1`).
+ *  - `backfill`: the harness's bounded pre-delivery citation re-entry (`x-rhema-phase-class:
+ *    backfill`, CITE.1/ADR-085). Its fetches draw the DEDICATED `backfillFetchBudget` — never the
+ *    research `fetchBudget` and never the `fetchFloor` share — and it carries no search grant (the
+ *    instruction names the urls; discovery is not its job). `used.fetches` for a backfill admission
+ *    is the tracker's backfill-class counter, not the research totals.
  */
 export interface WebToolAdmission {
   readonly floorEligible?: boolean;
   readonly bypassBudget?: boolean;
+  readonly backfill?: boolean;
 }
 
 /** Read the granted `max_uses` off the web tools in a (rewritten) request body — the reservation amount. */
@@ -198,15 +218,22 @@ export function ensureServerWebTools(
   // turns and subagents. RES.1: a non-floor-eligible request additionally sees its bound reduced by the
   // research floor (`budget − floor`), reserving that share for research-class traffic; `bypassBudget`
   // (the harness's preflight probe) grants up to the per-call cap regardless of remaining.
+  // CITE.1 — a `backfill` admission draws its dedicated allowance (`backfillFetchBudget − backfill
+  // used`) for fetches and NO searches: it never draws `fetchBudget`, and the arithmetic below never
+  // subtracts `fetchFloor` for it — RES.1's reserved share is structurally out of reach.
   const searchRemaining = config.search
     ? admission?.bypassBudget
       ? config.searchMaxUses
-      : config.searchBudget - (admission?.floorEligible ? 0 : config.searchFloor) - (used?.searches ?? 0)
+      : admission?.backfill
+        ? 0
+        : config.searchBudget - (admission?.floorEligible ? 0 : config.searchFloor) - (used?.searches ?? 0)
     : 0;
   const fetchRemaining = config.fetch
     ? admission?.bypassBudget
       ? config.fetchMaxUses
-      : config.fetchBudget - (admission?.floorEligible ? 0 : config.fetchFloor) - (used?.fetches ?? 0)
+      : admission?.backfill
+        ? config.backfillFetchBudget - (used?.fetches ?? 0)
+        : config.fetchBudget - (admission?.floorEligible ? 0 : config.fetchFloor) - (used?.fetches ?? 0)
     : 0;
 
   // (1) strip the CLI's client web tools so they cannot pre-empt the server tool.

@@ -1,4 +1,5 @@
 import type { Claim, ClaimVerdict, DispositionKind, FindingView, Severity } from "@rhema/contracts";
+import { normalizeUrl as canonicalNormalizeUrl } from "@rhema/contracts";
 import { normalizeEvidence } from "./normalize-evidence.js";
 
 // Ledger + claim-ledger summaries (§5.7; deliverable 1). Pure row math the run card, letter header, and claims
@@ -38,9 +39,14 @@ export function summarizeLedger(views: readonly FindingView[]): LedgerSummary {
 /** A normalized proxy fetch-log URL set (the source for cited⇒fetched — §12.7). */
 export type FetchLog = ReadonlySet<string>;
 
-/** Build a fetch-log lookup from the proxy's request-log rows (normalized URL is the join key). */
+/**
+ * Build a fetch-log lookup from the proxy's request-log rows (normalized URL is the join key).
+ * CITE.1 (ADR-083): the stored `normalized_url` keeps the proxy's richer form (it retains the query),
+ * so each row is re-canonicalized HERE — cited⇒fetched identity is the canonical-on-read form, exactly
+ * the function the delivery guard applies to the cited side.
+ */
 export function fetchLogFromRows(rows: readonly { readonly normalizedUrl: string }[]): FetchLog {
-  return new Set(rows.map((r) => r.normalizedUrl));
+  return new Set(rows.map((r) => canonicalNormalizeUrl(r.normalizedUrl)));
 }
 
 /** A single claim URL + whether the proxy fetch log actually retrieved it (REQ-IDE-25; REQ-VIS-9). */
@@ -51,16 +57,19 @@ export interface ClaimUrlView {
   readonly stance?: "supports" | "contradicts" | "contextualizes";
   /** true iff this URL is present in the proxy fetch log — the "fetched ✓" chip (REQ-IDE-25). */
   readonly fetched: boolean;
+  /** CITE.1 — how the log covered this url: `"search"` when only search-hit rows carry it (the
+   *  "Search result" chip), `"fetch"` when a page fetch did. Unset when `fetched` is false. */
+  readonly retrievedBy?: "fetch" | "search";
 }
 
+/**
+ * CITE.1 (ADR-083) — the cited side normalizes through the SAME canonical function the guard and the
+ * fetch-log set use. `explicit` (the persisted `claims.normalized_url`) is already canonical — the
+ * mirror wrote it with this function — but it is still folded through once for byte-exactness.
+ */
 function normalizeUrl(url: string, explicit?: string): string {
-  if (explicit) return explicit;
-  try {
-    const u = new URL(url);
-    return `${u.protocol}//${u.host}${u.pathname}`.replace(/\/$/, "");
-  } catch {
-    return url;
-  }
+  if (explicit) return canonicalNormalizeUrl(explicit);
+  return canonicalNormalizeUrl(url);
 }
 
 /**
@@ -68,18 +77,20 @@ function normalizeUrl(url: string, explicit?: string): string {
  * `url`, each stamped `fetched` iff its normalized URL is in the proxy log. A URL absent from the log gets NO
  * chip — the transparency floor made visible, not asserted.
  */
-export function claimUrlViews(claim: Claim, fetchLog: FetchLog): ClaimUrlView[] {
+export function claimUrlViews(claim: Claim, fetchLog: FetchLog, searchOnly?: FetchLog): ClaimUrlView[] {
   const out: ClaimUrlView[] = [];
   const seen = new Set<string>();
   const push = (url: string, normalizedUrl: string, accessedAt?: string, stance?: ClaimUrlView["stance"]): void => {
     if (seen.has(normalizedUrl)) return;
     seen.add(normalizedUrl);
+    const fetched = fetchLog.has(normalizedUrl);
     out.push({
       url,
       normalizedUrl,
       ...(accessedAt != null ? { accessedAt } : {}),
       ...(stance != null ? { stance } : {}),
-      fetched: fetchLog.has(normalizedUrl),
+      fetched,
+      ...(fetched ? { retrievedBy: searchOnly?.has(normalizedUrl) ? ("search" as const) : ("fetch" as const) } : {}),
     });
   };
   for (const s of claim.sources ?? []) {
@@ -97,16 +108,18 @@ export function claimUrlViews(claim: Claim, fetchLog: FetchLog): ClaimUrlView[] 
  * `unknown` on purpose — this is a read boundary, so a legacy/partial stored blob normalizes here rather
  * than crashing the surface (ADR-019).
  */
-export function evidenceUrlViews(evidence: unknown, fetchLog: FetchLog): ClaimUrlView[] {
+export function evidenceUrlViews(evidence: unknown, fetchLog: FetchLog, searchOnly?: FetchLog): ClaimUrlView[] {
   const normalized = normalizeEvidence(evidence);
   if (normalized == null) return [];
   return normalized.urls.map((u) => {
     const normalizedUrl = normalizeUrl(u.url);
+    const fetched = fetchLog.has(normalizedUrl);
     return {
       url: u.url,
       normalizedUrl,
       ...(u.accessed != null ? { accessedAt: u.accessed } : {}),
-      fetched: fetchLog.has(normalizedUrl),
+      fetched,
+      ...(fetched ? { retrievedBy: searchOnly?.has(normalizedUrl) ? ("search" as const) : ("fetch" as const) } : {}),
     };
   });
 }

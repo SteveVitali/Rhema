@@ -65,7 +65,7 @@ import {
   trialEntitlementFor,
   recordAnalyticsEvent,
 } from "@rhema/ledger";
-import { planOf, modelTierAllowed, effectiveConcurrency } from "@rhema/contracts";
+import { planOf, modelTierAllowed, effectiveConcurrency, normalizeUrl } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
 import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
@@ -1226,6 +1226,34 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           runId: run.runId,
           attempt: run.attempt,
           workspaceId: run.workspaceId,
+        }),
+      ),
+    );
+  });
+
+  // CITE.1 (ADR-085) — the run's retrieved-url set, canonicalized with the SAME `normalizeUrl` the
+  // delivery guard applies (`@rhema/contracts` — the stored `normalized_url` keeps the proxy's richer
+  // form, so it is re-canonicalized here on read). The harness's pre-delivery backfill check computes
+  // cited∖retrieved against this set — identical identity to `validateCitedFetched`, never pod-trusted.
+  internal.get("/runs/:id/retrieved-urls", (c) => {
+    const run = c.get("run");
+    return guard(c, async () =>
+      c.json(
+        await deps.txRunner.run(run.workspaceId, async (tx) => {
+          const rows = (
+            await tx.query(
+              `select distinct normalized_url, url from fetch_log
+                 where run_id = $1 and kind in ('fetch','search') and decision in ('allow','success','ok')
+                   and (normalized_url is not null or url is not null)`,
+              [run.runId],
+            )
+          ).rows as { normalized_url: string | null; url: string | null }[];
+          const urls = new Set<string>();
+          for (const r of rows) {
+            const raw = r.normalized_url ?? r.url;
+            if (raw) urls.add(normalizeUrl(raw));
+          }
+          return { urls: [...urls].sort() };
         }),
       ),
     );

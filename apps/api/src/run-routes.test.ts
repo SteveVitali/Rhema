@@ -646,6 +646,34 @@ describe("internal run API — token auth + fencing", () => {
     expect((await res.json()) as { code: string }).toMatchObject({ code: "event_batch_too_large" });
   });
 
+  it("GET /retrieved-urls returns the canonical fetch∪search set (CITE.1 — the backfill miss check)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running" });
+    await db.client.query(
+      `insert into fetch_log(run_id, ts, agent_label, kind, url, normalized_url, status, decision)
+       values
+         ($1,now(),'w','fetch','https://a.example/p','https://a.example/p',200,'allow'),
+         ($1,now(),'w','search',NULL,'https://B.Example/hit?q=1',NULL,'allow'),
+         ($1,now(),'w','fetch','https://denied.example/x',NULL,403,'deny'),
+         ($1,now(),'w','inference','https://api.anthropic.com/v1/messages','https://api.anthropic.com/v1/messages',200,'allow')`,
+      ["run1"],
+    );
+    const token = deps.tokens.mint({ runId: "run1", attempt: 1, workspaceId: seed.workspaceId, seat: "harness" });
+    const res = await app.request("/internal/runs/run1/retrieved-urls", {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { urls: string[] };
+    // allow'd fetch + allow'd search-url rows only; deny'd and inference rows excluded; the search hit
+    // re-canonicalized on read (query stripped, host lowercased) — identical identity to the guard.
+    expect(body.urls).toEqual(["https://a.example/p", "https://b.example/hit"]);
+  });
+
+  it("GET /retrieved-urls is 401 without a token (the pod path is never user-facing)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running" });
+    const res = await app.request("/internal/runs/run1/retrieved-urls");
+    expect(res.status).toBe(401);
+  });
+
   it("GET /runspec returns the server-authored spec token-authed (D-P0.15c-6), 401 without a token", async () => {
     // the seat's tool set comes from agent_types (the run spec reads it for the hook policy).
     await agentTypesSeed({

@@ -108,3 +108,8 @@ export * from "./observability.js";
 // (the teeny-request/retry-request/node-fetch PassThrough listener pile). Shared so @rhema/mirror
 // and @rhema/live-clients bind the identical byte path.
 export * from "./gcs-bytes.js";
+
+// CITE.1 (ADR-083) — the ONE cited⇒fetched URL identity function: the delivery guard, the findings-core
+// chip matcher, the benchmark scorer, the proxy fetch-log normalizer, and every completeness scan share
+// it (REQ-VIS-9/REQ-OBJ-18).
+export * from "./url-normalize.js";

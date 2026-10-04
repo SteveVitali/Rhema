@@ -51,6 +51,9 @@ describe("visibility split (REQ-ARCH-12)", () => {
         "engine.error",
         "egress.denied",
         "boundary.violation",
+        // CITE.1 — the per-run completeness record is internal telemetry (REQ-VIS-9; ADR-084):
+        // counts + normalized-url ids the platform reports on, never a card the run UI renders.
+        "run.citation_completeness",
       ]),
     );
     for (const t of INTERNAL_EVENT_TYPES) expect(isUserVisible(t)).toBe(false);

@@ -88,6 +88,9 @@ describe("worker run-lifecycle handlers", () => {
     expect(context.webTools).toMatchObject({
       search: true, fetch: true,
       searchBudget: 0, fetchBudget: 0, searchFloor: 0, fetchFloor: 0,
+      // CITE.1 — the backfill allowance is zeroed too: a forced-Unverified run cannot rescue its
+      // coverage through the mechanism's fetch grant (ADR-085).
+      backfillFetchBudget: 0,
     });
   });
 

@@ -161,6 +161,138 @@ describe("delivery transaction", () => {
     expect(srcs.map((s) => s.url)).toEqual([FETCHED_URL]);
   });
 
+  // ---- CITE.1 (ADR-083/084/085) — canonical-on-read URL identity + the measured completeness record ----
+
+  it("covers a cited url whose stored normalized_url carries the proxy's query+slash form (ADR-083)", async () => {
+    // the PROXY form keeps query + trailing slash; the guard's canonical drops both. Pre-CITE.1 this
+    // byte-join missed and Path B stripped a fetched citation (the parity defect, ticket §Goal).
+    const cited = "https://x.test/a";
+    await seedFetchLog(db.exec, { runId, url: "https://x.test/a/?id=7", normalizedUrl: "https://x.test/a/?id=7" });
+    const args = baseArgs({
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: cited, normalizedUrl: normalizeUrl(cited), humanAdded: false },
+      ]),
+    });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.strippedCitations).toBe(0);
+    expect(result.downgradedClaimOrdinals).toEqual([]);
+    const claim = (
+      await db.exec.query("select url, verdict from claims where correspondence_id=$1", [result.correspondenceId])
+    ).rows[0] as { url: string | null; verdict: string };
+    expect(claim.url).toBe(cited);
+    expect(claim.verdict).toBe("verified");
+    expect(result.citationCompleteness).toMatchObject({ cited: 1, covered: 1, missed: 0, stripped: 0 });
+  });
+
+  it("covers the cited ?id=7 variant of a fetched url (query dropped on BOTH sides — ADR-083)", async () => {
+    const cited = "https://x.test/a?id=7";
+    await seedFetchLog(db.exec, { runId, url: "https://x.test/a/", normalizedUrl: "https://x.test/a/" });
+    const args = baseArgs({
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: cited, normalizedUrl: normalizeUrl(cited), humanAdded: false },
+      ]),
+    });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.strippedCitations).toBe(0);
+    const claim = (
+      await db.exec.query("select url from claims where correspondence_id=$1", [result.correspondenceId])
+    ).rows[0] as { url: string | null };
+    expect(claim.url).toBe(cited);
+  });
+
+  it("a url-bearing `search` row covers the cite + reports searchCovered (ADR-084 — guard/chip parity)", async () => {
+    const cited = "https://hit.test/p";
+    await seedFetchLog(db.exec, {
+      runId,
+      kind: "search",
+      url: cited,
+      normalizedUrl: "https://hit.test/p",
+      query: "hit p",
+    });
+    const args = baseArgs({
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: cited, normalizedUrl: normalizeUrl(cited), humanAdded: false },
+      ]),
+    });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.strippedCitations).toBe(0);
+    expect(result.citationCompleteness).toMatchObject({ cited: 1, covered: 1, searchCovered: 1, missed: 0 });
+  });
+
+  it("a `backfill` phase-class row covers the cite + reports backfillRan/backfillResolved (ADR-085)", async () => {
+    const cited = "https://b.test/rescued";
+    await seedFetchLog(db.exec, { runId, url: cited, normalizedUrl: cited, phaseClass: "backfill" });
+    const args = baseArgs({
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: cited, normalizedUrl: normalizeUrl(cited), humanAdded: false },
+      ]),
+    });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.strippedCitations).toBe(0);
+    expect(result.citationCompleteness).toMatchObject({
+      cited: 1,
+      covered: 1,
+      missed: 0,
+      backfillRan: true,
+      backfillResolved: 1,
+    });
+  });
+
+  it("records the measured record for a fixture with one parity-rescued + one true miss (BL-15)", async () => {
+    // the seeded FETCHED_URL covers the base claim; add a parity-rescued cite + a truly unretrieved one.
+    await seedFetchLog(db.exec, { runId, url: "https://x.test/a/?id=7", normalizedUrl: "https://x.test/a/?id=7" });
+    const args = baseArgs({
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: "https://x.test/a", normalizedUrl: "https://x.test/a", humanAdded: false },
+        { ordinal: 2, text: "c2", tier: 2, verdict: "verified", url: "https://gone.test/x", normalizedUrl: "https://gone.test/x", humanAdded: false },
+      ]),
+    });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.strippedCitations).toBe(1); // ONLY the true miss stripped — the parity case survived
+    expect(result.downgradedClaimOrdinals).toEqual([2]);
+    expect(result.citationCompleteness).toMatchObject({
+      cited: 2,
+      covered: 1,
+      missed: 1,
+      stripped: 1,
+      missedUrls: ["https://gone.test/x"],
+      backfillRan: false,
+      backfillResolved: 0,
+    });
+    const claims = (
+      await db.exec.query("select ordinal, url, verdict from claims where correspondence_id=$1 order by ordinal", [result.correspondenceId])
+    ).rows as { ordinal: number; url: string | null; verdict: string }[];
+    expect(claims[0]).toMatchObject({ url: "https://x.test/a", verdict: "verified" });
+    expect(claims[1]).toMatchObject({ url: null, verdict: "unverifiable" });
+  });
+
+  it("a Tier-1 verdict sourced from a domain the run's own searches reached earns sourceCheck=from_search (ADR-084; D-P0.15-2)", async () => {
+    // before CITE.1 `searchResultDomains` was only the harness's claim-ledger hostname guess — a Tier-1
+    // verdict whose source domain surfaced via a url-bearing SEARCH row now passes §12.8(c) honestly.
+    const cited = "https://found.test/p";
+    await seedFetchLog(db.exec, { runId, kind: "search", url: cited, normalizedUrl: cited, query: "found p" });
+    const args = baseArgs({
+      claimLedger: claimLedger([
+        { ordinal: 1, text: "c1", tier: 1, verdict: "verified", url: cited, normalizedUrl: normalizeUrl(cited),
+          sources: [{ url: cited, normalizedUrl: normalizeUrl(cited), accessedAt: "2026-09-03T00:00:00.000Z", stance: "supports" }], humanAdded: false },
+      ]),
+      verdictContext: EMPTY_VERDICT_CTX, // found.test is not citation/reputable — only search-reached
+    });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.downgradedClaimOrdinals).toEqual([]); // NOT suspicious_source — search-reached counts
+    const claim = (
+      await db.exec.query("select verdict, source_check from claims where correspondence_id=$1", [result.correspondenceId])
+    ).rows[0] as { verdict: string; source_check: string };
+    expect(claim.verdict).toBe("verified");
+    expect(claim.source_check).toBe("from_search");
+  });
+
+  it("no claim ledger ⇒ no completeness record (a note delivery stays unmeasured)", async () => {
+    const args = baseArgs({ claimLedger: undefined });
+    const result = await runDeliveryTransaction(db.exec, deps, args);
+    expect(result.citationCompleteness).toBeUndefined();
+  });
+
   // AC6 (at the commit level) — a Tier-1 contradicted verdict from a suspicious source is downgraded on write.
   it("downgrades a suspicious Tier-1 verdict to unverifiable + suspicious_source at commit (§12.8(c))", async () => {
     const args = baseArgs({

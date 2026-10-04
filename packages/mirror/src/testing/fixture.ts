@@ -155,11 +155,31 @@ export async function seedRun(
 /** Insert an allowed proxy fetch-log row (the meter of record) so cited⇒fetched passes for a url. */
 export async function seedFetchLog(
   exec: SqlExecutor,
-  args: { runId: string; url: string; normalizedUrl: string; kind?: string; decision?: string; attempt?: number },
+  args: {
+    runId: string;
+    url: string;
+    normalizedUrl: string;
+    kind?: string;
+    decision?: string;
+    attempt?: number;
+    /** CITE.1 — a search row's query text (kind='search'). */
+    query?: string;
+    /** CITE.1 — the harness-stamped phase class (e.g. 'backfill' for mechanism-A traffic). */
+    phaseClass?: string;
+  },
 ): Promise<void> {
   await exec.query(
-    `insert into fetch_log(run_id, ts, agent_label, attempt, kind, url, normalized_url, status, decision)
-     values ($1, now(), 'editor', $2, $3, $4, $5, 200, $6)`,
-    [args.runId, args.attempt ?? 1, args.kind ?? "fetch", args.url, args.normalizedUrl, args.decision ?? "allow"],
+    `insert into fetch_log(run_id, ts, agent_label, attempt, kind, url, normalized_url, query, status, decision, phase_class)
+     values ($1, now(), 'editor', $2, $3, $4, $5, $7, 200, $6, $8)`,
+    [
+      args.runId,
+      args.attempt ?? 1,
+      args.kind ?? "fetch",
+      args.url,
+      args.normalizedUrl,
+      args.decision ?? "allow",
+      args.query ?? null,
+      args.phaseClass ?? null,
+    ],
   );
 }

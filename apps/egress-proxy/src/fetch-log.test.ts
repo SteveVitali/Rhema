@@ -24,6 +24,7 @@ describe("fetch log of record (REQ-DATA-16, AC6)", () => {
       bytes: 512,
       decision: "allow",
       denyReason: null,
+      phaseClass: null, // CITE.1 — unstamped traffic carries NULL (0056 `phase_class`)
     });
   });
 

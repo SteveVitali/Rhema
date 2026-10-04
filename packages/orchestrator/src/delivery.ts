@@ -18,6 +18,7 @@ import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import {
   DeliveryValidationError,
   runDeliveryTransaction,
+  type CitationCompleteness,
   type ContentStore,
   type DeliveryArgs,
   type DeliveryEventAppender,
@@ -51,7 +52,15 @@ export interface DeliverRunArgs {
 }
 
 export type DeliverRunResult =
-  | { readonly ok: true; readonly state: RunState; readonly correspondenceId: string; readonly downgradedClaimOrdinals: readonly number[] }
+  | {
+      readonly ok: true;
+      readonly state: RunState;
+      readonly correspondenceId: string;
+      readonly downgradedClaimOrdinals: readonly number[];
+      /** CITE.1 — Path B's strip count + the measured completeness record (no longer discarded). */
+      readonly strippedCitations: number;
+      readonly citationCompleteness?: CitationCompleteness;
+    }
   | { readonly ok: false; readonly state: RunState; readonly code: "validation" | "withheld"; readonly reason: string };
 
 /**
@@ -122,8 +131,37 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
         runId,
         from: "finalizing",
         to: "completed",
-        ...(deliveryRow ? { fields: { delivery: deliveryRow } } : {}),
+        ...(deliveryRow || delivery.citationCompleteness
+          ? {
+              fields: {
+                ...(deliveryRow ? { delivery: deliveryRow } : {}),
+                // CITE.1 — the measured completeness record lands in the SAME commit as the delivered
+                // dossier, on its own column (`runs.delivery` stays RES.2's write-once label shape).
+                ...(delivery.citationCompleteness
+                  ? { citationCompleteness: delivery.citationCompleteness }
+                  : {}),
+              },
+            }
+          : {}),
       });
+      if (delivery.citationCompleteness) {
+        // CITE.1 (REQ-VIS-9) — the measured rate's durable event: counts + identifiers only (invariant 10).
+        await deps.eventWriter.append(tx, {
+          runId,
+          type: "run.citation_completeness",
+          payload: {
+            cited: delivery.citationCompleteness.cited,
+            covered: delivery.citationCompleteness.covered,
+            missed: delivery.citationCompleteness.missed,
+            stripped: delivery.citationCompleteness.stripped,
+            backfillRan: delivery.citationCompleteness.backfillRan,
+            backfillResolved: delivery.citationCompleteness.backfillResolved,
+            searchCovered: delivery.citationCompleteness.searchCovered,
+            missedUrls: [...delivery.citationCompleteness.missedUrls],
+          },
+          at: deps.clock.now(),
+        });
+      }
       if (unverified) {
         // `run.unverified` in the run-events stream (the analytics `run.completed` suppression lives in the
         // beta-dashboard emitter). Counts only — never claim text (invariant 10).
@@ -203,7 +241,16 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
         // swallowed on purpose — leg E retries; the delivery result must not hinge on settlement.
       }
     }
-    return { ok: true, state: "completed", correspondenceId: result.delivery.correspondenceId, downgradedClaimOrdinals: result.delivery.downgradedClaimOrdinals };
+    return {
+      ok: true,
+      state: "completed",
+      correspondenceId: result.delivery.correspondenceId,
+      downgradedClaimOrdinals: result.delivery.downgradedClaimOrdinals,
+      strippedCitations: result.delivery.strippedCitations,
+      ...(result.delivery.citationCompleteness
+        ? { citationCompleteness: result.delivery.citationCompleteness }
+        : {}),
+    };
   } catch (e) {
     if (e instanceof DeliveryValidationError) {
       // delivery validation unrecoverable → finalizing → failed(validation); files retained as partial.

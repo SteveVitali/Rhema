@@ -84,8 +84,10 @@ describe("extractResponseServerToolsSse (D-P0.07-5)", () => {
     ]);
     expect(extractResponseServerToolsSse(body)).toEqual([
       { kind: "search", query: "rhema" },
-      { kind: "fetch", url: "https://a.test/one" },
-      { kind: "fetch", url: "https://b.test/two" },
+      // CITE.1 — search hits log as `search` rows carrying the url (the retrieved set is fetch ∪
+      // search-url rows); a `fetch` row means the fetch tool actually ran.
+      { kind: "search", url: "https://a.test/one" },
+      { kind: "search", url: "https://b.test/two" },
     ]);
   });
 
@@ -98,7 +100,7 @@ describe("extractResponseServerToolsSse (D-P0.07-5)", () => {
     });
     expect(extractResponseServerTools(ok)).toEqual([
       { kind: "search", query: "q" },
-      { kind: "fetch", url: "https://c.test/p" },
+      { kind: "search", url: "https://c.test/p" },
     ]);
     // a web_search_tool_result ERROR carries an object (error_code), not a results array → nothing fetched.
     const err = JSON.stringify({
@@ -116,7 +118,7 @@ describe("extractResponseServerToolsSse (D-P0.07-5)", () => {
         { type: "web_search_tool_result", content: [{ type: "web_search_result", url: "https://a.test/p", encrypted_content: page }] },
       ],
     });
-    expect(extractResponseServerTools(body)).toEqual([{ kind: "fetch", url: "https://a.test/p", bytes: Buffer.byteLength(page, "utf8") }]);
+    expect(extractResponseServerTools(body)).toEqual([{ kind: "search", url: "https://a.test/p", bytes: Buffer.byteLength(page, "utf8") }]);
   });
 
   it("a web_fetch_tool_result's content.source.data sizes the page (utf8 and base64)", () => {
@@ -143,6 +145,6 @@ describe("extractResponseServerToolsSse (D-P0.07-5)", () => {
     const body = JSON.stringify({
       content: [{ type: "web_search_tool_result", content: [{ type: "web_search_result", url: "https://a.test/p" }] }],
     });
-    expect(extractResponseServerTools(body)).toEqual([{ kind: "fetch", url: "https://a.test/p" }]);
+    expect(extractResponseServerTools(body)).toEqual([{ kind: "search", url: "https://a.test/p" }]);
   });
 });

@@ -103,24 +103,28 @@ export function FetchedUrlChip({
   url,
   host,
   fetchedLabel,
+  retrievedBy = "fetch",
 }: {
   url: string;
   host: string;
   fetchedLabel: string;
+  /** CITE.1 — `"search"` renders the "Search result" variant (a search-hit chip, not a page fetch). */
+  retrievedBy?: "fetch" | "search";
 }): ReactNode {
+  const searchHit = retrievedBy === "search";
   return (
     <a
       href={url}
       rel="noreferrer"
       title={url}
-      data-fetched="true"
+      data-fetched={searchHit ? "search" : "true"}
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: "5px",
         padding: "1px 8px",
         borderRadius: "6px",
-        border: "1px solid var(--state-ready)",
+        border: `1px solid ${searchHit ? "var(--paper-rule)" : "var(--state-ready)"}`,
         background: "var(--shell-surface)",
         color: "var(--shell-fg)",
         fontSize: "12px",
@@ -128,9 +132,11 @@ export function FetchedUrlChip({
         fontVariantNumeric: "tabular-nums",
       }}
     >
-      <span aria-hidden="true" style={{ color: "var(--state-ready)" }}>
-        ✓
-      </span>
+      {searchHit ? null : (
+        <span aria-hidden="true" style={{ color: "var(--state-ready)" }}>
+          ✓
+        </span>
+      )}
       <span style={{ color: "var(--shell-fg-muted)" }}>{fetchedLabel}</span>
       <span>{host}</span>
     </a>
