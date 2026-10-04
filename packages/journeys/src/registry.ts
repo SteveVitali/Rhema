@@ -65,6 +65,18 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: false,
   },
+  // STB.5a — T9 sits FIRST among the paid steps: arming quiet hours on jrn-a before the weekly
+  // leg's runs launch is what lets T14 observe this session's run_finished rows deferred to the
+  // window's end (deliverInApp writes visible_at = the quiet end at delivery time).
+  {
+    id: "T9",
+    journey: "both",
+    asserts:
+      "arming quiet hours on the funded test tenant persists (STB.5a BL-22 — the pre-step every other weekly run_finished delivery defers under)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: true,
+  },
   {
     id: "N5",
     journey: "new-visitor",
@@ -188,6 +200,72 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "red",
     paid: true,
   },
+  // ---- STB.5a weekly paid riders (jrn-a; ride the weekly leg's own-tenant delivered Review) ----
+  // These run AFTER R9 — the weekly sequence's own runs are what deliver the Review T10–T13 read
+  // and the deferred run_finished rows T14 counts (T9 armed the window before N5).
+  {
+    id: "T10",
+    journey: "both",
+    asserts:
+      "the own-tenant delivered Review renders all seven dossier parts (D-PRB.04-1's live half — letter, claim ledger with retrieval chips, second read, rubric, findings, trust chip, version obligations)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: true,
+  },
+  {
+    id: "T11",
+    journey: "both",
+    asserts:
+      "on the own-tenant dossier: the Margin's cards carry severity×kind marks, the Desk's shared filter narrows rows, a Desk finding link resolves to the card anchor, and /p/:slug/f/:fid lands the dossier at that finding (D-P1.07-1 surfaces)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: true,
+  },
+  {
+    id: "T12",
+    journey: "both",
+    asserts:
+      "a defer disposition + note round-trips across a reload, Add-to-obligations lands ?obligated, and a palette New obligation files a user row the export dialog's obligation summary lists (D-P1.07-1 writes)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: true,
+  },
+  {
+    id: "T13",
+    journey: "both",
+    asserts:
+      "Apply on a suggestion-bearing finding lands ?applied= and retracts its own control; a bulk action's preview shows the per-item checklist before the confirm lands ?bulkdone= (D-P1.07-1 — red while no suggestion-bearing finding exists)",
+    owner: "STB.5a",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "T14",
+    journey: "both",
+    asserts:
+      "the badge counts only open gates+decisions; an escalated decision row lands IMMEDIATELY inside quiet hours while this session's run_finished rows stay deferred to the window's end; a swept pre_export decision answers re-defer (re-parks) then drop (moots) (D-P1.19-1)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: true,
+  },
+  {
+    id: "T15",
+    journey: "both",
+    asserts:
+      "an open approval's Inbox row lands the focused ?gate= card at the head of the artifact with live decide controls (D-P1.19-1 deep-link leg — owed while no open gate exists)",
+    owner: "STB.5a",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "T16",
+    journey: "both",
+    asserts:
+      "a fact change on a profiled persona lands a group-3 stale-voice row and the digest claims it once (D-P1.19-1 — owed: no test tenant carries persona_profiles; asserts the no-profile negative today)",
+    owner: "STB.5a",
+    expected: "red",
+    paid: true,
+  },
   // ---- phone-width reader ---------------------------------------------------
   {
     id: "P1",
@@ -216,6 +294,79 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts: "no foreign rows on /voices, /usage, project list, dossier, Inbox (API probe + journey)",
     owner: "SEC.1",
     expected: "green",
+    paid: false,
+  },
+  // ---- STB.5a nightly $0 legs (BL-21/BL-22's free surface — fresh test tenants) ---------------
+  {
+    id: "T1",
+    journey: "both",
+    asserts:
+      "the seeded Showcase dossier renders all seven D-PRB.04-1 parts signed-in (letter, claim ledger with retrieval chips, second read, rubric, findings, trust chip, version obligations)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "T2",
+    journey: "both",
+    asserts:
+      "the Inbox badge equals its rendered Needs-you rows, every row carries an open link, and the notification matrix + quiet-hours controls render actionable (D-P1.19-1's free half)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "T3",
+    journey: "both",
+    asserts:
+      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Red on two live defects the leg exposed: D-STB.5a-1 (the anonymous /export/download token lookup runs unscoped against FORCE-RLS account_exports → 404 for every valid token) and D-STB.5a-2 (importAccountZip → artifacts_project_id_fkey 500 — the seed showcase slug collides, the skipped row's mapped id orphans its artifacts)",
+    owner: "STB.5a",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "T4",
+    journey: "both",
+    asserts:
+      "a project carrying a CSL-JSON bibliography exports md with the rendered citation (no raw [@key] token) and no protocol marker (D-P1.18-1b citeproc leg + REQ-ARCH-33)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "T5",
+    journey: "both",
+    asserts:
+      "a substack_export connection syncs the committed export zip, and the re-sync produces ZERO new sample_versions (D-P1.15-1's AC-I-A — the content-hash change key dedups)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "T6",
+    journey: "both",
+    asserts:
+      "a deleted project lands in the deleted-projects section with an actionable Restore and leaves the live list (D-P1.04-2's tombstone half)",
+    owner: "STB.5a",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "T7",
+    journey: "both",
+    asserts:
+      "the delete enqueues a pgboss project.purge job start_after tombstone+30d, singleton-keyed on the project (D-P1.04-2's schedule half — owed: the app-login role has no pgboss schema grant, needs a system-scoped JOURNEY_DATABASE_URL or a pgboss.job SELECT grant; the live-destruction half is clock-owed)",
+    owner: "STB.5a",
+    expected: "red",
+    paid: false,
+  },
+  {
+    id: "T8",
+    journey: "both",
+    asserts:
+      "the export token gate answers 404 to a bogus token (the 410 expired-link half is owed — the 26h test-tenant purge deletes the row before its 7-day expiry can ever fire)",
+    owner: "STB.5a",
+    expected: "red",
     paid: false,
   },
 ];

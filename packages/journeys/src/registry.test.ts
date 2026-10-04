@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { STEP_REGISTRY, stepById } from "./registry.js";
-import { STEP_IMPLS } from "./steps.js";
+import { ALL_IMPLS } from "./impls.js";
 
 // JOURNEY.1 — the registry is THE deliverable-2 artifact: every planning-ledger step, an owner,
 // an expected flag, and a wired implementation.
@@ -18,12 +18,14 @@ describe("the journey step registry", () => {
         "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N10", "N11",
         // DEF.4 added R9 (the §14.4 refund-window leg — red until Stage B flips the flag).
         "P1", "R1", "R4", "R5", "R6", "R7", "R8", "R9", "X1",
+        // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
+        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16",
       ].sort(),
     );
   });
   it("every step has an owner, an assertion, and an expected flag", () => {
     for (const s of STEP_REGISTRY) {
-      expect(s.owner, s.id).toMatch(/^[A-Z0-9]+\.\d+$/);
+      expect(s.owner, s.id).toMatch(/^[A-Z0-9]+\.\d+[a-z]?$/); // STB.5a's sub-ticket suffix is legit
       expect(s.asserts.length, s.id).toBeGreaterThan(10);
       expect(["red", "green"]).toContain(s.expected);
     }
@@ -32,19 +34,27 @@ describe("the journey step registry", () => {
     const green = STEP_REGISTRY.filter((s) => s.expected === "green").map((s) => s.id).sort();
     expect(green).toEqual(
       // P1 flipped red→green on prod proof (UX.2 Stage B, nonce 4ff89a27d950 @6723784).
-      ["C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "X1"].sort(),
+      [
+        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "X1",
+        // STB.5a's greens: the $0 legs that pass on free tenants (T1, T2, T4–T6) + the weekly
+        // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3 is
+        // red on two live defects its legs exposed (D-STB.5a-1 emailed token 404, D-STB.5a-2
+        // import 500); T7/T8/T13/T15/T16 stay red — clock/prerequisite/read-path rows.
+        "T1", "T2", "T4", "T5", "T6", "T9", "T10", "T11", "T12", "T14",
+      ].sort(),
     );
   });
   it("every registry row has a wired implementation", () => {
     for (const s of STEP_REGISTRY) {
-      expect(STEP_IMPLS[s.id], s.id).toBeTypeOf("function");
+      expect(ALL_IMPLS[s.id], s.id).toBeTypeOf("function");
     }
   });
   it("paid steps are exactly the paid legs (run/chat spend)", () => {
     const paid = STEP_REGISTRY.filter((s) => s.paid).map((s) => s.id).sort();
     // R9 is paid (two Quick/Base runs on the planted excerpt — the Stage-B evidence leg).
     // N11 is paid (CITE.1's golden-op-ed dossier leg — the Stage-B evidence leg).
-    expect(paid).toEqual(["N11", "N5", "N6", "R4", "R6", "R9"]);
+    // T9–T16 are paid — they ride the weekly funded leg on jrn-a (the tenant the runs deliver to).
+    expect(paid).toEqual(["N11", "N5", "N6", "R4", "R6", "R9", "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T9"].sort());
   });
   it("stepById resolves", () => {
     expect(stepById("N7")?.owner).toBe("HOT.1");

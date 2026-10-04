@@ -1,0 +1,123 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "8c74704271d7",
+  "startedAt": "2026-10-04T06:12:22.141Z",
+  "finishedAt": "2026-10-04T06:20:59.523Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "b909fe9a802867064317b57ea573c018e6d83332",
+    "observed": {
+      "web": "b909fe9a802867064317b57ea573c018e6d83332",
+      "api": "b909fe9a802867064317b57ea573c018e6d83332"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "T1",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 38506,
+      "screenshot": "T1.png"
+    },
+    {
+      "id": "T2",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6602,
+      "screenshot": "T2.png"
+    },
+    {
+      "id": "T3",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 25903,
+      "error": "the emailed token link → 404 (expected a 302→zip) — D-STB.5a-1: the anonymous token lookup is RLS-denied · the import did not land on notice=imported (https://rhema.tools/app/settings/data?notice=importFailed) — D-STB.5a-2",
+      "screenshot": "T3.png"
+    },
+    {
+      "id": "T4",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 12301,
+      "screenshot": "T4.png"
+    },
+    {
+      "id": "T5",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 417259,
+      "screenshot": "T5.png"
+    },
+    {
+      "id": "T6",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 8018,
+      "screenshot": "T6.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7836,
+      "error": "owed — JOURNEY_DATABASE_URL's role has no grant on the pgboss schema (42501): the queued-job half needs a system-scoped DSN or a pgboss.job SELECT grant",
+      "screenshot": "T7.png"
+    },
+    {
+      "id": "T8",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 325,
+      "error": "owed — the 410 half needs a live expired token (7 d), which the 26 h test-tenant purge makes unreachable without a purge exemption or an operator hand-dated row; the fire date is recorded in DEFERRALS",
+      "screenshot": "T8.png"
+    }
+  ],
+  "passed": true
+}
