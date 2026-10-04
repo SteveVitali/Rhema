@@ -116,6 +116,17 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: false,
   },
+  {
+    id: "N11",
+    journey: "new-visitor",
+    asserts:
+      "on the golden-op-ed dossier every cited source URL carries a retrieval chip — fetched ✓ or the ADR-083 \"Search result\" label — with zero chip-less citations (claims table and findings evidence alike)",
+    owner: "CITE.1",
+    // CITE.1 — red until Stage B runs Leg 3 (the ≤$4 weekly-capped paid leg) and commits the
+    // dossier screenshot; the runner's post-step PNG is the AC8 evidence.
+    expected: "red",
+    paid: true,
+  },
   // ---- returning-user journey ---------------------------------------------
   {
     id: "R1",

@@ -14,7 +14,8 @@ describe("the journey step registry", () => {
     expect(ids).toEqual(
       [
         // UX.1 added N10 (public copy/meta/showcase) + R8 (signed-in showcase/prefs/inbox).
-        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N10",
+        // CITE.1 added N11 (the dossier citation-chip invariant — red until its Stage-B Leg 3).
+        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N10", "N11",
         // DEF.4 added R9 (the §14.4 refund-window leg — red until Stage B flips the flag).
         "P1", "R1", "R4", "R5", "R6", "R7", "R8", "R9", "X1",
       ].sort(),
@@ -42,7 +43,8 @@ describe("the journey step registry", () => {
   it("paid steps are exactly the paid legs (run/chat spend)", () => {
     const paid = STEP_REGISTRY.filter((s) => s.paid).map((s) => s.id).sort();
     // R9 is paid (two Quick/Base runs on the planted excerpt — the Stage-B evidence leg).
-    expect(paid).toEqual(["N5", "N6", "R4", "R6", "R9"]);
+    // N11 is paid (CITE.1's golden-op-ed dossier leg — the Stage-B evidence leg).
+    expect(paid).toEqual(["N11", "N5", "N6", "R4", "R6", "R9"]);
   });
   it("stepById resolves", () => {
     expect(stepById("N7")?.owner).toBe("HOT.1");
