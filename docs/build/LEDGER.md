@@ -20,10 +20,10 @@
 ## CURRENT STATE
 
 ```
-projectStatus:   IN_PROGRESS
-nextTicket:      CAP.3              # row 88 — capstone closure; owns CAP.2's routed gaps (paid-leg window, chain-tip re-run, P1 defect fix, ACCEPTED-deviations list)
-lastCompleted:   CAP.2              # 2026-10-04 (composed verification vs prod b909fe9a: deterministic green 4,552/0; live 18 pass/3 owed/3 fail/21 paid-skip — all non-green D-id'd; COMPOSED_E2E_REPORT.md; D-CAP.2-1/-2/-3)
-blockedOn:       (nothing)          # a REAL block only; gates + operator pauses are not blocks — D-ECON.2-1's deploy waits on the same operator `pulumi login` as D-CITE.1-1
+projectStatus:   IN_PROGRESS        # NOT DONE — the accepted-deviations signature is the operator's at GATE-ACCEPT
+nextTicket:      88a_GATE-ACCEPT__accepted-deviations.md  # row 88a — operator signs the 13-row ACCEPTED-deviations list in CAPSTONE_CLOSURE.md §4 (then the D-CAP.2-1/-2 + D-CAP.3-1 live/deploy legs on the first funded+deployed window)
+lastCompleted:   CAP.3              # 2026-10-04 — closure: 8 gaps fixed+tested; 14 ADRs; CAPSTONE_CLOSURE signature table; live legs→D-CAP.3-1
+blockedOn:       (nothing)          # a REAL block only; gates + operator pauses are not blocks — all remaining legs gate on the operator `pulumi login` (D-CITE.1-1/D-ECON.2-1/D-CAP.2-2) + the 2026-10-05 spend reset (D-CAP.2-1)
 pauseRequested:  false
 returnPass:      (none)             # P0.15j/P0.15k done; PRB.18's residual → JOURNEY.1 steps + H7 (BL-32)
 manifest:        docs/tickets/00_MANIFEST.md
@@ -33,12 +33,12 @@ dispatchTarget:  subagent           # round-3 tickets sized for a one-window sub
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, p0-01) — P0.01's fork point
-chainTip:        stevevitali/cap-2-composed-verification  # round 3 stacks here (D1)
+chainTip:        stevevitali/cap-3-capstone-closure  # round 3 stacks here (D1)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           3
-updatedAt:       2026-10-04         # CAP.2 done — composed run recorded honestly: deterministic green; live classified to D-ids (N4/N9→D-OBS.1-3, P1→new D-CAP.2-3 defect, 21 paid→D-CAP.2-1, tip→D-CAP.2-2); CAP.3 next (closure)
+updatedAt:       2026-10-04         # CAP.3 done — capstone closure recorded: 8 fixes + tests, 14 ADRs (090–103), CAPSTONE_CLOSURE.md + 13 accepted deviations for signature; matrix REQ-ACCT-3→PARTIAL; DEFERRALS flips append-only; build NOT DONE
 ```
 
 ## OPEN FINDINGS

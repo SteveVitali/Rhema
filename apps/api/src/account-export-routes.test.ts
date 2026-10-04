@@ -40,11 +40,15 @@ const presignGet = async (key: string): Promise<string> => {
   return url;
 };
 
-const app = () =>
+const app = (over: { systemExec?: SqlClient } = {}) =>
   createApp({
     ...deps,
     principal: () => principal(),
     db: sql,
+    // CAP.3 (D-STB.5a-1) — the emailed token link resolves on the system exec; the PGlite pool
+    // stands in for the BYPASSRLS role. Pass `systemExec: undefined` explicitly to test the
+    // fail-closed path.
+    systemExec: "systemExec" in over ? over.systemExec : sql,
     contentStore: store,
     queue,
     exportPresign: presignGet,
@@ -161,6 +165,51 @@ describe("POST + GET /account/export (REQ-ACCT-3)", () => {
     expect(pub.headers.get("location")).toBe(presigned[1]);
     const bad = await app().request(`/export/download?token=wrong`);
     expect(bad.status).toBe(404);
+  });
+
+  // D-STB.5a-1 (CAP.3) — the token lookup is cross-tenant by design: the anonymous route must run
+  // it on `systemExec` (BYPASSRLS), never the FORCE-RLS user pool (which reads zero rows → a 404 on
+  // every valid emailed link, the live prod defect). This test fails pre-fix: the route used
+  // `deps.db`, so the system-bound probe saw no query and the unbound case still resolved.
+  it("the token route resolves through systemExec and fails closed without it", async () => {
+    await seedArtifact();
+    const res = await app().request("/account/export", { method: "POST" });
+    const { export: ex } = (await res.json()) as { export: { id: string } };
+    const token = "tok_sysbound";
+    await completeExportRow(ex.id, token);
+
+    // a `db` that records every query + a `systemExec` spy prove which pool the lookup rides.
+    const sysQueries: string[] = [];
+    const spySys: SqlClient = {
+      query: (q, p) => {
+        sysQueries.push(q);
+        return db.pg.query(q, p as unknown[]) as Promise<{ rows: unknown[] }>;
+      },
+    };
+    const recordingDb: SqlClient = {
+      query: (q, p) => db.pg.query(q, p as unknown[]) as Promise<{ rows: unknown[] }>,
+    };
+    const spyApp = createApp({
+      ...deps,
+      principal: () => principal(),
+      db: recordingDb,
+      systemExec: spySys,
+      contentStore: store,
+      queue,
+      exportPresign: presignGet,
+    });
+    const pub = await spyApp.request(`/export/download?token=${token}`);
+    expect(pub.status).toBe(302);
+    expect(
+      sysQueries.some((q) => q.includes("from account_exports where token_sha256")),
+      "the token lookup must run on systemExec",
+    ).toBe(true);
+
+    // no system binding ⇒ the route refuses rather than silently querying the RLS-blind pool.
+    const unbound = app({ systemExec: undefined });
+    const res2 = await unbound.request(`/export/download?token=${token}`);
+    expect(res2.status).toBe(503);
+    expect(((await res2.json()) as { error: string }).error).toBe("download_unavailable");
   });
 
   it("the token link 410s past its seven days", async () => {

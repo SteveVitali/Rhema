@@ -95,3 +95,17 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-087](ADR-087-econ2-preregistered-lever-protocol.md) | ECON.2 pre-registered lever-measurement protocol — fixtures, arms, adoption rule, offline ceilings | ECON.2 | Proposed |
 | [ADR-088](ADR-088-stb5a-live-leg-clocks-and-cadence.md) | STB.5a live-leg clock rule, cadence map, and the honest-owed boundary for clock legs | STB.5a | Proposed |
 | [ADR-089](ADR-089-cap1-verdict-rubric.md) | CAP.1 coverage verdict rubric — the five-verdict scale and its evidence bars | CAP.1 | Proposed |
+| [ADR-090](ADR-090-anonymous-export-token-resolves-on-system-pool.md) | The emailed export token resolves on the system pool, not the scoped connection | CAP.3 | Proposed |
+| [ADR-091](ADR-091-account-import-deterministic-slug-deconflict.md) | Account import resolves slug collisions deterministically instead of skipping the row | CAP.3 | Proposed |
+| [ADR-092](ADR-092-pgboss-purge-schedule-bounded-probe.md) | The purge-schedule witness is a bounded SECURITY DEFINER probe, not a pgboss grant | CAP.3 | Proposed |
+| [ADR-093](ADR-093-spend-guard-fails-closed-on-rls-blind-pool.md) | The weekly paid-journey spend guard fails closed on an RLS-blind pool | CAP.3 | Proposed |
+| [ADR-094](ADR-094-iteration-caps-bind-at-launch-ledger.md) | Audit/gap-check iteration caps are enforced at the launch ledger | CAP.3 | Proposed |
+| [ADR-095](ADR-095-fetcher-grant-stays-holdout-calibrator-only.md) | The client fetcher grant stays holdout-calibrator-only — server-side fetch serves review | CAP.3 | Proposed |
+| [ADR-096](ADR-096-emission-audit-honest-bound.md) | The emission audit's honest bound — uncatalogued emissions fail structurally; silent surfaces stay a live leg | CAP.3 | Proposed |
+| [ADR-097](ADR-097-deep-link-layout-restore-client-state.md) | Deep-link layout restore is per-user client state — the SSR leg carries the anchor + context, not the layout | CAP.3 | Proposed |
+| [ADR-098](ADR-098-reserved-req-spec-rows-merged.md) | The reserved REQ-SPEC rows merge into their live targets — retro-fitted record | CAP.3 | Proposed |
+| [ADR-099](ADR-099-proposal-cards-not-suggestion-marks.md) | MVP editor collaboration is proposal cards, not in-document suggestion marks — retro-fitted record | CAP.3 | Proposed |
+| [ADR-100](ADR-100-boundary-attestation-sources.md) | Boundary attestation derives from hydration manifest + proxy log + launch records — retro-fitted record | CAP.3 | Proposed |
+| [ADR-101](ADR-101-usercontent-origin-is-a-subdomain.md) | The user-content origin is a subdomain of the apex zone, not a separate registrable domain — retro-fitted record | CAP.3 | Proposed |
+| [ADR-102](ADR-102-phone-width-web-carries-inputs.md) | Phone-width web carries the gate/disposition/chat inputs — the app banner waits for the app — retro-fitted record | CAP.3 | Proposed |
+| [ADR-103](ADR-103-open-wait-only-signed-email-actions.md) | Signed email actions are Open/Wait-only — retro-fitted record | CAP.3 | Proposed |

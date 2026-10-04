@@ -240,6 +240,79 @@ describe("importAccountZip (REQ-ACCT-3 — fresh account)", () => {
     await db.close();
   });
 
+  // D-STB.5a-2 (CAP.3) — the prod 500: every workspace's seed rows squat on the export's slugs
+  // (`UNIQUE(workspace_id, slug)`), the project row silently skipped, and the showcase artifacts
+  // then violated `artifacts_project_id_fkey`. The importer must deconflict the slug
+  // deterministically so the project AND its dependents land. Fails pre-fix: the projects insert
+  // no-ops on the slug conflict and the artifacts insert 23503s.
+  it("a slug collision remaps the slug instead of dropping the row (D-STB.5a-2)", { timeout: 30_000 }, async () => {
+    const db = await createMirrorTestDb();
+    const store = new InMemoryContentStore();
+    const { workspaceId, projects } = await seedAllRealProjects(db.exec, store);
+    await seedExtra(db.exec, store, workspaceId, projects[0]!.projectId, projects[0]!.personaId);
+    const out = await buildAccountZip({ exec: db.exec, store, workspaceId, exportedAt: EXPORTED_AT });
+
+    // the destination workspace — already holding ITS own rows on the colliding slugs
+    // (the seeded-showcase collision every real account has).
+    await db.exec.query(`insert into billing_accounts (id) values ('bill_imp2')`);
+    await db.exec.query(`insert into "user" (id, email, name) values ($1,'imp2@x.test','Importer')`, [USER_B]);
+    await db.exec.query(
+      `insert into workspaces (id, kind, name, billing_account_id) values ($1,'personal','Fresh','bill_imp2')`,
+      [WS_B],
+    );
+    await db.exec.query(
+      `insert into projects (id, workspace_id, owner_id, title, slug) values ('prj_squat',$1,$2,'Squatter','slug-proj_pv')`,
+      [WS_B, USER_B],
+    );
+    await db.exec.query(
+      `insert into personas (id, workspace_id, slug, display_name, mode, kind) values ('per_squat',$1,'voice-proj_pv','Squatter voice','self','leaf')`,
+      [WS_B],
+    );
+
+    const res = await importAccountZip({
+      exec: db.exec, store, workspaceId: WS_B, userId: USER_B, zipBytes: out.bytes,
+    });
+    expect(res.deduped).toBe(false);
+    expect(res.projects).toBe(3);
+    expect(res.files).toBeGreaterThan(30);
+
+    // all three imported projects landed — the colliding one under a deconflicted slug.
+    const prjRows = (await db.exec.query(
+      `select slug from projects where workspace_id = $1 order by slug`, [WS_B],
+    )).rows as { slug: string }[];
+    expect(prjRows.map((r) => r.slug)).toEqual([
+      "slug-proj_cr", "slug-proj_pv", "slug-proj_pv-2", "slug-proj_sd",
+    ]);
+    // and its artifacts DID land under the imported (remapped) project, not the squatter.
+    const importedPv = importedId(WS_B, "prj", "proj_pv");
+    const art = (await db.exec.query(
+      `select count(*)::int as c from artifacts where project_id = $1`, [importedPv],
+    )).rows[0] as { c: number };
+    expect(art.c).toBeGreaterThan(0);
+    const squatArts = (await db.exec.query(
+      `select count(*)::int as c from artifacts where project_id = 'prj_squat'`, [],
+    )).rows[0] as { c: number };
+    expect(squatArts.c).toBe(0);
+    // the colliding persona likewise remapped.
+    const perSlugs = (await db.exec.query(
+      `select slug from personas where workspace_id = $1`, [WS_B],
+    )).rows as { slug: string }[];
+    expect(perSlugs.map((r) => r.slug).sort()).toEqual([
+      "voice-proj_cr", "voice-proj_pv", "voice-proj_pv-2", "voice-proj_sd",
+    ]);
+
+    // re-import still dedupes — the remap is deterministic (same derived row id owns the suffix).
+    const again = await importAccountZip({
+      exec: db.exec, store, workspaceId: WS_B, userId: USER_B, zipBytes: out.bytes,
+    });
+    expect(again).toEqual({ projects: 0, voices: 0, files: 0, deduped: true });
+    const projCount = (await db.exec.query(
+      `select count(*)::int as c from projects where workspace_id = $1`, [WS_B],
+    )).rows[0] as { c: number };
+    expect(projCount.c).toBe(4);
+    await db.close();
+  });
+
   it("rejects a non-export zip and an unsupported version", { timeout: 30_000 }, async () => {
     const db = await createMirrorTestDb();
     const store = new InMemoryContentStore();

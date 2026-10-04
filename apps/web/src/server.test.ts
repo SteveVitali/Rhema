@@ -990,6 +990,42 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     expect(html).toContain("⚑ 3 open · 2 addressed");
   });
 
+  // D-CAP.1-1 (CAP.3; REQ-IDE-1's second clause — "opening [a deep link] restores the IDE with the
+  // target focused and the rest of the layout from the user's last state"). The clause decomposes:
+  // (a) /p/:slug/f/:fid resolves to the dossier anchor (the shared deep link, §5.7); (b) the landed
+  // page carries the IDE host stamped data-user + data-project-id — the inputs ide.js keys
+  // paneStorageKey(userId, projectId) on to re-apply the stored arrangement (packages/ide/src/state);
+  // (c) the anchor target itself renders (`id="finding-<id>"` on the Margin card) and the island's
+  // selectFinding focuses it (client/ide.ts, `^#finding-` handler).
+  it("REQ-IDE-1/D-CAP.1-1 — a finding deep link lands the IDE host + the anchored target", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      getDossier: async () => DOSSIER,
+      getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+      resolveFinding: async (_s, _pid, fid) => ({
+        findingId: fid,
+        runId: "run_1",
+        anchor: `finding-${fid}`,
+      }),
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/f/f_2");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/review/run_1#finding-f_2");
+
+    const landed = await app.request("/p/the-politics-of-visibility/review/run_1");
+    expect(landed.status).toBe(200);
+    const html = await landed.text();
+    // the layout-restore seam: the island keys the user's stored arrangement on these two attrs.
+    expect(html).toContain('data-ide="1"');
+    expect(html).toContain('data-user="u_1"');
+    expect(html).toContain('data-project-id="proj_pv"');
+    expect(html).toContain('src="/assets/ide.js"');
+    // the focused target: the Margin card IS the `finding-<id>` anchor.
+    expect(html).toContain('id="finding-f_2"');
+  });
+
   it("404s for an unknown project slug (no dossier read attempted)", async () => {
     let called = false;
     const deps = makeDeps({ session: () => ({}) });

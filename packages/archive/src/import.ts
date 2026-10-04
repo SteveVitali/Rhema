@@ -22,7 +22,7 @@ import {
 
 export class ArchiveImportError extends Error {
   constructor(
-    readonly reason: "not_a_rhema_export" | "unsupported_version" | "corrupt_state",
+    readonly reason: "not_a_rhema_export" | "unsupported_version" | "corrupt_state" | "slug_conflict",
     message: string,
   ) {
     super(message);
@@ -46,6 +46,40 @@ export function importedId(workspaceId: string, kind: string, originalId: string
 
 const text = async (f: JSZip.JSZipObject | null | undefined): Promise<string | null> =>
   f == null ? null : f.async("string");
+
+/**
+ * CAP.3 (D-STB.5a-2) — resolve the slug an imported row takes under `UNIQUE(workspace_id, slug)`.
+ * The export always carries the seeded `showcase` project/persona and every target workspace holds
+ * its own seed row under that slug, so `on conflict do nothing` would silently skip the insert
+ * while dependents still insert under the derived id — the `artifacts_project_id_fkey` 500 on
+ * prod. Deconflict deterministically (the showcase seed's own rule: `base`, `base-2`, …): a
+ * candidate owned by OUR derived id means this is a re-import and the row dedupes on its pk; a
+ * foreign candidate bumps the suffix so the row — and its dependents — actually land.
+ * Returns the slug to insert under — a candidate owned by OUR derived id means this is a
+ * re-import (the row dedupes on its pk; `on conflict do nothing` still no-ops it).
+ */
+async function resolveImportSlug(
+  exec: SqlExecutor,
+  table: "projects" | "personas",
+  workspaceId: string,
+  id: string,
+  base: string,
+): Promise<{ slug: string }> {
+  for (let n = 1; n <= 64; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`;
+    const existing = (
+      await exec.query(`select id from ${table} where workspace_id = $1 and slug = $2`, [
+        workspaceId,
+        candidate,
+      ])
+    ).rows[0] as { id: string } | undefined;
+    if (!existing || existing.id === id) return { slug: candidate };
+  }
+  throw new ArchiveImportError(
+    "slug_conflict",
+    `no free slug for ${table} '${base}' in ${workspaceId} — 64 deterministic candidates taken`,
+  );
+}
 
 export async function importAccountZip(args: {
   exec: SqlExecutor;
@@ -85,13 +119,16 @@ export async function importAccountZip(args: {
   const projectId = new Map<string, string>();
   for (const p of state.projects) {
     const id = iid("prj", p.id);
+    const resolved = await resolveImportSlug(exec, "projects", workspaceId, id, p.slug);
     projectId.set(p.id, id);
+    // A re-import resolves to the slug our row already holds — `on conflict` on the pk dedupes
+    // it and every dependent dedupes on its own derived id.
     projects += await insert(
       `insert into projects (id, workspace_id, owner_id, title, slug, protocol_id, protocol_version,
          venue, rigor_default, model_tier_default, approval_policy, archived_at, created_at)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [
-        id, workspaceId, userId, p.title, p.slug, p.protocolId, p.protocolVersion, p.venue,
+        id, workspaceId, userId, p.title, resolved.slug, p.protocolId, p.protocolVersion, p.venue,
         p.rigorDefault, p.modelTierDefault, p.approvalPolicy, p.archivedAt, p.createdAt,
       ],
     );
@@ -101,13 +138,18 @@ export async function importAccountZip(args: {
   const personaId = new Map<string, string>();
   for (const v of state.personas) {
     const id = iid("per", v.id);
+    // persona slug is nullable; a null slug can't collide under the unique index.
+    const slug =
+      v.slug == null
+        ? null
+        : (await resolveImportSlug(exec, "personas", workspaceId, id, v.slug)).slug;
     personaId.set(v.id, id);
     voices += await insert(
       `insert into personas (id, workspace_id, slug, display_name, byline, mode, kind, provenance,
          registers, seed_authored_by)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
-        id, workspaceId, v.slug, v.displayName, v.byline, v.mode, v.kind, v.provenance,
+        id, workspaceId, slug, v.displayName, v.byline, v.mode, v.kind, v.provenance,
         v.registers as unknown, v.seedAuthoredBy,
       ],
     );

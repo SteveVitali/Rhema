@@ -37,6 +37,14 @@ export interface AccountExportRow {
 export interface AccountExportApiDeps {
   readonly principal: (c: { req: { header(name: string): string | undefined } }) => Principal | null;
   readonly db: SqlClient;
+  /**
+   * CAP.3 (D-STB.5a-1) — the system-scoped executor (BYPASSRLS) for the emailed token link's
+   * lookup. `account_exports` is FORCE-RLS and the token route is anonymous — the token IS the
+   * credential, so the cross-tenant `token_sha256 → row` resolve cannot run on the user-serving
+   * pool (it would read zero rows → a 404 on every valid link, forever). Unset ⇒ the public
+   * route fails closed with 503 `download_unavailable`; the session-authed routes never touch it.
+   */
+  readonly systemExec?: SqlClient;
   readonly txRunner: TxRunner;
   readonly ids: (prefix?: string) => string;
   readonly clock: { now(): Date };
@@ -165,13 +173,17 @@ export function createAccountExportRoutes(deps: AccountExportApiDeps): Hono {
   });
 
   // ---- the emailed link — token-gated, no session. The token is the credential; the row stores
-  //      only its hash. Expired ⇒ 410 (the link lived its seven days). ----
+  //      only its hash. Expired ⇒ 410 (the link lived its seven days). The resolve + the
+  //      downloaded_at stamp run on `systemExec`: the lookup is cross-tenant by design (no session
+  //      ⇒ no tenant GUC ⇒ the FORCE-RLS table reads empty on the user pool — D-STB.5a-1). ----
   app.get("/export/download", async (c) => {
     const token = c.req.query("token") ?? "";
     if (!token) return c.json({ error: "not_found" }, 404);
+    const sys = deps.systemExec;
+    if (!sys) return c.json({ error: "download_unavailable" }, 503);
     const tokenSha = sha256Hex(token);
     const row = (
-      await deps.db.query(
+      await sys.query(
         `select id, status, sha256, bytes, s3_key, error, created_at, ready_at, expires_at, downloaded_at
            from account_exports where token_sha256 = $1`,
         [tokenSha],
@@ -183,7 +195,7 @@ export function createAccountExportRoutes(deps: AccountExportApiDeps): Hono {
       return c.json({ error: "export_link_expired" }, 410);
     }
     if (!deps.presignGet) return c.json({ error: "download_unavailable" }, 503);
-    await deps.db.query(`update account_exports set downloaded_at = now() where id = $1`, [row.id]);
+    await sys.query(`update account_exports set downloaded_at = now() where id = $1`, [row.id]);
     // A 302 sends the mail client straight to the object URL — the token leaves no trace on it.
     return c.redirect(await deps.presignGet(row.s3_key), 302);
   });

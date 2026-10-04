@@ -67,8 +67,10 @@ for (const [label, base] of Object.entries({ web, api })) {
 const provOk = expectSha ? provenanceMatch(expectSha, observed) : false;
 
 // The measured spend-guard path needs a DB read — JOURNEY_DATABASE_URL binds a read pool when the
-// runner can reach the stage's Postgres (operator-driven legs). Scheduled CI can't reach the private
-// DB: the no-db attestation stands because the cron itself bounds paid runs to one leg/week.
+// runner can reach the stage's Postgres (operator-driven legs). D-STB.5b-1: that DSN MUST be the
+// system role — an app-login DSN reads usage_records as $0 through FORCE RLS, so the guard probes
+// the bound role and fails closed on a blind pool. Scheduled CI can't reach the private DB: the
+// no-db attestation stands because the cron itself bounds paid runs to one leg/week.
 let spendDb: { query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> } | undefined;
 let spendPool: pg.Pool | undefined;
 if (paid && process.env.JOURNEY_DATABASE_URL) {

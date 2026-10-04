@@ -108,6 +108,14 @@ export function ideCss(): string {
     ".ide[data-view='focus'] .ide-rail, .ide[data-view='focus'] .ide-files, .ide[data-view='focus'] .ide-timeline, .ide[data-view='focus'] .ide-desk, .ide[data-view='focus'] .ide-statusbar { display: none; }",
     ".ide[data-view='focus'] .ide-margin { flex-basis: 36px; width: 36px; padding: var(--s3) 6px; }",
 
+    // UX.2 (ADR-067) — the project page's action row: ≥ 24-px targets at every width (WCAG 2.5.8);
+    // the <768 block below lifts them to bordered ≥ 44-px controls. These BASE rules must precede
+    // the media blocks — at equal specificity the later declaration wins, so a base rule declared
+    // after the phone override would silently dead it at every width (D-CAP.2-3: 25-px targets on
+    // prod at 390 px).
+    ".ide .ide-actions { display: flex; flex-wrap: wrap; gap: var(--s3); }",
+    ".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }",
+
     // ---- yield order (§5.1; the same breakpoints paneLayout() implements) ----
     // Below 1600 with Files open: Margin → ticks, Timeline → overlay.
     `@media (max-width: ${B.bpFilesTicksMarginPx - 1}px) {`,
@@ -149,10 +157,6 @@ export function ideCss(): string {
     ".ide-phonebar .ide-badge { position: relative; margin-left: auto; color: var(--shell-fg-muted); text-decoration: none; }",
     ".ide-phonebar .ide-badge[data-count]:not([data-count='0'])::after { content: attr(data-count); position: absolute; top: -6px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--state-needs-you); color: var(--shell-bg); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }",
     ".ide-phone-only { display: none; }",
-    // UX.2 (ADR-067) — the project page's action row: ≥ 24-px targets at every width (WCAG 2.5.8);
-    // the <768 block above lifts them to bordered ≥ 44-px controls.
-    ".ide .ide-actions { display: flex; flex-wrap: wrap; gap: var(--s3); }",
-    ".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px; }",
 
     // ---- View menu + disclosure popovers ----
     ".ide-menu { position: absolute; z-index: 40; min-width: 220px; background: var(--shell-raised); border: 1px solid var(--shell-border); border-radius: var(--radius-2); box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: var(--s2); }",

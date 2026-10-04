@@ -721,26 +721,46 @@ const T7: StepFn = async (ctx) => {
   await page.waitForLoadState("domcontentloaded");
 
   // the queued job — pgboss.job rows are the schedule of record (the api enqueues with
-  // startAfterMs = 30 d and singletonKey project.purge:<projectId>). The app-login role has no
-  // grant on the pgboss schema — the read needs a system-capable DSN bound as
-  // JOURNEY_DATABASE_URL (or a pgboss.job grant); without it the leg reports owed, never a fail.
+  // startAfterMs = 30 d and singletonKey project.purge:<projectId>). CAP.3 (D-STB.5a-3): the
+  // bounded SECURITY DEFINER probe `rhema_project_purge_schedule` (migration 0058) gives the
+  // app-login role exactly this read — the queue name is pinned and no payload column returns.
+  // Pre-0058 deploys fall back to the raw table read (a system-scoped JOURNEY_DATABASE_URL);
+  // a 42501 there still reports owed, never a fail.
   let rows: unknown[];
   try {
     ({ rows } = await db().query(
-      `select state, start_after, singleton_key, data->>'tombstonedAt' as tombstoned_at
-         from pgboss.job where name = 'project.purge' and data->>'projectId' = $1
-        order by created_on desc limit 1`,
+      `select state, start_after, singleton_key, tombstoned_at::text as tombstoned_at
+         from public.rhema_project_purge_schedule($1)`,
       [projectId],
     ));
   } catch (e) {
     const code = (e as { code?: string }).code;
-    if (code === "42501") {
+    if (code === "42883") {
+      // probe not deployed yet — the raw read under a system DSN still works.
+      try {
+        ({ rows } = await db().query(
+          `select state, start_after, singleton_key, data->>'tombstonedAt' as tombstoned_at
+             from pgboss.job where name = 'project.purge' and data->>'projectId' = $1
+            order by created_on desc limit 1`,
+          [projectId],
+        ));
+      } catch (e2) {
+        if ((e2 as { code?: string }).code === "42501") {
+          throw new Error(
+            "owed — JOURNEY_DATABASE_URL's role has no grant on the pgboss schema (42501): " +
+              "the queued-job half needs migration 0058 deployed or a system-scoped DSN",
+          );
+        }
+        throw e2;
+      }
+    } else if (code === "42501") {
       throw new Error(
-        "owed — JOURNEY_DATABASE_URL's role has no grant on the pgboss schema (42501): " +
-          "the queued-job half needs a system-scoped DSN or a pgboss.job SELECT grant",
+        "owed — JOURNEY_DATABASE_URL's role cannot execute rhema_project_purge_schedule (42501): " +
+          "the queued-job half needs migration 0058 deployed or a system-scoped DSN",
       );
+    } else {
+      throw e;
     }
-    throw e;
   }
   const job = rows[0] as
     | { state: string; start_after: Date; singleton_key: string | null; tombstoned_at: string | null }
