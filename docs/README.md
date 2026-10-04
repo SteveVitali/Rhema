@@ -6,6 +6,14 @@
 
 The Rhēma design record and build memory. Each entry has a **mode** that says how it may change.
 
+**Where the build is (2026-10-04):** the product runs in production on `rhema.tools` (GCP; Cloud SQL
+prod / AlloyDB dev+previews); the round-3 launch-readiness invariants are ratified spec —
+REQ-SPEC-29 (browser-journey acceptance via `@rhema/journeys`), REQ-SPEC-30 (tenant isolation in
+depth), REQ-SPEC-31 (research integrity / *Unverified* delivery), REQ-SPEC-32 (cost truthfulness).
+Open-state honesty: trial interim terms (`audience: "test_tenants"`, ADR-014), purchases
+`"closed"` (ADR-028), refund window `test_tenants`-only (ADR-071; BL-30 pending), four SLO breaches
+open (D-SLO.1-5…8), G2 deferred — no efficacy claims anywhere (REQ-EVAL-19).
+
 | Mode | What it means | How it changes |
 |---|---|---|
 | **frozen** | written once, then immutable (captured evidence / a ratified artifact) | not edited; corrections are recorded elsewhere |
@@ -23,8 +31,11 @@ The Rhēma design record and build memory. Each entry has a **mode** that says h
 | [`6_ticket-decomposition-prompt.md`](./6_ticket-decomposition-prompt.md) | **frozen** | The decomposition hand-off prompt (regenerates the ticket chain). Not edited. |
 | [`rhema-design-spec.md`](./rhema-design-spec.md) | **frozen-with-amendments** | The canonical, ratified design spec (v1.0). Change a requirement by amending here, then the manifest `## Spec amendments applied` + an ADR — never fork the design into a ticket. |
 | [`phase0-exit-readout.md`](./phase0-exit-readout.md) | **append-only** | The G1 Phase-0 exit readout: each criterion → measured/deferred result. Updated by appending measured values as the live legs land. |
+| [`phase1-exit-readout.md`](./phase1-exit-readout.md) | **append-only** | The Phase-1 exit readout (§17, P1.22): each criterion → build evidence or honest "unmeasured"; corrections land as dated entries in its append-only Corrections section. |
 | [`research/`](./research/) | **frozen** | Numbered research notes (phases 1–3). Historical; not edited. |
 | [`design/`](./design/) | **frozen** | Numbered design notes (phase 3). Historical; not edited. |
 | [`tickets/`](./tickets/) | **historical record** | The committed contract record: [`tickets/00_MANIFEST.md`](./tickets/00_MANIFEST.md) is the chain order; each `NN_<ID>__…` file is one ticket's contract; executed contracts are not rewritten. [`tickets/DEFERRALS.md`](./tickets/DEFERRALS.md) is **append-only** (read first every run; never overwritten). |
 | [`build/`](./build/) | **historical record** | Committed build memory (build-memory v2, ADR-004): the machine-state ledger [`build/LEDGER.md`](./build/LEDGER.md), the per-ticket run ledgers [`build/runs/`](./build/runs/) and PR bodies [`build/pr/`](./build/pr/), [`build/BUILD_INDEX.md`](./build/BUILD_INDEX.md), gate readouts [`build/readouts/`](./build/readouts/). Validated by `check-build-memory.sh`; `build/logs/` is the one gitignored subtree; the marker [`build/README.md`](./build/README.md) is living. |
 | [`adr/`](./adr/) | **append-only** | Architecture Decision Records. A decision is immutable; a change is a **new** ADR. The index [`adr/README.md`](./adr/README.md) is **generated** by `build-memory adr-index` — never hand-edited. |
+| [`ops/`](./ops/) | **living** | Operator-facing runbooks and review rules: [`ops/slo-review.md`](./ops/slo-review.md) (the REQ-ARCH-34 weekly SLO review), [`ops/debit-mode-flip.md`](./ops/debit-mode-flip.md) (the committed→metered flip), and [`ops/playbooks/`](./ops/playbooks/) (one per alert row). Correct in place as the procedures evolve. |
+| [`security/`](./security/) | **living** | Security audit + engagement records: the usercontent/CSP audit, the tenancy audit, the RLS-exposure review, and the pen-test scope/vendor-package/findings-triage set. Correct in place; dated findings stay attributed to their date. |

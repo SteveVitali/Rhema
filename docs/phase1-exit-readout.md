@@ -69,3 +69,32 @@ The row's text (§17, "1 — Web MVP, the full IDE"):
   designed). The still-open residue for row 4 is `sdk_estimate` rows unpopulated live (D-P0.08-2) and
   the un-instrumented protocols 2–4 + `RIGOR_MULTIPLIERS` (D-P0.15-2 PARTIAL). The PARTIAL verdict
   is unchanged; the citation was wrong, not the verdict. See `docs/build/readouts/CAPSTONE.md` §2.
+- **2026-10-04 (DOC.1 repo-docs refresh):** this readout's "UNMEASURED — Stage B" framing predates
+  the round-3 live legs — **prod exists now** (`rhema.tools`; the Stage-B legs ran on prod, not the
+  `dev` deploy the readout anticipated). Honest per-row state, from `docs/tickets/DEFERRALS.md` and
+  `docs/build/LEDGER.md` rather than re-measurement:
+  - **Row 2 (first finding ≤ 4 min):** still **unmeasured** — needs real-signup telemetry; the trial
+    audience is `test_tenants` (ADR-014), so there is no organic funnel to read yet.
+  - **Row 3 (nightly golden runs):** still **OPEN** (D-P0.15-4; operator-budget-gated ~$150–300/night).
+    What does run on a schedule is the *user-journey* suite (`.github/workflows/journeys.yml` — nightly
+    $0 legs + a weekly paid leg, REQ-SPEC-29), not the golden-run scorer gate.
+  - **Row 4 (provisional cost figures):** still **PARTIAL**, now sharper — ECON.1/EST.1/ACT.1 landed
+    the one calibrated estimator every surface reads (REQ-SPEC-32), the durable calibration store
+    (migration `0049_cost_calibration`, ADR-032) and metered-mode debits behind the `debitMode` flag
+    (still `committed` on every stage — operator-paused flip, `docs/ops/debit-mode-flip.md`); the
+    P1.21 protocols 2–4 and `RIGOR_MULTIPLIERS` remain modeled (D-P0.15-2).
+  - **Row 5 (benchmark wave):** still **not run** — G2 stays deferred by the operator's 2026-09-15
+    decision (ADR-104); H2/H5 corpus work is unscheduled.
+  - **Row 6 (no superiority claims):** still **MET** — `lintGrowthCopy` sweeps the surfaces every
+    commit; with G2 deferred the ban is total, docs included.
+  - **Security deliverables table:** the "live leg Stage B" stubs have since been exercised on prod —
+    the SEC.1 user-serving role switch (`rhema_app_login`, cannot bypass RLS — REQ-SPEC-30 landed
+    since this readout), the SEC.2 shared Redis throttle, the SEC.3 distroless/AppArmor run-task
+    image, and the P1.22 IAM/RBAC program all deployed and verified (their run ledgers + DEFERRALS
+    rows); the external pen test remains unprocured (D-P1.22-3 — the vendor package exists,
+    `docs/security/pen-test-vendor-package.md`).
+  - **New since this readout (honest):** four named SLO breaches are open on prod
+    (D-SLO.1-5…8), the measured prod bill is ~$285/mo vs the ~$50 target (OPS.2, ADR-082), the
+    trial runs interim terms on `test_tenants` only, purchases stay `closed` (ADR-028), and the
+    refund window serves `test_tenants` only pending BL-30 (ADR-071). None of these change a row
+    verdict above; they are the current state a reader should carry forward.

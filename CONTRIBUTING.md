@@ -6,15 +6,16 @@
 
 ## Getting started
 ```bash
-pnpm install                 # builds against the PUBLIC stubs by default (REQ-ARCH-37)
+pnpm install
 pnpm turbo build lint typecheck
 pnpm test
 ```
 
-A public clone builds and passes CI without the private protocols/evals checkout. To develop against
-the private code, point the resolver at it:
+`@rhema/protocols` is a committed workspace member (`packages/protocols`) — this repo is private, so a
+plain `pnpm install` builds the real graph (REQ-ARCH-37, amended 2026-09-01). Only `@rhema/evals` is
+still path-resolved: point `RHEMA_EVALS_PATH` at the private evals checkout to develop against it,
+otherwise the in-repo `evals-stub` satisfies the graph (`.pnpmfile.cjs`):
 ```bash
-export RHEMA_PROTOCOLS_PATH=/abs/path/to/rhema-protocols
 export RHEMA_EVALS_PATH=/abs/path/to/rhema-evals
 pnpm install
 ```

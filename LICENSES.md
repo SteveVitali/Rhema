@@ -62,7 +62,10 @@ are added.
 
 ## Notes
 - Protocol IP (skills, rubrics, calibration language, prompts) lives in the **private**
-  `packages/protocols` and `evals/`, resolved by path and never present in a public clone
-  (REQ-ARCH-33/37). A public clone builds against the stubs.
-- `beautiful-mermaid`'s licence is **unverified** (§16.3 #22); the fallback is a Mermaid CLI in the
-  render worker. Resolve before it ships.
+  `packages/protocols` — a committed workspace member since the 2026-09-01 REQ-ARCH-37 amendment —
+  and in `evals/`, which is still path-resolved (`RHEMA_EVALS_PATH`, `.pnpmfile.cjs`). Neither may
+  reach a client bundle, the OpenAPI document, or an event payload (REQ-ARCH-33). A public export
+  drops `packages/protocols` and builds against `packages/protocols-stub` + `evals-stub`.
+- `beautiful-mermaid@1.1.3` is MIT — the earlier "licence unverified" caveat (§16.3 #22) is resolved;
+  its EPL-2.0 transitive dep is excepted in `licenses.exceptions.json` (worker-only diagram layout,
+  never a client bundle).
