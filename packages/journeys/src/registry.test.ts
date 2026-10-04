@@ -20,6 +20,9 @@ describe("the journey step registry", () => {
         "P1", "R1", "R4", "R5", "R6", "R7", "R8", "R9", "X1",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
         "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16",
+        // STB.5b added B16/B17/B18A/B18B/B19A/B19B/B19C — the BL-16–19 bounded paid live legs
+        // (all `red` until a leg lands its live asserts; B19C is the pre-registered cap drop).
+        "B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C",
       ].sort(),
     );
   });
@@ -54,7 +57,14 @@ describe("the journey step registry", () => {
     // R9 is paid (two Quick/Base runs on the planted excerpt — the Stage-B evidence leg).
     // N11 is paid (CITE.1's golden-op-ed dossier leg — the Stage-B evidence leg).
     // T9–T16 are paid — they ride the weekly funded leg on jrn-a (the tenant the runs deliver to).
-    expect(paid).toEqual(["N11", "N5", "N6", "R4", "R6", "R9", "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T9"].sort());
+    // B16…B19C are paid — the STB.5b BL-16–19 bounded live legs (cheapest-first).
+    expect(paid).toEqual(
+      [
+        "N11", "N5", "N6", "R4", "R6", "R9",
+        "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T9",
+        "B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C",
+      ].sort(),
+    );
   });
   it("stepById resolves", () => {
     expect(stepById("N7")?.owner).toBe("HOT.1");
