@@ -26,8 +26,8 @@ DATABASE_URL=postgres://… EFFECTIVE_DATE=YYYY-MM-DD \
 
 # then send (writes inbox rows + claims delivery rows + mails via Resend; exactly-once on the
 # dedup key, safe to re-run)
-DATABASE_URL=… EFFECTIVE_DATE=YYYY-MM-DD APP_ORIGIN=https://rhema.app \
-  RESEND_API_KEY=… EMAIL_FROM='Rhema <billing@rhema.app>' \
+DATABASE_URL=… EFFECTIVE_DATE=YYYY-MM-DD APP_ORIGIN=https://rhema.tools \
+  RESEND_API_KEY=… EMAIL_FROM='Rhema <hello@rhema.tools>' \
   node scripts/live/send-metered-notice.mjs --send
 ```
 
