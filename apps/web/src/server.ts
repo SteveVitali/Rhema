@@ -29,6 +29,9 @@ import {
   figuresElement,
   figureCardElement,
   visualizeElement,
+  billingElement,
+  billingReturnElement,
+  projectUsageElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
@@ -274,6 +277,9 @@ export function createWebApp(deps: WebDeps): Hono {
         { label: "Project settings", path: `/p/${row.slug}` },
         { label: "Account settings", path: "/settings" },
         { label: "Usage", path: "/usage" },
+        // P1.16 — the plan card + the §14.5 level-2 rollup ride the IDE settings list too.
+        { label: "Billing", path: "/settings/billing" },
+        { label: "Project usage", path: `/p/${row.slug}/usage` },
       ],
     };
     return {
@@ -1691,10 +1697,192 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/usage", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    const usage = await deps.dataSource.getUsage(session).catch(() => undefined);
+    const [usage, usageAccount] = await Promise.all([
+      deps.dataSource.getUsage(session).catch(() => undefined),
+      // P1.16 — the §14.5 level-1 account read (buckets, period, warnings, next expiry). Best-effort:
+      // a billing-read miss degrades to the glance, never a blank page.
+      Promise.resolve().then(() => deps.dataSource.getUsageAccount?.(session)).catch(() => undefined),
+    ]);
     return c.html(renderDocument(c.req.path, usageElement, {
       ...(usage ? { usage } : {}),
+      ...(usageAccount ? { usageAccount } : {}),
       dwellSurface: "usage",
+    }));
+  });
+  // REQ-BILL-11 — the level-1 CSV export, proxied with the viewer's session (the api is internal).
+  app.get("/usage.csv", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const dl = await Promise.resolve()
+      .then(() => deps.dataSource.downloadUsageCsv?.(session))
+      .catch(() => undefined);
+    if (!dl) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return new Response(dl.bytes, {
+      status: 200,
+      headers: {
+        "content-type": dl.mediaType,
+        "content-disposition": `attachment; filename="${dl.fileName}"`,
+      },
+    });
+  });
+  // §14.5 level 2 — the per-project usage rollup (/p/:project/usage).
+  app.get("/p/:project/usage", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const rows = await deps.dataSource.listProjects(session).catch(() => []);
+    const row = rows.find((r) => r.slug === slug);
+    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const usageProject = await Promise.resolve()
+      .then(() => deps.dataSource.getUsageProject?.(session, row.id))
+      .then((u) => (u ? { ...u, slug } : undefined))
+      .catch(() => undefined);
+    if (!usageProject) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    return c.html(renderDocument(c.req.path, projectUsageElement, { usageProject }));
+  });
+
+  // ---- P1.16 — billing, full (§14.2/14.3/14.6): the plan card, Checkout/portal/auto-reload POSTs,
+  // the Team waitlist, and the checkout-return poll (REQ-BILL-14 — the ≤30 s webhook-lag window). ----
+  app.get("/settings/billing", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const [subscription, plans] = await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.getSubscription?.(session)).catch(() => undefined),
+      Promise.resolve().then(() => deps.dataSource.getPlans?.(session)).catch(() => undefined),
+    ]);
+    return c.html(renderDocument(c.req.path, billingElement, {
+      ...(subscription && plans
+        ? {
+            billing: {
+              subscription,
+              plans,
+              ...(c.req.query("saved") === "1" ? { saved: true } : {}),
+              ...(c.req.query("notice") ? { notice: COPY.billing.stripeDownNote } : {}),
+            },
+          }
+        : {}),
+    }));
+  });
+  // Subscribe / top-up — mint the Checkout session server-side and 302 to Stripe. A billing-config
+  // miss (503) or any api error returns to the card with the "temporarily unavailable" notice —
+  // never a half-minted state (the api's checkout insert is idempotent).
+  app.post("/settings/billing/subscribe", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const tier = typeof form.tier === "string" ? form.tier : "";
+    const cycle = form.cycle === "annual" ? "annual" : "monthly";
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.startCheckout?.(session, {
+        kind: "subscribe", plan: tier, cycle, returnTo: "/settings/billing",
+      }))
+      .catch(() => undefined);
+    if (!out?.url) return c.redirect("/settings/billing?notice=checkout");
+    return c.redirect(out.url);
+  });
+  app.post("/settings/billing/topup", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const packId = typeof form.packId === "string" ? form.packId : "";
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.startCheckout?.(session, {
+        kind: "topup", packId, returnTo: "/settings/billing",
+      }))
+      .catch(() => undefined);
+    if (!out?.url) return c.redirect("/settings/billing?notice=checkout");
+    return c.redirect(out.url);
+  });
+  // Plan change — an upgrade applies now, a downgrade schedules to period end (§14.2/14.6).
+  app.post("/settings/billing/change-plan", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const tier = typeof form.tier === "string" ? form.tier : "";
+    const cycle = form.cycle === "annual" ? "annual" as const : "monthly" as const;
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.changePlan?.(session, tier, cycle))
+      .catch(() => undefined);
+    if (!out || "error" in out) return c.redirect("/settings/billing?notice=change");
+    return c.redirect("/settings/billing?saved=1");
+  });
+  // Cancel = cancel_at_period_end — access runs to the paid-through date (§14.6).
+  app.post("/settings/billing/cancel", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.cancelSubscription?.(session))
+      .catch(() => undefined);
+    if (!out?.applied) return c.redirect("/settings/billing?notice=cancel");
+    return c.redirect("/settings/billing?saved=1");
+  });
+  // Auto-reload — the opt-in, user-capped, only unattended charge path (REQ-BILL-17).
+  app.post("/settings/billing/auto-reload", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.setAutoReload?.(session, {
+        enabled: form.enabled === "1",
+        ...(typeof form.thresholdCredits === "string" && Number(form.thresholdCredits) > 0
+          ? { thresholdCredits: Number(form.thresholdCredits) } : {}),
+        ...(typeof form.packId === "string" && form.packId ? { packId: form.packId } : {}),
+        ...(typeof form.monthlyCapUsd === "string" && Number(form.monthlyCapUsd) > 0
+          ? { monthlyCapUsd: Number(form.monthlyCapUsd) } : {}),
+      }))
+      .catch(() => undefined);
+    if (!out?.ok) return c.redirect("/settings/billing?notice=autoreload");
+    return c.redirect("/settings/billing?saved=1");
+  });
+  // The Stripe Customer-Portal session — payment methods, invoices, receipts live Stripe-side.
+  app.post("/settings/billing/portal", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.createBillingPortalSession?.(session, "/settings/billing"))
+      .catch(() => undefined);
+    if (!out?.url) return c.redirect("/settings/billing?notice=portal");
+    return c.redirect(out.url);
+  });
+  // The Team tier's waitlist row (§14.2 — listed with its price; mechanics are 1.x).
+  app.post("/settings/billing/waitlist", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.joinTeamWaitlist?.(session, {
+        email: typeof form.email === "string" ? form.email : "",
+        ...(typeof form.seats === "string" && Number(form.seats) > 0 ? { seats: Number(form.seats) } : {}),
+      }))
+      .catch(() => undefined);
+    if (!out?.ok) return c.redirect("/settings/billing?notice=waitlist");
+    return c.redirect("/settings/billing?saved=1");
+  });
+  // REQ-BILL-19 — the published rate tables, relayed verbatim so a run report's rate-table link
+  // resolves on the app host (the api is internal; the upstream endpoint is public).
+  app.get("/pricing/rates", async (c) => {
+    const out = await Promise.resolve()
+      .then(() => deps.dataSource.getRatesPublication?.())
+      .catch(() => undefined);
+    if (!out) return c.json({ error: "unavailable" }, 503);
+    return c.json(out);
+  });
+  // The checkout return (REQ-BILL-14): Stripe lands here with ?session_id=. `open` ⇒ the document
+  // auto-refreshes (webhook lag ≤30 s); `completed` ⇒ continue to where the user started.
+  app.get("/billing/return", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const sessionId = c.req.query("session_id") ?? "";
+    const checkoutReturn = sessionId
+      ? await Promise.resolve()
+          .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
+          .catch(() => undefined)
+      : undefined;
+    return c.html(renderDocument(c.req.path, billingReturnElement, {
+      ...(checkoutReturn ? { checkoutReturn } : {}),
+      ...(checkoutReturn?.state === "open"
+        ? { autoRefresh: { seconds: 5, url: `/billing/return?session_id=${encodeURIComponent(sessionId)}` } }
+        : {}),
     }));
   });
   // The dwell heartbeat's sink (REQ-BETA-10): the beacon posts {surface, ms}; the route wraps it into the

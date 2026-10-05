@@ -40,8 +40,11 @@ import {
   phaseShapeForWorkflow,
   projectState,
   RUN_JOBS,
+  TIER_MODEL,
   type OrchestratorDeps,
 } from "@rhema/orchestrator";
+import { repriceParkedRun } from "@rhema/ledger";
+import { capFromEstimate, rateForModel, rateTableFor, CURRENT_RATE_TABLE_VERSION } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import type { Principal } from "./run-routes.js";
 import type { ContentStore } from "@rhema/mirror";
@@ -533,13 +536,13 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       const run = (
         await tx.query(
           `select r.id, r.project_id, r.workflow, r.state, r.estimate_credits, r.cap_credits,
-                  r.spent_credits, r.model_tier, r.inputs, p.slug as project_slug
+                  r.spent_credits, r.model_tier, r.inputs, r.rate_table_version, p.slug as project_slug
              from runs r left join projects p on p.id = r.project_id
             where r.id = $1 and r.workspace_id = $2`,
           [runId, principal.workspaceId],
         )
       ).rows[0] as
-        | { id: string; project_id: string | null; project_slug: string | null; workflow: string; state: RunState; estimate_credits: number; cap_credits: number; spent_credits: number; model_tier: string; inputs: Record<string, unknown> | string }
+        | { id: string; project_id: string | null; project_slug: string | null; workflow: string; state: RunState; estimate_credits: number; cap_credits: number; spent_credits: number; model_tier: string; inputs: Record<string, unknown> | string; rate_table_version: number | null }
         | undefined;
       if (!run) return { kind: "not_found" } as const;
 
@@ -660,6 +663,8 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         usage: reportUsage,
         claims: claims != null && claims.checked > 0 ? { checked: claims.checked, verified: claims.verified } : null,
         modelTier: run.model_tier,
+        // REQ-BILL-19 — the report links its frozen rate-table version to /pricing/rates.
+        ...(run.rate_table_version != null ? { rateTableVersion: Number(run.rate_table_version) } : {}),
       });
       return {
         kind: "ok" as const,
@@ -705,6 +710,25 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       projectId,
       userId: principal.userId,
       ...(body.note != null ? { note: body.note } : {}),
+      // §14.6 "rate-table change while parked" — re-price under the CURRENT table inside the resume tx; a
+      // positive cap delta opens a confirm_cost gate instead of resuming under a stale price. The
+      // re-estimate scales the frozen estimate by the tier's combined rate ratio (the scope is frozen; only
+      // the table moved) and re-derives the cap at the default multiplier.
+      reprice: (tx) =>
+        repriceParkedRun(tx, {
+          runId,
+          reestimate: async (r) => {
+            const oldT = rateTableFor(r.rateTableVersion);
+            const newT = rateTableFor(CURRENT_RATE_TABLE_VERSION);
+            const model = TIER_MODEL[r.modelTier] ?? r.modelTier;
+            const o = rateForModel(oldT, model);
+            const n = rateForModel(newT, model);
+            const ratio =
+              (n.inputUsdPerMTok + n.outputUsdPerMTok) / (o.inputUsdPerMTok + o.outputUsdPerMTok);
+            const estimateCredits = Math.ceil(r.estimateCredits * ratio);
+            return { estimateCredits, capCredits: capFromEstimate(estimateCredits) };
+          },
+        }),
     });
     if (!res.ok) return c.json({ error: res.reason }, res.reason === "not_found" ? 404 : 409);
     return c.json(res);

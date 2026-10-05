@@ -3,6 +3,7 @@
 // auth on the internal routes. The orchestration LOGIC (state machine, fencing, gates, ledger coupling) lives
 // in the package; the live DB/Redis/queue clients behind `deps` are constructed at deploy (deferred).
 
+import { createHash } from "node:crypto";
 import { Hono } from "hono";
 import type { DecisionAction, WorkflowKey } from "@rhema/contracts";
 import {
@@ -43,11 +44,36 @@ import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
 import { capFromEstimate } from "@rhema/contracts";
+import { effectivePlanTier, gateTrialUnlock, trialEntitlementFor } from "@rhema/ledger";
+import { planOf, modelTierAllowed, effectiveConcurrency } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
 import type { DeliveryArgs, NewVersion, ObligationHook, VerdictSourceContext } from "@rhema/mirror";
 import type { AgentTypeKey } from "@rhema/contracts";
 import type { UsageSnapshot } from "@rhema/engine";
+
+// ---- P1.16 trial-unlock helpers (§14.3; REQ-GROWTH-10) -------------------------------------------------
+
+/** A small disposable-domain list — the §14.3 identity check's cheap arm (the fingerprint is the real one). */
+const DISPOSABLE_DOMAINS = new Set([
+  "mailinator.com",
+  "tempmail.com",
+  "temp-mail.org",
+  "guerrillamail.com",
+  "10minutemail.com",
+  "throwaway.email",
+  "yopmail.com",
+  "sharklasers.com",
+  "trashmail.com",
+]);
+function isDisposableDomain(domain: string): boolean {
+  return DISPOSABLE_DOMAINS.has(domain);
+}
+
+/** The salted device-fingerprint hash (REQ-GROWTH-10: stored hashed, never raw). */
+function fingerprintHash(fp: string): string {
+  return createHash("sha256").update(`rhema:trial:${fp}`).digest("hex");
+}
 
 /** Auth principal for run creation — the session's user + billing scope (Better Auth wiring is P0.01/PRB). */
 export interface Principal {
@@ -96,6 +122,12 @@ export interface RunApiDeps extends OrchestratorDeps {
    * not applied (fixture/deploys without a user lookup); `createApp` binds it whenever `deps.db` exists.
    */
   userEmailVerified?(userId: string): Promise<boolean>;
+  /**
+   * P1.16 (§14.3; REQ-GROWTH-10) — the injectable ASN/IP risk scorer for the trial unlock gate. Receives
+   * the request context (headers carry the client IP in deploy); returns a [0,1] risk score or undefined.
+   * Unset ⇒ the risk arm is inert (fingerprint + disposable-domain checks still run).
+   */
+  asnRiskScorer?(c: { req: { header(name: string): string | undefined } }): Promise<number | undefined>;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -233,7 +265,12 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       // anything below the computed cap is floored back up (the 1.5× guarantee).
       capCredits = Math.max(body.capCredits ?? 0, derived.capCredits);
     } catch {
-      // not a beta sheet workflow — keep the client estimate but floor the cap at the 1.5× guarantee.
+      // §14.6 (P1.16) — "estimate service down → runs do not start": for a sheet workflow the estimator
+      // is the ONLY trustworthy price source; a failure must refuse rather than freeze a client-sent
+      // money figure. Non-sheet workflows keep the client estimate with the 1.5× floor.
+      if (resolvedToggles != null) {
+        return c.json({ error: "estimate_unavailable" }, 503);
+      }
       if (estimateCredits != null) capCredits = Math.max(capCredits ?? 0, capFromEstimate(estimateCredits));
     }
 
@@ -243,6 +280,115 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (deps.circuitBreaker && capCredits != null) {
       const { capMultiplier } = await deps.circuitBreaker(deps.clock.now());
       capCredits = capCredits * capMultiplier;
+    }
+
+    // P1.16 — the plan gates (§14.2/14.3; REQ-GROWTH-4/7/8, REQ-PERSONA-5, REQ-DATA-42). Server-derived,
+    // never client-trusted: the account's effective tier + trial state decide which workflows/model tiers
+    // run at all, at what concurrency, and (Writer) the ≤40-runs/day ceiling. An entitlement run goes
+    // through the §14.3 unlock gate first — identity-before-spend, fingerprint/disposable/risk, the global
+    // daily ceiling — and must stay the trial's exact shape (Review, Standard, Base, ≤6,000 words).
+    const planGate = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const account = (
+        await tx.query("select trial_state, trial_killed_at from billing_accounts where id = $1", [
+          principal.billingAccountId,
+        ])
+      ).rows[0] as { trial_state: string | null; trial_killed_at: string | null } | undefined;
+      const tier = await effectivePlanTier(tx, principal.billingAccountId);
+      const inTrial =
+        account?.trial_state === "trial_pending" ||
+        account?.trial_state === "trial_active" ||
+        account?.trial_state === "trial_used";
+      if (account?.trial_killed_at) return { error: "trial_denied" as const, reason: "killed" };
+
+      // Free after the window is chat-only — a non-chat workflow is an upgrade prompt, not a 500.
+      if (!inTrial && planOf(tier).chatOnly && workflow !== "chat_turn") {
+        return { error: "upgrade_required" as const, reason: "chat_only_plan" };
+      }
+      // the model-tier gate (REQ-PERSONA-5/REQ-DATA-42): inside the trial window the tier is pinned Base.
+      if (inTrial && body.modelTier !== "base") return { error: "trial_base_only" as const };
+      if (!modelTierAllowed(tier, body.modelTier)) return { error: "model_tier_requires_upgrade" as const };
+
+      // concurrency: the account's live runs vs the plan's concurrent cap.
+      const limit = effectiveConcurrency(tier, inTrial && account?.trial_state !== "trial_used");
+      const active = Number(
+        (
+          (
+            await tx.query(
+              `select count(*)::int as c from runs r join workspaces w on w.id = r.workspace_id
+                 where w.billing_account_id = $1 and r.state in ('queued','provisioning','running','waiting_gate','finalizing')`,
+              [principal.billingAccountId],
+            )
+          ).rows[0] as { c: number }
+        ).c,
+      );
+      if (limit === 0 || active >= limit) {
+        return { error: "concurrency_limit" as const, limit, active };
+      }
+      // Writer's ≤40 runs/day platform bound (§14.2).
+      const ceiling = planOf(tier).dailyRunCeiling;
+      if (!inTrial && ceiling) {
+        const today = deps.clock.now().toISOString().slice(0, 10);
+        const runsToday = Number(
+          (
+            (
+              await tx.query(
+                `select count(*)::int as c from runs r join workspaces w on w.id = r.workspace_id
+                   where w.billing_account_id = $1 and r.created_at >= $2::date`,
+                [principal.billingAccountId, today],
+              )
+            ).rows[0] as { c: number }
+          ).c,
+        );
+        if (runsToday >= ceiling) return { error: "daily_run_ceiling" as const, limit: ceiling };
+      }
+
+      // the trial entitlement run — the unlock gate is the §14.3 identity-before-spend boundary.
+      if (body.entitlementId) {
+        const ent = await trialEntitlementFor(tx, principal.billingAccountId);
+        if (!ent || ent.id !== body.entitlementId) return { error: "entitlement_unavailable" as const };
+        if (ent.state === "locked") {
+          const user = (
+            await tx.query(`select email from "user" where id = $1`, [principal.userId])
+          ).rows[0] as { email: string } | undefined;
+          const emailDomain = user?.email.split("@")[1]?.toLowerCase();
+          const outcome = await gateTrialUnlock(tx, deps, {
+            billingAccountId: principal.billingAccountId,
+            workspaceId: principal.workspaceId,
+            userId: principal.userId,
+            evidence: {
+              billingAccountId: principal.billingAccountId,
+              userId: principal.userId,
+              ...(emailDomain ? { emailDomain } : {}),
+              disposableDomain: emailDomain ? isDisposableDomain(emailDomain) : false,
+              ...(body.fingerprint ? { fingerprintHash: fingerprintHash(body.fingerprint) } : {}),
+              ...(deps.asnRiskScorer ? { asnRisk: await deps.asnRiskScorer(c) } : {}),
+            },
+          });
+          if (outcome.decision === "challenge") return { error: "phone_challenge_required" as const };
+          if (outcome.decision === "paused") return { error: "trial_ceiling" as const };
+          if (!outcome.claimable) return { error: "trial_denied" as const, reason: outcome.reason };
+        } else if (ent.state !== "unused") {
+          return { error: "entitlement_unavailable" as const };
+        }
+        // the entitlement IS a Review ≤6,000 words on Standard/Base — a run shaped otherwise is not it.
+        if (workflow !== "review" || body.rigor !== "standard" || body.modelTier !== "base") {
+          return { error: "trial_shape" as const, detail: "the included Review is Standard rigor on Base" };
+        }
+        const words = (body.inputSnapshot as { wordCount?: number } | undefined)?.wordCount ?? 0;
+        if (words > ent.wordCap) return { error: "trial_word_cap" as const, wordCap: ent.wordCap };
+      }
+      return null;
+    });
+    if (planGate) {
+      const status: 402 | 403 | 422 | 429 =
+        planGate.error === "upgrade_required" || planGate.error === "model_tier_requires_upgrade"
+          ? 402
+          : planGate.error === "concurrency_limit" || planGate.error === "daily_run_ceiling" || planGate.error === "trial_ceiling"
+            ? 429
+            : planGate.error === "trial_denied" || planGate.error === "phone_challenge_required"
+              ? 403
+              : 422;
+      return c.json(planGate, status);
     }
 
     // PRB.05 / REQ-IDE-28: pre-triage dispositions reach the Revise run as HIGHEST-PRECEDENCE guidance.
@@ -570,6 +716,11 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     if (res.reason === "insufficient_balance") return c.json({ error: res.reason, required: res.required }, 402);
     // REQ-SPEC-24.7 (PRB.08): a chargeback-suspended account takes no new runs — 403, never a silent queue.
     if (res.reason === "account_suspended") return c.json({ error: res.reason }, 403);
+    // P1.16 (§14.3): a trial-entitlement refusal — the ledger's name distinguishes the daily ceiling (429)
+    // from an unavailable/killed entitlement (403).
+    if (res.reason === "entitlement_unavailable") {
+      return c.json({ error: res.reason, detail: res.detail }, res.detail === "TrialCeilingExhaustedError" ? 429 : 403);
+    }
     return c.json({ error: res.reason, detail: res.error.message }, 422);
   });
 
@@ -899,6 +1050,8 @@ interface CreateRunBody {
   toggles?: Record<string, boolean>;
   sheetLaunched?: boolean;
   entitlementId?: string;
+  /** P1.16 (§14.3; REQ-GROWTH-10) — the device fingerprint the trial unlock gate hashes + binds. */
+  fingerprint?: string;
   imageDigest?: string;
   protocolsVersion?: string;
   draftId?: string;

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createOrchestratorTestDb, seedProject, seedRun, seedGate, makeDeps, type OrchestratorTestDb, type TestDeps } from "@rhema/orchestrator/testing";
 import { agentTypesSeed } from "@rhema/db";
+import { provisionTrial } from "@rhema/ledger";
+import { testEntryDeps } from "@rhema/ledger/testing";
 import { createApp, type Principal } from "./index.js";
 
 // The HTTP adapter wires correctly onto the orchestrator: run creation, token-authenticated internal routes,
@@ -382,6 +384,227 @@ describe("POST /runs/:id/gates/:gid — gate resolution (§6.4; §12.4 step 7)",
     expect(body.error).toBe("insufficient_balance");
     const after = (await db.pg.query("select count(*)::int as n from runs")).rows[0] as { n: number };
     expect(after.n).toBe(before.n); // the creation transaction rolled back — no abandoned row
+  });
+});
+
+// P1.16 — the §14.2 plan gates (REQ-PERSONA-5/DATA-42): tier, concurrency and chat-only are
+// server-derived from the account's effective plan — never client-trusted. `plan:null` seeds an
+// account with NO subscription (the post-beta Free default: chat only, Base, zero run concurrency).
+describe("POST /projects/:id/runs — the plan gate (P1.16; §14.2)", () => {
+  it("a free account's non-chat run is 402 upgrade_required — never a silent run", async () => {
+    const free = await seedProject(db, {
+      userId: "usr_free", billingAccountId: "ba_free", workspaceId: "ws_free", projectId: "prj_free",
+      draftN: 1, plan: null,
+    });
+    const gated = createApp({
+      ...deps,
+      principal: () => ({ userId: free.userId, workspaceId: free.workspaceId, billingAccountId: free.billingAccountId }),
+    });
+    const r = await gated.request(`/projects/${free.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-free-1", inputs: { draftId: free.draftId }, draftId: free.draftId })),
+    });
+    expect(r.status).toBe(402);
+    expect(((await r.json()) as { error: string }).error).toBe("upgrade_required");
+    const runs = (await db.pg.query("select count(*)::int as n from runs where workspace_id = 'ws_free'")).rows[0] as { n: number };
+    expect(runs.n).toBe(0);
+  });
+
+  it("a free account's chat on a paid model tier is 402 model_tier_requires_upgrade", async () => {
+    const free = await seedProject(db, {
+      userId: "usr_free2", billingAccountId: "ba_free2", workspaceId: "ws_free2", projectId: "prj_free2",
+      plan: null,
+    });
+    const gated = createApp({
+      ...deps,
+      principal: () => ({ userId: free.userId, workspaceId: free.workspaceId, billingAccountId: free.billingAccountId }),
+    });
+    const r = await gated.request(`/projects/${free.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-free-2", workflow: "chat_turn", modelTier: "balanced" })),
+    });
+    expect(r.status).toBe(402);
+    expect(((await r.json()) as { error: string }).error).toBe("model_tier_requires_upgrade");
+  });
+
+  it("a concurrency-bound plan 429s at the cap (Writer: 2 live runs)", async () => {
+    const w = await seedProject(db, {
+      userId: "usr_w", billingAccountId: "ba_w", workspaceId: "ws_w", projectId: "prj_w",
+      draftN: 1, plan: "writer",
+    });
+    await seedRun(db, { runId: "run_w1", workspaceId: w.workspaceId, projectId: w.projectId, state: "running" });
+    await seedRun(db, { runId: "run_w2", workspaceId: w.workspaceId, projectId: w.projectId, state: "queued" });
+    const gated = createApp({
+      ...deps,
+      principal: () => ({ userId: w.userId, workspaceId: w.workspaceId, billingAccountId: w.billingAccountId }),
+    });
+    const r = await gated.request(`/projects/${w.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-w-1", modelTier: "base", inputs: { draftId: w.draftId }, draftId: w.draftId })),
+    });
+    expect(r.status).toBe(429);
+    expect(((await r.json()) as { error: string }).error).toBe("concurrency_limit");
+  });
+});
+
+// P1.16 — the §14.3 trial gate (REQ-GROWTH-10/15; REQ-SPEC-8). A trial account carries the LOCKED
+// entitlement from signup; the first run claiming `entitlementId` goes through the identity-before-spend
+// unlock gate (fingerprint/disposable/risk/daily-ceiling, every decision audited in
+// trial_unlock_checks), must be exactly the included shape (Review · Standard · Base · ≤6,000 words),
+// and never touches the credit ledger for the entitlement itself.
+describe("POST /projects/:id/runs — the trial gate (P1.16; §14.3)", () => {
+  async function seedTrial(opts: { userId?: string; disposable?: boolean; asnRisk?: number } = {}) {
+    const s = await seedProject(db, {
+      userId: opts.userId ?? "usr_t",
+      billingAccountId: "ba_t",
+      workspaceId: "ws_t",
+      projectId: "prj_t",
+      draftN: 1,
+      plan: null,
+    });
+    if (opts.disposable) {
+      await db.pg.query(`update "user" set email = 'trial@mailinator.com' where id = $1`, [s.userId]);
+    }
+    await db.txRunner.run(s.workspaceId, (tx) =>
+      provisionTrial(tx, testEntryDeps(), { billingAccountId: s.billingAccountId }),
+    );
+    const entitlement = (
+      await db.client.query("select id from trial_entitlements where billing_account_id = $1", [s.billingAccountId])
+    ).rows[0] as { id: string };
+    const tapp = createApp({
+      ...deps,
+      principal: () => ({ userId: s.userId, workspaceId: s.workspaceId, billingAccountId: s.billingAccountId }),
+      ...(opts.asnRisk !== undefined ? { asnRiskScorer: async () => opts.asnRisk } : {}),
+    });
+    const post = (over: Record<string, unknown> = {}, entitlementId: string | undefined = entitlement.id) =>
+      tapp.request(`/projects/${s.projectId}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          runBody({
+            idempotencyKey: "idem-trial-1",
+            modelTier: "base",
+            modelProfile: { tier: "base" },
+            rigor: "standard",
+            ...(entitlementId ? { entitlementId } : {}),
+            draftId: s.draftId,
+            inputs: { draftId: s.draftId, sidecar: true },
+            ...over,
+          }),
+        ),
+      });
+    return { s, tapp, entitlementId: entitlement.id, post };
+  }
+
+  it("the entitlement run unlocks the gate and creates queued — entitlement_id on the run, audit row written", async () => {
+    const { s, entitlementId, post } = await seedTrial();
+    const r = await post();
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const run = (
+      await db.pg.query("select entitlement_id, state from runs where id = $1", [runId])
+    ).rows[0] as { entitlement_id: string | null; state: string };
+    expect(run).toMatchObject({ entitlement_id: entitlementId, state: "queued" });
+    // the §14.3 unlock ran: account active, the audited allow decision, the 150-credit pocket granted.
+    expect(
+      (await db.client.query("select trial_state from billing_accounts where id = $1", [s.billingAccountId])).rows[0],
+    ).toMatchObject({ trial_state: "trial_active" });
+    const checks = (
+      await db.client.query("select decision from trial_unlock_checks where billing_account_id = $1", [s.billingAccountId])
+    ).rows as { decision: string }[];
+    expect(checks.map((c) => c.decision)).toEqual(["allow"]);
+    expect(
+      (
+        await db.client.query(
+          "select available::int a from credit_balances where billing_account_id = $1 and bucket = 'trial_pocket'",
+          [s.billingAccountId],
+        )
+      ).rows[0],
+    ).toMatchObject({ a: 150 });
+    // the hold carried the entitlement — the SqlHoldLedger claims it (trial.test.ts); no credit-bucket hold.
+    expect(deps.ledger.opsOf("hold")[0]?.args.entitlementId).toBe(entitlementId);
+  });
+
+  it("a >6,000-word draft is 422 trial_word_cap — the first-6,000-words-or-upgrade offer (REQ-SPEC-8)", async () => {
+    const { post } = await seedTrial();
+    const r = await post({ inputSnapshot: { wordCount: 7000 } });
+    expect(r.status).toBe(422);
+    expect(((await r.json()) as { error: string; wordCap: number })).toMatchObject({
+      error: "trial_word_cap",
+      wordCap: 6000,
+    });
+    expect((await db.pg.query("select count(*)::int n from runs")).rows[0]).toMatchObject({ n: 0 });
+  });
+
+  it("a non-Standard/non-review entitlement claim is 422 trial_shape", async () => {
+    const { post } = await seedTrial();
+    const r = await post({ rigor: "full_board" });
+    expect(r.status).toBe(422);
+    expect(((await r.json()) as { error: string }).error).toBe("trial_shape");
+  });
+
+  it("a disposable email domain denies the unlock — 403 trial_denied, audited", async () => {
+    const { s, post } = await seedTrial({ userId: "usr_tdisp", disposable: true });
+    const r = await post();
+    expect(r.status).toBe(403);
+    expect(((await r.json()) as { error: string }).error).toBe("trial_denied");
+    expect(
+      (await db.client.query("select trial_state from billing_accounts where id = $1", [s.billingAccountId])).rows[0],
+    ).toMatchObject({ trial_state: "trial_denied" });
+    const checks = (
+      await db.client.query("select decision, reason from trial_unlock_checks where billing_account_id = $1", [s.billingAccountId])
+    ).rows as { decision: string; reason: string }[];
+    expect(checks[0]).toMatchObject({ decision: "deny", reason: "disposable_domain" });
+  });
+
+  it("a high ASN risk score asks for the phone challenge — 403, entitlement stays locked", async () => {
+    const { s, entitlementId, post } = await seedTrial({ userId: "usr_trisk", asnRisk: 0.9 });
+    const r = await post();
+    expect(r.status).toBe(403);
+    expect(((await r.json()) as { error: string }).error).toBe("phone_challenge_required");
+    expect(
+      (
+        await db.client.query("select state from trial_entitlements where id = $1", [entitlementId])
+      ).rows[0],
+    ).toMatchObject({ state: "locked" });
+    void s;
+  });
+
+  it("the global daily trial-spend ceiling pauses the unlock — 429 trial_ceiling", async () => {
+    const { post } = await seedTrial({ userId: "usr_tceil" });
+    // deps.clock is fixed at 2026-09-02 — exhaust today's counter.
+    await db.client.query("insert into trial_spend_daily (day, credits) values ('2026-09-02', 250000)", []);
+    const r = await post();
+    expect(r.status).toBe(429);
+    expect(((await r.json()) as { error: string }).error).toBe("trial_ceiling");
+  });
+
+  it("a killed account's entitlement run is 403 trial_denied (the kill switch is read live)", async () => {
+    const { s, post } = await seedTrial({ userId: "usr_tkill" });
+    await db.client.query("update billing_accounts set trial_killed_at = now() where id = $1", [s.billingAccountId]);
+    const r = await post();
+    expect(r.status).toBe(403);
+    expect(((await r.json()) as { error: string; reason: string })).toMatchObject({
+      error: "trial_denied",
+      reason: "killed",
+    });
+  });
+
+  it("an already-consumed entitlement is 422 entitlement_unavailable — one trial run, ever", async () => {
+    const { entitlementId, post } = await seedTrial({ userId: "usr_tused" });
+    // the first claim consumed the entitlement; the account is still inside the window (trial_active
+    // — trial concurrency, not the post-window free floor).
+    await db.client.query(
+      "update trial_entitlements set state = 'consumed' where id = $1",
+      [entitlementId],
+    );
+    await db.client.query("update billing_accounts set trial_state = 'trial_active' where id = 'ba_t'", []);
+    const r = await post();
+    expect(r.status).toBe(422);
+    expect(((await r.json()) as { error: string }).error).toBe("entitlement_unavailable");
   });
 });
 

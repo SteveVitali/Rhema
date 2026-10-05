@@ -301,6 +301,42 @@ export async function resolveGate(deps: ResolveGateDeps, args: ResolveGateArgs):
         return { ok: true, resolved: true, state: "queued", overlayVersionIds, guidanceId };
       }
 
+      // P1.16 §14.6 — a `confirm_cost` gate on a waiting_gate run is the parked-resume re-price: the
+      // run kept its original hold, so consenting places an ADDITIONAL hold for the delta
+      // (new cap − still-held), keyed on the gate id so a consent replay is idempotent. A refused
+      // hold rolls the decision back (the gate stays open) like the awaiting_consent path.
+      if (gr.kind === "confirm_cost") {
+        const stillHeld = Number(
+          (
+            (
+              await tx.query(
+                `select coalesce(sum(case kind when 'hold' then credits when 'debit' then -credits
+                                       when 'release' then -credits else 0 end), 0)::int as h
+                   from credit_ledger where run_id = $1 and kind in ('hold','debit','release')`,
+                [args.runId],
+              )
+            ).rows[0] as { h: number } | undefined
+          )?.h ?? 0,
+        );
+        const delta = Number(gr.cap_credits) - stillHeld;
+        if (delta > 0) {
+          try {
+            await deps.ledger.hold(tx, {
+              billingAccountId: gr.billing_account_id,
+              workspaceId: args.workspaceId,
+              runId: args.runId,
+              credits: delta,
+              idempotencyKey: `hold-delta:${args.runId}:${args.gateId}`,
+              ...(gr.entitlement_id ? { entitlementId: gr.entitlement_id } : {}),
+            });
+          } catch (e) {
+            if (e instanceof InsufficientBalanceError) throw new ConsentRollback({ ok: false, reason: "insufficient_balance", required: e.required });
+            if (e instanceof AccountSuspendedError) throw new ConsentRollback({ ok: false, reason: "account_suspended" });
+            throw e;
+          }
+        }
+      }
+
       // waiting_gate → queued as a FRESH attempt (§12.4 step 7). A first keep_planning resets the
       // gate's step so the resume re-runs it; a refusal gate opened on the re-plan cap marks its
       // FAILED step done so any non-stop resolution proceeds past it (proceed-with-[unverified] /

@@ -26,6 +26,7 @@ import type {
 import { InsufficientBalanceError, AccountSuspendedError } from "@rhema/orchestrator";
 import { ALL_BUCKETS, CONSUMPTION_ORDER, drawFromBuckets, type HoldBucket } from "./buckets.js";
 import { applyLedgerEntry, type EntryDeps } from "./entries.js";
+import { recordTrialSpend, TrialKilledError } from "./trial.js";
 
 interface OpRow {
   readonly id: string;
@@ -49,18 +50,41 @@ export class SqlHoldLedger implements HoldLedger {
   constructor(private readonly deps: EntryDeps) {}
 
   async hold(tx: SqlClient, args: HoldArgs): Promise<HoldResult> {
-    // A trial entitlement run holds against the entitlement, not credits (§14.3; REQ-SPEC-8). Full trial
-    // pricing is P1.16. The conditional update is the concurrency guard (a single-statement CAS, like the
-    // gates' `conditionalResolve`): it consumes the entitlement only if unused OR already consumed by THIS run
-    // (so a retry is idempotent). Zero rows back means another run already spent it (or it does not exist) — we
-    // must NOT let this run proceed for free (REQ-SPEC-24.2).
+    // A trial entitlement run holds against the entitlement, not credits (§14.3; REQ-SPEC-8). P1.16 completes
+    // the lifecycle: the entitlement must be `unused` (still `locked` ⇒ the unlock gate hasn't run — refuse),
+    // the kill switch (`billing_accounts.trial_killed_at`) is read live under the same lock, and a FRESH claim
+    // charges the run's estimate to the global daily trial-spend ceiling (a refused hold rolls it back).
+    // The conditional update remains the concurrency guard — a second run can never consume it twice
+    // (REQ-SPEC-24.2); a retry of THIS run is idempotent.
     if (args.entitlementId) {
-      const claimed = await tx.query(
-        `update trial_entitlements set state = 'consumed', consumed_by_run_id = $2
-           where id = $1 and (state = 'unused' or consumed_by_run_id = $2) returning id`,
+      const account = (
+        await tx.query("select trial_killed_at from billing_accounts where id = $1 for update", [
+          args.billingAccountId,
+        ])
+      ).rows[0] as { trial_killed_at: string | null } | undefined;
+      if (account?.trial_killed_at) throw new TrialKilledError(args.billingAccountId);
+      const fresh = await tx.query(
+        `update trial_entitlements set state = 'consumed', consumed_by_run_id = $2, consumed_at = now()
+           where id = $1 and state = 'unused' returning id`,
         [args.entitlementId, args.runId],
       );
-      if (claimed.rows.length === 0) throw new EntitlementUnavailableError(args.entitlementId);
+      if (fresh.rows.length === 0) {
+        const retry = (
+          await tx.query("select 1 from trial_entitlements where id = $1 and consumed_by_run_id = $2", [
+            args.entitlementId,
+            args.runId,
+          ])
+        ).rows[0];
+        if (!retry) throw new EntitlementUnavailableError(args.entitlementId);
+      } else {
+        // a fresh claim counts against the global daily trial-spend ceiling (REQ-GROWTH-15 amended) — the
+        // increment is in this tx, so a refused hold rolls it back.
+        await recordTrialSpend(tx, args.credits, this.deps.clock.now());
+        await tx.query(
+          "update billing_accounts set trial_state = 'trial_used' where id = $1 and trial_state = 'trial_active'",
+          [args.billingAccountId],
+        );
+      }
       return { ledgerId: `ent_${args.runId}`, bucket: "trial_pocket" };
     }
 

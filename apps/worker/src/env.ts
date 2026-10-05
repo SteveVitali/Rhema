@@ -58,6 +58,12 @@ export interface WorkerEnv {
    * verify). Unset ⇒ the `notify` handler no-ops `unconfigured` — no emails are minted.
    */
   readonly emailActionSecretName?: string;
+  /**
+   * P1.16 — the Stripe Billing API key's secret-version NAME (Secret Manager at boot) for the auto-reload
+   * sweep's off-session charge — the ONLY unattended charge path (REQ-BILL-17). Unset ⇒ the sweep logs a
+   * `no_stripe_port` skip — it must never fabricate a charge.
+   */
+  readonly stripeSecretKeyName?: string;
   /** PRB.09 — the api origin one-click links point at (`<apiPublicUrl>/api/action/<token>`). */
   readonly apiPublicUrl?: string;
   /** PRB.09 — the web app origin for email deep links (`<appBaseUrl>/p/<project>/review/<run>`). */
@@ -130,6 +136,10 @@ export function readWorkerEnv(): WorkerEnv {
     ...(process.env.EMAIL_FROM ? { emailFrom: process.env.EMAIL_FROM } : {}),
     ...(process.env.EMAIL_ACTION_SECRET_NAME
       ? { emailActionSecretName: process.env.EMAIL_ACTION_SECRET_NAME }
+      : {}),
+    // P1.16 — the Stripe Billing key is a secret-NAME (Secret Manager at boot) for auto-reload.
+    ...(process.env.STRIPE_SECRET_KEY_NAME
+      ? { stripeSecretKeyName: process.env.STRIPE_SECRET_KEY_NAME }
       : {}),
     ...(process.env.API_PUBLIC_URL ? { apiPublicUrl: process.env.API_PUBLIC_URL } : {}),
     ...(process.env.APP_BASE_URL ? { appBaseUrl: process.env.APP_BASE_URL } : {}),

@@ -7,6 +7,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  date,
   primaryKey,
 } from "drizzle-orm/pg-core";
 
@@ -84,6 +85,16 @@ export const subscriptions = pgTable("subscriptions", {
   includedCredits: integer("included_credits"),
   concurrency: integer("concurrency"),
   status: text("status"),
+  // P1.16 (0036; §14.2/14.6): Stripe Billing lifecycle — cycle, scheduled downgrade, the Smart-Retries
+  // renewal-failure window, and the 7-day downgrade-warning marker.
+  stripeCustomerId: text("stripe_customer_id"),
+  billingCycle: text("billing_cycle"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  scheduledTier: text("scheduled_tier"),
+  renewalFailedAt: timestamp("renewal_failed_at"),
+  downgradeWarnedAt: timestamp("downgrade_warned_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const trialEntitlements = pgTable("trial_entitlements", {
@@ -93,9 +104,95 @@ export const trialEntitlements = pgTable("trial_entitlements", {
   wordCap: integer("word_cap").notNull().default(6000),
   rigor: text("rigor").notNull().default("standard"),
   modelTier: text("model_tier").notNull().default("base"),
+  // P1.16 (0036): 'locked' | 'revoked' | 'converted' join 'unused' | 'consumed' | 'expired'.
   state: text("state").notNull().default("unused"),
   consumedByRunId: text("consumed_by_run_id"),
   expiresAt: timestamp("expires_at"),
+  // P1.16 (0036): the unlock/consumption/conversion audit columns.
+  activatedAt: timestamp("activated_at"),
+  consumedAt: timestamp("consumed_at"),
+  convertedAt: timestamp("converted_at"),
+  revokedAt: timestamp("revoked_at"),
+  pocketLedgerId: text("pocket_ledger_id"),
+  promoLedgerId: text("promo_ledger_id"),
+});
+
+// P1.16 (0036; REQ-GROWTH-10) — every first-spend unlock decision is an auditable row.
+export const trialUnlockChecks = pgTable("trial_unlock_checks", {
+  id: text("id").primaryKey(),
+  billingAccountId: text("billing_account_id").notNull(),
+  userId: text("user_id"),
+  at: timestamp("at").notNull().defaultNow(),
+  emailDomain: text("email_domain"),
+  disposableDomain: boolean("disposable_domain").notNull().default(false),
+  fingerprintHash: text("fingerprint_hash"),
+  fingerprintSeen: integer("fingerprint_seen").notNull().default(0),
+  asnRisk: numeric("asn_risk"),
+  decision: text("decision").notNull(),
+  reason: text("reason").notNull(),
+});
+
+// P1.16 (0036; REQ-GROWTH-15 amended) — the global daily trial-spend ceiling, one row per UTC day.
+export const trialSpendDaily = pgTable("trial_spend_daily", {
+  day: date("day").primaryKey(),
+  credits: bigint("credits", { mode: "number" }).notNull().default(0),
+});
+
+// P1.16 (0036; REQ-BILL-14) — Checkout sessions: return-to-context + grant-path discrimination.
+export const checkoutSessions = pgTable("checkout_sessions", {
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id").notNull(),
+  billingAccountId: text("billing_account_id").notNull(),
+  userId: text("user_id"),
+  kind: text("kind").notNull(),
+  plan: text("plan"),
+  cycle: text("cycle"),
+  packId: text("pack_id"),
+  stripeSessionId: text("stripe_session_id"),
+  returnTo: text("return_to"),
+  state: text("state").notNull().default("open"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// P1.16 (0036; REQ-BILL-17) — every unattended charge (or skip/failure) is auditable.
+export const autoReloadEvents = pgTable("auto_reload_events", {
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id").notNull(),
+  billingAccountId: text("billing_account_id").notNull(),
+  at: timestamp("at").notNull().defaultNow(),
+  packId: text("pack_id"),
+  credits: integer("credits"),
+  cents: integer("cents"),
+  stripeRef: text("stripe_ref"),
+  reason: text("reason").notNull(),
+  outcome: text("outcome").notNull(),
+});
+
+// P1.16 (0036; REQ-BILL-7 amended) — the weekly re-fit's evidence rows + the live cap multiplier singleton.
+export const estimatorFits = pgTable("estimator_fits", {
+  id: text("id").primaryKey(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+  sampleRuns: integer("sample_runs").notNull(),
+  medianRatio: numeric("median_ratio"),
+  capMultiplier: numeric("cap_multiplier").notNull(),
+  note: text("note"),
+});
+
+export const estimatorConfig = pgTable("estimator_config", {
+  id: text("id").primaryKey(),
+  capMultiplier: numeric("cap_multiplier").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// P1.16 (0036; §14.2) — the Team tier is listed but waitlisted; mechanics are out of scope.
+export const teamWaitlist = pgTable("team_waitlist", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull(),
+  seats: integer("seats"),
+  workspaceId: text("workspace_id"),
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const proxyCredentials = pgTable("proxy_credentials", {

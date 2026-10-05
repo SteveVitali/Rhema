@@ -229,3 +229,73 @@ describe("keep_planning — the bounded one-shot re-plan (REQ-GATE-6)", () => {
     expect(deps.queue.sent.some((j) => j.name === "run.resume" && (j.payload as { fromStep?: string }).fromStep === "next")).toBe(true);
   });
 });
+
+// P1.16 §14.6 — a `confirm_cost` gate on a waiting_gate run is the parked-resume re-price (steering's
+// reprice seam opened it): the run kept its original hold, so consenting places an ADDITIONAL hold for
+// the delta (new cap − still-held), keyed on the gate id, then the normal resume edge fires.
+describe("confirm_cost on waiting_gate — the reprice delta hold (P1.16 §14.6)", () => {
+  let db: OrchestratorTestDb;
+  let deps: TestDeps;
+  let ws: string;
+
+  beforeEach(async () => {
+    db = await createOrchestratorTestDb();
+    const seed = await seedProject(db);
+    ws = seed.workspaceId;
+    deps = makeDeps(db);
+  });
+  afterEach(() => db.close());
+
+  it("consent holds ONLY the delta (new cap − still-held) and resumes as a fresh attempt", async () => {
+    await seedRun(db, { runId: "run_p", workspaceId: ws, projectId: "prj_seed", state: "waiting_gate" });
+    // the run's original hold: 300 held of which 40 already debited → 260 still held; reprice lifted the
+    // cap to 360 → the consent holds 100.
+    await db.client.query(
+      `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key)
+       values ('led_h1',$1,'ba_seed','hold',300,'included','run_p','hold','hold:run_p#included'),
+              ('led_d1',$1,'ba_seed','debit',40,'included','run_p','run','debit:run_p:ph1#included')`,
+      [ws],
+    );
+    await db.client.query("update runs set cap_credits = 360 where id = 'run_p'");
+    await seedGate(db, { gateId: "g_rp", runId: "run_p", kind: "confirm_cost", onExpiry: "cancel", deadlineAt: PAST });
+
+    const r = await resolveGate(deps, { runId: "run_p", gateId: "g_rp", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: true, resolved: true, state: "queued" });
+    const holds = deps.ledger.opsOf("hold");
+    expect(holds).toHaveLength(1);
+    expect(holds[0]!.args.credits).toBe(100); // the delta, not the full cap
+    expect(holds[0]!.args.idempotencyKey).toBe("hold-delta:run_p:g_rp");
+    expect(deps.queue.ofName(RUN_JOBS.resume)).toHaveLength(1); // the resume edge, not run.start
+    expect(deps.queue.ofName(RUN_JOBS.start)).toHaveLength(0);
+  });
+
+  it("a delta the balance can't cover rolls the consent back — insufficient_balance, gate stays open", async () => {
+    await seedRun(db, { runId: "run_p", workspaceId: ws, projectId: "prj_seed", state: "waiting_gate" });
+    await db.client.query("update runs set cap_credits = 360 where id = 'run_p'");
+    await seedGate(db, { gateId: "g_rp", runId: "run_p", kind: "confirm_cost", onExpiry: "cancel", deadlineAt: PAST });
+    deps.ledger.primeInsufficient(true);
+    const r = await resolveGate(deps, { runId: "run_p", gateId: "g_rp", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: false, reason: "insufficient_balance" });
+    const g = await db.client.query("select resolved_at from gates where id = 'g_rp'");
+    expect((g.rows[0] as { resolved_at: Date | null }).resolved_at).toBeNull(); // the decision rolled back
+    expect(await countDecisions(db, "g_rp")).toBe(0);
+  });
+
+  it("a suspended account's consent rolls back — account_suspended", async () => {
+    await seedRun(db, { runId: "run_p", workspaceId: ws, projectId: "prj_seed", state: "waiting_gate" });
+    await db.client.query("update runs set cap_credits = 360 where id = 'run_p'");
+    await seedGate(db, { gateId: "g_rp", runId: "run_p", kind: "confirm_cost", onExpiry: "cancel", deadlineAt: PAST });
+    deps.ledger.primeSuspended(true);
+    const r = await resolveGate(deps, { runId: "run_p", gateId: "g_rp", workspaceId: ws, userId: "usr_seed", action: "approve" });
+    expect(r).toMatchObject({ ok: false, reason: "account_suspended" });
+  });
+
+  it("stop on a reprice gate cancels the run and releases the original hold — no delta hold is placed", async () => {
+    await seedRun(db, { runId: "run_p", workspaceId: ws, projectId: "prj_seed", state: "waiting_gate", holdLedgerId: "led_h1" });
+    await seedGate(db, { gateId: "g_rp", runId: "run_p", kind: "confirm_cost", onExpiry: "cancel", deadlineAt: PAST });
+    const r = await resolveGate(deps, { runId: "run_p", gateId: "g_rp", workspaceId: ws, userId: "usr_seed", action: "stop" });
+    expect(r).toMatchObject({ ok: true, state: "cancelled" });
+    expect(deps.ledger.opsOf("hold")).toHaveLength(0);
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+});

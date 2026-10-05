@@ -79,6 +79,8 @@ export type CreateRunResult =
   // PRB.21 / D-PRB.20-1 — the beta concurrency ruling: at most ONE non-terminal run per project; a
   // second create 409s carrying the active run's id (the sheet re-renders its in-progress state).
   | { readonly ok: false; readonly reason: "run_in_progress"; readonly activeRunId: string }
+  // P1.16 (§14.3): a trial-entitlement refusal (locked/consumed/revoked/killed/daily-ceiling).
+  | { readonly ok: false; readonly reason: "entitlement_unavailable"; readonly detail?: string }
   | { readonly ok: false; readonly reason: "model_profile_rejected"; readonly error: ModelProfileRejectedError };
 
 /**
@@ -226,6 +228,17 @@ export async function createRun(
           // REQ-SPEC-24.7: a chargeback-suspended account takes no new holds — the run is never created
           // (rolled back like an insufficient balance); the api surfaces 403 account_suspended.
           throw new CreationRollback({ ok: false, reason: "account_suspended" });
+        }
+        // P1.16 (§14.3): a trial-entitlement refusal — consumed/locked entitlement, the kill switch, or
+        // the global daily trial-spend ceiling — must never let the run proceed free (REQ-SPEC-24.2).
+        // Matched by name: the ledger's error classes live downstream of this package.
+        if (
+          e instanceof Error &&
+          (e.name === "EntitlementUnavailableError" ||
+            e.name === "TrialKilledError" ||
+            e.name === "TrialCeilingExhaustedError")
+        ) {
+          throw new CreationRollback({ ok: false, reason: "entitlement_unavailable", detail: e.name });
         }
         throw e;
       }

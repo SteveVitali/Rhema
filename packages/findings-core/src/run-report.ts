@@ -80,6 +80,9 @@ export interface RunReportView {
   readonly drivers: readonly { key: ReportFlagKey | "phase_share" | "within_estimate"; phase?: string; share?: number }[];
   /** Suggested guidance for the next round — controlled keys the UI renders into sentences. */
   readonly suggestedGuidance: readonly string[];
+  /** REQ-BILL-19 (P1.16) — the frozen rate-table version this run priced under; the report links it to
+   *  `/pricing/rates` so a reader can always trace a figure to its published table. */
+  readonly rateTableVersion?: number;
 }
 
 /** A Level-4 drill-down row — phase × seat × model tier (Advanced only; tokens live ONLY here). */
@@ -121,6 +124,8 @@ export interface BuildReportInput {
   readonly claims?: { checked: number; verified: number } | null;
   /** the run's model tier (for the second-read-model flag). */
   readonly modelTier?: string | null;
+  /** the run's frozen rate-table version (REQ-BILL-19 — the report links it to /pricing/rates). */
+  readonly rateTableVersion?: number;
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;
@@ -273,6 +278,7 @@ export function buildRunReport(input: BuildReportInput): RunReportView {
     claims,
     drivers,
     suggestedGuidance,
+    ...(input.rateTableVersion != null ? { rateTableVersion: input.rateTableVersion } : {}),
   };
 }
 

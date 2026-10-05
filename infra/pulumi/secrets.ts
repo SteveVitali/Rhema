@@ -20,7 +20,7 @@ export interface Secrets {
   /** Better-Auth signing secret + Google OAuth client secret (api reads these; never web/collab). */
   betterAuthSecret: gcp.secretmanager.Secret;
   googleOauthClientSecret: gcp.secretmanager.Secret;
-  /** Stripe secret (billing worker only) + the webhook signing secret (api only — PRB.08). */
+  /** Stripe secret (api Checkout/Portal + billing worker — P1.16) + the webhook signing secret (api only — PRB.08). */
   stripeSecret: gcp.secretmanager.Secret;
   stripeWebhookSecret: gcp.secretmanager.Secret;
   /** The RS256 private key the api mints run tokens with (RunTokenService); the proxy holds the public JWK. */

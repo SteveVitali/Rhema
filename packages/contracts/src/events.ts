@@ -55,6 +55,18 @@ export const RUN_EVENTS = {
     density: "summary",
     payload: z.object({ resumeFrom: boundedText.optional() }),
   },
+  // P1.16 §14.6 — the rate table moved while the run was parked: the cap delta waits on a confirm_cost
+  // gate instead of resuming under a stale price. Credits + the gate id only (no token figures).
+  "run.repriced": {
+    visibility: "user",
+    density: "summary",
+    payload: z.object({
+      deltaCredits: z.number().int(),
+      newEstimateCredits: z.number().int(),
+      newCapCredits: z.number().int(),
+      gateId: idSchema,
+    }),
+  },
   "run.hiccup": {
     visibility: "user",
     density: "summary",

@@ -15,7 +15,7 @@ import {
   randomUlids,
   RUN_JOBS,
 } from "@rhema/orchestrator";
-import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB } from "@rhema/ledger";
+import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
 import { createGcsContentStore, createGcsRestoreBlobStore } from "@rhema/mirror";
 import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
 import {
@@ -77,6 +77,14 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   const stripeWebhookSecret = env.stripeWebhookSecretName
     ? await access(env.stripeWebhookSecretName)
     : undefined;
+  // P1.16: the Stripe Billing key is a Secret-Manager secret the same way — loaded at boot into the thin
+  // REST port (no SDK). A seeded PLACEHOLDER value counts as unconfigured (PRB.17 pattern); unset ⇒ the
+  // Checkout/Portal routes answer 503 `stripe_unconfigured` — never a session that pretends a charge exists.
+  const stripeKeySecret = env.stripeSecretKeyName ? await access(env.stripeSecretKeyName) : undefined;
+  const stripeKey = stripeKeySecret && !/placeholder/i.test(stripeKeySecret) ? stripeKeySecret : undefined;
+  if (stripeKeySecret && !stripeKey) {
+    console.log("[api] STRIPE secret is a placeholder — Checkout/Portal stay 503 stripe_unconfigured");
+  }
   // PRB.09: the one-click email-action HMAC key is a Secret Manager secret like the run-token keys — the api
   // verifies at /api/action/<token>; unset ⇒ the route 404s (notification emails are not minted either — the
   // worker holds the same seam).
@@ -211,6 +219,9 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     ...(systemExec ? { systemExec } : {}),
     ...(stripeWebhookSecret ? { stripeWebhookSecret } : {}),
     ...(env.stripePaymentLinkUrl ? { paymentLinkUrl: env.stripePaymentLinkUrl } : {}),
+    // P1.16 — the Billing port + the app origin Checkout success/cancel URLs bounce through.
+    ...(stripeKey ? { stripe: new FetchStripePort(stripeKey) } : {}),
+    ...(env.appBaseUrl ? { appBaseUrl: env.appBaseUrl } : {}),
     // PRB.09 — the signed-action config the notification routes consume (+ the OrchestratorDeps field the
     // notify path uses when the api process itself schedules/emits).
     ...(notificationConfig ? { notifications: notificationConfig } : {}),

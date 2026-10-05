@@ -41,6 +41,12 @@ export interface ApiEnv {
    */
   readonly stripeWebhookSecretName?: string;
   /**
+   * P1.16 — the Stripe Billing API key's secret-version NAME (the `sk_…` value loads from Secret
+   * Manager at boot into `FetchStripePort`; never a plaintext env var). Unset ⇒ `/billing/checkout`
+   * + `/billing/portal` answer 503 `stripe_unconfigured` — never a fake session.
+   */
+  readonly stripeSecretKeyName?: string;
+  /**
    * The beta's ONE real-money surface: the Stripe Payment Link the exhaustion panel links out to (deploy
    * config — a URL, not a secret). Unset ⇒ the panel renders no add-credits action.
    */
@@ -136,6 +142,10 @@ export function readApiEnv(): ApiEnv {
     // Link + plan-offer URLs are plain deploy config.
     ...(process.env.STRIPE_WEBHOOK_SECRET_NAME
       ? { stripeWebhookSecretName: process.env.STRIPE_WEBHOOK_SECRET_NAME }
+      : {}),
+    // P1.16 — the Stripe Billing key is a secret-NAME too (Secret Manager at boot); unset ⇒ checkout 503s.
+    ...(process.env.STRIPE_SECRET_KEY_NAME
+      ? { stripeSecretKeyName: process.env.STRIPE_SECRET_KEY_NAME }
       : {}),
     ...(process.env.STRIPE_PAYMENT_LINK_URL ? { stripePaymentLinkUrl: process.env.STRIPE_PAYMENT_LINK_URL } : {}),
     ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
