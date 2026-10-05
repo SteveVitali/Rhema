@@ -1,0 +1,31 @@
+{
+  "name": "@rhema/archive",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Whole-account export zip + fresh-account import (REQ-ACCT-3; §13.4): every project in its on-disk layout (agents/editor/* excluded), every voice incl. profile + calibration + canonical-markdown samples, a ledger CSV, and an idempotent importer that reproduces projects and voices under a fresh workspace.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@rhema/contracts": "workspace:*",
+    "@rhema/ledger": "workspace:*",
+    "@rhema/mirror": "workspace:*",
+    "jszip": "^3.10.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}

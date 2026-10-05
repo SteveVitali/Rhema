@@ -87,6 +87,12 @@ import {
   type IngestReconstructJobPayload,
   type VoicePurgeJobPayload,
 } from "./ingest-jobs.js";
+import {
+  ACCOUNT_EXPORT_QUEUE,
+  handleAccountExport,
+  type AccountExportJobPayload,
+  type WorkerAccountExportDeps,
+} from "./export-jobs.js";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
@@ -376,6 +382,7 @@ export async function startWorker(): Promise<void> {
     "notify",
     "mail.send",
     "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
+    ACCOUNT_EXPORT_QUEUE, // P1.18 — the whole-account zip build + emailed 7-day link (REQ-ACCT-3)
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
@@ -548,6 +555,26 @@ export async function startWorker(): Promise<void> {
         continue;
       }
       await deps.mailer.send({ to: p.to, subject: p.subject, text: p.text, html: p.html });
+    }
+  });
+
+  // P1.18 — the account-export build (REQ-ACCT-3): re-reads the account_exports row, builds the zip
+  // via @rhema/archive, stores it content-addressed, mints the 7-day token, emails the link. The
+  // handler never throws on a deterministic failure (the row lands `failed`; a fresh request
+  // starts a new build) — a throw would burn retries on a build that cannot succeed.
+  const accountExportDeps: WorkerAccountExportDeps = {
+    systemExec,
+    contentStoreFor: deps.contentStoreFor,
+    clock,
+    ...(deps.mailer ? { mailer: deps.mailer } : {}),
+    ...(deps.emailFrom ? { emailFrom: deps.emailFrom } : {}),
+    // the emailed link hits the API's token-gated /export/download (the web app proxies it).
+    ...(env.apiPublicUrl ? { linkBaseUrl: env.apiPublicUrl } : env.appBaseUrl ? { linkBaseUrl: env.appBaseUrl } : {}),
+  };
+  await boss.work<AccountExportJobPayload>(ACCOUNT_EXPORT_QUEUE, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleAccountExport(accountExportDeps, job.data);
+      console.log(`[worker] account.export ${job.data.exportId} → ${JSON.stringify(r)}`);
     }
   });
 

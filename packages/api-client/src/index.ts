@@ -7,7 +7,10 @@ import type {
   Claim,
   ConversionResult,
   CorpusMeasures,
+  CslStyle,
+  ExportFormat,
   FindingView,
+  MdExportProfile,
   ObligationState,
   RunState,
   VoiceMeasureRow,
@@ -1742,11 +1745,42 @@ export interface ReseedPreviewDto {
 // every read — the only write is `appendAiUseAddition` (append-only; there is no update/delete).
 // ---------------------------------------------------------------------------------------------------------
 
-/** One beta export format on the dialog (the §13.4 beta subset: md/txt/docx). */
+/** One export format on the dialog (P1.18 — the full seven-format registry, one shared table). */
 export interface ExportFormatDto {
-  readonly id: "md" | "txt" | "docx";
+  readonly id: ExportFormat;
   readonly label: string;
   readonly extension: string;
+  readonly blurb: string;
+  /** whether the §8.4 block-level provenance appendix can ride this format. */
+  readonly provenanceAppendix: boolean;
+}
+
+/** P1.18 — an `md`-only export profile (`substack`; never an eighth format). */
+export interface MdExportProfileDto {
+  readonly id: MdExportProfile;
+  readonly label: string;
+  readonly blurb: string;
+}
+
+/** P1.18 — the dialog's citation block: the bibliography artifact's presence + the vendored styles. */
+export interface ExportCitationsDto {
+  readonly hasBibliography: boolean;
+  readonly styles: { readonly id: CslStyle; readonly label: string }[];
+}
+
+/** P1.18 — the provenance-appendix toggle's state (off by default; greyed without a map). */
+export interface ExportProvenanceDto {
+  readonly available: boolean;
+  readonly defaultOn: boolean;
+  readonly label: string;
+  readonly formats: readonly ExportFormat[];
+}
+
+/** P1.18 — the protocol-conditioned surfaces (§6.7): Academic's disclosure toggle copy and the
+ *  op-ed exclusivity reminder (a reminder, never a gate). */
+export interface ExportSurfacesDto {
+  readonly disclosure: boolean;
+  readonly exclusivityReminder: string | null;
 }
 
 /** An open obligation surfaced on the export dialog (informational — export never blocks, §11.7). */
@@ -1778,6 +1812,10 @@ export interface AiUseStatementDto {
 export interface ExportDialogDto {
   readonly projectId: string;
   readonly formats: ExportFormatDto[];
+  readonly mdProfiles: MdExportProfileDto[];
+  readonly citations: ExportCitationsDto;
+  readonly provenance: ExportProvenanceDto;
+  readonly surfaces: ExportSurfacesDto;
   readonly obligations: {
     readonly blockingOpen: number;
     readonly open: number;
@@ -1791,11 +1829,17 @@ export interface ExportDialogDto {
 }
 
 export interface ExportRequestDto {
-  readonly format: "md" | "txt" | "docx";
+  readonly format: ExportFormat;
   /** the draft to export (default the highest-n head). */
   readonly draftId?: string;
+  /** an `md`-only profile (`substack`) — the api rejects it on any other format. */
+  readonly profile?: MdExportProfile;
+  /** CSL style for `--citeproc` (honored only when the project carries `bibliography/csl.json`). */
+  readonly cslStyle?: CslStyle;
   /** attach the AI-use statement as a trailing section (§8.4). */
   readonly attachAiUse?: boolean;
+  /** append the §8.4 block-level provenance appendix (off by default). */
+  readonly attachProvenance?: boolean;
 }
 
 /** A binary download result (the export POST + the standalone statement GET). */
@@ -1809,6 +1853,34 @@ export interface AiUseAdditionDto {
   readonly id: string;
   readonly sentence: string;
   readonly createdAt: string;
+}
+
+// ---- P1.18 — the whole-account export/import (REQ-ACCT-3) ----
+
+export type AccountExportStatus = "building" | "ready" | "failed";
+
+/** One account_exports row as the api reports it (the download token NEVER appears — it lives in
+ *  the email; `downloadPath` is the session-authed in-app route). */
+export interface AccountExportDto {
+  readonly id: string;
+  readonly status: AccountExportStatus;
+  readonly bytes: number | null;
+  readonly sha256: string | null;
+  readonly error: string | null;
+  readonly createdAt: string;
+  readonly readyAt: string | null;
+  readonly expiresAt: string | null;
+  readonly expired: boolean;
+  readonly downloadedAt: string | null;
+  readonly downloadPath?: string;
+}
+
+/** POST /account/import — the fresh-account replay's counts (a re-import is `deduped: true`). */
+export interface AccountImportResultDto {
+  readonly projects: number;
+  readonly voices: number;
+  readonly files: number;
+  readonly deduped: boolean;
 }
 
 // ---- PRB.20 — the live ingestion path (D-PRB.02-1) ----
@@ -2752,11 +2824,20 @@ export interface ApiClient {
   getExportDialog(projectId: string, init?: RequestInitLite): Promise<ExportDialogDto>;
   /** POST /projects/:id/export → the binary download. Never blocks on obligations (§11.7). */
   exportProject(projectId: string, req: ExportRequestDto, init?: RequestInitLite): Promise<ExportDownloadDto>;
+  // ---- P1.18 — the whole-account zip (REQ-ACCT-3) ----
+  /** GET /account/export — the latest build's state (null when never requested). */
+  getAccountExportState(init?: RequestInitLite): Promise<{ export: AccountExportDto | null }>;
+  /** POST /account/export — enqueue the build; deduped when a build runs or a link still lives. */
+  requestAccountExport(init?: RequestInitLite): Promise<{ export: AccountExportDto; deduped: boolean }>;
+  /** GET /account/export/download → a presigned object URL for the ready zip (410 when expired). */
+  getAccountExportDownloadUrl(exportId?: string, init?: RequestInitLite): Promise<{ downloadUrl: string }>;
+  /** POST /account/import — replay an export zip into this (fresh) account; idempotent. */
+  importAccountExport(zipBytes: ArrayBuffer | Uint8Array, init?: RequestInitLite): Promise<AccountImportResultDto>;
   /** GET /projects/:id/ai-use — the statement JSON; `format` returns the standalone binary download. */
   getAiUseStatement(projectId: string, init?: RequestInitLite): Promise<AiUseStatementDto>;
   downloadAiUseStatement(
     projectId: string,
-    format: "md" | "txt" | "docx",
+    format: ExportFormat,
     init?: RequestInitLite,
   ): Promise<ExportDownloadDto>;
   /** Append one author sentence to the statement (REQ-VIS-10 — the ONLY statement write; append-only). */
@@ -3814,6 +3895,49 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify({ sentence }),
       });
+    },
+    // ---- P1.18 — the whole-account zip ----
+    async getAccountExportState(init): Promise<{ export: AccountExportDto | null }> {
+      return json<{ export: AccountExportDto | null }>("/account/export", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async requestAccountExport(init): Promise<{ export: AccountExportDto; deduped: boolean }> {
+      return json<{ export: AccountExportDto; deduped: boolean }>("/account/export", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: "{}",
+      });
+    },
+    async getAccountExportDownloadUrl(exportId, init): Promise<{ downloadUrl: string }> {
+      const qs = exportId ? `?id=${encodeURIComponent(exportId)}` : "";
+      return json<{ downloadUrl: string }>(`/account/export/download${qs}`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async importAccountExport(zipBytes, init): Promise<AccountImportResultDto> {
+      const url = `${base}/account/import`;
+      const res = await f(url, {
+        method: "POST",
+        headers: {
+          ...baseHeaders,
+          "content-type": "application/zip",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
+        body: zipBytes instanceof Uint8Array ? zipBytes : new Uint8Array(zipBytes),
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as { error?: unknown } | null;
+        throw new ApiError(
+          res.status,
+          url,
+          undefined,
+          typeof errBody?.error === "string" ? errBody.error : undefined,
+        );
+      }
+      return (await res.json()) as AccountImportResultDto;
     },
     async presignImportUpload(init?: RequestInitLite): Promise<PresignedImportDto> {
       return json<PresignedImportDto>("/import/presign", {

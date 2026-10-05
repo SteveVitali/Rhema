@@ -3909,20 +3909,89 @@ export function ExportPage(): ReactNode {
               <legend style={{ fontSize: "13px", fontWeight: 600, color: "var(--shell-fg)" }}>{COPY.export.formatLegend}</legend>
               <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                 {dialog.formats.map((f, i) => (
-                  <label key={f.id} style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                  <label key={f.id} title={f.blurb} style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
                     <input type="radio" name="format" value={f.id} defaultChecked={i === 0} />
                     {f.label}
                   </label>
                 ))}
               </div>
             </fieldset>
+            {/* P1.18 — the .md-only profile (Substack). The web POST drops it for any other format,
+                and the api enforces the same rule — a profile is never an eighth format. */}
+            {dialog.mdProfiles.length > 0 ? (
+              <label style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "12px", fontSize: "13px", color: "var(--shell-fg)" }}>
+                {COPY.export.profileLegend}:{" "}
+                <select name="profile" data-md-profile="true" style={{ fontSize: "13px" }}>
+                  <option value="">{COPY.export.profileCanonical}</option>
+                  {dialog.mdProfiles.map((p) => (
+                    <option key={p.id} value={p.id} title={p.blurb}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.export.profileNote}</span>
+              </label>
+            ) : null}
+            {/* the citation-style select only exists while a bibliography artifact exports. */}
+            {dialog.citations.hasBibliography ? (
+              <label style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "12px", fontSize: "13px", color: "var(--shell-fg)" }}>
+                {COPY.export.citationLegend}:{" "}
+                <select name="cslStyle" data-csl-style="true" style={{ fontSize: "13px" }}>
+                  {dialog.citations.styles.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.export.citationNote}</span>
+              </label>
+            ) : null}
             <label style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginTop: "12px", fontSize: "13px", color: "var(--shell-fg)" }}>
               <input type="checkbox" name="attachAiUse" defaultChecked style={{ marginTop: "2px" }} />
               <span>
                 {COPY.export.attachLabel}
                 <span style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}>{COPY.export.attachNote}</span>
+                {/* §6.7 — the Academic surface: the disclosure toggle copy (the ICMJE template
+                    registers at P1.21; until then the general statement ships). */}
+                {dialog.surfaces.disclosure ? (
+                  <span data-disclosure-note="true" style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                    {COPY.export.disclosureNote}
+                  </span>
+                ) : null}
               </span>
             </label>
+            {/* §8.4 — the block-level provenance appendix (off by default; greyed without a map). */}
+            <label
+              data-provenance-toggle={dialog.provenance.available ? "available" : "unavailable"}
+              style={{
+                display: "flex",
+                gap: "8px",
+                alignItems: "flex-start",
+                marginTop: "12px",
+                fontSize: "13px",
+                color: dialog.provenance.available ? "var(--shell-fg)" : "var(--shell-fg-faint)",
+              }}
+            >
+              <input
+                type="checkbox"
+                name="attachProvenance"
+                disabled={!dialog.provenance.available}
+                defaultChecked={dialog.provenance.defaultOn && dialog.provenance.available}
+                style={{ marginTop: "2px" }}
+              />
+              <span>
+                {COPY.export.provenanceLabel}
+                <span style={{ display: "block", fontSize: "12px", color: "var(--shell-fg-faint)" }}>
+                  {dialog.provenance.available ? dialog.provenance.label : COPY.export.provenanceUnavailable}
+                </span>
+              </span>
+            </label>
+            {/* §6.7 — the op-ed exclusivity reminder: a reminder line, never a gate. */}
+            {dialog.surfaces.exclusivityReminder ? (
+              <p data-exclusivity-reminder="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "12px" }}>
+                {dialog.surfaces.exclusivityReminder}
+              </p>
+            ) : null}
             <button type="submit" style={{ marginTop: "12px", fontSize: "13px" }}>{COPY.export.exportCta}</button>
           </form>
 
@@ -3972,8 +4041,9 @@ export function ExportPage(): ReactNode {
 /** PRB.12 — Settings (level-0 minimal): the one control REQ-PROD-15 requires to exist and bind — the
  *  analytics opt-out. A plain form POST; the flag also hides existing events from every read. */
 export function SettingsPage(): ReactNode {
-  const { privacy, theme } = usePageData();
+  const { privacy, theme, accountExport } = usePageData();
   const pref = theme?.pref ?? "dark";
+  const acct = accountExport?.export ?? null;
   return (
     <Shell brand={COPY.brand} nav={
       <>
@@ -4023,6 +4093,75 @@ export function SettingsPage(): ReactNode {
             </span>
           ) : null}
         </form>
+      </section>
+      {/* P1.18 — the whole-account zip (REQ-ACCT-3): "Export everything" queues the build and the
+          download link arrives by email (7-day expiry); the restore half replays an export zip
+          into this account — a re-import is a no-op. */}
+      <section aria-label={COPY.accountExport.heading} style={{ marginTop: "24px", maxWidth: "68ch" }} data-account-export="true">
+        <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{COPY.accountExport.heading}</h3>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 10px" }}>
+          {COPY.accountExport.lede}
+        </p>
+        {acct?.status === "building" ? (
+          <p data-export-status="building" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+            {COPY.accountExport.building}
+          </p>
+        ) : null}
+        {acct?.status === "ready" && !acct.expired ? (
+          <p data-export-status="ready" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+            {COPY.accountExport.readyFmt.replace("{date}", (acct.expiresAt ?? "").slice(0, 10))}{" "}
+            <a href={`/settings/account-export/download?id=${acct.id}`} data-export-download="true">
+              {COPY.accountExport.downloadCta}
+            </a>
+          </p>
+        ) : null}
+        {acct?.status === "ready" && acct.expired ? (
+          <p data-export-status="expired" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+            {COPY.accountExport.expired}
+          </p>
+        ) : null}
+        {acct?.status === "failed" ? (
+          <p data-export-status="failed" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+            {COPY.accountExport.failedFmt.replace("{error}", acct.error ?? "unknown")}
+          </p>
+        ) : null}
+        {accountExport?.notice === "requested" ? (
+          <p data-export-notice="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 8px" }}>
+            {COPY.accountExport.building}
+          </p>
+        ) : null}
+        <form method="post" action="/settings/account-export">
+          <button type="submit" style={{ fontSize: "13px" }}>{COPY.accountExport.cta}</button>
+        </form>
+        <h4 style={{ fontSize: "13px", margin: "16px 0 6px" }}>{COPY.accountExport.importHeading}</h4>
+        <p style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 8px" }}>
+          {COPY.accountExport.importNote}
+        </p>
+        <form method="post" action="/settings/account-import" encType="multipart/form-data" data-account-import="true">
+          <label style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", color: "var(--shell-fg)" }}>
+            {COPY.accountExport.importLabel}:{" "}
+            <input type="file" name="archive" accept=".zip,application/zip" required style={{ fontSize: "12px" }} />
+          </label>
+          <button type="submit" style={{ marginTop: "8px", fontSize: "13px" }}>{COPY.accountExport.importCta}</button>
+        </form>
+        {accountExport?.notice === "imported" && accountExport.imported ? (
+          <p data-import-notice="imported" style={{ fontSize: "12px", color: "var(--state-ready)", marginTop: "8px" }}>
+            {COPY.accountExport.importDoneFmt
+              .replace("{projects}", String(accountExport.imported.projects))
+              .replace("{voices}", String(accountExport.imported.voices))
+              .replace("{files}", String(accountExport.imported.files))}
+          </p>
+        ) : null}
+        {accountExport?.notice === "deduped" ? (
+          <p data-import-notice="deduped" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>
+            {COPY.accountExport.importDeduped}
+          </p>
+        ) : null}
+        {accountExport?.notice === "importFailed" ? (
+          <p data-import-notice="failed" style={{ fontSize: "12px", color: "var(--shell-fg)", marginTop: "8px" }}>
+            {COPY.accountExport.importFailed}
+          </p>
+        ) : null}
       </section>
     </Shell>
   );

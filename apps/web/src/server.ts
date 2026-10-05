@@ -67,7 +67,7 @@ import {
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, type GateKind } from "@rhema/contracts";
+import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, type GateKind } from "@rhema/contracts";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
@@ -1852,14 +1852,73 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/settings", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    const [privacy, theme] = await Promise.all([
+    const [privacy, theme, acct] = await Promise.all([
       deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false })),
       Promise.resolve().then(() => deps.dataSource.getTheme?.(session)).catch(() => null),
+      // P1.18 — the latest account-export build (best-effort: the section still renders without it).
+      Promise.resolve()
+        .then(() => deps.dataSource.getAccountExportState?.(session))
+        .then((r) => r ?? { export: null })
+        .catch(() => ({ export: null })),
     ]);
+    const notice = c.req.query("notice");
     return c.html(renderDocument(c.req.path, settingsElement, {
       privacy: { analyticsOptOut: privacy.analyticsOptOut, saved: c.req.query("saved") === "1" },
       ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
+      accountExport: {
+        export: acct?.export ?? null,
+        ...(notice ? { notice } : {}),
+        ...(c.req.query("p") != null
+          ? {
+              imported: {
+                projects: Number(c.req.query("p") ?? 0),
+                voices: Number(c.req.query("v") ?? 0),
+                files: Number(c.req.query("f") ?? 0),
+                deduped: false,
+              },
+            }
+          : {}),
+      },
     }));
+  });
+  // P1.18 — "Export everything" (REQ-ACCT-3): queue the account zip; the build + emailed link are
+  // the worker's. A repeat click dedupes server-side (the same row answers).
+  app.post("/settings/account-export", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    await deps.dataSource.requestAccountExport?.(session).catch(() => undefined);
+    return c.redirect("/settings?notice=requested");
+  });
+  // The in-app download of the ready zip — presigned through the api.
+  app.get("/settings/account-export/download", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const id = c.req.query("id");
+    const dl = await Promise.resolve()
+      .then(() => deps.dataSource.getAccountExportDownloadUrl?.(session, id))
+      .catch(() => null);
+    if (!dl) return c.redirect("/settings?notice=expired");
+    return c.redirect(dl.downloadUrl, 302);
+  });
+  // The restore half — upload an export zip; the api replays it idempotently.
+  app.post("/settings/account-import", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const file = form.archive;
+    const bytes =
+      file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
+        ? new Uint8Array(await (file as File).arrayBuffer())
+        : null;
+    if (!bytes) return c.redirect("/settings?notice=importFailed");
+    try {
+      if (!deps.dataSource.importAccountExport) return c.redirect("/settings?notice=importFailed");
+      const r = await deps.dataSource.importAccountExport(session, bytes);
+      if (r.deduped) return c.redirect("/settings?notice=deduped");
+      return c.redirect(`/settings?notice=imported&p=${r.projects}&v=${r.voices}&f=${r.files}`);
+    } catch {
+      return c.redirect("/settings?notice=importFailed");
+    }
   });
   // P1.01 — the app-theme control (the no-JS form counterpart of the IDE shell's theme menu; both write
   // "user".app_theme through the api). The POST redirects back with the saved flash.
@@ -3733,14 +3792,25 @@ export function createWebApp(deps: WebDeps): Hono {
     const t = await projectRow(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const form = await c.req.parseBody();
-    const format = typeof form.format === "string" ? form.format : "md";
-    if (format !== "md" && format !== "txt" && format !== "docx") {
+    const format = typeof form.format === "string" && isExportFormat(form.format) ? form.format : null;
+    if (!format) {
       return c.redirect(`/p/${t.slug}/export?error=1`);
     }
+    // P1.18 — the profile is md-only (a select the page always renders; drop it for any other
+    // format so the SSR form can't 422 on a legal combination — the api enforces the same rule).
+    const profile =
+      format === "md" && typeof form.profile === "string" && isMdExportProfile(form.profile)
+        ? form.profile
+        : undefined;
+    const cslStyle =
+      typeof form.cslStyle === "string" && isCslStyle(form.cslStyle) ? form.cslStyle : undefined;
     try {
       const dl = await deps.dataSource.exportProject(session, t.row.id, {
         format,
+        ...(profile ? { profile } : {}),
+        ...(cslStyle ? { cslStyle } : {}),
         attachAiUse: form.attachAiUse === "on",
+        attachProvenance: form.attachProvenance === "on",
       });
       return new Response(dl.bytes, {
         status: 200,
@@ -3768,14 +3838,14 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect(`/p/${t.slug}/export?added=1`);
   });
 
-  // The standalone statement download (md/txt/docx — the §8.4 REQ-VIS-10 exportable artifact).
+  // The standalone statement download (any registered format — the §8.4 REQ-VIS-10 artifact).
   app.get("/p/:project/export/ai-use/:fmt", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const t = await projectRow(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const fmt = c.req.param("fmt");
-    if (fmt !== "md" && fmt !== "txt" && fmt !== "docx") {
+    if (!isExportFormat(fmt)) {
       return c.html(renderDocument(c.req.path, notFoundElement), 404);
     }
     const dl = await deps.dataSource.downloadAiUseStatement(session, t.row.id, fmt).catch(() => null);

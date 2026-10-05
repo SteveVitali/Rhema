@@ -337,7 +337,14 @@ export async function startApiServer(): Promise<void> {
     throw lastErr;
   };
   await retryStartup("boss.start", () => boss.start());
-  for (const name of [...Object.values(RUN_JOBS), STRIPE_EVENT_JOB, "notify", "mail.send", "auth.mail"]) {
+  for (const name of [
+    ...Object.values(RUN_JOBS),
+    STRIPE_EVENT_JOB,
+    "notify",
+    "mail.send",
+    "auth.mail",
+    "account.export", // P1.18 — the account-zip build (the worker consumes; both sides createQueue).
+  ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
 

@@ -49,6 +49,9 @@ importers:
       '@rhema/ai-use':
         specifier: workspace:*
         version: link:../../packages/ai-use
+      '@rhema/archive':
+        specifier: workspace:*
+        version: link:../../packages/archive
       '@rhema/assistant':
         specifier: workspace:*
         version: link:../../packages/assistant
@@ -409,6 +412,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@rhema/archive':
+        specifier: workspace:*
+        version: link:../../packages/archive
       '@rhema/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -543,6 +549,25 @@ importers:
       '@rhema/findings-core':
         specifier: workspace:*
         version: link:../findings-core
+
+  packages/archive:
+    dependencies:
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/ledger':
+        specifier: workspace:*
+        version: link:../ledger
+      '@rhema/mirror':
+        specifier: workspace:*
+        version: link:../mirror
+      jszip:
+        specifier: ^3.10.2
+        version: 3.10.2
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
 
   packages/assistant:
     dependencies:
@@ -5652,6 +5677,14 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.20.1)
 
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@26.4.1))':
+    dependencies:
+      '@vitest/spy': 2.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 5.4.21(@types/node@26.4.1)
+
   '@vitest/pretty-format@2.1.9':
     dependencies:
       tinyrainbow: 1.2.0
@@ -8098,7 +8131,7 @@ snapshots:
   vitest@2.1.9(@types/node@26.4.1)(happy-dom@20.14.5):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.4.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

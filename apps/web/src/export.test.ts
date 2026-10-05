@@ -21,10 +21,34 @@ const PROJECTS: ProjectRow[] = [
 const DIALOG: ExportDialogDto = {
   projectId: "proj_1",
   formats: [
-    { id: "md", label: "Markdown", extension: "md" },
-    { id: "txt", label: "Plain text", extension: "txt" },
-    { id: "docx", label: "Word (.docx)", extension: "docx" },
+    { id: "md", label: "Markdown", extension: "md", blurb: "The canonical file.", provenanceAppendix: true },
+    { id: "txt", label: "Plain text", extension: "txt", blurb: "Text only.", provenanceAppendix: false },
+    { id: "html", label: "HTML", extension: "html", blurb: "A self-contained page.", provenanceAppendix: true },
+    { id: "docx", label: "Word (.docx)", extension: "docx", blurb: "A Word document.", provenanceAppendix: true },
+    { id: "rtf", label: "RTF", extension: "rtf", blurb: "Rich text.", provenanceAppendix: false },
+    { id: "pdf", label: "PDF", extension: "pdf", blurb: "Typeset by Typst.", provenanceAppendix: true },
+    { id: "latex", label: "LaTeX", extension: "tex", blurb: "A .tex source file.", provenanceAppendix: true },
   ],
+  mdProfiles: [
+    { id: "substack", label: "Substack", blurb: "Markdown shaped for the Substack editor." },
+  ],
+  citations: {
+    hasBibliography: true,
+    styles: [
+      { id: "apa", label: "APA" },
+      { id: "mla", label: "MLA" },
+      { id: "chicago-author-date", label: "Chicago (author-date)" },
+      { id: "harvard", label: "Harvard" },
+      { id: "vancouver", label: "Vancouver" },
+    ],
+  },
+  provenance: {
+    available: true,
+    defaultOn: false,
+    label: "Block-level provenance.",
+    formats: ["md", "html", "docx", "pdf", "latex"],
+  },
+  surfaces: { disclosure: true, exclusivityReminder: "Confirm this piece is not under review anywhere else." },
   obligations: {
     blockingOpen: 2,
     open: 3,
@@ -90,10 +114,19 @@ describe("export dialog — SSR (PRB.11)", () => {
     const res = await app.request("/p/the-piece/export");
     expect(res.status).toBe(200);
     const html = await res.text();
-    // the beta format set (§13.4) — md/txt/docx only.
+    // the full seven-format registry (P1.18) renders as radios.
     expect(html).toContain('name="format"');
     expect(html).toContain('value="md"');
     expect(html).toContain('value="docx"');
+    expect(html).toContain('value="pdf"');
+    expect(html).toContain('value="latex"');
+    // the md-profile select, the citation-style select, and the provenance toggle.
+    expect(html).toContain('name="profile"');
+    expect(html).toContain('value="substack"');
+    expect(html).toContain('name="cslStyle"');
+    expect(html).toContain('name="attachProvenance"');
+    expect(html).toContain('data-disclosure-note="true"');
+    expect(html).toContain('data-exclusivity-reminder="true"');
     // the §11.7 count line — informational, never a block.
     expect(html).toContain("2 blocking obligations open");
     expect(html).toContain("export always proceeds");
@@ -111,25 +144,44 @@ describe("export dialog — SSR (PRB.11)", () => {
     expect(html).toContain("/p/the-piece/export/ai-use/docx");
   });
 
-  it("POST /export proxies the binary download (format + attach flag forwarded)", async () => {
-    let seen: { format?: string; attachAiUse?: boolean } = {};
+  it("POST /export proxies the binary download (format + attach flags forwarded)", async () => {
+    let seen: Record<string, unknown> = {};
     const app = createWebApp(
       makeDeps({
         exportProject: async (_s, _p, req) => {
-          seen = req;
+          seen = req as Record<string, unknown>;
           return DL;
         },
       }),
     );
     const res = await app.request("/p/the-piece/export", {
       method: "POST",
-      ...form({ format: "docx", attachAiUse: "on" }),
+      ...form({ format: "docx", attachAiUse: "on", attachProvenance: "on", cslStyle: "apa", profile: "substack" }),
     });
     expect(res.status).toBe(200);
-    expect(seen).toEqual({ format: "docx", attachAiUse: true });
+    // the substack profile is md-only — the POST drops it for docx; the rest forwards verbatim.
+    expect(seen).toEqual({ format: "docx", attachAiUse: true, attachProvenance: true, cslStyle: "apa" });
     expect(res.headers.get("content-type")).toContain("text/markdown");
     expect(res.headers.get("content-disposition")).toContain("the-piece.md");
     expect(await res.text()).toBe("# the manuscript");
+  });
+
+  it("POST /export forwards the substack profile on .md only", async () => {
+    let seen: Record<string, unknown> = {};
+    const app = createWebApp(
+      makeDeps({
+        exportProject: async (_s, _p, req) => {
+          seen = req as Record<string, unknown>;
+          return DL;
+        },
+      }),
+    );
+    const res = await app.request("/p/the-piece/export", {
+      method: "POST",
+      ...form({ format: "md", profile: "substack" }),
+    });
+    expect(res.status).toBe(200);
+    expect(seen.profile).toBe("substack");
   });
 
   it("POST /export/addition appends a sentence and redirects back", async () => {
@@ -156,7 +208,10 @@ describe("export dialog — SSR (PRB.11)", () => {
     const res = await app.request("/p/the-piece/export/ai-use/md");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-disposition")).toContain("the-piece.md");
-    const bad = await app.request("/p/the-piece/export/ai-use/pdf");
+    const bad = await app.request("/p/the-piece/export/ai-use/epub");
     expect(bad.status).toBe(404);
+    // pdf is a registered format now — it streams too.
+    const pdf = await app.request("/p/the-piece/export/ai-use/pdf");
+    expect(pdf.status).toBe(200);
   });
 });
