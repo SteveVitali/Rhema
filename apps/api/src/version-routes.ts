@@ -34,6 +34,7 @@ import {
 } from "@rhema/mirror";
 import { assembleWhatChangedView } from "./what-changed.js";
 import type { Principal } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 export interface VersionApiDeps {
   readonly principal: (c: { req: { header(name: string): string | undefined } }) => Principal | null;
@@ -470,6 +471,8 @@ async function headMarkdown(
 
 export function createVersionRoutes(deps: VersionApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: restore-point restores on it 409.
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
   const storeFor = async (workspaceId: string): Promise<ContentStore | null> =>
     (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.store) ?? null;
   const ownProject = async (c: { req: { param(n: string): string } }, workspaceId: string) => {

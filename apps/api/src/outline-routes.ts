@@ -38,6 +38,7 @@ import { estimatorSpec, estimateCredits, serializeOutline } from "@rhema/protoco
 import { listThreads, threadPaths, parseIndex, RESEARCH_ROOT, type ResearchIndexEntry } from "@rhema/assistant";
 import { applyGateEdits, type GateStructuredEdits } from "@rhema/findings-core";
 import type { Principal } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 /** The outline surface's deps — the orchestrator bundle + session principal + tenant db + store. */
 export interface OutlineApiDeps extends OrchestratorDeps {
@@ -296,6 +297,9 @@ async function persistOutlineDoc(
 
 export function createOutlineRoutes(deps: OutlineApiDeps): Hono {
   const app = new Hono();
+
+  // P1.17 (§15.4) — outline writes on the Showcase dossier get 409 showcase_read_only.
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   /** Shared project gate: authed + project alive + not archived (writes). */
   const gate = async (

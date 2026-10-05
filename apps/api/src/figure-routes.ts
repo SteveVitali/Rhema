@@ -38,6 +38,7 @@ import {
 } from "@rhema/mirror";
 import { FIGURE_RENDER_QUEUE, type OrchestratorDeps } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 export interface FigureApiDeps extends OrchestratorDeps {
   readonly principal: (c: { req: { header(n: string): string | undefined } }) => Principal | null;
@@ -320,6 +321,8 @@ const VEGA_MARKS = new Set([
 
 export function createFigureRoutes(deps: FigureApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: figure proposals/edits/restores 409.
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   const storeFor = async (workspaceId: string): Promise<ContentStore | null> =>
     (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.store) ?? null;

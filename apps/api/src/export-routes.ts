@@ -26,6 +26,7 @@ import {
 import type { SqlClient, TxRunner } from "@rhema/orchestrator";
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { Principal } from "./run-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 import { resolveEditorHead, versionText, type DraftHeadRow } from "./editor-routes.js";
 
 // PRB.11 — export + the AI-use statement (§13.4, §8.4 REQ-VIS-10, §11.7). The conversion itself runs ONLY
@@ -131,6 +132,8 @@ function statementDto(s: AiUseStatement): StatementDto {
 
 export function createExportRoutes(deps: ExportApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: export jobs + AI-use additions 409.
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
   const oblDeps: ObligationDeps = { ids: deps.ids, clock: deps.clock };
 
   const ownProject = async (

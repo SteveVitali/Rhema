@@ -4,6 +4,9 @@ import { toProjectRowView, groupByAttention, groupByVoice } from "./state-map.js
 import { renderDocument } from "./render.js";
 import {
   inviteElement,
+  landingElement,
+  pricingElement,
+  signupElement,
   loginElement,
   projectsElement,
   projectElement,
@@ -91,7 +94,7 @@ export interface WebDeps {
    * Begin auth AFTER the invite passed (magic link / Google). Default: magic-link "sent". The Context is
    * passed so the live impl can relay the api's Set-Cookie (the OAuth `state` cookie) onto the response.
    */
-  beginAuth?(method: string, args: { code: string; email?: string }, c?: Context): Promise<AuthOutcome>;
+  beginAuth?(method: string, args: { code: string; email?: string; next?: string }, c?: Context): Promise<AuthOutcome>;
   /** End the session (clears the cookie). Default: no-op. */
   endSession?(c: Context): Promise<void>;
   /**
@@ -1166,13 +1169,153 @@ export function createWebApp(deps: WebDeps): Hono {
   };
 
   // Public: the invite page (+ read-only sample dossier). In `open` mode the access note drops the
-  // invitation requirement — still no marketing page, still factual.
+  // invitation requirement — still no marketing page, still factual. The partner-cohort machinery
+  // keeps `/invite`; P1.17 takes `/` for the §15.1 landing (the Notes rule).
   const invite = async (c: Context) =>
     (await signedIn(c))
       ? c.redirect("/app")
       : c.html(renderDocument(c.req.path, inviteElement, { invite: { signupOpen } }));
-  app.get("/", invite);
   app.get("/invite", invite);
+
+  // P1.17 — the pre-auth funnel beacons. `landing.viewed` fires server-side on the landing GET
+  // (the api hashes the forwarded IP into acquisition_events); the client beacon endpoint relays
+  // the drop-zone hold + any landing-side signals. Fire-and-forget — analytics never slow the page.
+  const landingBeacon = (event: "landing.viewed" | "landing.dropzone_used", c: Context, props?: Record<string, unknown>, token?: string) => {
+    try {
+      void deps.dataSource
+        .recordLandingEvent?.({
+          event,
+          ...(props ? { props } : {}),
+          ...(token ? { token } : {}),
+          ip: clientIp(c),
+        })
+        .catch(() => undefined);
+    } catch {
+      /* an unbound seam drops the event — the page still renders */
+    }
+  };
+
+  // P1.17 (§15.1) — `/` is the public landing: the twelve sections in the v0.3 order, the drop-zone
+  // hero, the sample dossier. A signed-in viewer still goes straight to /app.
+  app.get("/", async (c) => {
+    if (await signedIn(c)) return c.redirect("/app");
+    landingBeacon("landing.viewed", c, c.req.query("src") ? { src: c.req.query("src") } : undefined);
+    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen } }));
+  });
+
+  // P1.17 (§15.2) — /pricing: the derived page model (the annual toggle re-renders prices and shows
+  // the 15% saving in dollars — REQ-GROWTH-8).
+  app.get("/pricing", async (c) => {
+    if (await signedIn(c)) return c.redirect("/app");
+    return c.html(
+      renderDocument(c.req.path, pricingElement, { pricing: { annual: c.req.query("cycle") === "annual" } }),
+    );
+  });
+
+  // P1.17 (§15.3) — /signup: the intent-carrying admission form. `?intent=review` (the drop-zone
+  // route) maps to entry `draft`; `?entry=` carries the chosen first step; `?held=1` marks a
+  // client-side file hold; `?src=` is the acquisition label. Google or magic link — same admission
+  // seam as /login's POST (invite mode still requires a code; open mode never does).
+  const SIGNUP_ENTRIES = new Set(["scratch", "outline", "draft"] as const);
+  const signupEntryFrom = (raw: string | undefined, intent: string | undefined) => {
+    if (raw === "scratch" || raw === "outline" || raw === "draft") return raw;
+    if (intent === "review") return "draft" as const;
+    return undefined;
+  };
+  const renderSignup = (
+    c: Context,
+    signup: NonNullable<PageData["signup"]>,
+    status: 200 | 400 | 429 = 200,
+  ) =>
+    c.html(
+      renderDocument(c.req.path, signupElement, { signup: { ...signup, signupOpen } }),
+      status,
+    );
+
+  app.get("/signup", async (c) => {
+    if (await signedIn(c)) return c.redirect("/app");
+    return renderSignup(c, {
+      entry: signupEntryFrom(c.req.query("entry"), c.req.query("intent")),
+      src: c.req.query("src") ?? undefined,
+      held: c.req.query("held") === "1",
+    });
+  });
+
+  app.post("/signup", async (c) => {
+    const form = await c.req.parseBody();
+    const code = typeof form.code === "string" ? form.code : "";
+    const email = typeof form.email === "string" ? form.email : "";
+    const method = typeof form.method === "string" ? form.method : "magic_link";
+    const entry = SIGNUP_ENTRIES.has(form.entry as "scratch")
+      ? (form.entry as "scratch" | "outline" | "draft")
+      : undefined;
+    const src = typeof form.src === "string" && form.src.length <= 80 ? form.src : undefined;
+    const held = form.held === "1";
+
+    // invite mode: no code ⇒ no auth request is ever made (the PRB.01 gate, preserved verbatim).
+    if (!signupOpen && !code.trim()) {
+      return renderSignup(c, { error: COPY.login.errorRequired, code, email, entry, src, held }, 400);
+    }
+    if (method === "magic_link") {
+      if (!email.trim()) {
+        return renderSignup(
+          c,
+          { error: signupOpen ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired, code, email, entry, src, held },
+          400,
+        );
+      }
+      const verdict = magicLinkThrottle.attempt(clientIp(c), email);
+      if (!verdict.allowed) {
+        return renderSignup(c, { error: COPY.login.errorRateLimited, code, email, entry, src, held }, 429);
+      }
+      let res: Awaited<ReturnType<DataSource["signup"]>> | null;
+      try {
+        res = await deps.dataSource.signup({
+          email,
+          ...(code.trim() ? { code } : {}),
+          method,
+          ...(entry || src || held
+            ? { intent: { ...(entry ? { entry } : {}), ...(src ? { src } : {}), ...(held ? { held: true } : {}) } }
+            : {}),
+        });
+      } catch {
+        res = null;
+      }
+      if (!res) {
+        return renderSignup(c, { error: COPY.login.errorSignupUnavailable, code, email, entry, src, held }, 400);
+      }
+      if (!res.ok) {
+        return renderSignup(
+          c,
+          { error: signupErrorFor(res.error, signupOpen), code, email, entry, src, held },
+          res.status === 429 ? 429 : 400,
+        );
+      }
+    } else if (!signupOpen || code.trim()) {
+      const check = await deps.dataSource.checkInvite(code, undefined);
+      if (!check.ok) {
+        return renderSignup(c, { error: loginErrorFor(check.reason), code, email, entry, src, held }, 400);
+      }
+    }
+
+    // The funnel intent rides the post-auth landing (the OAuth/magic-link callbackURL): /app reads
+    // the ?entry&held&src query as its precedence fallback, and the held-file claim survives as a
+    // marker (never bytes — the file itself stays in IndexedDB).
+    const nextParams = new URLSearchParams();
+    if (entry) nextParams.set("entry", entry);
+    if (src) nextParams.set("src", src);
+    if (held) nextParams.set("held", "1");
+    const nextQuery = nextParams.toString();
+    const outcome = await beginAuth(
+      method,
+      { code, email: email || undefined, next: nextQuery ? `/app?${nextQuery}` : "/app" },
+      c,
+    );
+    if (outcome.redirect) {
+      return c.redirect(outcome.redirect);
+    }
+    return renderSignup(c, { sent: true, email, entry, src, held }, 200);
+  });
 
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).
@@ -1260,6 +1403,17 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // P1.17 (§3.5) — the verification return: a `?verified=1` landing emits `email.verified` once
+    // (the acquisition mint binds the identity; the api dedupes the same user re-arriving).
+    if (c.req.query("verified") === "1") {
+      try {
+        void deps.dataSource
+          .postAcquisitionEvent?.(session, { event: "email.verified", props: { trigger: "magic_link" } })
+          .catch(() => undefined);
+      } catch {
+        /* telemetry is never fatal */
+      }
+    }
     const q = (c.req.query("q") ?? "").trim();
     const voiceFilter = c.req.query("voice") || null; // a personaId or 'unfiled'
     const protocolFilter = c.req.query("protocol") || null; // a protocol id (§5.2 organisation)
@@ -1291,6 +1445,38 @@ export function createWebApp(deps: WebDeps): Hono {
             .catch(() => [])
         : Promise.resolve([]),
     ]);
+
+    // ---- P1.17 (§15.3) — the first-five-minutes precedence, run BEFORE the list renders ----
+    // The Showcase opens first ONLY while it is the workspace's unopened only child; a user who
+    // arrived carrying a file (entry draft/outline) wins instead — their file path lands first and
+    // the Showcase waits as the list's second row. An archived or already-opened Showcase is just a
+    // row. (Showcase rows are excluded from the count — the seed is not "the user's own work".)
+    const showcaseRows = rows.filter((r) => r.showcase === true);
+    const ownRows = rows.filter((r) => r.showcase !== true);
+    if (ownRows.length === 0 && showcaseRows.length > 0) {
+      const entry = await Promise.resolve()
+        .then(() => deps.dataSource.getShowcaseEntry?.(session))
+        .catch(() => undefined);
+      const showcase = entry?.showcase;
+      // The auth redirect may carry the intent verbatim (?entry=&held=1) when the api-side intent
+      // write raced or the deploy skipped it — the query is the fallback source.
+      const queryEntry = c.req.query("entry");
+      const intentEntry =
+        entry?.intent?.entry ??
+        (queryEntry === "draft" || queryEntry === "outline" || queryEntry === "scratch" ? queryEntry : undefined);
+      // The drop-zone hold marker survives the magic-link leg as intent.held (a flag, never bytes) —
+      // the OAuth redirect's ?held=1 is the fallback for deploys that skipped the intent write.
+      const heldQuery = entry?.intent?.held === true || c.req.query("held") === "1" ? "&held=1" : "";
+      if (intentEntry === "draft" || intentEntry === "outline") {
+        // the carried-file precedence (§15.3 rule: the dropped file wins).
+        return c.redirect(`/app/new?entry=${intentEntry}${heldQuery}`);
+      }
+      if (showcase && !showcase.opened && !showcase.archived) {
+        const anchor = showcase.firstFindingId ? `#finding-${showcase.firstFindingId}` : "";
+        return c.redirect(`/p/${showcase.slug}/review/${showcase.reviewRunId}${anchor}`);
+      }
+    }
+
     let filtered = voiceFilter
       ? rows.filter((r) => (voiceFilter === "unfiled" ? r.voice == null : r.voice?.personaId === voiceFilter))
       : rows;
@@ -1404,6 +1590,8 @@ export function createWebApp(deps: WebDeps): Hono {
       defaultProtocolId: null,
       askProtocol: false,
       form: { title: "", protocolId: null, venue: null, personaId: null, startVersion: null },
+      // P1.17 — `?held=1` marks a landing drop-zone hold to claim (the script hydrates the file input).
+      ...(c.req.query("held") === "1" ? { held: true } : {}),
     });
   });
 
@@ -1893,6 +2081,57 @@ export function createWebApp(deps: WebDeps): Hono {
     const body = (await c.req.json().catch(() => null)) as { surface?: unknown; ms?: unknown } | null;
     if (typeof body?.surface === "string" && typeof body?.ms === "number" && body.ms > 0) {
       emit(session, "surface.dwell", { surface: body.surface.slice(0, 40), ms: Math.min(Math.round(body.ms), 3_600_000) });
+    }
+    return c.body(null, 204);
+  });
+
+  // P1.17 — the pre-auth landing beacon: landing.js posts the drop-zone hold here (never the file —
+  // the bytes stay in IndexedDB; the token is the claim marker). Public, quiet 204 on anything odd.
+  app.post("/a/landing", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as {
+      event?: unknown;
+      props?: unknown;
+      token?: unknown;
+    } | null;
+    if (body?.event === "landing.viewed" || body?.event === "landing.dropzone_used") {
+      landingBeacon(
+        body.event,
+        c,
+        body.props && typeof body.props === "object" && !Array.isArray(body.props)
+          ? (body.props as Record<string, unknown>)
+          : undefined,
+        typeof body.token === "string" ? body.token.slice(0, 80) : undefined,
+      );
+    }
+    return c.body(null, 204);
+  });
+
+  // P1.17 — the session-authed acquisition mint (the dossier's anchor-viewed beacon, the
+  // verification-return's email.verified): forwards to POST /analytics/acquisition — the api binds
+  // the identity and honors opt-out. A missing session is a quiet 204 (the event is telemetry).
+  app.post("/a/acq", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.body(null, 204);
+    const body = (await c.req.json().catch(() => null)) as {
+      event?: unknown;
+      props?: unknown;
+      projectId?: unknown;
+      runId?: unknown;
+    } | null;
+    if (typeof body?.event !== "string") return c.body(null, 204);
+    try {
+      void deps.dataSource
+        .postAcquisitionEvent?.(session, {
+          event: body.event,
+          ...(body.props && typeof body.props === "object" && !Array.isArray(body.props)
+            ? { props: body.props as Record<string, unknown> }
+            : {}),
+          ...(typeof body.projectId === "string" ? { projectId: body.projectId } : {}),
+          ...(typeof body.runId === "string" ? { runId: body.runId } : {}),
+        })
+        .catch(() => undefined);
+    } catch {
+      /* unbound seam — drop the event */
     }
     return c.body(null, 204);
   });
@@ -4061,6 +4300,16 @@ export function createWebApp(deps: WebDeps): Hono {
   const outlineBundlePath = new URL("../public/outline.js", import.meta.url);
   app.get("/assets/outline.js", async (c) => {
     const body = await readFile(outlineBundlePath).catch(() => null);
+    if (!body) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": "text/javascript; charset=utf-8",
+      "cache-control": "no-cache",
+    });
+  });
+  // P1.17 — the landing island (drop-zone hold + beacon; also rehydrates the hold on /app/new?held=1).
+  const landingBundlePath = new URL("../public/landing.js", import.meta.url);
+  app.get("/assets/landing.js", async (c) => {
+    const body = await readFile(landingBundlePath).catch(() => null);
     if (!body) return c.body(null, 404);
     return c.body(body, 200, {
       "content-type": "text/javascript; charset=utf-8",

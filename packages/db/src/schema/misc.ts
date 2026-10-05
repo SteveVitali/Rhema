@@ -98,6 +98,18 @@ export const notificationDeliveries = pgTable(
   (t) => ({ dedup: unique().on(t.userId, t.channel, t.dedupKey) }),
 );
 
+// P1.17 (0037; §3.5) — the PRE-AUTH acquisition funnel: landing.viewed / landing.dropzone_used minted
+// before a session exists, so the analytics_events envelope (user/workspace identity) cannot apply.
+// Append-only, no PII (ip_hash for coarse dedupe); the api whitelists the two names at the route.
+export const acquisitionEvents = pgTable("acquisition_events", {
+  id: text("id").primaryKey(),
+  event: text("event").notNull(),
+  props: jsonb("props").notNull().default({}),
+  surface: text("surface").notNull().default("web"),
+  ipHash: text("ip_hash"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const figures = pgTable("figures", {
   id: text("id").primaryKey(),
   projectId: text("project_id"),

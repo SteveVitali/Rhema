@@ -276,12 +276,13 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(checkInvite).not.toHaveBeenCalled(); // admission runs post-OAuth in the live deploy
   });
 
-  it("the landing page in open mode drops the invitation requirement (still no marketing)", async () => {
+  it("the landing page in open mode drops the invitation requirement (P1.17: the real §15.1 landing)", async () => {
     const app = createWebApp(makeDeps({ signupMode: "open" }));
     const res = await app.request("/");
     const html = await res.text();
-    expect(html).toContain("credits you add yourself");
+    expect(html).toContain("An editorial board for everything you write.");
     expect(html).not.toContain("Access is by invitation");
+    expect(html).toContain('href="/signup'); // the funnel's CTA — open mode needs no code
   });
 
   it("magic-link requests throttle per IP — the send is refused 429, never silent", async () => {
@@ -365,7 +366,7 @@ describe("AC2 — project rows derive from the state function", () => {
 });
 
 describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
-  it("the public invite page renders the dossier with a contradicted Tier-1 claim + fetched URL, read-only", async () => {
+  it("the public landing renders the dossier with a contradicted Tier-1 claim + fetched URL, read-only", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/");
     expect(res.status).toBe(200);
@@ -376,9 +377,12 @@ describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
     expect(html).toContain('data-fetched="true"');
     expect(html).toContain("courtlistener.com");
     expect(html).toContain('data-readonly="true"');
-    // read-only: no disposition/triage controls on the public page
-    expect(html).not.toContain("<button");
-    expect(html).not.toContain("<form");
+    // read-only: the sample dossier's article carries no disposition/triage controls. (The page's
+    // own drop-zone <form> is the §15.1 hero's — outside the dossier block; P1.17 put it there.)
+    const dossier = html.slice(html.indexOf('data-readonly="true"'), html.indexOf("</article>"));
+    expect(dossier).not.toContain("<button");
+    expect(dossier).not.toContain("<form");
+    expect(dossier).not.toContain('name="disposition"');
   });
 });
 
@@ -496,14 +500,19 @@ describe("§5.3 import flow (deliverable 4)", () => {
   });
 });
 
-describe("AC5 — private + capped (REQ-BETA-19)", () => {
-  it("no pricing route, and the shell carries the dark theme", async () => {
+describe("AC5 — public funnel (P1.17; the beta's invite-only rule yields to the §15 launch surface)", () => {
+  it("/pricing renders the derived public page, and the shell carries the dark theme", async () => {
     const app = createWebApp(makeDeps());
-    expect((await app.request("/pricing")).status).toBe(404);
+    const res = await app.request("/pricing");
+    expect(res.status).toBe(200);
+    const pricing = await res.text();
+    // §15.2: the derived cards + the dollars-shown annual toggle copy — every figure comes from
+    // pricing.json via buildPricingPageData (the hand-edit trap lives in the contracts tests).
+    expect(pricing).toContain("Pricing");
+    expect(pricing).toContain("Annual");
     const home = await (await app.request("/")).text();
     expect(home).toContain('data-theme="dark"');
-    expect(home.toLowerCase()).not.toContain("pricing");
-    expect(home.toLowerCase()).not.toContain("plans");
+    expect(home.toLowerCase()).toContain("pricing"); // §15.1 section 10 links the public pricing page
   });
 
   it("healthz responds", async () => {

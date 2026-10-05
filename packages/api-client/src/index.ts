@@ -103,6 +103,10 @@ export interface ProjectRow {
   readonly statusLine?: string;
   /** P1.04 — the row's §5.2 attention group (server-derived). */
   readonly group?: ProjectGroupKey;
+  /** P1.17 (§15.4) — the workspace's read-only worked example (the "Worked example" row). */
+  readonly showcase?: boolean;
+  /** P1.17 — the latest review correspondence's delivering run (the dossier href). */
+  readonly latestReviewRunId?: string | null;
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -179,6 +183,12 @@ export interface SignupRequestDto {
   readonly email: string;
   readonly code?: string;
   readonly method?: string;
+  /**
+   * P1.17 (§15.3) — the funnel intent the signup carried: `entry` is the chosen first step
+   * (a carried file reads `draft`), `src` the acquisition label. Persisted once at creation;
+   * `GET /showcase` returns it for the `GET /app` precedence redirect.
+   */
+  readonly intent?: { readonly entry?: "scratch" | "outline" | "draft"; readonly src?: string; readonly held?: boolean };
 }
 
 /**
@@ -917,6 +927,40 @@ export interface AnalyticsEventRequestDto {
   readonly runId?: string;
   /** retry-safe mint: a heartbeat/beacon can name its key so a replayed POST lands once. */
   readonly dedupeKey?: string;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// P1.17 — the acquisition funnel (§15.3/§15.4; §3.5 events). `GET /showcase` is the precedence read the
+// `GET /app` redirect consumes (the workspace's Showcase entry + the signup intent it carried);
+// `POST /analytics/acquisition` is the session-authed funnel mint; `POST /analytics/landing` is the
+// pre-auth channel (acquisition_events — no session, no PII, the IP hashes server-side).
+// ---------------------------------------------------------------------------------------------------------
+
+/** `GET /showcase` — the workspace's Showcase entry + the recorded signup intent. */
+export interface ShowcaseEntryDto {
+  readonly showcase: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly reviewRunId: string;
+    readonly firstFindingId: string | null;
+    /** the letter has been opened at least once — the precedence redirect's "already seen" flag. */
+    readonly opened: boolean;
+    readonly archived: boolean;
+  } | null;
+  /** the intent POST /signup recorded (`user.signup_intent`; null ⇒ none carried). `held` marks a
+   *  device-local drop-zone hold the /app redirect must route to the claim form — a flag, never bytes. */
+  readonly intent: { readonly entry?: "scratch" | "outline" | "draft"; readonly src?: string; readonly held?: boolean } | null;
+}
+
+/** POST /analytics/acquisition — the §3.5 funnel mint (session-bound identity). */
+export type AcquisitionEventRequestDto = AnalyticsEventRequestDto;
+
+/** POST /analytics/landing — the pre-auth landing/drop-zone beacon. */
+export interface LandingEventRequestDto {
+  readonly event: "landing.viewed" | "landing.dropzone_used";
+  readonly props?: Record<string, unknown>;
+  /** the drop-zone hold token (localStorage key suffix — the claim lands post-auth). */
+  readonly token?: string;
 }
 
 /** GET/POST /settings/privacy — the account's analytics opt-out flag. */
@@ -2510,6 +2554,23 @@ export interface ApiClient {
     req: AnalyticsEventRequestDto,
     init?: RequestInitLite,
   ): Promise<{ ok: boolean; recorded: boolean }>;
+  /**
+   * P1.17 — the §3.5 acquisition funnel mint (POST /analytics/acquisition): the small funnel set —
+   * entry.chosen / outline.approved / paywall.shown / showcase.* / email.verified / landing.* —
+   * with identity bound server-side from the session.
+   */
+  postAcquisitionEvent(
+    req: AcquisitionEventRequestDto,
+    init?: RequestInitLite,
+  ): Promise<{ ok: boolean; recorded: boolean }>;
+  /** P1.17 — the pre-auth landing beacon (POST /analytics/landing → acquisition_events). The caller
+   *  MAY forward the client IP in `init.headers["x-forwarded-for"]` — the api hashes it for dedupe. */
+  recordLandingEvent(req: LandingEventRequestDto, init?: RequestInitLite): Promise<{ ok: boolean }>;
+  /**
+   * P1.17 (§15.4) — GET /showcase: the workspace's Showcase entry (slug/dossier run/opened flag)
+   * + the recorded signup intent — the `GET /app` precedence redirect's read.
+   */
+  getShowcase(init?: RequestInitLite): Promise<ShowcaseEntryDto>;
   /** The account's analytics opt-out flag (the Settings toggle's read). */
   getPrivacySettings(init?: RequestInitLite): Promise<PrivacySettingsDto>;
   /** Flip `analytics_opt_out` (REQ-PROD-15 — stops future writes AND hides existing rows from reads). */
@@ -3312,6 +3373,31 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         method: "POST",
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: JSON.stringify(req),
+      });
+    },
+    // ---- P1.17 — the acquisition funnel + the Showcase precedence read ----
+    async postAcquisitionEvent(req, init): Promise<{ ok: boolean; recorded: boolean }> {
+      return json<{ ok: boolean; recorded: boolean }>("/analytics/acquisition", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
+        body: JSON.stringify(req),
+      });
+    },
+    async recordLandingEvent(req, init): Promise<{ ok: boolean }> {
+      // Pre-auth by design — no session headers; the api hashes the forwarded IP itself.
+      return json<{ ok: boolean }>("/analytics/landing", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
+        body: JSON.stringify(req),
+      });
+    },
+    async getShowcase(init): Promise<ShowcaseEntryDto> {
+      return json<ShowcaseEntryDto>("/showcase", {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
       });
     },
     async getPrivacySettings(init): Promise<PrivacySettingsDto> {

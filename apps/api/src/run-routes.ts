@@ -44,7 +44,7 @@ import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
 import { capFromEstimate } from "@rhema/contracts";
-import { effectivePlanTier, gateTrialUnlock, trialEntitlementFor } from "@rhema/ledger";
+import { effectivePlanTier, gateTrialUnlock, trialEntitlementFor, recordAnalyticsEvent } from "@rhema/ledger";
 import { planOf, modelTierAllowed, effectiveConcurrency } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
@@ -196,12 +196,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // is a cheap tenant-scoped read before any spend work happens.
     const gateRow = (
       await deps.txRunner.run(principal.workspaceId, (tx) =>
-        tx.query(`select archived_at, deleted_at from projects where id = $1`, [projectId]),
+        tx.query(`select archived_at, deleted_at, showcase from projects where id = $1`, [projectId]),
       )
-    ).rows[0] as { archived_at: unknown; deleted_at: unknown } | undefined;
+    ).rows[0] as { archived_at: unknown; deleted_at: unknown; showcase: unknown } | undefined;
     // A missing row keeps prior behavior (the fixture harness creates runs without project rows).
     if (gateRow?.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (gateRow?.archived_at != null) return c.json({ error: "project_archived" }, 409);
+    // P1.17 (§15.4) — the Showcase dossier is read-only: runs are blocked with an inline explanation
+    // (the sheet surfaces `showcase_read_only` as "Duplicate it first" guidance).
+    if (gateRow?.showcase === true) return c.json({ error: "showcase_read_only" }, 409);
 
     // PRB.23 — resolve the sheet's Advanced per-phase toggle set ONCE, server-side: rigor
     // defaults + the submitted overrides (sanitized to the profile's declared toggle keys —
@@ -388,6 +391,22 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
             : planGate.error === "trial_denied" || planGate.error === "phone_challenge_required"
               ? 403
               : 422;
+      // P1.17 — the funnel's `paywall.shown` fires at the gate-denied seam (the sheet renders the
+      // paywall from this response; the server-authored event is the durable record). Awaited so the
+      // emission can't race the response on a single-connection driver; a failure is non-fatal.
+      try {
+        await deps.txRunner.run(principal.workspaceId, (tx) =>
+          recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
+            userId: principal.userId,
+            workspaceId: principal.workspaceId,
+            projectId,
+            event: "paywall.shown",
+            props: { location: planGate.error },
+          }),
+        );
+      } catch {
+        /* analytics must never block the gate's response */
+      }
       return c.json(planGate, status);
     }
 
@@ -749,6 +768,30 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       return c.json({ error: res.reason }, 404);
     }
     if (!res.resolved) return c.json({ resolved: false, reason: res.reason }, 409);
+    // P1.17 — REQ-CHAT-30's activation event, emitted at the seam the outline flow exposes: an
+    // `approve_outline` gate resolving `approve` is the scratch cohort's first gate decision.
+    // Server-owned, opt-out honored, never fatal to the decision write.
+    if (body.action === "approve") {
+      void deps.txRunner
+        .run(principal.workspaceId, async (tx) => {
+          const g = (
+            await tx.query(
+              `select g.kind, r.project_id from gates g join runs r on r.id = g.run_id where g.id = $1`,
+              [c.req.param("gid")],
+            )
+          ).rows[0] as { kind: string; project_id: string | null } | undefined;
+          if (g?.kind !== "approve_outline") return;
+          await recordAnalyticsEvent(tx, { ids: deps.ids, clock: deps.clock }, {
+            userId: principal.userId,
+            workspaceId: principal.workspaceId,
+            ...(g.project_id ? { projectId: g.project_id } : {}),
+            runId: c.req.param("id"),
+            event: "outline.approved",
+            props: {},
+          });
+        })
+        .catch(() => undefined);
+    }
     return c.json({ resolved: true, state: res.state, overlayVersionIds: res.overlayVersionIds, guidanceId: res.guidanceId });
   });
 

@@ -975,8 +975,15 @@ export function NewProjectPage(): ReactNode {
           }}
         />
       ) : null}
+      {/* P1.17 — a landing drop-zone hold is claimed here: landing.js reads the localStorage hold and
+          hydrates the file input (the SAME upload path — no bytes ever bypass conversion). */}
+      {np?.held ? (
+        <p data-held-notice role="status" style={{ fontSize: "13px", color: "var(--state-ready)" }}>
+          {COPY.showcase.heldFileReady}
+        </p>
+      ) : null}
       {np && !np.pending && !np.preview ? (
-        <form method="post" action="/app/new" encType="multipart/form-data" style={{ maxWidth: "68ch" }}>
+        <form method="post" action="/app/new" encType="multipart/form-data" data-held={np?.held ? "1" : undefined} style={{ maxWidth: "68ch" }}>
           <input type="hidden" name="entry" value={entry} />
           <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
             {COPY.newProject.titleLabel}
@@ -1108,6 +1115,8 @@ export function NewProjectPage(): ReactNode {
           </div>
         </form>
       ) : null}
+      {/* P1.17 — the drop-zone hold claim: hydrates the localStorage-held file into the file input. */}
+      {np?.held ? <script src="/assets/landing.js" defer /> : null}
     </IdeFrame>
   );
 }
@@ -2130,6 +2139,39 @@ export function DossierPage(): ReactNode {
 
   return (
     <IdeFrame>
+      {/* P1.17 (§15.4) — the Showcase banner: the workspace's read-only worked example names itself
+          and offers the ONE write affordance it has (Duplicate → a normal project). */}
+      {dossier.showcase ? (
+        <div
+          role="note"
+          data-showcase-banner
+          style={{
+            border: "1px solid var(--shell-border)",
+            borderRadius: "10px",
+            padding: "12px 16px",
+            margin: "0 0 16px",
+            background: "var(--shell-raised)",
+            fontSize: "13px",
+          }}
+        >
+          <strong>{COPY.showcase.bannerTitle}</strong>
+          <span style={{ color: "var(--shell-fg-muted)" }}> — {COPY.showcase.bannerBody} </span>
+          <form method="post" action={`/p/${dossier.slug}/duplicate`} style={{ display: "inline" }}>
+            <button type="submit" style={{ fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+              {COPY.showcase.duplicateCta}
+            </button>
+          </form>
+        </div>
+      ) : null}
+      {/* P1.17 (§3.5) — `showcase.finding_anchor_viewed`: only the client observes the scroll onto the
+          first finding's card — an IntersectionObserver posts the beacon once (the <60 s funnel leg). */}
+      {dossier.showcase && dossier.firstFindingId ? (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var el=document.querySelector('[data-finding="${dossier.firstFindingId}"]');if(!el)return;var sent=false;function fire(){if(sent)return;sent=true;var b=JSON.stringify({event:"showcase.finding_anchor_viewed",props:{}});try{if(navigator.sendBeacon){navigator.sendBeacon("/a/acq",new Blob([b],{type:"application/json"}));return;}}catch(e){}fetch("/a/acq",{method:"POST",headers:{"content-type":"application/json"},body:b,keepalive:true}).catch(function(){});}var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){fire();io.disconnect();}}},{threshold:0.4});io.observe(el);setTimeout(function(){var r=el.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0)fire();},1200);})();`,
+          }}
+        />
+      ) : null}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <SectionTitle>{dossier.projectTitle}</SectionTitle>
         <span style={{ color: "var(--shell-fg-muted)", fontSize: "13px" }}>{dossier.versionLabel}</span>

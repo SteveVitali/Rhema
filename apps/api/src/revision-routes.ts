@@ -8,16 +8,22 @@ import { captureGuidance, type OrchestratorDeps } from "@rhema/orchestrator";
 import type { ContentStore } from "@rhema/mirror";
 import { loadWhatChanged, loadVersionDiff, findHunk } from "./what-changed.js";
 import type { Principal } from "./run-routes.js";
+import type { SqlClient } from "./invite.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 export interface RevisionApiDeps extends OrchestratorDeps {
   readonly principal: (c: { req: { header(name: string): string | undefined } }) => Principal | null;
   /** the workspace-bound readable store (same seam as the deliver route's `contentStoreFor`). */
   contentStoreFor?(workspaceId: string): Promise<ContentStore>;
   readonly store?: ContentStore;
+  /** P1.17 — the scoped read the Showcase read-only guard uses. Unset ⇒ the guard is inert. */
+  readonly db?: SqlClient;
 }
 
 export function createRevisionRoutes(deps: RevisionApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: comments on its response/diff hunks 409.
+  if (deps.db) app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
   const storeFor = async (workspaceId: string): Promise<ContentStore | null> =>
     (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.store) ?? null;
 

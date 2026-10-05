@@ -36,6 +36,7 @@ import {
   type FindingRow,
   type TriageApiDeps,
 } from "./triage-routes.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 export type FindingApiDeps = TriageApiDeps & {
   /** emits `finding.applied` / `findings.bulk_*` analytics (server-owned facts — never client-minted). */
@@ -177,6 +178,10 @@ async function headMarkdown(
 export function createFindingRoutes(deps: FindingApiDeps): Hono {
   const app = new Hono();
   const oblDeps: ObligationDeps = { ids: deps.ids, clock: deps.clock };
+
+  // P1.17 (§15.4) — apply / promote / obligation writes on the Showcase dossier get 409
+  // showcase_read_only (reads still resolve so the welcome dossier renders end to end).
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   const ownProject = async (c: { req: { param(n: string): string } }, workspaceId: string) => {
     const r = (

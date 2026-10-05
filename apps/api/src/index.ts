@@ -32,6 +32,7 @@ import { createVoiceRoutes } from "./voice-routes.js";
 import { createIngestRoutes, type IngestApiDeps, type IngestBlobs } from "./ingest-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
 import { createAnalyticsRoutes } from "./analytics-routes.js";
+import { createShowcaseSeeder } from "./showcase.js";
 import { createThemeRoutes } from "./theme-routes.js";
 import { createTimelineRoutes } from "./timeline-routes.js";
 import { createApprovalRoutes, type ApprovalApiDeps } from "./approval-routes.js";
@@ -343,6 +344,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         txRunner: deps.txRunner,
         clock: deps.clock,
         ids: deps.ids,
+        // P1.17 — the pre-auth funnel write (acquisition_events) needs the raw client.
+        ...(deps.db ? { db: deps.db } : {}),
       }),
     );
     // P1.01 — the theme endpoints (REQ-IDE-38 amended): the per-user app theme + the per-project paper pin.
@@ -381,6 +384,14 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           ids: deps.ids,
           clock: deps.clock,
           txRunner: deps.txRunner,
+          // P1.17 — every provision seeds the workspace's Showcase dossier (§15.4): the deterministic
+          // fixture at $0. The content store binds when the deploy has one so the letter bytes render.
+          showcaseSeed: createShowcaseSeeder({
+            txRunner: deps.txRunner,
+            ids: deps.ids,
+            clock: deps.clock,
+            ...(deps.contentStore ? { store: deps.contentStore } : {}),
+          }),
         }),
       );
       // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the

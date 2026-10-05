@@ -248,7 +248,11 @@ describe("verified-email run gate (AC3 — an unverified self-serve account cann
     });
     expect(blocked.status).toBe(403);
     expect(await blocked.json()).toEqual({ error: "email_unverified" });
-    expect((await db.pg.query(`select count(*)::int n from runs`)).rows[0]).toEqual({ n: 0 });
+    // P1.17: provisioning seeds the workspace Showcase (a frozen dossier WITH its completed review
+    // run) — count only the project under test; the blocked request must create nothing there.
+    expect(
+      (await db.pg.query(`select count(*)::int n from runs where project_id = 'prj_self'`)).rows[0],
+    ).toEqual({ n: 0 });
 
     // the sign-in link verified the mailbox — the gate opens and the SAME body now creates the run.
     await db.pg.query(`update "user" set email_verified = true where id = $1`, [acct.userId]);

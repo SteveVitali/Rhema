@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, jsonb, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp, jsonb, primaryKey } from "drizzle-orm/pg-core";
 import { tsvector } from "./_shared.js";
 
 // Projects & sharing — mirrors migrations/0002_schema.sql (+ 0029's project_home additions).
@@ -28,6 +28,8 @@ export const projects = pgTable("projects", {
   archivedAt: timestamp("archived_at"),
   // P1.04 (0029; §5.2): soft delete — the 30-day restore window. A visibility marker, never state.
   deletedAt: timestamp("deleted_at"),
+  // P1.17 (0037; §15.4): the per-workspace Showcase — the read-only worked example seeded at $0.
+  showcase: boolean("showcase").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

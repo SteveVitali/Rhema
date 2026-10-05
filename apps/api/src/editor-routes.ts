@@ -28,6 +28,7 @@ import { artifactKindSchema, artifactPolicy } from "@rhema/contracts";
 import { buildEstimate } from "@rhema/run-sheet";
 import type { RunApiDeps } from "./run-routes.js";
 import { upsertProjectSearchDoc } from "./search.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 export type EditorApiDeps = RunApiDeps & {
   /** the raw SQL client for project-scoped reads (the shell's `db`; same seam the triage routes take). */
@@ -163,6 +164,10 @@ function findingsDto(rows: FindingSourceRow[], markdown: string): EditorFindingD
 export function createEditorRoutes(deps: EditorApiDeps): Hono {
   const app = new Hono();
   const oblDeps = { ids: deps.ids, clock: deps.clock };
+
+  // P1.17 (§15.4) — the Showcase dossier is read-only: every mutating verb under /projects/:id/*
+  // on a showcase project gets 409 showcase_read_only (reads pass through).
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   const storeFor = async (workspaceId: string): Promise<ContentStore | null> =>
     (deps.contentStoreFor ? await deps.contentStoreFor(workspaceId) : deps.store) ?? null;

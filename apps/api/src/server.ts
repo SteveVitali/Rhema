@@ -44,6 +44,7 @@ import {
   type BetaApiDeps,
 } from "./index.js";
 import { provisionPersonalAccount } from "./signup.js";
+import { createShowcaseSeeder } from "./showcase.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
 import type { SqlClient } from "./invite.js";
 
@@ -133,9 +134,16 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
         },
         {
           // self-serve paths that never pass through POST /signup provision the same account rows here
-          // (a session principal needs the personal-workspace membership row to resolve).
+          // (a session principal needs the personal-workspace membership row to resolve) — and P1.17's
+          // Showcase seed rides the same provision (§15.4, the $0 fixture dossier).
           onUserCreate: async (u) => {
-            await provisionPersonalAccount(rawDb, ids, u.id);
+            await provisionPersonalAccount(rawDb, ids, u.id, {
+              seedShowcase: createShowcaseSeeder({
+                txRunner,
+                ids,
+                store: artifactsStore,
+              }),
+            });
           },
         },
       )

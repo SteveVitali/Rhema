@@ -52,6 +52,7 @@ import {
   type GateDtoDeps,
   type OpenGateRow,
 } from "./gate-dto.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 /** The disposition write + decision-surface deps: the orchestrator deps (txRunner/ids/clock) + the shell's
  *  raw SqlClient for reads + a content store for approve_triage's ledger read/write-back. */
@@ -290,6 +291,9 @@ export async function recordDispositionInTx(
 export function createTriageRoutes(deps: TriageApiDeps): Hono {
   const app = new Hono();
   const oblDeps: ObligationDeps = { ids: deps.ids, clock: deps.clock };
+
+  // P1.17 (§15.4) — dispositions/decisions/gates on the Showcase dossier get 409 showcase_read_only.
+  app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   // Tenant check (the codebase convention: an explicit workspace filter; RLS is the live-deploy backstop).
   // Every project-scoped route below verifies the project belongs to the principal's workspace — a

@@ -15,6 +15,8 @@ import {
 import type { EstimatorInputs } from "@rhema/protocols";
 import type { ModelTier, Rigor, WorkflowKey } from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
+import type { SqlClient } from "./invite.js";
+import { showcaseReadOnlyGuard } from "./showcase.js";
 
 /** The Haiku-class claim pre-pass (§5.6 item 1). Returns the refined claim count for a draft version. */
 export interface ClaimPrePass {
@@ -56,6 +58,8 @@ export interface EstimateApiDeps {
   /** the pre-pass budget in ms (§5.6 item 1: ≤5 s). Default 5000. */
   readonly prePassBudgetMs?: number;
   clock?: { now(): Date };
+  /** P1.17 — the scoped read the Showcase read-only guard uses. Unset ⇒ the guard is inert. */
+  readonly db?: SqlClient;
 }
 
 interface EstimateBody {
@@ -106,6 +110,8 @@ async function withBudget<T>(p: Promise<T>, ms: number): Promise<T | null> {
 
 export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
   const app = new Hono();
+  // P1.17 (§15.4) — the Showcase dossier is read-only: bespoke estimates on it 409.
+  if (deps.db) app.use("/projects/:id/*", showcaseReadOnlyGuard(deps.db));
 
   app.post("/projects/:id/estimates", async (c) => {
     const principal = deps.principal(c);
