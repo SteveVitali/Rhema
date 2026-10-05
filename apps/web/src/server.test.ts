@@ -786,6 +786,19 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     expect(res.status).toBe(404);
     expect(called).toBe(false);
   });
+
+  it("STB.2 — an api 404 (a run that completed with no dossier) renders the not-found page, not a 500", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      getDossier: async () => {
+        throw new ApiError(404, "http://api/projects/x/review/run_1/dossier");
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/review/run_1");
+    expect(res.status).toBe(404);
+  });
 });
 
 // PRB.06 — the What-changed page (§5.8): the server-joined view SSRs (move cards + strip + unlinked +

@@ -170,11 +170,24 @@ export function createIam(args: IamArgs): Iam {
   });
 
   // The worker launches the two-uid run-task Jobs on the GKE cluster (createGkeJobLauncher → k8s Job create).
-  // `container.developer` grants the k8s-API access to create/read Jobs in the cluster (D-P0.08-1); a tighter
-  // per-namespace RBAC role is a later hardening (P1.22 / ops).
+  // P1.22 (D-P0.01-5 least-privilege close): `roles/container.developer` was the stand-in — it can create and
+  // DELETE clusters and node pools, far beyond what the launcher does. The launcher's GCP-layer need is just
+  // `container.clusters.get` (cluster discovery / the auth surface for its metadata token — the endpoint + CA
+  // reach it as env, so even that is defensive); what the identity may DO inside the cluster is decided by
+  // RBAC — the per-namespace Role/RoleBinding in infra/k8s/30-worker-job-rbac.yaml grants secrets create/get +
+  // jobs create/get/list in `runs`, nothing else. The custom role below is the narrow IAM half.
+  const gkeClusterAccess = new gcp.projects.IAMCustomRole(`rhema-${stack}-gke-cluster-access`, {
+    project,
+    roleId: `rhema${stack.replace(/-/g, "")}GkeClusterAccess`.slice(0, 64),
+    title: `Rhema ${stack} — GKE cluster access (worker job launcher)`,
+    description:
+      "Least-privilege IAM half of the run-task Job launch path (P1.22; D-P0.01-5): cluster discovery only — " +
+      "in-cluster powers come from the `runs`-namespace RBAC Role (infra/k8s/30-worker-job-rbac.yaml).",
+    permissions: ["container.clusters.get", "container.clusters.list"],
+  });
   new gcp.projects.IAMMember(`rhema-${stack}-worker-gke-job-launcher`, {
     project,
-    role: "roles/container.developer",
+    role: gkeClusterAccess.name,
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["worker"].email}`,
   });
 

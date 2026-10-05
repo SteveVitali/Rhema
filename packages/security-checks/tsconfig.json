@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../contracts" },
+    { "path": "../db" },
+    { "path": "../engine" },
+    { "path": "../hooks" },
+    { "path": "../live-clients" },
+    { "path": "../mirror" },
+    { "path": "../orchestrator" },
+    { "path": "../../apps/egress-proxy" },
+    { "path": "../../apps/fetcher" },
+    { "path": "../../apps/convert" },
+    { "path": "../../apps/api" },
+    { "path": "../../apps/web" },
+    { "path": "../../apps/run-task" },
+    { "path": "../../infra" }
+  ],
+  "exclude": ["dist", "**/*.test.ts"]
+}

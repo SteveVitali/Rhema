@@ -39,11 +39,12 @@ import {
   type ContentStore,
   type ModelProfile,
 } from "@rhema/orchestrator";
-import { buildEstimate, phaseFlagsForToggles, resolveToggles, sheetProfile, type ToggleState } from "@rhema/run-sheet";
+import { buildEstimate, phaseFlagsForToggles, resolveToggles, sheetProfile, type ToggleKey, type ToggleState } from "@rhema/run-sheet";
+import { PROTOCOL_SEEDS } from "@rhema/protocols";
 import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
-import { capFromEstimate } from "@rhema/contracts";
+import { capFromEstimate, projectProtocolOverridesSchema } from "@rhema/contracts";
 import { effectivePlanTier, gateTrialUnlock, trialEntitlementFor, recordAnalyticsEvent } from "@rhema/ledger";
 import { planOf, modelTierAllowed, effectiveConcurrency } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
@@ -196,15 +197,75 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // is a cheap tenant-scoped read before any spend work happens.
     const gateRow = (
       await deps.txRunner.run(principal.workspaceId, (tx) =>
-        tx.query(`select archived_at, deleted_at, showcase from projects where id = $1`, [projectId]),
+        tx.query(
+          `select archived_at, deleted_at, showcase, protocol_id, protocol_overrides from projects where id = $1`,
+          [projectId],
+        ),
       )
-    ).rows[0] as { archived_at: unknown; deleted_at: unknown; showcase: unknown } | undefined;
+    ).rows[0] as
+      | {
+          archived_at: unknown;
+          deleted_at: unknown;
+          showcase: unknown;
+          protocol_id: string | null;
+          protocol_overrides: unknown;
+        }
+      | undefined;
     // A missing row keeps prior behavior (the fixture harness creates runs without project rows).
     if (gateRow?.deleted_at != null) return c.json({ error: "not_found" }, 404);
     if (gateRow?.archived_at != null) return c.json({ error: "project_archived" }, 409);
     // P1.17 (§15.4) — the Showcase dossier is read-only: runs are blocked with an inline explanation
     // (the sheet surfaces `showcase_read_only` as "Duplicate it first" guidance).
     if (gateRow?.showcase === true) return c.json({ error: "showcase_read_only" }, 409);
+
+    // P1.22 W10 (REQ-GENRE-2's consumption half) — the project's stored `protocol_overrides` (the §6.7
+    // settings-page edits) resolve here, at launch: phaseDefaults sit BETWEEN the rigor defaults and the
+    // sheet's explicit toggle levers; `stage`/`length` fill unset fields below. A malformed stored blob
+    // safe-parses to null — never a launch failure, never silently trusted.
+    const storedOverrides = (() => {
+      const parsed = projectProtocolOverridesSchema.safeParse(gateRow?.protocol_overrides ?? null);
+      return parsed.success ? parsed.data : null;
+    })();
+    /** §6.7 phase-default names → the sheet profile's toggle keys (verification→fact_check,
+     *  second_read/secondRead→second_read); both the seeded protocol's snake_case and the stored
+     *  overrides' camelCase spellings fold through the same map. */
+    const PHASE_DEFAULT_TOGGLES: Record<string, ToggleKey> = {
+      verification: "fact_check",
+      discourse: "discourse",
+      second_read: "second_read",
+      secondRead: "second_read",
+      grounding: "grounding",
+      audit: "audit",
+    };
+    // The SEEDED protocol's own phase_defaults (e.g. Memo's `discourse:false`, §6.7) are the bottom
+    // override layer — below the project's stored overrides. The launch resolves the effective protocol
+    // the same way the scope card does: an explicit `body.protocol` lever, else the project's pin.
+    const resolvedProtocolId =
+      ((typeof body.protocol === "string" && body.protocol) || gateRow?.protocol_id || null)
+        ?.toLowerCase() ?? null;
+    const protocolSeed = PROTOCOL_SEEDS.find((p) => p.id === resolvedProtocolId);
+    const protocolToggleDefaults: ToggleState = {};
+    if (protocolSeed?.phase_defaults) {
+      for (const [k, v] of Object.entries(protocolSeed.phase_defaults)) {
+        const toggleKey = PHASE_DEFAULT_TOGGLES[k];
+        if (toggleKey && typeof v === "boolean") protocolToggleDefaults[toggleKey] = v;
+      }
+    }
+    /** The protocol's `phase_defaults.stage` as a frozen-inputs stage — `infer` freezes nothing;
+     *  `near-final` normalizes to the PROJECT_STAGES spelling. */
+    const protocolStage =
+      protocolSeed?.phase_defaults?.stage === "near-final"
+        ? "near_final"
+        : protocolSeed?.phase_defaults?.stage === "early"
+          ? "early"
+          : null;
+    const storedToggleDefaults: ToggleState = {};
+    if (storedOverrides?.phaseDefaults) {
+      for (const [k, v] of Object.entries(storedOverrides.phaseDefaults)) {
+        const toggleKey = PHASE_DEFAULT_TOGGLES[k];
+        if (toggleKey && typeof v === "boolean") storedToggleDefaults[toggleKey] = v;
+      }
+    }
 
     // PRB.23 — resolve the sheet's Advanced per-phase toggle set ONCE, server-side: rigor
     // defaults + the submitted overrides (sanitized to the profile's declared toggle keys —
@@ -217,10 +278,17 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     let phaseFlags: Record<string, boolean> = {};
     try {
       const profile = sheetProfile(workflow);
-      const overrides: ToggleState = {};
+      // Layering: rigor defaults < the seeded protocol's phase_defaults < the project's stored
+      // overrides < the sheet's explicit toggles — `resolveToggles` spreads `overrides` last, so the
+      // merged defaults seed the override set and a sheet lever still wins (P1.22 W10).
+      const overrides: ToggleState = { ...protocolToggleDefaults, ...storedToggleDefaults };
       for (const key of profile.toggles) {
         const v = body.toggles?.[key];
         if (typeof v === "boolean") overrides[key] = v;
+      }
+      // drop stored-default keys the profile doesn't declare at all (e.g. `grounding` on a Review run).
+      for (const key of Object.keys(overrides) as ToggleKey[]) {
+        if (!profile.toggles.includes(key)) delete overrides[key];
       }
       resolvedToggles = resolveToggles(profile, body.rigor, overrides);
       phaseFlags = phaseFlagsForToggles(workflow, resolvedToggles);
@@ -558,6 +626,37 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       };
     }
 
+    // STB.2 — freeze the delivery-target draft into `inputs.draftId` for the workflows whose delivery
+    // resolves ONLY that explicit input (delivery-base.ts: a Review/fact_check "delivers only on its
+    // explicit draft"). The sheet posts the head draft as `body.draftId` — a lock-set fact, never an
+    // input — so without this freeze the run's delivery base resolves null, the pod calls bare
+    // `finalize`, and the run "completes" with NO correspondence/findings (dossier 404; observed live
+    // on run 01M36663…, 2026-09-23). Server-resolved, never client-trusted: a body id that does not
+    // name a draft of THIS project is ignored and the head draft (newest promoted) takes its place.
+    if (workflow === "review" || workflow === "fact_check") {
+      const deliveryDraftId = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+        if (typeof body.draftId === "string" && body.draftId !== "") {
+          const named = (
+            await tx.query(`select id from drafts where id = $1 and project_id = $2`, [
+              body.draftId,
+              projectId,
+            ])
+          ).rows[0] as { id: string } | undefined;
+          if (named) return named.id;
+        }
+        return (
+          (
+            await tx.query(
+              `select id from drafts where project_id = $1 and promoted_version_id is not null
+                order by n desc limit 1`,
+              [projectId],
+            )
+          ).rows[0] as { id: string } | undefined
+        )?.id;
+      });
+      if (deliveryDraftId) inputs = { ...inputs, draftId: deliveryDraftId };
+    }
+
     // PRB.10 — the linked voice freezes into the run's FROZEN inputs at creation (§9.6; REQ-PERSONA-17):
     // the project pins the exact profile snapshot the run writes against (the project's pin wins; an unpinned
     // project resolves the persona's CURRENT profile and persists the pin). A stale / untested / never-built
@@ -643,7 +742,18 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       scopeBlocking,
       ...(typeof body.protocol === "string" && body.protocol ? { protocol: body.protocol } : {}),
       ...(typeof body.venue === "string" && body.venue ? { venue: body.venue } : {}),
-      ...(typeof body.stage === "string" && body.stage ? { stage: body.stage } : {}),
+      // P1.22 W10 — the stored `stage` override fills an unset sheet field (a body lever still wins),
+      // then the seeded protocol's `phase_defaults.stage` (Op-ed's `near-final`) below that — `infer`
+      // freezes nothing; `length` freezes as `lengthTarget` — the protocol's length_norms.default
+      // override consumed at spec resolution in the sandbox.
+      ...(typeof body.stage === "string" && body.stage
+        ? { stage: body.stage }
+        : storedOverrides?.stage
+          ? { stage: storedOverrides.stage }
+          : protocolStage
+            ? { stage: protocolStage }
+            : {}),
+      ...(storedOverrides?.length != null ? { lengthTarget: storedOverrides.length } : {}),
     };
 
     // P1.21 (§6.7/REQ-WF-8/REQ-GENRE-6; §16.4's Memo-confidentiality row) — the run's user_sources[]:

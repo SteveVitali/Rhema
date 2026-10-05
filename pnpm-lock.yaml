@@ -1022,6 +1022,54 @@ importers:
         specifier: workspace:*
         version: link:../protocols
 
+  packages/security-checks:
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
+      '@rhema/api':
+        specifier: workspace:*
+        version: link:../../apps/api
+      '@rhema/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@rhema/convert':
+        specifier: workspace:*
+        version: link:../../apps/convert
+      '@rhema/db':
+        specifier: workspace:*
+        version: link:../db
+      '@rhema/egress-proxy':
+        specifier: workspace:*
+        version: link:../../apps/egress-proxy
+      '@rhema/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@rhema/fetcher':
+        specifier: workspace:*
+        version: link:../../apps/fetcher
+      '@rhema/hooks':
+        specifier: workspace:*
+        version: link:../hooks
+      '@rhema/infra':
+        specifier: workspace:*
+        version: link:../../infra
+      '@rhema/live-clients':
+        specifier: workspace:*
+        version: link:../live-clients
+      '@rhema/mirror':
+        specifier: workspace:*
+        version: link:../mirror
+      '@rhema/orchestrator':
+        specifier: workspace:*
+        version: link:../orchestrator
+      '@rhema/run-task':
+        specifier: workspace:*
+        version: link:../../apps/run-task
+      '@rhema/web':
+        specifier: workspace:*
+        version: link:../../apps/web
+
   packages/tokens: {}
 
   packages/ui:
@@ -5680,14 +5728,6 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.20.1)
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@26.4.1))':
-    dependencies:
-      '@vitest/spy': 2.1.9
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 5.4.21(@types/node@26.4.1)
-
   '@vitest/pretty-format@2.1.9':
     dependencies:
       tinyrainbow: 1.2.0
@@ -8134,7 +8174,7 @@ snapshots:
   vitest@2.1.9(@types/node@26.4.1)(happy-dom@20.14.5):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@26.4.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.20.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

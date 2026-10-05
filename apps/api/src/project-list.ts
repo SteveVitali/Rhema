@@ -8,6 +8,7 @@ import {
   type VoiceSnapshotFacts,
   type VoiceStatus,
 } from "@rhema/findings-core";
+import type { TxRunner } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient, InviteGate } from "./invite.js";
 import { parseSampleSet, personaPhaseCount } from "./voice-status.js";
@@ -549,6 +550,12 @@ export async function listProjectStates(
 export interface ShellApiDeps {
   principal(c: { req: { header(name: string): string | undefined } }): Principal | null;
   readonly db: SqlClient;
+  /**
+   * The tenant-scoped runner (STB.2 / D-PRB.01-3): session reads run inside `withTenant` so RLS is a
+   * real backstop under a non-BYPASSRLS role — and an explicit workspace predicate still lands even
+   * where the role bypasses. Unset ⇒ the legacy unscoped `db` read (tests that never wired it).
+   */
+  readonly txRunner?: TxRunner;
   /** The invite gate — mounts the public `POST /invite/check` used by the web signup gate (REQ-BETA-19). */
   readonly inviteGate?: InviteGate;
 }
@@ -560,9 +567,13 @@ export function createShellRoutes(deps: ShellApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     // `?scope=deleted` reads back the soft-deleted rows for the 30-day restore window (§5.2).
-    const rows = await listProjectStates(deps.db, principal, {
-      deletedOnly: c.req.query("scope") === "deleted",
-    });
+    // D-PRB.01-3 — under txRunner the read runs inside `withTenant(workspaceId)` (RLS backstop).
+    const deletedOnly = c.req.query("scope") === "deleted";
+    const rows = deps.txRunner
+      ? await deps.txRunner.run(principal.workspaceId, (tx) =>
+          listProjectStates(tx, principal, { deletedOnly }),
+        )
+      : await listProjectStates(deps.db, principal, { deletedOnly });
     return c.json({ projects: rows });
   });
 
@@ -572,9 +583,12 @@ export function createShellRoutes(deps: ShellApiDeps): Hono {
   app.get("/showcase", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const tenantDb = <T>(fn: (tx: SqlClient) => Promise<T>): Promise<T> =>
+      deps.txRunner ? deps.txRunner.run(principal.workspaceId, fn) : fn(deps.db);
     const row = (
-      await deps.db.query(
-        `select p.id, p.slug, p.archived_at,
+      await tenantDb((db) =>
+        db.query(
+          `select p.id, p.slug, p.archived_at,
                 (select ci.run_id from correspondence_items ci
                   where ci.project_id = p.id and ci.kind = 'review' order by ci.ordinal limit 1) as review_run_id,
                 (select ci.letter_opened_at from correspondence_items ci
@@ -585,7 +599,8 @@ export function createShellRoutes(deps: ShellApiDeps): Hono {
            from projects p
           where p.workspace_id = $1 and p.showcase and p.deleted_at is null
           order by p.created_at limit 1`,
-        [principal.workspaceId],
+          [principal.workspaceId],
+        ),
       )
     ).rows[0] as
       | {

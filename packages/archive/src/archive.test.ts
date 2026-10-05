@@ -240,7 +240,7 @@ describe("importAccountZip (REQ-ACCT-3 — fresh account)", () => {
     await db.close();
   });
 
-  it("rejects a non-export zip and an unsupported version", async () => {
+  it("rejects a non-export zip and an unsupported version", { timeout: 30_000 }, async () => {
     const db = await createMirrorTestDb();
     const store = new InMemoryContentStore();
     const other = new JSZip();

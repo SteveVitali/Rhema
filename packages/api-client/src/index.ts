@@ -357,6 +357,29 @@ export interface RunSheetContextDto {
     readonly modelTier: string | null;
     /** §6.7 — set ⇒ a settings-page protocol change marks the next Review's scope card. */
     readonly protocolChanged: boolean;
+    /**
+     * P1.22 W10 — the project's stored `protocol_overrides` (§6.7 safe fields). The sheet uses them as
+     * PREFILL: phaseDefaults seed the toggle row (query levers still override), stage fills the scope
+     * card, length the target. `null` when unset or malformed.
+     */
+    readonly protocolOverrides?: {
+      readonly length?: number;
+      readonly phaseDefaults?: Record<string, boolean>;
+      readonly stage?: string;
+    } | null;
+    /**
+     * P1.22 W10 — every seeded protocol's `phase_defaults` keyed by protocol id (booleans + normalized
+     * stage; `infer` ⇒ null) — the layer below `protocolOverrides.phaseDefaults` in both the sheet's
+     * prefill and the launch's toggle resolution. Keyed by id so a client-side protocol selection
+     * prefills correctly; no protocol text crosses (REQ-ARCH-33).
+     */
+    readonly protocolDefaults?: Record<
+      string,
+      {
+        readonly phaseDefaults: Record<string, boolean>;
+        readonly stage: "early" | "near_final" | null;
+      }
+    >;
     /** P1.21 (REQ-GENRE-3) — the project's pinned `protocol@version` for the sheet display. */
     readonly protocolVersion: number | null;
     /** P1.21 — `true` on the memo protocol ⇒ the sheet renders the user_sources field + the

@@ -17,6 +17,7 @@ import { createData } from "./data";
 import { createSecrets } from "./secrets";
 import { createIam } from "./iam";
 import { createCompute } from "./compute";
+import { createMonitoring } from "./monitoring";
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();
@@ -66,6 +67,10 @@ const googleOauthClientId = rhemaConfig.get("googleOauthClientId");
 // PRB.17 — the Stripe Payment Link URL (plain deploy config — the exhaustion panel + billing surface
 // 302 to it; the whsec_… + sk_… stay Secret-Manager values, never config).
 const stripePaymentLinkUrl = rhemaConfig.get("stripePaymentLinkUrl");
+// P1.22 W9 — the ops-alert webhook URL as a Pulumi SECRET config (the same value the worker reads from
+// the `ops-alert-webhook-url` Secret Manager container as OPS_ALERT_WEBHOOK_URL). Unset ⇒ the §13.5 alert
+// policies still record incidents; they just don't page.
+const opsAlertWebhookUrl = rhemaConfig.getSecret("opsAlertWebhookUrl");
 // PRB.15 — the real digest-pinned service images as a JSON `{service: ref}` map (the images CI publishes
 // it; REQ-ARCH-39). Missing entries fall back to the placeholder so `preview` stays plannable.
 const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImages");
@@ -107,6 +112,15 @@ const compute = createCompute({
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
+});
+
+// P1.22 W9 — the §13.5 SLO dashboard + alert policies (REQ-ARCH-34). The worker's `slo.probe` sweep logs
+// breach lines the log-based metric counts; policies page the ops webhook when it's configured.
+createMonitoring({
+  stack,
+  project,
+  region,
+  ...(opsAlertWebhookUrl ? { opsAlertWebhookUrl } : {}),
 });
 
 // Stack outputs — consumed by the deploy step (to feed the app env) and by the post-deploy network

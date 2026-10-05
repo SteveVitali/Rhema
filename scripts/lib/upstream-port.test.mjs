@@ -59,9 +59,9 @@ describe("upstream-port applier (REQ-ARCH-5 sanctioned deltas)", () => {
     expect(out).toBe("line one\nA\nline two\nLAST\n");
   });
 
-  it("exposes exactly the six sanctioned categories", () => {
+  it("exposes exactly the five sanctioned categories", () => {
     expect([...SANCTIONED_CATEGORIES].sort()).toEqual(
-      ["inputs", "persona-resolution", "phase-result", "q11", "reseed", "sidecar"].sort(),
+      ["inputs", "persona-resolution", "phase-result", "q11", "sidecar"].sort(),
     );
   });
 });

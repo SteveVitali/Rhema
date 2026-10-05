@@ -681,8 +681,11 @@ export function createCompute(args: ComputeArgs): Compute {
 
   // P1.03 — the collab service behind the SAME LB, path-routed `/collab*` on the APP host (the
   // `__Host-` session cookie only rides same-host upgrades — the WebSocket auth hook reads it). No
-  // CDN (WS frames are never cacheable), and a long timeoutSec: the LB's default 30 s backend timeout
-  // becomes the WebSocket IDLE timeout — an hour keeps a quiet editing session's socket alive.
+  // CDN (WS frames are never cacheable). timeoutSec is NOT set: GCP rejects it outright on
+  // Serverless-NEG backend services (surfaced live at STB.1, update 76 — "Timeout sec is not
+  // supported for a backend service with Serverless network endpoint groups"), so the WebSocket
+  // idle lifetime is whatever the GFE→Cloud Run hop defaults to; the Hocuspocus layer's own
+  // keepalive/reconnect handles quiet-session drops.
   const collabNeg = new gcp.compute.RegionNetworkEndpointGroup(name("collab-neg"), {
     region,
     networkEndpointType: "SERVERLESS",
@@ -692,7 +695,6 @@ export function createCompute(args: ComputeArgs): Compute {
     protocol: "HTTPS",
     loadBalancingScheme: "EXTERNAL_MANAGED",
     enableCdn: false,
-    timeoutSec: 3600,
     backends: [{ group: collabNeg.id }],
   });
 

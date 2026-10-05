@@ -6,6 +6,7 @@ import { meterResponse } from "./metering.js";
 import { EMPTY_METERED_USAGE } from "./rates.js";
 import { buildRequestFetchLogRow } from "./fetch-log.js";
 import { SqlCapAccountant, SqlFetchLogWriter, SqlUsageWriter, type SqlExecutor } from "./sinks.js";
+import { SqlSignalSink } from "./signal-sink.js";
 import { ulid } from "./ids.js";
 
 // Integration: run the proxy's SQL writers against the REAL migrated schema (PGlite = Postgres in WASM), so the
@@ -105,5 +106,47 @@ describe("SqlFetchLogWriter → fetch_log (fetch log of record, AC6)", () => {
       status: 200,
       decision: "allow",
     });
+  });
+});
+
+describe("SqlSignalSink → pause_signals + run_events_internal (P1.22; REQ-ARCH-32)", () => {
+  it("a PauseSignal lands a durable pause_signals row the worker drain can claim", async () => {
+    await new SqlSignalSink(db).emitPauseSignal({
+      runId: "run_1",
+      reason: "user_source_fetch",
+      detail: { domain: "docs.internal.example.com" },
+    });
+    const res = await db.query(
+      `select run_id, workspace_id, reason, detail, processed_at, attempts from pause_signals`,
+    );
+    expect(res.rows).toHaveLength(1);
+    const got = res.rows[0] as Record<string, unknown>;
+    expect(got.run_id).toBe("run_1");
+    expect(got.workspace_id).toBe("ws1"); // resolved from the run — the proxy is not tenant-scoped
+    expect(got.reason).toBe("user_source_fetch");
+    expect(got.detail).toMatchObject({ domain: "docs.internal.example.com" });
+    expect(got.processed_at).toBeNull();
+    expect(got.attempts).toBe(0);
+  });
+
+  it("emitEgressDenied writes an internal run_events row on the run's own seq space", async () => {
+    const sink = new SqlSignalSink(db);
+    await sink.emitEgressDenied({ runId: "run_1", status: 403, reason: "allowlist", host: "evil.example" });
+    await sink.emitEgressDenied({ runId: "run_1", status: 403, reason: "allowlist", host: "evil2.example" });
+    const res = await db.query(
+      `select seq, type, workspace_id from run_events_internal where run_id = 'run_1' order by seq`,
+    );
+    expect(res.rows).toMatchObject([
+      { seq: 1, type: "egress.denied", workspace_id: "ws1" },
+      { seq: 2, type: "egress.denied", workspace_id: "ws1" },
+    ]);
+  });
+
+  it("an unattributable signal (no runId / unknown run) writes nothing — no orphan rows", async () => {
+    const sink = new SqlSignalSink(db);
+    await sink.emitEgressDenied({ status: 403, reason: "bad_credential" });
+    await sink.emitPauseSignal({ runId: "run_missing", reason: "suspicious_query", detail: {} });
+    expect((await db.query(`select count(*) c from run_events_internal`)).rows[0]).toMatchObject({ c: 0 });
+    expect((await db.query(`select count(*) c from pause_signals`)).rows[0]).toMatchObject({ c: 0 });
   });
 });

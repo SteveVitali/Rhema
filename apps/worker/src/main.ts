@@ -15,6 +15,8 @@ import {
   RUN_JOBS,
   GATE_EXPIRY_QUEUE,
   FIGURE_RENDER_QUEUE,
+  drainPauseSignals,
+  probeSlos,
   type SqlClient,
 } from "@rhema/orchestrator";
 import { SqlHoldLedger, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
@@ -95,11 +97,15 @@ import {
 } from "./export-jobs.js";
 import {
   handleAccountHardDelete,
+  handleProjectPurge,
   type AccountHardDeleteJob,
+  type ProjectPurgeJob,
 } from "./jobs.js";
 
 /** P1.20 — the `account.hard-delete` queue name (the api enqueues at the grace end). */
 const ACCOUNT_HARD_DELETE_JOB = "account.hard-delete";
+/** STB.2 / D-P1.04-2 — the `project.purge` queue name (the api enqueues at the tombstone's +30d). */
+const PROJECT_PURGE_JOB = "project.purge";
 
 /** The parked-run auto-cancel sweep queue (REQ-SPEC-24.4; D-P0.11-1). */
 export const LEDGER_JOBS = { sweepParked: "run.sweep_parked" } as const;
@@ -395,6 +401,8 @@ export async function startWorker(): Promise<void> {
     "notify.sweep.hourly",
     "auth.mail", // PRB.16 — the Better Auth magic-link transport (the api enqueues; this sends)
     ACCOUNT_EXPORT_QUEUE, // P1.18 — the whole-account zip build + emailed 7-day link (REQ-ACCT-3)
+    ACCOUNT_HARD_DELETE_JOB, // the api enqueues at the deletion grace end (P1.20)
+    PROJECT_PURGE_JOB, // the api enqueues at the tombstone's +30d (D-P1.04-2)
   ]) {
     await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
   }
@@ -455,6 +463,48 @@ export async function startWorker(): Promise<void> {
     for (const s of swept) console.log("[worker] stranded-sweep:", JSON.stringify(s));
   });
   await boss.schedule(RUN_JOBS.reap, "* * * * *");
+
+  // P1.22 (REQ-ARCH-32; §12.8) — the pause-signal drain. The egress proxy's `SqlSignalSink` lands a
+  // `pause_signals` row on a `suspicious_query` / `egress.denied` spike / `user_source_fetch`; this
+  // sweep claims it (a `claimed_at` lease + bounded attempts — `drainPauseSignals`) and applies
+  // `pauseRun`: the run parks `running → waiting_gate` at a refusal-class card and the sandbox exits.
+  // A short setInterval — NOT a pg-boss cron (1-minute granularity is too slow for a security pause) —
+  // keeps the pause latency ≈ the interval. A failed tick logs and the next tick retries; the drain
+  // dead-letters a poisoned row after `PAUSE_MAX_ATTEMPTS` so the sweep can never wedge.
+  const PAUSE_SWEEP_INTERVAL_MS = 5_000;
+  const drainPause = () =>
+    drainPauseSignals(deps, { system: systemExec })
+      .then((r) => {
+        if (r.claimed > 0) console.log(`[worker] pause-drain: ${JSON.stringify(r)}`);
+      })
+      .catch((err: unknown) => console.error("[worker] pause-drain failed:", err));
+  void drainPause();
+  setInterval(drainPause, PAUSE_SWEEP_INTERVAL_MS);
+
+  // P1.22 W9 (§13.5; REQ-ARCH-34) — the SLO probe. Every 5 minutes `probeSlos` reads the DB-backed §13.5
+  // signals on the system executor; each breach logs one structured `[slo]` line (the
+  // `rhema_slo_violations` log-based metric + alert policies in infra/pulumi/monitoring.ts key on it) and
+  // pages the ops webhook. Unmeasured signals are logged once at startup, not per tick.
+  const SLO_SWEEP_INTERVAL_MS = 5 * 60_000;
+  const probeTick = () =>
+    probeSlos(systemExec)
+      .then((readings) => {
+        for (const r of readings) {
+          if (r.status === "breach") {
+            const line = JSON.stringify({ signal: r.key, value: r.value, threshold: r.threshold, target: r.target });
+            console.error(`[slo] violation ${line}`);
+            void alertSink?.({ kind: "slo_violation", signal: r.key, value: r.value, threshold: r.threshold, target: r.target });
+          }
+        }
+      })
+      .catch((err: unknown) => console.error("[worker] slo-probe failed:", err));
+  void probeSlos(systemExec).then((readings) => {
+    for (const r of readings.filter((x) => x.status === "unmeasured")) {
+      console.log(`[slo] unmeasured ${r.key}: ${r.unmeasuredReason ?? "no probe"}`);
+    }
+  });
+  void probeTick();
+  setInterval(probeTick, SLO_SWEEP_INTERVAL_MS);
 
   await boss.work(LEDGER_JOBS.sweepParked, async () => {
     await handleParkedSweep(deps);
@@ -624,6 +674,18 @@ export async function startWorker(): Promise<void> {
     for (const job of jobs) {
       const r = await handleAccountHardDelete(job.data, { systemExec });
       console.log(`[worker] account.hard-delete ${job.data.userId} → ${JSON.stringify(r)}`);
+    }
+  });
+
+  // STB.2 / D-P1.04-2 — the project tombstone's purge sweep (REQ-ARCH-28): the api enqueues at
+  // delete + 30d; the handler re-reads `projects.deleted_at` (a restore no-ops; a re-delete
+  // re-schedules off the CURRENT tombstone) and past grace hard-deletes the project tree (the
+  // `projects` cascade) + the now-unreferenced content-addressed object keys.
+  const purgeBlobs = await createGcsBlobStore(env.objectsBucket);
+  await boss.work<ProjectPurgeJob>(PROJECT_PURGE_JOB, async (jobs) => {
+    for (const job of jobs) {
+      const r = await handleProjectPurge(job.data, { systemExec, queue: deps.queue, blobs: purgeBlobs });
+      console.log(`[worker] project.purge ${job.data.projectId} → ${JSON.stringify(r)}`);
     }
   });
 

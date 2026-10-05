@@ -1,0 +1,47 @@
+# Per-namespace RBAC for the worker's Job-launcher identity (P1.22 W7; closes the k8s half of D-P0.01-5).
+#
+# The worker authenticates to the cluster with a per-launch GCE metadata OAuth token minted for the
+# `rhema-<stack>-worker` GSA (a custom IAM role carrying only `container.clusters.get`/`list` at the IAM
+# layer — see infra/pulumi/iam.ts; IAM is NOT sufficient for in-cluster action on its own). What the
+# identity may DO inside the
+# cluster is decided by RBAC — this Role scopes it to exactly the launcher's two API calls
+# (`GkeJobLauncher.launch` → `createNamespacedSecret` + `createNamespacedJob`) plus read access to those
+# objects. Nothing else: no pod exec, no list/watch across namespaces, no node access.
+#
+# ${WORKER_GSA_EMAIL} is substituted by infra/k8s/apply.sh from the stack's project.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: run-task-launcher
+  namespace: runs
+  labels:
+    app.kubernetes.io/part-of: rhema
+    rhema.dev/purpose: job-launcher
+rules:
+  # one Secret per run attempt (the harness-only token + proxy credential mount).
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get"]
+  # one Job per run attempt; get/list lets the launcher (and future status probes) observe attempts.
+  # `ttlSecondsAfterFinished` reaps finished Jobs, so no delete verb is granted.
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: run-task-launcher
+  namespace: runs
+  labels:
+    app.kubernetes.io/part-of: rhema
+    rhema.dev/purpose: job-launcher
+subjects:
+  # GKE maps an IAM service-account OAuth token to the `User` named by the SA's email.
+  - kind: User
+    name: ${WORKER_GSA_EMAIL}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: run-task-launcher
+  apiGroup: rbac.authorization.k8s.io

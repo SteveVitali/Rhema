@@ -247,4 +247,30 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     // the per-finding obligation chips (REQ-OBJ-6).
     expect(dto.findingObligations).toEqual({ fnd_1: "open", fnd_2: "discharged" });
   });
+
+  it("STB.2 — a dossier in ANOTHER workspace 404s even without RLS (the SQL workspace predicate)", async () => {
+    // The live finding: the deployed api connects as a BYPASSRLS role, so withTenant's GUC never
+    // filtered — this run's correspondence row in ws_other must be invisible to ws_seed's principal.
+    const foreign = await seedProject(db, {
+      userId: "usr_other",
+      billingAccountId: "ba_other",
+      workspaceId: "ws_other",
+      projectId: "prj_other",
+      draftN: 1,
+    });
+    await seedRun(db, {
+      runId: "run_foreign",
+      workspaceId: foreign.workspaceId,
+      projectId: foreign.projectId,
+      workflow: "review",
+      state: "completed",
+    });
+    await db.pg.query(
+      `insert into correspondence_items(id, project_id, kind, draft_id, run_id, ordinal, delivered_at, artifact_ids)
+       values ('corr_foreign',$1,'review',$2,'run_foreign',1,now(),'{}')`,
+      [foreign.projectId, foreign.draftId],
+    );
+    const res = await getDossier(foreign.projectId, "run_foreign");
+    expect(res.status).toBe(404);
+  });
 });

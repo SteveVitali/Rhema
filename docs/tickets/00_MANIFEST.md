@@ -194,6 +194,14 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 49 | `49_P1.21__protocols-2-4.md` | 1 | [skeleton] Academic/Op-ed/Memo protocols + venue tables (HUMAN H4 first) |
 | 50 | `50_P1.22__security-hardening-and-launch-checks.md` | 1 | [skeleton] injection controls verified, pen test, launch readout |
 | — | **CAPSTONE** (ledger) | — | whole-chain gap analysis vs the entire spec + composed end-to-end verification |
+| 51 | `51_RCN.1__deferral-reconciliation.md` | post-P1 | audit all OPEN deferral rows vs existing evidence; close the provable; sharpen the rest |
+| 52 | `52_STB.1__merge-deploy-smoke.md` | post-P1 | **gated on operator merge** — full-chain `dev` deploy + migrations 0029–0041 + smoke |
+| 53 | `53_STB.2__read-only-live-verifies.md` | post-P1 | all $0 read-only Stage-B legs + small live-binding fixes |
+| 54 | `54_STB.3__bounded-live-run-legs.md` | post-P1 | the inference-capped live legs, cheapest-first, combined ≤$120 |
+| 55 | `55_DEF.1__run-pipeline-blockers.md` | post-P1 fix | F1 phase-result, F2 second_read producer, F3 structure anchors — the delivery-blocking defects from STB.3 |
+| 56 | `56_DEF.2__ledger-metering-integrity.md` | post-P1 fix | F4 held-counter drift, F5 committed-vs-metered divergence, F6 estimate_cache unbound |
+| 57 | `57_DEF.3__live-noise-and-polish.md` | post-P1 fix | F7 SDK probe SLO noise, F9 dead /api/action, F10 chat_turn cap overshoot |
+| 58 | `58_STB.4__real-money-and-external-legs.md` | post-P1 | live Stripe ≤$50 + pen-test facilitation + admin-key reconciliation — operator hard gates; **depends on DEF.1–3** (don't spend real money over live defects) |
 
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 

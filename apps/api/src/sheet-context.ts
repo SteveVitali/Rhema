@@ -10,8 +10,8 @@ import { NON_TERMINAL_RUN_STATES, computeLockSet, firstConflict, seatForWorkflow
 import type { ContentStore } from "@rhema/mirror";
 import { runSheetObligations } from "@rhema/obligations";
 import { deriveSections } from "@rhema/commands";
-import { PROTOCOL_CARDS } from "@rhema/protocols";
-import { parseUserPrefs, type WorkflowKey } from "@rhema/contracts";
+import { PROTOCOL_CARDS, PROTOCOL_SEEDS } from "@rhema/protocols";
+import { parseUserPrefs, projectProtocolOverridesSchema, type WorkflowKey } from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import { versionText } from "./editor-routes.js";
@@ -44,7 +44,7 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
     const project = (
       await deps.db.query(
         `select id, title, protocol_id, protocol_version, venue, approval_policy, persona_id,
-                rigor_default, model_tier_default, protocol_changed_at
+                rigor_default, model_tier_default, protocol_changed_at, protocol_overrides
            from projects where id = $1 and workspace_id = $2 and deleted_at is null`,
         [projectId, principal.workspaceId],
       )
@@ -60,6 +60,7 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
           rigor_default: string | null;
           model_tier_default: string | null;
           protocol_changed_at: string | Date | null;
+          protocol_overrides: unknown;
         }
       | undefined;
     if (!project) return c.json({ error: "not_found" }, 404);
@@ -162,6 +163,37 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
         rigor: resolvedRigor,
         modelTier: resolvedModelTier,
         protocolChanged: project.protocol_changed_at != null,
+        // P1.22 W10 — the settings-page protocol overrides ride the context so the sheet can PREFILL
+        // (toggle defaults between the rigor defaults and the query levers; stage/length fill unset
+        // fields). Validated server-side; a malformed blob yields null, never a 500.
+        protocolOverrides: (() => {
+          const parsed = projectProtocolOverridesSchema.safeParse(project.protocol_overrides ?? null);
+          return parsed.success ? parsed.data : null;
+        })(),
+        // P1.22 W10 — the SEEDED protocols' own `phase_defaults` keyed by id (e.g. Memo's
+        // `discourse:false`), the layer BELOW the stored overrides at launch — the sheet prefills the
+        // same layering for the SELECTED protocol (the selector can switch client-side, so all four
+        // ship) — booleans + stage only; protocol bodies stay server-side (REQ-ARCH-33).
+        protocolDefaults: Object.fromEntries(
+          PROTOCOL_SEEDS.map((p) => [
+            p.id,
+            {
+              phaseDefaults: {
+                verification: p.phase_defaults.verification,
+                discourse: p.phase_defaults.discourse,
+                secondRead: p.phase_defaults.second_read,
+                grounding: p.phase_defaults.grounding,
+                audit: p.phase_defaults.audit,
+              },
+              stage:
+                p.phase_defaults.stage === "near-final"
+                  ? "near_final"
+                  : p.phase_defaults.stage === "early"
+                    ? "early"
+                    : null, // `infer` ⇒ unset
+            },
+          ]),
+        ),
       },
       // P1.21 — the four §6.7 protocol options the sheet's selector renders (the §5.3 cards' id+name
       // only — bodies stay server-side, REQ-ARCH-33).

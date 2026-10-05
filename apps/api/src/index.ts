@@ -250,6 +250,15 @@ export interface BetaApiDeps {
  *  content store — the draft-import routes (PRB.02). */
 export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
   const app = new Hono();
+  // P1.22 (§13.3 audit) — the api is a JSON surface, never a browsing context: pin the strictest CSP
+  // (`default-src 'none'; frame-ancestors 'none'`) + nosniff on EVERY response so any route that ever
+  // returns renderable content (an export, an error page) still cannot execute script or be framed.
+  app.use("*", async (c, next) => {
+    await next();
+    // mutate in place — auth responses carry Set-Cookie, which a Headers clone could collapse.
+    c.res.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    c.res.headers.set("X-Content-Type-Options", "nosniff");
+  });
   // PRB.16 — request middleware FIRST (before every route): resolve the session principal into the ALS
   // context the `principal` seams + scoped `db` read, then apply the mutation Origin allowlist.
   if (deps?.sessionResolver || deps?.identityHeaders) {
@@ -498,6 +507,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         createShellRoutes({
           principal: deps.principal,
           db,
+          txRunner: deps.txRunner,
           inviteGate,
         }),
       );
@@ -513,6 +523,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           clock: deps.clock,
           ...(deps.importConverter ? { converter: deps.importConverter } : {}),
           ...(deps.contentStore ? { contentStore: deps.contentStore } : {}),
+          ...(deps.queue ? { queue: deps.queue } : {}),
         }),
       );
       app.route("/", createSearchRoutes({ principal: deps.principal, db, ids: deps.ids }));
