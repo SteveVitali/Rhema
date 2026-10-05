@@ -763,7 +763,8 @@ function main(): void {
         break;
       case "settings":
         e.preventDefault();
-        window.location.assign("/settings");
+        // P1.20 — ⌘, lands on the §14.7 settings tree (Account is the default section).
+        window.location.assign("/app/settings/account");
         break;
       case "version-next":
       case "version-prev": {

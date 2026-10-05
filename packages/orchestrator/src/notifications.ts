@@ -1460,13 +1460,21 @@ export async function handleMailSendJob(
 
 // ------------------------------------------------------------------ prefs read for the api
 
-/** The settings-surface read: the full effective matrix + the stored quiet window. */
+/**
+ * The settings-surface read: the full effective matrix + the stored quiet window + the raw prefs
+ * blob (P1.20's §14.7 Notifications section renders per-channel toggles from it — the effective
+ * email matrix alone loses the inApp/digest/per-project arms).
+ */
 export async function readNotificationPrefs(
   txRunner: TxRunner,
   args: { userId: string; workspaceId: string },
-): Promise<{ matrix: ReturnType<typeof effectiveEmailMatrix>; quietHours: NotificationPrefs["quietHours"] }> {
+): Promise<{
+  matrix: ReturnType<typeof effectiveEmailMatrix>;
+  quietHours: NotificationPrefs["quietHours"];
+  prefs: NotificationPrefs;
+}> {
   return txRunner.run(args.workspaceId, async (tx) => {
     const prefs = await readPrefs(tx, args.userId);
-    return { matrix: effectiveEmailMatrix(prefs), quietHours: prefs.quietHours ?? null };
+    return { matrix: effectiveEmailMatrix(prefs), quietHours: prefs.quietHours ?? null, prefs };
   });
 }

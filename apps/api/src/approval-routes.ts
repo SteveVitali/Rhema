@@ -201,6 +201,44 @@ export function createApprovalRoutes(deps: ApprovalApiDeps): Hono {
     return c.json({ ok: true });
   });
 
+  // P1.20 (REQ-GATE-10's management half) — edit an ACTIVE standing rule's body/workflows in place;
+  // a retired row is history and 409s. The row's id, created_at, and consumed_by lineage stay —
+  // an edit never rewrites what a run already consumed.
+  app.put("/projects/:id/guidance/:gid", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const projectId = c.req.param("id");
+    if (!(await ownProject(projectId, principal.workspaceId))) return c.json({ error: "not_found" }, 404);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      body?: unknown;
+      workflows?: unknown;
+    };
+    const text = typeof body.body === "string" ? body.body.trim() : "";
+    if (!text) return c.json({ error: "body required" }, 400);
+    const workflows =
+      body.workflows === null
+        ? null
+        : Array.isArray(body.workflows) && body.workflows.every((w) => typeof w === "string")
+          ? (body.workflows as string[])
+          : undefined;
+    if (body.workflows !== undefined && workflows === undefined) {
+      return c.json({ error: "workflows must be a string array" }, 422);
+    }
+    const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      const upd = await tx.query(
+        `update guidance set body = $3,
+           workflows = case when $5::boolean then $4::text[] else workflows end
+          where id = $1 and project_id = $2 and standing = true and active = true
+          returning id`,
+        // an explicit `workflows: null` widens the rule to all workflows; a missing key keeps it.
+        [c.req.param("gid"), projectId, text, workflows ?? null, body.workflows !== undefined],
+      );
+      return upd.rows.length;
+    });
+    if (res === 0) return c.json({ error: "not_found_or_retired" }, 409);
+    return c.json({ ok: true });
+  });
+
   // ---- the one-time inline explainers (§5.11/§6.4; user-scoped — "user".dismissed_explainers, 0032). ----
   app.get("/settings/explainers", async (c) => {
     const principal = deps.principal(c);

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { buildEstimate } from "@rhema/run-sheet";
-import { parseQuarantineKey } from "@rhema/contracts";
+import { parseQuarantineKey, parseUserPrefs } from "@rhema/contracts";
 import { PROTOCOL_CARDS, defaultProtocolId } from "@rhema/protocols";
 import { recordAnalyticsEvent } from "@rhema/ledger";
 import type { ContentStore } from "@rhema/mirror";
@@ -167,11 +167,39 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
       snapshotId = (p.rows[0] as { id: string } | undefined)?.id ?? null;
     }
 
+    // P1.20 (§14.7) — the account defaults stamp at create: the approval policy + editor paper
+    // theme land as project values (NOT NULL columns need a concrete pick); rigor/tier stay NULL —
+    // NULL means "inherit the account default live" (per-project overrides win only when the user
+    // actually picks one on /p/:id/settings).
+    const accountPrefs = parseUserPrefs(
+      (
+        await deps.db
+          .query(`select prefs from "user" where id = $1`, [principal.userId])
+          .catch(() => ({ rows: [] }))
+      ).rows[0] as { prefs: unknown } | undefined,
+    );
     await deps.db.query(
       `insert into projects (id, workspace_id, owner_id, title, slug, protocol_id, venue, persona_id,
-                             persona_profile_snapshot_id, persona_locked_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9, case when $8::text is null then null else now() end)`,
-      [projectId, principal.workspaceId, principal.userId, title, slug, protocolId, venue, personaId, snapshotId],
+                             persona_profile_snapshot_id, persona_locked_at,
+                             approval_policy, model_tier_default, paper_theme)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9, case when $8::text is null then null else now() end,
+               $10,$11,$12)`,
+      [
+        projectId,
+        principal.workspaceId,
+        principal.userId,
+        title,
+        slug,
+        protocolId,
+        venue,
+        personaId,
+        snapshotId,
+        accountPrefs.approvalPolicy ?? "named",
+        // NULL = "inherit the account default live" — stamping the current default here would
+        // freeze it into a project override and sever later account-level changes.
+        null,
+        accountPrefs.editor?.paperTheme ?? "light",
+      ],
     );
     await deps.db.query(
       `insert into project_members (project_id, user_id, role) values ($1,$2,'admin') on conflict do nothing`,

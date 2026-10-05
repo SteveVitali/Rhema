@@ -27,6 +27,15 @@ export const user = pgTable("user", {
   // creation; `GET /app`'s precedence redirect reads it (a carried draft beats the Showcase-first
   // default). Never overwritten for a returning account.
   signupIntent: jsonb("signup_intent"),
+  // P1.20 (0040; §14.7): the account-level Preferences blob — validated `userPrefsSchema`
+  // (@rhema/contracts): model-tier / rigor / approval-policy defaults, editor prefs, the Q-26
+  // preference-profile opt-out. Project overrides win over these.
+  prefs: jsonb("prefs").notNull().default({}),
+  // P1.20 (0040; REQ-ACCT-4): the Delete-account grace clock — set ⇒ the 14-day grace is running
+  // (the `account.hard-delete` job fires at its end); NULL ⇒ no pending deletion.
+  deletionRequestedAt: timestamp("deletion_requested_at"),
+  // P1.20 (0040; §14.7): the account byline (the default voice byline the Account section edits).
+  byline: text("byline"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -84,4 +93,31 @@ export const device = pgTable("device", {
   platform: text("platform"), // "web" | "ios" | "android"
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// P1.20 (0040; REQ-VIS-11; §14.7) — the support-access toggle: the user mints a 72-h-expiring grant
+// (one active at a time); every grant event AND every staff access appends a `support_access_log`
+// row (the user-visible audit mirror of the operator's `admin_actions` 'support_access' row).
+export const supportAccessGrants = pgTable("support_access_grants", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  workspaceId: text("workspace_id").notNull(),
+  grantedAt: timestamp("granted_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+});
+
+export const supportAccessLog = pgTable("support_access_log", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  workspaceId: text("workspace_id").notNull(),
+  grantId: text("grant_id"),
+  actor: text("actor").notNull(), // 'user' for grant/revoke; the operator id for access
+  action: text("action").notNull(), // 'granted' | 'revoked' | 'accessed' | 'expired'
+  detail: text("detail"),
+  at: timestamp("at").notNull().defaultNow(),
 });

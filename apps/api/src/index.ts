@@ -28,6 +28,7 @@ import { createImportRoutes, type Converter, type ImportUploadDeps } from "./imp
 import { createProjectRoutes } from "./project-routes.js";
 import { createSearchRoutes } from "./search.js";
 import { createSheetContextRoutes } from "./sheet-context.js";
+import { createSettingsRoutes } from "./settings-routes.js";
 import { createVoiceRoutes } from "./voice-routes.js";
 import { createIngestRoutes, type IngestApiDeps, type IngestBlobs } from "./ingest-routes.js";
 import { createExportRoutes, type ExportRunner } from "./export-routes.js";
@@ -144,6 +145,9 @@ export type { OutlineApiDeps } from "./outline-routes.js";
 export type { ApprovalApiDeps } from "./approval-routes.js";
 export { createAnalyticsRoutes } from "./analytics-routes.js";
 export { createThemeRoutes } from "./theme-routes.js";
+// P1.20 — the §14.7 settings routes (account/preferences/data/support-access/deletion/integrations/
+// project settings). `logSupportAccess` is the REQ-VIS-11 shared logger the admin CLI calls.
+export { createSettingsRoutes, logSupportAccess, ACCOUNT_HARD_DELETE_QUEUE } from "./settings-routes.js";
 export type { AnalyticsApiDeps } from "./analytics-routes.js";
 
 /** The deps for the full api app: run creation + internal run API (P0.08) + the run-event SSE route (P0.08b)
@@ -512,6 +516,21 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
         }),
       );
       app.route("/", createSearchRoutes({ principal: deps.principal, db, ids: deps.ids }));
+      // P1.20 — the §14.7 settings tree's api half: account/profile/sessions/email change, the
+      // user.prefs blob, support access (REQ-VIS-11), account deletion (REQ-ACCT-4), the uniform
+      // integrations read (REQ-ACCT-2), and the /p/:project/settings safe-field patch (REQ-GENRE-2).
+      app.route(
+        "/",
+        createSettingsRoutes({
+          principal: deps.principal,
+          db,
+          txRunner: deps.txRunner,
+          ids: deps.ids,
+          clock: deps.clock,
+          ...(deps.queue ? { queue: deps.queue } : {}),
+          ...(deps.appBaseUrl ? { appBaseUrl: deps.appBaseUrl } : {}),
+        }),
+      );
       // P1.06 — the run sheet's single context read (§5.6; REQ-IDE-13): head-draft facts + sections +
       // obligation counts + the trial entitlement + the user's consent pref + `blockedBy` (the per-lock
       // conflict under the P1.06 concurrency ruling).

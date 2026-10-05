@@ -24,7 +24,7 @@ describe("handleAccountHardDelete (account.hard-delete consumer)", () => {
   it("stays in grace before 14 days", async () => {
     const r = await handleAccountHardDelete(
       { tenantId: "t", userId: "u", deletionRequestedAt: day(0).toISOString() },
-      day(10),
+      { now: day(10) },
     );
     expect(r.phase).toBe("grace");
     expect(r.userId).toBe("u");
@@ -32,7 +32,7 @@ describe("handleAccountHardDelete (account.hard-delete consumer)", () => {
   it("hard-deletes at 14 days, retaining tax-required data", async () => {
     const r = await handleAccountHardDelete(
       { tenantId: "t", userId: "u", deletionRequestedAt: day(0).toISOString() },
-      day(14),
+      { now: day(14) },
     );
     expect(r.phase).toBe("hard-delete");
     expect(r.retain).toContain("anonymized-ledger-rows");

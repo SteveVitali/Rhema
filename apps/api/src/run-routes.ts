@@ -622,17 +622,20 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
     // Full board, or a protocol/venue change vs the project's pinned scope, makes `approve_scope` a
     // blocking 2-hour proceed-as-proposed gate (`resolveGatePolicy`'s `scopeBlocking`). Wait-for-me-each
     // needs no flag — the policy branch already blocks. Server-derived, never client-trusted.
+    // P1.20 (§6.7) — a settings-page protocol change (`projects.protocol_changed_at` still set) counts
+    // as a protocol change for the NEXT Review's scope gate; the launch below clears the marker.
     const projectScope = await deps.txRunner
       .run(
         principal.workspaceId,
         async (tx) =>
-          (await tx.query(`select protocol_id, venue from projects where id = $1`, [projectId])).rows[0] as
-            | { protocol_id: string | null; venue: string | null }
+          (await tx.query(`select protocol_id, venue, protocol_changed_at from projects where id = $1`, [projectId])).rows[0] as
+            | { protocol_id: string | null; venue: string | null; protocol_changed_at: string | Date | null }
             | undefined,
       )
       .catch(() => undefined);
     const scopeBlocking =
       body.rigor === "full_board" ||
+      (workflow === "review" && projectScope?.protocol_changed_at != null) ||
       (typeof body.protocol === "string" && body.protocol !== "" && body.protocol !== (projectScope?.protocol_id ?? null)) ||
       (typeof body.venue === "string" && body.venue !== "" && body.venue !== (projectScope?.venue ?? ""));
     inputs = {
@@ -705,6 +708,15 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
           runId: res.runId,
           workflows: ["revise"],
         });
+      }
+      // §6.7 (P1.20) — a launched Review carries the settings page's "protocol changed" mark:
+      // clear `protocol_changed_at` once a review consumes it so the NEXT change re-arms the card.
+      if (workflow === "review" && !res.deduped) {
+        await deps.txRunner
+          .run(principal.workspaceId, (tx) =>
+            tx.query(`update projects set protocol_changed_at = null where id = $1`, [projectId]),
+          )
+          .catch(() => undefined);
       }
       // P1.06 (§5.6/§7.2) — the sheet's free-text guidance lands as a run-scope Guidance row delivered at
       // the next phase boundary (same channel as pre-triage). A guidance write never fails the launch.

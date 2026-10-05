@@ -481,14 +481,15 @@ export function createIngestRoutes(deps: IngestApiDeps): Hono {
   });
 
   // ---- DELETE /voices/:id/connections/:cid — Remove: soft-detach the source (items + versions
-  //  stay — unlinking never destroys corpus). ----
+  //  stay — unlinking never destroys corpus). P1.20 (REQ-ACCT-2): the credential drops in the SAME
+  //  write — `auth_ref` nulls immediately; the samples remain unless separately removed. ----
   app.delete("/voices/:id/connections/:cid", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const res = await deps.txRunner.run(principal.workspaceId, async (tx) => {
       if (!(await personaOr404(tx, c.req.param("id")))) return null;
       const upd = await tx.query(
-        `update connections set removed_at = now(), status = 'removed'
+        `update connections set removed_at = now(), status = 'removed', auth_ref = null
           where id = $1 and persona_id = $2 and removed_at is null returning id`,
         [c.req.param("cid"), c.req.param("id")],
       );

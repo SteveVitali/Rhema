@@ -328,6 +328,13 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
         </p>
       ) : null}
 
+      {/* P1.20 (§6.7) — the settings-page protocol-change marker on the Review's scope card. */}
+      {view.protocolChangedLine ? (
+        <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-protocol-changed>
+          {view.protocolChangedLine}
+        </p>
+      ) : null}
+
       {/* P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence at launch: informational /
           blocking-2h / waits-for-you, from the same gate-policy facts the run freezes. */}
       <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0 0" }} data-scope-approval>

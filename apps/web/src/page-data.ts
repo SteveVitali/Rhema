@@ -43,6 +43,14 @@ import type {
   FigureCardDto,
 } from "@rhema/api-client";
 import type { GateOutlineView } from "@rhema/findings-core";
+import type {
+  AccountSettingsDto,
+  PreferencesSettingsDto,
+  DataSettingsDto,
+  IntegrationsSettingsDto,
+  ProjectSettingsDto,
+  NotificationPrefsDto,
+} from "@rhema/api-client";
 import type { DossierData } from "./data.js";
 
 // Per-request data the SSR route handler resolves (project list, login form state, the resolved project) and
@@ -436,6 +444,39 @@ export interface PageData {
   readonly balance?: { readonly spendableCredits: number; readonly heldCredits: number };
   /** the settings page's privacy toggle (REQ-PROD-15 — binds "user".analytics_opt_out). */
   readonly privacy?: { readonly analyticsOptOut: boolean; readonly saved?: boolean };
+  /**
+   * P1.20 — the §14.7 settings tree (`/app/settings/:section`): which section renders + its read.
+   * The accountExport + privacy fields above stay the Data section's payloads (no fork — the beta's
+   * toggle migrates here, REQ-PROD-15 carried).
+   */
+  readonly settings?: {
+    readonly section: "account" | "preferences" | "notifications" | "integrations" | "billing" | "data";
+    /** /account — profile + sign-in methods + sessions + the deletion banner state. */
+    readonly account?: AccountSettingsDto;
+    /** /preferences — the user.prefs blob + consent threshold + app theme. */
+    readonly preferences?: PreferencesSettingsDto;
+    /** /notifications — the §5.11 matrix + raw prefs + quiet hours + the user's projects
+     *  (the run_progress Advanced opt-in is per-project). */
+    readonly notifications?: NotificationPrefsDto & {
+      readonly projects?: readonly { readonly id: string; readonly title: string }[];
+    };
+    /** /integrations — the uniform provider cards (P1.15's connections). */
+    readonly integrations?: IntegrationsSettingsDto;
+    /** /data — privacy toggles + support grant/log + pending deletion (Q-26 posture rides copy). */
+    readonly data?: DataSettingsDto;
+    /** one-shot flashes — `saved` | a bounced form's `notice` token. */
+    readonly saved?: boolean;
+    readonly notice?: string;
+  };
+  /** P1.20 — `/p/:project/settings` (§4.2; REQ-GENRE-2 safe fields + REQ-GATE-3/10 management). */
+  readonly projectSettings?: {
+    readonly slug: string;
+    readonly settings: ProjectSettingsDto;
+    /** the P1.09 approval-settings read (policy + overrides + standing guidance) when present. */
+    readonly approvalSettings?: ApprovalSettingsDto;
+    readonly saved?: boolean;
+    readonly notice?: string;
+  };
   /**
    * P1.18 — the Settings "Your data" section (REQ-ACCT-3): the latest account-export build state +
    * a one-shot flash for the export-request / import-result round-trips.

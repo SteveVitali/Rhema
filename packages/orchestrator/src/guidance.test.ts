@@ -120,4 +120,61 @@ describe("guidance capture + delivery (§6.5; REQ-GATE-9/10/11; REQ-RUN-18)", ()
     const revise = await consumeGuidance(deps, { runId: "run1", workspaceId: ws, projectId: "prj_seed", workflow: "revise", phase: "p" });
     expect(revise.delivered).toHaveLength(1);
   });
+
+  // P1.20 (REQ-OBJ-14; §11.7 Q-26) — the capture path stamps `preference_signal` at WRITE time from the
+  // author's account opt-out. The row lands either way (a run consumes it); the flag is what the 1.x
+  // profile aggregation reads — opting out flips the NEXT capture immediately.
+  it("preference_signal follows the account's Q-26 opt-out at write time (REQ-OBJ-14)", async () => {
+    const signalOf = async (id: string) =>
+      ((await db.client.query("select preference_signal from guidance where id=$1", [id])).rows[0] as {
+        preference_signal: boolean;
+      }).preference_signal;
+
+    // default account (no opt-out) → capture eligible.
+    const on = await captureGuidance(deps, {
+      workspaceId: ws,
+      projectId: "prj_seed",
+      userId: "usr_seed",
+      source: "gate_edit",
+      text: "Eligible signal.",
+      scope: "project",
+    });
+    expect(await signalOf(on.guidanceId)).toBe(true);
+
+    // opt out → the NEXT capture is marked ineligible (the row still lands — it is functional).
+    await db.pg.query(`update "user" set prefs = $2 where id = $1`, [
+      "usr_seed",
+      JSON.stringify({ preferenceOptOut: true }),
+    ]);
+    const off = await captureGuidance(deps, {
+      workspaceId: ws,
+      projectId: "prj_seed",
+      userId: "usr_seed",
+      source: "gate_edit",
+      text: "Not a preference signal.",
+      scope: "project",
+    });
+    expect(await signalOf(off.guidanceId)).toBe(false);
+    // …but the functional row still delivers — an opt-out must not break the run.
+    const delivered = await consumeGuidance(deps, {
+      runId: "run1",
+      workspaceId: ws,
+      projectId: "prj_seed",
+      workflow: "draft",
+      phase: "p",
+    });
+    expect(delivered.delivered.map((d) => d.guidanceId)).toContain(off.guidanceId);
+
+    // opt back in → eligible again.
+    await db.pg.query(`update "user" set prefs = $2 where id = $1`, ["usr_seed", "{}"]);
+    const back = await captureGuidance(deps, {
+      workspaceId: ws,
+      projectId: "prj_seed",
+      userId: "usr_seed",
+      source: "gate_edit",
+      text: "Eligible again.",
+      scope: "project",
+    });
+    expect(await signalOf(back.guidanceId)).toBe(true);
+  });
 });

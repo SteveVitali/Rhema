@@ -6,6 +6,7 @@
 // fidelity audit, gap check, hold-out calibration — REQ-RUN-18) and never edits `agents/**` (REQ-GATE-11).
 
 import type { GuidanceSource } from "@rhema/contracts";
+import { parseUserPrefs, preferenceCaptureEnabled } from "@rhema/contracts";
 import type { OrchestratorDeps } from "./internal-api.js";
 import type { SqlClient } from "./tx.js";
 
@@ -56,10 +57,24 @@ type CaptureDeps = Pick<OrchestratorDeps, "ids" | "clock" | "eventWriter">;
 export async function captureGuidanceTx(tx: SqlClient, deps: CaptureDeps, args: CaptureGuidanceArgs): Promise<string> {
   const guidanceId = deps.ids("gdn");
   const now = deps.clock.now();
+  // REQ-OBJ-14 (Q-26; §11.7) — the preference profile is capture-only at MVP: a captured guidance
+  // row records whether its author's account allowed preference capture AT WRITE TIME. The row
+  // lands either way (it is functional — a run consumes it); `preference_signal` is the flag the
+  // 1.x aggregation reads, so opting out flips the next capture immediately. A user lookup that
+  // fails open still writes the row but marks it ineligible (fail closed for privacy).
+  let preferenceSignal = false;
+  try {
+    const prefs = (
+      await tx.query(`select prefs from "user" where id = $1`, [args.userId])
+    ).rows[0] as { prefs: unknown } | undefined;
+    preferenceSignal = preferenceCaptureEnabled(parseUserPrefs(prefs?.prefs));
+  } catch {
+    preferenceSignal = false;
+  }
   await tx.query(
     `insert into guidance(id, project_id, run_id, source, anchors, body, standing, workflows, consumed_by,
-       active, created_by, created_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,'[]'::jsonb,true,$9,$10)`,
+       active, created_by, preference_signal, created_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,'[]'::jsonb,true,$9,$10,$11)`,
     [
       guidanceId,
       args.projectId,
@@ -70,6 +85,7 @@ export async function captureGuidanceTx(tx: SqlClient, deps: CaptureDeps, args: 
       args.scope === "project",
       args.workflows ? (args.workflows as string[]) : null,
       JSON.stringify(args.userId),
+      preferenceSignal,
       now,
     ],
   );
