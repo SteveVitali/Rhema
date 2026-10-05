@@ -30,6 +30,17 @@ export const NOTIFICATION_EVENT_TYPES = [
   "credits_threshold",
   /** trial ending / payment failed — NON-CONFIGURABLE, mostly dormant at beta (§5.11). */
   "trial_payment",
+  // ---------- P1.19 — the in-app half of the §5.11 matrix ----------
+  /** a run was cancelled by the system / recovered — §5.11: in-app row only (email is failed-only). */
+  "run_cancelled_recovered",
+  /** a voice profile went stale (seed/samples changed, aged, badly-off) — in-app + weekly email digest. */
+  "voice_stale",
+  /** an assistant reply landed while the project was backgrounded — in-app (+ optional email). */
+  "chat_reply",
+  /** a finding streamed / a phase finished — §5.11 "off, Advanced opt-in", per-PROJECT in-app only. */
+  "run_progress",
+  /** product updates — §5.11: email only, OFF by default. */
+  "product_update",
 ] as const;
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 export const notificationEventTypeSchema = z.enum(NOTIFICATION_EVENT_TYPES);
@@ -49,8 +60,8 @@ export function notificationEventForGate(kind: GateKind): "spend_gate" | "approv
   return SPEND_GATE_KINDS.includes(kind) ? "spend_gate" : "approval_waiting";
 }
 
-/** Event types quiet hours may defer (§5.11: "run-finished and chat"; chat has no beta email). */
-export const QUIET_HOURS_DEFERRABLE: readonly NotificationEventType[] = ["run_finished"];
+/** Event types quiet hours may defer (§5.11: "run-finished and chat" — approvals + spend gates never). */
+export const QUIET_HOURS_DEFERRABLE: readonly NotificationEventType[] = ["run_finished", "chat_reply"];
 
 // ---------- preferences (server-side, per event type — REQ-ACCT-1) ----------
 
@@ -62,29 +73,168 @@ export const quietHoursSchema = z.object({
 });
 export type QuietHours = z.infer<typeof quietHoursSchema>;
 
-/** The `notification_prefs.prefs` jsonb shape: per-event-type email toggles + an optional quiet window. */
+/**
+ * The `notification_prefs.prefs` jsonb shape (P1.19 — one blob per user, shared by web and the 1.x app):
+ * per-channel toggles, digest opts, the per-PROJECT `run_progress` opt-in, and an optional quiet window.
+ */
 export const notificationPrefsSchema = z.object({
+  /** per-event-type email toggles (absent ⇒ the §5.11 default for the row). */
   email: z.record(notificationEventTypeSchema, z.boolean()).optional(),
+  /** per-event-type in-app toggles — the same server-side authority the 1.x app reads (REQ-MOBILE-19). */
+  inApp: z.record(notificationEventTypeSchema, z.boolean()).optional(),
+  /** digest opts — run_finished may batch hourly; voice_stale batches weekly (§5.11 "email digest weekly"). */
+  digest: z
+    .object({
+      run_finished: z.literal("hourly").optional(),
+      voice_stale: z.literal("weekly").optional(),
+    })
+    .partial()
+    .optional(),
+  /** per-PROJECT overrides — the only project-scoped row at MVP is the Advanced `run_progress` opt-in. */
+  project: z
+    .record(z.string(), z.object({ run_progress: z.boolean().optional() }).partial())
+    .optional(),
   quietHours: quietHoursSchema.nullish(),
 });
 export type NotificationPrefs = z.infer<typeof notificationPrefsSchema>;
 
 /**
- * The effective email toggle for an event type: stored pref wins, absent ⇒ ON (the §5.11 defaults), and a
+ * The §5.11 matrix, declaratively — one row per event type; the source of truth the AC1 fixtures verify
+ * and every channel (email, in-app, the 1.x push transport) resolves against.
+ *   `email`:      "always" (default on) · "digest" (the only mail is the digest) · "opt_in" (off default)
+ *                 · "none" (the event never mails)
+ *   `inApp`:      the Inbox row exists — "always" or "opt_in" (project-scoped for run_progress)
+ *   `defaultOn`:  the row's §5.11 default for its toggles
+ *   `osLevelOnlyWhenUnfocused`: §5.11 — an OS-level notification fires only while the project is not focused.
+ *   `collapse`:   the Inbox collapse-key family — a run's notifications update one row in place.
+ */
+export const NOTIFICATION_MATRIX = {
+  approval_waiting: {
+    inApp: "always", push: true, email: "always", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  gate_reminder: {
+    inApp: "always", push: true, email: "always", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  spend_gate: {
+    inApp: "always", push: true, email: "always", defaultOn: true, configurable: false,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  run_finished: {
+    inApp: "always", push: true, email: "always", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: true, collapse: "run",
+  },
+  run_failed: {
+    inApp: "always", push: true, email: "always", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  run_cancelled_recovered: {
+    inApp: "always", push: false, email: "none", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  auto_proceeded: {
+    inApp: "always", push: false, email: "always", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  voice_stale: {
+    inApp: "always", push: false, email: "digest", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "voice",
+  },
+  credits_threshold: {
+    inApp: "always", push: false, email: "always", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "billing",
+  },
+  trial_payment: {
+    inApp: "always", push: true, email: "always", defaultOn: true, configurable: false,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "billing",
+  },
+  chat_reply: {
+    inApp: "always", push: true, email: "opt_in", defaultOn: true, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: true, collapse: "run",
+  },
+  run_progress: {
+    inApp: "opt_in", push: false, email: "none", defaultOn: false, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "run",
+  },
+  product_update: {
+    inApp: "none", push: false, email: "opt_in", defaultOn: false, configurable: true,
+    osLevelOnlyWhenUnfocused: true, quietHoursDeferrable: false, collapse: "account",
+  },
+} as const;
+export type NotificationMatrixRow = (typeof NOTIFICATION_MATRIX)[NotificationEventType];
+
+/** The event types that can send email at all (in-app-only rows have no template). */
+export const EMAIL_EVENT_TYPES = NOTIFICATION_EVENT_TYPES.filter(
+  (t) => NOTIFICATION_MATRIX[t].email !== "none",
+) as NotificationEventType[];
+
+/**
+ * The effective email toggle for an event type: stored pref wins, absent ⇒ the matrix default, and a
  * non-configurable row is always ON no matter what was stored (defense in depth — the API also rejects).
+ * opt_in rows (chat_reply's optional email, product updates) default OFF.
  */
 export function emailEnabled(prefs: NotificationPrefs | null | undefined, type: NotificationEventType): boolean {
   if (isNonConfigurableEvent(type)) return true;
-  return prefs?.email?.[type] ?? true;
+  const row = NOTIFICATION_MATRIX[type];
+  if (row.email === "none") return false;
+  // "opt_in" rows (chat_reply's optional arm, product updates) mail only when the user turns them on;
+  // `defaultOn` describes the row's in-app arm, so it cannot be used as the email default here.
+  if (row.email === "opt_in") return prefs?.email?.[type] ?? false;
+  return prefs?.email?.[type] ?? row.defaultOn;
 }
 
-/** The complete effective matrix for the settings surface: every type's effective toggle + its lock. */
+/**
+ * The effective in-app toggle (P1.19): stored `inApp` pref wins, absent ⇒ the matrix default —
+ * `run_progress` is the ONLY off-by-default row and it is per-PROJECT (the project-scoped pref must be
+ * explicitly true; a global inApp toggle for it is ignored). Non-configurable rows are always ON.
+ */
+export function inAppEnabled(
+  prefs: NotificationPrefs | null | undefined,
+  type: NotificationEventType,
+  projectId?: string | null,
+): boolean {
+  if (isNonConfigurableEvent(type)) return true;
+  if (NOTIFICATION_MATRIX[type].inApp === "none") return false;
+  if (type === "run_progress") {
+    // the Advanced row is per-project opt-in ONLY (§5.11 "off — Advanced opt-in") — a global toggle
+    // can switch it OFF once opted in but never opts a project in.
+    const scoped = projectId != null && prefs?.project?.[projectId]?.run_progress === true;
+    const userOff = prefs?.inApp?.run_progress === false;
+    return scoped && !userOff;
+  }
+  return prefs?.inApp?.[type] ?? NOTIFICATION_MATRIX[type].defaultOn;
+}
+
+/** The stored digest mode for an event (run_finished→hourly; voice_stale's weekly digest is its email arm). */
+export function digestMode(
+  prefs: NotificationPrefs | null | undefined,
+  type: "run_finished" | "voice_stale",
+): "hourly" | "weekly" | null {
+  if (type === "voice_stale") return "weekly"; // §5.11: the voice-stale email is ALWAYS the weekly digest
+  return prefs?.digest?.run_finished === "hourly" ? "hourly" : null;
+}
+
+/** The complete effective matrix for the settings surface: every type's toggles + its lock. */
 export function effectiveEmailMatrix(
   prefs: NotificationPrefs | null | undefined,
-): Record<NotificationEventType, { enabled: boolean; configurable: boolean }> {
-  const out = {} as Record<NotificationEventType, { enabled: boolean; configurable: boolean }>;
+): Record<NotificationEventType, { enabled: boolean; inApp: boolean; digest: string | null; configurable: boolean }> {
+  const out = {} as Record<
+    NotificationEventType,
+    { enabled: boolean; inApp: boolean; digest: string | null; configurable: boolean }
+  >;
   for (const t of NOTIFICATION_EVENT_TYPES) {
-    out[t] = { enabled: emailEnabled(prefs, t), configurable: !isNonConfigurableEvent(t) };
+    out[t] = {
+      enabled: emailEnabled(prefs, t),
+      inApp: inAppEnabled(prefs, t),
+      digest:
+        t === "run_finished"
+          ? digestMode(prefs, "run_finished")
+          : t === "voice_stale"
+            ? "weekly"
+            : null,
+      configurable: !isNonConfigurableEvent(t),
+    };
   }
   return out;
 }
@@ -113,6 +263,181 @@ export function quietHoursEnd(prefs: NotificationPrefs, now: Date): Date {
   // a wrapping window's post-midnight arm ends today already.
   if (end.getTime() <= now.getTime()) return new Date(end.getTime() + 24 * 60 * 60 * 1000);
   return end;
+}
+
+// ---------- the §5.11 collapse key + the Inbox payload (P1.19) ----------
+
+/**
+ * The §5.11 collapse key: "a run's notifications collapse to one Inbox item — the collapse key is the
+ * run id." Non-run rows collapse on their own family key (a voice's staleness row updates in place;
+ * each credits threshold is a separate event; each billing reason is a separate event).
+ */
+export function inboxCollapseKey(
+  type: NotificationEventType,
+  ids: { runId?: string | null; personaId?: string | null; billingAccountId?: string | null; tag?: string | null },
+): string {
+  const fam = NOTIFICATION_MATRIX[type].collapse;
+  if (fam === "run" && ids.runId) return `run:${ids.runId}`;
+  if (fam === "voice") return `voice:${ids.personaId ?? "unknown"}`;
+  if (fam === "billing") return `billing:${ids.billingAccountId ?? "acct"}:${ids.tag ?? type}`;
+  return `acct:${type}${ids.tag ? `:${ids.tag}` : ""}`;
+}
+
+/** The shared §10.1 Inbox row (InboxItem) — the shape web and the 1.x app both consume (REQ-MOBILE-19). */
+export const inboxItemSchema = z.object({
+  id: z.string().min(1),
+  /** 'blocked' (approval/decision — badge-counted) | 'event' (a §5.11 notification) | 'voice' (stale). */
+  kind: z.enum(["blocked", "event", "voice"]),
+  /** the §5.11 event type for kind='event'; 'gate'/'decision' for kind='blocked'; 'stale' for voices. */
+  type: z.string(),
+  title: z.string().max(200),
+  body: z.string().max(400).optional(),
+  /** the §4.2 app-path deep link — every row lands on a focused surface, never a dead end. */
+  href: z.string().max(2000),
+  projectId: z.string().nullable().optional(),
+  projectTitle: z.string().max(140).nullable().optional(),
+  runId: z.string().nullable().optional(),
+  unread: z.boolean(),
+  createdAt: z.string(),
+  /** kind='blocked' rows carry their gate/decision payload inline (the Needs-you wire shape). */
+  gate: z.unknown().optional(),
+  decision: z.unknown().optional(),
+});
+export type InboxItem = z.infer<typeof inboxItemSchema>;
+
+/** The §10.1 NotificationDevice row — POST/DELETE /devices registers the 1.x push transport later. */
+export const notificationDeviceSchema = z.object({
+  id: z.string().min(1),
+  platform: z.enum(["web", "ios", "android"]),
+  token: z.string().min(1).max(2000),
+  createdAt: z.string(),
+});
+export type NotificationDevice = z.infer<typeof notificationDeviceSchema>;
+
+// ---------- Inbox copy (the in-app template registry — same notes.ts discipline) ----------
+
+const label2 = z.string().max(80).regex(/^[\w .:'/–—()+-]*$/, "inbox label must be a controlled token");
+const bounded = z.string().max(300);
+const title2 = z.string().max(140);
+const credits2 = z.number().int().nonnegative();
+
+/**
+ * The in-app row's copy for an event — a fixed template + whitelisted params (ids, counts, bounded
+ * labels; NEVER finding/draft text — REQ-MOBILE-20's payload rule applies to the in-app channel too).
+ */
+export const INBOX_COPY: Record<
+  NotificationEventType,
+  { params: z.ZodType<unknown>; render: (p: never) => { title: string; body?: string } }
+> = {
+  approval_waiting: {
+    params: z.object({ gateLabel: label2, projectTitle: title2.optional() }),
+    render: ((p: { gateLabel: string; projectTitle?: string }) => ({
+      title: `${p.gateLabel} is waiting on you`,
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  spend_gate: {
+    params: z.object({ gateLabel: label2, projectTitle: title2.optional() }),
+    render: ((p: { gateLabel: string; projectTitle?: string }) => ({
+      title: `Spend needs your call: ${p.gateLabel}`,
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  gate_reminder: {
+    params: z.object({
+      gateLabel: label2,
+      offsetLabel: label2,
+      doNothing: label2,
+      projectTitle: title2.optional(),
+    }),
+    render: ((p: { gateLabel: string; offsetLabel: string; doNothing: string; projectTitle?: string }) => ({
+      title: `${p.gateLabel} — ${p.doNothing} in ${p.offsetLabel}`,
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  auto_proceeded: {
+    params: z.object({
+      gateLabel: label2,
+      actionLabel: label2,
+      spentCredits: credits2,
+      capCredits: credits2,
+      projectTitle: title2.optional(),
+    }),
+    render: ((p: {
+      gateLabel: string; actionLabel: string; spentCredits: number; capCredits: number; projectTitle?: string;
+    }) => ({
+      title: `${p.gateLabel} proceeded — the run ${p.actionLabel}`,
+      body: `${p.spentCredits} of ${p.capCredits} credits${p.projectTitle ? ` · ${p.projectTitle}` : ""}`,
+    })) as never,
+  },
+  run_finished: {
+    params: z.object({ projectTitle: title2.optional(), workflowLabel: label2.optional() }),
+    render: ((p: { projectTitle?: string; workflowLabel?: string }) => ({
+      title: `${p.workflowLabel ?? "Run"} finished — the deliverable is ready`,
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  run_failed: {
+    params: z.object({ projectTitle: title2.optional() }),
+    render: ((p: { projectTitle?: string }) => ({
+      title: "Run failed — see what was kept",
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  run_cancelled_recovered: {
+    params: z.object({ variant: z.enum(["cancelled", "recovered"]), projectTitle: title2.optional() }),
+    render: ((p: { variant: "cancelled" | "recovered"; projectTitle?: string }) => ({
+      title: p.variant === "cancelled" ? "Run was cancelled by the system" : "Run recovered",
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  voice_stale: {
+    params: z.object({ personaName: label2, pillLabel: label2 }),
+    render: ((p: { personaName: string; pillLabel: string }) => ({
+      title: `Voice needs attention: ${p.personaName}`,
+      body: p.pillLabel,
+    })) as never,
+  },
+  credits_threshold: {
+    params: z.object({ percent: z.number().int().min(1).max(100) }),
+    render: ((p: { percent: number }) => ({ title: `Credits: ${p.percent}% used` })) as never,
+  },
+  trial_payment: {
+    params: z.object({ reason: bounded }),
+    render: ((p: { reason: string }) => ({ title: p.reason })) as never,
+  },
+  chat_reply: {
+    params: z.object({ projectTitle: title2.optional() }),
+    render: ((p: { projectTitle?: string }) => ({
+      title: "The Assistant replied",
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  run_progress: {
+    params: z.object({
+      phase: label2,
+      ordinal: z.number().int().positive(),
+      of: z.number().int().positive(),
+      projectTitle: title2.optional(),
+    }),
+    render: ((p: { phase: string; ordinal: number; of: number; projectTitle?: string }) => ({
+      title: `Phase ${p.ordinal} of ${p.of} finished: ${p.phase}`,
+      ...(p.projectTitle ? { body: p.projectTitle } : {}),
+    })) as never,
+  },
+  product_update: {
+    params: z.object({ subject: bounded }),
+    render: ((p: { subject: string }) => ({ title: p.subject })) as never,
+  },
+};
+
+export function renderInboxCopy<K extends NotificationEventType>(
+  type: K,
+  params: unknown,
+): { title: string; body?: string } {
+  const entry = INBOX_COPY[type];
+  const parsed = entry.params.parse(params);
+  return (entry.render as (p: never) => { title: string; body?: string })(parsed as never);
 }
 
 // ---------- gate labels + the do-nothing outcome (template vocabulary) ----------
@@ -340,15 +665,101 @@ export const EMAIL_TEMPLATES = {
       };
     },
   ),
+
+  // ---- P1.19 — the deferred §5.11 email rows ----
+
+  /** §5.11 "voice stale → email: weekly digest" — the ONLY mail the event sends. */
+  voice_stale: define(
+    z.object({
+      count: z.number().int().positive(),
+      voices: z.array(z.object({ name: label, pill: label })).min(1).max(50),
+      openUrl: url,
+    }),
+    (p) => {
+      const lines = [
+        `${p.count} voice${p.count === 1 ? "" : "s"} need${p.count === 1 ? "s" : ""} attention:`,
+        ...p.voices.map((v) => `• ${v.name} — ${v.pill}`),
+        `Open the voice library to update.`,
+      ];
+      return {
+        subject: `Voices: ${p.count} stale`,
+        text: `${lines.join("\n")}\n\nOpen: ${p.openUrl}`,
+        html: shell(lines, [{ label: "Open", url: p.openUrl }]),
+      };
+    },
+  ),
+
+  /** §5.11 "chat reply while backgrounded — email optional" (the opt-in arm; in-app is default). */
+  chat_reply: define(
+    z.object({ projectTitle: title.optional(), openUrl: url }),
+    (p) => {
+      const where = p.projectTitle ? ` on “${p.projectTitle}”` : "";
+      const lines = [`The Assistant replied${where}.`, `Open the project to read it.`];
+      return {
+        subject: `New reply${where}`,
+        text: `${lines.join("\n")}\n\nOpen: ${p.openUrl}`,
+        html: shell(lines, [{ label: "Open", url: p.openUrl }]),
+      };
+    },
+  ),
+
+  /** §5.11 "product updates — email only, off by default" (the opt-in arm). */
+  product_update: define(
+    z.object({ subject: label, summary: z.string().max(400), openUrl: url }),
+    (p) => {
+      const lines = [p.subject, p.summary];
+      return {
+        subject: p.subject,
+        text: `${lines.join("\n")}\n\nOpen: ${p.openUrl}`,
+        html: shell(lines, [{ label: "Open", url: p.openUrl }]),
+      };
+    },
+  ),
 } as const;
 
-// self-check: the registry covers every event type exactly.
-for (const t of NOTIFICATION_EVENT_TYPES) {
+/**
+ * Mail shapes that are NOT one-event-per-row — the optional hourly run-finished digest batches several
+ * finished runs into one mail (§5.11 "digest (hourly)").
+ */
+export const DIGEST_TEMPLATES = {
+  run_finished_digest: define(
+    z.object({
+      count: z.number().int().positive(),
+      runs: z.array(z.object({ workflowLabel: label, projectTitle: title.optional(), openUrl: url })).min(1).max(100),
+    }),
+    (p) => {
+      const lines = [
+        `${p.count} run${p.count === 1 ? "" : "s"} finished this hour:`,
+        ...p.runs.map((r) => `• ${r.workflowLabel}${r.projectTitle ? ` — ${r.projectTitle}` : ""} ${r.openUrl}`),
+      ];
+      return {
+        subject: `Runs: ${p.count} finished`,
+        text: lines.join("\n"),
+        html: shell(lines, p.runs.slice(0, 5).map((r) => ({ label: "Open", url: r.openUrl }))),
+      };
+    },
+  ),
+} as const;
+
+export function renderDigest<K extends keyof typeof DIGEST_TEMPLATES>(
+  key: K,
+  params: z.infer<(typeof DIGEST_TEMPLATES)[K]["params"]>,
+): RenderedEmail {
+  const t = DIGEST_TEMPLATES[key];
+  return (t.render as (p: never) => RenderedEmail)(t.params.parse(params) as never);
+}
+
+// self-check: the registry covers every email-capable event type exactly.
+for (const t of EMAIL_EVENT_TYPES) {
   if (!(t in EMAIL_TEMPLATES)) throw new Error(`EMAIL_TEMPLATES missing ${t}`);
 }
 
+/** The event types that carry an email template (a subset of NOTIFICATION_EVENT_TYPES — in-app-only
+ *  rows like run_progress have no mail arm at all). */
+export type EmailEventType = keyof typeof EMAIL_TEMPLATES;
+
 /** Render an email for an event type from its whitelisted params (validated + bounded like notes.ts). */
-export function renderEmail<K extends NotificationEventType>(
+export function renderEmail<K extends EmailEventType>(
   type: K,
   params: z.infer<(typeof EMAIL_TEMPLATES)[K]["params"]>,
 ): RenderedEmail {

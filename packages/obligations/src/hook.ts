@@ -14,6 +14,7 @@ import { matchFinding, quoteOf, type CandidateFinding, type LineageMatchOptions 
 import { bumpSeverity, incrementRoundsOpen, spawnObligationFromFinding, spawnsAtDelivery } from "./spawn.js";
 import { dischargeByGapCheck, dischargeByNoMatch, mootObligation, reopenObligation, sweepArrivedDeferrals } from "./discharge.js";
 import { routeDisposition, spawnAndRouteMinor } from "./routing.js";
+import { escalateStalls } from "./stall.js";
 import type { Severity } from "@rhema/contracts";
 
 // The delivery hook (REQ-OBJ-2/3/4; REQ-WF-7). This is the concrete implementation of `@rhema/mirror`'s
@@ -175,6 +176,14 @@ export class SqlObligationHook implements ObligationHook {
           discharged.push(o.id);
         }
       }
+    }
+
+    // 3b. P1.19 — the §6.8 stall escalation fires for hand-run rounds too (REQ-OBJ-5/6): after this
+    //     covering round's carries/returns land, any blocking/major obligation still open ≥2 rounds
+    //     escalates to the Decisions inbox ("decide / re-defer / drop"). Idempotent per obligation
+    //     (an already-open request is re-used); scoped runs never escalate obligations outside them.
+    if (ctx.coversAllObligations !== false) {
+      await escalateStalls(exec, this.deps, { projectId: ctx.projectId, runId: ctx.runId, byActor: actor });
     }
 
     // 4. counts (from rows) reconciled with the Editor's sidecar tally → a warning, never a failure (REQ-WF-7).

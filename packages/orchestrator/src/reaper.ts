@@ -10,7 +10,7 @@ import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS } from "./queue.js";
-import { scheduleGateNotifications } from "./notifications.js";
+import { scheduleGateNotifications, scheduleRunTerminalNotification } from "./notifications.js";
 import { HEARTBEAT_STALE_MS } from "./heartbeat.js";
 import type { SqlClient } from "./tx.js";
 
@@ -125,6 +125,13 @@ export async function reap(
         { runId: hb.runId, attempt: outcome.attempt, fromStep: "current" },
         { singletonKey: hb.runId, startAfterMs: STOP_TASK_GRACE_MS },
       );
+      // P1.19 — §5.11 "cancelled / recovered" is an in-app-only row: the re-enqueued run's Inbox row
+      // narrates the recovery (the handler re-reads state; a run that already went terminal no-ops).
+      await scheduleRunTerminalNotification(deps, {
+        runId: hb.runId,
+        workspaceId: hb.workspaceId,
+        outcome: "recovered",
+      });
     }
     // PRB.09 — the resume_partial card emails its waiting notice (neverAutoProceed ⇒ no reminders armed).
     if (outcome.action === "resume_partial" && gateBox.opened) {

@@ -11,7 +11,7 @@ import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { reconcileRunSpend } from "./spend.js";
 import { RUN_JOBS, scheduleGateExpiry } from "./queue.js";
-import { NOTIFY_QUEUE, scheduleGateReminders } from "./notifications.js";
+import { NOTIFY_QUEUE, scheduleGateReminders, scheduleRunTerminalNotification } from "./notifications.js";
 import { conditionalResolve, writeDecision, emitGateResolved } from "./gate-resolution.js";
 import type { RunState } from "./state-machine.js";
 import type { SqlClient } from "./tx.js";
@@ -60,9 +60,16 @@ export async function handleGateExpiry(
   args: { gateId: string; workspaceId: string },
 ): Promise<GateExpiryOutcome> {
   const now = deps.clock.now();
-  const box: { job: { name: string; payload: Record<string, unknown> } | null; autoProceeded: boolean } = {
+  const box: {
+    job: { name: string; payload: Record<string, unknown> } | null;
+    autoProceeded: boolean;
+    terminalOutcome: "cancelled" | "completed_partial" | null;
+    runId: string | null;
+  } = {
     job: null,
     autoProceeded: false,
+    terminalOutcome: null,
+    runId: null,
   };
 
   const outcome = await deps.txRunner.run(args.workspaceId, async (tx): Promise<GateExpiryOutcome> => {
@@ -120,10 +127,14 @@ export async function handleGateExpiry(
       return { action: "resolved", onExpiry, state: "queued", presence: usingPresence };
     }
 
-    // cancel / accept_partial: terminal; settle the hold + revoke the credential.
+    // cancel / accept_partial: terminal; settle the hold + revoke the credential. P1.19 — the §5.11
+    // in-app row rides the same post-commit seam (a system cancel lands `run_cancelled_recovered`; a
+    // kept partial lands the run_finished Inbox row, mail-suppressed).
     const to: RunState = onExpiry === "cancel" ? "cancelled" : "completed_partial";
     await applyTransition(tx, deps, { runId: gr.run_id, from: gr.state, to, reason: "expired" });
     await settleTerminal(deps, tx, { runId: gr.run_id, workspaceId: args.workspaceId, billingAccountId: gr.billing_account_id, holdLedgerId: gr.hold_ledger_id, now });
+    box.terminalOutcome = onExpiry === "cancel" ? "cancelled" : "completed_partial";
+    box.runId = gr.run_id;
     return { action: "resolved", onExpiry, state: to, presence: usingPresence };
   });
 
@@ -137,6 +148,13 @@ export async function handleGateExpiry(
       { type: "auto_proceeded", gateId: args.gateId, workspaceId: args.workspaceId },
       { singletonKey: `notify:auto:${args.gateId}` },
     );
+  }
+  if (box.terminalOutcome && box.runId) {
+    await scheduleRunTerminalNotification(deps, {
+      runId: box.runId,
+      workspaceId: args.workspaceId,
+      outcome: box.terminalOutcome,
+    });
   }
   return outcome;
 }

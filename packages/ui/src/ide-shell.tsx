@@ -188,16 +188,22 @@ export function IdeShell(props: IdeShellProps): ReactNode {
       {...(props.activeRun ? { "data-run-state": props.activeRun.state } : {})}
       {...(props.runNextHref ? { "data-run-next": props.runNextHref } : {})}
     >
-      {/* the phone-width fallback bar (visible <768 only — the reader-only Page layout) */}
+      {/* the phone-width fallback bar (visible <768 only — the reader-only Page layout).
+          P1.19 — the Inbox link + badge ride it: the Rail is display:none at this width, and the
+          badge is how a phone reader reaches the approvals/decisions the input set centers on. */}
       <div className="ide-phonebar">
         <a href="/app" aria-label={L.rail.home}>← {L.rail.home}</a>
         <strong>{project.title}</strong>
+        <a href="/app/inbox" className="ide-badge" data-count={props.inboxCount ?? 0}
+           title={L.rail.inbox} aria-label={L.rail.inbox}>◎</a>
       </div>
       <div className="ide-main">
         {/* Rail — the only persistent global chrome (§5.1). */}
         <nav className="ide-rail" aria-label={L.rail.project}>
           <a href="/app" title={L.rail.home} aria-label={L.rail.home}>⌂</a>
-          <a href={`/p/${project.slug}`} className="ide-badge" data-count={props.inboxCount ?? 0}
+          {/* P1.19 — the badge opens the global /app/inbox (REQ-IDE-2 amended); the count is the
+              api's approvals+decisions number. */}
+          <a href="/app/inbox" className="ide-badge" data-count={props.inboxCount ?? 0}
              title={L.rail.inbox} aria-label={L.rail.inbox}>◎</a>
           <span className="ide-rail-spacer" />
           <button type="button" data-ide-view-menu title={L.statusBar.view} aria-haspopup="menu" aria-expanded="false">▤</button>

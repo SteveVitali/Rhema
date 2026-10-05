@@ -336,10 +336,12 @@ describe("§5.11 delivery rules", () => {
   it("a disabled configurable row suppresses the mail; the spend-gate row cannot be suppressed", async () => {
     const { gateId } = await seedWaitingRun();
     markOpen();
+    // P1.19 — prefs are per-channel: `email: false` alone still lands the Inbox row; both channels
+    // must be off for a full noop. spend_gate is non-configurable — its stored false is ignored.
     await db.txRunner.run(seed.workspaceId, (tx) =>
       tx.query("insert into notification_prefs(user_id, prefs) values ($1,$2)", [
         seed.userId,
-        JSON.stringify({ email: { approval_waiting: false, spend_gate: false } }),
+        JSON.stringify({ email: { approval_waiting: false, spend_gate: false }, inApp: { spend_gate: false } }),
       ]),
     );
     await scheduleGateNotifications(deps, {
@@ -352,6 +354,31 @@ describe("§5.11 delivery rules", () => {
     });
     const waiting = deps.queue.ofName(NOTIFY_QUEUE).find((j) => j.payload.type === "gate_waiting")!;
     expect(await handleNotifyJob(deps, waiting.payload as unknown as NotificationJobPayload)).toMatchObject({
+      action: "inbox",
+      eventType: "approval_waiting",
+    });
+    expect(mailJobs()).toHaveLength(0); // the mail leg was suppressed — the row still landed
+
+    // with the in-app leg also off, nothing happens at all.
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query("update notification_prefs set prefs = prefs || $2 where user_id = $1", [
+        seed.userId,
+        JSON.stringify({ inApp: { approval_waiting: false } }),
+      ]),
+    );
+    const bothOff = await seedWaitingRun();
+    await scheduleGateNotifications(deps, {
+      gateId: bothOff.gateId,
+      workspaceId: seed.workspaceId,
+      kind: "approve_plan",
+      onExpiry: "proceed_conservative",
+      deadlineAt: null,
+      now: deps.clock.now(),
+    });
+    const waiting2 = deps.queue
+      .ofName(NOTIFY_QUEUE)
+      .find((j) => j.payload.type === "gate_waiting" && j.payload.gateId === bothOff.gateId)!;
+    expect(await handleNotifyJob(deps, waiting2.payload as unknown as NotificationJobPayload)).toMatchObject({
       action: "noop",
       reason: "disabled",
     });
@@ -366,7 +393,9 @@ describe("§5.11 delivery rules", () => {
       deadlineAt: null,
       now: deps.clock.now(),
     });
-    const spendJob = deps.queue.ofName(NOTIFY_QUEUE).filter((j) => j.payload.type === "gate_waiting")[1]!;
+    const spendJob = deps.queue
+      .ofName(NOTIFY_QUEUE)
+      .find((j) => j.payload.type === "gate_waiting" && j.payload.gateId === spend.gateId)!;
     expect(spendJob.startAfterMs).toBe(0); // money is blocked — the notice is immediate, not +15 min
     expect(await handleNotifyJob(deps, spendJob.payload as unknown as NotificationJobPayload)).toMatchObject({
       action: "mailed",
@@ -401,11 +430,12 @@ describe("§5.11 delivery rules", () => {
     ).toMatchObject({ action: "mailed", eventType: "run_failed" });
     await deliverAll();
     expect(sent.some((m) => m.subject === "Run failed on “Seed project”")).toBe(true);
-    // cancelled/completed_partial send nothing.
+    // cancelled/completed_partial send no MAIL — but P1.19 lands the in-app row
+    // (run_cancelled_recovered / run_finished are Inbox events, §5.11).
     await db.client.query("update runs set state = 'cancelled' where id = $1", [runId]);
     expect(
       await handleNotifyJob(deps, { type: "run_terminal", runId, workspaceId: seed.workspaceId, outcome: "cancelled" }),
-    ).toMatchObject({ action: "noop" });
+    ).toMatchObject({ action: "inbox", eventType: "run_cancelled_recovered" });
   });
 
   it("credits thresholds mail at 50/80/100, once each", async () => {
@@ -442,9 +472,10 @@ describe("§5.11 delivery rules", () => {
     await deliverAll();
     expect(sent[1]!.subject).toContain("80%");
 
-    // a repeat check sends nothing new (every crossed level is already claimed).
+    // a repeat check sends no new MAIL (every crossed level is already claimed) — the Inbox upsert
+    // re-lands idempotently on its `billing:<acct>:<pct>` collapse key.
     const again = await handleNotifyJob(deps, { type: "credits_check", billingAccountId: seed.billingAccountId, workspaceId: seed.workspaceId });
-    expect(again).toMatchObject({ action: "noop", reason: "already_sent" });
+    expect(again).toMatchObject({ action: "inbox", eventType: "credits_threshold" });
     expect(mailJobs()).toHaveLength(2);
   });
 });

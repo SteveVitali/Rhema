@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { matchRoutes } from "react-router";
-import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, NotFoundPage } from "./pages.js";
+import { InvitePage, LoginPage, ProjectsPage, ProjectPage, NewProjectPage, ImportPage, ImportPreviewPage, RunSheetPage, DossierPage, RevisionPage, EditorPage, PagePage, ComparePage, ExportPage, VoicesPage, VoiceNewPage, VoiceDetailPage, VoiceReseedPage, ObligationNewPage, SettingsPage, UsagePage, RunReportPage, OutlinePage, OutlinePromotePage, FiguresPanePage, FigureCardPage, VisualizePage, BillingPage, BillingReturnPage, ProjectUsagePage, InboxPage, NotFoundPage } from "./pages.js";
 import { LandingPage, PricingPage, SignupPage } from "./marketing.js";
 
 // The canonical route manifest (§4.2). The beta uses the `/p/:project` shapes so nothing is thrown away when
@@ -50,6 +50,8 @@ export const usageElement = <UsagePage />;
 export const billingElement = <BillingPage />;
 export const billingReturnElement = <BillingReturnPage />;
 export const projectUsageElement = <ProjectUsagePage />;
+// P1.19 — the §5.11 Inbox (REQ-IDE-2 amended; the Rail's global surface).
+export const inboxElement = <InboxPage />;
 // P1.05 — the run report (§14.5 levels 3–4; the Timeline card's "Run report" link lands here).
 export const runReportElement = <RunReportPage />;
 // P1.12 — the unlocked outline editor + the promotion sheet (§7.3).
@@ -72,6 +74,8 @@ export const routes: readonly AppRoute[] = [
   { path: "/app", public: false, element: projectsElement },
   // P1.04 — the new-project sheet (§5.3): ?entry=scratch|outline|draft picks the entry.
   { path: "/app/new", public: false, element: newProjectElement },
+  // P1.19 — the §5.11 Inbox (REQ-IDE-2 amended): blocked-on-you → unread events → stale voices.
+  { path: "/app/inbox", public: false, element: inboxElement },
   { path: "/p/:project", public: false, element: projectElement },
   { path: "/p/:project/import", public: false, element: importElement },
   { path: "/p/:project/run", public: false, element: runSheetElement },

@@ -35,12 +35,13 @@ import {
   billingElement,
   billingReturnElement,
   projectUsageElement,
+  inboxElement,
   notFoundElement,
 } from "./routes.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto, GateCardDto } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
@@ -216,7 +217,7 @@ export function createWebApp(deps: WebDeps): Hono {
       runNextHref?: string;
       status?: { version?: string; words?: number; readMin?: number; venueCap?: string; credits?: number; sync?: "synced" | "syncing" | "offline" };
     } = {},
-  ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide">> => {
+  ): Promise<Pick<PageData, "theme" | "paperTheme" | "ide" | "compact">> => {
     const [principal, theme, files, chat] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getSessionPrincipal?.(session))
@@ -288,6 +289,9 @@ export function createWebApp(deps: WebDeps): Hono {
     return {
       ...(theme?.appTheme ? { theme: { pref: theme.appTheme } } : {}),
       paperTheme: row.paperTheme ?? "light",
+      // P1.19 (§10.1) — every IDE-framed render inherits the phone-width flag from here: the Desk's
+      // gate card and the Margin's finding affordances read `data.compact` directly.
+      compact: isPhoneRequest(c),
       ide: {
         ...(principal?.userId ? { userId: principal.userId } : {}),
         projectId: row.id,
@@ -1503,6 +1507,7 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(search != null ? { search: { q, results: search } } : {}),
       },
       ...(bal ? { balance: { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 } } : {}),
+      compact: isPhoneRequest(c),
     }));
   });
 
@@ -1573,6 +1578,7 @@ export function createWebApp(deps: WebDeps): Hono {
     c.html(
       renderDocument(path, newProjectElement, {
         newProject: { protocols: base.protocols, voices: base.voices, ...np },
+        compact: isPhoneRequest(c),
         ...extra,
       }),
     );
@@ -1848,6 +1854,69 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.redirect("/app?deleted=1");
   });
 
+  // ---- P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): the global blocked-on-you →
+  // unread → earlier → voices surface. The api's /inbox owns the ordering; the web page renders it
+  // verbatim. The read POSTs collapse to the api's marks; deep links land on the focused surface. ----
+  app.get("/app/inbox", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const [items, badge] = await Promise.all([
+      Promise.resolve()
+        .then(() => deps.dataSource.getInbox?.(session) ?? [])
+        .catch(() => []),
+      Promise.resolve()
+        .then(() => deps.dataSource.getInboxBadge?.(session))
+        .then((b) => (b && typeof b.count === "number" ? b.count : 0))
+        .catch(() => 0),
+    ]);
+    // §5.11 — "inline Approve opens the artifact in a side sheet first": an expanded gate row mounts
+    // the run's REAL §6.4 card (the same `gateCardFor` the Needs-you surface renders). The row DTO
+    // carries ids only, so the page loads each touched project's open-gates read once and joins by
+    // gate id — a missing read degrades the row to its deep link, never a failed page.
+    const gateProjectIds = [...new Set(items.filter((i) => i.gate != null).map((i) => i.projectId).filter((p): p is string => p != null))];
+    const gateLists = await Promise.all(
+      gateProjectIds.map((pid) =>
+        Promise.resolve()
+          .then(() => deps.dataSource.listGates(session, pid))
+          .catch(() => [] as GateCardDto[]),
+      ),
+    );
+    const gatesById = new Map(gateLists.flat().map((g) => [g.id, g] as const));
+    const gateCards: Record<string, GateCardDto> = {};
+    for (const it of items) {
+      if (it.gate == null) continue;
+      const card = gatesById.get(it.gate.gateId);
+      if (card) gateCards[it.id] = card;
+    }
+    return c.html(
+      renderDocument(c.req.path, inboxElement, {
+        inbox: { items, badge, gateCards },
+        compact: isPhoneRequest(c),
+      }),
+    );
+  });
+  // A row's "Mark read" — no-JS friendly (plain form POST → redirect back to the Inbox).
+  app.post("/app/inbox/read", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const form = await c.req.parseBody();
+    const item = typeof form.item === "string" ? form.item : "";
+    if (item) {
+      await Promise.resolve()
+        .then(() => deps.dataSource.markInboxItemRead?.(session, item))
+        .catch(() => undefined);
+    }
+    return c.redirect("/app/inbox");
+  });
+  app.post("/app/inbox/read-all", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    await Promise.resolve()
+      .then(() => deps.dataSource.markInboxAllRead?.(session))
+      .catch(() => undefined);
+    return c.redirect("/app/inbox");
+  });
+
   // ---- PRB.12 — Settings (the REQ-PROD-15 toggle) + the §14.5 usage glance + the dwell beacon sink ----
   app.get("/settings", async (c) => {
     const session = deps.session(c);
@@ -1998,6 +2067,7 @@ export function createWebApp(deps: WebDeps): Hono {
       Promise.resolve().then(() => deps.dataSource.getPlans?.(session)).catch(() => undefined),
     ]);
     return c.html(renderDocument(c.req.path, billingElement, {
+      compact: isPhoneRequest(c),
       ...(subscription && plans
         ? {
             billing: {
@@ -2204,6 +2274,28 @@ export function createWebApp(deps: WebDeps): Hono {
     const rows = await deps.dataSource.listProjects(session);
     const row = rows.find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // P1.19 — REQ-IDE-48: opening a project with an UNREAD finished run lands on its walkthrough
+    // (the row's href is already workflow-shaped: the letter for reviews, what-changed for revisions,
+    // v1 on the Page for drafts). The row marks read on the way through so the hand-off fires once —
+    // a repeated open lands on the plain project home. A data source without the Inbox seam never
+    // redirects (fixtures keep the overview).
+    if (c.req.query("focus") !== "1" && deps.dataSource.getInbox) {
+      const finishedRow = await Promise.resolve()
+        .then(() => deps.dataSource.getInbox!(session))
+        .then(
+          (items) =>
+            items.find(
+              (i) => i.kind === "event" && i.type === "run_finished" && i.unread === true && i.projectId === row.id,
+            ),
+        )
+        .catch(() => undefined);
+      if (finishedRow) {
+        await Promise.resolve()
+          .then(() => deps.dataSource.markInboxItemRead?.(session, finishedRow.id))
+          .catch(() => undefined);
+        return c.redirect(finishedRow.href);
+      }
+    }
     const [gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice] = await Promise.all([
       deps.dataSource.listGates(session, row.id).catch(() => []),
       deps.dataSource.listDecisions(session, row.id).catch(() => []),
@@ -2247,6 +2339,13 @@ export function createWebApp(deps: WebDeps): Hono {
     // P1.05 — the Timeline pane's round log (§5.5) + the live feed's replayed rows for a non-terminal
     // run (§5.5's Desk auto-open). Both best-effort: a failed read degrades to the empty timeline/feed,
     // never a failed page.
+    // P1.19 — the rail badge is GLOBAL (open approvals + decisions across every project — §5.11);
+    // the api's /inbox/badge owns the count. A data source without the seam (fixtures) keeps the
+    // project-local count it always had.
+    const badge = await Promise.resolve()
+      .then(() => deps.dataSource.getInboxBadge?.(session))
+      .then((b) => (b && typeof b.count === "number" ? b.count : null))
+      .catch(() => null);
     const [timeline, feedData] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getTimeline?.(session, slug))
@@ -2266,7 +2365,7 @@ export function createWebApp(deps: WebDeps): Hono {
       renderDocument(c.req.path, projectElement, {
         // P1.01 — the project overview mounts inside the IDE frame; ?focus=1 seeds the Focus view.
         ...(await ideContext(c, session, { ...row, slug }, {
-          inboxCount: gates.length + decisions.length,
+          inboxCount: badge ?? gates.length + decisions.length,
           ...(timeline ? { timelineView: timeline, runNextHref: `/p/${slug}/run` } : {}),
           ...(row.activeRun && feedData
             ? {
@@ -2323,7 +2422,9 @@ export function createWebApp(deps: WebDeps): Hono {
                 projectId: row.id,
                 doc: pageLoad.doc,
                 docJson: pageLoad.docJson,
-                ...(deps.collabWsUrl ? { collabWsUrl: deps.collabWsUrl } : {}),
+                // P1.19 — §10.1: the overview's Page is reader-only on phone width.
+                ...(isPhoneRequest(c) ? { readOnly: true } : {}),
+                ...(deps.collabWsUrl && !isPhoneRequest(c) ? { collabWsUrl: deps.collabWsUrl } : {}),
               },
             }
           : {}),
@@ -2383,6 +2484,7 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.html(
       renderDocument(c.req.path, voiceReseedElement, {
         voiceReseed: { slug, projectId: row.id, preview },
+        compact: isPhoneRequest(c),
       }),
     );
   });
@@ -2588,6 +2690,7 @@ export function createWebApp(deps: WebDeps): Hono {
       renderDocument(c.req.path, importElement, {
         ...(await ideContext(c, session, row)),
         project: { title: row.title, pill: row.state.pill, slug },
+        compact: isPhoneRequest(c),
       }),
     );
   });
@@ -2606,6 +2709,7 @@ export function createWebApp(deps: WebDeps): Hono {
         renderDocument(c.req.path, importPreviewElement, {
           ...(await ideContext(c, session, { id: slug, slug })),
           project: { title: input.fileName ?? slug, pill: "", slug },
+          compact: isPhoneRequest(c),
           conversion: {
             projectSlug: slug,
             sourceLabel: input.fileName ?? "pasted text",
@@ -2620,6 +2724,7 @@ export function createWebApp(deps: WebDeps): Hono {
       renderDocument(c.req.path, importPreviewElement, {
         ...(await ideContext(c, session, { id: slug, slug })),
         project: { title: input.fileName ?? slug, pill: "", slug },
+        compact: isPhoneRequest(c),
         conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
       }),
     );
@@ -2642,6 +2747,7 @@ export function createWebApp(deps: WebDeps): Hono {
         renderDocument(c.req.path, importPreviewElement, {
           ...(await ideContext(c, session, { id: slug, slug })),
           project: { title: input.fileName ?? slug, pill: "", slug },
+          compact: isPhoneRequest(c),
           conversion: {
             projectSlug: slug,
             sourceLabel: input.fileName ?? "the upload",
@@ -2656,6 +2762,7 @@ export function createWebApp(deps: WebDeps): Hono {
       renderDocument(c.req.path, importPreviewElement, {
         ...(await ideContext(c, session, { id: slug, slug })),
         project: { title: input.fileName ?? slug, pill: "", slug },
+        compact: isPhoneRequest(c),
         conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
       }),
     );
@@ -2674,6 +2781,7 @@ export function createWebApp(deps: WebDeps): Hono {
       if (e instanceof ApiError && e.status === 409 && e.code === "conversion_pending" && input.quarantineKey) {
         return c.html(
           renderDocument(c.req.path, importPreviewElement, {
+            compact: isPhoneRequest(c),
             conversion: {
               projectSlug: slug,
               sourceLabel: input.fileName ?? "the upload",
@@ -2953,6 +3061,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
+    // P1.19 — landing on a run deep link collapses the run's Inbox rows read (REQ-MOBILE-16; the
+    // api's mark is idempotent — opening the dossier from anywhere counts as "seen").
+    await Promise.resolve()
+      .then(() => deps.dataSource.markInboxRunRead?.(session, runId))
+      .catch(() => undefined);
     // P1.05 — the dossier carries the same Timeline pane (the card's own run resolves into its round).
     const timeline = await Promise.resolve()
       .then(() => deps.dataSource.getTimeline?.(session, slug))
@@ -3005,6 +3118,16 @@ export function createWebApp(deps: WebDeps): Hono {
       }
       return undefined;
     })();
+    // P1.19 — the Inbox gate row's `?gate=<id>` deep link (§5.11): the open gate's card mounts at the
+    // head of the artifact so the approve flow reads the artifact first — and it's the only gate
+    // surface reachable at phone width, where the Timeline is display:none.
+    const focusGateId = c.req.query("gate");
+    const focusedGate =
+      focusGateId != null && focusGateId !== ""
+        ? ((await deps.dataSource.listGates(session, row.id).catch(() => [])).find(
+            (g) => g.id === focusGateId,
+          ) ?? null)
+        : null;
     return c.html(renderDocument(c.req.path, dossierElement, {
       // P1.01 — the dossier IS the IDE's flagship reading surface: its findings feed the Margin
       // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
@@ -3032,6 +3155,7 @@ export function createWebApp(deps: WebDeps): Hono {
           : {}),
         ...(bulkDone != null ? { bulkDone: { count: Number(bulkDone) || 0, skipped: Number(c.req.query("bulkskip") ?? "0") || 0 } } : {}),
         ...(notice != null ? { notice } : {}),
+        ...(focusedGate != null ? { focusedGate } : {}),
       },
       compact: isPhoneRequest(c),
       dwellSurface: "dossier",
@@ -3052,6 +3176,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const advanced = c.req.query("advanced") === "1";
+    // P1.19 — a run_finished Inbox row's generic-workflow landing is this report; mark the collapsed
+    // row read on open (same read-receipt as the dossier's, REQ-MOBILE-16).
+    await Promise.resolve()
+      .then(() => deps.dataSource.markInboxRunRead?.(session, runId))
+      .catch(() => undefined);
     const [report, timeline] = await Promise.all([
       deps.dataSource.getRunReport(session, runId, { advanced }).catch(() => null),
       Promise.resolve()
@@ -3485,6 +3614,9 @@ export function createWebApp(deps: WebDeps): Hono {
       : null;
     const restoredQ = c.req.query("restored");
     const restoredN = restoredQ != null ? Number(restoredQ) : null;
+    // P1.19 — §10.1: below ~768px the Page is reader-only (the ✗ column bans editing; the rail's
+    // restore/diff affordances hide with it).
+    const phone = isPhoneRequest(c);
 
     return c.html(
       renderDocument(c.req.path, pageElement, {
@@ -3497,14 +3629,17 @@ export function createWebApp(deps: WebDeps): Hono {
           },
         })),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        compact: phone,
         page: {
           slug,
           projectId: row.id,
           doc,
           docJson: pageLoad.docJson,
-          ...(deps.collabWsUrl ? { collabWsUrl: deps.collabWsUrl } : {}),
+          // phone width ⇒ reader-only Page (§10.1): no edits, no collab wire, no version rail.
+          ...(phone ? { readOnly: true } : {}),
+          ...(deps.collabWsUrl && !phone ? { collabWsUrl: deps.collabWsUrl } : {}),
           ...(c.req.query("noted") ? { noteSaved: true } : {}),
-          ...(railData
+          ...(railData && !phone
             ? {
                 rail: {
                   data: railData,
@@ -3580,6 +3715,7 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(await ideContext(c, session, row)),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
         compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
+        compact: isPhoneRequest(c),
         dwellSurface: "page",
       }),
     );
@@ -3630,6 +3766,7 @@ export function createWebApp(deps: WebDeps): Hono {
           },
         })),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+        compact: isPhoneRequest(c),
         page: {
           slug,
           projectId: row.id,
@@ -3781,6 +3918,7 @@ export function createWebApp(deps: WebDeps): Hono {
           ...(c.req.query("error") ? { error: COPY.export.exportFailed } : {}),
           ...(c.req.query("added") ? { added: true } : {}),
         },
+        compact: isPhoneRequest(c),
       }),
     );
   });
@@ -3891,14 +4029,14 @@ export function createWebApp(deps: WebDeps): Hono {
     const voices = await deps.dataSource
       .listVoiceGroups(session)
       .catch(() => ({ voices: [], groups: { your_voices: [], house_styles: [], shared_with_you: [] } }));
-    return c.html(renderDocument(c.req.path, voicesElement, { voices }));
+    return c.html(renderDocument(c.req.path, voicesElement, { voices, compact: isPhoneRequest(c) }));
   });
 
   // The §9.2 creation sheet (GET) — name required; description/byline/sample/mode/tier optional.
   app.get("/voices/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    return c.html(renderDocument(c.req.path, voiceNewElement, { voiceNew: {} }));
+    return c.html(renderDocument(c.req.path, voiceNewElement, { voiceNew: {}, compact: isPhoneRequest(c) }));
   });
 
   // The creation sheet's POST: create the persona (+ Mode metadata), attach any pasted sample through the
@@ -3911,7 +4049,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const name = str("name").trim();
     if (!name) {
       return c.html(
-        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.nameRequired } }),
+        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.nameRequired }, compact: isPhoneRequest(c) }),
         400,
       );
     }
@@ -3931,7 +4069,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // (text/file + URL), so a Full build always lands on the detail page to add the rest.
     if (intent === "build" && tier === "quick" && !sampleText && !sampleUrl) {
       return c.html(
-        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired } }),
+        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired }, compact: isPhoneRequest(c) }),
         400,
       );
     }
@@ -3939,7 +4077,7 @@ export function createWebApp(deps: WebDeps): Hono {
       const hasCorpus = sampleText !== "" || sampleUrl !== "";
       if (!hasCorpus) {
         return c.html(
-          renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.fullRequired } }),
+          renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.fullRequired }, compact: isPhoneRequest(c) }),
           400,
         );
       }
@@ -4028,6 +4166,7 @@ export function createWebApp(deps: WebDeps): Hono {
           ...(notice ? { notice } : {}),
           ...(tab ? { tab } : {}),
         },
+        compact: isPhoneRequest(c),
       }),
     );
   });

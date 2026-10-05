@@ -396,6 +396,42 @@ export interface DecisionItemDto {
   readonly createdAt: string | null;
 }
 
+/**
+ * P1.19 — the §10.1 Inbox row (the shared `InboxItem` wire shape, REQ-MOBILE-19). `kind` partitions the
+ * ordering groups: 'blocked' (approval/decision — badge-counted), 'event' (a §5.11 notification row),
+ * 'voice' (a stale-voice row). The payload carries ids + templated strings only — never finding or
+ * draft text (REQ-MOBILE-20's rule applied to the in-app channel).
+ */
+export interface InboxItemDto {
+  readonly id: string;
+  readonly kind: "blocked" | "event" | "voice";
+  /** the §5.11 event type ('gate'/'decision' for blocked rows, 'voice_stale' for voices). */
+  readonly type: string;
+  readonly title: string;
+  readonly body?: string;
+  /** the §4.2 app-path deep link. */
+  readonly href: string;
+  readonly projectId?: string | null;
+  readonly projectTitle?: string | null;
+  readonly runId?: string | null;
+  readonly unread: boolean;
+  readonly createdAt: string;
+  /** kind='blocked' gate rows carry the card facts the row needs (side-sheet Approve opens from them). */
+  readonly gate?: {
+    readonly gateId: string;
+    readonly runId: string;
+    readonly kind: string;
+    readonly workflow: string;
+    readonly deadlineAt: string | null;
+  };
+  readonly decision?: {
+    readonly decisionId: string;
+    readonly text: string;
+    readonly options: readonly string[];
+    readonly obligationId: string | null;
+  };
+}
+
 /** A row of the ledger an approve_triage card presents (finding + current/proposed disposition). */
 export interface TriageRowDto {
   readonly findingId: string;
@@ -2492,6 +2528,17 @@ export interface ApiClient {
     req: { action: BulkPreviewDto["action"]; section?: string; only?: string[] },
     init?: RequestInitLite,
   ): Promise<BulkResultDto>;
+  // ---- P1.19 — the §5.11 Inbox + the rail badge (REQ-IDE-2 amended; REQ-MOBILE-19) ----
+  /** `GET /inbox` — the globally-ordered Inbox rows (blocked-on-you → unread events → stale voices). */
+  getInbox(init?: RequestInitLite): Promise<InboxItemDto[]>;
+  /** `GET /inbox/badge` — the rail count: open approvals + open decisions ONLY (§5.11). */
+  getInboxBadge(init?: RequestInitLite): Promise<{ count: number }>;
+  /** `POST /inbox/:item/read` — mark one event row read. */
+  markInboxItemRead(itemId: string, init?: RequestInitLite): Promise<{ ok: true }>;
+  /** `POST /inbox/read-all` — mark every visible event row read. */
+  markInboxAllRead(init?: RequestInitLite): Promise<{ ok: true; marked: number }>;
+  /** `POST /inbox/read-run/:run` — the deep-link landing's read receipt (the run's collapsed row). */
+  markInboxRunRead(runId: string, init?: RequestInitLite): Promise<{ ok: true; marked: number }>;
   /** The Decisions list — open `decision_requests` for the project (§5.7; beta Inbox stand-in). */
   listDecisions(projectId: string, init?: RequestInitLite): Promise<DecisionItemDto[]>;
   /** Answer a Decisions row (the row's option, or "dismiss"). */
@@ -3175,6 +3222,37 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
           body: JSON.stringify(req),
         },
       );
+    },
+    async getInbox(init): Promise<InboxItemDto[]> {
+      const body = await json<{ items: InboxItemDto[] }>(`/inbox`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+      return body.items;
+    },
+    async getInboxBadge(init): Promise<{ count: number }> {
+      return json<{ count: number }>(`/inbox/badge`, {
+        method: "GET",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async markInboxItemRead(itemId, init): Promise<{ ok: true }> {
+      return json<{ ok: true }>(`/inbox/${encodeURIComponent(itemId)}/read`, {
+        method: "POST",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async markInboxAllRead(init): Promise<{ ok: true; marked: number }> {
+      return json<{ ok: true; marked: number }>(`/inbox/read-all`, {
+        method: "POST",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
+    },
+    async markInboxRunRead(runId, init): Promise<{ ok: true; marked: number }> {
+      return json<{ ok: true; marked: number }>(`/inbox/read-run/${encodeURIComponent(runId)}`, {
+        method: "POST",
+        headers: init?.headers as Record<string, string> | undefined,
+      });
     },
     async listDecisions(projectId, init): Promise<DecisionItemDto[]> {
       const body = await json<{ decisions: DecisionItemDto[] }>(

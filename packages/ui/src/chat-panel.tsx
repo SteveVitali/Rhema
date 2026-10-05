@@ -175,10 +175,17 @@ export interface ChatDeskProps {
   };
   readonly endpoints: ChatDeskEndpoints;
   readonly labels: ChatDeskLabels;
+  /**
+   * P1.19 — §10.1 phone width: text only, no promote. Compact keeps the threads, transcript, the
+   * free-text composer, and the estimate strip; it drops the plan card's run-start/config actions
+   * (run_research / first_step / edit — Cancel stays), the anchored-suggestion form (an edit), and
+   * the tier picker (rigor/model is a ✗-column control).
+   */
+  readonly compact?: boolean;
 }
 
 export function ChatDesk(props: ChatDeskProps): ReactNode {
-  const { model: m, endpoints: E, labels: L } = props;
+  const { model: m, endpoints: E, labels: L, compact } = props;
   const empty = m.emptyState ?? null;
   const tierNotches = ["base", "balanced", "frontier"] as const;
   return (
@@ -295,18 +302,24 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
             {m.planCard.modelTier}
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {/* run_research resolves to the SHEET link — never a direct run create (REQ-CHAT-6/10). */}
-            {m.planCard.researchSheetHref ? (
+            {/* run_research resolves to the SHEET link — never a direct run create (REQ-CHAT-6/10).
+                P1.19 §10.1 ✗: run-start + run configuration never render at phone width — the
+                estimate stays readable, Cancel stays available. */}
+            {compact !== true && m.planCard.researchSheetHref ? (
               <a href={m.planCard.researchSheetHref} data-chat-plan="run_research">
                 {L.planCard.run}
               </a>
             ) : null}
-            <button type="submit" name="action" value="first_step" data-chat-plan="first_step">
-              {L.planCard.firstStep}
-            </button>
-            <button type="submit" name="action" value="edit" data-chat-plan="edit">
-              {L.planCard.edit}
-            </button>
+            {compact !== true ? (
+              <>
+                <button type="submit" name="action" value="first_step" data-chat-plan="first_step">
+                  {L.planCard.firstStep}
+                </button>
+                <button type="submit" name="action" value="edit" data-chat-plan="edit">
+                  {L.planCard.edit}
+                </button>
+              </>
+            ) : null}
             <button type="submit" name="action" value="cancel" data-chat-plan="cancel">
               {L.planCard.cancel}
             </button>
@@ -315,8 +328,9 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
       ) : null}
 
       {/* §7.4 — "Ask about this draft": the anchored composer (a ≤1-paragraph suggestion; the api
-          refuses larger with the /lineedit|/revise pointer — the copy names them as commands). */}
-      {m.askAbout ? (
+          refuses larger with the /lineedit|/revise pointer — the copy names them as commands).
+          P1.19 §10.1 ✗ — it posts an edit suggestion: never at phone width. */}
+      {m.askAbout && compact !== true ? (
         <form method="post" action={E.suggestion} className="chat-ask" data-chat-ask>
           <strong style={{ fontSize: 13 }}>{L.askAbout.heading}</strong>
           <p style={{ fontSize: 12, color: "var(--shell-fg-muted)", margin: "2px 0" }}>
@@ -354,15 +368,19 @@ export function ChatDesk(props: ChatDeskProps): ReactNode {
         />
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button type="submit">{L.send}</button>
-          {/* REQ-CHAT-14 — the tier picker is notch-only (Base/Balanced/Frontier), never model text. */}
-          <span role="radiogroup" aria-label={L.tierLabel} style={{ display: "inline-flex", gap: 4 }}>
-            {tierNotches.map((t) => (
-              <label key={t} data-chat-tier={t} style={{ fontSize: 12 }}>
-                <input type="radio" name="modelTier" value={t} defaultChecked={m.tier === t} />{" "}
-                {L.tiers[t]}
-              </label>
-            ))}
-          </span>
+          {/* REQ-CHAT-14 — the tier picker is notch-only (Base/Balanced/Frontier), never model text.
+              P1.19 §10.1 ✗ — rigor/model selection is a config control: it drops at phone width and
+              the turn posts with the thread's current tier. */}
+          {compact !== true ? (
+            <span role="radiogroup" aria-label={L.tierLabel} style={{ display: "inline-flex", gap: 4 }}>
+              {tierNotches.map((t) => (
+                <label key={t} data-chat-tier={t} style={{ fontSize: 12 }}>
+                  <input type="radio" name="modelTier" value={t} defaultChecked={m.tier === t} />{" "}
+                  {L.tiers[t]}
+                </label>
+              ))}
+            </span>
+          ) : null}
           {/* the per-turn cost strip — metered rows only (REQ-CHAT-9). */}
           {m.strip ? (
             <span data-chat-strip style={{ fontSize: 12, color: "var(--shell-fg-muted)", marginLeft: "auto" }}>

@@ -3,6 +3,7 @@ import type { ObligationDeps, ObligationRow, SqlExecutor } from "./types.js";
 import { loadObligation, loadProjectObligations } from "./queries.js";
 import { applyObligationTransition, ObligationTransitionError } from "./state-machine.js";
 import { incrementRoundsOpen } from "./spawn.js";
+import { createDecisionRequest } from "./routing.js";
 
 // Discharge, moot, reopen and the deferral horizon (REQ-OBJ-3 closing paths + REQ-DATA-26). Every path here is
 // a named cause in the closed-world machine; none of them can close an obligation without one. `discharged` is
@@ -164,6 +165,15 @@ export async function sweepArrivedDeferrals(
     const ctx = args.context === "review" ? ({ kind: "review" } as const) : ({ kind: "pre_export" } as const);
     if (horizonArrived(ob, ctx)) {
       await returnDeferredToOpen(exec, deps, { obligationId: ob.id, byActor: actor, cause: "horizon", runId: args.runId ?? null, ...(args.at ? { at: args.at } : {}) });
+      // P1.19 — REQ-OBJ-6: a horizon-expired deferral is a Decisions-inbox row ("decide / re-defer /
+      // drop"), not a silent re-open — the Inbox needs a row the badge/ordering can see. Idempotent:
+      // `createDecisionRequest` re-uses an already-open request for the obligation.
+      await createDecisionRequest(exec, deps, {
+        obligationId: ob.id,
+        runId: args.runId ?? null,
+        text: `Deferred ${ob.roundsOpen > 0 ? `${ob.roundsOpen} round${ob.roundsOpen === 1 ? "" : "s"}` : "previously"}, horizon reached: ${ob.title}`,
+        options: ["decide", "re-defer", "drop"],
+      });
       returned.push(ob.id);
     } else if (args.context === "review" && ob.deferHorizon && typeof ob.deferHorizon.rounds === "number") {
       // consume one round of the countdown (a direct jsonb update — not `state`).

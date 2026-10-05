@@ -91,6 +91,12 @@ export interface VersionRailProps {
   };
   /** `?restored=<n>` echo — the undoable-apply notice. */
   readonly restoredN?: number | null;
+  /**
+   * P1.19 — §10.1 phone width: version chips still navigate (reading is the phone's job) but the
+   * compare link, the restore menu, and the restore-preview card never render — diffs and edit
+   * actions are the ✗ column.
+   */
+  readonly compact?: boolean;
   readonly labels: VersionRailLabels;
 }
 
@@ -217,7 +223,7 @@ export function VersionRail(props: VersionRailProps): ReactNode {
       ) : null}
 
       <span style={{ marginLeft: "auto", display: "inline-flex", gap: "8px", alignItems: "center" }}>
-        {previous ? (
+        {previous && props.compact !== true ? (
           <a
             href={props.hrefs.diff(previous.n, current!.n)}
             data-compare-previous
@@ -226,7 +232,7 @@ export function VersionRail(props: VersionRailProps): ReactNode {
             {L.comparePrevious}
           </a>
         ) : null}
-        {props.restore ? (
+        {props.restore && props.compact !== true ? (
           <details data-restore-menu style={{ position: "relative", display: "inline-block" }}>
             <summary style={{ fontSize: "12px", cursor: "pointer", listStyle: "none" }}>
               {L.restorePoints} ▾
@@ -299,7 +305,7 @@ export function VersionRail(props: VersionRailProps): ReactNode {
         </p>
       ) : null}
 
-      {props.restore?.preview ? (
+      {props.restore?.preview && props.compact !== true ? (
         <section
           data-restore-preview
           aria-label={L.restorePreviewHeading}
