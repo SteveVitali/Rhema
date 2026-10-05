@@ -24,7 +24,7 @@ import {
 } from "./fetch-log.js";
 import { ulid, type IdFactory } from "./ids.js";
 import { meterResponse } from "./metering.js";
-import { registrableDomainOf } from "./domains.js";
+import { hostnameOf, registrableDomainOf } from "./domains.js";
 import {
   extractResponseServerTools,
   extractResponseServerToolsSse,
@@ -243,6 +243,28 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   //        allowed passthroughs — else a fetch would be re-logged every turn it stays in history. The fetch
   //        log's per-fetch/search rows are sourced from the RESPONSE instead (step 9). Only the terminal
   //        `suspicious_query` block writes a request-side row (it happens once — it stops the run). ---
+  // P1.21 (§6.7/REQ-WF-8; §16.4's memo-confidentiality row) — a Memo run carries
+  // `urlPolicy.fetchUserDataForbidden` + the `user_sources[]` domains. Search-query text is then
+  // CONFIDENTIAL-adjacent: a query could quote internal figures, so every logged row carries the
+  // redacted placeholder, never the raw query — zero fetch-log rows may carry user-source content.
+  const userDataForbidden = ctx.urlPolicy.fetchUserDataForbidden === true;
+  const userSourceDomainSet = new Set(ctx.urlPolicy.userSourceDomains ?? []);
+  /**
+   * A URL hits the user-source boundary when its hostname IS a frozen user-source host or sits under
+   * one (`docs.internal.example.com` covers its own subpaths; `example.com` covers `a.example.com`).
+   */
+  const hitsUserSource = (url: string): string | undefined => {
+    const host = hostnameOf(url);
+    if (!host) return undefined;
+    for (const d of userSourceDomainSet) {
+      if (host === d || host.endsWith(`.${d}`)) return host;
+    }
+    return undefined;
+  };
+  /** The query text a fetch-log row may carry (redacted under the memo confidentiality boundary). */
+  const loggableQuery = (q: string | undefined): string | undefined =>
+    userDataForbidden ? "[redacted: user-source confidentiality]" : q;
+
   let outboundBody: unknown = body;
   const invocations = extractServerToolInvocations(body);
   for (const inv of invocations) {
@@ -252,7 +274,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
         await writeFetch(
           buildServerToolFetchLogRow(
             { ...logBase, ts: nowIso() },
-            { kind: "search", query: inv.query, decision: "deny", denyReason: "suspicious_query" },
+            { kind: "search", query: loggableQuery(inv.query), decision: "deny", denyReason: "suspicious_query" },
           ),
         );
         await deps.events.emitPauseSignal({
@@ -283,6 +305,32 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
         continue;
       }
       const domain = registrableDomainOf(effectiveUrl);
+      // P1.21 — a fetch to one of the run's `user_sources[]` domains is a `web_fetch_of_user_data`
+      // violation: hard-deny the request BEFORE forwarding (a `user_source` deny row — URL only, the
+      // source's bytes never enter the log), pause the run like the other exfiltration guards. The
+      // injected `blocked_domains` is the second layer, not the enforcement of record.
+      const userSourceHost = hitsUserSource(effectiveUrl);
+      if (userSourceHost) {
+        await writeFetch(
+          buildServerToolFetchLogRow(
+            { ...logBase, ts: nowIso() },
+            { kind: "fetch", url: effectiveUrl, decision: "deny", denyReason: "user_source" },
+          ),
+        );
+        await deps.events.emitPauseSignal({
+          runId: ctx.runId,
+          reason: "user_source_fetch",
+          detail: { domain: userSourceHost, agentId },
+        });
+        return {
+          kind: "response",
+          response: {
+            status: 403,
+            headers: { "content-type": "application/json" },
+            body: jsonError("user_source", `web_fetch of user-supplied data is forbidden for this run (${userSourceHost})`),
+          },
+        };
+      }
       if (domain) {
         const admit = novelDomains.admit(ctx.runId, domain, ctx.knownDomains, ctx.novelDomainCap);
         if (!admit.admitted) outboundBody = rewriteFetchUrl(outboundBody, inv.path, "");
@@ -370,7 +418,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
       for (const act of serverTools) {
         await writeFetch(
           act.kind === "search"
-            ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: act.query, decision: "allow" })
+            ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: loggableQuery(act.query), decision: "allow" })
             : buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "fetch", url: act.url, ...(act.bytes !== undefined ? { bytes: act.bytes } : {}), decision: "allow" }),
         );
       }

@@ -34,6 +34,11 @@ export function resolveSeatRoots(input: {
 /** Shared-record project paths readable by every author-side seat (§12.6; read-only bind mounts). */
 const SHARED_READ: readonly MountSpec[] = [
   { glob: "manifest.md", root: "project", mode: "read", namespace: "shared" },
+  // P1.21 (REQ-WF-8/REQ-GENRE-6) — the memo run's derived user-source mounts. Read-only everywhere
+  // (never in a writable glob); shared so the Editor sees the same bytes the Drafter did (a parity
+  // check could not run otherwise). Independence contexts mount only input-scoped files — the hook
+  // mount doesn't widen what materializeScoped writes into those contexts.
+  { glob: "user_sources/**", root: "project", mode: "read", namespace: "shared" },
   { glob: "drafts/**", root: "project", mode: "read", namespace: "shared" },
   { glob: "assets/**", root: "project", mode: "read", namespace: "shared" },
   { glob: "correspondence/**", root: "project", mode: "read", namespace: "shared" },

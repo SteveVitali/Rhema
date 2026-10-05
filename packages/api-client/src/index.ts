@@ -186,7 +186,16 @@ export interface ProtocolCardDto {
   readonly holdYouTo: string;
   readonly venueBar: {
     readonly kind: string;
-    readonly table: readonly { venue: string; minWords?: number; maxWords?: number }[];
+    /** §16.4 — a stale (unverified, H4-pending) row carries `as_of` and must render its date;
+     *  `abstractMaxWords` is the Academic venue's separate abstract cap. */
+    readonly table: readonly {
+      venue: string;
+      minWords?: number;
+      maxWords?: number;
+      abstractMaxWords?: number;
+      verified_at?: string;
+      as_of?: string;
+    }[];
     readonly prompt: string;
   };
   readonly lengthNorms: { readonly unit: string; readonly default?: number; readonly apparatus: string };
@@ -297,6 +306,20 @@ export interface CreateRunDto {
    * `runs.gates_off` at creation (the same flag "Approve and run autonomously" sets mid-run).
    */
   readonly autoProceedRun?: boolean;
+  /**
+   * P1.06/P1.21 — the sheet's editable scope facts (REQ-SPEC-17/REQ-GENRE-2's safe set): the api
+   * freezes them into the run inputs and re-derives the scope-gate flag — a changed protocol/venue
+   * is never client-trusted.
+   */
+  readonly protocol?: string;
+  readonly venue?: string;
+  readonly stage?: string;
+  /**
+   * P1.21 (§6.7/REQ-GENRE-6) — a Memo run's `user_sources[]`: `name` + `text` and/or `url`. The api
+   * validates the shape, refuses the field off the memo protocol, mounts the text read-only in the
+   * sandbox, and freezes each url's host into the run's `userSourceDomains` URL policy.
+   */
+  readonly userSources?: readonly { readonly name: string; readonly text?: string; readonly url?: string }[];
   /** the reader's correspondence kind + variant slot (the corr lock discriminator). */
   readonly corrKind?: string;
   readonly corrK?: number;
@@ -334,7 +357,14 @@ export interface RunSheetContextDto {
     readonly modelTier: string | null;
     /** §6.7 — set ⇒ a settings-page protocol change marks the next Review's scope card. */
     readonly protocolChanged: boolean;
+    /** P1.21 (REQ-GENRE-3) — the project's pinned `protocol@version` for the sheet display. */
+    readonly protocolVersion: number | null;
+    /** P1.21 — `true` on the memo protocol ⇒ the sheet renders the user_sources field + the
+     *  confidentiality line (sources are never web-fetched; §16.4). */
+    readonly memoConfidentiality: boolean;
   };
+  /** P1.21 — the §5.3 protocol options (id + name) the sheet's selector renders. */
+  readonly protocols: readonly { readonly id: string; readonly name: string }[];
   readonly headDraft: {
     readonly id: string;
     readonly n: number;

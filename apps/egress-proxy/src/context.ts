@@ -33,6 +33,15 @@ export interface ProxyUrlPolicy {
   readonly blockedDomains: readonly string[];
   /** Registrable domains injected as `allowed_domains` (calibrator-only narrowing); usually empty. */
   readonly allowedDomains?: readonly string[];
+  /**
+   * P1.21 (§6.7/REQ-WF-8; §16.4's memo-confidentiality row) — a Memo run's `user_sources[]` domains. A
+   * fetch to one is a `web_fetch_of_user_data` violation: the proxy refuses it before forwarding (a
+   * `user_source` deny row in the fetch log — URL only, never content) and unions the set into the
+   * injected `blocked_domains` so the provider refuses it too (enforced twice, never advised).
+   */
+  readonly userSourceDomains?: readonly string[];
+  /** The §6.7 `web_fetch_of_user_data: 'forbidden'` marker a Memo-protocol run carries. */
+  readonly fetchUserDataForbidden?: boolean;
 }
 
 /**

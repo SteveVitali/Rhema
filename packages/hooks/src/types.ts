@@ -54,6 +54,13 @@ export interface UrlPolicy {
   readonly serverFetchDisabled: boolean;
   /** Globally blocked (robots/paywall) registrable domains — reported as denied, never cookie-fetched. */
   readonly blockedDomains?: readonly string[];
+  /**
+   * P1.21 (REQ-WF-8/REQ-GENRE-6; §16.4's Memo-confidentiality row) — the registrable domains of a Memo
+   * run's `user_sources[]`: content the user supplied confidentially. A fetch to one is a user-data
+   * fetch — `web_fetch_of_user_data: 'forbidden'` — denied with `denyReason: "user_source"` and never
+   * sent upstream; the proxy enforces the same set (enforced, never advised — §12.6 posture).
+   */
+  readonly userSourceDomains?: readonly string[];
 }
 
 export const EMPTY_URL_POLICY: UrlPolicy = {
@@ -118,7 +125,7 @@ export interface AccessLogRow {
   readonly decision: "allow" | "deny" | "rewrite";
 }
 
-export type FetchDenyReason = "holdout" | "paywall" | "robots" | "policy";
+export type FetchDenyReason = "holdout" | "paywall" | "robots" | "policy" | "user_source";
 
 /** A `fetch_log` row (§11.3 `FetchLogEntry`; mirrors the `fetch_log` DDL). Post-fetch `status`/`bytes`
  * are joined in later by the proxy/fetcher (REQ-DATA-16); the hook emits the pre-fetch decision row. */

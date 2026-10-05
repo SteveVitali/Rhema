@@ -47,6 +47,7 @@ import { revokeRunCredentials } from "./credentials.js";
 import { seatForWorkflow } from "./run-shape.js";
 import { preApproveGateByTrial } from "./gate-resolution.js";
 import { resolveDeliveryBase, type DeliveryBaseDraft } from "./delivery-base.js";
+import { userSourceMounts } from "./user-sources.js";
 import { applyOutlineApproval } from "./outline-delivery.js";
 import { applyFigureDelivery, enqueueFigureRender } from "./figure-delivery.js";
 import type { FigureClaimsMountProvider } from "./figure-claims.js";
@@ -447,6 +448,22 @@ export async function hydration(deps: OrchestratorDeps, args: HydrationArgs): Pr
       });
       if (claimsFile) serverFiles.push(claimsFile);
     }
+
+    // P1.21 (REQ-WF-8/REQ-GENRE-6) — a Memo run's `user_sources[]` mount as derived read-only files
+    // (`user_sources/NN-name.md`): the agent verifies claims against the bytes, never a fetch — the
+    // run's URL policy carries each source's domain in `userSourceDomains` and the proxy denies the
+    // fetch (§16.4: enforced, never advised). Derived files stay out of input-scoped independence
+    // contexts by construction (materializeScoped), so the second read never sees them.
+    for (const m of userSourceMounts(inputs?.user_sources)) {
+      serverFiles.push({
+        path: m.path,
+        root: "project",
+        bytes: Buffer.from(m.content, "utf8"),
+        kind: null,
+        namespace: "shared",
+      });
+    }
+
     const workflowManifest = WORKFLOW_MANIFESTS[row.workflow as WorkflowKey];
     const writablePaths =
       row.project_id && workflowManifest

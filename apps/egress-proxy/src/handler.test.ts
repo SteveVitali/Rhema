@@ -481,3 +481,108 @@ describe("handleProxyRequest — denial spike pause (REQ-ARCH-32)", () => {
     expect(h.events.pauseSignals.filter((s) => s.reason === "egress_denied_spike")).toHaveLength(1);
   });
 });
+
+// P1.21 — Memo confidentiality (REQ-WF-8; §16.4): `fetchUserDataForbidden` + `userSourceDomains` are
+// ENFORCED at the proxy — a web_fetch to a user-source domain is denied before forwarding, its deny row
+// carries the URL only, and every logged search query is the redacted placeholder.
+describe("handleProxyRequest — memo user-source confidentiality (REQ-WF-8)", () => {
+  const memoCtx = () =>
+    ctx({
+      urlPolicy: {
+        blockedDomains: [],
+        userSourceDomains: ["wiki.acme.co"],
+        fetchUserDataForbidden: true,
+      },
+    });
+
+  /** A request body whose history contains a web_fetch invocation to `url`. */
+  function fetchHistory(url: string): string {
+    return JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        { role: "user", content: "verify" },
+        { role: "assistant", content: [{ type: "server_tool_use", name: "web_fetch", input: { url } }] },
+      ],
+    });
+  }
+
+  it("denies a web_fetch to a user-source domain BEFORE forwarding (403 + user_source row + pause)", async () => {
+    const h = harness({ context: memoCtx() });
+    const res = await handleProxyRequest(request({ body: fetchHistory("https://wiki.acme.co/q3-metrics") }), h);
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body).error.type).toBe("user_source");
+    expect(h.forwarded.req).toBeUndefined();
+    const deny = h.fetchLogWriter.rows.find((r) => r.decision === "deny");
+    expect(deny).toMatchObject({ kind: "fetch", url: "https://wiki.acme.co/q3-metrics", denyReason: "user_source" });
+    expect(h.events.pauseSignals[0]).toMatchObject({ runId: "run_1", reason: "user_source_fetch" });
+  });
+
+  it("denies a fetch to a SUBDOMAIN of a user-source domain", async () => {
+    const h = harness({ context: memoCtx() });
+    const res = await handleProxyRequest(request({ body: fetchHistory("https://app.wiki.acme.co/x") }), h);
+    expect(res.status).toBe(403);
+    expect(h.forwarded.req).toBeUndefined();
+  });
+
+  it("leaves an unrelated fetch alone under the same policy", async () => {
+    const h = harness({ context: memoCtx() });
+    const res = await handleProxyRequest(request({ body: fetchHistory("https://reuters.com/story") }), h);
+    expect(res.status).toBe(200);
+    expect(h.forwarded.req).toBeDefined();
+  });
+
+  it("redacts the logged search query under fetchUserDataForbidden (never source text in fetch_log)", async () => {
+    const response: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1 },
+        content: [{ type: "server_tool_use", name: "web_search", input: { query: "industry benchmarks" } }],
+      }),
+    };
+    const h = harness({ context: memoCtx(), response });
+    await handleProxyRequest(request(), h);
+    const search = h.fetchLogWriter.rows.find((r) => r.kind === "search");
+    expect(search).toBeDefined();
+    expect(search!.query).toBe("[redacted: user-source confidentiality]");
+  });
+
+  it("unions user-source domains onto the injected tool's blocked_domains (provider-side second layer)", async () => {
+    const h = harness({ context: memoCtx() });
+    await handleProxyRequest(request(), h); // base body has no tools → the proxy injects them
+    const fwdBody = JSON.parse(h.forwarded.req!.body) as { tools?: { name?: string; blocked_domains?: string[] }[] };
+    const search = fwdBody.tools?.find((t) => t.name === "web_search");
+    expect(search!.blocked_domains).toContain("wiki.acme.co");
+  });
+
+  it("the n-gram guard diffs search queries against the frozen user-source text (draftText)", async () => {
+    const internal = "arr grew twelve percent while churn fell to four percent in the third quarter of the fiscal year";
+    const context = ctx({
+      draftText: internal,
+      urlPolicy: { blockedDomains: [], fetchUserDataForbidden: true },
+    });
+    const body = JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "server_tool_use",
+              name: "web_search",
+              input: { query: "arr grew twelve percent while churn fell to four percent in the third" },
+            },
+          ],
+        },
+      ],
+    });
+    const h = harness({ context });
+    const res = await handleProxyRequest(request({ body }), h);
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body).error.type).toBe("suspicious_query");
+    // and the deny row carries the placeholder, not the leaked query.
+    const deny = h.fetchLogWriter.rows.find((r) => r.denyReason === "suspicious_query");
+    expect(deny!.query).toBe("[redacted: user-source confidentiality]");
+  });
+});

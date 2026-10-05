@@ -134,7 +134,8 @@ describe("buildRunSheetView — the launcher shape (§5.6)", () => {
       spendableCredits: 100000,
       protocolChanged: true,
     });
-    expect(v.protocolChangedLine).toBe("Protocol changed since the last Review.");
+    // P1.21 — the marker names the reviewed version ("protocol changed since vN was reviewed", §6.7).
+    expect(v.protocolChangedLine).toBe("Protocol changed since v2 was reviewed.");
     expect(v.scopeApprovalLine).toContain("blocking gate opens at launch");
     // Wait-for-me-at-each already blocks — the marker line still shows but the policy line wins.
     const w = buildRunSheetView({
@@ -147,7 +148,7 @@ describe("buildRunSheetView — the launcher shape (§5.6)", () => {
       protocolChanged: true,
       approvalPolicy: "wait_each",
     });
-    expect(w.protocolChangedLine).toBe("Protocol changed since the last Review.");
+    expect(w.protocolChangedLine).toBe("Protocol changed since v2 was reviewed.");
     expect(w.scopeApprovalLine).toContain("waits for you");
     // no marker → no line, informational approval.
     const u = buildRunSheetView({

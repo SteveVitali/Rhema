@@ -765,3 +765,89 @@ describe("POST /projects/:id/runs — Figure (P1.13; §7.5)", () => {
     expect((count.rows[0] as { n: number }).n).toBe(1);
   });
 });
+
+// P1.21 (§6.7/REQ-WF-8/REQ-GENRE-6) — the Memo run's `user_sources[]`: validated + frozen into run
+// inputs, the source domains frozen into `inputs.urlPolicy.userSourceDomains` with the
+// `fetchUserDataForbidden` marker — the hook + the proxy deny the fetches, never advise them.
+describe("POST /projects/:id/runs — memo user_sources (P1.21; REQ-WF-8)", () => {
+  function memoBody(over: Record<string, unknown> = {}) {
+    return runBody({
+      idempotencyKey: "idem-memo-1",
+      protocol: "memo",
+      ...over,
+    });
+  }
+
+  it("a memo run freezes user_sources + the no-web-fetch URL policy (domains extracted server-side)", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        memoBody({
+          userSources: [
+            { name: "Q3 board metrics", text: "ARR grew 12% while churn fell to 4%." },
+            { name: "Internal wiki", url: "https://wiki.acme.test/pages/headcount" },
+          ],
+        }),
+      ),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+      inputs: Record<string, unknown> & { user_sources: unknown[]; urlPolicy: Record<string, unknown> };
+    }).inputs;
+    expect(ins.user_sources).toEqual([
+      { name: "Q3 board metrics", text: "ARR grew 12% while churn fell to 4%." },
+      { name: "Internal wiki", url: "https://wiki.acme.test/pages/headcount" },
+    ]);
+    // the frozen URL policy — what provisioning maps into the proxy allowlist + the hook policy.
+    expect(ins.urlPolicy.fetchUserDataForbidden).toBe(true);
+    expect(ins.urlPolicy.userSourceDomains).toEqual(["wiki.acme.test"]);
+    expect(ins.protocol).toBe("memo");
+  });
+
+  it("a memo run without sources still carries the fetchUserDataForbidden marker", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(memoBody()),
+    });
+    expect(r.status).toBe(201);
+    const { runId } = (await r.json()) as { runId: string };
+    const ins = ((await db.pg.query("select inputs from runs where id = $1", [runId])).rows[0] as {
+      inputs: { urlPolicy: Record<string, unknown> };
+    }).inputs;
+    expect(ins.urlPolicy.fetchUserDataForbidden).toBe(true);
+    expect(ins.user_sources).toBeUndefined();
+  });
+
+  it("user_sources off the memo protocol is 422 user_sources_memo_only", async () => {
+    const r = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        runBody({ userSources: [{ name: "S", text: "t" }] }), // the seeded project's protocol is not memo
+      ),
+    });
+    expect(r.status).toBe(422);
+    expect(((await r.json()) as { error: string }).error).toBe("user_sources_memo_only");
+  });
+
+  it("malformed sources 422 invalid_user_sources (name-only, bad url scheme, >8 rows)", async () => {
+    const cases = [
+      [{ name: "S" }], // no text and no url
+      [{ name: "S", url: "ftp://x.test/f" }], // non-http(s) url
+      Array.from({ length: 9 }, (_, i) => ({ name: `S${i}`, text: "t" })),
+      [{ name: "S", text: 42 }],
+    ];
+    for (const [i, userSources] of cases.entries()) {
+      const r = await app.request(`/projects/${seed.projectId}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(memoBody({ idempotencyKey: `idem-memo-bad-${i}`, userSources })),
+      });
+      expect(r.status).toBe(422);
+      expect(((await r.json()) as { error: string }).error).toBe("invalid_user_sources");
+    }
+  });
+});

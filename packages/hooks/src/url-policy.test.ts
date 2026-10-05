@@ -105,3 +105,36 @@ describe("server-fetch disablement + exclusions", () => {
     expect(evaluateUrl("https://ok.example.com/page", pol).decision).toBe("allow");
   });
 });
+
+// P1.21 — Memo's `web_fetch_of_user_data: 'forbidden'` (REQ-WF-8): the hook denies a fetch to a
+// `user_sources[]` domain before any other check; the proxy duplicates this deny (defense in depth).
+describe("memo user-source fetch deny (REQ-WF-8)", () => {
+  const memoPolicy: UrlPolicy = {
+    holdouts: [],
+    userExclusions: [],
+    calibratorAllow: [],
+    predictionFileWritten: false,
+    serverFetchDisabled: false,
+    userSourceDomains: ["wiki.internal.example.com", "intranet.acme.co"],
+  };
+
+  it("denies a fetch to a user-source domain", () => {
+    const d = evaluateUrl("https://wiki.internal.example.com/pages/board-memo", memoPolicy);
+    expect(d.decision).toBe("deny");
+    expect(d.denyReason).toBe("user_source");
+  });
+
+  it("denies a subdomain of a user-source domain", () => {
+    const d = evaluateUrl("https://app.intranet.acme.co/q3-metrics", memoPolicy);
+    expect(d.decision).toBe("deny");
+    expect(d.denyReason).toBe("user_source");
+  });
+
+  it("does not deny a domain that merely shares a suffix", () => {
+    expect(evaluateUrl("https://intranet.acme.co.evil.com/x", memoPolicy).decision).toBe("allow");
+  });
+
+  it("allows unrelated fetches under the same policy", () => {
+    expect(evaluateUrl("https://news.example.com/story", memoPolicy).decision).toBe("allow");
+  });
+});

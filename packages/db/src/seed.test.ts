@@ -16,11 +16,11 @@ describe("real-project seed (REQ-DATA-3)", () => {
     );
     expect(seats).toEqual(["assistant", "author", "editor", "persona_builder", "system"]);
 
-    const { n: protos } = (await db.query("select count(*)::int n from protocols where id='essay'"))
-      .rows[0] as {
-      n: number;
-    };
-    expect(Number(protos)).toBe(1);
+    // P1.21 (REQ-GENRE-1) — all four §6.7 protocol rows seed: essay, academic, op-ed, memo.
+    const protoIds = (
+      await db.query("select id from protocols order by id")
+    ).rows.map((r) => (r as { id: string }).id);
+    expect(protoIds).toEqual(["academic", "essay", "memo", "op-ed"]);
 
     const projects = (await db.query("select slug from projects order by slug")).rows.map(
       (r) => (r as { slug: string }).slug,
@@ -124,6 +124,10 @@ describe("real-project seed (REQ-DATA-3)", () => {
       n: number;
     };
     expect(Number(n)).toBe(5);
+    const { n: protoN } = (await db.query("select count(*)::int n from protocols")).rows[0] as {
+      n: number;
+    };
+    expect(Number(protoN)).toBe(4); // the four §6.7 rows; re-seeding is idempotent on (id, version)
     await db.close();
   });
 });

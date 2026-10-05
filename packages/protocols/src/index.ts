@@ -25,6 +25,7 @@ export * from "./estimator.js";
 export * from "./protocols.js";
 export * from "./path-kind.js";
 export * from "./input-sources.js";
+export * from "./eval-fixtures.js";
 export * from "./version.js";
 export * from "../parsers/index.js";
 export * from "../serializers/index.js";

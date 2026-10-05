@@ -53,9 +53,14 @@ export function createDbRunContextResolver(
 
       const ctx = parseJson<Record<string, unknown>>(row.context);
       const endpoints = parseJson<AllowedEndpoint[]>(row.endpoints);
-      const urlPolicy = parseJson<{ blockedDomains?: string[]; allowedDomains?: string[]; knownDomains?: string[]; novelDomainCap?: number }>(
-        row.url_policy,
-      );
+      const urlPolicy = parseJson<{
+        blockedDomains?: string[];
+        allowedDomains?: string[];
+        userSourceDomains?: string[];
+        fetchUserDataForbidden?: boolean;
+        knownDomains?: string[];
+        novelDomainCap?: number;
+      }>(row.url_policy);
 
       return {
         ...(ctx as unknown as Omit<RunContext, "allowlist" | "urlPolicy">),
@@ -63,6 +68,9 @@ export function createDbRunContextResolver(
         urlPolicy: {
           blockedDomains: urlPolicy.blockedDomains ?? [],
           ...(urlPolicy.allowedDomains ? { allowedDomains: urlPolicy.allowedDomains } : {}),
+          // P1.21 — the Memo run's `user_sources[]` domains + the forbidden marker (REQ-WF-8).
+          ...(urlPolicy.userSourceDomains ? { userSourceDomains: urlPolicy.userSourceDomains } : {}),
+          ...(urlPolicy.fetchUserDataForbidden === true ? { fetchUserDataForbidden: true } : {}),
         },
         ...(urlPolicy.knownDomains ? { knownDomains: urlPolicy.knownDomains } : {}),
         ...(urlPolicy.novelDomainCap != null ? { novelDomainCap: urlPolicy.novelDomainCap } : {}),

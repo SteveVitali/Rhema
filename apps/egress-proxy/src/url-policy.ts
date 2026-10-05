@@ -229,8 +229,11 @@ export function injectUrlPolicyIntoBody(
   body: unknown,
   policy: ProxyUrlPolicy,
 ): { body: unknown; rewritten: boolean } {
+  // P1.21 — a Memo run's `user_sources[]` domains join the block set (`web_fetch_of_user_data:
+  // 'forbidden'`): the provider refuses the call too, behind the proxy's own pre-forward deny.
+  const blocked = union(policy.blockedDomains, policy.userSourceDomains ?? []);
   const hasAllow = (policy.allowedDomains?.length ?? 0) > 0;
-  const hasBlock = policy.blockedDomains.length > 0;
+  const hasBlock = blocked.length > 0;
   if (!hasAllow && !hasBlock) return { body, rewritten: false };
   if (!body || typeof body !== "object") return { body, rewritten: false };
 
@@ -242,14 +245,19 @@ export function injectUrlPolicyIntoBody(
     if (!isServerWebTool(tool)) return tool;
     const t = tool as Record<string, unknown>;
     if (hasAllow) {
+      // allow-list mode narrows to the list — and a user-source domain can never BE on it (the run's
+      // own internal data is never a permitted fetch target, even under calibrator narrowing).
       rewritten = true;
-      const next = { ...t, allowed_domains: [...(policy.allowedDomains ?? [])] };
+      const allowed = (policy.allowedDomains ?? []).filter(
+        (d) => !(policy.userSourceDomains ?? []).includes(d),
+      );
+      const next = { ...t, allowed_domains: allowed };
       delete (next as Record<string, unknown>)["blocked_domains"];
       return next;
     }
     // block-list mode: union onto whatever the sandbox set, and drop any allow-list (API forbids both).
     rewritten = true;
-    const merged = union(asStringArray(t["blocked_domains"]), policy.blockedDomains);
+    const merged = union(asStringArray(t["blocked_domains"]), blocked);
     const next = { ...t, blocked_domains: merged };
     delete (next as Record<string, unknown>)["allowed_domains"];
     return next;

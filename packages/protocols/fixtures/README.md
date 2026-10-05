@@ -24,6 +24,18 @@ the Drafter's `structure-plan` are Phase-1/full-IDE workflows (P1.10 / P1) that 
 dossiers, so no upstream artifact exists yet. They match the established P0.02 convention of hand-authored
 twins and exist to exercise the serializer/parser inverse; byte offsets in anchors are illustrative.
 
+## `_evals/` — golden eval fixtures (P1.21, §13.5)
+
+- `golden-op-ed.md` — the op-ed golden draft; `GOLDEN_EVAL_FIXTURES` pins it under the `op-ed`
+  protocol with venue `WaPo` and asserts the phase defaults, `run`/`pass` verdicts, and the
+  750-word outlet cap rendering.
+- `golden-memo.md` — the memo golden draft; pinned under `memo` with `user_sources[]` inputs and
+  asserted for `discourse: off`, `web_fetch_of_user_data: 'forbidden'`, and the
+  `ship`/`rewrite`/`needs data` verdicts.
+
+The registry lives in `../src/eval-fixtures.ts`; every fixture runs under every seeded protocol
+(the eval matrix is the cross product).
+
 ## `_cases/` — edge-case fixtures
 
 - `two-source-claim.json` — a claim with two `sources[]` stance edges (REQ-OBJ-18); the singular `url`

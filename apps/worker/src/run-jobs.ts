@@ -11,6 +11,7 @@ import {
   authorWebToolPolicy,
   authorAssistantWebToolPolicy,
   urlPolicyFromInputs,
+  userSourceGuardText,
   seatForWorkflow,
   applyTransition,
   revokeRunCredentials,
@@ -123,6 +124,10 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   const webTools =
     authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
     authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
+  // P1.21 (REQ-WF-8/§16.4) — a Memo run's `user_sources[]` text rides the credential context as
+  // `draftText`: the proxy's n-gram guard diffs every search query against it, so internal figures
+  // cannot leak inside a query (the fetch-side deny is the frozen `urlPolicy.userSourceDomains`).
+  const draftText = userSourceGuardText(run.inputs?.user_sources);
   return provisionRun(deps, deps.launcher, {
     runId: job.runId,
     workspaceId: job.workspaceId,
@@ -141,6 +146,7 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
     capCredits: run.cap_credits,
     allowlist,
     webTools,
+    ...(draftText ? { draftText } : {}),
   });
 }
 

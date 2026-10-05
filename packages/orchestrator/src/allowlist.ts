@@ -22,6 +22,14 @@ export interface AuthorAllowlistArgs {
   readonly modelTier: ModelTier;
   /** hold-out + user-excluded domains the URL policy blocks (anti-exfil; §12.6). */
   readonly blockedDomains?: readonly string[];
+  /**
+   * P1.21 (REQ-WF-8/REQ-GENRE-6) — a Memo run's `user_sources[]` domains: fetches to them are
+   * `web_fetch_of_user_data` violations — denied at the proxy (logged `user_source`) and folded into
+   * the injected tool's `blocked_domains` so the provider refuses the call too (defense in depth).
+   */
+  readonly userSourceDomains?: readonly string[];
+  /** the §6.7 `web_fetch_of_user_data: 'forbidden'` marker — persisted on the run's URL policy. */
+  readonly fetchUserDataForbidden?: boolean;
   /** calibrator-only narrowing; usually empty. */
   readonly allowedDomains?: readonly string[];
   /** domains already in the claim ledger / a search result — the known set for the novel-domain cap. */
@@ -39,6 +47,10 @@ export function authorRunAllowlist(args: AuthorAllowlistArgs): RunAllowlistData 
     models: MODELS_BY_TIER[args.modelTier],
     urlPolicy: {
       blockedDomains: args.blockedDomains ?? [],
+      ...(args.userSourceDomains && args.userSourceDomains.length > 0
+        ? { userSourceDomains: args.userSourceDomains }
+        : {}),
+      ...(args.fetchUserDataForbidden === true ? { fetchUserDataForbidden: true } : {}),
       ...(args.allowedDomains ? { allowedDomains: args.allowedDomains } : {}),
       ...(args.knownDomains ? { knownDomains: args.knownDomains } : {}),
       ...(args.novelDomainCap != null ? { novelDomainCap: args.novelDomainCap } : {}),
@@ -165,13 +177,15 @@ export function authorAssistantWebToolPolicy(args: {
  */
 export function urlPolicyFromInputs(inputs: Record<string, unknown> | null | undefined): Pick<
   AuthorAllowlistArgs,
-  "blockedDomains" | "allowedDomains" | "knownDomains" | "novelDomainCap"
+  "blockedDomains" | "allowedDomains" | "knownDomains" | "novelDomainCap" | "userSourceDomains" | "fetchUserDataForbidden"
 > {
   const p = (inputs?.urlPolicy ?? null) as {
     blockedDomains?: unknown;
     allowedDomains?: unknown;
     knownDomains?: unknown;
     novelDomainCap?: unknown;
+    userSourceDomains?: unknown;
+    fetchUserDataForbidden?: unknown;
   } | null;
   const strList = (v: unknown): string[] | undefined =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : undefined;
@@ -180,5 +194,7 @@ export function urlPolicyFromInputs(inputs: Record<string, unknown> | null | und
     ...(p?.allowedDomains != null ? { allowedDomains: strList(p.allowedDomains) ?? [] } : {}),
     ...(p?.knownDomains != null ? { knownDomains: strList(p.knownDomains) ?? [] } : {}),
     ...(typeof p?.novelDomainCap === "number" ? { novelDomainCap: Math.max(0, Math.round(p.novelDomainCap)) } : {}),
+    ...(p?.userSourceDomains != null ? { userSourceDomains: strList(p.userSourceDomains) ?? [] } : {}),
+    ...(p?.fetchUserDataForbidden === true ? { fetchUserDataForbidden: true } : {}),
   };
 }

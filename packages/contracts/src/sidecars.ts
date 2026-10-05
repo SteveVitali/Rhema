@@ -8,7 +8,7 @@ import {
   CLAIM_SOURCE_CHECKS,
   SEVERITIES,
   FINDING_KINDS,
-  RUBRIC_DIMENSIONS,
+  RUBRIC_DIMENSIONS_ALL,
 } from "./enums.js";
 import { anchorSchema } from "./domain/anchor.js";
 import { claimSourceSchema } from "./domain/claims.js";
@@ -91,7 +91,7 @@ export const findingRowSchema = z.object({
     })
     .optional(),
   suggestion: z.object({ replacement: z.string() }).optional(),
-  rubricDims: z.array(coercedEnum(RUBRIC_DIMENSIONS)).default([]),
+  rubricDims: z.array(coercedEnum(RUBRIC_DIMENSIONS_ALL)).default([]),
   letterSection: coercedEnum(LETTER_SECTIONS.options).optional(),
   /** a re-review declares which open obligation this finding carries (lineage matcher 2 — REQ-OBJ-4). */
   carriesObligationId: z.string().optional(),
@@ -138,9 +138,9 @@ export const claimLedgerSidecarSchema = envelope("claim_ledger").extend({
 });
 export type ClaimLedgerSidecar = z.infer<typeof claimLedgerSidecarSchema>;
 
-// ---- rubric.json (eight dimensions, 1–5, entailment caps; NEVER an aggregate — REQ-IDE-30) ----
+// ---- rubric.json (the protocol's declared dimensions, 1–5, entailment caps; NEVER an aggregate — REQ-IDE-30) ----
 export const rubricRowSchema = z.object({
-  dimension: coercedEnum(RUBRIC_DIMENSIONS),
+  dimension: coercedEnum(RUBRIC_DIMENSIONS_ALL),
   score: scoreField,
   cap: z
     .object({
@@ -153,7 +153,7 @@ export const rubricRowSchema = z.object({
 export const rubricSidecarSchema = envelope("rubric").extend({
   dimensions: z.array(rubricRowSchema),
   /** protocols may swap at most one dimension and add at most one (§6.7). */
-  swaps: z.array(z.object({ from: z.string(), to: coercedEnum(RUBRIC_DIMENSIONS) })).optional(),
+  swaps: z.array(z.object({ from: z.string(), to: coercedEnum(RUBRIC_DIMENSIONS_ALL) })).optional(),
 });
 export type RubricSidecar = z.infer<typeof rubricSidecarSchema>;
 

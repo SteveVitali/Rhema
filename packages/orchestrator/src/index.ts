@@ -28,6 +28,7 @@ export * from "./run-shape.js";
 export * from "./allowlist.js";
 export * from "./provision.js";
 export * from "./resolver.js";
+export * from "./user-sources.js";
 export * from "./internal-api.js";
 export * from "./runspec.js";
 export * from "./delivery.js";

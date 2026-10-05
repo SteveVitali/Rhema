@@ -113,6 +113,9 @@ export const COPY = {
     protocolLegend: "Protocol",
     venueLabel: "Venue",
     venuePlaceholder: "Pick or type a venue",
+    // §16.4 — a venue-table row that was never verified (H4) shows its authored date, never a
+    // fabricated "verified" stamp.
+    venueStaleFmt: "Venue bounds as of {dates} — not yet re-verified; you can always type your own.",
     lengthLabel: "Target length",
     voiceLegend: "Voice",
     voiceGroupYours: "Your voices",
@@ -310,6 +313,11 @@ export const COPY = {
       prose: "Prose",
       voice_audience_fit: "Voice and audience fit",
       intellectual_honesty: "Intellectual honesty",
+      // P1.21 — the protocol-declared swap/add dimensions (§6.7: Op-ed +Timeliness; Memo swaps
+      // Originality → Decision readiness + adds Scope discipline).
+      timeliness: "Timeliness",
+      decision_readiness: "Decision readiness",
+      scope_discipline: "Scope discipline",
     } as Record<string, string>,
     capFmt: "capped at {at} — {reason}",
     secondReadHeading: "Second read",

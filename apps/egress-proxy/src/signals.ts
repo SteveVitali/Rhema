@@ -10,8 +10,9 @@
 
 import { parseRunEvent } from "@rhema/contracts";
 
-/** Why the proxy is asking the orchestrator to pause the run. */
-export type PauseReason = "suspicious_query" | "egress_denied_spike";
+/** Why the proxy is asking the orchestrator to pause the run. P1.21 adds `user_source_fetch` — a Memo
+ *  run's attempt to web-fetch one of its own `user_sources[]` domains (§16.4; REQ-WF-8). */
+export type PauseReason = "suspicious_query" | "egress_denied_spike" | "user_source_fetch";
 
 /** A request to pause a run (REQ-ARCH-32). The orchestrator (P0.08) reacts; the proxy only emits. */
 export interface PauseSignal {

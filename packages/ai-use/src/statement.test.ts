@@ -149,10 +149,13 @@ describe("generatedSentences — the general template (REQ-VIS-10, REQ-POS-6)", 
     await db.close();
   });
 
-  it("every beta protocol renders the general template (Academic ICMJE is P1.21)", () => {
+  it("essay renders the general template; the P1.21 protocols render their own (REQ-GENRE-5)", async () => {
+    await import("./templates.js"); // the registration side-effect index.ts performs for callers
     expect(templateForProtocol(null)).toBe("general");
     expect(templateForProtocol("essay")).toBe("general");
-    expect(templateForProtocol("academic")).toBe("general");
+    expect(templateForProtocol("academic")).toBe("icmje");
+    expect(templateForProtocol("op-ed")).toBe("op-ed");
+    expect(templateForProtocol("memo")).toBe("memo");
   });
 
   it("a registered protocol template selects + renders its own heading; others keep general", async () => {

@@ -138,6 +138,11 @@ export interface ProvisionArgs extends AdmitArgs {
   readonly allowlist: RunAllowlistData;
   /** the run's server web-research policy (PRB.22); the proxy applies its bounded defaults when absent. */
   readonly webTools?: WebToolPolicyData;
+  /**
+   * P1.21 — text the proxy's n-gram guard diffs search queries against (§12.8d). A Memo run passes its
+   * `user_sources[]` text so a query quoting internal figures trips `suspicious_query`.
+   */
+  readonly draftText?: string;
   readonly agentId?: string;
   readonly role?: string;
 }
@@ -190,6 +195,7 @@ export async function provisionRun(
     capCredits: args.capCredits,
     allowlist: args.allowlist,
     ...(args.webTools ? { webTools: args.webTools } : {}),
+    ...(args.draftText ? { draftText: args.draftText } : {}),
   });
 
   // launch the GKE Job with backoff.
@@ -244,6 +250,8 @@ export interface MintCredentialArgs {
   readonly capCredits: number;
   readonly allowlist: RunAllowlistData;
   readonly webTools?: WebToolPolicyData;
+  /** P1.21 — the memo run's user-source text (the n-gram query guard's corpus). */
+  readonly draftText?: string;
 }
 
 /** The credential secret is hashed for storage; the resolver looks it up by hash. */
@@ -277,6 +285,7 @@ export async function mintProxyCredential(deps: OrchestratorDeps, args: MintCred
     rateTableVersion: args.rateTableVersion,
     capCredits: args.capCredits,
     ...(args.webTools ? { webTools: args.webTools } : {}),
+    ...(args.draftText ? { draftText: args.draftText } : {}),
   };
 
   // one tenant-scoped transaction: the non-RLS proxy rows + the RLS `runs` link commit together.

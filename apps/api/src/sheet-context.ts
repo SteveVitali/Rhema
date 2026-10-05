@@ -10,6 +10,7 @@ import { NON_TERMINAL_RUN_STATES, computeLockSet, firstConflict, seatForWorkflow
 import type { ContentStore } from "@rhema/mirror";
 import { runSheetObligations } from "@rhema/obligations";
 import { deriveSections } from "@rhema/commands";
+import { PROTOCOL_CARDS } from "@rhema/protocols";
 import { parseUserPrefs, type WorkflowKey } from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
@@ -42,7 +43,7 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
 
     const project = (
       await deps.db.query(
-        `select id, title, protocol_id, venue, approval_policy, persona_id,
+        `select id, title, protocol_id, protocol_version, venue, approval_policy, persona_id,
                 rigor_default, model_tier_default, protocol_changed_at
            from projects where id = $1 and workspace_id = $2 and deleted_at is null`,
         [projectId, principal.workspaceId],
@@ -52,6 +53,7 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
           id: string;
           title: string;
           protocol_id: string | null;
+          protocol_version: number | null;
           venue: string | null;
           approval_policy: string;
           persona_id: string | null;
@@ -149,6 +151,10 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
     return c.json({
       project: {
         protocol: project.protocol_id,
+        // P1.21 (REQ-GENRE-3) — the pinned `protocol@version` for the sheet's protocol display; plus
+        // the memo marker that gates the user_sources field + confidentiality line.
+        protocolVersion: project.protocol_version,
+        memoConfidentiality: project.protocol_id === "memo",
         venue: project.venue,
         approvalPolicy: project.approval_policy,
         // P1.20 (§14.7) — the resolved rigor/tier defaults the sheet opens on (a `?rigor=`/`?tier=`
@@ -157,6 +163,9 @@ export function createSheetContextRoutes(deps: SheetContextDeps): Hono {
         modelTier: resolvedModelTier,
         protocolChanged: project.protocol_changed_at != null,
       },
+      // P1.21 — the four §6.7 protocol options the sheet's selector renders (the §5.3 cards' id+name
+      // only — bodies stay server-side, REQ-ARCH-33).
+      protocols: PROTOCOL_CARDS.map((card) => ({ id: card.id, name: card.name })),
       headDraft: head
         ? {
             id: head.id,
