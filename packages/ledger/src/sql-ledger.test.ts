@@ -218,3 +218,29 @@ describe("SqlHoldLedger.release + refund", () => {
     expect((await readBalances(db, BA)).included).toEqual({ available: 1000, held: 0 }); // whole again
   });
 });
+
+describe("SqlHoldLedger.absorb — the platform-COGS record (DEF.2/F5; REQ-SPEC-24.8)", () => {
+  it("books an adjustment(absorbed) row with NO balance effect, idempotent per episode key", async () => {
+    await seedBalances(db, { billingAccountId: BA, balances: { included: 1000 } });
+    await seedRun(db, { runId: "run1", workspaceId: WS, state: "running", capCredits: 840, holdLedgerId: "h" });
+    const led = ledger();
+    await inTx((tx) => led.hold(tx, { billingAccountId: BA, workspaceId: WS, runId: "run1", credits: 840, idempotencyKey: "hold:run1" }));
+    await inTx((tx) => led.debit(tx, { billingAccountId: BA, workspaceId: WS, runId: "run1", phaseId: "p1", credits: 300, idempotencyKey: "debit:run1:p1:1" }));
+
+    const res = await inTx((tx) =>
+      led.absorb(tx, { billingAccountId: BA, workspaceId: WS, runId: "run1", credits: 65, idempotencyKey: "absorb:run1:1" }),
+    );
+    expect(res.ledgerId).toBeTruthy();
+    const rows = (await readLedgerRows(db, "run1")) as { kind: string; reason: string | null; credits: number }[];
+    const absorb = rows.find((r) => r.kind === "adjustment")!;
+    expect(absorb).toMatchObject({ kind: "adjustment", reason: "absorbed", credits: 65 });
+    // no balance effect: the hold − debit position is untouched by the accounting-record row.
+    expect((await readBalances(db, BA)).included).toEqual({ available: 160, held: 540 });
+    // a replay of the same episode key is a no-op.
+    const again = await inTx((tx) =>
+      led.absorb(tx, { billingAccountId: BA, workspaceId: WS, runId: "run1", credits: 65, idempotencyKey: "absorb:run1:1" }),
+    );
+    expect(again.ledgerId).toBe(res.ledgerId);
+    expect(((await readLedgerRows(db, "run1")) as { kind: string }[]).filter((r) => r.kind === "adjustment")).toHaveLength(1);
+  });
+});

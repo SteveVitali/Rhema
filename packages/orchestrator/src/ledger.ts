@@ -44,6 +44,19 @@ export interface RefundArgs {
   readonly credits: number;
   readonly idempotencyKey: string;
 }
+/**
+ * Metered burn the user did NOT pay, booked `adjustment(absorbed)` — the platform-COGS record the
+ * REQ-SPEC-24.5 circuit breaker's Σ reads (DEF.2/F5; REQ-SPEC-24.8 "carried in the reserve"). Written by
+ * the terminal settle: a cancelled run absorbs its uncommitted in-flight burn; a failed run absorbs the
+ * whole metered figure after its debits refund.
+ */
+export interface AbsorbArgs {
+  readonly billingAccountId: string;
+  readonly workspaceId: string;
+  readonly runId: string;
+  readonly credits: number;
+  readonly idempotencyKey: string;
+}
 
 export interface LedgerEntryRef {
   readonly ledgerId: string;
@@ -58,6 +71,7 @@ export interface HoldLedger {
   debit(tx: SqlClient, args: DebitArgs): Promise<LedgerEntryRef>;
   release(tx: SqlClient, args: ReleaseArgs): Promise<LedgerEntryRef>;
   refund(tx: SqlClient, args: RefundArgs): Promise<LedgerEntryRef>;
+  absorb(tx: SqlClient, args: AbsorbArgs): Promise<LedgerEntryRef>;
 }
 
 export class InsufficientBalanceError extends Error {
@@ -81,8 +95,8 @@ export class AccountSuspendedError extends Error {
 }
 
 interface RecordedOp {
-  readonly op: "hold" | "debit" | "release" | "refund";
-  readonly args: HoldArgs | DebitArgs | ReleaseArgs | RefundArgs;
+  readonly op: "hold" | "debit" | "release" | "refund" | "absorb";
+  readonly args: HoldArgs | DebitArgs | ReleaseArgs | RefundArgs | AbsorbArgs;
 }
 
 /**
@@ -126,6 +140,10 @@ export class TestHoldLedger implements HoldLedger {
   }
   refund(_tx: SqlClient, args: RefundArgs): Promise<LedgerEntryRef> {
     this.ops.push({ op: "refund", args });
+    return Promise.resolve({ ledgerId: this.next() });
+  }
+  absorb(_tx: SqlClient, args: AbsorbArgs): Promise<LedgerEntryRef> {
+    this.ops.push({ op: "absorb", args });
     return Promise.resolve({ ledgerId: this.next() });
   }
 

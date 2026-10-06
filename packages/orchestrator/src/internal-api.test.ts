@@ -6,6 +6,7 @@ import { makeDeps, type TestDeps } from "./testing/deps.js";
 import {
   audit,
   commitStep,
+  failRun,
   failStep,
   finalizeRun,
   harvestStep,
@@ -898,5 +899,151 @@ describe("P1.10 — harvest emits section.drafted from the committed 04-draft-le
     // a retried phase / ledger re-harvest commits the same rows again — the dedupe must hold.
     expect((await harvestStep(writerDeps, args)).ok).toBe(true);
     expect(await sectionRows()).toHaveLength(2);
+  });
+});
+
+// DEF.2/F5 — the committed-vs-metered fix: commits debit the proxy-metered incremental (the pod's figure
+// is the floor + the unmetered-environment fallback), completed runs settle the remainder before the
+// release, failed runs refund net debits by default, and every terminal settle books the un-paid metered
+// burn `absorbed` (platform COGS — REQ-SPEC-24.8). The TestHoldLedger records the port calls; seeded
+// credit_ledger rows stand in for the ledger writes a real SqlHoldLedger persists.
+describe("DEF.2/F5 — committed vs metered: incremental debits + terminal settles", () => {
+  const DONE = { status: "done" as const, sdkSubtype: "success", predicatesPassed: true, compactions: 0 };
+  const seedUsage = (id: string, runId: string, attempt: number, credits: number) =>
+    db.client.query(
+      `insert into usage_records(id, ts, workspace_id, billing_account_id, run_id, attempt, role, provider, model, model_tier,
+         rate_table_version, list_cost_usd, credits, source)
+       values ($1, now(), $2, $3, $4, $5, 'editor', 'anthropic', 'claude-x', 'balanced', 1, 0.5, $6, 'proxy')`,
+      [id, seed.workspaceId, seed.billingAccountId, runId, attempt, credits],
+    );
+  const seedDebit = (id: string, runId: string, key: string, credits: number) =>
+    db.client.query(
+      `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key, at)
+       values ($1, $2, $3, 'debit', $4, 'included', $5, 'run', $6, now())`,
+      [id, seed.workspaceId, seed.billingAccountId, credits, runId, key],
+    );
+  const debitCredits = () => deps.ledger.opsOf("debit").map((o) => (o.args as { credits: number }).credits);
+  const commit = (stepKey: string, ordinal: number, credits: number) =>
+    commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey,
+      ordinal,
+      of: 3,
+      credits,
+      result: DONE,
+      next: { kind: "advance" },
+    });
+
+  it("commitStep debits the proxy-metered delta when it outruns the pod's figure (REQ-SPEC-11)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await seedUsage("ur_1", "run1", 1, 65);
+    await commit("intake", 0, 10);
+    // pod said 10; the meter says 65 — the commit charges the metered total, not the claim.
+    expect(debitCredits()).toEqual([65]);
+
+    // mirror what a real ledger persisted (the test double records ops without writing rows).
+    await seedDebit("led_c1", "run1", "debit:run1:intake:1#included", 65);
+    await seedUsage("ur_2", "run1", 1, 8); // attempt-metered total now 73
+    await commit("triage", 1, 8);
+    // incremental: 73 − 65 = 8 — only the uncommitted burn is charged (no double-charge).
+    expect(debitCredits()).toEqual([65, 8]);
+  });
+
+  it("commitStep falls back to the pod figure where no proxy rows exist (unmetered env)", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await commit("intake", 0, 42);
+    expect(debitCredits()).toEqual([42]);
+    // a replayed commit stays a no-op — the idempotent path never reaches the debit.
+    await commit("intake", 0, 42);
+    expect(debitCredits()).toEqual([42]);
+  });
+
+  it("a terminal failStep refunds the run's net committed debits, then absorbs the metered burn", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "running",
+      holdLedgerId: "led_hold",
+    });
+    await db.client.query("insert into proxy_credentials(id, run_id, attempt, credential_hash) values ('pcr_1','run1',1,'h')", []);
+    await seedUsage("ur_1", "run1", 1, 65); // 65 metered; only 30 ever committed
+    await seedDebit("led_d1", "run1", "debit:run1:intake:1#included", 30);
+
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "craft",
+      ordinal: 1,
+      errorClass: "budget",
+      reason: "SDK result subtype budget (not success)",
+    });
+    expect(res).toEqual({ ok: true, terminal: "cap_reached" });
+    // §12.4 step 9 — a failed run refunds its debits; the settle owns the figure (no caller-provided number).
+    expect(deps.ledger.opsOf("refund").map((o) => (o.args as { credits: number }).credits)).toEqual([30]);
+    // post-refund the charge is 0 and the whole metered burn absorbs — under a real SqlHoldLedger the
+    // refund rows persist in-tx (gap = 65 − 0). The recording double writes no rows, so the gap read
+    // still nets the seeded debit: 65 − 30 = 35. The row-level math is covered in the spend tests.
+    expect(deps.ledger.opsOf("absorb").map((o) => (o.args as { credits: number }).credits)).toEqual([35]);
+    expect(deps.eventWriter.typesForRun("run1")).toContain("cost.refunded");
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
+  it("failRun refunds net debited BY DEFAULT (an explicit 0 is the only opt-out)", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "running",
+      holdLedgerId: "led_hold",
+    });
+    await db.client.query("insert into proxy_credentials(id, run_id, attempt, credential_hash) values ('pcr_1','run1',1,'h')", []);
+    await seedUsage("ur_1", "run1", 1, 50);
+    await seedDebit("led_d1", "run1", "debit:run1:intake:1#included", 40);
+    await failRun(deps, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      billingAccountId: seed.billingAccountId,
+      from: "running",
+      failure: { code: "validation", message: "sidecar parse", retryable: false },
+      holdLedgerId: "led_hold",
+    });
+    // no refundCredits passed → the settle refunds the whole net committed charge.
+    expect(deps.ledger.opsOf("refund").map((o) => (o.args as { credits: number }).credits)).toEqual([40]);
+    // absorb = metered − still-visible net debits (the double's refund writes no rows): 50 − 40 = 10.
+    expect(deps.ledger.opsOf("absorb").map((o) => (o.args as { credits: number }).credits)).toEqual([10]);
+    expect(deps.eventWriter.typesForRun("run1")).toContain("cost.refunded");
+  });
+
+  it("finalizeRun debits the attempt's metered remainder BEFORE releasing the hold", async () => {
+    await seedRun(db, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      state: "finalizing",
+      holdLedgerId: "led_hold",
+      spentCredits: 40,
+    });
+    await db.client.query("insert into proxy_credentials(id, run_id, attempt, credential_hash) values ('pcr_1','run1',1,'h')", []);
+    await seedUsage("ur_1", "run1", 1, 65); // 65 metered; the phase commits debited 40
+    await seedDebit("led_d1", "run1", "debit:run1:intake:1#included", 40);
+
+    const res = await finalizeRun(deps, {
+      runId: "run1",
+      workspaceId: seed.workspaceId,
+      billingAccountId: seed.billingAccountId,
+      holdLedgerId: "led_hold",
+      spentCredits: 40,
+      capCredits: 840,
+    });
+    expect(res.state).toBe("completed");
+    // the catch-up debit: 65 metered − 40 committed = 25, keyed debit:<run>:settle:<attempt>.
+    const settles = deps.ledger.opsOf("debit");
+    expect(settles.map((o) => (o.args as { credits: number }).credits)).toEqual([25]);
+    expect((settles[0]!.args as { idempotencyKey: string }).idempotencyKey).toBe("debit:run1:settle:1");
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
   });
 });

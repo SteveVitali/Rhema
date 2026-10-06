@@ -340,7 +340,7 @@ export async function startWorker(): Promise<void> {
     clock,
     queue: deps.queue,
     contentStoreFor: deps.contentStoreFor,
-    meter: sqlSampleMeter(ids),
+    meter: sqlSampleMeter({ ids, clock }),
     ...(env.fetcherServiceUrl
       ? { fetcher: createFetcherServicePort(env.fetcherServiceUrl, fetch, fetchGceMetadataIdToken) }
       : {}),

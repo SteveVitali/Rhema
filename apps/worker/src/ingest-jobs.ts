@@ -31,6 +31,7 @@ import {
 } from "@rhema/ingest";
 import type { ContentStore } from "@rhema/mirror";
 import type { Queue, SqlClient, TxRunner } from "@rhema/orchestrator";
+import { applyLedgerEntry, type EntryDeps, type HoldBucket } from "@rhema/ledger";
 import type { ConversionResult } from "@rhema/contracts";
 
 export const INGEST_JOB_NAMES = {
@@ -73,7 +74,8 @@ export interface IngestBlobStore {
   delete?(key: string): Promise<void>;
 }
 
-/** The priced-operation debit seam — a credit_ledger `debit` row (no run; `source` names the job). */
+/** The priced-operation debit seam — a canonical ledger `hold`+`debit` pair (no run; `source` names the
+ *  job in `reason`). A bare debit would be an unheld charge — the exact drift STB.3 measured on prod. */
 export interface SampleMeter {
   debit(
     tx: SqlClient,
@@ -200,13 +202,25 @@ export interface WorkerIngestDeps {
 
 const REGISTRY = createProviderRegistry();
 
-/** The fixed-price debit for a metered sample op — SQL impl bound in prod; tests inject a fake. */
-export const sqlSampleMeter: (ids: (p: string) => string) => SampleMeter = (ids) => ({
+/** The fixed-price debit for a metered sample op — SQL impl bound in prod; tests inject a fake.
+ *
+ *  DEF.2/F4: this writes through `applyLedgerEntry` — the ONLY path allowed to touch `credit_balances`
+ *  — as a `hold` then `debit` pair on the same bucket, in the caller's transaction. The pair is the
+ *  canonical "reserve, then spend" for a fixed-price op with no run: `hold` moves available → held,
+ *  `debit` spends the held amount (net: available −credits, held ±0, ledger-foldable). The previous
+ *  bare `debit` row + direct `available -= credits` bypassed `balanceEffect` — the fold attributes a
+ *  `debit` to `held`, so every op drifted the counter against the ledger (STB.3's −897) — and would
+ *  trip the `credit_balances.held >= 0` invariant (0044). */
+export const sqlSampleMeter: (deps: EntryDeps) => SampleMeter = (deps) => ({
   async debit(tx, args) {
     const ws = (
       await tx.query(`select billing_account_id from workspaces where id = $1`, [args.workspaceId])
     ).rows[0] as { billing_account_id: string } | undefined;
     if (!ws) return { ok: false, reason: "workspace_missing" };
+    // Row-lock the billing account BEFORE the headroom read (REQ-SPEC-24.2 ordering — the same guard
+    // the canonical hold takes), so two concurrent priced ops cannot both pass the available check and
+    // race one over the balance; the check(available >= 0) is the backstop.
+    await tx.query("select id from billing_accounts where id = $1 for update", [ws.billing_account_id]);
     // Draw from the first bucket with headroom (included → topup → daily), respecting the
     // credit_balances check(available >= 0).
     const balances = (
@@ -216,22 +230,29 @@ export const sqlSampleMeter: (ids: (p: string) => string) => SampleMeter = (ids)
         [ws.billing_account_id],
       )
     ).rows as { bucket: string; available: number }[];
-    const bucket = balances.find((b) => b.available >= args.credits)?.bucket;
+    const bucket = balances.find((b) => b.available >= args.credits)?.bucket as HoldBucket | undefined;
     if (!bucket) return { ok: false, reason: "insufficient_balance" };
-    const ins = await tx.query(
-      `insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, source, reason, idempotency_key)
-         values ($1,$2,$3,'debit',$4,$5,$6,$7,$8)
-         on conflict (idempotency_key) do nothing
-         returning id`,
-      [ids("cl"), args.workspaceId, ws.billing_account_id, args.credits, bucket, args.source, args.reason, args.idempotencyKey],
-    );
-    if (!ins.rows[0]) return { ok: true }; // already debited — idempotent re-drive
-    // The bucket row exists (it was selected with available >= credits); subtract in place.
-    await tx.query(
-      `update credit_balances set available = available - $3, updated_at = now()
-         where billing_account_id = $1 and bucket = $2`,
-      [ws.billing_account_id, bucket, args.credits],
-    );
+    const entry = {
+      workspaceId: args.workspaceId,
+      billingAccountId: ws.billing_account_id,
+      credits: args.credits,
+      bucket,
+      source: "system" as const,
+      // the job label rides `reason` — `source` is the canonical audit-provenance enum.
+      reason: args.reason ? `${args.source}: ${args.reason}` : args.source,
+    };
+    const hold = await applyLedgerEntry(tx, deps, {
+      ...entry,
+      kind: "hold",
+      idempotencyKey: `${args.idempotencyKey}#hold`,
+    });
+    // A replayed hold means the pair already committed in an earlier drive — nothing re-charges.
+    if (!hold.applied) return { ok: true };
+    await applyLedgerEntry(tx, deps, {
+      ...entry,
+      kind: "debit",
+      idempotencyKey: `${args.idempotencyKey}#debit`,
+    });
     return { ok: true };
   },
 });

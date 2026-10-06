@@ -19,7 +19,7 @@ import type { OrchestratorDeps } from "./internal-api.js";
 import { failRun } from "./internal-api.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
-import { reconcileRunSpend } from "./spend.js";
+import { absorbMeteredGap, reconcileRunSpend, settleMeteredDebit } from "./spend.js";
 import type { RunState } from "./state-machine.js";
 import type { SqlClient } from "./tx.js";
 
@@ -98,6 +98,19 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
         args.delivery,
       );
       await applyTransition(tx, deps, { runId, from: "finalizing", to: "completed" });
+      // DEF.2/F5 — charge the attempt's proxy-metered remainder the phase commits never reached
+      // (REQ-SPEC-11: the proxy meter drives debits) BEFORE the release draws the hold away.
+      const curAttempt = (
+        await tx.query("select current_attempt from runs where id = $1", [runId])
+      ).rows[0] as { current_attempt: number } | undefined;
+      if (curAttempt) {
+        await settleMeteredDebit(tx, deps, {
+          runId,
+          workspaceId,
+          billingAccountId: args.billingAccountId,
+          attempt: curAttempt.current_attempt,
+        });
+      }
       if (args.holdLedgerId) {
         await deps.ledger.release(tx, {
           billingAccountId: args.billingAccountId,
@@ -107,6 +120,11 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
           idempotencyKey: `release:${runId}`,
         });
       }
+      await absorbMeteredGap(tx, deps, {
+        runId,
+        workspaceId,
+        billingAccountId: args.billingAccountId,
+      });
       // PRB.16b: reconcile spent_credits from the usage rows of record before the final figure is
       // emitted — the run-row figure resolved pre-tx can predate the last metered usage.
       const spentCredits = Math.max(args.spentCredits, await reconcileRunSpend(tx, runId));

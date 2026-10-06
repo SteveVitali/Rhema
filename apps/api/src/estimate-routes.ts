@@ -4,7 +4,8 @@
 // `run.estimated`. Two figures from the same estimator: an IMMEDIATE provisional figure from the word
 // count (returned without ever blocking the Run button), and a REFINED figure from a Haiku-class claim
 // pre-pass cached per (draft sha, workflow, rigor, tier) — its ~5-credit COGS absorbed, paid once per draft
-// version (§5.6 item 1). The pre-pass and the cache are DI'd seams; the live Haiku call is a deferred leg.
+// version (§5.6 item 1). DEF.2 (F6) binds the live seams: `SqlEstimateCacheStore` over `estimate_cache`
+// and `createProxyClaimPrePass`, which rides the egress proxy on a purpose-minted credential.
 
 import { Hono } from "hono";
 import {
@@ -18,9 +19,18 @@ import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
 import { showcaseReadOnlyGuard } from "./showcase.js";
 
-/** The Haiku-class claim pre-pass (§5.6 item 1). Returns the refined claim count for a draft version. */
+/** The Haiku-class claim pre-pass (§5.6 item 1). Returns the refined claim count for a draft version.
+ *  `workspaceId`/`billingAccountId` come from the session principal — the live binding attributes its
+ *  proxy-metered COGS usage row with them (the synthetic run context needs real tenant FKs). */
 export interface ClaimPrePass {
-  count(args: { projectId: string; draftSha?: string; workflow: WorkflowKey; inputs: EstimatorInputs }): Promise<number>;
+  count(args: {
+    projectId: string;
+    workspaceId: string;
+    billingAccountId: string;
+    draftSha?: string;
+    workflow: WorkflowKey;
+    inputs: EstimatorInputs;
+  }): Promise<number | null>; // null ⇒ no refinement (the route keeps the provisional figure)
 }
 
 /** One cached estimate row (per the `(draft sha, workflow, rigor, tier)` `cache_key`). */
@@ -121,6 +131,19 @@ export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
     if (!body.workflow || !body.rigor || !body.modelTier) {
       return c.json({ error: "workflow, rigor and modelTier required" }, 400);
     }
+    // DEF.2 (F6 hardening) — the project must belong to the caller's workspace: the estimate cache is
+    // GLOBAL (tenantless, keyed on the content sha), so without this check an authenticated caller
+    // could probe another workspace's refined estimates by project id. Unset `db` ⇒ the check defers
+    // to the caller's own guard (tests); the live api always binds it.
+    if (deps.db) {
+      const owned = (
+        await deps.db.query("select id from projects where id = $1 and workspace_id = $2", [
+          projectId,
+          principal.workspaceId,
+        ])
+      ).rows[0];
+      if (!owned) return c.json({ error: "not_found" }, 404);
+    }
     const workflow = body.workflow as WorkflowKey;
     const inputs = body.inputs ?? {};
     const common = {
@@ -153,7 +176,14 @@ export function createEstimateRoutes(deps: EstimateApiDeps): Hono {
     // A refine request runs the pre-pass under the ≤5 s budget and caches the refined figure (§5.6 item 1).
     if (body.refine && deps.claimPrePass) {
       const count = await withBudget(
-        deps.claimPrePass.count({ projectId, draftSha: body.draftSha, workflow, inputs }),
+        deps.claimPrePass.count({
+          projectId,
+          workspaceId: principal.workspaceId,
+          billingAccountId: principal.billingAccountId,
+          draftSha: body.draftSha,
+          workflow,
+          inputs,
+        }),
         deps.prePassBudgetMs ?? 5000,
       );
       if (count != null) {

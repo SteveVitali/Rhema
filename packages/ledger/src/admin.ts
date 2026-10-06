@@ -11,13 +11,16 @@ import type { SqlClient } from "@rhema/orchestrator";
 import { applyLedgerEntry, type EntryDeps } from "./entries.js";
 import { expireCredits } from "./expiry.js";
 
-/** The admin_actions vocabulary (mirrors the 0020 check constraint). */
+/** The admin_actions vocabulary (mirrors the check constraint — latest: 0044). */
 export type AdminAction =
   | "house_credit_grant"
   | "house_credit_void"
   | "account_suspend"
   | "account_reinstate"
-  | "wtp_record";
+  | "wtp_record"
+  | "trial_kill"
+  | "support_access"
+  | "balance_recompute";
 
 /** Write the operator audit row; returns its id. */
 async function audit(
