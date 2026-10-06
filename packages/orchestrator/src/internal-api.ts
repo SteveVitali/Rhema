@@ -63,6 +63,16 @@ import { MAX_EVENT_BATCH } from "./event-store.js";
 /** The full DI bundle the internal API + provisioning + reaper + phase loop share. */
 export interface OrchestratorDeps {
   readonly txRunner: TxRunner;
+  /**
+   * SEC.1 (REQ-SPEC-30; ADR-017) — the SYSTEM-pool transaction runner: same tenant-scoped transaction
+   * semantics as `txRunner`, but bound to the elevated (`SYSTEM_DATABASE_URL`) pool instead of the
+   * user-serving role. Paths that write system-only tables — `proxy_credentials`/`proxy_allowlists`
+   * mints at provision — MUST run here; the user role holds no grant on them and the operation fails
+   * closed. Falls back to `txRunner` when unset (single-role dev). Credential REVOCATION does not
+   * ride this seam: it crosses the boundary through the 0045 SECURITY DEFINER function so a
+   * user-initiated cancel stays atomic on the user pool.
+   */
+  readonly systemTxRunner?: TxRunner;
   readonly eventWriter: EventWriter;
   readonly clock: Clock;
   readonly ids: IdFactory;

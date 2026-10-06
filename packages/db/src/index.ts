@@ -4,7 +4,7 @@
 // owns only the tables, invariants, tenancy, and seed.
 
 export * as schema from "./schema/index.js";
-export { withTenant, type TenantClient } from "./rls.js";
+export { withTenant, USER_SERVING_ROLE, type TenantClient, type WithTenantOpts } from "./rls.js";
 export {
   SESSION_COOKIE_NAMES,
   resolveSessionPrincipal,

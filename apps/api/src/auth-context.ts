@@ -159,7 +159,7 @@ export interface TenantPool {
  * unauthenticated — under FORCE RLS an unscoped query sees zero rows on tenant tables (deny by default),
  * while the non-RLS account tables (`user`, `workspaces`, `session`, …) stay reachable for signup/auth.
  */
-export function createScopedDb(pool: TenantPool): SqlClient {
+export function createScopedDb(pool: TenantPool, opts: { role?: string } = {}): SqlClient {
   return {
     async query(sql: string, params?: readonly unknown[]): Promise<{ rows: unknown[] }> {
       const tenant = currentTenant();
@@ -169,9 +169,11 @@ export function createScopedDb(pool: TenantPool): SqlClient {
       }
       const client = await pool.connect();
       try {
+        // SEC.1 — `role` pins the tx to the user-serving role (0045): if the pool's DSN is ever
+        // mispointed at an elevated login, the tenant path still fails closed inside RLS.
         return await withTenant(client, tenant, () =>
           client.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows })),
-        );
+        { ...(opts.role ? { role: opts.role } : {}) });
       } finally {
         client.release();
       }

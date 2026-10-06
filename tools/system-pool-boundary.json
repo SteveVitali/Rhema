@@ -1,0 +1,28 @@
+{
+  "$comment": "SEC.1 (REQ-SPEC-30; ADR-017) — THE SYSTEM-POOL BOUNDARY. Every file listed here may reference the system-pool seams (systemExec / systemTxRunner / systemPool / systemDatabaseUrl / SYSTEM_DATABASE_URL). Everything else — user routes above all — must not touch them: eslint-plugin-rhema/no-system-pool-in-user-route enforces it and packages/security-checks pins this list so an addition is a deliberate, reviewed act. See docs/security/tenancy-audit.md for the per-path audit.",
+  "files": {
+    "apps/api/src/admin-cli.ts": "operator CLI — SYSTEM_DATABASE_URL only (cross-tenant support/tooling by design)",
+    "apps/api/src/billing-routes.ts": "Stripe webhook intake writes stripe_events (system table) through systemExec",
+    "apps/api/src/claim-prepass.ts": "proxy credential mint/revoke for the claim pre-pass — elevated seam",
+    "apps/api/src/env.ts": "parses SYSTEM_DATABASE_URL",
+    "apps/api/src/index.ts": "composition root — forwards systemExec into the billing deps",
+    "apps/api/src/server.ts": "constructs the pools; passes systemExec to the audited seams",
+    "apps/worker/src/billing-jobs.ts": "stripe-event processing, provider reconcile, balance assertion, withheld-delivery re-drive",
+    "apps/worker/src/env.ts": "parses SYSTEM_DATABASE_URL (required — fail closed)",
+    "apps/worker/src/export-jobs.ts": "account export zip build — reads across the account's tables",
+    "apps/worker/src/ingest-jobs.ts": "ingestion sweeps + purge bookkeeping",
+    "apps/worker/src/jobs.ts": "project/account purge jobs — cross-tenant maintenance",
+    "apps/worker/src/ledger-jobs.ts": "billing sweeps (parked holds, period tick) — cross-tenant",
+    "apps/worker/src/main.ts": "pool construction; pg-boss on the system DSN; systemTxRunner wiring",
+    "apps/worker/src/run-jobs.ts": "run lifecycle handlers — provision mints via systemTxRunner",
+    "infra/pulumi/compute.ts": "IaC wiring — emits the SYSTEM_DATABASE_URL env into the api/worker services",
+    "infra/pulumi/data.ts": "IaC wiring — the DB urls the services' env values resolve from",
+    "integration/src/harness.ts": "integration harness binds the system seam over the test DB",
+    "integration/src/run-live-exit.ts": "live-exit runner binds a systemExec-shaped adapter",
+    "packages/orchestrator/src/internal-api.ts": "OrchestratorDeps declares the systemTxRunner field",
+    "packages/orchestrator/src/provision.ts": "proxy_* mint + __system__ revocation ride systemTxRunner",
+    "packages/orchestrator/src/stranded-sweep.ts": "cross-tenant stranded-run scans via systemExec",
+    "packages/orchestrator/src/testing/deps.ts": "test deps bind the harness systemTxRunner",
+    "packages/orchestrator/src/testing/pg.ts": "the test harness defines both runners"
+  }
+}

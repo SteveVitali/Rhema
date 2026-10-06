@@ -181,9 +181,15 @@ describe("the Cloud Run service envs — no plaintext secrets to web/collab (REQ
     const collabBlock = compute.match(/\.\.\.\(svc === "collab"[\s\S]*?envs: \[([\s\S]*?)\]\s*,?\s*\}/)?.[1];
     expect(collabBlock).toBeTruthy();
     const names = [...collabBlock!.matchAll(/name: "([A-Z_]+)"/g)].map((m) => m[1]);
-    expect(names.sort()).toEqual(["DATABASE_URL", "OBJECTS_BUCKET"].sort());
-    // No provider/model key names ever reach collab's env block.
-    expect(collabBlock).not.toMatch(/ANTHROPIC|API_KEY|secretKeyRef|_SECRET_NAME/);
+    // SEC.1 — DATABASE_URL appears twice in source: the secretKeyRef mount (required stages) and the
+    // plaintext `value:` fallback (preview/unseeded stages). The runtime env set is still just these two.
+    expect([...new Set(names)].sort()).toEqual(["DATABASE_URL", "OBJECTS_BUCKET"].sort());
+    // No provider/model key names ever reach collab's env block; the ONLY secretKeyRef permitted here
+    // is the collab-database-url mount — the DSN itself must never be a plaintext literal.
+    expect(collabBlock).not.toMatch(/ANTHROPIC|API_KEY|_SECRET_NAME/);
+    for (const m of collabBlock!.matchAll(/secret: secrets\.byId\["([a-z-]+)"\]/g)) {
+      expect(m[1]).toBe("collab-database-url");
+    }
   });
 });
 

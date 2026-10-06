@@ -11,6 +11,8 @@
 // provisions the SUBSTRATE only; service business logic ships in the app images later tickets build.
 
 import * as pulumi from "@pulumi/pulumi";
+import * as gcp from "@pulumi/gcp";
+import * as random from "@pulumi/random";
 import { stageConfigFor } from "../config/stages";
 import { createNetwork } from "./network";
 import { createData } from "./data";
@@ -78,6 +80,30 @@ const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImag
 const network = createNetwork({ stack, cfg, region });
 const secrets = createSecrets({ stack, region });
 const data = createData({ stack, cfg, region, network, alloydbPassword });
+
+// SEC.1 (REQ-SPEC-30; REQ-ARCH-30) — the user-serving role's credential is generated HERE (never
+// operator-handled, never committed): `rhema_app_login`'s password is a @pulumi/random secret output
+// and the program itself writes the DSN version into `rhema-<stack>-app-database-url`, so api +
+// worker Cloud Run services can mount DATABASE_URL via `secretKeyRef` (compute.ts) instead of a
+// plaintext env `value`. The role stays NOLOGIN until Stage B's authorized `ALTER ROLE … LOGIN
+// PASSWORD '<this value>'` — the operator reads the DSN (and its password) back from Secret Manager,
+// never from a ledger. `pulumi stack output appDatabaseDsn --show-secrets` is the equivalent.
+const appDbPassword = new random.RandomPassword("rhema-app-login-password", {
+  length: 32,
+  special: false, // URL-inlined into the DSN — no percent-encoding surface
+});
+const appDatabaseDsn = pulumi.secret(
+  pulumi.interpolate`postgresql://rhema_app_login:${appDbPassword.result}@${data.databaseHost}:5432/rhema`,
+);
+// Only version the secret on stages that wire it (requiredSecrets — compute.ts's `requires` gate);
+// a versionless preview container stays empty and harmless.
+if (cfg.requiredSecrets.includes("app-database-url")) {
+  new gcp.secretmanager.SecretVersion(`rhema-${stack}-app-database-url-v1`, {
+    secret: secrets.byId["app-database-url"].id,
+    secretData: appDatabaseDsn,
+  });
+}
+export const appDatabaseDsnOutput = appDatabaseDsn;
 const iam = createIam({ stack, project, secrets, buckets: data.buckets });
 const compute = createCompute({
   stack,

@@ -9,6 +9,7 @@
 const noCrossPackageRelativeImport = require("./rules/no-cross-package-relative-import.js");
 const noBannedStrings = require("./rules/no-banned-strings.js");
 const noRawSetTenant = require("./rules/no-raw-set-tenant.js");
+const noSystemPoolInUserRoute = require("./rules/no-system-pool-in-user-route.js");
 const requireEstimateProp = require("./rules/require-estimate-prop.js");
 
 module.exports = {
@@ -17,6 +18,7 @@ module.exports = {
     "no-cross-package-relative-import": noCrossPackageRelativeImport,
     "no-banned-strings": noBannedStrings,
     "no-raw-set-tenant": noRawSetTenant,
+    "no-system-pool-in-user-route": noSystemPoolInUserRoute,
     "require-estimate-prop": requireEstimateProp,
   },
 };

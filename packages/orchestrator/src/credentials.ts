@@ -5,10 +5,14 @@
 
 import type { SqlClient } from "./tx.js";
 
-/** Revoke every live credential for a run, inside the caller's transaction. */
+/** Revoke every live credential for a run, inside the caller's transaction.
+ *
+ * SEC.1 (REQ-SPEC-30): the write crosses the proxy-table grant boundary through
+ * `rhema_revoke_run_credentials` — a 0045 SECURITY DEFINER function the `rhema_app` role may EXECUTE.
+ * The function additionally enforces tenant scope: a user-pool transaction (app.tenant_id = a real
+ * workspace) may only revoke credentials on ITS OWN runs; the system scope (__system__ or unset)
+ * revokes unconditionally. The row-level update itself stays atomic with the caller's transition.
+ */
 export async function revokeRunCredentials(tx: SqlClient, runId: string, now: Date): Promise<void> {
-  await tx.query("update proxy_credentials set revoked_at = $2 where run_id = $1 and revoked_at is null", [
-    runId,
-    now,
-  ]);
+  await tx.query("select public.rhema_revoke_run_credentials($1, $2)", [runId, now]);
 }

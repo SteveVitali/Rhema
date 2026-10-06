@@ -84,6 +84,12 @@ export function createIam(args: IamArgs): Iam {
   // Manager at boot; the operator-gated reconstruction spend is metered per job (§9.5).
   grantSecret("worker-reads-anthropic", secrets.anthropicApiKey, serviceAccounts["worker"]);
   grantSecret("worker-reads-ops-webhook", secrets.opsAlertWebhookUrl, serviceAccounts["worker"]);
+  // SEC.1 — api + worker mount the `rhema_app_login` DATABASE_URL via Cloud Run secretKeyRef
+  // (compute.ts); the runtime SA must hold secretAccessor on the container. Collab reads its own
+  // `rhema_collab` DSN the same way (REQ-ARCH-30).
+  grantSecret("api-reads-appdb", secrets.byId["app-database-url"], serviceAccounts["api"]);
+  grantSecret("worker-reads-appdb", secrets.byId["app-database-url"], serviceAccounts["worker"]);
+  grantSecret("collab-reads-collabdb", secrets.byId["collab-database-url"], serviceAccounts["collab"]);
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
   // artifacts (to materialize /work); the benchmark-enclave bucket is granted to NO product SA here — it

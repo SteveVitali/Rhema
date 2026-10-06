@@ -48,13 +48,14 @@ pulumi stack output                # sanity: empty until first up
 # The Postgres bootstrap password — bind it FIRST; the Cloud SQL `postgres` built-in user is created
 # with it (the key name is `alloydbPassword` for stack continuity — it is engine-agnostic).
 pulumi config set --secret rhema:alloydbPassword '<generated-strong-password>'
-# Database URLs (restricted RLS roles where marked) — built AFTER the instance exists (its private IP
-# comes from `pulumi stack output databaseHost`); set them before `up` if you already know the
-# address plan, else `up`, then set them, then `up` again so services pick them up. Recommended:
-# set after step 3's first up. Host = the Cloud SQL private IP — e.g. postgresql://<user>:<pw>@<ip>:5432/rhema
-pulumi config set --secret rhema:appDatabaseUrl          'postgresql://…@<cloudsql-private-ip>:5432/rhema'
+# Database URLs — the elevated/system strings stay Pulumi secret config (operator-built from the
+# bootstrap password + the private IP from `pulumi stack output databaseHost`; set after step 3's
+# first up). SEC.1 amended the USER-serving string: api + worker `DATABASE_URL` is now the
+# `rhema_app_login` DSN in Secret Manager (`rhema-prod-app-database-url`, version materialized by
+# the program from a @pulumi/random password — NEVER set `rhema:appDatabaseUrl`/`rhema:workerDatabaseUrl`
+# for prod; on stages that provision `app-database-url` those config keys are ignored in favour of
+# the secretKeyRef mount).
 pulumi config set --secret rhema:apiSystemDatabaseUrl    'postgresql://…(elevated role)…/rhema'
-pulumi config set --secret rhema:workerDatabaseUrl       'postgresql://…(restricted)…/rhema'
 pulumi config set --secret rhema:workerSystemDatabaseUrl 'postgresql://…(elevated)…/rhema'
 pulumi config set --secret rhema:proxyDatabaseUrl        'postgresql://…(restricted)…/rhema'
 pulumi config set --secret rhema:redisUrl                'redis://<redis-host>:6379'   # stack output redisHost
@@ -137,13 +138,16 @@ for s in $(pulumi stack output requiredSecrets --show-secrets=false | jq -r '.[]
 # per secret:  printf %s "$VALUE" | gcloud secrets versions add rhema-prod-<id> --data-file=-
 ```
 
-The 11 REQUIRED ids (from `requiredSecrets` / stage facts — **amended 2026-09-17**:
+The REQUIRED ids (from `requiredSecrets` / stage facts — **amended 2026-09-17**:
 `ops-alert-webhook-url` is provisioned but NOT required — the operator has no alert destination yet
 and the drift-alert path stays inert; opting back in = seed a version + re-add the id to
 `PROD_REQUIRED_SECRETS`): `anthropic-api-key`, `run-token-signing-key`,
 `alloydb-password`, `better-auth-secret`, `google-oauth-client-secret`, `stripe-secret`,
 `stripe-webhook-secret`, `email-action-secret`, `resend-api-key`, `anthropic-admin-key`,
-`user-content-signing-key`.
+`user-content-signing-key`. **SEC.1 additions:** `app-database-url` is PULUMI-MANAGED — the program
+itself writes the `rhema_app_login` DSN version (skip it in the seeding loop); `collab-database-url`
+IS operator-seeded — `postgresql://rhema_collab:<pw>@<host>:5432/rhema` (the `rhema_collab`
+bootstrap password), required before the deploy that flips collab's env to secretKeyRef.
 
 Then arm the private user-content origin: the SAME `user-content-signing-key` value is installed on
 the backend bucket so the CDN edge verifies the signatures the api will mint (D-PRB.02-1's signer is a
@@ -240,10 +244,52 @@ kubectl -n runs run egress-check --rm -i --image=curlimages/curl -- \
   sh -c 'curl -m5 -sS https://api.anthropic.com || echo BLOCKED; curl -m5 -sS http://<proxy>:8443/v1/messages -X POST -d "{}"'  # the proxy is plain HTTP with NO /healthz (surfaced live 2026-09-17) — an uncredentialed request must come back `{"error":{"type":"egress.denied","message":"missing proxy credential"}}` 403; anything else is a wiring bug
 ```
 
+## 11. SEC.1 — the user-serving role switch (Stage B, OPERATOR GATE)
+
+Once the SEC.1 deploy is up (`0045` applied — `rhema_app_login` exists `NOLOGIN`; the
+`rhema-prod-app-database-url` secret carries its generated DSN), the authorized window is:
+
+```bash
+# 1. Seed collab's DSN secret (REQ-ARCH-30 — collab's env flips to secretKeyRef this deploy):
+printf %s 'postgresql://rhema_collab:<collab-pw>@<cloudsql-private-ip>:5432/rhema' \
+  | gcloud secrets versions add rhema-prod-collab-database-url --data-file=-
+
+# 2. Enable the user-serving role WITH THE GENERATED PASSWORD (read it from SM — the same value the
+#    program wrote into the DSN; never re-derive by hand):
+DSN=$(gcloud secrets versions access latest --secret=rhema-prod-app-database-url)
+PW=$(printf %s "$DSN" | sed -E 's|.*://rhema_app_login:([^@]+)@.*|\1|')
+psql 'postgresql://postgres:<bootstrap-pw>@127.0.0.1:5433/rhema' \
+  -c "alter role rhema_app_login login password '${PW}'"
+
+# 3. PRE-switch probe (two real magic-link tenants — see step 0's probe-account prerequisites):
+PROBE_SESSION_A='…' PROBE_SESSION_B='…' \
+  pnpm tsx integration/src/two-tenant-probe.ts \
+  --base-url https://api.rhema.tools --web-url https://rhema.tools
+
+# 4. Roll the switch: `pulumi up` — api/worker `DATABASE_URL` envs land on the
+#    `app-database-url` secretKeyRef (new revisions). If a revision still carries the OLD DSN config
+#    key from a previous stack, unset it first: `pulumi config rm rhema:appDatabaseUrl` /
+#    `rhema:workerDatabaseUrl` (ignored anyway on required-secrets stages — belt & suspenders).
+
+# 5. POST-switch probe — identical command; zero cross-tenant markers + own rows visible.
+
+# 6. Observe 30 minutes (api/worker 5xx rate, Cloud Run logs for `permission denied` — a denied
+#    grant means a table the user role legitimately needs was missed in 0045; that is a FIX bug,
+#    not a rollback trigger by itself).
+```
+
+**Rollback (retained pre-switch revision):** `gcloud run services list-revisions
+--service rhema-prod-api` → shift traffic back to the pre-switch revision
+(`gcloud run services update-traffic rhema-prod-api --to-revisions <rev>=100`), same for
+`rhema-prod-worker`, then `alter role rhema_app_login nologin` to seal the window. The `postgres`
+system DSNs are untouched throughout — system paths never leave the elevated role.
+
 ## What Stage B then records
 
 - `deployments` row + `providerTransmissible` assertion → annotate `D-P0.04-2` / `D-P0.13-2` in
   `docs/tickets/DEFERRALS.md` and flip the rows the live evidence genuinely proves
+- SEC.1: the pre/post probe reports + switch timestamp → `docs/security/rls-exposure-since-0026.md`
+  closes each exposure row's end date; the role-enable ALTER output is HUMAN-H7's review evidence
   (`D-P0.01-1`, `D-P0.01-7`, `D-P0.15b-1`, `D-P0.15c-1`, `D-P0.07-4`'s serve leg).
 - Live leftovers (auth binding, user-content signed-URL serving, Stripe live mode, provider-smoke)
   stay OPEN and route to PRB.16/PRB.17 per their named paths.

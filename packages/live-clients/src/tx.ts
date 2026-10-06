@@ -22,13 +22,22 @@ export function pgClientToSqlClient(client: Pick<PoolClient, "query">): SqlClien
 
 /** `TxRunner` over a `pg.Pool` — the deploy binding behind the orchestrator's tx seam. */
 export class PgPoolTxRunner implements TxRunner {
-  constructor(private readonly pool: Pool) {}
+  /**
+   * `opts.role` pins a transaction-local `ROLE` inside every tenant transaction (SEC.1; REQ-SPEC-30) —
+   * prod passes `USER_SERVING_ROLE` so a `DATABASE_URL` mispointed at a bypass role still cannot see
+   * cross-tenant rows on the tenant path.
+   */
+  constructor(
+    private readonly pool: Pool,
+    private readonly opts: { role?: string } = {},
+  ) {}
 
   async run<T>(tenantId: string, fn: (tx: SqlClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
     try {
-      // withTenant issues BEGIN / SET LOCAL app.tenant_id / COMMIT|ROLLBACK on this one checked-out connection.
-      return await withTenant(client, tenantId, () => fn(pgClientToSqlClient(client)));
+      // withTenant issues BEGIN / SET LOCAL ROLE / SET LOCAL app.tenant_id / COMMIT|ROLLBACK on this one
+      // checked-out connection.
+      return await withTenant(client, tenantId, () => fn(pgClientToSqlClient(client)), this.opts);
     } finally {
       client.release();
     }

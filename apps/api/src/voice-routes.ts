@@ -346,7 +346,15 @@ export function createVoiceRoutes(deps: VoiceApiDeps): Hono {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
     const rows = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      const res = await tx.query(`select id from personas where deleted_at is null order by id`);
+      // SEC.1 (PR-S1; REQ-SPEC-30) — the explicit workspace predicate: the compensating control that
+      // closes the confirmed cross-tenant /voices leak even if the role switch window slips. Personas
+      // always live in the requester's own workspace (house/shared voices are per-workspace rows;
+      // workspaces.kind is personal|team — there is no global persona workspace), so scoping to
+      // $principal.workspaceId loses nothing. RLS is the backstop, never the only filter.
+      const res = await tx.query(
+        `select id from personas where deleted_at is null and workspace_id = $1 order by id`,
+        [principal.workspaceId],
+      );
       const out: {
         personaId: string;
         name: string | null;

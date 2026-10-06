@@ -6,11 +6,12 @@ export interface WorkerEnv {
   /** a RESTRICTED, RLS-ENFORCED role for the worker's tenant-scoped transactions. */
   readonly databaseUrl: string;
   /**
-   * Optional elevated connection for the worker's SYSTEM-scoped reads (the parked-run sweep + run-event
-   * maintenance scan across tenants / system tables). Set it so `databaseUrl` can stay a restricted RLS-enforced
-   * role; unset ⇒ those reads fall back to the main pool (whose role must then be able to read across tenants).
+   * REQUIRED elevated connection for the worker's SYSTEM seams (the sweeps' cross-tenant scans, the proxy
+   * credential mint at provision, the pg-boss queue transport, `systemExec`). SEC.1 (REQ-SPEC-30): there is
+   * NO fallback to `databaseUrl` — a system path silently running as the RLS-bound user role is the exact
+   * failure mode the role split removes, so the worker refuses to boot without it.
    */
-  readonly systemDatabaseUrl?: string;
+  readonly systemDatabaseUrl: string;
   readonly redisUrl: string;
   /** RS256 run-token key secret-version resource names (the worker MINTS at provision → needs both). */
   readonly runTokenPrivateKeySecret: string;
@@ -128,7 +129,7 @@ export function readWorkerEnv(): WorkerEnv {
     internalApiUrl: required("API_INTERNAL_URL"),
     proxyBaseUrl: required("ANTHROPIC_BASE_URL"),
     defaultConcurrency: Number(process.env.DEFAULT_CONCURRENCY ?? 2),
-    ...(process.env.SYSTEM_DATABASE_URL ? { systemDatabaseUrl: process.env.SYSTEM_DATABASE_URL } : {}),
+    systemDatabaseUrl: required("SYSTEM_DATABASE_URL"), // SEC.1 — required; no fallback to DATABASE_URL
     ...(process.env.GKE_ENDPOINT ? { gkeEndpoint: process.env.GKE_ENDPOINT } : {}),
     ...(process.env.GKE_CA_DATA ? { gkeCaData: process.env.GKE_CA_DATA } : {}),
     ...(process.env.ANTHROPIC_ADMIN_KEY_SECRET

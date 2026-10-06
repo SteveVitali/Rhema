@@ -23,3 +23,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-015](ADR-015-research-integrity-unverified-delivery.md) | Research integrity — preflight the tools, keep a research floor, deliver zero-coverage Reviews *Unverified* and refunded | RES.1 (preflight + floor + the regression fix), RES.2 (the *Unverified* delivery + refund + alert) | Accepted |
 | [ADR-016](ADR-016-browser-journey-acceptance.md) | Browser-journey acceptance — a user surface is verified by walking it | JOURNEY.1 (owner); every later round-3 Stage B consumes it | Accepted |
 | [ADR-017](ADR-017-tenant-isolation-in-depth.md) | Tenant isolation in depth — user-serving code cannot bypass RLS | SEC.1 | Accepted |
+| [ADR-018](ADR-018-user-serving-role-mechanics.md) | The user-serving role's mechanics — identity, grants, pools, and the lint boundary | SEC.1 | Accepted |

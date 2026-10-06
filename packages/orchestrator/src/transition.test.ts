@@ -36,6 +36,10 @@ beforeEach(async () => {
   await db.pg.exec(
     "create table test_run_events(run_id text not null, seq int not null, type text not null, payload jsonb, visibility text, at timestamptz)",
   );
+  // SEC.1 — the harness txRunner runs as `rhema_app_login` (the prod user role): a test-created table
+  // carries no grant for it, so grant the surface the transition-under-test writes, exactly like a
+  // migration would for a real table.
+  await db.pg.exec("grant select, insert on test_run_events to rhema_app");
   seed = await seedProject(db);
   await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running" });
 });

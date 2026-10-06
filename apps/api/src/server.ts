@@ -15,6 +15,7 @@ import {
   randomUlids,
   RUN_JOBS,
 } from "@rhema/orchestrator";
+import { USER_SERVING_ROLE } from "@rhema/db";
 import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort } from "@rhema/ledger";
 import { createGcsContentStore, createGcsRestoreBlobStore } from "@rhema/mirror";
 import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
@@ -56,7 +57,11 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   const pool = new pg.Pool({ connectionString: env.databaseUrl });
   const redis = new Redis(env.redisUrl);
   const subscriber = redis.duplicate(); // a subscriber connection cannot issue other commands (§12.5)
-  const boss = new PgBoss(env.databaseUrl);
+  // SEC.1 — pg-boss owns its `pgboss` schema (CREATE/migrate on start); the user-serving role holds
+  // no grant there, so the api's queue transport rides the SYSTEM DSN like the worker's. Falling
+  // back to `databaseUrl` fails closed: under `rhema_app_login` the schema-touching start() throws
+  // instead of silently bypassing.
+  const boss = new PgBoss(env.systemDatabaseUrl ?? env.databaseUrl);
 
   // Crash-resilience (diagnosed live P0.15h — the api exited 1 on a transient AlloyDB connect timeout over
   // Cloud Run Direct-VPC egress, which pg-boss/pg surface as an EMITTED 'error' event; an unhandled emitter
@@ -164,7 +169,11 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           systemPool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
       }
     : null;
-  const txRunner = new PgPoolTxRunner(pool);
+  // SEC.1 (REQ-SPEC-30) — belt-and-suspenders: the api's tenant transactions pin `rhema_app_login`
+  // transaction-locally, so a `DATABASE_URL` mistakenly pointed at a BYPASSRLS role still runs the
+  // user surface under the non-bypass role. (`DATABASE_URL` itself is repointed by the deploy —
+  // infra/pulumi — this pin is the second layer.)
+  const txRunner = new PgPoolTxRunner(pool, { role: USER_SERVING_ROLE });
   // PRB.20 — the artifacts-bucket content store doubles as the imported-draft byte store (the draft create
   // path writes content-addressed markdown there); hoist so `store` (write-back overlays) and `contentStore`
   // (import) share one binding.
@@ -332,7 +341,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     // tenant-scoped client the account routes consume (signup/invite/userEmailVerified); `auth` mounts
     // the Better Auth surface at /api/auth/*.
     principal: sessionScopedPrincipal,
-    db: createScopedDb(pool),
+    db: createScopedDb(pool, { role: USER_SERVING_ROLE }),
     sessionResolver: async (req) => {
       const token = sessionTokenFromCookieHeader(req.headers.get("cookie") ?? undefined);
       return token ? resolveSessionPrincipal(rawDb, token) : null;
