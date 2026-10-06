@@ -134,9 +134,14 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "on the golden-op-ed dossier every cited source URL carries a retrieval chip — fetched ✓ or the ADR-083 \"Search result\" label — with zero chip-less citations (claims table and findings evidence alike)",
     owner: "CITE.1",
-    // CITE.1 — red until Stage B runs Leg 3 (the ≤$4 weekly-capped paid leg) and commits the
-    // dossier screenshot; the runner's post-step PNG is the AC8 evidence.
-    expected: "red",
+    // CITE.1 — green 2026-10-06 (funded-window A2 redeploy, prod 476a0ed): the canonical-fold
+    // fix (claimUrlViews folds claim_sources.normalized_url on read; delivery persists the
+    // canonical form) shipped on the deployed images; the delivered Leg-3 dossier
+    // /p/jrn-7e6d14996693-cite1/review/01M48YYS50Z6CNX517RJQXRCJ2 re-walked live — 7/7 cited
+    // URLs chipped, 0 chip-less, 6/6 findings-evidence URLs stamped; persisted completeness
+    // 7/7/0/0 matches. Evidence: docs/build/reports/2026-10-06_n11-reverify/ +
+    // runs/FUNDED-2026-10-06-A.md §C.
+    expected: "green",
     paid: true,
   },
   // ---- returning-user journey ---------------------------------------------
