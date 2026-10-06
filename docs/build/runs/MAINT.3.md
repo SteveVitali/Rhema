@@ -95,8 +95,12 @@ Test: `server.test.ts` MAINT.3 block — mismatch suppresses `data-included`+`en
     non-vocabulary verdict for REQ-SPEC-31 (pre-REC.1 value: `MET`; the D-RES.1-2 ref already
     lives in the note cell). Restored `MET`; 6/6 checker tests green.
 - `git diff --check` — clean
-- `check-build-memory.sh .` — 0 violations (warnings baseline-class; the new BUILD_INDEX row lands with the PR number)
+- `check-build-memory.sh .` — 0 violations (warnings baseline-class; BUILD_INDEX row 122 landed)
 - `check-append-only.mjs --base b51f80b` — OK
+
+*Amendment 2026-10-06 (post-commit):* full-suite re-run after the two baseline-red fixes —
+**4,567/4,567 pass** (447 files, 0 failures; prior run's 2 failures were the baseline reds
+this run repaired). PR #116 opened on `stevevitali/doc-2-agent-docs-refresh`.
 
 ## Owed (honest)
 
