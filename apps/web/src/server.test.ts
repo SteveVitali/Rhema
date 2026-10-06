@@ -1189,6 +1189,9 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
       void g;
     }
     expect(html).toContain('data-collapsed-group="quiet"');
+    // HOT.1 (REQ-IDE-4) — the suppressed native marker is replaced by an explicit affordance.
+    expect(html).toContain('data-collapsed-marker="true"');
+    expect(html).toContain('data-cue-when-closed="true"');
     expect(html).toContain("Unfiled");
     // the bar: search, Group-by (persisted), Protocol filter, Sort, Archived + Deleted affordances
     expect(html).toContain('name="q"');

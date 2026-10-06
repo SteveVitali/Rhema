@@ -1,0 +1,56 @@
+{
+  "results": {
+    "magic-link verify + land on /app": {
+      "status": 200,
+      "url": "https://rhema.tools/p/showcase/review/01M3TS9ASMJSD1CQW59K1G1XBQ#finding-01M3TS9BR0SDJQ40JJXG3NFHMT"
+    },
+    "project list (Quiet affordance)": {
+      "status": 200,
+      "collapsedMarker": true,
+      "cue": true,
+      "quietCount": 3
+    },
+    "showcase dossier": {
+      "status": 200,
+      "url": "/p/showcase/review/01M3TS9ASMJSD1CQW59K1G1XBQ",
+      "hasFindings": true,
+      "nrscotland": true
+    },
+    "project page (page.js island, console-clean)": {
+      "status": 200,
+      "slug": "showcase?thread=01M3TS9CD0FPH6YGB3KF3NWKZG#chat",
+      "refsPageJs": true,
+      "newConsoleErrors": 0
+    },
+    "billing return ?cancelled=1 renders once": {
+      "status": 200,
+      "finalUrl": "https://rhema.tools/billing/return?cancelled=1",
+      "stillThere": true
+    },
+    "landing claims": {
+      "status": 200,
+      "leaks": []
+    },
+    "pricing claims": {
+      "status": 200,
+      "leaks": []
+    },
+    "phone: project list (Quiet)": {
+      "status": 200,
+      "collapsedMarker": true
+    },
+    "phone: showcase dossier": {
+      "status": 200,
+      "url": "/p/showcase/review/01M3TS9ASMJSD1CQW59K1G1XBQ"
+    },
+    "phone: landing": {
+      "status": 200
+    },
+    "phone: pricing": {
+      "status": 200
+    }
+  },
+  "consoleErrors": [
+    "https://rhema.tools/favicon.ico: Failed to load resource: the server responded with a status of 404 ()"
+  ]
+}

@@ -1242,14 +1242,18 @@ async function runDigest(
   box: { mail: MailJob | null },
 ): Promise<NotifyOutcome> {
   const windowStart = new Date(now.getTime() - 60 * 60 * 1000);
+  // HOT.1 — `runs.finished_at` never existed (the column is `ended_at`; every sweep threw), and the
+  // query had no workspace predicate — STB.2's lesson is the tenant boundary belongs IN the SQL, not
+  // only in the RLS GUC (a BYPASSRLS connection would otherwise read every workspace's runs).
   const finished = (
     await tx.query(
       `select r.id, r.workflow, r.project_id,
               p.title as project_title, p.slug as project_slug, p.owner_id
          from runs r join projects p on p.id = r.project_id
-        where r.state = 'completed' and r.finished_at >= $1 and r.finished_at <= $2
-        order by p.owner_id, r.finished_at`,
-      [windowStart, now],
+        where r.state = 'completed' and r.ended_at >= $1 and r.ended_at <= $2
+          and r.workspace_id = $3 and p.workspace_id = $3
+        order by p.owner_id, r.ended_at`,
+      [windowStart, now, payload.workspaceId],
     )
   ).rows as {
     id: string;

@@ -43,6 +43,7 @@ export * from "./domain/estimate.js";
 // (§14.5 — Levels 0/1/2/4; tokens live in Level 4 only, behind Advanced disclosure; REQ-DATA-42).
 export * from "./domain/pricing.js";
 export * from "./domain/pricing-page.js";
+export * from "./domain/public-claims.js";
 export * from "./domain/showcase.js";
 export * from "./domain/trial.js";
 export * from "./domain/usage.js";

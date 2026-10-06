@@ -27,6 +27,8 @@ export * from "./inbox.js";
 export * from "./what-changed.js";
 export * from "./manual-revision.js";
 export * from "./voice-status.js";
+// HOT.1 — the single evidence-shape read seam (ADR-019): every evidence consumer normalizes here.
+export * from "./normalize-evidence.js";
 // P1.14 — the Update-voice scope router + diff-of-inputs panel (REQ-SPEC-27), the hold-out spec +
 // leak audit (§9.5), and the fixed §9.4 profile surfaces (section order, approve-sample card, build
 // gates, hold-out reveal) — all pure over the same facts the pill derives.

@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMPARATIVE_WAVE_MET, lintGrowthCopy } from "@rhema/contracts";
+import {
+  COMPARATIVE_WAVE_MET,
+  lintGrowthCopy,
+  PRICING,
+  PUBLIC_CLAIM_COPY,
+  PUBLIC_CLAIM_IDS,
+  publicClaimEnabled,
+} from "@rhema/contracts";
 import { collectCopyStrings } from "@rhema/web";
 
 // P1.22 W8 — the launch-surface lint (REQ-EVAL-19 + REQ-POS-4/5/13). P1.17's `lintGrowthCopy` covers the
@@ -103,6 +110,48 @@ describe("the full copy table — the P1.17 lints over every key, not just the f
       }
     }
     expect(hits).toEqual([]);
+  });
+});
+
+describe("HOT.1 — the hidden public claims stay out of the shipped surface", () => {
+  /** The verbatim claim-ON strings a disabled claim must not leak — wherever they're authored. */
+  const gatedStrings = (): string[] => {
+    const out: string[] = [];
+    if (!publicClaimEnabled("trial.firstReviewIncluded")) {
+      out.push(...Object.values(PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"]));
+      out.push(PRICING.trial.includedNote);
+    }
+    if (!publicClaimEnabled("plans.whatItCovers")) {
+      for (const p of Object.values(PRICING.plans))
+        if (p.whatItCoversClaimId === "plans.whatItCovers") out.push(p.whatItCovers);
+    }
+    return out;
+  };
+
+  it("the shipped config hides every gated claim id", () => {
+    for (const id of PUBLIC_CLAIM_IDS) expect(publicClaimEnabled(id)).toBe(false);
+  });
+
+  it("the gated spec fields mark exactly the ≈-loop coverage lines", () => {
+    const gated = Object.entries(PRICING.plans).filter(([, p]) => p.whatItCoversClaimId != null);
+    expect(gated.map(([tier]) => tier).sort()).toEqual(["studio", "studio_max", "writer"]);
+    for (const [, p] of gated) expect(p.whatItCovers).toContain("≈");
+  });
+
+  it("the copy table contains no hidden claim's text — verbatim or as a retired phrase", () => {
+    const texts = collectCopyStrings().map(([, t]) => t);
+    for (const s of gatedStrings()) expect(texts).not.toContain(s);
+    // the pre-HOT.1 claim copy was deleted outright — a phrase-level guard keeps it from returning
+    // under another key (an exact-string check would miss a reworded leak).
+    for (const phrase of [
+      "first review is included",
+      "included first review",
+      "one included Review",
+      "your review run is Included",
+      "on us, plus a 150-credit pocket",
+    ]) {
+      expect(texts.filter((t) => t.includes(phrase))).toEqual([]);
+    }
   });
 });
 

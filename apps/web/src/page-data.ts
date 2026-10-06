@@ -43,6 +43,7 @@ import type {
   FigureCardDto,
 } from "@rhema/api-client";
 import type { GateOutlineView } from "@rhema/findings-core";
+import type { PublicClaimsConfig } from "@rhema/contracts";
 import type {
   AccountSettingsDto,
   PreferencesSettingsDto,
@@ -148,6 +149,10 @@ export interface PageData {
   readonly pricing?: {
     readonly annual?: boolean;
   };
+  /** HOT.1 — the public-claims visibility config for the landing/pricing pages (default
+   *  `PUBLIC_CLAIMS` — every gated claim hidden); a test config flips ids to exercise the
+   *  claim-ON path without touching copy. */
+  readonly claims?: PublicClaimsConfig;
   readonly project?: {
     readonly title: string;
     readonly pill: string;

@@ -182,8 +182,15 @@ operator's call; there is no public endpoint.) Then, with `DATABASE_URL` pointed
 
 ```bash
 pnpm build
+# HOT.1 — the additive-migration gate (ADR-013's standing authorization; ADR-018 §8 defines "role
+# change"): `prod-migrate-seed` below lint-checks every migration NEWER than the live `_migrations`
+# max and refuses to apply a non-additive one. To dry-check the chain's migrations yourself:
+#   node scripts/check-additive-migrations.mjs --since-git <deployed-base-ref>
+# The `contracts` CI job runs the same lint per-PR against the base ref.
 DATABASE_URL='postgresql://postgres:<pw>@127.0.0.1:5433/rhema' \
   node scripts/live/prod-migrate-seed.mjs
+# ⇒ [lint] additive-migration gate: checking migrations newer than <prod max>  (HOT.1 — fails fast
+#         on a non-additive migration BEFORE anything applies)
 # ⇒ [migrate] applied 00NN_*.sql … ; N migrations recorded
 # ⇒ [seed] protocol essay v<n>   (seedProtocols — the ONLY prod seed; seedRealProjects is dev data and
 #                                this runner refuses to touch it)

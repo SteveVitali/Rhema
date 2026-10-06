@@ -15,6 +15,8 @@
 // cannot import them; the thin `scripts/live/prod-migrate-seed.mjs` runner spawns tsx on this file.
 
 import pg from "pg";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { applyMigrations, agentTypesSeed, type MigrationDb } from "@rhema/db";
 import { seedProtocols } from "@rhema/protocols";
 
@@ -35,6 +37,24 @@ export async function runProdMigrateSeed(
     exec: (sql) => pool.query(sql),
     query: (sql, params) => pool.query(sql, params as unknown[]),
   };
+
+  // HOT.1 — the runbook's pre-deploy gate (ADR-013's standing authorization): the additive-migration
+  // lint runs over every migration NEWER than the prod `_migrations` max before anything is applied.
+  // A fresh database has no recorded max — greenfield bringup predates the rule and skips the lint.
+  const recordedNames = await pool
+    .query("select name from _migrations")
+    .then((r) => (r.rows as { name: string }[]).map((row) => row.name))
+    .catch(() => [] as string[]);
+  if (recordedNames.length > 0) {
+    const base = recordedNames.sort().at(-1)!;
+    log(`[lint] additive-migration gate: checking migrations newer than ${base}`);
+    const root = fileURLToPath(new URL("../../", import.meta.url));
+    execFileSync(
+      process.execPath,
+      ["scripts/check-additive-migrations.mjs", "--newer-than", base],
+      { cwd: root, stdio: "inherit" },
+    );
+  }
 
   const applied = await applyMigrations(db, { onApplied: (name) => log(`[migrate] applied ${name}`) });
   if (applied.length === 0) log("[migrate] no new migrations — schema already up to date");

@@ -714,6 +714,10 @@ export function createCompute(args: ComputeArgs): Compute {
       cacheKeyPolicy: { includeHost: true, includeProtocol: true, includeQueryString: true },
     },
     backends: [{ group: webNeg.id }],
+    // HOT.1 (BL-65) — LB request logging: user-visible 5xxs must leave a loadbalancing.googleapis.com/requests
+    // trail (the dossier 500s were invisible because the backends logged nothing). sampleRate 1.0 — cheap at
+    // this traffic level; the log is the audit surface OBS.1 consumes.
+    logConfig: { enable: true, sampleRate: 1.0 },
   });
 
   // The api on the same LB (prod): host `api.rhema.tools` routes to the api Cloud Run NEG — no public
@@ -728,6 +732,8 @@ export function createCompute(args: ComputeArgs): Compute {
     loadBalancingScheme: "EXTERNAL_MANAGED",
     enableCdn: false, // api responses are never edge-cached
     backends: [{ group: apiNeg.id }],
+    // HOT.1 — same request-log trail on the api backend.
+    logConfig: { enable: true, sampleRate: 1.0 },
   });
 
   // P1.03 — the collab service behind the SAME LB, path-routed `/collab*` on the APP host (the
@@ -747,6 +753,8 @@ export function createCompute(args: ComputeArgs): Compute {
     loadBalancingScheme: "EXTERNAL_MANAGED",
     enableCdn: false,
     backends: [{ group: collabNeg.id }],
+    // HOT.1 — the WebSocket backend gets the same request-log trail (upgrade requests + denials).
+    logConfig: { enable: true, sampleRate: 1.0 },
   });
 
   // The user-content origin (PRB.15; D-PRB.02-1's IaC leg): `usercontent.rhema.tools` (the `*.`

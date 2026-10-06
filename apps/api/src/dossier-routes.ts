@@ -14,6 +14,7 @@ import { buildAccessReport, type ContentStore } from "@rhema/mirror";
 import {
   buildFindingView,
   deriveRunCardInput,
+  normalizeEvidence,
   type DispositionState,
   type RubricRowInput,
   type RunEventLike,
@@ -117,7 +118,12 @@ export interface FindingRow {
   anchor: Finding["anchor"];
   title: string;
   body: string;
-  evidence: Finding["evidence"] | null;
+  /**
+   * HOT.1 (ADR-019) — jsonb is untyped at the driver boundary and shipped shapes drifted (canonical
+   * `{verdict?, urls}` / `{verdict}`-only / the legacy `{claim, source}[]`); `toFinding` normalizes,
+   * so the row type is honestly `unknown`, never the contract it may not satisfy.
+   */
+  evidence: unknown;
   suggestion: Finding["suggestion"] | null;
   rubric_dims: Finding["rubricDims"];
   letter_section: Finding["letterSection"] | null;
@@ -160,6 +166,9 @@ interface ClaimRow {
 
 /** Row → canonical Finding (exported for the P1.07 finding routes' preview/dispatch reads). */
 export function toFinding(r: FindingRow): Finding {
+  // HOT.1 — row jsonb → domain is an evidence read seam (ADR-019): normalize once here so every
+  // downstream Finding carries the canonical shape.
+  const evidence = normalizeEvidence(r.evidence);
   return {
     id: r.id,
     correspondenceId: r.correspondence_id,
@@ -172,7 +181,7 @@ export function toFinding(r: FindingRow): Finding {
     anchor: r.anchor,
     title: r.title,
     body: r.body,
-    ...(r.evidence != null ? { evidence: r.evidence } : {}),
+    ...(evidence != null ? { evidence } : {}),
     ...(r.suggestion != null ? { suggestion: r.suggestion } : {}),
     rubricDims: r.rubric_dims,
     ...(r.letter_section != null ? { letterSection: r.letter_section } : {}),

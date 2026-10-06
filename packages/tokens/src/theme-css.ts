@@ -138,6 +138,11 @@ export function themeCss(): string {
     // prefers-reduced-motion rule below collapses it to instant like every catalogued motion.
     "@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }",
     ".rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }",
+    // HOT.1 (REQ-IDE-4) — the collapsed group's explicit affordance: its ▸ marker rotates open and the
+    // Show/Hide cue swaps, all on the native <details> state (the summary suppresses the default marker).
+    "details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }",
+    "details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }",
+    "details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }",
     // REQ-IDE-40 — `prefers-reduced-motion` collapses every catalogued motion to instant. The 1ms floor
     // keeps transitionend listeners firing; visually it is instant.
     "@media (prefers-reduced-motion: reduce) {",

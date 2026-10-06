@@ -5,7 +5,7 @@ import {
   SHOWCASE_FIXTURE_CLAIMS,
   type ShowcaseSeedDeps,
 } from "./showcase.js";
-import { SHOWCASE_SLUG, SHOWCASE_TITLE } from "@rhema/contracts";
+import { SHOWCASE_SLUG, SHOWCASE_TITLE, findingEvidenceSchema } from "@rhema/contracts";
 
 // P1.17 (§15.4; REQ-POS-3; REQ-GROWTH-2) — the deterministic Showcase dossier seed: one read-only
 // worked-example project per workspace, seeded at $0, shaped like a real delivered dossier (outline →
@@ -97,6 +97,18 @@ describe("the Showcase dossier seed (§15.4)", () => {
       await db.query(`select severity, kind from findings where id = $1`, [r.firstFindingId])
     ).rows[0] as { severity: string; kind: string };
     expect(f0).toBeTruthy();
+
+    // HOT.1 — the seed writes the CANONICAL evidence shape: every findings row's evidence parses
+    // against findingEvidenceSchema (urls always present; no legacy [{claim, source}] arrays).
+    const evRows = (
+      await db.query(`select evidence from findings where correspondence_id = $1 and evidence is not null`, [
+        r.reviewCorrId,
+      ])
+    ).rows as { evidence: unknown }[];
+    expect(evRows.length).toBeGreaterThan(0);
+    for (const row of evRows) {
+      expect(findingEvidenceSchema.safeParse(row.evidence).success).toBe(true);
+    }
 
     await db.close();
   });

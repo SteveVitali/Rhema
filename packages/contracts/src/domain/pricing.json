@@ -41,7 +41,8 @@
       "exportFormats": "all",
       "sharing": "read_only_links",
       "dailyRunCeiling": 40,
-      "whatItCovers": "≈3 essay loops on Base, ≈1.4 on Balanced."
+      "whatItCovers": "≈3 essay loops on Base, ≈1.4 on Balanced.",
+      "whatItCoversClaimId": "plans.whatItCovers"
     },
     "studio": {
       "display": "Studio",
@@ -60,7 +61,8 @@
       "voices": "unlimited",
       "exportFormats": "all",
       "sharing": "read_only_links",
-      "whatItCovers": "≈1 academic loop on Frontier or 4 on Balanced."
+      "whatItCovers": "≈1 academic loop on Frontier or 4 on Balanced.",
+      "whatItCoversClaimId": "plans.whatItCovers"
     },
     "studio_max": {
       "display": "Studio Max",
@@ -79,7 +81,8 @@
       "voices": "unlimited",
       "exportFormats": "all",
       "sharing": "read_only_links",
-      "whatItCovers": "≈1 long-paper Frontier loop."
+      "whatItCovers": "≈1 long-paper Frontier loop.",
+      "whatItCoversClaimId": "plans.whatItCovers"
     },
     "team": {
       "display": "Team",

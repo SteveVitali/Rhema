@@ -1,4 +1,5 @@
 import type { Claim, ClaimVerdict, DispositionKind, FindingView, Severity } from "@rhema/contracts";
+import { normalizeEvidence } from "./normalize-evidence.js";
 
 // Ledger + claim-ledger summaries (§5.7; deliverable 1). Pure row math the run card, letter header, and claims
 // table read: disposition tallies, claim verdict/tier tallies, and the per-URL fetched-⇒-log join. Framework-free.
@@ -92,16 +93,21 @@ export function claimUrlViews(claim: Claim, fetchLog: FetchLog): ClaimUrlView[] 
 
 /**
  * P1.07 — the same cited⇒fetched stamping for a FINDING's `evidence.urls` (§5.7 evidence block;
- * REQ-IDE-25). Each URL gets `fetched` iff its normalized form is in the proxy log.
+ * REQ-IDE-25). Each URL gets `fetched` iff its normalized form is in the proxy log. HOT.1: the input is
+ * `unknown` on purpose — this is a read boundary, so a legacy/partial stored blob normalizes here rather
+ * than crashing the surface (ADR-019).
  */
-export function evidenceUrlViews(
-  evidence: { readonly urls: readonly { readonly url: string; readonly accessed: string }[] } | undefined,
-  fetchLog: FetchLog,
-): ClaimUrlView[] {
-  if (evidence == null) return [];
-  return evidence.urls.map((u) => {
+export function evidenceUrlViews(evidence: unknown, fetchLog: FetchLog): ClaimUrlView[] {
+  const normalized = normalizeEvidence(evidence);
+  if (normalized == null) return [];
+  return normalized.urls.map((u) => {
     const normalizedUrl = normalizeUrl(u.url);
-    return { url: u.url, normalizedUrl, accessedAt: u.accessed, fetched: fetchLog.has(normalizedUrl) };
+    return {
+      url: u.url,
+      normalizedUrl,
+      ...(u.accessed != null ? { accessedAt: u.accessed } : {}),
+      fetched: fetchLog.has(normalizedUrl),
+    };
   });
 }
 

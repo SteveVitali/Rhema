@@ -3,6 +3,8 @@
 // and failure-state tests all read through these types. "What it covers" lines and §15.2 cost cards are
 // generated at publication time — nothing downstream hand-edits a number.
 import type { ModelTier, PlanTier } from "../vocab.js";
+import type { PublicClaimId } from "./public-claims.js";
+import { PUBLIC_CLAIM_IDS } from "./public-claims.js";
 import { PLAN_TIERS } from "../vocab.js";
 import pricingJson from "./pricing.json" with { type: "json" };
 
@@ -31,6 +33,12 @@ export interface PlanSpec {
   concurrencyPerSeat?: boolean;
   waitlist?: boolean;
   whatItCovers: string;
+  /**
+   * HOT.1 — when set, `whatItCovers` is a gated public claim: surfaces render it (and the
+   * /billing/plans DTO transmits it) only while `publicClaimEnabled(whatItCoversClaimId)` holds.
+   * Absent ⇒ the line is factual coverage copy and renders unconditionally.
+   */
+  whatItCoversClaimId?: PublicClaimId;
 }
 
 export interface TrialSpec {
@@ -140,6 +148,9 @@ function validate(p: PricingPublication): PricingPublication {
     assert(plan.monthlyUsd === mo, `${tier}.monthlyUsd=${plan.monthlyUsd} expected ${mo}`);
     assert(plan.includedCreditsMonthly === cr, `${tier}.includedCreditsMonthly expected ${cr}`);
     if (tier !== "team") assert(plan.annualMonthlyUsd === ann, `${tier}.annualMonthlyUsd expected ${ann}`);
+    // HOT.1 — a gated coverage line must name a real claim id (typo ⇒ the gate can't fire).
+    assert(plan.whatItCoversClaimId == null || (PUBLIC_CLAIM_IDS as readonly string[]).includes(plan.whatItCoversClaimId),
+      `${tier}: unknown whatItCoversClaimId`);
   }
   assert(p.trial.windowDays === 14 && p.trial.pocketCredits === 150 && p.trial.upgradePromoCredits === 800,
     "trial constants (14d, 150-credit pocket, 800-credit promo)");

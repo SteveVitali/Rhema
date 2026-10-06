@@ -8,6 +8,7 @@ import {
   type TestDeps,
 } from "@rhema/orchestrator/testing";
 import { InMemoryContentStore } from "@rhema/mirror";
+import { seedShowcaseProject, type MigrationDb } from "@rhema/db";
 import { createApp, parseLetterSections, type Principal } from "./index.js";
 import type { SqlClient } from "./invite.js";
 
@@ -272,5 +273,64 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     );
     const res = await getDossier(foreign.projectId, "run_foreign");
     expect(res.status).toBe(404);
+  });
+
+  it("HOT.1 — legacy/partial evidence blobs in findings rows normalize at the read seam (the 500 fix)", async () => {
+    await seedDeliveredReview();
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      // the shapes prod actually carried: the pre-canonical [{claim, source}] Showcase array, the
+      // {verdict}-only sidecar carry, and a malformed blob — all must lift to {urls: [...]}.
+      await tx.query(
+        `update findings set evidence = $1::jsonb where id = 'fnd_1'`,
+        [JSON.stringify([{ claim: "a claim", source: "https://legacy.test/src" }])],
+      );
+      await tx.query(`update findings set evidence = $1::jsonb where id = 'fnd_2'`, [
+        JSON.stringify({ verdict: "verified" }),
+      ]);
+      await tx.query(
+        `insert into findings(id, correspondence_id, draft_id, ordinal, kind, severity, origin, title, body, evidence)
+         values ('fnd_3',$1,$2,2,'claim','note','editor','malformed','garbage blob',$3::jsonb)`,
+        [CORR, seed.draftId, JSON.stringify({ urls: "not-an-array", verdict: "bogus" })],
+      );
+    });
+    const res = await getDossier(seed.projectId, RUN);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as {
+      findings: { id: string; evidence?: { verdict?: string; urls: { url: string }[] } }[];
+    };
+    const byId = new Map(dto.findings.map((f) => [f.id, f]));
+    expect(byId.get("fnd_1")?.evidence).toEqual({ urls: [{ url: "https://legacy.test/src" }] });
+    expect(byId.get("fnd_2")?.evidence).toEqual({ verdict: "verified", urls: [] });
+    expect(byId.get("fnd_3")?.evidence).toEqual({ urls: [] });
+  });
+
+  it("HOT.1 — the Showcase seed's real output renders the dossier: contradicted Tier-1 claim + URL (REQ-POS-3)", async () => {
+    // The prod-shape fixture end-to-end: seedShowcaseProject's actual written rows → GET → 200.
+    let n = 0;
+    const mdb: MigrationDb = {
+      exec: (q) => db.pg.query(q),
+      query: (q, p) => db.pg.query(q, p as unknown[]),
+    };
+    const sc = await seedShowcaseProject(mdb, {
+      workspaceId: seed.workspaceId,
+      ownerId: seed.userId,
+      ids: () => `sx_${String(++n).padStart(6, "0")}`,
+      store,
+    });
+    const res = await getDossier(sc.projectId, sc.reviewRunId);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as {
+      claims: { tier: number; verdict: string; sources?: { url: string }[] }[];
+      findings: { evidence?: { verdict?: string; urls: { url: string }[] } }[];
+      letterSections: { title: string }[];
+    };
+    // the contradicted Tier-1 claim carries its fetched source URL (the REQ-POS-3 surface contract)
+    const tier1 = dto.claims.find((cl) => cl.tier === 1 && cl.verdict === "contradicted");
+    expect(tier1?.sources?.some((s) => s.url.includes("nrscotland.gov.uk"))).toBe(true);
+    // and the seeded canonical evidence survives row → DTO intact (urls present + stamped accessed)
+    const anchorFinding = dto.findings.find((f) => f.evidence?.verdict === "contradicted");
+    expect(anchorFinding?.evidence?.urls.some((u) => u.url.includes("nrscotland.gov.uk"))).toBe(true);
+    // the letter is real content, not an error body
+    expect(dto.letterSections.length).toBeGreaterThan(0);
   });
 });

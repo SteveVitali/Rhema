@@ -221,7 +221,9 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     letterSection: "major",
     title: "The Scotland figure is wrong — and the argument leans on it",
     body: "The essay claims the 1871 census recorded 3.1 million households in Scotland. The published tables record roughly 560,000. Because the error is the essay's own example of citation decay, it must be corrected visibly — the correction is the argument's best evidence.",
-    evidence: [{ claim: "The 1871 census recorded 3.1 million households in Scotland.", source: SCOTLAND_URL }],
+    // HOT.1 — canonical evidence shape (verdict + urls); `accessed` is stamped at insert with the
+    // seed's `now`, the same stamp the claim rows' `accessed_at` gets.
+    evidence: { verdict: "contradicted", urls: [{ url: SCOTLAND_URL }] },
     suggestion: { action: "replace", text: "Carry the correction in the open: name the figure, name the real count, keep the lesson." },
     rubricDims: ["evidence_accuracy", "intellectual_honesty"],
   },
@@ -232,7 +234,7 @@ export const SHOWCASE_FIXTURE_FINDINGS = [
     letterSection: "major",
     title: "The link-rot estimate needs its source",
     body: "The 'more than a quarter' figure is real but venue-dependent and currently unattributed. Cite the primary study or soften the claim to a measured-range statement.",
-    evidence: [{ claim: "More than a quarter of links in recent papers now resolve to nothing.", source: LINKROT_URL }],
+    evidence: { verdict: "misleading_in_context", urls: [{ url: LINKROT_URL }] },
     rubricDims: ["evidence_accuracy"],
   },
   {
@@ -536,7 +538,12 @@ export async function seedShowcaseProject(
         findingId, corrId, v1Id, i, f.kind, f.severity, f.origin,
         "reconciliation" in f ? f.reconciliation : null,
         f.title, f.body,
-        "evidence" in f ? JSON.stringify(f.evidence) : null,
+        "evidence" in f
+          ? JSON.stringify({
+              ...f.evidence,
+              urls: f.evidence.urls.map((u) => ({ url: u.url, accessed: now.toISOString() })),
+            })
+          : null,
         "suggestion" in f ? JSON.stringify(f.suggestion) : null,
         [...f.rubricDims], f.letterSection,
       ],

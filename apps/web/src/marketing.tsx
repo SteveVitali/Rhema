@@ -8,7 +8,7 @@
 
 import type { ReactNode } from "react";
 import { Shell, SectionTitle, DossierView, type DossierLabels } from "@rhema/ui";
-import { buildPricingPageData, rangeLabel } from "@rhema/contracts";
+import { buildPricingPageData, rangeLabel, PUBLIC_CLAIM_COPY, publicClaimEnabled } from "@rhema/contracts";
 import { COPY } from "./copy.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { usePageData } from "./page-data.js";
@@ -60,9 +60,9 @@ const CTA_GHOST = {
  * landing.js) and routes to /signup?intent=review; without JS the affordance is a plain link.
  */
 export function LandingPage(): ReactNode {
-  const { invite } = usePageData();
+  const { invite, claims } = usePageData();
   const open = invite?.signupOpen === true;
-  const pricing = buildPricingPageData();
+  const pricing = buildPricingPageData(claims);
   const essayCard = pricing.cards.find((card) => card.key === "essay") ?? pricing.cards[0];
   const reviewRow = essayCard?.rows.find((r) => r.key === "review");
   return (
@@ -101,7 +101,13 @@ export function LandingPage(): ReactNode {
           </details>
         </form>
         <p style={{ ...MUTED, marginTop: "12px" }}>
-          <strong style={{ color: "var(--shell-fg)" }}>{COPY.landing.hero.trialNote}</strong>
+          {/* HOT.1 — the "first review is included" variant is gated claim copy; the honest
+              copy-table default renders while `trial.firstReviewIncluded` is hidden. */}
+          <strong style={{ color: "var(--shell-fg)" }}>
+            {publicClaimEnabled("trial.firstReviewIncluded", claims)
+              ? PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote
+              : COPY.landing.hero.trialNote}
+          </strong>
         </p>
         <p style={{ marginTop: "8px", fontSize: "14px" }}>
           <a href="/signup?entry=draft">{COPY.landing.hero.ctaPrimary}</a>
@@ -198,12 +204,19 @@ export function LandingPage(): ReactNode {
       </section>
       <section data-section="faq" style={SECTION}>
         <SectionTitle>{COPY.landing.faq.heading}</SectionTitle>
-        {COPY.landing.faq.items.map((f) => (
-          <details key={f.q} style={{ marginBottom: "8px", maxWidth: "68ch" }}>
-            <summary style={{ cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>{f.q}</summary>
-            <p style={{ ...MUTED, marginTop: "6px" }}>{f.a}</p>
-          </details>
-        ))}
+        {COPY.landing.faq.items.map((f) => {
+          // HOT.1 — a `claimId` item renders its PUBLIC_CLAIM_COPY variant only while enabled.
+          const answer =
+            "claimId" in f && f.claimId != null && publicClaimEnabled(f.claimId, claims)
+              ? PUBLIC_CLAIM_COPY[f.claimId].landingFaqAnswer
+              : f.a;
+          return (
+            <details key={f.q} style={{ marginBottom: "8px", maxWidth: "68ch" }}>
+              <summary style={{ cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>{f.q}</summary>
+              <p style={{ ...MUTED, marginTop: "6px" }}>{answer}</p>
+            </details>
+          );
+        })}
       </section>
 
       {/* 11 — final CTA */}
@@ -224,8 +237,9 @@ export function LandingPage(): ReactNode {
 
 /** §15.2 — /pricing: the ladder + cost-range cards + matrix + FAQ, all derived (never hand-typed). */
 export function PricingPage(): ReactNode {
-  const data = buildPricingPageData();
-  const annual = usePageData().pricing?.annual === true;
+  const { pricing: cycle, claims } = usePageData();
+  const data = buildPricingPageData(claims);
+  const annual = cycle?.annual === true;
   return (
     <Shell
       brand={COPY.brand}
@@ -268,11 +282,15 @@ export function PricingPage(): ReactNode {
             </div>
             {p.freeNotes ? (
               <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>
-                <div>{p.freeNotes.trialWindow}</div>
+                {/* HOT.1 — absent while the included-Review claim is hidden. */}
+                {p.freeNotes.trialWindow != null ? <div>{p.freeNotes.trialWindow}</div> : null}
                 <div style={{ marginTop: "4px" }}>{p.freeNotes.postTrial}</div>
               </div>
             ) : (
-              <div style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>{p.whatItCovers}</div>
+              /* HOT.1 — null while the plan's coverage line is a hidden claim. */
+              p.whatItCovers != null ? (
+                <div style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "8px" }}>{p.whatItCovers}</div>
+              ) : null
             )}
             <div style={{ marginTop: "14px" }}>
               {p.waitlist ? (
@@ -285,7 +303,12 @@ export function PricingPage(): ReactNode {
         ))}
       </div>
       <p style={{ ...MUTED, marginTop: "10px", fontSize: "12px" }}>
-        {fmtCopy(COPY.pricing.trialRuleFmt, { days: data.trial.windowDays })}
+        {fmtCopy(
+          publicClaimEnabled("trial.firstReviewIncluded", claims)
+            ? PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].trialRuleFmt
+            : COPY.pricing.trialRuleFmt,
+          { days: data.trial.windowDays },
+        )}
       </p>
 
       {/* the cost-range cards — Essay leads, Academic second, then Book chapter + the voice card
