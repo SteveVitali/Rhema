@@ -1,0 +1,31 @@
+{
+  "step": "B18A",
+  "nonce": "02b3e71dae34",
+  "at": "2026-10-06T19:16:58.103Z",
+  "capUsd": 3,
+  "asserts": [
+    {
+      "id": "fetch-rows-landed",
+      "pass": true,
+      "evidence": "7 fetch_log kind='fetch' decision='allow' row(s) joined to the run — e.g. https://example.com/"
+    },
+    {
+      "id": "fetch-row-attribution",
+      "pass": true,
+      "evidence": "rows carry run_id + agent_label + url + bytes (status is null on the server-tool path by design)"
+    },
+    {
+      "id": "verification-phase-committed",
+      "pass": true,
+      "evidence": "the pinned verification phase committed (the fetch window ran)"
+    },
+    {
+      "id": "fetch-via-fetcher-bound",
+      "pass": false,
+      "evidence": "unreachable on this leg by construction: fetchViaFetcher (apps/fetcher/src/tool.ts) is bound only inside the fetcher service, which the harness reaches solely via the `fetcher` client — granted to the holdout-calibrator role alone (engine/scoped-subagent.ts:196–200, allowFetcher = role==='holdout-calibrator' && prediction written). A full_board review's Editor fetch rides Anthropic's server-side web_fetch through the egress proxy (the fetch_log rows this leg asserts); the fetcher-tool path carries no full_board leg (D-PRB.02-3 defect, recorded)"
+    }
+  ],
+  "runId": "01M49A5565DXSZ72WQAAJ89MDM",
+  "meteredUsd": 0.499336,
+  "fetchRows": 7
+}

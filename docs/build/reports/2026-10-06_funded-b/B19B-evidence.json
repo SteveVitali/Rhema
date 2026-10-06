@@ -1,0 +1,43 @@
+{
+  "step": "B19B",
+  "nonce": "c77137523fb0",
+  "at": "2026-10-06T19:53:00.664Z",
+  "capUsd": 5,
+  "asserts": [
+    {
+      "id": "gate-opened",
+      "pass": false,
+      "evidence": "gate kind: (none opened)"
+    },
+    {
+      "id": "structured-edit-decided",
+      "pass": false,
+      "evidence": "decisions.action=(none); overlay_version_ids: 0"
+    },
+    {
+      "id": "edit-lands-in-next-phase-file",
+      "pass": false,
+      "evidence": "overlay versions on (none); created_by user: false — the write-back pair the next phase materializes"
+    },
+    {
+      "id": "run-finalized",
+      "pass": false,
+      "evidence": "runs.state = failed (the post-gate phases committed, the run finalized + delivered)"
+    },
+    {
+      "id": "marker-in-committed-artifact",
+      "pass": false,
+      "evidence": "marker JRN-C77137523FB0-STB5B-MARKER not observed in later artifact rows — the overlay version write-back is proven but the content-level carry was not observed"
+    },
+    {
+      "id": "outline-approved-event-consistency",
+      "pass": true,
+      "evidence": "outline.approved analytics row absent vs decision (none) — the event is approve-only by design (run-routes gate resolver)"
+    }
+  ],
+  "runId": "01M49C3XST10AMNGNKKEYEDRWE",
+  "turnRunId": "01M49C1EFN0YD4EJS422NPJBNN",
+  "meteredUsd": 0.54092,
+  "overlayVersionIds": [],
+  "promotedPaths": []
+}

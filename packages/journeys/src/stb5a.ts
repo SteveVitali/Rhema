@@ -38,25 +38,38 @@ async function assertClick(el: ReturnType<Page["locator"]>, label: string): Prom
 }
 
 /** The Desk's findings panel renders SSR but CSS-hidden until the island's tab swaps
- *  `data-desk-tab` — clicking the tab IS the actionable-control proof; fall back to a body
- *  disposition verb when the island isn't hydrated yet. */
+ *  `data-desk-tab` — and on a delivered dossier the Desk starts CLOSED (§5.1's bottom drawer:
+ *  height 0 clips the tab strip, so the ONLY open affordance is the ⌘J chord / a live run's feed
+ *  link). Press the real chord, then pick the Findings tab; returns whether the panel showed. */
 async function openFindingsDesk(page: Page): Promise<boolean> {
+  const ide = page.locator(".ide").first();
+  if ((await page.locator('button[data-ide-desk-tab="findings"]').count()) === 0) return false;
+  if ((await ide.getAttribute("data-desk").catch(() => null)) !== "open") {
+    // blur any field first — ⌘ chords dispatch globally EXCEPT in input focus (§5.12). The island
+    // hydrates asynchronously after domcontentloaded, so a chord pressed too early is swallowed —
+    // a real user re-presses; bounded retry keeps the leg honest (it still reports closed if the
+    // chord genuinely never opens the drawer).
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.()).catch(() => undefined);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.keyboard.press("Control+j").catch(() => undefined);
+      const opened = await page
+        .locator('.ide[data-desk="open"]')
+        .waitFor({ state: "attached", timeout: 4_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (opened) break;
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.()).catch(() => undefined);
+    }
+  }
   const tab = page.locator('button[data-ide-desk-tab="findings"]').first();
-  if ((await tab.count()) === 0) return false;
-  await tab.scrollIntoViewIfNeeded().catch(() => undefined);
-  await tab.click().catch(() => undefined);
-  const visible = await page
-    .locator('[data-desk-panel="findings"] [data-desk-row]')
-    .first()
-    .isVisible()
-    .catch(() => false);
-  if (visible) return true;
+  if ((await ide.getAttribute("data-desk-tab").catch(() => null)) !== "findings") {
+    await tab.scrollIntoViewIfNeeded().catch(() => undefined);
+    await tab.click({ timeout: 5_000 }).catch(() => undefined);
+  }
+  const row = page.locator('[data-desk-panel="findings"] [data-desk-row]').first();
+  if (await row.isVisible().catch(() => false)) return true;
   await page.waitForTimeout(800);
-  return page
-    .locator('[data-desk-panel="findings"] [data-desk-row]')
-    .first()
-    .isVisible()
-    .catch(() => false);
+  return row.isVisible().catch(() => false);
 }
 
 let pool: pg.Pool | null = null;
@@ -132,6 +145,20 @@ async function findDeliveredReview(
   page: Page,
   ctx: StepCtx,
 ): Promise<{ slug: string; runId: string }> {
+  // The funded-window pin: with several delivered Reviews on one tenant the first-200 discovery
+  // is order-dependent (it picked CITE.1 Leg-1a's all-unverifiable dossier over the healthy Leg-3
+  // one). `JOURNEY_DOSSIER_SLUG` + `JOURNEY_DOSSIER_RUN` name the intended dossier explicitly.
+  const pinSlug = process.env.JOURNEY_DOSSIER_SLUG;
+  const pinRun = process.env.JOURNEY_DOSSIER_RUN;
+  if (pinSlug && pinRun) {
+    const r = await page.request
+      .get(`${ctx.webBaseUrl}/p/${pinSlug}/review/${pinRun}`)
+      .catch(() => null);
+    if (!r || r.status() !== 200) {
+      throw new Error(`pinned dossier /p/${pinSlug}/review/${pinRun} → ${r?.status() ?? "no response"}`);
+    }
+    return { slug: pinSlug, runId: pinRun };
+  }
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   const slugs = (
     await page.locator('a[href^="/p/"]').evaluateAll((els) =>
@@ -843,12 +870,15 @@ const T10: StepFn = async (ctx) => {
   const { slug, runId } = await findDeliveredReview(page, ctx);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
   await assertDossierParts(page, `own-tenant dossier ${slug}/${runId}`);
-  // an actionable control — the filter bar or a finding's disposition verb must be reachable.
+  // an actionable control — the filter bar or a finding's disposition verb must be reachable. The
+  // filter bar lives in the Desk's findings panel — CSS-hidden until its tab swaps data-desk-tab;
+  // the tab click is itself an actionable control.
+  await openFindingsDesk(page);
   const filter = page.locator("form[data-findings-filters] select").first();
-  if ((await filter.count()) > 0) {
+  if (await filter.isVisible().catch(() => false)) {
     await assertClick(filter, "the findings filter select");
   } else {
-    await assertClick(page.locator("[data-verb]").first(), "a disposition verb");
+    await assertClick(page.locator("[data-findings-list] [data-verb]").first(), "a disposition verb");
   }
   assertBundleParity(ctx);
 };
@@ -880,8 +910,10 @@ const T11: StepFn = async (ctx) => {
   const wrong = await page.locator(`[data-desk-row]:not([data-severity="${firstSev}"])`).count();
   if (wrong > 0) throw new Error(`${wrong} Desk rows survive the ?sev=${firstSev} filter`);
 
-  // a Desk row's finding link resolves to the finding card's anchor.
+  // a Desk row's finding link resolves to the finding card's anchor — the rows live in the Desk's
+  // findings panel, CSS-hidden until its tab swaps data-desk-tab; opening it is the control proof.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+  await openFindingsDesk(page);
   const link = page.locator("a[data-finding-link]").first();
   const fid = await link.getAttribute("data-finding-link");
   if (!fid) throw new Error("no Desk row carries a finding link");
@@ -911,7 +943,11 @@ const T12: StepFn = async (ctx) => {
 
   // ---- the disposition round-trip --------------------------------------------------------
   const note = `${ctx.marker("NOTE")} — deferred on the live leg`;
-  const card = page.locator("[data-finding]").first();
+  // §5.7 renders every card on THREE surfaces (body list, Margin, Desk) — scope to the canonical
+  // body list; an unscoped [data-finding] resolves twice and strict-mode inputValue() throws.
+  const listCard = (id?: string) =>
+    page.locator(`[data-findings-list] [data-finding${id ? `="${id}"` : ""}]`);
+  const card = listCard().first();
   const fid = (await card.getAttribute("data-finding")) ?? "";
   if (!fid) throw new Error("no finding card to dispose");
   const form = card.locator("[data-disposition-form]");
@@ -922,7 +958,7 @@ const T12: StepFn = async (ctx) => {
   await page.waitForURL(/disposed=/, { timeout: 15_000 }).catch(() => page.waitForLoadState("domcontentloaded"));
   // the round-trip: reload — the card carries the defer kind AND the note re-hydrates the field.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
-  const cardAfter = page.locator(`[data-finding="${fid}"]`);
+  const cardAfter = listCard(fid);
   if ((await cardAfter.locator('[data-disposition="defer"]').count()) === 0) {
     throw new Error("the deferred finding does not show its defer disposition after reload");
   }
@@ -1042,8 +1078,12 @@ const T14: StepFn = async (ctx) => {
   const baseline = await readInboxBadge(page, ctx);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
   // escalate the LAST card — earlier steps in the run already disposed the first findings; a fresh
-  // escalate guarantees a NEW decision request (the +1 the badge must show).
-  const escCard = page.locator("[data-finding]").last();
+  // escalate guarantees a NEW decision request (the +1 the badge must show). §5.7 renders each card
+  // on three surfaces (body list, Margin, Desk) — scope to the canonical body list: the Margin's
+  // copies sit inside collapsed chip <details>, so an unscoped .last() resolves to a hidden one.
+  const escCard = page
+    .locator('[data-findings-list] [data-finding]:not(:has([data-disposition="escalate"]))')
+    .last();
   const escForm = escCard.locator("[data-disposition-form]");
   await escForm.locator("input[data-note]").fill(`${ctx.marker("ESC")} — escalate for the decision row`);
   const esc = escForm.locator('button[data-verb="escalate"]');
@@ -1059,34 +1099,63 @@ const T14: StepFn = async (ctx) => {
   if ((await decRow.count()) === 0) {
     throw new Error("the escalated decision row did not land in the Inbox during quiet hours");
   }
-  // quiet-hours deferral, UI half — while the window is armed, no this-session run row is visible
-  // (this session's run_finished deliveries all carry visible_at = the window's end).
-  const visibleTypes = await page.locator("[data-inbox-row][data-inbox-type]").evaluateAll((els) =>
+  // quiet-hours deferral, UI half — while the window is armed, no run_finished row DELIVERED INSIDE
+  // it may be visible (deliverInApp writes visible_at = the quiet end). The DOM row id IS the
+  // inbox_items id, so when the read pool is bound the check correlates each rendered row against
+  // its real created_at — a long-lived tenant carries legitimately-visible pre-window rows and the
+  // JRN- title prefix alone cannot tell "this window's" deliveries from earlier ones (the funded
+  // tenant jrn-a is purge-exempt and accumulates them). Unbound ⇒ the prefix heuristic stands
+  // (nightly/weekly tenants are fresh-minted, so every JRN-* row IS this session's).
+  const domRunRows = await page.locator("[data-inbox-row][data-inbox-type]").evaluateAll((els) =>
     els.map((e) => ({
+      id: e.getAttribute("data-inbox-row") ?? "",
       type: e.getAttribute("data-inbox-type") ?? "",
       project: e.querySelector("[data-inbox-project]")?.textContent ?? "",
     })),
   );
-  const leaked = visibleTypes.filter((r) => r.type === "run_finished" && r.project.includes("JRN-"));
-  if (leaked.length > 0) {
-    throw new Error(`${leaked.length} this-session run_finished row(s) are visible inside quiet hours — deferral failed`);
-  }
-  // DB half: the deferred run_finished rows exist server-side with visible_at = the window's end.
-  if (process.env.JOURNEY_DATABASE_URL) {
-    const userId = (
+  const dbBound = !!process.env.JOURNEY_DATABASE_URL;
+  // the quiet window + user id ride the DB read below; hoist them so the leak check correlates.
+  let qh: { startMinutesUtc: number; endMinutesUtc: number } | null | undefined;
+  let userId: string | undefined;
+  if (dbBound) {
+    userId = (
       await db().query(`select id from "user" where email = $1`, ["test+jrn-a@rhema.tools"])
-    ).rows[0] as { id: string } | undefined;
+    ).rows[0]?.id as string | undefined;
     if (!userId) throw new Error("no user row for test+jrn-a");
     const prefsRow = (
-      await db().query(`select prefs from notification_prefs where user_id = $1`, [userId.id])
+      await db().query(`select prefs from notification_prefs where user_id = $1`, [userId])
     ).rows[0] as { prefs: { quietHours?: { startMinutesUtc: number; endMinutesUtc: number } | null } } | undefined;
-    const qh = prefsRow?.prefs?.quietHours;
+    qh = prefsRow?.prefs?.quietHours;
     if (!qh) throw new Error("notification_prefs carries no quiet window — T9's arm did not persist");
+    const domIds = domRunRows.map((r) => r.id).filter(Boolean);
+    const domDb = domIds.length
+      ? ((await db().query(
+          `select id, created_at, visible_at from inbox_items where id = any($1::text[])`,
+          [domIds],
+        )).rows as { id: string; created_at: Date; visible_at: Date }[])
+      : [];
+    const createdInWindow = new Set(
+      domDb
+        .filter((r) => deferredVisibleAt(qh!.startMinutesUtc, qh!.endMinutesUtc, r.created_at) !== null)
+        .map((r) => r.id),
+    );
+    const leaked = domRunRows.filter((r) => createdInWindow.has(r.id));
+    if (leaked.length > 0) {
+      throw new Error(`${leaked.length} in-window run_finished row(s) are visible inside quiet hours — deferral failed`);
+    }
+  } else {
+    const leaked = domRunRows.filter((r) => r.project.includes("JRN-"));
+    if (leaked.length > 0) {
+      throw new Error(`${leaked.length} this-session run_finished row(s) are visible inside quiet hours — deferral failed`);
+    }
+  }
+  // DB half: the deferred run_finished rows exist server-side with visible_at = the window's end.
+  if (dbBound) {
     const { rows } = await db().query(
       `select run_id, created_at, visible_at from inbox_items
-        where user_id = $1 and kind = 'run_finished' and created_at > now() - interval '4 hours'
+        where user_id = $1 and payload->>'type' = 'run_finished' and created_at > now() - interval '4 hours'
         order by created_at desc`,
-      [userId.id],
+      [userId],
     );
     if (rows.length === 0) {
       throw new Error("no run_finished inbox rows exist at all — the terminal deliveries produced nothing to defer");
@@ -1102,7 +1171,7 @@ const T14: StepFn = async (ctx) => {
       const row = r as { run_id: string | null; created_at: Date };
       // a row whose terminal event fell outside the window (delivered after the end) is
       // legitimately undelayed — only rows delivered INSIDE the window must defer.
-      const expect = deferredVisibleAt(qh.startMinutesUtc, qh.endMinutesUtc, row.created_at);
+      const expect = deferredVisibleAt(qh!.startMinutesUtc, qh!.endMinutesUtc, row.created_at);
       if (expect) {
         throw new Error(`run ${row.run_id}'s row was delivered inside quiet hours yet is not deferred`);
       }
@@ -1111,10 +1180,14 @@ const T14: StepFn = async (ctx) => {
       const row = r as { created_at: Date; visible_at: Date };
       return row.visible_at.getTime() > row.created_at.getTime() + 60_000;
     });
+    // only rows DELIVERED inside the currently-armed window must defer to ITS end — the funded
+    // tenant is purge-exempt, so rows deferred under an earlier arm of the day carry that arm's
+    // (different) end; expecting the new end there is a false positive. Rows delivered outside
+    // the window (expect == null) are evidence of an earlier arm, not of this leg.
     const wrong = deferred.filter((r) => {
       const row = r as { created_at: Date; visible_at: Date };
-      const expect = deferredVisibleAt(qh.startMinutesUtc, qh.endMinutesUtc, row.created_at);
-      return !expect || Math.abs(expect.getTime() - row.visible_at.getTime()) > 60_000;
+      const expect = deferredVisibleAt(qh!.startMinutesUtc, qh!.endMinutesUtc, row.created_at);
+      return expect != null && Math.abs(expect.getTime() - row.visible_at.getTime()) > 60_000;
     });
     if (wrong.length > 0) {
       throw new Error("a deferred run_finished row's visible_at is not the quiet window's end");
@@ -1140,12 +1213,21 @@ const T14: StepFn = async (ctx) => {
   // row carrying decide / re-defer / drop.
   const projectId = await apiProjectId(ctx, context, slug);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+  // only an OBLIGATION-bearing finding parks a defer_horizon (recordDispositionInTx routes the
+  // obligation iff one exists — a plain finding's defer is just a disposition). The dossier marks
+  // them with the obligation chip — and the chip must be a LIVE state: a `discharged_pending`
+  // (mooted) or `discharged_unverified` chip still renders, and deferring a finding whose
+  // obligation is closed/mooted hits routeDisposition on a dead row (observed live 2026-10-06:
+  // → 500 internal_error; the closed-world transition has no mooted→deferred edge — recorded as a
+  // product finding, the leg keeps to live obligations).
   const findingIds = (
-    await page.locator("[data-finding]").evaluateAll((els) =>
-      els.map((el) => el.getAttribute("data-finding") ?? "").filter(Boolean),
-    )
+    await page
+      .locator(
+        '[data-findings-list] [data-finding]:has([data-obligation-state="open"], [data-obligation-state="reopened"])',
+      )
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-finding") ?? "").filter(Boolean))
   ).slice(-2); // the last two — least likely already parked by earlier steps.
-  if (findingIds.length === 0) throw new Error("no findings on the dossier to park");
+  if (findingIds.length === 0) throw new Error("no obligation-bearing findings on the dossier to park");
   const answers = ["re-defer", "drop"] as const;
   for (let i = 0; i < findingIds.length; i++) {
     const fid = findingIds[i]!;
@@ -1157,10 +1239,13 @@ const T14: StepFn = async (ctx) => {
       throw new Error(`pre_export defer on ${fid} → ${resp.status}: ${resp.text.slice(0, 160)}`);
     }
     // the export dialog's open IS the pre_export horizon — the sweep returns the obligation and
-    // lands its Decisions row.
+    // lands its Decisions row. The list is oldest-first and escalate asks (decide/dismiss) may sit
+    // ahead — the swept obligation row is the one offering re-defer.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`);
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
-    const row = page.locator("[data-decisions-list] [data-decision]").first();
+    const row = page
+      .locator('[data-decisions-list] [data-decision]:has(button[data-decision-option="re-defer"])')
+      .first();
     await row.waitFor({ state: "attached", timeout: 15_000 });
     const answeredId = await row.getAttribute("data-decision");
     const option = row.locator(`button[data-decision-option="${answers[i]}"]`);
@@ -1182,7 +1267,7 @@ const T14: StepFn = async (ctx) => {
   // obligation-state proof on the dossier: the re-deferred finding parks (deferred); the dropped
   // finding's obligation is mooted (its live chip leaves).
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
-  const redeferred = page.locator(`[data-finding="${findingIds[0]}"] [data-obligation-state="deferred"]`);
+  const redeferred = page.locator(`[data-findings-list] [data-finding="${findingIds[0]}"] [data-obligation-state="deferred"]`);
   if ((await redeferred.count()) === 0) {
     throw new Error("the re-deferred finding shows no deferred obligation chip on the dossier");
   }

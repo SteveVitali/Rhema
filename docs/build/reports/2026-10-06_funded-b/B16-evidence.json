@@ -1,0 +1,36 @@
+{
+  "step": "B16",
+  "nonce": "d52d97087858",
+  "at": "2026-10-06T18:10:30.199Z",
+  "capUsd": 1,
+  "asserts": [
+    {
+      "id": "sidecar-absent",
+      "pass": true,
+      "evidence": "runs.inputs keys: phase,voice,draftId,claim_cap,discourse,cogsLevers,second_read,modelProfile,verification,scopeBlocking"
+    },
+    {
+      "id": "phase-pinned",
+      "pass": true,
+      "evidence": "inputs.phase = \"4\""
+    },
+    {
+      "id": "single-phase-commit",
+      "pass": true,
+      "evidence": "steps: craft/1/done"
+    },
+    {
+      "id": "phase-result-written",
+      "pass": true,
+      "evidence": "craft step committed done with predicatesPassed=true — the oracle's phase_result leg parsed .rhema/phase-result.json (transient; never mirrored to artifacts: 2 path(s))"
+    },
+    {
+      "id": "run-stopped",
+      "pass": true,
+      "evidence": "runs.state = completed (a pinned run commits its one phase then finalizes bare — no advance, no gate, no dossier)"
+    }
+  ],
+  "runId": "01M496CXS5DY78HX56AF0J0JW6",
+  "projectId": "01M496CXBJ79VNS453575JCHG0",
+  "meteredUsd": 0.340324
+}

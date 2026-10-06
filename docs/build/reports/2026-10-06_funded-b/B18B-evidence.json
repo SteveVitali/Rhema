@@ -1,0 +1,29 @@
+{
+  "step": "B18B",
+  "nonce": "7f54b073bc8c",
+  "at": "2026-10-06T19:17:25.390Z",
+  "capUsd": 4,
+  "asserts": [
+    {
+      "id": "policy-frozen",
+      "pass": true,
+      "evidence": "inputs.urlPolicy{fetchUserDataForbidden:true, userSourceDomains ⊃ host: true}"
+    },
+    {
+      "id": "source-not-transited",
+      "pass": true,
+      "evidence": "0 fetch_log row(s) carry the user-source host — must be 0 (the source's bytes never enter the wire or the log)"
+    },
+    {
+      "id": "deny-on-attempt",
+      "pass": false,
+      "evidence": "no fetch attempt at the user-source host was observed — the deny-on-attempt leg is unexercised (the agent honored the mounted read-only source, per STB.3 L9); owed, not failed"
+    }
+  ],
+  "runId": "01M49AC5AC90A998BMJG28R40W",
+  "meteredUsd": 0,
+  "host": "stb5b-7f54b073bc8c.example.internal",
+  "domains": [
+    "stb5b-7f54b073bc8c.example.internal"
+  ]
+}

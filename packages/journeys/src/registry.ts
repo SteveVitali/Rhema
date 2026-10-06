@@ -242,7 +242,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "Apply on a suggestion-bearing finding lands ?applied= and retracts its own control; a bulk action's preview shows the per-item checklist before the confirm lands ?bulkdone= (D-P1.07-1 — red while no suggestion-bearing finding exists)",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {
@@ -384,7 +384,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "a pinned `phase:'4'` review with NO `sidecar` input commits exactly the craft phase (one done step, `.rhema/phase-result.json` written, frozen inputs show sidecar absent + the phase pin) then stops `completed` (BL-16; D-P0.03-2, D-P0.03-3 residual)",
     owner: "STB.5b",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {

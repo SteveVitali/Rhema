@@ -46,8 +46,14 @@ describe("the journey step registry", () => {
         // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
         // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7
         // flipped green 2026-10-06 on the deployed tip fcbbc66 (CAP.3's fixes verified live —
-        // nonce 6c268536d58b); T8/T13/T15/T16 stay red — clock/prerequisite rows.
-        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T14",
+        // nonce 6c268536d58b); T13 flipped green 2026-10-06 (funded window B continuation —
+        // Apply + bulk-preview legs landed on the delivered funded dossier, nonce b76029538106-class);
+        // T8/T15/T16 stay red — clock/prerequisite rows.
+        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T13", "T14",
+        // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
+        // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
+        // D-P0.03-2 DONE.
+        "B16",
       ].sort(),
     );
   });
