@@ -195,9 +195,10 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "the delivered report's refund control is visible+enabled+unobscured; the click reports \"Refunded N cr.\" and spendable moves exactly +N; a second eligible request renders \"sent for review\" and moves nothing",
     owner: "DEF.4",
-    // DEF.4 — red until Stage B flips `refundWindow` to `test_tenants` on the evidence deploy and
-    // the journey walks it green ($≤3 total; two Quick/Base runs on the planted excerpt).
-    expected: "red",
+    // DEF.4 — green 2026-10-06 (funded window B): live prod walk on `fcbbc66` — leg A auto-refunded
+    // 504 cr (spendable +504), leg B "sent for review" (pending_review row + alerted_at by the
+    // stranded sweep). Evidence: docs/build/reports/2026-10-06_funded-b/ + runs/FUNDED-2026-10-06-A.md §B.6.
+    expected: "green",
     paid: true,
   },
   // ---- STB.5a weekly paid riders (jrn-a; ride the weekly leg's own-tenant delivered Review) ----

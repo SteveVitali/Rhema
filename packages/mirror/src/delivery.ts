@@ -516,7 +516,7 @@ export async function runDeliveryTransaction(
       await exec.query(
         `insert into claim_sources(claim_id, ordinal, url, normalized_url, accessed_at, stance, note)
          values ($1,$2,$3,$4,$5,$6,$7)`,
-        [claimId, i, s.url, s.normalizedUrl, s.accessedAt, s.stance, s.note ?? null],
+        [claimId, i, s.url, s.normalizedUrl ? normalizeUrl(s.normalizedUrl) : normalizeUrl(s.url), s.accessedAt, s.stance, s.note ?? null],
       );
     }
     persistedClaims.push({

@@ -1,0 +1,39 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "7e6d14996693",
+  "startedAt": "2026-10-06T14:46:09.105Z",
+  "finishedAt": "2026-10-06T14:46:14.597Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "fcbbc663857ae34041716c3b51ebc8482d803772",
+    "observed": {
+      "web": "fcbbc663857ae34041716c3b51ebc8482d803772",
+      "api": "fcbbc663857ae34041716c3b51ebc8482d803772"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N11",
+      "journey": "new-visitor",
+      "owner": "CITE.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 422 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 5444,
+      "error": "run launch refused: The included Review is Standard rigor on Base — switch the levers back or add credits to run your way.",
+      "screenshot": "N11.png"
+    }
+  ],
+  "passed": true
+}

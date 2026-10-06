@@ -309,3 +309,23 @@ OPEN FINDINGS (X-citation-completeness).
   `402 insufficient_balance required=1493`; the locked trial covers only Standard/Base Reviews (never the
   probe's fact_check cell, off-contract for the Quick/Base Leg 3). **$0 metered; legs stay deferred on an
   operator `house-grant`** — detail + ask in `runs/FUNDED-2026-10-06-A.md` §2–4.
+
+## Evidence log — 2026-10-06 (funded window B)
+
+Operator-authorized `house-grant` (8,000 promo cr) + purge exemption landed on the live jrn-a
+tenant; funded legs executed on prod `fcbbc66`. Full ledger: `runs/FUNDED-2026-10-06-A.md` §B.
+
+- **Leg 1a** `01M48VNKY6F263TCQRVBJ8JRQA` — completed at **$8.45** but failed functionally (9/9
+  `unverifiable`, 0 `claim_sources`, null completeness; auto-refund `platform_fault:zero_coverage`
+  165 cr). Not a pass; legs 1b/1c + 2a/2b skipped on the cumulative-spend pause ($125.31 round-3).
+- **Leg 3** `01M48YYS50Z6CNX517RJQXRCJ2` — Quick/Base Review delivered, **$5.72**,
+  `citation_completeness` = 7 cited / 7 covered / 0 missed / 0 stripped (`searchCovered=7`), rate 1.00.
+- **ADR-086 interim read:** aggregate **1.00** over the completed funded legs (n=1 with a record) —
+  meets ≥0.95 / no run <0.80 on the measured sample; definitive read rides the remaining legs.
+- **N11 FAILED live — real parity defect found + fixed in-tree:** 2/7 cited sources (trailing-slash
+  `claim_sources.normalized_url`) rendered chip-less because `claimUrlViews` passed the stored
+  `normalizedUrl` raw into `fetchLog.has()`. Fix: canonical fold on read (`findings-core/ledger.ts`)
+  + canonical persist on write (`mirror/delivery.ts`) + regression test. Deployed re-verify owed
+  (D-CITE.1-4 stays OPEN; N11 stays `expected:"red"`).
+- **R9 PASS** → D-DEF.4-1 DONE; R9 flips red→green. Refund 504 cr auto + second request
+  `pending_review` with `alerted_at` stamped by the live sweep (§B.6 of the funded ledger).

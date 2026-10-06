@@ -94,6 +94,28 @@ describe("claimUrlViews — the fetched ⇒ log join (REQ-IDE-25)", () => {
     expect(v?.fetched).toBe(false);
     expect(v?.retrievedBy).toBeUndefined();
   });
+
+  // CITE.1 live defect (2026-10-06, run 01M48YYS50Z6CNX517RJQXRCJ2): claim_sources.normalized_url
+  // rows persisted the proxy's richer form (trailing slash kept) while the log set is canonical —
+  // a covered search-hit source rendered chip-less because the stored value skipped the canonical
+  // fold. Both surfaces must agree byte-for-byte after normalization.
+  it("a source whose stored normalized_url keeps a trailing slash still joins the canonical log", () => {
+    const slashLog = fetchLogFromRows([{ normalizedUrl: "https://www.williamrinehart.com/2022/broadband-mapping-machine-learning" }]);
+    const c = claim({
+      sources: [
+        {
+          url: "https://www.williamrinehart.com/2022/broadband-mapping-machine-learning/",
+          normalizedUrl: "https://www.williamrinehart.com/2022/broadband-mapping-machine-learning/",
+          accessedAt: "2026-10-06T00:00:00Z",
+          stance: "supports",
+        },
+      ],
+    });
+    const [v] = claimUrlViews(c, slashLog, slashLog);
+    expect(v?.fetched).toBe(true);
+    expect(v?.retrievedBy).toBe("search");
+    expect(v?.normalizedUrl).toBe("https://www.williamrinehart.com/2022/broadband-mapping-machine-learning");
+  });
 });
 
 describe("summaries (§5.7)", () => {
