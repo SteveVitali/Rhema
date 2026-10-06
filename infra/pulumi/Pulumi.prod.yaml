@@ -67,8 +67,53 @@ config:
   # inputs.draftId freeze, project.purge enqueue+consumer, exportPresign GCS binding, slo_samples
   # instrumentation, /projects+/showcase txRunner, web dossier 404→not-found. fetcher/convert/
   # export/collab/run-task/egress-proxy unchanged — keep their STB.1 digests.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:ef986d1334c276a54c52721693f2c033bb7b42d573f579baf90a0d03ece3cdca","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:98e86c6855b1c226c8b3f23661882fb9560c84791f3c280f8fb4070cba35d80a","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:3c96ecef81334eef4c5824932e8e964fb3f3571e9fc51626ed9eb7d895a97ffc
+  # DEF.1 deploy (build rhema:def1, Cloud Build 3d8e649e, 2026-09-26): api + run-task rebuilt on
+  # 61a71ca (stevevitali/def-1-run-pipeline-blockers — pre-merge deploy authorized; PR #77 open, DO
+  # NOT MERGE). Lands the F1/F2/F3 run-pipeline fixes: api mints the runspec scopedLaunch +
+  # unconditional phase_result_contract/sidecar inputs (F1-3/F2); run-task carries the rewritten
+  # scoped-runner.sh, runScopedPhase, scoped-query.js, persona-root writability, and the persona
+  # .rhema/** seat-table grant (F1-1/F1-2/F2). web/worker/fetcher/convert/export/collab/egress-proxy
+  # unchanged — keep their STB.1/STB.2 digests.
+  # DEF.1 Stage-B hotfix (build rhema:def1b, Cloud Build e7f5f591, 2026-09-26): api + worker rebuilt —
+  # live finding while re-running the outline leg: `waiting_gate → finalizing` was missing from the
+  # §12.4 transition table (gate-resolution's allCommitted path 500'd every last-phase-gate approve;
+  # latent since P1.12). Both gate-resolvers ride the table: api (resolveGate) + worker (stranded
+  # sweep auto-resolve). run-task unchanged (keeps the def1 digest).
+  # DEF.1 Stage-B hotfix 2 (build rhema:def1c, Cloud Build 080f5e0c, 2026-09-26, SHA 5d40868):
+  # run-task only — live finding on the profile_voice rerun (01M3E42JXTF3HVZZQV0806SZPB): the
+  # agent-writable tree walk chmod'ed a dir's CONTENTS but never the dir itself, so the persona root
+  # /work/personas/<id> stayed harness-owned 0755 and every persona-root write (phase-result.json,
+  # profile/**) EACCES'd despite hook allows. work-perms.ts chmods the walked root too.
+  # DEF.1 Stage-B hotfix 3 (build rhema:def1d, Cloud Build 138b0333, 2026-09-26, SHA edf725a):
+  # run-task only — live finding on the draft rerun (01M3E8F8Z2TG2Q8FR62C7V1QJP): the hook classified
+  # /app/skills as outside every mount root, so the seat's Read of the canonical draft-ledger.md
+  # reference denied "path escapes the sandbox root"; the model improvised a prose ledger the
+  # draft_sections_eq_plan parser read as zero sections. compileSeatPolicy now grants every seat a
+  # read-only '**' mount over the skills root (no write; other /app paths still escape-deny).
+  # DEF.1 Stage-B hotfix 4 (build rhema:def1e, Cloud Build febda4b4, 2026-09-26, SHA 69c72a3):
+  # api + run-task — def1d attempt 5 still failed: the model explores skills at the STAGED path
+  # <CLAUDE_CONFIG_DIR>/skills, and the dir itself escape-denied ('ls /config/skills' denied). A
+  # harness-injected 'config' root now grants read over the staged dir, and the api's runspec pins
+  # draft_ledger_contract on the draft phase (the readable reference path + the ## Sections contract).
+  # DEF.1 Stage-B hotfix 5 (build rhema:def1f, Cloud Build e0924957, 2026-09-26, SHA 7fdfcb8):
+  # worker only — its Job spec now sets appArmorProfile=Unconfined on the run-task container:
+  # containerd's default cri-containerd.apparmor.d denies mount(2) outright (SYS_ADMIN or not), so the
+  # input-scoped second_read's unshare/tmpfs/binds EPERM'd (rerun 01M3EAAZ… second_read attempts 3-4).
+  # DEF.1 Stage-B hotfix 6 (build rhema:def1g, Cloud Build c5e607e3, 2026-09-26, SHA 82179e1):
+  # run-task only — unshare now works but mount(2) still failed: util-linux `mount` gates on the REAL
+  # uid ("must be superuser" for any ruid≠0 caller — ambient CAP_SYS_ADMIN is invisible to it, and the
+  # binary's setuid bit only fixes the EFFECTIVE uid). The scoped launch argv re-escalates the runner to
+  # ruid 0 inside the namespace via `setpriv --reuid 0` (ambient CAP_SETUID carries it); the model still
+  # drops to the distinct scoped uid with --no-new-privs. Verified live on the probe pod: all privsep
+  # checks pass through the real launch chain (rerun 01M3EAAZ… second_read attempt 5).
+  # DEF.1 Stage-B hotfix 7 (build rhema:def1h, Cloud Build fe969d4c, 2026-09-26, SHA 6a36dde):
+  # run-task only — mounts then worked and scoped-query.js launched, but the vendored CLI crashed on
+  # `uv_os_homedir ENOENT`: the scoped uid (agentUid+offset) has no passwd entry and options.env
+  # REPLACES the Bun subprocess env (no HOME). The image now carries passwd entries for scoped uids
+  # 10003–10006, and HOME is set to the scoped root in both env layers (runner env -i + query
+  # options.env). Probe-verified: the CLI ran the full query path end to end.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:f4e7806e75c2b0d68c591712f4f53adbc26199fcfd760f66329bcc0b4afdaa27","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:658143d5337c5725268bf0af5d97d9aa2dd533953e21476433f977b465a47b3e","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e4dc868720ae8e89c24e65917274bfd513b20c2e43d0cf359698049165bbfba1","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:ffdaf127523f560cca116a248b012e8bc752b044cc21af9827a3469d9ab8a905","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:85b580645b79b7f84cba60e6085898976a255a322325f213f3730f3cb5c242a4","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:84568c4d78912507e7a47209f90a1fb1d74ba9dcb927f6ac2c4d5d123dd2b0b2","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:946577988629511517ded5e1d162de3e3af18a3881a0c3278f092e0924e71582"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:0833dfd61d29b3c2bed281c241111b3e6152e3873c86f1f0fcc001b40eab4a04
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cf779cd54857aaf4040cb1cf20a823276ec9d2adfb9c4847e7955b5d0f5e794c
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app

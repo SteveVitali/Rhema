@@ -100,7 +100,16 @@ export interface ScopedLaunchSpec {
   /** `["Read"]`, plus `WebFetch` (client `fetcher` only) for the calibrator once its prediction file exists. */
   readonly tools: readonly string[];
   readonly mountPlan: ScopedMountPlan;
-  /** `unshare --mount --propagation private -- <runner…>` — a NEW mount namespace for this query (§12.6). */
+  /**
+   * `unshare --mount --propagation private -- setpriv --reuid 0 --regid 0 --clear-groups -- <runner…>` —
+   * a NEW mount namespace for this query (§12.6). The `setpriv` re-escalation to REAL uid 0 is
+   * load-bearing: util-linux `mount` gates on `getuid()` before calling mount(2), so the harness's ambient
+   * CAP_SYS_ADMIN is invisible to it (and the binary's setuid bit only fixes the EFFECTIVE uid — ruid stays
+   * harness's and `mount` exits "must be superuser"). The runner must therefore run with ruid 0; the
+   * harness holds ambient CAP_SETUID so `setpriv --reuid 0` succeeds. scoped-runner.sh still drops to the
+   * distinct scoped uid with --no-new-privs before the model's process execs — the MODEL's privilege is
+   * unchanged; only the trusted setup runner carries ruid 0.
+   */
   readonly unshareArgv: readonly string[];
   /** recorded on the artifact version the scoped query writes (§12.2/§12.6). */
   readonly producerQueryId: string;
@@ -191,7 +200,24 @@ export function buildScopedLaunchSpec(input: BuildScopedInput): ScopedLaunchSpec
   if (allowFetcher) tools.push("WebFetch");
 
   const runnerArgv = input.runnerArgv ?? ["/usr/local/bin/rhema-scoped-runner"];
-  const unshareArgv = ["unshare", "--mount", "--propagation", "private", "--", ...runnerArgv];
+  // See the `unshareArgv` doc: the runner needs REAL uid 0 for the mount(2) calls (`mount` refuses any
+  // non-ruid-0 caller outright — ambient capabilities do not reach it). `--clear-groups` keeps the root
+  // re-escalation's group set minimal; the runner's own setpriv drop re-establishes the scoped uid/gid.
+  const unshareArgv = [
+    "unshare",
+    "--mount",
+    "--propagation",
+    "private",
+    "--",
+    "/usr/bin/setpriv",
+    "--reuid",
+    "0",
+    "--regid",
+    "0",
+    "--clear-groups",
+    "--",
+    ...runnerArgv,
+  ];
 
   return {
     role,

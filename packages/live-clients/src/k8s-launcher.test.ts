@@ -92,6 +92,9 @@ describe("buildRunTaskJobManifest", () => {
     // SETUID/SETGID for the harness→agent uid drop; SYS_ADMIN for unshare/mount; SYS_CHROOT for the scoped runner.
     expect(csc.capabilities.add).toEqual(expect.arrayContaining(["SETUID", "SETGID", "SYS_ADMIN", "SYS_CHROOT"]));
     expect(csc.capabilities.drop).toEqual(["ALL"]);
+    // DEF.1 Stage-B: containerd's default AppArmor profile denies mount(2) outright (SYS_ADMIN
+    // notwithstanding) — the scoped-subagent namespace needs mount, so the container runs unconfined.
+    expect((csc as { appArmorProfile?: { type: string } }).appArmorProfile).toEqual({ type: "Unconfined" });
   });
 
   it("mounts the harness secret read-only at the harness-only path and points env at the files", () => {

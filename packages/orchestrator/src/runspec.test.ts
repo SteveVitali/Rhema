@@ -358,6 +358,35 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     expect(String(spec.request.inputs.phase_result_contract)).toContain('"done"');
   });
 
+  // DEF.1 Stage-B — the draft phase pins a pointer to the canonical ledger reference (the live
+  // failure: the model couldn't read /app/skills/…/draft-ledger.md and improvised a prose ledger
+  // that draftedSectionCount reads as zero → draft_sections_eq_plan failed on five attempts).
+  it("the draft phase carries `draft_ledger_contract` naming the canonical reference + the parse contract", async () => {
+    const runId = await seedWorkflowRun("run_draft_ledger", "draft");
+    // commit intake/voice/plan/grounding so the selected phase is `draft` (index 4).
+    const order = ["intake", "voice", "plan", "grounding"] as const;
+    for (const [i, key] of order.entries()) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_dl_${i}`, runId, key, i],
+      );
+    }
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("draft");
+    const hint = String(spec.request.inputs.draft_ledger_contract);
+    expect(hint).toContain("/app/skills/draft-from-outline/references/draft-ledger.md");
+    expect(hint).toContain("## Sections");
+    expect(hint).toContain("drafted");
+  });
+
+  it("a non-draft phase carries NO draft_ledger_contract input", async () => {
+    const runId = await seedWorkflowRun("run_no_draft_ledger", "draft");
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("intake");
+    expect(spec.request.inputs.draft_ledger_contract).toBeUndefined();
+  });
+
   it("F16 — run-scope guidance is delivered into `inputs.guidance` at the phase boundary + marked consumed", async () => {
     const runId = await seedWorkflowRun("run_guid", "revise");
     // the pretriage-style note captured at run creation (run-scope, queued_message source).
@@ -543,5 +572,94 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
     expect(spec.delivery).toBeUndefined();
     expect(spec.writablePaths).toEqual([]);
+  });
+
+  // -----------------------------------------------------------------------------------------------
+  // DEF.1 (F2; D-P0.15h-5) — the §12.6 input-scoped second read: the server mints the producer id,
+  // records the launch in `subagent_launches` (the delivery producer check's row), and ships the
+  // launch order on `spec.scopedLaunch` for the harness to execute — the parent Editor never spawns it.
+  // -----------------------------------------------------------------------------------------------
+
+  /** Commit every review phase BEFORE second_read (manifest index 4) so the spec selects it. */
+  async function commitThrough(runId: string, workflow: WorkflowKey, beforeIndex: number): Promise<void> {
+    const manifest = WORKFLOW_MANIFESTS[workflow]!;
+    for (let i = 0; i < beforeIndex; i++) {
+      await db.pg.query(
+        `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at, ended_at, credits)
+         values ($1,$2,$3,$4,'done',1, now(), now(), 10)`,
+        [`stp_${runId}_${i}`, runId, manifest.phases[i]!.key, i],
+      );
+    }
+  }
+
+  it("F2 — the second_read spec carries a scopedLaunch + a recorded subagent_launches row", async () => {
+    const runId = await seedWorkflowRun("run_sr", "review");
+    const { versionId } = await seedReviewedDraft();
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ draftId: seed.draftId })]),
+    );
+    await commitThrough(runId, "review", 4);
+
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("second_read");
+
+    const launch = spec.scopedLaunch;
+    expect(launch).toBeDefined();
+    expect(launch).toMatchObject({
+      role: "second-reader",
+      files: ["/work/project/drafts/v1.md"],
+      outputPath: "agents/editor/05-second-read.md",
+      markerPath: "agents/editor/.rhema/second-read.json",
+    });
+    expect(launch!.producerQueryId).toBeTruthy();
+    expect(launch!.prompt.length).toBeGreaterThan(0);
+
+    // the launch is attested server-side: the exact row `checkSecondReadProducer` reads at delivery.
+    const rows = (
+      await db.pg.query(
+        `select label, inputs_kind, input_paths, producer_query_id from subagent_launches
+         where run_id = $1 and attempt = 1`,
+        [runId],
+      )
+    ).rows as { label: string; inputs_kind: string; input_paths: string[]; producer_query_id: string }[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      label: "second-reader",
+      inputs_kind: "explicit_files",
+      input_paths: ["drafts/v1.md"],
+      producer_query_id: launch!.producerQueryId,
+    });
+    // and the delivery-time producer check accepts exactly this id (§12.2 F17).
+    const { checkSecondReadProducer } = await import("@rhema/mirror");
+    expect(await checkSecondReadProducer(db.client, { runId, producerQueryId: launch!.producerQueryId })).toEqual({
+      ok: true,
+    });
+    expect(await checkSecondReadProducer(db.client, { runId, producerQueryId: "qry_forged" })).toMatchObject({
+      ok: false,
+    });
+    void versionId;
+  });
+
+  it("F2 — a non-second_read phase carries no scopedLaunch and records no launch", async () => {
+    const runId = await seedWorkflowRun("run_sr_no", "review");
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("intake");
+    expect(spec.scopedLaunch).toBeUndefined();
+    const n = (await db.pg.query(`select count(*)::int as n from subagent_launches where run_id = $1`, [runId]))
+      .rows[0] as { n: number };
+    expect(n.n).toBe(0);
+  });
+
+  it("F2 — a second_read phase with no mounted draft ships NO launch order (the predicate fails honestly)", async () => {
+    const runId = await seedWorkflowRun("run_sr_nodraft", "review");
+    // the drafts ROW exists but no artifact version backs drafts/v1.md → nothing is mounted → no launch.
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(`update runs set inputs = $2::jsonb where id = $1`, [runId, JSON.stringify({ draftId: seed.draftId })]),
+    );
+    await commitThrough(runId, "review", 4);
+    const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+    expect(spec.request.phase.key).toBe("second_read");
+    expect(spec.manifest.entries.some((e) => e.kind === "draft")).toBe(false);
+    expect(spec.scopedLaunch).toBeUndefined();
   });
 });

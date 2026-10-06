@@ -10,9 +10,11 @@
 import type { AgentTypeKey, CorrespondenceKind, ModelTier, SidecarFilename, WorkflowKey } from "@rhema/contracts";
 import { MODEL_TIERS, SIDECAR_CONTRACT_HINTS } from "@rhema/contracts";
 import type { PhaseRequest } from "@rhema/engine";
+import { mainModelForTier } from "@rhema/engine";
 import type { MirrorManifest } from "@rhema/mirror";
+import { recordSubagentLaunch } from "@rhema/mirror";
 import { EMPTY_URL_POLICY, resolveSeatRoots, type PhasePolicy, type UrlPolicy } from "@rhema/hooks";
-import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
+import { WORKFLOW_MANIFESTS, SECOND_READ_PROMPT } from "@rhema/protocols";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
 import { consumeGuidance } from "./guidance.js";
@@ -36,7 +38,13 @@ export const DEFAULT_MAX_TURNS = 40;
 export interface HookPolicyInput {
   readonly seat: AgentTypeKey;
   readonly personaId?: string;
-  readonly roots?: { readonly project?: string; readonly persona?: string };
+  readonly roots?: {
+    readonly project?: string;
+    readonly persona?: string;
+    readonly skills?: string;
+    /** Harness-injected (the staged `<CLAUDE_CONFIG_DIR>/skills`) — never set server-side. */
+    readonly config?: string;
+  };
   /** the seat's permitted tool tokens (from the `agent_types` row); `web_fetch` gating is in `urlPolicy`. */
   readonly tools: readonly string[];
   readonly urlPolicy: UrlPolicy;
@@ -88,6 +96,38 @@ export interface HarnessRunSpec {
    * weaker policy than the project/run carries.
    */
   readonly gatePolicy?: GatePolicyFacts;
+  /**
+   * DEF.1 / D-P0.15h-5 — the §12.6 input-scoped second read. Present ONLY on the phase that declares
+   * `second_read_producer_checked`: the server mints `producerQueryId`, records the launch in
+   * `subagent_launches` (`inputs_kind:'explicit_files'`, the delivery producer check's row), and the
+   * harness executes the phase AS the scoped query — `tools:["Read"]`, a private mount namespace holding
+   * `files` only — then writes the produced artifact + the `.rhema/second-read.json` marker itself. The
+   * judge-phase `Agent` deny stays in force: the parent model never spawns the read.
+   */
+  readonly scopedLaunch?: ScopedPhaseLaunch;
+}
+
+/**
+ * The server-authored launch order for one input-scoped producer query (§12.6). The harness executes it
+ * verbatim: `files` are the ONLY paths the private namespace mounts; `producerQueryId` is the id the
+ * `subagent_launches` row + the `.rhema/second-read.json` marker + the delivery producer check agree on.
+ */
+export interface ScopedPhaseLaunch {
+  readonly role: "second-reader";
+  /** server-minted at spec build; recorded in `subagent_launches.producer_query_id`. */
+  readonly producerQueryId: string;
+  /** absolute /work paths the scoped query may read — input-scoped, nothing else exists in its namespace. */
+  readonly files: readonly string[];
+  /** the scoped query's prompt (the protocol's second-read instruction). */
+  readonly prompt: string;
+  /** the project-root-relative path the harness writes the read's output to (e.g. `agents/editor/05-second-read.md`). */
+  readonly outputPath: string;
+  /** the project-root-relative marker path carrying `{producerQueryId, expectedProducerQueryId}`. */
+  readonly markerPath: string;
+  /** the judge-tier model for the scoped query (the run's tier). */
+  readonly model: string;
+  readonly maxBudgetUsd: number;
+  readonly maxTurns: number;
 }
 
 /** The server-side delivery facts the harness folds into the final `DeliveryArgs` (P0.15e). */
@@ -397,19 +437,27 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       : {}),
     // F15 follow-on (live attempt 5): the SAME invisible-contract class hid `.rhema/phase-result.json`'s
     // status enum — the skill docs say `{status}` with no value, so the live agent wrote "success" and only
-    // the oracle's non-blocked/non-replan fall-through saved leg (b). Pin the enum explicitly whenever the
-    // `sidecar` input (manifest default or frozen override) is what makes the skill write the file.
-    ...((hyd.inputs.sidecar ?? manifest.defaultInputs?.sidecar) === true
-      ? {
-          // PRB.19 (live F34) — pin the WRITABLE location too: the bare `.rhema/…` path resolves cwd-relative
-          // to the project root, which the §12.6 seat table denies — the live Revise bootstrap agent's literal
-          // `Write /work/project/.rhema/phase-result.json` was hook-denied and the phase failed on a missing
-          // phase-result despite sdk=success (run 01M2VDHN… att-2). The seat dir `agents/<seat>/.rhema/` is
-          // writable AND suffix-resolves for the oracle.
-          phase_result_contract:
-            `.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports). Write it under your writable seat directory as agents/${seat}/.rhema/phase-result.json (likewise agents/${seat}/.rhema/<sidecar>.json for sidecars) — the project root is read-only for your seat.`,
-        }
-      : {}),
+    // the oracle's non-blocked/non-replan fall-through saved leg (b). Pin the enum + the seat-aware location
+    // explicitly. DEF.1 (F1): this is UNCONDITIONAL now — the oracle's leg (b) requires the file on EVERY
+    // phase regardless of `sidecar`, and a run whose inputs lacked `sidecar: true` (profile_voice's
+    // `defaultInputs` carry only `{mode}`) emitted no phase-result at all under the ported skill's
+    // "sidecar gates the write" text — the STB.3 profile-voice F1 kill. The file is harness control-plane
+    // contract, not a model option, so `sidecar` is pinned true like `phase` is (the skill's structured
+    // `.json` twins remain gated on the phase's declared `sidecars`, unaffected).
+    sidecar: true,
+    // PRB.19 (live F34) — pin the WRITABLE location too: the bare `.rhema/…` path resolves cwd-relative
+    // to the project root, which the §12.6 seat table denies — the live Revise bootstrap agent's literal
+    // `Write /work/project/.rhema/phase-result.json` was hook-denied and the phase failed on a missing
+    // phase-result despite sdk=success (run 01M2VDHN… att-2). The seat dir `agents/<seat>/.rhema/` is
+    // writable AND suffix-resolves for the oracle.
+    // DEF.1 (F1) — the persona builder has NO project mount (§12.6): `agents/persona_builder/.rhema/`
+    // does not exist for it. Its `.rhema/` lives under the persona root (`/work/personas/<id>/.rhema/`),
+    // the same derivation as the `personas_dir` input; that mount is readwrite for the seat. The live
+    // profile-voice run's phase-result write was denied there before the mount row landed (STB.3).
+    phase_result_contract:
+      seat === "persona_builder"
+        ? `.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports). Write it at the persona root as ${resolveSeatRoots({ personaId: hyd.personaId ?? undefined }).persona}/.rhema/phase-result.json — the persona root's .rhema/ is your writable harness-control area (profile/ is the deliverable tree; the project root is unmounted for your seat).`
+        : `.rhema/phase-result.json must be {"status":"done"} when the phase completed its declared outputs — "done" exactly, not "success" ("blocked"|"replan" only for those self-reports). Write it under your writable seat directory as agents/${seat}/.rhema/phase-result.json (likewise agents/${seat}/.rhema/<sidecar>.json for sidecars) — the project root is read-only for your seat.`,
     // PRB.24 — the intra-phase transcript bound, shape layer. A research-class phase that fans out
     // (`allowsSubagents` — verification, discourse) otherwise runs the WHOLE per-claim loop inside ONE
     // session context: every Messages request resends the accumulated transcript, so cost is
@@ -425,6 +473,18 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
       ? {
           research_fanout:
             "Context contract (PRB.24): do NOT run one long research session over the whole claim/topic inventory — every request resends the full session transcript. Fan research out to `researcher` subagents in bounded batches of at most 5 items each. A researcher verifies ONLY its assigned items and returns a compact verdict list (item → verdict → retrieved source URLs) — never pasted page text. Assemble the ledger/report rows yourself from the returned verdicts and write the dossier file incrementally as each batch returns; if a subagent's batch stalls, re-delegate the remaining items in a fresh batch rather than continuing in your own context.",
+        }
+      : {}),
+    // DEF.1 Stage-B (live rerun 01M3E8F8…, draft attempts 1–5): the ported skill names the ledger's
+    // canonical layout in `references/draft-ledger.md`, but that file lived at `/app/skills/…` —
+    // outside every §12.6 mount root — so the model's Read escape-denied and it improvised a prose
+    // ledger `draftedSectionCount` reads as ZERO (draft_sections_eq_plan failed on every attempt).
+    // The skills mount grant makes the reference readable; this input line points the model at the
+    // exact path up front so it never has to discover it, and names the parser's hard contract.
+    ...(hyd.workflow === "draft" && phase.key === "draft"
+      ? {
+          draft_ledger_contract:
+            "Before writing 04-draft-ledger.md, READ the canonical format at /app/skills/draft-from-outline/references/draft-ledger.md (readable; mounted for your seat). Its required shape is a `## Sections` table with these columns: | # | Section | Function (from plan) | Budget | Actual | Status | Claim rows used | Deviation | — one row per plan section, Status ∈ drafted|seams-read|verified. Prose headings/bullets do NOT parse and fail the phase predicate.",
         }
       : {}),
   };
@@ -505,6 +565,55 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
         }
       : undefined;
 
+  // DEF.1 / D-P0.15h-5 — the `second_read_producer_checked` phase is produced by an orchestrator-launched
+  // INPUT-SCOPED query (§12.6), never by the parent Editor (the hook's judge-class `Agent` deny is correct and
+  // stays). Here the server mints the producer id, records the launch (`subagent_launches` — the delivery
+  // `checkSecondReadProducer` row + the §12.6 attestation source), and ships the launch order on the spec; the
+  // harness executes `scoped-query` against a private namespace holding ONLY the reviewed draft and stamps
+  // `.rhema/second-read.json` itself. Enumerated files = the draft the run reviews — "the second read
+  // received the draft only" (review 13 F13). No mounted draft ⇒ no launch order ⇒ the predicate still fails
+  // honestly (a scoped read over nothing is a bug, not a phase).
+  let scopedLaunch: ScopedPhaseLaunch | undefined;
+  const secondReadPred = phase.completionPredicates?.find((p) => p.kind === "second_read_producer_checked");
+  if (secondReadPred?.kind === "second_read_producer_checked") {
+    // the reviewed draft's mount path: the delivery base's canonical `drafts/vN.md`, else the manifest's
+    // `kind:'draft'` entry. The `entries.some` guard refuses a launch with nothing mounted (§12.6 — a
+    // scoped read over an empty set is a bug, not a phase; the predicate then still fails honestly).
+    const draftPath =
+      (hyd.deliveryBase?.n != null ? `drafts/v${hyd.deliveryBase.n}.md` : undefined) ??
+      hyd.manifest.entries.find((e) => e.kind === "draft")?.path;
+    if (draftPath && hyd.manifest.entries.some((e) => e.path === draftPath)) {
+      const producerQueryId = deps.ids("qry");
+      // the manifest paths are project-root-relative; the scoped query reads them at their materialized
+      // absolute location under the project root (the same root `request.cwd` names).
+      const roots = resolveSeatRoots({ personaId: hyd.personaId ?? undefined });
+      const model = mainModelForTier(tier ?? "base");
+      await deps.txRunner.run(args.workspaceId, (tx) =>
+        recordSubagentLaunch(tx, { ids: deps.ids, clock: deps.clock }, {
+          runId: args.runId,
+          attempt: args.attempt,
+          label: "second-reader",
+          model,
+          inputsKind: "explicit_files",
+          inputPaths: [draftPath],
+          producerQueryId,
+        }),
+      );
+      const artifactBase = secondReadPred.artifact;
+      scopedLaunch = {
+        role: "second-reader",
+        producerQueryId,
+        files: [`${roots.project}/${draftPath}`],
+        prompt: SECOND_READ_PROMPT,
+        outputPath: `agents/${seat}/${artifactBase}`,
+        markerPath: `agents/${seat}/.rhema/second-read.json`,
+        model,
+        maxBudgetUsd,
+        maxTurns: DEFAULT_MAX_TURNS,
+      };
+    }
+  }
+
   return {
     request,
     skillsDir: args.skillsDir ?? DEFAULT_SKILLS_DIR,
@@ -518,5 +627,6 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     ...(pinnedSkillPhase ? { stopAfterPhase: true } : {}),
     ...(delivery ? { delivery } : {}),
     ...(gatePolicy ? { gatePolicy } : {}),
+    ...(scopedLaunch ? { scopedLaunch } : {}),
   };
 }

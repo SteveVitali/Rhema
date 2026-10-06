@@ -61,6 +61,11 @@ const SEAT_DEFAULTS: Record<
     // start_workflow, propose_outline, visualize, elicit, measure, attach — plus read/write inside
     // the assistant namespace (threads, source notes, pins, briefs). The preparatory subset
     // (start_workflow/propose_outline/visualize/elicit/measure) returns run SHEETS, never runs.
+    // DEF.1 (F1) adds `subagent`: the research_burst `fetch` phase declares `allowsSubagents: true`
+    // (the PRB.24 bounded `researcher` fan-out contract), so an assistant-seat RUN needs the token —
+    // the hook still denies `Agent` wherever the phase policy does not opt in. Migration 0043 stamps
+    // the same list on an already-seeded database (`on conflict do nothing` keeps prod's P0.02-era
+    // row — missing `write` — which is what killed the STB.3 outline/research legs on F1).
     tools: [
       "read",
       "write",
@@ -73,6 +78,7 @@ const SEAT_DEFAULTS: Record<
       "elicit",
       "measure",
       "attach",
+      "subagent",
     ],
     modelProfile: "balanced",
   },

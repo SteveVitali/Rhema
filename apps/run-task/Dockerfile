@@ -50,6 +50,14 @@ RUN groupadd --gid 10001 harness \
   && useradd  --uid 10001 --gid 10001 --home-dir /home/harness --create-home --shell /usr/sbin/nologin harness \
   && groupadd --gid 10002 agent \
   && useradd  --uid 10002 --gid 10002 --home-dir /home/agent --create-home --shell /usr/sbin/nologin agent \
+  # the four input-scoped subagent uids (agentUid + roleOffset — §12.6). They need passwd entries: a uid with
+  # none makes getpwuid()/os.homedir() ENOENT, which crashes the SDK import inside the scoped query (live
+  # finding F-StageB-7 — scoped-query.js died at `uv_os_homedir`). No login shell, no home dir — the runner
+  # points HOME at the scoped root, the uid's only writable area.
+  && useradd --uid 10003 --user-group --no-create-home --shell /usr/sbin/nologin scoped-second-reader \
+  && useradd --uid 10004 --user-group --no-create-home --shell /usr/sbin/nologin scoped-fidelity-auditor \
+  && useradd --uid 10005 --user-group --no-create-home --shell /usr/sbin/nologin scoped-gap-analyst \
+  && useradd --uid 10006 --user-group --no-create-home --shell /usr/sbin/nologin scoped-holdout-calibrator \
   # the harness-only secrets mount point (the file is written 0600 harness at provision):
   && mkdir -p /run/secrets && chown harness:harness /run/secrets && chmod 0700 /run/secrets \
   # writable-namespace + scoped-subagent roots (tmpfs-mounted at run time):

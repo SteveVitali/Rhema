@@ -248,6 +248,94 @@ describe("Glob/Grep pattern escape (Finding 8)", () => {
   });
 });
 
+describe("baked skill tree reads (DEF.1 Stage-B)", () => {
+  const SKILLS_REF = "/app/skills/draft-from-outline/references/draft-ledger.md";
+
+  it("allows a Read of a skill reference under /app/skills", () => {
+    const policy = compileSeatPolicy({
+      seat: "author",
+      personaId: "p1",
+      tools: ["read", "write"],
+      phase: RESEARCH,
+      runId: "run_1",
+      agentLabel: "author",
+    });
+    const d = evaluateToolUse({ tool: "Read", input: { file_path: SKILLS_REF } }, policy, newDenialState(), CTX);
+    expect(d.decision).toBe("allow");
+    expect(d.accessRows[0]).toMatchObject({ tool: "Read", decision: "allow", namespace: "shared" });
+  });
+
+  it("denies a Write under /app/skills (read-only grant)", () => {
+    const policy = compileSeatPolicy({
+      seat: "author",
+      personaId: "p1",
+      tools: ["read", "write"],
+      phase: RESEARCH,
+      runId: "run_1",
+      agentLabel: "author",
+    });
+    const d = evaluateToolUse({ tool: "Write", input: { file_path: SKILLS_REF } }, policy, newDenialState(), CTX);
+    expect(d.decision).toBe("deny");
+    expect(d.reason).toBe("write to a read-only path");
+  });
+
+  it("still denies reads elsewhere under /app (no blanket /app grant)", () => {
+    const policy = editorPolicy(RESEARCH);
+    const d = evaluateToolUse(
+      { tool: "Read", input: { file_path: "/app/dist/hook-daemon.js" } },
+      policy,
+      newDenialState(),
+      CTX,
+    );
+    expect(d.decision).toBe("deny");
+    expect(d.reason).toBe("path escapes the sandbox root");
+  });
+
+  it("allows reads at the staged <configDir>/skills path when the harness supplies the config root", () => {
+    const policy = compileSeatPolicy({
+      seat: "author",
+      personaId: "p1",
+      tools: ["read", "write"],
+      phase: RESEARCH,
+      runId: "run_1",
+      agentLabel: "author",
+      roots: { config: "/config/skills" },
+    });
+    // The staged dir itself (a plain `ls` / Glob target that needs no symlink resolution).
+    const ls = evaluateToolUse(
+      { tool: "Glob", input: { path: "/config/skills/draft-from-outline", pattern: "*" } },
+      policy,
+      newDenialState(),
+      { ...CTX, resolveRealpath: (p: string) => p },
+    );
+    expect(ls.decision).toBe("allow");
+    // A Read THROUGH the staged symlink realpaths to /app/skills — classified under the skills root.
+    const throughSymlink = evaluateToolUse(
+      { tool: "Read", input: { file_path: "/config/skills/draft-from-outline/references/draft-ledger.md" } },
+      policy,
+      newDenialState(),
+      {
+        ...CTX,
+        resolveRealpath: (p: string) =>
+          p.startsWith("/config/skills/") ? p.replace("/config/skills", "/app/skills") : p,
+      },
+    );
+    expect(throughSymlink.decision).toBe("allow");
+    expect(throughSymlink.accessRows[0]?.path).toBe("/app/skills/draft-from-outline/references/draft-ledger.md");
+  });
+
+  it("does not grant the config root when the harness does not supply it", () => {
+    const policy = editorPolicy(RESEARCH);
+    const d = evaluateToolUse(
+      { tool: "Glob", input: { path: "/config/skills", pattern: "*" } },
+      policy,
+      newDenialState(),
+      CTX,
+    );
+    expect(d.decision).toBe("deny");
+  });
+});
+
 describe("toPreToolUseResult adapter", () => {
   it("maps a deny with a reason and carries the control signal", () => {
     const state = newDenialState();

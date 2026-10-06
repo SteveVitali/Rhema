@@ -164,7 +164,12 @@ function validateSidecar(
 }
 
 /** Build the `HarvestFile[]` for the write-back diff: every non-derived `/work` file with its mount root. */
-function harvestFiles(files: ReadonlyMap<string, Uint8Array>, manifest: MirrorManifest, defaultRoot: MountRoot): HarvestFile[] {
+function harvestFiles(
+  files: ReadonlyMap<string, Uint8Array>,
+  manifest: MirrorManifest,
+  defaultRoot: MountRoot,
+  scopedOutput?: { path: string; producerQueryId: string },
+): HarvestFile[] {
   const byPath = manifestByPath(manifest);
   const out: HarvestFile[] = [];
   for (const [path, bytes] of files) {
@@ -178,7 +183,12 @@ function harvestFiles(files: ReadonlyMap<string, Uint8Array>, manifest: MirrorMa
     const base = path.slice(path.lastIndexOf("/") + 1);
     if (path === "manifest.md" || base === "phase-result.json" || base === "agent-result.json") continue;
     const root = byPath.get(path)?.root ?? defaultRoot;
-    out.push({ path, root, bytes });
+    // DEF.1 / D-P0.15h-5 — the orchestrator-launched scoped phase's artifact carries its minted
+    // `producerQueryId` onto the persisted version row (§12.6/REQ-DATA-6: "recorded on the artifact
+    // version the scoped query writes"), so the delivery provenance trail is on the version itself,
+    // not only the transient marker file.
+    const producerQueryId = scopedOutput && path === scopedOutput.path ? scopedOutput.producerQueryId : undefined;
+    out.push({ path, root, bytes, ...(producerQueryId ? { producerQueryId } : {}) });
   }
   return out;
 }
@@ -389,7 +399,9 @@ export function buildPhaseOutputs(files: ReadonlyMap<string, Uint8Array>, spec: 
   const diff = harvest({
     seat,
     manifest: spec.manifest,
-    files: harvestFiles(files, spec.manifest, primaryRoot(seat)),
+    files: harvestFiles(files, spec.manifest, primaryRoot(seat), spec.scopedLaunch
+      ? { path: spec.scopedLaunch.outputPath, producerQueryId: spec.scopedLaunch.producerQueryId }
+      : undefined),
     // PRB.19 (F26b): the run's declared phase outputs are writable even under a §12.6 read-only mount, so
     // `drafts/v(N+1).md` + `correspondence/vN-response.md` persist instead of dropping as boundary violations.
     writablePaths: spec.writablePaths,

@@ -117,7 +117,7 @@ async function postAudit(args: {
   if (!res.ok) throw new Error(`harness: audit ship failed ${res.status} for run ${args.runId}`);
 }
 
-  const { readFile, writeFile, mkdir, chmod, readdir, stat } = await import("node:fs/promises");
+  const { readFile, writeFile, mkdir, chmod } = await import("node:fs/promises");
 
   /**
    * Make the agent's writable work tree agent-writable (residue 1, diagnosed live P0.15h). materializeWork
@@ -125,36 +125,21 @@ async function postAudit(args: {
    * files 0644 — all harness-owned. The agent (uid 10002) therefore gets EACCES creating its declared artifacts
    * inside `agents/editor/` (the live symptom: the agent wrote a `_write_test` probe at the 0777 project ROOT,
    * then reported the phase `blocked` because `agents/editor/00-piece-brief.md` could not be written). chmod'ing
-   * only the project root (below) is not enough — the NESTED writable dirs must be world-writable too. Walk the
-   * tree: every DIRECTORY → 0777 (so the agent can create new files anywhere), every FILE that is not the 0444
-   * read-only mount → 0666 (so the agent can overwrite a prior-round output). Read-only mounts (0444) are left
-   * untouched, so this widens only the writable set — the boundary stays the proxy + uid split + §12.6 hook.
+   * only the project root (below) is not enough — the NESTED writable dirs must be world-writable too. The walk
+   * (`makeTreeAgentWritable`, work-perms.ts) sets every DIRECTORY → 0777, every non-0444 FILE → 0666 — and,
+   * since the DEF.1 Stage-B live finding (persona root stayed 0755 → all persona_root writes EACCES'd despite
+   * hook allows), the walked ROOT dir itself too. Read-only mounts (0444) are left untouched, so this widens
+   * only the writable set — the boundary stays the proxy + uid split + §12.6 hook.
    */
-  const makeTreeAgentWritable = async (dir: string): Promise<void> => {
-    let entries: import("node:fs").Dirent[];
-    try {
-      entries = await readdir(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entries) {
-      const abs = `${dir}/${e.name}`;
-      if (e.isDirectory()) {
-        await chmod(abs, 0o777).catch(() => undefined);
-        await makeTreeAgentWritable(abs);
-      } else if (e.isFile()) {
-        const mode = (await stat(abs).then((s) => s.mode & 0o777).catch(() => 0o444));
-        if (mode !== 0o444) await chmod(abs, 0o666).catch(() => undefined); // keep read-only mounts read-only
-      }
-    }
-  };
   const { spawn } = await import("node:child_process");
   const { createFetchEventTransport } = await import("./event-transport.js");
   const { createHookDaemon } = await import("./hook-daemon.js");
   const { createGcsContentStore } = await import("@rhema/mirror");
   const { materializeWork, nodeWorkFs } = await import("./materialize-work.js");
   const { readWorkRoots } = await import("./work-reader.js");
+  const { makeTreeAgentWritable, nodePermFs } = await import("./work-perms.js");
   const { startCredentialInjector } = await import("./credential-injector.js");
+  const makeWritable = (dir: string) => makeTreeAgentWritable(dir, nodePermFs);
 
   const runId = reqEnv("RUN_ID");
   const workspaceId = reqEnv("WORKSPACE_ID");
@@ -197,11 +182,68 @@ async function postAudit(args: {
     const roots = resolveSeatRoots({ roots: spec.hookPolicyInput.roots, personaId: spec.hookPolicyInput.personaId });
     await materializeWork({ roots, manifest: spec.manifest, contentStore, serverFiles, fs: nodeWorkFs });
 
-    // The agent runs (and the SDK CLI is spawned) in `request.cwd` = `roots.project` (`/work/project`): the
-    // project files now live there, the agent writes its outputs + `.rhema/agent-result.json` there, and the
-    // loop harvests from the same dir. It MUST exist or `spawn` fails ENOENT (the D-P0.15e-2 symptom).
     const cwd = spec.request.cwd;
     await mkdir(cwd, { recursive: true });
+
+    // DEF.1 / D-P0.15h-5 — an input-scoped producer phase (today: the review `second_read`): the server
+    // minted + recorded the launch (`subagent_launches`); the phase IS the scoped query — a private mount
+    // namespace holding `launch.files` only, `tools:["Read"]`, a distinct uid, no seat agent at all. The
+    // harness persists the query's text answer as the phase artifact and stamps the producer marker, so
+    // `second_read_producer_checked` can only pass against an executed launch order (never a model claim).
+    if (spec.scopedLaunch) {
+      const { runScopedPhase } = await import("./scoped-phase.js");
+      const { spawn: spawnSync } = await import("node:child_process");
+      // report the scoped launch on the §12.5 stream (user-visible; the `subagent_launches` attestation
+      // row is recorded server-side when the runspec is built — the harness only emits the event pair).
+      const transport: EventTransport = createFetchEventTransport({ baseUrl: apiBaseUrl, runId, runToken });
+      const events = new EventBufferClient(transport, new FileBufferStore(`${configDir}/events.spool`));
+      await events
+        .enqueue({ type: "subagent.started", payload: { label: spec.scopedLaunch.role, inputs: "explicit_files", fileCount: spec.scopedLaunch.files.length, model: spec.scopedLaunch.model }, agentLabel: spec.scopedLaunch.role })
+        .catch(() => undefined);
+      await events.flush().catch(() => undefined);
+
+      await runScopedPhase(
+        spec,
+        {
+          launch: spec.scopedLaunch,
+          projectDir: cwd,
+          configDir,
+          proxyBaseUrl: agentProxyBaseUrl,
+          runId,
+          agentUid,
+        },
+        {
+          log: console.log,
+          mkdir: (p) => mkdir(p, { recursive: true }).then(() => undefined),
+          writeFile: (p, d) => writeFile(p, d),
+          spawnCollect: (argv, env) =>
+            new Promise((resolve, reject) => {
+              const child = spawnSync(argv[0]!, argv.slice(1), { env });
+              let stdout = "";
+              let stderr = "";
+              child.stdout?.on("data", (c: Buffer) => (stdout += c.toString("utf8")));
+              child.stderr?.on("data", (c: Buffer) => (stderr += c.toString("utf8")));
+              child.on("error", reject);
+              child.on("exit", (code) => resolve({ code: code ?? 1, stdout, stderr }));
+            }),
+        },
+      );
+      await events
+        .enqueue({ type: "subagent.finished", payload: { label: spec.scopedLaunch.role, fileCount: spec.scopedLaunch.files.length }, agentLabel: spec.scopedLaunch.role })
+        .catch(() => undefined);
+      await events.flush().catch(() => undefined);
+
+      const files = await readWorkRoots(cwd, roots.persona);
+      const outputs = buildPhaseOutputs(files, spec, spec.request.seat as AgentTypeKey);
+      console.log(`[harness] phase ${spec.request.phase.key} /work files: ${[...files.keys()].sort().join(", ") || "(none)"}`);
+      console.log(`[harness] phase ${spec.request.phase.key} outputs: subtype=${outputs.subtype} versions=${outputs.versions.length} facts=${JSON.stringify(outputs.facts)} phaseResult=${JSON.stringify(outputs.phaseResult)}`);
+      return outputs;
+    }
+
+    // The agent runs (and the SDK CLI is spawned) in `request.cwd` = `roots.project` (`/work/project`): the
+    // project files now live there, the agent writes its outputs + `.rhema/agent-result.json` there, and the
+    // loop harvests from the same dir. It MUST exist or `spawn` fails ENOENT (the D-P0.15e-2 symptom). `cwd`
+    // was mkdir'd above (the scoped-launch branch uses it too).
     // The agent (uid `agent`, 10002) runs in `cwd` and must create its OUTPUT tree there — `.rhema/agent-result.json`
     // + `.rhema/phase-result.json` + the seat's writable namespaces (`agents/<seat>/**`). `cwd` and its parents were
     // created by the harness (uid `harness`, 10001) during materialize, so they are harness-owned and the agent
@@ -215,12 +257,16 @@ async function postAudit(args: {
     // Recurse into the writable tree so the NESTED seat namespace (`agents/<seat>/**`) is agent-writable too —
     // chmod'ing only the root left `agents/editor/` harness-owned 0755, so the agent could not create its
     // declared artifacts there (residue 1, live P0.15h). Read-only mounts stay 0444.
-    await makeTreeAgentWritable(cwd);
+    await makeWritable(cwd);
     // PRB.16b F27 — the persona root needs the same treatment: a persona_builder's `profile/**` mount is
     // `readwrite` in §12.6 but the dir is harness-owned 0755, so the agent gets EACCES on its CANONICAL
     // mount and falls back to `/work/project` (live: Quick Voice 01M2T65W… att-5's committed phase-result
-    // reported exactly this). The walk keeps 0444 mounts (PERSONA.md, docs/**) read-only.
-    if (roots.persona) await makeTreeAgentWritable(roots.persona);
+    // reported exactly this). DEF.1 Stage-B sharpened the fix live (profile_voice 01M3E42J…): the walk
+    // chmod'ed only the root's CONTENTS, so `/work/personas/<id>` itself stayed harness-owned 0755 and the
+    // agent's `.rhema/phase-result.json`/`profile/**` writes still EACCES'd despite hook allows — the
+    // extracted walk now chmods the walked root too (work-perms.ts). It keeps 0444 mounts
+    // (PERSONA.md, docs/**) read-only.
+    if (roots.persona) await makeWritable(roots.persona);
     await mkdir(configDir, { recursive: true });
     // Stage the baked skills into a CLI-discoverable location so `/editorial-review` resolves (F2). The engine
     // then enables them with `skills: "all"`; the harness (not the agent) does the filesystem staging.
@@ -251,7 +297,16 @@ async function postAudit(args: {
     // the daemon holds the audit writer; the agent asks it for allow/deny and learns nothing else (§12.6). The
     // policy is server-authored (REQ-ARCH-17): the api ships JSON-safe compile inputs; the harness compiles the
     // live SeatPolicy here with the SAME @rhema/hooks code + a fresh per-phase DenialState.
-    const policy = compileSeatPolicy(spec.hookPolicyInput as unknown as CompileInput);
+    // The staged skills dir (`<configDir>/skills`) is harness-side env state the server never sees, so
+    // the `config` root is injected here at compile time — it grants read on the symlink dir itself
+    // (reads through a link realpath to `/app/skills` and classify under the skills root either way).
+    const policy = compileSeatPolicy({
+      ...(spec.hookPolicyInput as unknown as CompileInput),
+      roots: {
+        ...spec.hookPolicyInput.roots,
+        config: `${configDir}/skills`,
+      },
+    } as CompileInput);
     // REQ-ARCH-18 / REQ-DATA-16: the §12.6 audit sink — the daemon writes every allow/deny + fetch row into a
     // buffered writer that ships to `POST /internal/runs/:id/audit` (run-token auth, fenced, append-only). The
     // sink lives harness-side: nothing but the allow/deny decision crosses the agent socket. Rows ship on a

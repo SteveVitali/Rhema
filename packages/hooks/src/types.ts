@@ -17,8 +17,9 @@ export type Namespace =
   | "agent:persona_builder"
   | `persona:${string}`;
 
-/** Which mount root a glob is anchored to. */
-export type MountRoot = "project" | "persona";
+/** Which mount root a glob is anchored to. `skills`/`config` are hook-only read grants (the baked skill
+ *  tree and its staged symlink dir, DEF.1 Stage-B); manifest/mount rows never carry them. */
+export type MountRoot = "project" | "persona" | "skills" | "config";
 
 /** A single mount-table cell (§12.6): a path glob under one root, its access mode, and its namespace. */
 export interface MountSpec {
@@ -93,8 +94,15 @@ export interface PhasePolicy {
  */
 export interface SeatPolicy {
   readonly seat: AgentTypeKey;
-  /** Absolute mount roots for this run. `persona` is absent for seats with no persona mount (system). */
-  readonly roots: { readonly project: string; readonly persona?: string };
+  /** Absolute mount roots for this run. `persona` is absent for seats with no persona mount (system);
+   *  `skills` is absent for seats whose policy grants no skill-root mounts; `config` (the staged
+   *  `<CLAUDE_CONFIG_DIR>/skills` dir) is absent unless the harness supplied it at compile time. */
+  readonly roots: {
+    readonly project: string;
+    readonly persona?: string;
+    readonly skills?: string;
+    readonly config?: string;
+  };
   /** The compiled mount allowlist (§12.6 seat table for this seat). */
   readonly mounts: readonly MountRule[];
   /** The seat's permitted tool tokens (from the `agent_types` row); `web_fetch` gating is in `urlPolicy`. */
