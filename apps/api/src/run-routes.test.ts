@@ -64,6 +64,28 @@ describe("POST /projects/:id/runs", () => {
     expect(b2.deduped).toBe(true);
   });
 
+  it("STB.4 — rate_table_version is server-pinned: a missing value doesn't 500, a crafted version is ignored", async () => {
+    const { rateTableVersion: _omit, ...body } = runBody();
+    const r1 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    expect(r1.status).toBe(201); // previously a NOT NULL 500 on runs.rate_table_version
+    const r2 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...body, idempotencyKey: "idem-http-rtv", rateTableVersion: 0 }),
+    });
+    // a client-pinned stale/future table must not freeze — creation always stamps CURRENT.
+    expect(r2.status).not.toBe(500);
+    const rows = await db.client.query(
+      "select rate_table_version from runs where workspace_id = $1",
+      [seed.workspaceId],
+    );
+    for (const row of rows.rows) expect(Number(row.rate_table_version)).toBe(1);
+  });
+
   it("PRB.21 / D-PRB.20-1 — a second create on a project with a non-terminal run → 409 run_in_progress + the active id", async () => {
     const r1 = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",

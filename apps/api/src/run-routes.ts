@@ -44,7 +44,7 @@ import { PROTOCOL_SEEDS } from "@rhema/protocols";
 import { captureGuidance } from "@rhema/orchestrator";
 import { loadPretriage } from "./triage-routes.js";
 import { computeReReviewSeed } from "./what-changed.js";
-import { capFromEstimate, projectProtocolOverridesSchema } from "@rhema/contracts";
+import { capFromEstimate, projectProtocolOverridesSchema, CURRENT_RATE_TABLE_VERSION } from "@rhema/contracts";
 import { effectivePlanTier, gateTrialUnlock, trialEntitlementFor, recordAnalyticsEvent } from "@rhema/ledger";
 import { planOf, modelTierAllowed, effectiveConcurrency } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
@@ -811,7 +811,10 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       rigor: body.rigor,
       estimateCredits,
       capCredits,
-      rateTableVersion: body.rateTableVersion,
+      // STB.4 — server-derived like the estimate/cap above: a run always freezes the CURRENT rate
+      // table at creation (a client-pinned older version would be a pricing exploit, and a missing
+      // value 500'd on the NOT NULL column). Repricing only ever happens on parked-run resume.
+      rateTableVersion: CURRENT_RATE_TABLE_VERSION,
       phaseClassesUsed: phaseClassesForWorkflow(workflow),
       inputs,
       inputSnapshot: body.inputSnapshot ?? {},
@@ -1245,7 +1248,8 @@ interface CreateRunBody {
   rigor: "quick" | "standard" | "full_board";
   estimateCredits: number;
   capCredits: number;
-  rateTableVersion: number;
+  /** deprecated client hint — the run always freezes `CURRENT_RATE_TABLE_VERSION` server-side (STB.4). */
+  rateTableVersion?: number;
   inputs?: Record<string, unknown>;
   inputSnapshot?: Record<string, unknown>;
   /** PRB.23 — the sheet's Advanced per-phase toggle overrides (resolved against rigor defaults

@@ -502,6 +502,9 @@ export interface PageData {
   /** the /billing/return poll (REQ-BILL-14/§14.6 webhook lag): `open` ⇒ the document auto-refreshes;
    *  `completed` ⇒ the continue link carries `returnTo` (re-opening the sheet where they started). */
   readonly checkoutReturn?: CheckoutStatusDto;
+  /** STB.4 — the Stripe cancel_url landed (`?cancelled=1`): the session row stays `open` forever, so the
+   *  page renders the cancelled copy and never auto-refreshes. */
+  readonly checkoutCancelled?: boolean;
   /** §14.5 level 1 — the /usage account read (buckets, MTD, period, warnings, next expiry). */
   readonly usageAccount?: UsageAccountDto;
   /** §14.5 level 2 — /p/:project/usage (the runs rollup + per-project total). `slug` is the route's

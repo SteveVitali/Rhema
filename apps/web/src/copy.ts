@@ -1441,6 +1441,7 @@ export const COPY = {
     returnDone: "Payment confirmed — your credits are in.",
     returnPending: "Confirming your payment with Stripe — this page refreshes. If it takes more than a moment, we'll email you when it lands.",
     returnExpired: "That checkout expired — nothing was charged. Start again from Billing.",
+    returnCancelled: "Checkout cancelled — nothing was charged. Start again from Billing whenever you're ready.",
     returnContinue: "Continue",
     returnBack: "Back to Billing",
     upgradePromptFmt: "{tier} adds {credits} credits a month and unlocks {tiers}.",

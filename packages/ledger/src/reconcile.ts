@@ -25,6 +25,34 @@ export interface ProviderUsageReport {
   readonly reportKey: string;
   readonly asOf?: Date;
   readonly rows: readonly ProviderReportRow[];
+  /** Window-scoped facts — present when the provider reports aggregates instead of per-request
+   *  rows (STB.4: Anthropic's Usage & Cost API serves ONLY aggregate buckets; see provider-report.ts). */
+  readonly window?: ProviderWindow;
+}
+
+/** Per-model token totals from the provider's aggregate usage report — the second,
+ *  dimensionally-different check the window arm runs: dollars re-derive under a rate table,
+ *  but tokens are raw counts both sides observe. */
+export interface ProviderWindowModelUsage {
+  readonly model: string | null;
+  readonly uncachedInputTokens: number;
+  readonly cacheCreationInputTokens: number;
+  readonly cacheReadInputTokens: number;
+  readonly outputTokens: number;
+  readonly webSearchRequests: number;
+}
+
+/** The aggregate slice of a provider report — Anthropic's `cost_report` (daily USD buckets only,
+ *  `group_by[]` ⊆ {description, workspace_id}) + `usage_report/messages` (token buckets grouped by
+ *  model). Neither endpoint exposes request-level granularity, so no `rows[]` join is possible. */
+export interface ProviderWindow {
+  /** window bounds — the provider's bucket bounds, UTC. */
+  readonly start: Date;
+  readonly end: Date;
+  /** the provider's reported spend over the whole window, USD (normalized from the report's
+   *  lowest-currency-unit `amount` — cents for USD). */
+  readonly usd: number;
+  readonly tokensByModel: readonly ProviderWindowModelUsage[];
 }
 
 /** platform credits per USD — the 1.4 rate at the $0.01 peg (§14.1). */
@@ -286,4 +314,165 @@ export async function reconcileProviderReport(
   );
 
   return { matched, unmatchedReportRows, pendingProxyRows, proxyUsd, reportUsd, driftPct, refunds, alerted, recalibrated };
+}
+
+// ---- window-scoped reconcile (the Anthropic Usage & Cost contract; STB.4 / D-PRB.08-1b) ------------------
+
+/** Token totals one side of the window compare reports. */
+export interface WindowTokenSums {
+  readonly inputTokens: number;
+  readonly cacheWriteTokens: number;
+  readonly cacheReadTokens: number;
+  readonly outputTokens: number;
+  readonly searches: number;
+}
+
+/** Per-model token compare — the metering-hole check a request-id join can't run for Anthropic. */
+export interface WindowModelCompare {
+  readonly model: string;
+  /** meter-of-record sums (proxy rows in the window); absent when the model appears only in the report. */
+  readonly proxy: WindowTokenSums | null;
+  /** provider-reported sums; absent when the meter recorded a model the report lacks (a metering hole
+   *  in reverse — the provider never saw what we charged). */
+  readonly report: WindowTokenSums | null;
+  /** signed (report − proxy)/proxy over total tokens; null when either side is zero. */
+  readonly tokenDriftPct: number | null;
+}
+
+export interface ReconcileWindowResult {
+  readonly reportKey: string;
+  readonly start: Date;
+  readonly end: Date;
+  /** proxy usage rows inside the window. */
+  readonly proxyRows: number;
+  /** Σ usage_records.list_cost_usd over the window (the platform rate-table figure). */
+  readonly proxyUsd: number;
+  /** the provider's reported spend over the window, USD. */
+  readonly reportUsd: number;
+  /** signed (report − proxy)/proxy — positive means the platform undercharged (absorbed, never billed). */
+  readonly driftPct: number;
+  readonly models: readonly WindowModelCompare[];
+  readonly alerted: boolean;
+}
+
+/**
+ * Reconcile an aggregate provider window against the meter-of-record. Anthropic's Usage & Cost API
+ * reports ONLY aggregate buckets — no request-level rows exist to join on `provider_request_id` —
+ * so this arm is detection, not adjustment: it compares the provider's window totals (dollars +
+ * per-model tokens) to Σ `usage_records` (source='proxy') over the same bounds, pages on >2% fleet
+ * drift, and returns both numbers for the record.
+ *
+ * **No ledger writes, deliberately.** A window carries no request/run attribution, so the
+ * user-favourable refund arm above cannot run on it — a refund computed by smearing an aggregate
+ * across runs would be an unexplained ledger write, worse than none. If the provider reports LESS
+ * than we metered, the divergence pages for an operator-driven adjustment instead of fabricating
+ * per-run refunds.
+ */
+export async function reconcileProviderWindow(
+  exec: SqlClient,
+  deps: Pick<ReconcileDeps, "alert">,
+  report: ProviderUsageReport & { window: ProviderWindow },
+): Promise<ReconcileWindowResult> {
+  const w = report.window;
+
+  interface ProxySumsRow {
+    model: string;
+    n: number;
+    usd: number;
+    input_tokens: number | string;
+    cache_write_tokens: number | string;
+    cache_read_tokens: number | string;
+    output_tokens: number | string;
+    searches: number | string;
+  }
+  const sums = (
+    await exec.query(
+      `select model, count(*)::int as n,
+              coalesce(sum(list_cost_usd), 0)::float8 as usd,
+              coalesce(sum(input_tokens), 0)::bigint as input_tokens,
+              coalesce(sum(cache_write_tokens), 0)::bigint as cache_write_tokens,
+              coalesce(sum(cache_read_tokens), 0)::bigint as cache_read_tokens,
+              coalesce(sum(output_tokens), 0)::bigint as output_tokens,
+              coalesce(sum(searches), 0)::bigint as searches
+         from usage_records
+        where source = 'proxy' and ts >= $1 and ts < $2
+        group by model`,
+      [w.start, w.end],
+    )
+  ).rows as ProxySumsRow[];
+
+  const proxyByModel = new Map<string, ProxySumsRow>(sums.map((s) => [s.model, s]));
+  const reportByModel = new Map<string, ProviderWindowModelUsage>();
+  for (const m of w.tokensByModel) reportByModel.set(m.model ?? "", m);
+
+  const models: WindowModelCompare[] = [];
+  const modelNames = new Set<string>([...proxyByModel.keys(), ...reportByModel.keys()]);
+  for (const model of modelNames) {
+    const p = proxyByModel.get(model);
+    const r = reportByModel.get(model);
+    const proxy: WindowTokenSums | null = p
+      ? {
+          inputTokens: Number(p.input_tokens),
+          cacheWriteTokens: Number(p.cache_write_tokens),
+          cacheReadTokens: Number(p.cache_read_tokens),
+          outputTokens: Number(p.output_tokens),
+          searches: Number(p.searches),
+        }
+      : null;
+    const reportSums: WindowTokenSums | null = r
+      ? {
+          inputTokens: r.uncachedInputTokens,
+          cacheWriteTokens: r.cacheCreationInputTokens,
+          cacheReadTokens: r.cacheReadInputTokens,
+          outputTokens: r.outputTokens,
+          searches: r.webSearchRequests,
+        }
+      : null;
+    const proxyTotal = proxy ? proxy.inputTokens + proxy.cacheWriteTokens + proxy.cacheReadTokens + proxy.outputTokens : 0;
+    const reportTotal = reportSums
+      ? reportSums.inputTokens + reportSums.cacheWriteTokens + reportSums.cacheReadTokens + reportSums.outputTokens
+      : 0;
+    const tokenDriftPct =
+      proxyTotal > 0 && reportTotal > 0 ? (reportTotal - proxyTotal) / proxyTotal : null;
+    models.push({ model, proxy, report: reportSums, tokenDriftPct });
+  }
+
+  const proxyUsd = sums.reduce((s, r) => s + Number(r.usd), 0);
+  const proxyRows = sums.reduce((s, r) => s + Number(r.n), 0);
+  const reportUsd = w.usd;
+  const driftPct = proxyUsd > 0 ? (reportUsd - proxyUsd) / proxyUsd : 0;
+
+  let alerted = false;
+  if (Math.abs(driftPct) > 0.02) {
+    await deps.alert({
+      kind: "usage_drift",
+      reportKey: report.reportKey,
+      driftPct,
+      proxyUsd,
+      reportUsd,
+      detail: JSON.stringify({
+        window: { start: w.start, end: w.end },
+        proxyRows,
+        models: models.map((m) => ({
+          model: m.model,
+          tokenDriftPct: m.tokenDriftPct,
+          proxyOnly: m.report === null,
+          reportOnly: m.proxy === null,
+        })),
+      }),
+    });
+    alerted = true;
+  }
+
+  return {
+    reportKey: report.reportKey,
+    start: w.start,
+    end: w.end,
+    proxyRows,
+    proxyUsd,
+    reportUsd,
+    driftPct,
+    models,
+    alerted,
+  };
 }

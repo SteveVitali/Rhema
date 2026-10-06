@@ -314,7 +314,14 @@ export async function startWorker(): Promise<void> {
     obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),
     ...(adminKey ? { reportSource: new AnthropicAdminReportSource({ adminKey }) } : {}),
     // P1.16 — the Stripe port for the auto-reload sweep (unset ⇒ logged no_stripe_port skip).
-    ...(stripeKey ? { stripe: new FetchStripePort(stripeKey) } : {}),
+    // STB.4 — `stripeApiBaseUrl` points the port at a test-mode edge when configured.
+    ...(stripeKey
+      ? {
+          stripe: env.stripeApiBaseUrl
+            ? new FetchStripePort(stripeKey, env.stripeApiBaseUrl)
+            : new FetchStripePort(stripeKey),
+        }
+      : {}),
     ...(alertSink ? { alert: alertSink } : {}),
     // REQ-BILL-13: reconciled measured-vs-modeled facts fold into the estimator spec (the recorded override
     // flips the workflow's `provisional` once real reports land).
@@ -537,7 +544,7 @@ export async function startWorker(): Promise<void> {
   await boss.work(USAGE_RECONCILE_JOB, async () => {
     const r = await handleUsageReconcile(deps);
     console.log(
-      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : "skipped"}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
+      `[worker] usage.reconcile: report=${r.report ? `${r.report.matched} matched, drift ${(r.report.driftPct * 100).toFixed(2)}%` : "skipped"}, window=${r.window ? `report $${r.window.reportUsd.toFixed(4)} vs proxy $${r.window.proxyUsd.toFixed(4)} drift ${(r.window.driftPct * 100).toFixed(2)}%` : "skipped"}, balances ${r.balances.ok ? "ok" : `${r.balances.divergences} divergences`}`,
     );
   });
   await boss.schedule(USAGE_RECONCILE_JOB, "15 3 * * *");

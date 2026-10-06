@@ -70,8 +70,10 @@ export async function startCheckout(
       ? { pack: { id: args.packId, usd: args.packUsd, credits: args.packCredits } }
       : {}),
     // success/cancel land back in the app; `return_to` is what the api bounces through to the origin page.
-    successUrl: `${args.appBaseUrl}/billing/checkout-return?session=${sessionId}`,
-    cancelUrl: `${args.appBaseUrl}/billing/checkout-return?session=${sessionId}&cancelled=1`,
+    // STB.4 (live finding): the deployed web mounts `/billing/return?session_id=` — an earlier
+    // `/billing/checkout-return?session=` shape 404'd the Stripe redirect on every real checkout.
+    successUrl: `${args.appBaseUrl}/billing/return?session_id=${sessionId}`,
+    cancelUrl: `${args.appBaseUrl}/billing/return?session_id=${sessionId}&cancelled=1`,
     ...(args.require3ds ? { require3ds: true } : {}),
   });
   await tx.query("update checkout_sessions set stripe_session_id = $2 where id = $1", [sessionId, ref.id]);

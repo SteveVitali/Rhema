@@ -2617,11 +2617,14 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.json(out);
   });
   // The checkout return (REQ-BILL-14): Stripe lands here with ?session_id=. `open` ⇒ the document
-  // auto-refreshes (webhook lag ≤30 s); `completed` ⇒ continue to where the user started.
+  // auto-refreshes (webhook lag ≤30 s); `completed` ⇒ continue to where the user started. A
+  // `cancelled=1` return (the Stripe cancel_url) renders the cancelled copy — the session row stays
+  // `open` forever, so auto-refresh would poll a state that can never change (STB.4 live finding).
   app.get("/billing/return", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const sessionId = c.req.query("session_id") ?? "";
+    const cancelled = c.req.query("cancelled") === "1";
     const checkoutReturn = sessionId
       ? await Promise.resolve()
           .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
@@ -2629,7 +2632,8 @@ export function createWebApp(deps: WebDeps): Hono {
       : undefined;
     return c.html(renderDocument(c.req.path, billingReturnElement, {
       ...(checkoutReturn ? { checkoutReturn } : {}),
-      ...(checkoutReturn?.state === "open"
+      ...(cancelled ? { checkoutCancelled: true } : {}),
+      ...(checkoutReturn?.state === "open" && !cancelled
         ? { autoRefresh: { seconds: 5, url: `/billing/return?session_id=${encodeURIComponent(sessionId)}` } }
         : {}),
     }));
