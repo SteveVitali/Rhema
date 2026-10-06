@@ -1625,10 +1625,12 @@ const P1: StepFn = async (ctx) => {
     await assertAxeClean(page, `phone /p/${slug}`);
     await page.screenshot({ path: join(ctx.outDir, "p1-project-390.png"), fullPage: true });
 
-    // The Page's sync pill at phone width (ADR-069 + §10.1): /v/working is an EDITOR surface —
-    // phone requests land on the project page (or the §10.1 note) and the editor never mounts,
-    // so no pill exists to float. If a mounted editor ever reaches phone again, its pill must
-    // be there AND in-flow; a fixed/sticky pill anywhere is the regression this leg guards.
+    // The Page's sync pill at phone width (ADR-069 + §10.1 + P1.19): /v/working is an EDITOR
+    // surface. Below ~768px the shipped contract is P1.19's READER-only Page — `isPhoneRequest`
+    // SSRs the same route `compact` + `readOnly` (no collab wire, no version rail, the read-only
+    // note) — OR a redirect to the project page, OR the §10.1 blocked note. If a mounted editor
+    // ever reaches phone again, its pill must be there AND in-flow; a fixed/sticky pill anywhere
+    // is the regression this leg guards.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
     const pillLanded = new URL(page.url()).pathname;
     await assertNoOverflow(page, `phone ${pillLanded} (via /v/working)`);
@@ -1645,8 +1647,37 @@ const P1: StepFn = async (ctx) => {
       const overlapped = await pillTextOverlap(page);
       if (overlapped) throw new Error(`sync pill covers text at phone width: ${overlapped}`);
     }
-    if (pillLanded !== `/p/${slug}` && !editorMounted && (await page.locator("[data-phone-blocked]").count()) === 0) {
-      throw new Error(`/v/working @390 landed on ${pillLanded} with neither the project page nor the §10.1 note`);
+    // P1.19's reader contract (D-CAP.3-3): wherever the Page SSRs at phone width — on /v/working
+    // itself or embedded on the project page it redirects to — it must carry the reader markers:
+    // data-readonly="1", no collab wire, the read-only note, no version rail, and nothing
+    // editable mounted (the island renders contenteditable="false"). An editable Page at phone
+    // width is the capability-leak this assert catches.
+    const pageRoot = page.locator("[data-page-root]").first();
+    const readerPage = (await pageRoot.count()) > 0;
+    if (readerPage) {
+      if ((await pageRoot.getAttribute("data-readonly")) !== "1") {
+        throw new Error(`phone ${pillLanded}: the Page SSR'd without data-readonly="1" (§10.1 reader contract)`);
+      }
+      if ((await pageRoot.getAttribute("data-collab-url")) !== "") {
+        throw new Error(`phone ${pillLanded}: the Page SSR'd with a collab wire (§10.1 bans editing on phone)`);
+      }
+      if ((await page.locator('[data-page-banner="readonly"]').count()) === 0) {
+        throw new Error(`phone ${pillLanded}: the reader Page lacks its read-only note`);
+      }
+      if ((await page.locator("[data-version-rail]").count()) > 0) {
+        throw new Error(`phone ${pillLanded}: the version rail renders on the phone reader (§10.1 hides it)`);
+      }
+      if ((await page.locator('[data-page-host] [contenteditable="true"]').count()) > 0) {
+        throw new Error(`phone ${pillLanded}: an editable Page view mounted at phone width`);
+      }
+    }
+    if (
+      pillLanded !== `/p/${slug}` &&
+      !editorMounted &&
+      !readerPage &&
+      (await page.locator("[data-phone-blocked]").count()) === 0
+    ) {
+      throw new Error(`/v/working @390 landed on ${pillLanded} with neither the project page, the P1.19 reader, nor the §10.1 note`);
     }
     await assertAxeClean(page, `phone ${pillLanded} (via /v/working)`);
     await page.screenshot({ path: join(ctx.outDir, "p1-pill-390.png"), fullPage: true });

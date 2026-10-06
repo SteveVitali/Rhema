@@ -298,3 +298,14 @@ all three paid legs deferred on the deploy prerequisite + the measured weekly sp
 $0 metered spend this Stage B. The measured completeness owed (ADR-086) rides D-CITE.1-5; the
 pre-deploy baseline (canonical 1.0 aggregate, 0 trulyUnretrieved) is recorded above and in LEDGER
 OPEN FINDINGS (X-citation-completeness).
+
+## Evidence log — 2026-10-06 (funded window A)
+
+- Deploy leg discharged at the later chain tip `fcbbc66` (update 144; D-CITE.1-1 DONE, recorded in
+  `runs/DEPLOY-2026-10-06.md`).
+- Paid legs attempted: weekly guard **clear** ($0.00 system-role, ISO week 2026-10-05) but **test-tenant
+  funding empty** — the ~26 h purge reaped the grant-bearing tenants (promo residuals 7,472/8,000/3,743 cr
+  stranded on memberless workspaces); live jrn-a holds 10 `daily` cr; `POST /projects/…/runs` refuses
+  `402 insufficient_balance required=1493`; the locked trial covers only Standard/Base Reviews (never the
+  probe's fact_check cell, off-contract for the Quick/Base Leg 3). **$0 metered; legs stay deferred on an
+  operator `house-grant`** — detail + ask in `runs/FUNDED-2026-10-06-A.md` §2–4.
