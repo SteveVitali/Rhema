@@ -10,6 +10,7 @@ import {
   type VerdictSourceContext,
 } from "@rhema/mirror";
 import { SqlObligationHook } from "./hook.js";
+import { mootObligation } from "./discharge.js";
 import { loadProjectObligations } from "./queries.js";
 import {
   createObligationTestDb,
@@ -188,6 +189,66 @@ describe("obligation hook inside the delivery transaction (REQ-OBJ-2, REQ-DATA-7
     expect(stateOf("wording")).toBe("addressed"); // the minor spawned on accept/done
     expect(blocking.id).not.toBe(major.id); // sanity: distinct obligations
     void nextDraftId;
+  });
+
+  // MAINT.3 (D-STB.5b-4) — a frozen `defer`/`rebut`/verified fold whose obligation CLOSED between
+  // freeze and delivery is a stale fold: the later transition wins, delivery completes, the debt
+  // stays closed (the live class: a `defer` route onto `mooted` 500s the tx — and would wedge a
+  // run in `finalizing` inside the delivery tx).
+  it("a folded defer onto a since-mooted obligation absorbs — delivery completes, mooted wins", async () => {
+    const review = await runDeliveryTransaction(db.exec, deps, args());
+    const before = await loadProjectObligations(db.exec, projectId);
+    const major = before.find((o) => o.title === "weak argument")!;
+    // the debt closed (mooted) AFTER the response ledger froze its defer for it.
+    await mootObligation(db.exec, testDeps(700), { obligationId: major.id, byActor: { kind: "user", userId: "usr_x" } });
+
+    const respRun = "run_resp_moot";
+    await seedRun(db.exec, { runId: respRun, workspaceId, projectId, state: "finalizing" });
+    const tree = await materializeSeat(db.exec, store, { seat: "drafter", projectId, personaId: "prs_pv" });
+    await recordMounts(db.exec, { runId: respRun, attempt: 1, manifest: tree.manifest });
+    const baseDraftId = deps.ids("dft");
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, base_draft_id)
+       values ($1,$2,3,'response_to_review','working','dft_v2')`,
+      [baseDraftId, projectId],
+    );
+    const v3 = await store.putText(workspaceId, "# v2\n\nThe restated pillar paragraph.\n");
+    await db.exec.query(
+      `insert into artifacts(id, workspace_id, project_id, kind, namespace, mirror_path, head_version_id)
+       values ('art_v3',$1,$2,'draft','shared','drafts/v3.md','av_v3')`,
+      [workspaceId, projectId],
+    );
+    await db.exec.query(
+      `insert into artifact_versions(id, artifact_id, ordinal, content_sha256, s3_key, bytes, media_type, created_by)
+       values ('av_v3','art_v3',1,$1,'k',40,'text/markdown','{"kind":"system"}'::jsonb)`,
+      [v3.sha256],
+    );
+
+    const ledger = {
+      sidecar: "response_ledger",
+      version: 1,
+      entries: [
+        // a stale defer fold onto the now-mooted debt — absorbed, never a closed-world abort.
+        { findingOrdinal: 2, disposition: { kind: "defer", status: "done", rationale: "later", actor: "drafter" } },
+      ],
+      moves: [],
+    };
+    await runDeliveryTransaction(db.exec, deps, {
+      runId: respRun,
+      attempt: 1,
+      workspaceId,
+      projectId,
+      draftId: baseDraftId,
+      correspondenceKind: "response",
+      priorReviewId: review.correspondenceId,
+      deliveredVersionIds: ["av_v3"],
+      draftPromotedVersionId: "av_v2",
+      sidecars: [{ filename: "response-ledger.json", json: ledger as never }],
+      verdictContext: EMPTY_VERDICT_CTX,
+    });
+
+    const after = await loadProjectObligations(db.exec, projectId);
+    expect(after.find((o) => o.title === "weak argument")?.state).toBe("mooted"); // the close wins
   });
 
   // PRB.06 — the re-review's lineage tally is computed from rows and emitted as `rereview.lineage`.

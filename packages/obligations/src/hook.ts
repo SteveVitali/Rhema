@@ -14,6 +14,7 @@ import { matchFinding, quoteOf, type CandidateFinding, type LineageMatchOptions 
 import { bumpSeverity, incrementRoundsOpen, spawnObligationFromFinding, spawnsAtDelivery } from "./spawn.js";
 import { dischargeByGapCheck, dischargeByNoMatch, mootObligation, reopenObligation, sweepArrivedDeferrals } from "./discharge.js";
 import { routeDisposition, spawnAndRouteMinor } from "./routing.js";
+import { CLOSING_STATES, ObligationTransitionError } from "./state-machine.js";
 import { escalateStalls } from "./stall.js";
 import type { Severity } from "@rhema/contracts";
 
@@ -273,6 +274,13 @@ export class SqlObligationHook implements ObligationHook {
         }
         continue;
       }
+      // MAINT.3 (D-STB.5b-4) — a frozen ledger move whose obligation CLOSED since the ledger froze
+      // (moot, a by-hand discharge, a rebut through another path) is a stale fold: the later
+      // transition wins and delivery must not wedge on the closed-world refusal (the PRB.19 F33
+      // class, generalised — a `defer` fold onto `mooted` otherwise aborts this whole tx). A
+      // refusal onto a NON-closed state still throws: that is a real transition bug, and wedging
+      // is what surfaces it.
+      try {
       switch (d.kind) {
         case "rebut":
           await routeDisposition(exec, this.deps, {
@@ -361,6 +369,10 @@ export class SqlObligationHook implements ObligationHook {
             if (res.transitioned) routed.push(obl.id);
           }
           break;
+      }
+      } catch (e) {
+        if (e instanceof ObligationTransitionError && CLOSING_STATES.has(obl.state)) continue;
+        throw e;
       }
     }
     this.lastOutcome = {

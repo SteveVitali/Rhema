@@ -316,7 +316,12 @@ function bandOf(text: string): { low: number; high: number } | null {
   return m ? { low: Number(m[1]), high: Number(m[2]) } : null;
 }
 
-/** The run sheet's estimate-box figure + band for a lever/inputs override (`?words=`/`?claims=`/`?tier=`/`?rigor=`). */
+/** The run sheet's estimate-box figure + band for a lever/inputs override (`?words=`/`?claims=`/`?tier=`/`?rigor=`).
+ *  MAINT.3 (D-OBS.1-3 N4) — an entitled trial tenant renders the §14.3 `Included` variant: no
+ *  `[data-credits-line]`. The sheet's own recompute payload (`var R={…cells…}`, §5.6 item 2) still
+ *  embeds the SAME lever matrix the funded variant prints — read the cell for the resolved
+ *  rigor|tier|toggles exactly as the inline script does. The assertion is unchanged: the figure the
+ *  run would actually be estimated at, never a fabricated number. */
 async function sheetFigure(
   page: Page,
   ctx: StepCtx,
@@ -325,9 +330,32 @@ async function sheetFigure(
 ): Promise<{ credits: number; band: { low: number; high: number } | null }> {
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&${query}`);
   const creditsLine = (await page.textContent("[data-credits-line]")) ?? "";
-  const credits = creditsOf(creditsLine);
   const timeLine = (await page.textContent("[data-time-line]")) ?? "";
-  return { credits, band: bandOf(timeLine) };
+  if (creditsLine) return { credits: creditsOf(creditsLine), band: bandOf(timeLine) };
+  if ((await page.locator("[data-included='true']").count()) === 0) {
+    throw new Error(`run sheet renders neither a credits line nor the Included variant`);
+  }
+  const cell = await page.evaluate(() => {
+    const script = [...document.querySelectorAll("script")]
+      .map((s) => s.textContent ?? "")
+      .find((t) => t.includes("var R="));
+    const m = script ? /var R=(\{.*?\});var f=/.exec(script) : null;
+    if (!m) return null;
+    const R = JSON.parse(m[1] ?? "{}") as {
+      modelTier: string;
+      cells: Record<string, { e: number; lo: number; hi: number }>;
+    };
+    const rig = (document.querySelector("input[name=rigor]:checked") as HTMLInputElement | null)?.value;
+    const tier =
+      (document.querySelector("select[name=modelTier]") as HTMLSelectElement | null)?.value ?? R.modelTier;
+    const toggles = [...document.querySelectorAll("input[name^='toggle.']:checked")]
+      .map((b) => (b as HTMLInputElement).name.slice(7))
+      .sort()
+      .join(",");
+    return R.cells[`${rig}|${tier}|${toggles}`] ?? null;
+  });
+  if (!cell) throw new Error(`Included sheet: no recompute cell for the resolved levers`);
+  return { credits: Math.round(cell.e), band: bandOf(timeLine) ?? { low: cell.lo, high: cell.hi } };
 }
 
 /**

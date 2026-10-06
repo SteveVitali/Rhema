@@ -832,6 +832,58 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     ).toBe(true);
   });
 
+  it("MAINT.3 — a trial entitlement renders `Included` only at its own shape; any other shape prices honestly", async () => {
+    // The funded-window defect (D-STB.5b window, §B.3): the sheet rendered `Included` + posted the
+    // hidden entitlementId for EVERY shape, so a Quick launch on an entitled account 422'd
+    // `trial_shape` and never re-offered the funded figure. The entitlement applies only to the one
+    // configured shape (review/standard/base — the api's `trial_shape` gate reads the same config).
+    const entitledCtx = {
+      project: {
+        protocol: "essay",
+        venue: null,
+        approvalPolicy: "named" as const,
+        rigor: "standard",
+        modelTier: null,
+        protocolChanged: false,
+        protocolVersion: 1,
+        memoConfidentiality: false,
+        protocolDefaults: {},
+      },
+      protocols: [],
+      headDraft: { id: "d_1", n: 1, state: "ready", words: 600, sha256: null },
+      sections: [],
+      openObligations: 0,
+      reviewScopeLine: null,
+      reviseScopeLine: null,
+      standingNotes: 0,
+      entitlement: { id: "ent_1", kind: "review", wordCap: 2800, rigor: "standard", modelTier: "base" },
+      dontAskUnder: 0,
+      activeRuns: [],
+      blockedBy: null,
+    };
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = { ...deps.dataSource, getRunSheetContext: async () => entitledCtx };
+    const app = createWebApp(deps);
+
+    // the mismatching shape: the funded estimate renders, `Included` + the hidden id do not.
+    const quick = await (
+      await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=quick")
+    ).text();
+    expect(quick).not.toContain('data-included="true"');
+    expect(quick).not.toContain('name="entitlementId"');
+    expect(quick).toContain("data-credits-line");
+
+    // the configured shape: `Included` + the hidden id — the entitlement still claims its run.
+    const standard = await (
+      await app.request(
+        "/p/the-politics-of-visibility/run?workflow=review&rigor=standard&modelTier=base",
+      )
+    ).text();
+    expect(standard).toContain('data-included="true"');
+    expect(standard).toContain('name="entitlementId"');
+    expect(standard).toContain('value="ent_1"');
+  });
+
   it("PRB.23 — no sentinel ⇒ no toggles sent (rigor defaults apply server-side)", async () => {
     const seen: (Readonly<Record<string, boolean>> | undefined)[] = [];
     const deps = makeDeps({ session: () => ({}) });

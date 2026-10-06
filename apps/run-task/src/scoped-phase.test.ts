@@ -3,6 +3,7 @@ import { FORBIDDEN_AGENT_ENV_KEYS, PROXY_PLACEHOLDER_ANTHROPIC_API_KEY } from "@
 import type { HarnessRunSpec, ScopedPhaseLaunch } from "@rhema/orchestrator";
 import {
   buildScopedPhasePlan,
+  EMPTY_SUCCESS_NUDGE,
   runScopedPhase,
   scopedPromptWithGuidance,
   scopedRunnerEnv,
@@ -176,11 +177,50 @@ describe("runScopedPhase — output persistence (DEF.1 F2)", () => {
     expect(written.has("/work/project/.rhema/agent-result.json")).toBe(true);
   });
 
-  it("empty text on a success subtype is NOT produced (no artifact, marker, or done)", async () => {
-    const { deps, written } = memDeps({ code: 0, stdout: JSON.stringify({ text: "  ", subtype: "success" }), stderr: "" });
+  it("empty text on a success subtype re-issues once with the nudge, then still reports blocked (D-STB.5b-5)", async () => {
+    let spawns = 0;
+    const written = new Map<string, string>();
+    const deps: ScopedPhaseDeps = {
+      spawnCollect: async () => {
+        spawns++;
+        return { code: 0, stdout: JSON.stringify({ text: "  ", subtype: "success" }), stderr: "" };
+      },
+      writeFile: async (p, d) => void written.set(p, typeof d === "string" ? d : Buffer.from(d).toString("utf8")),
+      mkdir: async () => undefined,
+      log: () => undefined,
+    };
     const out = await runScopedPhase(SPEC, ARGS, deps);
+    expect(spawns).toBe(2); // the transient empty success gets exactly one guided re-issue
     expect(out.produced).toBe(false);
     expect(JSON.parse(written.get("/work/project/.rhema/phase-result.json")!)).toMatchObject({ status: "blocked" });
+    // the retry's spec carries the correction nudge on the prompt channel — never in /work outputs.
+    const specFile = JSON.parse(written.get("/config/scoped-spec.json")!) as { query: { prompt: string } };
+    expect(specFile.query.prompt).toBe(`${LAUNCH.prompt}\n\n${EMPTY_SUCCESS_NUDGE}`);
+    for (const [path, content] of written) {
+      if (path === "/config/scoped-spec.json") continue;
+      expect(content, `${path} leaked the nudge`).not.toContain("no text");
+    }
+  });
+
+  it("empty text on success then a real answer produces — the retry converts the transient (D-STB.5b-5)", async () => {
+    let spawns = 0;
+    const written = new Map<string, string>();
+    const deps: ScopedPhaseDeps = {
+      spawnCollect: async () => {
+        spawns++;
+        return spawns === 1
+          ? { code: 0, stdout: JSON.stringify({ text: "", subtype: "success" }), stderr: "" }
+          : { code: 0, stdout: JSON.stringify({ text: "the second read", subtype: "success", usage: {} }), stderr: "" };
+      },
+      writeFile: async (p, d) => void written.set(p, typeof d === "string" ? d : Buffer.from(d).toString("utf8")),
+      mkdir: async () => undefined,
+      log: () => undefined,
+    };
+    const out = await runScopedPhase(SPEC, ARGS, deps);
+    expect(spawns).toBe(2);
+    expect(out).toEqual({ subtype: "success", produced: true });
+    expect(written.get("/work/project/agents/editor/05-second-read.md")).toBe("the second read");
+    expect(JSON.parse(written.get("/work/project/.rhema/phase-result.json")!)).toMatchObject({ status: "done" });
   });
 
   // DEF.4 — a guided retry lands the predicate-failure text in the spec file's query.prompt, and the
