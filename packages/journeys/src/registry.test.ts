@@ -39,11 +39,11 @@ describe("the journey step registry", () => {
       // P1 flipped red→green on prod proof (UX.2 Stage B, nonce 4ff89a27d950 @6723784).
       [
         "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "X1",
-        // STB.5a's greens: the $0 legs that pass on free tenants (T1, T2, T4–T6) + the weekly
-        // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3 is
-        // red on two live defects its legs exposed (D-STB.5a-1 emailed token 404, D-STB.5a-2
-        // import 500); T7/T8/T13/T15/T16 stay red — clock/prerequisite/read-path rows.
-        "T1", "T2", "T4", "T5", "T6", "T9", "T10", "T11", "T12", "T14",
+        // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
+        // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7
+        // flipped green 2026-10-06 on the deployed tip fcbbc66 (CAP.3's fixes verified live —
+        // nonce 6c268536d58b); T8/T13/T15/T16 stay red — clock/prerequisite rows.
+        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T14",
       ].sort(),
     );
   });

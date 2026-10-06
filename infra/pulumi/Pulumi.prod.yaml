@@ -309,7 +309,21 @@ config:
   # ADR-085). fetcher/convert/export/turbo-cache have no diff'd runtime code — they keep
   # their pins. NOTE: `pulumi up` is owed — blocked on an expired Pulumi Cloud token at
   # build time (D-CITE.1-1); these pins are the declared desired state for that apply.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:0df7b7e1512e5bec043af99d174a1b6f115ddf91e4f6b9ad0bea43edb81bf092","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:dc619a5114ace778ccc68721298446592156ef008b42177466baf09a665e81c4","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:da8ac0cf0eed95add701e9b490d55c9b0ab822f086432064cc756c4565a3556e","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:5a18a7739014f953f6b0e760253ac51727e70b1b8723e7c01c40ca705415223e","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:2a6fd042c52ac54fffe0975fc26c2d79efc94e1f766a4443f3f0bfd8f0af7299","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:93853b8de694a9b2d357260db633e21149fdc56e1857c846cb919aa6c745d94f","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:fd026a24ee3b449547b110216fc6aed75de30fbef4de7f479b7753afb53b28d0","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:b62a2863cbc36ba9f763760ad21fc0e6eab6045a73f8c74318b974876177a265"}'
+  # (2026-10-06 addendum: the CITE.1 build a1a25956 @5baa666 never applied — superseded
+  # by the post-GATE-ACCEPT tip build below; the D-rows explicitly accept legs running
+  # on the later deploy.)
+  # Post-GATE-ACCEPT deploy (tag prod, Cloud Build f1efda63, 2026-10-06, chain-tip SHA
+  # fcbbc663857ae34041716c3b51ebc8482d803772 — stevevitali/doc-2-agent-docs-refresh):
+  # api + web + worker + run-task + egress-proxy + collab rebuilt on the tip. Carries
+  # everything CITE.1's never-applied build did PLUS: ECON.2's five flag-gated COGS
+  # levers (all OFF — behavior-neutral until armed, ADR-087); STB.5a/STB.5b harness;
+  # CAP.3's eight defect fixes — anonymous export token on systemExec (ADR-090), import
+  # slug deconflict (ADR-091), the 0058 pgboss purge probe (ADR-092 — migration applied
+  # via the IAP tunnel BEFORE this pin lands), fail-closed spend guard (ADR-093),
+  # launch-ledger iteration caps (ADR-094), phone 44px CSS source-order fix; the
+  # REC/DOC tickets' code deltas. fetcher/convert/export/turbo-cache carry no diff'd
+  # runtime code — pins kept.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:c534eefbb16d82144c245c7cd63be8d23fb8322a0b8ffdf1fc8ade1a66f448e3","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:c7606e3ea0e0004f850894129df871b59ee1a2e9ad59dffdea50c2885d5d018d","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:4bb2ac9e541c1244532b0ec426174f788c8f7c65ca581b2e901af212d6ef7fe4","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:5a18a7739014f953f6b0e760253ac51727e70b1b8723e7c01c40ca705415223e","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:2a6fd042c52ac54fffe0975fc26c2d79efc94e1f766a4443f3f0bfd8f0af7299","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:93853b8de694a9b2d357260db633e21149fdc56e1857c846cb919aa6c745d94f","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:e07f71e8c6ba297ea12071fc2686fbd72145fad569ebf876217cd8e263a3418e","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:b62a2863cbc36ba9f763760ad21fc0e6eab6045a73f8c74318b974876177a265"}'
   # SEC.3 (build sec3-73718cd, Cloud Build 90a36278, 2026-10-03, SHA 73718cd): the distroless
   # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
   # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner. Third
@@ -318,13 +332,17 @@ config:
   # F-SEC3-4: the serviceImages worker pin above (4c4efebe, Cloud Build c3d1f107, same SHA)
   # carries the SEC.3 launcher/env plumbing — the DEF.4-era worker ignored RUN_TASK_APPARMOR_*
   # and emitted the F-StageB-5 stopgap profile type.
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:53cca28095925882bb5d1dc820dc8b591e5ba5a91ff1c725bd58cac7153b2888
+  # 2026-10-06 — run-task re-pinned to the fcbbc66 tip build (f1efda63): carries CITE.1's
+  # backfill phase class + ECON.2's COGS lever flags + CAP.3's launch-ledger caps.
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:c161a34e1b91fe1702ee7b7154d62fe449904d556cfbe8d9561e04ea58d8aea5
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.
   rhema:runTaskAppArmorType: Localhost
   rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:9767f907451dedf4976e96d8b2471fea94c45f0173609900a2e99198c9b88475
+  # 2026-10-06 — egress-proxy re-pinned to the fcbbc66 tip build (f1efda63): CITE.1's
+  # canonical cited⇒retrieved parity + search-row logging + backfill metering.
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:7fdf22e10d548ff5d70c1edb02ac1668a50cbede7e96ceb5b143e1b6fd3b39f8
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

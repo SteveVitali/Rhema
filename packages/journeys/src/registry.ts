@@ -319,9 +319,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T3",
     journey: "both",
     asserts:
-      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Red on two live defects the leg exposed: D-STB.5a-1 (the anonymous /export/download token lookup runs unscoped against FORCE-RLS account_exports → 404 for every valid token) and D-STB.5a-2 (importAccountZip → artifacts_project_id_fkey 500 — the seed showcase slug collides, the skipped row's mapped id orphans its artifacts)",
+      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Flipped green 2026-10-06 on the deployed tip fcbbc66 (nonce 6c268536d58b): CAP.3's D-STB.5a-1 systemExec token lookup → the emailed link 302s to the presigned zip, and D-STB.5a-2's slug deconflict → notice=imported parity + re-import deduped",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -355,9 +355,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T7",
     journey: "both",
     asserts:
-      "the delete enqueues a pgboss project.purge job start_after tombstone+30d, singleton-keyed on the project (D-P1.04-2's schedule half — owed: the app-login role has no pgboss schema grant, needs a system-scoped JOURNEY_DATABASE_URL or a pgboss.job SELECT grant; the live-destruction half is clock-owed)",
+      "the delete enqueues a pgboss project.purge job start_after tombstone+30d, singleton-keyed on the project — read via migration 0058's rhema_project_purge_schedule probe on the app role (D-P1.04-2's schedule half; the live-destruction half stays clock-owed). Flipped green 2026-10-06 on the deployed tip fcbbc66 (nonce 6c268536d58b): the probe returns the singleton-keyed row under JOURNEY_DATABASE_URL bound to rhema_app_login",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
