@@ -4,12 +4,15 @@
 //   PUT  /notifications/prefs   — write toggles; the two NON-CONFIGURABLE rows (spend_gate, trial_payment)
 //                                 reject with 400 — the server is the authority (REQ-ACCT-1), and the
 //                                 delivery path ignores a stored false for them regardless (defense in depth).
-//   GET  /action/:token         — the signed one-click link the email renders. UNAUTHENTICATED: the signed
+//   GET  /api/action/:token     — the signed one-click link the email renders (mintEmailAction mints
+//   GET  /action/:token           `<apiBaseUrl>/api/action/<payload>.<sig>`; this app mounts at the
+//                                 listener root so BOTH the minted /api/action path and the unprefixed
+//                                 route answer — DEF.3 / STB.3 F9). UNAUTHENTICATED: the signed
 //                                 token IS the credential. Consumption is atomic (single-use, expiry, HMAC);
 //                                 `hold` pauses the countdown ("Wait for me"), `open` redirects to the deep
 //                                 link. There is no Approve action anywhere in this surface.
 
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import {
   isNonConfigurableEvent,
   notificationEventTypeSchema,
@@ -163,13 +166,14 @@ export function createNotificationRoutes(deps: NotificationApiDeps): Hono {
   });
 
   // ---- the signed one-click action (unauthenticated — the token is the credential) ---------------------
-  app.get("/action/:token", async (c) => {
+  // Mounted twice: `/api/action/:token` is the path mintEmailAction puts in the email (STB.3 F9 — the
+  // minted URL was a dead 404); `/action/:token` keeps the unprefixed surface that leg exercised.
+  const consumeSignedAction = async (c: Context) => {
     const config = deps.notifications;
     if (!config) return c.json({ error: "email actions are not configured" }, 404);
-    const res = await consumeEmailAction(
-      { txRunner: deps.txRunner, clock: deps.clock, config },
-      c.req.param("token"),
-    );
+    const token = c.req.param("token");
+    if (token === undefined) return c.json({ error: "malformed" }, 400); // unreachable under :token mounts — typed for the generic Context
+    const res = await consumeEmailAction({ txRunner: deps.txRunner, clock: deps.clock, config }, token);
     if (!res.ok) {
       const status = res.reason === "bad_signature" || res.reason === "malformed" ? 400 : 410;
       return c.html(`<p>This link ${res.reason === "expired_or_consumed" ? "has already been used or expired" : "is not valid"}. Open Rhema to decide.</p>`, status);
@@ -193,7 +197,9 @@ export function createNotificationRoutes(deps: NotificationApiDeps): Hono {
       });
     });
     return c.redirect(link, 303);
-  });
+  };
+  app.get("/api/action/:token", consumeSignedAction);
+  app.get("/action/:token", consumeSignedAction);
 
   // ---- the Inbox (P1.19; REQ-IDE-2 amended / REQ-MOBILE-19) --------------------------------------------
   //   GET  /inbox            — the §5.11 ordered item list (blocked-on-you → unread events → stale voices).

@@ -2,9 +2,13 @@
 //
 // The proxy enforces the cap: when a run's Σ metered cost ≥ its cap, the NEXT request is rejected with 402
 // (the engine sees `budget`, the orchestrator opens `resume_partial`). The request that crosses the cap is
-// served and metered — the residual overrun bound is exactly one in-flight request (§12.4). The accountant
-// sums PRECISE platform credits (never the per-row rounded `credits`), so the cap does not drift from
-// double-rounding. The live service seeds this from Σ `list_cost_usd` over the run's committed proxy rows.
+// served and metered — the residual overrun bound is exactly one in-flight request (§12.4). That bound is
+// only honest if metering is ORDERED: on the streamed path the terminal response bytes are withheld until
+// the usage row commits, so a client that observed end-of-stream is already on the meter — there is no
+// consumed-but-unmetered window (DEF.3 / STB.3 F10; committed debits still clamp at the cap per REQ-BILL-3,
+// the residual booked as absorbed COGS). The accountant sums PRECISE platform credits (never the per-row
+// rounded `credits`), so the cap does not drift from double-rounding. The live service seeds this from Σ
+// `list_cost_usd` over the run's committed proxy rows.
 
 /** Accumulates a run's metered platform credits and answers "how much has this run spent?". */
 export interface CapAccountant {

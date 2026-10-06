@@ -300,6 +300,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
             proxyBaseUrl: env.egressProxyUrl,
             db: systemExec,
             contentStore: artifactsStore,
+            // Stage-B fix: get() needs a workspace-bound store — resolve it per call with the
+            // principal's workspace (the unbound `artifactsStore` would throw on every get).
+            contentStoreFor: (workspaceId) =>
+              createGcsContentStore({ bucketName: env.objectsBucket, workspaceId }),
             ids,
             clock,
           }),

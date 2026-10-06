@@ -167,3 +167,83 @@ the −717 counter/ledger gap the F4 repair closes.
 **Owed (operator-gated):** apply `recompute-balances --apply` on the divergent account (writes the
 backfill hold + counter rewrite + audit row), then `validate` the `held>=0` NOT VALID check; deploy
 the F6 api + run a live estimate refine to fill `estimate_cache`.
+
+## 7. Stage B — deploy + F4 reconcile + F6 live pre-pass (2026-09-26, operator-driven)
+
+Combined DEF.2+DEF.3 Stage B ran on `prod` from the cumulative DEF.3 branch — builds
+`rhema:def3` (Cloud Build `29cf48d0`, SHA `fafab45`), `rhema:def3b` api-only
+(`ec2dcacb`, SHA `4d06640`), `rhema:def3c` api+egress-proxy (`bca7f7c7`/`f2eba076`,
+SHA `47d1ecc`). Pulumi `prod` updates 88–90: only updates + one stateless
+InstanceTemplate replace (the proxy roll); **zero** destroys/replacements on stateful
+resources. Migration `0044` applied (44th). `EGRESS_PROXY_URL` wired on the api; the
+private-app→proxy firewall rule added. Deployed digests pinned in `Pulumi.prod.yaml`.
+
+### F4 — reconcile applied, `held >= 0` invariant holds
+
+`recompute-balances --billing-account 01M2V3PM1133TPH4M8H0T8CSEE --apply` via the
+canonical `runAdminCli` path:
+
+- Pre-state: `topup` available 2,235 / held **−897**; ledger-derived expected
+  available 1,518 / held −180.
+- Applied: backfill `hold` **180 cr** (ledger `01M3ETW24PZBGSHM48R1CV69BC`),
+  counter rewritten available 2,235→**1,338**, held −897→**0**, audit row
+  `admin_actions.action='balance_recompute'` `01M3ETW2A5C7RV9C8W6KGXMXMY`.
+- Post-state: `held = 0`; `assertBalances` clean on the account;
+  `credit_balances_held_nonnegative` check **re-validated**.
+- **Follow-up finding (durable fix owed):** the repair races its own check — the
+  canonical sequence appends the reconcile hold *before* rewriting the counter, so the
+  intermediate state (held −897+180 = −717) violates the `held>=0` check on write. The
+  sanctioned leg needed a manual constraint drop/re-add. The code path should write the
+  corrected counter inside the same transaction before the check evaluates (or defer
+  the check); tracked as a follow-up since the prod repair completed correctly.
+
+### F6 — `estimate_cache` fills; second call short-circuits (D-PRB.03-1 → DONE)
+
+Two *further* live binding defects surfaced under the deploy, both fixed and shipped:
+
+1. **`def3b` (SHA `4d06640`):** `claimPrePass` bound the unbound write-only
+   `artifactsStore`; `GcsContentStore.get()` throws without a workspace binding →
+   `count()` null → provisional forever. Fix: resolve `contentStoreFor(workspaceId)`
+   per call.
+2. **`def3c` (SHA `47d1ecc`):** with (1) fixed the pre-pass reached the proxy and
+   metered — but the api *still* fell back to provisional. On-instance curl repro:
+   the proxy truncated the buffered non-SSE body at **100 bytes**. Root cause:
+   `est_<id>` mints **no `runs` row** by design while `fetch_log`/`run_events*`/
+   `pause_signals` all FK to `runs(id)` — the step-9 fetch-log write threw *inside*
+   `meter()` after the usage commit, and the F10 meter-before-stream-end ordering
+   honestly truncated the stream at the withheld tail → `res.json()` throws →
+   `count()` null. Fix: `RunContext.meterOnly` (minted on the synthetic credential
+   context) skips run-scoped writes; `usage_records` still lands (no `run_id` FK);
+   deny paths keep HTTP semantics; I2 truncation preserved for real meter refusals.
+
+On-instance probe post-fix (`est_` metered credential, same model/path): **HTTP 200,
+529-byte complete JSON** (was 100). `usage_records` 1 row, `fetch_log` 0, `runs` 0 —
+exactly the intended meterOnly surface.
+
+Live leg (`POST /projects/01M34YDZ3SK525JYF74EEH44QR/estimates`, `refine:true`,
+draft `9031303a…`, review/standard/balanced):
+
+```text
+refine#1: HTTP 200 1076ms  est=4137 cap=6206 prov=false claims=8
+cache row: cache_key="9031303a…|review|standard|balanced||" est=4137 cap=6206
+           claims=8 provisional=false computed_at=2026-09-26T13:12:45.352Z
+refine#2: HTTP 200   80ms  est=4137 cap=6206 prov=false claims=8   ← short-circuit
+```
+
+- Second call: **80 ms** vs 1076 ms, identical figures, **zero** new `est_*` usage
+  rows (the only row is #1's `est_01M3EXHFRCQ085ZR5NBHA1J30T`).
+- `runs` rows for `est_%`: **0** — an estimate never creates a run (REQ-CHAT-25).
+- `run.estimated` emitted — no analytics warnings after the fix.
+- **Helper-bug nit discovered + routed around:** the route accepts an invalid
+  `modelTier` (vocab violation) and `estimateCredits` returns NaN →
+  `estimate_cache.put` throws `22P02` (500) and `run.estimated` logs a NaN schema
+  warn. The endpoint should 400 on unknown tier — follow-up nit, not a correctness
+  defect of the F6 path (a valid tier works end-to-end).
+
+**Spend:** 12 `estimate_prepass` calls across all attempts = **10 cr ≈ $0.10**
+(absorbed COGS, never ledger-debited) — far under the ≤$3 F6 bound.
+
+**D-PRB.03-1 → DONE.** Both halves proven on prod: the `estimate_cache` row keyed by
+the real `(draft sha, workflow, rigor, tier)` inputs is non-provisional, the repeat
+call short-circuits without a second pre-pass, no `runs` row is created, and
+`run.estimated` emits.

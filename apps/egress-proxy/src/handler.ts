@@ -173,8 +173,17 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   const agentId = presentedAgentId(req.headers) ?? ctx.agentId;
   const logBase: FetchLogBase = { runId: ctx.runId, attempt: ctx.attempt, agentLabel: agentId };
   const writeFetch = async (row: FetchLogRow): Promise<void> => {
+    // meterOnly contexts (the est_ claim pre-pass) carry no `runs` row — fetch_log FKs to runs(id),
+    // so the write would throw inside meter() and truncate a served response. Their meter of record
+    // is the usage row itself.
+    if (ctx.meterOnly) return;
     await deps.fetchLogWriter.write(row);
   };
+  // Same FK boundary for the event sinks: run_events*/pause_signals reference runs(id). A meterOnly
+  // context keeps the refusal's HTTP semantics but emits nothing run-scoped.
+  const events: EventSink = ctx.meterOnly
+    ? { emitEgressDenied: () => Promise.resolve(), emitPauseSignal: () => Promise.resolve() }
+    : deps.events;
 
   // A refusal that is attributable to a run: log it, emit egress.denied, and pause on a denial spike. Returns a
   // prepared `response` (there is no upstream to forward for a refusal).
@@ -182,7 +191,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
     await writeFetch(
       buildRequestFetchLogRow({ ...logBase, ts: nowIso() }, { url: req.url, status, decision: "deny", denyReason: reason }),
     );
-    await deps.events.emitEgressDenied({
+    await events.emitEgressDenied({
       runId: ctx.runId,
       attempt: ctx.attempt,
       agentId,
@@ -193,7 +202,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
     });
     const spike = denialSpikes.record(ctx.runId);
     if (spike.spike) {
-      await deps.events.emitPauseSignal({
+      await events.emitPauseSignal({
         runId: ctx.runId,
         reason: "egress_denied_spike",
         detail: { count: spike.count },
@@ -277,7 +286,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
             { kind: "search", query: loggableQuery(inv.query), decision: "deny", denyReason: "suspicious_query" },
           ),
         );
-        await deps.events.emitPauseSignal({
+        await events.emitPauseSignal({
           runId: ctx.runId,
           reason: "suspicious_query",
           detail: { matchLength: check.matchLength, agentId },
@@ -317,7 +326,7 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
             { kind: "fetch", url: effectiveUrl, decision: "deny", denyReason: "user_source" },
           ),
         );
-        await deps.events.emitPauseSignal({
+        await events.emitPauseSignal({
           runId: ctx.runId,
           reason: "user_source_fetch",
           detail: { domain: userSourceHost, agentId },
@@ -481,8 +490,15 @@ export interface StreamingHandlerDeps extends PrepareDeps {
  * Handle one proxied request the STREAMING way (D-P0.07-5): run the pre-forward pipeline, then forward and pipe
  * the upstream bytes to `sink` AS THEY ARRIVE — so the Agent SDK sees each SSE frame incrementally instead of
  * waiting for the whole buffered response (the P0.15e suspect for the agent→proxy hang). The full response is
- * accumulated in parallel and metered ONCE after the stream ends (metering never blocks delivery; the proxy
- * stays the meter of record). An early policy refusal (there is no upstream to stream) is written whole.
+ * accumulated in parallel and metered ONCE over the complete body. An early policy refusal (there is no
+ * upstream to stream) is written whole.
+ *
+ * Ordering invariant (DEF.3 / STB.3 F10): the TERMINAL upstream chunk is withheld until the usage record
+ * commits — a client that observes end-of-stream is always already on the meter. §12.4's residual overrun
+ * bound is one in-flight request; before this fix the whole response (including the usage-bearing tail)
+ * could be consumed while the meter write was still in flight — and a meter refusal would have silently
+ * delivered a complete-but-unmetered response (an I2 breach). A meter throw now truncates the stream
+ * instead: the client sees a broken response, never an unmetered success.
  */
 export async function streamProxyRequest(req: ProxyRequest, deps: StreamingHandlerDeps, sink: ResponseSink): Promise<void> {
   const prep = await prepareProxyRequest(req, deps);
@@ -497,13 +513,20 @@ export async function streamProxyRequest(req: ProxyRequest, deps: StreamingHandl
   sink.writeHead(upstream.status, stripResponseFramingHeaders(upstream.headers));
 
   const chunks: Buffer[] = [];
+  let last: Buffer | undefined;
   for await (const chunk of upstream.body) {
     const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     chunks.push(buf);
-    sink.write(buf); // incremental delivery — the SDK gets each frame as it streams in
+    if (last !== undefined) sink.write(last); // incremental delivery — every frame but the terminal one
+    last = buf;
   }
-  sink.end();
 
-  // meter over the COMPLETE accumulated body, after the client already has the stream (§12.7; I2).
+  // Meter over the COMPLETE accumulated body BEFORE the final bytes leave (§12.7; I2). A throw here
+  // propagates — the shell closes the socket mid-stream (truncated response) rather than serving
+  // a complete-but-unmetered one.
   await prep.meter({ status: upstream.status, headers: upstream.headers, body: Buffer.concat(chunks).toString("utf8") });
+
+  // Meter committed: release the withheld tail and close — stream end now implies the meter of record.
+  if (last !== undefined) sink.write(last);
+  sink.end();
 }
