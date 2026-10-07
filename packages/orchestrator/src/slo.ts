@@ -53,12 +53,28 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
   },
   {
     key: "run_success_rate_24h_pct",
-    target: "run success rate (excl. user cancels), weekly ≥ 97% — alert < 95% daily window",
+    // RES.2 — an Unverified delivery is NOT a success: it stays in the denominator (a completed run) but
+    // leaves the numerator. `isSuccessfulDelivery` is the shared predicate; the label is the persisted
+    // `runs.delivery` write, so the exclusion reads it here rather than recomputing coverage.
+    target: "run success rate (excl. user cancels + Unverified deliveries), weekly ≥ 97% — alert < 95% daily window",
     comparator: "lt",
     threshold: 95,
-    probe: `select 100.0 * count(*) filter (where state = 'completed') / nullif(count(*), 0)
+    probe: `select 100.0 * count(*) filter (where state = 'completed'
+                and (delivery ->> 'label') is distinct from 'unverified') / nullif(count(*), 0)
               from runs where ended_at > now() - interval '24 hours'
                 and state in ('completed', 'failed') and ${TEST_TENANT_FREE("runs")}`,
+  },
+  {
+    key: "unverified_review_rate_7d_pct",
+    // RES.2 (REQ-SPEC-31(3); ADR-015) — the weekly Review Unverified rate. >1% is a platform regression
+    // (verification fetched nothing) — breach above. The denominator is completed Reviews in the window;
+    // Unverified runs ARE completed, so they count on both sides of the fraction.
+    target: "Review Unverified rate ≤ 1% weekly — alert above",
+    comparator: "gt",
+    threshold: 1,
+    probe: `select 100.0 * count(*) filter (where r.delivery ->> 'label' = 'unverified') / nullif(count(*), 0)
+              from runs r where r.ended_at > now() - interval '7 days'
+                and r.state = 'completed' and r.workflow = 'review' and ${TEST_TENANT_FREE("r")}`,
   },
   {
     key: "gate_resume_latency_p95_s",

@@ -90,6 +90,42 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     expect(body.nextStep.verb).toBeTruthy();
   });
 
+  it("RES.2 — the persisted run-level label rides the timeline card; unlabelled runs carry none", async () => {
+    await seedRun(db, {
+      runId: "run_uv",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+    });
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query("update runs set inputs = $2::jsonb, delivery = $3::jsonb where id = $1", [
+        "run_uv",
+        JSON.stringify({ draftId: seed.draftId }),
+        '{"label":"unverified","checkableClaims":16,"coveredClaims":0}',
+      ]),
+    );
+    await seedDoneSteps("run_uv");
+    // an ordinary completed run for the control half of the assertion.
+    await seedRun(db, {
+      runId: "run_ok",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+    });
+    const res = await app.request(`/projects/${seed.projectId}/timeline`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      rounds: { runs: { runId: string; card: { deliveryLabel?: string | null } }[] }[];
+      ungrouped: { runId: string; card: { deliveryLabel?: string | null } }[];
+    };
+    const all = [...body.rounds.flatMap((r) => r.runs), ...body.ungrouped];
+    // the label is READ off runs.delivery — never recomputed from claims or events.
+    expect(all.find((r) => r.runId === "run_uv")!.card.deliveryLabel).toBe("unverified");
+    expect(all.find((r) => r.runId === "run_ok")!.card.deliveryLabel ?? null).toBeNull();
+  });
+
   it("a steering-parked waiting_gate run shows paused (not gate_waiting) on its card", async () => {
     await seedRun(db, {
       runId: "run_p",

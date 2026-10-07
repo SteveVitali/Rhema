@@ -23,6 +23,9 @@ export interface RunFields {
   readonly parkedUntil?: Date | null;
   readonly failure?: unknown;
   readonly spentCredits?: number;
+  /** RES.2 — `runs.delivery` (migration 0047): the write-once run-level delivery label + its counts,
+   *  stamped atomically with `finalizing → completed`. */
+  readonly delivery?: unknown;
 }
 
 const FIELD_COLUMNS: Record<keyof RunFields, string> = {
@@ -33,6 +36,7 @@ const FIELD_COLUMNS: Record<keyof RunFields, string> = {
   parkedUntil: "parked_until",
   failure: "failure",
   spentCredits: "spent_credits",
+  delivery: "delivery",
 };
 
 export async function readRunState(tx: SqlClient, runId: string): Promise<RunState | null> {
@@ -73,7 +77,7 @@ export async function applyTransition(
   for (const [k, col] of Object.entries(FIELD_COLUMNS)) {
     const v = (fields as Record<string, unknown>)[k];
     if (v !== undefined) {
-      params.push(k === "failure" ? JSON.stringify(v) : (v as unknown));
+      params.push(k === "failure" || k === "delivery" ? JSON.stringify(v) : (v as unknown));
       sets.push(`${col} = $${params.length}`);
     }
   }

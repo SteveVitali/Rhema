@@ -89,6 +89,7 @@ describe("collectFiles — the base selection", () => {
     expect(files).toEqual([
       "packages/db/migrations/0045_user_serving_role.sql",
       "packages/db/migrations/0046_test_workspaces.sql",
+      "packages/db/migrations/0047_run_delivery.sql",
     ]);
   });
 

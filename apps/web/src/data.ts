@@ -230,6 +230,9 @@ export interface DossierData {
   readonly showcase?: boolean;
   /** P1.17 — the welcome dossier's deep-link anchor (finding 1) for the <60 s funnel event. */
   readonly firstFindingId?: string;
+  /** RES.2 — the persisted run-level delivery label (`runs.delivery.label`); the page renders the
+   *  banner above the verdict row when set. */
+  readonly deliveryLabel?: string | null;
 }
 
 export interface DataSource {

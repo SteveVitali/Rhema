@@ -5,8 +5,16 @@
 // producer) throws `DeliveryValidationError` → the run ends `finalizing → failed(validation)` with the files
 // retained as partial and nothing marked immutable (REQ-DATA-7). The ledger DEBIT stays a separate retried
 // transaction (this never debits — a ledger failure never rolls back a delivered dossier, review 13 F36).
+// RES.2 (REQ-SPEC-31(3)): a research-bearing run whose delivered coverage is zero (no Tier-1/2 claim kept a
+// fetched source while ≥1 was checkable) is classified Unverified HERE — the write-once `runs.delivery` label
+// and the `run.unverified` event land in the SAME commit as `finalizing → completed`. The platform-fault
+// settlement (research-phase refund, metered absorb, trial restore, ops page) is deliberately POST-commit in
+// `deps.settleUnverified` so it can never roll the dossier back; the stranded sweep retries it while
+// `delivery.platformFaultSettledAt` is unset.
 
-import type { RunEventType } from "@rhema/contracts";
+import type { RunEventType, WorkflowKey } from "@rhema/contracts";
+import { isUnverifiedDelivery, type RunDelivery } from "@rhema/contracts";
+import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import {
   DeliveryValidationError,
   runDeliveryTransaction,
@@ -17,6 +25,7 @@ import {
 } from "@rhema/mirror";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { failRun } from "./internal-api.js";
+import { scheduleRunTerminalNotification } from "./notifications.js";
 import { applyTransition } from "./transition.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { absorbMeteredGap, reconcileRunSpend, settleMeteredDebit } from "./spend.js";
@@ -76,7 +85,7 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
       // once the balance is non-negative. Lock the run row so a concurrent chargeback can't split the check.
       const gate = (
         await tx.query(
-          `select r.delivery_withheld_at, b.suspended_at
+          `select r.delivery_withheld_at, r.workflow, b.suspended_at
              from runs r
              join workspaces w on w.id = r.workspace_id
              join billing_accounts b on b.id = w.billing_account_id
@@ -84,7 +93,7 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
             for update of r`,
           [runId],
         )
-      ).rows[0] as { delivery_withheld_at: string | null; suspended_at: string | null } | undefined;
+      ).rows[0] as { delivery_withheld_at: string | null; workflow: WorkflowKey; suspended_at: string | null } | undefined;
       if (gate && (gate.delivery_withheld_at !== null || gate.suspended_at !== null)) {
         await tx.query(
           "update runs set delivery_withheld_at = coalesce(delivery_withheld_at, $2), pending_delivery = $3 where id = $1",
@@ -97,7 +106,34 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
         { ids: deps.ids, clock: deps.clock, store: deps.store, eventWriter, ...(deps.obligationHook ? { obligationHook: deps.obligationHook } : {}) },
         args.delivery,
       );
-      await applyTransition(tx, deps, { runId, from: "finalizing", to: "completed" });
+      // RES.2 (REQ-SPEC-31(3)) — the Unverified classification is a PRODUCT fact computed server-side on the
+      // post-Path-B coverage the mirror counted (invariant: zero covered of ≥1 checkable Tier-1/2 claims).
+      // It persists HERE, atomically with `finalizing → completed` — every surface reads `runs.delivery`,
+      // none recomputes. Only a research-bearing workflow can classify (checkableClaims is 0 otherwise).
+      const researchPhaseKeys = (WORKFLOW_MANIFESTS[gate?.workflow ?? ("review" as WorkflowKey)]?.phases ?? [])
+        .filter((p) => p.phaseClass === "research")
+        .map((p) => p.key);
+      const coverage = delivery.verificationCoverage;
+      const unverified = researchPhaseKeys.length > 0 && isUnverifiedDelivery(coverage);
+      const deliveryRow: RunDelivery | null = unverified
+        ? { label: "unverified", checkableClaims: coverage.checkableClaims, coveredClaims: coverage.coveredClaims }
+        : null;
+      await applyTransition(tx, deps, {
+        runId,
+        from: "finalizing",
+        to: "completed",
+        ...(deliveryRow ? { fields: { delivery: deliveryRow } } : {}),
+      });
+      if (unverified) {
+        // `run.unverified` in the run-events stream (the analytics `run.completed` suppression lives in the
+        // beta-dashboard emitter). Counts only — never claim text (invariant 10).
+        await deps.eventWriter.append(tx, {
+          runId,
+          type: "run.unverified",
+          payload: { checkableClaims: coverage.checkableClaims, coveredClaims: coverage.coveredClaims },
+          at: deps.clock.now(),
+        });
+      }
       // DEF.2/F5 — charge the attempt's proxy-metered remainder the phase commits never reached
       // (REQ-SPEC-11: the proxy meter drives debits) BEFORE the release draws the hold away.
       const curAttempt = (
@@ -135,7 +171,7 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
         at: deps.clock.now(),
       });
       await revokeRunCredentials(tx, runId, deps.clock.now()); // terminal revocation (REQ-SPEC-11)
-      return delivery;
+      return { delivery, unverified: deliveryRow !== null, researchPhaseKeys, coverage };
     });
     if (result === null) {
       return {
@@ -146,7 +182,28 @@ export async function deliverRun(deps: DeliverRunDeps, args: DeliverRunArgs): Pr
       };
     }
     await deps.heartbeats.clear(runId);
-    return { ok: true, state: "completed", correspondenceId: result.correspondenceId, downgradedClaimOrdinals: result.downgradedClaimOrdinals };
+    // RES.2 — the delivery path never scheduled the terminal notification (completeRun/failRun/gate-expiry
+    // all do): the `run_finished` email + in-app card ride this outbox row, and for an Unverified run the
+    // copy reads the just-committed `runs.delivery` label.
+    await scheduleRunTerminalNotification(deps, { runId, workspaceId, outcome: "completed" });
+    if (result.unverified) {
+      // RES.2 (REQ-SPEC-31(3)) — the platform-fault settle runs POST-COMMIT in its own transaction: a refund/
+      // restore/alert failure must never roll back the delivered dossier (delivery.ts header). Best-effort
+      // here; the stranded sweep's leg E is the durable retry while `delivery.platformFaultSettledAt` is null.
+      try {
+        await deps.settleUnverified?.({
+          runId,
+          workspaceId,
+          billingAccountId: args.billingAccountId,
+          phaseKeys: result.researchPhaseKeys,
+          checkableClaims: result.coverage.checkableClaims,
+          coveredClaims: result.coverage.coveredClaims,
+        });
+      } catch {
+        // swallowed on purpose — leg E retries; the delivery result must not hinge on settlement.
+      }
+    }
+    return { ok: true, state: "completed", correspondenceId: result.delivery.correspondenceId, downgradedClaimOrdinals: result.delivery.downgradedClaimOrdinals };
   } catch (e) {
     if (e instanceof DeliveryValidationError) {
       // delivery validation unrecoverable → finalizing → failed(validation); files retained as partial.

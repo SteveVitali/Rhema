@@ -18,6 +18,7 @@ import {
   DO_NOTHING_OUTCOME,
   GATE_KIND_LABELS,
   QUIET_HOURS_DEFERRABLE,
+  deliveryLabelFromRow,
   digestMode,
   effectiveEmailMatrix,
   emailEnabled,
@@ -852,14 +853,14 @@ async function runTerminal(
       `select r.state, r.workflow, r.persona_id, r.project_id,
               p.title as project_title, p.slug as project_slug,
               ps.slug as persona_slug,
-              r.spent_credits, r.cap_credits
+              r.spent_credits, r.cap_credits, r.delivery
          from runs r
          left join projects p on p.id = r.project_id
          left join personas ps on ps.id = r.persona_id
         where r.id = $1`,
       [payload.runId],
     )
-  ).rows[0] as (RunRow & { persona_slug: string | null }) | undefined;
+  ).rows[0] as (RunRow & { persona_slug: string | null; delivery: unknown }) | undefined;
   if (!r) return { action: "noop", reason: "not_found" };
   // a later transition supersedes a stale terminal job (e.g. a cancel raced a completion).
   if (r.state !== payload.outcome) {
@@ -894,11 +895,18 @@ async function runTerminal(
     ...(r.persona_slug != null ? { personaSlug: r.persona_slug } : {}),
   });
   const projectTitle = r.project_title ? r.project_title.slice(0, 140) : undefined;
+  // RES.2 — the persisted run-level label rides both surfaces (Inbox copy + the mail body) as the
+  // display word; the row's own delivery blob is the only source (never recomputed here).
+  const deliveryLabel = deliveryLabelFromRow(r.delivery) === "unverified" ? "Unverified" : undefined;
   const copy =
     eventType === "run_cancelled_recovered"
       ? { variant: variant!, ...(projectTitle ? { projectTitle } : {}) }
       : eventType === "run_finished"
-        ? { ...(projectTitle ? { projectTitle } : {}), workflowLabel: r.workflow.replace(/_/g, " ") }
+        ? {
+            ...(projectTitle ? { projectTitle } : {}),
+            workflowLabel: r.workflow.replace(/_/g, " "),
+            ...(deliveryLabel ? { deliveryLabel } : {}),
+          }
         : { ...(projectTitle ? { projectTitle } : {}) };
   const inAppOnly = eventType === "run_cancelled_recovered" || outcome === "completed_partial";
 
@@ -948,6 +956,7 @@ async function runTerminal(
     render: async () =>
       renderEmail(eventType, {
         ...(r.project_title ? { projectTitle: r.project_title.slice(0, 140) } : {}),
+        ...(deliveryLabel ? { deliveryLabel } : {}),
         openUrl: runDeepLink(config.appBaseUrl, { projectSlug: r.project_slug, landingPath: landing, runId: payload.runId }),
       }),
   });

@@ -12,7 +12,12 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
     // (§6.5; P1.05's report heading reuses the same role), "tokens" ONLY under that disclosure (§14.5's
     // Level-4 drill-down columns), and "author" ONLY in §15.1's "the author's seat" — the human's chair,
     // exactly the role the exception reserves. Every other banned/excepted term must still be absent.
-    const violations = lintCopy(collectCopyStrings(), { allow: ["Advanced", "tokens", "author"] });
+    // RES.2 — "unverified" joins the allow-list: its Appendix D.2 exception (the run-level delivery label)
+    // plus the six pre-existing provenance badges are key-enumerated in the guard loop below, so a NEW use
+    // still fails there even though the term is permitted here.
+    const violations = lintCopy(collectCopyStrings(), {
+      allow: ["Advanced", "tokens", "author", "unverified"],
+    });
     expect(violations).toEqual([]);
     // and each excepted term stays inside its sanctioned role — nowhere else in the table.
     for (const v of lintCopy(collectCopyStrings())) {
@@ -21,6 +26,21 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
       } else if (v.term === "author") {
         // the human's seat (§15.1) — 'author' as a label for an agent stays banned.
         expect(v.key).toBe("landing.seat.heading");
+      } else if (v.term === "unverified") {
+        // RES.2 (Appendix D.2 "Delivery labels") — `review.deliveryLabel` is the sanctioned run-level
+        // slot; the claim verdict is `unverifiable` (a different word the matcher never confuses with
+        // it). The remaining keys are the PRE-EXISTING provenance badges (`[unverified]` /
+        // `[unverified data]` — a source-fetch fact, not a claim verdict) — enumerated so no NEW use
+        // slips past the reservation.
+        expect([
+          "review.deliveryLabel",
+          "feed.templates.run.unverified", // the feed row for the run.unverified event (same slot)
+          "gates.outline.unverifiedBadge",
+          "revision.verifiedByLabel.user",
+          "promote.urlsFmt",
+          "visualize.insistLabel",
+          "ide.chatDesk.unverified",
+        ]).toContain(v.key);
       } else {
         expect(v.term).toBe("Advanced");
         // the §5.13 Files pane's Advanced disclosure (section label + the per-section "Show working"
@@ -33,6 +53,19 @@ describe("copy vocabulary lint (Appendix D.2)", () => {
         ]).toContain(v.key);
       }
     }
+  });
+
+  it("RES.2 — `unverified` is flagged as a claim verdict but accepted as the run-level label", () => {
+    // a claim-verdict use is a violation; the run-level label slot is the only fresh key permitted.
+    expect(
+      lintCopy({ claimVerdict: "Unverified" }).some((v) => v.term === "unverified"),
+    ).toBe(true);
+    // and the label string itself is exactly the reserved word — nothing else may carry it.
+    const table = collectCopyStrings();
+    const labelKeys = table
+      .filter(([, v]) => /unverified/i.test(v))
+      .map(([k]) => k);
+    expect(labelKeys).toContain("review.deliveryLabel");
   });
 
   it("PRB.13 — the open-mode signup copy is factual and lint-clean (REQ-POS-4/5/13)", () => {

@@ -51,6 +51,16 @@ export interface MaterializeArgs {
    * have no entry — the new-file grant lives in `harvest`'s allowlist check.
    */
   readonly writablePaths?: readonly string[];
+  /**
+   * BL-66 / RES.2 — the run this materialization serves. A SEAT-NAMESPACE path (`agents/<seat>/**`) whose
+   * head artifact_version a DIFFERENT run's committed steps produced is a prior run's working memory and
+   * never mounts: the new run writes its own fresh output (or the phase ships without it) — otherwise a
+   * re-run reads the previous run's claim ledger verbatim (RES.1 Stage B's stale-ledger delivery). Versions
+   * THIS run produced still mount (a resume re-materializes its own phase outputs; PRB.19), and shared
+   * namespaces (`drafts/`, `correspondence/`, `project`) are untouched — the reviewed draft and prior
+   * dossiers are deliberate cross-run reads. Unset ⇒ the legacy behavior (no exclusion).
+   */
+  readonly runId?: string;
 }
 
 /** One materialized file in the mirror tree (bytes + its manifest entry). */
@@ -98,6 +108,27 @@ async function readHeads(exec: SqlExecutor, column: "project_id" | "persona_id",
     [id],
   );
   return res.rows as HeadRow[];
+}
+
+/**
+ * BL-66 (RES.2) — the subset of `versionIds` a DIFFERENT run's committed steps produced. The version→run
+ * link is `steps.produced_version_ids` (written by the step commit); `artifact_versions.created_by` is
+ * `{kind:'agent'}` for harness output and carries no runId, so the step ledger is the producing-run truth.
+ * A re-materialization of the SAME run keeps its versions (the filter is `run_id <> $1` — resume-safe).
+ */
+async function versionsProducedByOtherRuns(
+  exec: SqlExecutor,
+  runId: string,
+  versionIds: readonly string[],
+): Promise<Set<string>> {
+  if (versionIds.length === 0) return new Set();
+  const res = await exec.query(
+    `select distinct v as version_id
+       from steps s cross join lateral unnest(s.produced_version_ids) as v
+      where s.run_id <> $1 and v = any($2::text[])`,
+    [runId, [...versionIds]],
+  );
+  return new Set((res.rows as { version_id: string }[]).map((r) => r.version_id));
 }
 
 /** Resolve overlay version ids → their artifact path + sha (they override the committed file at that path). */
@@ -199,6 +230,22 @@ async function resolveSeatTree(
   const backed: BackedEntry[] = [];
   const seen = new Set<string>();
 
+  // BL-66 — read both scopes' heads FIRST so the one foreign-version lookup can batch them. A head version
+  // a DIFFERENT run's committed steps produced (`steps.produced_version_ids` — `created_by` carries no
+  // runId for agent output) is foreign working memory; under `agents/**` it never mounts.
+  const projectHeads = args.projectId ? await readHeads(exec, "project_id", args.projectId) : [];
+  const personaHeads = args.personaId ? await readHeads(exec, "persona_id", args.personaId) : [];
+  const foreignVersions = args.runId
+    ? await versionsProducedByOtherRuns(
+        exec,
+        args.runId,
+        [...projectHeads, ...personaHeads].map((h) => h.version_id),
+      )
+    : new Set<string>();
+  /** a prior run's output under `agents/**` (the seat working memory) never mounts for another run. */
+  const staleSeatOutput = (path: string, versionId: string): boolean =>
+    /^agents\//.test(path) && foreignVersions.has(versionId);
+
   const consider = (root: MountRoot, path: string, sha256: string, versionId: string, immutable: boolean): void => {
     if (seen.has(path)) return;
     const mount = mountFor(args.seat, root, path);
@@ -213,15 +260,13 @@ async function resolveSeatTree(
     seen.add(path);
   };
 
-  if (args.projectId) {
-    for (const r of await readHeads(exec, "project_id", args.projectId)) {
-      consider("project", r.mirror_path, r.content_sha256, r.version_id, r.immutable);
-    }
+  for (const r of projectHeads) {
+    if (staleSeatOutput(r.mirror_path, r.version_id)) continue;
+    consider("project", r.mirror_path, r.content_sha256, r.version_id, r.immutable);
   }
-  if (args.personaId) {
-    for (const r of await readHeads(exec, "persona_id", args.personaId)) {
-      consider("persona", r.mirror_path, r.content_sha256, r.version_id, r.immutable);
-    }
+  for (const r of personaHeads) {
+    if (staleSeatOutput(r.mirror_path, r.version_id)) continue;
+    consider("persona", r.mirror_path, r.content_sha256, r.version_id, r.immutable);
   }
   for (const [path, o] of overlayByPath) consider(o.root, path, o.sha256, o.versionId, false);
 

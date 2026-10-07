@@ -71,6 +71,12 @@ export interface RunCardLabels {
    *  policy"). One per recorded decision on the run.
    */
   readonly decisionLabel?: (decision: GateDecisionView) => string;
+  /**
+   * RES.2 — the run-level delivery-label line, rendered ABOVE the state/verdict when the persisted
+   * label is set (e.g. (label) => "Unverified — research could not check the claims; research credits
+   *  were refunded"). Absent ⇒ the slot hides.
+   */
+  readonly deliveryLabel?: (label: string) => string;
 }
 
 /** The POST/GET targets a card's actions submit to (web-supplied; absent ⇒ that affordance hides). */
@@ -194,6 +200,17 @@ export function RunCard({
         padding: "16px",
       }}
     >
+      {/* RES.2 — the persisted run-level delivery label leads the card, above the state/verdict
+          (the same slot the dossier + email carry). Never recomputed — `view.deliveryLabel` is the
+          committed `runs.delivery` fact. */}
+      {view.deliveryLabel && labels.deliveryLabel ? (
+        <p
+          data-delivery-label={view.deliveryLabel}
+          style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: 600, color: "var(--state-running)" }}
+        >
+          {labels.deliveryLabel(view.deliveryLabel)}
+        </p>
+      ) : null}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--shell-fg)" }}>{labels.stateLabel(view.state)}</span>
         <span data-credits style={{ fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>

@@ -138,6 +138,17 @@ export const trialSpendDaily = pgTable("trial_spend_daily", {
   credits: bigint("credits", { mode: "number" }).notNull().default(0),
 });
 
+// RES.2 (0047; REQ-SPEC-31(3)) — the platform-fault trial-restore audit row: exactly one per
+// (entitlement, run) restored by `settleUnverifiedDelivery`; append-only (grant select, insert).
+export const trialRestorations = pgTable("trial_restorations", {
+  id: text("id").primaryKey(),
+  entitlementId: text("entitlement_id").notNull(),
+  runId: text("run_id").notNull(),
+  workspaceId: text("workspace_id").notNull(),
+  billingAccountId: text("billing_account_id").notNull(),
+  restoredAt: timestamp("restored_at").notNull().defaultNow(),
+});
+
 // P1.16 (0036; REQ-BILL-14) — Checkout sessions: return-to-context + grant-path discrimination.
 export const checkoutSessions = pgTable("checkout_sessions", {
   id: text("id").primaryKey(),

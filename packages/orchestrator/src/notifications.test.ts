@@ -438,6 +438,37 @@ describe("§5.11 delivery rules", () => {
     ).toMatchObject({ action: "inbox", eventType: "run_cancelled_recovered" });
   });
 
+  it("RES.2 — an Unverified-labelled run's finished mail + Inbox row lead with the run-level label", async () => {
+    const { runId } = await seedWaitingRun();
+    // the persisted label is the ONLY source — the notify path never recomputes coverage.
+    await db.client.query(
+      `update runs set state = 'completed',
+         delivery = '{"label":"unverified","checkableClaims":16,"coveredClaims":0}'::jsonb
+       where id = $1`,
+      [runId],
+    );
+    expect(
+      await handleNotifyJob(deps, {
+        type: "run_terminal", runId, workspaceId: seed.workspaceId, outcome: "completed",
+      }),
+    ).toMatchObject({ action: "mailed", eventType: "run_finished" });
+    await deliverAll();
+    const mail = sent.find((m) => m.subject.includes("Run finished"))!;
+    expect(mail).toBeTruthy();
+    // the run-level label is the FIRST body line — above the deliverable line, the same slot it holds
+    // above the verdict on the run card + dossier. It never reads the claim verdict "unverifiable".
+    expect(mail.text.startsWith("Unverified — research could not check the claims")).toBe(true);
+    expect(mail.text).toContain("research-phase credits were refunded");
+    expect(mail.text).not.toContain("unverifiable");
+    // the Inbox row's templated copy carries the label above the project title too.
+    const inbox = (
+      await db.client.query("select payload from inbox_items where run_id = $1", [runId])
+    ).rows[0] as { payload: { type: string; title: string; body?: string } };
+    expect(inbox.payload.type).toBe("run_finished");
+    expect(inbox.payload.body).toContain("Unverified — claims could not be checked; research credits refunded.");
+    expect(inbox.payload.body).not.toContain("unverifiable");
+  });
+
   it("credits thresholds mail at 50/80/100, once each", async () => {
     const { runId } = await seedWaitingRun();
     await db.client.query("update runs set cap_credits = 5000 where id = $1", [runId]); // headroom for the debits

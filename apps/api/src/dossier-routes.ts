@@ -21,6 +21,7 @@ import {
 } from "@rhema/findings-core";
 import { WORKFLOW_MANIFESTS } from "@rhema/protocols";
 import type { Actor, Claim, ClaimSource, Finding, ObligationState } from "@rhema/contracts";
+import { deliveryLabelFromRow } from "@rhema/contracts";
 import { scopeChip, type ScopeRef } from "@rhema/commands";
 import type { Principal } from "./run-routes.js";
 import type { SqlClient } from "./invite.js";
@@ -298,7 +299,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       const run = (
         await tx.query(
           `select id, workflow, state, cap_credits, current_attempt, estimate_credits,
-                  spent_credits, paused_at, walkthrough, scope, rigor
+                  spent_credits, paused_at, walkthrough, scope, rigor, delivery
              from runs where id = $1`,
           [runId],
         )
@@ -315,9 +316,13 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
             walkthrough: { status?: string; text?: string } | null;
             scope: unknown;
             rigor: string | null;
+            /** RES.2 — the persisted delivery label blob (write-once; read, never recomputed). */
+            delivery: unknown;
           }
         | undefined;
       if (!run) return null;
+      // RES.2 — the run-level label the dossier banner + card render above the verdict.
+      const deliveryLabel = deliveryLabelFromRow(run.delivery);
 
       // P1.06 (§7.2; REQ-CHAT-23) — a scoped run's dossier is keyed (version, run) and LABELLED with
       // its scope: the stored ref list renders as the same chips the sheet showed (§III · v2/17…).
@@ -352,6 +357,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
           : run.walkthrough?.status === "failed"
             ? { walkthrough: { status: "failed" as const } }
             : { walkthrough: { status: "pending" as const } }),
+        deliveryLabel,
       });
 
       // ---- letter: the delivered artifact's markdown → sections; finding refs join via letter_section ----
@@ -529,6 +535,8 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
           ? { firstFindingId: findingRows[0]!.id }
           : {}),
         runCard,
+        // RES.2 — the dossier banner's label (the page renders it above the verdict when set).
+        deliveryLabel,
         letterTitle: corr.project_title,
         letterSections,
         claims,

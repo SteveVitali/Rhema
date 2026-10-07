@@ -62,6 +62,9 @@ export const runs = pgTable("runs", {
   // re-priced the run; `repriced_from_version` records the frozen table version it moved from.
   repricedAt: timestamp("repriced_at"),
   repricedFromVersion: integer("repriced_from_version"),
+  // RES.2 (0047; REQ-SPEC-31(3)): the write-once delivery classification — {label:'unverified',
+  // checkableClaims, coveredClaims} + platform-fault settlement markers. Read, never recomputed.
+  delivery: jsonb("delivery"),
 });
 
 export const steps = pgTable("steps", {

@@ -267,6 +267,12 @@ export const COPY = {
     offLabel: "off",
     // PRB.08 — the run card's refund line (failed/refused/cancelled, or a silent reconciliation refund).
     refundFmt: "refunded {n} credits; partial results kept",
+    // RES.2 (Appendix D.2 "Delivery labels") — the run-level label for a zero-coverage delivery. It renders
+    // ABOVE the verdict on the run card + dossier and leads the `run_finished` email. The claim verdict
+    // stays `Unverifiable` (verdictLabel.unverifiable, below) — the two never conflate: the label names a
+    // RUN whose research could not fetch a single source, the verdict names a CLAIM that cannot be checked.
+    deliveryLabel: "Unverified",
+    deliveryBannerFmt: "{label} — research could not check the claims; the research credits were refunded",
     feedHeading: "Live feed",
     densityLabel: { summary: "Summary", details: "Details", verbose: "Verbose" } as Record<string, string>,
     letterTocHeading: "Contents",
@@ -1821,6 +1827,8 @@ export const COPY = {
       "usage.tick": "{spentCredits} of {capCredits} cr",
       "cost.final": "Final — {spentCredits} cr",
       "cost.refunded": "Refunded {credits} cr",
+      // RES.2 — the run-level delivery label event; "Unverified" is the reserved D.2 word here.
+      "run.unverified": "Unverified — {coveredClaims} of {checkableClaims} claims covered",
       // P1.16 §14.6 — the rate table moved while the run was parked; the cap delta waits on consent.
       "run.repriced": "Re-priced — new cap {newCapCredits} cr",
       "check.result": "Check {name} — {passed}",

@@ -73,7 +73,8 @@ export async function materializeRunAnalytics(
   const runs = (
     await exec.query(
       `select r.id, r.workspace_id, r.project_id, r.workflow, r.state, r.rigor, r.estimate_credits,
-              r.cap_credits, r.spent_credits, r.requested_by, r.failure, r.created_at, r.ended_at,
+              r.cap_credits, r.spent_credits, r.requested_by, r.failure, r.delivery,
+              r.created_at, r.ended_at,
               coalesce(r.requested_by, p.owner_id) as user_id, p.venue
          from runs r left join projects p on p.id = r.project_id
         where r.created_at >= $1 and r.created_at < $2`,
@@ -83,6 +84,7 @@ export async function materializeRunAnalytics(
     id: string; workspace_id: string; project_id: string | null; workflow: string; state: string;
     rigor: string; estimate_credits: number; cap_credits: number; spent_credits: number;
     requested_by: string | null; failure: Record<string, unknown> | null;
+    delivery: { label?: string; checkableClaims?: number; coveredClaims?: number } | null;
     created_at: Date; ended_at: Date | null;
     user_id: string | null; venue: string | null;
   }[];
@@ -105,7 +107,16 @@ export async function materializeRunAnalytics(
       ...economics,
     }, r.created_at);
     const endedAt = r.ended_at ?? r.created_at;
-    if (r.state === "completed" || r.state === "completed_partial") {
+    // RES.2: an Unverified delivery is NEVER a success — `run.unverified` in place of `run.completed`
+    // (isSuccessfulDelivery is the shared predicate) so success cohorts + rate lines stay clean.
+    if (r.state === "completed" && r.delivery?.label === "unverified") {
+      await emit(r.id, env, "run.unverified", {
+        checkable_claims: r.delivery.checkableClaims,
+        covered_claims: r.delivery.coveredClaims,
+        refunded: true,
+        ...economics,
+      }, endedAt);
+    } else if (r.state === "completed" || r.state === "completed_partial") {
       await emit(r.id, env, "run.completed", {
         cap_hit: r.spent_credits >= r.cap_credits,
         ...(r.state === "completed_partial" ? { verdict: "partial" } : {}),

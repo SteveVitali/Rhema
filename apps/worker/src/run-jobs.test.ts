@@ -69,6 +69,45 @@ describe("worker run-lifecycle handlers", () => {
     expect(context.webTools?.fetchBudget).toBe(80);
   });
 
+  it("RES.2 — inputs.force_unverified zeroes the research budgets on a TEST workspace only", async () => {
+    // the flagged test tenant: the frozen input's flag zeroes search/fetch budgets (floors included) —
+    // RES.1's preflight still runs, the run delivers, coverage reads zero.
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [seed.workspaceId]);
+    await seedRun(db, {
+      runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId,
+      workflow: "review", state: "queued", lockSet: [],
+      inputSnapshot: { wordCount: 701, claimCount: 3 },
+    });
+    await db.client.query(`update runs set inputs = '{"force_unverified":true}'::jsonb where id = 'run1'`, []);
+    const res = await handleRunStart(deps, { runId: "run1", workspaceId: seed.workspaceId });
+    expect(res.ok).toBe(true);
+    const row = (await db.client.query("select context from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      context: { webTools?: Record<string, number | boolean> } | string;
+    };
+    const context = typeof row.context === "string" ? JSON.parse(row.context) : row.context;
+    expect(context.webTools).toMatchObject({
+      search: true, fetch: true,
+      searchBudget: 0, fetchBudget: 0, searchFloor: 0, fetchFloor: 0,
+    });
+  });
+
+  it("RES.2 — a NON-test workspace's force_unverified input is ignored (the flag can never reach prod)", async () => {
+    await seedRun(db, {
+      runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId,
+      workflow: "review", state: "queued", lockSet: [],
+      inputSnapshot: { wordCount: 701, claimCount: 3 },
+    });
+    await db.client.query(`update runs set inputs = '{"force_unverified":true}'::jsonb where id = 'run1'`, []);
+    const res = await handleRunStart(deps, { runId: "run1", workspaceId: seed.workspaceId });
+    expect(res.ok).toBe(true);
+    const row = (await db.client.query("select context from proxy_credentials where run_id='run1'", [])).rows[0] as {
+      context: { webTools?: { fetchBudget?: number; searchBudget?: number } } | string;
+    };
+    const context = typeof row.context === "string" ? JSON.parse(row.context) : row.context;
+    // the flag did nothing — the ordinary claim-scaled bound stands (3 claims ⇒ fetch 24, search 11).
+    expect(context.webTools).toMatchObject({ fetchBudget: 24, searchBudget: 11 });
+  });
+
   it("run.reap orphans a stale run and re-enqueues it", async () => {
     await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, state: "running", currentAttempt: 1 });
     await deps.heartbeats.beat({

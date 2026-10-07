@@ -43,6 +43,12 @@ export interface RefundArgs {
   readonly runId: string;
   readonly credits: number;
   readonly idempotencyKey: string;
+  /**
+   * RES.2 — the ledger-row reason. `platform_fault:<cause>` marks the platform-fault refund class
+   * (`isPlatformFaultRefund`): the platform paying for its own failure — excluded from DEF.4's
+   * user-refund accounting and from resume's re-debit set (a refunded research phase never re-charges).
+   */
+  readonly reason?: string;
 }
 /**
  * Metered burn the user did NOT pay, booked `adjustment(absorbed)` — the platform-COGS record the

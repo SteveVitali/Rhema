@@ -105,6 +105,7 @@ operator-gated/deferred (DEFERRALS + G1); `fixture-only` = deterministic/integra
 | 89 | JOURNEY.1 | ticket | `stevevitali/journey-1-browser-journey-acceptance` | #83 | `stevevitali/hot-1-prod-hotfix-pack` | 2026-10-01 | ADR-020 | none opened — every unmet leg is an expected-red step owed to its named owner (BL-32 rows carry dated JOURNEY.1 mapping notes); none closed falsely | **live-executed** (prod `34d1439`, pulumi updates 95–97 zero-replace; migration `0046` applied; provenance `prod:34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c`; N2/N7/R1/R5/X1 pass live over real Gmail-DWD magic links; `is_test` flag + SLO exclusion + full purge→hard-delete observed; paid leg under the approved 2000cr grant: N5→ACT.1, N6→RES.1, R4→RUN.1 owed, R6 ready-to-flip, **$0.0000 ≤ $5**; two prod defects caught + fixed same-day — purge-queue crash loop `2aa4ee2`, leaf-first hard-delete `087ec7f`; reports `reports/2026-10-01_JOURNEY.1-{nightly,paid,paid2}/`) | `runs/JOURNEY.1.md` |
 | 90 | MAINT.2 | ticket | `stevevitali/maint-2-build-memory-hygiene` | #84 | `stevevitali/journey-1-browser-journey-acceptance` | 2026-10-01 | — | 9 rows → **DONE** dated (D-P0.03-3, D-PRB.03-1, D-PRB.16-4, D-P0.15b-2/-3/-4, D-P0.15c-2/-3/-5); D-P0.15b-1 re-scoped **PARTIAL**→BL-25; six P1 rows re-assessed **PARTIAL** w/ round-3 owners; none opened | **docs-only, $0** — LEDGER truth pass (OPEN FINDINGS stubs, RETURN PASS empty, verbatim archive `reports/ledger-archive/2026-10-01_*`, PHASE LOG + GATE DECISIONS byte-identical, 220,841→212,244 B); 17 retro Plan-extensions lines; DEF.2/DEF.3 header corrections; prod test-data inventory for H7; `check-append-only.mjs` + `history.policy`; build-memory 0 viol (tree + staged), append-only OK vs `a2bf831`, selftest OK, check-backlog 6 (was 8) | `runs/MAINT.2.md` |
 | 91 | RES.1 | ticket | `stevevitali/res-1-review-research-restore` | #85 | `stevevitali/maint-2-build-memory-hygiene` | 2026-10-01 | ADR-021, ADR-022, ADR-023 | D-RES.1-1 (deploy + ≤3 probes ≤$3), D-RES.1-2 (N6 Quick/Base essay Review ≤$7, H7-dependent), D-RES.1-3 (Standard/Base excerpt ≤$5) — all operator-gated Stage-B legs | **gate-pending** — Stage A executed at $0; Stage B operator-gated (D-RES.1-1..3). Root cause proven on read-only prod evidence (parallel subagent admission at `used=0` → 28/12 search overshoot → drop-at-zero starved verification); reservations + executed-only counting + floor + phase-class stamp + model×tool preflight (fail-closed, resume re-probe, terminal settle, id-only alert); planted-error fixtures + probe driver + recorded twin; turbo 135/135, 3,782 tests green | `runs/RES.1.md` |
+| 92 | RES.2 | ticket | `stevevitali/res-2-unverified-delivery-and-refund` | — | `stevevitali/res-1-review-research-restore` | 2026-10-01 | ADR-024, ADR-025, ADR-026 | D-RES.2-1 (Stage B deploy + forced-Unverified walk + N6, ≤$3), D-RES.2-2 (prod historical scan + operator retro ruling), D-RES.2-3 (fact_check extension) — all operator-gated; dated note on D-P0.15d-2 (`refundPhases` has its first live caller; stays OPEN) | **gate-pending** — Stage A executed at $0; Stage B + prod scan operator-gated. `runs.delivery` (migration 0047, additive) written atomically with `finalizing→completed` + `run.unverified`; post-commit platform-fault settle (`platform_fault:zero_coverage`, absorb, exactly-once trial restore, send-then-mark alert); sweep leg E retries; `isSuccessfulDelivery` excludes label from SLO numerator + refit + `run.completed` emission; label read-only on card/dossier/email; BL-66 `agents/**` foreign-version hydration fix; `is_test`-gated forcing; turbo 135/135 | `runs/RES.2.md` |
 
 <!-- build-memory correction — a dated entry naming sha + line, per BM-HIST-01 -->
 - 2026-10-01 — **correction to row 91 (RES.1), added at `7833ece` / BUILD_INDEX.md:107** — the
@@ -119,3 +120,21 @@ operator-gated/deferred (DEFERRALS + G1); `fixture-only` = deterministic/integra
   delivered claim ledger was the prior run's bytes (stale `agents/editor/01-claim-ledger.json`
   mount on re-run) → defect **BL-66** → RES.2. N6 + Standard excerpt cut by the $2.51 remainder →
   **D-RES.1-1 → PARTIAL; D-RES.1-2/-3 stay OPEN.** Evidence: `runs/RES.1.md` § Stage B.
+- 2026-10-01 — **correction to row 92 (RES.2), added at the Stage-B closeout / BUILD_INDEX.md:108** —
+  the "gate-pending · Stage B + prod scan operator-gated" verification cell is stale from the same
+  day's continuation. **PR is #86** (`—` cell stale). Stage B **executed** on prod 2026-10-01:
+  migration `0047` applied 19:57:46Z; all nine `d15e1bd` images Cloud-Built (`ef3f5f94`) and pinned
+  (`5700ca2`); `pulumi preview` zero stateful replace/delete → `pulumi up` **update 101**;
+  `/healthz` provenance `d15e1bd76a83…` on api+web; `deployments` row recorded. Live walk: forced
+  `inputs.force_unverified` Review `01M3WJ2393X73MA6JYQF04STK3` on the `is_test` workspace delivered
+  `completed` with `delivery={label:'unverified',checkableClaims:7,coveredClaims:0,alerted:true,
+  trialRestoredAt,platformFaultSettledAt}`; `run.unverified` in the completion commit; claim verdicts
+  stayed `unverifiable`; the consumed trial entitlement restored to `unused` exactly once
+  (`trial_restorations` `01M3WMCMZ9…`); ONE id-only `unverified_delivery` ops alert received; the
+  `run_finished` email + dossier + run card all carry the label (`reports/2026-10-01_RES.2-walk/`).
+  N6: existing normal Reviews read `delivery=null` ($0). Historical scan executed live: 4 candidates
+  incl. incident run `01M3SK62…` → operator ruling **GD-RES.2-1**. **Cap breach recorded:** Stage B
+  metered **$7.27 vs ≤$3** (entitlement→Standard rigor + a hiccup re-drive) → **GD-RES.2-2**.
+  `refundedCredits:0` is correct — the run was trial-pocket funded (no credit-bucket debits to
+  refund). **D-RES.2-1 → DONE; D-RES.2-2 → PARTIAL (scan ran; ruling owed); D-RES.2-3 OPEN.**
+  Evidence: `runs/RES.2.md` § Stage B + § Historical scan.

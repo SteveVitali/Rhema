@@ -249,6 +249,29 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     expect(dto.findingObligations).toEqual({ fnd_1: "open", fnd_2: "discharged" });
   });
 
+  it("RES.2 — the persisted run-level label surfaces on the dossier banner AND the run card, read never recomputed", async () => {
+    await seedDeliveredReview();
+    // no label → both slots absent.
+    const before = (await (await getDossier(seed.projectId, RUN)).json()) as {
+      deliveryLabel?: string | null; runCard: { deliveryLabel?: string | null };
+    };
+    expect(before.deliveryLabel).toBeNull(); // the banner slot serializes null
+    expect(before.runCard.deliveryLabel).toBeUndefined(); // the card omits the key when unlabelled
+    // persist the label → it rides the DTO's top-level banner slot and the card verbatim.
+    await db.pg.query(
+      `update runs set delivery = '{"label":"unverified","checkableClaims":16,"coveredClaims":0}'::jsonb where id = $1`,
+      [RUN],
+    );
+    const res = await getDossier(seed.projectId, RUN);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as {
+      deliveryLabel?: string; runCard: { deliveryLabel?: string; state: string };
+    };
+    expect(dto.deliveryLabel).toBe("unverified");
+    expect(dto.runCard.deliveryLabel).toBe("unverified");
+    expect(dto.runCard.state).toBe("completed"); // the label never rewrote the state
+  });
+
   it("STB.2 — a dossier in ANOTHER workspace 404s even without RLS (the SQL workspace predicate)", async () => {
     // The live finding: the deployed api connects as a BYPASSRLS role, so withTenant's GUC never
     // filtered — this run's correspondence row in ws_other must be invisible to ws_seed's principal.

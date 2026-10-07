@@ -162,9 +162,15 @@ config:
   # caps (floor(budget/4) via RESEARCH_PARALLELISM) in authorWebToolPolicy, preflight excluded
   # from bound settlement, and the probe launcher's inputSnapshot pass-through. All nine images
   # rebuilt on the hotfix tip so healthz provenance stays uniform.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5eb3640691ab16e00d0cc2f2e3705fc0dc68a8fdc355fb5fe0f0921e2c590ddb","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:95ae7b1af5455545b868607339e345f1c5827b2535be16c970c306616b77b379","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:231ce872506d84c69f5afcd6de1e382cd6a8e59611dbf86b1aa16a1d4ce3b933","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:59e2ec7b19df90a7f03d9daf708c007642b29669d736a9bb42a19d764769b957","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:9ed30c42f52f9145d7521184b1e8ae3e4e0fbb37925e43572e97b7a961cac421","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:235561238600ca4a33f4d3c223107d9f3081a93484eb669d1a8b0e57f561a6d1","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:97d90e523ee7368c5ec790b0367e4acdafa9dc908a28e6a8edcddc06009ea7d1"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:faa6aa00b8b6e678c17f69bd8632e30199578c2630a4561073e324e44acd06d9
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:618ddfa8a23c6277b25b321ad15eae6b23e7c9f75247fbb9fb25c9443a224f15
+  # RES.2 Stage-B (build rhema:res2, Cloud Build ef3f5f94, 2026-10-01, SHA d15e1bd — stacks on the
+  # res1c deploy): all nine images rebuilt on the RES.2 tip. Carries: the Unverified delivery label
+  # (runs.delivery, migration 0047 applied), the platform_fault:zero_coverage settle + ops alert,
+  # is_test-gated force_unverified, the BL-66 foreign-run seat-namespace hydration fix, the
+  # unverified_review_rate_7d_pct SLO signal, and the run_finished label copy. healthz provenance
+  # requires every service rebuilt on the tip SHA, so all nine pins move together.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:9f5f3e1e9102ed5c887e4e31ab92e692d9d122691bb0a9aa164f9001442e3fab","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:2b167520b4aa3d73185f2de4bea70adf45d47215731e60b5659fd744fa866804","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:ba6dddff3ceb6d719af729503306791e3f545863730b133395764091e5970731","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:22c2174c1205dd3ffffa309f93f8e56299763f84f06b6f51002c8be36a165bb2
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:92cb2ad26435632621310197891b9ba6b3a7385ead2625e84d95b42e5399477d
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

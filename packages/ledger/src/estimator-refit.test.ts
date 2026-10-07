@@ -82,4 +82,22 @@ describe("weeklyEstimatorRefit", () => {
     expect(out.moved).toBe("held");
     expect(out.capMultiplier).toBe(CAP_MULTIPLIER_CEILING);
   });
+
+  it("RES.2 — an Unverified run is excluded from the refit sample (platform-fault spend is not estimate evidence)", async () => {
+    // REFIT_MIN_SAMPLE − 1 ordinary runs (insufficient on their own) + 1 Unverified run with spend that,
+    // were it counted, would reach the sample floor AND skew the median toward overrun.
+    await seedCompletedRuns(REFIT_MIN_SAMPLE - 1, 200, 150);
+    await seedRun(db, { runId: "run_uv", workspaceId: WS, projectId: PRJ });
+    await db.pg.query(
+      `update runs set state = 'completed', estimate_credits = 10, spent_credits = 200,
+                      ended_at = $2,
+                      delivery = '{"label":"unverified","checkableClaims":9,"coveredClaims":0}'::jsonb
+        where id = $1`,
+      ["run_uv", new Date(NOW.getTime() - 24 * 60 * 60 * 1000)],
+    );
+    const out = await weeklyEstimatorRefit(db.client, deps(), NOW);
+    // 19 ordinary + 1 excluded ⇒ insufficient — the Unverified spend moved nothing.
+    expect(out.moved).toBe("insufficient");
+    expect(out.sampleRuns).toBe(REFIT_MIN_SAMPLE - 1);
+  });
 });
