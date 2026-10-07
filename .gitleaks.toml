@@ -21,4 +21,7 @@ paths = [
 regexes = [
   '''test-secret-0123456789abcdef0123456789abcdef''',
   '''quarantine/ws1/up1''',
+  # CITE.1/STB.5a — a CSL-JSON bibliography cite key for the headless journey fixture, not a
+  # secret (gitleaks generic-api-key false positive on packages/journeys/src/stb5a-helpers.ts).
+  '''journey2026stb5a''',
 ]
