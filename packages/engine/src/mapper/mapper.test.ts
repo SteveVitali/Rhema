@@ -63,6 +63,45 @@ describe("mapper — REQ-ARCH-14 (agent.note is template-only) + free-text bound
   });
 });
 
+describe("mapper — RES.3 (search.performed resultCount is honest, never fabricated)", () => {
+  it("a server-side search whose result never arrives flushes resultCount null — not a fabricated 0", () => {
+    const evs = events([
+      { type: "assistant", message: { content: [{ type: "tool_use", id: "s1", name: "web_search", input: { query: "loc founding date" } }] } },
+      { type: "result", subtype: "success", usage: { input_tokens: 1, output_tokens: 1 } },
+    ]);
+    const search = evs.find((e) => e.kind === "event" && e.type === "search.performed");
+    expect(search).toBeDefined();
+    expect(search && search.kind === "event" && (search.payload as { resultCount: unknown }).resultCount).toBeNull();
+  });
+
+  it("a tool_result envelope with no count field reports null (count unobserved, not empty)", () => {
+    const evs = events([
+      { type: "assistant", message: { content: [{ type: "tool_use", id: "s1", name: "web_search", input: { query: "q" } }] } },
+      { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "s1", content: { note: "results inlined elsewhere" } }] } },
+    ]);
+    const search = evs.find((e) => e.kind === "event" && e.type === "search.performed");
+    expect(search && search.kind === "event" && (search.payload as { resultCount: unknown }).resultCount).toBeNull();
+  });
+
+  it("a real empty result set (result_count: 0) still reports 0", () => {
+    const evs = events([
+      { type: "assistant", message: { content: [{ type: "tool_use", id: "s1", name: "web_search", input: { query: "q" } }] } },
+      { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "s1", content: { result_count: 0 } }] } },
+    ]);
+    const search = evs.find((e) => e.kind === "event" && e.type === "search.performed");
+    expect(search && search.kind === "event" && (search.payload as { resultCount: unknown }).resultCount).toBe(0);
+  });
+
+  it("an observed count still reports the count", () => {
+    const evs = events([
+      { type: "assistant", message: { content: [{ type: "tool_use", id: "s1", name: "web_search", input: { query: "q" } }] } },
+      { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "s1", content: { result_count: 7 } }] } },
+    ]);
+    const search = evs.find((e) => e.kind === "event" && e.type === "search.performed");
+    expect(search && search.kind === "event" && (search.payload as { resultCount: unknown }).resultCount).toBe(7);
+  });
+});
+
 describe("mapper — subagent attribution (parent_tool_use_id → subagent label)", () => {
   it("attributes a subagent's turns to the subagent, not the seat", () => {
     const evs = events([

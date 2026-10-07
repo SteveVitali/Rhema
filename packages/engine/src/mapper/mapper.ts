@@ -221,9 +221,14 @@ export function createMapper(ctx: MapperContext): Mapper {
     },
     flush(): EngineEvent[] {
       const out: EngineEvent[] = [];
-      // any search whose result never arrived (server-tool inline results) is emitted with count 0.
+      // Any search whose result never arrived — the SERVER-side `web_search` is the only search
+      // path (P0.15i) and its results ride inline `web_search_tool_result` blocks, never a
+      // `tool_result` — flushes with `resultCount: null`: the query is real evidence worth
+      // keeping, but the count was never observable. Emitting `0` here claimed "empty result
+      // set" for searches that billed and returned content — the fabricated zeros were the
+      // "6 empty search events" that misdirected the Leg-1a diagnosis (RES.3).
       for (const [, s] of pendingSearch) {
-        out.push(event("search.performed", { query: s.query, resultCount: 0, agentLabel: s.agentLabel }, s.agentLabel));
+        out.push(event("search.performed", { query: s.query, resultCount: null, agentLabel: s.agentLabel }, s.agentLabel));
       }
       pendingSearch.clear();
       return out;

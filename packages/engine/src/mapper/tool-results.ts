@@ -44,11 +44,15 @@ export function extractFetchResult(content: unknown): FetchResult {
   return { ...(url ? { url } : {}), ...(title ? { title } : {}), ...(status !== undefined ? { status } : {}), ...(bytes !== undefined ? { bytes } : {}) };
 }
 
-/** Read a web-search result count from a normalized result envelope (structured field only). */
-export function extractSearchResultCount(content: unknown): number {
+/**
+ * Read a web-search result count from a normalized result envelope (structured field only).
+ * Returns `null` when the envelope carries no count — "not observed" is honest; fabricating `0`
+ * would report an empty result set that never happened (RES.3).
+ */
+export function extractSearchResultCount(content: unknown): number | null {
   const o = firstObject(content);
   const n = o?.result_count ?? o?.resultCount ?? (Array.isArray(o?.results) ? o!.results.length : undefined);
-  return typeof n === "number" ? n : 0;
+  return typeof n === "number" ? n : null;
 }
 
 /** The registrable-ish host of a URL, for a bounded domain label. Returns undefined on a malformed URL. */
