@@ -347,7 +347,7 @@ export function createWebApp(deps: WebDeps): Hono {
   // the raw value never leaves this host's cookie jar (no script may read it — HttpOnly).
   const FP_COOKIE = "rhema_fp";
   const cookieValue = (c: Context, name: string): string | undefined => {
-    const raw = c.req.header("cookie") ?? "";
+    const raw = c.req.header("cookie") ?? "";  // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
     for (const pair of raw.split(";")) {
       const eq = pair.indexOf("=");
       if (eq < 0) continue;
@@ -364,7 +364,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const fp = randomBytes(24).toString("base64url");
     // Secure when the page is served over https (prod); the dev http stage plants it without.
     const secure = c.req.url.startsWith("https://") ? "; Secure" : "";
-    c.header("set-cookie", `${FP_COOKIE}=${fp}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`, { append: true });
+    c.header("set-cookie", `${FP_COOKIE}=${fp}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`, { append: true });  // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
     return fp;
   };
 
