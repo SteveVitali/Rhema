@@ -167,11 +167,16 @@ async function postAudit(args: {
   // request; `runOnePhaseInPod` sets it from the server-authored manifest `phaseClass` at each phase start,
   // so a `research`-class phase's traffic (its seat AND all its subagents — everything egresses through the
   // injector) alone may draw the reserved floor share.
+  // RPT.1 (§14.5 Level 4) — `currentStepKey` is the same per-phase stamp for usage attribution: the proxy
+  // folds it into `usage_records.step_id`, so the report's per-request drill-down names the phase that
+  // burned it (the seat AND its subagents all egress through this one injector).
   let currentPhaseClass: string | undefined;
+  let currentStepKey: string | undefined;
   const injector = await startCredentialInjector({
     credential: proxyCredential,
     upstreamBaseUrl: egressProxyBaseUrl,
     phaseClass: () => currentPhaseClass,
+    stepKey: () => currentStepKey,
   });
   const agentProxyBaseUrl = injector.url;
   console.log(`[harness] credential injector listening at ${agentProxyBaseUrl} → ${egressProxyBaseUrl} for run ${runId}`);
@@ -186,7 +191,9 @@ async function postAudit(args: {
   const runOnePhaseInPod = async (spec: HarnessRunSpec, opts: { guidance?: string }): Promise<PhaseRunOutputs> => {
     // RES.1 — stamp this phase's class on every egress request for the duration of the phase (the injector
     // reads `currentPhaseClass` live; the agent cannot forge it — see credential-injector).
+    // RPT.1 — `currentStepKey` stamps `x-rhema-step: step:<key>` the same way (Level-4 attribution).
     currentPhaseClass = spec.request.phase.phaseClass;
+    currentStepKey = spec.request.phase.key;
     const serverFiles = new Map(Object.entries(spec.serverFiles ?? {}).map(([p, s]) => [p, Buffer.from(s, "utf8")]));
     // Reconciled /work layout (F3): materialize each manifest entry under its mount root, using the SAME roots
     // the §12.6 hook compiles against (`resolveSeatRoots`) — so a `project` entry lands at `/work/project/…`

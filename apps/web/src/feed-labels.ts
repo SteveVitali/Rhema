@@ -50,7 +50,15 @@ export function feedRowsFor(events: readonly FeedEventRow[], density: FeedDensit
   const maps = feedLabelMaps();
   const rows: FeedRow[] = [];
   for (const ev of filterFeed(events, density)) {
-    const t = formatFeedRow(ev.type, ev.payload, maps);
+    // RPT.1 — a provisional usage tick renders its ≈ template (matches the SSE-side rule in ide.ts).
+    const key =
+      ev.type === "usage.tick" &&
+      typeof ev.payload === "object" &&
+      ev.payload != null &&
+      (ev.payload as Record<string, unknown>)["provisional"] === true
+        ? "usage.tick.provisional"
+        : ev.type;
+    const t = formatFeedRow(key, ev.payload, maps);
     if (!t) continue;
     rows.push({ type: ev.type, label: t.label, ...(t.detail ? { detail: t.detail } : {}), density: ev.density });
   }

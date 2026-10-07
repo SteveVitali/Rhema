@@ -75,6 +75,12 @@ export interface RunCardInput {
   readonly phases: readonly PhaseProgress[];
   readonly spentCredits: number;
   readonly capCredits: number;
+  /**
+   * RPT.1 (REQ-SPEC-32(a) display half; §5.5) — the meter figure is a mid-phase PROVISIONAL reading
+   * (Σ proxy-metered usage ahead of the committed step figure). The card labels it so (≈ prefix);
+   * absent/false ⇒ a committed/final figure.
+   */
+  readonly provisional?: boolean;
   /** PRB.08 — credits refunded back to available (a failed/refused/cancelled run or a reconciliation
    *  silent-refund); the card renders "refunded N credits; partial results kept". */
   readonly refundedCredits?: number;
@@ -123,6 +129,8 @@ export interface RunCardView {
   readonly phases: readonly PhaseProgress[];
   readonly spentCredits: number;
   readonly capCredits: number;
+  /** RPT.1 — the meter figure is a provisional (pre-commit) reading; the label carries the ≈ marker. */
+  readonly provisional: boolean;
   /** spent/cap as a 0..1 fraction (clamped), for a meter — never a percentage of agent text. */
   readonly creditFraction: number;
   /** total credits refunded (the `cost.refunded` Σ) — 0 when nothing was returned. */
@@ -213,6 +221,7 @@ export function buildRunCardView(input: RunCardInput): RunCardView {
     phases: input.phases,
     spentCredits: input.spentCredits,
     capCredits: input.capCredits,
+    provisional: input.provisional === true,
     creditFraction,
     refundedCredits: input.refundedCredits ?? 0,
     elapsedMs: input.elapsedMs ?? null,
@@ -326,6 +335,9 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
   let spent = 0;
   let cap = opts.capCredits ?? 0;
   let refunded = 0;
+  // RPT.1 — a `usage.tick` may carry `provisional:true` (mid-phase proxy-metered reading); the
+  // completion tick + `cost.final` are committed figures and clear it.
+  let provisional = false;
   // P1.05 — the waiting-gate kind/deadline (the latest UNRESOLVED gate.opened) + the steering markers.
   let waitingGate: { kind: string; deadlineAt: string | null } | null = null;
   let paused = opts.paused === true;
@@ -388,12 +400,20 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
         }
         break;
       }
-      case "usage.tick":
+      case "usage.tick": {
+        const s = num(p["spentCredits"]);
+        const c = num(p["capCredits"]);
+        if (s != null) spent = s;
+        if (c != null) cap = c;
+        provisional = p["provisional"] === true;
+        break;
+      }
       case "cost.final": {
         const s = num(p["spentCredits"]);
         const c = num(p["capCredits"]);
         if (s != null) spent = s;
         if (c != null) cap = c;
+        provisional = false; // the final figure is committed, never provisional
         break;
       }
       case "cost.refunded": {
@@ -446,6 +466,8 @@ export function deriveRunCardInput(runId: string, events: readonly RunEventLike[
     spentCredits: spent,
     capCredits: cap,
     refundedCredits: refunded,
+    // RPT.1 — always present (a committed/final figure explicitly clears the provisional marker).
+    provisional,
     ...(opts.elapsedMs != null ? { elapsedMs: opts.elapsedMs } : {}),
     ...(opts.etaBand != null ? { etaBand: opts.etaBand } : {}),
     ...(opts.estimateCredits != null ? { estimateCredits: opts.estimateCredits } : {}),

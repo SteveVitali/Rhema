@@ -28,7 +28,8 @@ export interface RunCardLabels {
   /** resolve a canonical run state to its user-facing label. */
   readonly stateLabel: (state: string) => string;
   /** e.g. (spent, cap) => "412 / 1,860 cr". */
-  readonly creditsLabel: (spent: number, cap: number) => string;
+  /** RPT.1 — `provisional` marks a mid-phase metered reading (the label renders the ≈ marker). */
+  readonly creditsLabel: (spent: number, cap: number, provisional?: boolean) => string;
   /** e.g. (low, high) => "~25–40 min". */
   readonly etaLabel?: (lowMin: number, highMin: number) => string;
   /** the "off" tag for an opt-out phase (REQ-IDE-12). */
@@ -213,8 +214,8 @@ export function RunCard({
       ) : null}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--shell-fg)" }}>{labels.stateLabel(view.state)}</span>
-        <span data-credits style={{ fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
-          {labels.creditsLabel(view.spentCredits, view.capCredits)}
+        <span data-credits {...(view.provisional ? { "data-provisional": "true" } : {})} style={{ fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
+          {labels.creditsLabel(view.spentCredits, view.capCredits, view.provisional)}
         </span>
       </div>
       {view.paused && labels.pausedLabel ? (

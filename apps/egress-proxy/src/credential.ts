@@ -24,6 +24,14 @@ export const AGENT_ID_HEADER = "x-rhema-agent-id";
 export const PHASE_CLASS_HEADER = "x-rhema-phase-class";
 
 /**
+ * The harness-stamped step identity for per-request usage attribution (RPT.1; §14.5 Level 4). The
+ * credential injector stamps `step:<key>` for the phase currently running; the proxy folds it into
+ * `usage_records.step_id` so the report's per-request drill-down attributes burn to the phase that
+ * made it. Never forwarded upstream.
+ */
+export const STEP_HEADER = "x-rhema-step";
+
+/**
  * Request headers the proxy must never forward to the provider: the sandbox's own credentials (stripped so it
  * cannot bill outside the meter), the proxy's internal headers, and hop-by-hop headers the forward client
  * re-derives. All lowercase — node lowercases incoming header names.
@@ -35,6 +43,7 @@ const NEVER_FORWARD = new Set<string>([
   PROXY_CREDENTIAL_HEADER,
   AGENT_ID_HEADER,
   PHASE_CLASS_HEADER,
+  STEP_HEADER,
   "cookie",
   "host",
   "connection",
@@ -76,6 +85,12 @@ export function presentedAgentId(headers: Readonly<Record<string, string>>): str
 /** The harness-stamped phase class for the research floor, or `undefined` (unstamped ⇒ not floor-eligible). */
 export function presentedPhaseClass(headers: Readonly<Record<string, string>>): string | undefined {
   return lower(headers)[PHASE_CLASS_HEADER];
+}
+
+/** The harness-stamped step id for per-request attribution (`step:<key>`), or `undefined` (RPT.1). */
+export function presentedStep(headers: Readonly<Record<string, string>>): string | undefined {
+  const v = lower(headers)[STEP_HEADER];
+  return typeof v === "string" && v.length > 0 && v.length <= 128 ? v : undefined;
 }
 
 /**

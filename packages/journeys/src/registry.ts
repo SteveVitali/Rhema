@@ -135,7 +135,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "returning",
     asserts: "the run card's meter moves during a phase; the run report's spent = Σ debits",
     owner: "RPT.1",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {

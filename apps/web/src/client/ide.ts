@@ -1023,7 +1023,15 @@ function main(): void {
       if (typeof ev.seq === "number") lastSeq = Math.max(lastSeq, ev.seq);
       const density = typeof ev.density === "string" ? ev.density : "summary";
       if (!feedRowVisible(density, feedDensity)) return;
-      const text = formatFeedRow(ev.type, ev.payload, feedMaps);
+      // RPT.1 — a provisional usage tick renders its ≈ template (provisional is never ambiguous).
+      const key =
+        ev.type === "usage.tick" &&
+        typeof ev.payload === "object" &&
+        ev.payload != null &&
+        (ev.payload as Record<string, unknown>)["provisional"] === true
+          ? "usage.tick.provisional"
+          : ev.type;
+      const text = formatFeedRow(key, ev.payload, feedMaps);
       if (!text) return; // fail-closed: no template ⇒ no row
       const li = document.createElement("li");
       li.dataset["feedEvent"] = ev.type;
@@ -1044,6 +1052,53 @@ function main(): void {
       while (rowsUl.childElementCount > 400) rowsUl.firstElementChild?.remove(); // bound the DOM
     };
 
+    // RPT.1 (REQ-IDE-11 meter half) — the run card moves WITH the feed's events, not just at SSR:
+    // `usage.tick`/`cost.final` re-render the meter's text (through the same server-owned
+    // `card.meter`/`card.meterProvisional` templates — no client-authored copy) + fill and toggle the
+    // provisional marker; `step.started`/`step.finished` flip the phase row's status + glyph. The card
+    // is `[data-run-card="<feed run>"]` in the Timeline pane; the glyphs mirror ui's GLYPH map
+    // (mechanical symbols, not copy).
+    const PHASE_GLYPH: Record<string, string> = { done: "✓", running: "◐", pending: "○", skipped: "○", off: "○" };
+    const cardRunId = feedPanel.dataset["feedRun"] ?? "";
+    const cardEl = cardRunId !== "" ? ide.querySelector<HTMLElement>(`[data-run-card="${cardRunId}"]`) : null;
+    const patchCard = (ev: { type?: string; payload?: unknown }): void => {
+      if (cardEl == null || typeof ev.type !== "string") return;
+      const p = typeof ev.payload === "object" && ev.payload != null ? (ev.payload as Record<string, unknown>) : {};
+      if (ev.type === "usage.tick" || ev.type === "cost.final") {
+        const spent = Number(p["spentCredits"]);
+        const cap = Number(p["capCredits"]);
+        if (!Number.isFinite(spent) || !Number.isFinite(cap)) return;
+        const provisional = ev.type === "usage.tick" && p["provisional"] === true;
+        const creditsEl = cardEl.querySelector<HTMLElement>("[data-credits]");
+        if (creditsEl) {
+          const key = provisional ? "card.meterProvisional" : "card.meter";
+          const rendered = formatFeedRow(
+            key,
+            { spentCredits: spent.toLocaleString("en-US"), capCredits: cap.toLocaleString("en-US") },
+            feedMaps,
+          );
+          if (rendered) creditsEl.textContent = rendered.label;
+          if (provisional) creditsEl.setAttribute("data-provisional", "true");
+          else creditsEl.removeAttribute("data-provisional");
+        }
+        const meter = cardEl.querySelector<HTMLElement>("[data-credit-meter]");
+        if (meter && cap > 0) meter.style.width = `${Math.min(100, Math.max(0, Math.round((spent / cap) * 100)))}%`;
+      }
+      if (ev.type === "step.started" || ev.type === "step.finished") {
+        const phase = typeof p["phase"] === "string" ? p["phase"] : null;
+        const li = phase != null ? cardEl.querySelector<HTMLElement>(`[data-phase="${phase}"]`) : null;
+        if (li) {
+          const status = ev.type === "step.started" ? "running" : "done";
+          li.setAttribute("data-phase-status", status);
+          const glyph = li.querySelector("span");
+          if (glyph) {
+            glyph.textContent = PHASE_GLYPH[status] ?? "○";
+            glyph.style.color = status === "running" ? "var(--state-running)" : "var(--state-ready)";
+          }
+        }
+      }
+    };
+
     // The SSE tail — the same-origin web route proxies the api's stream (the browser never holds a
     // credential; REQ-ARCH-33). `?after` resumes past the SSR replay; reconnects carry Last-Event-ID.
     const eventsUrl = feedPanel.dataset["feedEvents"];
@@ -1053,12 +1108,17 @@ function main(): void {
       // listener; the label maps' keys are exactly the types worth listening for (fail-closed).
       const onEvent = (m: Event): void => {
         try {
-          appendRow(JSON.parse((m as MessageEvent).data as string));
+          const ev = JSON.parse((m as MessageEvent).data as string) as { type?: string; payload?: unknown };
+          patchCard(ev);
+          appendRow(ev);
         } catch {
           /* a malformed frame is dropped */
         }
       };
-      for (const type of Object.keys(feedMaps.t)) src.addEventListener(type, onEvent);
+      for (const type of Object.keys(feedMaps.t)) {
+        if (type.startsWith("card.")) continue; // pseudo-keys (RPT.1 meter copy) aren't event types
+        src.addEventListener(type, onEvent);
+      }
       src.onerror = () => {
         /* EventSource auto-reconnects; Last-Event-ID resumes exactly-once (§12.5) */
       };

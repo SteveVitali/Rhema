@@ -42,3 +42,5 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-034](ADR-034-surface-estimator-api.md) | The surface-estimator API — one call shape, one figure, every pre-run surface | EST.1 | Accepted |
 | [ADR-035](ADR-035-model-tier-resolution-order.md) | Model-tier default resolution — explicit → project → account → §6.5 notch, plan-clamped | EST.1 | Accepted |
 | [ADR-036](ADR-036-shared-duration-bands-and-lever-matrix-timing.md) | Shared duration bands + the lever-matrix timing method (BL-12) | EST.1 | Accepted |
+| [ADR-037](ADR-037-intra-phase-meter-source-and-cadence.md) | Intra-phase meter source and cadence — the heartbeat reads the proxy ledger | RPT.1 | Accepted |
+| [ADR-038](ADR-038-metered-vs-charged-difference-wording.md) | Metered ≠ charged — the difference is stated per reason, in controlled sentences | RPT.1 | Accepted |

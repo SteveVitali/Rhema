@@ -205,11 +205,16 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
           [principal.billingAccountId],
         )
       ).rows[0] as { spendable: number; held: number } | undefined;
+      // RPT.1 (§15.3) — the seeded Showcase run is a worked example, not usage history: it never lists
+      // in the account's run spend (its report still serves under the worked-example label).
       const runs = (
         await tx.query(
-          `select id, project_id, workflow, state, estimate_credits, cap_credits, spent_credits,
-                  created_at, ended_at
-             from runs where workspace_id = $1 order by created_at desc limit 50`,
+          `select r.id, r.project_id, r.workflow, r.state, r.estimate_credits, r.cap_credits, r.spent_credits,
+                  r.created_at, r.ended_at
+             from runs r
+             where r.workspace_id = $1
+               and coalesce((select p.showcase from projects p where p.id = r.project_id), false) = false
+             order by r.created_at desc limit 50`,
           [principal.workspaceId],
         )
       ).rows as {

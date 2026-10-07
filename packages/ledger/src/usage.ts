@@ -79,12 +79,17 @@ export async function usageLevel1(
   }));
 
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  // RPT.1 (§15.3) — a Showcase project's run is the seeded worked example, never the user's spend:
+  // its debits (if any ever existed) stay out of the month-to-date total.
   const mtd = Number(
     (
       (
         await exec.query(
-          `select coalesce(sum(credits),0)::int as s from credit_ledger
-             where billing_account_id = $1 and kind = 'debit' and at >= $2`,
+          `select coalesce(sum(credits),0)::int as s from credit_ledger l
+             where l.billing_account_id = $1 and l.kind = 'debit' and l.at >= $2
+               and not exists (
+                 select 1 from runs r join projects p on p.id = r.project_id
+                  where r.id = l.run_id and p.showcase)`,
           [billingAccountId, monthStart],
         )
       ).rows[0] as { s: number }
@@ -150,10 +155,15 @@ export async function usageLevel2(
   const project = (
     await exec.query("select title from projects where id = $1 and workspace_id = $2", [projectId, workspaceId])
   ).rows[0] as { title: string } | undefined;
+  // RPT.1 (§15.3) — a Showcase project's seeded run is a worked example, not usage history: it never
+  // lists or totals on the project rollup (its report still serves, labelled).
   const rows = (
     await exec.query(
       `select r.id, r.created_at, r.workflow, r.state, r.spent_credits, r.estimate_credits, r.cap_credits
-         from runs r where r.project_id = $1 and r.workspace_id = $2 order by r.created_at desc limit 100`,
+         from runs r
+         where r.project_id = $1 and r.workspace_id = $2
+           and coalesce((select p.showcase from projects p where p.id = r.project_id), false) = false
+         order by r.created_at desc limit 100`,
       [projectId, workspaceId],
     )
   ).rows as {
@@ -189,7 +199,10 @@ export async function usageLevel4(exec: SqlClient, workspaceId: string, runId: s
       `select u.run_id, coalesce(s.phase, u.role) as phase, u.role as seat, u.model, u.model_tier,
               u.input_tokens::int as it, u.output_tokens::int as ot, u.cache_read_tokens::int as crt,
               u.cache_write_tokens::int as cwt, u.searches, u.fetches, u.credits, u.provider_request_id
-         from usage_records u left join steps s on s.id = u.step_id
+         from usage_records u
+         left join steps s on s.run_id = u.run_id
+           -- RPT.1: pod-stamped step:<key> (x-rhema-step) AND the orchestrator's step-id form.
+           and (u.step_id = s.id or u.step_id = 'step:' || s.phase)
         where u.run_id = $1 and u.workspace_id = $2 and u.source = 'proxy' -- ECON.1 D-A: meter of record only
         order by u.ts`,
       [runId, workspaceId],
@@ -235,6 +248,8 @@ export async function usageCsv(exec: SqlClient, billingAccountId: string, worksp
          left join runs r on r.id = l.run_id
          left join projects p on p.id = r.project_id
         where l.billing_account_id = $1 and l.workspace_id = $2 and l.kind = 'debit'
+          -- RPT.1 (§15.3) — a Showcase-seeded run never exports as usage history.
+          and coalesce(p.showcase, false) = false
         order by l.at desc limit 5000`,
       [billingAccountId, workspaceId],
     )

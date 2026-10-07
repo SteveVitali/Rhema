@@ -1852,6 +1852,9 @@ export const COPY = {
       "boundary.denied": "Denied — {tool}",
       "boundary.attested": "Boundary attested — {paths_touched_count} paths",
       "usage.tick": "{spentCredits} of {capCredits} cr",
+      // RPT.1 — a mid-phase proxy-metered reading is labelled provisional in the feed too (the ≈ marker;
+      // REQ-SPEC-32(a)). Pseudo-key: renderers pick it when the tick's payload carries provisional:true.
+      "usage.tick.provisional": "≈ {spentCredits} of {capCredits} cr",
       "cost.final": "Final — {spentCredits} cr",
       "cost.refunded": "Refunded {credits} cr",
       // RES.2 — the run-level delivery label event; "Unverified" is the reserved D.2 word here.
@@ -1876,6 +1879,11 @@ export const COPY = {
       "revision.move_traced": "{hunkCount} changes traced",
       "rereview.lineage": "{carried} carried · {closed} closed · {new} new",
       "outline.approved": "Outline approved — {slug}",
+      // RPT.1 — the run card's credit meter (pseudo-keys, NOT event types): the SSR label and the SSE
+      // patch both render the meter from these, so a provisional mid-phase reading carries the ≈ marker
+      // everywhere (REQ-SPEC-32(a): provisional vs committed is labelled, never ambiguous).
+      "card.meter": "{spentCredits} / {capCredits} cr",
+      "card.meterProvisional": "≈ {spentCredits} / {capCredits} cr",
     } as Record<string, string>,
     // enum maps the templates resolve through — {kind}, {verdict}, {to}, {passed}, {severity}.
     gateKind: {
@@ -1916,9 +1924,34 @@ export const COPY = {
     noEstimate: "{spent} cr spent",
     refundFmt: "{n} cr returned",
     durationFmt: "{n} min",
+    // RPT.1 — the metered-vs-charged reconciliation (§14.4/§14.5; REQ-SPEC-32): the metered figure is
+    // stated beside the charged figure, and every difference carries its reason — never an unexplained
+    // gap, never an implied charge that did not happen.
+    meteredFmt: "{metered} cr metered · {charged} cr charged",
+    differenceFmt: {
+      cap: "The run metered past your cap — you were not charged for {n} cr of overrun.",
+      absorbed: "{n} cr of metered usage was absorbed by the platform — not charged to you.",
+      refund: "{n} cr returned — {reason}",
+      refundNoReason: "{n} cr returned.",
+      entitlement: "{n} cr metered — covered by your included review, no charge.",
+      committed: "Charged on the committed phase figures — {n} cr differs from the meter.",
+      cross_check: "The agent's own estimate read {n} cr — the proxy meter is the figure of record.",
+    } as Record<string, string>,
+    // RPT.1 — refund ledger reasons → readable words (a machine code never renders raw).
+    refundReasonLabel: {
+      metered_over_debit: "the committed figure ran ahead of the meter",
+      reconcile_drift: "a reconciliation correction",
+      platform_fault: "a platform fault",
+      operator: "an operator adjustment",
+    } as Record<string, string>,
+    workedExample: "Worked example — the seeded Showcase run; these are illustrative figures, not your usage.",
     phaseHeading: "Phases",
     phaseDetailFmt: "{credits} cr",
     phaseDetailDurationFmt: "{credits} cr · {n} min",
+    // RPT.1 — a real sub-minute phase is honest about its seconds (never "0 min"); a legacy row whose
+    // started_at = ended_at has no truth to tell and renders the dash the AC words (no backfill).
+    phaseDetailDurationSecFmt: "{credits} cr · {n} sec",
+    phaseDetailDurationUnknownFmt: "{credits} cr · —",
     seatsHeading: "Seats",
     seatLabel: {
       // Appendix D.2 seat display names (vocab.ts: 'author' displays as Drafter, 'system' as Rhema).
@@ -1930,14 +1963,17 @@ export const COPY = {
     } as Record<string, string>,
     seatSplitFmt: "{seat} — {credits} cr ({pct}%)",
     flagsHeading: "Flags",
+    // RPT.1 — each flag's sentence interpolates ONLY the figures the server computed on it
+    // ({pct}/{phase}/{n}/{ratio}); nothing is computed in the UI or asserted by the agent.
     flagLabel: {
-      fact_check_dominated: "Fact-checking carried most of the spend.",
-      long_draft: "Drafting carried a large share — a long or heavy piece.",
-      discourse_map: "The discourse map ran (a Standard-tier phase).",
-      second_read_model: "The second read ran on a different model tier.",
-      over_estimate: "The run came in well under its estimate.",
-      under_estimate: "The run ran over its estimate.",
-      retries: "Some steps needed a retry.",
+      fact_check_dominated: "Fact-checking carried {pct}% of the spend ({n} claims verified).",
+      fact_check_dominated_noClaims: "Fact-checking carried {pct}% of the spend.",
+      long_draft: "Drafting carried {pct}% of the spend — a long or heavy piece.",
+      discourse_map: "The discourse map ran in {phase} (a Standard-tier phase).",
+      second_read_model: "The second read in {phase} ran on a different model tier.",
+      over_estimate: "The run came in at {ratio}× its estimate — well under.",
+      under_estimate: "The run ran {ratio}× its estimate — over.",
+      retries: "{n} step(s) needed a retry ({phase}).",
     } as Record<string, string>,
     claimsFmt: "{checked} claims checked · {verified} verified · {per} cr per verified claim",
     claimsNoVerifyFmt: "{checked} claims checked · {verified} verified",

@@ -448,3 +448,210 @@ describe("steering endpoints (§6.5)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// RPT.1 — the live meter on the run card (REQ-IDE-11) + the reconciled report (§14.4/§14.5; REQ-SPEC-32).
+
+const insertTick = (runId: string, seq: number, payload: Record<string, unknown>) =>
+  db.client.query(
+    `insert into run_events(run_id, seq, workspace_id, day, type, payload, density, at)
+     values ($1,$2,$3,current_date,'usage.tick',$4::jsonb,'summary',now())`,
+    [runId, seq, seed.workspaceId, JSON.stringify(payload)],
+  );
+
+describe("RPT.1 — the live meter on the timeline card", () => {
+  it("a running run's SSR card reads the latest provisional usage.tick, not just the committed total", async () => {
+    await seedRun(db, {
+      runId: "run_live",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "running",
+      spentCredits: 100,
+      capCredits: 840,
+    });
+    // two ascending mid-phase ticks (the proxy-metered figure ahead of the committed claim)
+    await insertTick("run_live", 1, { spentCredits: 220, capCredits: 840, provisional: true });
+    await insertTick("run_live", 2, { spentCredits: 300, capCredits: 840, provisional: true });
+
+    const res = await app.request(`/projects/${seed.projectId}/timeline`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      ungrouped: { runId: string; card: { spentCredits: number; provisional?: boolean; capCredits: number } }[];
+    };
+    const card = body.ungrouped.find((r) => r.runId === "run_live")!.card;
+    expect(card.spentCredits).toBe(300); // the live figure, not the stale committed 100
+    expect(card.provisional).toBe(true);
+    expect(card.capCredits).toBe(840);
+  });
+
+  it("a committed (non-provisional) tick is not labelled provisional; a tick behind the committed figure loses", async () => {
+    await seedRun(db, {
+      runId: "run_caught",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "running",
+      spentCredits: 300,
+      capCredits: 840,
+    });
+    await insertTick("run_caught", 1, { spentCredits: 400, capCredits: 840, provisional: true });
+    await insertTick("run_caught", 2, { spentCredits: 300, capCredits: 840 }); // the commit caught up
+    const res = await app.request(`/projects/${seed.projectId}/timeline`);
+    const body = (await res.json()) as {
+      ungrouped: { runId: string; card: { spentCredits: number; provisional?: boolean } }[];
+    };
+    const card = body.ungrouped.find((r) => r.runId === "run_caught")!.card;
+    expect(card.spentCredits).toBe(300);
+    expect(card.provisional ?? false).toBe(false);
+  });
+});
+
+describe("RPT.1 — the reconciled run report (§14.4)", () => {
+  const insertLedger = (
+    id: string,
+    runId: string,
+    kind: "debit" | "refund" | "adjustment",
+    credits: number,
+    reason: string | null = null,
+  ) =>
+    db.client.query(
+      `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, reason, idempotency_key, at)
+       values ($1,$2,$3,$4,$5,'included',$6,'run',$7,$8,now())`,
+      [id, seed.workspaceId, seed.billingAccountId, kind, credits, runId, reason, `k:${id}`],
+    );
+  const insertProxyUsage = (id: string, runId: string, credits: number, stepId: string | null) =>
+    db.client.query(
+      `insert into usage_records
+         (id, ts, workspace_id, billing_account_id, run_id, attempt, step_id, role, provider, model,
+          model_tier, rate_table_version, input_tokens, output_tokens, list_cost_usd, credits, source)
+       values ($1, now(), $2, $3, $4, 1, $5, 'verifier', 'anthropic', 'claude-sonnet-4-6', 'balanced',
+               1, 4000, 500, 1.0, $6, 'proxy')`,
+      [id, seed.workspaceId, seed.billingAccountId, runId, stepId, credits],
+    );
+
+  it("spent = Σ debits − Σ refunds (the ledger), NOT runs.spent_credits; refunds carry their reason", async () => {
+    await seedRun(db, {
+      runId: "run_recon",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+      spentCredits: 300, // the committed claim — deliberately NOT what the report charges
+      capCredits: 840,
+    });
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_recon','run_recon','checking_claims',1,'done',300,1,now()-interval '2 minutes',now())`,
+      ),
+    );
+    await insertProxyUsage("ur_recon_1", "run_recon", 300, "st_recon");
+    // the ledger's truth: debited 634 (a committed-mode claim floor), refunded 4 back to 630.
+    await insertLedger("led_d", "run_recon", "debit", 634);
+    await insertLedger("led_r", "run_recon", "refund", 4, "metered_over_debit");
+
+    const res = await app.request("/runs/run_recon/report");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      report: {
+        spentCredits: number;
+        meteredCredits: number;
+        refundedCredits: number;
+        differences: { key: string; credits: number; reason?: string }[];
+      };
+    };
+    expect(body.report.spentCredits).toBe(630); // 634 − 4 — the ledger, not the claim, not the meter
+    expect(body.report.meteredCredits).toBe(300);
+    expect(body.report.refundedCredits).toBe(4);
+    // charged(630) ran above metered(300) → the committed-mode gap is stated; the refund lists separately.
+    expect(body.report.differences).toContainEqual({ key: "committed", credits: 330 });
+    expect(body.report.differences).toContainEqual({ key: "refund", credits: 4, reason: "metered_over_debit" });
+  });
+
+  it("the capped fixture: metered past the cap reports the absorbed overrun as 'not charged'", async () => {
+    await seedRun(db, {
+      runId: "run_cap",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+      spentCredits: 840,
+      capCredits: 840,
+    });
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_cap','run_cap','checking_claims',1,'done',840,1,now(),now()+interval '1 minute')`,
+      ),
+    );
+    await insertProxyUsage("ur_cap_1", "run_cap", 900, "step:checking_claims"); // pod-stamped attribution
+    await insertLedger("led_cap_d", "run_cap", "debit", 840); // clamped at the cap
+    await insertLedger("led_cap_a", "run_cap", "adjustment", 60, "absorbed"); // the overrun, absorbed
+
+    const res = await app.request("/runs/run_cap/report?advanced=1");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      report: { spentCredits: number; meteredCredits: number; differences: { key: string; credits: number }[] };
+      advancedView: { rows: { phase: string; credits: number }[] };
+    };
+    expect(body.report.spentCredits).toBe(840);
+    expect(body.report.meteredCredits).toBe(900);
+    expect(body.report.differences).toContainEqual({ key: "cap", credits: 60 });
+    // Level-4 resolves the pod-stamped `step:<key>` row to the phase (the populated drill-down).
+    expect(body.advancedView.rows[0]).toMatchObject({ phase: "checking_claims", credits: 900 });
+  });
+
+  it("RPT.1 — a committed step's real duration surfaces; a legacy equal-timestamps row reports 0 (the web renders '—')", async () => {
+    await seedRun(db, {
+      runId: "run_dur",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+      spentCredits: 400,
+    });
+    await db.txRunner.run(seed.workspaceId, async (tx) => {
+      // a real 2-minute step…
+      await tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_dur_1','run_dur','checking_claims',1,'done',300,1,now()-interval '2 minutes',now())`,
+      );
+      // …beside a legacy row whose commit wrote started_at = ended_at (the pre-RPT.1 $7,$7 upsert).
+      await tx.query(
+        `insert into steps(id, run_id, phase, ordinal, state, credits, attempt, started_at, ended_at)
+         values ('st_dur_2','run_dur','legacy_phase',2,'done',100,1,'2020-01-01T00:00:00Z','2020-01-01T00:00:00Z')`,
+      );
+    });
+    const res = await app.request("/runs/run_dur/report");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      report: { phases: { key: string; durationMs: number | null }[] };
+    };
+    const real = body.report.phases.find((p) => p.key === "checking_claims");
+    expect(real?.durationMs).toBeGreaterThanOrEqual(115_000); // ~2 min, clock skew tolerated
+    expect(real?.durationMs).toBeLessThan(130_000);
+    const legacy = body.report.phases.find((p) => p.key === "legacy_phase");
+    expect(legacy?.durationMs).toBe(0); // rendered "—" by the web — never "0 min"
+  });
+
+  it("a Showcase-seeded run's report carries the worked-example label (§15.3)", async () => {
+    await db.client.query("update projects set showcase = true where id = $1", [seed.projectId]);
+    await seedRun(db, {
+      runId: "run_sc",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "completed",
+      spentCredits: 3860,
+    });
+    const res = await app.request("/runs/run_sc/report");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { report: { workedExample?: boolean } };
+    expect(body.report.workedExample).toBe(true);
+    // …and the unmarked project's run carries none
+    await db.client.query("update projects set showcase = false where id = $1", [seed.projectId]);
+    const res2 = await app.request("/runs/run_sc/report");
+    expect(((await res2.json()) as { report: { workedExample?: boolean } }).report.workedExample).toBeUndefined();
+  });
+});

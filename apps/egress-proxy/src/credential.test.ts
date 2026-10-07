@@ -4,9 +4,13 @@ import {
   buildUpstreamHeaders,
   isEndpointAllowed,
   isModelAllowed,
+  PHASE_CLASS_HEADER,
   PROXY_CREDENTIAL_HEADER,
+  STEP_HEADER,
   presentedAgentId,
   presentedCredential,
+  presentedPhaseClass,
+  presentedStep,
   stripSandboxAuth,
 } from "./credential.js";
 
@@ -17,6 +21,14 @@ describe("credential + header scrub", () => {
     expect(presentedAgentId(headers)).toBe("editor");
     expect(presentedCredential({ "X-Rhema-Proxy-Credential": "up" })).toBe("up");
     expect(presentedCredential({})).toBeUndefined();
+  });
+
+  it("RPT.1 — reads the harness-stamped step id; oversized/absent values read undefined", () => {
+    expect(presentedStep({ [STEP_HEADER]: "step:checking_claims" })).toBe("step:checking_claims");
+    expect(presentedStep({ "X-Rhema-Step": "step:intake" })).toBe("step:intake");
+    expect(presentedStep({})).toBeUndefined();
+    expect(presentedStep({ [STEP_HEADER]: "" })).toBeUndefined();
+    expect(presentedStep({ [STEP_HEADER]: "x".repeat(200) })).toBeUndefined(); // bounded, never trusted
   });
 
   it("strips the sandbox's Authorization and x-api-key (AC5)", () => {
@@ -37,6 +49,8 @@ describe("credential + header scrub", () => {
         "x-api-key": "sk-sandbox",
         [PROXY_CREDENTIAL_HEADER]: "cred-abc",
         [AGENT_ID_HEADER]: "editor",
+        [PHASE_CLASS_HEADER]: "research",
+        [STEP_HEADER]: "step:checking_claims",
         cookie: "session=1",
         host: "proxy.internal",
         "content-length": "42",
@@ -53,6 +67,10 @@ describe("credential + header scrub", () => {
     expect(upstream["accept-encoding"]).toBeUndefined();
     expect(upstream[PROXY_CREDENTIAL_HEADER]).toBeUndefined();
     expect(upstream[AGENT_ID_HEADER]).toBeUndefined();
+    // RPT.1/RES.1 — the internal attribution stamps are read for metering, NEVER forwarded upstream.
+    expect(upstream[PHASE_CLASS_HEADER]).toBeUndefined();
+    expect(upstream[STEP_HEADER]).toBeUndefined();
+    expect(presentedPhaseClass({ [PHASE_CLASS_HEADER]: "research" })).toBe("research");
     expect(upstream["cookie"]).toBeUndefined();
     expect(upstream["host"]).toBeUndefined();
     expect(upstream["content-length"]).toBeUndefined();

@@ -252,7 +252,10 @@ export const RUN_EVENTS = {
   "usage.tick": {
     visibility: "user",
     density: "summary",
-    payload: z.object({ spentCredits: z.number().int(), capCredits: z.number().int() }),
+    // RPT.1 — `provisional` marks a mid-phase meter reading (Σ proxy-metered usage before the step's
+    // committed figure lands). Omitted/false on the completion-time tick, which reflects committed
+    // credits. REQ-SPEC-32(a): the card's meter labels the provisional figure differently.
+    payload: z.object({ spentCredits: z.number().int(), capCredits: z.number().int(), provisional: z.boolean().optional() }),
   },
   "cost.final": {
     visibility: "user",

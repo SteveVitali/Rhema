@@ -21,6 +21,14 @@ export const PROXY_CREDENTIAL_HEADER = "x-rhema-proxy-credential";
  */
 export const PHASE_CLASS_HEADER = "x-rhema-phase-class";
 
+/**
+ * The harness-stamped step identity for per-request usage attribution (RPT.1; §14.5 Level 4). The
+ * credential injector stamps `step:<key>` for the phase currently running — the AGENT can never set
+ * it (its copy is dropped before stamping), and the proxy folds it into `usage_records.step_id`.
+ * Wire contract duplicated with the proxy (`credential.ts`), deliberately — defense in depth.
+ */
+export const STEP_HEADER = "x-rhema-step";
+
 /** Inject the per-run credential into an outbound request's headers (harness-side). Returns a new object. */
 export function injectProxyCredential(
   headers: Readonly<Record<string, string>>,

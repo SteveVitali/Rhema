@@ -1567,11 +1567,14 @@ describe("P1.05 — timeline, run page, steering", () => {
       capCredits: 840,
       refundedCredits: 0,
       estimateRatio: 0.62,
+      // RPT.1 — the metered figure + the reasoned difference list ride every report.
+      meteredCredits: 520,
+      differences: [],
       phases: [
         { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 120000, searches: 12, fetches: 40, subagentLabels: [] },
       ],
       seatSplit: [{ seat: "verifier", credits: 300, share: 1 }],
-      flags: ["fact_check_dominated" as const],
+      flags: [{ key: "fact_check_dominated" as const, sharePct: 58, phase: "checking_claims", count: 50 }],
       claims: { checked: 56, verified: 50, creditsPerVerified: 10.4 },
       drivers: [{ key: "phase_share" as const, phase: "checking_claims", share: 0.58 }],
       suggestedGuidance: ["guidance.fact_check_dominated"],
@@ -1737,6 +1740,28 @@ describe("P1.05 — timeline, run page, steering", () => {
       p105Deps({ getRunReport: async () => { throw new ApiError(404, "no"); } }),
     );
     expect((await missing.request("/p/the-politics-of-visibility/r/run_x")).status).toBe(404);
+  });
+
+  it("RPT.1 — report phase durations are truthful: a real sub-minute phase renders seconds, a legacy equal-timestamps row renders '—' (never '0 min')", async () => {
+    const report = {
+      ...REPORT,
+      report: {
+        ...REPORT.report,
+        phases: [
+          { key: "reading_the_piece", ordinal: 1, status: "done" as const, seat: "editor", credits: 40, durationMs: 45_000, searches: 0, fetches: 0, subagentLabels: [] },
+          { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 0, searches: 0, fetches: 0, subagentLabels: [] },
+          { key: "editors_letter", ordinal: 3, status: "done" as const, seat: "editor", credits: 180, durationMs: 120_000, searches: 0, fetches: 0, subagentLabels: [] },
+        ],
+      },
+    };
+    const app = createWebApp(
+      p105Deps({ getRunReport: async () => report as never }),
+    );
+    const html = await (await app.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(html).toContain("45 sec");
+    expect(html).toMatch(/300\s*cr · —/);
+    expect(html).toContain("2 min");
+    expect(html).not.toMatch(/0\s*min/);
   });
 
   it("/app/usage/r/:run redirects to the canonical /p/ path with #report", async () => {

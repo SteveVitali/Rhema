@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { InMemoryCapAccountant } from "./cap.js";
 import type { RunContext, RunContextResolver } from "./context.js";
-import { PROXY_CREDENTIAL_HEADER, AGENT_ID_HEADER } from "./credential.js";
+import { PROXY_CREDENTIAL_HEADER, AGENT_ID_HEADER, STEP_HEADER } from "./credential.js";
 import { handleProxyRequest, type Forwarder, type HandlerDeps, type ProxyRequest, type UpstreamResponse } from "./handler.js";
 import { NovelDomainTracker, ResearchUsageTracker } from "./outbound-limits.js";
 import {
@@ -243,6 +243,25 @@ describe("handleProxyRequest — serve, scrub, meter, log (AC3, AC5, AC6)", () =
     await handleProxyRequest(request({ headers }), h);
     expect(h.usageWriter.rows[0]!.subagentLabel).toBe("second-reader");
     expect(h.fetchLogWriter.rows[0]!.agentLabel).toBe("second-reader");
+  });
+
+  it("RPT.1 — the harness step stamp lands on usage_records.step_id and never reaches upstream", async () => {
+    const h = harness();
+    const headers = {
+      [PROXY_CREDENTIAL_HEADER]: CRED,
+      [STEP_HEADER]: "step:checking_claims",
+      "content-type": "application/json",
+    };
+    const res = await handleProxyRequest(request({ headers }), h);
+    expect(res.status).toBe(200);
+    // the metered row carries the phase attribution the report's Level-4 join resolves.
+    expect(h.usageWriter.rows[0]!.stepId).toBe("step:checking_claims");
+    // the internal stamp is stripped from the upstream request (a provider never sees it).
+    expect(h.forwarded.req!.headers[STEP_HEADER]).toBeUndefined();
+    // an unstamped request meters unattributed (null, not a guess).
+    const h2 = harness();
+    await handleProxyRequest(request(), h2);
+    expect(h2.usageWriter.rows[0]!.stepId).toBeNull();
   });
 
   it("meters server_tool_use + cache-write tokens (AC3)", async () => {

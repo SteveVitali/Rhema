@@ -288,6 +288,38 @@ export async function heartbeat(deps: OrchestratorDeps, args: HeartbeatArgs): Pr
       });
       return { state: "running" as RunState };
     }
+    // RPT.1 (REQ-IDE-11 meter half; §12.7; Manifest #10/#13) — the intra-phase live meter rides the
+    // pod's own beat: a run-predicated read of Σ usage_records(source='proxy') inside the fenced tx,
+    // published as `usage.tick{provisional:true}` only when the figure (or its provisional marker)
+    // moved, so a quiet phase appends nothing. The provisional figure is
+    // `min(cap, max(committed spent, metered))` — charged-never-exceeds-cap, and the committed figure
+    // wins while the proxy's async write lags a just-committed step.
+    if (row.state === "running" || row.state === "cancelling") {
+      const meterRes = await tx.query(
+        `select r.spent_credits, r.cap_credits,
+                coalesce((select sum(u.credits) from usage_records u
+                           where u.run_id = r.id and u.source = 'proxy'), 0)::int as metered
+           from runs r where r.id = $1`,
+        [args.runId],
+      );
+      const m = meterRes.rows[0] as { spent_credits: number; cap_credits: number; metered: number };
+      const tickSpent = Math.min(m.cap_credits, Math.max(m.spent_credits, m.metered));
+      const provisional = tickSpent > m.spent_credits;
+      const lastTick = await tx.query(
+        `select payload->>'spentCredits' as s, coalesce((payload->>'provisional')::boolean, false) as p
+           from run_events where run_id = $1 and type = 'usage.tick' order by seq desc limit 1`,
+        [args.runId],
+      );
+      const last = lastTick.rows[0] as { s: string; p: boolean } | undefined;
+      if (last == null || Number(last.s) !== tickSpent || last.p !== provisional) {
+        await deps.eventWriter.append(tx, {
+          runId: args.runId,
+          type: "usage.tick",
+          payload: { spentCredits: tickSpent, capCredits: m.cap_credits, provisional },
+          at: deps.clock.now(),
+        });
+      }
+    }
     return { state: row.state };
   });
 
@@ -301,6 +333,60 @@ export async function heartbeat(deps: OrchestratorDeps, args: HeartbeatArgs): Pr
   const cancelRequested = prior?.cancelRequested ?? state === "cancelling";
   const token = deps.tokens.mint({ runId: args.runId, attempt: args.attempt, workspaceId: args.workspaceId, seat: "harness" });
   return { ok: true, cancelRequested, token, state };
+}
+
+// ---------------------------------------------------------------------------- step lifecycle
+
+export interface BeginStepArgs {
+  readonly runId: string;
+  readonly attempt: number;
+  readonly workspaceId: string;
+  readonly stepKey: string;
+  readonly ordinal: number;
+  readonly of: number;
+}
+
+/**
+ * `POST /internal/runs/:id/steps/:key/begin` (RPT.1; REQ-IDE-11 + the §14.5 duration truth). The pod
+ * calls it when the phase's real work starts — upserts `steps.state='running'` with the wall-clock
+ * `started_at`, publishes `step.started` (the card's running phase + the live meter's phase), and
+ * points `runs.current_step_id` at the row so the timeline phase and proxy-stamped `usage_records`
+ * attribute to it. Idempotent on (run, ordinal): a second begin while the step is already running is
+ * a no-op (no duplicate `step.started`); a committed `done` row is untouched. Fenced like commit.
+ */
+export async function beginStep(deps: OrchestratorDeps, args: BeginStepArgs): Promise<{ ok: true; stepId: string }> {
+  return deps.txRunner.run(args.workspaceId, async (tx) => {
+    await fence(tx, args.runId, args.attempt);
+    const now = deps.clock.now();
+    const upserted = await tx.query(
+      `insert into steps(id, run_id, phase, ordinal, state, attempt, started_at)
+       values ($1,$2,$3,$4,'running',$5,$6)
+       on conflict (run_id, ordinal) do update set
+         state='running', attempt=excluded.attempt, started_at=excluded.started_at, ended_at=null
+       where steps.state not in ('running','done')
+       returning id, state`,
+      [deps.ids("step"), args.runId, args.stepKey, args.ordinal, args.attempt, now],
+    );
+    let row = upserted.rows[0] as { id: string; state: string } | undefined;
+    if (!row) {
+      // already running (re-beat) or already done (a duplicate begin after commit) — leave the row.
+      const existing = await tx.query("select id, state from steps where run_id = $1 and ordinal = $2", [
+        args.runId,
+        args.ordinal,
+      ]);
+      row = existing.rows[0] as { id: string; state: string } | undefined;
+      if (!row) throw new Error(`beginStep: no step row for ${args.runId}#${args.ordinal}`);
+      return { ok: true, stepId: row.id };
+    }
+    await tx.query("update runs set current_step_id = $2 where id = $1", [args.runId, row.id]);
+    await deps.eventWriter.append(tx, {
+      runId: args.runId,
+      type: "step.started",
+      payload: { phase: args.stepKey, ordinal: args.ordinal, of: args.of },
+      at: now,
+    });
+    return { ok: true, stepId: row.id };
+  });
 }
 
 // ---------------------------------------------------------------------------- events
@@ -874,14 +960,19 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       // `current_step_id` / `debit.phaseId` / `gates.step_id` writes a dangling reference, and `openGate`'s
       // `gates_step_id_fkey` then rolls the whole commit back (live: run 01M2SH38's attempt-5 triage verdict
       // was complete and the commit 500'd on exactly this — the pod's "commit rejected" exit orphaned the run).
+      // RPT.1 (REQ-BILL-9 timing half): the phase's REAL wall-clock span is the committed fact.
+      // A `beginStep` upsert has usually already stamped `started_at` (kept by the conflict path);
+      // an insert without a begin row derives `started_at` from the caller's measured `durationMs`
+      // when present, else stamps `now` (a legacy-style equal pair → the report renders "—", never
+      // "0 min"). `durationMs` in `step.finished` is then the SERVER-DERIVED ended−started truth.
       const upserted = await tx.query(
         `insert into steps(id, run_id, phase, ordinal, state, attempt, produced_version_ids, started_at,
            ended_at, credits, result)
-         values ($1,$2,$3,$4,'done',$5,$6,$7,$7,$8,$9)
+         values ($1,$2,$3,$4,'done',$5,$6,$7,$8,$9,$10)
          on conflict (run_id, ordinal) do update set
            state='done', attempt=excluded.attempt, produced_version_ids=excluded.produced_version_ids,
            ended_at=excluded.ended_at, credits=excluded.credits, result=excluded.result
-         returning id`,
+         returning id, extract(epoch from (ended_at - started_at)) * 1000 as duration_ms`,
         [
           deps.ids("step"),
           args.runId,
@@ -889,12 +980,15 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
           args.ordinal,
           args.attempt,
           (args.producedVersionIds ?? []) as string[],
+          args.durationMs != null ? new Date(now.getTime() - args.durationMs) : now,
           now,
           args.credits,
           JSON.stringify(args.result),
         ],
       );
-      const stepId = (upserted.rows[0] as { id: string }).id;
+      const stepRow = upserted.rows[0] as { id: string; duration_ms: number | null };
+      const stepId = stepRow.id;
+      const serverDurationMs = stepRow.duration_ms != null ? Math.round(stepRow.duration_ms) : null;
 
       await deps.eventWriter.append(tx, {
         runId: args.runId,
@@ -904,7 +998,9 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
           ordinal: args.ordinal,
           of: args.of,
           credits: args.credits,
-          ...(args.durationMs != null ? { durationMs: args.durationMs } : {}),
+          // the row's real span; a zero/negative span (equal timestamps) stays ABSENT so the card
+          // and the report render "—" instead of a false "0 min" (§14.5).
+          ...(serverDurationMs != null && serverDurationMs > 0 ? { durationMs: serverDurationMs } : {}),
         },
         at: now,
       });
