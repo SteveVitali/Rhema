@@ -58,7 +58,7 @@ import {
   createSharedIpEmailThrottle,
 } from "@rhema/contracts";
 import { provisionPersonalAccount, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
-import { MAGIC_LINK_THROTTLE_DEFAULTS } from "./auth.js";
+import { MAGIC_LINK_THROTTLE_DEFAULTS, OAUTH_SIGNIN_THROTTLE_DEFAULTS } from "./auth.js";
 import { magicLinkSender } from "./magic-link-email.js";
 import { createGcpOidcVerifier } from "./gcp-oidc.js";
 import { createShowcaseSeeder } from "./showcase.js";
@@ -131,7 +131,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   };
   const queue = new PgBossQueue(boss);
 
-  // SEC.2 (D-PRB.13-1 closed; ADR-039/040) — the signup + magic-link throttles share the Redis store:
+  // SEC.2 (D-PRB.13-1 closed; ADR-039/040) — the signup + magic-link + oauth-signin throttles share the Redis store:
   // one bucket per (ip|email) across ALL api instances (an atomic INCR+PEXPIRE Lua — no check-then-set
   // race). ADR-039's outage posture is `createFallbackIpEmailThrottle`: a store failure degrades to the
   // per-instance map for the rest of the process — never unlimited, never fail-closed on signup — and
@@ -151,6 +151,16 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     createSharedIpEmailThrottle(throttleStore, { ...MAGIC_LINK_THROTTLE_DEFAULTS, keyPrefix: "rl:magiclink" }),
     createIpEmailThrottle({ ...MAGIC_LINK_THROTTLE_DEFAULTS }),
     { onDegraded: degraded("magic-link") },
+  );
+  // MAINT.4 — the OAuth sign-in START throttle: it replaces better-auth's built-in
+  // `/sign-in/*` limiter (disabled in auth.ts — its XFF keying collapsed to one global
+  // `no-trusted-ip` bucket under ADR-040). Same shared-store + per-instance-fallback
+  // shape on its own `rl:oauth` prefix; the `hooks.before` social branch calls it
+  // ip-only (the provider identity is unknown at initiation).
+  const signinThrottle = createFallbackIpEmailThrottle(
+    createSharedIpEmailThrottle(throttleStore, { ...OAUTH_SIGNIN_THROTTLE_DEFAULTS, keyPrefix: "rl:oauth" }),
+    createIpEmailThrottle({ ...OAUTH_SIGNIN_THROTTLE_DEFAULTS }),
+    { onDegraded: degraded("oauth-signin") },
   );
   // SEC.2 (ADR-040) — the trusted client-IP channel: the web stamps `x-rhema-client-ip` and proves it
   // with its runtime SA's OIDC token (`x-rhema-internal-token`). The verifier checks the signature
@@ -189,8 +199,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           // SEC.2 (REQ-BETA-19 amended) — the SAME admission boundary POST /signup enforces, on every
           // Better Auth creation path: `user.create.before` throttles + mode/invite-checks (throwing a
           // named APIError — no rows left behind), `create.after` consumes the invite at creation, and
-          // `hooks.before` throttles + pre-gates the magic-link SEND so a direct /api/auth call cannot
-          // bypass the /login limit or enqueue mail for an unadmitted email.
+          // `hooks.before` throttles the OAuth sign-in START (MAINT.4 — the built-in
+          // limiter's replacement) and throttles + pre-gates the magic-link SEND so a
+          // direct /api/auth call cannot bypass the /login limit or enqueue mail for an
+          // unadmitted email.
           admission: {
             mode: env.signupMode,
             inviteGate: createInviteGate(rawDb),
@@ -200,6 +212,7 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
             },
             accountThrottle: signupThrottle,
             magicLinkThrottle,
+            signinThrottle,
             ...(verifyInternalToken ? { verifyInternalToken } : {}),
           },
           // self-serve paths that never pass through POST /signup provision the same account rows here
