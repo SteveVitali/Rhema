@@ -43,3 +43,20 @@ attempts" (the only visible feedback); non-429'd attempts died on this CSP line 
 ## Deferrals
 
 - `D-MAINT.4-1` half (b) still stands — the real-Google-account round trip to `/app` is operator-owed.
+
+---
+
+### Post-deploy (2026-10-07)
+
+- Web-only rebuild: Cloud Build `80fb3cd9` (`_SERVICES=web`, `_GIT_SHA=6ebb1cb76e…`) →
+  `web@sha256:ab1a2937e38f66c05a4a877b775546b6bfa4d714afc688fc16283e2d5d0049b9`; pinned in
+  `Pulumi.prod.yaml`; **`pulumi up` update 147** (1 update, 0 replaces).
+- `web/healthz` → `6ebb1cb76e14be8bfa6c6dc0731932c9011e6224`; `deployments` row recorded.
+- **Live leg GREEN:** headless-Chromium click on `rhema.tools/login` "Continue with Google" →
+  302 → `accounts.google.com/o/oauth2/v2/auth` → `v3/signin/identifier` ("Sign in - Google Accounts")
+  — the real Google sign-in dialog; zero CSP console errors. (curl still sees 7×302 — unchanged.)
+- **D-MAINT.4-1** half (a) now fully proven end-to-end (curl 302s + browser navigation to Google);
+  half (b) — a real Google account through consent → `callback/google` → `/app` — remains operator-owed.
+- Note: the fix commits rode `stevevitali/res-3-leg1a-zero-coverage` (PR #118) as an in-session hotfix
+  under the operator's live report rather than a separate maint-5 branch; recorded here so the ledger
+  matches the pushed history exactly.
