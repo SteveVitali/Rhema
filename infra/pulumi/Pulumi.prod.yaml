@@ -168,8 +168,17 @@ config:
   # stripe_unavailable / stripe_unconfigured surfaced truthfully), the PURCHASE_MODE closed switch
   # (is_test allowlist), and the pending-checkout email (migration 0048 applied). The six untouched
   # services keep their res2 pins — only api/web/worker carry diff'd code.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:cd8d2ceb1a548b1555e69eb2ed06cdc5fe58441c8dfb47493c1a062e23295b5d","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:9c242238dbd78d7d28c307c3ad829f5f59d843357af9cb241deb47db9d018de5","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:1b39c534129011f91961b27d4157f65618c75bcfb65cc8f1c73308386f223a8e","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:22c2174c1205dd3ffffa309f93f8e56299763f84f06b6f51002c8be36a165bb2
+  # ECON.1 Stage-B (build rhema:econ1-e264219, Cloud Build e1fd8bc4, 2026-10-02, chain-tip SHA
+  # e264219 — stacks on the econ1-13e8b95 deploy): api + web + worker + run-task rebuilt on the
+  # F-ECON.1-1 fix tip. Carries everything econ1-13e8b95 did (proxy-only usage surfaces, the
+  # server-frozen §6.5 claim_cap, the dark DEBIT_MODE env, durable calibration store via migration
+  # 0049, the late-arrival resettle sweep, the stale-rigor toggle sentinel) plus the §6.5 preset
+  # precedence fix: seeded/stored phase_defaults may only DISABLE a phase the rigor preset runs
+  # (the essay seed's all-true defaults had silently re-enabled discourse+second_read on every
+  # Quick Review; live finding F-ECON.1-1, run 01M3XN53DEJY0NRJTTK2QDH8Z6). The five untouched
+  # services keep their bill3 pins.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:4edcd97ee44565b9fa0c4a22556a20f10fcc29f99fb8db4325bc78ed68d9f947","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:2cf735f9af18f45464c02e9c5c6ec69834ea63f7797b8e70459f0aa34690b548","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:61a7d287930d78a4ee6942258ab855d67c4e8e002e78d32d300226bd3a88906c","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:320794449c58cd2548ec4f4803315602a6d659400fb6ca841ce1c4ca83eaadf1
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:92cb2ad26435632621310197891b9ba6b3a7385ead2625e84d95b42e5399477d
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app

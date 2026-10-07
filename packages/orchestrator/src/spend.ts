@@ -8,8 +8,32 @@
 // makes the write monotone — a reconciled figure is never lowered by a second settle and a mid-flight
 // call can only fold usage IN.
 
+import type { DebitMode } from "@rhema/contracts";
 import type { SqlClient } from "./tx.js";
 import type { HoldLedger } from "./ledger.js";
+
+export type { DebitMode } from "@rhema/contracts";
+
+// ---------------------------------------------------------------------------------------------------------
+// ECON.1 — `debitMode` (REQ-SPEC-32(a) "charge what we meter"; ADR-031 burn classification). The mode is a
+// DEPLOY flag (`DEBIT_MODE` env → `OrchestratorDeps.debitMode`), default `committed`:
+//
+//   committed — the launched semantics: a commit debits max(pod claim, metered catch-up); a completed run
+//               tops up to metered (`settleMeteredDebit`); a cancel keeps committed debits (partials are
+//               kept/resumable); a failed run refunds its debits and the whole metered burn absorbs.
+//   metered   — the charge IS the proxy meter, `min(metered, cap)`, on every terminal path that charges at
+//               all: commits debit only the metered remainder (the pod claim is never a floor — its excess
+//               would be refunded at settle anyway); a completed run's over-debit REFUNDS
+//               (`reason: metered_over_debit`); a user-cancelled run settles to metered the same way (the
+//               burn happened and the partials are kept). Failed runs are unchanged: refund + absorb.
+//
+// Both modes share the invariant `Σ debits − Σ refunds ≤ cap` (the ledger clamps) and every metered credit
+// the user did not pay is `adjustment(absorbed)` — platform COGS (REQ-SPEC-24.8). The type itself lives in
+// `@rhema/contracts` (`parseDebitMode` fails closed to `committed`).
+
+/** The burn classification for a metered-mode over-debit return (ADR-031): the committed channel's
+ *  pod-claim floor debited MORE than the proxy metered — the excess is the user's, not COGS. */
+export const METERED_OVER_DEBIT_REASON = "metered_over_debit" as const;
 
 /**
  * Fold the run's recorded usage into `runs.spent_credits` and return the reconciled figure. Safe to
@@ -95,22 +119,29 @@ async function attemptDebitedCredits(exec: SqlClient, runId: string, attempt: nu
 }
 
 /**
- * The charge target for one commit (REQ-SPEC-11: proxy rows drive debits). The pod's reconciled figure is
- * the FLOOR (`fallbackCredits` — also the whole story when no proxy rows exist yet); the attempt's
- * cumulative metered total minus what this attempt's commits already debited is the catch-up — a lagged
- * metered row or under-reported subagent burn lands in the NEXT phase's debit instead of leaking. Never
- * returns less than the pod's figure: a short commit debits nothing extra and the settle catches it.
+ * The charge target for one commit (REQ-SPEC-11: proxy rows drive debits). Under `committed` the pod's
+ * reconciled figure is the FLOOR (`fallbackCredits` — also the whole story when no proxy rows exist yet);
+ * the attempt's cumulative metered total minus what this attempt's commits already debited is the
+ * catch-up — a lagged metered row or under-reported subagent burn lands in the NEXT phase's debit instead
+ * of leaking. Under `metered` (ECON.1) the claim is advisory only: the commit is exactly the metered
+ * remainder, and any lagged over-debit is returned by `refundMeteredExcess` at settle.
  */
 export async function incrementalMeteredDebit(
   exec: SqlClient,
   runId: string,
   attempt: number,
   fallbackCredits: number,
+  mode: DebitMode = "committed",
 ): Promise<number> {
   const metered = await meteredCredits(exec, runId, attempt);
   if (metered <= 0) return Math.max(0, Math.trunc(fallbackCredits));
   const debited = await attemptDebitedCredits(exec, runId, attempt);
-  return Math.max(0, Math.trunc(fallbackCredits), metered - debited);
+  // ECON.1: under `metered` the pod claim is never a floor — the commit charges exactly the metered
+  // remainder (D-F: the floor over-debits vs the final meter, e.g. 634 vs 632 on 01M3SK62…). Under
+  // `committed` the claim stands as the floor and the excess stays the charge (the committed figure).
+  return mode === "metered"
+    ? Math.max(0, metered - debited)
+    : Math.max(0, Math.trunc(fallbackCredits), metered - debited);
 }
 
 export interface MeteredSettleArgs {
@@ -195,4 +226,59 @@ export async function absorbMeteredGap(
     idempotencyKey: `absorb:${args.runId}:${episode}`,
   });
   return gap;
+}
+
+/**
+ * ECON.1/`debitMode=metered` — the mirror of `settleMeteredDebit`: when the attempt's committed debits
+ * EXCEED its metered total (the pod-claim floor over-debited, or committed-mode commits ran under a flag
+ * flip), the charge is still exactly `min(metered, cap)` — refund the excess with the
+ * `metered_over_debit` classification (ADR-031: the user's money, never platform COGS). Idempotent on
+ * `refund:<run>:settle:<attempt>`; a no-op under `committed` (the committed figure is the charge there).
+ */
+export async function refundMeteredExcess(
+  tx: SqlClient,
+  deps: { ledger: HoldLedger },
+  args: MeteredSettleArgs & { attempt: number },
+): Promise<number> {
+  const metered = await meteredCredits(tx, args.runId, args.attempt);
+  if (metered <= 0) return 0;
+  const debited = await attemptDebitedCredits(tx, args.runId, args.attempt);
+  const excess = Math.max(0, debited - metered);
+  if (excess <= 0) return 0;
+  await deps.ledger.refund(tx, {
+    billingAccountId: args.billingAccountId,
+    workspaceId: args.workspaceId,
+    runId: args.runId,
+    credits: excess,
+    reason: METERED_OVER_DEBIT_REASON,
+    idempotencyKey: `refund:${args.runId}:settle:${args.attempt}`,
+  });
+  return excess;
+}
+
+/**
+ * ECON.1 D-E — the late-arrival re-settle. Proxy usage rows can land AFTER a run's terminal settle
+ * (async flush; prod `01M3DQ4A…` reconciled to 0 then metered 6; `01M3DJ5V…` froze at 182 of 185).
+ * Idempotent by construction: `reconcileRunSpend` is `greatest`-monotone and `absorbMeteredGap` computes
+ * `metered − debited − absorbed` fresh, so a re-run books ONLY the residue. Safe for the stranded sweep
+ * to call on recently-terminal runs. A `completed` run's re-settle tops up the metered gap through
+ * `settleMeteredDebit` (and refunds the over-debit under `metered` mode); cancelled/failed runs only
+ * absorb — the terminal refund already ran.
+ */
+export async function resettleRun(
+  tx: SqlClient,
+  deps: { ledger: HoldLedger; debitMode?: DebitMode },
+  args: MeteredSettleArgs & { state: string; attempt: number },
+): Promise<{ debited: number; refunded: number; absorbed: number; spent: number }> {
+  const debited =
+    args.state === "completed" || (args.state === "cancelled" && deps.debitMode === "metered")
+      ? await settleMeteredDebit(tx, deps, args)
+      : 0;
+  const refunded =
+    deps.debitMode === "metered" && (args.state === "completed" || args.state === "cancelled")
+      ? await refundMeteredExcess(tx, deps, args)
+      : 0;
+  const absorbed = await absorbMeteredGap(tx, deps, args);
+  const spent = await reconcileRunSpend(tx, args.runId);
+  return { debited, refunded, absorbed, spent: Number(spent) };
 }

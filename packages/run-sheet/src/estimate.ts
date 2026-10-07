@@ -72,6 +72,12 @@ export function buildEstimate(args: BuildEstimateArgs): Estimate {
       provisional = true;
     }
   }
+  // ECON.1 (§6.5; ADR-033) — a rigor notch's server-authored claim cap clamps the priced claim count:
+  // Quick Review fact-checks "the five load-bearing claims", so a 23-claim draft prices five. The SAME
+  // effective count rides the `claimCount` output into `input_snapshot.claimCount`, so the claim-scaled
+  // egress budgets (`authorWebToolPolicy`) bound on it too. fact_check-off zeroes claims below anyway.
+  const claimCap = profile.rigorDefaults[args.rigor]?.claimCap;
+  if (claimCap != null && claims != null) claims = Math.min(claims, claimCap);
   // PRB.23 — the per-phase fixed-overhead term reads `inputs.phases`: the count of manifest
   // phases that will ACTUALLY run under the resolved toggles (the same opt-out rule the
   // orchestrator's runspec applies to the frozen inputs). Estimate and runtime consume one

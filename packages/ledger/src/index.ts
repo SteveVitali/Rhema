@@ -34,6 +34,8 @@ export * from "./trial.js";
 export * from "./auto-reload.js";
 export * from "./usage.js";
 export * from "./estimator-refit.js";
+export * from "./cost-calibration.js"; // ECON.1: the durable calibration store (0049) + costCard/capFor APIs
+export * from "./metered-notice.js"; // ECON.1: the paid-account metered-flip notice (ADR-014 §1)
 export * from "./reprice.js";
 export * from "./unverified-settle.js";
 export * from "./unverified-scan.js";

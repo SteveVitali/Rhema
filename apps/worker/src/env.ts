@@ -2,6 +2,8 @@
 // (Cloud Run env + Secret Manager refs + the GKE launcher config) into a typed config; fail-fast on a missing
 // required var.
 
+import { parseDebitMode, type DebitMode } from "@rhema/contracts";
+
 export interface WorkerEnv {
   /** a RESTRICTED, RLS-ENFORCED role for the worker's tenant-scoped transactions. */
   readonly databaseUrl: string;
@@ -104,6 +106,27 @@ export interface WorkerEnv {
    */
   readonly convertJob?: string;
   readonly convertJobRoot?: string;
+  /**
+   * ECON.1 — `debit.mode` (ADR-031; `DEBIT_MODE`): `committed` (default on every stage until the
+   * operator flips post-calibration) keeps the launched charge semantics; `metered` charges exactly
+   * the proxy meter (`min(metered, cap)` on every charging terminal path). Unset/unknown ⇒ `committed`.
+   */
+  readonly debitMode: DebitMode;
+  /**
+   * ECON.1 — calibration admissibility cutovers (ISO 8601; `CALIBRATION_PRESET_CUTOVER` =
+   * the §6.5 conformance deploy, `CALIBRATION_RESEARCH_AFTER` = RES.1's research-restore deploy).
+   * Unset ⇒ the predicate does not fire. The flip runbook sets them at deploy.
+   */
+  readonly calibrationPresetCutover?: Date;
+  readonly calibrationResearchAfter?: Date;
+}
+
+/** Parse an optional ISO-8601 env var into a Date; a malformed value is ignored (never crashes boot). */
+function optionalDate(name: string): Date | undefined {
+  const v = process.env[name];
+  if (!v) return undefined;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
 function required(name: string): string {
@@ -147,6 +170,13 @@ export function readWorkerEnv(): WorkerEnv {
     ...(process.env.STRIPE_SECRET_KEY_NAME
       ? { stripeSecretKeyName: process.env.STRIPE_SECRET_KEY_NAME }
       : {}),
+    // ECON.1 — the calibration admissibility cutovers (deploy-stamped; see the flip runbook).
+    ...(optionalDate("CALIBRATION_PRESET_CUTOVER")
+      ? { calibrationPresetCutover: optionalDate("CALIBRATION_PRESET_CUTOVER") }
+      : {}),
+    ...(optionalDate("CALIBRATION_RESEARCH_AFTER")
+      ? { calibrationResearchAfter: optionalDate("CALIBRATION_RESEARCH_AFTER") }
+      : {}),
     // STB.4 — the test-mode vehicle's Stripe API base override (never on prod).
     ...(process.env.STRIPE_API_BASE_URL
       ? { stripeApiBaseUrl: process.env.STRIPE_API_BASE_URL }
@@ -162,6 +192,8 @@ export function readWorkerEnv(): WorkerEnv {
     ...((process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET)
       ? { ingestModelKeySecret: process.env.INGEST_MODEL_KEY_SECRET ?? process.env.WALKTHROUGH_MODEL_KEY_SECRET }
       : {}),
+    // ECON.1 — the metered-debit flag (default committed; ADR-031).
+    debitMode: parseDebitMode(process.env.DEBIT_MODE),
     ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),
     ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
   };

@@ -691,7 +691,8 @@ export async function computeBetaDashboard(
       `select r.id, r.workflow,
               coalesce((select sum(l.credits) from credit_ledger l where l.run_id = r.id and l.kind = 'debit'), 0)::int
                 as billed_credits,
-              coalesce((select sum(u.list_cost_usd) from usage_records u where u.run_id = r.id), 0)::float
+              coalesce((select sum(u.list_cost_usd) from usage_records u
+                         where u.run_id = r.id and u.source = 'proxy'), 0)::float -- ECON.1 D-A: meter of record only
                 as cogs_usd
          from runs r where r.created_at >= $1 and r.created_at < $2
         order by r.created_at`,

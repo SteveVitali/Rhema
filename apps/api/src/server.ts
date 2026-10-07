@@ -16,7 +16,8 @@ import {
   RUN_JOBS,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
-import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery } from "@rhema/ledger";
+import { SqlHoldLedger, circuitBreakerState, recordAnalyticsEvent, STRIPE_EVENT_JOB, FetchStripePort, settleUnverifiedDelivery, loadEstimatorCells } from "@rhema/ledger";
+import { setInstrumentedOverride, type EstimatorSpec } from "@rhema/protocols";
 import { createGcsContentStore, createGcsRestoreBlobStore } from "@rhema/mirror";
 import { createObligationMountProvider, SqlObligationHook } from "@rhema/obligations";
 import {
@@ -176,6 +177,21 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
   // user surface under the non-bypass role. (`DATABASE_URL` itself is repointed by the deploy —
   // infra/pulumi — this pin is the second layer.)
   const txRunner = new PgPoolTxRunner(pool, { role: USER_SERVING_ROLE });
+  // ECON.1 — boot-load the durable estimator cells into the override map: the API is the estimating
+  // process, so a folded spec the worker wrote must govern ITS prices too. The estimator_cells table is
+  // user-role SELECTable (0049); read it on the ordinary pool so the cells load even where no
+  // SYSTEM_DATABASE_URL exists (a preview stage). Non-fatal — the modeled base still prices.
+  try {
+    const bootExec: SqlClient = systemExec ?? {
+      query: (sql: string, params?: readonly unknown[]) =>
+        pool.query(sql, params ? [...params] : undefined).then((r) => ({ rows: r.rows as unknown[] })),
+    };
+    for (const cell of await loadEstimatorCells(bootExec)) {
+      setInstrumentedOverride(cell.workflow, cell.spec as EstimatorSpec);
+    }
+  } catch (err) {
+    console.warn("[api] estimator_cells load failed — modeled estimators govern:", err);
+  }
   // Hoisted so RES.2's `settleUnverified` closure binds the same ledger + writer the run paths use.
   const holdLedger = new SqlHoldLedger({ ids, clock });
   const runEventWriter = new SqlEventWriter(bus);
@@ -201,6 +217,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
     settleUnverified: (a) =>
       settleUnverifiedDelivery({ txRunner, ledger: holdLedger, eventWriter: runEventWriter, ids, clock }, a),
     queue,
+    // ECON.1 — `DEBIT_MODE` (default `committed`); the metered-debit flag rides the run paths.
+    debitMode: env.debitMode,
     obligationMount: createObligationMountProvider(),
     // the obligation spawn/join hook, constructed into the delivery transaction (D-P0.12-1).
     obligationHook: new SqlObligationHook({ ids, clock, appendEvent: new SqlEventWriter(bus) }),

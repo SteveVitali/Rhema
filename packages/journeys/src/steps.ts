@@ -38,10 +38,14 @@ export function assertBundleParity(ctx: StepCtx): void {
     );
   }
   if (ctx.consoleErrors.length > 0) {
-    throw new Error(`console errors on visited pages: ${ctx.consoleErrors.slice(0, 5).join(" | ")}`);
+    throw new Error(
+      `console errors on visited pages: ${ctx.consoleErrors.slice(0, 5).join(" | ")}`,
+    );
   }
   if (ctx.failedRequests.length > 0) {
-    throw new Error(`failed requests on visited pages: ${ctx.failedRequests.slice(0, 5).join(" | ")}`);
+    throw new Error(
+      `failed requests on visited pages: ${ctx.failedRequests.slice(0, 5).join(" | ")}`,
+    );
   }
 }
 
@@ -63,7 +67,8 @@ async function createScratchProject(
   await page.click('button[type="submit"], button:not([type])');
   await page.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
   const m = /\/p\/([a-z0-9-]+)/i.exec(page.url());
-  if (!m?.[1]) throw new Error(`scratch project did not redirect to /p/<slug> (landed ${page.url()})`);
+  if (!m?.[1])
+    throw new Error(`scratch project did not redirect to /p/<slug> (landed ${page.url()})`);
   return m[1];
 }
 
@@ -95,9 +100,7 @@ const N2: StepFn = async (ctx) => {
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   const path = new URL(page.url()).pathname;
   const onApp =
-    path === "/app" ||
-    /^\/p\/[^/]+\/review\/[^/]+/.test(path) ||
-    /^\/p\/[^/]+/.test(path);
+    path === "/app" || /^\/p\/[^/]+\/review\/[^/]+/.test(path) || /^\/p\/[^/]+/.test(path);
   if (!onApp) throw new Error(`post-signup did not land in the app (${path})`);
   const bodyText = await page.textContent("body");
   if (/sign in|log in/i.test(bodyText ?? "") && path === "/login") {
@@ -119,7 +122,9 @@ const N2_INVITE: StepFn = async (ctx) => {
       const first = page.locator('form[action="/signup"] input:visible').first();
       const name = await first.getAttribute("name");
       if (name !== "email") {
-        throw new Error(`open-mode signup's first field is "${name}", not "email" (invite still first)`);
+        throw new Error(
+          `open-mode signup's first field is "${name}", not "email" (invite still first)`,
+        );
       }
     }
   }
@@ -153,9 +158,12 @@ const N3: StepFn = async (ctx) => {
   await page.fill('textarea[name="paste"]', FREE_FIXTURE);
   const t0 = Date.now();
   await page.click('button[type="submit"], button:not([type])');
-  await page.waitForSelector('[data-preview], [data-held-notice], [role="status"], meta[http-equiv]', {
-    timeout: 20_000,
-  });
+  await page.waitForSelector(
+    '[data-preview], [data-held-notice], [role="status"], meta[http-equiv]',
+    {
+      timeout: 20_000,
+    },
+  );
   const ms = Date.now() - t0;
   if (ms > 20_000) throw new Error(`preview took ${ms}ms (> 20 s)`);
 };
@@ -165,9 +173,8 @@ const N4: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("n4");
   await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
   // collect every "≈ N credits" / duration figure on the sheet's protocol cards
-  const cardEstimates = await page.$$eval(
-    "[data-protocol-card] .tnum",
-    (els) => els.map((e) => (e.textContent ?? "").replace(/\s+/g, " ").trim()).filter(Boolean),
+  const cardEstimates = await page.$$eval("[data-protocol-card] .tnum", (els) =>
+    els.map((e) => (e.textContent ?? "").replace(/\s+/g, " ").trim()).filter(Boolean),
   );
   if (cardEstimates.length === 0) throw new Error("no protocol-card estimates rendered");
   const body = (await page.textContent("body")) ?? "";
@@ -177,7 +184,9 @@ const N4: StepFn = async (ctx) => {
   const nums = cardEstimates.map((e) => /\d[\d,]*/.exec(e)?.[0] ?? "");
   if (!nums.every((n) => sheetEstimate.replace(/,/g, "").includes(n.replace(/,/g, "")))) {
     // not fatal-shape — the step's real contract is exact agreement; EST.1 owns the green flip.
-    throw new Error(`sheet estimate "${sheetEstimate}" does not agree with cards ${JSON.stringify(cardEstimates)}`);
+    throw new Error(
+      `sheet estimate "${sheetEstimate}" does not agree with cards ${JSON.stringify(cardEstimates)}`,
+    );
   }
 };
 
@@ -215,7 +224,9 @@ function n9StripeHosted(url: string): boolean {
 function n9AssertNoCspViolation(ctx: StepCtx, label: string): void {
   const violations = ctx.consoleErrors.filter((m) => N9_CSP_ERROR.test(m));
   if (violations.length > 0) {
-    throw new Error(`${label}: CSP console violation after hosted hand-off — ${violations.join(" | ")}`);
+    throw new Error(
+      `${label}: CSP console violation after hosted hand-off — ${violations.join(" | ")}`,
+    );
   }
 }
 
@@ -250,12 +261,16 @@ async function n9ClickToStripe(
   const deadline = Date.now() + 30_000;
   let body = "";
   do {
-    body = await page.locator("body").innerText({ timeout: 10_000 }).catch(() => "");
+    body = await page
+      .locator("body")
+      .innerText({ timeout: 10_000 })
+      .catch(() => "");
     if (expected.every((re) => re.test(body))) break;
     await page.waitForTimeout(1_000);
   } while (Date.now() < deadline);
   for (const re of expected) {
-    if (!re.test(body)) throw new Error(`${label}: Stripe page did not show ${re} (url ${page.url()})`);
+    if (!re.test(body))
+      throw new Error(`${label}: Stripe page did not show ${re} (url ${page.url()})`);
   }
   n9AssertNoCspViolation(ctx, label);
 }
@@ -267,7 +282,10 @@ const N9: StepFn = async (ctx) => {
   // Checkout entry; the paid tenant below has no "Choose Writer" button once it is already Writer).
   const { page: subscribePage } = await ctx.freshUser("n9");
   await gotoOk(subscribePage, `${webBase}/app/settings/billing`);
-  await subscribePage.selectOption("form[data-subscribe-form='writer'] select[name='cycle']", "monthly");
+  await subscribePage.selectOption(
+    "form[data-subscribe-form='writer'] select[name='cycle']",
+    "monthly",
+  );
   await n9ClickToStripe(
     ctx,
     subscribePage,
@@ -319,7 +337,9 @@ const N9: StepFn = async (ctx) => {
   const addCredits = page.locator("button[data-payment-link]");
   const paymentLink = await addCredits.getAttribute("data-payment-link");
   if (!paymentLink || !n9StripeHosted(paymentLink)) {
-    throw new Error(`N9 run-sheet Add credits: non-Stripe Payment Link ${paymentLink ?? "(missing)"}`);
+    throw new Error(
+      `N9 run-sheet Add credits: non-Stripe Payment Link ${paymentLink ?? "(missing)"}`,
+    );
   }
   await n9ClickToStripe(ctx, page, addCredits, "N9 run-sheet Add credits", [/\$\d+(?:\.\d{2})?/]);
 
@@ -340,7 +360,9 @@ const N5: StepFn = async (ctx) => {
   if (!/included/i.test(body)) throw new Error('trial Review surface shows no "Included" line');
   // launch the Standard/Base Review — the one bounded paid run of the weekly leg.
   const launch = page
-    .locator('button[type="submit"]:has-text("Review"), button:has-text("Start"), button:has-text("Run")')
+    .locator(
+      'button[type="submit"]:has-text("Review"), button:has-text("Start"), button:has-text("Run")',
+    )
     .first();
   if ((await launch.count()) === 0) throw new Error("no Review launch control on the run sheet");
   await assertActionable(launch, "Review launch");
@@ -365,7 +387,9 @@ export async function createDraftProject(
   await gotoOk(page, `${webBaseUrl}/app/new?entry=draft`);
   await page.fill('input[name="title"]', title);
   await page.fill('textarea[name="paste"]', text);
-  await page.click('form[action="/app/new"] button[type="submit"], form[action="/app/new"] button:not([type])');
+  await page.click(
+    'form[action="/app/new"] button[type="submit"], form[action="/app/new"] button:not([type])',
+  );
   // pending → meta-refresh (5 s cadence) → preview: wait for the preview's Create form. A cold
   // convert Job runs ~2.5–4 min (PRB.21's own note), so the budget is 5 min — never a stale page.
   const create = page.locator('form[action="/app/new/create"] button[value="create"]').first();
@@ -396,9 +420,17 @@ const N6: StepFn = async (ctx) => {
   const rigor = page.locator('input[name="rigor"][value="quick"]');
   if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
   // "This run only — run it to completion" (per-run gates_off): the leg is unattended; named
-  // approvals would park the review at its gates.
+  // approvals would park the review at its gates. The checkbox rides the §5.6 collapsed row
+  // (a closed <details>) — open it as a user would before checking; a force-check on an
+  // invisible input would be a harness lie, not a walk.
   const auto = page.locator('input[name="autoRun"]');
-  if ((await auto.count()) > 0 && !(await auto.isChecked())) await auto.check();
+  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
+    if (!(await auto.isVisible())) {
+      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
+      if ((await summary.count()) > 0) await summary.first().click();
+    }
+    await auto.check();
+  }
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
@@ -420,7 +452,11 @@ const N6: StepFn = async (ctx) => {
     .catch(() => null);
   for (let i = 0; i < 12 && !reviewHref; i++) {
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
-    reviewHref = await page.locator(runLinkSel).first().getAttribute("href").catch(() => null);
+    reviewHref = await page
+      .locator(runLinkSel)
+      .first()
+      .getAttribute("href")
+      .catch(() => null);
     if (!reviewHref) await new Promise((res) => setTimeout(res, 5_000));
   }
   if (!reviewHref) throw new Error("run sheet shows no active-run dossier link after launch");
@@ -429,7 +465,9 @@ const N6: StepFn = async (ctx) => {
   const deadline = Date.now() + 40 * 60_000;
   let delivered = false;
   while (Date.now() < deadline) {
-    const r = await page.goto(`${ctx.webBaseUrl}${reviewHref}`, { waitUntil: "domcontentloaded" }).catch(() => null);
+    const r = await page
+      .goto(`${ctx.webBaseUrl}${reviewHref}`, { waitUntil: "domcontentloaded" })
+      .catch(() => null);
     if (r && r.status() === 200) {
       delivered = true;
       break;
@@ -442,9 +480,11 @@ const N6: StepFn = async (ctx) => {
   const fetched = await page.locator('a[data-fetched="true"]').count();
   if (fetched === 0) throw new Error("dossier shows no fetched-✓ claims");
   // the planted error row itself: verdict Contradicted + its fetched source inside the same row.
-  const planted = page.locator('li[data-verdict]', { hasText: "Library of Congress" });
+  const planted = page.locator("li[data-verdict]", { hasText: "Library of Congress" });
   if ((await planted.count()) === 0) throw new Error("no claim row names the planted LoC claim");
-  const contra = page.locator('li[data-verdict="contradicted"]', { hasText: "Library of Congress" });
+  const contra = page.locator('li[data-verdict="contradicted"]', {
+    hasText: "Library of Congress",
+  });
   if ((await contra.count()) === 0) {
     throw new Error("planted error is not marked Contradicted");
   }
@@ -527,7 +567,9 @@ const R4: StepFn = async (ctx) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   await followProjectLink(page, ctx);
-  const input = page.locator('form[action$="/chat/turns"] input[name="body"], input[name="body"]').first();
+  const input = page
+    .locator('form[action$="/chat/turns"] input[name="body"], input[name="body"]')
+    .first();
   if ((await input.count()) === 0) throw new Error("no chat input on the project page");
   const send = page.locator('form[action$="/chat/turns"] button[type="submit"]').first();
   await assertActionable(send, "chat Send @1440×900");
@@ -552,32 +594,45 @@ const R5: StepFn = async (ctx) => {
   await gotoOk(page, `${ctx.webBaseUrl}/p/showcase`);
   if (!/\/review\//.test(new URL(page.url()).pathname)) {
     const reviewLink = page.locator('a[href*="/review/"]').first();
-    if ((await reviewLink.count()) === 0) throw new Error("no dossier link on the Showcase overview");
+    if ((await reviewLink.count()) === 0)
+      throw new Error("no dossier link on the Showcase overview");
     const href = await reviewLink.getAttribute("href");
     if (!href) throw new Error("dossier link has no href");
     await gotoOk(page, `${ctx.webBaseUrl}${href}`);
   }
-  const dup = page.locator('form[action$="/duplicate"] button[type="submit"], form[action$="/duplicate"] button:not([type])').first();
+  const dup = page
+    .locator(
+      'form[action$="/duplicate"] button[type="submit"], form[action$="/duplicate"] button:not([type])',
+    )
+    .first();
   if ((await dup.count()) === 0) throw new Error("no duplicate control on the Showcase");
   await assertActionable(dup, "showcase duplicate");
   await dup.click();
   await page.waitForURL(/\/p\/([a-z0-9-]+)/i, { timeout: 20_000 });
   const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
-  if (!slug || slug === "showcase") throw new Error(`duplicate did not land on a copy (url ${page.url()})`);
+  if (!slug || slug === "showcase")
+    throw new Error(`duplicate did not land on a copy (url ${page.url()})`);
   // open the export dialog and submit — the response is a file download.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
   const exportForm = page.locator('form[data-export-form="true"], form[action$="/export"]');
   if ((await exportForm.count()) === 0) {
     // the dialog may be a /p/:slug/export page — try the direct route.
     const r = await page.goto(`${ctx.webBaseUrl}/p/${slug}/export`);
-    if (!r || r.status() >= 400) throw new Error(`export surface missing (GET /p/${slug}/export → ${r?.status()})`);
+    if (!r || r.status() >= 400)
+      throw new Error(`export surface missing (GET /p/${slug}/export → ${r?.status()})`);
   }
   const download = page.waitForEvent("download", { timeout: 20_000 }).catch(() => null);
-  const resp = page.waitForResponse(
-    (r) => /\/export$/.test(new URL(r.url()).pathname) && r.request().method() === "POST",
-    { timeout: 20_000 },
-  ).catch(() => null);
-  const submit = page.locator('form[action$="/export"] button[type="submit"], form[data-export-form] button[type="submit"]').first();
+  const resp = page
+    .waitForResponse(
+      (r) => /\/export$/.test(new URL(r.url()).pathname) && r.request().method() === "POST",
+      { timeout: 20_000 },
+    )
+    .catch(() => null);
+  const submit = page
+    .locator(
+      'form[action$="/export"] button[type="submit"], form[data-export-form] button[type="submit"]',
+    )
+    .first();
   if ((await submit.count()) === 0) throw new Error("no export submit control");
   await assertActionable(submit, "export submit");
   await submit.click();
@@ -623,7 +678,9 @@ const P1: StepFn = async (ctx) => {
         const visible = r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
         const primary = el.matches("button,[role='button'],a[class*='cta'],a[data-cta]");
         if (visible && primary && r.height > 0 && r.height < 44) {
-          bad.push(`${el.tagName.toLowerCase()} ${(el.textContent ?? "").slice(0, 24)} (${Math.round(r.height)}px)`);
+          bad.push(
+            `${el.tagName.toLowerCase()} ${(el.textContent ?? "").slice(0, 24)} (${Math.round(r.height)}px)`,
+          );
         }
       }
       return bad;
@@ -648,7 +705,8 @@ const C1: StepFn = async (ctx) => {
   if (l && p && l !== p) {
     throw new Error(`trial word claim disagrees: landing ${l} vs pricing ${p}`);
   }
-  if (!l && !p) throw new Error("no word-count claim found on either public surface to cross-check");
+  if (!l && !p)
+    throw new Error("no word-count claim found on either public surface to cross-check");
 };
 
 /** X1 (GREEN, SEC.1) — two flagged tenants: no foreign markers on the listed surfaces. */
@@ -701,7 +759,8 @@ const X1: StepFn = async (ctx) => {
     if ((await quiet.count()) > 0) {
       await quiet.first().click();
       const again = (await a.page.textContent("body")) ?? "";
-      if (!again.includes(aMarker)) throw new Error("tenant A cannot see its own marker (vacuous check)");
+      if (!again.includes(aMarker))
+        throw new Error("tenant A cannot see its own marker (vacuous check)");
     } else {
       throw new Error("tenant A cannot see its own marker (vacuous check)");
     }

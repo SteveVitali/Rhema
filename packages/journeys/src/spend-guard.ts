@@ -44,7 +44,7 @@ export async function checkWeeklySpendCap(
     `select coalesce(sum(u.list_cost_usd), 0)::float8 as usd
        from usage_records u
        join workspaces w on w.id = u.workspace_id
-      where w.is_test = true and u.ts >= $1`,
+      where w.is_test = true and u.ts >= $1 and u.source = 'proxy'`, // ECON.1 D-A: meter of record only
     [day],
   );
   const usd = Number(r.rows[0]?.usd ?? 0);

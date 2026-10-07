@@ -119,6 +119,14 @@ describe("purchase.mode stage flag (BILL.3; REQ-BILL-16)", () => {
   });
 });
 
+describe("debit.mode stage flag (ECON.1; REQ-SPEC-32(a); ADR-031)", () => {
+  it("every stage ships committed — the metered flip is the operator's, after notice + calibrated caps", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      expect(cfg.debitMode, `stage ${name}`).toBe("committed");
+    }
+  });
+});
+
 describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => {
   it("prod carries the real domains: rhema.tools apex + api.rhema.tools + the cookieless usercontent.rhema.tools (amended 2026-09-17)", () => {
     expect(STAGES.prod.domains).toEqual(PROD_DOMAINS);

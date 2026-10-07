@@ -83,6 +83,26 @@ describe("completion oracle (REQ-SPEC-13)", () => {
     expect(v.outcome).toBe("complete");
   });
 
+  it("ECON.1 §6.5 — claim_cap: a Quick review completes once its five load-bearing claims are checked", () => {
+    // 23 claims inventoried, 5 checked: without the cap the predicate fails; with claimCap=5 it passes.
+    const facts: PredicateFacts = { claimRowCount: 5, inventoryCount: 23, claimCap: 5 };
+    const v = evaluateOracle(input({}), createFactsEvaluator(facts));
+    expect(v.outcome).toBe("complete");
+  });
+
+  it("ECON.1 §6.5 — claim_cap: below the capped floor still fails, and detail shows the cap", () => {
+    const facts: PredicateFacts = { claimRowCount: 4, inventoryCount: 23, claimCap: 5 };
+    const v = evaluateOracle(input({}), createFactsEvaluator(facts));
+    expect(v).toMatchObject({ outcome: "incomplete", failedLeg: "predicate" });
+    const ev = createFactsEvaluator(facts)(claimPredicate);
+    expect(ev.detail).toContain("capped");
+  });
+
+  it("ECON.1 §6.5 — no claim_cap keeps the uncapped semantic (standard/full board: cover the inventory)", () => {
+    const facts: PredicateFacts = { claimRowCount: 5, inventoryCount: 23 };
+    expect(evaluateOracle(input({}), createFactsEvaluator(facts)).outcome).toBe("incomplete");
+  });
+
   it("second_read producer mismatch fails (the parent Editor cannot forge the second read)", () => {
     const pred: CompletionPredicate = { kind: "second_read_producer_checked", artifact: "05-second-read.md" };
     const facts: PredicateFacts = { secondReadProducerQueryId: "q_parent", expectedProducerQueryId: "q_scoped" };

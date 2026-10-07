@@ -2,7 +2,14 @@
 // injects (Cloud Run env + Secret Manager secret refs) into a typed config. Fail-fast on a missing required
 // var — a half-configured api must not start and silently mis-route runs.
 
-import { parsePurchaseMode, parseSignupMode, type PurchaseMode, type SignupMode } from "@rhema/contracts";
+import {
+  parseDebitMode,
+  parsePurchaseMode,
+  parseSignupMode,
+  type DebitMode,
+  type PurchaseMode,
+  type SignupMode,
+} from "@rhema/contracts";
 
 export interface ApiEnv {
   readonly port: number;
@@ -89,6 +96,12 @@ export interface ApiEnv {
    * never fail open.
    */
   readonly purchaseMode: PurchaseMode;
+  /**
+   * ECON.1 — `debit.mode` (ADR-031; `DEBIT_MODE`): `committed` (default on every stage until the
+   * operator flips post-calibration) keeps the launched charge semantics; `metered` charges exactly
+   * the proxy meter. Unset/unknown ⇒ `committed` — fail-closed to the launched mode.
+   */
+  readonly debitMode: DebitMode;
   /**
    * BILL.3 — `STRIPE_AUTOMATIC_TAX=true` sends `automatic_tax[enabled]` on Checkout sessions; valid
    * only after the operator activates a Tax registration Stripe-side (paused under BL-33/HUMAN-H7).
@@ -206,6 +219,7 @@ export function readApiEnv(): ApiEnv {
     // BILL.3 — purchase mode; unknown/unset parses to `closed` (never fail open), and the
     // Checkout automatic-tax opt (off until the operator activates a Tax registration).
     purchaseMode: parsePurchaseMode(process.env.PURCHASE_MODE),
+    debitMode: parseDebitMode(process.env.DEBIT_MODE),
     ...(process.env.STRIPE_AUTOMATIC_TAX === "true" ? { stripeAutomaticTax: true } : {}),
     // PRB.16 — Better Auth secret NAMES (values load from Secret Manager at boot). The Google OAuth
     // client id is public deploy config; its SECRET is a secret name like the rest.

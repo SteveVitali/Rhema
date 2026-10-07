@@ -321,6 +321,9 @@ export function createCompute(args: ComputeArgs): Compute {
           },
         ]
       : []),
+    // ECON.1 — `debit.mode` (ADR-031): the worker's settle/cancel paths read the same flag the api
+    // does — one stage fact, both consumers (a divergent pair would double-charge or under-settle).
+    { name: "DEBIT_MODE", value: cfg.debitMode },
     // Plan-concurrency default (D-P0.08-4 stopgap, IaC'd from the live P0.15g hand-fix). The reaper does not
     // yet mark queued/failed-agent runs terminal, so a stuck non-terminal run counts against the flat default
     // (worker env, default 2) and blocks new admissions. Raise the default so a wedged dev run does not stall
@@ -475,6 +478,9 @@ export function createCompute(args: ComputeArgs): Compute {
                     // paused rendering from the api's `purchase` field, not its own env). All stages
                     // ship `closed` until the operator flips the stage fact to re-open.
                     { name: "PURCHASE_MODE", value: cfg.purchaseMode },
+                    // ECON.1 — `debit.mode` (ADR-031): the api's run-create/finalize paths read it.
+                    // All stages ship `committed`; the operator flips the stage fact post-notice.
+                    { name: "DEBIT_MODE", value: cfg.debitMode },
                     { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
                     { name: "MAX_USD_PER_RUN", value: String(cfg.maxUsdPerRun) },
                     // The api mints run tokens → both key halves from the ONE signing-key secret (name

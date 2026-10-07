@@ -523,6 +523,21 @@ export function resetInstrumentedOverrides(): void {
   INSTRUMENTED_OVERRIDES.clear();
 }
 
+/**
+ * ECON.1 — record an EXTERNALLY-loaded spec: the durable `estimator_cells` row the API/worker
+ * boot-loads (and the calibration sweep refreshes) so the folded estimator survives restarts and is
+ * visible to the estimating process, not just the reconciling one. The map stays the in-process cache;
+ * the table is the source of truth (a boot reload overwrites any drifted fold).
+ */
+export function setInstrumentedOverride(workflow: string, spec: EstimatorSpec): void {
+  INSTRUMENTED_OVERRIDES.set(workflow, spec);
+}
+
+/** The recorded overrides (diagnostics/the calibration sweep's persist leg). */
+export function instrumentedOverrides(): ReadonlyMap<string, EstimatorSpec> {
+  return INSTRUMENTED_OVERRIDES;
+}
+
 /** Are the ported-workflow estimator figures still provisional? (the price card / marketing precondition — §16.4).
  *  Reads the recorded instrumented override first (so a folded live run flips this to false), else the shipped base. */
 export function estimatorsAreProvisional(workflows: readonly string[] = ["review", "revise", "fact_check", "profile_voice"]): boolean {

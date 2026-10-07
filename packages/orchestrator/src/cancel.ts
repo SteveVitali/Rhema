@@ -9,7 +9,12 @@
 import { applyTransition } from "./transition.js";
 import { conditionalResolve, emitGateResolved, writeDecision } from "./gate-resolution.js";
 import { revokeRunCredentials } from "./credentials.js";
-import { absorbMeteredGap, reconcileRunSpend } from "./spend.js";
+import {
+  absorbMeteredGap,
+  reconcileRunSpend,
+  refundMeteredExcess,
+  settleMeteredDebit,
+} from "./spend.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import type { OrchestratorDeps } from "./internal-api.js";
 import type { SqlClient } from "./tx.js";
@@ -36,6 +41,7 @@ interface RunRow {
   state: RunState;
   hold_ledger_id: string | null;
   billing_account_id: string;
+  current_attempt: number;
 }
 
 /**
@@ -50,7 +56,7 @@ export async function cancelRun(deps: OrchestratorDeps, args: CancelRunArgs): Pr
   const result = await deps.txRunner.run(args.workspaceId, async (tx: SqlClient): Promise<CancelRunResult> => {
     const row = (
       await tx.query(
-        `select r.state, r.hold_ledger_id, w.billing_account_id
+        `select r.state, r.hold_ledger_id, r.current_attempt, w.billing_account_id
            from runs r join workspaces w on w.id = r.workspace_id
           where r.id = $1 and r.workspace_id = $2 for update`,
         [args.runId, args.workspaceId],
@@ -81,6 +87,20 @@ export async function cancelRun(deps: OrchestratorDeps, args: CancelRunArgs): Pr
     const from = row.state === "running" ? "cancelling" : row.state;
     await applyTransition(tx, deps, { runId: args.runId, from, to: "cancelled", reason: "cancel_to_edit" });
 
+    // ECON.1 — `debitMode=metered`: a user-cancelled run still charges `min(metered, cap)` — the burn
+    // happened and the partials are kept/resumable (ADR-031). The settle draws the run's HELD buckets,
+    // so it MUST run before the release below (post-release a debit absorbs as COGS instead of
+    // charging). Under `committed` nothing changes: debits stand, the residue absorbs.
+    if (deps.debitMode === "metered") {
+      const settleArgs = {
+        runId: args.runId,
+        workspaceId: args.workspaceId,
+        billingAccountId: row.billing_account_id,
+        attempt: row.current_attempt,
+      };
+      await settleMeteredDebit(tx, deps, settleArgs);
+      await refundMeteredExcess(tx, deps, settleArgs);
+    }
     if (row.hold_ledger_id) {
       await deps.ledger.release(tx, {
         billingAccountId: row.billing_account_id,

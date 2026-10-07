@@ -122,8 +122,14 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   // per-turn caps (consented-shrunk via inputs.budget); research_burst caps fetches at the plan card's
   // source count. Neither has a claim count to scale on.
   const snap = run.input_snapshot ?? {};
-  const claims =
+  const rawClaims =
     typeof snap.claimCount === "number" ? snap.claimCount : provisionalClaimCount(workflow, snap.wordCount);
+  // ECON.1 (§6.5; ADR-033) — the rigor's frozen claim cap bounds the claim-scaled web budgets even if a
+  // client-supplied snapshot out-counts it (Quick Review: five load-bearing claims ⇒ five claims' budgets).
+  const claims =
+    typeof run.inputs?.claim_cap === "number" && rawClaims != null
+      ? Math.min(rawClaims, run.inputs.claim_cap)
+      : rawClaims;
   // RES.2 (REQ-SPEC-31(3); ADR-026) — `inputs.force_unverified` forces a zero-coverage Review for the
   // JOURNEY.1 Stage-B walk. It is honored ONLY on a flagged test workspace (`workspaces.is_test`,
   // migration 0046): a production run's frozen input can never reach this branch, and even there the

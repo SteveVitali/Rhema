@@ -31,13 +31,19 @@ describe("rejections — the non-additive shapes", () => {
   it("rejects SET NOT NULL without a CHECK, accepts it with the PG14 check path", () => {
     expect(rules("alter table t alter column c set not null;")).toEqual(["table_rewrite"]);
     expect(
-      rules("alter table t add constraint t_c_nn check (c is not null) not valid; alter table t alter column c set not null;"),
+      rules(
+        "alter table t add constraint t_c_nn check (c is not null) not valid; alter table t alter column c set not null;",
+      ),
     ).toEqual([]);
   });
 
   it("rejects ADD COLUMN with a volatile default, accepts constant/no-default columns", () => {
-    expect(rules("alter table t add column c uuid default gen_random_uuid();")).toEqual(["table_rewrite"]);
-    expect(rules("alter table t add column c int default nextval('s');")).toEqual(["table_rewrite"]);
+    expect(rules("alter table t add column c uuid default gen_random_uuid();")).toEqual([
+      "table_rewrite",
+    ]);
+    expect(rules("alter table t add column c int default nextval('s');")).toEqual([
+      "table_rewrite",
+    ]);
     expect(rules("alter table t add column if not exists c int default 0;")).toEqual([]);
     expect(rules("alter table t add column if not exists c timestamptz;")).toEqual([]);
   });
@@ -46,7 +52,9 @@ describe("rejections — the non-additive shapes", () => {
     expect(rules("alter role rhema_app login;")).toEqual(["role_change"]);
     expect(rules("alter user postgres bypassrls;")).toEqual(["role_change"]);
     expect(rules("drop role rhema_app_login;")).toEqual(["role_change"]);
-    expect(rules("alter default privileges grant select on t to rhema_app;")).toEqual(["role_change"]);
+    expect(rules("alter default privileges grant select on t to rhema_app;")).toEqual([
+      "role_change",
+    ]);
     expect(rules("grant rhema_app to postgres;")).toEqual(["role_change"]);
     expect(rules("revoke rhema_app from rhema_app_login;")).toEqual(["role_change"]);
     expect(rules("create role x login password 'p';")).toEqual(["role_change"]);
@@ -79,7 +87,9 @@ describe("acceptance — the additive shapes", () => {
   });
 
   it("ignores DROP/ALTER inside comments", () => {
-    expect(rules("-- drop table t; /* alter role x login */ create table t2 (id text);")).toEqual([]);
+    expect(rules("-- drop table t; /* alter role x login */ create table t2 (id text);")).toEqual(
+      [],
+    );
   });
 });
 
@@ -91,6 +101,7 @@ describe("collectFiles — the base selection", () => {
       "packages/db/migrations/0046_test_workspaces.sql",
       "packages/db/migrations/0047_run_delivery.sql",
       "packages/db/migrations/0048_checkout_return_viewed.sql",
+      "packages/db/migrations/0049_cost_calibration.sql",
     ]);
   });
 

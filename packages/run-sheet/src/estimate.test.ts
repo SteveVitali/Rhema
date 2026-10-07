@@ -93,6 +93,42 @@ describe("buildEstimate — provisional then refined (REQ-SPEC-16; §5.6 item 1)
     expect(all.estimateCredits - twoOff.estimateCredits).toBe(547);
   });
 
+  it("ECON.1 §6.5 — Quick Review clamps the priced claim count to the five load-bearing claims", () => {
+    // 23 real claims under a Quick rigor: the estimate, the claimCount the snapshot freezes, and the
+    // claim-scaled budgets all bound on 5 — one number, server-derived.
+    const capped = buildEstimate({
+      workflow: "review", rigor: "quick", modelTier: "base",
+      inputs: { words: 5180 }, claimCount: 23,
+    });
+    expect(capped.claimCount).toBe(5);
+    const exact = buildEstimate({
+      workflow: "review", rigor: "quick", modelTier: "base",
+      inputs: { words: 5180 }, claimCount: 5,
+    });
+    expect(capped.estimateCredits).toBe(exact.estimateCredits);
+    expect(capped.capCredits).toBe(exact.capCredits);
+
+    // The density-derived provisional count clamps too (21 → 5), staying provisional.
+    const provisional = buildEstimate({ workflow: "review", rigor: "quick", modelTier: "base", inputs: { words: 5180 } });
+    expect(provisional.provisional).toBe(true);
+    expect(provisional.claimCount).toBe(5);
+
+    // Standard/Full Board price the FULL inventory — no cap.
+    const standard = buildEstimate({
+      workflow: "review", rigor: "standard", modelTier: "base",
+      inputs: { words: 5180 }, claimCount: 23,
+    });
+    expect(standard.claimCount).toBe(23);
+    expect(standard.estimateCredits).toBeGreaterThan(capped.estimateCredits);
+
+    // A draft under the cap is untouched.
+    const small = buildEstimate({
+      workflow: "review", rigor: "quick", modelTier: "base",
+      inputs: { words: 701 }, claimCount: 3,
+    });
+    expect(small.claimCount).toBe(3);
+  });
+
   it("reflects a folded instrumented spec (override-first) without a code change", () => {
     resetInstrumentedOverrides();
     const modeled = buildEstimate({ workflow: "review", rigor: "standard", modelTier: "base", inputs: { words: 5180 }, claimCount: 45 });

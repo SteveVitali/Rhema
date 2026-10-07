@@ -281,6 +281,34 @@ describe("GET …/turns/:runId — the metered cost strip (REQ-CHAT-11)", () => 
     expect(dto.strip.workspaceSpent).toBe(7);
   });
 
+  it("ECON.1 D-A: sdk twin rows never double-count the strip's credits or workspace spend", async () => {
+    const tid = await defaultThreadId();
+    const created = await postJson(`/projects/${seed.projectId}/chat/threads/${tid}/turns`, {
+      message: "turn",
+    });
+    const { runId } = (await created.json()) as { runId: string };
+    for (const [id, source, credits] of [
+      ["ur_p", "proxy", 7],
+      ["ur_e", "sdk_estimate", 9],
+      ["ur_s", "sdk_stream", 11],
+      ["ur_pr", "provider_report", 13],
+    ] as const) {
+      await db.pg.query(
+        `insert into usage_records
+           (id, ts, workspace_id, billing_account_id, run_id, role, provider, model, model_tier,
+            rate_table_version, searches, fetches, list_cost_usd, credits, source)
+         values ($1, now(), $2, $3, $4, 'phase', 'anthropic', 'm', 'base', 1, 0, 0, 0.1, $5, $6)`,
+        [id, seed.workspaceId, seed.billingAccountId, runId, credits, source],
+      );
+    }
+    const res = await get(`/projects/${seed.projectId}/chat/threads/${tid}/turns/${runId}`);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as { strip: { spentCredits: number; workspaceSpent?: number } };
+    // the turn's credit truth is the proxy row alone (7), not 7+9+11+13 = 40;
+    // workspace spend is likewise proxy-only (7).
+    expect(dto.strip.workspaceSpent).toBe(7);
+  });
+
   it("404s a run that isn't this thread's chat_turn", async () => {
     const tid = await defaultThreadId();
     expect(

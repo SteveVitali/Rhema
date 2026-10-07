@@ -561,6 +561,10 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
       ).rows as { phase: string; ordinal: number; state: string; credits: number; attempt: number; duration_ms: string | null }[];
 
       // Level-4 usage buckets: phase × seat × model-tier, aggregated from usage_records (step_id → phase).
+      // ECON.1 (D-A): `source='proxy'` ONLY — the meter of record. `sdk_estimate`/`sdk_stream` are twin
+      // rows over the SAME tokens (estimate at commit / provisional render), so an unfiltered sum
+      // triple-counts the burn (incident 01M3SK62…: proxy 632 + estimate 553 + stream 440 displayed
+      // "Editor — 1,625 cr" against a 632-credit metered charge).
       const usage = (
         await tx.query(
           `select s.phase, u.role as seat, u.subagent_label, u.model, u.model_tier,
@@ -573,7 +577,7 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
                   sum(coalesce(u.cache_write_tokens, 0))::bigint as cache_write_tokens,
                   array_agg(u.provider_request_id) filter (where u.provider_request_id is not null) as provider_request_ids
              from usage_records u left join steps s on s.id = u.step_id
-            where u.run_id = $1
+            where u.run_id = $1 and u.source = 'proxy'
             group by s.phase, u.role, u.subagent_label, u.model, u.model_tier
             order by s.phase nulls last, u.role`,
           [runId],

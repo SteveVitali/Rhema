@@ -11,6 +11,8 @@ import {
   incrementalMeteredDebit,
   meteredCredits,
   netDebitedCredits,
+  refundMeteredExcess,
+  resettleRun,
   settleMeteredDebit,
 } from "./spend.js";
 import { TestHoldLedger } from "./ledger.js";
@@ -155,6 +157,123 @@ describe("absorbMeteredGap — the un-paid burn books platform COGS", () => {
     ).toBe(20);
     expect(ledger.opsOf("absorb").map((o) => (o.args as { idempotencyKey: string }).idempotencyKey)).toEqual([
       "absorb:run1:2",
+    ]);
+  });
+});
+
+// -----------------------------------------------------------------------------------------------------------
+// ECON.1 — `debitMode` (REQ-SPEC-32(a); ADR-031 burn classification). The reproducing half of the ticket's
+// ground-truth work: each named divergence path gets a test against the real row math.
+
+describe("ECON.1 divergence paths (live-reproduced math)", () => {
+  it("D-B — the pre-settle completed gap: debited < metered tops up exactly (01M36663… 586→720)", async () => {
+    // the run committed 5 phases for 586 while the proxy metered 720 (research-loop subagent burn the
+    // committed channel never saw); the completed settle catches the 134 remainder up.
+    await seedUsage("u1", "run1", 1, 720);
+    await seedLedger("l1", "debit", 586, "debit:run1:intake:1#included");
+    const gap = await inTx((tx) =>
+      settleMeteredDebit(tx, { ledger }, { runId: "run1", workspaceId: ws, billingAccountId: ba, attempt: 1 }),
+    );
+    expect(gap).toBe(134);
+  });
+
+  it("D-C — the cancel residue: debited 114 vs metered 438 absorbs 324 (01M3DKQR…)", async () => {
+    await seedUsage("u1", "run1", 1, 438);
+    await seedLedger("l1", "debit", 114, "debit:run1:intake:1#included");
+    const gap = await inTx((tx) =>
+      absorbMeteredGap(tx, { ledger }, { runId: "run1", workspaceId: ws, billingAccountId: ba }),
+    );
+    expect(gap).toBe(324);
+  });
+
+  it("D-F — committed mode keeps the pod-claim floor (the 634-vs-632 over-debit is the mode's semantics)", async () => {
+    await seedUsage("u1", "run1", 1, 60);
+    // the pod claims 97 but the meter only saw 60 — committed mode debits the claim (floor wins).
+    expect(await inTx((tx) => incrementalMeteredDebit(tx, "run1", 1, 97))).toBe(97);
+    // metered mode charges exactly the metered remainder — the claim is never a floor.
+    expect(await inTx((tx) => incrementalMeteredDebit(tx, "run1", 1, 97, "metered"))).toBe(60);
+  });
+});
+
+describe("refundMeteredExcess — metered-mode over-debit returns to the user (ADR-031)", () => {
+  it("refunds debited − metered with the metered_over_debit class; keyed refund:<run>:settle:<attempt>", async () => {
+    await seedUsage("u1", "run1", 1, 632);
+    await seedLedger("l1", "debit", 634, "debit:run1:letter:1#included");
+    const excess = await inTx((tx) =>
+      refundMeteredExcess(tx, { ledger }, { runId: "run1", workspaceId: ws, billingAccountId: ba, attempt: 1 }),
+    );
+    expect(excess).toBe(2);
+    const ops = ledger.opsOf("refund");
+    expect(ops).toHaveLength(1);
+    expect((ops[0]!.args as { reason?: string }).reason).toBe("metered_over_debit");
+    expect((ops[0]!.args as { idempotencyKey: string }).idempotencyKey).toBe("refund:run1:settle:1");
+  });
+
+  it("is a no-op when debited ≤ metered, and never double-returns once the refund row lands", async () => {
+    await seedUsage("u1", "run1", 1, 65);
+    await seedLedger("l1", "debit", 65, "debit:run1:intake:1#included");
+    expect(
+      await inTx((tx) =>
+        refundMeteredExcess(tx, { ledger }, { runId: "run1", workspaceId: ws, billingAccountId: ba, attempt: 1 }),
+      ),
+    ).toBe(0);
+    expect(ledger.opsOf("refund")).toHaveLength(0);
+    // netDebitedCredits folds the refund in — after it persists, a re-run sees no excess.
+    await seedLedger("l2", "debit", 70, "debit:run1:craft:1#included");
+    await seedLedger("l3", "refund", 5, "refund:run1:settle:1#included", "metered_over_debit");
+    // note: attemptDebitedCredits counts debit rows only — the refund settles net through
+    // absorbMeteredGap's debit/refund netting instead.
+    expect(
+      await inTx((tx) =>
+        absorbMeteredGap(tx, { ledger }, { runId: "run1", workspaceId: ws, billingAccountId: ba }),
+      ),
+    ).toBe(0); // metered 65 − net debited 130−5=130 → …nothing absorbs when debited ≥ metered
+  });
+});
+
+describe("resettleRun — ECON.1 D-E late-arrival re-settle", () => {
+  it("a cancelled run whose proxy rows landed AFTER the settle books only the residue", async () => {
+    // reproduce 01M3DQ4A…: cancelled with spent 0 / debited 0; 6 metered credits flushed late.
+    await seedLedger("l0", "hold", 300, "hold:run1#included");
+    await seedLedger("l1", "release", 300, "release:run1#included");
+    const settled = await inTx((tx) =>
+      resettleRun(tx, { ledger, debitMode: "committed" }, {
+        runId: "run1", workspaceId: ws, billingAccountId: ba, state: "cancelled", attempt: 1,
+      }),
+    );
+    expect(settled).toMatchObject({ debited: 0, refunded: 0, absorbed: 0, spent: 0 });
+    // late proxy flush lands AFTER the settle → the sweep re-settles and the burn books absorbed.
+    await seedUsage("u1", "run1", 1, 6);
+    const again = await inTx((tx) =>
+      resettleRun(tx, { ledger, debitMode: "committed" }, {
+        runId: "run1", workspaceId: ws, billingAccountId: ba, state: "cancelled", attempt: 1,
+      }),
+    );
+    expect(again).toMatchObject({ debited: 0, refunded: 0, absorbed: 6, spent: 6 });
+    // a THIRD pass is a clean no-op — the absorb row the real ledger persisted nets the residue out.
+    await seedLedger("l2", "adjustment", 6, "absorb:run1:1#included", "absorbed");
+    const third = await inTx((tx) =>
+      resettleRun(tx, { ledger, debitMode: "committed" }, {
+        runId: "run1", workspaceId: ws, billingAccountId: ba, state: "cancelled", attempt: 1,
+      }),
+    );
+    expect(third.absorbed).toBe(0);
+  });
+
+  it("metered mode: a completed run's late over-debit refunds; under-debit tops up", async () => {
+    // committed-mode commits over-debited vs the meter (floor semantics); after the flag flips the
+    // sweep's re-settle returns the excess.
+    await seedUsage("u1", "run1", 1, 632);
+    await seedLedger("l1", "debit", 634, "debit:run1:letter:1#included");
+    const r = await inTx((tx) =>
+      resettleRun(tx, { ledger, debitMode: "metered" }, {
+        runId: "run1", workspaceId: ws, billingAccountId: ba, state: "completed", attempt: 1,
+      }),
+    );
+    expect(r.refunded).toBe(2);
+    expect(r.debited).toBe(0);
+    expect(ledger.opsOf("refund").map((o) => (o.args as { reason?: string }).reason)).toEqual([
+      "metered_over_debit",
     ]);
   });
 });

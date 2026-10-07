@@ -593,7 +593,8 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
   it("PRB.23 — the run POST forwards the submitted toggle set (sentinel resolves unchecked = off)", async () => {
     // An unchecked checkbox submits no field, so `toggleKeys` is the sentinel: every rendered
     // toggle is listed there, and only `toggle.<key>=on` means on. The resolved set reaches the
-    // api, which freezes it into the run inputs as phase opt-out flags.
+    // api, which freezes it into the run inputs as phase opt-out flags. `toggleRigor` marks the
+    // rigor the boxes were rendered for — the POST honors the set only when it still matches.
     const seen: Record<string, boolean>[] = [];
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
@@ -609,6 +610,7 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
       ...form({
         workflow: "review", rigor: "quick", idempotencyKey: "idem_tgl",
         estimateCredits: "288", capCredits: "432",
+        toggleRigor: "quick", // the sheet rendered this rigor — the set is coherent
         toggleKeys: "fact_check,discourse,second_read",
         "toggle.fact_check": "on",
         "toggle.discourse": "on",
@@ -617,6 +619,37 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     });
     expect(res.status).toBe(200);
     expect(seen).toEqual([{ fact_check: true, discourse: true, second_read: false }]);
+  });
+
+  it("ECON.1 §6.5 — a stale form (rendered for another rigor) drops its toggle claims server-side", async () => {
+    // The incident shape: the sheet rendered Standard's Advanced boxes (discourse + second_read
+    // checked); the user switched the radio to Quick and submitted. Without the `toggleRigor`
+    // guard those boxes claim discourse/second_read ON for a Quick run — the opposite of §6.5.
+    // The POST drops the stale set; the api derives Quick's own defaults (both OFF).
+    const seen: Record<string, boolean>[] = [];
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = {
+      ...deps.dataSource,
+      createRun: async (_s, _p, req) => {
+        seen.push({ ...(req.toggles ?? {}) });
+        return { runId: "run_t", state: "queued", deduped: false };
+      },
+    };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/run", {
+      method: "POST",
+      ...form({
+        workflow: "review", rigor: "quick", idempotencyKey: "idem_stale",
+        estimateCredits: "288", capCredits: "432",
+        toggleRigor: "standard", // rendered for Standard, submitted under Quick → stale
+        toggleKeys: "fact_check,discourse,second_read",
+        "toggle.fact_check": "on",
+        "toggle.discourse": "on",
+        "toggle.second_read": "on",
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(seen).toEqual([{}]); // no claim survives — Quick's rigor defaults govern
   });
 
   it("PRB.23 — no sentinel ⇒ no toggles sent (rigor defaults apply server-side)", async () => {
