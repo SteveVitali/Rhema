@@ -67,4 +67,8 @@ Full sketch in `docs/tickets/DEFERRALS.md`.
 - `vitest packages/engine/src/mapper` — **40/40** · contracts+engine+sse+event-stream — **407/407**
 - `pnpm turbo build lint typecheck` — **135/135**
 - `check-build-memory.sh .` clean · `check-append-only.mjs --base b7c7d95` clean
+- CI (run `37664984330`): `typecheck/lint/unit` ✓ 29m · `contracts` ✓ · `public-safe` ✓ · `images` ✓ —
+  `integration` ✗ at `two-uid privsep PRODUCTION-image kernel legs`, **identical to the base
+  `b7c7d95` failure** (run `37657627798`, same step, same `setpriv: setresgid failed` /
+  bind-mount error) — the GD-MAINT.4-1 runner-environment flake, not this diff.
 - Evidence + query list: `docs/build/runs/RES.3.md`

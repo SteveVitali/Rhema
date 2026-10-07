@@ -180,4 +180,12 @@ phases when `usage_records` shows the claim-scaled bound spent, terminalizing wi
 - `vitest packages/contracts packages/engine sse-routes event-stream` — **407/407**
 - `pnpm turbo build lint typecheck` — **135/135**
 - `check-build-memory.sh .` / `check-append-only.mjs --base b7c7d95` — recorded below
+- PR #118 CI (run `37664984330`, head `e7b71c7`): `typecheck/lint/unit` ✓ 29m1s,
+  `contracts` ✓ 1m37s, `public-safe` ✓, `images` ✓ 14m30s; `integration` ✗ at the
+  `two-uid privsep PRODUCTION-image kernel legs (D-P0.06-2, SEC.3)` step —
+  `privsep.docker.test.ts` fails inside `docker run` with `setpriv: setresgid failed:
+  Operation not permitted` + `mount: /work/ro-mnt: bind /work/ro-src failed`, **the same
+  failure the base `b7c7d95` shows** (run `37657627798`, same job/step) — the GD-MAINT.4-1
+  runner-environment flake, inherited, not introduced by this diff. PR state `OPEN`,
+  `mergeable`.
 - Spend: **$0**; zero prod writes; zero deploys; mergePolicy OPERATOR.
