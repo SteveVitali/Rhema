@@ -182,3 +182,15 @@ ci: fail #117@9ce64cc (integration run 37649414207 — `privsep.docker.test.ts`
   CI fail on #117 (integration)`, PHASE LOG `blocked` entry, no BUILD_INDEX row, no
   `lastCompleted`/`nextTicket`/`chainTip` advance. Boundary record:
   `docs/build/logs/ci-MAINT.4.json` (gitignored subtree).
+
+---
+
+### 2026-10-07 — GD-MAINT.4-1 waiver applied (append)
+
+Operator waived the inherited `integration`/privsep red verbatim
+("Waive the privsep leg") — GATE DECISIONS row `GD-MAINT.4-1`. The check fails
+identically on base #116 (run 37647411487) and locally; the worker's blocked
+disposition is superseded by the waiver: ticket closes done-under-waiver,
+`lastCompleted`/`chainTip` advanced, BUILD_INDEX row 123 added. The waiver
+scopes to the privsep leg only; every other CI check still gates. Live legs
+(`D-MAINT.4-1`) remain owed to a deploy + operator real-Google round-trip.
