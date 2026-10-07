@@ -5,7 +5,8 @@
 - **Spec:** `docs/tickets/95_MAINT.4__oauth-signin-throttle.md` (manifest row 95, maintenance)
 - **Base:** `stevevitali/maint-3-funded-window-repairs` @ `1fa46b3` (the chain tip)
 - **Branch:** `stevevitali/maint-4-oauth-signin-throttle` (mergePolicy=OPERATOR — never merge)
-- **Started:** 2026-10-07T15:52Z · **Closed:** (open)
+- **Started:** 2026-10-07T15:52Z · **Closed:** 2026-10-07T16:55Z — **blocked** (inherited CI
+  red: `integration`/`privsep.docker.test.ts` fails identically on base PR #116; see below)
 - **Config:** code + deterministic tests only; **Live stage: none**; metered spend **$0**;
   zero prod writes, zero deploys
 
@@ -172,4 +173,12 @@ All contract items met with evidence (gap table above). The two live legs are
 operator/HUMAN real-Google round-trip. No deviations; no ADRs (the contract specified the
 design). CI read on the pushed head below.
 
-ci: (recorded at close)
+ci: fail #117@9ce64cc (integration run 37649414207 — `privsep.docker.test.ts`
+  `setpriv: setresgid failed`/`mount: bind failed` inside the GH-runner container; typecheck
+  / lint / unit PASS 37m14s, contracts PASS, public-safe PASS, images pending at read).
+  **Inherited from base:** `ci-boundary --pr 116 --no-wait` → the same check fails on the
+  base head (run 37647411487, same test, same error); MAINT.4 touches `apps/api` auth
+  wiring only and the test passes locally → the inherited-red rule applied: `blockedOn:
+  CI fail on #117 (integration)`, PHASE LOG `blocked` entry, no BUILD_INDEX row, no
+  `lastCompleted`/`nextTicket`/`chainTip` advance. Boundary record:
+  `docs/build/logs/ci-MAINT.4.json` (gitignored subtree).
