@@ -1,0 +1,41 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "f6e2b338070b",
+  "startedAt": "2026-10-02T03:32:22.734Z",
+  "finishedAt": "2026-10-02T03:32:40.262Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "28019fcf96f0566c393069ab46084a014d94a600",
+    "observed": {
+      "web": "28019fcf96f0566c393069ab46084a014d94a600",
+      "api": "28019fcf96f0566c393069ab46084a014d94a600"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 ()"
+      ],
+      "failedRequests": [
+        "GET https://30e13dfe50e1.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://d51a99ed9ed1.w.hcaptcha.com/logo.png net::ERR_ABORTED"
+      ],
+      "durationMs": 17122,
+      "screenshot": "N9.png"
+    }
+  ],
+  "passed": true
+}

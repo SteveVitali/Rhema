@@ -164,6 +164,10 @@ export const checkoutSessions = pgTable("checkout_sessions", {
   state: text("state").notNull().default("open"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
+  // BILL.3 (0048) — first tenant-scoped observation of the open return page; the pending-email trigger.
+  returnViewedAt: timestamp("return_viewed_at"),
+  // …and the post-enqueue marker that keeps a redriven webhook from enqueueing a second pending mail.
+  pendingEmailQueuedAt: timestamp("pending_email_queued_at"),
 });
 
 // P1.16 (0036; REQ-BILL-17) — every unattended charge (or skip/failure) is auditable.

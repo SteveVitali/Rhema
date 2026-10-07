@@ -18,13 +18,16 @@ export const DOWNGRADE_WARN_MS = 7 * DAY_MS;
 export interface SubDeps extends EntryDeps {
   /** Open one tenant-scoped transaction for a workspace. */
   readonly runTx: (workspaceId: string, fn: (tx: SqlClient) => Promise<void>) => Promise<void>;
-  /** Enqueue a billing email through the notify queue (`trial_payment` carries a free reason string). */
+  /** Enqueue a billing email through the notify queue (`trial_payment` carries a free reason string;
+   *  BILL.3 — `tag` keys exactly-once deliveries, `openPath` overrides the mail's open link). */
   readonly notify?: (payload: {
     type: "trial_payment";
     workspaceId: string;
     userId?: string;
     billingAccountId?: string;
     reason: string;
+    tag?: string;
+    openPath?: string;
   }) => Promise<void>;
 }
 

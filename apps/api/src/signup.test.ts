@@ -283,6 +283,9 @@ describe("the 0-credit purchase path (AC2 — balance 0 → exhaustion → Payme
       stripeWebhookSecret: SECRET,
       systemExec: db.client,
       paymentLinkUrl: "https://buy.stripe.com/test_beta",
+      // BILL.3 — the purchase switch ships closed; this AC2 leg exercises the Payment-Link path, so the
+      // app under test runs `open` (a JOURNEY.1 is_test flag would allowlist the same read).
+      purchaseMode: "open",
     });
 
     // the §14.5 level-0 read a fresh account lands on: 0 spendable + the Payment Link for the panel.

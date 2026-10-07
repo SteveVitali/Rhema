@@ -79,9 +79,10 @@ export function handleStripeEvent(
     eventWriter: deps.eventWriter,
     queue: deps.queue,
     // P1.16 — billing emails ride the notify queue (`trial_payment` carries a free reason string).
+    // BILL.3 — a `tag` (e.g. `checkout:<sessionId>`) keys the pending-checkout mail exactly-once.
     notify: async (p) => {
       await deps.queue.send(NOTIFY_QUEUE, p, {
-        singletonKey: `notify:billing:${p.billingAccountId ?? p.userId}:${p.reason.slice(0, 40)}`,
+        singletonKey: `notify:billing:${p.billingAccountId ?? p.userId}:${(p.tag ?? p.reason).slice(0, 40)}`,
       });
     },
   }, payload.eventId);

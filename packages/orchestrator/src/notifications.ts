@@ -93,6 +93,11 @@ export interface NotificationJobPayload {
   readonly deadlineMs?: number;
   readonly outcome?: string;
   readonly reason?: string;
+  // BILL.3 — trial_payment extensions (the pending-checkout mail): `tag` keys the delivery claim
+  // (`checkout:<sessionId>` ⇒ exactly-once per session, independent of the reason string); `openPath`
+  // overrides the mail's open URL + the Inbox row's href (an in-app path — the page the user came from).
+  readonly tag?: string;
+  readonly openPath?: string;
   // run_progress fields (the committed phase the row narrates).
   readonly phase?: string;
   readonly ordinal?: number;
@@ -1067,6 +1072,13 @@ async function trialPayment(
   if (!userId) return { action: "noop", reason: "no_recipient" };
   const prefs = await readPrefs(tx, userId);
   const reason = payload.reason ?? "Your trial is ending";
+  // BILL.3 — `openPath` is the pending-checkout email's "back to where you were" link. Only an in-app
+  // path is ever honored (starts with `/`, never `//` — an external scheme lands the default).
+  const openPath =
+    payload.openPath && payload.openPath.startsWith("/") && !payload.openPath.startsWith("//")
+      ? payload.openPath
+      : null;
+  const dedupTag = payload.tag ?? reason;
 
   // the Inbox leg — non-configurable too (a trial/payment row can't lose its notification).
   const inboxed = await deliverInApp(tx, deps, {
@@ -1076,10 +1088,10 @@ async function trialPayment(
     prefs: { ...prefs, inApp: {} }, // non-configurable: pretend no overrides exist
     projectId: null,
     runId: null,
-    href: "/settings/billing",
+    href: openPath ?? "/settings/billing",
     copy: { reason },
     billingAccountId: payload.billingAccountId ?? null,
-    tag: reason,
+    tag: dedupTag,
     now,
   });
 
@@ -1089,12 +1101,14 @@ async function trialPayment(
     workspaceId: payload.workspaceId,
     userId,
     eventType: "trial_payment",
-    dedupKey: `trial:${userId}:${payload.reason ?? "notice"}`,
+    // BILL.3 — a tagged delivery keys exactly-once on the tag (`checkout:<sessionId>`); the untagged
+    // callers keep the reason-keyed key so their existing sent rows still dedupe.
+    dedupKey: `trial:${userId}:${dedupTag}`,
     runId: null,
     render: async () =>
       renderEmail("trial_payment", {
         reason,
-        openUrl: billingDeepLink(config.appBaseUrl),
+        openUrl: openPath ? `${config.appBaseUrl}${openPath}` : billingDeepLink(config.appBaseUrl),
       }),
   });
   if (!claim.claimed) {

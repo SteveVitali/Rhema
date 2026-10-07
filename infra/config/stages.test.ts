@@ -111,6 +111,14 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
   });
 });
 
+describe("purchase.mode stage flag (BILL.3; REQ-BILL-16)", () => {
+  it("every stage ships closed — only an auditable operator flip re-opens real-user purchase", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      expect(cfg.purchaseMode, `stage ${name}`).toBe("closed");
+    }
+  });
+});
+
 describe("prod serving surface (PRB.15 — §13.1 / D-PRB.02-1 IaC leg)", () => {
   it("prod carries the real domains: rhema.tools apex + api.rhema.tools + the cookieless usercontent.rhema.tools (amended 2026-09-17)", () => {
     expect(STAGES.prod.domains).toEqual(PROD_DOMAINS);

@@ -195,6 +195,8 @@ export const COPY = {
     // PRB.08 — the exhaustion panel's Payment Link action + the suspended-account notice + the final-month
     // beta-plan offer (copy + link only — REQ-BETA-14/15, §14.6; no subscription machinery).
     buyCredits: "Add credits",
+    // BILL.3 — the exhaustion panel + the bounced POST while purchase is closed for the account.
+    purchasePaused: "Purchases are paused while we finish rolling them out — your balance and work are safe.",
     suspended: "This account is paused while a payment dispute is open — runs can't start until it resolves.",
     // PRB.13 — the verified-email gate's notice (REQ-BETA-19 amended): the sign-in link is the verification.
     emailUnverified: "Runs need a verified email — your sign-in link verifies it.",
@@ -1443,7 +1445,20 @@ export const COPY = {
     teamCta: "Join the waitlist",
     teamJoined: "You're on the list.",
     saved: "Saved.",
+    // BILL.3 — the per-class failure copy (REQ-BILL-16): each refusal names its own cause, and the
+    // generic line only remains for the genuinely-transient case (Stripe itself unreachable).
     stripeDownNote: "Billing is temporarily unavailable — try again in a moment.",
+    stripeUnconfiguredNote: "Checkout isn't configured on this deployment yet — nothing was charged.",
+    purchasePausedNote: "Purchases are paused while we finish rolling them out — your balance and work are safe.",
+    topupRequiresPlanNote: "Top-ups need a paid plan — choose Writer or above first.",
+    firstMonthCapNote: "New accounts can add up to $100 of credits in their first month — the cap lifts after.",
+    planWaitlistedNote: "That plan isn't open yet — join its waitlist on the card above.",
+    noStripeCustomerNote: "There's no card on file yet — choose a plan or buy a top-up first.",
+    stripeRejectedNote: "Stripe refused that checkout — nothing was charged. The detail is logged; try again in a moment.",
+    changeFailedNote: "The plan change didn't apply — try again.",
+    cancelFailedNote: "Cancellation didn't apply — try again.",
+    autoReloadFailedNote: "The auto-reload settings didn't save — check the values and try again.",
+    waitlistFailedNote: "That didn't join the waitlist — check the email and try again.",
     includedBadge: "Included",
     returnHeading: "Checkout",
     returnDone: "Payment confirmed — your credits are in.",

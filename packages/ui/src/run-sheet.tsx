@@ -143,6 +143,8 @@ export interface RunSheetLabels {
   readonly wholeDraftPrefix?: string;
   /** the §14.3 trial badge text when the entitlement covers the run. */
   readonly includedLabel?: string;
+  /** BILL.3 — the exhaustion panel's line while purchase is closed for the account. */
+  readonly purchasePausedLabel?: string;
 }
 
 export interface RunSheetProps {
@@ -251,7 +253,13 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
                 the whole form to the exhausted-prompt route (telemetry lands server-side, then a 302 to the
                 link) — the `action_taken` value is the telemetry field. No nested form: `formAction`
                 retargets this submit. */}
-            {view.paymentLinkUrl && exhaustedAction ? (
+            {/* BILL.3 — purchase closed: no checkout hand-off exists to click; the paused line is the
+                honest state (the exhausted POST would refuse the redirect anyway). */}
+            {view.purchaseClosed ? (
+              <p style={{ margin: "10px 0 0", fontSize: "13px", color: "var(--shell-fg-muted)" }} data-purchase-paused="true">
+                {labels.purchasePausedLabel ?? "Purchases are paused — your balance and work are safe."}
+              </p>
+            ) : view.paymentLinkUrl && exhaustedAction ? (
               <p style={{ margin: "10px 0 0" }}>
                 <button
                   type="submit"

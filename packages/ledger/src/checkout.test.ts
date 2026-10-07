@@ -4,6 +4,8 @@ import {
   startCheckout,
   resolveCheckoutSession,
   completeCheckoutSession,
+  expireCheckoutSession,
+  markCheckoutSessionReturnViewed,
   readCheckoutSession,
 } from "./checkout.js";
 import { StubStripePort } from "./stripe-port.js";
@@ -84,9 +86,80 @@ describe("completeCheckoutSession + readCheckoutSession", () => {
         appBaseUrl: "https://app.test",
       }),
     );
-    expect(await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW))).toBe(true);
-    expect(await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW))).toBe(false);
+    expect(await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW))).toBeTruthy();
+    expect(await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW))).toBeNull();
     const view = await readCheckoutSession(db.client, sessionId);
-    expect(view).toEqual({ state: "completed", kind: "topup", returnTo: "/app/runs" });
+    expect(view).toMatchObject({ state: "completed", kind: "topup", returnTo: "/app/runs", workspaceId: WS });
+  });
+});
+
+// BILL.3 (0048; ADR-029) — the pending-checkout email's precondition + the expired state.
+describe("return_viewed marker + expiry", () => {
+  async function openSession(): Promise<string> {
+    const stripe = new StubStripePort();
+    const { sessionId } = await inTx((tx) =>
+      startCheckout(tx, { ...testEntryDeps(NOW), stripe }, {
+        workspaceId: WS,
+        billingAccountId: BA,
+        userId: USR,
+        kind: "topup",
+        packId: "topup_10",
+        packUsd: 10,
+        packCredits: 1000,
+        returnTo: "/app/settings/billing",
+        appBaseUrl: "https://app.test",
+      }),
+    );
+    return sessionId;
+  }
+
+  it("the open-view marker stamps once; a completed row is never marked", async () => {
+    const sessionId = await openSession();
+    // first open view stamps it; a second view keeps the original instant.
+    await inTx((tx) => markCheckoutSessionReturnViewed(tx, sessionId, WS, NOW));
+    const first = (
+      await db.client.query("select return_viewed_at::text as v from checkout_sessions where id = $1", [
+        sessionId,
+      ])
+    ).rows[0]!.v as string;
+    expect(first).not.toBeNull();
+    await inTx((tx) => markCheckoutSessionReturnViewed(tx, sessionId, WS, new Date(NOW.getTime() + 5000)));
+    const second = (
+      await db.client.query("select return_viewed_at::text as v from checkout_sessions where id = $1", [
+        sessionId,
+      ])
+    ).rows[0]!.v as string;
+    expect(second).toBe(first);
+    // completion returns the marker + recipient facts for the pending-email decision.
+    const completed = await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW));
+    expect(completed).toMatchObject({
+      id: sessionId,
+      userId: USR,
+      returnTo: "/app/settings/billing",
+      kind: "topup",
+    });
+    expect(completed!.returnViewedAt).not.toBeNull();
+    // after completion a late view never stamps (the email decision is already made).
+    await inTx((tx) => markCheckoutSessionReturnViewed(tx, sessionId, WS, NOW));
+    expect(
+      (await db.client.query("select return_viewed_at::text as v from checkout_sessions where id = $1", [sessionId]))
+        .rows[0]!.v,
+    ).toBe(first);
+  });
+
+  it("completion BEFORE any open view carries a null marker — the pending email never fires", async () => {
+    const sessionId = await openSession();
+    const completed = await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW));
+    expect(completed!.returnViewedAt).toBeNull();
+  });
+
+  it("checkout.session.expired marks an open row expired; replay is a no-op", async () => {
+    const sessionId = await openSession();
+    expect(await inTx((tx) => expireCheckoutSession(tx, sessionId, NOW))).toBe(true);
+    expect(await inTx((tx) => expireCheckoutSession(tx, sessionId, NOW))).toBe(false);
+    const view = await readCheckoutSession(db.client, sessionId);
+    expect(view!.state).toBe("expired");
+    // and an expired row can't complete or be marked.
+    expect(await inTx((tx) => completeCheckoutSession(tx, sessionId, NOW))).toBeNull();
   });
 });

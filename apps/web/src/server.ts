@@ -59,6 +59,8 @@ import {
   type IpEmailThrottle,
   type WorkflowKey,
   figureIdFromRef,
+  STRIPE_HOSTED_ORIGINS,
+  isStripeHostedRedirect,
 } from "@rhema/contracts";
 import { buildRunSheetView, buildEstimate, sheetProfile, type ToggleKey, type ToggleState } from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
@@ -159,6 +161,63 @@ function loginErrorFor(reason: string | undefined): string {
 const defaultBeginAuth = async (method: string): Promise<AuthOutcome> =>
   method === "google" ? { redirect: "/auth/google/start" } : { sent: true };
 
+/**
+ * BILL.3 (REQ-BILL-16) — map a billing POST failure's stable api code to truthful copy. The generic
+ * "temporarily unavailable" line is now ONLY the genuinely-transient answer (Stripe unreachable,
+ * or an unknown failure); every classified refusal gets its own sentence so the user knows what
+ * actually happened. Unknown codes fall back to the generic note — never a blank page.
+ */
+function billingNoticeFor(code: string | undefined): string {
+  switch (code) {
+    case "purchase_closed":
+      return COPY.billing.purchasePausedNote;
+    case "topups_require_plan":
+      return COPY.billing.topupRequiresPlanNote;
+    case "first_month_cap":
+      return COPY.billing.firstMonthCapNote;
+    case "plan_waitlisted":
+      return COPY.billing.planWaitlistedNote;
+    case "no_stripe_customer":
+      return COPY.billing.noStripeCustomerNote;
+    case "stripe_rejected":
+      return COPY.billing.stripeRejectedNote;
+    case "stripe_unconfigured":
+    case "stripe_credentials_unconfigured":
+      return COPY.billing.stripeUnconfiguredNote;
+    case "change":
+      return COPY.billing.changeFailedNote;
+    case "cancel":
+      return COPY.billing.cancelFailedNote;
+    case "autoreload":
+      return COPY.billing.autoReloadFailedNote;
+    case "waitlist":
+      return COPY.billing.waitlistFailedNote;
+    case "checkout":
+    case "portal":
+    case "stripe_unavailable":
+    default:
+      return COPY.billing.stripeDownNote;
+  }
+}
+
+/** The stable code a billing POST failure carries: the api's `{error}` code on an ApiError, else the
+ *  route's own fallback label (a network/unknown failure IS the "temporarily unavailable" case). */
+function billingFailureCode(err: unknown, fallback: string): string {
+  return err instanceof ApiError && typeof err.code === "string" ? String(err.code) : fallback;
+}
+
+/**
+ * BILL.3 (ADR-027) — the app only ever redirects to a Stripe-hosted origin (the CSP `form-action`
+ * allowlist's other half). A checkout/portal URL that isn't on the allowlist is refused — logged and
+ * rendered as the generic billing-down note, never followed.
+ */
+function stripeRedirectTarget(url: string | undefined, log: (msg: string) => void): string | null {
+  if (!url) return null;
+  if (isStripeHostedRedirect(url)) return url;
+  log(`[web] billing: refusing non-Stripe redirect target ${url.slice(0, 80)}`);
+  return null;
+}
+
 /** Map a refused admission's stable error code to copy (invite reject reasons reuse the invite copy). */
 function signupErrorFor(error: string, open: boolean): string {
   switch (error) {
@@ -189,7 +248,13 @@ export function createWebApp(deps: WebDeps): Hono {
   const cspFor = (nonce: string) =>
     `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; ` +
     `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'; font-src 'self'; ` +
-    `object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`;
+    `object-src 'none'; frame-ancestors 'none'; base-uri 'self'; ` +
+    // BILL.3 (ADR-027): a form submission whose response redirects to a Stripe-hosted page is checked
+    // against `form-action` — the bare `'self'` blocked every purchase hand-off (the run-sheet Add
+    // credits POST 302s to buy.stripe.com; Checkout/Portal POSTs 302 to checkout./billing.stripe.com).
+    // The allowlist is the contracts' STRIPE_HOSTED_ORIGINS — the same list the redirect validator
+    // enforces, so CSP can never admit a host we would not redirect to.
+    `form-action 'self' ${STRIPE_HOSTED_ORIGINS.join(" ")}`;
   app.use("*", async (c, next) => {
     await next();
     const res = c.res;
@@ -2512,7 +2577,9 @@ export function createWebApp(deps: WebDeps): Hono {
               subscription,
               plans,
               ...(c.req.query("saved") === "1" ? { saved: true } : {}),
-              ...(c.req.query("notice") ? { notice: COPY.billing.stripeDownNote } : {}),
+              // BILL.3 — the notice code maps through the per-class copy (an api refusal is told
+              // apart from Stripe being down; unknown codes land the generic note).
+              ...(c.req.query("notice") ? { notice: billingNoticeFor(c.req.query("notice")) } : {}),
             },
           }
         : {}),
@@ -2527,35 +2594,50 @@ export function createWebApp(deps: WebDeps): Hono {
     app.post(`/app/settings/billing/${path}`, (c) => handler(c, billingBase(c)));
     app.post(`/settings/billing/${path}`, (c) => handler(c, billingBase(c)));
   };
-  // Subscribe / top-up — mint the Checkout session server-side and 302 to Stripe. A billing-config
-  // miss (503) or any api error returns to the card with the "temporarily unavailable" notice —
-  // never a half-minted state (the api's checkout insert is idempotent).
+  // Subscribe / top-up — mint the Checkout session server-side and 302 to Stripe. BILL.3: the failure
+  // carries the api's stable code through to the notice (a refused checkout is told apart from Stripe
+  // being down) and the redirect target is validated against the Stripe-hosted allowlist before the
+  // 302 is ever emitted — never a half-minted state, never a non-Stripe hand-off.
   billingPost("subscribe", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? "annual" : "monthly";
+    let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.startCheckout?.(session, {
         kind: "subscribe", plan: tier, cycle, returnTo: base,
       }))
-      .catch(() => undefined);
-    if (!out?.url) return c.redirect(`${base}?notice=checkout`);
-    return c.redirect(out.url);
+      .catch((e) => {
+        failure = billingFailureCode(e, "checkout");
+        console.error(`[web] billing subscribe failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        return undefined;
+      });
+    if (!out?.url) return c.redirect(`${base}?notice=${failure ?? "checkout"}`);
+    const target = stripeRedirectTarget(out.url, (m) => console.error(m));
+    if (!target) return c.redirect(`${base}?notice=checkout`);
+    return c.redirect(target);
   });
   billingPost("topup", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
     const packId = typeof form.packId === "string" ? form.packId : "";
+    let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.startCheckout?.(session, {
         kind: "topup", packId, returnTo: base,
       }))
-      .catch(() => undefined);
-    if (!out?.url) return c.redirect(`${base}?notice=checkout`);
-    return c.redirect(out.url);
+      .catch((e) => {
+        failure = billingFailureCode(e, "checkout");
+        console.error(`[web] billing topup failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        return undefined;
+      });
+    if (!out?.url) return c.redirect(`${base}?notice=${failure ?? "checkout"}`);
+    const target = stripeRedirectTarget(out.url, (m) => console.error(m));
+    if (!target) return c.redirect(`${base}?notice=checkout`);
+    return c.redirect(target);
   });
   // Plan change — an upgrade applies now, a downgrade schedules to period end (§14.2/14.6).
   billingPost("change-plan", async (c, base) => {
@@ -2585,6 +2667,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
     const form = await c.req.parseBody();
+    // BILL.3 — opt-IN is a purchase-path write (it schedules an unattended charge): keep the api's
+    // `purchase_closed` class so the notice is the paused copy, not a generic "didn't save".
+    let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.setAutoReload?.(session, {
         enabled: form.enabled === "1",
@@ -2594,19 +2679,30 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(typeof form.monthlyCapUsd === "string" && Number(form.monthlyCapUsd) > 0
           ? { monthlyCapUsd: Number(form.monthlyCapUsd) } : {}),
       }))
-      .catch(() => undefined);
-    if (!out?.ok) return c.redirect(`${base}?notice=autoreload`);
+      .catch((e) => {
+        failure = billingFailureCode(e, "autoreload");
+        console.error(`[web] billing auto-reload failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        return undefined;
+      });
+    if (!out?.ok) return c.redirect(`${base}?notice=${failure ?? "autoreload"}`);
     return c.redirect(`${base}?saved=1`);
   });
   // The Stripe Customer-Portal session — payment methods, invoices, receipts live Stripe-side.
   billingPost("portal", async (c, base) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.createBillingPortalSession?.(session, base))
-      .catch(() => undefined);
-    if (!out?.url) return c.redirect(`${base}?notice=portal`);
-    return c.redirect(out.url);
+      .catch((e) => {
+        failure = billingFailureCode(e, "portal");
+        console.error(`[web] billing portal failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
+        return undefined;
+      });
+    if (!out?.url) return c.redirect(`${base}?notice=${failure ?? "portal"}`);
+    const target = stripeRedirectTarget(out.url, (m) => console.error(m));
+    if (!target) return c.redirect(`${base}?notice=portal`);
+    return c.redirect(target);
   });
   // The Team tier's waitlist row (§14.2 — listed with its price; mechanics are 1.x).
   billingPost("waitlist", async (c, base) => {
@@ -2645,10 +2741,14 @@ export function createWebApp(deps: WebDeps): Hono {
           .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
           .catch(() => undefined)
       : undefined;
+    // §14.6's webhook-lag bound is real: an `open` row auto-refreshes only for 30 s after Checkout
+    // creation, then leaves the pending/email-fallback copy on a stable page instead of polling forever.
+    const openAgeMs = checkoutReturn?.createdAt ? Date.now() - Date.parse(checkoutReturn.createdAt) : Number.POSITIVE_INFINITY;
+    const stillPolling = openAgeMs >= 0 && openAgeMs < 30_000;
     return c.html(renderDocument(c.req.path, billingReturnElement, {
       ...(checkoutReturn ? { checkoutReturn } : {}),
       ...(cancelled ? { checkoutCancelled: true } : {}),
-      ...(checkoutReturn?.state === "open" && !cancelled
+      ...(checkoutReturn?.state === "open" && !cancelled && stillPolling
         ? { autoRefresh: { seconds: 5, url: `/billing/return?session_id=${encodeURIComponent(sessionId)}` } }
         : {}),
     }));
@@ -3364,7 +3464,13 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.html(renderDocument(c.req.path, runSheetElement, {
       ...(await ideContext(c, session, row)),
       project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-      runSheet: { slug, projectTitle: row.title, view },
+      runSheet: {
+        slug,
+        projectTitle: row.title,
+        view,
+        // BILL.3 — the exhausted POST bounced back because purchase is closed: the paused line.
+        ...(c.req.query("notice") === "purchase_paused" ? { notice: COPY.runSheet.purchasePaused } : {}),
+      },
       ...(pretriage ? { pretriage } : {}),
       compact: isPhoneRequest(c),
     }));
@@ -3519,11 +3625,22 @@ export function createWebApp(deps: WebDeps): Hono {
     await deps.dataSource.recordExhaustedPrompt(session, action).catch(() => undefined);
     if (action === "open_payment_link") {
       const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
+      // BILL.3 — the purchase switch binds the Payment Link too: anything short of an explicit `open`
+      // (closed, absent on an older api, or a failed read) gets the paused note, never a checkout; and
+      // the redirect target is validated against the Stripe-hosted allowlist before the 302 (the CSP
+      // form-action list admits nothing else anyway).
+      if (billing?.purchase !== "open") {
+        return c.redirect(`/p/${slug}/run?notice=purchase_paused`);
+      }
       // F32 (PRB.19): the Payment Link must carry `client_reference_id=<billingAccountId>` — without it the
       // Stripe-originated checkout lands `unresolved` (money taken, no grant(topup)). Composed, never
       // concatenated, so an existing query on the configured link survives.
       if (billing?.paymentLinkUrl) {
-        return c.redirect(paymentLinkWithReference(billing.paymentLinkUrl, billing.billingAccountId));
+        const target = stripeRedirectTarget(
+          paymentLinkWithReference(billing.paymentLinkUrl, billing.billingAccountId),
+          (m) => console.error(m),
+        );
+        if (target) return c.redirect(target);
       }
     }
     return c.redirect(`/p/${slug}/run`);
@@ -5076,7 +5193,7 @@ function parseUserSourcesField(raw: string): { name: string; url?: string; text?
  *  the degraded fallback (an api outage must not block the sheet). */
 function buildSheet(
   query: Record<string, string>,
-  billing?: { spendableCredits: number; suspended: boolean; paymentLinkUrl?: string },
+  billing?: { spendableCredits: number; suspended: boolean; paymentLinkUrl?: string; purchase?: "open" | "closed" },
   planOfferUrl?: string,
   // P1.06 — the api's run-sheet context (head draft, sections, obligations, entitlement, consent pref,
   // the project scope defaults). Unset ⇒ the sheet renders its bare defaults (context fetch failed open).
@@ -5215,7 +5332,13 @@ function buildSheet(
             undefined,
         }
       : {}),
-    ...(billing?.paymentLinkUrl ? { paymentLinkUrl: billing.paymentLinkUrl } : {}),
+    // BILL.3 — purchase closed ⇒ the exhaustion panel renders the paused line, never the link button.
+    // The balance DTO's `purchase` is optional for older apis — fail closed for the LINK either way,
+    // but only render the paused note when the api actually answered.
+    ...(billing && billing.purchase !== "open" ? { purchaseClosed: true } : {}),
+    ...(billing?.paymentLinkUrl && billing.purchase === "open"
+      ? { paymentLinkUrl: billing.paymentLinkUrl }
+      : {}),
     ...(billing?.suspended ? { suspended: true } : {}),
     ...(planOfferUrl ? { planOfferUrl } : {}),
   });

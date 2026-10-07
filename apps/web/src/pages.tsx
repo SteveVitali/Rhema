@@ -1240,6 +1240,7 @@ const runSheetLabels: RunSheetLabels = {
   },
   buyCreditsLabel: COPY.runSheet.buyCredits,
   suspendedNotice: COPY.runSheet.suspended,
+  purchasePausedLabel: COPY.runSheet.purchasePaused,
   planOffer: { text: COPY.runSheet.planOffer, linkLabel: COPY.runSheet.planOfferLink },
   // P1.06 — the §5.6 collapsed-row fields + the §14.3 trial badge + the §7.2 scope comparison line.
   approvalsLabel: COPY.runSheet.approvals,
@@ -5684,6 +5685,9 @@ export function BillingPage(): ReactNode {
     );
   }
   const { subscription: sub, plans } = billing;
+  // BILL.3 — fail closed when an older api omits `purchase`; only the literal `open` unlocks the
+  // Checkout/Portal forms.
+  const purchaseOpen = sub.purchase === "open";
   const planEntries = Object.entries(plans.plans);
   const current = sub.tier;
   return (
@@ -5699,6 +5703,14 @@ export function BillingPage(): ReactNode {
       ) : null}
       {billing.notice ? (
         <p data-notice="true" style={{ fontSize: "13px", color: "var(--sev-major)", margin: "8px 0" }}>{billing.notice}</p>
+      ) : null}
+      {/* BILL.3 — the purchase switch rendered truthfully: while the api reports `closed` the page
+          shows the paused note and the subscribe/top-up/portal forms never mount (the POSTs would
+          403 anyway — this is the honest surface, not a trap door). */}
+      {!purchaseOpen ? (
+        <p data-purchase-paused="true" style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "8px 0" }}>
+          {B.purchasePausedNote}
+        </p>
       ) : null}
       {billing.saved ? (
         <p data-saved="true" style={{ fontSize: "13px", color: "var(--state-ready)", margin: "8px 0" }}>{B.saved}</p>
@@ -5781,7 +5793,7 @@ export function BillingPage(): ReactNode {
                     <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.cancelNote}</span>
                   </form>
                 ) : null
-              ) : (
+              ) : !purchaseOpen ? null : ( // BILL.3 — no subscribe form while purchase is closed
                 <form method="post" action="/app/settings/billing/subscribe" data-subscribe-form={tier} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                   <input type="hidden" name="tier" value={tier} />
                   <select name="cycle" style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)" }}>
@@ -5798,7 +5810,13 @@ export function BillingPage(): ReactNode {
 
       <section data-topups="true" style={{ margin: "0 0 20px" }}>
         <h3 style={{ fontSize: "14px", margin: "0 0 8px" }}>{B.topupHeading}</h3>
-        {plans.topUpPacks.map((p) => (
+        {/* BILL.3 — §14.2: Free never sees a Checkout top-up (the api would 402 `topups_require_plan`);
+            the honest note renders in place of the pack buttons. Purchase-closed hides them too. */}
+        {!purchaseOpen ? null : sub.tier === "free" ? (
+          <p data-topup-gated="true" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 8px" }}>
+            {B.topupRequiresPlanNote}
+          </p>
+        ) : plans.topUpPacks.map((p) => (
           <form key={p.id} method="post" action="/app/settings/billing/topup" data-topup-form={p.id} style={{ display: "inline-block", margin: "0 8px 8px 0" }}>
             <input type="hidden" name="packId" value={p.id} />
             <button type="submit" style={{ fontSize: "12px" }}>
@@ -5839,11 +5857,20 @@ export function BillingPage(): ReactNode {
         </form>
       </section>
 
-      {sub.hasStripeCustomer ? (
+      {/* BILL.3 — the Portal is a purchase entry point too: while the switch is closed the form never
+          mounts (the api would 403 before the Stripe call anyway). */}
+      {sub.hasStripeCustomer && purchaseOpen ? (
         <form method="post" action="/app/settings/billing/portal" data-portal-form="true" style={{ margin: "0 0 20px" }}>
           <button type="submit" style={{ fontSize: "12px" }}>{B.manageCta}</button>
           <span style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{B.manageNote}</span>
         </form>
+      ) : null}
+      {/* BILL.3 — no stripe_customer yet ⇒ name the reason instead of hiding the affordance silently
+          only when purchase is open (while closed the paused note already explains). */}
+      {!sub.hasStripeCustomer && purchaseOpen ? (
+        <p data-no-customer="true" style={{ fontSize: "11px", color: "var(--shell-fg-faint)", margin: "0 0 20px" }}>
+          {B.noStripeCustomerNote}
+        </p>
       ) : null}
       </>
       )}

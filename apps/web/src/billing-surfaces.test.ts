@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectRow } from "@rhema/contracts";
+import { STRIPE_HOSTED_ORIGINS, type ProjectRow } from "@rhema/contracts";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
 
@@ -15,7 +15,15 @@ const PROJECTS: ProjectRow[] = [
 const PAY_LINK = "https://buy.stripe.com/test_beta_topup";
 
 function makeDeps(opts: {
-  balance?: { spendableCredits: number; suspended: boolean; clawbackDebt: number; paymentLinkUrl?: string; billingAccountId?: string };
+  balance?: {
+    spendableCredits: number;
+    suspended: boolean;
+    clawbackDebt: number;
+    paymentLinkUrl?: string;
+    billingAccountId?: string;
+    /** BILL.3 — absent exercises the fail-closed older-api shape; explicit `open` is the purchase path. */
+    purchase?: "open" | "closed";
+  };
   planOfferUrl?: string;
   recorded?: string[];
 }): WebDeps {
@@ -44,7 +52,7 @@ function makeDeps(opts: {
       postEditorNote: async () => { throw new Error("unused"); },
       cancelEditorRun: async () => { throw new Error("unused"); },
       reviseWithEdits: async () => { throw new Error("unused"); },
-      getBillingBalance: async () => opts.balance ?? { spendableCredits: 200_000, suspended: false, clawbackDebt: 0 },
+      getBillingBalance: async () => opts.balance ?? { spendableCredits: 200_000, suspended: false, clawbackDebt: 0, purchase: "open" },
       recordExhaustedPrompt: async (_s, action) => { recorded.push(action); },
     } as unknown as DataSource,
     session: () => ({}),
@@ -55,7 +63,7 @@ function makeDeps(opts: {
 describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => {
   it("a cap over the spendable balance renders the panel WITH the Payment Link and records 'shown'", async () => {
     const recorded: string[] = [];
-    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK }, recorded }));
+    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, purchase: "open" }, recorded }));
     const res = await app.request(`/p/${SLUG}/run?words=5180`);
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -82,7 +90,7 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
   it("the panel's Payment-Link POST records open_payment_link then 302s to the link + client_reference_id (F32)", async () => {
     const recorded: string[] = [];
     const app = createWebApp(
-      makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, billingAccountId: "ba_123" }, recorded }),
+      makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, purchase: "open", billingAccountId: "ba_123" }, recorded }),
     );
     const res = await app.request(`/p/${SLUG}/exhausted`, {
       method: "POST",
@@ -103,6 +111,7 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
           spendableCredits: 10, suspended: false, clawbackDebt: 0,
           paymentLinkUrl: "https://buy.stripe.com/test_link?prefilled_promo_code=ABC",
           billingAccountId: "ba x+y", // reserved chars → percent-encoded by URL
+          purchase: "open",
         },
       }),
     );
@@ -120,7 +129,7 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
   });
 
   it("a balance read without a billingAccountId redirects to the bare link (never breaks the redirect)", async () => {
-    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK } }));
+    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, purchase: "open" } }));
     const res = await app.request(`/p/${SLUG}/exhausted`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -132,7 +141,7 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
 
   it("an exhausted POST with no configured link returns to the sheet (no open redirect)", async () => {
     const recorded: string[] = [];
-    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0 }, recorded }));
+    const app = createWebApp(makeDeps({ balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, purchase: "open" }, recorded }));
     const res = await app.request(`/p/${SLUG}/exhausted`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -142,6 +151,63 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe(`/p/${SLUG}/run`);
     expect(recorded).toEqual(["open_payment_link"]);
+  });
+
+  it("purchase=closed keeps the Payment Link off the sheet and refuses the hand-off POST (BILL.3)", async () => {
+    const recorded: string[] = [];
+    const app = createWebApp(makeDeps({
+      balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK, purchase: "closed" },
+      recorded,
+    }));
+    const html = await (await app.request(`/p/${SLUG}/run?words=5180`)).text();
+    expect(html).toContain('data-purchase-paused="true"');
+    expect(html).toContain("Purchases are paused");
+    expect(html).not.toContain("data-payment-link");
+
+    const res = await app.request(`/p/${SLUG}/exhausted`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action_taken: "open_payment_link" }).toString(),
+      redirect: "manual",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/p/${SLUG}/run?notice=purchase_paused`);
+    // the click is still telemetry (the user acted), but no Stripe URL is emitted.
+    expect(recorded).toEqual(["shown", "open_payment_link"]);
+  });
+
+  it("an absent purchase field fails closed and a non-Stripe link is never followed (BILL.3)", async () => {
+    const app = createWebApp(makeDeps({
+      balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: PAY_LINK },
+    }));
+    const res = await app.request(`/p/${SLUG}/exhausted`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action_taken: "open_payment_link" }).toString(),
+      redirect: "manual",
+    });
+    expect(res.headers.get("location")).toBe(`/p/${SLUG}/run?notice=purchase_paused`);
+
+    const rogue = createWebApp(makeDeps({
+      balance: { spendableCredits: 10, suspended: false, clawbackDebt: 0, paymentLinkUrl: "https://evil.example/pay", purchase: "open" },
+    }));
+    const res2 = await rogue.request(`/p/${SLUG}/exhausted`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action_taken: "open_payment_link" }).toString(),
+      redirect: "manual",
+    });
+    expect(res2.status).toBe(302);
+    expect(res2.headers.get("location")).toBe(`/p/${SLUG}/run`);
+  });
+
+  it("the CSP form-action is 'self' plus exactly the Stripe-hosted origins — no wildcard (BILL.3)", async () => {
+    const app = createWebApp(makeDeps({}));
+    const res = await app.request(`/p/${SLUG}/run?words=5180`);
+    const csp = res.headers.get("content-security-policy") ?? "";
+    const formAction = /(?:^|;)\s*form-action\s+([^;]+)/.exec(csp)?.[1]?.trim().split(/\s+/);
+    expect(formAction).toEqual(["'self'", ...STRIPE_HOSTED_ORIGINS]);
+    expect(csp).not.toContain("*");
   });
 });
 

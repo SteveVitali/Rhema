@@ -25,6 +25,9 @@ import { recordAnalyticsEvent } from "./analytics.js";
 import {
   resolveCheckoutSession,
   completeCheckoutSession,
+  expireCheckoutSession,
+  markCheckoutPendingEmailQueued,
+  type CompletedCheckout,
 } from "./checkout.js";
 import {
   activateSubscription,
@@ -117,13 +120,17 @@ export async function insertStripeEvent(
 
 export interface StripeEventDeps extends ChargebackDeps {
   readonly queue: Queue;
-  /** billing emails through the notify queue (P1.16 — the renewal-failure banner etc.). */
+  /** billing emails through the notify queue (P1.16 — the renewal-failure banner etc.).
+   *  BILL.3: `tag` keys the delivery claim (`checkout:<sessionId>` ⇒ exactly-once per session);
+   *  `openPath` overrides the mail's in-app href/open URL (an in-app path, never external). */
   readonly notify?: (payload: {
     type: "trial_payment";
     workspaceId: string;
     userId?: string;
     billingAccountId?: string;
     reason: string;
+    tag?: string;
+    openPath?: string;
   }) => Promise<void>;
 }
 
@@ -209,6 +216,9 @@ export async function processStripeEvent(
   switch (row.type) {
     case "checkout.session.completed":
       outcome = await processCheckoutCompleted(exec, deps, object);
+      break;
+    case "checkout.session.expired":
+      outcome = await processCheckoutExpired(exec, deps, object);
       break;
     case "invoice.paid":
       outcome = await processInvoicePaid(exec, deps, object);
@@ -335,6 +345,9 @@ async function processCheckoutCompleted(
   }
   if (ours.state !== "open") {
     // already completed — the webhook replayed; the grant rows' idempotency keys make the arms safe.
+    // If the earlier pass crashed AFTER completing the row but BEFORE the pending-mail enqueue, retry
+    // that post-commit half here (`pending_email_queued_at` is the durable "a job exists" marker).
+    if (ours.state === "completed") await notifyPendingCheckout(deps, ours, ours);
     return { kind: "ignored" };
   }
 
@@ -343,6 +356,7 @@ async function processCheckoutCompleted(
     if (!pack) return { kind: "unresolved", reason: `checkout session ${ours.id} has no resolvable pack` };
     let ledgerId = "";
     let applied = false;
+    let completed: CompletedCheckout | null = null;
     await deps.runTx(ours.workspaceId, async (tx) => {
       const res = await applyLedgerEntry(tx, deps, {
         workspaceId: ours.workspaceId,
@@ -358,7 +372,15 @@ async function processCheckoutCompleted(
       });
       ledgerId = res.ledgerId;
       applied = res.applied;
-      await completeCheckoutSession(tx, ours.id, deps.clock.now());
+      // BILL.3 — persist the Customer a payment-mode session minted (`customer_creation=always`) so the
+      // account reaches the Portal after its first top-up. Same `is null` guard as the auto-reload arm.
+      if (session.customer) {
+        await tx.query(
+          "update billing_accounts set stripe_customer_id = $2 where id = $1 and stripe_customer_id is null",
+          [ours.billingAccountId, session.customer],
+        );
+      }
+      completed = await completeCheckoutSession(tx, ours.id, deps.clock.now());
       if (applied) {
         const member = (
           await tx.query(
@@ -382,6 +404,7 @@ async function processCheckoutCompleted(
         }
       }
     });
+    await notifyPendingCheckout(deps, ours, completed);
     return { kind: "topup_granted", ledgerId, credits: pack.credits, billingAccountId: ours.billingAccountId, applied };
   }
 
@@ -406,6 +429,7 @@ async function processCheckoutCompleted(
     if (!prior) periodEnd.setUTCMonth(periodEnd.getUTCMonth() + (cycle === "annual" ? 12 : 1));
     let subscriptionId = "";
     let converted = false;
+    let completed: CompletedCheckout | null = null;
     await deps.runTx(ours.workspaceId, async (tx) => {
       const act = await activateSubscription(tx, deps, {
         workspaceId: ours.workspaceId,
@@ -425,8 +449,9 @@ async function processCheckoutCompleted(
         workspaceId: ours.workspaceId,
       });
       converted = conv.converted;
-      await completeCheckoutSession(tx, ours.id, deps.clock.now());
+      completed = await completeCheckoutSession(tx, ours.id, deps.clock.now());
     });
+    await notifyPendingCheckout(deps, ours, completed);
     return {
       kind: "subscription_activated",
       billingAccountId: ours.billingAccountId,
@@ -436,6 +461,7 @@ async function processCheckoutCompleted(
   }
 
   // auto_reload_setup — the card is on file; the account's opt-in settings (already user-typed) take effect.
+  let completed: CompletedCheckout | null = null;
   await deps.runTx(ours.workspaceId, async (tx) => {
     if (session.customer) {
       await tx.query(
@@ -443,9 +469,77 @@ async function processCheckoutCompleted(
         [ours.billingAccountId, session.customer],
       );
     }
-    await completeCheckoutSession(tx, ours.id, deps.clock.now());
+    completed = await completeCheckoutSession(tx, ours.id, deps.clock.now());
   });
+  await notifyPendingCheckout(deps, ours, completed);
   return { kind: "auto_reload_setup", billingAccountId: ours.billingAccountId };
+}
+
+/**
+ * `checkout.session.expired` (BILL.3; §14.6's expired row): Stripe abandons a session after ~24 h
+ * unpaid — mark ours `expired` so the return poll renders the honest copy instead of auto-refreshing
+ * a state that can never change. Idempotent: only an `open` row transitions.
+ */
+async function processCheckoutExpired(
+  exec: SqlClient,
+  deps: StripeEventDeps,
+  session: CheckoutSession,
+): Promise<StripeEventOutcome> {
+  if (!session.id) return { kind: "unresolved", reason: "checkout session has no id" };
+  const ours = await resolveCheckoutSession(exec, session.metadata?.checkout_session_id ?? session.id);
+  if (!ours) return { kind: "ignored" }; // a Payment-Link session carries no row — nothing to expire
+  if (ours.state !== "open") return { kind: "ignored" };
+  await deps.runTx(ours.workspaceId, async (tx) => {
+    await expireCheckoutSession(tx, ours.id, deps.clock.now());
+  });
+  return { kind: "ignored" };
+}
+
+/**
+ * BILL.3 (REQ-BILL-16; ADR-029) — the pending-checkout email. `checkout.session.completed` fires it
+ * ONLY when:
+ *   (a) this event did the open→completed transition (`completed` non-null — a replayed webhook finds
+ *       the row already completed and returns null), AND
+ *   (b) the user observed the `open` return page (`return_viewed_at` stamped by the tenant-scoped poll,
+ *       0048) — a completion that lands BEFORE the first poll never mails (the user never saw "pending"), AND
+ *   (c) the pending mail was not already enqueued (`pending_email_queued_at`, 0048) — a redriven Stripe
+ *       event can re-execute this function after a crash between enqueue + `stripe_events.processed_at`.
+ * The `tag: checkout:<sessionId>` rides to the notification_deliveries dedup key, so a retried/duplicated
+ * notify job can never send the same email twice. Post-commit only — a rolled-back grant never mails; the
+ * queued marker is stamped only after the enqueue call returns, so a failed enqueue remains retryable.
+ */
+async function notifyPendingCheckout(
+  deps: StripeEventDeps,
+  ours: { workspaceId: string; billingAccountId: string },
+  completed: CompletedCheckout | null,
+): Promise<void> {
+  if (
+    !deps.notify ||
+    !completed ||
+    completed.returnViewedAt == null ||
+    completed.pendingEmailQueuedAt != null ||
+    !completed.userId
+  ) {
+    return;
+  }
+  const reason =
+    completed.kind === "topup"
+      ? "Your top-up landed — the credits are in"
+      : completed.kind === "subscribe"
+        ? "Your plan is active — the checkout finished"
+        : "Your card is on file — auto-reload is set up";
+  await deps.notify({
+    type: "trial_payment",
+    workspaceId: ours.workspaceId,
+    userId: completed.userId,
+    billingAccountId: ours.billingAccountId,
+    reason,
+    tag: `checkout:${completed.id}`,
+    ...(completed.returnTo ? { openPath: completed.returnTo } : {}),
+  });
+  await deps.runTx(ours.workspaceId, async (tx) => {
+    await markCheckoutPendingEmailQueued(tx, completed.id, deps.clock.now());
+  });
 }
 
 /** `invoice.paid` — a subscription renewal: new period bounds + this period's included grant. */
@@ -605,6 +699,14 @@ async function processTopUp(
     });
     ledgerId = res.ledgerId;
     applied = res.applied;
+    // BILL.3 — a Payment-Link purchase also mints a Stripe Customer; persist it so the account reaches
+    // the Portal (the same `is null` guard the checkout arms use).
+    if (session.customer) {
+      await tx.query(
+        "update billing_accounts set stripe_customer_id = $2 where id = $1 and stripe_customer_id is null",
+        [billingAccountId, session.customer],
+      );
+    }
     if (!applied) return;
 
     // REQ-BETA-12 telemetry: the purchase IS the WTP signal. The envelope needs the workspace's member

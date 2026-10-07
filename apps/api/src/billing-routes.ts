@@ -19,10 +19,13 @@ import {
   STRIPE_EVENT_JOB,
   startCheckout,
   readCheckoutSession,
+  markCheckoutSessionReturnViewed,
   changePlan,
   requestCancellation,
   configureAutoReload,
   effectivePlanTier,
+  isTestWorkspace,
+  StripeRequestError,
   usageLevel1,
   usageLevel2,
   usageLevel4,
@@ -30,7 +33,16 @@ import {
   usageCsvText,
   type StripePort,
 } from "@rhema/ledger";
-import { PRICING, planOf, priceCents, topUpPack, visiblePlansPublication, PLAN_TIERS, type PlanTier } from "@rhema/contracts";
+import {
+  PRICING,
+  planOf,
+  priceCents,
+  topUpPack,
+  visiblePlansPublication,
+  PLAN_TIERS,
+  type PlanTier,
+  type PurchaseMode,
+} from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
 
 export interface BillingApiDeps {
@@ -51,6 +63,46 @@ export interface BillingApiDeps {
   readonly stripe?: StripePort;
   /** P1.16 — the app origin Checkout success/cancel URLs bounce through (deploy config). */
   readonly appBaseUrl?: string;
+  /**
+   * BILL.3 (ADR-028; REQ-BILL-16) — the purchase switch. `closed` (the default when unset — the dep is
+   * fail-closed, not fail-open) ⇒ `/billing/checkout` refuses with `purchase_closed` for every real
+   * user; JOURNEY.1-flagged test workspaces (`workspaces.is_test`, read inside the tenant tx) are
+   * allowlisted so N9 can exercise the real Stripe pages while purchase stays closed. The Portal is
+   * gated with the rest — while closed the switch means NO Stripe call, not just no charge-minting call.
+   */
+  readonly purchaseMode?: PurchaseMode;
+}
+
+/** BILL.3 — a checkout's `returnTo` must be an in-app path; anything else drops to undefined (the
+ *  field lands verbatim in the return page's continue link + the pending email's open URL — an
+ *  external value would be an open redirect). */
+function safeReturnToPath(v: unknown): string | undefined {
+  return typeof v === "string" && v.startsWith("/") && !v.startsWith("//") ? v : undefined;
+}
+
+/**
+ * BILL.3 — classify a failed Stripe call into the stable code the web maps to truthful copy:
+ * a 4xx from Stripe is OUR request's fault (`stripe_rejected` — "Stripe refused that checkout",
+ * logged with the session id); a 5xx or a network throw is `stripe_unavailable`. Anything that isn't
+ * a StripeRequestError re-throws (an internal bug stays a 500 — never relabeled as billing trouble).
+ */
+function stripeFailure(
+  kind: "checkout" | "portal",
+  err: unknown,
+  log: (msg: string) => void,
+): { error: string; status: 502 | 503 } {
+  if (err instanceof StripeRequestError) {
+    const sessionId = (err as StripeRequestError & { checkoutSessionId?: string }).checkoutSessionId;
+    log(
+      `[api] billing ${kind} refused: status=${err.status} type=${err.stripeType ?? "-"} code=${err.stripeCode ?? "-"}` +
+        (sessionId ? ` session=${sessionId}` : ""),
+    );
+    // a 4xx is our request's shape at fault (rejected, logged); a 5xx from Stripe is THEIR outage.
+    return err.rejected ? { error: "stripe_rejected", status: 502 } : { error: "stripe_unavailable", status: 503 };
+  }
+  // Anything else is an internal/db bug, not Stripe trouble: rethrow so it stays a 500 instead of
+  // collapsing into the billing-unavailable class (BILL.3's truthful-failure rule).
+  throw err;
 }
 
 export function createBillingRoutes(deps: BillingApiDeps): Hono {
@@ -109,11 +161,16 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
           [principal.billingAccountId],
         )
       ).rows[0] as { suspended_at: string | null; debt: number } | undefined;
+      // BILL.3 — the purchase switch surfaced to the web (is_test allowlist: a JOURNEY.1 tenant
+      // exercises the purchase surfaces while the mode is closed for everyone else).
+      const purchase: PurchaseMode =
+        deps.purchaseMode === "open" || (await isTestWorkspace(tx, principal.workspaceId)) ? "open" : "closed";
       return {
         spendable: Number(bal?.spendable ?? 0),
         held: Number(bal?.held ?? 0),
         suspended: acct?.suspended_at != null,
         clawbackDebt: Number(acct?.debt ?? 0),
+        purchase,
       };
     });
     return c.json({
@@ -122,7 +179,10 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       heldCredits: row.held,
       suspended: row.suspended,
       clawbackDebt: row.clawbackDebt,
-      ...(deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
+      purchase: row.purchase,
+      // BILL.3 — a closed switch must not surface the Payment Link at all: a caller who has the URL can
+      // otherwise hand Stripe money outside the closed UI (the webhook would still be obliged to grant it).
+      ...(row.purchase === "open" && deps.paymentLinkUrl ? { paymentLinkUrl: deps.paymentLinkUrl } : {}),
       // PRB.19 (F32) — the caller's billing account id, so the web's Payment-Link 302 can pin
       // `client_reference_id` and the Stripe-originated checkout joins THIS account (money never lands
       // `unresolved`). Server truth from the authenticated principal — never a request field.
@@ -242,7 +302,6 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   app.post("/billing/checkout", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    if (!deps.stripe || !deps.appBaseUrl) return c.json({ error: "stripe_unconfigured" }, 503);
     const body = (await c.req.json().catch(() => null)) as {
       kind?: unknown;
       plan?: unknown;
@@ -252,7 +311,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       email?: unknown;
     } | null;
     const kind = body?.kind;
-    const returnTo = typeof body?.returnTo === "string" ? body.returnTo : undefined;
+    const returnTo = safeReturnToPath(body?.returnTo);
 
     if (kind === "subscribe") {
       const tier = typeof body?.plan === "string" && (PLAN_TIERS as readonly string[]).includes(body.plan)
@@ -261,91 +320,119 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
       const cycle = body?.cycle === "annual" ? "annual" : "monthly";
       if (!tier || tier === "free") return c.json({ error: "plan required (writer|studio|studio_max)" }, 400);
       if (planOf(tier).waitlist) return c.json({ error: "plan_waitlisted" }, 422);
-      const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-        const acct = (
-          await tx.query("select stripe_customer_id from billing_accounts where id = $1", [
-            principal.billingAccountId,
-          ])
-        ).rows[0] as { stripe_customer_id: string | null } | undefined;
-        return startCheckout(tx, { ids: deps.ids, clock: deps.clock, stripe: deps.stripe! }, {
-          workspaceId: principal.workspaceId,
-          billingAccountId: principal.billingAccountId,
-          userId: principal.userId,
-          kind: "subscribe",
-          plan: tier,
-          cycle,
-          ...(returnTo ? { returnTo } : {}),
-          customerId: acct?.stripe_customer_id ?? null,
-          ...(typeof body?.email === "string" ? { customerEmail: body.email } : {}),
-          appBaseUrl: deps.appBaseUrl!,
-          unitAmountCents: priceCents(tier, cycle),
-          planDisplay: planOf(tier).display,
+      try {
+        const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+          // BILL.3 — the purchase switch: closed for real users; `is_test` (server-set) allowlists the
+          // JOURNEY.1 tenant so N9 can walk the real Checkout while the mode stays closed.
+          const test = await isTestWorkspace(tx, principal.workspaceId);
+          if (deps.purchaseMode !== "open" && !test) return { error: "purchase_closed" as const };
+          if (!deps.stripe || !deps.appBaseUrl) return { error: "stripe_unconfigured" as const };
+          const acct = (
+            await tx.query("select stripe_customer_id from billing_accounts where id = $1", [
+              principal.billingAccountId,
+            ])
+          ).rows[0] as { stripe_customer_id: string | null } | undefined;
+          return startCheckout(tx, { ids: deps.ids, clock: deps.clock, stripe: deps.stripe! }, {
+            workspaceId: principal.workspaceId,
+            billingAccountId: principal.billingAccountId,
+            userId: principal.userId,
+            kind: "subscribe",
+            plan: tier,
+            cycle,
+            ...(returnTo ? { returnTo } : {}),
+            customerId: acct?.stripe_customer_id ?? null,
+            ...(typeof body?.email === "string" ? { customerEmail: body.email } : {}),
+            appBaseUrl: deps.appBaseUrl!,
+            unitAmountCents: priceCents(tier, cycle),
+            planDisplay: planOf(tier).display,
+          });
         });
-      });
-      return c.json({ sessionId: out.sessionId, url: out.url });
+        if ("error" in out) {
+          return c.json(out, out.error === "stripe_unconfigured" ? 503 : 403);
+        }
+        return c.json({ sessionId: out.sessionId, url: out.url });
+      } catch (err) {
+        const f = stripeFailure("checkout", err, (m) => console.error(m));
+        return c.json({ error: f.error }, f.status);
+      }
     }
 
     if (kind === "topup" || kind === "auto_reload_setup") {
       const pack = typeof body?.packId === "string" ? topUpPack(body.packId) : undefined;
       if (!pack) return c.json({ error: "packId required (topup_10|topup_50|topup_200)" }, 400);
-      const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-        const acct = (
+      try {
+        const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+          const test = await isTestWorkspace(tx, principal.workspaceId);
+          if (deps.purchaseMode !== "open" && !test) return { error: "purchase_closed" as const };
+          if (!deps.stripe || !deps.appBaseUrl) return { error: "stripe_unconfigured" as const };
+          const acct = (
+            await tx.query(
+              "select stripe_customer_id, created_at::text, first_month_topup_cents, daily_topup_date::text, daily_topup_cents, trial_state from billing_accounts where id = $1",
+              [principal.billingAccountId],
+            )
+          ).rows[0] as
+            | {
+                stripe_customer_id: string | null;
+                created_at: string;
+                first_month_topup_cents: number;
+                daily_topup_date: string | null;
+                daily_topup_cents: number;
+                trial_state: string | null;
+              }
+            | undefined;
+          // §14.2 fraud bounds: top-ups require a paid plan (Free can't buy). The BILL.3 is_test
+          // allowlist crosses ONLY the purchase switch — it must not relax a product invariant, so a
+          // Free test tenant still gets `topups_require_plan` (its purchase paths are the Payment Link
+          // and Choose Writer). Then: the first-month $100 account cap; >$200/day forces 3-D Secure.
+          const tier = await effectivePlanTier(tx, principal.billingAccountId);
+          if (kind === "topup" && planOf(tier).topUps === false) {
+            return { error: "topups_require_plan" as const };
+          }
+          const firstMonth =
+            acct && Date.now() - new Date(acct.created_at).getTime() < 31 * 24 * 60 * 60 * 1000;
+          if (firstMonth && Number(acct?.first_month_topup_cents ?? 0) + pack.usd * 100 > PRICING.topUp.firstMonthCapUsd * 100) {
+            return { error: "first_month_cap" as const };
+          }
+          const today = deps.clock.now().toISOString().slice(0, 10);
+          const dailyCents = acct?.daily_topup_date === today ? Number(acct.daily_topup_cents) : 0;
+          const require3ds = dailyCents + pack.usd * 100 > PRICING.topUp.threeDsDailyThresholdUsd * 100;
+          const r = await startCheckout(tx, { ids: deps.ids, clock: deps.clock, stripe: deps.stripe! }, {
+            workspaceId: principal.workspaceId,
+            billingAccountId: principal.billingAccountId,
+            userId: principal.userId,
+            kind,
+            packId: pack.id,
+            ...(returnTo ? { returnTo } : {}),
+            customerId: acct?.stripe_customer_id ?? null,
+            ...(typeof body?.email === "string" ? { customerEmail: body.email } : {}),
+            appBaseUrl: deps.appBaseUrl!,
+            packUsd: pack.usd,
+            packCredits: pack.credits,
+            require3ds,
+          });
+          // counters the bound reads — updated at session creation so a declined/abandoned Checkout still
+          // counts against the attempt (conservative; §14.2's bound is on attempts, not just captures).
           await tx.query(
-            "select stripe_customer_id, created_at::text, first_month_topup_cents, daily_topup_date::text, daily_topup_cents, trial_state from billing_accounts where id = $1",
-            [principal.billingAccountId],
-          )
-        ).rows[0] as
-          | {
-              stripe_customer_id: string | null;
-              created_at: string;
-              first_month_topup_cents: number;
-              daily_topup_date: string | null;
-              daily_topup_cents: number;
-              trial_state: string | null;
-            }
-          | undefined;
-        // §14.2 fraud bounds: top-ups require a paid plan (Free can't buy); the first-month $100 account
-        // cap; >$200/day forces 3-D Secure.
-        const tier = await effectivePlanTier(tx, principal.billingAccountId);
-        if (kind === "topup" && planOf(tier).topUps === false) {
-          return { error: "topups_require_plan" as const };
-        }
-        const firstMonth =
-          acct && Date.now() - new Date(acct.created_at).getTime() < 31 * 24 * 60 * 60 * 1000;
-        if (firstMonth && Number(acct?.first_month_topup_cents ?? 0) + pack.usd * 100 > PRICING.topUp.firstMonthCapUsd * 100) {
-          return { error: "first_month_cap" as const };
-        }
-        const today = deps.clock.now().toISOString().slice(0, 10);
-        const dailyCents = acct?.daily_topup_date === today ? Number(acct.daily_topup_cents) : 0;
-        const require3ds = dailyCents + pack.usd * 100 > PRICING.topUp.threeDsDailyThresholdUsd * 100;
-        const r = await startCheckout(tx, { ids: deps.ids, clock: deps.clock, stripe: deps.stripe! }, {
-          workspaceId: principal.workspaceId,
-          billingAccountId: principal.billingAccountId,
-          userId: principal.userId,
-          kind,
-          packId: pack.id,
-          ...(returnTo ? { returnTo } : {}),
-          customerId: acct?.stripe_customer_id ?? null,
-          ...(typeof body?.email === "string" ? { customerEmail: body.email } : {}),
-          appBaseUrl: deps.appBaseUrl!,
-          packUsd: pack.usd,
-          packCredits: pack.credits,
-          require3ds,
+            `update billing_accounts set
+                first_month_topup_cents = first_month_topup_cents + $2,
+                daily_topup_date = $3,
+                daily_topup_cents = case when daily_topup_date = $3 then daily_topup_cents else 0 end + $2
+               where id = $1`,
+            [principal.billingAccountId, pack.usd * 100, today],
+          );
+          return r;
         });
-        // counters the bound reads — updated at session creation so a declined/abandoned Checkout still
-        // counts against the attempt (conservative; §14.2's bound is on attempts, not just captures).
-        await tx.query(
-          `update billing_accounts set
-              first_month_topup_cents = first_month_topup_cents + $2,
-              daily_topup_date = $3,
-              daily_topup_cents = case when daily_topup_date = $3 then daily_topup_cents else 0 end + $2
-             where id = $1`,
-          [principal.billingAccountId, pack.usd * 100, today],
-        );
-        return r;
-      });
-      if ("error" in out) return c.json(out, 402);
-      return c.json({ sessionId: out.sessionId, url: out.url });
+        if ("error" in out) {
+          return c.json(
+            out,
+            out.error === "purchase_closed" ? 403 : out.error === "stripe_unconfigured" ? 503 : 402,
+          );
+        }
+        return c.json({ sessionId: out.sessionId, url: out.url });
+      } catch (err) {
+        const f = stripeFailure("checkout", err, (m) => console.error(m));
+        return c.json({ error: f.error }, f.status);
+      }
     }
     return c.json({ error: "kind required (subscribe|topup|auto_reload_setup)" }, 400);
   });
@@ -354,21 +441,37 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   app.post("/billing/portal", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    if (!deps.stripe) return c.json({ error: "stripe_unconfigured" }, 503);
-    const customerId = await deps.txRunner.run(principal.workspaceId, async (tx) => {
-      return (
+    const access = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      // BILL.3 — the closed switch admits no Stripe call, Portal included. A JOURNEY.1 tenant is the
+      // only allowlisted caller while the mode is closed.
+      const test = await isTestWorkspace(tx, principal.workspaceId);
+      const customerId = (
         (await tx.query("select stripe_customer_id from billing_accounts where id = $1", [
           principal.billingAccountId,
         ])).rows[0] as { stripe_customer_id: string | null } | undefined
       )?.stripe_customer_id;
+      return { customerId, allowed: deps.purchaseMode === "open" || test };
     });
-    if (!customerId) return c.json({ error: "no_stripe_customer" }, 404);
+    if (!access.allowed) return c.json({ error: "purchase_closed" }, 403);
+    // The Portal needs BOTH the port and the absolute app return origin. Check after the purchase
+    // gate so a closed account answers `purchase_closed`, not a config detail it cannot act on.
+    if (!deps.stripe || !deps.appBaseUrl) return c.json({ error: "stripe_unconfigured" }, 503);
+    if (!access.customerId) return c.json({ error: "no_stripe_customer" }, 404);
     const body = (await c.req.json().catch(() => null)) as { returnTo?: unknown } | null;
-    const ref = await deps.stripe.createPortalSession({
-      customerId,
-      returnUrl: typeof body?.returnTo === "string" ? body.returnTo : `${deps.appBaseUrl ?? ""}/billing`,
-    });
-    return c.json({ url: ref.url });
+    // BILL.3 — the portal's return URL is an ABSOLUTE app URL built server-side: the web sends the
+    // in-app path it wants back on and the api prefixes the configured origin (a client-supplied
+    // absolute URL is never trusted — the redirect would become an open redirect off Stripe).
+    const returnPath = safeReturnToPath(body?.returnTo) ?? "/billing";
+    try {
+      const ref = await deps.stripe.createPortalSession({
+        customerId: access.customerId,
+        returnUrl: `${deps.appBaseUrl}${returnPath}`,
+      });
+      return c.json({ url: ref.url });
+    } catch (err) {
+      const f = stripeFailure("portal", err, (m) => console.error(m));
+      return c.json({ error: f.error }, f.status);
+    }
   });
 
   // ---- the subscription read (plan, period, past-due banner flag) --------------------------------------
@@ -412,8 +515,12 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
           [principal.billingAccountId],
         )
       ).rows[0] as { id: string; state: string; word_cap: number; expires_at: string | null } | undefined;
+      // BILL.3 — the purchase switch, surfaced for the billing page's paused rendering.
+      const purchase: PurchaseMode =
+        deps.purchaseMode === "open" || (await isTestWorkspace(tx, principal.workspaceId)) ? "open" : "closed";
       return {
         tier: sub?.tier ?? "free",
+        purchase,
         subscription: sub
           ? {
               id: sub.id,
@@ -494,14 +601,27 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   });
 
   // ---- the checkout-return poll (§14.6 webhook lag: ≤30 s, then the email fallback) --------------------
+  // BILL.3 — the poll is also the pending-checkout email's precondition: an `open` read stamps
+  // `return_viewed_at` (0048), so a completion that lands while the user watched fires exactly one
+  // "your payment landed" mail and a completion before any view fires none.
   app.get("/billing/checkout-sessions/:id", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const session = await deps.txRunner.run(principal.workspaceId, (tx) =>
-      readCheckoutSession(tx, c.req.param("id")),
-    );
+    const session = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+      // BILL.3 — stamp BEFORE reading: if the webhook's open→completed update wins the row lock, its
+      // `returning` clause must see this observed-open marker and fire the promised mail. If completion
+      // won first, this update is a no-op and the read below sees the finished state. The workspace
+      // predicate keeps a guessed session id from being marked by another tenant.
+      await markCheckoutSessionReturnViewed(tx, c.req.param("id"), principal.workspaceId, deps.clock.now());
+      const s = await readCheckoutSession(tx, c.req.param("id"));
+      // tenant check: a session row is only readable by its own workspace (404, not 403 — never reveal
+      // that the id exists).
+      if (!s || s.workspaceId !== principal.workspaceId) return null;
+      return s;
+    });
     if (!session) return c.json({ error: "not_found" }, 404);
-    return c.json(session);
+    const { workspaceId: _ws, ...dto } = session;
+    return c.json(dto);
   });
 
   // ---- opt-in auto-reload (REQ-BILL-17: threshold + monthly cap are user-typed, always) -----------------
@@ -513,15 +633,25 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
     } | null;
     const enabled = body?.enabled === true;
     try {
-      await deps.txRunner.run(principal.workspaceId, (tx) =>
-        configureAutoReload(tx, {
+      const out = await deps.txRunner.run(principal.workspaceId, async (tx) => {
+        // BILL.3 — opting IN schedules a future unattended charge, so it is a purchase-path write and
+        // obeys the same closed switch / JOURNEY.1 allowlist as the hosted Checkout setup leg. Opting
+        // OUT (`enabled:false`) is a safety-off, not a purchase — it is never gated, so a closed
+        // switch can never trap a configured account into charges it cannot cancel.
+        const test = await isTestWorkspace(tx, principal.workspaceId);
+        if (enabled && deps.purchaseMode !== "open" && !test) {
+          return { error: "purchase_closed" as const };
+        }
+        await configureAutoReload(tx, {
           billingAccountId: principal.billingAccountId,
           enabled,
           ...(typeof body?.thresholdCredits === "number" ? { thresholdCredits: body.thresholdCredits } : {}),
           ...(typeof body?.packId === "string" ? { packId: body.packId } : {}),
           ...(typeof body?.monthlyCapUsd === "number" ? { monthlyCapCents: Math.round(body.monthlyCapUsd * 100) } : {}),
-        }),
-      );
+        });
+        return { ok: true as const };
+      });
+      if ("error" in out) return c.json(out, 403);
     } catch (e) {
       return c.json({ error: "invalid_auto_reload", detail: (e as Error).message }, 422);
     }

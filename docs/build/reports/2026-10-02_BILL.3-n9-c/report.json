@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "ad4fb545d8a6",
+  "startedAt": "2026-10-02T03:31:42.810Z",
+  "finishedAt": "2026-10-02T03:31:54.269Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "28019fcf96f0566c393069ab46084a014d94a600",
+    "observed": {
+      "web": "28019fcf96f0566c393069ab46084a014d94a600",
+      "api": "28019fcf96f0566c393069ab46084a014d94a600"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [
+        "GET https://0d0bb4a058e0.w.hcaptcha.com/logo.png net::ERR_ABORTED",
+        "GET https://35a574a6317f.w.hcaptcha.com/logo.png net::ERR_ABORTED"
+      ],
+      "durationMs": 11349,
+      "error": "N9 billing Buy 1,000 credits: occluded at its center point by (no element at point)",
+      "screenshot": "N9.png"
+    }
+  ],
+  "passed": false
+}

@@ -471,6 +471,10 @@ export function createCompute(args: ComputeArgs): Compute {
                     // discover/review fetches ride it; invoker-gated → OIDC per hop).
                     { name: "FETCHER_SERVICE_URL", value: services["fetcher"]!.uri },
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
+                    // BILL.3 — `purchase.mode` (ADR-028): the api's only consumer (the web derives the
+                    // paused rendering from the api's `purchase` field, not its own env). All stages
+                    // ship `closed` until the operator flips the stage fact to re-open.
+                    { name: "PURCHASE_MODE", value: cfg.purchaseMode },
                     { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
                     { name: "MAX_USD_PER_RUN", value: String(cfg.maxUsdPerRun) },
                     // The api mints run tokens → both key halves from the ONE signing-key secret (name

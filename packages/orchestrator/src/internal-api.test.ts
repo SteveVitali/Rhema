@@ -533,6 +533,35 @@ describe("failStep — terminal phase failures finalize the run in one tx (PRB.1
     expect(deps.ledger.opsOf("release")).toHaveLength(1);
   });
 
+  it("a provider outage after the retry budget terminalizes failed and refunds committed spend", async () => {
+    await seedTerminalFixture();
+    // Attempt 3 is the exhausted-retries leg (engine retry + orchestrator re-attempts). The pod reports
+    // provider_transient only once it can no longer retry the same provider failure.
+    await db.client.query("update runs set current_attempt = 3 where id = 'run1'", []);
+    await db.client.query(
+      `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, source, idempotency_key, at)
+       values ('led_d1', $1, $2, 'debit', 30, 'included', 'run1', 'run', 'debit:run1:intake:3#included', now())`,
+      [seed.workspaceId, seed.billingAccountId],
+    );
+
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 3,
+      workspaceId: seed.workspaceId,
+      stepKey: "triage",
+      ordinal: 1,
+      errorClass: "provider_transient",
+      reason: "provider returned 529 through the exhausted retry budget",
+    });
+    expect(res).toEqual({ ok: true, terminal: "provider_outage" });
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.failure).toMatchObject({ code: "provider_outage" });
+    expect(deps.ledger.opsOf("refund").map((o) => (o.args as { credits: number }).credits)).toEqual([30]);
+    expect(deps.eventWriter.typesForRun("run1")).toContain("cost.refunded");
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
   it("a non-terminal class leaves the run running for the caller/reaper to decide", async () => {
     await seedTerminalFixture();
     const res = await failStep(deps, {

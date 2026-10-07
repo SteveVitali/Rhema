@@ -1101,11 +1101,16 @@ const CAP_REACHED_REASON = /reached its cap|cap[_\s-]?reached|cap of \d+ credits
  * found a pair the provider refuses — the run can never research, so it terminalizes here with the
  * same settle (zero debit → the refund leg no-ops; the probe burn absorbs as platform cost), and the
  * stranded sweep's preflight leg pages exactly one ID-only ops alert.
+ *
+ * BILL.3 (§14.6) adds `provider_transient`: that class only reaches failStep after the phase retry
+ * policy is exhausted, so the run must settle `failed` (refund + release) rather than stay `running`
+ * for the reaper to re-enqueue into the same provider outage.
  */
 function terminalPhaseFailure(errorClass: string, reason: string | undefined): { code: string } | null {
   if (errorClass === "budget" || (reason != null && CAP_REACHED_REASON.test(reason))) {
     return { code: "cap_reached" };
   }
+  if (errorClass === "provider_transient") return { code: "provider_outage" };
   if (errorClass === "blocked") return { code: "phase_blocked" };
   if (errorClass === "replan") return { code: "phase_replan" };
   if (errorClass === "research_preflight_failed") return { code: "research_preflight_failed" };

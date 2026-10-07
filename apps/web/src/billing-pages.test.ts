@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectRow } from "@rhema/contracts";
-import type { BillingPlansDto, BillingSubscriptionDto, CheckoutStatusDto, UsageAccountDto, UsageProjectDto } from "@rhema/api-client";
+import { ApiError, type BillingPlansDto, type BillingSubscriptionDto, type CheckoutStatusDto, type UsageAccountDto, type UsageProjectDto } from "@rhema/api-client";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
 
@@ -67,6 +67,7 @@ function sub(partial?: Partial<BillingSubscriptionDto>): BillingSubscriptionDto 
     trial: { state: null, entitlement: null },
     autoReload: { enabled: false, thresholdCredits: null, packId: null, monthlyCapUsd: null },
     hasStripeCustomer: false,
+    purchase: "open",
     ...partial,
   };
 }
@@ -101,6 +102,8 @@ function makeDeps(opts: {
   subscription?: BillingSubscriptionDto;
   plans?: BillingPlansDto;
   checkout?: { sessionId: string; url: string };
+  checkoutError?: ApiError;
+  portalError?: ApiError;
   checkoutStatus?: CheckoutStatusDto;
   usageAccount?: UsageAccountDto;
   usageProject?: UsageProjectDto;
@@ -113,23 +116,31 @@ function makeDeps(opts: {
     dataSource: {
       listProjects: async () => PROJECTS,
       checkInvite: async () => ({ ok: true }),
-      getBillingBalance: async () => ({ spendableCredits: 3100, suspended: false, clawbackDebt: 0 }),
+      getBillingBalance: async () => ({ spendableCredits: 3100, suspended: false, clawbackDebt: 0, purchase: "open" }),
       getUsage: async () => ({ spendableCredits: 3100, heldCredits: 120, runs: [] }),
       getSubscription: async () => opts.subscription ?? sub(),
       getPlans: async () => opts.plans ?? PLANS,
       startCheckout: async (_s: unknown, req: unknown) => {
         rec("checkout", req);
+        if (opts.checkoutError) throw opts.checkoutError;
         if (!opts.checkout) throw new Error("stripe down");
         return opts.checkout;
       },
       createBillingPortalSession: async () => {
         rec("portal", true);
+        if (opts.portalError) throw opts.portalError;
         if (!opts.checkout) throw new Error("no portal");
         return { url: opts.checkout.url };
       },
       cancelSubscription: async () => { rec("cancel", true); return { applied: true }; },
       changePlan: async (_s: unknown, tier: unknown, cycle: unknown) => { rec("changePlan", { tier, cycle }); return { applied: "scheduled" }; },
-      getCheckoutSession: async () => opts.checkoutStatus ?? { state: "open", kind: "subscribe", returnTo: null },
+      getCheckoutSession: async () =>
+        opts.checkoutStatus ?? {
+          state: "open",
+          kind: "subscribe",
+          returnTo: null,
+          createdAt: new Date().toISOString(),
+        },
       setAutoReload: async (_s: unknown, req: unknown) => { rec("autoReload", req); return { ok: true }; },
       joinTeamWaitlist: async (_s: unknown, req: unknown) => { rec("waitlist", req); return { ok: true }; },
       getUsageAccount: async () => opts.usageAccount ?? ACCOUNT,
@@ -154,7 +165,11 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
     expect(html).toContain('data-plan="writer"');
     expect(html).toContain("$20/mo");
     expect(html).toContain('data-subscribe-form="writer"');
-    expect(html).toContain('data-topup-form="pack_50"');
+    // BILL.3 / §14.2 — Free is never offered a Checkout top-up it cannot complete; the honest gate
+    // note renders instead. The pack buttons belong to the paid-plan card (asserted below).
+    expect(html).not.toContain('data-topup-form=');
+    expect(html).toContain('data-topup-gated="true"');
+    expect(html).toContain("Top-ups need a paid plan");
     expect(html).toContain('data-auto-reload-form="true"');
     // Team is waitlisted — a waitlist form, never a checkout button (REQ-GROWTH-7).
     expect(html).toContain('data-waitlist-form="true"');
@@ -178,8 +193,42 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
     expect(html).toContain("Renews 2026-10-01");
     expect(html).toContain('data-cancel-form="true"');
     expect(html).toContain('data-portal-form="true"');
+    expect(html).toContain('data-topup-form="pack_50"');
     // the current plan never offers a subscribe form
     expect(html).not.toContain('data-subscribe-form="writer"');
+  });
+
+  it("an absent purchase field fails closed — an older api never unlocks the forms", async () => {
+    const fixture = sub({ tier: "writer", hasStripeCustomer: true });
+    const app = createWebApp(makeDeps({ subscription: { ...fixture, purchase: undefined } }));
+    const html = await (await app.request("/settings/billing")).text();
+    expect(html).toContain('data-purchase-paused="true"');
+    expect(html).not.toContain('data-subscribe-form=');
+    expect(html).not.toContain('data-topup-form=');
+    expect(html).not.toContain('data-portal-form=');
+  });
+
+  it("purchase=closed renders the paused note and mounts no subscribe/top-up/portal form (BILL.3)", async () => {
+    const app = createWebApp(makeDeps({
+      subscription: sub({
+        tier: "writer",
+        purchase: "closed",
+        hasStripeCustomer: true,
+        subscription: {
+          id: "sub_1", tier: "writer", cycle: "monthly", status: "active",
+          periodStart: "2026-09-01T00:00:00Z", periodEnd: "2026-10-01T00:00:00Z",
+          cancelAtPeriodEnd: false, scheduledTier: null, pastDue: false,
+        },
+      }),
+    }));
+    const html = await (await app.request("/settings/billing")).text();
+    expect(html).toContain('data-purchase-paused="true"');
+    expect(html).toContain("Purchases are paused");
+    expect(html).not.toContain('data-subscribe-form=');
+    expect(html).not.toContain('data-topup-form=');
+    expect(html).not.toContain('data-portal-form=');
+    // cancellation stays reachable — it is not a purchase and makes no Stripe call.
+    expect(html).toContain('data-cancel-form="true"');
   });
 
   it("a past-due subscription renders the renewal-failure banner (§14.6)", async () => {
@@ -252,6 +301,75 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
     expect(res.headers.get("location")).toBe("/settings/billing?notice=checkout");
   });
 
+  it("the top-up POST mints Checkout and the portal POST reaches Stripe's hosted portal", async () => {
+    const topup = createWebApp(makeDeps({ checkout: { sessionId: "cs_top", url: "https://checkout.stripe.com/c/pay/cs_top" } }));
+    const res = await topup.request("/settings/billing/topup", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ packId: "pack_10" }).toString(),
+      redirect: "manual",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("https://checkout.stripe.com/c/pay/cs_top");
+
+    const portal = createWebApp(makeDeps({ checkout: { sessionId: "bps_1", url: "https://billing.stripe.com/session/bps_1" } }));
+    const res2 = await portal.request("/settings/billing/portal", { method: "POST", redirect: "manual" });
+    expect(res2.status).toBe(302);
+    expect(res2.headers.get("location")).toBe("https://billing.stripe.com/session/bps_1");
+  });
+
+  it("every classified api refusal carries its own notice/copy; only real outages use the generic line", async () => {
+    const apiFailure = (status: number, code: string) =>
+      new ApiError(status, "https://api.test/billing/checkout", undefined, code);
+    const cases: readonly {
+      path: string; body?: URLSearchParams; code: string; copy: string; portal?: boolean;
+    }[] = [
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "purchase_closed", copy: "Purchases are paused" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "plan_waitlisted", copy: "plan isn" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_rejected", copy: "Stripe refused that checkout" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_unconfigured", copy: "isn&#x27;t configured" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_unavailable", copy: "Billing is temporarily unavailable" },
+      { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "topups_require_plan", copy: "Top-ups need a paid plan" },
+      { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "first_month_cap", copy: "first month" },
+      { path: "portal", code: "no_stripe_customer", copy: "no card on file", portal: true },
+    ];
+    for (const row of cases) {
+      const app = createWebApp(makeDeps(
+        row.portal ? { portalError: apiFailure(404, row.code) } : { checkoutError: apiFailure(403, row.code) },
+      ));
+      const res = await app.request(`/settings/billing/${row.path}`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        ...(row.body ? { body: row.body.toString() } : {}),
+        redirect: "manual",
+      });
+      expect(res.status, `${row.path}/${row.code}`).toBe(302);
+      const location = res.headers.get("location") ?? "";
+      expect(location).toBe(`/settings/billing?notice=${row.code}`);
+      const html = await (await app.request(location)).text();
+      expect(html, `${row.path}/${row.code}`).toContain(row.copy);
+    }
+  });
+
+  it("never emits a non-Stripe checkout/portal redirect (CSP's server-side half)", async () => {
+    const app = createWebApp(makeDeps({ checkout: { sessionId: "cs_bad", url: "https://evil.example/pay" } }));
+    for (const [path, body] of [
+      ["subscribe", new URLSearchParams({ tier: "writer" })],
+      ["topup", new URLSearchParams({ packId: "pack_10" })],
+    ] as const) {
+      const res = await app.request(`/settings/billing/${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+        redirect: "manual",
+      });
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toBe(`/settings/billing?notice=${path === "portal" ? "portal" : "checkout"}`);
+    }
+    const res = await app.request("/settings/billing/portal", { method: "POST", redirect: "manual" });
+    expect(res.headers.get("location")).toBe("/settings/billing?notice=portal");
+  });
+
   it("the cancel POST applies cancel_at_period_end and flashes saved", async () => {
     const recorded = { calls: {} as Record<string, unknown[]> };
     const app = createWebApp(makeDeps({ recorded }));
@@ -292,7 +410,12 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
 describe("the /billing/return poll (REQ-BILL-14; §14.6 webhook lag)", () => {
   it("a completed checkout renders the confirmed line + the returnTo continue link", async () => {
     const app = createWebApp(makeDeps({
-      checkoutStatus: { state: "completed", kind: "subscribe", returnTo: "/p/new-essay/run" },
+      checkoutStatus: {
+        state: "completed",
+        kind: "subscribe",
+        returnTo: "/p/new-essay/run",
+        createdAt: new Date().toISOString(),
+      },
     }));
     const res = await app.request("/billing/return?session_id=cs_1");
     const html = await res.text();
@@ -304,7 +427,7 @@ describe("the /billing/return poll (REQ-BILL-14; §14.6 webhook lag)", () => {
 
   it("an open checkout renders the pending line + auto-refresh (the ≤30 s window)", async () => {
     const app = createWebApp(makeDeps({
-      checkoutStatus: { state: "open", kind: "subscribe", returnTo: null },
+      checkoutStatus: { state: "open", kind: "subscribe", returnTo: null, createdAt: new Date().toISOString() },
     }));
     const res = await app.request("/billing/return?session_id=cs_1");
     const html = await res.text();
@@ -313,6 +436,37 @@ describe("the /billing/return poll (REQ-BILL-14; §14.6 webhook lag)", () => {
     expect(html).toContain("we&#x27;ll email you");
     expect(html).toContain('http-equiv="refresh"');
     expect(html).toContain("session_id=cs_1");
+  });
+
+  it("an open checkout past the 30 s webhook-lag bound keeps the email fallback but stops polling", async () => {
+    const app = createWebApp(makeDeps({
+      checkoutStatus: {
+        state: "open",
+        kind: "subscribe",
+        returnTo: null,
+        createdAt: new Date(Date.now() - 31_000).toISOString(),
+      },
+    }));
+    const html = await (await app.request("/billing/return?session_id=cs_late")).text();
+    expect(html).toContain('data-checkout-state="open"');
+    expect(html).toContain("we&#x27;ll email you");
+    expect(html).not.toContain('http-equiv="refresh"');
+  });
+
+  it("an expired checkout renders the honest expired state — no forever-poll (BILL.3)", async () => {
+    const app = createWebApp(makeDeps({
+      checkoutStatus: {
+        state: "expired",
+        kind: "topup",
+        returnTo: "/settings/billing",
+        createdAt: new Date().toISOString(),
+      },
+    }));
+    const html = await (await app.request("/billing/return?session_id=cs_exp")).text();
+    expect(html).toContain('data-checkout-state="expired"');
+    expect(html).toContain("checkout expired");
+    expect(html).not.toContain('http-equiv="refresh"');
+    expect(html).toContain('href="/settings/billing"');
   });
 });
 
