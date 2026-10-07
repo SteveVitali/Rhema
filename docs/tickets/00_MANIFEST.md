@@ -245,6 +245,8 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 92 | `92_DOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs |
 | 93 | `93_DOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs |
 | 94 | `94_MAINT.3__funded-window-repairs.md` | maint | funded-window defect repairs (D-STB.5b-4/-5, entitlement interception, N4/N9 substrate) — $0 |
+| 95 | `95_MAINT.4__oauth-signin-throttle.md` | maint | better-auth's default `/sign-in/*` limiter keys a global shared bucket under ADR-040 → "Continue with Google" 429s; disable + app-channel throttle — $0 |
+| 96 | `96_RES.3__leg1a-zero-coverage-diagnosis.md` | maint | Leg-1a zero-coverage diagnosis (read-only prod reads; fix if contained) — $0 |
 
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
@@ -655,3 +657,10 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   (N4 reads the Included variant's embedded recompute cell; `scripts/live/reseat-n9-fixture.mjs`
   reseats the BILL.3 fixture sub). Trigger: the funded window's run ledgers; live re-verification of
   each fix stays ledgered on its D-row.
+- **2026-10-07 — INSERT** `95_MAINT.4` + `96_RES.3` (stacked PRs; $0 — the operator's no-more-credits
+  constraint): MAINT.4 repairs the OAuth sign-in defect the operator surfaced ("Continue with Google"
+  loops back to /login) — better-auth v1.7.2's default `/sign-in/*` limiter (3/10s) keys
+  `NO_TRUSTED_IP_KEY` because ADR-040's stamped channel carries no resolvable XFF → one global bucket;
+  prod log evidence 26×200/8×429 on `sign-in/social`. RES.3 is the read-only Leg-1a zero-coverage
+  diagnosis (`01M48VNKY6F263TCQRVBJ8JRQA` — 9/9 unverifiable, 0 `claim_sources`). Trigger: operator
+  report + the funded window's §B.4 finding; live legs owed, ledgered.
