@@ -319,7 +319,9 @@ const submitStyle = {
 
 /** The ONLY signup path: the invitation code is required in `invite` mode and optional in `open`
  *  (PRB.13, REQ-BETA-19 amended — enforced server-side at POST /login, never by the form alone).
- *  No pricing page, no plan ladder either way. */
+ *  SEC.2 (PR-U1 form half): under `open` the EMAIL field leads (the self-serve path) and the
+ *  invitation code sits behind a "Have an invitation code?" disclosure — never the first focusable
+ *  field. `invite` mode keeps the code first + required. No pricing page, no plan ladder either way. */
 export function LoginPage(): ReactNode {
   const { login } = usePageData();
   const open = login?.signupOpen === true;
@@ -341,14 +343,36 @@ export function LoginPage(): ReactNode {
         ) : null}
 
         <form method="post" action="/login">
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
-            {open ? COPY.login.codeLabelOptional : COPY.login.codeLabel}
-            <input name="code" required={!open} defaultValue={login?.code ?? ""} placeholder={COPY.login.codePlaceholder} style={fieldStyle} />
-          </label>
-          <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px", display: "block" }}>
-            {COPY.login.emailLabel}
-            <input name="email" type="email" defaultValue={login?.email ?? ""} placeholder={COPY.login.emailPlaceholder} style={fieldStyle} />
-          </label>
+          {open ? (
+            <>
+              <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                {COPY.login.emailLabel}
+                <input name="email" type="email" defaultValue={login?.email ?? ""} placeholder={COPY.login.emailPlaceholder} style={fieldStyle} />
+              </label>
+              {/* a re-rendered code (an error retry) opens the disclosure so the typed value stays
+                  visible — closed otherwise, the self-serve default. */}
+              <details open={!!login?.code} style={{ marginTop: "12px" }}>
+                <summary style={{ fontSize: "13px", color: "var(--shell-fg-muted)", cursor: "pointer" }}>
+                  {COPY.login.codeToggle}
+                </summary>
+                <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "8px", display: "block" }}>
+                  {COPY.login.codeLabelOptional}
+                  <input name="code" defaultValue={login?.code ?? ""} placeholder={COPY.login.codePlaceholder} style={fieldStyle} />
+                </label>
+              </details>
+            </>
+          ) : (
+            <>
+              <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)" }}>
+                {COPY.login.codeLabel}
+                <input name="code" required defaultValue={login?.code ?? ""} placeholder={COPY.login.codePlaceholder} style={fieldStyle} />
+              </label>
+              <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "12px", display: "block" }}>
+                {COPY.login.emailLabel}
+                <input name="email" type="email" defaultValue={login?.email ?? ""} placeholder={COPY.login.emailPlaceholder} style={fieldStyle} />
+              </label>
+            </>
+          )}
           <div style={{ marginTop: "16px" }}>
             <button type="submit" name="method" value="magic_link" style={submitStyle}>
               {COPY.login.continueEmail}

@@ -52,11 +52,10 @@ import type { ConversionResult } from "@rhema/contracts";
 import {
   RIGORS,
   MODEL_TIERS,
-  createIpEmailThrottle,
+  forwardedClientIp,
   type ModelTier,
   type Rigor,
   type SignupMode,
-  type IpEmailThrottle,
   type WorkflowKey,
   figureIdFromRef,
   STRIPE_HOSTED_ORIGINS,
@@ -87,15 +86,22 @@ import { CLIENT_ENTRIES } from "../client-entries.mjs";
 // client bundle). Auth-gated routes redirect to /login. `signup.mode` decides what POST /login requires
 // (REQ-BETA-19 amended 2026-09-16): `invite` — no code ⇒ no auth request is ever made; `open` — self-serve
 // signup, a supplied code still validated. Account admission itself is the api's `POST /signup` (throttled
-// per IP + email; invite consume happens there at creation); the magic-link SEND is throttled here. The
-// live Better Auth session/OAuth binding is D-P0.01-3 (deploy) — injected via `session` / `beginAuth` so
-// the shell is fully unit-testable offline.
+// per IP + email; invite consume happens there at creation); SEC.2 moved the magic-link SEND throttle to
+// the api too (the shared Redis store + `hooks.before` on `/api/auth/sign-in/magic-link` — a direct caller
+// can't bypass it), so the web's old per-instance limiter is RETIRED: a refusal arrives as the api's
+// 429/`rate_limited` and renders the same copy (ADR-041). The live Better Auth session/OAuth binding is
+// D-P0.01-3 (deploy) — injected via `session` / `beginAuth` so the shell is fully unit-testable offline.
 
 export interface AuthOutcome {
   /** Redirect the browser here (e.g. the Google OAuth start, or the post-login landing). */
   readonly redirect?: string;
   /** A magic-link email was sent — show the "check your email" state. */
   readonly sent?: boolean;
+  /**
+   * SEC.2 — the auth call was refused upstream (the api's shared throttle ⇒ "rate_limited"; anything
+   * else ⇒ "auth_unavailable"). The routes render the matching copy instead of a false "sent" state.
+   */
+  readonly error?: string;
 }
 
 export interface WebDeps {
@@ -123,11 +129,6 @@ export interface WebDeps {
    */
   readonly signupMode?: SignupMode;
   /**
-   * PRB.13 — the magic-link request throttle (per source IP + per email; REQ-BETA-19 abuse control).
-   * Unset ⇒ the beta-grade default below. Only requests that reach the send count against it.
-   */
-  readonly magicLinkThrottle?: IpEmailThrottle;
-  /**
    * P1.03 — the collab WSS base the Page's island connects to (`wss://<host>/collab`, env
    * COLLAB_WS_URL). Unset ⇒ the Page mounts without a collab session (the static read view).
    */
@@ -142,12 +143,13 @@ export interface WebDeps {
   readonly buildGitSha?: string;
 }
 
-/** The beta-grade magic-link throttle — per IP + per email, fixed window (PRB.13; D-PRB.13-1: in-memory). */
-export const MAGIC_LINK_THROTTLE_DEFAULTS = { perIp: 20, perEmail: 4, windowMs: 3_600_000 } as const;
-
-/** The source IP the LB forwarded (first XFF hop); absent ⇒ every headerless caller shares "unknown". */
+/**
+ * The browser's real source IP (SEC.2): the PENULTIMATE XFF hop — the one the GCP LB appended — never
+ * the caller-controlled first hop. Headerless ⇒ every such caller shares the "unknown" bucket.
+ * This is also the value the web stamps into `x-rhema-client-ip` on its api calls (ADR-040).
+ */
 function clientIp(c: Context): string {
-  return c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  return forwardedClientIp(c.req.header("x-forwarded-for"));
 }
 
 function loginErrorFor(reason: string | undefined): string {
@@ -235,10 +237,39 @@ function signupErrorFor(error: string, open: boolean): string {
     case "email_required":
       return open ? COPY.login.emailRequiredSelfServe : COPY.login.errorEmailRequired;
     case "signup_failed":
+    case "auth_unavailable": // SEC.2 — a transient auth-call failure (the api unreachable), not a refusal
       return COPY.login.errorSignupUnavailable;
+    // SEC.2 — better-auth's own verify-leg code: the emailed token is spent/expired, not refused.
+    case "INVALID_TOKEN":
+      return COPY.login.errorLinkInvalid;
     default:
       return loginErrorFor(error);
   }
+}
+
+/**
+ * SEC.2 — the codes a verify/OAuth-callback error redirect can carry on `?error=` (the api's stable
+ * admission codes + better-auth's protocol codes). Anything outside the set renders the generic
+ * "unavailable" line — never the invite-invalid copy for an OAuth/transport failure.
+ */
+const LOGIN_ERROR_CODES = new Set([
+  "rate_limited",
+  "invite_required",
+  "invite_rejected",
+  "email_required",
+  "signup_failed",
+  "auth_unavailable",
+  "INVALID_TOKEN",
+  "unknown",
+  "expired",
+  "revoked",
+  "exhausted",
+  "email_mismatch",
+]);
+
+function loginQueryErrorFor(code: string | undefined, open: boolean): string | undefined {
+  if (!code) return undefined;
+  return signupErrorFor(LOGIN_ERROR_CODES.has(code) ? code : "signup_failed", open);
 }
 
 export function createWebApp(deps: WebDeps): Hono {
@@ -283,7 +314,6 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   const signupOpen = deps.signupMode === "open";
-  const magicLinkThrottle = deps.magicLinkThrottle ?? createIpEmailThrottle({ ...MAGIC_LINK_THROTTLE_DEFAULTS });
 
   /** PRB.12 — mint a client-whitelisted analytics event through the api intake (POST /analytics/events).
    *  Fire-and-forget: telemetry NEVER breaks a page render, and an opted-out user simply records nothing. */
@@ -1391,16 +1421,15 @@ export function createWebApp(deps: WebDeps): Hono {
           400,
         );
       }
-      const verdict = magicLinkThrottle.attempt(clientIp(c), email);
-      if (!verdict.allowed) {
-        return renderSignup(c, { error: COPY.login.errorRateLimited, code, email, entry, src, held }, 429);
-      }
+      // SEC.2 — the send throttle lives at the api now (the shared store; a direct /api/auth caller
+      // can't bypass it). The api's `rate_limited` refusal renders the same 429 page here.
       let res: Awaited<ReturnType<DataSource["signup"]>> | null;
       try {
         res = await deps.dataSource.signup({
           email,
           ...(code.trim() ? { code } : {}),
           method,
+          clientIp: clientIp(c), // the resolved browser IP — stamped web→api per ADR-040
           ...(entry || src || held
             ? { intent: { ...(entry ? { entry } : {}), ...(src ? { src } : {}), ...(held ? { held: true } : {}) } }
             : {}),
@@ -1438,6 +1467,15 @@ export function createWebApp(deps: WebDeps): Hono {
       { code, email: email || undefined, next: nextQuery ? `/app?${nextQuery}` : "/app" },
       c,
     );
+    if (outcome.error) {
+      // SEC.2 — the api's send-throttle refusal (or a transient auth failure) renders the same copy the
+      // retired web-side limiter did; a false "sent" page must never appear.
+      return renderSignup(
+        c,
+        { error: signupErrorFor(outcome.error, signupOpen), code, email, entry, src, held },
+        outcome.error === "rate_limited" ? 429 : 400,
+      );
+    }
     if (outcome.redirect) {
       return c.redirect(outcome.redirect);
     }
@@ -1446,10 +1484,17 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // Public: sign in — invitation required in `invite` mode, optional in `open`. GET renders the form;
   // POST enforces the mode gate (REQ-BETA-19 amended).
-  app.get("/login", async (c) =>
-    (await signedIn(c))
-      ? c.redirect("/app")
-      : c.html(renderDocument(c.req.path, loginElement, { login: { signupOpen } })));
+  app.get("/login", async (c) => {
+    if (await signedIn(c)) return c.redirect("/app");
+    // SEC.2 — a magic-link verify / OAuth-callback refusal lands here as `?error=` (the api's
+    // `errorCallbackURL` channel); surface the mapped copy instead of a bare form. 400 keeps the
+    // refusal out of any cache-key equivalence with the clean form.
+    const err = loginQueryErrorFor(c.req.query("error"), signupOpen);
+    return c.html(
+      renderDocument(c.req.path, loginElement, { login: { signupOpen, ...(err ? { error: err } : {}) } }),
+      err ? 400 : 200,
+    );
+  });
 
   app.post("/login", async (c) => {
     const form = await c.req.parseBody();
@@ -1479,17 +1524,14 @@ export function createWebApp(deps: WebDeps): Hono {
           400,
         );
       }
-      // the link SEND is the abusable resource — throttle per IP + email before any auth request is made.
-      const verdict = magicLinkThrottle.attempt(clientIp(c), email);
-      if (!verdict.allowed) {
-        return renderLogin({ error: COPY.login.errorRateLimited, code, email }, 429);
-      }
+      // SEC.2 — the send throttle moved to the api (the shared store on /api/auth/sign-in/magic-link;
+      // a direct caller can't bypass it). The api's `rate_limited` refusal renders the same 429 page.
       // Admission + provisioning is the api's `POST /signup` — invite mode requires a valid code there and
       // consumes it at creation; open mode treats the code as optional (still validated when supplied);
       // a returning account resolves `created:false` so a re-login with an exhausted code still sends.
       let res: Awaited<ReturnType<DataSource["signup"]>> | null;
       try {
-        res = await deps.dataSource.signup({ email, ...(code.trim() ? { code } : {}), method });
+        res = await deps.dataSource.signup({ email, ...(code.trim() ? { code } : {}), method, clientIp: clientIp(c) });
       } catch {
         res = null; // a transport/5xx failure is "unavailable", never a refusal
       }
@@ -1513,6 +1555,14 @@ export function createWebApp(deps: WebDeps): Hono {
     }
 
     const outcome = await beginAuth(method, { code, email: email || undefined }, c);
+    if (outcome.error) {
+      // SEC.2 — the api's send-throttle refusal (or a transient auth failure) renders the same copy the
+      // retired web-side limiter did; a false "sent" page must never appear.
+      return renderLogin(
+        { error: signupErrorFor(outcome.error, signupOpen), code, email },
+        outcome.error === "rate_limited" ? 429 : 400,
+      );
+    }
     if (outcome.redirect) return c.redirect(outcome.redirect);
     return renderLogin({ sent: true, email }, 200);
   });
