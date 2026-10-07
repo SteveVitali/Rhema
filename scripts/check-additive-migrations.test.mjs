@@ -86,7 +86,10 @@ describe("acceptance — the additive shapes", () => {
 describe("collectFiles — the base selection", () => {
   it("--newer-than selects strictly-later numeric prefixes", () => {
     const files = collectFiles(["--newer-than", "0044"]);
-    expect(files).toEqual(["packages/db/migrations/0045_user_serving_role.sql"]);
+    expect(files).toEqual([
+      "packages/db/migrations/0045_user_serving_role.sql",
+      "packages/db/migrations/0046_test_workspaces.sql",
+    ]);
   });
 
   it("--files passes explicit paths through", () => {

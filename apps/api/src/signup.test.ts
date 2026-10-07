@@ -328,3 +328,82 @@ describe("the 0-credit purchase path (AC2 — balance 0 → exhaustion → Payme
     expect((await after.json()).spendableCredits).toBe(5000);
   });
 });
+
+// JOURNEY.1 — the test-tenant flag at provisioning (REQ-SPEC-29; ADR-020): an address matching the
+// configured test mailbox (exact base or +tag) flags the new workspace `is_test`; nothing else does;
+// and the flag is never reachable through any API route (it exists in the schema for the system-side
+// readers only).
+describe("JOURNEY.1 — test-tenant flagging at provisioning", () => {
+  function appWithMailbox(testMailbox?: string) {
+    return createApp({
+      ...deps,
+      principal: () => null,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle(),
+      stripeWebhookSecret: SECRET,
+      systemExec: db.client,
+      paymentLinkUrl: "https://buy.stripe.com/test_beta",
+      ...(testMailbox ? { testMailbox } : {}),
+    });
+  }
+  async function isTestFlag(email: string) {
+    const acct = await accountFor(email);
+    if (!acct?.workspaceId) return undefined;
+    const r = (
+      await db.pg.query(`select is_test from workspaces where id = $1`, [acct.workspaceId])
+    ).rows[0] as { is_test: boolean } | undefined;
+    return r?.is_test;
+  }
+
+  it("a test+<tag> signup flags its workspace is_test; a real address does not", async () => {
+    const a = appWithMailbox("test@rhema.tools");
+    const r1 = await postSignup(a, { email: "test+j1nv@rhema.tools", method: "magic_link" });
+    expect([200, 201]).toContain(r1.status);
+    expect(await isTestFlag("test+j1nv@rhema.tools")).toBe(true);
+    const r2 = await postSignup(a, { email: "real.person@example.org", method: "magic_link" });
+    expect([200, 201]).toContain(r2.status);
+    expect(await isTestFlag("real.person@example.org")).toBe(false);
+  });
+
+  it("no configured mailbox ⇒ nothing is flagged", async () => {
+    const a = appWithMailbox();
+    await postSignup(a, { email: "test+j1nv@rhema.tools", method: "magic_link" });
+    expect(await isTestFlag("test+j1nv@rhema.tools")).toBe(false);
+  });
+
+  it("the flag grants nothing: a flagged account still hits the unverified-email run gate", async () => {
+    const a = appWithMailbox("test@rhema.tools");
+    await postSignup(a, { email: "test+j1gate@rhema.tools", method: "magic_link" });
+    const acct = (await accountFor("test+j1gate@rhema.tools"))!;
+    expect(await isTestFlag("test+j1gate@rhema.tools")).toBe(true);
+    // seed the account's project + draft and POST /runs as the (unverified) principal — the flag
+    // must NOT bypass REQ-BETA-19's verification gate.
+    await db.pg.query(
+      `insert into projects(id, workspace_id, owner_id, title, slug) values ('prj_t', $1, $2, 'T', 't-p')`,
+      [acct.workspaceId, acct.userId],
+    );
+    await db.pg.query(
+      `insert into drafts(id, project_id, n, origin, state) values ('dft_t', 'prj_t', 1, 'agent', 'working')`,
+    );
+    const principal = (): Principal => ({
+      userId: acct.userId,
+      workspaceId: acct.workspaceId!,
+      billingAccountId: acct.billingAccountId!,
+    });
+    const b = createApp({
+      ...deps,
+      principal,
+      db: db.client,
+      signupMode: "open",
+      signupThrottle: throttle(),
+      paymentLinkUrl: "https://buy.stripe.com/test_beta",
+    });
+    const r = await b.request("/projects/prj_t/runs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idempotencyKey: "idem-t", workflow: "review", draftId: "dft_t" }),
+    });
+    expect(r.status).toBe(403);
+  });
+});

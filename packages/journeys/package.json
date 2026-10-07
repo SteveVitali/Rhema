@@ -1,0 +1,33 @@
+{
+  "name": "@rhema/journeys",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-journey acceptance (JOURNEY.1; REQ-SPEC-29; ADR-016/ADR-020): the Playwright suite that walks the product as users do — visible-text + actionable-control assertions, real magic-link sessions into the operator-provisioned test mailbox (keyless Gmail DWD), per-step owners + expected-red flags, flagged test tenants, and the deploy-provenance check.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "rhema-journeys": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "pg": "8.23.0",
+    "playwright": "^1.49.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "8.23.1"
+  }
+}

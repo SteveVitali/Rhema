@@ -19,6 +19,10 @@ RUN pnpm --filter @rhema/api --prod deploy --legacy /bundle
 # ---- runtime: non-root, minimal ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
+# JOURNEY.1 (REQ-ARCH-39) — the deploy provenance field: `docker build --build-arg GIT_SHA=<sha>` bakes
+# the commit into the image; /healthz serves it as `build.gitSha`. `unknown` fails the check closed.
+ARG GIT_SHA=unknown
+ENV RHEMA_BUILD_GIT_SHA=$GIT_SHA
 RUN groupadd --gid 10004 api \
   && useradd --uid 10004 --gid 10004 --home-dir /home/api --create-home --shell /usr/sbin/nologin api
 WORKDIR /app

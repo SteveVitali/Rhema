@@ -20,6 +20,7 @@ import { createSecrets } from "./secrets";
 import { createIam } from "./iam";
 import { createCompute } from "./compute";
 import { createMonitoring } from "./monitoring";
+import { createJourneys } from "./journeys";
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();
@@ -138,6 +139,14 @@ const compute = createCompute({
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
+});
+
+// JOURNEY.1 — adopt the journey-mailbox resources (the hand-created DWD service account, the Gmail
+// API enablement, and the Token-Creator grants for the CI WIF principal + the operator). `import:`
+// brings the pre-existing resources under management without replacing them.
+createJourneys({
+  project,
+  ciRepository: rhemaConfig.get("ciRepository") ?? "SteveVitali/Rhema",
 });
 
 // P1.22 W9 — the §13.5 SLO dashboard + alert policies (REQ-ARCH-34). The worker's `slo.probe` sweep logs

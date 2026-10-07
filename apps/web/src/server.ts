@@ -129,6 +129,8 @@ export interface WebDeps {
    * by re-introducing parallel copy.
    */
   readonly claims?: PublicClaimsConfig;
+  /** JOURNEY.1 (REQ-ARCH-39) — the image-baked deploy SHA surfaced on `/healthz` (`RHEMA_BUILD_GIT_SHA`). */
+  readonly buildGitSha?: string;
 }
 
 /** The beta-grade magic-link throttle — per IP + per email, fixed window (PRB.13; D-PRB.13-1: in-memory). */
@@ -234,7 +236,10 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.text("internal error", 500);
   });
 
-  app.get("/healthz", (c) => c.json({ ok: true, service: "web" }));
+  // JOURNEY.1 (REQ-ARCH-39) — the provenance check's network-reachable SHA (see apps/api /healthz).
+  app.get("/healthz", (c) =>
+    c.json({ ok: true, service: "web", build: { gitSha: deps.buildGitSha ?? null } }),
+  );
 
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme

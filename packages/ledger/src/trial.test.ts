@@ -402,3 +402,32 @@ describe("the pocket spends like a normal bucket", () => {
     expect((await readBalances(db, BA)).trial_pocket.held).toBe(50);
   });
 });
+
+// JOURNEY.1 — flagged test tenants never count against the global daily trial-spend ceiling
+// (REQ-SPEC-29; ADR-020): the kill switch measures real users' burn, not the journey harness's.
+describe("recordTrialSpend — the test-tenant exclusion (JOURNEY.1)", () => {
+  it("a flagged workspace's spend never increments the day counter and never trips the ceiling", async () => {
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [WS]);
+    const day = NOW.toISOString().slice(0, 10);
+    // an ordinary increment first so the day row exists
+    await inTx((tx) => recordTrialSpend(tx, 100, NOW));
+    // the flagged tenant's spend — beyond the ceiling, yet excluded
+    const back = await inTx((tx) =>
+      recordTrialSpend(tx, TRIAL.dailySpendCeilingCredits + 1, NOW, { workspaceId: WS }),
+    );
+    expect(back).toBe(100); // returns the day's running total, unincremented
+    const row = (
+      await db.client.query("select credits::int as c from trial_spend_daily where day = $1", [day])
+    ).rows[0] as { c: number };
+    expect(row.c).toBe(100);
+  });
+
+  it("an unflagged workspace's spend still counts and still trips the ceiling", async () => {
+    await inTx((tx) => recordTrialSpend(tx, 100, NOW));
+    await expect(
+      inTx((tx) =>
+        recordTrialSpend(tx, TRIAL.dailySpendCeilingCredits, NOW, { workspaceId: WS }),
+      ),
+    ).rejects.toBeInstanceOf(TrialCeilingExhaustedError);
+  });
+});

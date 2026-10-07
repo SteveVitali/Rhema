@@ -122,6 +122,16 @@ export interface ApiEnv {
    * estimate stays provisional — the §5.6 graceful posture, never a half-bound refine.
    */
   readonly egressProxyUrl?: string;
+  /**
+   * JOURNEY.1 (REQ-SPEC-29; ADR-020) — the configured test mailbox base address (`TEST_MAILBOX`,
+   * e.g. `test@rhema.tools`). A workspace provisioned for `test@…` or `test+<tag>@…` on that domain is
+   * flagged `is_test` at creation (SLO/trial exclusions + the auto-purge sweep). Plain deploy config —
+   * an address pattern, not a secret. Unset ⇒ nothing is ever flagged.
+   */
+  readonly testMailbox?: string;
+  /** JOURNEY.1 — the git SHA the image was built from (`RHEMA_BUILD_GIT_SHA`, baked by the Dockerfile
+   *  `ARG GIT_SHA`); surfaced on `/healthz` as `build.gitSha` for the deploy-provenance check. */
+  readonly buildGitSha?: string;
 }
 
 function required(name: string): string {
@@ -200,6 +210,9 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.FETCHER_SERVICE_URL ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL } : {}),
     // DEF.2 (F6) — the egress-proxy base URL the estimate pre-pass's synthetic credential calls.
     ...(process.env.EGRESS_PROXY_URL ? { egressProxyUrl: process.env.EGRESS_PROXY_URL } : {}),
+    // JOURNEY.1 — the test-mailbox flagging config + the image-baked build SHA (healthz provenance).
+    ...(process.env.TEST_MAILBOX ? { testMailbox: process.env.TEST_MAILBOX } : {}),
+    ...(process.env.RHEMA_BUILD_GIT_SHA ? { buildGitSha: process.env.RHEMA_BUILD_GIT_SHA } : {}),
   };
   return process.env.RUN_TOKEN_KEY_ID ? { ...base, runTokenKeyId: process.env.RUN_TOKEN_KEY_ID } : base;
 }

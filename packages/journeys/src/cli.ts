@@ -1,0 +1,134 @@
+#!/usr/bin/env node
+// JOURNEY.1 — the journey CLI (`rhema-journeys`). Nightly runs the $0 legs; the weekly adds --paid.
+//
+//   rhema-journeys --web https://app.rhema.tools --api https://api.rhema.tools \
+//     --steps N2,N7,R1,R5,X1 --expect-sha e6c9103 --out docs/build/reports/<date>_JOURNEY.1-journeys
+//
+// Flags: --steps csv | --journey <name|all> (registry order) | --paid (the weekly leg) |
+// --stage <prod|dev|pr-N> | --out <dir> | --state-dir <dir> | --expect-sha <sha> | --nonce <n>.
+// --stage resolves the stage's public origins (prod is the only stage with real DNS today —
+// infra/config/stages.ts); any other stage still needs explicit --web/--api overrides.
+
+import { chromium } from "playwright";
+import pg from "pg";
+import { STEP_REGISTRY } from "./registry.js";
+import { STEP_IMPLS } from "./steps.js";
+import { createGmailClient } from "./mailbox.js";
+import { fetchDeployedSha, provenanceMatch } from "./provenance.js";
+import { checkWeeklySpendCap } from "./spend-guard.js";
+import { journeyNonce } from "./nonce.js";
+import { runJourneys, type JourneyReport } from "./runner.js";
+
+function arg(flag: string): string | undefined {
+  const i = process.argv.indexOf(flag);
+  return i >= 0 ? process.argv[i + 1] : undefined;
+}
+const has = (flag: string) => process.argv.includes(flag);
+
+// --stage resolves the stage's public origins; only prod carries real DNS (stages.ts) — other
+// stages fall back to explicit --web/--api or the JOURNEY_*_URL env pair.
+const stage = arg("--stage") ?? process.env.JOURNEY_STAGE;
+const stageOrigins = (s: string): { web: string; api: string } | undefined =>
+  s === "prod" ? { web: "https://rhema.tools", api: "https://api.rhema.tools" } : undefined;
+if (stage && !stageOrigins(stage) && !arg("--web") && !process.env.JOURNEY_WEB_URL) {
+  console.error(`--stage ${stage} has no known public origin; pass --web/--api explicitly`);
+  process.exit(2);
+}
+const origins = stage ? stageOrigins(stage) : undefined;
+const web = arg("--web") ?? process.env.JOURNEY_WEB_URL ?? origins?.web ?? "http://localhost:3000";
+const api = arg("--api") ?? process.env.JOURNEY_API_URL ?? origins?.api ?? web;
+const paid = has("--paid");
+const nonce = arg("--nonce") ?? journeyNonce();
+const date = new Date().toISOString().slice(0, 10);
+const outDir = arg("--out") ?? `docs/build/reports/${date}_JOURNEY.1-journeys`;
+const stateDir = arg("--state-dir") ?? process.env.JOURNEY_STATE_DIR ?? ".journeys-state";
+const expectSha = arg("--expect-sha") ?? process.env.JOURNEY_EXPECT_SHA;
+
+const stepsArg = arg("--steps");
+const journeyArg = arg("--journey");
+const steps = STEP_REGISTRY.filter((s) =>
+  stepsArg
+    ? stepsArg.split(",").map((x) => x.trim()).includes(s.id)
+    : journeyArg && journeyArg !== "all"
+      ? s.journey === journeyArg || s.journey === "both"
+      : true,
+);
+if (steps.length === 0) {
+  console.error("no steps selected");
+  process.exit(2);
+}
+
+// provenance (REQ-ARCH-39): read every reachable /healthz BEFORE walking — a stale deploy is a
+// fail-closed run, not an amber footnote.
+const observed: Record<string, string | null> = {};
+for (const [label, base] of Object.entries({ web, api })) {
+  observed[label] = await fetchDeployedSha(base);
+}
+const provOk = expectSha ? provenanceMatch(expectSha, observed) : false;
+
+// The measured spend-guard path needs a DB read — JOURNEY_DATABASE_URL binds a read pool when the
+// runner can reach the stage's Postgres (operator-driven legs). Scheduled CI can't reach the private
+// DB: the no-db attestation stands because the cron itself bounds paid runs to one leg/week.
+let spendDb: { query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> } | undefined;
+let spendPool: pg.Pool | undefined;
+if (paid && process.env.JOURNEY_DATABASE_URL) {
+  spendPool = new pg.Pool({ connectionString: process.env.JOURNEY_DATABASE_URL, max: 1 });
+  spendDb = spendPool;
+}
+const spend = paid
+  ? await checkWeeklySpendCap({ ...(spendDb ? { db: spendDb } : {}) })
+  : { capUsd: 5, weeklyMeteredUsd: 0, withinCap: true };
+if (paid && !spend.withinCap) {
+  console.error(`spend guard refused: ${spend.reason}`);
+  process.exit(3);
+}
+if (paid && spend.weeklyMeteredUsd !== null && spend.weeklyMeteredUsd + 3 > spend.capUsd) {
+  console.error(`spend guard refused: $${spend.weeklyMeteredUsd} already metered this week`);
+  process.exit(3);
+}
+
+const launchOpts: Parameters<typeof chromium.launch>[0] = { headless: true };
+try {
+  const probe = await chromium.launch({ channel: "chrome", headless: true });
+  await probe.close();
+  launchOpts.channel = "chrome"; // the scheduled run's installed Chrome (ADR-020)
+} catch {
+  /* fall back to the bundled chromium */
+}
+const browser = await chromium.launch(launchOpts);
+
+let report: JourneyReport;
+try {
+  report = await runJourneys({
+    browser,
+    webBaseUrl: web.replace(/\/+$/, ""),
+    apiBaseUrl: api.replace(/\/+$/, ""),
+    mailbox: createGmailClient("test@rhema.tools"),
+    stateDir,
+    outDir,
+    nonce,
+    paid,
+    steps,
+    impls: STEP_IMPLS,
+    provenance: { expected: expectSha, observed, match: provOk },
+    spend: {
+      weeklyMeteredUsd: spend.weeklyMeteredUsd,
+      capUsd: spend.capUsd,
+      withinCap: spend.withinCap,
+    },
+  });
+} finally {
+  await browser.close();
+  await spendPool?.end();
+}
+
+for (const r of report.results) {
+  const mark =
+    r.outcome === "pass" ? "PASS" : r.outcome === "owed" ? "owed" : r.outcome === "skipped" ? "skip" : r.outcome === "ready-to-flip" ? "FLIP" : "FAIL";
+  console.log(`${mark.padEnd(5)} ${r.id.padEnd(10)} [${r.owner}] ${r.error ?? ""}`);
+}
+console.log(`provenance ${provOk ? "match" : "NO-MATCH"} · spend $${report.spend.weeklyMeteredUsd ?? "?"} ≤ $${report.spend.capUsd} · report ${outDir}/report.json`);
+
+// exit non-zero when a green step failed or provenance mismatched with an expectation given.
+const provenanceFailed = expectSha !== undefined && !provOk;
+process.exit(report.passed && !provenanceFailed ? 0 : 1);

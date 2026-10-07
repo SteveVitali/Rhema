@@ -10,6 +10,7 @@ import {
   shouldPurgeProject,
   accountDeletionPlan,
   PROJECT_PURGE_AFTER_DAYS,
+  ACCOUNT_GRACE_DAYS,
   type AccountDeletionPlan,
 } from "./deletion.js";
 
@@ -249,8 +250,85 @@ export async function handleAccountHardDelete(
        (select id from personas where workspace_id = $1) returning composite_id`,
     [tenant],
   );
-  // 3 — the content roots: projects cascade drafts/artifacts/runs/gates/findings/guidance/threads/
-  //     files/obligations/figures/versions; personas cascade connections + samples + profiles.
+  // 3 — leaf-first: every NO ACTION child of the content tree dies before its parent, because the
+  //     projects cascade only reaches the CASCADE-marked edges (found live 2026-10-01 — the purge
+  //     sweep's first hard-delete tripped `claims_draft_id_fkey`). Order: gates (→steps NO ACTION),
+  //     obligation links (decision_requests→revision_obligations, obligation_findings→findings),
+  //     revision_obligations + dispositions, then claims/findings/correspondence (all →drafts NO
+  //     ACTION), THEN projects cascade drafts/runs/steps/artifacts; drafts→artifact_versions
+  //     (promoted_version_id NO ACTION) is satisfied because artifacts die after projects.
+  await del(
+    "gates",
+    `delete from gates where step_id in
+       (select s.id from steps s join runs r on r.id = s.run_id join projects p on p.id = r.project_id
+         where p.workspace_id = $1)
+       or run_id in
+       (select r.id from runs r join projects p on p.id = r.project_id where p.workspace_id = $1)
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "decision_requests",
+    `delete from decision_requests where project_id in
+       (select id from projects where workspace_id = $1) returning id`,
+    [tenant],
+  );
+  await del(
+    "obligation_findings",
+    `delete from obligation_findings where obligation_id in
+       (select id from revision_obligations where project_id in
+         (select id from projects where workspace_id = $1))
+       or finding_id in
+       (select f.id from findings f join correspondence_items ci on ci.id = f.correspondence_id
+         where ci.project_id in (select id from projects where workspace_id = $1))
+      returning obligation_id`,
+    [tenant],
+  );
+  await del(
+    "revision_obligations",
+    `delete from revision_obligations where project_id in
+       (select id from projects where workspace_id = $1) returning id`,
+    [tenant],
+  );
+  await del(
+    "dispositions",
+    `delete from dispositions where response_id in
+       (select id from correspondence_items where project_id in
+         (select id from projects where workspace_id = $1))
+       or finding_id in
+       (select f.id from findings f join correspondence_items ci on ci.id = f.correspondence_id
+         where ci.project_id in (select id from projects where workspace_id = $1))
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "findings",
+    `delete from findings where draft_id in
+       (select d.id from drafts d join projects p on p.id = d.project_id where p.workspace_id = $1)
+       or correspondence_id in
+       (select id from correspondence_items where project_id in
+         (select id from projects where workspace_id = $1))
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "claims",
+    `delete from claims where draft_id in
+       (select d.id from drafts d join projects p on p.id = d.project_id where p.workspace_id = $1)
+       or correspondence_id in
+       (select id from correspondence_items where project_id in
+         (select id from projects where workspace_id = $1))
+      returning id`,
+    [tenant],
+  );
+  await del(
+    "correspondence_items",
+    `delete from correspondence_items where project_id in
+       (select id from projects where workspace_id = $1) returning id`,
+    [tenant],
+  );
+  // 4 — the content roots: projects cascade drafts/artifacts/runs/steps/guidance/threads/files/
+  //     versions; personas cascade connections + samples + profiles.
   await del("projects", `delete from projects where workspace_id = $1 returning id`, [tenant]);
   await del("personas", `delete from personas where workspace_id = $1 returning id`, [tenant]);
   await del("artifacts", `delete from artifacts where workspace_id = $1 returning id`, [tenant]);
@@ -267,4 +345,87 @@ export async function handleAccountHardDelete(
   // trial_*, admin_actions, auto_reload_events.
 
   return { userId: job.userId, ...plan, deleted };
+}
+
+// ------------------------------------------------------------------ test-tenant auto-purge (JOURNEY.1)
+
+/**
+ * `test-tenant.purge` sweep payload — the worker schedules it (TEST_TENANT_PURGE_HOURS carries the
+ * window; the job payload carries it so a changed env never confuses an in-flight job).
+ */
+export interface TestTenantPurgeJob {
+  /** flagged workspaces older than this many hours are purged. */
+  olderThanHours: number;
+}
+
+export interface TestTenantPurgeDeps {
+  /**
+   * SYSTEM-POOL client — this is a deliberate cross-tenant scan (ADR-020; the allowlisted pattern in
+   * tools/system-pool-boundary.json — `jobs.ts` carries the same seam `account.hard-delete` uses).
+   */
+  readonly systemExec?: SqlClient;
+  /** pg-boss — the sweep enqueues one `account.hard-delete` per flagged account member. */
+  readonly queue?: Queue;
+  readonly now?: Date;
+}
+
+export interface TestTenantPurgeResult {
+  scanned: number;
+  /** workspaces whose members were marked + enqueued for hard-delete. */
+  purgedWorkspaces: string[];
+  enqueuedDeletes: number;
+}
+
+export const TEST_TENANT_PURGE_JOB = "test-tenant.purge";
+
+/**
+ * The JOURNEY.1 auto-purge (REQ-SPEC-29; REQ-SPEC-30's system-pool-scan rule): every flagged workspace
+ * (`workspaces.is_test`, migration 0046) older than the configured window is destroyed through the
+ * EXISTING account-deletion pipeline — the member `user.deletion_requested_at` is set past the 14-day
+ * grace and `account.hard-delete` runs as usual, so flagged accounts skip the grace window but keep
+ * the retention contract (anonymized ledger rows survive). An unflagged account is never touched —
+ * the scan only reads `is_test` workspaces.
+ */
+export async function handleTestTenantPurge(
+  job: TestTenantPurgeJob,
+  deps: TestTenantPurgeDeps = {},
+): Promise<TestTenantPurgeResult> {
+  const now = deps.now ?? new Date();
+  const hours = Number.isFinite(job.olderThanHours) && job.olderThanHours >= 0 ? job.olderThanHours : 24;
+  if (!deps.systemExec || !deps.queue) {
+    return { scanned: 0, purgedWorkspaces: [], enqueuedDeletes: 0 };
+  }
+  const db = deps.systemExec;
+  const stale = (
+    await db.query(
+      `select w.id as workspace_id, m.user_id
+         from workspaces w
+         join workspace_members m on m.workspace_id = w.id
+        where w.is_test = true
+          and w.created_at < now() - ($1::double precision * interval '1 hour')
+        order by w.created_at`,
+      [hours],
+    )
+  ).rows as { workspace_id: string; user_id: string }[];
+
+  // Past-grace marker: accountDeletionPlan(deletionRequestedAt, now) must read `hard-delete`, so the
+  // stamp sits strictly beyond the grace window (grace + one day of slack).
+  const pastGrace = new Date(now.getTime() - (ACCOUNT_GRACE_DAYS + 1) * 24 * 60 * 60 * 1000);
+  const purgedWorkspaces = [...new Set(stale.map((r) => r.workspace_id))];
+  let enqueuedDeletes = 0;
+  for (const row of stale) {
+    // Set the grace-expired request marker only — the flag itself is what authorized this write; an
+    // account already mid-deletion keeps its earlier timestamp (harmless: the handler re-reads it).
+    await db.query(`update "user" set deletion_requested_at = $2 where id = $1`, [
+      row.user_id,
+      pastGrace,
+    ]);
+    await deps.queue.send("account.hard-delete", {
+      tenantId: row.workspace_id,
+      userId: row.user_id,
+      deletionRequestedAt: pastGrace.toISOString(),
+    });
+    enqueuedDeletes += 1;
+  }
+  return { scanned: stale.length, purgedWorkspaces, enqueuedDeletes };
 }

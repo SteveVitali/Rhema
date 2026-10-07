@@ -1,0 +1,50 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "5ef69e1002eb",
+  "startedAt": "2026-10-01T07:29:18.493Z",
+  "finishedAt": "2026-10-01T07:29:22.215Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c",
+    "observed": {
+      "web": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c",
+      "api": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1886,
+      "error": "no edit affordance on the project page",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "R4",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1714,
+      "error": "chat Send @1440×900: occluded at its center point by (no element at point)",
+      "screenshot": "R4.png"
+    }
+  ],
+  "passed": true
+}

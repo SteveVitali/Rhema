@@ -28,7 +28,7 @@ import type { Context } from "hono";
 import type { SignupMode, IpEmailThrottle } from "@rhema/contracts";
 import type { SqlClient, InviteGate, InviteRejectReason } from "./invite.js";
 import type { IdFactory, Clock } from "@rhema/orchestrator";
-import { recordAnalyticsEvent, provisionTrial } from "@rhema/ledger";
+import { recordAnalyticsEvent, provisionTrial, flagWorkspaceIfTestTenant } from "@rhema/ledger";
 
 /** Why a signup was refused — stable codes; the web maps these to copy, the route maps them to statuses. */
 export type SignupRejectReason =
@@ -53,6 +53,8 @@ export interface SignupPolicyDeps {
   readonly ids: IdFactory;
   /** P1.17 — the Showcase seed seam (see ProvisionOptions). */
   readonly showcaseSeed?: (workspaceId: string, ownerId: string) => Promise<unknown>;
+  /** JOURNEY.1 — the configured test mailbox (see ProvisionOptions.testMailbox). */
+  readonly testMailbox?: string;
 }
 
 interface ExistingMembership {
@@ -151,6 +153,7 @@ export async function admitSignup(
 
   const provisioned = await provisionPersonalAccount(deps.db, deps.ids, userId, {
     ...(deps.showcaseSeed ? { seedShowcase: deps.showcaseSeed } : {}),
+    ...(deps.testMailbox ? { testMailbox: deps.testMailbox } : {}),
   });
   // P1.17 — persist the signup intent on the new account only (a returning user's intent is theirs;
   // a fresh record here would rewrite history the precedence redirect already consumed).
@@ -180,6 +183,13 @@ export interface ProvisionOptions {
    * a seed failure never fails provisioning (the workspace works, the walkthrough just isn't there).
    */
   readonly seedShowcase?: (workspaceId: string, ownerId: string) => Promise<unknown>;
+  /**
+   * JOURNEY.1 (REQ-SPEC-29; ADR-020) — the configured test mailbox (`TEST_MAILBOX` deploy config).
+   * When the provisioning account's stored email is the base address or base+`tag` on its domain, the
+   * new personal workspace is flagged `is_test` (0046) — the only write path for the flag. Unset ⇒
+   * nothing is ever flagged.
+   */
+  readonly testMailbox?: string;
 }
 
 export async function provisionPersonalAccount(
@@ -227,6 +237,21 @@ export async function provisionPersonalAccount(
        on conflict (workspace_id, user_id) do nothing`,
     [workspaceId, userId],
   );
+  // JOURNEY.1 — flag the workspace when the account's stored signup email matches the configured test
+  // mailbox (exact base or base+tag). This is THE flag write path: never reachable from an API route,
+  // grants nothing — only SLO/trial exclusion + the auto-purge sweep (ADR-020).
+  if (opts?.testMailbox) {
+    const email = (
+      await db.query(`select email from "user" where id = $1`, [userId])
+    ).rows[0] as { email: string } | undefined;
+    if (email) {
+      await flagWorkspaceIfTestTenant(db, {
+        workspaceId,
+        email: email.email,
+        testMailbox: opts.testMailbox,
+      });
+    }
+  }
   if (opts?.seedShowcase) {
     await opts.seedShowcase(workspaceId, userId).catch(() => undefined);
   }

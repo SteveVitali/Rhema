@@ -227,7 +227,7 @@ Sizes: 21 S · 21 M · 7 L.
 | X-prod-test-data-residue | STB.2 test draft `01M3D7E1…` v7 on `my-first-project`, and a stray `deployments` row `prod:82179e1` (`0.4.0+test`) | `runs/STB.2.md` §6; `runs/DEF.1.md` §7.1 | BL-38 |
 | X-citation-completeness | G1 recorded "§16.4 marketing claims await the citation-completeness follow-up (ADR-006)"; no row owns it | `readouts/GATE-G1.md`; LEDGER GATE DECISIONS 2026-09-15 | BL-15 |
 | X-infra-cost-vs-target | A ~$50/mo target was authorized against a documented ~$95/mo always-on floor, to be closed by GKE free-tier and idle levers. Actual spend was never measured against the target | LEDGER GATE DECISIONS 2026-09-17; `infra/PROD-BRINGUP.md` §0 | BL-29 |
-| X-p102-page-editor-live-verify | The 8 REQs owned by P1.02 are marked "gate-pending" with no D-row. The P1.02 ledger folded them into D-P1.01-1, which is now DONE but never mentions P1.02 | CAPSTONE §3 | BL-32 |
+| X-p102-page-editor-live-verify | The 8 REQs owned by P1.02 are marked "gate-pending" with no D-row. The P1.02 ledger folded them into D-P1.01-1, which is now DONE but never mentions P1.02. **2026-10-01 (JOURNEY.1):** the automatable half is journey step **N8** (owner EDIT.1, expected-red) — the edit→fork→sync-pill browser leg runs nightly once green | CAPSTONE §3 | BL-32 |
 | X-phase1-exit-readout-stale | The phase-1 exit readout's "instrumented costs" row still reads PARTIAL and cites D-P0.08-2/D-P0.15-2, both of which are now DONE | CAPSTONE §2 | BL-06 |
 
 ## Rows marked DONE that still owe something (added as sources)

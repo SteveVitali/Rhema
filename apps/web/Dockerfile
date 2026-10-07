@@ -18,6 +18,9 @@ RUN pnpm --filter @rhema/web --prod deploy --legacy /bundle
 # ---- runtime: non-root, minimal ----
 FROM --platform=$TARGETPLATFORM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
+# JOURNEY.1 (REQ-ARCH-39) — bake the built commit (`--build-arg GIT_SHA=<sha>`); /healthz serves it.
+ARG GIT_SHA=unknown
+ENV RHEMA_BUILD_GIT_SHA=$GIT_SHA
 RUN groupadd --gid 10005 web \
   && useradd --uid 10005 --gid 10005 --home-dir /home/web --create-home --shell /usr/sbin/nologin web
 WORKDIR /app

@@ -1,0 +1,251 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "adf39ec69042",
+  "startedAt": "2026-10-01T07:01:00.386Z",
+  "finishedAt": "2026-10-01T07:03:21.823Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c",
+    "observed": {
+      "web": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c",
+      "api": "34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "N1",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 12318,
+      "error": "landing drop-zone absent",
+      "screenshot": "N1.png"
+    },
+    {
+      "id": "N2",
+      "journey": "new-visitor",
+      "owner": "JOURNEY.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6575,
+      "screenshot": "N2.png"
+    },
+    {
+      "id": "N2.invite",
+      "journey": "new-visitor",
+      "owner": "SEC.2",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 296,
+      "error": "open-mode signup's first field is \"code\", not \"email\" (invite still first)",
+      "screenshot": "N2.invite.png"
+    },
+    {
+      "id": "N3",
+      "journey": "new-visitor",
+      "owner": "ONB.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 51570,
+      "error": "page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator('[data-preview], [data-held-notice], [role=\"status\"], meta[http-equiv]') to be visible\n    14 × locator resolved to 3 elements. Proceeding with the first one: <meta http-equiv=\"refresh\" content=\"5;url=/app/new/preview?entry=draft&qk=quarantine%2F01M3V490P3FE94Y520JQCY5755%2F01M3V49A7GVYCDKARYN4Y8T119&title=JRN-ADF39EC69042-DRAFT&src=pasted+text\"/>\n    - waiting for \"https://rhema.tools/app/new/preview?entry=draft&qk=quarantine%2F01M3V490P3FE94Y520JQCY5755%2F01M3V49A7GVYCDKARYN4Y8T119&title=JRN-ADF39EC69042-DRAFT&src=pasted+text\" navigation to finish...\n",
+      "screenshot": "N3.png"
+    },
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 6664,
+      "error": "no sheet-level estimate rendered",
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N5",
+      "journey": "new-visitor",
+      "owner": "ACT.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N6",
+      "journey": "new-visitor",
+      "owner": "RES.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "N7",
+      "journey": "both",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11226,
+      "screenshot": "N7.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 31080,
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('a[href^=\"/p/\"]').first()\n    - locator resolved to <a href=\"/p/showcase-copy\">Showcase — a worked example copy</a>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is not stable\n  - retrying click action\n    - waiting for element to be visible, enabled and stable\n    - element is not visible\n  - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    58 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "N9",
+      "journey": "new-visitor",
+      "owner": "BILL.3",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1682,
+      "screenshot": "N9.png"
+    },
+    {
+      "id": "R1",
+      "journey": "returning",
+      "owner": "HOT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 2162,
+      "screenshot": "R1.png"
+    },
+    {
+      "id": "R4",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R5",
+      "journey": "returning",
+      "owner": "JOURNEY.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [
+        "POST https://rhema.tools/p/showcase-copy-2/export net::ERR_ABORTED"
+      ],
+      "durationMs": 4593,
+      "screenshot": "R5.png"
+    },
+    {
+      "id": "R6",
+      "journey": "returning",
+      "owner": "RPT.1",
+      "expected": "red",
+      "paid": true,
+      "outcome": "skipped",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 0,
+      "error": "paid step — nightly runs exclude it (the weekly --paid leg carries it)"
+    },
+    {
+      "id": "R7",
+      "journey": "returning",
+      "owner": "RUN.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 1068,
+      "error": "no informational gate on the board to probe (or gates render unlabelled)",
+      "screenshot": "R7.png"
+    },
+    {
+      "id": "P1",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "red",
+      "paid": false,
+      "outcome": "owed",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 512,
+      "error": "/: sub-44px primary actions: button Hold my text (21px)",
+      "screenshot": "P1.png"
+    },
+    {
+      "id": "C1",
+      "journey": "both",
+      "owner": "ACT.1",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 400,
+      "screenshot": "C1.png"
+    },
+    {
+      "id": "X1",
+      "journey": "two-tenants",
+      "owner": "SEC.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "failedRequests": [],
+      "durationMs": 4098,
+      "screenshot": "X1.png"
+    }
+  ],
+  "passed": true
+}

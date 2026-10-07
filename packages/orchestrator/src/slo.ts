@@ -31,6 +31,17 @@ export interface SloSignalDef {
 
 const MIN = "interval '1 minute'";
 
+// JOURNEY.1 (REQ-SPEC-29; ADR-020) — flagged test tenants never count toward SLOs: every probe over a
+// workspace-keyed table applies this NOT-EXISTS fragment (`workspaces.is_test`, migration 0046). For a
+// table reachable only through `runs` (gates, fetch_log), wrap it: `not exists (select 1 from runs r
+// where r.id = <fk> and ${TEST_TENANT_FREE("r")})` — see the probes below.
+const TEST_TENANT_FREE = (rel: string) =>
+  `not exists (select 1 from workspaces w where w.id = ${rel}.workspace_id and w.is_test)`;
+/** Row-level exclusion for a fk into `runs` (the row is test-tenant traffic iff its run's ws is flagged). */
+const NOT_FROM_TEST_RUN = (fk: string) =>
+  `not exists (select 1 from runs r join workspaces w on w.id = r.workspace_id
+     where r.id = ${fk} and w.is_test)`;
+
 export const SLO_SIGNALS: readonly SloSignalDef[] = [
   {
     key: "run_start_latency_p95_s",
@@ -38,7 +49,7 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     comparator: "gt",
     threshold: 90,
     probe: `select percentile_cont(0.95) within group (order by extract(epoch from (started_at - created_at)))
-              from runs where started_at > now() - ${MIN} * 60`,
+              from runs where started_at > now() - ${MIN} * 60 and ${TEST_TENANT_FREE("runs")}`,
   },
   {
     key: "run_success_rate_24h_pct",
@@ -47,7 +58,7 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     threshold: 95,
     probe: `select 100.0 * count(*) filter (where state = 'completed') / nullif(count(*), 0)
               from runs where ended_at > now() - interval '24 hours'
-                and state in ('completed', 'failed')`,
+                and state in ('completed', 'failed') and ${TEST_TENANT_FREE("runs")}`,
   },
   {
     key: "gate_resume_latency_p95_s",
@@ -55,14 +66,16 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     comparator: "gt",
     threshold: 120,
     probe: `select percentile_cont(0.95) within group (order by extract(epoch from (resolved_at - opened_at)))
-              from gates where resolved_at > now() - interval '24 hours'`,
+              from gates where resolved_at > now() - interval '24 hours'
+                and ${NOT_FROM_TEST_RUN("gates.run_id")}`,
   },
   {
     key: "orphaned_runs",
     target: "orphaned runs = 0 — alert > 0 for 10 min (a lingering orphan means the reaper didn't clear it)",
     comparator: "gt",
     threshold: 0,
-    probe: `select count(*) from runs where state = 'orphaned' and state_since > now() - interval '10 minutes'`,
+    probe: `select count(*) from runs where state = 'orphaned' and state_since > now() - interval '10 minutes'
+              and ${TEST_TENANT_FREE("runs")}`,
   },
   {
     key: "mirror_errors_10m",
@@ -72,14 +85,16 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     comparator: "gt",
     threshold: 0,
     probe: `select count(*) from run_events_internal
-             where type in ('engine.error', 'boundary.violation') and at > now() - interval '10 minutes'`,
+             where type in ('engine.error', 'boundary.violation') and at > now() - interval '10 minutes'
+               and ${TEST_TENANT_FREE("run_events_internal")}`,
   },
   {
     key: "egress_denied_10m",
     target: "egress denied ≈ 0 — alert on a spike (any denial in the window)",
     comparator: "gt",
     threshold: 0,
-    probe: `select count(*) from fetch_log where decision = 'deny' and ts > now() - interval '10 minutes'`,
+    probe: `select count(*) from fetch_log where decision = 'deny' and ts > now() - interval '10 minutes'
+              and ${NOT_FROM_TEST_RUN("fetch_log.run_id")}`,
   },
   {
     key: "provider_429_5xx_pct_5m",
@@ -87,7 +102,8 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     comparator: "gt",
     threshold: 5,
     probe: `select 100.0 * count(*) filter (where status = 429 or status >= 500) / nullif(count(*), 0)
-              from fetch_log where decision = 'allow' and ts > now() - interval '5 minutes'`,
+              from fetch_log where decision = 'allow' and ts > now() - interval '5 minutes'
+                and ${NOT_FROM_TEST_RUN("fetch_log.run_id")}`,
   },
   {
     key: "proxy_vs_sdk_cost_runs_over5pct_1h",
@@ -100,6 +116,7 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
                      sum(list_cost_usd) filter (where source = 'sdk_estimate') as sdk_usd
                 from usage_records
                where ts > now() - interval '1 hour' and source in ('proxy', 'sdk_estimate')
+                 and ${TEST_TENANT_FREE("usage_records")}
                group by run_id
               having sum(list_cost_usd) filter (where source = 'proxy') > 0
                  and sum(list_cost_usd) filter (where source = 'sdk_estimate') > 0
@@ -119,7 +136,8 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
                    coalesce(sum(case when kind = 'adjustment' and reason = 'absorbed' then credits else 0 end), 0)
                    / nullif(coalesce(sum(case when kind = 'debit' then credits
                                              when kind = 'adjustment' and reason = 'absorbed' then credits else 0 end), 0), 0)
-              from credit_ledger where at > now() - interval '24 hours'`,
+              from credit_ledger where at > now() - interval '24 hours'
+                and ${TEST_TENANT_FREE("credit_ledger")}`,
   },
   {
     key: "cost_drift_pct_nightly",
@@ -138,8 +156,10 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     // STB.2 / D-P0.08b-3 — `slo_samples.event_delivery_ms`: the SSE tail writes one row per flush
     // batch (max append→flush ms). The server-side half of delivery latency — the socket→render hop
     // is unmeasurable without a client ack (D-P1.22-1 keeps that caveat honest in the target text).
+    // slo_samples.workspace_id is nullable — NULL rows (platform-level samples) always count.
     probe: `select percentile_cont(0.95) within group (order by value_ms) / 1000.0
-             from slo_samples where signal = 'event_delivery_ms' and at > now() - ${MIN} * 10`,
+             from slo_samples where signal = 'event_delivery_ms' and at > now() - ${MIN} * 10
+               and (workspace_id is null or ${TEST_TENANT_FREE("slo_samples")})`,
   },
   {
     key: "autosave_roundtrip_p95_ms",
@@ -150,7 +170,8 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
     // debounced autosave POST. The client leg of the round-trip (network + render) is not measured —
     // the probe answers "server save p95", the honest measurable component.
     probe: `select percentile_cont(0.95) within group (order by value_ms) / 1000.0
-             from slo_samples where signal = 'autosave_save_ms' and at > now() - ${MIN} * 10`,
+             from slo_samples where signal = 'autosave_save_ms' and at > now() - ${MIN} * 10
+               and (workspace_id is null or ${TEST_TENANT_FREE("slo_samples")})`,
   },
   {
     key: "api_availability_monthly_pct",

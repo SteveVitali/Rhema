@@ -203,6 +203,13 @@ export interface BetaApiDeps {
    */
   signupThrottle?: IpEmailThrottle;
   /**
+   * JOURNEY.1 (REQ-SPEC-29; ADR-020) — the configured test mailbox (`TEST_MAILBOX`). Accounts created for
+   * a matching address (`test@…`/`test+<tag>@…`) get a flagged `workspaces.is_test` at provisioning.
+   */
+  testMailbox?: string;
+  /** JOURNEY.1 — the image-baked deploy SHA surfaced on `/healthz` (`RHEMA_BUILD_GIT_SHA`). */
+  buildGitSha?: string;
+  /**
    * PRB.16 — the Better Auth handler mounted at `/api/auth/*`. The deploy's `baseURL` is the APP origin
    * (the SSR web service proxies `/api/auth/*` server-side, so auth cookies plant host-only on
    * `rhema.tools`). Unset ⇒ the auth surface 404s (pre-PRB.16 prod posture).
@@ -271,7 +278,12 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
     );
   }
   if (deps?.allowedOrigins) app.use("*", createOriginGuard(deps.allowedOrigins));
-  app.get("/healthz", (c) => c.json({ ok: true, service: "api" }));
+  // JOURNEY.1 (REQ-ARCH-39) — `build.gitSha` is the image-baked deploy SHA (`RHEMA_BUILD_GIT_SHA` env,
+  // set from the Dockerfile `ARG GIT_SHA`): the network-reachable half of the deploy-provenance check
+  // (scripts/check-deploy-provenance.mjs). Absent ⇒ `build.gitSha` is null — the check fails closed.
+  app.get("/healthz", (c) =>
+    c.json({ ok: true, service: "api", build: { gitSha: deps?.buildGitSha ?? null } }),
+  );
   // Public rate publication (REQ-BILL-19; §14.6): current + previous rate tables with effective dates and the
   // 1.4 platform rate. No auth — every run report links to its version. The full pricing page is PRB.8/P1.16.
   app.get("/pricing/rates", (c) => c.json(buildRatesPublication()));
@@ -418,6 +430,8 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
             clock: deps.clock,
             ...(deps.contentStore ? { store: deps.contentStore } : {}),
           }),
+          // JOURNEY.1 — test-mailbox flagging at provisioning.
+          ...(deps.testMailbox ? { testMailbox: deps.testMailbox } : {}),
         }),
       );
       // PRB.05 — the disposition write + the decision surfaces (decisions, gates, pretriage) mount on the
