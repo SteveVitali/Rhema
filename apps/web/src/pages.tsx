@@ -1099,8 +1099,15 @@ export function NewProjectPage(): ReactNode {
                   <div style={{ fontSize: "12px", color: "var(--shell-fg-muted)", marginTop: "4px" }}>{p.tagline}</div>
                   <div style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>{p.holdYouTo}</div>
                   {p.typicalReviewCredits != null ? (
-                    <div className="tnum" style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginTop: "4px" }}>
+                    <div
+                      className="tnum"
+                      data-typical-words={p.typicalWords}
+                      style={{ fontSize: "11px", color: "var(--shell-fg-faint)", marginTop: "4px" }}
+                    >
                       {`Review ≈ ${p.typicalReviewCredits} credits`}
+                      {p.typicalReviewDuration != null
+                        ? ` · ~${p.typicalReviewDuration.lowMinutes}–${p.typicalReviewDuration.highMinutes} min`
+                        : ""}
                     </div>
                   ) : null}
                 </label>
@@ -1256,6 +1263,12 @@ const runSheetLabels: RunSheetLabels = {
   stageLabel: COPY.runSheet.stageLabel,
   wholeDraftPrefix: COPY.runSheet.wholeDraftPrefix,
   includedLabel: COPY.runSheet.includedLabel,
+  // EST.1 — the model-tier select, clamp notice, unmeasured-inputs state, resolution links.
+  modelTierLabel: COPY.runSheet.modelTierLabel,
+  tierLockedSuffix: COPY.runSheet.tierLockedSuffix,
+  tierClampedFmt: COPY.runSheet.tierClampedFmt,
+  estimatingLabel: COPY.runSheet.estimatingLabel,
+  resolutionLabels: COPY.runSheet.resolutionLabels,
 };
 
 /** Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6). */
@@ -1313,6 +1326,7 @@ export function RunSheetPage(): ReactNode {
           }}
           runAction={`/p/${slug}/run`}
           exhaustedAction={`/p/${slug}/exhausted`}
+          selfHref={`/p/${slug}/run`}
         />
       ) : null}
     </IdeFrame>

@@ -7,7 +7,6 @@ import {
   lintGrowthCopy,
   PRICING,
   PUBLIC_CLAIM_COPY,
-  PUBLIC_CLAIM_IDS,
   publicClaimEnabled,
 } from "@rhema/contracts";
 import { collectCopyStrings } from "@rhema/web";
@@ -128,8 +127,11 @@ describe("HOT.1 — the hidden public claims stay out of the shipped surface", (
     return out;
   };
 
-  it("the shipped config hides every gated claim id", () => {
-    for (const id of PUBLIC_CLAIM_IDS) expect(publicClaimEnabled(id)).toBe(false);
+  it("the shipped config hides only the claims still gated (EST.1 flipped the coverage claim)", () => {
+    expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(false); // ACT.1's flip
+    // `plans.whatItCovers` is ON — but its renderers emit only the pricer-COMPUTED line
+    // (`planCoverageLine`); the gated pricing.json copy is retired text, not rendered copy.
+    expect(publicClaimEnabled("plans.whatItCovers")).toBe(true);
   });
 
   it("the gated spec fields mark exactly the ≈-loop coverage lines", () => {

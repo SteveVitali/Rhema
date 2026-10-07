@@ -1,21 +1,60 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { durationPriorForPhases } from "@rhema/contracts";
 import { buildEstimate } from "./estimate.js";
-import { buildLeverMatrix, leverKey, signedCredits, timeBandFor } from "./lever-matrix.js";
+import { buildLeverMatrix, leverKey, signedCredits } from "./lever-matrix.js";
+import { activePhaseCount } from "./profiles.js";
 
 // AC2 — every lever change recomputes estimate/cap/time ≤100 ms; Advanced toggles show signed deltas;
 // fact-check off on the 8k/45 golden draft moves ≈1,240 → ≈330 ± 10%.
+// EST.1 (ADR-036, BL-12) — TWO guards replace the flaky single-shot clock:
+//  (a) wall-clock: the MEDIAN of five timed builds after two un-timed warm-ups stays <100 ms
+//      (a single-shot measurement flaked under full-suite CPU contention — the code was fine);
+//  (b) structural: the estimator's CALL COUNT is bounded to ~one buildEstimate per distinct state —
+//      at 72 states a genuine O(states²) implementation (e.g. a per-state rescale over `m.states`)
+//      stays under 100 ms on a fast machine, so the clock alone cannot catch it; the call bound can
+//      (mutation-verified during the EST.1 run — see docs/build/runs/EST.1.md).
+let buildEstimateCalls = 0;
+vi.mock("./estimate.js", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("./estimate.js")>();
+  return {
+    ...mod,
+    buildEstimate: (a: Parameters<typeof mod.buildEstimate>[0]) => {
+      buildEstimateCalls += 1;
+      return mod.buildEstimate(a);
+    },
+  };
+});
 describe("buildLeverMatrix — recompute + signed deltas (§5.6 item 2; REQ-BILL-5)", () => {
-  it("recomputes the whole matrix in well under 100 ms", () => {
-    const start = performance.now();
-    const m = buildLeverMatrix({ workflow: "review", inputs: { words: 8000, claims: 45 }, rigor: "standard", modelTier: "base" });
-    const elapsed = performance.now() - start;
-    expect(elapsed).toBeLessThan(100);
+  it("recomputes the whole matrix in well under 100 ms (median of 5)", () => {
+    const args = { workflow: "review" as const, inputs: { words: 8000, claims: 45 }, rigor: "standard" as const, modelTier: "base" as const };
+    buildLeverMatrix(args); // warm-up (JIT/module cold start is not the budgeted quantity)
+    buildLeverMatrix(args);
+    const samples: number[] = [];
+    let m = buildLeverMatrix(args);
+    for (let i = 0; i < 5; i++) {
+      const start = performance.now();
+      m = buildLeverMatrix(args);
+      samples.push(performance.now() - start);
+    }
+    samples.sort((a, b) => a - b);
+    expect(samples[2]).toBeLessThan(100); // median of 5
     // a lookup recompute (what the client does per lever change) is a map read — effectively free.
     const lookupStart = performance.now();
     let sink: unknown;
     for (let i = 0; i < 1000; i++) sink = m.states[leverKey("full_board", "frontier", m.current.toggles)];
     expect(sink).toBeDefined();
     expect(performance.now() - lookupStart).toBeLessThan(100);
+  });
+
+  it("calls the estimator ~once per DISTINCT state — a quadratic implementation fails this bound", () => {
+    buildEstimateCalls = 0;
+    const m = buildLeverMatrix({ workflow: "review", inputs: { words: 8000, claims: 45 }, rigor: "standard", modelTier: "base" });
+    // 72 cells + 3 toggle-delta probes + the current state — LINEAR in distinct states.
+    // A per-state rescale (the O(states²) mutation) costs ≈72² = 5,184 calls and fails here even
+    // though it still meets the 100 ms wall-clock on a fast machine.
+    const bound = Object.keys(m.states).length + m.toggleDeltas.length + 1;
+    expect(buildEstimateCalls).toBeLessThanOrEqual(bound);
+    expect(buildEstimateCalls).toBeGreaterThanOrEqual(Object.keys(m.states).length); // no state skipped
   });
 
   it("every rigor × tier × toggle combination is precomputed and keyed", () => {
@@ -69,10 +108,25 @@ describe("buildLeverMatrix — recompute + signed deltas (§5.6 item 2; REQ-BILL
     expect(signedCredits(0)).toBe("0");
   });
 
-  it("timeBandFor derives a plausible increasing band", () => {
-    const band = timeBandFor(560);
-    expect(band.lowMinutes).toBeGreaterThanOrEqual(5);
-    expect(band.highMinutes).toBeGreaterThan(band.lowMinutes);
+  it("EST.1 — duration bands are shared: a calibrated cell wins, else the per-phase prior", () => {
+    const toggles = { fact_check: true, discourse: true, second_read: true };
+    const m = buildLeverMatrix({
+      workflow: "review",
+      inputs: { words: 8000, claims: 45 },
+      rigor: "standard",
+      modelTier: "base",
+      durations: { "standard|base": { lowMinutes: 8, highMinutes: 14 } },
+    });
+    // the calibrated cell governs its bucket …
+    expect(m.states[leverKey("standard", "base", toggles)]!.time).toEqual({
+      lowMinutes: 8,
+      highMinutes: 14,
+    });
+    // … and an uncovered bucket falls back to the SAME per-phase prior every surface renders.
+    const uncovered = m.states[leverKey("standard", "frontier", toggles)]!.time;
+    expect(uncovered).toEqual(durationPriorForPhases(activePhaseCount("review", toggles)!));
+    expect(uncovered.lowMinutes).toBeGreaterThanOrEqual(1);
+    expect(uncovered.highMinutes).toBeGreaterThan(uncovered.lowMinutes);
   });
 
   it("changing rigor and tier changes the estimate (the one first-class lever + its consequence)", () => {

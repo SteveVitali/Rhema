@@ -43,6 +43,7 @@ import {
   type PlanTier,
   type PurchaseMode,
 } from "@rhema/contracts";
+import { surfacePricer } from "@rhema/run-sheet";
 import type { Principal } from "./run-routes.js";
 
 export interface BillingApiDeps {
@@ -284,7 +285,7 @@ export function createBillingRoutes(deps: BillingApiDeps): Hono {
   // `visiblePlansPublication` applies the claims gate server-side: a hidden claim's text transmits as
   // null on the DTO, so no client can render what the config has disabled. -------------------------
   app.get("/billing/plans", (c) => {
-    const visible = visiblePlansPublication();
+    const visible = visiblePlansPublication(undefined, surfacePricer());
     return c.json({
       version: PRICING.version,
       issuedAt: PRICING.issuedAt,

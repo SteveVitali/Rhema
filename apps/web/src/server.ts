@@ -62,7 +62,14 @@ import {
   STRIPE_HOSTED_ORIGINS,
   isStripeHostedRedirect,
 } from "@rhema/contracts";
-import { buildRunSheetView, buildEstimate, sheetProfile, type ToggleKey, type ToggleState } from "@rhema/run-sheet";
+import {
+  buildRunSheetView,
+  resolveSheetConfig,
+  sheetProfile,
+  surfaceEstimate,
+  type ToggleKey,
+  type ToggleState,
+} from "@rhema/run-sheet";
 import { ApiError } from "@rhema/api-client";
 import {
   applySeverityBudget,
@@ -886,7 +893,8 @@ export function createWebApp(deps: WebDeps): Hono {
     };
     let draftEstimateCredits: number | undefined;
     try {
-      draftEstimateCredits = buildEstimate({
+      // EST.1 — the surface API (the outline card's Draft pre-fill agrees with the sheet).
+      draftEstimateCredits = surfaceEstimate({
         workflow: "draft",
         rigor: "standard",
         modelTier: "base",
@@ -981,7 +989,8 @@ export function createWebApp(deps: WebDeps): Hono {
   /** The estimate for the sheet + the run create — one derivation, server-side (the api re-derives
    *  it too; these figures only pre-fill the card). */
   const figureEstimate = (iterate: boolean) =>
-    buildEstimate({
+    // EST.1 — the surface API (the figure sheet's pre-fill agrees with the run sheet).
+    surfaceEstimate({
       workflow: "figure",
       rigor: "standard",
       modelTier: "balanced",
@@ -3488,10 +3497,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const workflow = normalizeWorkflow(str("workflow"));
     const rigor = normalizeRigor(str("rigor"));
-    // §6.5: model tier is a CONSEQUENCE of rigor (the beta has no tier selector). Derive it from the
-    // submitted rigor rather than trusting a possibly-stale (no-JS) hidden field — run creation re-derives
-    // the estimate/cap from these, so the frozen figures always match the run's rigor+tier.
-    const modelTier = normalizeTier("", workflow, rigor);
+    // EST.1 — the submitted `modelTier` is the USER'S CHOICE (the collapsed-row select posts it). A
+    // canonical value is honoured verbatim — the api's plan gate stays the enforcer (a tier the plan
+    // locks 403s `trial_base_only` and the notice re-renders); a missing/garbage value resolves
+    // through the same chain as the GET. Tier no longer derives from rigor (BL-58; ADR-035).
+    const submittedTier = str("modelTier");
     const words = Number(str("words")) || 0;
     const claims = Number(str("claims")) || undefined;
     // PRB.23 — the Advanced toggles ride the SAME form as `toggle.<key>` checkboxes plus a
@@ -3519,7 +3529,34 @@ export function createWebApp(deps: WebDeps): Hono {
       }
     }
     const billing = await deps.dataSource.getBillingBalance(session).catch(() => undefined);
-    const view = buildSheet({ workflow, rigor, ...toggleQuery }, billing, deps.betaPlanOfferUrl);
+    // EST.1 — the re-render reads the SAME context the GET does (real head-draft counts, resolved
+    // defaults, plan tiers, calibrated durations) — the posted word/claim counts round-trip the
+    // rendered figure, and a post-confirm view can never fall back to the mock counts.
+    const postCtx = await Promise.resolve()
+      .then(() =>
+        deps.dataSource.getRunSheetContext?.(session, row.id, {
+          workflow,
+          ...(str("scope") ? { scope: str("scope") } : {}),
+        }),
+      )
+      .catch(() => null);
+    const view = buildSheet(
+      {
+        workflow,
+        rigor,
+        ...(submittedTier ? { modelTier: submittedTier } : {}),
+        words: str("words"),
+        claims: str("claims"),
+        ...toggleQuery,
+      },
+      billing,
+      deps.betaPlanOfferUrl,
+      postCtx,
+    );
+    // the frozen tier = the submitted choice when canonical, else the resolved/clamped default.
+    const modelTier = (MODEL_TIERS as readonly string[]).includes(submittedTier)
+      ? (submittedTier as ModelTier)
+      : view.modelTier;
     // P1.06 (§5.6; REQ-BILL-4) — the "don't ask under N" pref rides the same form; persist it via the
     // settings write before the run create (a pref write never blocks a run — failures swallow).
     const dontAskUnder = Number(str("dontAskUnder"));
@@ -3599,11 +3636,37 @@ export function createWebApp(deps: WebDeps): Hono {
           runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient },
         }));
       }
+      // EST.1 — a forged/stale tier the plan locks 403s `model_tier_requires_upgrade`/`trial_base_only`:
+      // re-render the sheet at the plan-clamped tier (the view's `requestedModelTier` carries the "your
+      // plan includes X only" notice) — never the suspension line for a lever the user can't pick.
+      if (
+        e instanceof ApiError &&
+        e.status === 403 &&
+        (e.code === "model_tier_requires_upgrade" || e.code === "trial_base_only")
+      ) {
+        return c.html(renderDocument(c.req.path, runSheetElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          runSheet: { slug, projectTitle: row.title, view },
+        }), 403);
+      }
       // REQ-SPEC-24.7 + PRB.13: a suspension or an unverified email can land between the sheet render and
       // the Run click — the api 403s with the reason code on the error (`account_suspended` /
       // `email_unverified`); re-render the sheet with the matching notice, never a silent failure.
       if (e instanceof ApiError && e.status === 403) {
-        const fresh = buildSheet({ workflow, rigor }, await deps.dataSource.getBillingBalance(session).catch(() => undefined), deps.betaPlanOfferUrl);
+        const fresh = buildSheet(
+          {
+            workflow,
+            rigor,
+            ...(submittedTier ? { modelTier: submittedTier } : {}),
+            words: str("words"),
+            claims: str("claims"),
+            ...toggleQuery,
+          },
+          await deps.dataSource.getBillingBalance(session).catch(() => undefined),
+          deps.betaPlanOfferUrl,
+          postCtx,
+        );
         const notice = e.code === "email_unverified" ? COPY.runSheet.emailUnverified : COPY.runSheet.suspended;
         return c.html(renderDocument(c.req.path, runSheetElement, {
           ...(await ideContext(c, session, row)),
@@ -5172,9 +5235,31 @@ function normalizeWorkflow(v: string): WorkflowKey {
 function normalizeRigor(v: string): Rigor {
   return (RIGORS as readonly string[]).includes(v) ? (v as Rigor) : "standard";
 }
-function normalizeTier(v: string, workflow: WorkflowKey, rigor: Rigor): ModelTier {
-  if ((MODEL_TIERS as readonly string[]).includes(v)) return v as ModelTier;
-  return sheetProfile(workflow).rigorDefaults[rigor].modelTier;
+/**
+ * EST.1 (ADR-035) — the sheet's rigor/tier resolution. Explicit `?rigor=`/`?tier=`/`?modelTier=` beat
+ * the context's resolved defaults (the api folds project → account prefs → 'standard'/null into
+ * `project.rigor`/`project.modelTier`); a null tier default falls to the rigor notch's §6.5 column;
+ * then the plan's `allowedModelTiers` clamp — a clamped tier carries `requestedModelTier` for the
+ * "your plan includes X only" notice. Tier is a USER CHOICE inside plan rules, never again an
+ * implicit consequence of the rigor notch (BL-58).
+ */
+function resolveSheetLevers(
+  query: Record<string, string>,
+  workflow: WorkflowKey,
+  ctx?: RunSheetContextDto | null,
+) {
+  const allowed = (ctx?.account?.allowedModelTiers as ModelTier[] | undefined) ?? undefined;
+  const resolved = resolveSheetConfig({
+    workflow,
+    rigor: query.rigor ?? null,
+    modelTier: query.tier ?? query.modelTier ?? null,
+    // ctx.project.rigor is already the api's project→prefs→'standard' fold; pass it as the project leg.
+    projectRigorDefault: ctx?.project?.rigor ?? null,
+    // ctx.project.modelTier is already project model_tier_default ?? account defaultModelTier (null ⇒ notch).
+    projectModelTierDefault: ctx?.project?.modelTier ?? null,
+    ...(allowed ? { allowedModelTiers: allowed } : {}),
+  });
+  return resolved;
 }
 
 /**
@@ -5211,15 +5296,18 @@ function buildSheet(
   ctx?: RunSheetContextDto | null,
 ) {
   const workflow = normalizeWorkflow(query.workflow ?? "review");
-  const rigor = normalizeRigor(query.rigor ?? "standard");
-  // §6.5: model tier follows rigor in the beta (no tier selector) — always the rigor's default.
-  const modelTier = normalizeTier("", workflow, rigor);
-  const words =
+  // EST.1 — rigor + tier resolve through the one resolver (explicit → project → account → notch →
+  // plan clamp); the returned `requestedModelTier` flags a clamp for the notice.
+  const resolved = resolveSheetLevers(query, workflow, ctx);
+  const rigor = resolved.rigor;
+  const modelTier = resolved.modelTier;
+  // EST.1 — the measured word count only: no draft ⇒ no figure ("—" + estimating, never the §5.6
+  // mock's 5,180). A stored length override still prefills an unmeasured draft (P1.22 W10).
+  const measuredWords =
     (Number(query.words) > 0 ? Number(query.words) : 0) ||
     (ctx?.headDraft?.words ?? 0) ||
-    // P1.22 W10 — a stored length override prefills the target when the draft has no measured count.
-    (ctx?.project?.protocolOverrides?.length ?? 0) ||
-    5180;
+    (ctx?.project?.protocolOverrides?.length ?? 0);
+  const words = measuredWords;
   // P1.22 W10 — toggle prefill mirrors the launch's layering exactly: the seeded protocol's own
   // `phase_defaults` (e.g. Memo's `discourse:false`) at the bottom, then the project's stored
   // overrides, then the `toggle.*` query levers on top — what the sheet shows is what the run freezes.
@@ -5240,6 +5328,22 @@ function buildSheet(
     if (typeof pv === "boolean") toggles[toggleKey] = pv;
     const v = ctx?.project?.protocolOverrides?.phaseDefaults?.[stored];
     if (typeof v === "boolean") toggles[toggleKey] = v;
+  }
+  // EST.1 (F-EST.1-2; ECON.1 §6.5 conformance on the SHEET side): seed/stored `true`s may only
+  // DISABLE relative to the selected rigor's preset — a `true` the preset already turns off would
+  // otherwise render a CHECKED box that submits back as an "explicit" lever and wins at launch
+  // (the F-ECON.1-1 shape laundered through this prefill — observed live on run
+  // 01M3Y5HJPC3SAQ1TGPVBATB1HE: Quick froze discourse:true/second_read:true and ran the phase).
+  // A `?toggle.x=on` lever below still wins in both directions.
+  const rigorToggleDefaults = (() => {
+    try {
+      return sheetProfile(workflow).rigorDefaults[rigor]?.toggles ?? {};
+    } catch {
+      return {};
+    }
+  })();
+  for (const key of Object.keys(toggles) as ToggleKey[]) {
+    if (toggles[key] === true && rigorToggleDefaults[key] === false) delete toggles[key];
   }
   for (const key of ["fact_check", "discourse", "second_read", "repair_research", "gap_check"] as const) {
     if (query[`toggle.${key}`] === "on") toggles[key] = true;
@@ -5273,12 +5377,19 @@ function buildSheet(
   // P1.20 (§6.7) — a settings-page protocol change marks the next Review's scope card: the sheet
   // surfaces the marker + the same blocking consequence (the api freezes `scopeBlocking` itself).
   const protocolChanged = workflow === "review" && ctx?.project?.protocolChanged === true;
+  const claimsQuery = Number(query.claims) > 0 ? Number(query.claims) : undefined;
   return buildRunSheetView({
     workflow,
     targetVersion,
     rigor,
     modelTier,
-    inputs: { words },
+    inputs: words > 0 ? { words } : {},
+    // EST.1 — fail-closed inputs: no measured count ⇒ the box renders "—" (never a mock figure).
+    inputsAvailable: words > 0,
+    ...(resolved.requestedModelTier ? { requestedModelTier: resolved.requestedModelTier } : {}),
+    allowedModelTiers: resolved.allowedModelTiers,
+    ...(ctx?.durations ? { durations: ctx.durations } : {}),
+    ...(claimsQuery != null ? { claimCount: claimsQuery } : {}),
     ...(Object.keys(toggles).length ? { toggles } : {}),
     scope: {
       // §7.2 — a typed `--protocol`/`--venue`/`--stage` lever presets the row; the project default fills

@@ -200,8 +200,12 @@ export interface ProtocolCardDto {
   };
   readonly lengthNorms: { readonly unit: string; readonly default?: number; readonly apparatus: string };
   readonly entryDefault: string;
+  /** the card's labelled typical length the typical Review figure is priced at (§5.3). */
+  readonly typicalWords: number;
   /** the api-computed typical Review figure for this protocol's card ("Review ≈ N credits"). */
   readonly typicalReviewCredits?: number;
+  /** EST.1 — the shared duration band for that typical Review (calibrated cell, else the prior). */
+  readonly typicalReviewDuration?: { readonly lowMinutes: number; readonly highMinutes: number };
 }
 
 /** `GET /projects/search` hit (§5.2's interim search — the ⌘K palette is P1.06's). */
@@ -388,6 +392,20 @@ export interface RunSheetContextDto {
   };
   /** P1.21 — the §5.3 protocol options (id + name) the sheet's selector renders. */
   readonly protocols: readonly { readonly id: string; readonly name: string }[];
+  /**
+   * EST.1 — the caller's effective plan + the model tiers it permits (the sheet's tier select locks
+   * to this; the run POST's plan gate remains the enforcer — REQ-PERSONA-5/ADR-035).
+   */
+  readonly account?: {
+    readonly planTier: string;
+    readonly allowedModelTiers: readonly string[];
+  };
+  /**
+   * EST.1 — the calibrated duration cells for the sheet's workflow × head-draft size band
+   * (`cost_card_cells` → `"<rigor>|<modelTier>"` → minute bands; migration 0050). `null`/absent ⇒
+   * the shared per-phase prior governs.
+   */
+  readonly durations?: Record<string, { readonly lowMinutes: number; readonly highMinutes: number }> | null;
   readonly headDraft: {
     readonly id: string;
     readonly n: number;

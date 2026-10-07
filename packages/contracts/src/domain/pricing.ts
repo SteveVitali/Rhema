@@ -194,6 +194,34 @@ export function modelTierAllowed(accountTier: PlanTier | string, modelTier: Mode
   return planOf(accountTier).modelTiers.includes(modelTier);
 }
 
+/** The model tiers a plan may choose, in canonical order (base → balanced → frontier). */
+export function allowedModelTiers(accountTier: PlanTier | string): readonly ModelTier[] {
+  return planOf(accountTier).modelTiers;
+}
+
+/**
+ * EST.1 (ADR-035) — clamp a requested model tier to a permitted set: if the request is not allowed,
+ * choose the HIGHEST allowed tier at or below it in canonical order; if nothing is below, the LOWEST
+ * allowed tier. Returns the clamped tier — callers compare it to the request to detect the clamp
+ * (the run sheet shows the "Your plan includes Base only" notice; the 402 route falls back to the
+ * actual tier's estimate, never the cheapest hard-coded one).
+ */
+export function clampModelTierTo(requested: ModelTier, allowed: readonly ModelTier[]): ModelTier {
+  if (allowed.includes(requested)) return requested;
+  const order: readonly ModelTier[] = ["base", "balanced", "frontier"];
+  const idx = order.indexOf(requested);
+  let pick: ModelTier | undefined;
+  for (const t of order.slice(0, idx + 1)) {
+    if (allowed.includes(t)) pick = t;
+  }
+  return pick ?? allowed[0] ?? requested;
+}
+
+/** The plan-tier form of `clampModelTierTo` (allowed set = the plan's `modelTiers`). */
+export function clampModelTier(requested: ModelTier, accountTier: PlanTier | string): ModelTier {
+  return clampModelTierTo(requested, allowedModelTiers(accountTier));
+}
+
 /** Effective concurrency: trial window reads the trial spec, post-trial/paid read the plan. */
 export function effectiveConcurrency(tier: PlanTier | string, inTrialWindow: boolean): number {
   if (inTrialWindow) return PRICING.trial.concurrency;

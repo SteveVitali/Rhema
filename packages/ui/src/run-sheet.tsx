@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { MODEL_TIER_DISPLAY, type ModelTier } from "@rhema/contracts";
 import type { RunSheetView } from "@rhema/run-sheet";
 
 // The run sheet (§5.6) — the launcher, and the product's ONLY paywall (REQ-GROWTH-13) and consent gate.
@@ -145,6 +146,16 @@ export interface RunSheetLabels {
   readonly includedLabel?: string;
   /** BILL.3 — the exhaustion panel's line while purchase is closed for the account. */
   readonly purchasePausedLabel?: string;
+  /** EST.1 — the collapsed row's Model-tier select label. */
+  readonly modelTierLabel?: string;
+  /** EST.1 — the plan-clamp notice: "{requested} isn't on your plan — priced on {resolved}." */
+  readonly tierClampedFmt?: string;
+  /** EST.1 — the locked-tier suffix in the select ("(not on your plan)"). */
+  readonly tierLockedSuffix?: string;
+  /** EST.1 — the unmeasured-inputs state ("Estimate pending — the draft is still being counted."). */
+  readonly estimatingLabel?: string;
+  /** EST.1 — the resolution options' link labels, keyed by action id. */
+  readonly resolutionLabels?: Readonly<Record<string, string>>;
 }
 
 export interface RunSheetProps {
@@ -157,6 +168,10 @@ export interface RunSheetProps {
   /** PRB.08 — the form action the exhaustion panel's Payment-Link button POSTs to (records
    *  `credits.exhausted_prompt{action_taken}` then 302s to the Payment Link — telemetry without JS). */
   readonly exhaustedAction?: string;
+  /** EST.1 — the sheet's own GET URL; the insufficient-balance resolution options link back to it
+   *  with the lever applied (`?tier=base` / `?rigor=quick` / `?toggle.fact_check=off`) — a resolution
+   *  is a re-render with the fitting lever, not a dead-end sentence. */
+  readonly selfHref?: string;
 }
 
 const boxStyle: CSSProperties = {
@@ -167,7 +182,41 @@ const boxStyle: CSSProperties = {
   margin: "12px 0",
 };
 
-export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }: RunSheetProps): ReactNode {
+/** EST.1 — a resolution option's sheet re-render URL (the lever applied via the query): rigor one
+ *  notch down, the Base tier, or fact-check off. `add_credits` has no href — the Payment Link button
+ *  renders separately. */
+function resolutionHref(base: string, view: RunSheetView, action: string): string | null {
+  const q = new URLSearchParams();
+  q.set("workflow", view.workflow);
+  // the lever levers ride the query; every OTHER toggle keeps its current state on the re-render.
+  const toggles = { ...view.leverMatrix.current.toggles };
+  if (action === "lower_rigor") {
+    const ladder = ["quick", "standard", "full_board"];
+    q.set("rigor", ladder[Math.max(0, ladder.indexOf(view.rigor) - 1)] ?? "quick");
+    q.set("tier", view.modelTier);
+  } else if (action === "use_base") {
+    q.set("rigor", view.rigor);
+    q.set("tier", "base");
+  } else if (action === "turn_off_fact_check") {
+    q.set("rigor", view.rigor);
+    q.set("tier", view.modelTier);
+    toggles.fact_check = false;
+  } else {
+    return null;
+  }
+  for (const [k, on] of Object.entries(toggles)) q.set(`toggle.${k}`, on ? "on" : "off");
+  if (view.commandScope?.serialized) q.set("scope", view.commandScope.serialized);
+  return `${base}?${q.toString()}`;
+}
+
+const RESOLUTION_FALLBACK_LABELS: Record<string, string> = {
+  turn_off_fact_check: "Turn off fact-check",
+  use_base: "Switch to Base",
+  lower_rigor: "Lower the rigor",
+  add_credits: "Add credits",
+};
+
+export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, selfHref }: RunSheetProps): ReactNode {
   const est = view.estimate;
   const insufficient = view.insufficient;
   return (
@@ -175,7 +224,8 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
       <input type="hidden" name="workflow" value={view.workflow} />
       <input type="hidden" name="idempotencyKey" value={view.idempotencyKey} />
       <input type="hidden" name="estimateCredits" value={est.estimateCredits} />
-      <input type="hidden" name="modelTier" value={view.modelTier} />
+      {/* EST.1 — `modelTier` submits from the collapsed-row <select> below (the user's choice rides
+          the form verbatim; the api's plan gate is the enforcer). */}
       {/* P1.06 (§7.2) — the command scope round-trips verbatim (canonical serialized form); the cap's
           editable field lives in the collapsed row (upward-only), so NO hidden capCredits here. */}
       {view.commandScope ? <input type="hidden" name="scope" value={view.commandScope.serialized} /> : null}
@@ -198,8 +248,15 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
       {/* title line: "Review v2 · 5,180 words · 21 claims" + the §7.2 scope pills (P1.06 — the typed
           @scope renders as human labels; the grammar syntax never reaches the surface). */}
       <h2 style={{ fontSize: "18px", fontWeight: 600, margin: 0 }}>
-        {view.title.verbLabel} {view.title.targetVersion} · {view.title.words.toLocaleString("en-US")} words
-        {view.title.claims != null ? ` · ${view.title.claims.toLocaleString("en-US")} claims` : ""}
+        {view.title.verbLabel} {view.title.targetVersion} ·{" "}
+        {est.missing ? (
+          "—"
+        ) : (
+          <>
+            {view.title.words.toLocaleString("en-US")} words
+            {view.title.claims != null ? ` · ${view.title.claims.toLocaleString("en-US")} claims` : ""}
+          </>
+        )}
       </h2>
       {view.commandScope ? (
         <div data-command-scope style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
@@ -256,6 +313,31 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
                 {s}
               </p>
             ))}
+            {/* EST.1 — the §14.6 levers are CLICKABLE: each option re-renders the sheet with the
+                lever applied (rigor ↓ / Base / fact-check off), cheapest-fitting first as primary.
+                `add_credits` has no lever href — the Payment Link below is its action. */}
+            {selfHref ? (
+              <p style={{ margin: "8px 0 0", display: "flex", gap: "12px", flexWrap: "wrap" }} data-resolution-options>
+                {insufficient.options.map((o) => {
+                  const href = resolutionHref(selfHref, view, o.action);
+                  if (!href) return null;
+                  return (
+                    <a
+                      key={o.action}
+                      href={href}
+                      data-resolution={o.action}
+                      style={{
+                        fontSize: "13px",
+                        color: o.primary ? "var(--accent)" : "var(--shell-fg)",
+                        fontWeight: o.primary ? 600 : 400,
+                      }}
+                    >
+                      {labels.resolutionLabels?.[o.action] ?? RESOLUTION_FALLBACK_LABELS[o.action] ?? o.action}
+                    </a>
+                  );
+                })}
+              </p>
+            ) : null}
             {/* PRB.08 — the beta's ONE real-money channel: the Stripe Payment Link (§14.6). The button POSTs
                 the whole form to the exhausted-prompt route (telemetry lands server-side, then a 302 to the
                 link) — the `action_taken` value is the telemetry field. No nested form: `formAction`
@@ -295,6 +377,19 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
               {view.entitlementLine}
             </div>
           </div>
+        ) : est.missing ? (
+          /* EST.1 — unmeasured inputs render "—" + an estimating hint (never a fabricated figure). */
+          <div style={boxStyle} data-estimate-box data-estimate-missing="true">
+            <div style={{ fontSize: "16px", fontWeight: 600 }} data-dollars-line>
+              —
+              <span style={{ float: "right", color: "var(--shell-fg-muted)", fontWeight: 400 }} data-time-line>
+                ~
+              </span>
+            </div>
+            <div style={{ fontSize: "13px", color: "var(--shell-fg-muted)", marginTop: "4px" }} data-credits-line>
+              {labels.estimatingLabel ?? "Estimate pending — the draft is still being measured."}
+            </div>
+          </div>
         ) : (
           <div style={boxStyle} data-estimate-box>
             <div style={{ fontSize: "16px", fontWeight: 600 }} data-dollars-line>
@@ -326,7 +421,7 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
             label={labels.runLabel}
             confirmLabel={labels.confirmLabel}
             needsSecondClick={view.consent.needsSecondClick}
-            disabled={!!insufficient || !!view.suspended}
+            disabled={!!insufficient || !!view.suspended || !!est.missing}
           />
         </div>
       </Paywall>
@@ -440,6 +535,27 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
             <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.stageLabel ?? "Stage"}</span>
             <input type="text" name="stage" defaultValue={view.scope.stage ?? ""} style={{ width: "180px" }} />
           </label>
+          {/* EST.1 (ADR-035) — the Model-tier select: a USER choice inside plan rules. A locked tier
+              renders disabled with its repriced estimate for context; the inline script repaints the
+              estimate box on change (the `cells` table covers every rigor|tier|toggle state). */}
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ color: "var(--shell-fg-muted)", minWidth: "170px" }}>{labels.modelTierLabel ?? "Model tier"}</span>
+            <select name="modelTier" defaultValue={view.modelTier} data-tier-select>
+              {view.modelTierOptions.map((o) => (
+                <option key={o.tier} value={o.tier} disabled={!o.allowed && !o.selected}>
+                  {o.display} · ≈{o.estimateCredits.toLocaleString("en-US")} cr
+                  {!o.allowed ? ` ${labels.tierLockedSuffix ?? "(not on your plan)"}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          {view.clampedFromModelTier ? (
+            <p style={{ margin: 0, fontSize: "12px", color: "var(--shell-fg-faint)" }} data-tier-clamped>
+              {(labels.tierClampedFmt ?? "{requested} isn't on your plan — priced on {resolved}.")
+                .replace("{requested}", MODEL_TIER_DISPLAY[view.clampedFromModelTier as ModelTier] ?? view.clampedFromModelTier)
+                .replace("{resolved}", view.modelTierDisplay)}
+            </p>
+          ) : null}
           {/* P1.21 (§6.7/REQ-GENRE-6) — the memo run's user_sources field: one `name :: url-or-text`
               per line; the api validates + freezes them and denies web fetches to their domains. */}
           {view.userSourcesField ? (
@@ -546,22 +662,29 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction }
 }
 
 /** The inline recompute script (§5.6 item 2). Scoped to the sheet's <form>; pure DOM text swaps from the
- *  embedded per-rigor table. Formatting is the trivial $0.01/credit peg — not the estimator (that ran on the
- *  server). Numbers only in the payload; JSON.stringify keeps it injection-safe. */
+ *  embedded FULL lever matrix (`cells`, keyed `rigor|tier|on-toggles` — EST.1: tier is a user lever, so
+ *  a tier change repaints in place like a rigor change, and a rigor change KEEPS the chosen tier —
+ *  ADR-035). Formatting is the trivial $0.01/credit peg — not the estimator (that ran on the server).
+ *  Numbers only in the payload; JSON.stringify keeps it injection-safe. */
 function recomputeScript(recompute: RunSheetView["recompute"]): string {
   const R = JSON.stringify(recompute);
   return `(function(){var R=${R};var f=document.currentScript.closest('form');if(!f)return;
 function usd(c){return '$'+(c/100).toFixed(2);}function cr(c){return Math.round(c).toLocaleString('en-US');}
 function consent(e){if(R.entitlement)return false;if(e<R.dontAskUnder)return false;if(e>500)return true;return e>200&&e>0.25*R.spendableCredits;}
 var ci=f.querySelector('[data-cap-input]');if(ci)ci.addEventListener('change',function(){if(Number(ci.value)<Number(ci.min))ci.value=ci.min;else ci.setAttribute('data-touched','1');});
-function upd(){var sel=f.querySelector('input[name=rigor]:checked');if(!sel)return;var s=R.byRigor[sel.value];if(!s)return;
-var cap=s.capCredits,est=s.estimateCredits,ba=R.spendableCredits-cap,insuf=cap>R.spendableCredits;
+function onT(){var o=[];f.querySelectorAll('input[name^="toggle."]').forEach(function(b){if(b.checked)o.push(b.name.slice(7));});o.sort();return o.join(',');}
+function cell(rig,tier){return R.cells[rig+'|'+tier+'|'+onT()];}
+function upd(){var sel=f.querySelector('input[name=rigor]:checked');if(!sel)return;
+var ts=f.querySelector('select[name=modelTier]');var tier=ts?ts.value:R.modelTier;
+var s=cell(sel.value,tier);if(!s)return;
+var cap=s.c,est=s.e,ba=R.spendableCredits-cap,insuf=cap>R.spendableCredits;
 var d=f.querySelector('[data-dollars-line]');if(d&&!R.entitlement)d.firstChild.nodeValue='\\u2248 '+usd(est)+' \\u00b7 never more than '+usd(cap);
 var cl=f.querySelector('[data-credits-line]');if(cl&&!R.entitlement)cl.textContent=cr(est)+' credits \\u00b7 cap '+cr(cap)+' \\u00b7 '+cr(ba)+' left after the cap';
-var t=f.querySelector('[data-time-line]');if(t)t.textContent='~'+s.lowMinutes+'\\u2013'+s.highMinutes+' min';
+var t=f.querySelector('[data-time-line]');if(t)t.textContent='~'+s.lo+'\\u2013'+s.hi+' min';
 var b=f.querySelector('[data-run-button]');if(b){var need=consent(est);b.textContent=need?b.getAttribute('data-confirm-label'):b.getAttribute('data-run-label');b.setAttribute('data-needs-consent',need?'true':'false');b.setAttribute('data-estimate-credits',String(est));b.disabled=insuf;}
 var eh=f.querySelector('input[name=estimateCredits]');if(eh)eh.value=String(est);
-var ch=f.querySelector('input[name=capCredits]');if(ch){ch.min=String(cap);if(!ch.getAttribute('data-touched'))ch.value=String(cap);else if(Number(ch.value)<cap)ch.value=String(cap);}
-var mt=f.querySelector('input[name=modelTier]');if(mt&&s.modelTier)mt.value=s.modelTier;}
-f.querySelectorAll('input[name=rigor]').forEach(function(r){r.addEventListener('change',upd);});})();`;
+var ch=f.querySelector('input[name=capCredits]');if(ch){ch.min=String(cap);if(!ch.getAttribute('data-touched'))ch.value=String(cap);else if(Number(ch.value)<cap)ch.value=String(cap);}}
+f.querySelectorAll('input[name=rigor]').forEach(function(r){r.addEventListener('change',upd);});
+var ts2=f.querySelector('select[name=modelTier]');if(ts2)ts2.addEventListener('change',upd);
+f.querySelectorAll('input[name^="toggle."]').forEach(function(b){b.addEventListener('change',upd);});})();`;
 }

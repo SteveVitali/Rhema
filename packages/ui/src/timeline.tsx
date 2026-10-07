@@ -27,6 +27,9 @@ export interface TimelineViewWire {
     readonly verb: string;
     readonly label: string | null;
     readonly estimateCredits: number | null;
+    /** EST.1 — the shared duration band the chip renders next to the estimate (calibrated cell,
+     *  else the per-phase prior — identical to the run sheet's figure). */
+    readonly duration?: { readonly lowMinutes: number; readonly highMinutes: number } | null;
     readonly headDraftN: number | null;
   };
   readonly rounds: readonly TimelineRoundWire[];
@@ -191,6 +194,11 @@ export function TimelinePane({
           {next.estimateCredits != null && labels.estimateLabel ? (
             <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--shell-fg-muted)", fontVariantNumeric: "tabular-nums" }}>
               {labels.estimateLabel(next.estimateCredits)}
+            </span>
+          ) : null}
+          {next.duration != null ? (
+            <span data-next-step-duration style={{ marginLeft: "8px", fontSize: "12px", color: "var(--shell-fg-faint)", fontVariantNumeric: "tabular-nums" }}>
+              ~{next.duration.lowMinutes}–{next.duration.highMinutes} min
             </span>
           ) : null}
         </div>

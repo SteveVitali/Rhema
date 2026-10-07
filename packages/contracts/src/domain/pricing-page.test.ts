@@ -10,6 +10,7 @@ import {
   buildPricingPageData,
   cardCreditsToUsd,
   costCardFigures,
+  creditsLabel,
   draftCardCredits,
   pricingFaq,
   pricingMatrix,
@@ -19,7 +20,48 @@ import {
   reviewNoFactCheckCredits,
   reviseCardCredits,
   voiceProfileCard,
+  type SurfacePricer,
 } from "./pricing-page.js";
+
+// EST.1 — the page's figures now flow through an injected `SurfacePricer` (the estimator-facing
+// call). Contracts is a leaf — it cannot import the real `surfacePricer()` from @rhema/run-sheet —
+// so this file injects a FIXTURE pricer that mirrors the published modelled terms (pricing.json's
+// costCardTerms). That keeps the composition assertions honest: a hand-edited figure still fails,
+// the injection plumbing is exercised, and the REAL estimator's figure parity is asserted where the
+// implementation lives (run-sheet's surface.test.ts). A pricer that cannot price yields "—"/null —
+// never a stale number — and a separate test pins that contract.
+
+/** The published modelled terms as a SurfacePricer — a fixture, not the estimator. */
+const fixturePricer = (): SurfacePricer => ({
+  estimate: (a) => {
+    const mult = PRICING.modelTierMultipliers[a.modelTier] ?? 1;
+    const t = PRICING.costCardTerms;
+    const w = a.inputs.words ?? 0;
+    const cl = a.inputs.claims ?? 0;
+    const rigorMult = t.quickReview.rigorMultipliers[a.rigor] ?? 1;
+    switch (a.workflow) {
+      case "review": {
+        const perClaim =
+          a.toggles?.fact_check === false
+            ? t.unverifiedClaimCredits * mult
+            : (PRICING.costPerVerifiedClaim.review?.[a.modelTier] ?? 0);
+        return (t.reading.intercept + t.reading.perWord * w) * mult * rigorMult + cl * perClaim * rigorMult;
+      }
+      case "draft":
+        return (t.draft.intercept + t.draft.perWord * w + t.draft.perClaim * cl) * mult;
+      case "revise": {
+        const moves = Math.round(cl * t.revise.researchedMoveShare);
+        return (t.revise.intercept + t.revise.perWord * w + t.revise.perClaim * cl + moves * t.revise.perResearchedMove) * mult;
+      }
+      case "voice_profile":
+        return (t.voiceProfile.intercept + t.voiceProfile.perWord * w) * mult;
+      default:
+        return null;
+    }
+  },
+  perVerifiedClaim: (wf, tier) => PRICING.costPerVerifiedClaim[wf]?.[tier] ?? null,
+});
+const PRICE = fixturePricer();
 
 // P1.17 (§15.2) — AC: every figure on /pricing derives from pricing.json + the cost terms; ranges stay
 // ranges; the essay card leads; annual shows the 15% saving in dollars; a hand-edited figure fails
@@ -27,6 +69,10 @@ import {
 // the literal assertions pin only the PUBLISHED constants' shape).
 
 const cardRound = (n: number) => Math.round(n / 10) * 10;
+// EST.1 (N4 live catch): a printed RANGE must round outward — the low floors, the high ceils —
+// so the card's bracket always contains the raw figure (a nearest-10 low can sit above it).
+const cardFloor = (n: number) => Math.floor(n / 10) * 10;
+const cardCeil = (n: number) => Math.ceil(n / 10) * 10;
 
 describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
   it("a Review's credits recompute from reading terms + per-verified-claim constants", () => {
@@ -37,30 +83,45 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
         (t.intercept + t.perWord * words) * PRICING.modelTierMultipliers[tier] +
           claims * PRICING.costPerVerifiedClaim.review![tier]!,
       );
-      expect(reviewCardCredits(words, claims, tier)).toBe(expected);
+      expect(reviewCardCredits(PRICE, words, claims, tier)).toBe(expected);
     }
   });
 
   it("every cost-card figure is a RANGE (low < high) — never a single value", () => {
     for (const shape of PRICING.costCardShapes) {
-      const card = costCardFigures(shape);
+      const card = costCardFigures(PRICE, shape);
       for (const row of card.rows) {
-        expect(row.range.low).toBeLessThan(row.range.high);
-        expect(row.range.low).toBeGreaterThan(0);
+        expect(row.range!.low).toBeLessThan(row.range!.high);
+        expect(row.range!.low).toBeGreaterThan(0);
+      }
+      for (const row of card.rows.filter((r) => r.key !== "full_round")) {
+        // outward rounding: the printed bracket always CONTAINS the raw Base/Frontier endpoints.
+        const args = {
+          workflow: (row.key === "review_no_fact_check" ? "review" : row.key) as "draft",
+          rigor: "standard",
+          inputs: { words: card.words, claims: card.claims },
+          ...(row.key === "review_no_fact_check" ? { toggles: { fact_check: false } } : {}),
+        };
+        const baseRaw = PRICE.estimate({ ...args, modelTier: "base" })!;
+        const frontierRaw = PRICE.estimate({ ...args, modelTier: "frontier" })!;
+        expect(row.range!.low, `${card.key}/${row.key} low`).toBe(cardFloor(baseRaw));
+        expect(row.range!.low, `${card.key}/${row.key} low ≤ raw`).toBeLessThanOrEqual(baseRaw);
+        expect(row.range!.high, `${card.key}/${row.key} high`).toBe(cardCeil(frontierRaw));
+        expect(row.range!.high, `${card.key}/${row.key} high ≥ raw`).toBeGreaterThanOrEqual(frontierRaw);
       }
       // and the full-round row IS the per-tier sum, not a hand-typed total.
       expect(card.fullRoundByTier.base).toBe(
-        draftCardCredits(shape.words, shape.claims, "base") +
-          reviewCardCredits(shape.words, shape.claims, "base") +
-          reviseCardCredits(shape.words, shape.claims, "base"),
+        draftCardCredits(PRICE, shape.words, shape.claims, "base")! +
+          reviewCardCredits(PRICE, shape.words, shape.claims, "base")! +
+          reviseCardCredits(PRICE, shape.words, shape.claims, "base")!,
       );
-      expect(card.rows.find((r) => r.key === "full_round")!.range.low).toBe(card.fullRoundByTier.base);
-      expect(card.rows.find((r) => r.key === "full_round")!.range.high).toBe(card.fullRoundByTier.frontier);
+      expect(card.rows.find((r) => r.key === "full_round")!.range!.low).toBe(card.fullRoundByTier.base);
+      expect(card.rows.find((r) => r.key === "full_round")!.range!.high).toBe(card.fullRoundByTier.frontier);
     }
   });
 
   it("the ESSAY card leads the cards (the §15.2 ordering rule)", () => {
-    const data = buildPricingPageData();
+    const data = buildPricingPageData(undefined, PRICE);
     expect(data.cards.length).toBeGreaterThanOrEqual(1);
     // costCardShapes order is the publication's; the essay shape must be first on the page.
     expect(data.cards[0]!.key).toBe(PRICING.costCardShapes[0]!.key);
@@ -68,7 +129,7 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
   });
 
   it("annual saves exactly 15% and renders the saving in DOLLARS per year", () => {
-    const data = buildPricingPageData();
+    const data = buildPricingPageData(undefined, PRICE);
     expect(data.annualSavingsPct).toBe(15);
     for (const plan of data.plans.filter((p) => !p.waitlist && p.tier !== "free")) {
       const p0 = planOf(plan.tier);
@@ -91,34 +152,52 @@ describe("§15.2 pricing derivation (REQ-GROWTH-6/9)", () => {
   it("the fact-check-off row is strictly cheaper than fact-check-on at every tier", () => {
     const academic = PRICING.costCardShapes.find((s) => s.key === "academic")!;
     for (const tier of ["base", "balanced", "frontier"] as const) {
-      expect(reviewNoFactCheckCredits(academic.words, academic.claims, tier)).toBeLessThan(
-        reviewCardCredits(academic.words, academic.claims, tier),
+      expect(reviewNoFactCheckCredits(PRICE, academic.words, academic.claims, tier)!).toBeLessThan(
+        reviewCardCredits(PRICE, academic.words, academic.claims, tier)!,
       );
     }
   });
 
   it("the voice card + quick-review line derive from their published terms", () => {
-    const vc = voiceProfileCard();
+    const vc = voiceProfileCard(PRICE);
     const t = PRICING.costCardTerms.voiceProfile;
     expect(vc.words).toBe(PRICING.costCardTerms.voiceCorpusWords);
-    expect(vc.range.low).toBe(cardRound((t.intercept + t.perWord * vc.words) * PRICING.modelTierMultipliers.base));
+    const vcBase = (t.intercept + t.perWord * vc.words) * PRICING.modelTierMultipliers.base;
+    expect(vc.range!.low).toBe(cardFloor(vcBase));
+    expect(vc.range!.low).toBeLessThanOrEqual(vcBase);
 
-    const qr = quickReviewLine();
+    const qr = quickReviewLine(PRICE);
     expect(qr.wordCap).toBe(PRICING.costCardTerms.quickReview.wordCap);
-    expect(qr.byRigor.standard).toBe(reviewCardCredits(qr.wordCap, qr.claims, "base"));
-    expect(qr.byRigor.quick).toBeLessThan(qr.byRigor.standard);
-    expect(qr.byRigor.full_board).toBeGreaterThan(qr.byRigor.standard);
+    expect(qr.byRigor.standard).toBe(reviewCardCredits(PRICE, qr.wordCap, qr.claims, "base"));
+    expect(qr.byRigor.quick!).toBeLessThan(qr.byRigor.standard!);
+    expect(qr.byRigor.full_board!).toBeGreaterThan(qr.byRigor.standard!);
   });
 
   it("the FAQ's 8,000-word figure is COMPUTED (not quoted) from the academic shape", () => {
     const academic = PRICING.costCardShapes.find((s) => s.key === "academic")!;
-    const faq = pricingFaq();
+    const faq = pricingFaq(PRICE);
     const q = faq[0]!;
     expect(q.q).toContain(academic.words.toLocaleString("en-US"));
-    const reviewBase = reviewCardCredits(academic.words, academic.claims, "base");
+    const reviewBase = reviewCardCredits(PRICE, academic.words, academic.claims, "base")!;
     expect(q.q).toContain(`$${Math.round(cardCreditsToUsd(reviewBase))}`);
     expect(q.a).toContain(reviewBase.toLocaleString("en-US"));
-    expect(q.a).toContain(reviewNoFactCheckCredits(academic.words, academic.claims, "base").toLocaleString("en-US"));
+    expect(q.a).toContain(reviewNoFactCheckCredits(PRICE, academic.words, academic.claims, "base")!.toLocaleString("en-US"));
+  });
+
+  it("an absent pricer fails CLOSED — every figure is an em-dash/null, never a remembered number", () => {
+    const data = buildPricingPageData();
+    for (const card of data.cards) {
+      for (const row of card.rows) expect(row.range).toBeNull();
+      expect(card.fullRoundByTier.base).toBeNull();
+    }
+    const qr = quickReviewLine(undefined);
+    expect(qr.byRigor.standard).toBeNull();
+    expect(creditsLabel(null)).toBe("—");
+    expect(rangeLabel(null)).toBe("—");
+    expect(voiceProfileCard(undefined).range).toBeNull();
+    // a priced card's rows are the sweep low→high through the SAME injected call.
+    const priced = costCardFigures(PRICE, PRICING.costCardShapes[0]!);
+    expect(priced.rows.every((r) => r.range != null)).toBe(true);
   });
 
   it("the matrix's cells are the plan specs' — including the waitlist + per-seat rows", () => {

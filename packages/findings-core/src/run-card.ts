@@ -1,4 +1,9 @@
-import type { RunState } from "@rhema/contracts";
+import {
+  DURATION_PRIOR_HIGH_FRACTION,
+  DURATION_PRIOR_LOW_FRACTION,
+  PHASE_DURATION_PRIOR_MINUTES,
+  type RunState,
+} from "@rhema/contracts";
 import type { GateDecisionView } from "./gate-card.js";
 
 // The run card + its state (§5.5; REQ-IDE-11/12). The card renders ORCHESTRATOR-EMITTED state, counters,
@@ -466,14 +471,15 @@ export interface EtaStepFact {
 }
 
 /** Flat per-phase duration prior when the run has no committed-step history yet (the parametric model
- *  until cross-run samples exist — ledger K4). */
-const ETA_PRIOR_MS_PER_PHASE = 5 * 60 * 1000;
+ *  until cross-run samples exist — ledger K4). EST.1 — the constants live in contracts/durations.ts so
+ *  the sheet's, the protocol card's and this card's prior can never drift apart. */
+const ETA_PRIOR_MS_PER_PHASE = PHASE_DURATION_PRIOR_MINUTES * 60 * 1000;
 
 /**
  * The running card's ETA band (§5.5; ledger K4): the mean committed-step duration this run × the phases
  * still to run (`pending`/`running`; `off` phases never run). Band = [0.8×, 1.5×] that projection —
- * honest uncertainty, whole minutes. With no committed history the flat prior stands in. Null when the
- * run isn't running or nothing remains.
+ * honest uncertainty, whole minutes (the shared `durationPriorForPhases` fractions). With no committed
+ * history the flat prior stands in. Null when the run isn't running or nothing remains.
  */
 export function etaBandForPhases(
   phases: readonly PhaseProgress[],
@@ -483,7 +489,7 @@ export function etaBandForPhases(
   if (remaining === 0) return null;
   const durations = stepFacts.map((s) => s.durationMs).filter((d): d is number => d != null && d > 0);
   const meanMs = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : ETA_PRIOR_MS_PER_PHASE;
-  const lowMin = Math.max(1, Math.round((meanMs * remaining * 0.8) / 60000));
-  const highMin = Math.max(lowMin + 1, Math.round((meanMs * remaining * 1.5) / 60000));
+  const lowMin = Math.max(1, Math.round((meanMs * remaining * DURATION_PRIOR_LOW_FRACTION) / 60000));
+  const highMin = Math.max(lowMin + 1, Math.round((meanMs * remaining * DURATION_PRIOR_HIGH_FRACTION) / 60000));
   return { lowMin, highMin };
 }

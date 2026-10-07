@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { buildEstimate } from "@rhema/run-sheet";
-import { parseQuarantineKey, parseUserPrefs } from "@rhema/contracts";
+import { resolveSheetConfig, surfaceEstimate } from "@rhema/run-sheet";
+import { allowedModelTiers, parseQuarantineKey, parseUserPrefs, type DurationBand } from "@rhema/contracts";
 import { PROTOCOL_CARDS, defaultProtocolId } from "@rhema/protocols";
-import { recordAnalyticsEvent } from "@rhema/ledger";
+import { durationCells, effectivePlanTier, recordAnalyticsEvent, sizeBandFor } from "@rhema/ledger";
 import type { ContentStore } from "@rhema/mirror";
 import type { Queue } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
@@ -97,24 +97,63 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
   const app = new Hono();
 
   // ---- GET /protocols — the four §5.3 protocol cards. The card's "typical cost band" is COMPUTED by
-  // the estimator (a Standard/Balanced Review over the card's typical length) — never a hand-typed price.
+  // the surface estimator (a Standard Review over the card's typical length AT THE CALLER'S RESOLVED
+  // TIER — EST.1: explicit choice → account pref → the notch default, clamped to the plan) — never a
+  // hand-typed price, and never a tier the caller's plan locks (BL-57/BL-58). A failed estimate omits
+  // the figure; the card renders "—" rather than a stale or modelled number.
   app.get("/protocols", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
-    const protocols = PROTOCOL_CARDS.map((card) => {
-      let typicalReviewCredits: number | undefined;
-      try {
-        typicalReviewCredits = buildEstimate({
-          workflow: "review",
-          rigor: "standard",
-          modelTier: "balanced",
-          inputs: { words: card.typicalWords },
-        }).estimateCredits;
-      } catch {
-        typicalReviewCredits = undefined; // a card without a priced band still renders
-      }
-      return { ...card, typicalReviewCredits };
+
+    // EST.1 — the same default chain the run sheet opens on (account pref → rigor-notch column),
+    // clamped to the plan's permitted tiers. Reads fail CLOSED: a prefs/plan read error prices the
+    // cards at the unconstrained notch default rather than 500ing a decorative read.
+    const prefsRow = (
+      await deps.db
+        .query(`select prefs from "user" where id = $1`, [principal.userId])
+        .catch(() => ({ rows: [] }))
+    ).rows[0] as { prefs: unknown } | undefined;
+    const prefs = parseUserPrefs(prefsRow?.prefs);
+    const planTier = await effectivePlanTier(deps.db, principal.billingAccountId).catch(() => null);
+    const allowed = planTier != null ? allowedModelTiers(planTier) : undefined;
+    const { modelTier } = resolveSheetConfig({
+      workflow: "review",
+      rigor: "standard",
+      prefs,
+      ...(allowed ? { allowedModelTiers: allowed } : {}),
     });
+
+    // EST.1 — the calibrated duration cells for a Review at each card's size band (the protocol card,
+    // the sheet and the run card's initial ETA all render the same band; null ⇒ the shared prior).
+    const bandCache = new Map<string, Awaited<ReturnType<typeof durationCells>>>();
+    const cellsFor = async (words: number) => {
+      const band = sizeBandFor({ words });
+      if (!bandCache.has(band)) bandCache.set(band, await durationCells(deps.db, "review", band).catch(() => null));
+      return bandCache.get(band) ?? null;
+    };
+
+    const protocols = await Promise.all(
+      PROTOCOL_CARDS.map(async (card) => {
+        let typicalReviewCredits: number | undefined;
+        let typicalReviewDuration: DurationBand | undefined;
+        try {
+          const durations = (await cellsFor(card.typicalWords)) ?? undefined;
+          const est = surfaceEstimate({
+            workflow: "review",
+            rigor: "standard",
+            modelTier,
+            inputs: { words: card.typicalWords },
+            ...(durations ? { durations } : {}),
+          });
+          typicalReviewCredits = est.estimateCredits;
+          typicalReviewDuration = est.duration;
+        } catch {
+          typicalReviewCredits = undefined; // a card without a priced band still renders
+          typicalReviewDuration = undefined;
+        }
+        return { ...card, typicalReviewCredits, typicalReviewDuration };
+      }),
+    );
     return c.json({ protocols });
   });
 

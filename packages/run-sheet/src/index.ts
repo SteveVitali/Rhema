@@ -8,5 +8,6 @@ export const PACKAGE_NAME = "@rhema/run-sheet" as const;
 
 export * from "./profiles.js";
 export * from "./estimate.js";
+export * from "./surface.js";
 export * from "./lever-matrix.js";
 export * from "./view.js";

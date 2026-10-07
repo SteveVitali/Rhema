@@ -28,9 +28,12 @@ export interface PublicClaimsConfig {
   readonly enabled: Readonly<Partial<Record<PublicClaimId, boolean>>>;
 }
 
-/** The shipped defaults — every gated claim is OFF until its owning ticket flips it. */
+/** The shipped defaults — every gated claim is OFF until its owning ticket flips it.
+ *  EST.1 — `plans.whatItCovers` is ON: its renderers now emit only lines COMPUTED from the cost
+ *  cards through the shared pricer (`planCoverageLine`); an uncomputable plan hides the line, so a
+ *  stale hand-composed figure can never leak back. `trial.firstReviewIncluded` stays OFF (ACT.1). */
 export const PUBLIC_CLAIMS: PublicClaimsConfig = {
-  enabled: { "trial.firstReviewIncluded": false, "plans.whatItCovers": false },
+  enabled: { "trial.firstReviewIncluded": false, "plans.whatItCovers": true },
 };
 
 export function publicClaimEnabled(id: PublicClaimId, cfg: PublicClaimsConfig = PUBLIC_CLAIMS): boolean {

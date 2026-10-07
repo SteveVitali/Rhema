@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { ProjectRow } from "@rhema/api-client";
 import { buildPricingPageData, HERO_HEADLINE } from "@rhema/contracts";
+import { surfacePricer } from "@rhema/run-sheet";
 import { createWebApp, type WebDeps, type AuthOutcome } from "./server.js";
 import type { DataSource, SignupIntent } from "./data.js";
 
@@ -83,7 +84,7 @@ describe("§15.1 — the landing page", () => {
 
   it("the landing's pricing teaser derives its figure (the Essay card's Review range)", async () => {
     const html = await (await createWebApp(makeDeps()).request("/")).text();
-    const data = buildPricingPageData();
+    const data = buildPricingPageData(undefined, surfacePricer());
     const card = data.cards[0]!;
     const review = card.rows.find((r) => r.key === "review")!;
     expect(html).toContain(`${review.range.low.toLocaleString("en-US")} – ${review.range.high.toLocaleString("en-US")}`);
@@ -95,7 +96,7 @@ describe("§15.2 — /pricing renders only derived figures", () => {
     const res = await createWebApp(makeDeps()).request("/pricing");
     expect(res.status).toBe(200);
     const html = await res.text();
-    const data = buildPricingPageData();
+    const data = buildPricingPageData(undefined, surfacePricer());
     for (const p of data.plans) {
       // the card head renders `>$40<span>/mo` (the unit is a span) — the contiguous `$x/mo`
       // string lives in the matrix's "Price (monthly)" row instead.
@@ -122,7 +123,7 @@ describe("§15.2 — /pricing renders only derived figures", () => {
   it("the annual cycle shows the 15% saving in dollars on each paid card", async () => {
     const res = await createWebApp(makeDeps()).request("/pricing?cycle=annual");
     const html = await res.text();
-    const data = buildPricingPageData();
+    const data = buildPricingPageData(undefined, surfacePricer());
     const writer = data.plans.find((p) => p.tier === "writer")!;
     expect(html).toContain(`>$${writer.annualMonthlyUsd}<`);
     expect(html).toContain(`Save $${writer.annualSavingsUsdPerYear}/yr`);

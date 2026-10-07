@@ -135,6 +135,46 @@ describe("POST /projects/:id/estimates (REQ-SPEC-16)", () => {
     expect(r.status).toBe(400);
   });
 
+  // EST.1 / BL-11(a) (closes the deterministic half of D-DEF.3-2) — an off-vocab modelTier used to
+  // flow into the pre-pass and 500 on a NaN; now it's a NAMED 400 ahead of the cache and the store.
+  it("400 invalid_model_tier on an off-vocab tier — no cache write, no event", async () => {
+    const prePass: ClaimPrePass = { count: async () => 45 };
+    const { app, cache, events } = makeApp({ claimPrePass: prePass });
+    const r = await post(app, "p1", { ...REVIEW, modelTier: "standard", refine: true });
+    expect(r.status).toBe(400);
+    expect(((await r.json()) as { error: string }).error).toBe("invalid_model_tier");
+    expect(cache.rows.size).toBe(0);
+    expect(events).toHaveLength(0);
+  });
+
+  it("400 invalid_rigor on an off-vocab rigor", async () => {
+    const r = await post(harness.app, "p1", { ...REVIEW, rigor: "frontier" });
+    expect(r.status).toBe(400);
+    expect(((await r.json()) as { error: string }).error).toBe("invalid_rigor");
+  });
+
+  it("400 invalid_workflow on an unknown workflow", async () => {
+    const r = await post(harness.app, "p1", { ...REVIEW, workflow: "teleport" });
+    expect(r.status).toBe(400);
+    expect(((await r.json()) as { error: string }).error).toBe("invalid_workflow");
+  });
+
+  it("EST.1 — the response carries the shared duration band + a sum-checkable why block", async () => {
+    const b = (await (await post(harness.app, "p1", REVIEW)).json()) as {
+      duration?: { lowMinutes: number; highMinutes: number };
+      why?: { subtotalCredits: number; factors: { multiplier: number }[]; exactCredits: number; totalCredits: number; estimateCredits?: number };
+      estimateCredits: number;
+    };
+    expect(b.duration).toBeDefined();
+    expect(b.duration!.lowMinutes).toBeGreaterThanOrEqual(1);
+    expect(b.duration!.highMinutes).toBeGreaterThan(b.duration!.lowMinutes);
+    expect(b.why).toBeDefined();
+    const exact = b.why!.factors.reduce((v, f) => v * f.multiplier, b.why!.subtotalCredits);
+    expect(Math.abs(exact - b.why!.exactCredits)).toBeLessThan(1e-9);
+    expect(Math.ceil(b.why!.exactCredits)).toBe(b.estimateCredits);
+    expect(b.why!.totalCredits).toBe(b.estimateCredits);
+  });
+
   it("cacheKey encodes (draft sha, workflow, rigor, tier, variant[, scope])", () => {
     expect(estimateCacheKey({ draftSha: "s", workflow: "review", rigor: "quick", modelTier: "base" })).toBe("s|review|quick|base||");
     expect(estimateCacheKey({ workflow: "review", rigor: "quick", modelTier: "base", variant: "v" })).toBe("nosha|review|quick|base|v|");
@@ -253,5 +293,17 @@ describe("F6 — the live estimate path over PGlite (refine → estimate_cache �
     expect(runs.n).toBe(0);
     expect(events).toHaveLength(3);
     expect(events.every((e) => e.kind === "review" && e.levers_shown)).toBe(true);
+  });
+
+  // EST.1 / D-DEF.3-2 — the invalid tier writes NOTHING to the real store (the old path 500'd mid-write).
+  it("an invalid modelTier 400s named and leaves estimate_cache/usage_records empty", async () => {
+    const app = createEstimateRoutes({ principal: P, db: db.client });
+    const r = await post(app, PROJ, { ...REVIEW, modelTier: "standard" });
+    expect(r.status).toBe(400);
+    expect(((await r.json()) as { error: string }).error).toBe("invalid_model_tier");
+    const cacheRows = (await db.client.query("select count(*)::int n from estimate_cache")).rows[0] as { n: number };
+    const usageRows = (await db.client.query("select count(*)::int n from usage_records")).rows[0] as { n: number };
+    expect(cacheRows.n).toBe(0);
+    expect(usageRows.n).toBe(0);
   });
 });

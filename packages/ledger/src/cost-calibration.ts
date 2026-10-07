@@ -83,6 +83,8 @@ export interface CostObservation {
   readonly inadmissibleReason?: string;
   readonly source: "production" | "stage_b" | "synthetic";
   readonly measuredAt: Date;
+  /** EST.1 — the run's execution duration (Σ step started_at→ended_at; gate waits excluded) in ms. */
+  readonly durationMs?: number;
 }
 
 /** Upsert an observation (reharvest-safe: the run is re-classified as later truth lands). */
@@ -91,18 +93,18 @@ export async function recordCostObservation(exec: SqlClient, ids: IdFactory, o: 
     `insert into cost_observations
        (id, run_id, workspace_id, workflow, rigor, model_tier, size_band, outcome,
         proxy_credits, proxy_list_cost_usd, committed_credits, estimate_credits,
-        words, claims, phases, admissible, inadmissible_reason, source, measured_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        words, claims, phases, admissible, inadmissible_reason, source, measured_at, duration_ms)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
      on conflict (run_id) do update set
        outcome = excluded.outcome, proxy_credits = excluded.proxy_credits,
        proxy_list_cost_usd = excluded.proxy_list_cost_usd, committed_credits = excluded.committed_credits,
        admissible = excluded.admissible, inadmissible_reason = excluded.inadmissible_reason,
-       measured_at = excluded.measured_at`,
+       measured_at = excluded.measured_at, duration_ms = excluded.duration_ms`,
     [
       ids("obs"), o.runId, o.workspaceId, o.workflow, o.rigor, o.modelTier, o.sizeBand, o.outcome,
       o.proxyCredits, o.proxyListCostUsd, o.committedCredits, o.estimateCredits ?? null,
       o.words ?? null, o.claims ?? null, o.phases ?? null,
-      o.admissible, o.inadmissibleReason ?? null, o.source, o.measuredAt,
+      o.admissible, o.inadmissibleReason ?? null, o.source, o.measuredAt, o.durationMs ?? null,
     ],
   );
 }
@@ -141,7 +143,8 @@ export async function harvestCostObservations(
               r.estimate_credits, r.input_snapshot, r.ended_at, r.entitlement_id,
               coalesce(u.proxy_credits,0)::int as proxy_credits,
               coalesce(u.proxy_usd,0)::float as proxy_usd,
-              coalesce(l.net,0)::int as net_debits
+              coalesce(l.net,0)::int as net_debits,
+              s.duration_ms::bigint as duration_ms
          from runs r
          left join (
            select run_id, sum(credits) as proxy_credits, sum(list_cost_usd) as proxy_usd
@@ -152,6 +155,12 @@ export async function harvestCostObservations(
                   sum(case when kind = 'debit' then credits when kind = 'refund' then -credits else 0 end) as net
              from credit_ledger group by run_id
          ) l on l.run_id = r.id
+         -- EST.1 — the run's EXECUTION duration: Σ step (ended_at − started_at). Gate waits sit between
+         -- steps and are deliberately excluded — the duration card measures pod work, not human waits.
+         left join (
+           select run_id, sum(extract(epoch from (ended_at - started_at)) * 1000) as duration_ms
+             from steps where started_at is not null and ended_at is not null group by run_id
+         ) s on s.run_id = r.id
         where r.state in ('completed','cancelled','failed') and r.ended_at is not null
           and not exists (select 1 from cost_observations o where o.run_id = r.id)
         order by r.ended_at asc
@@ -163,7 +172,7 @@ export async function harvestCostObservations(
     state: string; delivery: unknown; failure: unknown; estimate_credits: number | null;
     input_snapshot: { wordCount?: number; claimCount?: number } | string | null;
     ended_at: string; entitlement_id: string | null;
-    proxy_credits: number; proxy_usd: number; net_debits: number;
+    proxy_credits: number; proxy_usd: number; net_debits: number; duration_ms: number | null;
   }[];
 
   let written = 0;
@@ -197,6 +206,7 @@ export async function harvestCostObservations(
       inadmissibleReason: inadmissible ?? undefined,
       source: args.source ?? "production",
       measuredAt: endedAt,
+      durationMs: r.duration_ms != null ? Number(r.duration_ms) : undefined,
     });
     written += 1;
   }
@@ -215,6 +225,10 @@ export interface CostCardCell {
   readonly p95Credits: number | null;
   readonly p50Usd: number | null;
   readonly p95Usd: number | null;
+  /** EST.1 — execution-duration percentiles (ms; gate waits excluded — migration 0050). */
+  readonly p10Ms: number | null;
+  readonly p50Ms: number | null;
+  readonly p95Ms: number | null;
   readonly fitVersion: string;
   readonly computedAt: Date;
 }
@@ -224,18 +238,22 @@ export async function recomputeCostCards(exec: SqlClient, fitVersion: string, no
   const res = await exec.query(
     `insert into cost_card_cells
        (workflow, rigor, model_tier, size_band, outcome, n,
-        p50_credits, p95_credits, p50_usd, p95_usd, fit_version, computed_at)
+        p50_credits, p95_credits, p50_usd, p95_usd, p10_ms, p50_ms, p95_ms, fit_version, computed_at)
      select workflow, rigor, model_tier, size_band, outcome, count(*)::int,
             percentile_cont(0.5)  within group (order by proxy_credits),
             percentile_cont(0.95) within group (order by proxy_credits),
             percentile_cont(0.5)  within group (order by proxy_list_cost_usd),
             percentile_cont(0.95) within group (order by proxy_list_cost_usd),
+            percentile_cont(0.10) within group (order by duration_ms),
+            percentile_cont(0.5)  within group (order by duration_ms),
+            percentile_cont(0.95) within group (order by duration_ms),
             $1, $2
        from cost_observations
       group by workflow, rigor, model_tier, size_band, outcome
      on conflict (workflow, rigor, model_tier, size_band, outcome) do update set
        n = excluded.n, p50_credits = excluded.p50_credits, p95_credits = excluded.p95_credits,
        p50_usd = excluded.p50_usd, p95_usd = excluded.p95_usd,
+       p10_ms = excluded.p10_ms, p50_ms = excluded.p50_ms, p95_ms = excluded.p95_ms,
        fit_version = excluded.fit_version, computed_at = excluded.computed_at
      returning workflow`,
     [fitVersion, now],
@@ -271,6 +289,7 @@ export async function costCard(
     await exec.query(
       `select workflow, rigor, model_tier, size_band, outcome, n::int,
               p50_credits::float, p95_credits::float, p50_usd::float, p95_usd::float,
+              p10_ms::float, p50_ms::float, p95_ms::float,
               fit_version, computed_at
          from cost_card_cells where ${conds.join(" and ")}`,
       params,
@@ -278,7 +297,9 @@ export async function costCard(
   ).rows as {
     workflow: string; rigor: string; model_tier: string; size_band: string; outcome: RunOutcome;
     n: number; p50_credits: number | null; p95_credits: number | null;
-    p50_usd: number | null; p95_usd: number | null; fit_version: string; computed_at: string;
+    p50_usd: number | null; p95_usd: number | null;
+    p10_ms: number | null; p50_ms: number | null; p95_ms: number | null;
+    fit_version: string; computed_at: string;
   }[];
   return rows.map((r) => ({
     workflow: r.workflow,
@@ -291,9 +312,38 @@ export async function costCard(
     p95Credits: r.p95_credits,
     p50Usd: r.p50_usd,
     p95Usd: r.p95_usd,
+    p10Ms: r.p10_ms,
+    p50Ms: r.p50_ms,
+    p95Ms: r.p95_ms,
     fitVersion: r.fit_version,
     computedAt: new Date(r.computed_at),
   }));
+}
+
+// ---- EST.1 — calibrated duration bands for the pre-run surfaces (migration 0050) ----------------------
+
+/**
+ * The shared duration cells a surface passes to `durationBandFor`/the lever matrix: the `completed`
+ * cells of `cost_card_cells` for `workflow` at `sizeBand`, keyed `"<rigor>|<modelTier>"` with
+ * low = p10 → high = p95 in whole minutes (clamped ≥1, high > low). Cells with no duration evidence
+ * are skipped — `durationBandFor` falls back to the shared per-phase prior for their bucket.
+ * Returns `null` when the store has NO completed cell with durations for the bucket (the caller may
+ * then skip the lookup entirely); a partial map is normal — unmeasured cells just fall back.
+ */
+export async function durationCells(
+  exec: SqlClient,
+  workflow: string,
+  sizeBand: SizeBand | string,
+): Promise<Record<string, { lowMinutes: number; highMinutes: number }> | null> {
+  const cells = await costCard(exec, { workflow, sizeBand, outcome: "completed" });
+  const out: Record<string, { lowMinutes: number; highMinutes: number }> = {};
+  for (const c of cells) {
+    if (c.p10Ms == null || c.p95Ms == null) continue;
+    const low = Math.max(1, Math.round(c.p10Ms / 60000));
+    const high = Math.max(low + 1, Math.round(c.p95Ms / 60000));
+    out[`${c.rigor}|${c.modelTier}`] = { lowMinutes: low, highMinutes: high };
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 // ---- per-bucket cap refit (REQ-BILL-7): p95 metered/estimate → adopted multiplier ----------------------

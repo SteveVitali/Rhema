@@ -11,19 +11,23 @@ import {
   formatCredits,
   resolveInsufficientBalance,
   MODEL_TIER_DISPLAY,
+  MODEL_TIERS,
   RIGOR_DISPLAY,
+  RIGORS,
   type ConsentDecision,
+  type EstimateWhy,
+  type EstimateWhyTerm,
   type InsufficientBalanceResolution,
   type ModelTier,
   type Rigor,
   type WorkflowKey,
 } from "@rhema/contracts";
-import { estimatorSpec, MODEL_TIER_MULTIPLIERS, rigorMultiplier, type EstimatorInputs } from "@rhema/protocols";
+import type { EstimatorInputs } from "@rhema/protocols";
 import { APPROVAL_DISPLAY } from "@rhema/commands";
 import { buildEstimate } from "./estimate.js";
 import { buildLeverMatrix, leverKey, type LeverMatrix, type TimeBand } from "./lever-matrix.js";
-import { sheetProfile, type ToggleKey, type ToggleState } from "./profiles.js";
-import { RIGORS } from "@rhema/contracts";
+import { resolveToggles, sheetProfile, type ToggleKey, type ToggleState } from "./profiles.js";
+import { surfaceEstimate, type DurationCells } from "./surface.js";
 
 /** The verb label for a workflow's title line (not reserved vocab; the three beta verbs). */
 export const WORKFLOW_VERB_LABEL: Partial<Record<WorkflowKey, string>> = {
@@ -85,17 +89,38 @@ export interface RunSheetEstimateBox {
   readonly capCredits: number;
   readonly rateTableVersion: number;
   readonly provisional: boolean;
-  /** the FIRST, dollars-first line (REQ-BILL-1). */
+  /** the FIRST, dollars-first line (REQ-BILL-1). Empty while `missing` (see below). */
   readonly dollarsLine: string;
-  /** the SECOND, credits/cap/balance-after line (REQ-BILL-1). */
+  /** the SECOND, credits/cap/balance-after line (REQ-BILL-1). Empty while `missing`. */
   readonly creditsLine: string;
   readonly time: TimeBand;
+  /**
+   * EST.1 — the inputs could not be measured (no head draft / no word count): the sheet renders "—"
+   * and an estimating hint instead of a fabricated figure (fail closed, never a stale/mock number).
+   */
+  readonly missing?: boolean;
 }
 
 export interface RigorOption {
   readonly rigor: Rigor;
   readonly display: string;
   readonly selected: boolean;
+}
+
+/**
+ * EST.1 — one selectable model tier (§5.6 collapsed row, ADR-035): the tier label, whether the plan
+ * permits it (a locked tier renders disabled with its price for context), whether it is selected, and
+ * the repriced estimate if picked. The tier is a USER choice inside plan rules — never an implicit
+ * consequence of the rigor notch.
+ */
+export interface ModelTierOption {
+  readonly tier: ModelTier;
+  readonly display: string;
+  /** false ⇒ the plan rules lock this tier (the option renders disabled). */
+  readonly allowed: boolean;
+  readonly selected: boolean;
+  /** this tier's estimate at the current rigor/toggles — rendered beside the option. */
+  readonly estimateCredits: number;
 }
 
 /**
@@ -125,6 +150,13 @@ export interface RunSheetView {
   readonly rigorOptions: readonly RigorOption[];
   readonly modelTier: ModelTier;
   readonly modelTierDisplay: string;
+  /** EST.1 — the selectable model tiers with plan-rule locking + per-tier repricing (§5.6). */
+  readonly modelTierOptions: readonly ModelTierOption[];
+  /**
+   * EST.1 — set when the requested/defaulted tier was plan-clamped to `modelTier` (ADR-035): the sheet
+   * renders the "your plan includes X only" notice so the priced tier is never a silent surprise.
+   */
+  readonly clampedFromModelTier?: ModelTier;
   readonly estimate: RunSheetEstimateBox;
   readonly consent: ConsentDecision;
   /** non-null ⇒ the estimate box is a resolution panel; the Run button is blocked (§5.6 item 6). */
@@ -139,6 +171,9 @@ export interface RunSheetView {
    * "waits for you" under Wait-for-me-at-each.
    */
   readonly scopeApprovalLine: string;
+  /** EST.1 — the structured "Why this estimate?" decomposition (Σ terms × Π factors ≈ total). */
+  readonly why: EstimateWhy;
+  /** the rendered why-line ("… × 40 cr = 840 · … × 1.25 metered coverage ≈ N cr") — computed from `why`. */
   readonly whyLine: string;
   /** the obligation scope line (REQ-OBJ-6), when the caller supplied obligation data. */
   readonly scopeLine?: string;
@@ -222,6 +257,15 @@ export interface RecomputePayload {
   readonly spendableCredits: number;
   readonly dontAskUnder: number;
   readonly entitlement: boolean;
+  /**
+   * Every lever-matrix state the script can repaint to, keyed by `leverKey(rigor, tier, toggles)`
+   * (`"standard|balanced|discourse,fact_check,second_read"`). `e`/`c` = estimate/cap, `lo`/`hi` minutes.
+   */
+  readonly cells: Record<string, { e: number; c: number; lo: number; hi: number }>;
+  /** the tiers the plan permits — the script repaints only onto a selectable tier. */
+  readonly allowedModelTiers: readonly ModelTier[];
+  /** the resolved tier (fallback when the form carries no tier select). */
+  readonly modelTier: ModelTier;
   /** per-rigor DEFAULT state (§6.5: model tier is a consequence of rigor): estimate/cap/time + the tier. */
   readonly byRigor: Record<Rigor, { estimateCredits: number; capCredits: number; lowMinutes: number; highMinutes: number; modelTier: ModelTier }>;
 }
@@ -234,6 +278,24 @@ export interface BuildRunSheetViewArgs {
   readonly inputs: EstimatorInputs;
   readonly toggles?: ToggleState;
   readonly variant?: string;
+  /**
+   * EST.1 — false when the draft could not be measured (no head draft / no word count): the estimate
+   * box renders "—" + an estimating hint, never a fabricated figure (fail closed — ADR-034).
+   */
+  readonly inputsAvailable?: boolean;
+  /**
+   * EST.1 — the model tiers the caller's plan permits (the select locks the rest). Absent ⇒ all
+   * tiers selectable (the unconstrained/internal path).
+   */
+  readonly allowedModelTiers?: readonly ModelTier[];
+  /**
+   * EST.1 — the tier that was REQUESTED before the plan clamp (when different from `modelTier`);
+   * the sheet shows the "your plan includes X only" notice (ADR-035).
+   */
+  readonly requestedModelTier?: ModelTier;
+  /** EST.1 — calibrated duration cells (`cost_card_cells` → `${rigor}|${tier}` bands) for the sheet
+   *  + lever matrix; absent ⇒ the shared per-phase prior. */
+  readonly durations?: DurationCells;
   readonly scope: SheetScope;
   readonly spendableCredits: number;
   readonly dontAskUnder?: number;
@@ -295,25 +357,25 @@ export interface BuildRunSheetViewArgs {
   readonly purchaseClosed?: boolean;
 }
 
-/** The "Why this estimate?" breakdown ("21 claims × 24 cr ≈ 500 · 5,180 words ≈ 60"). Approximate by design. */
-function whyLine(args: BuildRunSheetViewArgs, pricedInputs: EstimatorInputs, claims: number | undefined): string {
-  const spec = estimatorSpec(args.workflow);
-  const scale =
-    MODEL_TIER_MULTIPLIERS[args.modelTier] *
-    rigorMultiplier(args.workflow, args.rigor) *
-    (spec?.calibrationScale ?? 1) *
-    (spec?.meteredCoverage ?? 1);
-  const parts: string[] = [];
-  const perClaim = spec?.costPerVerifiedClaimBase;
-  if (claims != null && perClaim != null) {
-    parts.push(`${formatCredits(claims)} claims × ${formatCredits(perClaim)} cr ≈ ${formatCredits(claims * perClaim * scale)}`);
-  }
-  const perWord = spec?.base?.perWord;
-  const words = pricedInputs.words;
-  if (perWord != null && words) {
-    parts.push(`${formatCredits(words)} words ≈ ${formatCredits(words * perWord * scale)}`);
-  }
-  return parts.join(" · ");
+/**
+ * EST.1 — render the structured `EstimateWhy` as the sheet's one-line breakdown. Each additive term
+ * prints `quantity units × rate cr = credits` (the intercept prints `fixed N cr`); then the
+ * multiplicative factors; then the printed total. The arithmetic is checkable: Σ terms = subtotal,
+ * subtotal × Π factors = the exact figure the estimate ceils to (the incident's unsummed
+ * "4 claims × 40 ≈ 440" shape cannot occur — a term's credits field IS its quantity × rate).
+ */
+function renderWhyLine(why: EstimateWhy): string {
+  const rate = (r: number) => (Number.isInteger(r) ? formatCredits(r) : String(r));
+  const termStr = (t: EstimateWhyTerm) =>
+    t.quantity == null
+      ? `fixed ${formatCredits(t.credits)} cr`
+      : `${formatCredits(t.quantity)} ${t.unit ?? "units"} × ${rate(t.rateCredits)} cr = ${formatCredits(t.credits)}`;
+  const parts = why.terms.map(termStr);
+  let line = parts.join(" · ");
+  if (why.terms.length > 1) line += ` → ${formatCredits(why.subtotalCredits)}`;
+  for (const f of why.factors) line += ` · ×${f.multiplier} ${f.label}`;
+  line += ` ≈ ${formatCredits(why.totalCredits)} cr`;
+  return line;
 }
 
 /** The collapsed-row summary: Protocol · Venue · Stage · Model tier · Voice (§5.6 collapsed row). */
@@ -332,7 +394,9 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   // P1.06 — a resolved command scope reprices the run from the scope's own inputs (a section's words,
   // `findings:1`); `estimate` is the RUN's price. The whole-draft figure renders beside it for context.
   const pricedInputs = args.commandScope?.scopedInputs ?? args.inputs;
-  const estimate = buildEstimate({
+  // EST.1 (ADR-034) — the estimate comes through the ONE surface API: estimate + cap + the duration
+  // band + the "Why this estimate?" decomposition all derive from the same evaluation.
+  const surface = surfaceEstimate({
     workflow: args.workflow,
     rigor: args.rigor,
     modelTier: args.modelTier,
@@ -341,7 +405,9 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ...(args.variant ? { variant: args.variant } : {}),
     ...(args.breakerMultiplier ? { breakerMultiplier: args.breakerMultiplier } : {}),
     ...(args.claimCount != null ? { claimCount: args.claimCount } : {}),
+    ...(args.durations ? { durations: args.durations } : {}),
   });
+  const estimate = surface;
   const whole = args.commandScope?.scopedInputs
     ? buildEstimate({
         workflow: args.workflow,
@@ -364,6 +430,7 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ...(args.variant ? { variant: args.variant } : {}),
     ...(args.breakerMultiplier ? { breakerMultiplier: args.breakerMultiplier } : {}),
     ...(args.claimCount != null ? { claimCount: args.claimCount } : {}),
+    ...(args.durations ? { durations: args.durations } : {}),
   });
 
   // P1.06 — the cap is editable UPWARD only: a submitted/queried override (`--budget`, a raised field)
@@ -377,10 +444,15 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ...(args.dontAskUnder != null ? { dontAskUnder: args.dontAskUnder } : {}),
     ...(args.entitlement ? { entitlement: args.entitlement } : {}),
   });
+  // EST.1 — the resolution may only advise tiers the plan permits ("switch to Base" needs Base
+  // selectable AND not already priced — §14.6's levers sentence reads the plan rules too).
+  const allowedModelTiers = args.allowedModelTiers ?? MODEL_TIERS;
   const insufficient = resolveInsufficientBalance({
     capCredits: effectiveCapCredits,
     spendableCredits: args.spendableCredits,
     ...(args.insufficientMode ? { mode: args.insufficientMode } : {}),
+    allowedModelTiers,
+    currentModelTier: args.modelTier,
   });
 
   const claims = estimate.claimCount;
@@ -431,8 +503,23 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     ? "Memo — user-supplied sources mount read-only for this run and are never fetched over the web."
     : undefined;
 
-  // per-rigor DEFAULT state at THAT rigor's default model tier (§6.5: tier is a consequence of rigor) —
-  // the inline enhancement's recompute table. Switching rigor moves the tier with it.
+  // EST.1 — the tier select: one option per canonical tier; a plan-locked tier renders disabled with
+  // its price for context; the estimate column reads the SAME lever matrix (no second formula).
+  const currentToggles = resolveToggles(profile, args.rigor, args.toggles);
+  const modelTierOptions: ModelTierOption[] = MODEL_TIERS.map((tier) => {
+    const key = leverKey(args.rigor, tier, currentToggles);
+    const s = leverMatrix.states[key] ?? leverMatrix.current;
+    return {
+      tier,
+      display: MODEL_TIER_DISPLAY[tier],
+      allowed: allowedModelTiers.includes(tier),
+      selected: tier === args.modelTier,
+      estimateCredits: s.estimateCredits,
+    };
+  });
+
+  // per-rigor DEFAULT state at that rigor's notch model tier — the no-JS/reference fallback row
+  // (the live recompute script reads `cells`, which keeps the USER's tier across a rigor change).
   const byRigor = {} as RecomputePayload["byRigor"];
   for (const r of RIGORS) {
     const tier = profile.rigorDefaults[r].modelTier;
@@ -440,6 +527,14 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     const s = leverMatrix.states[key] ?? leverMatrix.current;
     byRigor[r] = { estimateCredits: s.estimateCredits, capCredits: s.capCredits, lowMinutes: s.time.lowMinutes, highMinutes: s.time.highMinutes, modelTier: tier };
   }
+
+  // EST.1 — the full in-place recompute table (every rigor|tier|toggle state), keyed by leverKey.
+  const cells: RecomputePayload["cells"] = {};
+  for (const [key, s] of Object.entries(leverMatrix.states)) {
+    cells[key] = { e: s.estimateCredits, c: s.capCredits, lo: s.time.lowMinutes, hi: s.time.highMinutes };
+  }
+
+  const missing = args.inputsAvailable === false;
 
   return {
     workflow: args.workflow,
@@ -457,6 +552,10 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     })),
     modelTier: args.modelTier,
     modelTierDisplay: MODEL_TIER_DISPLAY[args.modelTier],
+    modelTierOptions,
+    ...(args.requestedModelTier != null && args.requestedModelTier !== args.modelTier
+      ? { clampedFromModelTier: args.requestedModelTier }
+      : {}),
     estimate: {
       estimateCredits: estimate.estimateCredits,
       capCredits: effectiveCapCredits,
@@ -464,7 +563,8 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
       provisional: estimate.provisional,
       dollarsLine: estimateLine(estimate.estimateCredits, effectiveCapCredits),
       creditsLine: creditsLine(estimate.estimateCredits, effectiveCapCredits, balanceAfterCap),
-      time: leverMatrix.current.time,
+      time: surface.duration,
+      ...(missing ? { missing: true } : {}),
     },
     consent,
     insufficient,
@@ -472,7 +572,8 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
     collapsedSummary: collapsedSummary(args.scope, args.modelTier),
     scope: args.scope,
     scopeApprovalLine,
-    whyLine: whyLine(args, pricedInputs, claims),
+    why: surface.why,
+    whyLine: renderWhyLine(surface.why),
     ...(args.scopeLine ? { scopeLine: args.scopeLine } : {}),
     ...(protocolChangedLine ? { protocolChangedLine } : {}),
     ...(memoConfidentialityLine ? { memoConfidentialityLine } : {}),
@@ -515,6 +616,9 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
       spendableCredits: args.spendableCredits,
       dontAskUnder: args.dontAskUnder ?? 0,
       entitlement: !!args.entitlement,
+      cells,
+      allowedModelTiers,
+      modelTier: args.modelTier,
       byRigor,
     },
   };
