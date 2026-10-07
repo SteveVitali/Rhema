@@ -15,8 +15,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        O1 — draft docs/frontend-spa-spec.md from the emitted requirement set
-lastCompleted:   A1–A4 + B1–B4 + C1–C3 + D1–D3 — all research rows done; notes in docs/research/ + docs/design/2x_spa-*
+nextUnit:        O2 — fresh-context adversarial review of docs/frontend-spa-spec.md
+lastCompleted:   O1 — docs/frontend-spa-spec.md v0.1 drafted (191 REQ ids folded, R1–R27 rulings, App A–E) + docs/OUTLINE_TRACE.md
 blockedOn:       (nothing)
 pauseRequested:  false
 brief:           docs/frontend-spa-brief.md
@@ -83,7 +83,7 @@ updatedAt:       2026-10-07T22:09:37Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| O1 | draft `docs/frontend-spa-spec.md` from the ledger (front matter + §0 + decision register + appendices) | S | open | |
+| O1 | draft `docs/frontend-spa-spec.md` from the ledger (front matter + §0 + decision register + appendices) | S | done | `docs/frontend-spa-spec.md` + `docs/OUTLINE_TRACE.md` |
 | O2 | fresh-context adversarial review (consistency, coverage of every row, realism, self-contradiction) | S | open | |
 | O3 | operator ratification round — §Q rows answered, spec → `canonical`, ledger frozen | S | open | |
 | O4 | write `docs/decomposition-prompt.md` — hand-off to decompose-spec | S | open | |
@@ -110,3 +110,4 @@ updatedAt:       2026-10-07T22:09:37Z
 - 2026-10-07T22:09:37Z — B1/C2/C3/B4/C1/D1/D2 done: design notes `docs/design/20_spa-framework-binding.md`, `23_spa-editor-collab-binding.md`, `24_spa-ux-design-system.md`, `25_spa-navigation-ia.md`, `26_spa-public-auth-boundary.md`, `27_spa-acceptance-mechanics.md`, `28_spa-safety-gates.md` (REQ-FW/ED/UX/NAV/BND/VFY/SAFE emitted; REQ namespaces renamed from worker drafts to avoid collisions with product-spec REQ-ARCH/REQ-GATE). B2/B3/D3 still in flight.
 - 2026-10-07T22:55:00Z — B2/D3 done: `docs/design/21_spa-toolchain.md` (Vite package-scoped, publicDir:false + outDir public/spa, file-based routing + autoCodeSplitting, manifest-driven shell, hidden sourcemaps, pin set w/ ≥7-day staleness; REQ-TL-1..14), `docs/design/29_spa-migration-sequencing.md` (SPA_SURFACES follows the signupMode precedent end-to-end; 14 surface keys + ide-chrome AND-gate; /p/:slug rides `editor`; two-leg per-flip procedure via x-rhema-renderer override + ?ssr=1 escape hatch; prod flip = separate one-line stage-fact PR; ~40 PRs sizing estimate; REQ-SEQ-1..12). B3 (BFF contract) still in flight.
 - 2026-10-07T23:20:00Z — B3 done: `docs/design/22_spa-bff-api-shape.md` (GET /bff/* twins for ~45 auth'd reads; wantsJson dual-mode on existing POSTs; {ok,redirect,flash,data,pending,url} mutation envelope; {error,detail?} at preserved status; pending-vs-optimistic classification; presign→direct-PUT uploads w/ CSP+CORS prerequisite flagged; slug→id once-per-request memo; GET /session + data-spa-boot; REQ-BFF-1..30). ALL 13 RESEARCH ROWS CLOSED — next: O1 spec draft.
+- 2026-10-07T22:52:16Z — O1 done: `docs/frontend-spa-spec.md` v0.1 drafted — 191 REQ ids folded across 14 families verbatim (INV/ISL/DAT/TST/FW/TL/BFF/ED/UX/NAV/BND/VFY/SAFE/SEQ), R1–R27 synthesis rulings resolving inter-note conflicts, 4 normative tables adopted by reference, §12.2 queues 7 operator ratification questions; `docs/OUTLINE_TRACE.md` proves brief superset (18/18 OL). Next: O2 fresh-context adversarial review.
