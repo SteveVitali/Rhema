@@ -15,8 +15,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        B1
-lastCompleted:   A4 (A-stream complete: A1–A4 done, notes in docs/research/)
+nextUnit:        B2, B3, D3 in flight — then O1 synthesis
+lastCompleted:   A1–A4, B1, B4, C1, C2, C3, D1, D2 (notes in docs/research/ + docs/design/2x_spa-*)
 blockedOn:       (nothing)
 pauseRequested:  false
 brief:           docs/frontend-spa-brief.md
@@ -24,7 +24,7 @@ specOut:         docs/frontend-spa-spec.md
 memoryRoot:      docs
 autonomy:        interactive (operator answers §Q rows live)
 round:           1
-updatedAt:       2026-10-07T21:25:32Z
+updatedAt:       2026-10-07T22:09:37Z
 ```
 
 ## 0. Working theses (to be tested, not assumed)
@@ -58,25 +58,25 @@ updatedAt:       2026-10-07T21:25:32Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| B1 | Framework decision matrix — TanStack Router+Query vs React Router 7 data routers vs TanStack Start; SSR-hybrid options per Q-1; type-sharing of contracts DTOs through the BFF; emits recommendation + ADR-007 amendment draft | A | in-progress | dispatched 2026-10-07 |
+| B1 | Framework decision matrix — TanStack Router+Query vs React Router 7 data routers vs TanStack Start; SSR-hybrid options per Q-1; type-sharing of contracts DTOs through the BFF; emits recommendation + ADR-007 amendment draft | A| done | `docs/design/20_spa-framework-binding.md` — matrix (Router+Query chosen; RR7-fw/Start rejected); ADR-106 draft; REQ-FW-1..12 emitted |
 | B2 | Toolchain — Vite vs keep-esbuild (Q-3); dev server/HMR, code-splitting, sourcemaps, fonts/assets, module scripts vs iife under `script-src 'self'`+nonce CSP ⚑; bundle-size budget | A | in-progress | dispatched 2026-10-07 |
 | B3 | BFF API shape — keep web-BFF JSON (session cookies same-origin ⚑) vs direct api calls; stable error codes; SSE + collab-ws subscriptions in SPA; OAuth hand-off as `location.assign` not form POST (T6); optimistic-mutation convention | A | in-progress | dispatched 2026-10-07 |
-| B4 | Editor/collab binding — ProseMirror+Y.Doc+decorations into React (binding lib vs hand-rolled view); sync-machine/lock-poll/findings-rail into the component tree; parity checklist vs `page.js` | A | in-progress | dispatched 2026-10-07 |
+| B4 | Editor/collab binding — ProseMirror+Y.Doc+decorations into React (binding lib vs hand-rolled view); sync-machine/lock-poll/findings-rail into the component tree; parity checklist vs `page.js` | A| done | `docs/design/23_spa-editor-collab-binding.md` — hand-rolled mount + module-scope session registry; 29-row parity checklist; REQ-ED-1..16 emitted |
 
 ## C. Product & UX
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| C1 | UX goals + design-system scope — target feel (transitions, skeletons, optimistic states, cmd-palette-class affordances?); `@rhema/tokens` reuse vs new system; a11y floor (WCAG 2.2 AA shipped — must not regress) ⚑; phone posture (P1.19's reader-only Page decision revisited in SPA world) | P | in-progress | dispatched 2026-10-07 |
-| C2 | Navigation/IA — post-SPA route tree; deep-link/back/scroll-restoration semantics; cross-route state persistence (Desk chord, held-file, theme) | P | in-progress | dispatched 2026-10-07 |
-| C3 | Public/auth'd boundary — which routes stay SSR (marketing/pricing/sample/login) under Q-1's hybrid; SEO/first-paint floor | P | in-progress | dispatched 2026-10-07 |
+| C1 | UX goals + design-system scope — target feel (transitions, skeletons, optimistic states, cmd-palette-class affordances?); `@rhema/tokens` reuse vs new system; a11y floor (WCAG 2.2 AA shipped — must not regress) ⚑; phone posture (P1.19's reader-only Page decision revisited in SPA world) | P| done | `docs/design/24_spa-ux-design-system.md` — generated-CSS-over-tokens carried verbatim; phone = server-stamped immutable capability; REQ-UX-1..16 emitted |
+| C2 | Navigation/IA — post-SPA route tree; deep-link/back/scroll-restoration semantics; cross-route state persistence (Desk chord, held-file, theme) | P| done | `docs/design/25_spa-navigation-ia.md` — normative route tree + search-param schema + redirect/404 semantics; REQ-NAV-1..11 emitted |
+| C3 | Public/auth'd boundary — which routes stay SSR (marketing/pricing/sample/login) under Q-1's hybrid; SEO/first-paint floor | P| done | `docs/design/26_spa-public-auth-boundary.md` — definitive boundary table; shell-doc spec; catch-all split; REQ-BND-1..12 emitted |
 
 ## D. Verification & gates
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| D1 | Acceptance mechanics — journeys adaptation plan (which steps need new probes vs survive); component-test strategy (vitest+RTL vs playwright-ct); visual/a11y regression story; the phone/rhythm legs | D | in-progress | dispatched 2026-10-07 |
-| D2 | Safety gates — never-cookies/protocol-marker/public-safe scans over a bundled SPA; banned-vocab lint on client copy; CSP in bundled world; bundle-size budget + CI enforcement | D | in-progress | dispatched 2026-10-07 |
+| D1 | Acceptance mechanics — journeys adaptation plan (which steps need new probes vs survive); component-test strategy (vitest+RTL vs playwright-ct); visual/a11y regression story; the phone/rhythm legs | D| done | `docs/design/27_spa-acceptance-mechanics.md` — vitest+happy-dom+RTL (playwright-ct dead upstream); dom-contract manifest; per-surface $0 gate sets; REQ-VFY-1..10 emitted |
+| D2 | Safety gates — never-cookies/protocol-marker/public-safe scans over a bundled SPA; banned-vocab lint on client copy; CSP in bundled world; bundle-size budget + CI enforcement | D| done | `docs/design/28_spa-safety-gates.md` — 3-layer protocol gate; CSP analysis (no navigate-to — BFF validators); bundle budgets; REQ-SAFE-1..10 emitted |
 | D3 | Migration sequencing — strangler vs flag vs cutover (recommendation feeds Q-5); per-surface ordering; rollback posture; preview-stage dogfooding; interplay with the unmerged 45-PR stack | D | in-progress | dispatched 2026-10-07 |
 
 ## O. Spec synthesis & review process
@@ -107,3 +107,4 @@ updatedAt:       2026-10-07T21:25:32Z
 - 2026-10-07T20:41:26Z — A4 done: `docs/research/04_test-surface-audit.md` written (per-file dispositions; REQ-TST-1..10).
 - 2026-10-07T21:00:00Z — A3 done: `docs/research/03_data-layer-audit.md` written (BFF seam + mutation catalog; REQ-DAT-1..14).
 - 2026-10-07T21:25:32Z — A1 done: `docs/research/01_route-census.md` written (~181 registrations, ~120 route rows; REQ-INV-1..8). A-stream complete; B/C/D streams dispatch.
+- 2026-10-07T22:09:37Z — B1/C2/C3/B4/C1/D1/D2 done: design notes `docs/design/20_spa-framework-binding.md`, `23_spa-editor-collab-binding.md`, `24_spa-ux-design-system.md`, `25_spa-navigation-ia.md`, `26_spa-public-auth-boundary.md`, `27_spa-acceptance-mechanics.md`, `28_spa-safety-gates.md` (REQ-FW/ED/UX/NAV/BND/VFY/SAFE emitted; REQ namespaces renamed from worker drafts to avoid collisions with product-spec REQ-ARCH/REQ-GATE). B2/B3/D3 still in flight.
