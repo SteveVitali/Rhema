@@ -15,8 +15,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        B3 in flight — then O1 synthesis
-lastCompleted:   A1–A4, B1, B2, B4, C1, C2, C3, D1, D2, D3 (notes in docs/research/ + docs/design/2x_spa-*)
+nextUnit:        O1 — draft docs/frontend-spa-spec.md from the emitted requirement set
+lastCompleted:   A1–A4 + B1–B4 + C1–C3 + D1–D3 — all research rows done; notes in docs/research/ + docs/design/2x_spa-*
 blockedOn:       (nothing)
 pauseRequested:  false
 brief:           docs/frontend-spa-brief.md
@@ -60,7 +60,7 @@ updatedAt:       2026-10-07T22:09:37Z
 |---|---|---|---|---|
 | B1 | Framework decision matrix — TanStack Router+Query vs React Router 7 data routers vs TanStack Start; SSR-hybrid options per Q-1; type-sharing of contracts DTOs through the BFF; emits recommendation + ADR-007 amendment draft | A| done | `docs/design/20_spa-framework-binding.md` — matrix (Router+Query chosen; RR7-fw/Start rejected); ADR-106 draft; REQ-FW-1..12 emitted |
 | B2 | Toolchain — Vite vs keep-esbuild (Q-3); dev server/HMR, code-splitting, sourcemaps, fonts/assets, module scripts vs iife under `script-src 'self'`+nonce CSP ⚑; bundle-size budget | A | done — docs/design/21_spa-toolchain.md | 2026-10-07 (worker 278cca6a) |
-| B3 | BFF API shape — keep web-BFF JSON (session cookies same-origin ⚑) vs direct api calls; stable error codes; SSE + collab-ws subscriptions in SPA; OAuth hand-off as `location.assign` not form POST (T6); optimistic-mutation convention | A | in-progress | dispatched 2026-10-07 |
+| B3 | BFF API shape — keep web-BFF JSON (session cookies same-origin ⚑) vs direct api calls; stable error codes; SSE + collab-ws subscriptions in SPA; OAuth hand-off as `location.assign` not form POST (T6); optimistic-mutation convention | A | done — docs/design/22_spa-bff-api-shape.md | 2026-10-07 (worker 51a84895) |
 | B4 | Editor/collab binding — ProseMirror+Y.Doc+decorations into React (binding lib vs hand-rolled view); sync-machine/lock-poll/findings-rail into the component tree; parity checklist vs `page.js` | A| done | `docs/design/23_spa-editor-collab-binding.md` — hand-rolled mount + module-scope session registry; 29-row parity checklist; REQ-ED-1..16 emitted |
 
 ## C. Product & UX
@@ -109,3 +109,4 @@ updatedAt:       2026-10-07T22:09:37Z
 - 2026-10-07T21:25:32Z — A1 done: `docs/research/01_route-census.md` written (~181 registrations, ~120 route rows; REQ-INV-1..8). A-stream complete; B/C/D streams dispatch.
 - 2026-10-07T22:09:37Z — B1/C2/C3/B4/C1/D1/D2 done: design notes `docs/design/20_spa-framework-binding.md`, `23_spa-editor-collab-binding.md`, `24_spa-ux-design-system.md`, `25_spa-navigation-ia.md`, `26_spa-public-auth-boundary.md`, `27_spa-acceptance-mechanics.md`, `28_spa-safety-gates.md` (REQ-FW/ED/UX/NAV/BND/VFY/SAFE emitted; REQ namespaces renamed from worker drafts to avoid collisions with product-spec REQ-ARCH/REQ-GATE). B2/B3/D3 still in flight.
 - 2026-10-07T22:55:00Z — B2/D3 done: `docs/design/21_spa-toolchain.md` (Vite package-scoped, publicDir:false + outDir public/spa, file-based routing + autoCodeSplitting, manifest-driven shell, hidden sourcemaps, pin set w/ ≥7-day staleness; REQ-TL-1..14), `docs/design/29_spa-migration-sequencing.md` (SPA_SURFACES follows the signupMode precedent end-to-end; 14 surface keys + ide-chrome AND-gate; /p/:slug rides `editor`; two-leg per-flip procedure via x-rhema-renderer override + ?ssr=1 escape hatch; prod flip = separate one-line stage-fact PR; ~40 PRs sizing estimate; REQ-SEQ-1..12). B3 (BFF contract) still in flight.
+- 2026-10-07T23:20:00Z — B3 done: `docs/design/22_spa-bff-api-shape.md` (GET /bff/* twins for ~45 auth'd reads; wantsJson dual-mode on existing POSTs; {ok,redirect,flash,data,pending,url} mutation envelope; {error,detail?} at preserved status; pending-vs-optimistic classification; presign→direct-PUT uploads w/ CSP+CORS prerequisite flagged; slug→id once-per-request memo; GET /session + data-spa-boot; REQ-BFF-1..30). ALL 13 RESEARCH ROWS CLOSED — next: O1 spec draft.
