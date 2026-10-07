@@ -15,8 +15,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        B2, B3, D3 in flight — then O1 synthesis
-lastCompleted:   A1–A4, B1, B4, C1, C2, C3, D1, D2 (notes in docs/research/ + docs/design/2x_spa-*)
+nextUnit:        B3 in flight — then O1 synthesis
+lastCompleted:   A1–A4, B1, B2, B4, C1, C2, C3, D1, D2, D3 (notes in docs/research/ + docs/design/2x_spa-*)
 blockedOn:       (nothing)
 pauseRequested:  false
 brief:           docs/frontend-spa-brief.md
@@ -59,7 +59,7 @@ updatedAt:       2026-10-07T22:09:37Z
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
 | B1 | Framework decision matrix — TanStack Router+Query vs React Router 7 data routers vs TanStack Start; SSR-hybrid options per Q-1; type-sharing of contracts DTOs through the BFF; emits recommendation + ADR-007 amendment draft | A| done | `docs/design/20_spa-framework-binding.md` — matrix (Router+Query chosen; RR7-fw/Start rejected); ADR-106 draft; REQ-FW-1..12 emitted |
-| B2 | Toolchain — Vite vs keep-esbuild (Q-3); dev server/HMR, code-splitting, sourcemaps, fonts/assets, module scripts vs iife under `script-src 'self'`+nonce CSP ⚑; bundle-size budget | A | in-progress | dispatched 2026-10-07 |
+| B2 | Toolchain — Vite vs keep-esbuild (Q-3); dev server/HMR, code-splitting, sourcemaps, fonts/assets, module scripts vs iife under `script-src 'self'`+nonce CSP ⚑; bundle-size budget | A | done — docs/design/21_spa-toolchain.md | 2026-10-07 (worker 278cca6a) |
 | B3 | BFF API shape — keep web-BFF JSON (session cookies same-origin ⚑) vs direct api calls; stable error codes; SSE + collab-ws subscriptions in SPA; OAuth hand-off as `location.assign` not form POST (T6); optimistic-mutation convention | A | in-progress | dispatched 2026-10-07 |
 | B4 | Editor/collab binding — ProseMirror+Y.Doc+decorations into React (binding lib vs hand-rolled view); sync-machine/lock-poll/findings-rail into the component tree; parity checklist vs `page.js` | A| done | `docs/design/23_spa-editor-collab-binding.md` — hand-rolled mount + module-scope session registry; 29-row parity checklist; REQ-ED-1..16 emitted |
 
@@ -77,7 +77,7 @@ updatedAt:       2026-10-07T22:09:37Z
 |---|---|---|---|---|
 | D1 | Acceptance mechanics — journeys adaptation plan (which steps need new probes vs survive); component-test strategy (vitest+RTL vs playwright-ct); visual/a11y regression story; the phone/rhythm legs | D| done | `docs/design/27_spa-acceptance-mechanics.md` — vitest+happy-dom+RTL (playwright-ct dead upstream); dom-contract manifest; per-surface $0 gate sets; REQ-VFY-1..10 emitted |
 | D2 | Safety gates — never-cookies/protocol-marker/public-safe scans over a bundled SPA; banned-vocab lint on client copy; CSP in bundled world; bundle-size budget + CI enforcement | D| done | `docs/design/28_spa-safety-gates.md` — 3-layer protocol gate; CSP analysis (no navigate-to — BFF validators); bundle budgets; REQ-SAFE-1..10 emitted |
-| D3 | Migration sequencing — strangler vs flag vs cutover (recommendation feeds Q-5); per-surface ordering; rollback posture; preview-stage dogfooding; interplay with the unmerged 45-PR stack | D | in-progress | dispatched 2026-10-07 |
+| D3 | Migration sequencing — strangler vs flag vs cutover (recommendation feeds Q-5); per-surface ordering; rollback posture; preview-stage dogfooding; interplay with the unmerged 45-PR stack | D | done — docs/design/29_spa-migration-sequencing.md | 2026-10-07 (worker 19ccfc03) |
 
 ## O. Spec synthesis & review process
 
@@ -108,3 +108,4 @@ updatedAt:       2026-10-07T22:09:37Z
 - 2026-10-07T21:00:00Z — A3 done: `docs/research/03_data-layer-audit.md` written (BFF seam + mutation catalog; REQ-DAT-1..14).
 - 2026-10-07T21:25:32Z — A1 done: `docs/research/01_route-census.md` written (~181 registrations, ~120 route rows; REQ-INV-1..8). A-stream complete; B/C/D streams dispatch.
 - 2026-10-07T22:09:37Z — B1/C2/C3/B4/C1/D1/D2 done: design notes `docs/design/20_spa-framework-binding.md`, `23_spa-editor-collab-binding.md`, `24_spa-ux-design-system.md`, `25_spa-navigation-ia.md`, `26_spa-public-auth-boundary.md`, `27_spa-acceptance-mechanics.md`, `28_spa-safety-gates.md` (REQ-FW/ED/UX/NAV/BND/VFY/SAFE emitted; REQ namespaces renamed from worker drafts to avoid collisions with product-spec REQ-ARCH/REQ-GATE). B2/B3/D3 still in flight.
+- 2026-10-07T22:55:00Z — B2/D3 done: `docs/design/21_spa-toolchain.md` (Vite package-scoped, publicDir:false + outDir public/spa, file-based routing + autoCodeSplitting, manifest-driven shell, hidden sourcemaps, pin set w/ ≥7-day staleness; REQ-TL-1..14), `docs/design/29_spa-migration-sequencing.md` (SPA_SURFACES follows the signupMode precedent end-to-end; 14 surface keys + ide-chrome AND-gate; /p/:slug rides `editor`; two-leg per-flip procedure via x-rhema-renderer override + ?ssr=1 escape hatch; prod flip = separate one-line stage-fact PR; ~40 PRs sizing estimate; REQ-SEQ-1..12). B3 (BFF contract) still in flight.
