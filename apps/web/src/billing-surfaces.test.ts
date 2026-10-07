@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STRIPE_HOSTED_ORIGINS, type ProjectRow } from "@rhema/contracts";
+import { STRIPE_HOSTED_ORIGINS, GOOGLE_OAUTH_ORIGINS, type ProjectRow } from "@rhema/contracts";
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
 
@@ -201,12 +201,12 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
     expect(res2.headers.get("location")).toBe(`/p/${SLUG}/run`);
   });
 
-  it("the CSP form-action is 'self' plus exactly the Stripe-hosted origins — no wildcard (BILL.3)", async () => {
+  it("the CSP form-action is 'self' plus exactly the Stripe- and Google-hosted origins — no wildcard (BILL.3/MAINT.5)", async () => {
     const app = createWebApp(makeDeps({}));
     const res = await app.request(`/p/${SLUG}/run?words=5180`);
     const csp = res.headers.get("content-security-policy") ?? "";
     const formAction = /(?:^|;)\s*form-action\s+([^;]+)/.exec(csp)?.[1]?.trim().split(/\s+/);
-    expect(formAction).toEqual(["'self'", ...STRIPE_HOSTED_ORIGINS]);
+    expect(formAction).toEqual(["'self'", ...STRIPE_HOSTED_ORIGINS, ...GOOGLE_OAUTH_ORIGINS]);
     expect(csp).not.toContain("*");
   });
 });

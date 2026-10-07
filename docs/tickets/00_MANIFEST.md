@@ -247,6 +247,7 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 94 | `94_MAINT.3__funded-window-repairs.md` | maint | funded-window defect repairs (D-STB.5b-4/-5, entitlement interception, N4/N9 substrate) — $0 |
 | 95 | `95_MAINT.4__oauth-signin-throttle.md` | maint | better-auth's default `/sign-in/*` limiter keys a global shared bucket under ADR-040 → "Continue with Google" 429s; disable + app-channel throttle — $0 |
 | 96 | `96_RES.3__leg1a-zero-coverage-diagnosis.md` | maint | Leg-1a zero-coverage diagnosis (read-only prod reads; fix if contained) — $0 |
+| 97 | `97_MAINT.5__oauth-form-action-csp.md` | maint | CSP `form-action` blocks the POST /login → accounts.google.com 302 (Chromium checks redirect targets) — admit `GOOGLE_OAUTH_ORIGINS` + validate target — $0 |
 
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
@@ -664,3 +665,7 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   prod log evidence 26×200/8×429 on `sign-in/social`. RES.3 is the read-only Leg-1a zero-coverage
   diagnosis (`01M48VNKY6F263TCQRVBJ8JRQA` — 9/9 unverifiable, 0 `claim_sources`). Trigger: operator
   report + the funded window's §B.4 finding; live legs owed, ledgered.
+- **2026-10-07 — INSERT** `97_MAINT.5` (stacked PR; $0): MAINT.4's deploy exposed the second stacked
+  OAuth defect — Chromium enforces CSP `form-action` on a form POST's redirect TARGET, so the healthy
+  302 to `accounts.google.com` was silently blocked (same class as BILL.3's Stripe hand-off, ADR-027).
+  Trigger: operator report post-deploy + headless-browser reproduction.
