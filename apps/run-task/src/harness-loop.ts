@@ -36,6 +36,29 @@ import {
   type PredicateFacts,
 } from "@rhema/orchestrator";
 import { resolveProducedPath } from "./work-reader.js";
+import { describePreflightFailures } from "./research-preflight.js";
+
+/** The server-authored preflight manifest (`HarnessRunSpec.researchPreflight`) — RES.1. */
+export type ResearchPreflightSpec = NonNullable<HarnessRunSpec["researchPreflight"]>;
+
+/** A failed pair for the failStep reason — model/tool ids + status only, never content. */
+export interface PreflightFailure {
+  readonly model: string;
+  readonly tool: string;
+  readonly status?: number;
+  readonly reason?: string;
+}
+export type PreflightOutcome =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly failures: readonly PreflightFailure[] };
+
+/**
+ * RES.1 (REQ-SPEC-31(3)) — the research-preflight seam the deploy binds to `runResearchPreflight`
+ * (research-preflight.ts). The loop invokes it ONCE per pod when the spec carries a non-empty pair set —
+ * a resume is a fresh pod, so re-preflight is automatic. An UNBOUND seam fails closed: a spec that
+ * demands preflight gets `research_preflight_failed` rather than a silently-skipped guard.
+ */
+export type PreflightFn = (spec: ResearchPreflightSpec) => Promise<PreflightOutcome>;
 
 /** Error classes whose remedy is re-running the same phase once (guided for artifact_missing) — mirrors runPhase. */
 const RERUN_CLASSES: ReadonlySet<ErrorClass> = new Set([
@@ -164,6 +187,8 @@ export interface CommitLoopDeps {
   readonly runPhase: RunPhaseFn;
   /** the run's workspace id (from WORKSPACE_ID) — folded into the delivery dossier. */
   readonly workspaceId: string;
+  /** RES.1 — the research-preflight probe seam (see `PreflightFn`); unbound ⇒ fail closed. */
+  readonly preflight?: PreflightFn;
   /** gate-policy context for a `gateAfter` gate; default: named policy, informational approve_scope. */
   gateContext?(now: Date): GatePolicyContext;
   now?(): Date;
@@ -220,6 +245,11 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
     beatTimer.unref?.();
   }
 
+  // RES.1 — the research preflight runs ONCE per pod lifetime (each resume launches a fresh pod → a fresh
+  // loop → a fresh probe). It must precede the FIRST phase's model traffic — and any subsequent phases in
+  // this pod ride the already-proven pairs.
+  let preflighted = false;
+
   try {
     for (;;) {
       if (cancelRequested) {
@@ -234,6 +264,28 @@ export async function runCommitLoop(deps: CommitLoopDeps): Promise<LoopResult> {
       const spec = await deps.client.fetchRunSpec();
       const phase = spec.request.phase;
       const predicates = phase.completionPredicates ?? [];
+
+      // RES.1 (REQ-SPEC-31(3)) — before the first phase's model traffic, prove every server-authored
+      // model × server-tool pair through the run's OWN proxy. A refused pair terminalizes the run
+      // (`research_preflight_failed`: zero user debit, hold released, probe burn absorbed); a run whose
+      // spec demands preflight but whose deploy left the seam unbound fails CLOSED, never silently skips.
+      if (!preflighted && spec.researchPreflight && spec.researchPreflight.pairs.length > 0) {
+        preflighted = true;
+        const outcome: PreflightOutcome = deps.preflight
+          ? await deps.preflight(spec.researchPreflight)
+          : { ok: false, failures: [{ model: "*", tool: "*", reason: "preflight seam unbound" }] };
+        if (!outcome.ok) {
+          const reason = `research preflight failed — ${describePreflightFailures(outcome.failures)}`;
+          // failStep terminalizes the run in one tx (step row + engine.error + running→failed + settle).
+          await deps.client.failStep({
+            stepKey: phase.key,
+            ordinal: phase.index,
+            errorClass: "research_preflight_failed",
+            reason,
+          });
+          return { kind: "failed", phasesCommitted, errorClass: "research_preflight_failed", reason };
+        }
+      }
 
       // run the phase; re-run ONCE (guided) on a re-runnable incomplete verdict (mirror runPhase).
       let outputs = await deps.runPhase(spec, {});

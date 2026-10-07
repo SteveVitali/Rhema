@@ -130,6 +130,28 @@ describe("buildHarnessRunSpec — the server-authored run spec (D-P0.15c-6)", ()
     }
   });
 
+  // RES.1 (REQ-SPEC-31(1)) — the preflight manifest rides the spec for research-bearing runs only.
+  describe("researchPreflight on the spec (RES.1)", () => {
+    it("a research-bearing run carries roster × enabled-tool pairs", async () => {
+      const runId = await seedWorkflowRun("run_pf", "review");
+      const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+      expect(spec.researchPreflight).toBeDefined();
+      const pf = spec.researchPreflight!;
+      // every roster model × both server tools (the credential context is absent in this fixture ⇒
+      // the proxy's default both-on policy applies).
+      expect(pf.pairs).toHaveLength(pf.models.length * 2);
+      expect(pf.tools).toEqual(["web_search", "web_fetch"]);
+      expect(pf.toolTypes.web_search).toBe("web_search_20250305");
+      expect(new Set(pf.pairs.map((p) => p.model)).size).toBe(pf.models.length);
+    });
+
+    it("a run with NO research-class phase (figure) carries no preflight", async () => {
+      const runId = await seedWorkflowRun("run_fig", "figure");
+      const spec = await buildHarnessRunSpec(deps, { runId, attempt: 1, workspaceId: seed.workspaceId });
+      expect(spec.researchPreflight).toBeUndefined();
+    });
+  });
+
   // PRB.16b F23 — the ported skill's declared args are `persona` + `personas_dir` (SKILL.md
   // frontmatter); the spec must pin them, with personas_dir the ABSOLUTE mount base the harness
   // materializes into — the conventions file that documents the layout is not shipped in the pod's

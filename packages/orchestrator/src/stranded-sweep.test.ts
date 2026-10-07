@@ -235,3 +235,48 @@ describe("leg C — parked-gate expiry re-arm (D-P0.10-2 consent half)", () => {
     expect(deps.queue.sent.filter((j) => j.name === GATE_EXPIRY_QUEUE && j.payload.gateId === "gate_wg")).toHaveLength(1);
   });
 });
+
+describe("leg D — the research_preflight_failed alert (RES.1; REQ-SPEC-31(3))", () => {
+  it("pages the ops sink ONCE for a preflight-failed run (id-only payload, send-then-mark)", async () => {
+    await seedRun(db, {
+      runId: "run_pf",
+      workspaceId: seed.workspaceId,
+      state: "failed",
+      stateSince: AGO(5 * 60 * 1000),
+    });
+    await db.client.query(
+      `update runs set failure = '{"code":"research_preflight_failed","message":"pair refused"}'::jsonb
+        where id = 'run_pf'`,
+      [],
+    );
+    const alerts: unknown[] = [];
+    const out = await sweepStrandedRuns({ ...sweepDeps(), alert: (a) => void alerts.push(a) });
+    expect(out).toEqual([
+      { kind: "preflight_alerted", runId: "run_pf", workspaceId: seed.workspaceId },
+    ]);
+    expect(alerts).toEqual([
+      { kind: "research_preflight_failed", runId: "run_pf", workspaceId: seed.workspaceId },
+    ]);
+    // the durable marker landed — a second pass sends nothing and pages nothing.
+    const out2 = await sweepStrandedRuns({ ...sweepDeps(), alert: (a) => void alerts.push(a) });
+    expect(out2).toEqual([]);
+    expect(alerts).toHaveLength(1);
+  });
+
+  it("never re-pages a run already marked, and leaves other failures alone", async () => {
+    await seedRun(db, { runId: "run_marked", workspaceId: seed.workspaceId, state: "failed", stateSince: AGO(60_000) });
+    await db.client.query(
+      `update runs set failure = '{"code":"research_preflight_failed","alerted":true}'::jsonb where id = 'run_marked'`,
+      [],
+    );
+    await seedRun(db, { runId: "run_other", workspaceId: seed.workspaceId, state: "failed", stateSince: AGO(60_000) });
+    await db.client.query(
+      `update runs set failure = '{"code":"cap_reached"}'::jsonb where id = 'run_other'`,
+      [],
+    );
+    const alerts: unknown[] = [];
+    const out = await sweepStrandedRuns({ ...sweepDeps(), alert: (a) => void alerts.push(a) });
+    expect(out).toEqual([]);
+    expect(alerts).toHaveLength(0);
+  });
+});

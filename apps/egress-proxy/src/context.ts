@@ -84,6 +84,14 @@ export interface WebToolPolicy {
   /** The run's TOTAL web_fetch budget across all requests (default `DEFAULT_WEB_FETCH_BUDGET`). */
   readonly fetchBudget?: number;
   /**
+   * RES.1 (REQ-SPEC-31(2)) — the research floor: invocations of each kind reserved for research-class
+   * traffic. The harness stamps `x-rhema-phase-class` beside the credential (the agent cannot set it);
+   * a request not stamped `research` (or `preflight`) sees its bound reduced by this reserve, so no
+   * earlier phase or non-research subagent can consume verification's share. Default 0 ⇒ no floor.
+   */
+  readonly searchFloor?: number;
+  readonly fetchFloor?: number;
+  /**
    * `max_content_tokens` set on every web_fetch tool — the per-page context truncation (PRB.22). Fetched
    * pages used to enter context wholesale (6.65M cache-read tokens on one 701-word review); this caps each
    * page's ingress (default `DEFAULT_WEB_FETCH_MAX_CONTENT_TOKENS`).

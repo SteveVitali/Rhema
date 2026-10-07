@@ -12,12 +12,36 @@
 /** The header the harness wrapper stamps on every outbound request (never in the agent's env). */
 export const PROXY_CREDENTIAL_HEADER = "x-rhema-proxy-credential";
 
+/**
+ * The harness-stamped phase identity for the research floor (RES.1; REQ-SPEC-31(2)). The credential
+ * injector stamps the current phase's manifest `phaseClass` on every request it forwards — the AGENT can
+ * never set it (the injector drops any agent-supplied copy before stamping), and the proxy treats anything
+ * other than `"research"`/`"preflight"` as not floor-eligible. Wire contract duplicated with the proxy
+ * (`credential.ts`), deliberately — defense in depth, not shared code.
+ */
+export const PHASE_CLASS_HEADER = "x-rhema-phase-class";
+
 /** Inject the per-run credential into an outbound request's headers (harness-side). Returns a new object. */
 export function injectProxyCredential(
   headers: Readonly<Record<string, string>>,
   credential: string,
 ): Record<string, string> {
   return { ...headers, [PROXY_CREDENTIAL_HEADER]: credential };
+}
+
+/**
+ * Stamp the harness-side phase class beside the credential (RES.1). Any value the agent supplied is
+ * dropped first — the stamp is authority, never an echo. `undefined` leaves the header absent
+ * (the proxy reads absent as not floor-eligible — the safe default).
+ */
+export function stampPhaseClass(
+  headers: Readonly<Record<string, string>>,
+  phaseClass: string | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) if (k.toLowerCase() !== PHASE_CLASS_HEADER) out[k] = v;
+  if (phaseClass !== undefined) out[PHASE_CLASS_HEADER] = phaseClass;
+  return out;
 }
 
 export interface ProxyAllowlist {

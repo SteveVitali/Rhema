@@ -59,7 +59,8 @@ export interface StrandedSweepOpts {
 export type StrandedSweepOutcome =
   | { readonly kind: "provisioning_failed"; readonly runId: string; readonly workspaceId: string }
   | { readonly kind: "queued_reenqueued"; readonly runId: string; readonly workspaceId: string; readonly attempt: number }
-  | { readonly kind: "gate_rearmed"; readonly gateId: string; readonly runId: string; readonly workspaceId: string };
+  | { readonly kind: "gate_rearmed"; readonly gateId: string; readonly runId: string; readonly workspaceId: string }
+  | { readonly kind: "preflight_alerted"; readonly runId: string; readonly workspaceId: string };
 
 interface StuckRow {
   readonly id: string;
@@ -190,6 +191,38 @@ export async function sweepStrandedRuns(
     const deadlineAt = new Date(g.deadline_at);
     await scheduleGateExpiry(deps, { gateId: g.id, workspaceId: g.workspace_id, deadlineAt, now });
     outcomes.push({ kind: "gate_rearmed", gateId: g.id, runId: g.run_id, workspaceId: g.workspace_id });
+  }
+
+  // ---- Leg D (RES.1; REQ-SPEC-31(3)): a `research_preflight_failed` run pages the ops sink ONCE. ----
+  // The pod terminalizes via the ordinary failStep path (zero user debit + hold release + probe burn
+  // absorbed), but the alert must reach a HUMAN — a run that can never research is a platform regression,
+  // not user error. `runs.failure.alerted` is the durable dedupe marker: the sweep sends the alert first
+  // and flips the flag only after the sink accepted (send-then-mark — a sink failure retries next pass;
+  // exactly one alert lands per run, never a re-page on resume). ID-only payload — no prompt/draft text.
+  const unalerted = (
+    await deps.systemExec.query(
+      `select id, workspace_id from runs
+        where state = 'failed'
+          and failure->>'code' = 'research_preflight_failed'
+          and failure->>'alerted' is null
+        order by state_since`,
+      [],
+    )
+  ).rows as { id: string; workspace_id: string }[];
+  for (const row of unalerted) {
+    await deps.alert?.({
+      kind: "research_preflight_failed",
+      runId: row.id,
+      workspaceId: row.workspace_id,
+    });
+    await deps.txRunner.run(row.workspace_id, (tx) =>
+      tx.query(
+        `update runs set failure = jsonb_set(failure, '{alerted}', 'true'::jsonb)
+          where id = $1 and failure->>'code' = 'research_preflight_failed'`,
+        [row.id],
+      ),
+    );
+    outcomes.push({ kind: "preflight_alerted", runId: row.id, workspaceId: row.workspace_id });
   }
 
   return outcomes;

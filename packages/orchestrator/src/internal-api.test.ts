@@ -512,6 +512,27 @@ describe("failStep — terminal phase failures finalize the run in one tx (PRB.1
     expect(deps.ledger.opsOf("release")).toHaveLength(1);
   });
 
+  it("a `research_preflight_failed` class terminalizes the run — zero debit, hold released (RES.1)", async () => {
+    // REQ-SPEC-31(3): a refused model × tool pair fails the run BEFORE any phase debits — the hold
+    // releases, the probe burn is absorbed, and `runs.failure.code` is the sweep's alert dedupe key.
+    await seedTerminalFixture();
+    const res = await failStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "bootstrap",
+      ordinal: 0,
+      errorClass: "research_preflight_failed",
+      reason: "research preflight failed — claude-b×web_fetch HTTP 400 (invalid_request_error)",
+    });
+    expect(res).toEqual({ ok: true, terminal: "research_preflight_failed" });
+    const row = await runRow();
+    expect(row.state).toBe("failed");
+    expect(row.failure).toMatchObject({ code: "research_preflight_failed" });
+    expect(row.spent_credits).toBe(65); // reconciled metered burn, never a user debit
+    expect(deps.ledger.opsOf("release")).toHaveLength(1);
+  });
+
   it("a non-terminal class leaves the run running for the caller/reaper to decide", async () => {
     await seedTerminalFixture();
     const res = await failStep(deps, {

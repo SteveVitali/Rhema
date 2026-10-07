@@ -17,6 +17,8 @@ import { EMPTY_URL_POLICY, resolveSeatRoots, type PhasePolicy, type UrlPolicy } 
 import { WORKFLOW_MANIFESTS, SECOND_READ_PROMPT } from "@rhema/protocols";
 import type { OrchestratorDeps } from "./internal-api.js";
 import { hydration } from "./internal-api.js";
+import { authorResearchPreflight, type ResearchPreflightSpec } from "./allowlist.js";
+import type { WebToolPolicyData } from "./resolver.js";
 import { consumeGuidance } from "./guidance.js";
 import { loadGatePolicyFacts, type GatePolicyFacts } from "./gate-policy.js";
 import { userSourceMounts } from "./user-sources.js";
@@ -105,6 +107,14 @@ export interface HarnessRunSpec {
    * judge-phase `Agent` deny stays in force: the parent model never spawns the read.
    */
   readonly scopedLaunch?: ScopedPhaseLaunch;
+  /**
+   * RES.1 (REQ-SPEC-31(3)) — the run's research preflight manifest: the model × server-tool pairs the
+   * run may exercise, authored server-side from the tier roster + the run's `webTools` policy. The
+   * harness MUST probe every pair through the run's own proxy credential (`x-rhema-phase-class:
+   * preflight`) BEFORE the first phase runs — and again on every resume. A refused pair terminalizes
+   * the run `research_preflight_failed` (zero user debit; the probe burn absorbs as platform cost).
+   */
+  readonly researchPreflight?: ResearchPreflightSpec;
 }
 
 /**
@@ -307,6 +317,29 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
   }
 
   const tier = (MODEL_TIERS as readonly string[]).includes(facts.modelTier) ? (facts.modelTier as ModelTier) : undefined;
+
+  // RES.1 (REQ-SPEC-31(3)) — the preflight manifest: every model the tier roster admits × the server-tool
+  // kinds the run's `webTools` policy enables (read from the live credential context — the SAME policy the
+  // proxy enforces — via the system pool, like the other proxy_* reads; absent ⇒ the proxy's default
+  // both-on policy). The harness probes these pairs before any paid phase runs, and again on resume.
+  const webToolsPolicy: WebToolPolicyData | null | undefined = deps.systemTxRunner
+    ? await deps.systemTxRunner.run(args.workspaceId, async (tx) => {
+        const row = (
+          await tx.query(
+            `select context->'webTools' as webtools from proxy_credentials
+              where run_id = $1 and revoked_at is null order by attempt desc limit 1`,
+            [args.runId],
+          )
+        ).rows[0] as { webtools: WebToolPolicyData | null } | undefined;
+        return row?.webtools ?? null;
+      })
+    : null;
+  // …but only a RESEARCH-bearing run carries it: the manifest's active phases decide (a chat_turn or
+  // figure run has no research-class phase, so probing its pair set would cost for no contract).
+  const researchBearing = activePhases.some((p) => p.phaseClass === "research");
+  const researchPreflight =
+    tier && researchBearing ? authorResearchPreflight({ modelTier: tier, webTools: webToolsPolicy }) : undefined;
+
   const maxUsdPerRun = args.maxUsdPerRun ?? DEFAULT_MAX_USD_PER_RUN;
   const maxBudgetUsd = Math.max(0.5, round2(phase.budgetShare * maxUsdPerRun));
 
@@ -628,5 +661,6 @@ export async function buildHarnessRunSpec(deps: OrchestratorDeps, args: BuildRun
     ...(delivery ? { delivery } : {}),
     ...(gatePolicy ? { gatePolicy } : {}),
     ...(scopedLaunch ? { scopedLaunch } : {}),
+    ...(researchPreflight ? { researchPreflight } : {}),
   };
 }

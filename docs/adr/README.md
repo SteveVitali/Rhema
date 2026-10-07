@@ -26,3 +26,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-018](ADR-018-user-serving-role-mechanics.md) | The user-serving role's mechanics — identity, grants, pools, and the lint boundary | SEC.1 | Accepted |
 | [ADR-019](ADR-019-evidence-normalization-and-claims-visibility.md) | Evidence normalization at read seams, and the public-claims visibility config | HOT.1 | Accepted |
 | [ADR-020](ADR-020-browser-journey-harness.md) | The browser-journey harness — keyless mailbox sessions, flagged test tenants, expected-red registry | JOURNEY.1 | Accepted |
+| [ADR-021](ADR-021-research-floor-enforcement.md) | The research floor — a reserved verification share enforced at the proxy | RES.1 | Accepted |
+| [ADR-022](ADR-022-research-preflight-protocol.md) | The research preflight — model × server-tool pairs proven before any debit | RES.1 | Accepted |
+| [ADR-023](ADR-023-planted-error-probe-shape.md) | The research probe is a real bounded `fact_check` run, not a synthetic credential | RES.1 | Accepted |

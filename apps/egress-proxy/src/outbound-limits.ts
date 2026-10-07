@@ -86,6 +86,44 @@ export function extractServerToolInvocations(body: unknown): ServerToolInvocatio
   return out;
 }
 
+/**
+ * Count the server-tool invocations in a request's history that ACTUALLY EXECUTED (RES.1). The PRB.22
+ * history counter accepted every `tool_use`-shaped block, including calls the provider never ran — the
+ * incident run logged a `web_search` `allow` row (`query "test search"`) against a metered `searches=0`
+ * because the model emitted a plain `tool_use` for a tool that was not in the request. A real server-tool
+ * execution surfaces as a `server_tool_use` block paired with a `web_*_tool_result` block, so only those
+ * count — per kind we take the larger of the two (a compacted/truncated transcript can drop the use block
+ * while keeping the result).
+ */
+export function extractExecutedServerToolUses(body: unknown): { searches: number; fetches: number } {
+  let searchUses = 0;
+  let fetchUses = 0;
+  let searchResults = 0;
+  let fetchResults = 0;
+  if (!body || typeof body !== "object") return { searches: 0, fetches: 0 };
+  const messages = (body as { messages?: unknown }).messages;
+  if (!Array.isArray(messages)) return { searches: 0, fetches: 0 };
+  for (const msg of messages) {
+    const content = (msg as { content?: unknown })?.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (!block || typeof block !== "object") continue;
+      const b = block as Record<string, unknown>;
+      const type = b["type"];
+      const tag = toolNameOf(b);
+      if (type === "server_tool_use") {
+        if (tag.includes("web_search")) searchUses++;
+        else if (tag.includes("web_fetch")) fetchUses++;
+      } else if (typeof type === "string" && type.includes("web_search_tool_result")) {
+        searchResults++;
+      } else if (typeof type === "string" && type.includes("web_fetch_tool_result")) {
+        fetchResults++;
+      }
+    }
+  }
+  return { searches: Math.max(searchUses, searchResults), fetches: Math.max(fetchUses, fetchResults) };
+}
+
 /** A server-tool activity the proxy read from a RESPONSE (this turn's real search/fetch), for the fetch log. */
 export type ServerToolActivity =
   | { readonly kind: "search"; readonly query: string }
@@ -136,7 +174,11 @@ function collectFromContent(content: unknown, out: ServerToolActivity[]): void {
     if (!block || typeof block !== "object") continue;
     const b = block as Record<string, unknown>;
     const type = b["type"];
-    if (type === "tool_use" || type === "server_tool_use") {
+    // RES.1 — only `server_tool_use` counts as executed server-tool activity: a plain `tool_use` is a
+    // CLIENT-side call the provider never ran (the incident run's phantom `query "test search"` allow
+    // row was exactly that — logged against metered `searches=0`). The fetch log must not mint
+    // `allow` evidence for a search/fetch that never executed.
+    if (type === "server_tool_use") {
       const tag = toolNameOf(b);
       const input = (b["input"] ?? {}) as Record<string, unknown>;
       if (tag.includes("web_search") && typeof input["query"] === "string") {
@@ -215,7 +257,8 @@ export function extractResponseServerToolsSse(body: string): ServerToolActivity[
       const index = ev["index"];
       const cb = ev["content_block"] as Record<string, unknown> | undefined;
       const cbType = cb?.["type"];
-      if (typeof index === "number" && (cbType === "server_tool_use" || cbType === "tool_use")) {
+      // RES.1 — `server_tool_use` only (see collectFromContent): a plain `tool_use` never executed.
+      if (typeof index === "number" && cbType === "server_tool_use") {
         const name = typeof cb?.["name"] === "string" ? (cb["name"] as string) : "";
         // some responses inline a complete `input` at start (no deltas) — seed the json from it.
         const seeded = cb?.["input"] && Object.keys(cb["input"] as object).length > 0 ? JSON.stringify(cb["input"]) : "";
@@ -296,28 +339,112 @@ export class NovelDomainTracker {
 }
 
 /**
- * Per-run cumulative web_search / web_fetch use (PRB.22 — D-PRB.21-1). `max_uses` on a server web tool
- * bounds ONE API call, so a run's research volume needs a cross-request bound: the proxy records every
- * response's metered `server_tool_use` counts (the same data the fetch log of record writes) and the
- * handler subtracts the running totals from the run's `WebToolPolicy` budgets — shrinking `max_uses` to
- * the remainder and dropping the tool entirely at zero. Run-keyed in-memory state, like the cap
- * accountant: the proxy is the run's one meter of record for its lifetime, and the request-history count
- * (the handler's other input) covers any gap a restart would leave.
+ * A live grant a forwarded `/v1/messages` request holds against the run's research budgets (RES.1;
+ * REQ-SPEC-31(2)). The handler reserves the `max_uses` it actually granted at admission and releases the
+ * reservation when the response is metered (or the forward fails). `release` is idempotent.
  */
+export interface ResearchReservation {
+  release(): void;
+}
+
+/**
+ * Per-run cumulative web_search / web_fetch use (PRB.22 — D-PRB.21-1) PLUS in-flight grants (RES.1).
+ *
+ * `max_uses` on a server web tool bounds ONE API call, so a run's research volume needs a cross-request
+ * bound: the proxy records every response's metered `server_tool_use` counts and the handler subtracts
+ * the running totals from the run's `WebToolPolicy` budgets — shrinking `max_uses` to the remainder and
+ * dropping the tool entirely at zero.
+ *
+ * RES.1 adds the missing half the 2026-09-30 incident exposed: four parallel Haiku research subagents
+ * were each admitted while the committed count was still 0, each carrying `max_uses` = the full remainder
+ * (12) — the wave executed 28 searches against a 12-search budget, then the drop-at-zero left the rest of
+ * verification (and every later phase) tool-less. `reserve`/`inflight` close that window: the grant each
+ * request is ADMITTED with counts against the next request's headroom until the response settles, so the
+ * sum of live grants plus committed use can never exceed the budget by more than one request's own cap.
+ *
+ * Grants are TTL-bound (`RESEARCH_GRANT_TTL_MS`): a wedged upstream request holds its reservation only
+ * until expiry, so a stuck grant can never starve a later attempt's verification (fail-safe direction —
+ * a lost grant over-admits; it never under-admits the reserved floor). Run-keyed in-memory state, like the
+ * cap accountant: the proxy is the run's one meter of record for its lifetime (prod runs a single-instance
+ * MIG — `targetSize: 1`), and the request-history count (the handler's other input) covers any gap a
+ * restart would leave.
+ */
+export const RESEARCH_GRANT_TTL_MS = 10 * 60 * 1000;
+
 export class ResearchUsageTracker {
-  private readonly byRun = new Map<string, { fetches: number; searches: number }>();
+  private readonly byRun = new Map<
+    string,
+    { fetches: number; searches: number; grants: Map<number, { searches: number; fetches: number; expiresAt: number }> }
+  >();
+  private grantSeq = 0;
+  private readonly now: () => number;
+
+  constructor(opts: { readonly now?: () => number } = {}) {
+    this.now = opts.now ?? (() => Date.now());
+  }
+
+  private row(runId: string) {
+    let cur = this.byRun.get(runId);
+    if (!cur) {
+      cur = { fetches: 0, searches: 0, grants: new Map() };
+      this.byRun.set(runId, cur);
+    }
+    return cur;
+  }
 
   /** Record one served response's server-tool use for the run (from `usage.server_tool_use` / parsed blocks). */
   record(runId: string, delta: { readonly fetches?: number; readonly searches?: number }): void {
-    const cur = this.byRun.get(runId) ?? { fetches: 0, searches: 0 };
+    const cur = this.row(runId);
     cur.fetches += delta.fetches ?? 0;
     cur.searches += delta.searches ?? 0;
-    this.byRun.set(runId, cur);
   }
 
-  /** The run's cumulative server-tool use so far. */
+  /** The run's cumulative server-tool use so far (committed responses only). */
   usage(runId: string): { fetches: number; searches: number } {
     const cur = this.byRun.get(runId);
     return { fetches: cur?.fetches ?? 0, searches: cur?.searches ?? 0 };
+  }
+
+  /**
+   * The run's RESERVED-but-unsettled server-tool use: the sum of live admission grants (`max_uses` values
+   * already handed to in-flight requests). A grant older than `RESEARCH_GRANT_TTL_MS` is expired out —
+   * a wedged request's reservation cannot starve later verification (RES.1's fail-safe direction).
+   */
+  inflight(runId: string): { searches: number; fetches: number } {
+    const cur = this.byRun.get(runId);
+    if (!cur) return { searches: 0, fetches: 0 };
+    const now = this.now();
+    for (const [id, g] of cur.grants) if (g.expiresAt <= now) cur.grants.delete(id);
+    let searches = 0;
+    let fetches = 0;
+    for (const g of cur.grants.values()) {
+      searches += g.searches;
+      fetches += g.fetches;
+    }
+    return { searches, fetches };
+  }
+
+  /**
+   * Reserve the grants a request was just admitted with (the `max_uses` on the forwarded web tools).
+   * The returned reservation is released when the response is metered (the committed delta replaces the
+   * grant) or when the forward fails — never double-counted, never leaked past the TTL.
+   */
+  reserve(runId: string, grant: { readonly searches: number; readonly fetches: number }): ResearchReservation {
+    if (grant.searches <= 0 && grant.fetches <= 0) return { release: () => undefined };
+    const cur = this.row(runId);
+    const id = ++this.grantSeq;
+    cur.grants.set(id, {
+      searches: Math.max(0, grant.searches),
+      fetches: Math.max(0, grant.fetches),
+      expiresAt: this.now() + RESEARCH_GRANT_TTL_MS,
+    });
+    let released = false;
+    return {
+      release: () => {
+        if (released) return;
+        released = true;
+        this.byRun.get(runId)?.grants.delete(id);
+      },
+    };
   }
 }

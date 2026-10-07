@@ -48,6 +48,12 @@ export interface LiveLauncherOptions {
   // ---- polling ----
   readonly pollIntervalMs?: number;
   readonly timeoutMs?: number;
+  /**
+   * A per-PROCESS nonce folded into every launch's idempotency key (RES.1 live probes). The in-process
+   * seq alone resets on restart — a retried probe would replay the previous attempt's key and read back
+   * its (already-terminal) run. Live drivers MUST pass one (e.g. attempt tag); tests omit it.
+   */
+  readonly idempotencySeed?: string;
   // ---- injectable seams (tests) ----
   readonly fetch?: FetchLike;
   readonly sleep?: (ms: number) => Promise<void>;
@@ -118,13 +124,24 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
     readonly workflow: WorkflowKind;
     readonly rigor?: Rigor;
     readonly instrumented?: boolean;
+    /**
+     * RES.1 — the word/claim counts the run's estimate + web-research bound are sized on
+     * (`runs.input_snapshot`, read at provision for `authorWebToolPolicy`). The sheet carries these
+     * from its claim pre-pass; an API-direct launch that omits them silently lands the claims=0
+     * fallback bound (8 searches/16 fetches) — the first live probe starved verification on exactly
+     * this. Pass the fixture's real counts when the caller knows them.
+     */
+    readonly inputSnapshot?: Record<string, unknown>;
   }): Promise<LaunchedRun> {
     const { projectId, workflow, instrumented = false } = input;
     const workflowKey = WORKFLOW_KEY_BY_KIND[workflow];
     const rigor = workflow === "quick_voice" ? "quick" : RIGOR_KEY[input.rigor ?? "standard"];
     const draftId = this.opts.draftIdFor?.(projectId);
-    // A distinct key per call so createRun's idempotency never collapses two intended runs into one (deduped).
-    const idempotencyKey = `live-${workflow}-${projectId}-${rigor}-${instrumented ? "i" : "n"}-${++this.launchSeq}`;
+    // A distinct key per call so createRun's idempotency never collapses two intended runs into one
+    // (deduped); `idempotencySeed` extends that across process restarts (a retried probe attempt must
+    // mint a NEW run, not replay the previous attempt's terminal row).
+    const seed = this.opts.idempotencySeed ? `${this.opts.idempotencySeed}-` : "";
+    const idempotencyKey = `live-${workflow}-${projectId}-${rigor}-${instrumented ? "i" : "n"}-${seed}${++this.launchSeq}`;
 
     const body = {
       idempotencyKey,
@@ -139,6 +156,8 @@ export class LiveWorkflowLauncher implements WorkflowLauncher {
       // G1 delivers with second_read off — this ticket's Stage B AC1). It is a review-only input.
       inputs: { ...(draftId ? { draftId } : {}), sidecar: true, instrumented, ...(workflow === "review" ? { second_read: false } : {}) },
       ...(draftId ? { draftId } : {}),
+      // the word/claim counts the estimate + research bound size on (see `launch` above).
+      ...(input.inputSnapshot ? { inputSnapshot: input.inputSnapshot } : {}),
     };
 
     const res = await this.fetch(`${this.base}/projects/${projectId}/runs`, {

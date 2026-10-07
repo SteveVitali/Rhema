@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_TIERS, isModelPriceable, CURRENT_RATE_TABLE_VERSION, type ModelTier } from "@rhema/contracts";
 import { rosterModelIds, mainModelForTier } from "@rhema/engine";
-import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES } from "./allowlist.js";
+import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, authorResearchFloor, authorResearchPreflight, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES, RESEARCH_FLOOR_SHARE, RESEARCH_PARALLELISM } from "./allowlist.js";
 
 // F4 — the model-allowlist trap. The proxy admits a request only when `body.model` is EXACTLY on the run's
 // allowlist (`MODELS_BY_TIER`, an exact-match includes) AND priceable in the rate table; otherwise it 403s the
@@ -66,6 +66,81 @@ describe("authorWebToolPolicy (PRB.22 — the per-run research bound)", () => {
     expect(p.fetchBudget).toBe(24); // 12 + 4×3
     expect(p.searchBudget).toBe(11); // 8 + 3
   });
+
+  it("RES.1 — per-call grants cap at budget ÷ wave width so parallel researchers can't starve", () => {
+    const p = authorWebToolPolicy({ claims: 9 });
+    // 17 searches / 48 fetches → each request reserves ≤4 / ≤12, so a 4-subagent wave never
+    // hands the whole remainder to its first request (the starved-sibling failure the first
+    // live probe hit — probe 01M3VT9R…). `max_uses` is per-call: more turns just keep working.
+    expect(p.searchMaxUses).toBe(4);
+    expect(p.fetchMaxUses).toBe(12);
+    // the wave invariant: RESEARCH_PARALLELISM concurrent full grants never oversubscribe the bound.
+    expect(p.searchMaxUses! * RESEARCH_PARALLELISM).toBeLessThanOrEqual(p.searchBudget!);
+    expect(p.fetchMaxUses! * RESEARCH_PARALLELISM).toBeLessThanOrEqual(p.fetchBudget!);
+    const small = authorWebToolPolicy({});
+    expect(small.searchMaxUses).toBe(2); // floor(8/4)
+    expect(small.fetchMaxUses).toBe(4); // floor(16/4)
+    // a claim-less bound still grants at least one invocation per call — never a zeroed tool.
+    expect(small.searchMaxUses!).toBeGreaterThanOrEqual(1);
+  });
+
+  it("RES.1 — floors half the authored bound to research-class phases (the verification reserve)", () => {
+    const p = authorWebToolPolicy({ claims: 20 });
+    // 28 searches / 80 fetches → 14 / 40 reserved for phaseClass=research traffic only.
+    expect(p.searchFloor).toBe(14);
+    expect(p.fetchFloor).toBe(40);
+    const small = authorWebToolPolicy({});
+    expect(small.searchFloor).toBe(4); // 8 / 2
+    expect(small.fetchFloor).toBe(8); // 16 / 2
+    // the floor is a share of the budget — it can never exceed it.
+    expect(small.searchFloor!).toBeLessThanOrEqual(small.searchBudget!);
+    expect(small.fetchFloor!).toBeLessThanOrEqual(small.fetchBudget!);
+  });
+
+  // RES.1 (REQ-SPEC-31(2)) — THE GUARD: this test fails if the floor share or the sizing function's
+  // output is lowered. ECON.2 may cut research spend only ABOVE the floor; a lower floor must be an
+  // ADR-visible decision, never a silent constant edit.
+  it("GUARD — the research floor never drops below half the run's bounded search/fetch budgets", () => {
+    expect(RESEARCH_FLOOR_SHARE).toBeGreaterThanOrEqual(0.5);
+    // claim-scaled bound at the incident's own numbers (claimCount=4 → 12 searches / 28 fetches).
+    const p = authorWebToolPolicy({ claims: 4 });
+    expect(p.searchFloor).toBe(6);
+    expect(p.fetchFloor).toBe(14);
+    // the pure function pins the same share on arbitrary budgets, claims and rigor carried.
+    expect(authorResearchFloor({ claims: 4, rigor: "quick", searchBudget: 12, fetchBudget: 28 })).toEqual({
+      searchFloor: 6,
+      fetchFloor: 14,
+    });
+  });
+});
+
+// RES.1 (REQ-SPEC-31(3)) — the preflight manifest: every model the tier's roster admits × every server
+// tool the run's webTools policy enables. The probe set must equal the model-allowlist × enabled-kind
+// product on EVERY tier — a narrower set probes less than the run may exercise; a wider one wastes burn.
+describe("authorResearchPreflight (RES.1 — REQ-SPEC-31(3) pair matrix)", () => {
+  it("every tier: pairs = the full roster × both enabled tools, canonical type variants pinned", () => {
+    for (const tier of MODEL_TIERS as readonly ModelTier[]) {
+      const spec = authorResearchPreflight({ modelTier: tier, webTools: null });
+      expect(spec.models).toEqual([...MODELS_BY_TIER[tier]]);
+      expect(spec.tools).toEqual(["web_search", "web_fetch"]);
+      expect(spec.toolTypes).toEqual({ web_search: "web_search_20250305", web_fetch: "web_fetch_20250910" });
+      // the pair set is exactly the matrix product — roster models × enabled tools, no more, no fewer.
+      expect(spec.pairs).toEqual(
+        MODELS_BY_TIER[tier].flatMap((model) => [
+          { model, tool: "web_search" },
+          { model, tool: "web_fetch" },
+        ]),
+      );
+    }
+  });
+
+  it("a disabled tool drops out of the pair set (probing it would prove nothing — the proxy strips it)", () => {
+    const spec = authorResearchPreflight({ modelTier: "base", webTools: { search: true, fetch: false } });
+    expect(spec.tools).toEqual(["web_search"]);
+    expect(spec.pairs.every((p) => p.tool === "web_search")).toBe(true);
+    const both = authorResearchPreflight({ modelTier: "base", webTools: { search: false, fetch: false } });
+    expect(both.pairs).toEqual([]);
+  });
 });
 
 // P1.11 — the Assistant seat's web bound (§7.1: ≤5 searches / ≤10 fetches per turn; §12.2 Research row:
@@ -98,10 +173,22 @@ describe("authorAssistantWebToolPolicy (P1.11 — the §7.1/§12.2 bound)", () =
     const p = authorAssistantWebToolPolicy({ workflow: "research_burst", inputs: { sources: 4 } });
     expect(p!.fetchBudget).toBe(4);
     expect(p!.searchBudget).toBe(4);
+    // RES.1 — half the source bound floored to the burst's research phase (its triage judge runs first).
+    expect(p!.fetchFloor).toBe(2);
+    expect(p!.searchFloor).toBe(2);
     const def = authorAssistantWebToolPolicy({ workflow: "research_burst" });
     expect(def!.fetchBudget).toBe(5); // the default source count
     const over = authorAssistantWebToolPolicy({ workflow: "research_burst", inputs: { sources: 999 } });
     expect(over!.fetchBudget).toBe(RESEARCH_BURST_MAX_SOURCES); // hard-clamped
+  });
+
+  it("chat_turn/figure carry NO floor — neither manifest has a research-class phase to reserve for (RES.1)", () => {
+    const chat = authorAssistantWebToolPolicy({ workflow: "chat_turn" });
+    expect(chat!.searchFloor).toBeUndefined();
+    expect(chat!.fetchFloor).toBeUndefined();
+    const fig = authorAssistantWebToolPolicy({ workflow: "figure" });
+    expect(fig!.searchFloor).toBeUndefined();
+    expect(fig!.fetchFloor).toBeUndefined();
   });
 
   it("non-assistant workflows fall back (null) to the claim-scaled bound", () => {

@@ -99,6 +99,16 @@ export interface OrchestratorDeps {
    * content store). Unset ⇒ no file mounts (the pre-P1.13 shape).
    */
   readonly figureClaimsMount?: FigureClaimsMountProvider;
+  /**
+   * RES.1 — the optional ops alert sink (the worker binds `OPS_ALERT_WEBHOOK_URL`). The ONLY consumer is
+   * the stranded sweep's `research_preflight_failed` leg: a run that can never research pages once —
+   * the payload is ID-only (`{kind, runId, workspaceId}`), never prompt/draft text. Unset ⇒ the marker
+   * still flips `runs.failure.alerted` so the failure is recorded once and never re-paged on resume.
+   */
+  // method signature (not a function-typed property): a sub-dep may narrow the payload it accepts —
+  // e.g. the worker's billing sink takes `ReconcileAlert` — while the sweep's preflight page sends
+  // its own id-only shape. Method-param bivariance keeps both assignable to this seam.
+  alert?(a: unknown): void | Promise<void>;
 }
 
 /** Builds the re-review `obligations.json` mount file for a seat's hydration, or null when none applies. */
@@ -1054,6 +1064,11 @@ const CAP_REACHED_REASON = /reached its cap|cap[_\s-]?reached|cap of \d+ credits
  * the agent's own terminal report (e.g. the dossier-visibility block); a `replan` asks for a
  * back-edge no machinery exists to take. Leaving the run `running` for the reaper was the live
  * cap-402 crash loop (heartbeat stale → orphaned → re-enqueued → instant 402 → repeat).
+ *
+ * RES.1 adds `research_preflight_failed` (REQ-SPEC-31(3)): the harness's model × server-tool probe
+ * found a pair the provider refuses — the run can never research, so it terminalizes here with the
+ * same settle (zero debit → the refund leg no-ops; the probe burn absorbs as platform cost), and the
+ * stranded sweep's preflight leg pages exactly one ID-only ops alert.
  */
 function terminalPhaseFailure(errorClass: string, reason: string | undefined): { code: string } | null {
   if (errorClass === "budget" || (reason != null && CAP_REACHED_REASON.test(reason))) {
@@ -1061,6 +1076,7 @@ function terminalPhaseFailure(errorClass: string, reason: string | undefined): {
   }
   if (errorClass === "blocked") return { code: "phase_blocked" };
   if (errorClass === "replan") return { code: "phase_replan" };
+  if (errorClass === "research_preflight_failed") return { code: "research_preflight_failed" };
   return null;
 }
 

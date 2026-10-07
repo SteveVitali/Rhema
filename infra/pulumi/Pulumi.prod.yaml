@@ -142,9 +142,29 @@ config:
   # stays postgres; pg-boss on the system DSN; collab DATABASE_URL → secretKeyRef
   # rhema-prod-collab-database-url), the /voices + loadProject workspace predicates, and the
   # withTenant role pin. web/fetcher/convert/export/egress-proxy unchanged — keep their digests.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:7684708bdc99e9e5a50cddcbd1439d5729f2b57baea030fea817439bfd0102b3","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:071d775d3a569d551bcd63cab22924900c006664eb2032d918625d3c4fad1b1a","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:9681d2aacf869f4871ad33ab93ea7f8f2289a7c706afdd9252b0a45cdb8e502e","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:e54e1600f39d2c0baf576140cc2a86ba3166a7985966784a61c97b786c9b4e71","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:cb092544fcd6a0e5f9e102816ada7e50c9b202e33dddafe6cb796227bce1cf9b","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:bd3fdfffb83050571204d2af324d710cdce5f25858755a312551b4bde4ae67f4","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:63237c0fc79aeb49e87987514422e71d7a85156a87cfc098455f3781258a8e67"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:fd2091cb55137a1af27dfc1f75ba8842dfccc397be46bdadcf034f3a17b706bb
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:f3423b8c934c62e357bbbc9afc5ec19476e1477a68b1dec7091df79ca0863737
+  # RES.1 Stage-B (build rhema:res1, Cloud Build 6a8c60f9, 2026-10-02, chain-tip SHA 3ee862f9 —
+  # stacks on the SEC.1 deploy): all nine images rebuilt on the RES.1 tip. Carries: the research
+  # floor (worker run-task sizing/enforcement), model×server-tool preflight through the real proxy
+  # before debit (api orchestrator + egress-proxy research-evidence rows), preflight-failure hold
+  # release/zero-debit, and the planted-error probe/journey surfaces. healthz provenance requires
+  # every service rebuilt on the tip SHA, so all nine pins move together.
+  # RES.1 Stage-B hotfix (build rhema:res1b, Cloud Build 56535f25, 2026-10-02, SHA 0552433):
+  # the first live probe failed closed — `research_preflight_failed`, all four pairs HTTP 400
+  # `invalid_request_error` (hold 945cr fully released, zero debit — the fail-closed path working).
+  # Isolated: the preflight probe omitted `anthropic-version` (the proxy forwards client headers
+  # verbatim, injects none; Anthropic requires it). One-line fix in run-task + test pin; all nine
+  # images rebuilt on the hotfix tip.
+  # RES.1 Stage-B hotfix 2 (build rhema:res1c, Cloud Build 7b8bc3eb, 2026-10-01, SHA 7833ece):
+  # the SECOND live probe (01M3VT9R…) ran real searches/fetches but every claim still landed
+  # Unverifiable — diagnosis: claims=0 fallback bound (8/16) + preflight executions consuming the
+  # bound it verifies + an uncapped whole-remainder grant starving parallel research siblings
+  # ("no working web_search" was literally true for starved requests). Carries: per-call grant
+  # caps (floor(budget/4) via RESEARCH_PARALLELISM) in authorWebToolPolicy, preflight excluded
+  # from bound settlement, and the probe launcher's inputSnapshot pass-through. All nine images
+  # rebuilt on the hotfix tip so healthz provenance stays uniform.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:5eb3640691ab16e00d0cc2f2e3705fc0dc68a8fdc355fb5fe0f0921e2c590ddb","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:95ae7b1af5455545b868607339e345f1c5827b2535be16c970c306616b77b379","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:231ce872506d84c69f5afcd6de1e382cd6a8e59611dbf86b1aa16a1d4ce3b933","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:59e2ec7b19df90a7f03d9daf708c007642b29669d736a9bb42a19d764769b957","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:9ed30c42f52f9145d7521184b1e8ae3e4e0fbb37925e43572e97b7a961cac421","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:235561238600ca4a33f4d3c223107d9f3081a93484eb669d1a8b0e57f561a6d1","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:97d90e523ee7368c5ec790b0367e4acdafa9dc908a28e6a8edcddc06009ea7d1"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:faa6aa00b8b6e678c17f69bd8632e30199578c2630a4561073e324e44acd06d9
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:618ddfa8a23c6277b25b321ad15eae6b23e7c9f75247fbb9fb25c9443a224f15
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

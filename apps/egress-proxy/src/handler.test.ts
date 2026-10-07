@@ -523,6 +523,189 @@ describe("handleProxyRequest — per-run research budget (PRB.22; D-PRB.21-1)", 
   });
 });
 
+describe("handleProxyRequest — RES.1 executed-only history + research floor + phase stamp", () => {
+  const PHASE = "x-rhema-phase-class";
+  /** Assistant history with `n` EXECUTED web_search calls (`server_tool_use` — provider-written). */
+  function executedSearchHistory(n: number): string {
+    return JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        { role: "user", content: "verify" },
+        {
+          role: "assistant",
+          content: Array.from({ length: n }, (_, i) => ({
+            type: "server_tool_use",
+            name: "web_search",
+            input: { query: `q${i}` },
+          })),
+        },
+      ],
+    });
+  }
+  /** Assistant history with `n` bare `tool_use` calls for web_search — the model's call, never executed. */
+  function phantomSearchHistory(n: number): string {
+    return JSON.stringify({
+      model: "claude-opus-5",
+      messages: [
+        { role: "user", content: "verify" },
+        {
+          role: "assistant",
+          content: Array.from({ length: n }, (_, i) => ({
+            type: "tool_use",
+            name: "web_search",
+            input: { query: `phantom ${i}` },
+          })),
+        },
+      ],
+    });
+  }
+  const toolsOf = (h: Harness): { name?: string; type?: string; max_uses?: number }[] =>
+    (JSON.parse(h.forwarded.req!.body) as { tools?: { name?: string; type?: string; max_uses?: number }[] }).tools ?? [];
+
+  it("the incident regression: bare tool_use blocks in history do NOT consume the search budget", async () => {
+    // 2026-09-30: 24 phantom `tool_use` web_search blocks would have read as an exhausted budget under the
+    // old name-or-type history count, dropping the tool. Executed-only counting sees zero executions.
+    const h = harness({ context: ctx({ webTools: { searchBudget: 24 } }) });
+    await handleProxyRequest(request({ body: phantomSearchHistory(24) }), h);
+    expect(toolsOf(h).some((t) => t.name === "web_search" && t.type === "web_search_20250305")).toBe(true);
+  });
+
+  it("a non-research request sees the bound NET of the floor; `research`-stamped sees the full remainder", async () => {
+    const context = ctx({ webTools: { searchBudget: 24, searchFloor: 4 } });
+    const body = executedSearchHistory(21); // 24 − 21 = 3 left for research; 24 − 4 − 21 < 0 for everyone else
+
+    const unstamped = harness({ context });
+    await handleProxyRequest(request({ body }), unstamped);
+    expect(toolsOf(unstamped).some((t) => t.name === "web_search")).toBe(false);
+
+    const judged = harness({ context });
+    await handleProxyRequest(request({ body, headers: { ...request().headers, [PHASE]: "verify_structural" } }), judged);
+    expect(toolsOf(judged).some((t) => t.name === "web_search")).toBe(false);
+
+    const research = harness({ context });
+    await handleProxyRequest(request({ body, headers: { ...request().headers, [PHASE]: "research" } }), research);
+    expect(toolsOf(research).find((t) => t.name === "web_search")?.max_uses).toBe(3);
+  });
+
+  it("a `preflight`-stamped probe keeps its declared max_uses:1 on an exhausted budget", async () => {
+    const context = ctx({ webTools: { searchFloor: 4 } });
+    const shared = new ResearchUsageTracker();
+    shared.record("run_1", { searches: 24 }); // committed budget fully spent
+    const probeBody = JSON.stringify({
+      model: "claude-opus-5",
+      messages: [{ role: "user", content: "Reply with the word ok." }],
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 1 }],
+    });
+    // a normal request is refused the tool outright…
+    const denied = harness({ context });
+    await handleProxyRequest(request({ body: probeBody }), { ...denied, researchUsage: shared });
+    expect(toolsOf(denied).some((t) => t.name === "web_search")).toBe(false);
+    // …but the harness's own probe still reaches it (resume re-preflight on a spent budget).
+    const probe = harness({ context });
+    await handleProxyRequest(
+      request({ body: probeBody, headers: { ...request().headers, [PHASE]: "preflight" } }),
+      { ...probe, researchUsage: shared },
+    );
+    expect(toolsOf(probe).find((t) => t.name === "web_search")?.max_uses).toBe(1);
+  });
+
+  it("a metered PREFLIGHT response does not consume the research bound it exists to verify", async () => {
+    // RES.1 — bypassBudget is symmetric: the probe's executions must not settle into the committed
+    // count either, or preflight shrinks the envelope it is proving reachable (first live probe:
+    // 2 of 8 searches + 2 of 16 fetches spent on preflight before verification even ran).
+    const context = ctx({ webTools: { searchBudget: 8 } });
+    const shared = new ResearchUsageTracker();
+    const probeResponse: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1, server_tool_use: { web_search_requests: 1 } },
+      }),
+    };
+    const h = harness({ context, response: probeResponse });
+    await handleProxyRequest(
+      request({ headers: { ...request().headers, [PHASE]: "preflight" } }),
+      { ...h, researchUsage: shared },
+    );
+    // billed usage still lands on the usage row (the meter of record)…
+    expect(h.usageWriter.rows[0]!.searches).toBe(1);
+    // …but the research bound sees nothing — the next request still draws the full budget.
+    expect(shared.usage("run_1")).toEqual({ fetches: 0, searches: 0 });
+    const h2 = harness({ context });
+    await handleProxyRequest(request(), { ...h2, researchUsage: shared });
+    expect(toolsOf(h2).find((t) => t.name === "web_search")?.max_uses).toBe(8);
+  });
+
+  it("two parallel requests can never be granted the same budget slice (the four-subagent window)", async () => {
+    // The incident shape: 12-search budget, a wave of parallel research subagents each admitted with the
+    // full remainder while committed=0. With reservations the second wave-member sees the first's grant.
+    const context = ctx({ webTools: { searchBudget: 12 } });
+    const shared = new ResearchUsageTracker();
+    let resolveFirst!: (r: UpstreamResponse) => void;
+    const gate = new Promise<UpstreamResponse>((res) => {
+      resolveFirst = res;
+    });
+    const h1 = harness({ context });
+    const forward1: Forwarder = async (req) => {
+      h1.forwarded.req = req;
+      return gate; // held open — grant stays reserved while upstream is in flight
+    };
+    const p1 = handleProxyRequest(request(), { ...h1, forward: forward1, researchUsage: shared });
+    // spin until request 1 has been admitted (its forwarded body is captured)
+    for (let i = 0; i < 50 && h1.forwarded.req === undefined; i++) await new Promise((r) => setTimeout(r, 1));
+    expect(toolsOf(h1).find((t) => t.name === "web_search")?.max_uses).toBe(12); // granted the remainder
+
+    const h2 = harness({ context });
+    await handleProxyRequest(request(), { ...h2, researchUsage: shared });
+    expect(toolsOf(h2).some((t) => t.name === "web_search")).toBe(false); // 12 − 12 reserved = 0
+
+    // release the wedge: metering commits 0 real use (the response ran no tools) and frees the grant.
+    resolveFirst({ status: 200, headers: { "content-type": "application/json" }, body: opusResponse() });
+    await p1;
+    const h3 = harness({ context });
+    await handleProxyRequest(request(), { ...h3, researchUsage: shared });
+    expect(toolsOf(h3).some((t) => t.name === "web_search")).toBe(true);
+  });
+
+  it("a dead upstream releases the reservation (a wedged grant cannot starve verification)", async () => {
+    const context = ctx({ webTools: { searchBudget: 12 } });
+    const shared = new ResearchUsageTracker();
+    const h1 = harness({ context });
+    const failing: Forwarder = async () => {
+      throw new Error("upstream unreachable");
+    };
+    await expect(handleProxyRequest(request(), { ...h1, forward: failing, researchUsage: shared })).rejects.toThrow(
+      "upstream unreachable",
+    );
+    expect(shared.inflight("run_1")).toEqual({ searches: 0, fetches: 0 }); // released on forward failure
+    const h2 = harness({ context });
+    await handleProxyRequest(request(), { ...h2, researchUsage: shared });
+    expect(toolsOf(h2).some((t) => t.name === "web_search")).toBe(true);
+  });
+
+  it("the phase stamp is a proxy-internal header — never forwarded to the provider", async () => {
+    const h = harness();
+    await handleProxyRequest(request({ headers: { ...request().headers, [PHASE]: "research" } }), h);
+    expect(h.forwarded.req!.headers[PHASE]).toBeUndefined();
+    expect(Object.keys(h.forwarded.req!.headers).some((k) => k.toLowerCase() === PHASE)).toBe(false);
+  });
+
+  it("a sandbox-declared bare-name `web_search` is stripped and the real server tool injected (incident shape)", async () => {
+    const h = harness();
+    const body = JSON.stringify({
+      model: "claude-opus-5",
+      messages: [{ role: "user", content: "verify" }],
+      tools: [{ name: "web_search", description: "search", input_schema: { type: "object" } }],
+    });
+    await handleProxyRequest(request({ body }), h);
+    const tools = toolsOf(h);
+    const searchTools = tools.filter((t) => t.name === "web_search");
+    expect(searchTools).toHaveLength(1);
+    expect(searchTools[0]!.type).toBe("web_search_20250305"); // the real server tool, not the impostor
+  });
+});
+
 describe("handleProxyRequest — denial spike pause (REQ-ARCH-32)", () => {
   it("emits a single pause signal once egress denials reach the spike threshold", async () => {
     // Reuse one events sink + spike tracker across denials by sharing the harness.
