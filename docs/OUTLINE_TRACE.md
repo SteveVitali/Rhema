@@ -26,7 +26,7 @@ de-scoped. An uncovered `OL-*` is a synthesis gap, not something to leave silent
 | OL-10 | JOURNEY.1 browser journeys remain the acceptance mechanism (REQ-SPEC-29) | spec §2 I-2 + §10 (journeys authoritative; component tests supplement) |
 | OL-11 | Canonical-vocab lint, protocol-markers, no-cookies, licenses continue to apply to browser output | spec §2 I-3 + §9 (gates *strengthened* — the vacuous-scan discovery is fixed in the foundation set) |
 | OL-12 | Strict CSP retained; outbound hand-offs are navigations to allowlisted origins | spec §2 I-4 + §9 (REQ-SAFE-5/6; REQ-BFF-27; form-action's non-coverage of JS navs addressed by BFF validation) |
-| OL-13 | Session cookies on `rhema.tools`; ADR-040 internal-stamp seam preserved | spec §2 I-5 + §5 (REQ-DAT-7; `/api/auth/*` proxy verbatim; stamp on every rate-limited call) |
+| OL-13 | Session cookies on `rhema.tools`; ADR-040 internal-stamp seam preserved | spec §2 I-5 + §5 (REQ-DAT-7 restated under §5's typed-seam promotion; `/api/auth/*` proxy verbatim; stamp on every rate-limited call) |
 | OL-14 | ProseMirror + Y.Doc + Hocuspocus collab survives (parity minimum; React binding welcome) | spec §2 I-6 + §6 (29-row parity checklist is the editor flip's gate) |
 | OL-15 | Prohibited claims / copy discipline unchanged | spec §2 I-7 + §9 (REQ-SAFE-4: every SPA string is a COPY leaf; launch-surface audit extends to SPA sources) |
 | OL-16 | Public/SEO surfaces keep fast first paint; never knowingly regressed | spec §2 I-8 + §4 (public set frozen by REQ-BND-1; shared token/font pipeline REQ-BND-12) |
