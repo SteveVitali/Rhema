@@ -1,9 +1,13 @@
 <!--
   docs/build/LEDGER.md (BM-LEDGER-01/02). The machine-state file orchestrate-build / drive-build.sh parse.
-  Reconstructed by MAINT.1 (build-memory v2 migration) from the legacy .agents/scratch/rhema-build-ledger.md
+  Reconstructed by MAINT.1 (build-memory v2 migration) from the legacy scratch ledger (its
+  path is retired — the original line is archived in the file named below).
   (state) + git + the 25 pull requests (PHASE LOG). This file holds ONLY state; the plan is the manifest
   (`manifest:` key). Legacy PHASE PLAN / invariants / SETUP / CAPSTONE sections were dropped — they cited the
   manifest by section already.
+  2026-10-01 (MAINT.2): resolved OPEN-FINDINGS bodies, the pruned RETURN-PASS rows and the
+  superseded line-3 provenance text are archived verbatim at
+  `docs/build/reports/ledger-archive/2026-10-01_open-findings-return-pass.md`.
 -->
 # Rhēma — build ledger (machine state)
 
@@ -17,11 +21,11 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextTicket:      MAINT.2            # row 62 — LEDGER cleanup + size cut, Plan-extensions backfill, stale DEFERRALS flips
-lastCompleted:   JOURNEY.1          # 2026-10-01 (PR #83, unmerged) — journey harness + test tenants DEPLOYED to prod; all green legs pass live
+nextTicket:      RES.1              # row 63 — review-research restore (PR-Q1 probe + research floor)
+lastCompleted:   MAINT.2            # 2026-10-01 (PR #84)
 blockedOn:       (nothing)          # a REAL block only; gates + operator pauses are not blocks
 pauseRequested:  false
-returnPass:      PRB.18             # stale — mostly done (BACKLOG.md § Stale rows); MAINT.2 prunes it
+returnPass:      (none)             # P0.15j/P0.15k done; PRB.18's residual → JOURNEY.1 steps + H7 (BL-32)
 manifest:        docs/tickets/00_MANIFEST.md
 canonicalSpec:   docs/rhema-design-spec.md
 memoryRoot:      docs/build
@@ -29,138 +33,71 @@ dispatchTarget:  subagent           # round-3 tickets sized for a one-window sub
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: main
 pinnedBaseSha:   bbb5d81            # merge-base(main, p0-01) — P0.01's fork point
-chainTip:        stevevitali/journey-1-browser-journey-acceptance   # round 3 stacks here (D1: no merge; PRs #48–#83 open)
+chainTip:        stevevitali/maint-2-build-memory-hygiene   # round 3 stacks here (D1)
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
-autonomy:        checkpoint         # auto-advance green tickets; pause at gates, real blocks, and the ADR-013 operator pauses
-mergePolicy:     OPERATOR           # stacked chain; operator merges bottom-up later (REC.3 writes the plan)
+autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
+mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           3
-updatedAt:       2026-10-01         # JOURNEY.1 landed + Stage-B deploy EXECUTED on prod (pulumi updates 95–97; nightly legs + purge + paid leg all observed live)
+updatedAt:       2026-10-01         # MAINT.2 memory hygiene landed; RES.1 next
 ```
 
 ## OPEN FINDINGS
 
-- **G1 CORE criterion MET live (2026-09-11, P0.15k Stage B, PR #28).** The `cited⇒fetched` wall ([[D-P0.15i-2]])
-  was confirmed unconverged live (a proj_pv review fetched 224 URLs but still cited 18 from training knowledge);
-  the **operator ruled Path B** ([[ADR-006]]: delivery strips unfetched citations + downgrades the claim, rather
-  than hard-failing — `validateCitedFetched` unchanged), and **all three real Reviews then DELIVERED green** on
-  `dev` (`assessPhase0ExitForRun` PASSED: violations=0, sidecars ok, cited⇒fetched 0-miss). Closes **D-P0.15-1**
-  and **D-P0.15i-2**. See `docs/phase0-exit-readout.md` § "P0.15k Stage B".
-- **GATE G1 dispositioned PASSED (2026-09-15, with accepted exceptions) — Phase 0 EXITED.** The Phase-0
-  deferrals were reconciled against the P0.15k live evidence (`DEFERRALS.md` § "Reconciliation — G1 clear"):
-  the live deploy/agent/proxy/mirror/orchestrator rows are DONE; the §18-eval rows belong to GATE G2; the
-  beta/IDE/CI/ops rows to later phases. Accepted-exception follow-ups (tracked, not blocking): the ±2% cost
-  cross-check ([[D-P0.08-2]]/[[D-P0.15-2]]), the live structured gate-EDIT ([[D-P0.15-3]]/[[D-P0.15k-2]]), the
-  estimator fold for revise/profile_voice ([[D-P0.15k-1]]). See `readouts/GATE-G1.md`.
-- **G2 DEFERRED (operator decision 2026-09-15) — Phase-B implementation proceeds.** The spec gates Phase-B UI on
-  **G2** (wave-1 LIFT) + **H2** (corpus); the operator deliberately overrode this for velocity (`readouts/GATE-G2.md`).
-  `nextTicket → PRB.01`. **Standing (deferred, not waived):** §16.4 marketing/efficacy claims do NOT ship until
-  LIFT is met; REQ-EVAL-16 consequences apply retroactively to UI built if the eval later fails — UI spend past
-  here is at risk. The Path-B citation-quality caveat (ADR-006: many `unverifiable` verdicts) compounds it. G2 +
-  H2 stay a HARD gate before public launch.
-- **REQ coverage (informational).** With `req_id_pattern` now set, `check-build-memory.sh` runs REQ→ticket
-  coverage against `docs/rhema-design-spec.md`; any warning it emits is recorded here, not fixed by this ticket
-  (RH.1 scope). None were violations (warnings only) at MAINT.1 close.
-- **STB.2 finding (RESOLVED — DEPLOYED + VERIFIED 2026-09-25 ~22:14Z) — cross-tenant dossier read on prod.**
-  `GET /projects/:id/review/:runId/dossier` returned a foreign workspace's full dossier DTO (letter,
-  findings, claims, access report) to an authenticated user outside that workspace: the anchor query
-  relied on RLS, but `correspondence_items`/`findings`/`claims`/`revision_obligations` are not
-  RLS-enforced tables and the deployed api connects as `postgres` (`rolbypassrls=true`). Fixed in source
-  (`apps/api/src/dossier-routes.ts` explicit `workspace_id` predicate + regression test), **deployed in
-  `pulumi up` update 78** (api `ef986d13`, web `658143d5`, worker `98e86c68` on `f3c7e13`), and
-  **verified closed live**: the same foreign pair that returned 200 + 56 KB pre-roll now returns
-  **404 `not_found`**; `deployments` row `prod:f3c7e13…`. Exposure window: route deploy → 2026-09-25
-  ~22:14Z. See `runs/STB.2.md` §3 + §9.
-- **D-PRB.21-1 (OPEN) — the review workflow is uncompletable at derived caps (2026-09-22, day-one live).**
-  Five consecutive `cap_reached` deaths on `my-first-project` across quick/standard and two docs:
-  `01M3508M` (est 364/cap 546 → 622), `01M35CEQ…` (est 1657/cap 2486 → 2629), `01M35FR9…` (73/110 → 119),
-  `01M35HHJ6…` (73/operator-raised 400 → 407), `01M35KCFA…` (73/400 → 466 on a 701-word draft with ZERO
-  in-doc URLs — `verification` still ran 128 fetches + 13 searches of its own research; 6.65M cache-read
-  tokens / 41 calls). Committed debits stayed modest (≈ $11.7 total across the day) — the cap meters
-  proxy burn, the estimate models committed-debit rates, and research volume is unbounded. Quick's
-  honest floor (cap ~86–110) is below minimum viable burn (~146). Routed to `28m_PRB.22` (bound the
-  research + model the residual; ≤$5 live verify). Also logged: the beta project page has no
-  run-history/delivered-review links (P1.05 concern — dossiers reachable only by URL).
-- **STB.3 live findings (2026-09-26, prod `f3c7e13` — runs/STB.3.md §4).** The bounded legs surfaced
-  ten concrete defects, all recorded unfixed per OPS scope: **F1** missing/unparseable
-  `.rhema/phase-result.json` killed outline/research_burst/profile_voice (~511cr metered, 0
-  committed); **F2** `second_read_producer_checked` is unsatisfiable on the deployed build — the
-  hook denies `Agent` in the judge-class phase while `expectedProducerQueryId` is null (memo review
-  dead-ends, 438cr across retries); **F3** draft emits `structure-plan.json` without
-  `anchor.{blockId,startOffset,endOffset}` (`sidecar_validates:structure`); **F4**
-  `credit_balances.held=-897` on `topup` — denormalized counter drift vs a clean append-only ledger;
-  **F5** cancelled/failed runs commit only completed-phase debits (451cr committed vs 1,304cr
-  metered tonight) → drives `proxy_vs_sdk_cost_runs_over5pct_1h`; **F6** `estimateCache` +
-  `claimPrePass` never bound in `buildApiDeps` → `estimate_cache` can never fill; **F7** SDK
-  `/api/hello` probe not on run allowlists → `egress_denied_10m` trips on healthy traffic; **F8**
-  live SLOs honestly red (start p95 3080s, gate-resume p95 443s, success 66.7%, event-delivery p95
-  105.9s); **F9** `/api/action` deep-link 404; **F10** chat cap overshoot 43/40cr. Each needs a
-  defect ticket; none was repaired-and-rerun inside STB.3.
-- **DEF.1 Stage B executed on prod (2026-09-26, `6a36dde`, `runs/DEF.1.md` §7).** F1–F3 repaired,
-  deployed (migration 0043 + def1a–h image rolls, provenance stamped per deploy), and re-run at
-  the original committed caps: outline `01M3E2EC…` 127/947, profile_voice `01M3E8CX…` 408/420,
-  draft `01M3E8F8…` 1,027/1,068, review `01M3EAAZ…` 447/1,083 — all **COMPLETED**; research
-  `01M3EGS5…` **failed at `plan` on an honest `{"status":"blocked"}` model verdict** (the thread
-  question decomposes into zero external fetches — a product/routing question, not a pipeline
-  defect; fetch/distill still unexercised → **D-DEF.1-1 OPEN**). **D-P0.15h-5 → DONE live**: the
-  scoped second-reader ran its private mount namespace inside the paid run — launch row
-  `explicit_files:["drafts/v1.md"]`, marker `producerQueryId===expectedProducerQueryId===
-  01M3EGB57986KDQVE7AA2Q82W8`, committed `05-second-read.md` carrying that `producer_query_id`,
-  `second_read_producer_checked` green, `correspondence/review/1/` dossier delivered,
-  `boundary.attested` violations=0. Stage B surfaced + fixed four defects the deterministic
-  suite cannot see: persona-root tree chmod, `/app/skills` + staged skills-dir read grant (draft
-  could not read `draft-ledger.md`), AppArmor denying `unshare` despite `SYS_ADMIN`, and
-  util-linux `mount` checking the REAL uid (ambient `CAP_SYS_ADMIN` insufficient — `setpriv
-  --reuid 0` wrapper). Committed spend 2,053cr total; every leg under its cap.
-- **DEF.2 landed on `stevevitali/def-2-ledger-metering-integrity` (2026-09-26, runs/DEF.2.md) —
-  STB.3 findings F4/F5/F6 repaired in code + a read-only prod reconcile leg executed.** F4: the
-  worker sampling meter bypassed the canonical ledger (direct `credit_ledger`+counter writes, no
-  account lock) — now routed through `@rhema/ledger`; migration 0044 adds `credit_balances`
-  `CHECK (held>=0) NOT VALID` + `admin_actions` `'balance_recompute'`; `reconcileBalances` /
-  `recompute-balances` folds the ledger, backfills `reconcile`-source holds, rewrites counters
-  (dry-run default; `--apply` operator-gated). F5: `commitStep` debits incremental proxy-metered
-  usage per attempt (`args.credits` fallback); cancel = release-only + absorbed-COGS rows, fail =
-  refund committed debits by default; `runs.spent_credits` reconciles monotonically. F6:
-  `SqlEstimateCacheStore` + `createProxyClaimPrePass` bound in `buildApiDeps` — the pre-pass mints
-  a 90 s synthetic proxy credential per refine (no provider key in api; REQ-ARCH-30), gated on
-  `EGRESS_PROXY_URL`+`SYSTEM_DATABASE_URL`; same-workspace check added (the shared cache made it a
-  cross-tenant probe oracle); Pulumi wires the api env + private-app→proxy firewall. **Prod
-  reconcile (read-only, IAP tunnel):** `assertBalances` — 1 divergence
-  (`01M2V3PM1133TPH4M8H0T8CSEE`/topup: ledger-derived available 1518/held −180 vs counter
-  2235/−897); `recompute-balances` dry-run plans a 180cr `reconcile` backfill + rewrite to
-  available 1338/held 0 — **verified zero writes** (counter unchanged, no `balance_recompute`
-  audit rows). Owed operator legs: `--apply` + `NOT VALID`→validated, F6 api deploy + a live
-  estimate refine filling `estimate_cache`. F7–F10 → DEF.3.
-- **DEF.3 Stage A landed on `stevevitali/def-3-live-noise-and-polish` (2026-09-26, runs/DEF.3.md) —
-  STB.3 findings F7/F9/F10 repaired in code ($0; Stage B owed → D-DEF.3-1).** F7: the vendored
-  SDK's `HEAD api.anthropic.com/api/hello` CLI-init preconnect transits the run's proxy but the
-  authored allowlist admitted only `/v1/` — a credentialed 403 + deny row + `egress.denied` event
-  per run, counted against §13.5 `egress_denied_10m`. Fixed by admission, not suppression:
-  `ANTHROPIC_PROBE_ENDPOINT` is authored on every run allowlist (same provider host; `/v1/` +
-  `/api/hello` only; nothing else widened). F9: `mintEmailAction` mints
-  `<apiBaseUrl>/api/action/<token>` but the api registered the consume handler at `/action/:token`
-  — every emailed link was a dead 404 (the live leg exercised the unprefixed path). Fixed by
-  mounting the handler on `/api/action/:token` as well. F10: `streamProxyRequest` delivered the
-  full stream + `end()` before `prep.meter` committed — a cap-crossing response could be
-  consumed-but-unmetered, and a meter refusal would have served a complete-but-unmetered response
-  (I2). Fixed by withholding the terminal chunk until the usage row commits: stream end ⇒
-  metered; a meter refusal truncates. §12.4's residual bound stays one in-flight request — now a
-  hard ordering; committed debits still clamp at cap per REQ-BILL-3. Regression tests per finding,
-  gates green. **Owed (D-DEF.3-1):** deploy api+proxy images + one bounded chat_turn ≤$5 re-verify
-  (probe allow row + cap-boundary 402 + minted-link round trip).
+_(Resolved entries are one-line stubs; their original bodies are archived verbatim in
+`reports/ledger-archive/2026-10-01_open-findings-return-pass.md`. Open entries are tightened with
+pointers; substance unchanged.)_
 
-- **2026-09-30 — prod design review (browser-driven; `reports/2026-09-30_prod-design-review.md`) → ROUND 3.**
-  A new user's journey on rhema.tools is broken at almost every load-bearing step, invisible to the 3,496-test suite:
-  - **Security:** a live cross-tenant read on `/voices` (PR-S1).
-  - **Dossiers:** a 500 on `evidence.urls` absent, including the Showcase (PR-J3).
-  - **Editing:** `/assets/page.js` never routed, and Edit source → `/v/working` 404 (PR-J4).
-  - **Money:** the free first review is absent (PR-J1), and purchase is dead: CSP + no checkout URL (PR-J2).
-  - **Chat:** a 502 (PR-J6).
-  - **Core value:** a paid Quick/Base Review did **zero web research**, 16/16 Unverifiable (PR-Q1).
-  - **Pricing:** 632 cr debited vs 1,625 cr metered (PR-E5); estimates disagree 10–20× (PR-E1).
-  - **SLOs:** still red after DEF.1–3 (PR-R2).
-
-  Consolidated with every owed item into `BACKLOG.csv` (65 rows) and planned as round 3 (ADR-013; planning ledger
-  `planning/2026-09-30_planning-ledger.md`).
+- **RESOLVED 2026-09-11 → `readouts/GATE-G1.md` + PHASE LOG 2026-09-11 (P0.15k Stage B, PR #28).**
+  G1 core criterion met live — three real-project Reviews delivered green on `dev` via the Path-B
+  ruling (ADR-006). Closed D-P0.15-1 + D-P0.15i-2.
+- **RESOLVED 2026-09-15 → `readouts/GATE-G1.md` + the 2026-09-15 GATE DECISIONS row.** G1 PASSED
+  with accepted exceptions; Phase 0 exited. The tracked follow-ups stay open as DEFERRALS rows:
+  ±2% cross-check (D-P0.15-2/D-P0.08-2), live gate-EDIT (D-P0.15-3/D-P0.15k-2), estimator fold
+  (D-P0.15k-1).
+- **G2 DEFERRED (operator decision 2026-09-15) — Phase-B implementation proceeds.** G2 + H2 stay
+  a HARD gate before public launch; §16.4 marketing/efficacy claims do NOT ship until LIFT is met
+  (REQ-EVAL-16 consequences apply retroactively to UI built meanwhile). See `readouts/GATE-G2.md`.
+- **REQ coverage (informational).** `check-build-memory.sh` runs REQ→ticket coverage against
+  `docs/rhema-design-spec.md`; warnings it emits are recorded here, not fixed by chain tickets
+  (CAP.1/BL-03 owns the matrix).
+- **RESOLVED 2026-09-25 → `runs/STB.2.md` §3 + §9.** Cross-tenant dossier read on prod
+  (`GET /projects/:id/review/:runId/dossier` served a foreign workspace's DTO): fixed in source,
+  deployed (pulumi update 78), verified 404. The exposure-window review stays open → HUMAN-H7
+  (BL-37; `docs/security/rls-exposure-since-0026.md`).
+- **RESOLVED 2026-09-23 → PHASE LOG 2026-09-23 + `runs/PRB.24.md`.** D-PRB.21-1 closed: run
+  `01M36663QG1ZJ7VEZ036Y54NSG` was the first prod `review` delivered within a derived cap. The
+  pricing-model question (derived caps vs metered cost) stays open under BL-13.
+- **STB.3 live findings (2026-09-26, prod `f3c7e13` — `runs/STB.3.md` §4).** Ten defects surfaced;
+  F1–F3 → DEF.1, F4–F6 → DEF.2, F7/F9/F10 → DEF.3 — all closed live 2026-09-26 (their run ledgers).
+  **Still open: F8** — prod SLOs honestly red (start p95 3080 s, gate-resume p95 443 s, success
+  66.7%, event-delivery p95 105.9 s; confirmed still red in the 2026-09-30 review, PR-R2) → BL-07.
+- **RESOLVED 2026-09-26 → `runs/DEF.1.md` §7.** DEF.1 Stage B executed on prod: F1–F3 repaired,
+  deployed, re-run at original committed caps (outline 127/947, profile_voice 408/420, draft
+  1,027/1,068, review 447/1,083 — all completed); D-P0.15h-5 closed live. The research leg died an
+  honest model `blocked` at `plan` — D-DEF.1-1 stays OPEN (BL-20).
+- **RESOLVED 2026-09-26 → `runs/DEF.2.md` §6 + §7.** DEF.2 F4/F5/F6 repaired and deployed; the
+  `--apply` reconcile (180 cr backfill + counter rewrite), migration 0044 `NOT VALID` validation,
+  and the F6 live estimate-cache fill all executed. Residuals: D-DEF.2-1 (BL-10) + the
+  invalid-`modelTier` nit (D-DEF.3-2 → BL-11).
+- **RESOLVED 2026-09-26 → `runs/DEF.3.md` §6.** DEF.3 Stage B executed on prod (≈$0.53 incl. the
+  DEF.2 leg): F10 meter-before-stream-end proven (incl. the deliberate cap-crossing run → 402s,
+  debits clamped at cap), F7 probe admitted with zero `egress_denied` noise, F9 minted
+  `/api/action/<token>` link verified 303/410/400. D-DEF.3-1 closed.
+- **2026-09-30 — prod design review (`reports/2026-09-30_prod-design-review.md`) → ROUND 3.** The
+  browser journey found the product broken at almost every load-bearing step (PR-S1 `/voices`
+  cross-tenant, PR-J3 dossier 500, PR-J4 no edit path, PR-J1/J2 money, PR-J6 chat, PR-Q1 zero
+  research, PR-E5/E1 pricing/metering, PR-R2 SLOs still red) — invisible to the 3,496-test suite.
+  Consolidated into `BACKLOG.csv` (65 rows) + round 3 (ADR-013; `planning/2026-09-30_planning-ledger.md`).
+- **Upstream (2026-10-01, MAINT.2 — `~/agent-skills`, recorded only):** (a) `check-backlog.sh`'s
+  DEFERRALS status parse tokenizes the last cell on `[^A-Z-]` and takes the *first canonical keyword
+  anywhere* — so a hyphenated compound status (`**DONE-code**` — hyphen survives the tokenizer) never
+  resolves to `DONE`, and any later bare `OPEN`/`PARTIAL` token in the prose wins instead; the MAINT.2
+  output + proposed patch are in `runs/MAINT.2.md` (the ticket's "leading-keyword only" description was
+  checked against the code and corrected). (b) The PHASE LOG is ~186 KB and grows unbounded — proposed:
+  a rotation convention archiving aged regions to `reports/ledger-archive/` while the head + current
+  region stay machine-readable (an ADR-004/layout.md change; watch item). (c) The append-only history
+  check had no idiom for curated-list regions — `docs/build/tools/record_policy/history.policy` now
+  declares `exempt` for OPEN FINDINGS / RETURN PASS explicitly.
 
 ## GATE DECISIONS
 
@@ -206,13 +143,14 @@ _(append-only: `| date | ticket | gate | item | answer | consequence |`)_
 
 ## RETURN PASS
 
-_(tickets run with a gate skipped; re-run after the operator acts. `returnPass:` lists the same ids.)_
+_(tickets run with a gate skipped; re-run after the operator acts. `returnPass:` lists the same
+ids.)_
 
-| ticket | gates | what the operator must do | re-run line |
-|---|---|---|---|
-| P0.15j | ~~AC3 (live deliver)~~ **DONE 2026-09-11 (PR #28) via Path B** — the proj_pv Review DELIVERS on `dev`; D-P0.15i-2 closed. No re-run owed. | — | — |
-| P0.15k | ~~AC1~~ **DONE** (3/3 reviews green live). Remaining are gate-pending DEFERRALS, not a ticket re-run: D-P0.15-2 (fold revise/profile_voice — needs richer fixtures, D-P0.15k-1), D-P0.08-2 (±2% cross-check — sdk_estimate not live), D-P0.15-3/D-P0.15k-2 (live gate-EDIT). | for the narrow legs: seed a revise-target + author corpus; populate `sdk_estimate`; drive a structured gate-edit | (optional) run revise/profile_voice instrumented + fold; drive a gate-edit → close D-P0.15-2/-3, D-P0.15k-1/-2 |
-| PRB.18 | operator legs — four remain after the worker half ran live (2026-09-18): Google sign-in click-through (gated on one Google-Console add), magic-link delivery+click (gated on Resend DNS), Stripe-originated purchase (operator's card — real money), browser SSE run-card + CodeMirror legs. Everything else on prod verified. | (1) Google Cloud Console → OAuth client → Authorized redirect URIs: add `https://rhema.tools/api/auth/callback/google` → sign in at `https://rhema.tools`. (2) Publish the 4 Resend DNS records in `runs/PRB.18.md` → verify the domain → request + click a magic link. (3) Open the Payment Link with `?client_reference_id=01M2V3PM1133TPH4M8H0T8CSEE` → complete the $25 checkout. (4) With verified email + credits: create a project, run a quick/base review, watch the run card live; open the editor, edit, save. | Assert `session`/`account`+`email_verified` rows, `auth.mail` job `completed`, `stripe_events`+`credit_ledger grant(topup,stripe,+12mo)`+`credit_balances`+`topup.purchased`/`wtp.recorded`, run-card `run_events` stream + `artifact_versions` fork rows → then close D-P0.01-3, D-PRB.17-1, D-PRB.04-2a, D-PRB.07-1a, D-PRB.13-2. |
+_(empty — P0.15j and P0.15k are done (2026-09-11, PR #28); PRB.18's residual browser SSE run-card +
+CodeMirror legs now map to JOURNEY.1's step registry and the H7 real-device check (BL-32), so no
+ticket re-run is owed. The three original rows are preserved verbatim in
+`reports/ledger-archive/2026-10-01_open-findings-return-pass.md`.)_
+
 
 ## PHASE LOG (append-only, newest last)
 
@@ -348,3 +286,4 @@ run-time `P0.15b…P0.15i` inserts are `inserted` events. Reconstructed by MAINT
 - 2026-10-01 — **SEC.1 done — Stage A + Stage B executed** — branch `stevevitali/sec-1-tenant-isolation-in-depth` · PR #81 · base `stevevitali/stb-4-real-money-external` ($0 inference) · **The user-serving/system DB-role split is LIVE on prod.** Stage A: migration `0045` (`rhema_app_login` NOLOGIN/NOBYPASSRLS/NOSUPERUSER `IN ROLE rhema_app`; `slo_samples`+`acquisition_events` insert grants; `pause_signals`/`stripe_events`/`deployments`/`estimator_*` revoked from `rhema_app`; `rhema_revoke_run_credentials` SECURITY DEFINER) · `withTenant` transaction-local `set_config('role',…)` pin + `PgPoolTxRunner{role}` + `createScopedDb` pin · worker `SYSTEM_DATABASE_URL` required (pg-boss on system DSN both services); `admin-cli` requires SYSTEM_DATABASE_URL · eslint `no-system-pool-in-user-route` + `tools/system-pool-boundary.json` + pin test · PGlite harness runs tenant txs as `rhema_app_login` · explicit `workspace_id` predicates on `/voices` + chat/outline `loadProject` (deterministic probe caught the live chat leak under BYPASSRLS) · `integration/src/two-tenant-probe.ts` deterministic census = 72 GET routes green + live `--base-url` mode · IaC `@pulumi/random` password → SM `rhema-prod-app-database-url` → `secretKeyRef` (collab DATABASE_URL → `rhema-prod-collab-database-url` secretKeyRef; plaintext env retired) · `docs/security/tenancy-audit.md` + `rls-exposure-since-0026.md` + **ADR-018** · **Stage B (window open 2026-09-30):** probe sessions acquired through the REAL magic-link funnel (`test+sec1a/b@rhema.tools`, mailbox read keylessly via `rhema-journeys` DWD — no minted sessions) · **pre-switch probe FAILED as designed** — live `GET /voices` + `/voices/<foreign>` + `/voices`/`/app` pages leaked foreign markers under BYPASSRLS `postgres` · prod `_migrations` bookkeeping repaired (`0044_ledger_integrity` → `.sql` name) then `0045` applied clean (45 recorded) · `pulumi up` update 93: +6/~6/0-replace/0-delete — `rhema_app_login` password generated + SM version written, api/worker/collab rolled to `sec1` images w/ secretKeyRef envs · `ALTER ROLE rhema_app_login LOGIN PASSWORD` ~01:52Z · **post-switch probe `passed:true`, 0 findings** (8 routes × 2 tenants) · direct-role check: connects as `rhema_app_login`, unscoped tenant reads → 0 rows, `pause_signals`/`stripe_events` permission-denied, `row_security=off` → hard error · provenance `prod:987ce00244645c73333f019a18df960bfaa9d73f` (protocols_version `0.4.0+ec61156725a895ab`) · 30-min observation window: services healthy, no permission-denied / no role errors in api+worker+collab logs · **Verify:** turbo 132/132 · `pnpm test` green (1 secrets-manifests assertion amended to the stricter collab contract) · licenses 607 · protocol-markers 45 · upstream-diff 22 · build-memory 0 · **Deferrals:** D-SEC.1-1 → **DONE live**; D-SEC.1-2 stays **OPEN** (H7 exposure review — operator-owned) · `runs/SEC.1.md` · chainTip → `stevevitali/sec-1-tenant-isolation-in-depth` · next → **HOT.1** (row 60)
 - 2026-10-01 — **HOT.1 done — Stage A + Stage B executed** — branch `stevevitali/hot-1-prod-hotfix-pack` · PR #82 · base `stevevitali/sec-1-tenant-isolation-in-depth` ($0 inference) · **The six review defects are fixed + live-verified on prod.** Stage A: `normalizeEvidence` at every evidence read seam (canonical `{verdict?, urls[]}` from legacy arrays / verdict-only / malformed; Showcase seed canonical; no backfill) · `/assets/<entry>.js` table-driven from exported `client-entries.mjs` + bundle↔route parity test (page.js served) · Quiet affordance (marker + `N quiet` + Show/Hide in native `<summary>`) · digest `r.finished_at`→`r.ended_at` + explicit workspace predicates (PGlite user-role test + AST SQL-PREPARE guard) · LB `logConfig{enable,1}` on web/api/collab backends · `PUBLIC_CLAIMS` config (`trial.firstReviewIncluded`, `plans.whatItCovers` off — all consumers respect; toggle-on tests) · `check-additive-migrations.mjs` + CI/runbook wiring · **ADR-019** · **Stage B:** preview 10 in-place/0 replace/delete (proxyImage re-pinned to deployed digest — no MIG roll) · `pulumi up` update 94 (2m43s; `d3d904d` digests on all services) · migrations no-op (45 recorded) · provenance `prod:d3d904d823d308042d92029ae94ebb91288a632f` (`0.4.0+ec61156725a895ab`; cf40f28 ancestor) · **live legs:** 5/5 asset routes 200 JS · magic-link session `test+hot1b@rhema.tools` (keyless `rhema-journeys` DWD Gmail read) → showcase dossier `/p/showcase/review/01M3TS9ASMJSD1CQW59K1G1XBQ` **200 + nrscotland Tier-1 URL** (was 500) · `/app` Quiet marker+cue both viewports · project page page.js, 0 app console errors (cosmetic favicon.ico 404 noted) · landing/pricing/billing claim-free (curl + browser) · `/billing/return?cancelled=1` renders once · 03:55Z hourly sweep: 7 `run_digest` jobs completed, **zero `finished_at` errors post-deploy** (02:55Z error = defect's last occurrence) · deliberate 404 visible in `loadbalancing.googleapis.com/requests` · 11 screenshots `docs/build/reports/2026-10-01_HOT.1/` · **Verify:** turbo 132/132 · `pnpm test` 3,683 pass/4 skip/395 files · build-memory 0 · **Deferrals:** none opened (all legs executed live); N7/R1 → JOURNEY.1 expected-green · `runs/HOT.1.md` · chainTip → `stevevitali/hot-1-prod-hotfix-pack` · next → **JOURNEY.1** (row 61)
 - 2026-10-01 — **JOURNEY.1 done — Stage A + Stage B executed** — branch `stevevitali/journey-1-browser-journey-acceptance` · PR #83 · base `stevevitali/hot-1-prod-hotfix-pack` ($0 metered) · **The browser-journey acceptance harness is committed + exercised live on prod.** Stage A: `packages/journeys` (`@rhema/journeys`, Playwright Apache-2.0) — step registry (`{id,journey,asserts,owner,expected,paid}` × 18; planning-ledger parity test), runner semantics green-fail=failure / red-fail=`owed` / red-pass=`ready-to-flip`, `assertActionable` occlusion (PR-J6 class), per-step console/request/screenshot + `/assets/*.js` parity capture; keyless Gmail-DWD mailbox (IAM Credentials `signJwt` as `rhema-journeys@rhema-507501.iam.gserviceaccount.com`, `sub` pinned `test@rhema.tools`, `gmail.readonly`, no secret); real `/signup`→magic-link→verify sessions w/ gitignored `storageState`; `JOURNEY_DATABASE_URL` spend guard refusing ≥ $5 ISO-week flagged-tenant metered · `workspaces.is_test` (migration `0046`, additive) flagged server-side at provisioning on `TEST_MAILBOX` exact/+tag match, never API-settable, grants nothing — excluded from `probeSlos`/`slo_samples` + `trial_spend_daily`; worker `test-tenant.purge` sweep (system-pool allowlisted) stamps flagged workspaces past `TEST_TENANT_PURGE_HOURS`=26 past grace → `account.hard-delete` · `/healthz build.gitSha` (Dockerfile `ARG GIT_SHA` → `RHEMA_BUILD_GIT_SHA`; cloudbuild `_GIT_SHA`) + `check-deploy-provenance.mjs` fail-closed · `.github/workflows/journeys.yml` nightly $0 (06:05Z) + weekly paid (Mon 04:35Z, ≤300-word fixture, ≤$5 guard) + `workflow_dispatch` · Pulumi adoption of the hand-made SA/Gmail API/WIF bindings · **ADR-020** · **Stage B:** Cloud Build `c9c726e8` (9 images `34d1439`) · `pulumi up` updates 95–97 (zero replaces/deletes) · migration `0046` applied (46 recorded) · provenance `prod:34d14395cde2a4ad04e9611cc8669f2fc1ec0f7c` both services · **live legs:** N2 PASS (real magic-link) · N7 PASS (dossier + parity) · R1 PASS · R5 PASS (duplicate read-only Showcase → export copy → download) · X1 PASS (tenant-B clean on 5 surfaces) · owed honestly: N1/N2.invite/N3/N4 (ONB.1), N8 (EDIT.1), R7, P1 (UX.2, "Hold my text" 21px<44px) · ready-to-flip N9/C1/R6 · **test tenants live:** `is_test=true` on journey workspaces (pre-migration rows unflagged); SLO exclusion verified live (planted breaching sample filtered 0-vs-1); purge swept a backdated flagged tenant → `account.hard-delete` completed, user+projects gone, shell+billing retained · **paid leg (approved 2000cr grant `01M3V5PZK…`):** N5 owed→ACT.1, N6 owed→RES.1, R4 owed→RUN.1 (Send occluded @1440×900), R6 ready-to-flip · **spend $0.0000 ≤ $5** · **two live defects caught + fixed same-day:** missing `test-tenant.purge` `createQueue` → worker crash-loop → prod magic links dead (`2aa4ee2`, update 96); non-leaf-first `account.hard-delete` → `claims_draft_id_fkey` on first real purge (`087ec7f`, update 97, PGlite regression) · reports `docs/build/reports/2026-10-01_JOURNEY.1-{nightly,paid,paid2}/` · **Verify:** turbo 135/135 · `pnpm test` 3,735 pass/4 skip/0 fail (404 files) · licenses 609 · protocol-markers 45 · no-cookies 28 · upstream-diff 22 · additive-migrations 0046 · build-memory 0 violations · worker jobs.test.ts 13/13 · **Deferrals:** none opened — every unmet leg is an expected-red step owed to its named owner (BL-32 mapping notes dated) · **Deviations:** paid leg ran end-to-end at $0 (owed before any metered work); R5 exports the duplicated copy (Showcase read-only by contract); journeys.yml crons activate on landing to `main` · `runs/JOURNEY.1.md` · chainTip → `stevevitali/journey-1-browser-journey-acceptance` · next → **MAINT.2** (row 62)
+- 2026-10-01 — **MAINT.2 done — build-memory hygiene (docs-only, $0)** — branch `stevevitali/maint-2-build-memory-hygiene` · PR #84 · base `stevevitali/journey-1-browser-journey-acceptance` @ `a2bf831` · **LEDGER.md truth pass:** OPEN FINDINGS collapsed to one-line `RESOLVED → pointer` stubs + tightened open entries (G2, REQ coverage, F8 SLOs, prod-review, new upstream bullet); every moved body archived verbatim at `reports/ledger-archive/2026-10-01_open-findings-return-pass.md`; RETURN PASS emptied (P0.15j/k done; PRB.18 residuals → JOURNEY.1 steps + H7/BL-32), `returnPass: (none)`; CURRENT STATE comments shortened; stale `.agents/scratch` token retired; 220,841→212,244 B with GATE DECISIONS + PHASE LOG **byte-identical** · **Manifest § Plan extensions backfilled:** 17 dated `retro:` lines covering every 2026-09-22…09-26 insert (28k–28p, G3 early read, P1 bodies 29–50, CAPSTONE, RCN.1, STB.1–4, DEF.1–3) each with its BUILD_INDEX PR · **DEFERRALS reconciled:** 9 rows → DONE with dated evidence prepended (D-P0.03-3, D-PRB.03-1, D-PRB.16-4, D-P0.15b-2/-3/-4, D-P0.15c-2/-3/-5); D-P0.15b-1 re-scoped PARTIAL→BL-25/OPS.1; six P1 rows re-assessed PARTIAL with residual legs + round-3 owners named (STB.5a/5b, OPS.1, H7); zero rows deleted, zero cells overwritten · **DEF.2/DEF.3 stale headers:** dated correction notes appended; originals untouched · **Upstream items recorded, not fixed:** `check-backlog.sh` last-cell tokenizer takes the first canonical keyword anywhere (hyphenated compound + later prose can mislead — proposed upstream patch in `runs/MAINT.2.md`); PHASE LOG ~186 KB unbounded → rotation convention proposed (outside scope); `tools/record_policy/history.policy` added — `exempt` on the curated OPEN-FINDINGS/RETURN-PASS regions + `archive` dir declared · **Prod test-data inventory committed** (`reports/2026-10-01_prod-test-data-inventory.md`, 12 rows — STB.2 draft `01M3D7E1…`, stray `prod:82179e1` deployment row, `+rhema-review` account + Showcase + two Library-After-Dark projects + Page note + completed review, operator review-test project/run, PRB16/STB3 Probe Voice personas, SEC.1 probe accounts, JOURNEY.1 purge residue check; recommended action + delete-risk each, zero secrets); dated pointer on H7's cleanup item · **Validator committed:** `docs/build/tools/check-append-only.mjs` (`--base <ref> [--staged]`, `--selftest`) — PHASE LOG/GATE DECISIONS prefix, DEFERRALS row-id + cell-text survival, Plan-extension growth; selftest proves failure on row delete + PHASE LOG edit · **Verify:** `check-build-memory.sh .` 0 violations / 6 pre-existing warnings · staged mode 0 violations (27 dates, 1,073 protected lines judged) · `check-append-only.mjs --base a2bf831` OK (tree + staged) · `--selftest` OK · `check-backlog.sh` 6 issues (was 8; BL-49 pair resolved, remainder = REC.1 scope) · `git diff --check` clean · section byte counts + archive verbatim grep recorded in `runs/MAINT.2.md` · **Deferrals:** none opened · **Deviations:** none beyond the archive-location decision (ledger-archive dir per history-policy convention) · spend $0, zero prod writes · `runs/MAINT.2.md` · chainTip → `stevevitali/maint-2-build-memory-hygiene` · next → **RES.1** (row 63)

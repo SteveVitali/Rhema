@@ -1,0 +1,10 @@
+# Build-memory history policy (repo-local) — consumed by
+# ~/agent-skills/skills/build-memory/scripts/check-history.sh.
+#
+# The LEDGER's OPEN FINDINGS and RETURN PASS regions are curated lists: resolved findings collapse
+# to dated pointers and pruned return-pass rows are archived under docs/build/reports/ledger-archive/
+# (the living-archived head rule still applies to the head above them, byte-for-byte). Declaring the
+# regions exempt here records that exception explicitly instead of weakening append-only silently.
+# Introduced 2026-10-01 by MAINT.2 (X-history-archival-gap — see docs/build/runs/MAINT.2.md).
+exempt docs/build/LEDGER.md OPEN FINDINGS
+exempt docs/build/LEDGER.md RETURN PASS

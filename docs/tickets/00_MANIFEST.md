@@ -586,3 +586,39 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   IDE-13 / SPEC-1 / GROWTH-1 / VIS-9 amended; Appendix D.2 *Unverified*); ADR-013…017. Builds on the unmerged chain
   tip (D1). **Not yet recorded here (MAINT.2 backfills):** the 2026-09-22…09-26 inserts (28k–28p, the P1 bodies,
   CAPSTONE, RCN.1, STB.1–4, DEF.1–3) whose chain-table rows exist but whose Plan-extensions lines were never written.
+- **2026-09-22 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `28k_PRB.20` (PR #49): live ingestion upload path — the prod import surface 500'd
+  (browser upload → quarantine → convert Job → §5.3 preview → frozen `human_upload` draft). Trigger: live
+  finding.
+- **2026-09-22 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `28l_PRB.21` (PR #50): day-one live-use defect pass (concurrent-run guard,
+  import-preview latency). Trigger: operator Option-C ruling — defect-repair work proceeds while G3 stays
+  parked.
+- **2026-09-22 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `28m_PRB.22` (PR #51): review-verification burn cap model. Trigger: the evening's
+  run data — five consecutive live reviews died `cap_reached`; D-PRB.21-1 opened (defect lane, G3 parked).
+- **2026-09-22 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `28n_PRB.23` (PR #52): context-churn estimate model — post-mortem on the PRB.22
+  verify run plus the zero-spend context-driver analysis. Trigger: live finding.
+- **2026-09-23 — GATE READ EARLY** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* G3 read on operator evidence → **PROCEED** (GATE DECISIONS; deliberate
+  REQ-BETA-18 override, caveat recorded — zero partner data). Context: unblocks the 29–50 skeletons.
+- **2026-09-23 — BODIES WRITTEN** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* rows 29–50 (`29_P1.01` … `50_P1.22`) — all 22 skeletons expanded to
+  `implement-spec`-ready bodies (PRs #55–#76 land them in order).
+- **2026-09-23 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `28o_PRB.24` (PR #53): intra-phase transcript accumulation — post-mortem on the
+  PRB.23 Stage-B verify run (defect lane, G3 parked). Trigger: live finding.
+- **2026-09-23 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `28p_PRB.25` (PR #54): synthesis-phase churn term — post-delivery residual (the
+  first delivered review needed its synthesis term priced). Trigger: live finding.
+- **2026-09-26 — LEDGER ROW** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* CAPSTONE (no PR — manifest ledger row on `stevevitali/p1-22-launch-checks`):
+  whole-chain gap analysis vs the ratified spec.
+- **2026-09-25 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `51_RCN.1` (ledger row, no PR; audit/docs-only): post-CAPSTONE deferral
+  reconciliation — 13 rows flipped DONE live.
+- **2026-09-25 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `52_STB.1` (ledger row, no PR; deploy-only ops): pre-merge prod deploy + smoke.
+- **2026-09-25 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `53_STB.2` (ledger row, no PR; read-only live verifies; the committed follow-up
+  deploy is tracked as the `STB.2-deploy` index row): twelve deferral rows verified live → DONE; the
+  cross-tenant dossier finding surfaced (→ P1.22 fix, deploy 78).
+- **2026-09-26 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `54_STB.3` (ledger row, no PR; bounded live run legs on prod `f3c7e13`): ten live
+  findings F1–F10 → split into DEF.1/DEF.2/DEF.3. Trigger: live findings.
+- **2026-09-26 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `55_DEF.1` (PR #77): run-pipeline blockers — the STB.3 F1–F3 repairs
+  (defect-lane split from the live findings).
+- **2026-09-26 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `56_DEF.2` (PR #78): ledger + metering integrity — the STB.3 F4–F6 repairs
+  (same split).
+- **2026-09-26 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `57_DEF.3` (PR #79): live noise + polish — the STB.3 F7/F9/F10 repairs
+  (same split).
+- **2026-09-26 — INSERT** *(retro: PHASE LOG same-date entry; backfilled 2026-10-01 by MAINT.2)* `58_STB.4` (PR #80): real-money + external legs (live Stripe, pen-test
+  facilitation, admin-key reconciliation — operator hard gates).
