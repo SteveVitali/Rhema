@@ -22,6 +22,9 @@ const HEADER =
 const VERDICTS = new Set([
   "MET",
   "MET-DIFFERENTLY",
+  // REQ-SPEC-31 (RES.1): met via an engineered path, carrying its owed-deferral annotation in the
+  // verdict cell (e.g. MET-ENGINEERED(D-RES.1-2)); the base token is the controlled vocabulary entry.
+  "MET-ENGINEERED",
   "PARTIAL",
   "MISSING",
   "AT-RISK-INTEGRATION",
@@ -97,7 +100,10 @@ test("exactly one matrix row per spec requirement id — no missing, extras, or 
 test("every row has a valid verdict and eleven populated columns", () => {
   for (const r of data) {
     assert.equal(r.length, 11, `${r[0]} has ${r.length} columns`);
-    assert.ok(VERDICTS.has(r[4]), `${r[0]} verdict '${r[4]}' is not allowed`);
+    // A verdict is a controlled token, optionally carrying a parenthesised deferral-ref annotation
+    // (e.g. MET-ENGINEERED(D-RES.1-2)); strip a well-formed `(D-…)` suffix and validate the base.
+    const verdictBase = r[4].replace(/\(D-[A-Z0-9.-]+\)$/, "");
+    assert.ok(VERDICTS.has(verdictBase), `${r[0]} verdict '${r[4]}' is not allowed`);
     for (const [i, name] of ["id", "level", "spec_section", "class"].entries())
       assert.notEqual(r[i].trim(), "", `${r[0]} blank ${name}`);
   }
