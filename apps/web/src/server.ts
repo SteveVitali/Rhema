@@ -50,6 +50,7 @@ import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
+import { createSpaConsult } from "./spa-flag.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
 import {
@@ -60,6 +61,7 @@ import {
   type ModelTier,
   type Rigor,
   type SignupMode,
+  type SpaSurface,
   type WorkflowKey,
   figureIdFromRef,
   STRIPE_HOSTED_ORIGINS,
@@ -142,6 +144,28 @@ export interface WebDeps {
    * permits a no-code signup. Unset ⇒ `invite` — the flag fails closed.
    */
   readonly signupMode?: SignupMode;
+  /**
+   * SPA.2 — the strangler surface-flag set (REQ-SEQ-1; spec §11): env `SPA_SURFACES` parsed
+   * through `parseSpaSurfaces` (fail-closed — unset/invalid ⇒ ∅, every auth'd document GET
+   * stays SSR). Consumed ONLY by `deps.spa`; no route flips until its surface ticket lands.
+   */
+  readonly spaSurfaces?: ReadonlySet<SpaSurface>;
+  /**
+   * SPA.2 — whether the force-SPA renderer overrides (`?renderer=spa`, `x-rhema-renderer: spa`)
+   * are honored on this stage (env `SPA_OVERRIDES=1`; deployed iff the stage kind is non-prod —
+   * REQ-SEQ-4). The force-SSR forms (`?ssr=1`, `x-rhema-renderer: ssr`) are honored on every
+   * stage regardless of this flag.
+   */
+  readonly spaOverrides?: boolean;
+  /**
+   * SPA.2 — the per-request flag consult, `deps.spa(c, surface)`, applied inside spec §4's
+   * fixed handler order AFTER the handler's session gate, server-owned redirects, and
+   * forced-SSR capability checks (REQ-BND-11/REQ-SEQ-4). The consult re-checks the session
+   * itself (overrides never bypass the gate), then the renderer overrides, then flag
+   * membership with the `ide-chrome` AND-gate. Default: built from `spaSurfaces`/`spaOverrides`
+   * + the wrapped `session`; injectable for tests like the other seams.
+   */
+  spa?(c: Context, surface: SpaSurface): boolean;
   /**
    * P1.03 — the collab WSS base the Page's island connects to (`wss://<host>/collab`, env
    * COLLAB_WS_URL). Unset ⇒ the Page mounts without a collab session (the static read view).
@@ -317,6 +341,19 @@ export function createWebApp(deps: WebDeps): Hono {
   deps = {
     ...deps,
     session: (c: Context) => withRequestId(innerSession(c), c),
+  };
+  // SPA.2 — the strangler flag consult (`deps.spa`, spec §4 order): installed from the deploy
+  // facts (`spaSurfaces`/`spaOverrides`) over the WRAPPED session resolver, so a force-spa
+  // override on a signed-out request still reads false (REQ-SEQ-4's never-bypass clause).
+  deps = {
+    ...deps,
+    spa:
+      deps.spa ??
+      createSpaConsult({
+        surfaces: deps.spaSurfaces,
+        overrides: deps.spaOverrides,
+        session: (c) => deps.session(c),
+      }),
   };
   const beginAuth = deps.beginAuth ?? defaultBeginAuth;
 

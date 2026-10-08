@@ -84,6 +84,10 @@ const opsAlertWebhookUrl = rhemaConfig.getSecret("opsAlertWebhookUrl");
 // PRB.15 — the real digest-pinned service images as a JSON `{service: ref}` map (the images CI publishes
 // it; REQ-ARCH-39). Missing entries fall back to the placeholder so `preview` stays plannable.
 const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImages");
+// SPA.2 — the per-flip preview flag path (REQ-SEQ-3): a `rhema:spaSurfaces` CSV set via
+// `preview-stack.mjs config` overrides the stage fact for THIS stack only (never committed —
+// the git-visible `StageConfig.spaSurfaces` stays the source of truth for dev/prod flips).
+const spaSurfaces = rhemaConfig.get("spaSurfaces");
 // OPS.1 — deploy-provenance inputs for the non-prod migrate Job's `deployments` row (REQ-ARCH-39):
 // the chain-tip SHA the images were built at + the computed protocols version; unset ⇒ the migrate
 // Job skips the record leg (a bare `pulumi preview` stays clean).
@@ -308,6 +312,7 @@ const compute = createCompute({
   ...(runTaskAppArmorLocalhostProfile ? { runTaskAppArmorLocalhostProfile } : {}),
   ...(internalApiUrl ? { internalApiUrl } : {}),
   ...(proxyBaseUrl ? { proxyBaseUrl } : {}),
+  ...(spaSurfaces ? { spaSurfaces } : {}),
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,

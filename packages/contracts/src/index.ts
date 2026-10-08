@@ -78,6 +78,9 @@ export * from "./analytics.js";
 
 // signup admission mode + the beta-grade abuse throttle (PRB.13; REQ-BETA-19 amended 2026-09-16)
 export * from "./signup.js";
+// SPA.2 — the strangler surface-flag vocabulary + fail-closed SPA_SURFACES parse (REQ-SEQ-1/2;
+// spec §11/Appendix D) shared by web (deps.spa), infra stage facts, and the journey harness.
+export * from "./spa.js";
 export * from "./rate-limit.js";
 export * from "./client-ip.js";
 

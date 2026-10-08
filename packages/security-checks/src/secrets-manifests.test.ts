@@ -191,9 +191,18 @@ describe("the Cloud Run service envs — no plaintext secrets to web/collab (REQ
     // env set is still just these five non-secret names — dedupe like the collab block below.
     const uniqueNames = [...new Set(names)];
     // SEC.2 — INTERNAL_AUTH_AUDIENCE is plain deploy config (the api origin the web's OIDC stamp
-    // targets), never a secret.
+    // targets), never a secret. SPA.2 — SPA_SURFACES/SPA_OVERRIDES are mode strings (the strangler
+    // flag CSV + the non-prod override posture), same class as SIGNUP_MODE.
     expect(uniqueNames.sort()).toEqual(
-      ["API_BASE_URL", "APP_BASE_URL", "COLLAB_WS_URL", "INTERNAL_AUTH_AUDIENCE", "SIGNUP_MODE"].sort(),
+      [
+        "API_BASE_URL",
+        "APP_BASE_URL",
+        "COLLAB_WS_URL",
+        "INTERNAL_AUTH_AUDIENCE",
+        "SIGNUP_MODE",
+        "SPA_OVERRIDES",
+        "SPA_SURFACES",
+      ].sort(),
     );
     expect(webBlock).not.toMatch(/secretKeyRef|secretVersion|_SECRET/);
   });

@@ -6,6 +6,7 @@ import { apiDataSource } from "./data.js";
 import type { SessionHeaders } from "./data.js";
 import {
   parseSignupMode,
+  parseSpaSurfaces,
   forwardedClientIp,
   INTERNAL_CLIENT_IP_HEADER,
   INTERNAL_IDENTITY_HEADER,
@@ -106,6 +107,11 @@ export function startWebServer(): void {
     ...(process.env.BETA_PLAN_OFFER_URL ? { betaPlanOfferUrl: process.env.BETA_PLAN_OFFER_URL } : {}),
     // PRB.13 — signup.mode (REQ-BETA-19 amended): the flag fails closed — unset/unparseable ⇒ `invite`.
     signupMode: parseSignupMode(process.env.SIGNUP_MODE),
+    // SPA.2 — the strangler flag set (REQ-SEQ-1/3): fail-closed ∅ on unset/typo; no surface
+    // flips until its ticket lands (REQ-SEQ-5). `SPA_OVERRIDES=1` rides non-prod stages only
+    // (compute.ts) — it unlocks the force-spa renderer overrides, never the session gate.
+    spaSurfaces: parseSpaSurfaces(process.env.SPA_SURFACES),
+    spaOverrides: process.env.SPA_OVERRIDES === "1",
     // P1.03 — the Page's collab transport (the LB path-routes /collab to the collab service).
     ...(process.env.COLLAB_WS_URL ? { collabWsUrl: process.env.COLLAB_WS_URL } : {}),
     // JOURNEY.1 — the image-baked deploy SHA for /healthz provenance.
