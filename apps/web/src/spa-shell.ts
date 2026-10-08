@@ -23,12 +23,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "hono";
-import type { PrincipalDto } from "@rhema/api-client";
-import { themeBootScript, resolveAppTheme, type AppTheme, type PaperTheme } from "@rhema/ide";
+import { themeBootScript, resolveAppTheme, type PaperTheme } from "@rhema/ide";
 import { SPA_DOCUMENT_ROUTES, SPA_PUBLIC_ROUTES, type SpaSurface } from "@rhema/contracts";
 import { themeCss, ideCss } from "@rhema/tokens";
 import { docMetaFor, escapeHtml } from "./render.js";
-import { deviceClassFor, type DeviceClass } from "./device.js";
+import { deviceClassFor } from "./device.js";
+import type { SpaBoot } from "./spa-boot.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders } from "./data.js";
 
@@ -54,20 +54,12 @@ export interface SpaShellDeps {
 /** The `<dir>/.vite/manifest.json` the Vite build emits next to `assets/` (vite.config.ts). */
 export const DEFAULT_SPA_ASSET_ROOT = fileURLToPath(new URL("../public/spa/", import.meta.url));
 
-/** REQ-BND-10 — the shell's runtime seed (the `<script type="application/json" data-spa-boot>`). */
-export interface SpaBootPayload {
-  /** The session principal's public fields — absent when the upstream read degraded. */
-  readonly principal?: PrincipalDto;
-  readonly theme: { readonly appTheme?: AppTheme; readonly paperTheme?: PaperTheme };
-  readonly deviceClass: DeviceClass;
-  /**
-   * The per-route renderer map (REQ-BFF-19): every known document route → "spa" | "ssr" — the
-   * effective flag set resolved THROUGH the same consult (session gate, overrides, AND-gates) so
-   * the client router's SsrHandoff can never disagree with the server.
-   */
-  readonly surfaces: Record<string, "spa" | "ssr">;
-  readonly project?: { readonly slug: string };
-}
+/**
+ * REQ-BND-10 — the shell's runtime seed (the `<script type="application/json" data-spa-boot>`).
+ * The wire contract lives in `spa-boot.ts` (SPA.4) so the producer and the client decoder share
+ * the one shape.
+ */
+export type SpaBootPayload = SpaBoot;
 
 /** One resolved Vite-manifest entry: the module entry tags + preload/css hints, `/assets/spa/`-relative. */
 export interface SpaManifestEntry {

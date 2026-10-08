@@ -1093,9 +1093,16 @@ export function apiDataSource(
     return pre.key;
   };
   return {
+    // SPA.4 (REQ-DAT-13) — the raw-fetch seam promoted to the typed `getSession` member: the api's
+    // `GET /session` still answers, and any non-2xx (401 absent session, 5xx upstream) ⇒ false —
+    // the boolean contract the session gate consumes is unchanged.
     checkSession: async (session) => {
-      const res = await f(`${baseUrl}/session`, { headers: session });
-      return res.ok;
+      try {
+        await createApiClient({ baseUrl, fetch: f, headers: session }).getSession();
+        return true;
+      } catch {
+        return false;
+      }
     },
     listProjects: (session) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).listProjects(),

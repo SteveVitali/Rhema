@@ -5,7 +5,7 @@ import { themeCss, ideCss } from "@rhema/tokens";
 import { themeBootScript, resolveAppTheme } from "@rhema/ide";
 import { spaRouteFor } from "@rhema/contracts";
 import { PageDataContext, type PageData } from "./page-data.js";
-import { COPY } from "./copy.js";
+import { docMetaFor, SITE } from "./doc-meta.js";
 
 // SSR: render a page element (inside the React Router static context + the per-request data provider) into a
 // full HTML document carrying the §5.9 theme stylesheet. The shell is Dark by default; P1.01 adds the
@@ -15,77 +15,10 @@ import { COPY } from "./copy.js";
 // progressive-enhancement HTML; /p/:project… documents additionally carry the IDE stylesheet + the
 // deferred ide.js island.
 
-// UX.1 — route-aware document meta: every route gets a distinct `<page> · Rhēma` title; public
-// routes additionally carry meta description + Open Graph + Twitter tags (REQ-SPEC-2 vocabulary;
-// descriptions live in copy.ts so the one public-string lint covers them). Project surfaces prefix
-// the project title. `og:url`/`canonical` emit only when the handler passes the request origin.
-const SITE = "Rhēma";
-const pageTitle = (page: string): string => `${page} · ${SITE}`;
-
-/** The §14.7 settings section → title word (a section the nav hides still gets its own title). */
-const SETTINGS_TITLES: Record<string, string> = {
-  account: "Account",
-  preferences: "Preferences",
-  notifications: "Notifications",
-  integrations: "Integrations",
-  billing: "Billing",
-  data: "Your data",
-  team: "Team",
-};
-
-/** Exported for SPA.3's shell — the title/metadoc convention is shared with the SSR document. */
-export function docMetaFor(pathname: string, data: PageData): { title: string; description?: string } {
-  const p = (pathname.replace(/\/+$/, "") || "/").split("?")[0]!;
-  // ---- public routes (signed-out reachable; description + social tags) ----
-  if (p === "/") return { title: `${SITE} — ${COPY.tagline}`, description: COPY.meta.landing };
-  if (p === "/invite") return { title: pageTitle("Welcome"), description: COPY.meta.landing };
-  if (p === "/pricing") return { title: pageTitle("Pricing"), description: COPY.meta.pricing };
-  if (p === "/signup") return { title: pageTitle("Create your account"), description: COPY.meta.signup };
-  if (p === "/login") return { title: pageTitle("Sign in"), description: COPY.meta.signIn };
-  if (p === "/showcase") return { title: pageTitle("Showcase"), description: COPY.meta.showcase };
-  // ---- authenticated app routes ----
-  if (p === "/app") return { title: pageTitle("Projects") };
-  if (p === "/app/new") return { title: pageTitle("New project") };
-  if (p === "/app/inbox") return { title: pageTitle("Inbox") };
-  if (p === "/usage") return { title: pageTitle("Usage") };
-  if (p === "/billing/return" || p === "/settings/billing" || p === "/app/settings/billing") {
-    return { title: pageTitle("Billing") };
-  }
-  if (p === "/voices") return { title: pageTitle("Voices") };
-  if (p === "/voices/new") return { title: pageTitle("New voice") };
-  const settings = /^\/(?:app\/)?settings(?:\/([a-z]+))?$/.exec(p);
-  if (settings) return { title: pageTitle(SETTINGS_TITLES[settings[1] ?? ""] ?? "Settings") };
-  const persona = /^\/v\/([^/]+)$/.exec(p);
-  if (persona) return { title: pageTitle(data.voice?.detail?.persona?.display_name ?? "Voice") };
-  // ---- project surfaces — "/p/<slug>/…" — the project title prefixes when the read carried it ----
-  const pt = data.project?.title;
-  const inProject = (page: string): string => (pt ? `${page} — ${pt} · ${SITE}` : pageTitle(page));
-  const pm = /^\/p\/[^/]+(?:\/(.+))?$/.exec(p);
-  if (pm) {
-    const sub = pm[1] ?? "";
-    if (sub === "") return { title: pt ? `${pt} · ${SITE}` : pageTitle("Project") };
-    if (sub === "import") return { title: inProject("Import") };
-    if (sub === "run") return { title: inProject("Run") };
-    if (/^review\//.test(sub)) return { title: inProject("Dossier") };
-    if (/^r\//.test(sub)) return { title: inProject("Run report") };
-    if (/^revisions\//.test(sub)) return { title: inProject("Revision") };
-    if (/^edit\//.test(sub)) return { title: inProject("Edit") };
-    if (sub === "outline") return { title: inProject("Outline") };
-    if (sub === "outline/promote") return { title: inProject("Promote outline") };
-    if (sub === "figures") return { title: inProject("Figures") };
-    if (/^figures\//.test(sub)) return { title: inProject("Figure") };
-    if (sub === "visualize") return { title: inProject("Visualize") };
-    if (sub === "obligations/new") return { title: inProject("New obligation") };
-    if (sub === "settings") return { title: inProject("Project settings") };
-    if (sub === "export") return { title: inProject("Export") };
-    if (sub === "usage") return { title: inProject("Usage") };
-    if (/^v\/[^/]+\/diff\//.test(sub)) return { title: inProject("Compare") };
-    if (/^[va]\//.test(sub)) return { title: inProject("Page") };
-    if (sub === "voice/reseed") return { title: inProject("Voice") };
-    return { title: pt ? `${pt} · ${SITE}` : pageTitle("Project") };
-  }
-  return { title: pageTitle("Not found") };
-}
+// UX.1 — route-aware document meta: `docMetaFor` lives in doc-meta.ts (SPA.4 — the browser-safe leaf the
+// SPA's client head manager and this SSR document share; REQ-BND-8). Re-exported so existing import
+// sites (spa-shell.ts, server.ts) stay untouched.
+export { docMetaFor } from "./doc-meta.js";
 
 /** The theme stylesheet, computed once. */
 const THEME_CSS = themeCss();
