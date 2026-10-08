@@ -126,5 +126,8 @@
   half; the shell document itself is SPA.3).
 - **Out of scope held:** no flag set on any stage (REQ-SEQ-5); no route consumes `deps.spa` (the
   shell is SPA.3); no surface content; overrides never bypass session/redirect/forced-SSR.
-- **CI:** recorded at closeout (`gh pr checks --watch=false`); the inherited
-  `integration`/privsep red on this chain is classified under GD-MAINT.4-1, not repaired.
+- **CI:** `gh pr checks --watch=false` on run 37722930545 (tip `b2e0ac4`): **`typecheck /
+  lint / unit` PASS (28m58s), `contracts` PASS, `public-safe` PASS**; `integration` FAIL on the
+  inherited `privsep.docker` red (`setpriv`/`unshare` EPERM on the GH runner — byte-identical to
+  the SPA.1 run 37720006789 failure) — classified under GD-MAINT.4-1, not repaired; `images
+  (build + scan, pin digests)` still **pending** at last read (~50 min in).
