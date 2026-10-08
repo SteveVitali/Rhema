@@ -1,6 +1,6 @@
 # SPAF.1 — prod flip: `usage` (`STAGES.prod.spaSurfaces += "usage"`)
 
-**Manifest row 108** · stacks on `stevevitali/spa-10-surface-usage` @ `f7d2946` · merge policy
+**PR #129** · Manifest row 108 · stacks on `stevevitali/spa-10-surface-usage` @ `f7d2946` · merge policy
 **OPERATOR** — do not merge from the build environment · **$0** spend, no deploys, no
 production writes.
 

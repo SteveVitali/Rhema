@@ -7,6 +7,9 @@
 - **Ticket:** `docs/tickets/108_SPAF.1__prod-flip-usage.md` (manifest row 108)
 - **Branch:** `stevevitali/spaf-1-prod-flip-usage`, stacked on
   `stevevitali/spa-10-surface-usage` @ `f7d2946` (`OPERATOR` merge policy, **not merged**).
+- **PR:** #129 — opened at closeout; `gh pr checks` read once: `typecheck / lint / unit`
+  **pending** at stamp time (no completed results yet; inherited `integration`/privsep red, if it
+  reports, is waived per GD-MAINT.4-1 — classified, not repaired).
 - **Goal:** flip `usage` to the SPA on prod — `STAGES.prod.spaSurfaces += 'usage'` as the one-line
   stage-fact PR; the operator merges + `pulumi up` deploys; rollback = revert + redeploy.
 - **Spend:** $0. No deploys, no production writes, no live legs. Preview legs not needed — this
