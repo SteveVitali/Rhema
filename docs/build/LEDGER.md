@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — GATE-ACCEPT signed the deviations; open rows remain ledgered on BACKLOG.csv
 nextTicket:      SPA.3              # round 4 (frontend-spa) seeded 2026-10-08 — 51 rows: 98_SPA.1 → 148_SPADOC.2
-lastCompleted:   SPA.2              # 2026-10-08 — strangler flag plumbing: parseSpaSurfaces fail-closed + deps.spa consult (fixed order, overrides non-prod, ide-chrome AND-gate) + stage fact + SPA_SURFACES/SPA_OVERRIDES env + rhema:spaSurfaces config; flag-∅ everywhere, nothing consults it until SPA.3; $0
+lastCompleted:   SPA.2              # 2026-10-08 — strangler flag plumbing: fail-closed parse + deps.spa consult + stage/deploy wiring; flag-∅ everywhere, nothing consults it until SPA.3; $0
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (nothing)          # GD-MAINT.4-1 waived the inherited privsep CI red 2026-10-07; remaining live legs gate on a FUNDED window + operator rows
 pauseRequested:  false
