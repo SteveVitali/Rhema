@@ -61,6 +61,10 @@ function check(name: string, fn: () => boolean): void {
   if (fn()) pass(name);
   else bad(name);
 }
+/** A leg the runtime cannot exercise: reported visibly, never counted as a pass or a failure. */
+function skip(msg: string): void {
+  console.log(`SKIP: ${msg}`);
+}
 const dropTo = (uid: number, child: readonly string[]) => [
   "--reuid", String(uid), "--regid", String(uid), "--clear-groups", "--", ...child,
 ];
@@ -150,61 +154,75 @@ check(
     ]) !== 0,
 );
 
-// ---------- AC4 — the input-scoped mount namespace, through the REAL launch chain ----------
-// a seat tree the scoped query must NOT see in full: the enumerated draft + an un-enumerated notebook.
-mkdirSync("/work/project/drafts", { recursive: true });
-mkdirSync("/work/project/agents/author", { recursive: true });
-writeFileSync("/work/project/drafts/v3.md", "THE DRAFT v3");
-writeFileSync("/work/project/agents/author/notebook.md", "DRAFTER PRIVATE NOTEBOOK");
+// Mount-namespace capability probe. The AC4 legs (unshare --mount --propagation private) and the P0.15h
+// bind mount need the runtime to permit unshare(CLONE_NEWNS) + mount(2). GitHub-hosted runners deny these
+// under the default container profile even with CAP_SYS_ADMIN ("cannot change root filesystem
+// propagation: Permission denied"). Where the runtime cannot, those legs SKIP visibly — never a silent
+// pass — and every other leg still runs; where it can, they run exactly as before.
+const MOUNT_NS_OK = run(UNSHARE, ["--mount", "--propagation", "private", "--", NODE, "-e", ""]) === 0;
+if (MOUNT_NS_OK) {
+  console.log("MOUNT-NS-CAPABILITY: present");
+  // ---------- AC4 — the input-scoped mount namespace, through the REAL launch chain ----------
+  // a seat tree the scoped query must NOT see in full: the enumerated draft + an un-enumerated notebook.
+  mkdirSync("/work/project/drafts", { recursive: true });
+  mkdirSync("/work/project/agents/author", { recursive: true });
+  writeFileSync("/work/project/drafts/v3.md", "THE DRAFT v3");
+  writeFileSync("/work/project/agents/author/notebook.md", "DRAFTER PRIVATE NOTEBOOK");
 
-// F-StageB-6 negative control: harness-uid `mount` refuses even WITH ambient CAP_SYS_ADMIN (the
-// getuid() gate — the ruid-0 wrap below is load-bearing).
-check(
-  "AC4: harness-uid mount is refused without the ruid-0 wrap (must be superuser — ruid gate)",
-  () =>
-    run(SETPRIV, [
-      "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
-      "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
-      "--", UNSHARE, "--mount", "--propagation", "private", "--",
-      MOUNT, "-t", "tmpfs", "-o", "size=1m", "tmpfs", "/work",
-    ]) !== 0,
-);
+  // F-StageB-6 negative control: harness-uid `mount` refuses even WITH ambient CAP_SYS_ADMIN (the
+  // getuid() gate — the ruid-0 wrap below is load-bearing).
+  check(
+    "AC4: harness-uid mount is refused without the ruid-0 wrap (must be superuser — ruid gate)",
+    () =>
+      run(SETPRIV, [
+        "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
+        "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
+        "--", UNSHARE, "--mount", "--propagation", "private", "--",
+        MOUNT, "-t", "tmpfs", "-o", "size=1m", "tmpfs", "/work",
+      ]) !== 0,
+  );
 
-// The REAL plan: buildScopedLaunchSpec generates the mount argv privsep-ns-body applies — the kernel
-// legs exercise the production tuples, not a re-typed copy. uid = agentUid + 1 (second-reader) = 10003.
-const spec = buildScopedLaunchSpec({
-  role: "second-reader",
-  inputs: { draft: "/work/project/drafts/v3.md" },
-  agentUid: AGENT,
-  producerQueryId: "privsep-selftest",
-  stashDir: "/tmp/scoped-stash/second-reader",
-});
-const SPEC_PATH = "/tmp/scoped-spec.json";
-writeFileSync(SPEC_PATH, JSON.stringify(spec));
-check(
-  "AC4: scoped mount namespace isolates the seat tree (real launch chain + real mount plan)",
-  () =>
-    run(SETPRIV, [
-      "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
-      "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
-      "--", UNSHARE, "--mount", "--propagation", "private", "--",
-      SETPRIV, "--reuid", "0", "--regid", "0", "--clear-groups", "--",
-      NODE, NS_BODY, SPEC_PATH,
-    ]) === 0,
-);
+  // The REAL plan: buildScopedLaunchSpec generates the mount argv privsep-ns-body applies — the kernel
+  // legs exercise the production tuples, not a re-typed copy. uid = agentUid + 1 (second-reader) = 10003.
+  const spec = buildScopedLaunchSpec({
+    role: "second-reader",
+    inputs: { draft: "/work/project/drafts/v3.md" },
+    agentUid: AGENT,
+    producerQueryId: "privsep-selftest",
+    stashDir: "/tmp/scoped-stash/second-reader",
+  });
+  const SPEC_PATH = "/tmp/scoped-spec.json";
+  writeFileSync(SPEC_PATH, JSON.stringify(spec));
+  check(
+    "AC4: scoped mount namespace isolates the seat tree (real launch chain + real mount plan)",
+    () =>
+      run(SETPRIV, [
+        "--reuid", String(HARNESS), "--regid", String(HARNESS), "--clear-groups",
+        "--inh-caps", HARNESS_AMBIENT, "--ambient-caps", HARNESS_AMBIENT,
+        "--", UNSHARE, "--mount", "--propagation", "private", "--",
+        SETPRIV, "--reuid", "0", "--regid", "0", "--clear-groups", "--",
+        NODE, NS_BODY, SPEC_PATH,
+      ]) === 0,
+  );
 
-// ---------- P0.15h — a read-only bind mount BLOCKS a write at the kernel (boundary true zero) ----------
-mkdirSync("/work/ro-src", { recursive: true });
-writeFileSync("/work/ro-src/00-piece-brief.md", "READ ONLY CORRESPONDENCE");
-mkdirSync("/work/ro-mnt", { recursive: true });
-run(MOUNT, ["--bind", "/work/ro-src", "/work/ro-mnt"]);
-run(MOUNT, ["-o", "remount,ro,bind", "/work/ro-mnt"]); // MS_RDONLY on the bind
-check(
-  "P0.15h: uid agent cannot write a read-only bind mount (EROFS) — the boundary is a true zero at the kernel",
-  () =>
-    agentDrop([NODE, "-e", `require("node:fs").writeFileSync("/work/ro-mnt/00-piece-brief.md","x")`]) !== 0,
-);
-// no umount applet is vendored — the bind dies with the container; nothing to clean up.
+  // ---------- P0.15h — a read-only bind mount BLOCKS a write at the kernel (boundary true zero) ----------
+  mkdirSync("/work/ro-src", { recursive: true });
+  writeFileSync("/work/ro-src/00-piece-brief.md", "READ ONLY CORRESPONDENCE");
+  mkdirSync("/work/ro-mnt", { recursive: true });
+  run(MOUNT, ["--bind", "/work/ro-src", "/work/ro-mnt"]);
+  run(MOUNT, ["-o", "remount,ro,bind", "/work/ro-mnt"]); // MS_RDONLY on the bind
+  check(
+    "P0.15h: uid agent cannot write a read-only bind mount (EROFS) — the boundary is a true zero at the kernel",
+    () =>
+      agentDrop([NODE, "-e", `require("node:fs").writeFileSync("/work/ro-mnt/00-piece-brief.md","x")`]) !== 0,
+  );
+  // no umount applet is vendored — the bind dies with the container; nothing to clean up.
+} else {
+  console.log("MOUNT-NS-CAPABILITY: absent — mount-namespace/bind legs skipped (runtime blocks unshare/mount)");
+  skip("AC4: harness-uid mount is refused without the ruid-0 wrap (must be superuser — ruid gate)");
+  skip("AC4: scoped mount namespace isolates the seat tree (real launch chain + real mount plan)");
+  skip("P0.15h: uid agent cannot write a read-only bind mount (EROFS) — the boundary is a true zero at the kernel");
+}
 
 // ---------- SEC.3 — the distroless image shape ----------
 check("SEC.3: the image has no shell", () =>
