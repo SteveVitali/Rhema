@@ -252,4 +252,18 @@ no-BFF-spend asserted), `spa-flag.test.ts` pins the override semantics,
 
 ## 6 — Closeout addendum (post-PR)
 
-_(written after `gh pr create` — see below)_
+- **PR:** #133 — `gh pr create --base stevevitali/spaf-2-prod-flip-inbox` (stacked; **not
+  merged** — `OPERATOR` policy). State at closeout: OPEN, MERGEABLE.
+- **Checks read (once, at closeout):** `typecheck / lint / unit` — **pending**
+  (actions run 37849241557, queued on push; recorded honestly, not claimed). The
+  inherited `integration`/privsep red that bound earlier rows is waived for this +
+  descendant PRs per GD-MAINT.4-1.
+- **Commits:** impl `5b5cef7` (folds the audited WIP `e278e28`) · docs pre-closeout
+  + this ledger — see the branch tip.
+- **Build memory:** `runs/SPA.12.md` + `pr/SPA.12.md` committed · BUILD_INDEX row 140 ·
+  LEDGER `lastCompleted: SPA.12`, `nextTicket: SPAF.3`, `chainTip:
+  stevevitali/spa-12-surface-settings` · PHASE LOG entry appended.
+- **Chain tip left behind:** `stevevitali/spa-12-surface-settings` — next row (SPAF.3,
+  prod flip: `settings`) stacks here; SPAF.3's entry gate still requires
+  D-SPAF.2-4's nightly green (and D-SPAF.1-4's chain of prior bakes).
+- **Spend:** $0 · zero production writes · zero deploys.
