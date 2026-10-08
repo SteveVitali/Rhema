@@ -244,8 +244,11 @@
   re-spec'd paths; live leg rides D-SPA.6-1); `[SURFACE_GATES bijection]` → deterministic
   (`surface-gates.test.ts` totality + bijection asserts); `[universal phase-gate AC]` → this
   ledger + the closeout row.
-- **CI:** PR #124 · `gh pr checks --watch=false` at closeout — recorded verbatim in §4-final
-  below (read exactly once per closeout discipline).
+- **CI:** PR #124 · `gh pr checks --watch=false` at closeout — verbatim:
+  `typecheck / lint / unit  pending  0  …/actions/runs/37753613446/job/113232637340` (exit 8 —
+  the run registered but had not reported at read time; read exactly once per closeout
+  discipline; when the matrix lands its result rides the PR, not a re-read here). The inherited
+  `integration`/privsep red on this chain is classified under GD-MAINT.4-1, not repaired.
 - **Validators:** `check-build-memory.sh` — **0 violations, 7 warnings** (all pre-existing
   classes: legacy run ledgers w/o Harness headers, PHASE-LOG 2 KiB budget — this entry joins the
   accepted pattern —, legacy index status values, pre-guard readouts, manifest banner/order
