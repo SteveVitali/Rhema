@@ -1453,6 +1453,9 @@ export const COPY = {
     nextExpiryFmt: "{n} {bucket} credits expire {at}",
     csvCta: "Download CSV",
     projectUsageCta: "Project usage",
+    // SPA.10 — the recent-runs table's column heads (SSR's literals, COPY-fied for the SPA's
+    // copy-containment rule — REQ-SAFE-10).
+    columns: { run: "Run", workflow: "Workflow", state: "State", spent: "Spent" } as const,
   },
   // P1.16 — the /settings/billing plan card + /billing/return poll (§14.2/14.3/14.6; REQ-BILL-14/17).
   billing: {
@@ -1528,6 +1531,9 @@ export const COPY = {
     totalFmt: "{n} cr across {runs} runs",
     runEmpty: "No runs yet.",
     runReportCta: "Run report",
+    // SPA.10 — the project runs table's column heads (the same copy-containment port; the blank
+    // actions column stays header-less).
+    columns: { run: "Run", workflow: "Workflow", state: "State", spent: "Spent" } as const,
   },
 
   // P1.12 — the unlocked outline editor + the promotion sheet (§7.3). The structured rows' copy lives

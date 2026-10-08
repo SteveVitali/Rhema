@@ -50,7 +50,7 @@ import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
-import { bffRoute, swallowDegraded, wantsJson } from "./bff.js";
+import { bffRoute, projectRow as bffProjectRow, swallowDegraded, wantsJson } from "./bff.js";
 import { createSpaConsult } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
@@ -538,6 +538,27 @@ export function createWebApp(deps: WebDeps): Hono {
           .catch(swallowDegraded),
       ]);
       return c.json({ usage: usage ?? null, account: account ?? null });
+    }),
+  );
+
+  // SPA.10 (REQ-BFF-11, REQ-DAT-4/6; design/22 §2 `p.projectUsage` row) — the `/p/:slug/usage`
+  // document's typed read twin: slug→id through the request-scoped `listProjects` memo, then the
+  // level-2 rollup verbatim. The SSR's miss semantics are preserved: an unknown slug OR a missed
+  // rollup read answers `{error:"not_found"}` at 404 — the same answer the document gives — while
+  // an upstream 401 rides `swallowDegraded`'s rethrow into the unauthenticated envelope. The slug
+  // rides the payload so the client's back-link needs no second read.
+  app.get(
+    "/bff/p/:slug/usage",
+    bffRoute(deps, async (c, session) => {
+      const slug = c.req.param("slug");
+      const row = slug ? await bffProjectRow(c, deps.dataSource, session, slug) : null;
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const usageProject = await Promise.resolve()
+        .then(() => deps.dataSource.getUsageProject?.(session, row.id))
+        .then((u) => (u ? { ...u, slug } : null))
+        .catch(swallowDegraded);
+      if (!usageProject) return c.json({ error: "not_found" }, 404);
+      return c.json({ usageProject });
     }),
   );
 

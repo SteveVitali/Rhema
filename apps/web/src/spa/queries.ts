@@ -4,7 +4,7 @@
 // (the long-stale server-owned copy maps) are the two the skeleton consumes.
 
 import { QueryClient, queryOptions } from "@tanstack/react-query";
-import type { PrincipalDto, UsageAccountDto, UsageDto } from "@rhema/api-client";
+import type { PrincipalDto, UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-client";
 import type { FeedLabelMaps } from "@rhema/ide";
 import { BffError, bffFetch } from "./bff.js";
 
@@ -69,3 +69,24 @@ export const usageQuery = queryOptions({
   queryFn: () => bffFetch<BffUsageTwin>("/bff/usage"),
   retry: retryPolicy,
 });
+
+/**
+ * The `GET /bff/p/:slug/usage` twin's payload (SPA.10; REQ-BFF-11, REQ-DAT-4): the level-2 rollup
+ * verbatim + the slug the SSR model attached (the back-link needs no second read). A 404 is the
+ * route's own answer — `bffFetch` throws `BffError{status:404}`, the leaf maps it to `notFound()`.
+ */
+export interface BffProjectUsageTwin {
+  readonly usageProject: UsageProjectDto & { readonly slug: string };
+}
+
+/**
+ * `GET /bff/p/:slug/usage` — the project rollup's query. The browser key carries the SLUG
+ * (`["bff","p",slug,"usage"]` — REQ-BFF-11's key grammar); the server resolves slug→id off its
+ * request-scoped memo.
+ */
+export const projectUsageQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "usage"],
+    queryFn: () => bffFetch<BffProjectUsageTwin>(`/bff/p/${encodeURIComponent(slug)}/usage`),
+    retry: retryPolicy,
+  });
