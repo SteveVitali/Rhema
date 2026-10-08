@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluateLicense, evaluateAll } from "./license-policy.mjs";
+import { evaluateLicense, evaluateAll, missingRequired } from "./license-policy.mjs";
 
 const policy = {
   allowlist: { allow: ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"] },
@@ -50,5 +50,30 @@ describe("evaluateAll", () => {
     );
     expect(ok).toBe(false);
     expect(violations.map((v) => v.name)).toEqual(["b", "c"]);
+  });
+});
+
+describe("missingRequired — the SPA.8 non-vacuity leg (REQ-SAFE-9)", () => {
+  it("returns the required names absent from the enumeration", () => {
+    expect(
+      missingRequired([{ name: "react" }, { name: "vite" }], ["react", "@tanstack/react-router"]),
+    ).toEqual(["@tanstack/react-router"]);
+  });
+
+  it("returns [] when the SPA dependency set is covered", () => {
+    const spaSet = [
+      "react",
+      "react-dom",
+      "@tanstack/react-router",
+      "@tanstack/react-query",
+      "vite",
+      "@vitejs/plugin-react",
+      "axe-core",
+    ];
+    expect(missingRequired(spaSet.map((name) => ({ name })), spaSet)).toEqual([]);
+  });
+
+  it("an empty enumeration misses everything — a vacuous gate cannot pass", () => {
+    expect(missingRequired([], ["react"]).length).toBe(1);
   });
 });

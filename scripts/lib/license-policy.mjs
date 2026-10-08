@@ -61,3 +61,16 @@ export function evaluateAll(packages, policy) {
   }
   return { ok: violations.length === 0, violations };
 }
+
+/**
+ * Non-vacuity (SPA.8 / REQ-SAFE-9): package names that MUST appear in a real enumeration of the
+ * installed graph. If a scope/flag regression shrank `pnpm licenses list` (e.g. prod-only) the
+ * gate would be green over a graph that never included the SPA dependency set — fail instead.
+ * @param {Array<{ name: string }>} packages
+ * @param {readonly string[]} required
+ * @returns {string[]} required names absent from `packages`
+ */
+export function missingRequired(packages, required) {
+  const have = new Set(packages.map((p) => p.name));
+  return required.filter((n) => !have.has(n));
+}

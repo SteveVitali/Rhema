@@ -12,9 +12,27 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { evaluateAll } from "./lib/license-policy.mjs";
+import { evaluateAll, missingRequired } from "./lib/license-policy.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * REQ-SAFE-9 non-vacuity (SPA.8): packages the enumeration MUST cover. These are the SPA/client
+ * dependency set landed by the round-4 migration — if `pnpm licenses list` silently dropped to a
+ * prod/dev-only subset or an empty graph the licence gate would be green over nothing (the same
+ * vacuity class the A4 audit found in the marker gate). Fail loudly instead.
+ */
+const REQUIRED_PACKAGES = [
+  "react",
+  "react-dom",
+  "@tanstack/react-router",
+  "@tanstack/react-query",
+  "vite",
+  "@vitejs/plugin-react",
+  "axe-core",
+];
+/** A real whole-graph enumeration is hundreds of packages; a truncated one is not a green gate. */
+const MIN_ENUMERATED = 100;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -48,6 +66,20 @@ function main() {
     packages = collectFromPnpm();
   } catch (err) {
     console.error("Could not enumerate licences via pnpm:", err.message);
+    process.exit(2);
+  }
+
+  const missing = missingRequired(packages, REQUIRED_PACKAGES);
+  if (packages.length < MIN_ENUMERATED) {
+    console.error(
+      `Licence enumeration looks truncated (${packages.length} < ${MIN_ENUMERATED} package(s)) — refusing to pass a vacuous gate.`,
+    );
+    process.exit(2);
+  }
+  if (missing.length) {
+    console.error(
+      `Licence enumeration does not cover the SPA dependency set — missing: ${missing.join(", ")}. The gate would be vacuous; fix enumeration, do not allowlist.`,
+    );
     process.exit(2);
   }
 

@@ -12,8 +12,13 @@
  * ("never-cookies", "no credential") are not violations:
  *
  *   - a credential-shaped FIELD:     `sessionToken:`, `api_key:`, `password:`, `bearer:` …
+ *     (the value must be a literal/identifier/expression — a minified constant table like
+ *     react-dom's `password:!0` input-type map is not a credential construct)
  *   - a credential HEADER literal:   `"cookie"`, `"set-cookie"`, `"authorization"`, `"x-api-key"` …
- *   - a credential FORM INPUT name:  `name="cookie"`, `name="session"`, `name="token"` …
+ *   - a credential FORM INPUT name:  `name="cookie"`, `name="session"`, `name="token"`, and the
+ *     JSX brace forms `name={"token"}` / `name={`token`}` (SPA.8 / REQ-SAFE-3)
+ *   - a credential-named JSX prop:   `password={"…"}`, `secret="…"` inside a tag or at a JSX
+ *     continuation line's start (plain `const secret = …` assignments are not props)
  *   - a credential HEADER write:     `headers.set("cookie", …)`, `setHeader("authorization", …)`
  *
  * Exits non-zero on any hit. Missing files/dirs are skipped (e.g. an unbuilt client bundle).
@@ -39,6 +44,15 @@ const TARGETS = [
   "apps/web/src/page-data.ts",
   "apps/web/src/server.ts",
   "apps/web/src/voice-surfaces.test.ts",
+  // SPA.8 / REQ-SAFE-3 (design/28 F3) — the client source trees that render ingestion surfaces
+  // (the landing dropzone lives in src/client; the SPA graph owns every surface post-flip) plus
+  // the emitted client bundles themselves (islands + public/spa), and the shared-ui surfaces that
+  // render ingestion/connections/samples UI as components migrate there. Directories walk
+  // .ts/.tsx/.js — tests included (connector fixtures must carry no Cookie header).
+  "apps/web/src/spa",
+  "apps/web/src/client",
+  "apps/web/public",
+  "packages/ui/src",
   // The client bundle: ingestion DTOs + request builders (index.ts only — the package's tests
   // legitimately forward the VIEWER's own platform session cookie through the transport, which
   // is not a connector credential; connector fixtures live in packages/ingest and ARE scanned).
@@ -61,12 +75,24 @@ const RULES = [
     re: /["'`](cookie|set-cookie|authorization|proxy-authorization|x-api-key|x-auth-token|x-session[-_]token|x-access[-_]token)["'`]/i,
   },
   {
+    // REQ-SAFE-3 (SPA.8): brace-aware — JSX writes `name={"token"}` / `name={`token`}` (the repo's
+    // idiom, e.g. `name={`ov_${d.kind}`}`), which the quote-only rule silently missed.
     what: "credential-shaped form-field name",
-    re: /\bname\s*=\s*["'](cookie|cookies|session|session_?token|token|auth|password|secret|api_?key|bearer)["']/i,
+    re: /\bname\s*=\s*\{?\s*["'`](cookie|cookies|session|session_?token|token|auth|password|secret|api_?key|bearer)["'`]/i,
   },
   {
+    // REQ-SAFE-3: a credential-named JSX PROP carrying a value (`<input password={"x"}>` /
+    // `secret="…"` at a line-start continuation). The `<`-tag or line-start anchor keeps plain
+    // assignments like `const secret = "…"` out of the finding set.
+    what: "credential-named JSX prop",
+    re: /(?:<[^>]*\b|^[\s{]*)(cookie|cookies|authorization|password|passwd|api_?key|apiKey|secret|bearer|access_?token|accessToken|refresh_?token|refreshToken|session_?token|sessionToken)\s*=\s*[{"'`]/i,
+  },
+  {
+    // REQ-SAFE-3: the value lookahead — a credential FIELD must carry an actual value
+    // (literal/identifier/expression), which keeps minified constant tables (react-dom's
+    // `password:!0` input-type map in emitted bundles) from tripping the rule.
     what: "credential-shaped field/property",
-    re: /\b(cookie|cookies|session_?token|sessionToken|auth_?token|authToken|access_?token|accessToken|refresh_?token|refreshToken|api_?key|apiKey|password|passwd|bearer)\s*:/i,
+    re: /\b(cookie|cookies|session_?token|sessionToken|auth_?token|authToken|access_?token|accessToken|refresh_?token|refreshToken|api_?key|apiKey|password|passwd|bearer)\s*:\s*(?=["'`{[\w$])/i,
   },
   {
     what: "credential header write",
@@ -97,6 +123,21 @@ function* targets() {
   }
 }
 
+/** Scan one file's text; returns the credential-construct violations on it (exported for tests). */
+export function scanText(text) {
+  const hits = [];
+  text.split("\n").forEach((line, i) => {
+    if (ALLOW.test(line)) return;
+    for (const rule of RULES) {
+      if (rule.re.test(line)) {
+        hits.push({ line: i + 1, what: rule.what, text: line.trim().slice(0, 140) });
+        break;
+      }
+    }
+  });
+  return hits;
+}
+
 function main() {
   const violations = [];
   let scanned = 0;
@@ -104,16 +145,9 @@ function main() {
     const ext = file.slice(file.lastIndexOf("."));
     if (!SRC_EXT.has(ext)) continue;
     scanned++;
-    const lines = readFileSync(file, "utf8").split("\n");
-    lines.forEach((line, i) => {
-      if (ALLOW.test(line)) return;
-      for (const rule of RULES) {
-        if (rule.re.test(line)) {
-          violations.push({ file, line: i + 1, what: rule.what, text: line.trim().slice(0, 140) });
-          break;
-        }
-      }
-    });
+    for (const hit of scanText(readFileSync(file, "utf8"))) {
+      violations.push({ file, ...hit });
+    }
   }
 
   if (violations.length > 0) {
@@ -124,4 +158,5 @@ function main() {
   console.log(`Never-cookies gate OK (AC-I-B) — ${scanned} ingestion-surface file(s) scanned, no credential field/header/input.`);
 }
 
-main();
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) main();

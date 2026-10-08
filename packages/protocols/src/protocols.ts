@@ -13,6 +13,23 @@ import { ALLOWED_INPUT_SOURCES, type ProtocolInputSource } from "./input-sources
 // project creation) is REQ-GENRE-4 (data half here). Protocol config is private (SS §8.4): it lives in
 // this package and the DB `protocols` table, never a client bundle/OpenAPI/event.
 
+// -----------------------------------------------------------------------------------------------------------
+// REQ-SAFE-2 (SPA.8) — protocol-IP sentinels. Exported string CONSTANTS, never comments: minifiers strip
+// comments but keep string literals, so a constant is the only marker that survives into a bundle (the
+// design/28 F2 "belt" layer — the provenance scan over .map sources[] is the proof). They are planted
+// adjacent to the protected rubric/calibration bodies so a leaked protocol text carries its marker, and
+// they are load-bearing both directions through `check:protocol-markers`: the gate FAILS if any marker
+// is absent from this package's sources (an unarmed tripwire) and FAILS if any appears in a public
+// artifact (a leak). Do not delete, rename, or "clean up" — absence is a CI failure by construction.
+// -----------------------------------------------------------------------------------------------------------
+
+/** Marker for the protocol body as a whole (config, seeds, phase wiring). */
+export const SENTINEL_PROTOCOL_BODY = "RHEMA-PROTOCOL-SECRET";
+/** Marker for the rubric dimension/cap blocks (`rubric.dimensions` / `caps` below). */
+export const SENTINEL_RUBRIC_BLOCK = "BEGIN-RHEMA-RUBRIC";
+/** Marker for the `calibration_language` blocks (verdict vocab + reviewer voice). */
+export const SENTINEL_CALIBRATION_BLOCK = "BEGIN-RHEMA-CALIBRATION";
+
 export interface ProtocolVariant {
   id: string;
   name: string;

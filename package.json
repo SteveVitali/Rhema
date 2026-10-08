@@ -21,6 +21,7 @@
     "check:protocol-markers": "node scripts/check-protocol-markers.mjs",
     "check:no-cookies": "node scripts/check-no-cookies.mjs",
     "check:spa-budget": "node scripts/check-spa-budget.mjs",
+    "check:spa-env": "node scripts/check-spa-env.mjs",
     "check:dom-contract": "node scripts/check-dom-contract.mjs",
     "nightly:golden": "node scripts/nightly-golden.mjs",
     "format": "prettier --check ."
