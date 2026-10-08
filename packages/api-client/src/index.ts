@@ -2109,6 +2109,42 @@ export interface CreatedImportDraftDto {
   readonly contentSha256: string;
 }
 
+// ---- SPA.5 (REQ-DAT-13, REQ-BFF-12) — the run-events feed's wire row ----
+
+/**
+ * A user-visible run event on the wire — the SSE `data:` payload's JSON, emitted by the
+ * orchestrator's `formatSse` (`id:`/`event:`/`data:` triplet; `at` is the ISO string). The
+ * `?poll=1` finite replay and the live tail carry the same row shape (§12.5).
+ */
+export interface RunEventDto {
+  readonly seq: number;
+  readonly type: string;
+  readonly payload: unknown;
+  readonly density: string;
+  readonly agentLabel?: string;
+  readonly at: string;
+}
+
+/**
+ * Parse a `GET /runs/:id/events?poll=1` finite replay body into event rows — one record per
+ * blank-line-separated block, the row from its `data:` line. A malformed record is skipped,
+ * never fatal (the feed renders what parses; the live tail re-syncs by seq).
+ */
+export function parseRunEventReplay(text: string): RunEventDto[] {
+  const out: RunEventDto[] = [];
+  for (const block of text.split("\n\n")) {
+    const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
+    if (!dataLine) continue;
+    try {
+      const ev = JSON.parse(dataLine.slice(5).trim()) as RunEventDto;
+      if (typeof ev.seq === "number" && typeof ev.type === "string") out.push(ev);
+    } catch {
+      /* a malformed record is skipped, never fatal */
+    }
+  }
+  return out;
+}
+
 // ---- P1.05 — Timeline / run report / steering DTOs (§5.5/§6.5/§14.5) ----
 
 /** A run inside a round (or ungrouped): the card view is the whitelisted orchestrator projection. */
@@ -2599,6 +2635,11 @@ export class ApiError extends Error {
      * distinguish a 403's reason: `account_suspended` vs `email_unverified` vs an invite refusal).
      */
     readonly code?: string,
+    /**
+     * SPA.5 (REQ-DAT-10) — the api body's `detail` verbatim when present, so a BFF passthrough can
+     * re-serialize the api's own `{error, detail}` answer (422 validation bodies carry it).
+     */
+    readonly detail?: unknown,
   ) {
     super(message ?? `api ${status} for ${url}`);
     this.name = "ApiError";
@@ -3160,6 +3201,22 @@ export interface ApiClient {
   requestRefund(runId: string, init?: RequestInitLite): Promise<UserRefundResponseDto>;
   /** POST /runs/:id/walkthrough/retry — re-enqueue the one package-class walkthrough call. */
   retryWalkthrough(runId: string, init?: RequestInitLite): Promise<{ status: string }>;
+  /**
+   * SPA.5 (REQ-DAT-13, REQ-BFF-12) — `GET /runs/:id/events?poll=1`: the FINITE replay, parsed to
+   * event rows (the feed's initial paint). Non-2xx → `ApiError` carrying the api's `{error}` code.
+   */
+  getRunEvents(runId: string, init?: RequestInitLite): Promise<RunEventDto[]>;
+  /**
+   * SPA.5 (REQ-DAT-13, REQ-BFF-12) — `GET /runs/:id/events`: the LIVE SSE response returned RAW —
+   * the web proxy pipes `res.body` through and reads the upstream status itself (404→404, a
+   * resolved non-ok→that status), so this member never throws on a resolved response; only a
+   * transport failure rejects. `after` + `last-event-id` forward for resume.
+   */
+  streamRunEvents(
+    runId: string,
+    opts?: { after?: string; lastEventId?: string },
+    init?: RequestInitLite,
+  ): Promise<Response>;
 
   // ---- P1.11 — the Assistant chat surface (§7.1/§7.4/§7.6) ----
   /** GET /projects/:id/chat — the Desk Chat read (threads, turns, pins, sources, the empty state). */
@@ -3305,13 +3362,17 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       headers: { ...baseHeaders, ...(init.headers as Record<string, string> | undefined) },
     });
     if (!res.ok) {
-      // Surface the api's stable `{error}` code on the ApiError so callers can branch on it.
-      const errBody = (await res.json().catch(() => null)) as { error?: unknown } | null;
+      // Surface the api's stable `{error}` code (+ verbatim `detail`) on the ApiError so callers
+      // can branch on it / pass it through (REQ-DAT-10's 422 passthrough).
+      const errBody = (await res.json().catch(() => null)) as
+        | { error?: unknown; detail?: unknown }
+        | null;
       throw new ApiError(
         res.status,
         url,
         undefined,
         typeof errBody?.error === "string" ? errBody.error : undefined,
+        errBody?.detail,
       );
     }
     return (await res.json()) as T;
@@ -4380,12 +4441,15 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         body: zipBytes instanceof Uint8Array ? zipBytes : new Uint8Array(zipBytes),
       });
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as { error?: unknown } | null;
+        const errBody = (await res.json().catch(() => null)) as
+          | { error?: unknown; detail?: unknown }
+          | null;
         throw new ApiError(
           res.status,
           url,
           undefined,
           typeof errBody?.error === "string" ? errBody.error : undefined,
+          errBody?.detail,
         );
       }
       return (await res.json()) as AccountImportResultDto;
@@ -4574,6 +4638,41 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         headers: { "content-type": "application/json", ...(init?.headers as Record<string, string> | undefined) },
         body: "{}",
       });
+    },
+    // ---- SPA.5 (REQ-DAT-13) — the run-events feed (typed members, not raw fetches) ----
+    async getRunEvents(runId, init): Promise<RunEventDto[]> {
+      const url = `${base}/runs/${encodeURIComponent(runId)}/events?poll=1`;
+      const res = await f(url, {
+        method: "GET",
+        headers: { ...baseHeaders, ...(init?.headers as Record<string, string> | undefined) },
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as
+          | { error?: unknown; detail?: unknown }
+          | null;
+        throw new ApiError(
+          res.status,
+          url,
+          undefined,
+          typeof errBody?.error === "string" ? errBody.error : undefined,
+          errBody?.detail,
+        );
+      }
+      return parseRunEventReplay(await res.text());
+    },
+    async streamRunEvents(runId, opts, init): Promise<Response> {
+      return f(
+        `${base}/runs/${encodeURIComponent(runId)}/events${opts?.after ? `?after=${encodeURIComponent(opts.after)}` : ""}`,
+        {
+          method: "GET",
+          headers: {
+            ...baseHeaders,
+            accept: "text/event-stream",
+            ...(opts?.lastEventId ? { "last-event-id": opts.lastEventId } : {}),
+            ...(init?.headers as Record<string, string> | undefined),
+          },
+        },
+      );
     },
 
     // ---- P1.11 — the Assistant chat surface ----

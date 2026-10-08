@@ -4,7 +4,7 @@
 // (the long-stale server-owned copy maps) are the two the skeleton consumes.
 
 import { QueryClient, queryOptions } from "@tanstack/react-query";
-import type { PrincipalDto } from "@rhema/api-client";
+import type { PrincipalDto, UsageAccountDto, UsageDto } from "@rhema/api-client";
 import type { FeedLabelMaps } from "@rhema/ide";
 import { BffError, bffFetch } from "./bff.js";
 
@@ -48,5 +48,24 @@ export const feedLabelsQuery = queryOptions({
   queryKey: ["feed-labels"],
   queryFn: () => bffFetch<FeedLabelMaps>("/bff/feed-labels"),
   staleTime: Infinity,
+  retry: retryPolicy,
+});
+
+/**
+ * The `GET /bff/usage` reference twin's payload (SPA.5; REQ-BFF-1/8/9): raw api-client DTOs,
+ * degrade semantics as `null` fields — never a fabricated zero.
+ */
+export interface BffUsageTwin {
+  readonly usage: UsageDto | null;
+  readonly account: UsageAccountDto | null;
+}
+
+/**
+ * `GET /bff/usage` — the reference twin's query (REQ-BFF-10's `["bff", …]` key family; SPA.10's
+ * `usage` surface consumes this). No slug — the key is the endpoint verbatim.
+ */
+export const usageQuery = queryOptions({
+  queryKey: ["bff", "usage"],
+  queryFn: () => bffFetch<BffUsageTwin>("/bff/usage"),
   retry: retryPolicy,
 });

@@ -168,4 +168,88 @@ describe("createApiClient", () => {
     expect(res.runId).toBe("run_1");
     expect(JSON.parse(body!).idempotencyKey).toBe("idem_1");
   });
+
+  it("ApiError carries the body's verbatim `detail` (REQ-DAT-10 — the 422 passthrough)", async () => {
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch(
+        () =>
+          new Response(JSON.stringify({ error: "invalid_overrides", detail: { issue: "bad field" } }), {
+            status: 422,
+          }),
+      ),
+    });
+    const err = (await client.listProjects().catch((e: unknown) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(422);
+    expect(err.code).toBe("invalid_overrides");
+    expect(err.detail).toEqual({ issue: "bad field" });
+  });
+
+  // ---- SPA.5 (REQ-DAT-13) — the run-events feed's typed seams (the BFF's raw fetches promoted) ----
+
+  it("getRunEvents GETs /runs/:id/events?poll=1 and parses the finite replay", async () => {
+    let seen: { url: string; init: RequestInit } | null = null;
+    const sse =
+      `id: 4\nevent: run.state_changed\ndata: {"seq":4,"type":"run.state_changed","payload":{"state":"running"},"density":"summary","at":"2026-10-08T00:00:04Z"}\n\n` +
+      `id: 5\nevent: artifact.written\ndata: {"seq":5,"type":"artifact.written","payload":{},"density":"normal","agentLabel":"Editor","at":"2026-10-08T00:00:05Z"}\n\n` +
+      `data: {malformed\n\n` +
+      `: ping\n\n`;
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      headers: { cookie: "s=1" },
+      fetch: fakeFetch((url, init) => {
+        seen = { url, init };
+        return new Response(sse, { status: 200, headers: { "content-type": "text/event-stream" } });
+      }),
+    });
+    const rows = await client.getRunEvents("run_1", { headers: { "x-req": "9" } });
+    expect(seen!.url).toBe("http://api.local/runs/run_1/events?poll=1");
+    expect((seen!.init.headers as Record<string, string>).cookie).toBe("s=1");
+    expect((seen!.init.headers as Record<string, string>)["x-req"]).toBe("9");
+    expect(rows).toEqual([
+      { seq: 4, type: "run.state_changed", payload: { state: "running" }, density: "summary", at: "2026-10-08T00:00:04Z" },
+      { seq: 5, type: "artifact.written", payload: {}, density: "normal", agentLabel: "Editor", at: "2026-10-08T00:00:05Z" },
+    ]);
+  });
+
+  it("getRunEvents throws ApiError carrying the api's {error} code on a refusal", async () => {
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch(() => new Response(JSON.stringify({ error: "not_found" }), { status: 404 })),
+    });
+    const err = (await client.getRunEvents("run_x").catch((e: unknown) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(404);
+    expect(err.code).toBe("not_found");
+  });
+
+  it("streamRunEvents returns the RAW response — accept:text/event-stream, ?after + last-event-id forward", async () => {
+    let seen: { url: string; init: RequestInit } | null = null;
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      headers: { cookie: "s=1" },
+      fetch: fakeFetch((url, init) => {
+        seen = { url, init };
+        return new Response("id: 9\n\n", { status: 200 });
+      }),
+    });
+    const res = await client.streamRunEvents("run_1", { after: "8", lastEventId: "8" });
+    // the caller pipes res.body + reads res.status itself — a resolved non-ok is never thrown
+    expect(res.status).toBe(200);
+    expect(seen!.url).toBe("http://api.local/runs/run_1/events?after=8");
+    const h = seen!.init.headers as Record<string, string>;
+    expect(h.accept).toBe("text/event-stream");
+    expect(h["last-event-id"]).toBe("8");
+    expect(h.cookie).toBe("s=1");
+  });
+
+  it("streamRunEvents hands a resolved non-ok through unthrown (the proxy maps 404→404)", async () => {
+    const client = createApiClient({
+      baseUrl: "http://api.local",
+      fetch: fakeFetch(() => new Response("gone", { status: 404 })),
+    });
+    const res = await client.streamRunEvents("run_x");
+    expect(res.status).toBe(404);
+  });
 });
