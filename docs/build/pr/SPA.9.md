@@ -1,6 +1,6 @@
 # SPA.9 — ide-chrome React layout: panes, palette, keymap, SSE feed
 
-Manifest row 106 · stacks on `stevevitali/spa-8-safety-gates` @ `4dfcb19` · merge policy
+**PR #127** · Manifest row 106 · stacks on `stevevitali/spa-8-safety-gates` @ `4dfcb19` · merge policy
 **OPERATOR** — do not merge from the build environment · **$0** spend, no deploys, no
 production writes.
 

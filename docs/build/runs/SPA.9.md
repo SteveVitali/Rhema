@@ -163,6 +163,20 @@
 
 ## 5 — CI / PR
 
-- PR base `stevevitali/spa-8-safety-gates`; head `stevevitali/spa-9-ide-chrome-layout`;
-  unmerged (`OPERATOR`). `docs/build/pr/SPA.9.md` is the body; PR number + `gh pr checks
-  --watch=false` (read once) recorded in the closeout addendum.
+- PR **#127** (`docs/build/pr/SPA.9.md` is the body); base `stevevitali/spa-8-safety-gates`;
+  head `stevevitali/spa-9-ide-chrome-layout`; impl tip `296dedb`; unmerged (`OPERATOR`).
+- `gh pr checks --watch=false` at closeout — verbatim:
+  `no checks reported on the 'stevevitali/spa-9-ide-chrome-layout' branch` (exit 1 — the run
+  had not registered at read time; read exactly once per closeout discipline; the result rides
+  the PR, not a re-read here).
+
+### Closeout addendum (validator results)
+
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — **0 violations,
+  7 warnings**, all pre-existing classes (manifest banner/order notes incl. GATE-G1/GATE-G2,
+  PHASE-LOG >2 KiB entries — this entry joins the accepted pattern, legacy index status values,
+  pre-guard readouts, run ledgers without Harness headers).
+- `node docs/build/tools/check-append-only.mjs --base 4dfcb19` — **append-only OK** (tree and
+  `--staged`).
+- `gh pr checks --watch=false` (read once at closeout) — `no checks reported` (exit 1; the run
+  had not registered at read time).
