@@ -174,10 +174,19 @@
 
 ## 5 — CI / PR
 
-- PR created against base `stevevitali/spa-7-dom-contract-rtl` (`docs/build/pr/SPA.8.md` is the
-  body); unmerged (`OPERATOR`).
-- `gh pr checks --watch=false` at closeout — recorded in the closeout addendum below.
+- PR **#126** (`docs/build/pr/SPA.8.md` is the body); base `stevevitali/spa-7-dom-contract-rtl`;
+  head `stevevitali/spa-8-safety-gates`; unmerged (`OPERATOR`).
+- `gh pr checks --watch=false` at closeout — verbatim:
+  `typecheck / lint / unit  pending  0  https://github.com/SteveVitali/Rhema/actions/runs/37799283140/job/113386864019`
+  (exit 8 — the run registered but had not reported at read time; read exactly once per closeout
+  discipline; the result rides the PR, not a re-read here).
 
 ### Closeout addendum (validator results)
 
-_(filled by the closeout commit)_
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — **0 violations,
+  7 warnings**, all pre-existing classes (manifest banner/order notes incl. GATE-G1/GATE-G2,
+  PHASE-LOG >2 KiB entries — this entry joins the accepted pattern, legacy index status values,
+  pre-guard readouts, run ledgers without Harness headers).
+- `node docs/build/tools/check-append-only.mjs --base 8b81fb9` — **append-only OK**.
+- `gh pr checks --watch=false` (read once at closeout) — `typecheck / lint / unit pending`
+  (exit 8; the run had registered but not reported).
