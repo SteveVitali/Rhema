@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { StaticRouter } from "react-router";
 import { themeCss, ideCss } from "@rhema/tokens";
 import { themeBootScript, resolveAppTheme } from "@rhema/ide";
+import { spaRouteFor } from "@rhema/contracts";
 import { PageDataContext, type PageData } from "./page-data.js";
 import { COPY } from "./copy.js";
 
@@ -32,7 +33,8 @@ const SETTINGS_TITLES: Record<string, string> = {
   team: "Team",
 };
 
-function docMetaFor(pathname: string, data: PageData): { title: string; description?: string } {
+/** Exported for SPA.3's shell — the title/metadoc convention is shared with the SSR document. */
+export function docMetaFor(pathname: string, data: PageData): { title: string; description?: string } {
   const p = (pathname.replace(/\/+$/, "") || "/").split("?")[0]!;
   // ---- public routes (signed-out reachable; description + social tags) ----
   if (p === "/") return { title: `${SITE} — ${COPY.tagline}`, description: COPY.meta.landing };
@@ -134,8 +136,16 @@ export function renderDocument(
   // re-resolves against matchMedia before paint (no wrong-theme flash either way).
   const pref = data.theme?.pref;
   const resolved = pref ? resolveAppTheme(pref, false) : "dark";
+  // SPA.3 (REQ-SEQ-8 + REQ-VFY-3/7; design/27 §settle) — every HTML document carries the settle
+  // vocabulary: `data-renderer` says which pipeline produced it, `data-route` is the route-shape
+  // id (the `$param` pattern both renderers emit; the raw path when the shape is unknown), and a
+  // served SSR document is complete so `data-mounted` lands statically — the SPA flips the same
+  // attr on `<html>` after its first data paint.
+  const pathname = url.split("?")[0] || "/";
+  const routeId = spaRouteFor(pathname).routeId ?? pathname;
   const htmlAttrs =
     `lang="en" data-theme="${resolved}"` +
+    ` data-renderer="ssr" data-route="${escapeHtml(routeId)}" data-mounted` +
     (pref ? ` data-app-theme="${escapeHtml(pref)}"` : "") +
     (data.paperTheme ? ` data-paper="${escapeHtml(data.paperTheme)}"` : "") +
     (data.project?.slug ? ` data-project="${escapeHtml(data.project.slug)}"` : "");
@@ -178,7 +188,10 @@ export function renderDocument(
   );
 }
 
-/** Minimal escaping for interpolating an app-built URL into a `<meta>` attribute. */
-function escapeHtml(s: string): string {
+/**
+ * Minimal escaping for interpolating an app-built URL into a `<meta>` attribute (exported for
+ * SPA.3's shell, which shares the interpolation discipline).
+ */
+export function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

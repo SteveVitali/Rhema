@@ -51,6 +51,8 @@ import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { createSpaConsult } from "./spa-flag.js";
+import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
+import { isPhoneRequest } from "./device.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
 import {
@@ -58,6 +60,7 @@ import {
   RIGORS,
   MODEL_TIERS,
   forwardedClientIp,
+  spaRouteFor,
   type ModelTier,
   type Rigor,
   type SignupMode,
@@ -96,6 +99,7 @@ import {
 import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, errorClass, stackForLog, REQUEST_ID_HEADER, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { CLIENT_ENTRIES } from "../client-entries.mjs";
 
 // The beta web shell server (Hono). SSR only — every route renders HTML; forms POST and links navigate (no
@@ -166,6 +170,11 @@ export interface WebDeps {
    * + the wrapped `session`; injectable for tests like the other seams.
    */
   spa?(c: Context, surface: SpaSurface): boolean;
+  /**
+   * SPA.3 — the on-disk dir the Vite SPA build emits into (`apps/web/public/spa`, consumed by the
+   * manifest read + `/assets/spa/*`). Injectable so tests point at a fixture dir.
+   */
+  readonly spaAssetRoot?: string;
   /**
    * P1.03 — the collab WSS base the Page's island connects to (`wss://<host>/collab`, env
    * COLLAB_WS_URL). Unset ⇒ the Page mounts without a collab session (the static read view).
@@ -475,6 +484,32 @@ export function createWebApp(deps: WebDeps): Hono {
   };
   app.get("/favicon.ico", favicon);
   app.get("/favicon.svg", favicon);
+
+  // SPA.3 (REQ-BND-6) — the same-origin session probe the SPA's session query consumes. A session
+  // cookie absent ⇒ 401; present ⇒ the api's /session payload verbatim. A dead upstream is a 502,
+  // never a forged principal — the api remains the auth oracle (design/26 §server-owned).
+  app.get("/session", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.json({ error: "unauthenticated" }, 401);
+    try {
+      const principal = await deps.dataSource.getSessionPrincipal(session);
+      if (principal == null) {
+        // OBS.1 — a user-visible 502 gets its one structured line.
+        logWebRouteError(c, { status: 502, msg: "session_probe_empty", errorClass: "UnboundSeam" });
+        return c.json({ error: "session_unavailable" }, 502);
+      }
+      return c.json(principal);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return c.json({ error: "unauthenticated" }, 401);
+      logWebRouteError(c, {
+        status: 502,
+        msg: "session_probe_failed",
+        upstreamStatus: e instanceof ApiError ? e.status : null,
+        errorClass: errorClass(e),
+      });
+      return c.json({ error: "session_unavailable" }, 502);
+    }
+  });
 
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
@@ -971,6 +1006,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/outline/promote", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
+    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
+    const spaDoc = await spaShellResponse(c, deps, "outline", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -1086,6 +1125,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/outline", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
+    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
+    const spaDoc = await spaShellResponse(c, deps, "outline", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -1262,6 +1305,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/visualize", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
+    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
+    const spaDoc = await spaShellResponse(c, deps, "figures", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -1386,6 +1433,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/figures", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
+    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
+    const spaDoc = await spaShellResponse(c, deps, "figures", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -1402,6 +1453,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/figures/:figureId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
+    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
+    const spaDoc = await spaShellResponse(c, deps, "figures", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -1963,6 +2018,12 @@ export function createWebApp(deps: WebDeps): Hono {
       }
     }
 
+    // SPA.3 — the strangler consult at spec §4's fixed position: AFTER the session gate AND the
+    // first-five-minutes precedence (a carried file or an unopened Showcase still wins), before
+    // the render. `project-home`'s flip ⇒ the shell document; else today's list continues.
+    const spaDoc = await spaShellResponse(c, deps, "project-home", session);
+    if (spaDoc) return spaDoc;
+
     let filtered = voiceFilter
       ? rows.filter((r) => (voiceFilter === "unfiled" ? r.voice == null : r.voice?.personaId === voiceFilter))
       : rows;
@@ -2072,6 +2133,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `onboarding`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "onboarding", session);
+    if (spaDoc) return spaDoc;
     const entryQ = c.req.query("entry");
     const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
       ? (entryQ as NewProjectEntry)
@@ -2196,6 +2260,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const picks = newProjectForm(c.req.query() as Record<string, unknown>);
     const qk = c.req.query("qk");
     if (!qk) return c.redirect(`/app/new?entry=${entry}`);
+    // SPA.3 — the strangler consult (spec §4 order): after the server-owned `qk` redirect, so a
+    // missing quarantine key still lands on the entry sheet under the flag.
+    const spaDoc = await spaShellResponse(c, deps, "onboarding", session);
+    if (spaDoc) return spaDoc;
     const sheet = await loadNewProjectSheet(session);
     const sourceLabel = c.req.query("src") ?? "the upload";
     const out = await Promise.resolve()
@@ -2366,6 +2434,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/inbox", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `inbox`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "inbox", session);
+    if (spaDoc) return spaDoc;
     const [items, badge] = await Promise.all([
       Promise.resolve()
         .then(() => deps.dataSource.getInbox?.(session) ?? [])
@@ -2451,6 +2522,10 @@ export function createWebApp(deps: WebDeps): Hono {
       const ok = out != null && "ok" in out && out.ok === true;
       return c.redirect(`/app/settings/account?notice=${ok ? "email-confirmed" : "email-confirm-failed"}`);
     }
+    // SPA.3 — the strangler consult (spec §4 order): after the confirmEmail consume+redirect so a
+    // token round-trip never lands in the shell.
+    const spaDoc = await spaShellResponse(c, deps, "settings", session);
+    if (spaDoc) return spaDoc;
     const account = await Promise.resolve()
       .then(() => deps.dataSource.getAccountSettings?.(session))
       .catch(() => undefined);
@@ -2526,6 +2601,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/preferences", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "settings", session);
+    if (spaDoc) return spaDoc;
     const prefs = await Promise.resolve()
       .then(() => deps.dataSource.getPreferencesSettings?.(session))
       .catch(() => undefined);
@@ -2586,6 +2664,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "settings", session);
+    if (spaDoc) return spaDoc;
     const [notif, projects] = await Promise.all([
       Promise.resolve().then(() => deps.dataSource.getNotificationPrefs?.(session)).catch(() => undefined),
       Promise.resolve()
@@ -2664,6 +2745,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/integrations", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "settings", session);
+    if (spaDoc) return spaDoc;
     const integrations = await Promise.resolve()
       .then(() => deps.dataSource.getIntegrationsSettings?.(session))
       .catch(() => undefined);
@@ -2688,6 +2772,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/data", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "settings", session);
+    if (spaDoc) return spaDoc;
     const [privacy, data, acct] = await Promise.all([
       deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false })),
       Promise.resolve().then(() => deps.dataSource.getDataSettings?.(session)).catch(() => undefined),
@@ -2818,6 +2905,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/settings", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "settings", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -2910,6 +3000,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/usage", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `usage`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "usage", session);
+    if (spaDoc) return spaDoc;
     const [usage, usageAccount] = await Promise.all([
       deps.dataSource.getUsage(session).catch(() => undefined),
       // P1.16 — the §14.5 level-1 account read (buckets, period, warnings, next expiry). Best-effort:
@@ -2942,6 +3035,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/usage", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `usage`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "usage", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const rows = await deps.dataSource.listProjects(session).catch(() => []);
     const row = rows.find((r) => r.slug === slug);
@@ -2961,6 +3057,10 @@ export function createWebApp(deps: WebDeps): Hono {
   const billingPageHandler = async (c: Context) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `billing`'s flip ⇒ the shell document. The
+    // shared handler covers BOTH mounts (/app/settings/billing + the /settings/billing alias).
+    const spaDoc = await spaShellResponse(c, deps, "billing", session);
+    if (spaDoc) return spaDoc;
     const [subscription, plans] = await Promise.all([
       Promise.resolve().then(() => deps.dataSource.getSubscription?.(session)).catch(() => undefined),
       Promise.resolve().then(() => deps.dataSource.getPlans?.(session)).catch(() => undefined),
@@ -3130,6 +3230,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/billing/return", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `billing`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "billing", session);
+    if (spaDoc) return spaDoc;
     const sessionId = c.req.query("session_id") ?? "";
     const cancelled = c.req.query("cancelled") === "1";
     const checkoutReturn = sessionId
@@ -3242,6 +3345,13 @@ export function createWebApp(deps: WebDeps): Hono {
           .catch(() => undefined);
         return c.redirect(finishedRow.href);
       }
+    }
+    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
+    // REQ-VFY-5): a phone request or a read-only `showcase` row keeps the server-rendered Page
+    // even when `editor` flips — the flag never re-enables a mount the capability refused.
+    if (!isPhoneRequest(c) && row.showcase !== true) {
+      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
+      if (spaDoc) return spaDoc;
     }
     const [gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice] = await Promise.all([
       deps.dataSource.listGates(session, row.id).catch(() => []),
@@ -3429,6 +3539,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/voice/reseed", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "voices", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -3657,6 +3770,11 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/import", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): the import legs are `onboarding` AND
+    // `ide-chrome` — a per-route AND composition since only these two onboarding legs are
+    // IDE-framed (design/29 §route-map).
+    const spaDoc = await spaShellResponse(c, deps, ["onboarding", "ide-chrome"], session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -3713,6 +3831,10 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const qk = c.req.query("qk");
     if (!qk) return c.redirect(`/p/${slug}/import`);
+    // SPA.3 — the strangler consult (spec §4 order): after the server-owned `qk` redirect; the
+    // import legs gate on `onboarding` AND `ide-chrome`.
+    const spaDoc = await spaShellResponse(c, deps, ["onboarding", "ide-chrome"], session);
+    if (spaDoc) return spaDoc;
     const src = c.req.query("src");
     const input: ImportInput = { projectSlug: slug, quarantineKey: qk, ...(src ? { fileName: src } : {}) };
     const out = await deps.dataSource.previewImport(session, input);
@@ -3778,6 +3900,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/run", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `run-sheet`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "run-sheet", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -4171,6 +4296,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/review/:runId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `dossier`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "dossier", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -4292,6 +4420,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/r/:runId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `run-report`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "run-report", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project");
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
@@ -4560,6 +4691,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/obligations/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `dossier`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "dossier", session);
+    if (spaDoc) return spaDoc;
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
@@ -4687,6 +4821,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const cid = c.req.param("cid");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
+    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
+    if (!isPhoneRequest(c) && row.showcase !== true) {
+      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
+      if (spaDoc) return spaDoc;
+    }
     const data = await deps.dataSource.getWhatChanged(session, row.id, cid).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
@@ -4752,6 +4892,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
+    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
+    if (!isPhoneRequest(c) && row.showcase !== true) {
+      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
+      if (spaDoc) return spaDoc;
+    }
     const v = c.req.param("v") ?? "working";
     const resolved = await deps.dataSource.resolveEditorDraft(session, row.id, v).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
@@ -4888,6 +5034,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
+    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
+    if (!isPhoneRequest(c) && row.showcase !== true) {
+      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
+      if (spaDoc) return spaDoc;
+    }
     const n = c.req.param("n") ?? "";
     const m = c.req.param("m") ?? "";
     const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
@@ -4937,6 +5089,12 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project") ?? "";
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
+    // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
+    if (!isPhoneRequest(c) && row.showcase !== true) {
+      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
+      if (spaDoc) return spaDoc;
+    }
     const doc = await deps.dataSource
       .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
       .catch((e) => {
@@ -5093,6 +5251,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/export", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `export`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "export", session);
+    if (spaDoc) return spaDoc;
     const t = await projectRow(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     const dialog = await deps.dataSource.getExportDialog(session, t.row.id).catch(() => null);
@@ -5216,6 +5377,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/voices", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "voices", session);
+    if (spaDoc) return spaDoc;
     const voices = await deps.dataSource
       .listVoiceGroups(session)
       .catch(() => ({ voices: [], groups: { your_voices: [], house_styles: [], shared_with_you: [] } }));
@@ -5226,6 +5390,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/voices/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "voices", session);
+    if (spaDoc) return spaDoc;
     return c.html(renderDocument(c.req.path, voiceNewElement, { voiceNew: {}, compact: isPhoneRequest(c) }));
   });
 
@@ -5310,6 +5477,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/v/:persona", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
+    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
+    const spaDoc = await spaShellResponse(c, deps, "voices", session);
+    if (spaDoc) return spaDoc;
     const personaId = c.req.param("persona");
     const detail = await deps.dataSource.getVoice(session, personaId).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
@@ -5703,18 +5873,63 @@ export function createWebApp(deps: WebDeps): Hono {
     });
   });
 
-  app.all("*", (c) => c.html(renderDocument(c.req.path, notFoundElement), 404));
+  // SPA.3 (REQ-TL-4/5) — the Vite SPA bundle under `<spaAssetRoot>` (default public/spa/): the
+  // shell's manifest tags reference `/assets/spa/<file>` where <file> is the manifest's `assets/`
+  // subtree. The name gate admits ONLY `assets/<name>.<ext>` shapes — every segment starts with a
+  // word char (no `.`/`..`/dotdirs, so traversal is refused by construction) and sourcemaps
+  // (`*.map`, Vite's hidden `sourcemap` output) never serve. Content-hashed ⇒ immutable cache.
+  const spaAssetRoot = deps.spaAssetRoot ?? DEFAULT_SPA_ASSET_ROOT;
+  const SPA_ASSET_TYPES: Readonly<Record<string, string>> = {
+    js: "text/javascript; charset=utf-8",
+    css: "text/css; charset=utf-8",
+    svg: "image/svg+xml",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+    woff2: "font/woff2",
+    json: "application/json; charset=utf-8",
+  };
+  const SPA_ASSET_NAME = /^assets\/(?:[\w][\w.-]*\/)*[\w][\w.-]*\.(\w+)$/; // [\w] first char — no ".." or dotdirs
+  app.get("/assets/spa/*", async (c) => {
+    const rel = c.req.path.slice("/assets/spa/".length);
+    const m = SPA_ASSET_NAME.exec(rel);
+    const type = m != null && !rel.endsWith(".map") ? SPA_ASSET_TYPES[m[1]!] : undefined;
+    if (type == null) return c.body(null, 404);
+    const body = await readFile(join(spaAssetRoot, rel)).catch(() => null);
+    if (body == null) return c.body(null, 404);
+    return c.body(body, 200, {
+      "content-type": type,
+      "cache-control": "public, max-age=31536000, immutable",
+    });
+  });
+
+  // SPA.3 (REQ-BND-4/11; design/26 §catch-all) — the catch-all splits on session + SPA space:
+  // a GET under an authenticated SPA prefix WITHOUT a session gets the same /login redirect every
+  // auth'd route enforces (a signed-out deep link never sees the shell NOR the public 404); WITH a
+  // session the flag consult decides — the surface's flip (or an honored `x-rhema-renderer: spa`)
+  // serves the shell so SPA deep links the server has no explicit route for reach the client
+  // router (it renders its own not-found for the truly unknown). Every other shape — non-GET
+  // verbs, non-SPA paths, flag-off requests — keeps today's SSR 404 byte-for-byte.
+  app.all("*", async (c) => {
+    if (c.req.method === "GET") {
+      const { surfaces } = spaRouteFor(c.req.path);
+      if (surfaces != null) {
+        const session = deps.session(c);
+        if (!session) return c.redirect("/login");
+        const spaDoc = await spaShellResponse(c, deps, surfaces, session);
+        if (spaDoc) return spaDoc;
+      }
+    }
+    return c.html(renderDocument(c.req.path, notFoundElement), 404);
+  });
 
   return app;
 }
 
-/** §10.1 — the phone-width input set is a server-rendered variant of the SAME components (REQ-SPEC-20);
- *  the shell picks it from the request's mobile hints (UA / Sec-CH-UA-Mobile). */
-function isPhoneRequest(c: Context): boolean {
-  if (c.req.header("sec-ch-ua-mobile") === "?1") return true;
-  const ua = c.req.header("user-agent") ?? "";
-  return /Mobi|iPhone|Android/i.test(ua);
-}
+// §10.1's phone-width input set is a server-rendered variant of the SAME components (REQ-SPEC-20);
+// `isPhoneRequest` moved to ./device.js for SPA.3 so the shell module shares the one verdict
+// without a server↔shell import cycle.
 
 /** A `next` redirect target must stay inside the app (no open redirects). */
 function safeBack(next: string, fallback: string): string {
