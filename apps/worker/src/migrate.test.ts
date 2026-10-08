@@ -2,12 +2,17 @@
 // generated-role LOGIN plan (REQ-SPEC-30), DSN parsing/quoting, and the maintenance-db bootstrap.
 
 import { describe, it, expect } from "vitest";
+import { createOrchestratorTestDb } from "@rhema/orchestrator/testing";
 import {
   rolePasswordFromDsn,
   sqlQuotePassword,
   loginStatements,
   seedPlanFor,
   maintenanceDsn,
+  seedInvitePlan,
+  seedPreviewInviteRow,
+  PREVIEW_INVITE_CODE_RE,
+  PREVIEW_INVITE_MAX_USES,
 } from "./migrate.js";
 
 describe("seedPlanFor — REQ-ARCH-38: real-project fixtures only on dev", () => {
@@ -80,5 +85,71 @@ describe("maintenanceDsn — the create-database bootstrap targets the maintenan
     expect(maintenanceDsn("postgresql://postgres:pw@10.0.0.9:5432/rhema")).toBe(
       "postgresql://postgres:pw@10.0.0.9:5432/postgres",
     );
+  });
+});
+
+// MAINT.6 (D-OPS.1-1) — the `--seed-invite` preview invite seam: pr-<n>-only admission, the
+// deterministic code shape, and the idempotent upsert the verb relies on.
+describe("seedInvitePlan — fail-closed admission for --seed-invite", () => {
+  it("admits pr-<n> stages with the deterministic code shape", () => {
+    expect(seedInvitePlan("pr-131", "prv-131-test")).toEqual({ ok: true });
+    expect(seedInvitePlan("pr-7", "prv-7-test")).toEqual({ ok: true });
+  });
+  it("refuses dev/prod/anything-else — the verb is preview-only", () => {
+    for (const stage of ["dev", "prod", "stage", "", "pr-test", "production"]) {
+      const plan = seedInvitePlan(stage, "prv-1-test");
+      expect(plan.ok, stage).toBe(false);
+      if (!plan.ok) expect(plan.reason).toMatch(/pr-<n> preview/);
+    }
+  });
+  it("refuses malformed/non-deterministic codes even on a pr-<n> stage", () => {
+    for (const code of ["", "test", "invite-123", "BETA-123", "prv-x-test", "prv-1", "prv-1-test;drop"]) {
+      const plan = seedInvitePlan("pr-1", code);
+      expect(plan.ok, code).toBe(false);
+    }
+  });
+});
+
+describe("seedPreviewInviteRow — the idempotent code-bound upsert (PGlite)", () => {
+  it("inserts one email-null, high-capacity invite and re-seeding preserves used_count", async () => {
+    const db = await createOrchestratorTestDb();
+    try {
+      const sql = { query: (q: string, p?: unknown[]) => db.pg.query(q, p as unknown[]) as Promise<{ rows: unknown[] }> };
+      const first = await seedPreviewInviteRow(sql, "prv-9-test");
+      expect(first).toEqual({ code: "prv-9-test", usedCount: 0, maxUses: PREVIEW_INVITE_MAX_USES });
+      const row = (
+        await sql.query(
+          `select email, max_uses, used_count, expires_at, revoked_at from invites where code = $1`,
+          ["prv-9-test"],
+        )
+      ).rows[0] as { email: string | null; max_uses: number; used_count: number; expires_at: unknown; revoked_at: unknown };
+      expect(row.email).toBeNull();
+      expect(row.max_uses).toBe(PREVIEW_INVITE_MAX_USES);
+      expect(row.used_count).toBe(0);
+      expect(row.expires_at).toBeNull();
+      expect(row.revoked_at).toBeNull();
+      // simulate a redemption, then re-seed: the row is refreshed (un-revoked/un-expired) but the
+      // count is preserved — the upsert never erases redemptions.
+      await sql.query(`update invites set used_count = 3, revoked_at = now() where code = $1`, ["prv-9-test"]);
+      const again = await seedPreviewInviteRow(sql, "prv-9-test");
+      expect(again.usedCount).toBe(3);
+      expect(again.maxUses).toBe(PREVIEW_INVITE_MAX_USES);
+      const refreshed = (await sql.query(`select revoked_at, expires_at from invites where code = $1`, ["prv-9-test"]))
+        .rows[0] as { revoked_at: unknown; expires_at: unknown };
+      expect(refreshed.revoked_at).toBeNull();
+      expect(refreshed.expires_at).toBeNull();
+      // still exactly one row for the code — never a duplicate.
+      const n = (await sql.query(`select count(*)::int n from invites where code = $1`, ["prv-9-test"]))
+        .rows[0] as { n: number };
+      expect(n.n).toBe(1);
+    } finally {
+      await db.close();
+    }
+  });
+  it("the code shape the plan admits is exactly what preview-stack.mjs generates", () => {
+    expect(PREVIEW_INVITE_CODE_RE.test("prv-131-test")).toBe(true);
+    for (const bad of ["prv--test", "prv-1-", "prv-1-", "x-1-test", "PRV-1-TEST"]) {
+      expect(PREVIEW_INVITE_CODE_RE.test(bad), bad).toBe(false);
+    }
   });
 });

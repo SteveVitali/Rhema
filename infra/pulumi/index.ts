@@ -24,6 +24,7 @@ import { createMonitoring } from "./monitoring";
 import { createJourneys } from "./journeys";
 import { createTurboCache } from "./turbo-cache";
 import { createBilling } from "./billing";
+import { NONPROD_OPERATOR_PLACEHOLDER_IDS, resendVersionPlan } from "./resend-key";
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();
@@ -93,8 +94,23 @@ const spaSurfaces = rhemaConfig.get("spaSurfaces");
 // Job skips the record leg (a bare `pulumi preview` stays clean).
 const gitSha = rhemaConfig.get("gitSha");
 const protocolsVersion = rhemaConfig.get("protocolsVersion");
+// MAINT.6 (D-OPS.1-1) — a REAL Resend key for non-prod session minting (the magic-link leg every
+// signed-in preview journey needs). Set via `preview-stack.mjs resend-pull`, which pipes the
+// operator-seeded shared secret `rhema-nonprod-resend-api-key` into this SECRET config — encrypted
+// in state, never in argv/logs/the repo (REQ-ARCH-30). The send-only key on the prod Resend account
+// keeps `rhema.tools` a verified sender while previews stay off prod secrets (REQ-ARCH-38).
+const resendApiKey = rhemaConfig.getSecret("resendApiKey");
 
 const isProd = cfg.kind === "prod";
+// MAINT.6 — fail-closed: the config is a non-prod-only path; a prod stack carrying it refuses the
+// entire program before a single resource is created (prod's resend key stays operator-seeded).
+const resendPlan = resendVersionPlan(cfg.kind, resendApiKey !== undefined);
+if (resendPlan === "refused") {
+  throw new pulumi.RunError(
+    "rhema:resendApiKey is refused on prod — prod's resend-api-key version stays operator-seeded " +
+      "out of band (REQ-ARCH-30/REQ-ARCH-38); the config path exists only so pr-<n>/dev can mint test sessions",
+  );
+}
 const network = createNetwork({ stack, cfg, region });
 // OPS.1 — `system-database-url` is a non-prod-only container: it carries the program-generated
 // `postgres`-role DSN and is kept OUT of ALL_SECRET_IDS so prod's provisioned set is byte-identical.
@@ -251,20 +267,25 @@ if (!isProd) {
   // preview boots every service with zero out-of-band seeding. The value is deliberately invalid
   // (any real provider/billing call 401s — which is what $0-inference previews WANT); prod still
   // refuses to run this block and keeps hand-seeded values only.
-  for (const id of [
-    "anthropic-api-key",
-    "anthropic-admin-key",
-    "resend-api-key",
-    "ops-alert-webhook-url",
-    "stripe-secret",
-    "stripe-webhook-secret",
-    "google-oauth-client-secret",
-    "user-content-signing-key",
-  ] as const) {
+  for (const id of NONPROD_OPERATOR_PLACEHOLDER_IDS) {
+    // MAINT.6 — when `rhema:resendApiKey` carries the real non-prod key it replaces the
+    // `resend-api-key` placeholder version entirely (the worker's mail.send transport goes live).
+    if (id === "resend-api-key" && resendPlan === "real") continue;
     secretVersions.push(
       new gcp.secretmanager.SecretVersion(`rhema-${stack}-${id}-placeholder-v1`, {
         secret: secrets.byId[id].id,
         secretData: `ops1-nonprod-placeholder-${stack}-not-a-real-key`,
+      }),
+    );
+  }
+  // MAINT.6 — the real-key version (plan "real" ⇔ resendApiKey defined on a non-prod stack; prod
+  // with the config set never reaches this block — the program threw above). The version lives only
+  // in Secret Manager + encrypted stack state, exactly like the generated DSN set.
+  if (resendPlan === "real" && resendApiKey) {
+    secretVersions.push(
+      new gcp.secretmanager.SecretVersion(`rhema-${stack}-resend-api-key-v1`, {
+        secret: secrets.byId["resend-api-key"].id,
+        secretData: resendApiKey,
       }),
     );
   }
@@ -313,6 +334,10 @@ const compute = createCompute({
   ...(internalApiUrl ? { internalApiUrl } : {}),
   ...(proxyBaseUrl ? { proxyBaseUrl } : {}),
   ...(spaSurfaces ? { spaSurfaces } : {}),
+  // MAINT.6 — mount the resend secret NAME on the worker ONLY when the real key was seeded
+  // (the placeholder version is never mounted: the env stays absent and mail.send no-ops exactly
+  // as an unkeyed preview does today).
+  ...(resendPlan === "real" ? { resendSecretWired: true } : {}),
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
