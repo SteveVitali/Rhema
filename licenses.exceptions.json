@@ -110,6 +110,61 @@
       "type": "npm",
       "license": "OFL-1.1",
       "rationale": "SIL Open Font License 1.1 — the §5.9 typefaces self-hosted via Fontsource (P1.01, REQ-IDE-39). OFL permits bundling + webfont embedding; the files ship as served woff2 assets (apps/web/public/fonts), never modified, with copyright + licence intact. No Reserved Font Name issue: Fontsource publishes the unmodified upstream faces."
+    },
+    "caniuse-lite": {
+      "type": "npm",
+      "license": "CC-BY-4.0",
+      "rationale": "Browser-support DATA table consumed by browserslist inside the babel toolchain (@vitejs/plugin-react, @tanstack/router-plugin — SPA.1, ADR-106). Compile-time input only; it is never bundled, served, or executed — the compiled output is our own code. CC-BY-4.0 permits use with attribution; the committed dependency record + LICENSES policy carry it."
+    },
+    "lightningcss": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Optional CSS toolchain peer of Vite (vite cssMinify: 'lightningcss') resolved once vite@8 entered the graph (SPA.1, ADR-106). Build-time CSS transformer only — what ships is our transformed CSS, not lightningcss code. MPL-2.0 is weak file-level copyleft; used as an unmodified dependency (the axe-core / resvg precedents)."
+    },
+    "lightningcss-darwin-arm64": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-darwin-x64": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-linux-x64-gnu": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle. This is the variant CI installs."
+    },
+    "lightningcss-linux-x64-musl": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-linux-arm64-gnu": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-linux-arm64-musl": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-win32-x64-msvc": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-win32-arm64-msvc": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
+    },
+    "lightningcss-freebsd-x64": {
+      "type": "npm",
+      "license": "MPL-2.0",
+      "rationale": "Platform binary of lightningcss (same package, same use — see that entry): optional Vite CSS-toolchain peer, build-time only, unmodified, never in a client bundle."
     }
   }
 }

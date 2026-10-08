@@ -72,7 +72,8 @@ describe("the exhaustion resolution panel (AC3; REQ-BETA-12/15; §14.6)", () => 
     expect(html).toContain("Or ask for more credits."); // §14.6 sentence 3 (beta mode — no "/ upgrade")
     // the Payment-Link action — a form POST to the telemetry route, carrying the link for verification.
     expect(html).toContain(`data-payment-link="${PAY_LINK}"`);
-    expect(html).toContain(`formaction="/p/${SLUG}/exhausted"`);
+    // case-insensitive attr name — React 19 serializes `formAction` (its DOM-property case).
+    expect(html).toMatch(new RegExp(`formaction="/p/${SLUG}/exhausted"`, "i"));
     expect(html).toContain('value="open_payment_link"');
     expect(recorded).toEqual(["shown"]); // the impression IS the telemetry event
   });

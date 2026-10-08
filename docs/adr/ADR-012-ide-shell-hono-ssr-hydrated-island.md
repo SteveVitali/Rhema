@@ -54,6 +54,15 @@ this ticket and would break the `tsc -b` composite build + the deployed SSR host
 - **Full React hydration (`hydrateRoot` over the shell):** rejected — forces SSR/client markup parity for
   no benefit; attribute-driven enhancement is smaller and cannot mismatch.
 
+## Amended 2026-10-08 — the island idiom is superseded per surface as SPA flags flip (ADR-106)
+
+ADR-106 amends this ruling per surface: the ~45 auth'd document GETs migrate to the Vite-built
+TanStack SPA behind per-surface `SPA_SURFACES` flags — the attribute-driven island idiom is
+superseded exactly where the "client-owned document tree" revisit trigger fired (editor, dossier,
+inbox — the whole auth'd shell). Islands remain the fallback implementation while a flag is off;
+the esbuild island pipeline itself is unchanged (REQ-TL-12), and `landing.js` keeps serving the
+public `/` drop-zone indefinitely (REQ-BND-12).
+
 ## Revisit trigger
 
 A P1.* surface that demonstrably cannot ship on attribute-driven enhancement (e.g. real-time collab

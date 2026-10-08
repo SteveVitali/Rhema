@@ -8,7 +8,10 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "*.tsbuildinfo"]
+      // public/** — apps/web's generated client bundles: the esbuild islands + fonts and the Vite
+      // SPA output at apps/web/public/spa/** (SPA.1, REQ-TL-3). Without this Turbo neither caches
+      // the Vite output nor restores it on a remote-cache hit.
+      "outputs": ["dist/**", "*.tsbuildinfo", "public/**"]
     },
     "typecheck": {
       "dependsOn": ["build"]

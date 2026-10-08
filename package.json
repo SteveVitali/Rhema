@@ -7,7 +7,8 @@
   "type": "module",
   "packageManager": "pnpm@10.32.1",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19",
+    "//": ">=20.19 — Vite 8 (Rolldown) requires ^20.19.0 || >=22.12.0 (SPA.1, REQ-TL-10); the SPA build is part of @rhema/web's `build`, so the floor binds the whole repo."
   },
   "scripts": {
     "preinstall": "node scripts/resolve-protocols.mjs",
@@ -19,6 +20,7 @@
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:protocol-markers": "node scripts/check-protocol-markers.mjs",
     "check:no-cookies": "node scripts/check-no-cookies.mjs",
+    "check:spa-budget": "node scripts/check-spa-budget.mjs",
     "nightly:golden": "node scripts/nightly-golden.mjs",
     "format": "prettier --check ."
   },

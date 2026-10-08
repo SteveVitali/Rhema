@@ -1,0 +1,19 @@
+{
+  "$comment": "SPA browser graph (SPA.1, design/21 F9, REQ-TL-11): a SIBLING of tsconfig.client.json — the islands keep their own config so the island-deletion diff stays trivial. verbatimModuleSyntax is inherited from tsconfig.base.json; relative imports inside src/spa carry .js extensions (the repo rule). vite/client types give import.meta.env types; its USE is lint-restricted to env.ts (REQ-SAFE-8, lands SPA.8).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": ["src/spa", "src/spa/routeTree.gen.ts"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+}
