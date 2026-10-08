@@ -45,12 +45,12 @@ import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto, GateCardDto, ProjectSettingsPatch } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
-import { bffRoute, projectRow as bffProjectRow, swallowDegraded, wantsJson } from "./bff.js";
+import { bffRoute, mutationOutcome, projectRow as bffProjectRow, swallowDegraded, wantsJson } from "./bff.js";
 import { createSpaConsult } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
@@ -559,6 +559,55 @@ export function createWebApp(deps: WebDeps): Hono {
         .catch(swallowDegraded);
       if (!usageProject) return c.json({ error: "not_found" }, 404);
       return c.json({ usageProject });
+    }),
+  );
+
+  // SPA.11 (REQ-BFF-1/8/9, REQ-DAT-4; design/22 §2 `inbox` row) — the `/app/inbox` document's typed
+  // read twin: `{items, badge, gateCards}` — the SAME aggregate the SSR handler composes, gate cards
+  // keyed by inbox-item id so an expanded row mounts the real §6.4 card without a second read.
+  // Degrade semantics ride `swallowDegraded` per seam (best-effort seams answer null/[]; a mid-session
+  // upstream 401 is NOT degradation — it rethrows into the `unauthenticated` envelope). The SSR's
+  // catch-everything tolerances stay on the document path — a dup'd join here would be the drift.
+  app.get(
+    "/bff/app/inbox",
+    bffRoute(deps, async (c, session) => {
+      const [items, badge] = await Promise.all([
+        Promise.resolve()
+          .then(() => deps.dataSource.getInbox?.(session) ?? [])
+          .catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getInboxBadge?.(session))
+          .then((b) => (b && typeof b.count === "number" ? b.count : 0))
+          .catch(swallowDegraded),
+      ]);
+      const list: InboxItemDto[] = items ?? [];
+      // The same per-project open-gates join the document runs — one listGates per touched project,
+      // keyed by inbox-item id; a missed join degrades that row to its deep link, never a 500.
+      const gateProjectIds = [
+        ...new Set(
+          list
+            .filter((i) => i.gate != null)
+            .map((i) => i.projectId)
+            .filter((p): p is string => p != null),
+        ),
+      ];
+      const gateLists = await Promise.all(
+        gateProjectIds.map((pid) =>
+          Promise.resolve()
+            .then(() => deps.dataSource.listGates(session, pid))
+            .catch(swallowDegraded),
+        ),
+      );
+      const gatesById = new Map(
+        gateLists.flatMap((gl) => gl ?? []).map((g) => [g.id, g] as const),
+      );
+      const gateCards: Record<string, GateCardDto> = {};
+      for (const it of list) {
+        if (it.gate == null) continue;
+        const card = gatesById.get(it.gate.gateId);
+        if (card) gateCards[it.id] = card;
+      }
+      return c.json({ items: list, badge: badge ?? 0, gateCards });
     }),
   );
 
@@ -2522,26 +2571,31 @@ export function createWebApp(deps: WebDeps): Hono {
       }),
     );
   });
-  // A row's "Mark read" — no-JS friendly (plain form POST → redirect back to the Inbox).
+  // A row's "Mark read" — no-JS friendly (plain form POST → redirect back to the Inbox). SPA.11:
+  // the `wantsJson` branch (REQ-BFF-1/2) — a JSON caller posts `{item}` and gets the `{ok:true,
+  // redirect:"/app/inbox"}` envelope, never a 302; the form post's 302 is verbatim.
   app.post("/app/inbox/read", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
-    const item = typeof form.item === "string" ? form.item : "";
+    // A JSON caller never rides the /login document redirect — the BFF convention answers 401.
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const raw = wantsJson(c)
+      ? ((await c.req.json().catch(() => null)) as { item?: unknown } | null)?.item
+      : (await c.req.parseBody()).item;
+    const item = typeof raw === "string" ? raw : "";
     if (item) {
       await Promise.resolve()
         .then(() => deps.dataSource.markInboxItemRead?.(session, item))
         .catch(() => undefined);
     }
-    return c.redirect("/app/inbox");
+    return mutationOutcome(c, { redirect: "/app/inbox" });
   });
   app.post("/app/inbox/read-all", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     await Promise.resolve()
       .then(() => deps.dataSource.markInboxAllRead?.(session))
       .catch(() => undefined);
-    return c.redirect("/app/inbox");
+    return mutationOutcome(c, { redirect: "/app/inbox" });
   });
 
   // ---- P1.20 — the §14.7 settings tree (`/app/settings/:section`; §4.2). The beta's `/settings`

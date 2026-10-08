@@ -19,11 +19,12 @@ describe("the journey step registry", () => {
         // DEF.4 added R9 (the §14.4 refund-window leg — red until Stage B flips the flag).
         // SPA.6 split P1→P1.{public,project,pill,runsheet,app-new} and X1→X1.{voices,usage,home,
         // inbox,detail} — the per-surface legs SURFACE_GATES selects (REQ-VFY-8).
+        // SPA.11 split T2→T2.{badge,matrix} and R8→R8.{showcase,prefs,inbox} the same way.
         "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new",
-        "R1", "R4", "R5", "R6", "R7", "R8", "R9",
+        "R1", "R4", "R5", "R6", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
-        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16",
+        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16",
         // STB.5b added B16/B17/B18A/B18B/B19A/B19B/B19C — the BL-16–19 bounded paid live legs
         // (all `red` until a leg lands its live asserts; B19C is the pre-registered cap drop).
         "B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C",
@@ -48,7 +49,7 @@ describe("the journey step registry", () => {
         // canonical-fold fix deployed; the Leg-3 dossier re-walked 7/7 chipped / 0 chip-less.
         "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "N11",
         "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new",
-        "R1", "R4", "R5", "R6", "R7", "R8", "R9",
+        "R1", "R4", "R5", "R6", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
         // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7
@@ -56,7 +57,7 @@ describe("the journey step registry", () => {
         // nonce 6c268536d58b); T13 flipped green 2026-10-06 (funded window B continuation —
         // Apply + bulk-preview legs landed on the delivered funded dossier, nonce b76029538106-class);
         // T8/T15/T16 stay red — clock/prerequisite rows.
-        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T13", "T14",
+        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T13", "T14",
         // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
         // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
         // D-P0.03-2 DONE.

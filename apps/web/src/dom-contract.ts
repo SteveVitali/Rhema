@@ -281,16 +281,23 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-project-usage-total", "conditional", "pages.tsx"),
   ],
   // ---- /app/inbox ----
+  // SPA.11 — the React twin emits the SAME vocabulary verbatim (`spa/surfaces/inbox.tsx` + the
+  // shared `gate-card.tsx` presence hook); emittedBy names both renderers. The two write hooks the
+  // SSR already emitted (`data-inbox-read-all`/`data-inbox-mark-read`) land in the manifest now —
+  // they were journey-asserted hooks that pre-date the vocabulary's completeness pass.
   inbox: [
-    a("data-inbox-badge", "conditional", "pages.tsx", "Needs-you count chip"),
-    a("data-inbox-empty", "conditional", "pages.tsx"),
-    a("data-inbox-gate-card", "conditional", "pages.tsx", "inboxed approval card"),
-    a("data-inbox-kind", "conditional", "pages.tsx"),
-    a("data-inbox-open", "conditional", "pages.tsx"),
-    a("data-inbox-project", "conditional", "pages.tsx"),
-    a("data-inbox-row", "conditional", "pages.tsx"),
-    a("data-inbox-section", "conditional", "pages.tsx"),
-    a("data-inbox-type", "conditional", "pages.tsx"),
+    a("data-inbox-badge", "conditional", "pages.tsx / spa/surfaces/inbox.tsx", "Needs-you count chip"),
+    a("data-inbox-empty", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-gate-card", "conditional", "pages.tsx / spa/surfaces/inbox.tsx", "inboxed approval card"),
+    a("data-inbox-kind", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-open", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-project", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-row", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-section", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-type", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-read-all", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    a("data-inbox-mark-read", "conditional", "pages.tsx / spa/surfaces/inbox.tsx"),
+    n("item", "conditional", "pages.tsx / spa/surfaces/inbox.tsx", "the mark-read form's hidden item id"),
   ],
   // ---- /app/settings/* + /p/:p/settings ----
   settings: [
@@ -630,6 +637,12 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "axe subset — the approval card",
     ),
     a("data-gate-actions", "conditional", "ui/gate-card.tsx"),
+    a(
+      "data-gate-artifact",
+      "conditional",
+      "ui/gate-card + approval-row",
+      "the card's artifact link — the presence script's 'reading' ping target (SPA.11: spa/gate-presence.ts consumes it)",
+    ),
     a("data-gate-explainer", "conditional", "pages.tsx"),
     a("data-gate-plan", "conditional", "ui/gate-card.tsx"),
     a("data-gate-scope", "conditional", "ui/gate-card.tsx"),

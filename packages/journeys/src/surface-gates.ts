@@ -67,13 +67,11 @@ const gate = (
  */
 export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
   usage: gate("usage", ["X1.usage"]),
-  inbox: gate("inbox", ["T2", "R8", "X1.inbox"], {
-    legNotes: { T2: "the badge ⇄ Needs-you rows legs", R8: "the inbox leg" },
-  }),
-  settings: gate("settings", ["T2", "T3", "R8"], {
+  // SPA.11 — T2/R8 were split into per-surface legs, so each gated id IS this surface's leg and
+  // no legNotes indirection is needed here.
+  inbox: gate("inbox", ["T2.badge", "R8.inbox", "X1.inbox"]),
+  settings: gate("settings", ["T2.matrix", "T3", "R8.prefs"], {
     legNotes: {
-      T2: "the notification-matrix leg",
-      R8: "the Preferences leg",
       T3: "the account zip / rights-export legs",
     },
   }),
@@ -81,8 +79,8 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
   onboarding: gate("onboarding", ["N1", "N3", "N4", "P1.app-new"], {
     legNotes: { N4: "the protocol-card estimate half" },
   }),
-  "project-home": gate("project-home", ["R1", "R7", "T2", "T6", "T7", "P1.project", "X1.home"], {
-    legNotes: { T2: "the badge leg", R7: "the gate/labels legs" },
+  "project-home": gate("project-home", ["R1", "R7", "T2.badge", "T6", "T7", "P1.project", "X1.home"], {
+    legNotes: { R7: "the gate/labels legs" },
   }),
   billing: gate("billing", ["N9"], {
     legNotes: { N9: "the free Choose-Writer / Buy-credits / portal legs" },
@@ -112,11 +110,10 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
     ],
     weeklyHolds: ["R6", "R9"],
   }),
-  editor: gate("editor", ["N8", "P1.pill", "P1.project", "R7", "T2", "T6", "T7"], {
+  editor: gate("editor", ["N8", "P1.pill", "P1.project", "R7", "T2.badge", "T6", "T7"], {
     legNotes: {
       N8: "type → fork → save, no confirm",
       "P1.pill": "the pill legs + the phone reader-Page markers",
-      T2: "the badge leg",
     },
   }),
   "ide-chrome": gate("ide-chrome", ["P1.project"], {

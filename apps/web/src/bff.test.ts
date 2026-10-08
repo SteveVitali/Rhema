@@ -525,3 +525,201 @@ describe("GET /bff/p/:slug/usage — the level-2 project rollup twin (SPA.10; RE
     expect(seen).toEqual([]); // the slug resolved to no row — the upstream read never ran
   });
 });
+
+describe("GET /bff/app/inbox — the §5.11 aggregate twin (SPA.11; REQ-BFF-1/8/9, REQ-DAT-4)", () => {
+  const GATE_ITEM = {
+    id: "gate:gate_1",
+    kind: "blocked",
+    type: "gate",
+    title: "approve plan needs your call",
+    href: "/p/seed-essay/review/run_1?gate=gate_1",
+    projectId: "proj_1",
+    unread: true,
+    createdAt: "2026-09-20T00:00:00Z",
+    gate: { gateId: "gate_1", runId: "run_1", kind: "approve_plan", workflow: "review", deadlineAt: null },
+  };
+  const EVENT_ITEM = {
+    id: "ib_1",
+    kind: "event",
+    type: "run_finished",
+    title: "Review finished",
+    href: "/p/seed-essay/review/run_9",
+    projectId: "proj_1",
+    unread: true,
+    createdAt: "2026-09-25T00:00:00Z",
+  };
+  const CARD = {
+    id: "gate_1",
+    runId: "run_1",
+    kind: "approve_plan",
+    workflow: "review",
+    openedAt: "2026-09-20T00:00:00Z",
+    pausedWhileReading: false,
+    held: false,
+    blocking: true,
+    onExpiry: "wait",
+    spentCredits: 120,
+    capCredits: 2000,
+  };
+  const webDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        getInbox: async () => [GATE_ITEM, EVENT_ITEM],
+        getInboxBadge: async () => ({ count: 1 }),
+        listGates: async () => [CARD],
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns the aggregate — items verbatim + badge + the gate-card join keyed by item id", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/app/inbox", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({
+      items: [GATE_ITEM, EVENT_ITEM],
+      badge: 1,
+      gateCards: { "gate:gate_1": CARD },
+    });
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("lists gates once per distinct project — a shared project id joins through ONE read", async () => {
+    const calls: string[] = [];
+    const second = {
+      ...GATE_ITEM,
+      id: "gate:gate_2",
+      gate: { ...GATE_ITEM.gate, gateId: "gate_2" },
+    };
+    const res = await createWebApp(
+      webDeps({
+        getInbox: async () => [GATE_ITEM, second],
+        listGates: async (_s: unknown, projectId: string) => {
+          calls.push(projectId);
+          return [CARD, { ...CARD, id: "gate_2" }] as never;
+        },
+      }),
+    ).request("/bff/app/inbox", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(calls).toEqual(["proj_1"]); // dedup — the join's cost is per-project, not per-row
+    const body = await res.json();
+    expect(Object.keys((body as { gateCards: object }).gateCards).sort()).toEqual([
+      "gate:gate_1",
+      "gate:gate_2",
+    ]);
+  });
+
+  it("a missed gate join degrades to an empty gateCards record — the row still answers", async () => {
+    const res = await createWebApp(
+      webDeps({ listGates: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/app/inbox", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ items: [GATE_ITEM, EVENT_ITEM], badge: 1, gateCards: {} });
+  });
+
+  it("degraded read seams land the SSR's defaults — [] items + 0 badge (REQ-BFF-9)", async () => {
+    const res = await createWebApp(
+      webDeps({
+        getInbox: async () => { throw new ApiError(503, "x"); },
+        getInboxBadge: async () => { throw new ApiError(503, "x"); },
+      }),
+    ).request("/bff/app/inbox", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ items: [], badge: 0, gateCards: {} });
+  });
+
+  it("an upstream 401 is NOT swallowed — the unauthenticated envelope answers", async () => {
+    const res = await createWebApp(
+      webDeps({ getInbox: async () => { throw new ApiError(401, "x"); } }),
+    ).request("/bff/app/inbox", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp(webDeps({}, () => null)).request("/bff/app/inbox", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("POST /app/inbox/read + /read-all — the JSON mutation branches (SPA.11; REQ-BFF-1/2/3)", () => {
+  const postDeps = (
+    over: Partial<DataSource>,
+    session: WebDeps["session"] = () => SESSION,
+  ): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("a JSON caller gets {ok:true, redirect:'/app/inbox'} — never a 302 (REQ-BFF-1)", async () => {
+    const mark = vi.fn(async () => ({ ok: true as const }));
+    const res = await createWebApp(postDeps({ markInboxItemRead: mark })).request("/app/inbox/read", {
+      ...jsonPost,
+      body: JSON.stringify({ item: "ib_1" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/app/inbox" });
+    expect(res.headers.get("location")).toBeNull();
+    expect(mark).toHaveBeenCalledWith(expect.anything(), "ib_1");
+  });
+
+  it("a JSON caller with no `item` still answers the envelope — the mark seam is skipped", async () => {
+    const mark = vi.fn(async () => ({ ok: true as const }));
+    const res = await createWebApp(postDeps({ markInboxItemRead: mark })).request("/app/inbox/read", {
+      ...jsonPost,
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(200);
+    expect(mark).not.toHaveBeenCalled();
+  });
+
+  it("the form post keeps its 302 verbatim (the no-JS leg is untouched)", async () => {
+    const mark = vi.fn(async () => ({ ok: true as const }));
+    const res = await createWebApp(postDeps({ markInboxItemRead: mark })).request("/app/inbox/read", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ item: "ib_1" }).toString(),
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/app/inbox");
+    expect(mark).toHaveBeenCalledWith(expect.anything(), "ib_1");
+  });
+
+  it("read-all JSON → the envelope; form → the 302", async () => {
+    const markAll = vi.fn(async () => ({ ok: true as const, marked: 2 }));
+    const app = createWebApp(postDeps({ markInboxAllRead: markAll }));
+    const json = await app.request("/app/inbox/read-all", { ...jsonPost, body: "{}" });
+    expect(json.status).toBe(200);
+    expect(await json.json()).toEqual({ ok: true, redirect: "/app/inbox" });
+    const form = await app.request("/app/inbox/read-all", { method: "POST" });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/app/inbox");
+    expect(markAll).toHaveBeenCalledTimes(2);
+  });
+
+  it("no session: JSON callers get 401 JSON, form callers get the /login redirect — never crossed", async () => {
+    const app = createWebApp(postDeps({}, () => null));
+    const json = await app.request("/app/inbox/read-all", { ...jsonPost, body: "{}" });
+    expect(json.status).toBe(401);
+    expect(json.headers.get("location")).toBeNull();
+    const form = await app.request("/app/inbox/read", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "item=ib_1",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/login");
+  });
+});

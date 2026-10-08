@@ -18,9 +18,7 @@ import {
   VersionObligationChip,
   BalanceChip,
   DispositionControls,
-  GateCard,
   ApprovalRow,
-  TriageLedger,
   DecisionsList,
   WhatChangedView,
   RubricDelta,
@@ -45,12 +43,6 @@ import {
   type WhatChangedLabels,
   type SourceEditorLabels,
   type PageEditorLabels,
-  type DispositionControlsLabels,
-  type GateCardLabels,
-  type ApprovalRowLabels,
-  type TriageLedgerLabels,
-  type DecisionsListLabels,
-  type TriageLedgerRow,
   type DossierLabels,
   type RunSheetLabels,
   type RunCardLabels,
@@ -69,7 +61,6 @@ import {
   buildRunCardView,
   buildRubricView,
   buildTrustChip,
-  buildGateCard,
   buildTriageQueue,
   pretriageSummary,
   groupFindingsForList,
@@ -92,11 +83,9 @@ import {
   applyGate,
   LIVE_OBLIGATION_STATES,
   type TrustChipLabels,
-  type DoNothingOutcome,
   // P1.09 — the §6.4 surface helpers: the Needs-you ordering + the decision-record view.
   needsYouOrder,
   type GateDecisionView,
-  type GateCardModel,
 } from "@rhema/findings-core";
 import type {
   EditorDocDto,
@@ -113,7 +102,6 @@ import type {
 } from "@rhema/api-client";
 import {
   CHECKABLE_CLAIM_KINDS,
-  GATE_DEFAULTS,
   MODEL_TIERS,
   MODEL_TIER_DISPLAY,
   RIGORS,
@@ -127,9 +115,17 @@ import {
   isNonConfigurableEvent,
   type ClaimKind,
   type FindingView,
-  type GateKind,
 } from "@rhema/contracts";
 import { COPY } from "./copy.js";
+import {
+  approvalRowLabels,
+  decisionLine,
+  decisionsLabels,
+  dispositionLabels,
+  gateCardFor,
+  gateCardModel,
+  outlineLabels,
+} from "./gate-card.js";
 import { SAMPLE_DOSSIER } from "./sample-dossier.js";
 import { feedLabelMapsJson } from "./feed-labels.js";
 import { usePageData } from "./page-data.js";
@@ -1662,167 +1658,10 @@ function checkable(kind: string | undefined): boolean {
 
 // ---- PRB.05 — the triage write surfaces (§5.7/§6.4/§10.1) ----
 
-const T = COPY.triage;
+// The gate-card composition + labels live in ./gate-card.js (SPA.11) — the shared SSR/SPA module —
+// imported back below. `const G` stays for the settings surfaces that still render inline.
+
 const G = COPY.gates;
-
-const dispositionLabels: DispositionControlsLabels = {
-  verbLabel: (verb) => T.verbLabel[verb] ?? verb,
-  noteLabel: T.noteLabel,
-  notePlaceholder: T.notePlaceholder,
-  reasonLegend: T.reasonLegend,
-  reasonLabel: (code) => T.reasonLabel[code] ?? code,
-  adaptLabel: T.adaptLabel,
-  appliedNote: T.appliedNote,
-};
-
-/** P1.12 — the shared spine-and-sections labels: the Approve-outline card AND the unlocked outline
- *  editor render the same component with the same copy (one table, both surfaces). */
-export const outlineLabels = {
-  thesisLabel: G.outline.thesisLabel,
-  venueLabel: G.outline.venueLabel,
-  targetLengthLabel: G.outline.targetLengthLabel,
-  protocolLabel: G.outline.protocolLabel,
-  voiceLabel: G.outline.voiceLabel,
-  spineHeading: G.outline.spineHeading,
-  sectionsHeading: G.outline.sectionsHeading,
-  alternativesHeading: G.outline.alternativesHeading,
-  gapsHeading: G.outline.gapsHeading,
-  sourcesHeading: G.outline.sourcesHeading,
-  orderLabel: G.outline.orderLabel,
-  strikeLabel: G.outline.strikeLabel,
-  notePlaceholder: G.outline.notePlaceholder,
-  addClaimLabel: G.outline.addClaimLabel,
-  addClaimPlaceholder: G.outline.addClaimPlaceholder,
-  addNotePlaceholder: G.outline.addNotePlaceholder,
-  addClaimSectionLabel: G.outline.addClaimSectionLabel,
-  targetWordsLabel: G.outline.targetWordsLabel,
-  functionLabel: G.outline.functionLabel,
-  entryLabel: G.outline.entryLabel,
-  exitLabel: G.outline.exitLabel,
-  moveLabel: G.outline.moveLabel,
-  unverifiedBadge: G.outline.unverifiedBadge,
-  provenanceBadge: (kind: "thread" | "source" | "user_typed" | "generated") =>
-    G.outline.provenanceBadge[kind] ?? kind,
-  answerLabel: G.outline.answerLabel,
-  answerPlaceholder: G.outline.answerPlaceholder,
-} as const;
-
-const gateCardLabels: GateCardLabels = {
-  kindLabel: (kind) => G.kindLabel[kind] ?? kind,
-  approveLabel: (kind) => (kind === "approve_triage" ? G.approveLabel.approve_triage : G.approveLabel.default),
-  approveAutonomousLabel: G.approveAutonomousLabel,
-  keepPlanningLabel: G.keepPlanningLabel,
-  waitLabel: G.waitLabel,
-  stopLabel: G.stopLabel,
-  waitingLine: G.waitingLine,
-  deadlineLine: (absolute, remaining) => fmt(G.deadlineFmt, { absolute, remaining }),
-  expiredLine: G.expiredLine,
-  doNothingLine: (outcome: DoNothingOutcome) => G.doNothingLine[outcome],
-  spendLine: (spent, cap, remaining) =>
-    fmt(G.spendFmt, {
-      spent: spent.toLocaleString("en-US"),
-      cap: cap.toLocaleString("en-US"),
-      remaining: remaining != null ? fmt(G.remainingFmt, { n: remaining.toLocaleString("en-US") }) : "",
-    }),
-  presenceLine: (countdown) => fmt(G.presenceFmt, { countdown }),
-  pausedNote: G.pausedNote,
-  heldLine: G.heldLine,
-  guidanceLabel: G.guidanceLabel,
-  standingLabel: G.standingLabel,
-  informationalNote: G.informationalNote,
-  escalationNote: G.escalationNote,
-  // ---- P1.09 — the structured bodies, decision record, per-run override (§6.4 items 3/4/8) ----
-  factsHeading: G.factsHeading,
-  factLine: (key, value) =>
-    `${G.factLabel[key] ?? key}: ${typeof value === "number" ? value.toLocaleString("en-US") : String(value ?? "—")}`,
-  exceedsCapLine: G.exceedsCapLine,
-  scopeFieldsHeading: G.scopeFieldsHeading,
-  scopeFieldLabel: (field) => G.scopeFieldLabel[field] ?? field,
-  plan: {
-    spineHeading: G.plan.spineHeading,
-    sectionsHeading: G.plan.sectionsHeading,
-    alternativesHeading: G.plan.alternativesHeading,
-    gapsHeading: G.plan.gapsHeading,
-    orderLabel: G.plan.orderLabel,
-    strikeLabel: G.plan.strikeLabel,
-    notePlaceholder: G.plan.notePlaceholder,
-    addClaimLabel: G.plan.addClaimLabel,
-    addClaimPlaceholder: G.plan.addClaimPlaceholder,
-    addNotePlaceholder: G.plan.addNotePlaceholder,
-    targetWordsLabel: G.plan.targetWordsLabel,
-    purposeLabel: G.plan.purposeLabel,
-    apparatusLabel: G.plan.apparatusLabel,
-  },
-  thesisLabel: G.thesisLabel,
-  // P1.12 — the Approve-outline spine-and-sections labels (the standalone outline editor reuses the
-  // same COPY.gates.outline table via `outlineLabels` below).
-  outline: outlineLabels,
-  cutList: {
-    heading: G.cutList.heading,
-    targetLine: (targetWords) => fmt(G.cutList.targetFmt, { n: targetWords.toLocaleString("en-US") }),
-    protectLabel: G.cutList.protectLabel,
-    wordsLabel: (words) => fmt(G.cutList.wordsFmt, { n: words.toLocaleString("en-US") }),
-  },
-  decisionsHeading: G.decisionsHeading,
-  decisionLabel: (decision) => decisionLine(decision),
-};
-
-/** The permanent decision line (§6.4 item 8): "approved by you at 14:02 · with 3 changes". Shared by the
- *  gate card's record list and the run card's decision lines — one wording, both surfaces. */
-function decisionLine(d: GateDecisionView): string {
-  return fmt(G.decisionLineFmt, {
-    action: G.decisionActionLabel[d.action] ?? d.action,
-    actor: G.decisionActorLabel[d.byActor] ?? d.byActor,
-    time: d.at.slice(11, 16),
-    changes: d.changes != null && d.changes > 0 ? fmt(G.decisionChangesFmt, { n: d.changes }) : "",
-  });
-}
-
-const approvalRowLabels: ApprovalRowLabels = {
-  kindLabel: (kind) => G.kindLabel[kind] ?? kind,
-  deadlineLine: (absolute, remaining) => fmt(G.deadlineFmt, { absolute, remaining }),
-  waitingLine: G.waitingLine,
-  doNothingLine: (outcome: DoNothingOutcome) => G.doNothingLine[outcome],
-  openLabel: `${G.rowOpenLabel} ▸`,
-  artifactLabel: G.rowArtifactLabel,
-};
-
-/**
- * The card's "This run only" deadline select (§6.4; REQ-SPEC-1): options legal for the kind only —
- * spend/refusal kinds get no control; wait-default kinds may ADD a ≥2 h deadline; defaulted kinds may
- * remove (→ wait) or lengthen. `ed.runOverride` posts `"" | "wait" | <ms>`.
- */
-function runOverrideFor(kind: GateKind): { label: string; options: { value: string; label: string }[] } | undefined {
-  const def = GATE_DEFAULTS[kind];
-  if (def.neverAutoProceed) return undefined;
-  const options: { value: string; label: string }[] = [{ value: "", label: G.thisRunDefault }];
-  if (def.deadlineMs == null) {
-    options.push(
-      { value: String(2 * 60 * 60 * 1000), label: fmt(COPY.approvals.overrideHoursFmt, { n: 2 }) },
-      { value: String(24 * 60 * 60 * 1000), label: G.thisRun24h },
-      { value: String(72 * 60 * 60 * 1000), label: G.thisRun72h },
-    );
-  } else {
-    options.push({ value: "wait", label: G.thisRunWait });
-    options.push({
-      value: String(def.deadlineMs * 2),
-      label: fmt(COPY.approvals.overrideHoursFmt, { n: Math.round((def.deadlineMs * 2) / 3600000) }),
-    });
-  }
-  return { label: G.thisRunLabel, options };
-}
-
-const triageLedgerLabels: TriageLedgerLabels = {
-  dispositionLabel: (kind) => (kind ? T.verbLabel[kind] ?? kind : G.undecidedLabel),
-  userActorLabel: G.userActorLabel,
-  severityLabel: (s) => R.severityLabel[s] ?? s,
-};
-
-const decisionsLabels: DecisionsListLabels = {
-  heading: COPY.decisions.heading,
-  emptyLabel: COPY.decisions.empty,
-  optionLabel: (option) => COPY.decisions.optionLabel[option] ?? option,
-};
 
 /** The per-finding disposition control (§5.7) — the same component desktop + phone (REQ-SPEC-20). */
 function dispositionControlsFor(
@@ -2084,27 +1923,6 @@ function chatPanel(
   );
 }
 
-/** The §6.4 card model from a GateCardDto — shared by the Needs-you row and the Timeline card. */
-function gateCardModel(gate: GateCardDto, compact: boolean): GateCardModel {
-  return buildGateCard(
-    {
-      kind: gate.kind as Parameters<typeof buildGateCard>[0]["kind"],
-      onExpiry: gate.onExpiry as Parameters<typeof buildGateCard>[0]["onExpiry"],
-      blocking: gate.blocking,
-      held: gate.held,
-      openedAt: gate.openedAt,
-      deadlineAt: gate.deadlineAt ?? null,
-      presenceDeadlineAt: gate.presenceDeadlineAt ?? null,
-      pausedWhileReading: gate.pausedWhileReading,
-      spentCredits: gate.spentCredits,
-      capCredits: gate.capCredits,
-      remainingEstimateCredits: gate.remainingEstimateCredits ?? null,
-    },
-    new Date(),
-    compact ? "phone" : "full",
-  );
-}
-
 const AP = COPY.approvals;
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -2260,94 +2078,6 @@ function ApprovalSettingsSection({
         ) : null}
       </div>
     </section>
-  );
-}
-
-/**
- * P1.09 — THE gate card (§6.4): one render path for the Needs-you ApprovalRow sheet AND the Timeline's
- * run-card mount — the "identical card" contract. Structured fields post `ed.*` through the decision
- * form; `decisions` render the permanent record; `explainer` mounts the one-time inline explainer.
- */
-function gateCardFor(
-  gate: GateCardDto,
-  slug: string,
-  compact: boolean,
-  error?: { findingId: string; message: string },
-  opts?: {
-    readonly decisions?: readonly GateDecisionView[];
-    /** true ⇒ the one-time inline explainer mounts on this card (the first undismissed approval). */
-    readonly explainer?: boolean;
-  },
-): ReactNode {
-  const model = gateCardModel(gate, compact);
-  const labels: GateCardLabels = opts?.explainer
-    ? { ...gateCardLabels, explainer: G.explainer }
-    : gateCardLabels;
-  const runOverride = compact ? undefined : runOverrideFor(gate.kind as GateKind);
-  const rows: TriageLedgerRow[] | undefined = gate.triage?.rows.map((r) => ({
-    findingId: r.findingId,
-    ordinal: r.ordinal,
-    title: r.title,
-    severity: r.severity,
-    ...(r.disposition != null
-      ? {
-          disposition: {
-            kind: r.disposition.kind,
-            ...(r.disposition.rationale != null ? { rationale: r.disposition.rationale } : {}),
-            ...(r.disposition.actor != null ? { actor: r.disposition.actor } : {}),
-          },
-        }
-      : {}),
-  }));
-  const hasEscalations = rows?.some((r) => r.disposition?.kind === "escalate") ?? false;
-  return (
-    <GateCard
-      key={gate.id}
-      model={model}
-      compact={compact}
-      formAction={`/p/${slug}/gates/${gate.id}`}
-      activityUrl={`/p/${slug}/gates/${gate.id}/activity`}
-      labels={labels}
-      {...(gate.artifactTitle != null
-        ? {
-            artifact: {
-              title: gate.artifactTitle,
-              // the read-before-approve sheet links the artifact's Page (P1.02's read-only read).
-              ...(gate.artifactId != null ? { href: `/p/${slug}/a/${gate.artifactId}` } : {}),
-            },
-          }
-        : {})}
-      hasEscalations={hasEscalations}
-      {...(gate.structured != null ? { structured: gate.structured } : {})}
-      {...(opts?.decisions != null ? { decisions: opts.decisions } : {})}
-      {...(opts?.explainer ? { explainerDismissAction: `/p/${slug}/explainers/approvals/dismiss` } : {})}
-      {...(runOverride ? { runOverride } : {})}
-    >
-      {rows != null ? (
-        <TriageLedger
-          rows={rows}
-          labels={triageLedgerLabels}
-          children={(row) => (
-            // the per-row override — the same disposition control the dossier uses (REQ-SPEC-20).
-            <DispositionControls
-              formAction={`/p/${slug}/findings/${row.findingId}/disposition`}
-              next={`/p/${slug}`}
-              compact
-              labels={dispositionLabels}
-              {...(error && error.findingId === row.findingId ? { error: error.message } : {})}
-              {...(row.disposition
-                ? {
-                    current: {
-                      kind: row.disposition.kind as "accept" | "adapt" | "rebut" | "defer" | "escalate",
-                      ...(row.disposition.rationale != null ? { rationale: row.disposition.rationale } : {}),
-                    },
-                  }
-                : {})}
-            />
-          )}
-        />
-      ) : undefined}
-    </GateCard>
   );
 }
 
@@ -6264,15 +5994,18 @@ export function InboxPage(): ReactNode {
               <p style={{ fontSize: "14px", color: "var(--shell-fg)", margin: "0 0 4px" }}>{it.title}</p>
               {projectMeta(it)}
               {it.body ? <p style={{ fontSize: "13px", color: "var(--shell-fg-muted)", margin: "0 0 6px" }}>{it.body}</p> : null}
+              {/* SPA.11 — `form` is a p-closing tag: this form was being hoisted out of the <p> by
+                  every HTML parser (with a stray `</p>` minting an empty paragraph after it). Emit
+                  the sibling shape directly so the SSR document is valid and matches the SPA. */}
               <p style={{ display: "flex", gap: "14px", margin: 0 }}>
                 <a href={it.href} data-inbox-open="true" style={{ fontSize: "13px" }}>{COPY.inbox.openCta}</a>
-                <form method="post" action="/app/inbox/read" style={{ margin: 0 }}>
-                  <input type="hidden" name="item" value={it.id} />
-                  <button type="submit" data-inbox-mark-read="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
-                    {COPY.inbox.markReadCta}
-                  </button>
-                </form>
               </p>
+              <form method="post" action="/app/inbox/read" style={{ margin: 0 }}>
+                <input type="hidden" name="item" value={it.id} />
+                <button type="submit" data-inbox-mark-read="true" style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", padding: 0 }}>
+                  {COPY.inbox.markReadCta}
+                </button>
+              </form>
             </div>
           ))}
         </section>

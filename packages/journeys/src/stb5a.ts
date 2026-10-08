@@ -299,10 +299,11 @@ const T1: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
-/** T2 (GREEN; nightly) — the Inbox + the notification-settings matrix on a fresh tenant: the
- *  badge line, the sectioned rows (or the honest empty state), actionable matrix toggles and the
- *  quiet-hours inputs. */
-const T2: StepFn = async (ctx) => {
+/** T2.badge (GREEN; nightly) — the Inbox half of the old T2 on a fresh tenant: the badge line
+ *  equals the rendered Needs-you rows, the sectioned rows (or the honest empty state) render, and
+ *  every event row carries an actionable open link. SPA.11 split T2 so the `inbox` flag gates on
+ *  this leg alone (REQ-VFY-8) — the settings half is T2.matrix. */
+const T2_BADGE: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("t2");
   const badge = await readInboxBadge(page, ctx);
   const blocked = await page.locator('[data-inbox-section="blocked"] [data-inbox-row]').count();
@@ -318,7 +319,14 @@ const T2: StepFn = async (ctx) => {
       await assertClick(page.locator("[data-inbox-row] a[data-inbox-open]").first(), "an Inbox open link");
     }
   }
-  // the settings matrix — every event row + the quiet-hours inputs render and are actionable.
+  assertBundleParity(ctx);
+};
+
+/** T2.matrix (GREEN; nightly) — the notification-settings half of the old T2 on a fresh tenant:
+ *  every event row + the quiet-hours inputs render and are actionable. The `settings` flag gates
+ *  on this leg (REQ-VFY-8). */
+const T2_MATRIX: StepFn = async (ctx) => {
+  const { page } = await ctx.freshUser("t2m");
   await gotoOk(page, `${ctx.webBaseUrl}/app/settings/notifications`);
   if ((await page.locator("[data-notification-matrix]").count()) === 0) {
     throw new Error("the notification matrix does not render");
@@ -1346,7 +1354,10 @@ const T16: StepFn = async (ctx) => {
 
 export const STB5A_IMPLS: Readonly<Record<string, StepFn>> = {
   T1,
-  T2,
+  // SPA.11 — T2 split per-surface (REQ-VFY-8): the inbox flag gates on T2.badge, settings on
+  // T2.matrix; the composite id is gone.
+  "T2.badge": T2_BADGE,
+  "T2.matrix": T2_MATRIX,
   T3,
   T4,
   T5,

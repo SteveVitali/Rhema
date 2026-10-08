@@ -4,7 +4,7 @@
 // (the long-stale server-owned copy maps) are the two the skeleton consumes.
 
 import { QueryClient, queryOptions } from "@tanstack/react-query";
-import type { PrincipalDto, UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-client";
+import type { GateCardDto, InboxItemDto, PrincipalDto, UsageAccountDto, UsageDto, UsageProjectDto } from "@rhema/api-client";
 import type { FeedLabelMaps } from "@rhema/ide";
 import { BffError, bffFetch } from "./bff.js";
 
@@ -90,3 +90,26 @@ export const projectUsageQuery = (slug: string) =>
     queryFn: () => bffFetch<BffProjectUsageTwin>(`/bff/p/${encodeURIComponent(slug)}/usage`),
     retry: retryPolicy,
   });
+
+/**
+ * The `GET /bff/app/inbox` twin's payload (SPA.11; REQ-BFF-1/8/9, REQ-DAT-4): the SAME aggregate the
+ * `/app/inbox` document composes — the api-ordered `items`, the raw `badge` count, and the §6.4 gate
+ * cards keyed by inbox-ITEM id (the row's `gate.gateId` is the join). A missed gate join degrades the
+ * row to its deep link, verbatim from the SSR.
+ */
+export interface BffInboxTwin {
+  readonly items: InboxItemDto[];
+  readonly badge: number;
+  readonly gateCards: Record<string, GateCardDto>;
+}
+
+/**
+ * `GET /bff/app/inbox` — the inbox aggregate's query. `["bff","app","inbox"]` — the endpoint verbatim
+ * under the REQ-BFF-10/11 key grammar. The mark-read mutations invalidate this key on settle so the
+ * badge + unread rows repaint from the server, never optimistic mirroring.
+ */
+export const inboxQuery = queryOptions({
+  queryKey: ["bff", "app", "inbox"],
+  queryFn: () => bffFetch<BffInboxTwin>("/bff/app/inbox"),
+  retry: retryPolicy,
+});
