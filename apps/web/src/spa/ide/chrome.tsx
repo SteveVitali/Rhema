@@ -1,0 +1,165 @@
+// SPA.9 — the React IDE chrome (REQ-ISL-9/10/14/15, REQ-NAV-8, REQ-UX-7/8/16, REQ-SEQ-2/11/12).
+// The layout every IDE-framed leaf mounts inside: the same `<IdeShell>` DOM the SSR chrome emits
+// (manifest vocabulary unchanged — REQ-TST-2 parity), enhanced by `useIdeChromeController` (the
+// island's non-document logic) and `useIdeFeed` (the §5.5 SSE tail bound to Query). Surface
+// leaves publish their prop bag through `useIdeChromeData` — the seam the SSR `ideContext`
+// assembled — and `IdeProjectLayout` mounts the chrome iff the current leaf is IDE-framed AND
+// its surface verdict is "spa" (the boot map already AND-gated `ide-chrome`, so a stale or
+// unflagged leaf stays on the SSR twin — the AND-gate holds here too).
+//
+// Dark-by-default: nothing here renders unless the leaf flipped; `SsrHandoff` still owns the
+// unflipped case.
+
+import { useMemo, useRef, type ReactNode } from "react";
+import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { SPA_IDE_FRAMED_ROUTES, spaRouteFor } from "@rhema/contracts";
+import { IdeShell } from "@rhema/ui";
+import { COPY, IDE_CHROME_LABELS, IDE_FEED_LABELS } from "../../copy.js";
+import { getSpaBoot, isSpaEnabled } from "../boot.js";
+import { feedLabelsQuery, sessionQuery } from "../queries.js";
+import { IdeChromeDataProvider, useIdeChromePublished } from "./chrome-data.js";
+import { useIdeChromeController, type IdeChromeNav } from "./controller.js";
+import { useIdeFeed } from "./feed.js";
+
+const FRAMED: ReadonlySet<string> = new Set(SPA_IDE_FRAMED_ROUTES);
+
+/**
+ * The `p.$project` layout component. Mounts `<IdeChrome>` when the matched leaf is IDE-framed
+ * and flipped; a bare `<Outlet>` otherwise (unflipped ⇒ the leaf's `SsrHandoff`; unframed ⇒
+ * the surface never had a shell). The provider wraps both branches — a leaf publishing into an
+ * unframed shell is a no-op.
+ */
+export function IdeProjectLayout({ project }: { project: string }): ReactNode {
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const { routeId } = spaRouteFor(pathname);
+  const framed = routeId != null && FRAMED.has(routeId) && isSpaEnabled(getSpaBoot(), routeId);
+  return (
+    <IdeChromeDataProvider>
+      {framed ? (
+        <IdeChrome slug={project}>
+          <Outlet />
+        </IdeChrome>
+      ) : (
+        <Outlet />
+      )}
+    </IdeChromeDataProvider>
+  );
+}
+
+/**
+ * The chrome itself: skip link (REQ-UX-16 — before the rail, targets `#ide-page`) + the shared
+ * shell + the controller/feed effects. `slug` is the route param; the surface-published bag
+ * supplies everything else.
+ */
+export function IdeChrome({ slug, children }: { slug: string; children?: ReactNode }): ReactNode {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const loc = useLocation();
+  const session = useQuery(sessionQuery);
+  const maps = useQuery(feedLabelsQuery);
+  const { data, published } = useIdeChromePublished();
+  const boot = getSpaBoot();
+
+  const userId = session.data?.userId ?? boot?.principal?.userId ?? "local";
+  const projectId = data.projectId ?? slug;
+  const hasFindings =
+    (data.findings?.length ?? 0) > 0 || data.marginBody != null || data.deskFindingsBody != null;
+
+  const nav = useMemo<IdeChromeNav>(() => {
+    const searchStr = loc.searchStr
+      ? loc.searchStr.startsWith("?")
+        ? loc.searchStr
+        : `?${loc.searchStr}`
+      : "";
+    return {
+      pathname: loc.pathname,
+      searchStr,
+      hash: loc.hash,
+      push: (href) => {
+        // `#finding-x` keeps the current path+search (the island's `location.assign("#x")`).
+        router.history.push(href.startsWith("#") ? `${loc.pathname}${searchStr}${href}` : href);
+      },
+      replace: (href) => {
+        router.history.replace(href);
+      },
+    };
+  }, [router, loc]);
+
+  useIdeChromeController({
+    hostRef,
+    slug,
+    userId,
+    projectId,
+    hasFindings,
+    ready: published,
+    ...(data.palette != null ? { palette: data.palette } : {}),
+    ...(data.paletteSearchUrl != null ? { paletteSearchUrl: data.paletteSearchUrl } : {}),
+    nav,
+  });
+  useIdeFeed({ hostRef, ...(data.feed != null ? { feed: data.feed } : {}), ...(maps.data != null ? { maps: maps.data } : {}), queryClient });
+
+  const feed =
+    data.feed != null && maps.data != null
+      ? { ...data.feed, labels: IDE_FEED_LABELS, labelMaps: JSON.stringify(maps.data) }
+      : undefined;
+
+  return (
+    <>
+      <a
+        className="ide-skip"
+        href="#ide-page"
+        data-skip-link
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById("ide-page")?.focus();
+        }}
+      >
+        {COPY.ide.skipToPage}
+      </a>
+      <div ref={hostRef} style={{ display: "contents" }}>
+        <IdeShell
+          project={{
+            slug,
+            title: data.projectTitle ?? slug,
+            ...(data.projectPill != null ? { pill: data.projectPill } : {}),
+          }}
+          userId={userId}
+          projectId={projectId}
+          paperTheme={data.paperTheme ?? boot?.theme?.paperTheme ?? "light"}
+          appTheme={data.appTheme ?? boot?.theme?.appTheme ?? "dark"}
+          {...(data.initialView != null ? { initialView: data.initialView } : {})}
+          {...(data.sourceHref != null ? { sourceHref: data.sourceHref } : {})}
+          {...(data.findings != null ? { findings: data.findings, hasFindings: true } : {})}
+          {...(data.filesBody != null ? { filesBody: data.filesBody } : {})}
+          {...(data.marginBody != null ? { marginBody: data.marginBody } : {})}
+          {...(data.deskFindingsBody != null ? { deskFindingsBody: data.deskFindingsBody } : {})}
+          {...(data.chatBody != null ? { chatBody: data.chatBody } : {})}
+          {...(data.timeline != null ? { timeline: data.timeline } : {})}
+          {...(data.timelineView != null
+            ? {
+                timelineView: data.timelineView,
+                ...(data.timelineLabels != null ? { timelineLabels: data.timelineLabels } : {}),
+                ...(data.timelineCardLabels != null ? { timelineCardLabels: data.timelineCardLabels } : {}),
+                ...(data.timelineHrefs != null ? { timelineHrefs: data.timelineHrefs } : {}),
+                ...(data.renderGateCard != null ? { renderGateCard: data.renderGateCard } : {}),
+              }
+            : {})}
+          {...(data.activeRun != null ? { activeRun: data.activeRun } : {})}
+          {...(feed != null ? { feed } : {})}
+          {...(data.runNextHref != null ? { runNextHref: data.runNextHref } : {})}
+          {...(data.palette != null ? { palette: JSON.stringify(data.palette) } : {})}
+          paletteSearchUrl={data.paletteSearchUrl ?? `/p/${slug}/palette-search`}
+          themeUrl="/ide/theme"
+          paperThemeUrl={`/p/${slug}/paper-theme`}
+          {...(data.inboxCount != null ? { inboxCount: data.inboxCount } : {})}
+          {...(data.status != null ? { status: data.status } : {})}
+          labels={IDE_CHROME_LABELS}
+        >
+          {children}
+        </IdeShell>
+      </div>
+    </>
+  );
+}
