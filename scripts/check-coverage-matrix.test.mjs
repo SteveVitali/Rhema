@@ -132,8 +132,13 @@ test("cited file paths exist; deferral and journey refs resolve", () => {
         const refT = ref.trim();
         if (refT.startsWith("deferral:") && !DEFERRALS.includes(refT.slice(9)))
           problems.push(`${id}: unknown deferral row ${refT}`);
-        if (refT.startsWith("journey:") && !REGISTRY.includes(`id: "${refT.slice(8)}"`))
-          problems.push(`${id}: unregistered journey step ${refT}`);
+        if (refT.startsWith("journey:")) {
+          const step = refT.slice(8);
+          // SPA.6 — an umbrella id (`journey:P1`, `journey:X1`) resolves when the registry carries
+          // either the step itself or any per-surface split member of its family (`P1.project`, …).
+          if (!REGISTRY.includes(`id: "${step}"`) && !REGISTRY.includes(`id: "${step}.`))
+            problems.push(`${id}: unregistered journey step ${refT}`);
+        }
       }
     }
   }

@@ -74,7 +74,9 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
 
       <ConversionNotesCard warnings={props.warnings} heading={props.labels.warningsHeading} empty={props.labels.noWarnings} />
 
-      <form method="post" action={props.actions.formAction} style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+      {/* SPA.6 — renderer-agnostic hooks (REQ-VFY-4): journeys locate the create surface by
+          `data-conversion-form`/`data-conversion-action`, never the POST action string. */}
+      <form method="post" action={props.actions.formAction} data-conversion-form="true" style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
         {Object.entries(props.actions.hiddenFields ?? {}).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
@@ -82,6 +84,7 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
           type="submit"
           name="action"
           value="create"
+          data-conversion-action="create"
           style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "var(--accent)", color: "var(--shell-bg)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
         >
           {props.actions.createLabel}
@@ -90,6 +93,7 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
           type="submit"
           name="action"
           value="fix_now"
+          data-conversion-action="fix_now"
           style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", fontSize: "14px", cursor: "pointer" }}
         >
           {props.actions.fixNowLabel}

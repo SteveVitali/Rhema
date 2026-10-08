@@ -660,6 +660,14 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
           the embedded per-rigor table (no client bundle — REQ-BETA-21). With JS off the levers still submit
           the form. Advanced toggles recompute on submit (they are under the fold). */}
       <script dangerouslySetInnerHTML={{ __html: recomputeScript(view.recompute) }} />
+      {/* SPA.6 (REQ-VFY-4): the same lever matrix as a typed JSON embed — the renderer-agnostic
+          read the journeys (and later the SPA's lever-recompute) share; the `var R=` script above
+          stays the no-bundle progressive enhancement. Numbers/keys only (JSON.stringify output). */}
+      <script
+        type="application/json"
+        data-estimate-matrix="true"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(view.recompute) }}
+      />
     </form>
   );
 }

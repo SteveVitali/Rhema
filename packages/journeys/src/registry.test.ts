@@ -17,7 +17,11 @@ describe("the journey step registry", () => {
         // CITE.1 added N11 (the dossier citation-chip invariant — red until its Stage-B Leg 3).
         "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N10", "N11",
         // DEF.4 added R9 (the §14.4 refund-window leg — red until Stage B flips the flag).
-        "P1", "R1", "R4", "R5", "R6", "R7", "R8", "R9", "X1",
+        // SPA.6 split P1→P1.{public,project,pill,runsheet,app-new} and X1→X1.{voices,usage,home,
+        // inbox,detail} — the per-surface legs SURFACE_GATES selects (REQ-VFY-8).
+        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new",
+        "R1", "R4", "R5", "R6", "R7", "R8", "R9",
+        "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
         "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16",
         // STB.5b added B16/B17/B18A/B18B/B19A/B19B/B19C — the BL-16–19 bounded paid live legs
@@ -42,7 +46,10 @@ describe("the journey step registry", () => {
         // (+504 spendable), leg B "sent for review" (pending_review + sweep alerted_at) — D-DEF.4-1 DONE.
         // N11 flipped red→green 2026-10-06 (funded-window A2 redeploy @476a0ed): the claimUrlViews
         // canonical-fold fix deployed; the Leg-3 dossier re-walked 7/7 chipped / 0 chip-less.
-        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "N11", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "R9", "X1",
+        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "N11",
+        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new",
+        "R1", "R4", "R5", "R6", "R7", "R8", "R9",
+        "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
         // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7
         // flipped green 2026-10-06 on the deployed tip fcbbc66 (CAP.3's fixes verified live —
@@ -96,9 +103,15 @@ describe("the journey step registry", () => {
     expect(rows.length).toBeGreaterThanOrEqual(16); // N1–N9, R1/R4–R7, P1, C1, X1
     for (const [, id, ownerCell] of rows) {
       const owner = ownerCell.match(/[A-Z0-9]+\.\d+/)?.[0];
-      const step = stepById(id);
-      expect(step, `ledger step ${id} missing from the registry`).toBeDefined();
-      expect(step!.owner, `ledger owner for ${id}`).toBe(owner);
+      // SPA.6 — a split ledger id (P1→P1.*, X1→X1.*) resolves as the family; every leg must carry
+      // the ledger's owner (the split never re-assigns ownership).
+      const family = stepById(id)
+        ? [stepById(id)!]
+        : STEP_REGISTRY.filter((s) => s.id.startsWith(`${id}.`));
+      expect(family.length, `ledger step ${id} missing from the registry`).toBeGreaterThan(0);
+      for (const step of family) {
+        expect(step.owner, `ledger owner for ${step.id}`).toBe(owner);
+      }
     }
   });
 });

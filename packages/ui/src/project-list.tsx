@@ -135,8 +135,9 @@ function RowMenuItem({ item }: { item: RowActionView }): ReactNode {
   }
   if (item.formAction) {
     return (
-      <form method="post" action={item.formAction} style={{ margin: 0 }}>
-        <button type="submit" style={menuButtonStyle}>
+      // SPA.6 — `data-menu-form=<key>` is the renderer-agnostic hook (the action URL is SSR detail).
+      <form method="post" action={item.formAction} data-menu-form={item.key} style={{ margin: 0 }}>
+        <button type="submit" data-menu-action={item.key} style={menuButtonStyle}>
           {item.label}
         </button>
       </form>

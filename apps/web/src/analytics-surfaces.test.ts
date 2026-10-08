@@ -63,6 +63,8 @@ describe("P1.20 — the REQ-PROD-15 opt-out toggle in the §14.7 Data section", 
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-privacy-form="true"');
+    // SPA.6 — the §14.7 account-export request carries its own renderer-agnostic hook.
+    expect(html).toContain('data-export-request-form="true"');
     expect(html).toContain('data-analytics-toggle="true"');
     expect(html).toContain("Exclude my usage from product analytics"); // §14.7 verbatim
     expect(toggleInput(html)).not.toContain("checked"); // analyticsOptOut false ⇒ box unchecked
