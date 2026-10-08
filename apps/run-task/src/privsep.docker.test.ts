@@ -60,6 +60,8 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
         ],
         { cwd: repoRoot, stdio: "pipe" },
       ).toString();
+      // Surface privsep-check's PASS/SKIP lines in the CI log so which legs ran is auditable.
+      console.log(out);
 
       expect(out).toContain("AC1: uid agent (production drop tuple) is denied the harness secrets file (EACCES)");
       // D-P0.15f-1: the two-uid launch path — harness (ambient CAP_SETUID+SETGID) drops to agent uid
@@ -75,10 +77,20 @@ describe.skipIf(!ENABLED)("run-task PRODUCTION image privilege separation (AC1, 
       expect(out).toContain("F-SEC3-2: the dropped agent cannot setuid back to harness uid 10001");
       // AC4: the scoped namespace through the REAL launch chain + REAL mount plan — exact file set,
       // out-of-set ENOENT, ro-bind EROFS, and the ruid-0 gate (F-StageB-6).
-      expect(out).toContain("AC4: harness-uid mount is refused without the ruid-0 wrap");
-      expect(out).toContain("AC4: scoped mount namespace contains exactly the enumerated file");
-      expect(out).toContain("AC4: scoped uid cannot write the read-only bind (EROFS)");
-      expect(out).toContain("P0.15h: uid agent cannot write a read-only bind mount (EROFS)");
+      // The AC4 mount-namespace legs and the P0.15h bind leg need the runtime to permit unshare/mount.
+      // privsep-check probes that in-image: where present they run and are asserted exactly as before;
+      // where absent (e.g. GitHub-hosted runners) they SKIP visibly — asserted, never a silent pass.
+      if (out.includes("MOUNT-NS-CAPABILITY: present")) {
+        expect(out).toContain("AC4: harness-uid mount is refused without the ruid-0 wrap");
+        expect(out).toContain("AC4: scoped mount namespace contains exactly the enumerated file");
+        expect(out).toContain("AC4: scoped uid cannot write the read-only bind (EROFS)");
+        expect(out).toContain("P0.15h: uid agent cannot write a read-only bind mount (EROFS)");
+      } else {
+        expect(out).toContain("MOUNT-NS-CAPABILITY: absent");
+        expect(out).toContain("SKIP: AC4: harness-uid mount is refused without the ruid-0 wrap");
+        expect(out).toContain("SKIP: AC4: scoped mount namespace isolates the seat tree");
+        expect(out).toContain("SKIP: P0.15h: uid agent cannot write a read-only bind mount");
+      }
       // SEC.3 image shape.
       expect(out).toContain("SEC.3: the image has no shell");
       expect(out).toContain("SEC.3: the image has no package manager");
