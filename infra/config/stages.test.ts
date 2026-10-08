@@ -116,12 +116,11 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
 describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", () => {
   it("dev + prod carry the flipped surfaces; preview ships [] (REQ-SEQ-5/10)", () => {
     // SPA.10 flipped `usage` on dev; SPA.11 added `inbox` on dev; SPA.12 added `settings` on dev;
-    // SPAF.1 was `usage`'s prod flip, SPAF.2 is `inbox`'s — each a one-line operator-merged
-    // stage-fact commit, in flip order. Prod's list stays unchanged here: `settings` waits for
-    // its own SPAF ticket.
+    // SPAF.1 was `usage`'s prod flip, SPAF.2 `inbox`'s, SPAF.3 `settings`'s — each a one-line
+    // operator-merged stage-fact commit, in flip order. Prod and dev now carry the same set.
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
     expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings"]);
-    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox"]); // SPAF.1 + SPAF.2 — the prod flips
+    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings"]); // SPAF.1 + SPAF.2 + SPAF.3 — the prod flips
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;
       expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
