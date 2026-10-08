@@ -142,5 +142,12 @@
 - **Out of scope held:** no surface components, no client routing (SPA.4+); no flag set anywhere
   (REQ-SEQ-5); public pages/redirects/mutations/SSE/binary unchanged; the SSR fallback never
   deleted.
-- **CI:** `gh pr checks --watch=false` recorded at closeout (inherited `integration`/privsep red
-  is classified under GD-MAINT.4-1, not repaired).
+- **CI:** PR #121 · `gh pr checks --watch=false` at closeout — `typecheck / lint / unit`
+  **pending** (run 37731873308, just queued; the other jobs hadn't registered at read time).
+  The inherited `integration`/privsep red on this chain is classified under GD-MAINT.4-1, not
+  repaired; a final matrix is appended when the run settles.
+- **Validators:** `check-build-memory.sh` — **0 violations** (7 warnings, all pre-existing
+  classes: legacy run ledgers w/o Harness headers, PHASE-LOG 2 KiB budget, legacy index status
+  values, pre-guard readouts, manifest banner/order notes — none new); `check-append-only.mjs
+  --base e00f523` — **OK** (history only grew: PHASE LOG/GATE DECISIONS appended, DEFERRALS
+  untouched).
