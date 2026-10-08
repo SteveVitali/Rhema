@@ -180,7 +180,14 @@
 - **Out of scope held:** no per-surface endpoint tables (each surface ticket owns its
   twins); SSE/WS/binary transports untouched (only envelopes re-typed); no business logic —
   every handler relays `DataSource` seams; no flag set; the SSR fallback untouched.
-- **CI:** PR #123 · `gh pr checks --watch=false` at closeout — **<CHECKS>**; the inherited
-  `integration`/privsep red on this chain is classified under GD-MAINT.4-1, not repaired.
-- **Validators:** `check-build-memory.sh` — **<MEMORY>**; `check-append-only.mjs --base
-  297e593` — **<APPEND>**.
+- **CI:** PR #123 · `gh pr checks --watch=false` at closeout — **"no checks reported on the
+  'stevevitali/spa-5-bff-conventions' branch"** (exit 1; no run had registered at read time,
+  read exactly once per closeout discipline). The inherited `integration`/privsep red on
+  this chain is classified under GD-MAINT.4-1, not repaired; when the run registers, its
+  matrix is appended honestly rather than re-read now.
+- **Validators:** `check-build-memory.sh` — **0 violations** (7 warnings, all pre-existing
+  classes: legacy run ledgers w/o Harness headers, PHASE-LOG 2 KiB budget, legacy index
+  status values, pre-guard readouts, manifest banner/order notes, GATE-G2 nextTicket
+  ordering — none new; this run's `runs/SPA.5.md` carries the Harness header);
+  `check-append-only.mjs --base 297e593` — **OK** (history only grew: PHASE LOG + index row
+  130 appended, CURRENT STATE machine keys advanced, DEFERRALS untouched).
