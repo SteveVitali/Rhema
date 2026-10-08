@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — GATE-ACCEPT signed the deviations; open rows remain ledgered on BACKLOG.csv
 nextTicket:      SPA.5              # round 4 (frontend-spa) seeded 2026-10-08 — 51 rows: 98_SPA.1 → 148_SPADOC.2
-lastCompleted:   SPA.4              # 2026-10-08 — SPA client skeleton: committed routeTree (all 36 auth'd doc routes day one) + _authenticated beforeLoad gate + bffFetch + session/feed-labels queries + SsrHandoff + head manager + settle markers; flag-∅ byte-identical SSR; $0
+lastCompleted:   SPA.4              # 2026-10-08 — client skeleton: committed routeTree (36 auth'd routes day one) + auth gate + bffFetch + SsrHandoff + head manager + settle markers; flag-∅ byte-identical; $0
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (nothing)          # GD-MAINT.4-1 waived the inherited privsep CI red 2026-10-07; remaining live legs gate on a FUNDED window + operator rows
 pauseRequested:  false

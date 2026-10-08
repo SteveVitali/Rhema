@@ -200,5 +200,9 @@
   **pending** (run 37739250882 on tip `7cc8ad3`, just queued; the other jobs hadn't registered
   at read time). The inherited `integration`/privsep red on this chain is classified under
   GD-MAINT.4-1, not repaired; a final matrix is appended when the run settles.
-- **Validators:** `check-build-memory.sh` — recorded at closeout; `check-append-only.mjs --base
-  e61185a` — recorded at closeout.
+- **Validators:** `check-build-memory.sh` — **0 violations** (7 warnings, all pre-existing
+  classes: legacy run ledgers w/o Harness headers, PHASE-LOG 2 KiB budget, legacy index status
+  values, pre-guard readouts, manifest banner/order notes, GATE-G2 nextTicket ordering — none
+  new; the run's `lastCompleted` line was trimmed under BM-LEDGER-08 before close);
+  `check-append-only.mjs --base e61185a` — **OK** (history only grew: PHASE LOG + index row
+  appended, DEFERRALS untouched).
