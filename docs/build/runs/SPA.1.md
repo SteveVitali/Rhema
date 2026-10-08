@@ -104,11 +104,12 @@ no component changes needed. Assertions updated to pin SEMANTICS not serializati
 - `pnpm check:protocol-markers` — **54 files, no markers**; `check:no-cookies` — **28 files, OK**
 - `pnpm install --frozen-lockfile` — clean; `pnpm dev:spa` smoke-verified
 - build-memory validator + append-only validator — recorded in §6.
-- **CI** (`gh pr checks`, 2026-10-08 ~02:55Z): run `37719160690` on tip `affe057` —
-  `typecheck / lint / unit` in progress at close of run (first push's run `37719008679`
-  superseded/cancelled by the memory-commit push; identical code ± docs). Downstream
-  `contracts`/`integration`/`images`/`public-safe` queued. The known inherited
-  `integration`/privsep red on the round-3 base is classified, not repaired (GD-MAINT.4-1).
+- **CI** (`gh pr checks --watch=false`, 2026-10-08 ~02:55Z): tip `0ff95a7` → run
+  `37719902082` pending; `typecheck / lint / unit` on the docs-parent run `37719160690` was
+  in progress at close (earlier `37719008679` cancelled by push-supersede; identical code ±
+  docs). Downstream `contracts`/`integration`/`images`/`public-safe` queued — `gh` reports the
+  PR **MERGEABLE**. The known inherited `integration`/privsep red on the round-3 base is
+  classified, not repaired (GD-MAINT.4-1).
 
 ## 6 — ACs, deferrals, deviations
 
