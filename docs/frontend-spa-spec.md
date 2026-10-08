@@ -1,6 +1,6 @@
 # Rhēma — Frontend SPA Migration Specification
 
-- **Status:** v0.3 — **Ratification session complete** · 2026-10-07 · all 14 research/design rows closed; O2 adversarial review applied (Appendix E, 15 findings, no blockers); all 7 §12.2 questions answered by the operator — R20 reversed (Source mode revived as REQ-ED-17), six recommendations confirmed. Awaiting final ratification word → decompose-spec.
+- **Status:** v1.0 — **canonical** · 2026-10-08 · **ratified by the operator** (Q-1…Q-7 register + Q-8…Q-14 §12.2 answers resolved). O2 adversarial review applied (Appendix E, 15 findings, no blockers); R20 reversed per operator ruling — Source mode revived as REQ-ED-17. Hand-off: `docs/decomposition-prompt.md` → `decompose-spec`.
 - **Synthesized from:** the frontend-SPA research ledger (`docs/research-ledger.md`), the brief (`docs/frontend-spa-brief.md`), four research notes (`docs/research/01`–`04`) and ten design notes (`docs/design/20`–`29`). Binding inputs are the brief's ⚑ operator-fixed constraints and the ledger's §Q register (Q-1…Q-7, all ratified 2026-10-07).
 - **Supersedes:** the nine SPA design notes on any point of disagreement (they are inputs; this spec is canonical). Amends ADR-007 and ADR-012 via **ADR-106** (§3.6); amends no product-spec `REQ-*` — this document adds its own families (§0.2) and references product requirements by id.
 
