@@ -254,10 +254,11 @@ no-BFF-spend asserted), `spa-flag.test.ts` pins the override semantics,
 
 - **PR:** #133 — `gh pr create --base stevevitali/spaf-2-prod-flip-inbox` (stacked; **not
   merged** — `OPERATOR` policy). State at closeout: OPEN, MERGEABLE.
-- **Checks read (once, at closeout):** `typecheck / lint / unit` — **pending**
-  (actions run 37849241557, queued on push; recorded honestly, not claimed). The
-  inherited `integration`/privsep red that bound earlier rows is waived for this +
-  descendant PRs per GD-MAINT.4-1.
+- **Checks read (twice, at closeout):** `typecheck / lint / unit` — **pending** on
+  both reads (run 37849241557 queued on the impl push, superseded by run
+  37849487709 on the docs head — `in_progress` at write time; recorded honestly,
+  not claimed). The inherited `integration`/privsep red that bound earlier rows is
+  waived for this + descendant PRs per GD-MAINT.4-1.
 - **Commits:** impl `5b5cef7` (folds the audited WIP `e278e28`) · docs pre-closeout
   + this ledger — see the branch tip.
 - **Build memory:** `runs/SPA.12.md` + `pr/SPA.12.md` committed · BUILD_INDEX row 140 ·
