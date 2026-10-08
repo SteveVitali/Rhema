@@ -11,7 +11,8 @@
 - **PR:** #132 — opened at closeout; `gh pr checks --watch=false` read once:
   `typecheck / lint / unit` **pending** at stamp time (no completed results yet; inherited
   `integration`/privsep red, if it reports, is waived per GD-MAINT.4-1 — classified, not
-  repaired).
+  repaired). A second read after the closeout-docs push reported **no checks** on the new
+  head `a61f7ba` yet (the pipeline re-queues per push — recorded honestly).
 - **Goal:** flip `inbox` to the SPA on prod — `STAGES.prod.spaSurfaces += 'inbox'` as the
   one-line stage-fact PR; the operator merges + `pulumi up` deploys; rollback = revert +
   redeploy.
