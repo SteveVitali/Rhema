@@ -21,12 +21,15 @@
     "check:protocol-markers": "node scripts/check-protocol-markers.mjs",
     "check:no-cookies": "node scripts/check-no-cookies.mjs",
     "check:spa-budget": "node scripts/check-spa-budget.mjs",
+    "check:dom-contract": "node scripts/check-dom-contract.mjs",
     "nightly:golden": "node scripts/nightly-golden.mjs",
     "format": "prettier --check ."
   },
   "pnpm": {
     "//": "esbuild ships a platform binary via its build script; Vitest/tsx need it. All other dependency build scripts stay blocked by default (pnpm 10).",
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

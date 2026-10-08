@@ -122,6 +122,7 @@ function ClaimRow({ claim, labels }: { claim: DossierClaim; labels: DossierLabel
 export function DossierView({ title, letter, claims, findings, labels }: DossierViewProps): ReactNode {
   return (
     <article
+      data-dossier="true"
       data-readonly="true"
       style={{
         background: "var(--paper-bg)",

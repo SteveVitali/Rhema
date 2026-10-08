@@ -41,6 +41,9 @@ jobs:
       # chromium so the unit job's assertions are never vacuous (the test fails hard under CI otherwise).
       - run: pnpm --filter @rhema/journeys exec playwright install chromium
       - run: pnpm test
+      # SPA.7 (REQ-VFY-2/REQ-TST-2): the emitted-DOM contract gate — journey selector literals ⊆
+      # the committed manifest ⊆ emitted+asserted. A pure source scan; no build or browser needed.
+      - run: pnpm check:dom-contract
       # Upstream-diff gate (REQ-ARCH-5; AC1): the ported skills equal the vendored pin + only sanctioned
       # edits. Self-contained (reads packages/protocols/upstream-pin) — no external repo needed.
       - run: node scripts/check-upstream-diff.mjs

@@ -1,0 +1,902 @@
+// apps/web/src/dom-contract.ts — the emitted-DOM contract manifest (SPA.7; REQ-VFY-2, REQ-TST-2;
+// design/27 F2; research/04 F4 + research/02 island contract table).
+//
+// The ONE committed vocabulary of load-bearing selector hooks both renderers must emit. Keyed by
+// surface (the SPA_SURFACES flip keys + three non-flip buckets):
+//   "shell"  — document/settle markers every served document or the SPA shell carries;
+//   "public" — the always-SSR funnel (/, /invite, /pricing, /signup, /login, /showcase);
+//   "shared" — cross-surface widgets whose hooks must hold on EVERY surface that emits them
+//              (sync pill, gate card, §10.1 phone withholding, deep-link selection);
+//   <surface> — a SPA_SURFACES key; the hook's owning flip unit.
+//
+// Entry kinds: attr literals ("data-x"), attr-prefix families ("data-label-" covers
+// data-label-{saving,saved,…}), ARIA roles, form-field names (incl. the `ed.*` gate-card/outline
+// grammar and `toggle.*`/`rigor_*` run-sheet families), and URL params (the REQ-VFY-3 flash-param
+// vocabulary). `role` = "required" (always emitted on the surface's render) or "conditional"
+// (state/fixture-dependent — component tests must exercise both legs per design/27 F2).
+// `emittedBy` is informational (the lint re-derives real emission by scanning sources).
+//
+// `check:dom-contract` (scripts/check-dom-contract.mjs) enforces: journey/test/SPA selector use ⊆
+// this manifest; every entry emitted by ≥1 scanned source; every entry asserted by ≥1 journey step
+// or test. A rename ships codemod + manifest edit in one PR covering BOTH renderers (REQ-TST-2).
+// FORMAT NOTE — the lint parses this file positionally: `key: [` opens a surface block, `]` closes
+// it, and entries are builder calls `a|f|r|n|nf|uf|u("hook", …)`. Prettier may wrap a call across
+// lines — the parser tolerates that; what it does NOT parse is a new builder/helper, another
+// export inside the record, or nested arrays. Keep entries inside the record and keep the file
+// comment/light.
+
+import type { SpaSurface } from "@rhema/contracts";
+
+export type DomContractSurface = SpaSurface | "shell" | "public" | "shared";
+
+export type DomContractKind =
+  | "attr" // a literal data-* attribute name
+  | "attr-prefix" // a data-* family prefix (hook ends in "-"; matches data-<prefix>*)
+  | "role" // an ARIA role selector ([role=x] / getByRole(x) / implicit element)
+  | "field" // a literal form-field name (name="x")
+  | "field-prefix" // a field-name grammar prefix (ed.*, rigor_*, toggle.*)
+  | "urlparam" // a literal URL flash-param name (?x=)
+  | "urlparam-prefix"; // a param family prefix (toggle.*)
+
+export interface DomContractEntry {
+  /** The selector token: `data-foo`, `data-label-` (prefix), `status` (role), `title` (field),
+   *  `ed.` (field grammar), `disposed` (param), `toggle.` (param family). */
+  readonly hook: string;
+  readonly kind: DomContractKind;
+  /** required = emitted on every render of the surface; conditional = state-dependent. */
+  readonly role: "required" | "conditional";
+  /** The primary emitter (file:component hint — informational; the lint scans real sources). */
+  readonly emittedBy: string;
+  readonly note?: string;
+}
+
+type R = DomContractEntry["role"];
+const a = (hook: string, role: R, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "attr",
+  role,
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+const f = (hook: string, role: R, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "attr-prefix",
+  role,
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+const r = (hook: string, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "role",
+  role: "conditional",
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+const n = (hook: string, role: R, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "field",
+  role,
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+const nf = (hook: string, role: R, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "field-prefix",
+  role,
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+const u = (hook: string, role: R, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "urlparam",
+  role,
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+const uf = (hook: string, role: R, emittedBy: string, note?: string): DomContractEntry => ({
+  hook,
+  kind: "urlparam-prefix",
+  role,
+  emittedBy,
+  ...(note ? { note } : {}),
+});
+
+export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[]> = {
+  // ---- document-level contract: settle markers, renderer flag, capability + theme stamps ----
+  shell: [
+    a(
+      "data-renderer",
+      "required",
+      "render.tsx htmlAttrs / spa-shell.ts",
+      "ssr|spa — REQ-VFY-7's per-document renderer verdict",
+    ),
+    a(
+      "data-route",
+      "required",
+      "render.tsx/spa-shell.ts + client head manager",
+      "the $param route id — the settle contract's route leg",
+    ),
+    a(
+      "data-mounted",
+      "conditional",
+      "render.tsx stamps on SSR; the SPA client flips it after first data paint",
+      "REQ-VFY-3 settle marker — never waited on as domcontentloaded",
+    ),
+    a(
+      "data-device",
+      "required",
+      "spa-shell.ts + device.ts isPhoneUa stamp",
+      "REQ-VFY-5's capability gate input (phone|desktop)",
+    ),
+    a(
+      "data-theme",
+      "required",
+      "render.tsx htmlAttrs",
+      "theme boot attr — tokens CSS + the island theme POSTs select on it",
+    ),
+    a("data-app-theme", "required", "render.tsx/spa-shell.ts", "app-theme pref stamp"),
+    a("data-paper", "conditional", "render.tsx/spa-shell.ts", "per-project paper theme stamp"),
+    a("data-project", "conditional", "render.tsx/spa-shell.ts", "project context stamp"),
+    a(
+      "data-user",
+      "conditional",
+      "render.tsx/ide-shell.tsx",
+      "user id stamp (pane localStorage key)",
+    ),
+    a("data-font", "conditional", "render.tsx", "reader font stamp"),
+    a("data-spa-root", "required", "spa-shell.ts", "the SPA mount node"),
+    a("data-spa-boot", "required", "spa-shell.ts", "REQ-BND-10 boot-JSON embed script"),
+    a(
+      "data-spa-surface",
+      "required",
+      "spa/states.tsx SurfaceShell",
+      "stamped on every SPA surface wrapper",
+    ),
+    a(
+      "data-spa-error",
+      "conditional",
+      "spa/states.tsx SpaRouteError",
+      "designed route error state (REQ-UX-6)",
+    ),
+    a("data-route-announcer", "required", "spa/head.tsx", "nav a11y live region"),
+    a(
+      "data-ide-state",
+      "conditional",
+      "ui/ide-states.tsx catalogue",
+      "§5.9 designed-state catalogue marker",
+    ),
+  ],
+  // ---- always-SSR public funnel (Q-1): landing, signup/login/invite, pricing, showcase ----
+  public: [
+    a(
+      "data-dropzone",
+      "conditional",
+      "marketing.tsx landing hero",
+      "landing island mount — file pick/drop/paste → IDB hold",
+    ),
+    a("data-dropzone-hint", "conditional", "marketing.tsx"),
+    a("data-dropzone-label", "conditional", "marketing.tsx"),
+    a(
+      "data-cost-card",
+      "conditional",
+      "marketing.tsx pricing",
+      "estimate/cost card on the public pricing page",
+    ),
+    a(
+      "data-claims",
+      "conditional",
+      "marketing.tsx showcase + ui/run-report",
+      "claim-set block (showcase read; report summary)",
+    ),
+    a("data-words", "conditional", "marketing.tsx"),
+    a("data-showcase-banner", "conditional", "pages.tsx /showcase"),
+    a("data-waitlist-form", "conditional", "pages.tsx"),
+    a("data-holdout-badge", "conditional", "pages.tsx"),
+    a("data-holdout-hidden", "conditional", "pages.tsx"),
+    a("data-section", "conditional", "marketing.tsx/pages.tsx"),
+    r("status", "pages.tsx forms", "polite live region — sign-in/sent states (N2)"),
+    n("email", "required", "pages.tsx sign-in form"),
+    n("method", "required", "pages.tsx sign-in form", "google|magic_link channel field"),
+    n("code", "conditional", "pages.tsx invite form"),
+    n("intent", "conditional", "signup flow fields"),
+  ],
+  // ---- hooks that must hold on every surface that emits them ----
+  shared: [
+    f(
+      "data-label-",
+      "conditional",
+      "ui/page-editor + source-editor + outline",
+      "sync-pill state labels — data-label-{saving,saved,failed,queued,locked,readonly,synced,syncing,offline}",
+    ),
+    a(
+      "data-fmt",
+      "conditional",
+      "ui ide-shell/page-editor status meters",
+      "status-meter format template",
+    ),
+    f(
+      "data-status-",
+      "conditional",
+      "ui/ide-shell + page meter slots",
+      "data-status-{words,readmin,venue,…} family — the island rewrites them live",
+    ),
+    a("data-sync-pill", "conditional", "ui/ide-shell + page-editor"),
+    a(
+      "data-sync-state",
+      "conditional",
+      "ui/source-editor sync machine",
+      "synced|syncing|queued|locked",
+    ),
+    a(
+      "data-phone-blocked",
+      "conditional",
+      "pages.tsx §10.1",
+      "phone-capability withholding marker — mount contract (REQ-VFY-5)",
+    ),
+    a(
+      "data-finding-id",
+      "conditional",
+      "ui + pages.tsx",
+      "per-finding stable id — deep-link + cross-pane selection",
+    ),
+    a("data-selected", "conditional", "island selection state", "linked-finding selected row"),
+    a("data-collapsed-group", "conditional", "ui/project-list + dossier groups"),
+    nf(
+      "ed.",
+      "conditional",
+      "ui/gate-card.tsx + outline-sections.tsx",
+      "the gate-card/outline structured-edit field grammar (server.ts decodeGateEditFields)",
+    ),
+    r("dialog", "ui gate cards + popovers"),
+    r("alertdialog", "ui gate cards", "confirm-destructive dialogs"),
+    r("alert", "pages.tsx/ui"),
+    r("region", "pages.tsx/ui"),
+    r("heading", "every document", "asserted via getByRole + implicit <h*>"),
+    r("button", "every document", "asserted via getByRole + implicit <button>"),
+    u("notice", "conditional", "server.ts redirects", "flash-param vocabulary (REQ-VFY-3)"),
+    u("saved", "conditional", "server.ts redirects"),
+  ],
+  // ---- /usage + /p/:p/usage ----
+  usage: [
+    a("data-usage-row", "conditional", "pages.tsx + ui/run-report usage rows"),
+    a("data-usage-balance", "conditional", "pages.tsx"),
+    a("data-usage-account", "conditional", "pages.tsx"),
+    a("data-usage-bucket", "conditional", "pages.tsx"),
+    a("data-usage-next-expiry", "conditional", "pages.tsx"),
+    a("data-usage-run", "conditional", "pages.tsx"),
+    a("data-usage-warning", "conditional", "pages.tsx"),
+    a("data-project-usage-run", "conditional", "pages.tsx"),
+    a("data-project-usage-total", "conditional", "pages.tsx"),
+  ],
+  // ---- /app/inbox ----
+  inbox: [
+    a("data-inbox-badge", "conditional", "pages.tsx", "Needs-you count chip"),
+    a("data-inbox-empty", "conditional", "pages.tsx"),
+    a("data-inbox-gate-card", "conditional", "pages.tsx", "inboxed approval card"),
+    a("data-inbox-kind", "conditional", "pages.tsx"),
+    a("data-inbox-open", "conditional", "pages.tsx"),
+    a("data-inbox-project", "conditional", "pages.tsx"),
+    a("data-inbox-row", "conditional", "pages.tsx"),
+    a("data-inbox-section", "conditional", "pages.tsx"),
+    a("data-inbox-type", "conditional", "pages.tsx"),
+  ],
+  // ---- /app/settings/* + /p/:p/settings ----
+  settings: [
+    a("data-settings-nav", "required", "pages.tsx settings shell"),
+    a("data-notification-matrix", "conditional", "pages.tsx"),
+    a("data-notification-row", "conditional", "pages.tsx"),
+    a("data-notifications-form", "conditional", "pages.tsx"),
+    a("data-account-export", "conditional", "pages.tsx data section"),
+    a("data-export-status", "conditional", "pages.tsx data section", "building|ready|expired"),
+    a("data-export-download", "conditional", "pages.tsx data section"),
+    a("data-account-import", "conditional", "pages.tsx data section"),
+    a("data-import-notice", "conditional", "pages.tsx"),
+    a("data-delete-account-form", "conditional", "pages.tsx"),
+    a("data-deletion-banner", "conditional", "pages.tsx"),
+    a("data-deleted-row", "conditional", "pages.tsx"),
+    a("data-deleted-section", "conditional", "pages.tsx"),
+    a("data-support-log", "conditional", "pages.tsx"),
+    a("data-privacy-form", "conditional", "pages.tsx"),
+    a("data-privacy-saved", "conditional", "pages.tsx"),
+    a("data-analytics-toggle", "conditional", "pages.tsx"),
+    a("data-approval-opt-in", "conditional", "pages.tsx"),
+    a("data-approval-policy", "conditional", "pages.tsx"),
+    a("data-approval-settings", "conditional", "pages.tsx"),
+    a("data-integration-card", "conditional", "pages.tsx"),
+    a("data-revoke-session", "conditional", "pages.tsx"),
+    a("data-session", "conditional", "pages.tsx"),
+    a("data-signin-method", "conditional", "pages.tsx"),
+    a("data-comment-saved", "conditional", "pages.tsx"),
+    a("data-auto-reload-form", "conditional", "pages.tsx"),
+    n("qh_enabled", "conditional", "pages.tsx notification prefs (quiet hours)"),
+    n("qh_start", "conditional", "pages.tsx notification prefs"),
+    n("qh_end", "conditional", "pages.tsx notification prefs"),
+    nf("email_", "conditional", "pages.tsx notification matrix", "email_<type> per-row selects"),
+    nf("inapp_", "conditional", "pages.tsx notification matrix", "inapp_<type> per-row selects"),
+    nf(
+      "rp_",
+      "conditional",
+      "pages.tsx notification prefs",
+      "rp_<projectId> per-project run_progress",
+    ),
+    nf("pd_", "conditional", "pages.tsx privacy form", "pd_<phase> per-phase data toggles"),
+    n("autoIncludeNew", "conditional", "pages.tsx notification prefs"),
+  ],
+  // ---- /voices* + reseed ----
+  voices: [
+    a("data-voice-filters", "conditional", "pages.tsx"),
+    a("data-voice-group", "conditional", "pages.tsx"),
+    a("data-voice-locked", "conditional", "pages.tsx"),
+    a("data-voice-tab", "conditional", "pages.tsx"),
+    a("data-new-voice", "conditional", "pages.tsx"),
+    a("data-fork-voice", "conditional", "pages.tsx"),
+    a("data-reseed-diff", "conditional", "pages.tsx"),
+    a("data-sample", "conditional", "pages.tsx"),
+    a("data-sample-drawer", "conditional", "pages.tsx"),
+    a("data-sample-open", "conditional", "pages.tsx"),
+    a("data-sample-preview", "conditional", "pages.tsx"),
+    a("data-sample-state", "conditional", "pages.tsx"),
+    a("data-sample-versions", "conditional", "pages.tsx"),
+    a("data-samples-form", "conditional", "pages.tsx"),
+    a("data-source", "conditional", "pages.tsx + server.ts"),
+    a("data-source-error", "conditional", "pages.tsx"),
+    a("data-source-settings-form", "conditional", "pages.tsx"),
+    a("data-sources", "conditional", "pages.tsx"),
+    a("data-provider", "conditional", "pages.tsx"),
+    a("data-resync", "conditional", "pages.tsx"),
+    a("data-resync-all", "conditional", "pages.tsx"),
+    a("data-link-substack", "conditional", "pages.tsx"),
+    a("data-link-url", "conditional", "pages.tsx"),
+    a("data-review-item", "conditional", "pages.tsx source review list"),
+    a("data-discover", "conditional", "pages.tsx discover button"),
+    a("data-conn-status", "conditional", "pages.tsx"),
+    a("data-profile-section", "conditional", "pages.tsx"),
+    a("data-typical-words", "conditional", "pages.tsx voice pick"),
+    a("data-quality-notes", "conditional", "pages.tsx"),
+    n("name", "conditional", "pages.tsx voice create form"),
+    n("description", "conditional", "pages.tsx voice form"),
+    n("twitter", "conditional", "pages.tsx voice form"),
+    n("archive", "conditional", "pages.tsx voices filter"),
+    n("only", "conditional", "pages.tsx samples filter"),
+    n("file", "conditional", "pages.tsx sample upload + dropzone"),
+    n("severity", "conditional", "pages.tsx/ui findings severity select"),
+    n("cycle", "conditional", "pages.tsx notification cadence"),
+    u("tab", "conditional", "server.ts /pages.tsx section tabs"),
+    u("audience", "conditional", "pages.tsx voice form redirect"),
+    u("deleted", "conditional", "server.ts delete redirect"),
+  ],
+  // ---- /app/new*, /p/:p/import* (+ landing island legs on authed pages) ----
+  onboarding: [
+    a("data-held", "conditional", "pages.tsx /app/new form", "landing-island hydration sentinel"),
+    a("data-held-notice", "conditional", "pages.tsx + landing.ts", "held-draft notice"),
+    a(
+      "data-held-discard",
+      "conditional",
+      "client/landing.ts dataset write",
+      "Discard-held-file button",
+    ),
+    a(
+      "data-held-consumed",
+      "conditional",
+      "pages.tsx/server.ts",
+      "token-matched consumed handshake",
+    ),
+    a("data-held-token", "conditional", "pages.tsx hidden input"),
+    a("data-new-project", "conditional", "pages.tsx"),
+    a("data-new-project-form", "conditional", "pages.tsx /app/new"),
+    a("data-protocol-card", "conditional", "pages.tsx /app/new + run sheet", "protocol pick card"),
+    a("data-conversion-form", "conditional", "ui/conversion.tsx", "import conversion preview"),
+    a("data-conversion-action", "conditional", "ui/conversion.tsx"),
+    a(
+      "data-conversion-pending",
+      "conditional",
+      "pages.tsx + ui/conversion",
+      "REQ-VFY-4 pending marker (meta-refresh re-spec)",
+    ),
+    a(
+      "data-import-notice",
+      "conditional",
+      "pages.tsx",
+      "import outcome notice — also settings/data",
+    ),
+    n("file", "required", "pages.tsx /app/new + marketing dropzone"),
+    n("heldToken", "conditional", "pages.tsx hidden input", "hold-claim handshake"),
+    n("paste", "conditional", "pages.tsx /app/new paste path"),
+    n("title", "conditional", "pages.tsx /app/new + voice forms"),
+    u("held", "conditional", "server.ts signup redirect", "?held=1 carries the hold signal"),
+    u("hc", "conditional", "server.ts ?hc= consumed-token echo"),
+    u("created", "conditional", "server.ts create redirect", "?created=scratch|outline|draft"),
+    u("entry", "conditional", "server.ts/pages.tsx entry-point param"),
+  ],
+  // ---- /app + /p/:slug feed (project list, run cards, Desk feed) ----
+  "project-home": [
+    a("data-project-row", "conditional", "ui/project-list.tsx"),
+    a("data-menu-form", "conditional", "ui/project-list.tsx"),
+    a("data-rename-form", "conditional", "pages.tsx project menu"),
+    a("data-duplicate-form", "conditional", "pages.tsx"),
+    a("data-fork-project", "conditional", "pages.tsx"),
+    a("data-next-step-card", "conditional", "pages.tsx"),
+    a("data-entry", "conditional", "pages.tsx next-step cards"),
+    a("data-needs-you", "conditional", "pages.tsx"),
+    a("data-focused-gate", "conditional", "pages.tsx"),
+    a("data-pretriage-line", "conditional", "pages.tsx"),
+    a("data-run-card", "conditional", "ui/run-card.tsx", "feed run card — the live meter root"),
+    a("data-run-state", "conditional", "ui/run-card + ide-shell"),
+    a("data-credits", "conditional", "ui/run-card.tsx + ide feed patch"),
+    a("data-credit-meter", "conditional", "ui/run-card.tsx + ide feed patch"),
+    a("data-phase", "conditional", "ui/run-card.tsx + ide feed patch"),
+    a("data-phase-status", "conditional", "ui/run-card + run-report + feed patch"),
+    a("data-waiting-gate", "conditional", "ui/run-card.tsx"),
+    a("data-provisional", "conditional", "ui/run-card + findings", "cost-provisional flag"),
+    a("data-decision", "conditional", "ui/gate-card + decisions + run-card"),
+    a("data-run-report", "conditional", "ui/run-card + run-report", "report link/root"),
+    a("data-feed-events", "conditional", "ui/ide-shell.tsx", "SSE feed events URL — island reads"),
+    a("data-feed-labels", "conditional", "ui/ide-shell + server.ts", "feed label map"),
+    a("data-feed-last-seq", "conditional", "ui/ide-shell", "SSE resume cursor"),
+    a("data-feed-rows", "conditional", "ui/run-card feed table"),
+    a("data-feed-event", "conditional", "ui/run-card feed row"),
+    a(
+      "data-feed-density",
+      "conditional",
+      "ui/run-card + ide island",
+      "density tabs re-filter SSR rows",
+    ),
+    a("data-feed-density-row", "conditional", "ui/run-card + ide island"),
+    a("data-live-feed", "conditional", "ui/run-card + ide island"),
+    a("data-chat-composer", "conditional", "ui/chat-panel.tsx", "Desk composer — axe subset"),
+    a("data-chat-thread", "conditional", "ui/chat-panel.tsx"),
+    a("data-chat-turn", "conditional", "ui/chat-panel.tsx"),
+    a("data-chat-chip", "conditional", "ui/chat-panel.tsx"),
+    u("thread", "conditional", "chat thread deep link"),
+    u("scope", "conditional", "pages.tsx scoped-run param"),
+  ],
+  // ---- Stripe hand-offs + /billing/return + /settings/billing ----
+  billing: [
+    a(
+      "data-subscribe-form",
+      "conditional",
+      "pages.tsx",
+      "N9's Stripe hand-off — stays a document navigation",
+    ),
+    a("data-topup-form", "conditional", "pages.tsx"),
+    a("data-topup-gated", "conditional", "pages.tsx"),
+    a("data-portal-form", "conditional", "pages.tsx"),
+    a("data-payment-link", "conditional", "ui/run-sheet.tsx paywall + pages.tsx"),
+    a("data-refund-cta", "conditional", "pages.tsx"),
+    a("data-refund-state", "conditional", "pages.tsx"),
+    a("data-checkout-state", "conditional", "pages.tsx"),
+    a("data-past-due", "conditional", "pages.tsx"),
+    a("data-plan", "conditional", "pages.tsx"),
+    a("data-plan-card", "conditional", "pages.tsx"),
+    a("data-plan-offer", "conditional", "ui/run-sheet + pages.tsx"),
+    a("data-purchase-paused", "conditional", "ui/run-sheet + pages.tsx"),
+    a("data-current-plan", "conditional", "pages.tsx"),
+    a("data-trial-state", "conditional", "pages.tsx"),
+    u("token", "conditional", "server.ts signed-action links"),
+  ],
+  // ---- /p/:p/export ----
+  export: [
+    a(
+      "data-export-form",
+      "conditional",
+      "pages.tsx",
+      "keep the hook on whatever element owns it (F3 R5)",
+    ),
+    a("data-export-request-form", "conditional", "pages.tsx"),
+    a("data-csl-style", "conditional", "pages.tsx"),
+    a("data-link-export", "conditional", "pages.tsx"),
+  ],
+  // ---- /p/:p/run — the run sheet (the only run creator + the only paywall) ----
+  "run-sheet": [
+    a("data-run-sheet", "required", "ui/run-sheet.tsx root"),
+    a(
+      "data-run-button",
+      "required",
+      "ui/run-sheet.tsx",
+      "REQ-GROWTH-16: never without a shown estimate",
+    ),
+    a(
+      "data-credits-line",
+      "conditional",
+      "ui/run-sheet.tsx",
+      "entitlement variant — N4's figure read",
+    ),
+    a(
+      "data-included",
+      "conditional",
+      "ui/run-sheet.tsx",
+      "§14.3 entitlement variant (data-credits-line's sibling)",
+    ),
+    a("data-time-line", "conditional", "ui/run-sheet.tsx"),
+    a("data-dollars-line", "conditional", "ui/run-sheet.tsx"),
+    a("data-estimate-box", "conditional", "ui/run-sheet.tsx"),
+    a("data-estimate-credits", "conditional", "ui/run-sheet.tsx"),
+    a(
+      "data-estimate-matrix",
+      "conditional",
+      "ui/run-sheet.tsx",
+      "REQ-VFY-4: typed script[type=application/json] embed — replaces the var R= read",
+    ),
+    a("data-estimate-line", "conditional", "ui/run-report.tsx", "estimate-vs-metered line"),
+    a("data-confirm-label", "conditional", "ui/run-sheet.tsx"),
+    a(
+      "data-insufficient",
+      "conditional",
+      "ui/run-sheet.tsx",
+      "insufficient-balance resolution panel",
+    ),
+    a("data-needs-consent", "conditional", "ui/run-sheet.tsx"),
+    a("data-paywall", "conditional", "ui/run-sheet.tsx"),
+    a("data-suspended", "conditional", "ui/run-sheet.tsx"),
+    a("data-run-label", "conditional", "pages.tsx"),
+    a("data-not-ready", "conditional", "pages.tsx"),
+    n("rigor", "required", "ui/run-sheet.tsx", "rigor radio"),
+    nf("rigor_", "conditional", "pages.tsx per-workflow rigor selects", "select[name^=rigor_]"),
+    n("modelTier", "required", "ui/run-sheet.tsx"),
+    n("autoRun", "conditional", "ui/run-sheet.tsx"),
+    n("entitlementId", "conditional", "ui/run-sheet.tsx"),
+    nf(
+      "toggle.",
+      "conditional",
+      "ui/run-sheet.tsx lever checkboxes",
+      "toggle.<key> on|off — field AND query-lever grammar",
+    ),
+    n("message", "conditional", "ui/run-sheet + chat composer"),
+    u("workflow", "conditional", "ui/run-sheet + server.ts lever query"),
+    u("rigor", "conditional", "lever query"),
+    u("tier", "conditional", "lever query"),
+    u("words", "conditional", "lever query"),
+    u("claims", "conditional", "lever query"),
+    u("budget", "conditional", "lever query"),
+    u("advanced", "conditional", "lever query"),
+    uf("toggle.", "conditional", "ui/run-sheet lever query", "?toggle.<key>=on|off"),
+  ],
+  // ---- /p/:p/review/:runId + /obligations/new — dossier, triage, gate cards, obligations ----
+  dossier: [
+    a(
+      "data-dossier",
+      "conditional",
+      "ui/dossier.tsx article root",
+      "dossier mount marker (N7 fallback probe)",
+    ),
+    a("data-letter-view", "conditional", "ui/letter.tsx"),
+    a("data-verdict", "conditional", "ui/claims.tsx + dossier", "per-claim verdict"),
+    a("data-tier", "conditional", "ui/claims/dossier/pages", "claim tier chip"),
+    a("data-fetched", "conditional", "ui/primitives.tsx"),
+    a("data-fetched-chip", "conditional", "ui/findings.tsx"),
+    a("data-claim", "conditional", "ui/claims.tsx"),
+    a("data-claim-url", "conditional", "ui/claims.tsx"),
+    a("data-url-in-log", "conditional", "ui/claims.tsx", "fetched-source log link"),
+    a("data-claims-table", "conditional", "ui/claims.tsx"),
+    a("data-finding", "conditional", "pages.tsx + ui/findings"),
+    a("data-finding-evidence", "conditional", "ui/findings.tsx"),
+    a("data-finding-link", "conditional", "ui/findings-desk.tsx"),
+    a("data-finding-notice", "conditional", "pages.tsx"),
+    a("data-findings-list", "conditional", "ui/findings.tsx"),
+    a("data-findings-filters", "conditional", "ui/findings-desk.tsx"),
+    a("data-findings-desk", "conditional", "ui/findings-desk + ide island"),
+    a(
+      "data-findings-rail",
+      "conditional",
+      "ui/page-editor + client/page",
+      "lost-anchor resync rail",
+    ),
+    a("data-margin-card", "conditional", "ui/margin.tsx + ide island"),
+    a("data-margin-chip", "conditional", "ui/margin.tsx"),
+    a("data-margin-surface", "conditional", "pages.tsx"),
+    a("data-disposition", "conditional", "ui/findings + gate-card"),
+    a("data-disposition-form", "conditional", "ui/dispositions.tsx"),
+    a("data-verb", "conditional", "ui/dispositions + ide verb clicks", "the five triage verbs"),
+    a("data-note", "conditional", "ui/dispositions.tsx"),
+    a("data-apply", "conditional", "pages.tsx + ide island clicks"),
+    a("data-apply-form", "conditional", "pages.tsx"),
+    a("data-bulk-preview", "conditional", "pages.tsx"),
+    a("data-bulk-confirm", "conditional", "pages.tsx"),
+    a("data-bulk-done", "conditional", "pages.tsx"),
+    a("data-bulk-skipped", "conditional", "pages.tsx"),
+    a("data-bulk-controls", "conditional", "pages.tsx"),
+    a("data-obligation-form", "conditional", "pages.tsx"),
+    a("data-obligation-id", "conditional", "pages.tsx"),
+    a("data-obligation-items", "conditional", "pages.tsx"),
+    a("data-obligation-state", "conditional", "ui/chips + what-changed"),
+    a("data-obligations-chip", "conditional", "pages.tsx"),
+    a("data-add-obligation", "conditional", "pages.tsx"),
+    a("data-version-obligations", "conditional", "ui/chips.tsx"),
+    a("data-second-read", "conditional", "ui/second-read.tsx"),
+    a("data-rubric", "conditional", "ui/rubric.tsx"),
+    a("data-rubric-row", "conditional", "ui/rubric.tsx"),
+    a("data-trust-chip", "conditional", "ui/chips.tsx"),
+    a("data-severity", "conditional", "ui findings/gate-card/margin"),
+    a("data-informational", "conditional", "ui/gate-card.tsx"),
+    a("data-blocking", "conditional", "ui/approval-row + gate-card"),
+    a("data-decisions-list", "conditional", "ui/decisions.tsx"),
+    a("data-decision-option", "conditional", "ui/decisions.tsx"),
+    a(
+      "data-gate-card",
+      "conditional",
+      "ui/gate-card + pages.tsx",
+      "axe subset — the approval card",
+    ),
+    a("data-gate-actions", "conditional", "ui/gate-card.tsx"),
+    a("data-gate-explainer", "conditional", "pages.tsx"),
+    a("data-gate-plan", "conditional", "ui/gate-card.tsx"),
+    a("data-gate-scope", "conditional", "ui/gate-card.tsx"),
+    a("data-gate-cutlist", "conditional", "ui/gate-card.tsx"),
+    a("data-gate-thesis", "conditional", "ui/gate-card.tsx"),
+    a("data-guidance-preserved", "conditional", "pages.tsx"),
+    a("data-facts-panel", "conditional", "pages.tsx"),
+    a("data-exceeds-cap", "conditional", "ui/gate-card.tsx"),
+    a("data-presence-timer", "conditional", "ui/gate-card.tsx"),
+    a("data-deadline-line", "conditional", "ui/gate-card.tsx"),
+    a("data-paused", "conditional", "ui/gate-card + run-card"),
+    a("data-spend-line", "conditional", "ui/gate-card.tsx"),
+    a("data-triage-ledger", "conditional", "ui/gate-card.tsx"),
+    a("data-triage-row", "conditional", "ui/gate-card.tsx"),
+    a("data-triage-section", "conditional", "pages.tsx"),
+    a("data-triage-mode", "conditional", "pages.tsx"),
+    a("data-row-deadline", "conditional", "pages.tsx"),
+    a("data-row-do-nothing", "conditional", "pages.tsx"),
+    a("data-do-nothing", "conditional", "ui/gate-card.tsx"),
+    a("data-actor", "conditional", "ui/gate-card.tsx"),
+    a("data-action", "conditional", "ui/gate-card + run-card"),
+    a("data-counter", "conditional", "ui/run-card.tsx"),
+    a("data-compact", "conditional", "ui/gate-card + tokens CSS"),
+    a("data-insist", "conditional", "pages.tsx"),
+    a("data-reject", "conditional", "pages.tsx"),
+    a("data-accept", "conditional", "pages.tsx"),
+    a("data-correction", "conditional", "pages.tsx"),
+    a("data-cited-note", "conditional", "pages.tsx"),
+    a("data-declined-note", "conditional", "pages.tsx"),
+    a("data-rebutted-finding", "conditional", "pages.tsx"),
+    a("data-contradicted-tier1", "conditional", "pages.tsx"),
+    a("data-evidence-explainer", "conditional", "pages.tsx"),
+    a("data-pinned-stale", "conditional", "pages.tsx"),
+    a("data-provenance", "conditional", "pages.tsx"),
+    a("data-prov-kind", "conditional", "pages.tsx"),
+    a("data-confirm", "conditional", "pages.tsx"),
+    a("data-confirm-cta", "conditional", "pages.tsx", "destructive confirm button"),
+    a("data-cancel-form", "conditional", "pages.tsx"),
+    a("data-restore", "conditional", "pages.tsx"),
+    a("data-restore-form", "conditional", "pages.tsx"),
+    a("data-difference", "conditional", "ui/run-report.tsx"),
+    a("data-reviewed", "conditional", "ui/version-rail.tsx"),
+    a("data-propose-form", "conditional", "pages.tsx"),
+    a("data-resync", "conditional", "pages.tsx"),
+    u(
+      "applied",
+      "conditional",
+      "server.ts disposition redirect",
+      "REQ-VFY-3 flash param — SPA writes it verbatim",
+    ),
+    u("disposed", "conditional", "server.ts disposition redirect"),
+    u("bulkdone", "conditional", "server.ts bulk redirect"),
+    u("obligated", "conditional", "server.ts obligation redirect"),
+    u("obligation", "conditional", "server.ts obligation=new deep link"),
+    u("gate", "conditional", "server.ts gate-focus deep link"),
+    u("sev", "conditional", "findings filter param"),
+    u("bulk", "conditional", "bulk-select param"),
+  ],
+  // ---- /p/:p/r/:runId ----
+  "run-report": [
+    a("data-report-phase", "conditional", "ui/run-report.tsx"),
+    a(
+      "data-metered-line",
+      "conditional",
+      "ui/run-report.tsx",
+      "committed-vs-metered reconciliation",
+    ),
+    a("data-refund", "conditional", "ui/run-card + run-report"),
+  ],
+  // ---- /p/:p/outline* — the structured outline editor + the outline.ts autosave island ----
+  outline: [
+    a("data-outline-section", "conditional", "pages.tsx + ui/outline-sections"),
+    a("data-outline-sections", "conditional", "ui/outline-sections.tsx"),
+    a("data-outline-claim", "conditional", "pages.tsx"),
+    a("data-outline-gap", "conditional", "pages.tsx"),
+    a("data-outline-delete", "conditional", "pages.tsx"),
+    a("data-move-card", "conditional", "pages.tsx move-join card"),
+    a("data-what-changed", "conditional", "ui/what-changed.tsx"),
+  ],
+  // ---- /p/:p/figures*, /visualize ----
+  figures: [
+    a("data-figure-row", "conditional", "pages.tsx"),
+    a("data-figure-spec", "conditional", "pages.tsx"),
+    a("data-figure-data", "conditional", "pages.tsx"),
+    a("data-figure-preview", "conditional", "pages.tsx"),
+    a("data-figure-versions", "conditional", "pages.tsx"),
+    a("data-figures-empty", "conditional", "pages.tsx"),
+    a("data-visualize-form", "conditional", "pages.tsx"),
+    a("data-reconstruct-visual", "conditional", "pages.tsx"),
+  ],
+  // ---- /p/:p, /v/:n, /a/:artifactId, /revisions/:cid, /v/:n/diff/:m — the Page + version rail ----
+  editor: [
+    a("data-page-root", "required", "ui/page-editor.tsx", "page island mount sentinel"),
+    a(
+      "data-page-view",
+      "conditional",
+      "ui/page-editor + client/page",
+      "live EditorView marker (.rm-page)",
+    ),
+    a("data-page-host", "required", "ui/page-editor.tsx"),
+    a("data-page-mount", "conditional", "pages.tsx", "editable-mount marker (P1 leg)"),
+    a(
+      "data-page-banner",
+      "conditional",
+      "ui/page-editor + client/page",
+      "version|readonly|lock banners",
+    ),
+    a(
+      "data-page-doc",
+      "required",
+      "ui/page-editor.tsx",
+      "script[type=application/json] PM JSON embed",
+    ),
+    a("data-page-prov", "conditional", "ui/page-editor.tsx", "provenance-map embed"),
+    a(
+      "data-page-findings",
+      "conditional",
+      "ui/page-editor.tsx",
+      "anchors+severity+lost+kind embed",
+    ),
+    a("data-page-preview", "required", "ui/page-editor.tsx", "SSR preview the island replaces"),
+    a("data-doc-url", "required", "ui/page-editor.tsx", "lock-poll + rebase endpoint"),
+    a(
+      "data-collab-url",
+      "conditional",
+      "ui/page-editor.tsx",
+      "present ⇒ collab bind; empty ⇒ local",
+    ),
+    a(
+      "data-readonly",
+      "conditional",
+      "ui/page-editor + dossier + files-pane",
+      "reader-mode marker (REQ-VFY-5)",
+    ),
+    a("data-draft-id", "required", "ui/page-editor + source-editor"),
+    a("data-draft-n", "conditional", "ui/page-editor.tsx"),
+    a("data-locked", "conditional", "ui/page-editor + source-editor"),
+    a("data-save-url", "conditional", "ui/page-editor + source-editor"),
+    a("data-edit-source", "conditional", "pages.tsx", "Edit-source affordance (P1 action row)"),
+    a("data-writer-text", "conditional", "ui/page-editor + source-editor banner"),
+    a("data-reader-text", "conditional", "ui/page-editor + source-editor banner"),
+    a("data-lost", "conditional", "ui/page-editor + client/page rail"),
+    a("data-lost-note-text", "conditional", "ui/page-editor + source-editor rail"),
+    a("data-proposal-accept", "conditional", "ui/page-editor + client/page"),
+    a("data-proposal-reject", "conditional", "ui/page-editor + client/page"),
+    a("data-proposal-origin", "conditional", "pages.tsx"),
+    a("data-pending-proposal", "conditional", "pages.tsx"),
+    a("data-proposal-block", "conditional", "pages.tsx"),
+    a(
+      "data-editor-root",
+      "conditional",
+      "ui/source-editor.tsx",
+      "source-mode island mount (unrouted standby)",
+    ),
+    a("data-editor-source", "conditional", "ui/source-editor.tsx"),
+    a("data-editor-host", "conditional", "ui/source-editor.tsx"),
+    a("data-editor-banner", "conditional", "client/editor.ts"),
+    a("data-editor-banner-text", "conditional", "client/editor.ts"),
+    a(
+      "data-version-rail",
+      "conditional",
+      "ui/version-rail.tsx",
+      "version rail — phone-hidden (§10.1)",
+    ),
+    a("data-version-chip", "conditional", "ui/version-rail + timeline"),
+    a("data-version", "conditional", "pages.tsx"),
+    a("data-origin", "conditional", "ui/version-rail.tsx", "provenance origin chip"),
+    a("data-state", "conditional", "ui/version-rail + ide-states"),
+    a("data-restore-point", "conditional", "ui/version-rail.tsx"),
+    a("data-restore-preview", "conditional", "ui/version-rail.tsx"),
+    a("data-restore-group", "conditional", "ui/version-rail.tsx"),
+    a("data-restore-menu", "conditional", "ui/version-rail.tsx"),
+    a("data-restore-apply", "conditional", "ui/version-rail.tsx"),
+    a("data-restored-notice", "conditional", "pages.tsx"),
+    a("data-compare", "conditional", "ui/compare.tsx"),
+    a("data-compare-layout", "conditional", "ui/compare.tsx"),
+    a("data-compare-previous", "conditional", "client/ide.ts compare action"),
+    a("data-diff-kind", "conditional", "pages.tsx/ui diff"),
+    a("data-diff-side", "conditional", "pages.tsx/ui diff"),
+    a("data-hunk", "conditional", "pages.tsx diff hunks"),
+    a("data-hunk-comment", "conditional", "pages.tsx"),
+    a("data-unlinked-group", "conditional", "pages.tsx"),
+    a("data-unlinked-note", "conditional", "pages.tsx"),
+    a("data-reconstruct-text", "conditional", "pages.tsx"),
+    a("data-returned", "conditional", "pages.tsx"),
+    u("restored", "conditional", "server.ts restore redirect"),
+    u("focus", "conditional", "ide island ?focus=1 deep link"),
+  ],
+  // ---- the IDE chrome: panes, palette, keymap, menus — flips with the ide-chrome AND-gate ----
+  "ide-chrome": [
+    a("data-ide", "required", "render.tsx + ui/ide-shell root", "ide island mount sentinel"),
+    a(
+      "data-pane",
+      "conditional",
+      "ui/ide-shell.tsx",
+      "per-region pane marker (files|page|margin|timeline|desk)",
+    ),
+    a("data-margin", "conditional", "ui/ide-shell.tsx", "margin mode state"),
+    a("data-timeline", "conditional", "ui/ide-shell.tsx", "timeline open state"),
+    a("data-files", "conditional", "ui/ide-shell.tsx", "files pane mode state"),
+    a("data-finding-cards", "conditional", "ui/ide-shell.tsx", "finding-cards view state"),
+    a("data-ide-view-menu", "conditional", "ui/ide-shell.tsx", "axe subset — View menu button"),
+    a("data-ide-theme-menu", "conditional", "ui/ide-shell.tsx", "axe subset — Theme menu button"),
+    a("data-ide-menu", "conditional", "ui/ide-shell.tsx", "axe subset — the menu surface"),
+    a("data-ide-view", "conditional", "ui/ide-shell.tsx", "view menuitem rows"),
+    a("data-ide-theme", "conditional", "ui/ide-shell.tsx", "theme menuitem rows"),
+    a("data-ide-paper", "conditional", "ui/ide-shell.tsx", "paper-theme menuitem rows"),
+    a("data-ide-reader", "conditional", "ui/ide-shell.tsx", "reader-size menuitem rows"),
+    a("data-ide-font", "conditional", "ui/ide-shell.tsx", "font menuitemradio rows"),
+    a("data-ide-toggle", "conditional", "ui/ide-shell.tsx", "view-toggle menuitem rows"),
+    a("data-ide-handle", "conditional", "ui/ide-shell.tsx", "pane drag handle"),
+    a("data-ide-desk-toggle", "conditional", "ui/ide-shell + ide island"),
+    a("data-ide-files-toggle", "conditional", "ui/ide-shell + ide island"),
+    a("data-ide-timeline-toggle", "conditional", "ui/ide-shell + ide island"),
+    a("data-ide-cheatsheet", "conditional", "ui/ide-shell.tsx", "axe subset — ? key sheet"),
+    a("data-ide-cheatsheet-close", "conditional", "ui/ide-shell + island"),
+    a("data-ide-palette", "conditional", "ui/ide-shell.tsx", "axe subset — ⌘K palette root"),
+    a("data-palette", "conditional", "ui/ide-shell.tsx", "PaletteData JSON embed"),
+    a("data-palette-sections", "conditional", "ui/ide-shell.tsx"),
+    a("data-palette-search", "conditional", "ui/ide-shell.tsx", "debounced-180 ms GET target"),
+    a("data-palette-input", "conditional", "ui/ide-shell + island"),
+    a("data-palette-results", "conditional", "ui/ide-shell + island"),
+    a("data-palette-empty", "conditional", "ui/ide-shell + island"),
+    a("data-theme-url", "conditional", "ui/ide-shell.tsx", "theme POST target (/ide/theme)"),
+    a("data-paper-url", "conditional", "ui/ide-shell.tsx", "paper-theme POST target"),
+    a("data-paper-theme", "conditional", "ui/ide-shell.tsx"),
+    a("data-paper-surface", "conditional", "ui/ide-shell.tsx"),
+    a("data-app-theme-pref", "conditional", "ui/ide-shell.tsx"),
+    a("data-open", "conditional", "ui/ide-shell + island", "menu/popover open state"),
+    a("data-view", "conditional", "ui/ide-shell.tsx"),
+    a("data-count", "conditional", "ui/ide-shell.tsx"),
+    a("data-current", "conditional", "ui/ide-shell.tsx"),
+    a("data-run-next", "conditional", "ui/ide-shell.tsx"),
+    a("data-feed-run", "conditional", "ui/ide-shell.tsx"),
+    a("data-desk", "conditional", "ui/ide-shell.tsx"),
+    a("data-desk-panel", "conditional", "ui/ide-shell.tsx"),
+    a("data-desk-tab", "conditional", "ui/ide-shell.tsx"),
+    a("data-ide-desk-tab", "conditional", "ui/ide-shell + ide island"),
+    a("data-desk-row", "conditional", "ui/findings-desk + ide island"),
+    a("data-timeline-pane", "conditional", "ui/timeline.tsx"),
+    a("data-timeline-verbs", "conditional", "ui/timeline.tsx"),
+    a("data-files-pane", "conditional", "ui/files-pane.tsx"),
+    a("data-files-section", "conditional", "ui/files-pane.tsx"),
+    a("data-files-advanced", "conditional", "ui/files-pane.tsx"),
+    a("data-file-row", "conditional", "pages.tsx"),
+    a("data-next-step", "conditional", "ui/timeline.tsx"),
+    a("data-next-step-duration", "conditional", "ui/timeline.tsx"),
+    a("data-version-chip", "conditional", "ui/version-rail + timeline"),
+    a("data-project-id", "conditional", "ui/ide-shell.tsx"),
+    a("data-run", "conditional", "pages.tsx"),
+  ],
+};
+
+/** The manifest, flattened (surface tag preserved on each entry). */
+export const DOM_CONTRACT_ENTRIES: readonly (DomContractEntry & {
+  readonly surface: DomContractSurface;
+})[] = Object.entries(DOM_CONTRACT).flatMap(([surface, entries]) =>
+  entries.map((e) => ({ ...e, surface: surface as DomContractSurface })),
+);
+
+/** All hooks for one surface (or bucket). */
+export function hooksForSurface(surface: DomContractSurface): readonly DomContractEntry[] {
+  return DOM_CONTRACT[surface];
+}
+
+/**
+ * Does `token` (a `data-*` attr, role name, field name, or URL param) resolve to a manifest entry?
+ * Literal entries match exactly; prefix entries match any extension of the prefix. Mirrors the
+ * lint's resolver in scripts/check-dom-contract.mjs — keep the two in lockstep.
+ */
+export function domContractMatch(
+  token: string,
+): (DomContractEntry & { surface: DomContractSurface }) | null {
+  for (const e of DOM_CONTRACT_ENTRIES) {
+    if (e.kind === "attr" || e.kind === "role" || e.kind === "field" || e.kind === "urlparam") {
+      if (e.hook === token) return e;
+    } else {
+      if (token.startsWith(e.hook)) return e;
+    }
+  }
+  return null;
+}
