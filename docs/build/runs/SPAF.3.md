@@ -7,10 +7,10 @@
 - **Ticket:** `docs/tickets/112_SPAF.3__prod-flip-settings.md` (manifest row 112)
 - **Branch:** `stevevitali/spaf-3-prod-flip-settings`, stacked on
   `stevevitali/spa-12-surface-settings` @ `63be856` (`OPERATOR` merge policy, **not merged**).
-- **PR:** #134 — opened at closeout; `gh pr checks --watch=false` read once at stamp time
-  (results recorded below — the pipeline re-queues per push; inherited
+- **PR:** #134 — opened at closeout; `gh pr checks --watch=false` read once:
+  `typecheck / lint / unit` **pending** at stamp time (no completed results yet; inherited
   `integration`/privsep red, if it reports, is waived per GD-MAINT.4-1 — classified, not
-  repaired).
+  repaired). The pipeline re-queued on the closeout-docs push — recorded honestly.
 - **Goal:** flip `settings` to the SPA on prod — `STAGES.prod.spaSurfaces += 'settings'` as the
   one-line stage-fact PR; the operator merges + `pulumi up` deploys; rollback = revert +
   redeploy.
