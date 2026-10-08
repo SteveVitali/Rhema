@@ -300,7 +300,7 @@ Per the brief: backend data-model changes; api route semantics; billing/auth sem
 
 ## Appendix A — Requirement index
 
-All 191 requirements, id → governing section. `AC:` marks explicit acceptance hooks from source notes; decomposition derives criteria for the rest.
+All 192 requirements, id → governing section. `AC:` marks explicit acceptance hooks from source notes; decomposition derives criteria for the rest.
 
 | Family | Count | Governing section | Notes |
 |---|---|---|---|
