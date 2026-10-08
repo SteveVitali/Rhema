@@ -21,8 +21,8 @@
 
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — GATE-ACCEPT signed the deviations; open rows remain ledgered on BACKLOG.csv
-nextTicket:      MAINT.6            # row 149 (insert) — non-prod session plumbing — unblocks all signed-in preview legs; SPAF.2 follows (still gated on D-SPAF.1-4 + operator merge)
-lastCompleted:   SPA.11             # 2026-10-08 — surface: inbox — /bff twin + JSON mutations + InboxSurface + T2/R8 journey splits + dev flag (PR #130, unmerged); $0; preview legs blocked on D-OPS.1-1 preview sessions
+nextTicket:      SPAF.2             # row 110 — prod flip: inbox — still gated on D-SPAF.1-4 (nightly-green bake) + operator merge; MAINT.6's live proof is operator-secret-gated (D-MAINT.6-1)
+lastCompleted:   MAINT.6            # 2026-10-08 — non-prod session plumbing — resendApiKey non-prod path + resend-pull/seed-invite verbs + journeys --invite-code (PR #131, unmerged); $0; live proof deferred → D-MAINT.6-1 (operator secret absent)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (nothing)          # GD-MAINT.4-1 waived the inherited privsep CI red 2026-10-07; remaining live legs gate on a FUNDED window + operator rows
 pauseRequested:  false
@@ -34,12 +34,12 @@ dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operat
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
-chainTip:        stevevitali/spa-11-surface-inbox   # round 4 stacks here — SPA.11 tip
+chainTip:        stevevitali/maint-6-nonprod-session-plumbing   # round 4 stacks here — MAINT.6 tip
 benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           4                  # frontend-spa — spec docs/frontend-spa-spec.md (canonical v1.0)
-updatedAt:       2026-10-08T18:45:00Z         # SPA.11 landed (surface: inbox — dev flag only; prod untouched); prior: SPAF.1 prod flip: usage; build NOT DONE — live legs + funded-window rows remain ledgered
+updatedAt:       2026-10-08T19:55:00Z         # MAINT.6 landed (non-prod session plumbing — machinery-only; live proof D-MAINT.6-1, operator secret absent); prior: SPA.11 surface: inbox; build NOT DONE — live legs + funded-window rows remain ledgered
 ```
 
 ## OPEN FINDINGS
