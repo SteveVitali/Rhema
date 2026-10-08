@@ -15,11 +15,15 @@
 
 ## 0 — Context load
 
-- DEFERRALS.md read first (per AGENTS): no `OPEN` row is unblocked by SPA.7 — `D-SPA.6-1` (the
-  staging-verified renderer legs) gates on a deploy carrying the marker vocabulary + a `pr-<n>`
-  preview; the older open rows are funded-window legs, operator deploy legs, HUMAN
-  prerequisites, or product decisions; none is manifest/component-test scoped. No new row
-  opened — every ticket AC is discharged deterministically this run.
+- DEFERRALS.md read first (per AGENTS): `D-SPA.6-1` was assessed against the
+  **2026-10-08T12:29Z operator ruling** (PHASE LOG) that makes `pr-<n>` preview stacks
+  worker-self-serve — the ruling names D-SPA.6-1 as a leg the next preview-capable worker
+  should run. It stays OPEN: leg (a) still needs the operator's merge+deploy of the chain
+  (prod `6ebb1cb` predates the marker vocabulary), and leg (b) needs the CI `images` digests
+  for the head SHA + `rhema:spaSurfaces` stack config — PR #125's `images` job was still
+  pending at closeout, so no preview target for this head existed at run time. A dated
+  blocker-update note was appended to the row. No new row opened — every ticket AC is
+  discharged deterministically this run.
 - LEDGER CURRENT STATE read: `nextTicket: SPA.7`, `chainTip: stevevitali/spa-6-journey-harness`,
   `mergePolicy: OPERATOR`, `round: 4`, `dispatchTarget: subagent`, `pinnedBaseSha: fab08ed`.
 - Design sources applied, not re-derived: `docs/design/27_spa-acceptance-mechanics.md` (the
@@ -145,7 +149,9 @@ Enforces three inclusions over a comment-stripped, symlink-safe source scan
 - **Size:** ~2.0k changed lines vs the ~600 guide — the manifest alone is ~900 (the ticket's
   deliverable is the vocabulary), the lint ~465 + 208 test, the tests/testkit ~450. Recorded
   per the SPA.5/SPA.6 test-first precedent.
-- **Deferrals:** none opened, none closed.
+- **Deferrals:** none opened, none closed; dated blocker-update note appended to `D-SPA.6-1`
+  (preview stacks now worker-self-serve per the 12:29Z ruling; images/flag-config + the prod
+  merge-deploy remain).
 
 ## 4 — AC ledger
 
@@ -162,7 +168,21 @@ Enforces three inclusions over a comment-stripped, symlink-safe source scan
 
 ## 5 — CI / PR
 
-- PR: see `pr/SPA.7.md`; base `stevevitali/spa-6-journey-harness`; unmerged (`OPERATOR`).
-- `gh pr checks --watch=false` at closeout — result recorded verbatim below after the read.
+- PR **#125** (`docs/build/pr/SPA.7.md` is the body); base `stevevitali/spa-6-journey-harness`;
+  head `stevevitali/spa-7-dom-contract-rtl`; unmerged (`OPERATOR`).
+- `gh pr checks --watch=false` at closeout — verbatim:
+  `typecheck / lint / unit  pending  0  https://github.com/SteveVitali/Rhema/actions/runs/37790215319/job/113355309414`
+  (exit 8 — the run registered but had not reported at read time; read exactly once per
+  closeout discipline; the result rides the PR, not a re-read here).
 - Validators: `check-build-memory.sh` + `check-append-only.mjs --base 68cce50` — results
-  recorded below after the run.
+  recorded in the closeout commit below.
+
+### Closeout addendum (validator results)
+
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — **0 violations,
+  7 warnings**, all pre-existing classes (manifest banner/order notes incl. GATE-G1/GATE-G2,
+  PHASE-LOG >2 KiB entries — this entry joins the accepted pattern, legacy index status values,
+  pre-guard readouts, run ledgers without Harness headers).
+- `node docs/build/tools/check-append-only.mjs --base 68cce50` — **append-only OK**.
+- `gh pr checks --watch=false` (read once at closeout) — `typecheck / lint / unit pending`
+  (exit 8; the run had registered but not reported).
