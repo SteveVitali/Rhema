@@ -1,6 +1,6 @@
 # SPA.10 — surface: usage (`/usage` + `/p/:slug/usage` → React SPA behind the `usage` flag)
 
-Manifest row 107 · stacks on `stevevitali/spa-9-ide-chrome-layout` @ `1771922` · merge policy
+**PR #128** · Manifest row 107 · stacks on `stevevitali/spa-9-ide-chrome-layout` @ `1771922` · merge policy
 **OPERATOR** — do not merge from the build environment · **$0** spend, no deploys, no
 production writes.
 

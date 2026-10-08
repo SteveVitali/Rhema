@@ -175,4 +175,15 @@ the production router with flipped/unflipped verdicts (SsrHandoff + no-BFF-spend
 
 ## 6 — Closeout addendum (post-PR)
 
-_Pending — filled after `gh pr create` + the single `gh pr checks --watch=false` read._
+- **PR:** #128 — `gh pr create --base stevevitali/spa-9-ide-chrome-layout` (stacked; **not merged** —
+  `OPERATOR` policy).
+- **Checks read (once, `gh pr checks 128 --watch=false`):** `no checks reported on the
+  'stevevitali/spa-10-surface-usage' branch` — CI had not reported at read time; recorded honestly,
+  not claimed green.
+- **Commits:** impl `cc8ad4f` · docs pre-closeout `59617e4` · closeout `d92d27e` (+ this addendum).
+- **Build memory:** `runs/SPA.10.md` + `pr/SPA.10.md` committed · BUILD_INDEX row 135 · LEDGER
+  `lastCompleted: SPA.10`, `nextTicket: SPAF.1`, `chainTip: stevevitali/spa-10-surface-usage`,
+  `updatedAt: 2026-10-08T16:45:00Z` · PHASE LOG entry appended.
+- **Chain tip left behind:** `stevevitali/spa-10-surface-usage` — next row (SPAF.1,
+  `prod.spaSurfaces += usage`) stacks here.
+- **Spend:** $0 · zero production writes · zero deploys.
