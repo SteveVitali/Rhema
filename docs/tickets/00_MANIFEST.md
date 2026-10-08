@@ -263,6 +263,7 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 107 | `107_SPA.10__surface-usage.md` | R4 surfaces | Surface flip: usage (/usage, /p/:p/usage) — BFF twins + components + tests + journey legs + dev flag |
 | 108 | `108_SPAF.1__prod-flip-usage.md` | R4 prod flips | **flip** — STAGES.prod.spaSurfaces += usage; minimal PR + deploy + nightly-green gate |
 | 109 | `109_SPA.11__surface-inbox.md` | R4 surfaces | Surface flip: inbox (/app/inbox) — twin + 2 mutations |
+| 149 | `149_MAINT.6__nonprod-session-plumbing.md` | maint (insert) | preview signed-in sessions: non-prod `rhema:resendApiKey` real-key path + `resend-pull`/`seed-invite` verbs + journeys `--invite-code` — unblocks every surface's live legs; closes D-OPS.1-1 + D-SPA.6-1 |
 | 110 | `110_SPAF.2__prod-flip-inbox.md` | R4 prod flips | **flip** — prod += inbox |
 | 111 | `111_SPA.12__surface-settings.md` | R4 surfaces | Surface flip: settings (/app/settings* + /p/:p/settings, one flip across 6+1 sub-pages) + confirm-email POST |
 | 112 | `112_SPAF.3__prod-flip-settings.md` | R4 prod flips | **flip** — prod += settings |
@@ -743,3 +744,12 @@ sequence (BM-COMPAT-05 — historical filenames are not renamed).
   OAuth defect — Chromium enforces CSP `form-action` on a form POST's redirect TARGET, so the healthy
   302 to `accounts.google.com` was silently blocked (same class as BILL.3's Stripe hand-off, ADR-027).
   Trigger: operator report post-deploy + headless-browser reproduction.
+
+- **2026-10-08 — INSERT** `149_MAINT.6` (seq 149; stacked; positioned after row 109 `SPA.11`, before row
+  110 `SPAF.2`): non-prod test-session plumbing — `rhema:resendApiKey` real-key path (non-prod only, prod
+  refuses) + `preview-stack.mjs resend-pull`/`seed-invite` verbs + journeys `--invite-code`, so `pr-<n>`
+  previews mint real `test*@rhema.tools` sessions through the magic-link path. Operator prerequisite:
+  `rhema-nonprod-resend-api-key` seeded in Secret Manager (scoped send-only key, prod-account domain).
+  Closes D-OPS.1-1 + D-SPA.6-1; unblocks every remaining surface's legs A/B/C. Trigger: SPA.11 found
+  D-OPS.1-1 as the operative blocker for all signed-in preview legs; operator ruled "real Resend key on
+  non-prod" (2026-10-08 ledger phase log).
