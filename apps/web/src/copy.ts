@@ -1309,6 +1309,13 @@ export const COPY = {
     quietEnable: "On",
     quietStartLabel: "From",
     quietEndLabel: "To",
+    /** SPA.12 — the shared option labels the matrix selects + quiet-hours + `rp_*` rows carry
+     *  (REQ-SAFE-10: the SPA's copy-containment rule needs every user-facing literal on a leaf —
+     *  the SSR's bare "On"/"Off" option text now lives here too). */
+    optOn: "On",
+    optOff: "Off",
+    optDigest: "Digest",
+    optHourly: "Hourly",
     runProgressHeading: "Run progress — per project",
     runProgressNote: "In-app phase updates — off everywhere by default; opt in per project.",
     runProgressProjectFmt: "{title}",

@@ -327,8 +327,11 @@ export const STAGES: Record<StageKind, StageConfig> = {
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     // SPA.10 — the `usage` flag flips on dev (the surface's per-ticket dev line; REQ-SEQ-3/9).
     // SPA.11 — `inbox` joins on dev only; prod waits for its own SPAF flip ticket.
+    // SPA.12 — `settings` joins on dev only (its 7 routes ride the one surface flag; prod waits
+    // for its own SPAF flip ticket — the /app/settings/billing leaf answers to `billing`, not
+    // this flag).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox"],
+    spaSurfaces: ["usage", "inbox", "settings"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
