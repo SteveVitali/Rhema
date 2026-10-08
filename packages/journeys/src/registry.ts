@@ -325,7 +325,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T3",
     journey: "both",
     asserts:
-      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Flipped green 2026-10-06 on the deployed tip fcbbc66 (nonce 6c268536d58b): CAP.3's D-STB.5a-1 systemExec token lookup → the emailed link 302s to the presigned zip, and D-STB.5a-2's slug deconflict → notice=imported parity + re-import deduped",
+      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Flipped green 2026-10-06 on the deployed tip fcbbc66 (nonce 6c268536d58b): CAP.3's D-STB.5a-1 system-pool token lookup → the emailed link 302s to the presigned zip, and D-STB.5a-2's slug deconflict → notice=imported parity + re-import deduped",
     owner: "STB.5a",
     expected: "green",
     paid: false,
