@@ -1203,6 +1203,8 @@ export const COPY = {
     additionPlaceholder: "e.g. I rewrote the conclusion myself.",
     additionCta: "Add sentence",
     standaloneHeading: "Statement on its own",
+    standaloneMdLabel: ".md",
+    standaloneDocxLabel: ".docx",
     exportCta: "Export",
     exportFailed: "The export did not complete — nothing was downloaded.",
   },

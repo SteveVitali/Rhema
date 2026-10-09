@@ -24,7 +24,6 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -34,20 +33,14 @@ import { useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ConversionPreview,
-  FilesPane,
   PageTitle,
   Shell,
-  type IdeShellProps,
 } from "@rhema/ui";
-import type { PaletteData } from "@rhema/ide";
 import type { PresignedImportDto } from "@rhema/api-client";
 import { COPY } from "../../copy.js";
-// The FilesPane label bag is the ONE pages.tsx renders — the SSR↔SPA parity seam lives outside
-// the spa/ tree (the REQ-SAFE-10 leaf scan keys on `COPY.<leaf>` refs inside it).
-import { filesLabels } from "../../files-labels.js";
 import { BffError, bffFetch } from "../bff.js";
 import { navigateDocument } from "../dom.js";
-import { useIdeChromeData, type IdeChromeData } from "../ide/chrome-data.js";
+import { useShellChrome } from "../ide/chrome-data.js";
 import {
   HELD_DISCARD_CTA,
   HELD_DISCARDED_TEXT,
@@ -58,7 +51,6 @@ import {
 } from "../../client/hold-store.js";
 import type {
   BffConversion,
-  BffIdeBag,
   BffImportPreviewTwin,
   BffImportTwin,
   BffNewProjectPreviewTwin,
@@ -256,68 +248,9 @@ function useOnboardingSubmit(opts?: {
   };
 }
 
-// ---- the §5.1 IDE-chrome publication (the SSR `ideContext` bag → IdeChromeData) -----------------
-
-interface ImportShellData {
-  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
-  readonly paperTheme: string;
-  readonly appTheme?: string;
-  readonly ide: BffIdeBag;
-}
-
-/**
- * Publishes the twin's `ide` bag onto the React chrome for as long as the leaf is mounted —
- * the SSR `ideContext`'s fields verbatim: identity (projectId), theming, palette (its JSON
- * string parsed back to the typed `PaletteData`), panes that are data (findings/timeline/feed/
- * inbox/status), and `filesBody` built through the SAME `FilesPane` the SSR renders. `chat` is
- * the pane's own degrade state when absent (the seam is best-effort server-side too).
- */
-function useImportChrome(shell: ImportShellData): void {
-  const data = useMemo<IdeChromeData>(() => {
-    let palette: PaletteData | undefined;
-    try {
-      palette = shell.ide.palette ? (JSON.parse(shell.ide.palette) as PaletteData) : undefined;
-    } catch {
-      palette = undefined;
-    }
-    const slug = shell.project.slug;
-    return {
-      projectId: shell.ide.projectId ?? slug,
-      projectTitle: shell.project.title,
-      projectPill: shell.project.pill,
-      paperTheme: shell.paperTheme as IdeShellProps["paperTheme"],
-      ...(shell.appTheme ? { appTheme: shell.appTheme as IdeShellProps["appTheme"] } : {}),
-      ...(shell.ide.initialView ? { initialView: shell.ide.initialView } : {}),
-      ...(shell.ide.sourceHref ? { sourceHref: shell.ide.sourceHref } : {}),
-      ...(shell.ide.activeRun ? { activeRun: shell.ide.activeRun } : {}),
-      ...(shell.ide.inboxCount != null ? { inboxCount: shell.ide.inboxCount } : {}),
-      ...(shell.ide.findings ? { findings: shell.ide.findings } : {}),
-      ...(shell.ide.timeline ? { timeline: shell.ide.timeline } : {}),
-      ...(shell.ide.timelineView ? { timelineView: shell.ide.timelineView as IdeChromeData["timelineView"] } : {}),
-      ...(shell.ide.feed ? { feed: shell.ide.feed } : {}),
-      ...(shell.ide.runNextHref ? { runNextHref: shell.ide.runNextHref } : {}),
-      ...(palette ? { palette } : {}),
-      ...(shell.ide.paletteSearchUrl ? { paletteSearchUrl: shell.ide.paletteSearchUrl } : {}),
-      ...(shell.ide.status ? { status: shell.ide.status } : {}),
-      ...(shell.ide.files
-        ? {
-            filesBody: (
-              <FilesPane
-                sections={shell.ide.files.sections}
-                hrefs={{
-                  artifact: (id) => `/p/${slug}/a/${id}`,
-                  draft: (n) => `/p/${slug}/v/${n}`,
-                  run: (id) => `/p/${slug}/r/${id}`,
-                }}
-                labels={filesLabels}
-              />
-            ),
-          }
-        : {}),
-    };
-  }, [shell]);
-  useIdeChromeData(data);
-}
+// ---- the §5.1 IDE-chrome publication — SPA.17 hoisted the shell→IdeChromeData mapper onto the
+// shared seam (`useShellChrome` in ../ide/chrome-data.js); the import leaves publish the twin's
+// `ide` bag through it verbatim (REQ-SEQ-12). ----------------------------------------------------
 
 // ---- the §5.3 converting/pending section (shared by both preview legs) -------------------------
 
@@ -806,7 +739,7 @@ export function ImportSurface({
   data: BffImportTwin["import"];
   compact: boolean;
 }): ReactNode {
-  useImportChrome(data);
+  useShellChrome(data);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const slug = data.project.slug;
@@ -870,7 +803,7 @@ export function ImportPreviewSurface({
   compact: boolean;
 }): ReactNode {
   const { conversion } = data;
-  useImportChrome(data);
+  useShellChrome(data);
   const router = useRouter();
   const slug = conversion.projectSlug;
 

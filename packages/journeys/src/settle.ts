@@ -14,12 +14,30 @@
 // marker assert to our own origin so a hosted page never trips them.
 
 import type { Page } from "playwright";
+import { SPA_DOCUMENT_ROUTES, type SpaSurface } from "@rhema/contracts";
 
 /** The `data-renderer` vocabulary — the only two renderers a served document may report. */
 export type RendererName = "ssr" | "spa";
 
 /** The request-level override header (`deps.spa`'s consult input — REQ-SEQ-4). */
 export const RENDERER_HEADER = "x-rhema-renderer";
+
+/**
+ * SPA.17 (design/29 §coexistence) — the route ids a `--surface` leg asserts `--expect-renderer`
+ * on. A gated step's traversal documents outside the gated surfaces' path set keep their own
+ * flag's verdict — pinning `spa` on an unflipped neighbour's document would lie about the
+ * contract (e.g. `export`'s R5 step walks the still-SSR editor doc). `null` ⇒ the every-document
+ * assert (an unscoped run keeps its meaning).
+ */
+export function gatedRouteIds(
+  surfaces: readonly SpaSurface[] | null | undefined,
+): ReadonlySet<string> | null {
+  if (surfaces == null || surfaces.length === 0) return null;
+  const wanted = new Set<SpaSurface>(surfaces);
+  return new Set(
+    SPA_DOCUMENT_ROUTES.filter((r) => r.surfaces?.some((s) => wanted.has(s))).map((r) => r.routeId),
+  );
+}
 
 /**
  * The scope a settle/assert runs in. `StepCtx` satisfies this structurally — pass `ctx`
@@ -30,6 +48,12 @@ export interface SettleScope {
   readonly webBaseUrl: string;
   /** `--expect-renderer`: when pinned, every settled document must carry this `data-renderer`. */
   readonly expectRenderer?: RendererName | null;
+  /**
+   * SPA.17 — a `--surface` leg's gated route ids (`gatedRouteIds()`'s result). Non-null scopes
+   * the renderer assert to documents whose `data-route` is in the set; `null`/absent asserts
+   * every settled document.
+   */
+  readonly rendererScope?: ReadonlySet<string> | null;
 }
 
 export interface SettleWait {
@@ -67,18 +91,24 @@ export async function awaitMounted(
   if (!onOurOrigin(page.url(), scope.webBaseUrl)) return;
   const route = wait.route ?? null;
   const renderer = scope.expectRenderer ?? null;
+  const gated = scope.rendererScope == null ? null : [...scope.rendererScope];
   const timeout = wait.timeoutMs ?? 30_000;
   try {
     await page.waitForFunction(
-      ([wantRoute, wantRenderer]) => {
+      ([wantRoute, wantRenderer, gatedRoutes]) => {
         const el = document.documentElement;
         if (!el.hasAttribute("data-mounted")) return false;
-        if (wantRoute != null && el.getAttribute("data-route") !== wantRoute) return false;
-        if (wantRenderer != null && el.getAttribute("data-renderer") !== wantRenderer)
-          return false;
+        const docRoute = el.getAttribute("data-route");
+        if (wantRoute != null && docRoute !== wantRoute) return false;
+        if (wantRenderer != null) {
+          // a scoped leg asserts the renderer only under the gated surfaces' path set — a
+          // document outside the set reports its own flag's verdict (design/29 §coexistence).
+          const assertable = gatedRoutes == null || (docRoute != null && gatedRoutes.indexOf(docRoute) >= 0);
+          if (assertable && el.getAttribute("data-renderer") !== wantRenderer) return false;
+        }
         return true;
       },
-      [route, renderer] as const,
+      [route, renderer, gated] as const,
       { timeout },
     );
   } catch {

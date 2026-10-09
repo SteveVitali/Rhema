@@ -13,6 +13,7 @@ import type {
   BillingSubscriptionDto,
   CheckoutStatusDto,
   DataSettingsDto,
+  ExportDialogDto,
   ChatPanelDto,
   FilesDto,
   GateCardDto,
@@ -608,3 +609,32 @@ export const billingReturnQuery = (s: BillingReturnSearch = {}) => {
     retry: retryPolicy,
   });
 };
+
+// ---- SPA.17 — the `export` surface's twin (REQ-BFF-1/8/9/11/16, REQ-DAT-4/6; design/22 §2
+// `p.export` row). The §13.4 dialog's own composition verbatim — slug→id off the server's
+// request-scoped memo, `getExportDialog` under the SSR's catch→not-found seam — plus project
+// facts and the `ide` bag the leaf republishes onto the React chrome (the first IDE-framed
+// flip: `export` AND `ide-chrome` are server-ANDed into the boot verdict — REQ-SEQ-6/12).
+// `?error`/`?added`/`?focus` stay URL state — flash params are never payload; `compact` is
+// boot-owned (`deviceClass`). The export POST itself stays a native document nav — bytes
+// never ride a JSON envelope (REQ-BFF-17); `/export/addition` is the surface's one JSON
+// mutation (`{ok, redirect:"/p/:slug/export?added=1"}`). ----
+
+/** `GET /bff/p/:slug/export` — the dialog + project facts + the chrome `ide` bag. */
+export interface BffExportTwin {
+  readonly export: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly dialog: ExportDialogDto;
+    readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+    readonly paperTheme: string;
+    readonly appTheme?: string;
+    readonly ide: BffIdeBag;
+  };
+}
+export const projectExportQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "export"],
+    queryFn: () => bffFetch<BffExportTwin>(`/bff/p/${encodeURIComponent(slug)}/export`),
+    retry: retryPolicy,
+  });

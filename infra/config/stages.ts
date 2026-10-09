@@ -342,8 +342,10 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // verified/showcase/held precedence stays server-side ahead of the consult).
     // SPA.16 — `billing` joins on dev only (the /app/settings/billing + /settings/billing +
     // /billing/return leaves; the Stripe hand-offs stay server-validated `{url}` envelopes).
+    // SPA.17 — `export` joins on dev only, paired with the already-listed `ide-chrome` (the
+    // first IDE-framed flip: /p/:slug/export mounts <IdeChrome> — both flags gate together).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

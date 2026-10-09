@@ -3,6 +3,7 @@ import type { Page } from "playwright";
 import {
   RENDERER_HEADER,
   awaitMounted,
+  gatedRouteIds,
   gotoOk,
   onOurOrigin,
   rendererOfDocument,
@@ -184,6 +185,59 @@ describe("gotoOk / settleNav / reloadSettled — the canonical navs", () => {
       attrs: { route: "/p/$project", renderer: "ssr", mounted: true },
     });
     await expect(reloadSettled(page, SCOPE)).resolves.toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPA.17 — the scoped renderer assert (design/29 §coexistence): a `--surface` leg asserts
+// --expect-renderer only on documents under the gated surfaces' route ids; a traversal doc
+// outside the set keeps its own flag's verdict and must never fail the leg.
+
+describe("gatedRouteIds — the --surface path set (SPA.17)", () => {
+  it("unset/empty ⇒ null (the every-document assert keeps its meaning)", () => {
+    expect(gatedRouteIds(undefined)).toBeNull();
+    expect(gatedRouteIds(null)).toBeNull();
+    expect(gatedRouteIds([])).toBeNull();
+  });
+  it("a surface resolves to exactly its SPA_DOCUMENT_ROUTES rows", () => {
+    expect(gatedRouteIds(["export"])).toEqual(new Set(["/p/$project/export"]));
+    expect(gatedRouteIds(["ide-chrome"])).toEqual(
+      new Set(["/p/$project/import", "/p/$project/import/preview"]),
+    );
+    expect(gatedRouteIds(["export", "ide-chrome"])).toEqual(
+      new Set(["/p/$project/export", "/p/$project/import", "/p/$project/import/preview"]),
+    );
+  });
+});
+
+describe("awaitMounted — the scoped renderer assert (SPA.17)", () => {
+  const EXPORT_SCOPE: SettleScope = {
+    webBaseUrl: "https://app.test",
+    expectRenderer: "spa",
+    rendererScope: gatedRouteIds(["export"]),
+  };
+  it("an ungated route's settled document keeps its own renderer — the leg never demands spa on it", async () => {
+    const page = fakePage({
+      url: "https://app.test/p/acme",
+      attrs: { route: "/p/$project", renderer: "ssr", mounted: true },
+    });
+    await expect(awaitMounted(page, EXPORT_SCOPE)).resolves.toBeUndefined();
+  });
+  it("a gated route carrying the WRONG renderer still fails the wait", async () => {
+    const page = fakePage({
+      url: "https://app.test/p/acme/export",
+      attrs: { route: "/p/$project/export", renderer: "ssr", mounted: true },
+    });
+    await expect(awaitMounted(page, EXPORT_SCOPE)).rejects.toThrow(
+      /data-renderer="spa".*"renderer": ?"ssr"/,
+    );
+  });
+  it("a gated route carrying the pinned renderer resolves", async () => {
+    const page = fakePage({
+      url: "https://app.test/p/acme/export",
+      attrs: { route: "/p/$project/export", renderer: "spa", mounted: true },
+    });
+    await expect(awaitMounted(page, EXPORT_SCOPE)).resolves.toBeUndefined();
   });
 });
 

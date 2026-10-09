@@ -2150,3 +2150,259 @@ describe("POST /app/settings/billing/* + /settings/billing/* — the JSON mutati
     }
   });
 });
+
+describe("GET /bff/p/:slug/export — the export twin (SPA.17; REQ-BFF-1/8/9/11, REQ-DAT-4/6, REQ-SEQ-12)", () => {
+  const DIALOG = {
+    projectId: "proj_pv",
+    formats: [
+      {
+        id: "md",
+        label: "Markdown",
+        extension: "md",
+        blurb: "The canonical file.",
+        provenanceAppendix: true,
+      },
+    ],
+    mdProfiles: [
+      { id: "substack", label: "Substack", blurb: "Markdown shaped for the Substack editor." },
+    ],
+    citations: { hasBibliography: true, styles: [{ id: "apa", label: "APA" }] },
+    provenance: {
+      available: true,
+      defaultOn: false,
+      label: "Block-level provenance.",
+      formats: ["md"],
+    },
+    surfaces: {
+      disclosure: true,
+      exclusivityReminder: "Confirm this piece is not under review anywhere else.",
+    },
+    obligations: {
+      blockingOpen: 2,
+      open: 3,
+      line: "2 blocking obligations open",
+      items: [],
+      returnedIds: [],
+    },
+    statement: {
+      template: "general",
+      generated: ["This manuscript was prepared in Rhēma."],
+      additions: [],
+      markdown: "# AI-use statement\n",
+      openObligations: 3,
+      blockingOpen: 2,
+      generatedAt: "2026-09-04T00:00:00.000Z",
+    },
+  };
+  const webDeps = (over: Partial<DataSource>): WebDeps =>
+    ({
+      session: () => SESSION,
+      dataSource: {
+        listProjects: async () => ROWS,
+        getExportDialog: async () => DIALOG,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns {export:{slug,projectId,dialog,project,paperTheme,ide}} — the document's composition verbatim", async () => {
+    const res = await createWebApp(webDeps({})).request(
+      "/bff/p/the-politics-of-visibility/export",
+      {
+        headers: { accept: "application/json" },
+      },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      export: {
+        slug: string;
+        projectId: string;
+        dialog: typeof DIALOG;
+        project: { title: string; pill: string; slug: string };
+        paperTheme: string;
+        ide: { projectId?: string; paletteSearchUrl?: string; themeUrl?: string };
+      };
+    };
+    expect(body.export.slug).toBe("the-politics-of-visibility");
+    expect(body.export.projectId).toBe("proj_pv");
+    expect(body.export.dialog).toEqual(DIALOG);
+    expect(body.export.project).toEqual({
+      title: "The Politics of Visibility",
+      pill: "Draft",
+      slug: "the-politics-of-visibility",
+    });
+    expect(body.export.paperTheme).toBe("light");
+    // the chrome publish bag — the ideContext fields the leaf republishes (REQ-SEQ-12).
+    expect(body.export.ide.projectId).toBe("proj_pv");
+    expect(body.export.ide.paletteSearchUrl).toBe("/p/the-politics-of-visibility/palette-search");
+    expect(body.export.ide.themeUrl).toBe("/ide/theme");
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("an unknown slug answers {error:not_found} 404", async () => {
+    const res = await createWebApp(webDeps({})).request("/bff/p/nope/export", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("a refused dialog read lands 404 — the SSR's catch→not-found seam verbatim", async () => {
+    const res = await createWebApp(
+      webDeps({
+        getExportDialog: async () => {
+          throw new ApiError(500, "x");
+        },
+      }),
+    ).request("/bff/p/the-politics-of-visibility/export", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp({ ...webDeps({}), session: () => null }).request(
+      "/bff/p/the-politics-of-visibility/export",
+      { headers: { accept: "application/json" } },
+    );
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("POST /p/:slug/export + /export/addition — the export mutation arms (SPA.17; REQ-BFF-1/2/3/17)", () => {
+  const DL = {
+    bytes: new TextEncoder().encode("# the manuscript").buffer as ArrayBuffer,
+    mediaType: "text/markdown; charset=utf-8",
+    fileName: "the-politics-of-visibility.md",
+  };
+  const webDeps = (
+    over: Partial<DataSource> = {},
+    session: WebDeps["session"] = () => SESSION,
+  ): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        listProjects: async () => ROWS,
+        getExportDialog: async () => ({ statement: {} }),
+        exportProject: async () => DL,
+        appendAiUseAddition: async () => ({
+          id: "ad_9",
+          sentence: "x",
+          createdAt: "2026-09-04T00:00:00.000Z",
+        }),
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("POST /export — a JSON caller gets the honest refusal (bytes never ride an envelope, REQ-BFF-17)", async () => {
+    let exported = 0;
+    const res = await createWebApp(
+      webDeps({
+        exportProject: async () => {
+          exported += 1;
+          return DL;
+        },
+      }),
+    ).request("/p/the-politics-of-visibility/export", {
+      ...jsonPost,
+      body: JSON.stringify({ format: "md" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "binary_download" });
+    // the refusal happens BEFORE the upstream call — nothing was exported.
+    expect(exported).toBe(0);
+  });
+
+  it("POST /export — the form post still streams bytes (SSR behaviour verbatim)", async () => {
+    const res = await createWebApp(webDeps({})).request("/p/the-politics-of-visibility/export", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "format=md",
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-disposition")).toContain("the-politics-of-visibility.md");
+    expect(await res.text()).toBe("# the manuscript");
+  });
+
+  it("POST /export — no session: 401 JSON vs the form's /login redirect", async () => {
+    const app = createWebApp(webDeps({}, () => null));
+    const json = await app.request("/p/the-politics-of-visibility/export", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(json.status).toBe(401);
+    expect(await json.json()).toEqual({ error: "unauthenticated" });
+    const form = await app.request("/p/the-politics-of-visibility/export", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "format=md",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("/login");
+  });
+
+  it("POST /export/addition — JSON caller posts {sentence} and gets the ?added=1 redirect arm", async () => {
+    let appended = "";
+    const res = await createWebApp(
+      webDeps({
+        appendAiUseAddition: async (_s, _p, sentence) => {
+          appended = sentence;
+          return { id: "ad_9", sentence, createdAt: "2026-09-04T00:00:00.000Z" };
+        },
+      }),
+    ).request("/p/the-politics-of-visibility/export/addition", {
+      ...jsonPost,
+      body: JSON.stringify({ sentence: "  I rewrote the ending myself.  " }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      ok: true,
+      redirect: "/p/the-politics-of-visibility/export?added=1",
+    });
+    expect(appended).toBe("I rewrote the ending myself.");
+  });
+
+  it("POST /export/addition — a form post still 302s to ?added=1 (SSR verbatim); empty sentence is a no-op write", async () => {
+    let calls = 0;
+    const app = createWebApp(
+      webDeps({
+        appendAiUseAddition: async () => {
+          calls += 1;
+          return { id: "ad_9", sentence: "x", createdAt: "2026-09-04T00:00:00.000Z" };
+        },
+      }),
+    );
+    const res = await app.request("/p/the-politics-of-visibility/export/addition", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "sentence=hi",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/export?added=1");
+    expect(calls).toBe(1);
+    const empty = await app.request("/p/the-politics-of-visibility/export/addition", {
+      ...jsonPost,
+      body: JSON.stringify({ sentence: "   " }),
+    });
+    expect(empty.status).toBe(200);
+    expect(calls).toBe(1); // a blank sentence never reaches the api — verbatim.
+  });
+
+  it("POST /export/addition — no session → 401 JSON vs the form's /login redirect; unknown slug → 404", async () => {
+    const app = createWebApp(webDeps({}, () => null));
+    const res = await app.request("/p/the-politics-of-visibility/export/addition", {
+      ...jsonPost,
+      body: JSON.stringify({ sentence: "x" }),
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+    const missing = await createWebApp(webDeps({})).request("/p/nope/export/addition", {
+      ...jsonPost,
+      body: JSON.stringify({ sentence: "x" }),
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
+  });
+});
