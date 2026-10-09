@@ -222,23 +222,29 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         stepsByRun.set(s.run_id, l);
       }
 
-      // unresolved blocking gate per waiting run — the FULL card row set (P1.09: the Timeline mounts
-      // the identical approve-with-deadline card the Needs-you surface renders, §6.4).
-      const waitingIds = runs.filter((r) => r.state === "waiting_gate" && r.paused_at == null).map((r) => r.id);
+      // unresolved gate per live run — the FULL card row set (P1.09: the Timeline mounts the identical
+      // card the Needs-you surface renders, §6.4). RUN.1: a BLOCKING gate rides its waiting run; an
+      // INFORMATIONAL gate (blocking:false — the default approve_scope) rides its RUNNING run until the
+      // letter phase (the card is observability; `waitingGate` stays truthful below — the run never
+      // waited). A steering-paused run mounts nothing (its park isn't a gate).
+      const gateRunIds = runs.filter((r) => !TERMINAL.has(r.state) && r.paused_at == null).map((r) => r.id);
       const gates =
-        waitingIds.length === 0
+        gateRunIds.length === 0
           ? []
           : ((
               await tx.query(
                 `${OPEN_GATE_SELECT}
                   where g.run_id = any($1::text[]) and g.resolved_at is null
                   order by g.opened_at`,
-                [waitingIds],
+                [gateRunIds],
               )
             ).rows as OpenGateRow[]);
       const gateByRun = new Map<string, { row: OpenGateRow; dto: GateCardWire }>();
       for (const g of gates) {
-        if (gateByRun.has(g.run_id)) continue; // one open gate per run (earliest wins)
+        // one open gate card per run — a BLOCKING gate always wins over an informational one (it is
+        // what a waiting run is literally waiting on; earliest wins within a class).
+        const prior = gateByRun.get(g.run_id);
+        if (prior && (prior.row.blocking || !g.blocking)) continue;
         const dto = {
           ...gateDtoBase(g),
           remainingEstimateCredits:
@@ -452,15 +458,18 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
               }
             : {}),
           paused: r.paused_at != null,
-          waitingGate: gateByRun.has(r.id)
-            ? {
-                kind: gateByRun.get(r.id)!.row.kind,
-                deadlineAt:
-                  gateByRun.get(r.id)!.row.deadline_at != null
-                    ? new Date(gateByRun.get(r.id)!.row.deadline_at as string | Date).toISOString()
-                    : null,
-              }
-            : null,
+          // RUN.1 — `waitingGate` is literally truthful: only a run IN waiting_gate reports it. A
+          // running run's informational card mounts via `gate` below without the waiting treatment.
+          waitingGate:
+            r.state === "waiting_gate" && gateByRun.has(r.id)
+              ? {
+                  kind: gateByRun.get(r.id)!.row.kind,
+                  deadlineAt:
+                    gateByRun.get(r.id)!.row.deadline_at != null
+                      ? new Date(gateByRun.get(r.id)!.row.deadline_at as string | Date).toISOString()
+                      : null,
+                }
+              : null,
           // P1.09 — the run's permanent approval-decision records (§6.4 item 8).
           ...(decisionsByRun.has(r.id) ? { decisions: decisionsByRun.get(r.id) } : {}),
           deliverables,

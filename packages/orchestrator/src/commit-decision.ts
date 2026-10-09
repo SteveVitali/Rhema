@@ -37,6 +37,11 @@ export function decideCommitNext(args: CommitDecisionArgs): CommitNext {
         blocking: resolution.blocking,
         onExpiry: resolution.onExpiry,
         deadlineAt: resolution.deadlineAt,
+        // RUN.1 (ADR-050) — an informational gate (blocking:false — the default approve_scope) records
+        // the card but never parks: `then` carries the transition the run would have taken had the
+        // gate not opened — advance into the next phase or finalize after the last one. Blocking
+        // gates carry no `then` (the run waits for the decision).
+        ...(resolution.blocking ? {} : { then: args.isLastPhase ? ("finalize" as const) : ("advance" as const) }),
       };
     }
     // action === "skip": the gate is turned off by policy; the run keeps moving (advance/finalize below).

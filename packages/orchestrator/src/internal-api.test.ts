@@ -170,7 +170,7 @@ describe("commitStep — atomicity, idempotency, gate-open", () => {
       of: 7,
       credits: 60,
       result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
-      next: { kind: "gate", gateKind: "approve_scope", blocking: false, onExpiry: "proceed_as_proposed" },
+      next: { kind: "gate", gateKind: "approve_scope", blocking: true, onExpiry: "proceed_as_proposed" },
     });
     expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
     if (res.ok) expect(res.gateId).toBeTruthy();
@@ -180,6 +180,62 @@ describe("commitStep — atomicity, idempotency, gate-open", () => {
       await db.txRunner.run(seed.workspaceId, (tx) => tx.query("select parked_until from runs where id='run1'", []))
     ).rows[0] as { parked_until: Date | null };
     expect(row.parked_until).not.toBeNull();
+  });
+
+  // RUN.1 (ADR-050) — the live defect: an informational approve_scope card labelled "the run proceeds"
+  // still parked the run (2026-09-30 review). `blocking:false` now records the card only — the run
+  // takes `next.then` and keeps moving; no parked_until, no expiry job.
+  it("gate: an INFORMATIONAL (blocking:false) gate records the card but never parks — then:'advance'", async () => {
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "intake",
+      ordinal: 0,
+      of: 7,
+      credits: 60,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "gate", gateKind: "approve_scope", blocking: false, onExpiry: "wait", then: "advance" },
+    });
+    expect(res).toMatchObject({ ok: true, state: "running" });
+    if (res.ok) expect(res.gateId).toBeTruthy();
+    expect(await stateOf("run1")).toBe("running"); // the label "the run proceeds" is now the truth
+    const gate = (
+      await db.client.query("select blocking, resolved_at from gates where run_id='run1'", [])
+    ).rows[0] as { blocking: boolean; resolved_at: Date | null };
+    expect(gate.blocking).toBe(false);
+    expect(gate.resolved_at).toBeNull(); // the open card rides the run until the letter phase
+    const row = (
+      await db.txRunner.run(seed.workspaceId, (tx) => tx.query("select parked_until from runs where id='run1'", []))
+    ).rows[0] as { parked_until: Date | null };
+    expect(row.parked_until).toBeNull(); // no park → no horizon
+  });
+
+  it("gate: an informational gate on the LAST phase finalizes — and its open card closes by:'policy'", async () => {
+    const res = await commitStep(deps, {
+      runId: "run1",
+      attempt: 1,
+      workspaceId: seed.workspaceId,
+      stepKey: "letter",
+      ordinal: 6,
+      of: 7,
+      credits: 60,
+      result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
+      next: { kind: "gate", gateKind: "approve_scope", blocking: false, onExpiry: "wait", then: "finalize" },
+    });
+    expect(res).toMatchObject({ ok: true, state: "finalizing" });
+    expect(await stateOf("run1")).toBe("finalizing");
+    const gate = (
+      await db.client.query("select blocking, resolved_at from gates where run_id='run1'", [])
+    ).rows[0] as { blocking: boolean; resolved_at: Date | null };
+    expect(gate.resolved_at).not.toBeNull(); // the sweep closed it — the card's tour ends with the run
+    const decision = (
+      await db.client.query(
+        "select by_actor, action from decisions d join gates g on g.id = d.gate_id where g.run_id='run1'",
+        [],
+      )
+    ).rows[0] as { by_actor: string; action: string } | undefined;
+    expect(decision).toMatchObject({ by_actor: "policy", action: "proceed_as_proposed" });
   });
 
   // PRB.16b LIVE FINDING 17 — the resume_partial path: a prior attempt's failStep leaves a `steps` row for
@@ -209,7 +265,7 @@ describe("commitStep — atomicity, idempotency, gate-open", () => {
       of: 7,
       credits: 60,
       result: { status: "done", sdkSubtype: "success", predicatesPassed: true, compactions: 0 },
-      next: { kind: "gate", gateKind: "approve_triage", blocking: false, onExpiry: "proceed_as_proposed" },
+      next: { kind: "gate", gateKind: "approve_triage", blocking: true, onExpiry: "proceed_as_proposed" },
     });
     expect(res).toMatchObject({ ok: true, state: "waiting_gate" });
     const gate = (

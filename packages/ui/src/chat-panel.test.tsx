@@ -188,4 +188,26 @@ describe("ChatDesk (P1.11; §7.1)", () => {
     expect(html).toContain("committed artifacts only");
     expect(html).toContain("[unverified]");
   });
+
+  // RUN.1 (BL-56) — the 2026-09-30 prod defect: the composer scrolled under `footer.ide-statusbar`.
+  // The markup contract the CSS pins on: `.chat-body` wraps EVERYTHING except the composer (the
+  // scroll region inside the fixed-height Desk drawer), and `.chat-composer` is the LAST child of
+  // `.chat-desk` — `flex:0 0 auto` keeps Send glued to the drawer's bottom edge forever.
+  it("pins the composer as the last child — .chat-body scrolls, Send never leaves the drawer (RUN.1)", () => {
+    const html = render();
+    expect(html).toContain('class="chat-body"');
+    const desk = html.slice(html.indexOf('class="chat-desk"'));
+    const body = desk.indexOf('class="chat-body"');
+    const composer = desk.indexOf('class="chat-composer"');
+    expect(body).toBeGreaterThan(-1);
+    expect(composer).toBeGreaterThan(body); // the composer follows the scroll region
+    // every scrollable block — transcript, plan card, remembers, pins, sources — sits INSIDE
+    // .chat-body (before the composer), so nothing can push Send below the drawer's edge.
+    for (const marker of ["chat-log", "chat-remembers", "chat-pins", "chat-sources"]) {
+      const at = desk.indexOf(`class="${marker}"`);
+      if (at >= 0) expect(at).toBeLessThan(composer);
+    }
+    // and the composer is the LAST chat-* element — nothing chat-scoped follows it inside .chat-desk.
+    expect(desk.lastIndexOf('class="chat-')).toBe(composer);
+  });
 });

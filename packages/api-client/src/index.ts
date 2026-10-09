@@ -365,6 +365,12 @@ export interface RunSheetContextDto {
     readonly venue: string | null;
     readonly approvalPolicy: string;
     /**
+     * RUN.1 (ADR-050) — the project's validated per-kind approval overrides (`approvalOverridesSchema`
+     * shape — `{ approve_scope?: number | null, … }`) so the sheet's scope-approval line resolves
+     * from the same `resolveGatePolicy` the runtime parks on. `{}` when unset/invalid.
+     */
+    readonly approvalOverrides?: Record<string, number | null>;
+    /**
      * P1.20 (§14.7) — the resolved rigor/tier defaults the sheet opens on: the project's explicit
      * override wins over the account defaults (project → per-workflow pref → account default →
      * 'standard'); `modelTier` of null falls to the rigor's own default.

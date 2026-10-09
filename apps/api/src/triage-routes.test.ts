@@ -289,6 +289,23 @@ describe("GET /projects/:id/gates + POST .../decide — the §6.4 card's server 
     expect(row.resolved_at).toBeNull(); // held, NOT resolved
   });
 
+  // RUN.1 (ADR-050) — the Needs-you feed carries ACTIONABLE gates only: an informational gate on a
+  // MOVING run is observability (it rides the run's Timeline card), never a request for input. An
+  // informational gate on a still-parked run (a pre-RUN.1 row) stays listed — the click resolves it.
+  it("lists only actionable gates — an informational gate on a running run is not Needs-you", async () => {
+    await seedRun(db, { runId: "run_live", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "running" });
+    await seedGate(db, { gateId: "gate_info", runId: "run_live", kind: "approve_scope", onExpiry: "wait", blocking: false });
+    await seedRun(db, { runId: "run_parked", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedGate(db, { gateId: "gate_park", runId: "run_parked", kind: "approve_plan", onExpiry: "wait" });
+    // a pre-RUN.1 informational gate that still parks its run stays resolvable from the feed.
+    await seedRun(db, { runId: "run_stale", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
+    await seedGate(db, { gateId: "gate_stale", runId: "run_stale", kind: "approve_scope", onExpiry: "wait", blocking: false });
+
+    const list = await app.request(`/projects/${seed.projectId}/gates`);
+    const { gates } = (await list.json()) as { gates: { id: string }[] };
+    expect(gates.map((g) => g.id).sort()).toEqual(["gate_park", "gate_stale"]);
+  });
+
   it("activity pings arm the 10-min presence timer only on auto-proceed gates (REQ-SPEC-18)", async () => {
     await seedRun(db, { runId: "run_p", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "waiting_gate" });
     // all times relative to the deterministic test clock (FixedClock @ 2026-09-02T12:00Z).

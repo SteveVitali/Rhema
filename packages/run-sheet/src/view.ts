@@ -10,10 +10,12 @@ import {
   estimateLine,
   formatCredits,
   resolveInsufficientBalance,
+  resolveScopeGate,
   MODEL_TIER_DISPLAY,
   MODEL_TIERS,
   RIGOR_DISPLAY,
   RIGORS,
+  type ApprovalOverrides,
   type ConsentDecision,
   type EstimateWhy,
   type EstimateWhyTerm,
@@ -335,6 +337,12 @@ export interface BuildRunSheetViewArgs {
    */
   readonly scopeBlocking?: boolean;
   /**
+   * RUN.1 (ADR-050) — the project's validated `approval_overrides` (the api's sheet-context ships
+   * them). The scope-approval line resolves through the SAME `resolveGatePolicy` the runtime parks
+   * on — e.g. `approve_scope: null` ⇒ the card "waits for you", so the line must say exactly that.
+   */
+  readonly projectGateOverrides?: ApprovalOverrides;
+  /**
    * P1.20 (§6.7) — `projects.protocol_changed_at` set: a settings-page protocol change since the last
    * Review. The Review scope card carries the marker line and the same blocking consequence as a
    * lever-changed scope (the api re-derives the freeze server-side, never client-trusted).
@@ -496,17 +504,26 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   // (@rhema/commands — the palette's `--wait`/`--auto` chips and the sheet's select share them).
   const approvalPolicy = args.approvalPolicy ?? "named";
 
-  // P1.06 (REQ-SPEC-17's sheet half) — the scope-approval consequence surfaced at launch: informational
-  // by default; blocking (2 h, proceed-as-proposed) at Full board / on a protocol|venue change — which
-  // P1.20 (§6.7) extends to the settings page's `protocol_changed_at` marker; "waits for you" under
-  // Wait-for-me-at-each. The gate mechanics are the landed resolveGatePolicy.
+  // P1.06 (REQ-SPEC-17's sheet half) + RUN.1 (ADR-050) — the scope-approval line resolves through the
+  // ONE gate-policy resolution the runtime parks on: informational by default; blocking (2 h,
+  // proceed-as-proposed) at Full board / on a protocol|venue change — which P1.20 (§6.7) extends to
+  // the settings page's `protocol_changed_at` marker; "waits for you" under Wait-for-me-at-each or a
+  // project/run `approve_scope: null` override; skipped under Run-to-completion. The label can never
+  // disagree with the behavior — they share `resolveScopeGate`.
   const scopeBlocking = args.scopeBlocking === true || args.protocolChanged === true;
-  const scopeApprovalLine =
-    approvalPolicy === "wait_each"
-      ? "Scope approval — the run waits for you at the scope gate."
-      : scopeBlocking
-        ? "Scope approval — a blocking gate opens at launch; proceeds as proposed after 2 hours."
-        : "Scope approval — informational; the run proceeds.";
+  const scopeResolution = resolveScopeGate({
+    policy: approvalPolicy,
+    overrides: args.projectGateOverrides ?? null,
+    scopeBlocking,
+    now: new Date(0),
+  });
+  const scopeApprovalLine = scopeResolution.skips
+    ? "Scope approval — skipped under Run to completion."
+    : !scopeResolution.blocking
+      ? "Scope approval — informational; the run proceeds."
+      : scopeResolution.deadlineMs != null
+        ? `Scope approval — a blocking gate opens at launch; proceeds as proposed after ${Math.round(scopeResolution.deadlineMs / 3_600_000)} hours.`
+        : "Scope approval — the run waits for you at the scope gate.";
 
   // P1.20/P1.21 (§6.7) — the settings-page protocol-change marker on the Review's scope card (a fact
   // line, not a gate of its own — the blocking consequence rides scopeApprovalLine above). `vN` is the

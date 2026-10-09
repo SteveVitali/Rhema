@@ -236,6 +236,75 @@ describe("GET /projects/:id/timeline (§5.5)", () => {
     expect(run.card.decisions![0]).toMatchObject({ gateId: "g_done", action: "approve", changes: 3 });
   });
 
+  // RUN.1 (ADR-050) — an informational gate (blocking:false — the default approve_scope) rides its
+  // RUNNING run's card until the letter phase; `waitingGate` stays literally truthful (the run never
+  // waited). A blocking gate always wins the card slot when both are open.
+  it("an informational gate rides its running run — card mounted, waitingGate stays null", async () => {
+    await seedRun(db, {
+      runId: "run_info",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "running",
+    });
+    await seedGate(db, {
+      gateId: "g_info",
+      runId: "run_info",
+      kind: "approve_scope",
+      onExpiry: "wait",
+      blocking: false,
+    });
+    const res = await app.request(`/projects/${seed.projectId}/timeline`);
+    const body = (await res.json()) as {
+      ungrouped: {
+        runId: string;
+        gate?: { id: string; kind: string; blocking: boolean };
+        card: { waitingGate: { kind: string } | null };
+      }[];
+    };
+    const run = body.ungrouped.find((r) => r.runId === "run_info")!;
+    expect(run.gate).toMatchObject({ id: "g_info", kind: "approve_scope", blocking: false });
+    expect(run.card.waitingGate).toBeNull(); // the run never waited — no waiting treatment
+  });
+
+  it("a blocking gate wins the card slot over an open informational gate on the same run", async () => {
+    await seedRun(db, {
+      runId: "run_both",
+      workspaceId: seed.workspaceId,
+      projectId: seed.projectId,
+      workflow: "review",
+      state: "waiting_gate",
+    });
+    // informational first (earlier opened_at) — the blocking gate must still win the slot.
+    await seedGate(db, {
+      gateId: "g_i",
+      runId: "run_both",
+      kind: "approve_scope",
+      onExpiry: "wait",
+      blocking: false,
+      openedAt: new Date("2026-09-01T00:00:00Z"),
+    });
+    await seedGate(db, {
+      gateId: "g_b",
+      runId: "run_both",
+      kind: "approve_plan",
+      onExpiry: "wait",
+      blocking: true,
+      openedAt: new Date("2026-09-02T00:00:00Z"),
+    });
+    const res = await app.request(`/projects/${seed.projectId}/timeline`);
+    const body = (await res.json()) as {
+      ungrouped: {
+        runId: string;
+        gate?: { id: string; kind: string };
+        card: { waitingGate: { kind: string } | null };
+      }[];
+    };
+    const run = body.ungrouped.find((r) => r.runId === "run_both")!;
+    expect(run.gate).toMatchObject({ id: "g_b", kind: "approve_plan" });
+    expect(run.card.waitingGate).toMatchObject({ kind: "approve_plan" });
+  });
+
   it("lazily enqueues the walkthrough for a delivered run with no record (§5.5 D20), once", async () => {
     await seedRun(db, {
       runId: "run_done",

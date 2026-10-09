@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+const IAM_SRC = readFileSync(fileURLToPath(new URL("./iam.ts", import.meta.url)), "utf8");
+
 // HOT.1 (BL-65) — every external-LB backend service must carry request logging
 // (`logConfig { enable, sampleRate }`), the loadbalancing.googleapis.com/requests trail the 2026-09-30
 // review found absent when the dossier 500s hit prod. compute.ts is a Pulumi program (not a pure
@@ -107,5 +109,36 @@ describe("SEC.2 — the trusted client-IP channel is deploy config on BOTH ends 
     // DNS fronts those stages' LBs).
     expect(SRC).toContain('svc === "web" && cfg.kind !== "prod"');
     expect(SRC).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
+  });
+});
+
+describe("RUN.1 — the worker's walkthrough model key is deploy config (ADR-052)", () => {
+  it("injects WALKTHROUGH_MODEL_KEY_SECRET as the anthropic-api-key secret VERSION on the worker", () => {
+    // The deployed regression (2026-09-30: every prod run.walkthrough failed `walkthrough
+    // unconfigured`) was an env var that existed only in env.ts/main.ts — the Pulumi program never
+    // named it. The assertion binds the env to `secretVersion(secrets.anthropicApiKey)` (the secret
+    // NAME's `/versions/latest` — never the value; REQ-ARCH-30) and inside the worker container's
+    // `isWorker` envs block, so `loadWalkthroughGenerator` can never stub on a deployed stage.
+    const workerBlock = SRC.slice(
+      SRC.indexOf("...(isWorker"),
+      SRC.indexOf("svc === \"api\""),
+    );
+    expect(workerBlock).toContain(
+      '{ name: "WALKTHROUGH_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }',
+    );
+    expect(workerBlock).toMatch(
+      /requires\("anthropic-api-key"\)[^]*WALKTHROUGH_MODEL_KEY_SECRET/,
+    );
+  });
+
+  it("the worker SA holds secretAccessor on anthropic-api-key — the operator-side exception", () => {
+    // iam.ts documents egress-proxy as the sole reader FOR MODEL TRAFFIC; the worker grant is the
+    // ADR-052 exception (ingest.reconstruct + walkthrough). If either side of that pair is deleted,
+    // both legs silently fail at boot — keep them asserted together.
+    expect(IAM_SRC).toContain('grantSecret("worker-reads-anthropic", secrets.anthropicApiKey');
+    expect(IAM_SRC).toContain('grantSecret("proxy-reads-anthropic", secrets.anthropicApiKey');
+    // and no other service ever reads the provider key (REQ-ARCH-31).
+    const grants = IAM_SRC.match(/grantSecret\("[^"]+", secrets\.anthropicApiKey/g) ?? [];
+    expect(grants).toHaveLength(2);
   });
 });

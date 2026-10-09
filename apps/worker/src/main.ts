@@ -52,7 +52,7 @@ import {
   type WorkerRunConfig,
   type RunJobPayload,
 } from "./run-jobs.js";
-import { AnthropicWalkthroughGenerator } from "./walkthrough-generator.js";
+import { loadWalkthroughGenerator } from "./walkthrough-generator.js";
 import { handleRunEventsRetention, handleRunEventsPartition, RUN_EVENT_JOBS } from "./run-events-jobs.js";
 import { handleParkedSweep, reDebitOnResume, type WorkerLedgerDeps } from "./ledger-jobs.js";
 import {
@@ -311,13 +311,11 @@ export async function startWorker(): Promise<void> {
     console.log("[worker] STRIPE key is a placeholder — auto-reload sweep stays no_stripe_port");
   }
 
-  // P1.05 — the walkthrough's package-class call. Unconfigured (no key secret) ⇒ a stub that fails the
-  // attempt cleanly (recorded `failed`; the card's Retry covers it once the secret lands).
-  const walkthroughKeySecret = env.walkthroughModelKeySecret ? await access(env.walkthroughModelKeySecret) : undefined;
-  const walkthroughKey = walkthroughKeySecret && !/placeholder/i.test(walkthroughKeySecret) ? walkthroughKeySecret : undefined;
-  const walkthrough = walkthroughKey
-    ? new AnthropicWalkthroughGenerator({ apiKey: walkthroughKey })
-    : { generate: () => Promise.reject(new Error("walkthrough unconfigured")) };
+  // P1.05 — the walkthrough's package-class call (RUN.1: the binding lives in walkthrough-generator.ts
+  // for testability; the Pulumi program carries WALKTHROUGH_MODEL_KEY_SECRET → the provider key's
+  // secret-version NAME — see ADR-052). Unconfigured ⇒ a stub that fails the attempt cleanly
+  // (recorded `failed`; the card's Retry covers it once the secret lands).
+  const walkthrough = await loadWalkthroughGenerator(env.walkthroughModelKeySecret, access);
 
   // SEC.1 — `txRunner` runs the user-serving role (the tenant transactions RLS binds); the role pin is
   // belt-and-suspenders on top of the repointed DATABASE_URL. `systemTxRunner` rides the elevated pool

@@ -52,7 +52,7 @@ import { applyTransition, readRunState, type RunFields } from "./transition.js";
 import { isTerminal, type RunState } from "./state-machine.js";
 import { revokeRunCredentials } from "./credentials.js";
 import { seatForWorkflow } from "./run-shape.js";
-import { preApproveGateByTrial } from "./gate-resolution.js";
+import { autoResolveOpenInformationalGates, preApproveGateByTrial } from "./gate-resolution.js";
 import { resolveDeliveryBase, type DeliveryBaseDraft } from "./delivery-base.js";
 import { userSourceMounts } from "./user-sources.js";
 import { applyOutlineApproval } from "./outline-delivery.js";
@@ -379,6 +379,12 @@ export async function beginStep(deps: OrchestratorDeps, args: BeginStepArgs): Pr
       return { ok: true, stepId: row.id };
     }
     await tx.query("update runs set current_step_id = $2 where id = $1", [args.runId, row.id]);
+    // RUN.1 (ADR-050) — the informational gate "rides the run until the letter phase": when the LAST
+    // active phase begins, every still-open non-blocking gate resolves `by:'policy'` (the run kept
+    // moving — the card's tour is over). Finalize paths sweep again as the backstop.
+    if (args.ordinal === args.of - 1) {
+      await autoResolveOpenInformationalGates(tx, deps, args.runId, now);
+    }
     await deps.eventWriter.append(tx, {
       runId: args.runId,
       type: "step.started",
@@ -885,7 +891,20 @@ export async function harvestStep(deps: HarvestStepDeps, args: HarvestStepArgs):
 /** Where the run goes after a committed step (decided by the phase loop's completion oracle). */
 export type CommitNext =
   | { readonly kind: "advance" } //    running → running (self-edge); the task runs the next phase
-  | { readonly kind: "gate"; readonly gateKind: GateKind; readonly blocking: boolean; readonly onExpiry: string; readonly deadlineAt?: Date | null; readonly artifactVersionId?: string }
+  | {
+      readonly kind: "gate";
+      readonly gateKind: GateKind;
+      readonly blocking: boolean;
+      readonly onExpiry: string;
+      readonly deadlineAt?: Date | null;
+      readonly artifactVersionId?: string;
+      /**
+       * RUN.1 (ADR-050) — where a NON-blocking gate's run goes: the gate row opens for the record
+       * (the informational card rides the run until the letter phase) but the run never parks.
+       * Absent on a blocking gate — `blocking:true` always `running → waiting_gate`.
+       */
+      readonly then?: "advance" | "finalize";
+    }
   | { readonly kind: "finalize" }; //  final phase committed → finalizing
 
 export interface CommitStepArgs {
@@ -1092,12 +1111,17 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         return { ok: true, idempotent: false, state };
       }
       if (next.kind === "finalize") {
+        // RUN.1 — the final boundary closes any still-open informational gates (their card's ride ends
+        // with the run; the Decision{by:'policy'} keeps the audit row §6.4 item 6 requires).
+        await autoResolveOpenInformationalGates(tx, deps, args.runId, now);
         await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "finalizing" });
         return { ok: true, idempotent: false, state: "finalizing" };
       }
-      // gate: open it inside the commit tx, transition to waiting_gate, park ≤30 days; the task then exits.
-      const parkFields: RunFields = { parkedUntil: new Date(now.getTime() + THIRTY_DAYS_MS) };
-      await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "waiting_gate", fields: parkFields });
+      // gate: open it inside the commit tx. RUN.1 (ADR-050) — a BLOCKING gate parks (`running →
+      // waiting_gate`, ≤30 days; the task exits). An INFORMATIONAL gate (`blocking:false` — the default
+      // approve_scope per GATE_DEFAULTS) only records the card: the run takes `next.then` — advance
+      // stays `running` (the steering pause still applies) and finalize transitions `finalizing` —
+      // so the label and the behavior finally agree.
       const gateId = await openGate(tx, deps, {
         runId: args.runId,
         kind: next.gateKind,
@@ -1107,6 +1131,41 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
         artifactVersionId: next.artifactVersionId,
         deadlineAt: next.deadlineAt,
       });
+      if (next.blocking === false) {
+        // The run never parks at an informational gate. `then` defaults to advance for safety.
+        if (next.then === "finalize") {
+          await autoResolveOpenInformationalGates(tx, deps, args.runId, now);
+          await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "finalizing" });
+          return { ok: true, idempotent: false, state: "finalizing", gateId };
+        }
+        const pauseRequested = (
+          await tx.query("select pause_requested_at from runs where id = $1", [args.runId])
+        ).rows[0] as { pause_requested_at: Date | null } | undefined;
+        if (pauseRequested?.pause_requested_at != null) {
+          await tx.query("update runs set pause_requested_at = null, paused_at = $2 where id = $1", [
+            args.runId,
+            now,
+          ]);
+          await applyTransition(tx, deps, {
+            runId: args.runId,
+            from: "running",
+            to: "waiting_gate",
+            reason: "paused",
+            fields: { parkedUntil: new Date(now.getTime() + THIRTY_DAYS_MS) },
+          });
+          await deps.eventWriter.append(tx, {
+            runId: args.runId,
+            type: "steer.paused",
+            payload: { reason: "paused after phase" },
+            at: now,
+          });
+          return { ok: true, idempotent: false, state: "waiting_gate", gateId };
+        }
+        const state = (await readRunState(tx, args.runId))!; // stays running — the card rides the run
+        return { ok: true, idempotent: false, state, gateId };
+      }
+      const parkFields: RunFields = { parkedUntil: new Date(now.getTime() + THIRTY_DAYS_MS) };
+      await applyTransition(tx, deps, { runId: args.runId, from: "running", to: "waiting_gate", fields: parkFields });
       // P1.10 — a trial first-section preview pre-resolves Approve plan only (§6.4 item 3;
       // REQ-SPEC-1's trial mechanism): the frozen `inputs.preview` marks the run; the actual
       // `Decision{by:'trial', action:'proceed_as_proposed'}` + `waiting_gate → queued` resume land
@@ -1134,9 +1193,10 @@ export async function commitStep(deps: OrchestratorDeps, args: CommitStepArgs): 
       });
     }
     // Schedule the `gate:<id>` expiry job AFTER commit (§6.4 item 6; the queue send is not transactional with
-    // the DB write). Only for a freshly-opened gate with a deadline; a wait gate schedules nothing. A
-    // trial-pre-resolved Approve plan schedules none — it was resolved above.
-    if (res.ok && !res.idempotent && res.gateId && next.kind === "gate" && !box.trialGateId) {
+    // the DB write). Only for a freshly-opened BLOCKING gate with a deadline; a wait gate schedules nothing,
+    // and RUN.1's informational gates never take the waiting-notification jobs at all (the run isn't waiting).
+    // A trial-pre-resolved Approve plan schedules none — it was resolved above.
+    if (res.ok && !res.idempotent && res.gateId && next.kind === "gate" && next.blocking !== false && !box.trialGateId) {
       const now = deps.clock.now();
       if (next.deadlineAt) {
         await scheduleGateExpiry(deps, {
@@ -1447,6 +1507,9 @@ export async function finalizeRun(
   },
 ): Promise<{ ok: true; state: RunState }> {
   await deps.txRunner.run(args.workspaceId, async (tx) => {
+    // RUN.1 — the last backstop for the informational-gate sweep: no open non-blocking gate survives
+    // delivery (the card's tour always ends with a Decision row, §6.4 item 6).
+    await autoResolveOpenInformationalGates(tx, deps, args.runId, deps.clock.now());
     await applyTransition(tx, deps, { runId: args.runId, from: "finalizing", to: "completed" });
     // DEF.2/F5 — the charge leg of §12.4 step 9: debit the attempt's proxy-metered remainder the phase
     // commits never reached (a lagged metered row, under-reported subagent burn) BEFORE the release —

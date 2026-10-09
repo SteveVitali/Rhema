@@ -180,10 +180,12 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     expect(typeof rec.commits[0]!.durationMs).toBe("number");
   });
 
-  it("opens the approve_scope gate after intake and exits (no delivery); a resume then delivers", async () => {
-    // loop 1: the intake phase carries gateAfter=approve_scope → commit with next=gate, pod exits.
+  it("opens a BLOCKING approve_scope gate after intake and exits (no delivery); a resume then delivers", async () => {
+    // loop 1: the intake phase carries gateAfter=approve_scope; under Wait-for-me-each the gate is
+    // blocking (RUN.1) → commit with next=gate{blocking:true}, the run parks, the pod exits.
+    const waits = () => ({ policy: "wait_each" as const, now: new Date() });
     const gate = makeHarness([makeSpec(byKey("intake"))], () => completeOutputs(INTAKE_FACTS));
-    const res1 = await runCommitLoop({ client: gate.client, runPhase: gate.runPhase, workspaceId: "ws1" });
+    const res1 = await runCommitLoop({ client: gate.client, runPhase: gate.runPhase, workspaceId: "ws1", gateContext: waits });
     expect(res1).toEqual({ kind: "gated", phasesCommitted: 1 });
     expect(gate.rec.commits).toHaveLength(1);
     expect(gate.rec.commits[0]!.next.kind).toBe("gate");
@@ -206,6 +208,30 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
     const res2 = await runCommitLoop({ client: resume.client, runPhase: resume.runPhase, workspaceId: "ws1" });
     expect(res2.kind).toBe("delivered");
     expect(resume.rec.delivers).toHaveLength(1);
+  });
+
+  it("RUN.1 — an INFORMATIONAL approve_scope gate records the card and the pod keeps moving", async () => {
+    // the default `named` policy resolves approve_scope informational (blocking:false, then:advance):
+    // the commit opens the gate card server-side but the same pod takes the advance leg — no exit.
+    const letter = { ...byKey("letter"), index: OF - 1 };
+    const { rec, client, runPhase } = makeHarness(
+      [makeSpec(byKey("intake")), makeSpec(letter, { delivery: DELIVERY_FACTS })],
+      (spec) =>
+        spec.request.phase.key === "letter"
+          ? completeOutputs(
+              { letterSectionsComplete: true, rubricDimensionCount: 8, sidecarValidates: { "findings.json": true, "rubric.json": true } },
+              {
+                versions: [{ path: "correspondence/editors-letter.md", root: "project", kind: "letter", namespace: "editor", sha256: "s", bytes: Buffer.from("L"), wordCount: 1 }],
+                delivery: { deliveredPaths: ["correspondence/editors-letter.md"], sidecars: [], coversAllObligations: true },
+              },
+            )
+          : completeOutputs(INTAKE_FACTS),
+    );
+    const res = await runCommitLoop({ client, runPhase, workspaceId: "ws1" });
+    expect(res.kind).toBe("delivered");
+    const gateCommit = rec.commits.find((c) => c.next.kind === "gate");
+    expect(gateCommit?.next).toMatchObject({ kind: "gate", gateKind: "approve_scope", blocking: false, then: "advance" });
+    expect(rec.calls).toEqual(["begin:intake", "runPhase:intake", "begin:letter", "runPhase:letter"]);
   });
 
   it("a pinned phase:N run commits exactly one phase then stops (no advance, no delivery)", async () => {
@@ -533,9 +559,10 @@ describe("runCommitLoop — the pod→server commit/deliver loop", () => {
         probes++;
         return Promise.resolve({ ok: true as const });
       };
-      // pod 1: a gate phase commits and the pod exits; pod 2 (the resume) probes again before its phase.
+      // pod 1: a BLOCKING gate phase commits and the pod exits; pod 2 (the resume) probes again.
+      const waits = () => ({ policy: "wait_each" as const, now: new Date() });
       const gate = makeHarness([makeSpec(byKey("intake"), { researchPreflight: PAIRS })], () => completeOutputs(INTAKE_FACTS));
-      const res1 = await runCommitLoop({ client: gate.client, runPhase: gate.runPhase, workspaceId: "ws1", preflight });
+      const res1 = await runCommitLoop({ client: gate.client, runPhase: gate.runPhase, workspaceId: "ws1", preflight, gateContext: waits });
       expect(res1.kind).toBe("gated");
       const letter = { ...byKey("letter"), index: OF - 1 };
       const resume = makeHarness(
