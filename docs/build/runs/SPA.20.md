@@ -214,9 +214,10 @@ the server-side consult; `STAGES.dev` lists both keys.
 
 ## 5 — Checks read + memory
 
-- **PR** — `gh pr checks` read once at closeout (recorded in BUILD_INDEX row
-  156; the inherited-red classification rule is GD-MAINT.4-1's — the privsep
-  `integration` leg is waived on the chain).
+- **PR** — `gh pr checks --watch=false` read once at closeout → **no checks
+  reported on `stevevitali/spa-20-surface-run-sheet`** (the same no-report
+  outcome recorded at #140–#148's closeouts; the inherited privsep
+  `integration` red stays classified under GD-MAINT.4-1 — never repaired here).
 - `check-build-memory.sh` + `check-append-only.mjs --base c53c936` — green at
   closeout.
 - `BUILD_INDEX.md` row 156 · `LEDGER.md` advanced — `nextTicket: SPAF.11`
