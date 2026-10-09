@@ -15,6 +15,8 @@ import type {
   DataSettingsDto,
   ExportDialogDto,
   ChatPanelDto,
+  FigureCardDto,
+  FigureListItemDto,
   FilesDto,
   GateCardDto,
   InboxItemDto,
@@ -710,6 +712,98 @@ export const projectOutlinePromoteQuery = (
       const qs = q.toString();
       return bffFetch<BffOutlinePromoteTwin>(
         `/bff/p/${encodeURIComponent(slug)}/outline/promote${qs ? `?${qs}` : ""}`,
+      );
+    },
+    retry: retryPolicy,
+  });
+
+// ---- SPA.19 — the `figures` surface's twins (REQ-BFF-1/8/9/11, REQ-DAT-4/6; design/22 §2
+// `p.figures`/`p.figureCard`/`p.visualize` rows). The pane twin is the api's FigureListItemDto
+// rows verbatim — the `[unverified data]` badge text is the api's, never retyped; a degraded
+// list read lands `items:[]` (the SSR's own `.catch(() => null) ?? []` arm). The card twin
+// carries the full FigureCardDto + the head-draft id the insert proposal gates on —
+// `{figure:null}` is the document's own 404 arm (the leaf renders `COPY.visualize.notFound`,
+// not the router's generic not-found). The sheet twin echoes the URL's own entry-point picks
+// (`?request`/`?kind`/`?figure`/`?prior`/`?entry`) plus the server-computed figure estimate —
+// the leaf never re-derives `fig_`-prefix stripping or the honesty seeds. `?saved`/`?notice`
+// stay URL state (validated search), never payload. Binary figure assets never ride JSON
+// (REQ-BFF-17-class): the persisted preview ships inline (`card.files.svgLight`), and any
+// image/download stays a document navigation. ----
+
+/** `GET /bff/p/:slug/figures` — the pane list twin. */
+export interface BffFiguresTwin {
+  readonly figures: {
+    readonly slug: string;
+    readonly items: readonly FigureListItemDto[];
+  };
+}
+export const projectFiguresQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "figures"],
+    queryFn: () => bffFetch<BffFiguresTwin>(`/bff/p/${encodeURIComponent(slug)}/figures`),
+    retry: retryPolicy,
+  });
+
+/** `GET /bff/p/:slug/figures/:figureId` — the card twin (`figure:null` = the 404 arm). */
+export interface BffFigureCardTwin {
+  readonly figure: {
+    readonly slug: string;
+    readonly card: FigureCardDto;
+    /** the project's head draft — the insert proposal's target (null ⇒ insert disabled). */
+    readonly headDraftId: string | null;
+  } | null;
+}
+export const projectFigureCardQuery = (slug: string, figureId: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "figures", figureId],
+    queryFn: () =>
+      bffFetch<BffFigureCardTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/figures/${encodeURIComponent(figureId)}`,
+      ),
+    retry: retryPolicy,
+  });
+
+/** `GET /bff/p/:slug/visualize` — the sheet composition + the URL-echoed entry-point picks. */
+export interface BffVisualizeTwin {
+  readonly visualize: {
+    readonly slug: string;
+    readonly request: string;
+    readonly specKind: string;
+    /** iterate mode — the existing figure id + the version it continues from. */
+    readonly figureId?: string;
+    readonly priorVersion?: number;
+    /** the honesty path the entry point seeded (provenance is the run's to classify). */
+    readonly entryPoint?: string;
+    readonly estimateCredits: number;
+    readonly capCredits: number;
+  };
+}
+export const projectVisualizeQuery = (
+  slug: string,
+  opts?: { request?: string; kind?: string; figure?: string; prior?: string; entry?: string },
+) =>
+  queryOptions({
+    queryKey: [
+      "bff",
+      "p",
+      slug,
+      "visualize",
+      opts?.request ?? "",
+      opts?.kind ?? "",
+      opts?.figure ?? "",
+      opts?.prior ?? "",
+      opts?.entry ?? "",
+    ],
+    queryFn: () => {
+      const q = new URLSearchParams();
+      if (opts?.request) q.set("request", opts.request);
+      if (opts?.kind) q.set("kind", opts.kind);
+      if (opts?.figure) q.set("figure", opts.figure);
+      if (opts?.prior) q.set("prior", opts.prior);
+      if (opts?.entry) q.set("entry", opts.entry);
+      const qs = q.toString();
+      return bffFetch<BffVisualizeTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/visualize${qs ? `?${qs}` : ""}`,
       );
     },
     retry: retryPolicy,

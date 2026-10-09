@@ -1145,6 +1145,103 @@ export function createWebApp(deps: WebDeps): Hono {
     }),
   );
 
+  // ---- SPA.19 — the `figures` surface's twins (design/22 §2 `p.figures`/`p.figureCard`/
+  //      `p.visualize`; REQ-BFF-1/8/9/11, REQ-DAT-4/6/13). The pane twin is the document's own
+  //      composition verbatim (a degraded `listFigures` lands `items:[]` — the SSR's
+  //      `.catch(() => null) ?? []` arm, never a fabricated row); the card twin answers
+  //      `{figure:null}` on a missed/declined read — the document's `figureCardElement` 404 arm,
+  //      verbatim; the sheet twin echoes the entry-point params the document reads off the URL
+  //      (`?request`/`?kind`/`?figure`→`figureIdFromRef`/`?prior`/`?entry`) plus the
+  //      server-computed `figureEstimate` — the leaf never re-derives the honesty seeds or the
+  //      price. Binary figure assets (the SVG/PNG/data downloads) stay document/asset
+  //      navigations — no JSON twin proxies bytes (REQ-BFF-17-class). ----
+
+  /** The estimate for the sheet + the run create — one derivation, server-side (the api re-derives
+   *  it too; these figures only pre-fill the card). Hoisted ahead of the BFF twin so the document
+   *  routes and the JSON read share the ONE derivation. */
+  const figureEstimate = (iterate: boolean) =>
+    // EST.1 — the surface API (the figure sheet's pre-fill agrees with the run sheet).
+    surfaceEstimate({
+      workflow: "figure",
+      rigor: "standard",
+      modelTier: "balanced",
+      inputs: { iterations: iterate ? 1 : 0, dataRows: 0 },
+    });
+
+  /** Classify the request text's provenance seeds (@claim:/@asset:/a URL/typed insist) into the
+   *  sourceRefs shape the api's honesty seed reads. */
+  const figureSourceRefs = (args: { request: string; insist: boolean; selectionText?: string }) => {
+    const refs: Record<string, unknown> = {};
+    const claimIds = [...args.request.matchAll(/@claim:([^\s]+)/g)].map((m) => m[1]!);
+    if (claimIds.length > 0) refs.claimIds = claimIds;
+    const asset = /@asset:([^\s]+)/.exec(args.request);
+    if (asset) refs.assetId = asset[1];
+    const url = /(https?:\/\/[^\s]+)/.exec(args.request);
+    if (url) refs.url = url[1];
+    if (args.selectionText) refs.selection = { quote: args.selectionText };
+    if (args.insist) refs.insisted = true;
+    return Object.keys(refs).length > 0 ? refs : undefined;
+  };
+
+  app.get(
+    "/bff/p/:slug/figures",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/figures` — the pane twin: the api's FigureListItemDto rows verbatim
+      // (badge text — `[unverified data]` — is the api's, never retyped here).
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const items = (await deps.dataSource.listFigures?.(session, row.id).catch(swallowDegraded)) ?? [];
+      return c.json({ figures: { slug, items } });
+    }),
+  );
+
+  app.get(
+    "/bff/p/:slug/figures/:figureId",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/figures/:figureId` — the card twin: the full FigureCardDto + the head-draft
+      // target the insert proposal gates on. A missed read is `{figure:null}` — the leaf renders
+      // the document's own 404 arm (`COPY.visualize.notFound`), not the router's generic one.
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const card = await deps.dataSource
+        .getFigure?.(session, row.id, c.req.param("figureId") ?? "")
+        .catch(swallowDegraded);
+      if (!card) return c.json({ figure: null });
+      return c.json({
+        figure: { slug, card, headDraftId: row.headDraftId ?? null },
+      });
+    }),
+  );
+
+  app.get(
+    "/bff/p/:slug/visualize",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/visualize` — the consent sheet's composition verbatim: the URL-echoed
+      // request/spec-kind/iterate picks + the server-computed estimate. `?figure=` keeps the
+      // `fig_`-prefix strip (`figureIdFromRef`) — the leaf never re-derives it.
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const figureId = c.req.query("figure") ? figureIdFromRef(c.req.query("figure")!) : undefined;
+      const priorVersion = Number(c.req.query("prior"));
+      const est = figureEstimate(figureId != null);
+      return c.json({
+        visualize: {
+          slug,
+          request: c.req.query("request") ?? "",
+          specKind: c.req.query("kind") ?? "",
+          ...(figureId ? { figureId } : {}),
+          ...(Number.isInteger(priorVersion) && priorVersion > 0 ? { priorVersion } : {}),
+          entryPoint: c.req.query("entry") ?? "chat",
+          estimateCredits: est.estimateCredits,
+          capCredits: est.capCredits,
+        },
+      });
+    }),
+  );
+
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
   // flash — the inline boot script resolves dark|light|auto + the per-project paper pin before paint) and
@@ -1882,31 +1979,8 @@ export function createWebApp(deps: WebDeps): Hono {
   //      Edit figure, a craft finding's Visualize) opens the SAME sheet; the sheet's click is the
   //      only run creator (REQ-CHAT-25's consent rule, like /outline's Promote). ----
 
-  /** The estimate for the sheet + the run create — one derivation, server-side (the api re-derives
-   *  it too; these figures only pre-fill the card). */
-  const figureEstimate = (iterate: boolean) =>
-    // EST.1 — the surface API (the figure sheet's pre-fill agrees with the run sheet).
-    surfaceEstimate({
-      workflow: "figure",
-      rigor: "standard",
-      modelTier: "balanced",
-      inputs: { iterations: iterate ? 1 : 0, dataRows: 0 },
-    });
-
-  /** Classify the request text's provenance seeds (@claim:/@asset:/a URL/typed insist) into the
-   *  sourceRefs shape the api's honesty seed reads. */
-  const figureSourceRefs = (args: { request: string; insist: boolean; selectionText?: string }) => {
-    const refs: Record<string, unknown> = {};
-    const claimIds = [...args.request.matchAll(/@claim:([^\s]+)/g)].map((m) => m[1]!);
-    if (claimIds.length > 0) refs.claimIds = claimIds;
-    const asset = /@asset:([^\s]+)/.exec(args.request);
-    if (asset) refs.assetId = asset[1];
-    const url = /(https?:\/\/[^\s]+)/.exec(args.request);
-    if (url) refs.url = url[1];
-    if (args.selectionText) refs.selection = { quote: args.selectionText };
-    if (args.insist) refs.insisted = true;
-    return Object.keys(refs).length > 0 ? refs : undefined;
-  };
+  // `figureEstimate`/`figureSourceRefs` live ahead of the BFF twins block (SPA.19) — the
+  // `/bff/p/:slug/visualize` read and these routes share the one derivation.
 
   // The /visualize sheet (GET): the request (prefilled by the entry point), the spec-kind pick, the
   // honesty note, and the estimate. Iterate mode (`?figure=` + `?prior=`) replays the figure id.
@@ -1943,13 +2017,17 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // The Visualize click — the ONLY figure-run creator (the sheet IS the consent). Creates the
   // `figure` run via the same POST /runs path the run sheet uses, with the figure facts block.
+  // SPA.19 (REQ-BFF-1/2/3): the JSON arm posts the same field map through `bodyFields`, answers the
+  // success as `{ok, redirect:"/p/:slug/figures"}` (the identical destination the 302 carried), a
+  // blank request as `{error:"request_required", detail}` 422 (the document's re-render arm), and
+  // an upstream refusal through `bffFail` at the preserved status — never a redirect, never a sheet.
   app.post("/p/:project/visualize", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const request = str("request").trim();
     const figureId = str("figureId") || undefined;
@@ -1957,6 +2035,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const specKind = (["vega_lite", "mermaid", "table"] as const).find((k) => k === str("specKind"));
     const est = figureEstimate(figureId != null);
     if (!request) {
+      if (wantsJson(c)) {
+        return c.json({ error: "request_required", detail: COPY.visualize.requestRequired }, 422);
+      }
       return c.html(
         renderDocument(c.req.path, visualizeElement, {
           visualize: {
@@ -1976,7 +2057,7 @@ export function createWebApp(deps: WebDeps): Hono {
     }
     const sourceRefs = figureSourceRefs({
       request,
-      insist: str("insist") === "1" || form.insist === "on",
+      insist: str("insist") === "1" || form.insist === "on" || form.insist === true,
       ...(str("selectionText") ? { selectionText: str("selectionText") } : {}),
     });
     try {
@@ -1999,8 +2080,10 @@ export function createWebApp(deps: WebDeps): Hono {
           ...(Number.isInteger(priorVersion) && priorVersion > 0 ? { priorVersion } : {}),
         },
       });
-      return c.redirect(`/p/${slug}/figures`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures` });
     } catch (e) {
+      // the JSON arm answers the refusal at the preserved status — never a redirect, never a sheet.
+      if (wantsJson(c)) return bffFail(c, e, { msg: "figure_run_failed" });
       // OBS.1 — a ≥500 page status gets its one structured line; a handled <500 refusal renders the
       // notice silently (expected, not a server fault).
       if (!(e instanceof ApiError) || e.status >= 500) {
@@ -2087,14 +2170,16 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // The card's field edits (caption/alt/sourceLine) → the api's PATCH (alt ≤250 enforced there).
+  // SPA.19: the JSON arm answers `mutationOutcome` — the `?saved=1`/`?notice=` redirect URL is the
+  // envelope's `redirect` verbatim (flash state stays URL-owned, never a payload invention).
   app.post("/p/:project/figures/:figureId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     try {
       await deps.dataSource.patchFigure?.(session, row.id, figureId, {
@@ -2102,11 +2187,12 @@ export function createWebApp(deps: WebDeps): Hono {
         alt: str("alt"),
         sourceLine: str("sourceLine"),
       });
-      return c.redirect(`/p/${slug}/figures/${figureId}?saved=1`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?saved=1` });
     } catch (e) {
       if (e instanceof ApiError && e.status === 422) {
-        return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent("alt text is limited to 250 characters")}`);
+        return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent("alt text is limited to 250 characters")}` });
       }
+      if (wantsJson(c)) return bffFail(c, e, { msg: "figure_patch_failed" });
       throw e;
     }
   });
@@ -2114,86 +2200,86 @@ export function createWebApp(deps: WebDeps): Hono {
   // The type-chip iterate — a 0-cr mark edit (no run, no model call) → new version + re-render.
   app.post("/p/:project/figures/:figureId/spec-edit", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const mark = typeof form.mark === "string" ? form.mark : "";
     try {
       await deps.dataSource.editFigureSpec?.(session, row.id, figureId, { mark: mark as never });
-      return c.redirect(`/p/${slug}/figures/${figureId}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
     } catch (e) {
       const notice = e instanceof ApiError ? String(e.code ?? "chip_not_supported") : "chip_not_supported";
-      return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}` });
     }
   });
 
   // Restore v<n> — the version's spec/data/provenance copy back to head as a NEW version + re-render.
   app.post("/p/:project/figures/:figureId/versions/:n/restore", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     const n = Number(c.req.param("n"));
     await deps.dataSource.restoreFigureVersion?.(session, row.id, figureId, n).catch(() => null);
-    return c.redirect(`/p/${slug}/figures/${figureId}`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
   });
 
   // Insert… — the proposal card (alt + source line gate it server-side; nothing touches the draft).
   app.post("/p/:project/figures/:figureId/propose", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const afterBlockId = typeof form.afterBlockId === "string" && form.afterBlockId !== "" ? form.afterBlockId : undefined;
     try {
-      await deps.dataSource.proposeFigure?.(session, row.id, figureId, {
+      const out = await deps.dataSource.proposeFigure?.(session, row.id, figureId, {
         draftId: row.headDraftId ?? "",
         ...(afterBlockId ? { afterBlockId } : {}),
       });
-      return c.redirect(`/p/${slug}/figures/${figureId}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}`, data: out });
     } catch (e) {
       const notice =
         e instanceof ApiError && e.status === 409 ? "figure_not_ready" : e instanceof ApiError ? String(e.code ?? "propose_failed") : "propose_failed";
-      return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}` });
     }
   });
 
   // Accept — ONE tx: the block splices through the draft save path (a frozen draft forks v(N+1)).
   app.post("/p/:project/figures/:figureId/proposals/accept", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     try {
       const out = await deps.dataSource.acceptFigureProposal?.(session, row.id, figureId);
-      if (out?.inserted?.draftN != null) return c.redirect(`/p/${slug}/v/${out.inserted.draftN}`);
-      return c.redirect(`/p/${slug}/figures/${figureId}`);
+      if (out?.inserted?.draftN != null) return mutationOutcome(c, { redirect: `/p/${slug}/v/${out.inserted.draftN}`, data: out });
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
     } catch (e) {
       const notice = e instanceof ApiError ? String(e.code ?? "accept_failed") : "accept_failed";
-      return c.redirect(`/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}?notice=${encodeURIComponent(notice)}` });
     }
   });
 
   // Reject — clear the card; the figure asset stays in working figures.
   app.post("/p/:project/figures/:figureId/proposals/reject", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const figureId = c.req.param("figureId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     await deps.dataSource.rejectFigureProposal?.(session, row.id, figureId).catch(() => null);
-    return c.redirect(`/p/${slug}/figures/${figureId}`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/figures/${figureId}` });
   });
 
 

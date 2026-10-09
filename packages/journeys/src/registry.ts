@@ -345,6 +345,17 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: false,
   },
   {
+    // SPA.19 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
+    // D-SPA.19-*); a red-step failure reports `owed`, it never gates.
+    id: "P1.figures",
+    journey: "phone",
+    asserts:
+      "/p/:p/figures, /p/:p/figures/:id, and /p/:p/visualize at phone width under either renderer: the pane renders its rows or the designed empty arm; a missing card id lands the not-found arm; the sheet renders the consent form (request/specKind/insist/estimate) — ?request= prefills verbatim — or its own not-found arm; overflow + axe clean, never a blank",
+    owner: "UX.2",
+    expected: "red",
+    paid: false,
+  },
+  {
     id: "P1.app-new",
     journey: "phone",
     asserts:

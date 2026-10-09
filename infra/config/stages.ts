@@ -344,8 +344,10 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // /billing/return leaves; the Stripe hand-offs stay server-validated `{url}` envelopes).
     // SPA.17 — `export` joins on dev only, paired with the already-listed `ide-chrome` (the
     // first IDE-framed flip: /p/:slug/export mounts <IdeChrome> — both flags gate together).
+    // SPA.19 — `figures` joins on dev only (the /p/:p/figures* + /visualize leaves — unframed,
+    // the three GETs consult on `figures` alone); prod waits for SPAF.10 (REQ-SEQ-10).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

@@ -101,8 +101,18 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
       "desktop-width + outline-bearing legs (the editable form's ed.* grammar, autosave status, cited-409 flash) — no free step can mint an outline today; the dom.test parity legs stand in until a seeded fixture or paid leg carries them",
     ],
   }),
-  figures: gate("figures", [], {
-    owed: ["no free step walks /p/:p/figures or /visualize today — SPA.19 names its gate subset"],
+  // SPA.19 — `P1.figures` walks the pane, the card, and the visualize sheet at phone width under
+  // BOTH renderers (rows-or-empty / preview-or-not-found / consent-form-or-not-found — every leg
+  // is a designed arm, renderer-agnostic). The step is `expected:"red"` pending its first preview
+  // leg (the Resend secret blocker — D-SPA.19-*): a red miss reports `owed`, and the
+  // figure-bearing desktop legs stay owed honestly — no free step can mint a figure (the
+  // Visualize click is a paid run — REQ-VFY-10), so the populated-card arms ride this note until
+  // a seeded fixture or a paid leg can carry them.
+  figures: gate("figures", ["P1.figures"], {
+    owed: [
+      "P1.figures is expected:red pending its first preview leg — the Resend secret blocker (D-SPA.19-1) holds the two-leg run",
+      "figure-bearing legs (type chips, field edits, the pending-proposal Accept/Reject arms) — no free step can mint a figure today (the Visualize click is a paid run); the dom.test parity legs stand in until a seeded fixture or paid leg carries them",
+    ],
   }),
   "run-sheet": gate("run-sheet", ["N4", "R7", "N9", "P1.runsheet"], {
     legNotes: { R7: "the scope-line leg", N9: "the Add-credits Payment-Link leg" },

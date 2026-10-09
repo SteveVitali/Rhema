@@ -59,12 +59,15 @@ describe("gatedStepIds — the surface gate resolution", () => {
     expect(gatedStepIds(["usage"], paid)).toEqual({ ids: new Set(["X1.usage"]) });
   });
   it("refuses a surface whose gate is still empty (vacuous is never a gate)", () => {
-    const r = gatedStepIds(["figures"], paid);
+    const r = gatedStepIds(["run-report"], paid);
     expect(r.error).toContain("no gated steps");
     expect(r.error).toContain("owed:");
   });
   it("resolves the outline gate to its SPA.18 subset (P1.outline)", () => {
     expect(gatedStepIds(["outline"], paid)).toEqual({ ids: new Set(["P1.outline"]) });
+  });
+  it("resolves the figures gate to its SPA.19 subset (P1.figures)", () => {
+    expect(gatedStepIds(["figures"], paid)).toEqual({ ids: new Set(["P1.figures"]) });
   });
   it("refuses when a gate resolves a paid step — REQ-VFY-10's runtime belt", () => {
     // the schema test keeps this unreachable with the real registry; inject one to prove the gate.
