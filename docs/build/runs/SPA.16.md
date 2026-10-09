@@ -220,8 +220,11 @@ first — worked as designed).
 
 ## 5 — Checks read + memory
 
-- `gh pr checks --watch=false` — recorded once at closeout (see the PHASE LOG
-  line / §6 note).
+- `gh pr checks 141 --watch=false` — read once at closeout (2026-10-09T09:0xZ):
+  **`no checks reported on the 'stevevitali/spa-16-surface-billing' branch`** —
+  the same state SPAF.6's #140 recorded (`289acf5`); no check had reported yet.
+  Local gates stand in: turbo build/lint/typecheck 135/135, `pnpm test` green,
+  all five script gates clean.
 - `check-build-memory.sh` + `check-append-only.mjs --base d463318` — green at
   closeout.
 - `BUILD_INDEX.md` row 148 · `LEDGER.md` advanced — `nextTicket: SPAF.7`,
