@@ -12,13 +12,11 @@ import {
   BalanceChip,
   DecisionsList,
   WhatChangedView,
-  SourceEditor,
   IdeShell,
   RunReport,
   CompareView,
   FilesPane,
   OutlineSections,
-  type SourceEditorLabels,
   type DossierLabels,
 } from "@rhema/ui";
 import {
@@ -84,7 +82,6 @@ import { chatPanel } from "./chat-pane.js";
 import {
   PageChrome,
   ProjectOverviewBody,
-  anchorQuote,
   compareLabels,
   whatChangedLabels,
 } from "./page-chrome.js";
@@ -1261,80 +1258,13 @@ export function ComparePage(): ReactNode {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// PRB.07 — the source editor (§5.4/§6.3; REQ-BETA-21 stopgap #1 → 1.x Source mode). SSRs the CodeMirror host
-// + the §6.3 lock banner + the projected findings rail; the client bundle upgrades the textarea and runs the
-// debounced autosave. There is no Save button and no unsaved-changes dialog anywhere on this page.
+// SPA.24 (REQ-ED-16) — the PRB.07 source editor (`EditorPage` + `SourceEditor` + the editor.js
+// island) is RETIRED: `GET /p/:p/edit/:draftId` has 302'd to `/v/:n` since P1.02, so nothing
+// rendered it; the `/edit/:draftId/{doc,note,cancel-run,revise}` transport routes stay live (the
+// Page's poll + forms). Source mode's return is a designed SPA feature (SPA.25), not a port.
 // ---------------------------------------------------------------------------------------------------------------------
 
 const E = COPY.editor;
-
-const editorLabels: SourceEditorLabels = {
-  versionLabel: (n, baseN) =>
-    baseN != null ? fmt(E.versionForkFmt, { n, base: baseN }) : fmt(E.versionFmt, { n }),
-  writerLockText: (workflow) => fmt(E.writerLockFmt, { workflow }),
-  readerLockText: (workflow) => fmt(E.readerLockFmt, { workflow }),
-  cancelRun: E.cancelRun,
-  sync: { synced: E.sync.synced, syncing: E.sync.syncing, queued: E.sync.queued, locked: E.sync.locked },
-  findingsHeading: E.findingsHeading,
-  wholePiece: E.wholePiece,
-  lostNote: E.lostNote,
-  noteLabel: E.noteLabel,
-  notePlaceholder: E.notePlaceholder,
-  noteSubmit: E.noteSubmit,
-  noteSaved: E.noteSaved,
-  revise: E.revise,
-};
-
-export function EditorPage(): ReactNode {
-  const { editor, compact } = usePageData();
-  // P1.19 — §10.1 ✗: the source editor never renders on phone width (reader-only Page).
-  if (compact === true) {
-    return (
-      <IdeFrame>
-        <PageTitle>{E.notFound}</PageTitle>
-        <PhoneBlockedNote />
-      </IdeFrame>
-    );
-  }
-  if (!editor) {
-    return (
-      <Shell brand={COPY.brand} footer={footer()}>
-        <PageTitle>{E.notFound}</PageTitle>
-      </Shell>
-    );
-  }
-  const { slug, doc } = editor;
-  const base = `/p/${slug}/edit/${doc.draftId}`;
-  return (
-    <IdeFrame>
-      <SourceEditor
-        markdown={doc.markdown}
-        draftId={doc.draftId}
-        draftN={doc.draftN}
-        baseDraftN={doc.baseDraftN}
-        origin={doc.origin}
-        lock={doc.lock}
-        findings={doc.findings.map((f) => ({
-          findingId: f.findingId,
-          title: f.title,
-          severity: f.severity,
-          sourceLabel: f.sourceLabel,
-          quote: anchorQuote(f),
-          lost: f.lost,
-          kind: f.kind,
-          suggestion: f.suggestion,
-        }))}
-        saveUrl={`${base}/save`}
-        docUrl={`${base}/doc`}
-        noteUrl={`${base}/note`}
-        cancelUrl={`${base}/cancel-run`}
-        reviseUrl={`${base}/revise`}
-        noteSaved={editor.noteSaved}
-        labels={editorLabels}
-      />
-    </IdeFrame>
-  );
-}
 
 // =========================================================================================================
 // P1.02 — the Page (schema-first ProseMirror/Tiptap surface; §5.4; REQ-DATA-28/29 amended). The SSR render

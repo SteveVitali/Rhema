@@ -7,8 +7,9 @@
 //     keep-alive key REQ-NAV-6 names `(projectId, draftId)` is the same session (§6's note:
 //     `draft:<id>` is the canonical form).
 //   • Custody: `acquire` bumps a refcount and creates the entry on a miss (the `init` callback
-//     builds the `EditorState` — `createPageState` today, `createCollabPageState` once the wire
-//     binds); `release` drops it — at zero the entry runs its route-leave flush (the
+//     builds the `EditorState` — `createPageState` for a collab-less mount, SPA.24's
+//     `createCollabPageState` bound to the wire's `Y.XmlFragment` when one binds); `release`
+//     drops it — at zero the entry runs its route-leave flush (the
 //     pagehide-equivalent, REQ-ED-5's `session.flushOnHide`) and schedules an idle destroy.
 //   • Lifetime: an entry surviving `IDLE_TTL_MS` at zero refs is destroyed (session teardown +
 //     map drop); an LRU cap (`MAX_ENTRIES`) evicts the oldest idle entry first. `rekey` moves a

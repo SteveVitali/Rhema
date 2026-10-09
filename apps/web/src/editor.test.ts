@@ -3,10 +3,10 @@ import { ApiError, type ProjectRow, type EditorDocDto } from "@rhema/api-client"
 import { createWebApp, type WebDeps } from "./server.js";
 import type { DataSource } from "./data.js";
 
-// PRB.07 — the source editor web routes (§5.4/§6.3; REQ-BETA-21). Asserts the SSR contract the client
-// bundle depends on (data-* hooks, the read-only textarea fallback, the banner, the rail labels), the
-// same-origin autosave/doc endpoints, and the progressive-enhancement form POSTs. Also the negative the
-// ticket calls out: no Save button and no unsaved-changes dialog exist anywhere on the page.
+// PRB.07 — the source editor web routes (§5.4/§6.3; REQ-BETA-21). The SSR surface + island retired at
+// SPA.24 (REQ-ED-16); what survives — and this file keeps asserting — is the TRANSPORT: the
+// same-origin autosave/doc endpoints (the Page's collab stack polls `/doc`; `/save` remains the
+// `?collab=local` fallback) and the progressive-enhancement form POSTs (note / cancel-run / revise).
 
 const PROJECTS: ProjectRow[] = [
   {
@@ -193,14 +193,11 @@ describe("editor endpoints — autosave / doc poll / forms (PRB.07)", () => {
     expect(revise).toHaveBeenCalledWith(expect.anything(), "proj_1", "d_2");
   });
 
-  it("GET /assets/editor.js serves the built bundle or 404s before a build", async () => {
+  it("GET /assets/editor.js 404s — the island entry retired with the surface (SPA.24)", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/assets/editor.js");
-    // the bundle is a build artifact (gitignored): 200 once `pnpm build` has run, 404 on a bare checkout —
-    // either way the page degrades to the no-JS read-only view.
-    expect([200, 404]).toContain(res.status);
-    if (res.status === 200) {
-      expect(res.headers.get("content-type")).toContain("javascript");
-    }
+    // `editor` left CLIENT_ENTRIES at SPA.24 — the asset route only serves listed entries, so this is
+    // a hard 404 even after a build (a stale cached request can't resurrect the island).
+    expect(res.status).toBe(404);
   });
 });

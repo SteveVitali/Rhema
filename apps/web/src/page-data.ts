@@ -330,14 +330,8 @@ export interface PageData {
   readonly explainersDismissed?: readonly string[];
   /** PRB.06 — the What-changed read for a delivered response (the revision page; §5.8). */
   readonly revision?: { readonly slug: string; readonly data: WhatChangedDto; readonly commentedHunkId?: string };
-  /** PRB.07 — the source editor (§5.4/§6.3): the doc + lock + projected rail the SSR page renders. */
-  readonly editor?: {
-    readonly slug: string;
-    readonly projectId: string;
-    readonly doc: EditorDocDto;
-    /** a note POST redirected back with this set — the "Noted" marker renders. */
-    readonly noteSaved?: boolean;
-  };
+  // SPA.24 (REQ-ED-16) — the PRB.07 `editor` bag dropped with the retired source-editor surface;
+  // nothing populated it since the `/edit/:draftId` GET became a redirect.
   /** P1.02 — the Page (the schema-first editor surface): the api doc read + the PM doc JSON the island
    *  mounts (built server-side so SSR and the client see the SAME nodes). */
   readonly page?: {

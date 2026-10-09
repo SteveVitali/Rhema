@@ -95,8 +95,9 @@ describe("the Page — /p/:project/v/:v SSR (P1.02)", () => {
     expect(html).toContain("data-page-doc");
     expect(html).toContain("data-page-preview");
     expect(html).toContain("A paragraph with the quote inside");
-    // the transport URLs — the same /edit/:draftId/* endpoints the beta used
-    expect(html).toContain('data-save-url="/p/the-piece/edit/d_2/save"');
+    // the lock-poll/resync URL — the same /edit/:draftId/doc endpoint the beta island used.
+    // SPA.24 (REQ-ED-16): `data-save-url` is GONE — collab is the transport; /save stays server-side.
+    expect(html).not.toContain("data-save-url");
     expect(html).toContain('data-doc-url="/p/the-piece/edit/d_2/doc"');
     // the forked-head version line (§5.4's verbatim banner — EDIT.1)
     expect(html).toContain("Editing v2 · findings from v1 follow your text");
