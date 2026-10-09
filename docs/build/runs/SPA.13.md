@@ -262,10 +262,11 @@ vocabulary parity at 116/116.
 
 - **PR:** #135 — `gh pr create --base stevevitali/spaf-3-prod-flip-settings` (stacked;
   **not merged** — `OPERATOR` policy). State at closeout: OPEN, MERGEABLE.
-- **Checks read (at closeout):** `typecheck / lint / unit` — **pending** (run
-  37881093567 queued on the impl push; the docs head re-queues — recorded honestly, not
-  claimed). The inherited `integration`/privsep red that bound earlier rows is waived for
-  this + descendant PRs per GD-MAINT.4-1.
+- **Checks read (twice, at closeout):** `typecheck / lint / unit` — **pending** on the
+  first read (run 37881093567 queued on the impl push); **in_progress** on the second read
+  against the docs head `b4a3a6b` — recorded honestly, not claimed. The inherited
+  `integration`/privsep red that bound earlier rows is waived for this + descendant PRs
+  per GD-MAINT.4-1.
 - **Commits:** impl `9f00b07` (on top of the audited+kept WIPs `a46d935`/`b705a4e` and the
   operator ruling `96ab0f5`) · docs/closeout + this ledger — see the branch tip.
 - **Build memory:** `runs/SPA.13.md` + `pr/SPA.13.md` committed · BUILD_INDEX row 142 ·
