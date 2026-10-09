@@ -531,7 +531,7 @@ describe("§5.3 import flow (deliverable 4)", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("cold start can take a few minutes");
+    expect(html).toContain("a text import usually takes a few seconds");
     expect(html).toContain('http-equiv="refresh"');
     expect(html).toContain("/p/the-politics-of-visibility/import/preview?qk=quarantine%2Fws1%2Fup1");
     // no Create affordance on a pending page — there is nothing to create yet.
@@ -556,7 +556,7 @@ describe("§5.3 import flow (deliverable 4)", () => {
 
     const p1 = await app.request(url);
     expect(p1.status).toBe(200);
-    expect(await p1.text()).toContain("cold start can take a few minutes");
+    expect(await p1.text()).toContain("a text import usually takes a few seconds");
 
     ready = true;
     const p2 = await app.request(url);
@@ -582,7 +582,7 @@ describe("§5.3 import flow (deliverable 4)", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("cold start can take a few minutes");
+    expect(html).toContain("a text import usually takes a few seconds");
     expect(html).toContain('http-equiv="refresh"');
   });
 });

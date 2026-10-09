@@ -28,7 +28,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "new-visitor",
     asserts: "the landing drop-zone holds a dropped draft across sign-in and later page loads",
     owner: "ONB.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -53,7 +53,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "new-visitor",
     asserts: "the held draft becomes a project with its preview in ≤ 20 s",
     owner: "ONB.1",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {

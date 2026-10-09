@@ -9,8 +9,9 @@ Recorded for the launch checklist (P1.22). This file IS the REQ-ARCH-34 record.
 - **Weekly review.** Once a week (prod starts this on the first real week post-bringup) the on-call
   walks the `rhema-prod — §13.5 SLOs` dashboard (infra/pulumi/monitoring.ts) row by row and records the
   reading per signal: run-start p95, event-delivery p95, success rate, gate-resume p95, autosave p95,
-  API availability burn, orphan/mirror/boundary zero-counts, egress-denied spike count, provider error
-  share, cost drift, proxy-vs-SDK divergence, absorbed-adjustment share.
+  import-preview p95 (ONB.1 — presign→preview-ready, text formats only: `slo_samples.detail` carries
+  the source format kind), API availability burn, orphan/mirror/boundary zero-counts, egress-denied
+  spike count, provider error share, cost drift, proxy-vs-SDK divergence, absorbed-adjustment share.
 - **Breach ⇒ pause.** When a signal breaches its §13.5 alert row and stays breached into the review
   window, feature work on that surface pauses until the budget recovers. "The surface" is the signal's
   owning layer (e.g. `run_start_latency_p95_s` → the run-launch path; `provider_429_5xx_pct_5m` → the
@@ -25,7 +26,7 @@ Recorded for the launch checklist (P1.22). This file IS the REQ-ARCH-34 record.
 
 | Signal | Source |
 |---|---|
-| DB-backed signals (9) | `slo.probe` sweep — `apps/worker/src/main.ts`, `packages/orchestrator/src/slo.ts` |
+| DB-backed signals (10) | `slo.probe` sweep — `apps/worker/src/main.ts`, `packages/orchestrator/src/slo.ts` (ONB.1 added `import_preview_p95_s`: the api samples `import_preview_ms` into `slo_samples` per ready preview, `detail` = format kind) |
 | API availability | Cloud Monitoring request SLI + `Slo` resource — `infra/pulumi/monitoring.ts` |
 | Cost drift | `usage.reconcile` nightly → alertSink — `apps/worker/src/billing-jobs.ts` |
 

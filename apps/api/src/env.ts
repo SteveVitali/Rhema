@@ -144,6 +144,13 @@ export interface ApiEnv {
   /** PRB.20 — the Job's user-content volume mount path inside the container (`CONVERT_JOB_ROOT`, `/usercontent`). */
   readonly convertJobRoot?: string;
   /**
+   * ONB.1 (ADR-044) — the warm `convert-svc` Cloud Run service URL (`CONVERT_SERVICE_URL`,
+   * invoker-gated like fetcher/export). Set ⇒ the interactive import preview rides the service
+   * (≤20 s for the text formats) with the Job as the fallback; unset ⇒ the Job-only path (the
+   * pre-ONB.1 posture, multi-minute cold starts).
+   */
+  readonly convertServiceUrl?: string;
+  /**
    * P1.15 — the invoker-gated `fetcher` service URL (`FETCHER_SERVICE_URL`): the only egress ingestion
    * rides (SSRF/robots/rate/content-type). Unset ⇒ ingestion's remote providers fail closed with
    * `live fetcher not wired` (upload/paste/export still work — they carry their own bytes).
@@ -252,6 +259,8 @@ export function readApiEnv(): ApiEnv {
     ...(process.env.USER_CONTENT_BUCKET ? { userContentBucket: process.env.USER_CONTENT_BUCKET } : {}),
     ...(process.env.CONVERT_JOB ? { convertJob: process.env.CONVERT_JOB } : {}),
     ...(process.env.CONVERT_JOB_ROOT ? { convertJobRoot: process.env.CONVERT_JOB_ROOT } : {}),
+    // ONB.1 (ADR-044) — the warm convert service; unset ⇒ the Job-only path (still correct, just cold).
+    ...(process.env.CONVERT_SERVICE_URL ? { convertServiceUrl: process.env.CONVERT_SERVICE_URL } : {}),
     // P1.15 — the fetcher service URL (the api's discovery/review fetches ride it).
     ...(process.env.FETCHER_SERVICE_URL ? { fetcherServiceUrl: process.env.FETCHER_SERVICE_URL } : {}),
     // DEF.2 (F6) — the egress-proxy base URL the estimate pre-pass's synthetic credential calls.

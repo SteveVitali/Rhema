@@ -96,6 +96,8 @@ export interface Compute {
   services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>>;
   /** §12.1's convert Cloud Run Job (per-batch, no network, no DB) — executed by the caller, never served. */
   convertJob: gcp.cloudrunv2.Job;
+  /** ONB.1 (ADR-044) — the warm convert service: same image/SA/mount/isolation as the Job, `--serve`. */
+  convertSvc: gcp.cloudrunv2.Service;
   /** The external HTTPS LB's reserved global IPv4 (the operator points every prod DNS record at it). */
   lbIpAddress?: pulumi.Output<string>;
   /**
@@ -400,6 +402,56 @@ export function createCompute(args: ComputeArgs): Compute {
     },
   });
 
+  // --- ONB.1 (ADR-044): the warm `convert-svc` Cloud Run SERVICE — the §13.5 `import_preview_p95_s`
+  // ≤20 s leg for the text formats (md/txt/html/docx); PDFs + ingest.sync re-conversion stay on the
+  // Job above. It runs the SAME image (`--serve` picks the HTTP entrypoint in main.ts) under the SAME
+  // `convert` SA — every §12.1/§13.3 isolation property is preserved verbatim: gcsfuse `/usercontent`
+  // volume (its only I/O path), no vpcAccess, no DB credential, no GCS client in the process, and the
+  // SA's single write grant is the conditioned `converted/` prefix (iam.ts). The interactive posture
+  // adds exactly two constraints of its own: invoker-gated (api mints an OIDC token per hop — LIVE
+  // FINDING 11's pattern) and min-instance warmth on prod only (non-prod scales to zero — a cold
+  // preview there is slower but never wrong).
+  const convertSvc = new gcp.cloudrunv2.Service(name("convert-svc"), {
+    location: region,
+    deletionProtection: cfg.kind === "prod",
+    ingress: "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
+    template: {
+      serviceAccount: iam.serviceAccounts["convert"].email,
+      scaling: {
+        // The warm pool is the entire point of the service — prod keeps one resident instance;
+        // dev/preview scale to zero (the latency SLO is a prod contract; a cold non-prod preview
+        // just reads slower).
+        minInstanceCount: cfg.kind === "prod" ? 1 : 0,
+        maxInstanceCount: cfg.kind === "prod" ? 4 : 2,
+      },
+      volumes: [
+        {
+          name: "usercontent",
+          gcs: { bucket: args.buckets["user-content"].name, readOnly: false },
+        },
+      ],
+      containers: [
+        {
+          image: imageFor("convert"),
+          args: ["--serve"],
+          resources: {
+            startupCpuBoost: true,
+            // Mammoth/pdf.js spikes sit under the Job's default — 1Gi headroom for the warm path.
+            limits: { cpu: "1", memory: "1Gi" },
+          },
+          envs: [
+            { name: "CONVERT_ROOT", value: "/usercontent" },
+            // PORT is NOT settable — Cloud Run reserves+injects it (400 "reserved env names"),
+            // and serveConvert already defaults `process.env.PORT ?? 8080` to the platform value.
+          ],
+          volumeMounts: [{ name: "usercontent", mountPath: "/usercontent" }],
+        },
+      ],
+      // Same posture as the Job: NO vpcAccess. The process holds no network client and the mount is
+      // the platform's — the egress bound is process + IAM level, probed live (run ledger egress leg).
+    },
+  });
+
   // --- Cloud Run services: placeholder image, per-service SA, VPC egress to the private-app tier. ----
   const services: Partial<Record<ServiceName, gcp.cloudrunv2.Service>> = {};
   for (const svc of CLOUD_RUN_SERVICES) {
@@ -556,6 +608,10 @@ export function createCompute(args: ComputeArgs): Compute {
                       value: pulumi.interpolate`projects/${project}/locations/${region}/jobs/${convertJob.name}`,
                     },
                     { name: "CONVERT_JOB_ROOT", value: "/usercontent" },
+                    // ONB.1 (ADR-044) — the warm preview path: `convert-svc` first (≤20 s for text
+                    // formats), the Job above as the fallback + the PDF/batch leg. The api mints an
+                    // OIDC token per hop (the same invoker-gated pattern as fetcher/export).
+                    { name: "CONVERT_SERVICE_URL", value: convertSvc.uri },
                     ...(apiOrigin ? [{ name: "API_PUBLIC_URL", value: apiOrigin }] : []),
                     ...(appOrigin ? [{ name: "APP_BASE_URL", value: appOrigin }] : []),
                     // SEC.2 (ADR-040) — the trusted web→api client-IP channel: the api verifies the
@@ -675,6 +731,16 @@ export function createCompute(args: ComputeArgs): Compute {
       member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["api"].email}`,
     });
   }
+
+  // ONB.1 — api → convert-svc service-to-service invoker (the LIVE FINDING 11 pattern like
+  // fetcher/export): the warm service is invoker-gated — the api mints an OIDC ID token per hop
+  // (createConvertServicePreview in live-clients). Service-scoped, never project-scoped.
+  new gcp.cloudrunv2.ServiceIamMember(name("api-invokes-convert-svc"), {
+    location: region,
+    name: convertSvc.name,
+    role: "roles/run.invoker",
+    member: pulumi.interpolate`serviceAccount:${iam.serviceAccounts["api"].email}`,
+  });
 
   // --- Public invoker grants (surfaced live at Stage B, 2026-09-17): the LB-fronted services —
   // `web` (the public site), `api` (host-routed api.rhema.tools), and — P1.03 — `collab` (path-routed
@@ -893,6 +959,7 @@ export function createCompute(args: ComputeArgs): Compute {
     proxyGroup,
     services,
     convertJob,
+    convertSvc,
     lbIpAddress: lbAddress?.address,
     dnsRecords,
   };

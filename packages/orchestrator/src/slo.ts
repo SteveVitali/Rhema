@@ -190,6 +190,23 @@ export const SLO_SIGNALS: readonly SloSignalDef[] = [
                and (workspace_id is null or ${TEST_TENANT_FREE("slo_samples")})`,
   },
   {
+    key: "import_preview_p95_s",
+    // ONB.1 (REQ-GROWTH-1 / REQ-ARCH-34) — the amended text-import latency SLO: presign → preview-ready
+    // p95 ≤ 20 s (the ticket's AC; the warm convert-svc carries the text formats). The api samples
+    // `import_preview_ms` per ready preview (elapsed from the Redis first-seen stamp at presign;
+    // `detail` = the conversion sourceFormat; workspace-scoped so flagged test tenants never count).
+    // The SLO covers the TEXT formats only (md/txt/html/docx — the ticket's wording); a slow PDF
+    // through the same route is out of scope, never a breach. A breach means the preview is slower
+    // than a re-type — the exact regression the ticket fixes.
+    target: "import preview latency (presign → preview-ready) p95 ≤ 20 s — alert p95 > 40 s for 30 min",
+    comparator: "gt",
+    threshold: 40, // seconds — the ticket's alert threshold (2× the SLO), sustained for 30 min in IaC
+    probe: `select percentile_cont(0.95) within group (order by value_ms) / 1000.0
+             from slo_samples where signal = 'import_preview_ms' and at > now() - ${MIN} * 30
+               and detail in ('md','txt','html','docx')
+               and (workspace_id is null or ${TEST_TENANT_FREE("slo_samples")})`,
+  },
+  {
     key: "api_availability_monthly_pct",
     target: "API availability 99.9% monthly — alert on error-budget burn > 2×",
     comparator: "lt",

@@ -177,6 +177,66 @@ describe("createImportRoutes", () => {
     expect(seen).toBe(25_000); // clamped to IMPORT_PREVIEW_WAIT_MS
   });
 
+  it("ONB.1 (REQ-ARCH-34) — a ready preview samples `import_preview_ms` (presign→ready via the timing seam; workspace-scoped)", async () => {
+    const claims: string[] = [];
+    const releases: string[] = [];
+    const timed = createImportRoutes({
+      principal: () => ({ ...principal, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId, userId: seed.userId }),
+      db: sql,
+      contentStore: store,
+      converter,
+      ids,
+      timing: {
+        claim: async (k) => { claims.push(k); return 10_000; }, // the presign stamp
+        release: async (k) => { releases.push(k); },
+      },
+      now: () => 11_500, // 1.5 s after the presign stamp — the elapsed the sample must carry
+    });
+    const res = await timed.request("/projects/p/import/preview", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ quarantineKey: QK() }),
+    });
+    expect(res.status).toBe(200);
+    // the fire-and-forget insert lands before we assert — give the promise a tick.
+    for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+    const rows = (await db.pg.query(
+      `select value_ms, workspace_id, detail from slo_samples where signal = 'import_preview_ms'`,
+    )) as { rows: { value_ms: number; workspace_id: string; detail: string }[] };
+    expect(rows.rows).toHaveLength(1);
+    expect(rows.rows[0]!.workspace_id).toBe(seed.workspaceId);
+    // invariant #10 — the sample carries the format KIND, never text or filenames
+    expect(rows.rows[0]!.detail).toBe("docx");
+    // now() advanced 1.5 s from the 10 s presign stamp → the sample is the real elapsed
+    expect(rows.rows[0]!.value_ms).toBe(1_500);
+    expect(claims).toEqual([QK()]);
+    expect(releases).toEqual([QK()]);
+  });
+
+  it("ONB.1 — a 202 pending hop claims but does NOT sample or release (the ready hop owns the sample)", async () => {
+    const claims: string[] = [];
+    let released = 0;
+    const pending: Converter = { preview: async () => null };
+    const timed = createImportRoutes({
+      principal: () => ({ ...principal, workspaceId: seed.workspaceId, billingAccountId: seed.billingAccountId, userId: seed.userId }),
+      db: sql,
+      contentStore: store,
+      converter: pending,
+      ids,
+      timing: { claim: async (k) => { claims.push(k); return 1; }, release: async () => { released++; } },
+    });
+    const res = await timed.request("/projects/p/import/preview", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ quarantineKey: QK() }),
+    });
+    expect(res.status).toBe(202);
+    for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(claims).toEqual([QK()]);
+    expect(released).toBe(0);
+    expect((await db.pg.query(`select count(*)::int n from slo_samples where signal='import_preview_ms'`)).rows[0]).toEqual({ n: 0 });
+  });
+
   it("401s an unauthenticated import", async () => {
     const noauth = createImportRoutes({ principal: () => null, db: sql, contentStore: store, converter, ids });
     const res = await noauth.request("/projects/p/import/create", {

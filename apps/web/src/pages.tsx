@@ -139,6 +139,15 @@ function fmt(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 
+/** ONB.1 (invariant #14) — the converting-state copy, honest about the wait the label implies:
+ *  a known text extension → seconds on the warm service; `.pdf` → the batch Job's minutes; an
+ *  unlabeled key-only poll → both bounds, never a promised fast wait. */
+function convertingCopy(sourceLabel: string | undefined): string {
+  if (sourceLabel && /\.(md|markdown|txt|html?|docx)$/i.test(sourceLabel)) return COPY.import.convertingFmt;
+  if (sourceLabel && /\.pdf$/i.test(sourceLabel)) return COPY.import.convertingSlowFmt;
+  return COPY.import.convertingUnknownFmt;
+}
+
 // The beta's flat pages. Every string comes from COPY (lint-checked). Progressive enhancement: forms POST and
 // links navigate — no client JS is required.
 
@@ -250,6 +259,15 @@ export function IdeFrame({ children }: { children: ReactNode }): ReactNode {
       }}
     >
       {children}
+      {/* ONB.1 — the held-draft consumed handshake: `/app/new/create` echoes the hold's token as
+          `?hc=` on the success landing; this marker + landing.js let the island delete the hold
+          only when the echoed token matches its IndexedDB record (server-confirmed consumption). */}
+      {data.project?.heldConsumed ? (
+        <>
+          <span data-held-consumed={data.project.heldConsumed} hidden />
+          <script src="/assets/landing.js" defer />
+        </>
+      ) : null}
       {/* P1.19 — §10.1: below ~768 px the Desk is display:none, so the chat surface mounts INSIDE
           the Page — text only (the compact ChatDesk drops the plan card's run-start/edit actions,
           the anchored suggestion, and the tier pick; the estimate line still shows). */}
@@ -942,12 +960,13 @@ export function ImportPreviewPage(): ReactNode {
         </p>
       ) : null}
       {conversion?.pending === true ? (
-        // PRB.21 — the converting state: a cold convert Job can run ~2.5–4 min; the page's meta-refresh
-        // re-polls the preview GET on the quarantine key until the converted object lands. Honest copy —
-        // never a spinner masquerading as a hung request.
+        // PRB.21 + ONB.1 — the converting state: text formats ride the warm convert-svc (seconds);
+        // a PDF still pays the Job's cold start (minutes) — the copy says which by source label.
+        // The page's meta-refresh re-polls the preview GET on the quarantine key until the
+        // converted object lands — never a spinner masquerading as a hung request.
         <section style={{ maxWidth: "68ch" }}>
           <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
-            {fmt(COPY.import.convertingFmt, { name: conversion.sourceLabel })}
+            {fmt(convertingCopy(conversion.sourceLabel), { name: conversion.sourceLabel })}
           </p>
           <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px" }}>{COPY.import.convertingNote}</p>
         </section>
@@ -998,7 +1017,7 @@ export function NewProjectPage(): ReactNode {
     );
   }
   const entry = np?.entry ?? "scratch";
-  const form = np?.form ?? { title: "", protocolId: null, venue: null, personaId: null, startVersion: null };
+  const form = np?.form ?? { title: "", protocolId: null, venue: null, personaId: null, startVersion: null, heldToken: null };
   const protocols = np?.protocols ?? [];
   const voices = np?.voices ?? [];
   const pickedCard = protocols.find((p) => p.id === form.protocolId) ?? null;
@@ -1042,9 +1061,11 @@ export function NewProjectPage(): ReactNode {
       ) : null}
       {np?.pending ? (
         // the converting state (PRB.21 cadence): the page's meta-refresh re-polls the preview GET.
+        // ONB.1 — the wait copy is honest about the format (text = seconds on the warm service;
+        // PDF = the batch Job, still minutes cold).
         <section style={{ maxWidth: "68ch" }} data-conversion-pending="true">
           <p role="status" style={{ color: "var(--shell-fg)", fontSize: "15px", lineHeight: 1.6 }}>
-            {fmt(COPY.import.convertingFmt, { name: np.pending.sourceLabel })}
+            {fmt(convertingCopy(np.pending.sourceLabel), { name: np.pending.sourceLabel })}
           </p>
           <p style={{ color: "var(--shell-fg-faint)", fontSize: "13px" }}>{COPY.import.convertingNote}</p>
         </section>
@@ -1068,6 +1089,7 @@ export function NewProjectPage(): ReactNode {
               ...(form.venue ? { venue: form.venue } : {}),
               ...(form.personaId ? { personaId: form.personaId } : {}),
               ...(form.startVersion != null ? { startVersion: String(form.startVersion) } : {}),
+              ...(form.heldToken ? { heldToken: form.heldToken } : {}),
               qk: np.preview.quarantineKey,
             },
           }}
@@ -1080,22 +1102,24 @@ export function NewProjectPage(): ReactNode {
           }}
         />
       ) : null}
-      {/* P1.17 — a landing drop-zone hold is claimed here: landing.js reads the localStorage hold and
-          hydrates the file input (the SAME upload path — no bytes ever bypass conversion). */}
-      {np?.held ? (
-        <p data-held-notice role="status" style={{ fontSize: "13px", color: "var(--state-ready)" }}>
-          {COPY.showcase.heldFileReady}
-        </p>
+      {/* ONB.1 — the held draft persists until consumed: `data-held` + the notice are rendered on
+          EVERY /app/new load (not just `?held=1`) so landing.js re-hydrates the file input each
+          visit; the island fills the notice and the Discard control when a hold actually exists. */}
+      {np && !np.pending && !np.preview ? (
+        <p data-held-notice role="status" style={{ fontSize: "13px", color: "var(--state-ready)" }} />
       ) : null}
       {np && !np.pending && !np.preview ? (
-        <form method="post" action="/app/new" encType="multipart/form-data" data-held={np?.held ? "1" : undefined} style={{ maxWidth: "68ch" }}>
+        <form method="post" action="/app/new" encType="multipart/form-data" data-held="1" style={{ maxWidth: "68ch" }}>
           <input type="hidden" name="entry" value={entry} />
+          {/* ONB.1 — the island stamps the hold's token here; the create redirect echoes it as
+              `?hc=` so the hold is deleted only after a server-confirmed consumption. */}
+          <input type="hidden" name="heldToken" data-held-token value={form.heldToken ?? ""} />
           <label style={{ display: "block", fontSize: "13px", color: "var(--shell-fg-muted)" }}>
             {COPY.newProject.titleLabel}
             <input
               type="text"
               name="title"
-              required
+              required={entry === "scratch"}
               defaultValue={form.title}
               placeholder={COPY.newProject.titlePlaceholder}
               style={{ display: "block", marginTop: "4px", width: "100%", maxWidth: "420px", padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--shell-border)", background: "var(--shell-bg)", color: "var(--shell-fg)", fontSize: "14px", boxSizing: "border-box" }}
@@ -1242,8 +1266,9 @@ export function NewProjectPage(): ReactNode {
           </div>
         </form>
       ) : null}
-      {/* P1.17 — the drop-zone hold claim: hydrates the localStorage-held file into the file input. */}
-      {np?.held ? <script src="/assets/landing.js" defer /> : null}
+      {/* ONB.1 — the drop-zone hold island runs on EVERY /app/new load (not just `?held=1`): a hold
+          persists until consumed, so every visit re-hydrates the file input + the Discard control. */}
+      {np ? <script src="/assets/landing.js" defer /> : null}
     </IdeFrame>
   );
 }

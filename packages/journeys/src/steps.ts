@@ -9,6 +9,10 @@ import { fileURLToPath } from "node:url";
 import type { Locator, Page } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
+// ONB.1 — N1/N3 must sign in through the real magic link INSIDE the anonymous context that holds
+// the IndexedDB draft (sessions.signIn mints a NEW context — a separate storage partition where
+// the hold does not exist). The identities are still test-mailbox-only.
+import { freshIdentity, assertTestIdentity } from "./session.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
 import { PRICING, PUBLIC_CLAIM_COPY, trialIncludedNote } from "@rhema/contracts";
@@ -163,41 +167,126 @@ const N2_INVITE: StepFn = async (ctx) => {
   void context;
 };
 
-/** N1 (RED, ONB.1) — the drop-zone holds a dropped draft across sign-in and later page loads. */
+/**
+ * The held-draft wait: the island hydrates `input[name=file]` asynchronously after DOMContentLoaded —
+ * poll until it carries exactly the held file. Returns the attached filename (never status alone).
+ */
+async function awaitHeldFile(page: Page, timeoutMs = 15_000): Promise<string> {
+  await page.waitForFunction(
+    () => ((document.querySelector('input[name="file"]') as HTMLInputElement | null)?.files?.length ?? 0) === 1,
+    undefined,
+    { timeout: timeoutMs },
+  );
+  return page.evaluate(
+    () => (document.querySelector('input[name="file"]') as HTMLInputElement | null)?.files?.[0]?.name ?? "",
+  );
+}
+
+/** N1 (ONB.1) — a draft dropped on the landing is HELD across the real magic-link sign-in and two
+ *  later /app/new loads, the file input populated each time. IndexedDB is per-origin per-context, so
+ *  the whole leg runs in ONE anonymous context — sessions.signIn's separate context would partition
+ *  the hold away (which is also the honest proof the hold is client-side, never account-bound). */
 const N1: StepFn = async (ctx) => {
-  const { page } = await ctx.freshUser("n1held");
-  // Anonymous hold: paste into the landing drop-zone's paste field, then carry to signup via the
-  // form (progressive — the JS hold path would IndexedDB-stash it; the no-JS path rides ?entry).
+  const { page } = await ctx.anon();
   await gotoOk(page, ctx.webBaseUrl + "/");
   const dropzone = page.locator("[data-dropzone]");
   if ((await dropzone.count()) === 0) throw new Error("landing drop-zone absent");
-  const paste = page.locator("[data-dropzone] textarea[name='paste']");
-  if ((await paste.count()) === 0) throw new Error("drop-zone paste field absent");
-  // The held-file contract: drop/paste then sign in — the draft must survive into the new sheet.
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=draft`);
-  const heldNotice = page.locator("[data-held-notice]");
-  const pasteAgain = page.locator('form[action="/app/new"] textarea[name="paste"]');
-  if ((await heldNotice.count()) === 0 && (await pasteAgain.count()) === 0) {
-    throw new Error("no held-draft path into the new-project sheet");
+  await page.setInputFiles('[data-dropzone] input[type="file"]', {
+    name: "n1-held-draft.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from("# N1 Held Draft\n\nThe draft that must survive sign-in and two more loads."),
+  });
+  // the island holds it client-side and routes to the intent-carrying signup
+  await page.waitForURL((u) => u.pathname === "/signup" && u.searchParams.get("held") === "1", {
+    timeout: 10_000,
+  });
+  // the REAL magic-link leg — in THIS context, so the IndexedDB hold survives the auth hop
+  const email = freshIdentity(ctx.nonce, "n1held");
+  assertTestIdentity(email);
+  await page.fill('input[name="email"]', email);
+  const sentAt = Math.floor(Date.now() / 1000) - 30;
+  await page.click('button[name="method"][value="magic_link"]');
+  await page.waitForSelector('[role="status"]', { timeout: 45_000 });
+  const link = await ctx.mailbox.awaitMagicLink(email, sentAt, 120_000);
+  await page.goto(link, { waitUntil: "domcontentloaded" });
+  // post-auth the intent lands on /app/new?entry=draft&held=1 — the FIRST hydrated load
+  await page.waitForURL(/\/app\/new/, { timeout: 30_000 });
+  const name = await awaitHeldFile(page);
+  if (name !== "n1-held-draft.md") throw new Error(`post-signin hydration attached ${JSON.stringify(name)}`);
+  // …and two further /app/new loads — the hold persists, the input re-populates each time (ONB.1:
+  // no claim-on-attach; a hold dies only to a token-matched consumed marker or Discard).
+  for (let visit = 1; visit <= 2; visit++) {
+    await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=draft&held=1`);
+    const again = await awaitHeldFile(page);
+    if (again !== "n1-held-draft.md") {
+      throw new Error(`visit ${visit + 1}: the held file did not re-populate (got ${JSON.stringify(again)})`);
+    }
+  }
+  // the held notice names the file, Discard exists, and the consumed-handshake token is stamped
+  const notice = (await page.locator("[data-held-notice]").textContent()) ?? "";
+  if (!notice.includes("n1-held-draft.md")) {
+    throw new Error(`held notice does not name the file (${JSON.stringify(notice)})`);
+  }
+  if ((await page.locator("[data-held-discard]").count()) === 0) {
+    throw new Error("no 'Discard held file' control");
+  }
+  const stamped = await page.evaluate(
+    () => (document.querySelector('input[name="heldToken"]') as HTMLInputElement | null)?.value ?? "",
+  );
+  if (!stamped.startsWith("hold_")) {
+    throw new Error("heldToken not stamped — the consumed handshake cannot match this hold");
   }
 };
 
-/** N3 (RED, ONB.1) — held/pasted draft becomes a project with a preview in ≤ 20 s. */
+/** N3 (ONB.1) — the held draft becomes a project whose conversion preview renders in ≤ 20 s, and
+ *  the create consumes the hold (the `?hc=` handshake — a second /app/new shows an empty input). */
 const N3: StepFn = async (ctx) => {
-  const { page } = await ctx.freshUser("n3");
-  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=draft`);
-  await page.fill('input[name="title"]', ctx.marker("DRAFT"));
-  await page.fill('textarea[name="paste"]', FREE_FIXTURE);
+  // Same one-context walk as N1 (the hold is IndexedDB-bound): drop → magic link → /app/new.
+  const { page } = await ctx.anon();
+  await gotoOk(page, ctx.webBaseUrl + "/");
+  await page.setInputFiles('[data-dropzone] input[type="file"]', {
+    name: "n3-held.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(`# ${ctx.marker("N3HELD")}\n\n${FREE_FIXTURE}`),
+  });
+  await page.waitForURL((u) => u.pathname === "/signup" && u.searchParams.get("held") === "1", {
+    timeout: 10_000,
+  });
+  const email = freshIdentity(ctx.nonce, "n3held");
+  assertTestIdentity(email);
+  await page.fill('input[name="email"]', email);
+  const sentAt = Math.floor(Date.now() / 1000) - 30;
+  await page.click('button[name="method"][value="magic_link"]');
+  await page.waitForSelector('[role="status"]', { timeout: 45_000 });
+  const link = await ctx.mailbox.awaitMagicLink(email, sentAt, 120_000);
+  await page.goto(link, { waitUntil: "domcontentloaded" });
+  await page.waitForURL(/\/app\/new/, { timeout: 30_000 });
+  if ((await awaitHeldFile(page)) !== "n3-held.md") {
+    throw new Error("the held file did not hydrate on the post-auth load");
+  }
+  // submit → the conversion preview must render READY (its Create form exists only on the ready
+  // render; the pending page meta-refreshes under it) inside the §13.5 20 s bound.
   const t0 = Date.now();
   await page.click('button[type="submit"], button:not([type])');
-  await page.waitForSelector(
-    '[data-preview], [data-held-notice], [role="status"], meta[http-equiv]',
-    {
-      timeout: 20_000,
-    },
-  );
+  await page.waitForSelector('form[action="/app/new/create"]', { timeout: 20_000 });
   const ms = Date.now() - t0;
   if (ms > 20_000) throw new Error(`preview took ${ms}ms (> 20 s)`);
+  // Create → the project lands and the `?hc=` consumed marker echoes the hold's token.
+  await page.click('form[action="/app/new/create"] button[type="submit"][name="action"][value="create"]');
+  await page.waitForURL(/\/p\/[a-z0-9-]+.*created=/, { timeout: 30_000 });
+  const landed = new URL(page.url());
+  if (!landed.searchParams.get("hc")) {
+    throw new Error(`create landing carried no consumed marker (?hc= missing): ${page.url()}`);
+  }
+  // the consumed handshake actually ran: a return to /app/new shows an EMPTY file input.
+  await gotoOk(page, `${ctx.webBaseUrl}/app/new?entry=draft&held=1`);
+  await page.waitForTimeout(2_000); // the island's delete is async — give it a beat, then assert
+  const stillAttached = await page.evaluate(
+    () => (document.querySelector('input[name="file"]') as HTMLInputElement | null)?.files?.length ?? 0,
+  );
+  if (stillAttached !== 0) {
+    throw new Error("the hold survived a server-confirmed consumption — the handshake did not run");
+  }
 };
 
 /** Pull the leading "N credits"/"N cr" figure out of an estimate string. */

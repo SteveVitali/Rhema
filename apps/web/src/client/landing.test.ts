@@ -2,10 +2,11 @@
 import { IDBFactory } from "fake-indexeddb";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// P1.17 (§15.1/§15.3; REQ-GROWTH-1) — the landing island's two jobs under a real DOM + a real
-// IndexedDB (happy-dom + fake-indexeddb): the drop-zone HOLD (bytes stay on the device; the beacon
-// carries a token + kind, never a filename or contents) and the /app/new CLAIM (the held file
-// hydrates the file input via DataTransfer, seeds the title, marks itself claimed).
+// P1.17 + ONB.1 (§15.1/§15.3; REQ-GROWTH-1 amended) — the landing island's three jobs under a real
+// DOM + a real IndexedDB (happy-dom + fake-indexeddb): the drop-zone HOLD (bytes stay on the device;
+// the beacon carries a token + kind, never a filename or contents), the /app/new CLAIM (the held
+// file hydrates the file input on EVERY load — no claim-on-attach), and the CONSUMED HANDSHAKE (the
+// hold is deleted only by a server-echoed token-matched `data-held-consumed` marker or Discard).
 
 const LANDING = `
 <form data-dropzone action="/signup" method="get">
@@ -18,6 +19,7 @@ const LANDING = `
 const NEW_FORM = `
 <form method="post" action="/app/new" data-held="1">
   <input type="file" name="file" />
+  <input type="hidden" name="heldToken" data-held-token value="" />
   <input name="title" value="" />
 </form>
 <p data-held-notice></p>`;
@@ -64,6 +66,15 @@ const seedHold = async (rec: Record<string, unknown>) => {
     tx.onerror = () => rej(tx.error);
   });
 };
+
+const holdRec = (over: Record<string, unknown> = {}) => ({
+  token: "hold_abc",
+  name: "chapter-one.docx",
+  type: "application/vnd.openxmlformats",
+  size: 5,
+  bytes: new TextEncoder().encode("hello").buffer,
+  ...over,
+});
 
 const beaconBodies = async (): Promise<Record<string, unknown>[]> => {
   const spy = vi.mocked(navigator.sendBeacon);
@@ -176,15 +187,9 @@ describe("job 1 — the drop-zone hold (REQ-GROWTH-1)", () => {
   });
 });
 
-describe("job 2 — the hold claim on /app/new?held=1", () => {
-  it("hydrates the held file into the file input via DataTransfer, seeds the title, marks claimed", async () => {
-    await seedHold({
-      token: "hold_abc",
-      name: "chapter-one.docx",
-      type: "application/vnd.openxmlformats",
-      size: 5,
-      bytes: new TextEncoder().encode("hello").buffer,
-    });
+describe("job 2 — the hold claim on /app/new (ONB.1: durable until consumed)", () => {
+  it("hydrates the held file into the file input, seeds title + heldToken, and leaves the record UNTOUCHED (no claim-on-attach)", async () => {
+    await seedHold(holdRec());
     document.body.innerHTML = NEW_FORM;
     await loadIsland();
     await flush();
@@ -192,26 +197,62 @@ describe("job 2 — the hold claim on /app/new?held=1", () => {
     const fileInput = document.querySelector<HTMLInputElement>('input[name="file"]')!;
     expect(fileInput.files?.[0]?.name).toBe("chapter-one.docx");
     expect(document.querySelector<HTMLInputElement>('input[name="title"]')!.value).toBe("chapter-one");
+    expect(document.querySelector<HTMLInputElement>('input[name="heldToken"]')!.value).toBe("hold_abc");
     expect(document.querySelector("[data-held-notice]")!.textContent).toContain("chapter-one.docx");
-    expect((await readHold())?.claimed).toBe(true);
+    // ONB.1's regression guard: hydration must NOT mark the hold — a second visit needs it intact.
+    const rec = await readHold();
+    expect(rec).not.toBeNull();
+    expect(rec?.claimed).toBeUndefined();
   });
 
-  it("a claimed hold is a ghost — a second visit leaves the form untouched", async () => {
-    await seedHold({
-      token: "hold_abc",
-      name: "chapter-one.docx",
-      type: "text/markdown",
-      size: 1,
-      bytes: new TextEncoder().encode("x").buffer,
-      claimed: true,
-    });
+  it("a hold survives sign-in and TWO further /app/new loads — the file input is populated each time", async () => {
+    await seedHold(holdRec());
+    for (let visit = 1; visit <= 3; visit++) {
+      document.body.innerHTML = NEW_FORM;
+      await loadIsland();
+      await flush();
+      const fileInput = document.querySelector<HTMLInputElement>('input[name="file"]')!;
+      expect(fileInput.files?.[0]?.name, `visit ${visit} re-populates the input`).toBe("chapter-one.docx");
+      expect(await readHold(), `visit ${visit} keeps the hold`).not.toBeNull();
+    }
+  });
+
+  it("a legacy `claimed: true` record still hydrates (pre-ONB.1 holds upgrade transparently)", async () => {
+    await seedHold(holdRec({ claimed: true }));
     document.body.innerHTML = NEW_FORM;
     await loadIsland();
     await flush();
-    const fileInput = document.querySelector<HTMLInputElement>('input[name="file"]')!;
-    expect(fileInput.files?.length ?? 0).toBe(0);
-    expect(document.querySelector<HTMLInputElement>('input[name="title"]')!.value).toBe("");
-    expect(document.querySelector("[data-held-notice]")!.textContent).toBe("");
+    expect(document.querySelector<HTMLInputElement>('input[name="file"]')!.files?.[0]?.name).toBe("chapter-one.docx");
+  });
+
+  it("Discard deletes the hold, clears the input + token, and updates the notice", async () => {
+    await seedHold(holdRec());
+    document.body.innerHTML = NEW_FORM;
+    await loadIsland();
+    await flush();
+    const discard = document.querySelector<HTMLButtonElement>("[data-held-discard]")!;
+    expect(discard.textContent).toBe("Discard held file");
+    discard.click();
+    await flush();
+    expect(await readHold()).toBeNull();
+    expect(document.querySelector<HTMLInputElement>('input[name="heldToken"]')!.value).toBe("");
+    expect(document.querySelector("[data-held-notice]")!.textContent).toContain("discarded");
+  });
+
+  it("DataTransfer unavailable ⇒ the notice says exactly what to do (never an empty input under 'your file is here')", async () => {
+    const RealDT = globalThis.DataTransfer;
+    // @ts-expect-error — simulate a browser without the DataTransfer constructor
+    vi.stubGlobal("DataTransfer", undefined);
+    await seedHold(holdRec());
+    document.body.innerHTML = NEW_FORM;
+    await loadIsland();
+    await flush();
+    const notice = document.querySelector("[data-held-notice]")!.textContent!;
+    expect(notice).toContain("chapter-one.docx");
+    expect(notice).toContain("pick the same file again");
+    // and the token is NOT stamped — the held bytes were never attached, so a create must not consume it
+    expect(document.querySelector<HTMLInputElement>('input[name="heldToken"]')!.value).toBe("");
+    vi.stubGlobal("DataTransfer", RealDT);
   });
 
   it("no hold ⇒ the claim path no-ops", async () => {
@@ -219,5 +260,40 @@ describe("job 2 — the hold claim on /app/new?held=1", () => {
     await loadIsland();
     await flush();
     expect(document.querySelector<HTMLInputElement>('input[name="file"]')!.files?.length ?? 0).toBe(0);
+    expect(document.querySelector<HTMLInputElement>('input[name="heldToken"]')!.value).toBe("");
+  });
+});
+
+describe("job 3 — the consumed handshake (data-held-consumed)", () => {
+  it("a marker matching the hold's token deletes it, bytes included", async () => {
+    await seedHold(holdRec());
+    document.body.innerHTML = `<span data-held-consumed="hold_abc" hidden></span>`;
+    await loadIsland();
+    await flush();
+    expect(await readHold()).toBeNull();
+  });
+
+  it("a mismatched marker leaves the hold in place", async () => {
+    await seedHold(holdRec());
+    document.body.innerHTML = `<span data-held-consumed="hold_DIFFERENT" hidden></span>`;
+    await loadIsland();
+    await flush();
+    expect(await readHold()).not.toBeNull();
+  });
+
+  it("an empty marker leaves the hold in place", async () => {
+    await seedHold(holdRec());
+    document.body.innerHTML = `<span data-held-consumed hidden></span>`;
+    await loadIsland();
+    await flush();
+    expect(await readHold()).not.toBeNull();
+  });
+
+  it("no marker ⇒ the hold is untouched (only a server-confirmed create consumes)", async () => {
+    await seedHold(holdRec());
+    document.body.innerHTML = `<main><p>a plain project page</p></main>`;
+    await loadIsland();
+    await flush();
+    expect(await readHold()).not.toBeNull();
   });
 });

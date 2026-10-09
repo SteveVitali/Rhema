@@ -172,8 +172,7 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
       startVersion?: unknown;
       quarantineKey?: unknown;
     };
-    const title = typeof body.title === "string" ? body.title.trim().slice(0, TITLE_MAX) : "";
-    if (!title) return c.json({ error: "title required" }, 422);
+    const typedTitle = typeof body.title === "string" ? body.title.trim().slice(0, TITLE_MAX) : "";
     const entry = typeof body.entry === "string" && ENTRIES.has(body.entry) ? body.entry : null;
     if (!entry) return c.json({ error: "entry must be 'scratch' | 'outline' | 'draft'" }, 422);
     const personaId = typeof body.personaId === "string" ? body.personaId : null;
@@ -194,6 +193,9 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
     }
 
     // Upload entries need the quarantined conversion (preview is free — the SAME converted_result row).
+    // ONB.1 — the conversion resolves BEFORE the title check: the document's own leading H1
+    // (`ConversionResult.title`) is the project-title default when none was typed — an explicitly
+    // typed title still wins. Scratch keeps the typed-title requirement unchanged.
     let result = null;
     if (entry !== "scratch") {
       const parsed = parseQuarantineKey(body.quarantineKey);
@@ -203,6 +205,8 @@ export function createProjectRoutes(deps: ProjectApiDeps): Hono {
       result = await deps.converter.preview(body.quarantineKey as string, { waitMs: 25_000 });
       if (result == null) return c.json({ error: "conversion_pending", quarantineKey: body.quarantineKey }, 409);
     }
+    const title = (typedTitle || result?.title || "").slice(0, TITLE_MAX);
+    if (!title) return c.json({ error: "title required" }, 422);
 
     const slug = await uniqueSlug(deps.db, principal.workspaceId, title);
     const projectId = deps.ids();

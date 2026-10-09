@@ -260,6 +260,15 @@ export interface BetaApiDeps {
    */
   ingestFetcher?: IngestApiDeps["fetcher"];
   ingestBlobs?: IngestBlobs;
+  /**
+   * ONB.1 (REQ-ARCH-34) — the presign→preview-ready clock for `import_preview_p95_s`. `claim(key)`
+   * is called at presign AND at the first preview call (idempotent first-seen wins); `release(key)`
+   * clears the stamp once the ready sample is written. Unset ⇒ the sample uses the call's own elapsed.
+   */
+  importPreviewTiming?: {
+    claim(quarantineKey: string): Promise<number | null>;
+    release(quarantineKey: string): Promise<void>;
+  };
   /** Test/dev binding — run sync inline in the request rather than queueing `ingest.sync`. */
   inlineSync?: boolean;
   /**
@@ -617,6 +626,7 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
             converter: deps.importConverter,
             ids: deps.ids ?? (() => `id_${randomUUID()}`),
             ...(deps.importUploads ? { uploads: deps.importUploads } : {}),
+            ...(deps.importPreviewTiming ? { timing: deps.importPreviewTiming } : {}),
           }),
         );
       }

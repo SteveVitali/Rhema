@@ -123,3 +123,62 @@ describe("P1.15 — the §9.5 PDF quality verdicts (REQ-INGEST-7/9)", () => {
     }
   });
 });
+
+// ONB.1 — REQ-GROWTH-1 amended / REQ-INGEST-7: the leading H1 is the document's title (never a
+// demoted body-H2 duplicate), and a figure path nothing can resolve becomes an `image_dropped`
+// warning + an inert empty-url placeholder — never a live URL the Page would 404 on.
+describe("ONB.1 — faithful imports: the leading H1 and unresolved figures", () => {
+  it("an .md with a leading H1 yields `title` and a body with NO heading duplicating it", async () => {
+    const r = await convertBytes(
+      new TextEncoder().encode("# The Quiet Manuscript\n\nOpening line.\n\n## Section one\n\nBody."),
+    );
+    expect(r.title).toBe("The Quiet Manuscript");
+    expect(r.markdown).not.toContain("The Quiet Manuscript");
+    expect(r.markdown).not.toMatch(/^# /m); // no body H1 …
+    expect(r.markdown).not.toMatch(/^## The Quiet Manuscript/m); // …and no demoted dup
+    expect(r.markdown).toContain("## Section one");
+    expect(normalizeMarkdown(r.markdown)).toBe(r.markdown);
+  });
+
+  it("an .md whose H1 sits after prose yields NO title (it stays a section heading → H2)", async () => {
+    const r = await convertBytes(
+      new TextEncoder().encode("Intro paragraph first.\n\n# Later Heading\n\nBody."),
+    );
+    expect(r.title).toBeUndefined();
+    expect(r.markdown).toContain("## Later Heading"); // demoted, still a heading — not dropped
+    expect(r.markdown).not.toMatch(/^# /m);
+  });
+
+  it("a docx whose first paragraph is a Heading-1 style yields `title` the same way", async () => {
+    const docx = await makeDocx({ headingText: "Doc Title", paragraphs: ["body para"] });
+    const r = await convertBytes(docx);
+    expect(r.title).toBe("Doc Title");
+    expect(r.markdown).not.toContain("# Doc Title");
+    expect(r.markdown).not.toMatch(/^## Doc Title/m);
+  });
+
+  it("a relative figure path becomes a warning + an inert empty-url image (never a live src)", async () => {
+    const r = await convertBytes(
+      new TextEncoder().encode("Text.\n\n![the five questions](figure_1_five_questions.png)\n\nMore."),
+    );
+    const w = r.warnings.find((x) => x.kind === "image_dropped");
+    expect(w).toBeDefined();
+    expect(w!.message).toBe("figure_1_five_questions.png wasn't included — add it or remove the reference");
+    // the inert placeholder: an image with an EMPTY url (the figure node's placeholder form) —
+    // the relative path appears only inside the alt, never as a target.
+    expect(r.markdown).toMatch(/!\[the five questions]\(\s*\)/);
+    expect(r.markdown).not.toContain("](figure_1_five_questions.png)");
+    expect(r.quality).toBe("partial"); // REQ-INGEST-7's verdict for a dropped figure
+    expect(r.qualityNotes.join(" ")).toContain("figure_1_five_questions.png");
+    expect(normalizeMarkdown(r.markdown)).toBe(r.markdown); // still byte-stable
+  });
+
+  it("https/data image targets pass through untouched and un-warned", async () => {
+    const r = await convertBytes(
+      new TextEncoder().encode("![a](https://example.com/x.png)\n\n![b](data:image/png;base64,AAAA)\n"),
+    );
+    expect(r.warnings.filter((w) => w.kind === "image_dropped")).toEqual([]);
+    expect(r.markdown).toContain("https://example.com/x.png");
+    expect(r.quality).toBe("clean");
+  });
+});

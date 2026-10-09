@@ -172,9 +172,13 @@ export const COPY = {
     fixNowLabel: "Fix now",
     fixNowNote: "Fix now opens the affected block; Create and fix later keeps notes on the timeline.",
     created: "Draft created.",
-    // PRB.21 — the converting state (a cold convert Job runs ~2.5–4 min): honest pending copy while the
-    // page's meta-refresh re-polls the preview GET on the quarantine key.
-    convertingFmt: "Converting {name} — a cold start can take a few minutes.",
+    // ONB.1 (REQ-GROWTH-1) — the converting state, honest about the format: text formats ride the
+    // warm convert service (usually seconds); PDFs still run the batch Job (~minutes on a cold
+    // start). The page's meta-refresh re-polls the preview GET on the quarantine key.
+    convertingFmt: "Converting {name} — this usually takes a few seconds.",
+    convertingSlowFmt: "Converting {name} — a PDF can take a few minutes.",
+    // the key-only poll can't see the format — say both bounds rather than promise either.
+    convertingUnknownFmt: "Converting {name} — a text import usually takes a few seconds; a PDF can take a few minutes.",
     convertingNote: "This page refreshes itself until the preview is ready; you can also close it and come back to the project.",
   },
 

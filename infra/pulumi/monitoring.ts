@@ -45,6 +45,10 @@ export const SLO_ALERT_SIGNALS = [
   "autosave_roundtrip_p95_ms",
   // RES.2 — the weekly Unverified-review rate (ADR-015's revisit trigger: > 1% of Reviews in a week).
   "unverified_review_rate_7d_pct",
+  // ONB.1 — REQ-GROWTH-1's amended text-import latency: presign→preview-ready p95 ≤ 20 s, alerting
+  // when the rolling 30-minute p95 exceeds 40 s (the probe's `slo_samples.import_preview_ms` window
+  // IS the 30-minute duration; the breach line only exists while that window's p95 is breached).
+  "import_preview_p95_s",
 ] as const;
 
 export function createMonitoring(args: MonitoringArgs): {

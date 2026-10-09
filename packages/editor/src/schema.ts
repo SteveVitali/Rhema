@@ -191,7 +191,13 @@ const nodes: Record<string, NodeSpec> = {
       refType: { default: "" as "" | "full" | "collapsed" | "shortcut" },
     },
     toDOM: (n) =>
-      p(["img", { src: String(n.attrs.src), alt: String(n.attrs.alt ?? ""), ...(n.attrs.title ? { title: String(n.attrs.title) } : {}), ...(n.attrs.identifier ? { "data-ref": String(n.attrs.identifier) } : {}) }]),
+      // ONB.1 — an empty src is the import path's INERT placeholder form (an unresolved relative
+      // figure rewritten to `![alt]()`): render the same placeholder span the figure block uses,
+      // never a live `<img src="">` (which some browsers resolve to the page URL — a request either
+      // way it must not make).
+      n.attrs.src
+        ? p(["img", { src: String(n.attrs.src), alt: String(n.attrs.alt ?? ""), ...(n.attrs.title ? { title: String(n.attrs.title) } : {}), ...(n.attrs.identifier ? { "data-ref": String(n.attrs.identifier) } : {}) }])
+        : p(["span", { class: "rm-figure-placeholder" }, String(n.attrs.alt ?? "")]),
   },
 
   /** Inline math `$…$` — atom carrying TeX source. */
