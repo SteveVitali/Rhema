@@ -379,16 +379,19 @@ export const STAGES: Record<StageKind, StageConfig> = {
     refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
     // SPAF.1 — `usage` is the first prod surface flip; SPAF.2 — `inbox` joins it; SPAF.3 —
     // `settings` joins them; SPAF.4 — `voices` joins them; SPAF.5 — `onboarding` joins them;
-    // SPAF.6 — `project-home` joins them (REQ-SEQ-10): each prod flip is a one-line
-    // stage-fact commit, operator-merged + `pulumi up`-deployed; rollback = revert this
-    // line + redeploy. ≥ one nightly green on prod precedes the NEXT surface's prod flip.
-    // Order is flip order — never re-sort.
+    // SPAF.6 — `project-home` joins them; SPAF.7 — `billing` joins them (REQ-SEQ-10): each
+    // prod flip is a one-line stage-fact commit, operator-merged + `pulumi up`-deployed;
+    // rollback = revert this line + redeploy. ≥ one nightly green on prod precedes the NEXT
+    // surface's prod flip. Order is flip order — never re-sort.
     // `ide-chrome` stays dark on prod until SPAF.8 — the /p/:p/import* legs AND-gate on it,
     // so they keep serving SSR even with `onboarding` flagged. `/app`'s session gate +
     // first-five-minutes precedence (the carried `?entry` file / unopened-Showcase
     // redirects) still run ahead of the `project-home` consult — they answer 302s, never
-    // the shell.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home"],
+    // the shell. The billing session gates likewise precede the `billing` consult
+    // (unauthed → 302 /login on all three GETs); the seven billing POSTs are unaffected —
+    // they were never documents, and their Stripe hand-offs stay server-validated {url}
+    // envelopes on either renderer.
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing"],
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
