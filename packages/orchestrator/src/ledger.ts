@@ -16,6 +16,12 @@ export interface HoldArgs {
   readonly idempotencyKey: string;
   /** trial entitlement runs hold against the entitlement, not credits (§12.4 step 2). */
   readonly entitlementId?: string;
+  /**
+   * ACT.1 (ADR-014) — an entitlement run's PROJECTED metered cost (the run's estimate — the p90
+   * card figure), charged against the global daily trial-COGS tally at claim. Absent ⇒ the
+   * implementation falls back to `credits` (the cap — a conservative over-projection).
+   */
+  readonly projectedCredits?: number;
 }
 export interface HoldResult {
   readonly ledgerId: string;

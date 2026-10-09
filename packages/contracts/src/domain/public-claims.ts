@@ -31,9 +31,13 @@ export interface PublicClaimsConfig {
 /** The shipped defaults — every gated claim is OFF until its owning ticket flips it.
  *  EST.1 — `plans.whatItCovers` is ON: its renderers now emit only lines COMPUTED from the cost
  *  cards through the shared pricer (`planCoverageLine`); an uncomputable plan hides the line, so a
- *  stale hand-composed figure can never leak back. `trial.firstReviewIncluded` stays OFF (ACT.1). */
+ *  stale hand-composed figure can never leak back.
+ *  ACT.1 — `trial.firstReviewIncluded` is ON *subject to the audience*: the claim renders through
+ *  `claimsForAudience(cfg, isTest)`, which folds `pricing.json`'s `trial.audience` in — under
+ *  `test_tenants` only flagged workspaces (and their preview surfaces) see it; the everyone-flip
+ *  stays the operator's pause. */
 export const PUBLIC_CLAIMS: PublicClaimsConfig = {
-  enabled: { "trial.firstReviewIncluded": false, "plans.whatItCovers": true },
+  enabled: { "trial.firstReviewIncluded": true, "plans.whatItCovers": true },
 };
 
 export function publicClaimEnabled(id: PublicClaimId, cfg: PublicClaimsConfig = PUBLIC_CLAIMS): boolean {

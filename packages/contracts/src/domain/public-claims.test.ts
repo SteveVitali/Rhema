@@ -6,6 +6,7 @@ import {
   publicClaimEnabled,
   type PublicClaimsConfig,
 } from "./public-claims.js";
+import { claimsForAudience } from "./trial-claims.js";
 import { PRICING } from "./pricing.js";
 import {
   buildPricingPageData,
@@ -45,10 +46,27 @@ const fixturePricer = (): SurfacePricer => ({
 const PRICE = fixturePricer();
 
 describe("the claims config", () => {
-  it("names both HOT.1 claim ids; only the EST.1 coverage claim ships enabled", () => {
+  it("names both HOT.1 claim ids — the ACT.1 flip ships the trial claim ON, audience-gated", () => {
     expect(PUBLIC_CLAIM_IDS).toEqual(["trial.firstReviewIncluded", "plans.whatItCovers"]);
-    expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(false); // ACT.1's flip
+    // ACT.1 — `trial.firstReviewIncluded` ships ON in the shipped config; the RENDER for a real
+    // user is still gated by `claimsForAudience` folding `trial.audience` (test_tenants ⇒ off).
+    expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(true);
     expect(publicClaimEnabled("plans.whatItCovers")).toBe(true); // EST.1's flip
+  });
+
+  it("claimsForAudience folds `trial.audience` — test tenant sees the claim, real/anonymous do not", () => {
+    // audience = "test_tenants" (pricing.json): only flagged workspaces get the claim.
+    expect(publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, false))).toBe(false);
+    expect(publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, true))).toBe(true);
+    // non-trial claims are audience-independent.
+    expect(publicClaimEnabled("plans.whatItCovers", claimsForAudience(PUBLIC_CLAIMS, false))).toBe(true);
+    // an audience-excluded claim can never re-enable through the fold.
+    expect(
+      publicClaimEnabled(
+        "trial.firstReviewIncluded",
+        claimsForAudience({ enabled: { "trial.firstReviewIncluded": false } }, true),
+      ),
+    ).toBe(false);
   });
 
   it("publicClaimEnabled treats only explicit `true` as on (absent ⇒ off)", () => {
@@ -92,15 +110,22 @@ describe("planLadder — the gated coverage lines", () => {
 });
 
 describe("the Free card's trialWindow — the included-Review claim", () => {
-  it("omits the trial-window claim while hidden; the post-trial honesty line stays", () => {
-    const free = buildPricingPageData().plans.find((p) => p.tier === "free")!;
+  it("omits the trial-window claim for an audience the go-live flag excludes; the honesty line stays", () => {
+    // ACT.1 — `test_tenants` audience ⇒ a non-test viewer's claims fold the trial claim off.
+    const free = buildPricingPageData(claimsForAudience(PUBLIC_CLAIMS, false), PRICE).plans.find(
+      (p) => p.tier === "free",
+    )!;
     expect(free.freeNotes?.trialWindow).toBeUndefined();
     expect(free.freeNotes?.postTrial).toBe(PRICING.trial.postTrialNote);
   });
 
-  it("renders the pricing.json includedNote verbatim when enabled", () => {
-    const free = buildPricingPageData(ALL_ON, PRICE).plans.find((p) => p.tier === "free")!;
+  it("renders the generated includedNote when the audience covers the viewer", () => {
+    const free = buildPricingPageData(claimsForAudience(PUBLIC_CLAIMS, true), PRICE).plans.find(
+      (p) => p.tier === "free",
+    )!;
     expect(free.freeNotes?.trialWindow).toBe(PRICING.trial.includedNote);
+    // the rendered figure is the CONFIG cap (2,800 under the $15 ceiling) — never a hand-typed one.
+    expect(free.freeNotes?.trialWindow).toContain("2,800");
   });
 });
 

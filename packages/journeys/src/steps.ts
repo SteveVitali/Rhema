@@ -9,6 +9,9 @@ import { fileURLToPath } from "node:url";
 import type { Locator, Page } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
+// ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
+// surfaces render from), never a second literal copy of the trial's figures.
+import { PRICING, PUBLIC_CLAIM_COPY, trialIncludedNote } from "@rhema/contracts";
 
 /** The committed ≤300-word paid fixture (one planted false claim for N6). Loaded at module init. */
 const PAID_FIXTURE = readFileSync(
@@ -483,14 +486,40 @@ const N9: StepFn = async (ctx) => {
 
 /** N5 (RED, ACT.1; paid) — trial Review shows *Included* and delivers without a cap death.
  *  This is the paid leg's driver: it ingests the committed ≤300-word fixture and launches the
- *  run, so the weekly journey's metered spend is real and bounded by the spend guard. */
+ *  run, so the weekly journey's metered spend is real and bounded by the spend guard.
+ *  ACT.1 — the Included line must carry the CONFIG cap (never a stale literal), the launch must
+ *  forward `entitlementId`+the device fingerprint (the sheet mints `rhema_fp` on the GET), and
+ *  the run must run to DELIVERY — the "no cap death" half the pre-ACT.1 version never waited for. */
 const N5: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("n5");
-  // the paid fixture rides the real new-project sheet (a paste-ingested draft, not a file upload)
-  const slug = await createScratchProject(page, ctx, "PAID", PAID_FIXTURE);
+  // the paid fixture rides the real new-project sheet (a paste-ingested draft, not a file
+  // upload). The draft entry is deliberately preview-first (§5.3) — pending → conversion
+  // preview → Create — so it needs createDraftProject's preview-aware wait, never the
+  // synchronous scratch helper's 15 s redirect (the pre-ACT.1 N5's own "launch navigation
+  // timed out" debt was this same wrong-helper bug at the draft entry).
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("PAID"), PAID_FIXTURE);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
   const body = (await page.textContent("body")) ?? "";
   if (!/included/i.test(body)) throw new Error('trial Review surface shows no "Included" line');
+  // the Included line names the configured cap — `sheetEntitlementLine`'s "up to N words" under it.
+  const cap = PRICING.trial.entitlement.wordCap.toLocaleString("en-US");
+  if (!body.includes(cap)) {
+    throw new Error(`the Included line does not carry the configured ${cap}-word cap`);
+  }
+  // the Run form must carry the entitlement row id — absent ⇒ the claim posts a paid hold instead.
+  const ent = await page.locator('input[type="hidden"][name="entitlementId"]').count();
+  if (ent === 0) throw new Error("the Run form carries no hidden entitlementId field");
+  // "This run only — run it to completion" (per-run gates_off): the leg is unattended; without it the
+  // Review parks at approve_scope waiting on a named approver (the 2026-10-02 first green attempt
+  // starved its 40-min delivery poll exactly there — run 01M3Z55G8VAQEVRKF2RXEJA1G0).
+  const auto = page.locator('input[name="autoRun"]');
+  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
+    if (!(await auto.isVisible())) {
+      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
+      if ((await summary.count()) > 0) await summary.first().click();
+    }
+    await auto.check();
+  }
   // launch the Standard/Base Review — the one bounded paid run of the weekly leg.
   const launch = page
     .locator(
@@ -501,6 +530,43 @@ const N5: StepFn = async (ctx) => {
   await assertActionable(launch, "Review launch");
   await launch.click();
   await page.waitForLoadState("domcontentloaded");
+  // a launch refusal re-renders the sheet with role=alert — surface the honest notice.
+  const alert = page.locator('p[role="alert"]').first();
+  if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
+    throw new Error(`trial run launch refused: ${(await alert.textContent())?.trim()}`);
+  }
+  // ACT.1's "runs to delivery" half — the dossier link the sheet renders for the active run.
+  const runLinkSel = `a[href^="/p/${slug}/review/"]`;
+  let reviewHref: string | null = await page
+    .locator(runLinkSel)
+    .first()
+    .getAttribute("href")
+    .catch(() => null);
+  for (let i = 0; i < 12 && !reviewHref; i++) {
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
+    reviewHref = await page
+      .locator(runLinkSel)
+      .first()
+      .getAttribute("href")
+      .catch(() => null);
+    if (!reviewHref) await new Promise((res) => setTimeout(res, 5_000));
+  }
+  if (!reviewHref) throw new Error("run sheet shows no active-run dossier link after trial launch");
+  const runId = /\/review\/([A-Za-z0-9]+)/.exec(reviewHref)?.[1] ?? "";
+  // poll the dossier route until the run delivers — a cap death never produces it.
+  const deadline = Date.now() + 40 * 60_000;
+  let delivered = false;
+  while (Date.now() < deadline) {
+    const r = await page
+      .goto(`${ctx.webBaseUrl}${reviewHref}`, { waitUntil: "domcontentloaded" })
+      .catch(() => null);
+    if (r && r.status() === 200) {
+      delivered = true;
+      break;
+    }
+    await new Promise((res) => setTimeout(res, 20_000));
+  }
+  if (!delivered) throw new Error(`trial run ${runId} did not deliver a dossier within 40 min`);
 };
 
 /**
@@ -959,24 +1025,55 @@ const P1: StepFn = async (ctx) => {
   }
 };
 
-/** C1 (RED, ACT.1) — landing/pricing/trial claims equal the entitlement config + estimator. */
+/** C1 (RED, ACT.1) — claims equal the entitlement config, per AUDIENCE (ADR-043): while
+ *  `trial.audience` sits at `test_tenants` an anonymous `/` + `/pricing` carry NO trial claim
+ *  (the operator pause), and a signed-in is_test session's `?audience=test` preview renders the
+ *  generated config figures — the derived word cap + pocket — identical on both surfaces. */
 const C1: StepFn = async (ctx) => {
-  const { page } = await ctx.anon();
-  const claims = async (path: string) => {
-    await gotoOk(page, `${ctx.webBaseUrl}${path}`);
-    return (await page.textContent("body")) ?? "";
-  };
-  const landing = await claims("/");
-  const pricing = await claims("/pricing");
-  // the trial word-cap claim (6 000 in the seed config) must agree where both surfaces state it.
-  const find = (s: string) => /\b(\d[\d,]{2,})\s*(words?|w\b)/i.exec(s)?.[1]?.replace(/,/g, "");
-  const l = find(landing);
-  const p = find(pricing);
-  if (l && p && l !== p) {
-    throw new Error(`trial word claim disagrees: landing ${l} vs pricing ${p}`);
+  const cap = PRICING.trial.entitlement.wordCap.toLocaleString("en-US");
+  const pocket = PRICING.trial.pocketCredits.toLocaleString("en-US");
+  const generated = trialIncludedNote();
+  // — the operator pause: anonymous surfaces render no trial claim whatsoever.
+  const { page: anonPage } = await ctx.anon();
+  for (const path of ["/", "/pricing"]) {
+    await gotoOk(anonPage, `${ctx.webBaseUrl}${path}`);
+    const body = (await anonPage.textContent("body")) ?? "";
+    for (const leak of [generated, "first review is included", "one included Review"]) {
+      if (body.toLowerCase().includes(leak.toLowerCase())) {
+        throw new Error(`${path} leaks the gated trial claim to an uncovered audience: "${leak}"`);
+      }
+    }
   }
-  if (!l && !p)
-    throw new Error("no word-count claim found on either public surface to cross-check");
+  // — the covered audience's preview: a signed-in test tenant sees config-equal claims.
+  // Per §15.1/§15.2 the landing carries the claim TEXT (the hero note + the FAQ answer — the
+  // spec copy carries no figure), while /pricing carries the generated figures: the derived
+  // word cap, the pocket, and the generated includedNote. The assertions match
+  // claims-visibility.test.ts's deterministic contract exactly — "claims equal the config",
+  // surface by surface.
+  const { page } = await ctx.returningUser("a");
+  const landing = await gotoOk(page, `${ctx.webBaseUrl}/?audience=test`)
+    .then(() => page.textContent("body"))
+    .then((b) => b ?? "");
+  for (const claim of [
+    PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingTrialNote,
+    PUBLIC_CLAIM_COPY["trial.firstReviewIncluded"].landingFaqAnswer,
+  ]) {
+    if (!landing.toLowerCase().includes(claim.toLowerCase())) {
+      throw new Error(`/?audience=test render lacks the config claim text: "${claim}"`);
+    }
+  }
+  const pricing = await gotoOk(page, `${ctx.webBaseUrl}/pricing?audience=test`)
+    .then(() => page.textContent("body"))
+    .then((b) => b ?? "");
+  for (const [label, figure] of [
+    ["word cap", cap],
+    ["pocket", pocket],
+    ["includedNote", generated],
+  ] as const) {
+    if (!pricing.includes(figure)) {
+      throw new Error(`/pricing?audience=test render lacks the configured ${label} "${figure}"`);
+    }
+  }
 };
 
 /** X1 (GREEN, SEC.1) — two flagged tenants: no foreign markers on the listed surfaces. */

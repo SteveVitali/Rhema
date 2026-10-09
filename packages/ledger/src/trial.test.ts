@@ -5,6 +5,7 @@ import {
   provisionTrial,
   gateTrialUnlock,
   recordTrialSpend,
+  sweepTrialSpend,
   convertTrialOnUpgrade,
   sweepExpiredTrials,
   killTrial,
@@ -429,5 +430,111 @@ describe("recordTrialSpend — the test-tenant exclusion (JOURNEY.1)", () => {
         recordTrialSpend(tx, TRIAL.dailySpendCeilingCredits, NOW, { workspaceId: WS }),
       ),
     ).rejects.toBeInstanceOf(TrialCeilingExhaustedError);
+  });
+
+  it("a paused day (paused_at set) refuses a fresh increment regardless of the count", async () => {
+    const day = NOW.toISOString().slice(0, 10);
+    await db.client.query(
+      "insert into trial_spend_daily (day, credits, paused_at) values ($1, 50, now())",
+      [day],
+    );
+    await expect(inTx((tx) => recordTrialSpend(tx, 10, NOW))).rejects.toBeInstanceOf(
+      TrialCeilingExhaustedError,
+    );
+    // a TEST tenant's spend skips the counter entirely — a paused day never blocks the harness.
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [WS]);
+    const back = await inTx((tx) => recordTrialSpend(tx, 10, NOW, { workspaceId: WS }));
+    expect(back).toBe(50);
+  });
+});
+
+// ACT.1 — the reconciled daily trial-COGS tally (§14.3; REQ-SPEC-30; ADR-014/042): a system-pool
+// sweep recomputes Σ greatest(spent_credits, estimate_credits) over today's non-test entitlement
+// runs into `reconciled_credits` and sticks `paused_at` once the day crosses the $50 ceiling.
+describe("sweepTrialSpend — the reconciled tally (ACT.1)", () => {
+  /** Insert a today's entitlement run (the sweep's unit of account). */
+  async function seedTrialRun(runId: string, opts: { estimate: number; spent: number; test?: boolean }) {
+    const ws = `ws_${runId}`;
+    const ba = `ba_${runId}`;
+    await db.client.query("insert into billing_accounts(id) values ($1) on conflict do nothing", [ba]);
+    await db.client.query(
+      "insert into workspaces(id, kind, name, billing_account_id, is_test) values ($1,'personal',$2,$3,$4) on conflict do nothing",
+      [ws, runId, ba, opts.test === true],
+    );
+    await db.client.query(
+      `insert into runs(id, workspace_id, workflow, agent_instance_id, state, state_since,
+         current_attempt, inputs, model_profile, model_tier, rigor, estimate_credits, cap_credits,
+         spent_credits, rate_table_version, entitlement_id, created_at)
+       values ($1,$2,'review',null,'completed',$6,1,'{}'::jsonb,'balanced','base','standard',
+               $3,$4,$5,1,'ent_1',$6)`,
+      [runId, ws, opts.estimate, opts.estimate, opts.spent, NOW],
+    );
+  }
+  const day = () => NOW.toISOString().slice(0, 10);
+  const dayRow = () =>
+    db.client
+      .query(
+        "select credits::int as c, reconciled_credits::int as r, paused_at from trial_spend_daily where day = $1",
+        [day()],
+      )
+      .then((r) => r.rows[0] as { c: number; r: number; paused_at: string | null } | undefined);
+
+  it("reconciles metered spend over today's non-test entitlement runs — and skips test tenants", async () => {
+    await seedTrialRun("r_a", { estimate: 1000, spent: 1200 }); // metered overage wins
+    await seedTrialRun("r_b", { estimate: 800, spent: 500 }); // booked projection stands
+    await seedTrialRun("r_t", { estimate: 99999, spent: 99999, test: true }); // excluded
+    const out = await sweepTrialSpend(db.client, NOW);
+    expect(out.day).toBe(day());
+    expect(out.reconciledCredits).toBe(2000); // greatest(1200,1000) + greatest(500,800)
+    expect(out.paused).toBe(false);
+    const row = await dayRow();
+    expect(row?.r).toBe(2000);
+    expect(row?.paused_at).toBeNull();
+  });
+
+  it("trips `paused_at` when the reconciled tally crosses $50/day — sticky on a re-sweep", async () => {
+    await seedTrialRun("r_big", { estimate: 6000, spent: TRIAL.dailySpendCeilingCredits + 100 });
+    const out = await sweepTrialSpend(db.client, NOW);
+    expect(out.paused).toBe(true);
+    // the fresh increment inside a hold now refuses on the persisted trip marker
+    await expect(inTx((tx) => recordTrialSpend(tx, 10, NOW))).rejects.toBeInstanceOf(
+      TrialCeilingExhaustedError,
+    );
+    // and the gate pauses the unlock with the named reason.
+    await inTx((tx) => provisionTrial(tx, deps(), { billingAccountId: BA }));
+    const gate = await inTx((tx) =>
+      gateTrialUnlock(tx, deps(), { billingAccountId: BA, workspaceId: WS, evidence: cleanEvidence }),
+    );
+    expect(gate.decision).toBe("paused");
+    expect(gate.reason).toBe("daily_ceiling");
+    // sticky: recomputing at a lower figure does NOT un-pause the day.
+    const again = await sweepTrialSpend(db.client, NOW);
+    expect(again.paused).toBe(true);
+  });
+
+  it("the projected column and the reconciled column compete — the gate reads max(projected, reconciled)", async () => {
+    await db.client.query(
+      "insert into trial_spend_daily (day, credits, reconciled_credits) values ($1, $2, 0)",
+      [day(), TRIAL.dailySpendCeilingCredits],
+    );
+    // projected == ceiling ⇒ exhausted even though the sweep hasn't reconciled yet.
+    await inTx((tx) => provisionTrial(tx, deps(), { billingAccountId: BA }));
+    const gate = await inTx((tx) =>
+      gateTrialUnlock(tx, deps(), { billingAccountId: BA, workspaceId: WS, evidence: cleanEvidence }),
+    );
+    expect(gate.decision).toBe("paused");
+  });
+
+  it("a flagged test workspace ignores a paused day — the ceiling never blocks the harness", async () => {
+    await db.client.query(`update workspaces set is_test = true where id = $1`, [WS]);
+    await db.client.query(
+      "insert into trial_spend_daily (day, credits, paused_at) values ($1, $2, now())",
+      [day(), TRIAL.dailySpendCeilingCredits],
+    );
+    await inTx((tx) => provisionTrial(tx, deps(), { billingAccountId: BA }));
+    const gate = await inTx((tx) =>
+      gateTrialUnlock(tx, deps(), { billingAccountId: BA, workspaceId: WS, evidence: cleanEvidence }),
+    );
+    expect(gate.decision).toBe("allow");
   });
 });

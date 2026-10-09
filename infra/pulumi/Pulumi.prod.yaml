@@ -217,7 +217,20 @@ config:
   # disclosure (web), and the x-rhema-instance evidence marker (api). worker/run-task/
   # egress-proxy/fetcher/convert/export/collab have no diff'd runtime code — they keep their
   # RPT.1 digests.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:ff473936cd9e2811ae23af99b4bb6d88b52ef55ede6678a9374e46ffaeb43df1","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:a91f121f904c5eada51fe3270f7d4eaca2db47b2b85e4e29b6434a198ecd7b18","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:e08fa06297638b1350bf4beba6075ee5a6c45fc2b1e27456185ad26a41d99a7a","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
+  # ACT.1 Stage-B (tag act1b, Cloud Build eb03dd18, 2026-10-02, chain-tip SHA 5ce9d84 —
+  # stacks on the SEC.2 deploy; supersedes the act1 build 8497c6d5 @80c1e4f after the N5
+  # walk caught the zero-balance `insufficient` panel masking the Included render — the
+  # fix lives in @rhema/run-sheet's view.ts, shipped in the web image): api + web + worker
+  # rebuilt. Carries: the §14.3 trial entitlement honoured end-to-end — audience-gated
+  # claim render model (`test_tenants`),
+  # sheet-context locked+unused entitlement read with the config-derived 2,800-word cap,
+  # `rhema_fp` + `entitlementId` forwarded into `gateTrialUnlock`, named refusal mapping
+  # (api + web), the billing `trial_pending` block + `?audience=test` preview (web), and the
+  # projected-plus-reconciled $50/day trial kill switch — `sweepTrialSpend` rides
+  # `billing.period-tick` on the system pool (worker; needs migration 0051's
+  # `reconciled_credits`/`paused_at`, applied this leg). run-task/egress-proxy/fetcher/
+  # convert/export/collab have no diff'd runtime code — they keep their pins.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:75101869f8bf8d7463cf23c47b222c0badabb9db851104f361570d96315c0c4b","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:2e13ed0bdd99d974f0a0376c7c3e7147c478a36ecd21aa3573f9b790ed492b1f","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:983b1e1ee74c161f2fec55444cddc2b3b9a14dcb7b29a4c2ccd3e23680c4a06d","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:028a9b0450c2df89b7e497f0866ed97cede6989962542182747bed0149726771","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:60627b37bb5863b0d97685a06d4c7e02d0f1c1f8d6516ddb857d196a6e807891"}'
   rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:52bffc84169e5f85870a6b49e24acf139d7ea85999fbd926dd3a53beac984da6
   rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
   rhema:proxyBaseUrl: http://10.8.16.4:8443

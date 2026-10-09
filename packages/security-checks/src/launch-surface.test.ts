@@ -6,7 +6,9 @@ import {
   COMPARATIVE_WAVE_MET,
   lintGrowthCopy,
   PRICING,
+  PUBLIC_CLAIMS,
   PUBLIC_CLAIM_COPY,
+  claimsForAudience,
   publicClaimEnabled,
 } from "@rhema/contracts";
 import { collectCopyStrings } from "@rhema/web";
@@ -127,8 +129,15 @@ describe("HOT.1 — the hidden public claims stay out of the shipped surface", (
     return out;
   };
 
-  it("the shipped config hides only the claims still gated (EST.1 flipped the coverage claim)", () => {
-    expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(false); // ACT.1's flip
+  it("the shipped config hides only the claims still gated — ACT.1 flipped the trial flag ON; the AUDIENCE holds it (ADR-042)", () => {
+    // ACT.1 — `trial.firstReviewIncluded` is enabled at flag level; the operator pause lives in
+    // `trial.audience` ('test_tenants'), which `claimsForAudience` folds over every render. A
+    // non-covered viewer (the real-user default) still resolves the claim OFF.
+    expect(publicClaimEnabled("trial.firstReviewIncluded")).toBe(true);
+    expect(PRICING.trial.audience).toBe("test_tenants");
+    expect(
+      publicClaimEnabled("trial.firstReviewIncluded", claimsForAudience(PUBLIC_CLAIMS, false)),
+    ).toBe(false);
     // `plans.whatItCovers` is ON — but its renderers emit only the pricer-COMPUTED line
     // (`planCoverageLine`); the gated pricing.json copy is retired text, not rendered copy.
     expect(publicClaimEnabled("plans.whatItCovers")).toBe(true);

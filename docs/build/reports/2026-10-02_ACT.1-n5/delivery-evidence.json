@@ -1,0 +1,83 @@
+{
+  "runId": "01M3Z55G8VAQEVRKF2RXEJA1G0",
+  "email": "test+j0220c2d0eb47n5@rhema.tools",
+  "slug": "jrn-0220c2d0eb47-paid",
+  "dossierStatus": 200,
+  "run": {
+    "id": "01M3Z55G8VAQEVRKF2RXEJA1G0",
+    "state": "completed",
+    "workflow": "review",
+    "rigor": "standard",
+    "model_tier": "base",
+    "spent_credits": 664,
+    "estimate_credits": 1518,
+    "cap_credits": 4554,
+    "entitlement_id": "01M3Z532GKY5WE3JXPBGP1F17G",
+    "hold_bucket": "trial_pocket",
+    "has_delivery": false,
+    "pending_delivery": null,
+    "created_at": "2026-10-02 20:33:51.387+00",
+    "ended_at": "2026-10-02 21:54:47.74+00"
+  },
+  "usage": [
+    {
+      "source": "proxy",
+      "rows": 154,
+      "credits": 664,
+      "list_usd": "4.8069"
+    },
+    {
+      "source": "sdk_estimate",
+      "rows": 7,
+      "credits": 501,
+      "list_usd": "3.5741"
+    },
+    {
+      "source": "sdk_stream",
+      "rows": 7,
+      "credits": 376,
+      "list_usd": "0.0000"
+    }
+  ],
+  "ledger": [
+    {
+      "kind": "adjustment",
+      "credits": 664,
+      "n": 1
+    }
+  ],
+  "entitlement": {
+    "id": "01M3Z532GKY5WE3JXPBGP1F17G",
+    "kind": "review",
+    "word_cap": 2800,
+    "rigor": "standard",
+    "model_tier": "base",
+    "state": "consumed",
+    "consumed_by_run_id": "01M3Z55G8VAQEVRKF2RXEJA1G0",
+    "activated_at": "2026-10-02 20:33:51.343+00",
+    "consumed_at": "2026-10-02 20:33:51.384053+00",
+    "revoked_at": null,
+    "expires_at": "2026-10-16 20:32:31.763+00",
+    "promo_ledger_id": null
+  },
+  "gates": [
+    {
+      "id": "01M3Z59GTWA1QVRE6B9C5TH90G",
+      "kind": "approve_scope",
+      "blocking": false,
+      "opened_at": "2026-10-02 20:36:03.036+00",
+      "resolved_at": "2026-10-02 21:16:58.894+00"
+    }
+  ],
+  "unlockChecks": [
+    {
+      "id": "01M3Z55G7D0XRB6XF5M6JCFET4",
+      "decision": "allow",
+      "reason": "ok",
+      "fingerprint_seen": 0,
+      "disposable_domain": false,
+      "at": "2026-10-02 20:33:51.341+00"
+    }
+  ],
+  "audit": []
+}

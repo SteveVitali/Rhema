@@ -277,6 +277,10 @@ describe("verified-email run gate (AC3 — an unverified self-serve account cann
     const a = app("open");
     await postSignup(a, { email: "self@x.test" });
     const acct = (await accountFor("self@x.test"))!;
+    // ACT.1 (ADR-042) — the trial serves `test_tenants` only while the everyone-flip is
+    // operator-paused: the entitlement claim below needs the workspace flagged (the harness IS
+    // the JOURNEY.1 tenant).
+    await db.pg.query(`update workspaces set is_test = true where id = $1`, [acct.workspaceId]);
 
     // the new account's own project + draft (the run sheet's target).
     await db.pg.query(

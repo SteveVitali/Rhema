@@ -24,6 +24,14 @@ export const TRIAL_ENTITLEMENT_STATES = [
 ] as const;
 export type TrialEntitlementState = (typeof TRIAL_ENTITLEMENT_STATES)[number];
 
+/**
+ * ACT.1 — the trial go-live audience (pricing.json `trial.audience`): `off` (the claim and the
+ * first-spend unlock serve nobody), `test_tenants` (JOURNEY.1's flagged `is_test` workspaces only —
+ * the flag is operator-set, never user-settable), `everyone` (the operator's launch flip).
+ */
+export const TRIAL_AUDIENCES = ["off", "test_tenants", "everyone"] as const;
+export type TrialAudience = (typeof TRIAL_AUDIENCES)[number];
+
 /** The unlock decision recorded in trial_unlock_checks (REQ-GROWTH-10: every decision auditable). */
 export const TRIAL_UNLOCK_DECISIONS = ["allow", "challenge", "deny", "paused"] as const;
 export type TrialUnlockDecision = (typeof TRIAL_UNLOCK_DECISIONS)[number];

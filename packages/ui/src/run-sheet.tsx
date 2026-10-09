@@ -244,6 +244,9 @@ export function RunSheet({ view, labels, runAction, askAction, exhaustedAction, 
           longer matches this marker, and the api derives the submitted rigor's defaults instead:
           presets are server-derived unless the user changed a toggle for THAT rigor's render. */}
       <input type="hidden" name="toggleRigor" value={view.rigor} />
+      {/* ACT.1 — the included-Review claim rides the Run form: the entitlement's row id POSTs back so
+          the api's unlock gate + hold claim it. Absent when no claimable entitlement exists. */}
+      {view.entitlementId ? <input type="hidden" name="entitlementId" value={view.entitlementId} /> : null}
 
       {/* title line: "Review v2 · 5,180 words · 21 claims" + the §7.2 scope pills (P1.06 — the typed
           @scope renders as human labels; the grammar syntax never reaches the surface). */}

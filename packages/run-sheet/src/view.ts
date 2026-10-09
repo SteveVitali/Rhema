@@ -21,6 +21,7 @@ import {
   type ModelTier,
   type Rigor,
   type WorkflowKey,
+  sheetEntitlementLine,
 } from "@rhema/contracts";
 import type { EstimatorInputs } from "@rhema/protocols";
 import { APPROVAL_DISPLAY } from "@rhema/commands";
@@ -71,6 +72,9 @@ export interface CommandScopeView {
 /** The §14.3 trial-entitlement facts the sheet needs for its `Included` rendering (REQ-BILL-4: a
  *  qualifying entitlement run shows "Included" — no dollar/cap arithmetic, no consent click). */
 export interface EntitlementDetails {
+  /** ACT.1 — the entitlement row id; the Run form posts it back so the api's unlock gate + hold
+   *  claim the RIGHT row (a second tab's stale id 422s `entitlement_unavailable`). */
+  readonly id?: string;
   readonly wordCap: number;
   readonly rigor: string;
   readonly modelTier: string;
@@ -204,6 +208,12 @@ export interface RunSheetView {
    */
   readonly included?: boolean;
   readonly entitlementLine?: string;
+  /**
+   * ACT.1 — the claimable entitlement's row id, carried as the Run form's hidden `entitlementId`
+   * (the api's unlock gate + hold verify it against the account's current row — a stale id from a
+   * second tab fails `entitlement_unavailable`, never a wrong-row claim).
+   */
+  readonly entitlementId?: string;
   /**
    * P1.06 (§5.6 collapsed row) — the sheet's editable rows: Approvals (the project's policy), the
    * "don't ask me to confirm under N credits" pref, and the budget cap (editable UPWARD only — the
@@ -447,13 +457,19 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   // EST.1 — the resolution may only advise tiers the plan permits ("switch to Base" needs Base
   // selectable AND not already priced — §14.6's levers sentence reads the plan rules too).
   const allowedModelTiers = args.allowedModelTiers ?? MODEL_TIERS;
-  const insufficient = resolveInsufficientBalance({
-    capCredits: effectiveCapCredits,
-    spendableCredits: args.spendableCredits,
-    ...(args.insufficientMode ? { mode: args.insufficientMode } : {}),
-    allowedModelTiers,
-    currentModelTier: args.modelTier,
-  });
+  // §14.3/ACT.1 — an entitlement-covered run never renders the insufficient-balance panel and
+  // never disables its Run control: the Included box replaces it (PR-J1's residual half — a
+  // 0-spendable trial account still saw "cap is more than your spendable balance" over an
+  // Included claim, proven live on the N5 walk 2026-10-02). The entitlement IS the funding.
+  const insufficient = args.entitlement
+    ? null
+    : resolveInsufficientBalance({
+        capCredits: effectiveCapCredits,
+        spendableCredits: args.spendableCredits,
+        ...(args.insufficientMode ? { mode: args.insufficientMode } : {}),
+        allowedModelTiers,
+        currentModelTier: args.modelTier,
+      });
 
   const claims = estimate.claimCount;
 
@@ -463,10 +479,14 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
   // exceeds the entitlement's word cap the offer is the FIRST wordCap words (the sheet shows the @words
   // scope chip so the covered slice is explicit).
   const included = !!args.entitlement;
+  // ACT.1 — the Included line is the SHARED claim template (`sheetEntitlementLine` in
+  // @rhema/contracts trial-claims): the word cap renders from the entitlement config, never a
+  // hand-typed figure here.
   const entitlementLine = args.entitlementDetails
-    ? (args.inputs.words ?? 0) > args.entitlementDetails.wordCap
-      ? `Included — your trial run covers the first ${args.entitlementDetails.wordCap.toLocaleString("en-US")} words`
-      : `Included — your trial run covers up to ${args.entitlementDetails.wordCap.toLocaleString("en-US")} words`
+    ? sheetEntitlementLine({
+        coveredAll: (args.inputs.words ?? 0) <= args.entitlementDetails.wordCap,
+        wordCap: args.entitlementDetails.wordCap,
+      })
     : args.entitlement
       ? "Included — your trial run"
       : undefined;
@@ -592,6 +612,7 @@ export function buildRunSheetView(args: BuildRunSheetViewArgs): RunSheetView {
       : {}),
     ...(included ? { included: true } : {}),
     ...(entitlementLine ? { entitlementLine } : {}),
+    ...(args.entitlementDetails?.id ? { entitlementId: args.entitlementDetails.id } : {}),
     approvalPolicy,
     approvalPolicyDisplay: APPROVAL_DISPLAY[approvalPolicy] ?? approvalPolicy,
     dontAskUnder: args.dontAskUnder ?? 0,

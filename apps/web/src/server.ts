@@ -77,7 +77,7 @@ import {
   // P1.09 — the gate card's `ed.*` form grammar → the structured-edits payload (§6.4 item 4).
   decodeGateEditFields,
 } from "@rhema/findings-core";
-import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
+import { GATE_KINDS, isCslStyle, isExportFormat, isMdExportProfile, claimsForAudience, type GateKind, type PublicClaimsConfig } from "@rhema/contracts";
 import { randomUUID, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { CLIENT_ENTRIES } from "../client-entries.mjs";
@@ -328,6 +328,33 @@ export function createWebApp(deps: WebDeps): Hono {
     } catch {
       // a seam that isn't bound yet drops the event — telemetry is never fatal to a page render.
     }
+  };
+
+  // ACT.1 (§14.3; REQ-GROWTH-10) — the device fingerprint for the trial unlock gate. The web host
+  // mints `rhema_fp` — an opaque random value, HttpOnly + SameSite=Lax — on the first run-sheet GET
+  // that lacks one, and forwards its value on the Run POST. The api stores ONLY a salted SHA-256;
+  // the raw value never leaves this host's cookie jar (no script may read it — HttpOnly).
+  const FP_COOKIE = "rhema_fp";
+  const cookieValue = (c: Context, name: string): string | undefined => {
+    const raw = c.req.header("cookie") ?? "";  // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
+    for (const pair of raw.split(";")) {
+      const eq = pair.indexOf("=");
+      if (eq < 0) continue;
+      if (pair.slice(0, eq).trim() === name) {
+        const v = pair.slice(eq + 1).trim();
+        return v === "" ? undefined : v;
+      }
+    }
+    return undefined;
+  };
+  const ensureFingerprint = (c: Context): string => {
+    const existing = cookieValue(c, FP_COOKIE);
+    if (existing) return existing;
+    const fp = randomBytes(24).toString("base64url");
+    // Secure when the page is served over https (prod); the dev http stage plants it without.
+    const secure = c.req.url.startsWith("https://") ? "; Secure" : "";
+    c.header("set-cookie", `${FP_COOKIE}=${fp}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`, { append: true });  // never-cookies exempt — rhema_fp first-party trial-abuse device fingerprint, not an ingestion-connector credential (AC-I-B scans this file for connector surfaces)
+    return fp;
   };
 
   // PRB.16 — an api-side 401 on a data call means the session is gone/invalid: land on /login rather
@@ -1349,22 +1376,41 @@ export function createWebApp(deps: WebDeps): Hono {
     }
   };
 
+  // ACT.1 — the claims fold for a marketing render: `trial.firstReviewIncluded` resolves per the
+  // page's AUDIENCE (`trial.audience` in pricing.json). A signed-in JOURNEY.1 test tenant can PREVIEW
+  // the gated claim with `?audience=test` (`/session`'s `isTest` answers); everyone else — anonymous,
+  // real-user, non-test — renders the audience-disabled form. The everyone-flip stays the operator's.
+  const audienceClaims = async (c: Context): Promise<{ claims?: PublicClaimsConfig; isTest: boolean }> => {
+    const session = deps.session(c);
+    const principal = session
+      ? await Promise.resolve()
+          .then(() => deps.dataSource.getSessionPrincipal?.(session))
+          .catch(() => null)
+      : null;
+    const isTest = principal?.isTest === true;
+    return { claims: claimsForAudience(deps.claims, isTest), isTest };
+  };
+
   // P1.17 (§15.1) — `/` is the public landing: the twelve sections in the v0.3 order, the drop-zone
-  // hero, the sample dossier. A signed-in viewer still goes straight to /app.
+  // hero, the sample dossier. A signed-in viewer still goes straight to /app — except the flagged
+  // test tenant asking for the `?audience=test` preview (the gated-claim render Stage B verifies).
   app.get("/", async (c) => {
-    if (await signedIn(c)) return c.redirect("/app");
+    const { claims, isTest } = await audienceClaims(c);
+    const preview = c.req.query("audience") === "test" && isTest;
+    if (!preview && (await signedIn(c))) return c.redirect("/app");
     landingBeacon("landing.viewed", c, c.req.query("src") ? { src: c.req.query("src") } : undefined);
-    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen }, claims: deps.claims }));
+    return c.html(renderDocument(c.req.path, landingElement, { invite: { signupOpen }, claims }));
   });
 
   // P1.17 (§15.2) — /pricing: the derived page model (the annual toggle re-renders prices and shows
   // the 15% saving in dollars — REQ-GROWTH-8).
   app.get("/pricing", async (c) => {
-    if (await signedIn(c)) return c.redirect("/app");
+    const { claims, isTest } = await audienceClaims(c);
+    if (!(c.req.query("audience") === "test" && isTest) && (await signedIn(c))) return c.redirect("/app");
     return c.html(
       renderDocument(c.req.path, pricingElement, {
         pricing: { annual: c.req.query("cycle") === "annual" },
-        claims: deps.claims,
+        claims,
       }),
     );
   });
@@ -3511,6 +3557,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (view.insufficient) {
       await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
     }
+    // ACT.1 — the trial unlock's device fingerprint plants on the sheet GET so the Run POST can
+    // forward it (minted HttpOnly; the api stores only its salted hash).
+    if (view.entitlementId) ensureFingerprint(c);
     // PRB.05 / REQ-IDE-28: the Revise sheet shows "you pre-triaged N of M" (the user's rows are
     // highest-precedence guidance for the run). A failed read never blocks the sheet.
     let pretriage: { triaged: number; total: number } | undefined;
@@ -3651,6 +3700,10 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(row.headDraftId ? { draftId: row.headDraftId } : {}),
         corrKind: workflow === "review" || workflow === "fact_check" ? workflow : undefined,
         corrK: 1,
+        // ACT.1 — the included-Review claim: the entitlement id the sheet rendered (hidden field)
+        // + the `rhema_fp` device fingerprint (minted on the GET; the api stores only its hash).
+        ...(str("entitlementId") ? { entitlementId: str("entitlementId") } : {}),
+        ...(cookieValue(c, FP_COOKIE) ? { fingerprint: cookieValue(c, FP_COOKIE) } : {}),
       });
     } catch (e) {
       // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
@@ -3685,6 +3738,52 @@ export function createWebApp(deps: WebDeps): Hono {
           project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
           runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient },
         }));
+      }
+      // ACT.1 — every first-spend refusal renders honest copy and creates no run: `trial_denied`
+      // (403), `phone_challenge_required` (403), `trial_ceiling` (429 — paused, retryable tomorrow),
+      // `trial_word_cap`/`trial_shape`/`entitlement_unavailable` (422). The sheet re-renders without
+      // the entitlement (the api's context read now reports none usable) so the dollar/cap arithmetic
+      // the claim would have replaced shows honestly.
+      if (
+        e instanceof ApiError &&
+        ["trial_denied", "phone_challenge_required", "trial_ceiling", "trial_word_cap", "trial_shape", "entitlement_unavailable"].includes(e.code ?? "")
+      ) {
+        const noticeByCode: Record<string, string> = {
+          trial_denied: COPY.runSheet.trialDenied,
+          phone_challenge_required: COPY.runSheet.trialPhoneChallenge,
+          trial_ceiling: COPY.runSheet.trialCeiling,
+          entitlement_unavailable: COPY.runSheet.entitlementUnavailable,
+          trial_shape: COPY.runSheet.trialShape,
+          trial_word_cap: COPY.runSheet.trialWordCapFmt.replace(
+            /\{cap\}/g,
+            String(postCtx?.entitlement?.wordCap ?? "—"),
+          ),
+        };
+        const fresh = buildSheet(
+          {
+            workflow,
+            rigor,
+            ...(submittedTier ? { modelTier: submittedTier } : {}),
+            words: str("words"),
+            claims: str("claims"),
+            ...toggleQuery,
+          },
+          await deps.dataSource.getBillingBalance(session).catch(() => undefined),
+          deps.betaPlanOfferUrl,
+          await Promise.resolve()
+            .then(() =>
+              deps.dataSource.getRunSheetContext?.(session, row.id, {
+                workflow,
+                ...(str("scope") ? { scope: str("scope") } : {}),
+              }),
+            )
+            .catch(() => null),
+        );
+        return c.html(renderDocument(c.req.path, runSheetElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          runSheet: { slug, projectTitle: row.title, view: fresh, notice: noticeByCode[e.code!] },
+        }), e.status as 403 | 422 | 429);
       }
       // EST.1 — a forged/stale tier the plan locks 403s `model_tier_requires_upgrade`/`trial_base_only`:
       // re-render the sheet at the plan-clamped tier (the view's `requestedModelTier` carries the "your
@@ -5484,11 +5583,13 @@ function buildSheet(
     ...(typeof query.userSources === "string" && query.userSources ? { userSourcesText: query.userSources } : {}),
     // P1.06 — the promote-on-launch line: a WORKING head freezes to its vN on launch (§5.6 item 7).
     ...(ctx?.headDraft ? { headState: ctx.headDraft.state, promoteToVersion: `v${ctx.headDraft.n}` } : {}),
-    // §14.3 — the unused trial entitlement → the `Included` rendering (+ its word-cap detail).
+    // §14.3/ACT.1 — the claimable (locked-or-unused) trial entitlement → the `Included` rendering
+    // (+ its word-cap detail). The row `id` round-trips as the Run form's hidden `entitlementId`.
     ...(entitlement
       ? {
           entitlement: true,
           entitlementDetails: {
+            id: entitlement.id,
             wordCap: entitlement.wordCap,
             rigor: entitlement.rigor,
             modelTier: entitlement.modelTier,
