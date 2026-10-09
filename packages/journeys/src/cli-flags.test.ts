@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SPA_SURFACES } from "@rhema/contracts";
 import { STEP_REGISTRY } from "./registry.js";
+import { SURFACE_GATES } from "./surface-gates.js";
 import {
   gateEcho,
   gatedStepIds,
@@ -58,10 +59,23 @@ describe("gatedStepIds — the surface gate resolution", () => {
   it("resolves the gate subset (usage → exactly X1.usage)", () => {
     expect(gatedStepIds(["usage"], paid)).toEqual({ ids: new Set(["X1.usage"]) });
   });
-  it("refuses a surface whose gate is still empty (vacuous is never a gate)", () => {
-    const r = gatedStepIds(["run-report"], paid);
-    expect(r.error).toContain("no gated steps");
-    expect(r.error).toContain("owed:");
+  it("resolves the run-report gate to its SPA.22 subset (R6F)", () => {
+    expect(gatedStepIds(["run-report"], paid)).toEqual({ ids: new Set(["R6F"]) });
+  });
+  it("refuses a surface whose gate resolves to zero steps — vacuous is never a gate", () => {
+    // SPA.22's R6F filled the manifest's last empty gate, so no real `SpaSurface` key can reach
+    // the refusal arm anymore — stub `run-report`'s steps empty to prove the belt still refuses
+    // loudly (surface-gates.test.ts guards any future owed-only row structurally).
+    const gate = SURFACE_GATES["run-report"] as { steps: readonly string[] };
+    const orig = gate.steps;
+    gate.steps = [];
+    try {
+      const r = gatedStepIds(["run-report"], paid);
+      expect(r.error).toContain("no gated steps");
+      expect(r.error).toContain("owed:");
+    } finally {
+      gate.steps = orig;
+    }
   });
   it("resolves the outline gate to its SPA.18 subset (P1.outline)", () => {
     expect(gatedStepIds(["outline"], paid)).toEqual({ ids: new Set(["P1.outline"]) });

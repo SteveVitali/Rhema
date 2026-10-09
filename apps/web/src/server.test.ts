@@ -2132,3 +2132,255 @@ describe("DEF.4 — the refund-window affordance on the run report", () => {
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
   });
 });
+
+// SPA.22 — the `run-report` surface's BFF seam (REQ-BFF-1/3/4/8/9/11, REQ-DAT-4/6, REQ-UX-15;
+// design/22 §2 `p.runReport` row + note (f)'s live-feed slice). `GET /bff/p/:slug/r/:runId` shares
+// the document's `runReportComposition` verbatim (the `?advanced=1` Level-4 read + the Timeline
+// pane read + the Inbox read-receipt), and — the ticket's KEY PORT — carries `ide.feed` when the
+// project has a live run, so the SPA leaf's `useIdeFeed` binds the ONE same-origin EventSource
+// with `?after=<lastSeq>` resume (the SSR `/p/:slug` reader's identical slice). The surface's
+// writes (the §14.4 refund POST + the §6.5 steering verbs) keep their document paths — a JSON
+// caller gets the `{ok,redirect}`/`{error}` envelope at the preserved status, never a 302/HTML arm.
+describe("SPA.22 — GET /bff/p/:slug/r/:runId + the run-report JSON write branches", () => {
+  const SESSION = { cookie: "tok" };
+  const REPORT = {
+    kind: "ok" as const,
+    report: {
+      runId: "run_tl",
+      workflow: "review",
+      state: "completed" as const,
+      estimateCredits: 840,
+      spentCredits: 520,
+      capCredits: 840,
+      refundedCredits: 0,
+      estimateRatio: 0.62,
+      meteredCredits: 520,
+      differences: [],
+      phases: [
+        { key: "checking_claims", ordinal: 2, status: "done" as const, seat: "verifier", credits: 300, durationMs: 120000, searches: 12, fetches: 40, subagentLabels: [] },
+      ],
+      seatSplit: [{ seat: "verifier", credits: 300, share: 1 }],
+      flags: [],
+      claims: { checked: 56, verified: 50, creditsPerVerified: 10.4 },
+      drivers: [],
+      suggestedGuidance: [],
+      rateTableVersion: 1,
+    },
+    projectSlug: "the-politics-of-visibility",
+  };
+
+  const spa22Deps = (over: Partial<DataSource> = {}, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    makeDeps({
+      session,
+      dataSource: {
+        ...makeDeps().dataSource,
+        getSessionPrincipal: async () => ({ userId: "u_1", workspaceId: "ws_1", billingAccountId: "ba_1" }),
+        getRunReport: async (_s: unknown, _r: unknown, opts?: { advanced?: boolean }) =>
+          ({
+            ...REPORT,
+            ...(opts?.advanced
+              ? {
+                  advancedView: {
+                    runId: "run_tl",
+                    rows: [
+                      {
+                        phase: "checking_claims",
+                        seat: "verifier",
+                        subagentLabel: null,
+                        model: "claude-sonnet-4-6",
+                        modelTier: "balanced",
+                        credits: 300,
+                        durationMs: null,
+                        searches: 12,
+                        fetches: 40,
+                        inputTokens: 4000,
+                        outputTokens: 900,
+                        cacheReadTokens: 0,
+                        cacheWriteTokens: 0,
+                        providerRequestIds: ["req_1"],
+                      },
+                    ],
+                  },
+                }
+              : {}),
+          }) as never,
+        pauseRun: vi.fn(async () => ({ ok: true as const, state: "running" })),
+        requestRefund: vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 })),
+        ...over,
+      } as DataSource,
+    });
+
+  const JSON_GET = { headers: { accept: "application/json" } };
+  const jsonPost = { method: "POST", headers: { "content-type": "application/json", accept: "application/json" } };
+
+  it("returns the composition verbatim — {runReport, project, paperTheme, ide} — and marks the run read", async () => {
+    const markInboxRunRead = vi.fn(async () => undefined);
+    const res = await createWebApp(spa22Deps({ markInboxRunRead })).request(
+      "/bff/p/the-politics-of-visibility/r/run_tl",
+      JSON_GET,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.runReport.slug).toBe("the-politics-of-visibility");
+    expect(body.runReport.runId).toBe("run_tl");
+    expect(body.runReport.report.report.spentCredits).toBe(520);
+    expect(body.project.slug).toBe("the-politics-of-visibility");
+    expect(body.paperTheme).toBeDefined();
+    expect(body.ide).toBeDefined();
+    expect(markInboxRunRead).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
+    // the plain read never carries token rows — Level 4 rides `?advanced=1` only.
+    expect(body.runReport.report.advancedView).toBeUndefined();
+  });
+
+  it("forwards ?advanced=1 onto the report read — the Level-4 usage rows land on the twin", async () => {
+    const res = await createWebApp(spa22Deps()).request(
+      "/bff/p/the-politics-of-visibility/r/run_tl?advanced=1",
+      JSON_GET,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.runReport.report.advancedView.rows.length).toBe(1);
+    expect(body.runReport.report.advancedView.rows[0].inputTokens).toBe(4000);
+  });
+
+  it("carries the live-feed slice when the project has an active run — replayed rows + lastSeq + the same-origin events URL", async () => {
+    const live = [
+      { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },
+      PROJECTS[1]!,
+    ];
+    const getRunEvents = vi.fn(async () => [
+      { seq: 1, type: "run.state_changed", payload: { to: "running" }, density: "summary", at: "2026-09-01T12:00:00Z" },
+      { seq: 7, type: "usage.tick", payload: { spentCredits: 10 }, density: "details", at: "2026-09-01T12:01:00Z" },
+    ]);
+    const res = await createWebApp(
+      spa22Deps({ listProjects: async () => live, getRunEvents: getRunEvents as never }),
+    ).request("/bff/p/the-politics-of-visibility/r/run_tl", JSON_GET);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ide.feed).toBeDefined();
+    expect(body.ide.feed.runId).toBe("run_live");
+    expect(body.ide.feed.eventsUrl).toBe("/p/the-politics-of-visibility/r/run_live/events");
+    expect(body.ide.feed.lastSeq).toBe(7);
+    expect(getRunEvents).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_live");
+  });
+
+  it("no active run ⇒ no feed slice; a degraded events read degrades to no feed, never a failed twin", async () => {
+    const res = await createWebApp(spa22Deps()).request(
+      "/bff/p/the-politics-of-visibility/r/run_tl",
+      JSON_GET,
+    );
+    expect(res.status).toBe(200);
+    expect((await res.json()).ide.feed).toBeUndefined();
+    const degraded = createWebApp(
+      spa22Deps({
+        listProjects: async () => [{ ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } }, PROJECTS[1]!],
+        getRunEvents: async () => { throw new ApiError(502, "down"); },
+      }),
+    );
+    const res2 = await degraded.request("/bff/p/the-politics-of-visibility/r/run_tl", JSON_GET);
+    expect(res2.status).toBe(200);
+    expect((await res2.json()).ide.feed).toBeUndefined();
+  });
+
+  it("no session → {error:unauthenticated} 401; unknown slug / missing report → {error:not_found} 404", async () => {
+    const noSess = await createWebApp(spa22Deps({}, () => null)).request(
+      "/bff/p/the-politics-of-visibility/r/run_tl",
+      JSON_GET,
+    );
+    expect(noSess.status).toBe(401);
+    expect(await noSess.json()).toEqual({ error: "unauthenticated" });
+    const missing = await createWebApp(spa22Deps()).request("/bff/p/nope/r/run_tl", JSON_GET);
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
+    const noReport = await createWebApp(
+      spa22Deps({ getRunReport: async () => { throw new ApiError(404, "none"); } }),
+    ).request("/bff/p/the-politics-of-visibility/r/run_x", JSON_GET);
+    expect(noReport.status).toBe(404);
+  });
+
+  it("the refund POST's JSON caller gets {ok,redirect} — the 302's identical twin; a refusal preserves status", async () => {
+    const requestRefund = vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 }));
+    const app = createWebApp(spa22Deps({ requestRefund }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility/r/run_tl#report" });
+    expect(requestRefund).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
+
+    const closed = createWebApp(
+      spa22Deps({
+        requestRefund: vi.fn(async () => {
+          throw new ApiError(409, "http://api/runs/run_tl/refund", undefined, "window_expired");
+        }),
+      }),
+    );
+    const res2 = await closed.request("/p/the-politics-of-visibility/r/run_tl/refund", {
+      ...jsonPost,
+      body: "{}",
+    });
+    // REQ-BFF-3 — the preserved refusal status + code ride the envelope (the leaf maps 4xx to
+    // invalidate-and-re-read — the SSR stale→re-render arm).
+    expect(res2.status).toBe(409);
+    const errBody = await res2.json();
+    expect(errBody.error).toBeDefined();
+  });
+
+  it("a steering POST's JSON caller gets {ok,redirect}; a stale-state refusal preserves the api status", async () => {
+    const pauseRun = vi.fn(async () => ({ ok: true as const, state: "running" }));
+    const app = createWebApp(spa22Deps({ pauseRun }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, redirect: "/p/the-politics-of-visibility" });
+    expect(pauseRun).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
+
+    const stale = createWebApp(
+      spa22Deps({
+        pauseRun: vi.fn(async () => {
+          throw new ApiError(409, "http://api/runs/run_tl/pause", undefined, "not_running");
+        }),
+      }),
+    );
+    const res2 = await stale.request("/p/the-politics-of-visibility/r/run_tl/pause", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(res2.status).toBe(409);
+    expect((await res2.json()).error).toBeDefined();
+  });
+
+  it("a JSON caller on the document POSTs is never handed a /login redirect — 401 envelope", async () => {
+    const app = createWebApp(spa22Deps({}, () => null));
+    const refund = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(refund.status).toBe(401);
+    expect(await refund.json()).toEqual({ error: "unauthenticated" });
+    const pause = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", {
+      ...jsonPost,
+      body: "{}",
+    });
+    expect(pause.status).toBe(401);
+  });
+
+  it("form callers keep the SSR legs verbatim — a steer POST 302s to the project, refund 302s to #report", async () => {
+    const app = createWebApp(spa22Deps());
+    const pause = await app.request("/p/the-politics-of-visibility/r/run_tl/pause", {
+      method: "POST",
+      ...form({}),
+    });
+    expect(pause.status).toBe(302);
+    expect(pause.headers.get("location")).toBe("/p/the-politics-of-visibility");
+    const refund = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", {
+      method: "POST",
+      ...form({}),
+    });
+    expect(refund.status).toBe(302);
+    expect(refund.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
+  });
+});

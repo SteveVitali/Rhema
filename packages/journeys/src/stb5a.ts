@@ -10,7 +10,7 @@
 import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "playwright";
 import pg from "pg";
-import { seedWritableDossier, type MigrationDb } from "@rhema/db";
+import { seedDeliveredRunReport, seedWritableDossier, type MigrationDb } from "@rhema/db";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable } from "./occlusion.js";
 import { assertBundleParity, createDraftProject } from "./steps.js";
@@ -1199,6 +1199,106 @@ const T12F: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/**
+ * SPA.22 (REQ-VFY-10) — provision the SEEDED DELIVERED RUN REPORT on the leg's own tenant at
+ * $0: `seedDeliveredRunReport` writes the dossier fixture bundle plus the two ledger facts the
+ * report reads (the credit_ledger grant+debit pair and the `step:<phase>`-keyed proxy
+ * usage_records), so the Level-3/4 arms — seat split, drivers, flags, the metered-vs-charged
+ * reconciliation, the Advanced rows — all render for real without a paid run. Idempotent on the
+ * per-leg slug base (`jrn-<tag>-report`). Needs `JOURNEY_DATABASE_URL` — unset ⇒ the step
+ * reports owed, never fabricates.
+ */
+async function seededDeliveredRunReport(email: string, tag: string): Promise<{ slug: string; runId: string }> {
+  const { tenantId, ownerId } = await tenantIdentity(email);
+  const client = await db().connect();
+  try {
+    await client.query("begin");
+    // tenant-scoped like the api's txRunner — no-op under a BYPASSRLS system DSN (ADR-093),
+    // load-bearing when JOURNEY_DATABASE_URL binds an RLS role.
+    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const res = await seedDeliveredRunReport(migrationDbOf(client), {
+      workspaceId: tenantId,
+      ownerId,
+      ids: () => randomUUID(),
+      slugBase: `jrn-${tag}-report`,
+      title: `JRN ${tag} run report (seeded delivered)`,
+      seedLabel: "journey-report-seed",
+    });
+    await client.query("commit");
+    return { slug: res.slug, runId: res.reviewRunId };
+  } catch (e) {
+    await client.query("rollback").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/** R6F (RED; nightly $0; SPA.22) — the free delivered-run-report render leg the `run-report`
+ *  surface gate owes (the gate was deliberately EMPTY until this landed). The seeded delivered
+ *  review carries real ledger + metered facts, so the assert covers the report's own
+ *  vocabulary on BOTH renderers (the runner's `--expect-renderer` flag decides which document
+ *  serves — the DOM contract is identical): `data-run-report`, the `N cr spent` estimate line,
+ *  `data-metered-line` + the reasoned `data-difference` rows, the phase bars (≥ 5
+ *  `data-report-phase` rows with real durations — never "0 min"), the seat split, flags,
+ *  drivers, the claims line, the rate-table link, and `?advanced=1`'s Level-4
+ *  `data-usage-row`s. The Advanced `<details>` summary is the actionable control. */
+const R6F: StepFn = async (ctx) => {
+  const { page, email } = await ctx.freshUser("r6f");
+  const { slug, runId } = await seededDeliveredRunReport(email, "r6f");
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/r/${runId}?advanced=1`);
+  await page.locator("[data-run-report]").first().waitFor({ state: "attached", timeout: 60_000 });
+  const need = async (sel: string, label: string): Promise<void> => {
+    if ((await page.locator(sel).count()) === 0) {
+      throw new Error(`the delivered run report renders no ${label} (${sel} absent)`);
+    }
+  };
+  await need("[data-estimate-line]", "estimate line");
+  const estimateLine = (await page.locator("[data-estimate-line]").textContent()) ?? "";
+  if (!/(\d[\d,]*)\s*cr spent/i.test(estimateLine)) {
+    throw new Error(`the report shows no spent figure: "${estimateLine}"`);
+  }
+  // RPT.1 — the seeded fixture meters above the committed charge, so the reconciliation arms
+  // must render: the metered line, and ≥ 1 reasoned difference row (never a bare key).
+  await need("[data-metered-line]", "metered line");
+  const diffs = page.locator("[data-difference]");
+  if ((await diffs.count()) === 0) throw new Error("the report renders no reasoned difference rows");
+  for (let i = 0; i < (await diffs.count()); i++) {
+    const text = ((await diffs.nth(i).textContent()) ?? "").trim();
+    if (text.length < 10 || /^[a-z_]+$/.test(text)) {
+      throw new Error(`a difference row renders a bare key: "${text}"`);
+    }
+  }
+  // The phase bars — the seeded review's seven committed phases, each with a real duration.
+  if ((await page.locator("[data-report-phase]").count()) < 5) {
+    throw new Error("the report renders fewer than five phase rows");
+  }
+  const phaseRows = await page.locator("[data-report-phase]").allTextContents();
+  if (phaseRows.some((t) => /·\s*0\s*min\b/.test(t))) {
+    throw new Error(`a phase still renders "0 min": ${phaseRows.join(" | ")}`);
+  }
+  // The remaining Level-3 arms the fixture guarantees.
+  await need("[data-seat-split]", "seat split");
+  if ((await page.locator("[data-seat]").count()) < 2) {
+    throw new Error("the seat split renders fewer than two seats");
+  }
+  await need("[data-flags]", "report flags");
+  if ((await page.locator("[data-flag]").count()) === 0) throw new Error("the flags list renders no rows");
+  await need("[data-drivers]", "spend drivers");
+  if ((await page.locator("[data-driver]").count()) === 0) throw new Error("the drivers list renders no rows");
+  await need("[data-claims]", "claims line");
+  await need("[data-rate-table-link]", "rate-table link");
+  // Level 4 — the seeded proxy rows must surface as per-request usage rows.
+  await need("[data-report-advanced]", "Advanced disclosure");
+  if ((await page.locator("[data-usage-row]").count()) === 0) {
+    throw new Error("?advanced=1 returned no Level-4 usage rows");
+  }
+  // The actionable control — the Advanced disclosure's summary toggles the Level-4 fold.
+  const summary = page.locator("[data-report-advanced] > summary").first();
+  await assertClick(summary, "the Advanced disclosure");
+  assertBundleParity(ctx);
+};
+
 /** T13F (RED; nightly $0; SPA.21) — T13's Apply + bulk legs on the seeded writable dossier: the
  *  fixture's blocking anchor finding IS suggestion-bearing, so Apply lands `?applied=` and
  *  retracts its own control, and the bulk preview's per-item checklist precedes the `?bulkdone=`
@@ -1552,6 +1652,8 @@ export const STB5A_IMPLS: Readonly<Record<string, StepFn>> = {
   // SPA.21 — the seeded-dossier free twins of T12/T13 (REQ-VFY-10).
   T12F,
   T13F,
+  // SPA.22 — the seeded delivered-run-report free render leg (REQ-VFY-10).
+  R6F,
   T14,
   T15,
   T16,

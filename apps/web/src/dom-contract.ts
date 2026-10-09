@@ -1171,6 +1171,34 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
       "committed-vs-metered reconciliation",
     ),
     a("data-refund", "conditional", "ui/run-card + run-report"),
+    // SPA.22 — the twin-rendered vocabulary the BFF surface emits verbatim (the shared
+    // `ui/run-report.tsx` article: Level-3 + the `?advanced=1` Level-4 `<details>`, plus the
+    // §14.4 refund arms + the rate-table line the page body carries).
+    a("data-run-report", "required", "ui/run-report.tsx", "the article root, keyed by runId"),
+    a("data-estimate-line", "required", "ui/run-report.tsx", "the estimate-vs-spend header"),
+    a("data-phase-bars", "required", "ui/run-report.tsx", "the per-phase bar list"),
+    a("data-phase-status", "conditional", "ui/run-report.tsx", "per-phase glyph state"),
+    a("data-report-advanced", "required", "ui/run-report.tsx", "the Level-4 <details>"),
+    a("data-usage-row", "conditional", "ui/run-report.tsx", "one Advanced table row"),
+    a("data-worked-example", "conditional", "ui/run-report.tsx", "the Showcase worked-example banner"),
+    a("data-differences", "conditional", "ui/run-report.tsx", "the reasoned-differences list"),
+    a("data-difference", "conditional", "ui/run-report.tsx", "one metered-vs-charged reason"),
+    a("data-claims", "conditional", "ui/run-report.tsx", "the claims-checked × verified line"),
+    a("data-seat-split", "conditional", "ui/run-report.tsx", "the seat-split list"),
+    a("data-seat", "conditional", "ui/run-report.tsx", "one seat row"),
+    a("data-drivers", "conditional", "ui/run-report.tsx", "the spend-drivers list"),
+    a("data-driver", "conditional", "ui/run-report.tsx", "one driver row"),
+    a("data-flags", "conditional", "ui/run-report.tsx", "the report-flags list"),
+    a("data-flag", "conditional", "ui/run-report.tsx", "one flag sentence"),
+    a("data-suggested-guidance", "conditional", "ui/run-report.tsx", "the next-round guidance list"),
+    a("data-guidance", "conditional", "ui/run-report.tsx", "one guidance sentence"),
+    a("data-refund-form", "conditional", "pages.tsx + spa/surfaces/run-report", "the §14.4 eligible arm"),
+    a("data-refund-cta", "conditional", "pages.tsx + spa/surfaces/run-report", "the refund submit"),
+    a("data-refund-state", "conditional", "pages.tsx + spa/surfaces/run-report", "refunded/pending/denied arms"),
+    a("data-rate-table-link", "conditional", "pages.tsx + spa/surfaces/run-report", "the frozen rate-table version link"),
+    u("advanced", "conditional", "server.ts runReportComposition + search.ts", "the Level-4 lazy-load key"),
+    // the refund POST's `#report` landing is a FRAGMENT, not a param — its hook is the article's
+    // `id="report"` (the `data-run-report` root already covers it); tests assert location.hash.
   ],
   // ---- /p/:p/outline* — the structured outline editor + the outline.ts autosave island ----
   outline: [

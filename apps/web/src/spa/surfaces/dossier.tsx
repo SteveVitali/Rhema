@@ -261,8 +261,9 @@ function PaneIntercept({
 }
 
 /** The Timeline run-card's gate mount — `renderGateCard` verbatim from the SSR `IdeFrame`, with
- *  `presenceScript:false` + `useGatePresence` carrying the REQ-SPEC-18 pings per card. */
-function TimelineGateCard({
+ *  `presenceScript:false` + `useGatePresence` carrying the REQ-SPEC-18 pings per card. Exported:
+ *  SPA.22's run-report surface mounts the same Timeline pane. */
+export function TimelineGateCard({
   run,
   slug,
   compact,

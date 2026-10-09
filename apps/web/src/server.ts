@@ -1365,6 +1365,24 @@ export function createWebApp(deps: WebDeps): Hono {
     };
   };
 
+  /** SPA.22 — the live-feed slice every IDE-framed read shares: the replayed `details`-density
+   *  rows + the last sequence for a non-terminal run, best-effort (a missing/degraded events read
+   *  degrades to no feed, never a failed page). The `/p/:slug` reader + the `run-report` BFF twin
+   *  consume it verbatim so both renderers seed the SAME initial feed (`data-feed-rows` +
+   *  `data-feed-last-seq`) before the one same-origin SSE resumes at `?after=<lastSeq>`. */
+  const liveFeedSlice = async (
+    session: SessionHeaders,
+    runId: string,
+  ): Promise<{ rows: ReturnType<typeof feedRowsFor>; lastSeq: number } | null> =>
+    Promise.resolve()
+      .then(() => deps.dataSource.getRunEvents?.(session, runId))
+      .then((events) =>
+        events
+          ? { rows: feedRowsFor(events, "details"), lastSeq: events.reduce((m, e) => Math.max(m, e.seq), 0) }
+          : null,
+      )
+      .catch(() => null);
+
   // ---- SPA.20 — the `run-sheet` surface (REQ-BFF-1/8/9/11/12/23, REQ-DAT-4/6/12; design/22 §2
   //      `p.run` row + §7.3 the typed estimate twin). `runSheetComposition` is the ONE composition
   //      the document GET and `GET /bff/p/:slug/run` share — the same seams, the same degrade
@@ -4338,16 +4356,7 @@ export function createWebApp(deps: WebDeps): Hono {
       Promise.resolve()
         .then(() => deps.dataSource.getTimeline?.(session, slug))
         .catch(() => null),
-      row.activeRun
-        ? Promise.resolve()
-            .then(() => deps.dataSource.getRunEvents?.(session, row.activeRun!.runId))
-            .then((events) =>
-              events
-                ? { rows: feedRowsFor(events, "details"), lastSeq: events.reduce((m, e) => Math.max(m, e.seq), 0) }
-                : null,
-            )
-            .catch(() => null)
-        : Promise.resolve(null),
+      row.activeRun ? liveFeedSlice(session, row.activeRun.runId) : Promise.resolve(null),
     ]);
     return c.html(
       renderDocument(c.req.path, projectElement, {
@@ -5386,6 +5395,38 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // ---- P1.05 — the run report + §6.5 steering + the live-feed SSE proxy (§5.5/§14.5) ----
 
+  /** SPA.22 — the run report's ONE composition (document GET + BFF twin; design/22 §2's
+   *  `p.runReport` row): the `?advanced=1` report read + the Timeline pane read + the Inbox
+   *  read-receipt, in the same order and with the same degrade posture the document always had —
+   *  the report degrades ANY failure to the 404 arm; the timeline is best-effort. The live feed
+   *  stays OUT of the composition (the document never carried it — the twin adds the slice for
+   *  the SPA's live meter binding, design/22 §2 note (f)). */
+  const runReportComposition = async (
+    c: Context,
+    session: SessionHeaders,
+    row: ProjectRow,
+    runId: string,
+  ): Promise<{
+    report: Awaited<ReturnType<DataSource["getRunReport"]>>;
+    timeline: TimelineDto | null;
+  } | null> => {
+    const slug = row.slug;
+    const advanced = c.req.query("advanced") === "1";
+    // P1.19 — a run_finished Inbox row's generic-workflow landing is this report; mark the collapsed
+    // row read on open (same read-receipt as the dossier's, REQ-MOBILE-16).
+    await Promise.resolve()
+      .then(() => deps.dataSource.markInboxRunRead?.(session, runId))
+      .catch(() => undefined);
+    const [report, timeline] = await Promise.all([
+      deps.dataSource.getRunReport(session, runId, { advanced }).catch(() => null),
+      Promise.resolve()
+        .then(() => deps.dataSource.getTimeline(session, slug))
+        .catch(() => null),
+    ]);
+    if (!report) return null;
+    return { report, timeline };
+  };
+
   // The run report page (the Timeline card's "Run report" link; §14.5). `?advanced=1` lazy-loads the
   // Level-4 drill-down into the Advanced disclosure — the report read model is already split, so the
   // plain page never carries token-level rows (tokens appear ONLY inside the disclosure's copy).
@@ -5399,30 +5440,56 @@ export function createWebApp(deps: WebDeps): Hono {
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const advanced = c.req.query("advanced") === "1";
-    // P1.19 — a run_finished Inbox row's generic-workflow landing is this report; mark the collapsed
-    // row read on open (same read-receipt as the dossier's, REQ-MOBILE-16).
-    await Promise.resolve()
-      .then(() => deps.dataSource.markInboxRunRead?.(session, runId))
-      .catch(() => undefined);
-    const [report, timeline] = await Promise.all([
-      deps.dataSource.getRunReport(session, runId, { advanced }).catch(() => null),
-      Promise.resolve()
-        .then(() => deps.dataSource.getTimeline(session, slug))
-        .catch(() => null),
-    ]);
-    if (!report) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const comp = await runReportComposition(c, session, row, runId);
+    if (!comp) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     return c.html(
       renderDocument(c.req.path, runReportElement, {
         ...(await ideContext(c, session, row, {
-          ...(timeline ? { timelineView: timeline, runNextHref: `/p/${slug}/run` } : {}),
+          ...(comp.timeline ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` } : {}),
         })),
         project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-        runReport: { slug, runId, report },
+        runReport: { slug, runId, report: comp.report },
         dwellSurface: "report",
       }),
     );
   });
+
+  // SPA.22 — `GET /p/:slug/r/:runId`'s twin (design/22 §2 `p.runReport` row; REQ-BFF-1/8/9/11):
+  // the shared composition's `{report, timeline}` + the `ide` chrome bag + the LIVE feed slice the
+  // `/p/:slug` reader carries verbatim when a live run exists (design/22 §2 note (f)) — the
+  // replayed rows + `lastSeq` + the same-origin events URL let the leaf's `useIdeFeed` bind the
+  // one EventSource with `?after=` resume, so the report's run progress + spend ticker is the
+  // live binding REQ-UX-15 names (the ticket's KEY PORT).
+  app.get("/bff/p/:slug/r/:runId", bffRoute(deps, async (c, session) => {
+    const slug = c.req.param("slug") ?? "";
+    const runId = c.req.param("runId") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const comp = await runReportComposition(c, session, row, runId);
+    if (!comp) return c.json({ error: "not_found" }, 404);
+    const feedData = row.activeRun ? await liveFeedSlice(session, row.activeRun.runId) : null;
+    const ctx = await ideContext(c, session, row, {
+      ...(comp.timeline ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` } : {}),
+      ...(row.activeRun && feedData
+        ? {
+            feed: {
+              runId: row.activeRun.runId,
+              eventsUrl: `/p/${slug}/r/${row.activeRun.runId}/events`,
+              density: "details" as const,
+              rows: feedData.rows,
+              lastSeq: feedData.lastSeq,
+            },
+          }
+        : {}),
+    });
+    return c.json({
+      runReport: { slug, runId, report: comp.report },
+      project: { title: row.title, pill: row.state.pill, slug },
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    });
+  }));
 
   // §4.2 — the usage deep-link's canonical redirect: /app/usage/r/:run → /p/<slug>/r/<run>#report.
   app.get("/app/usage/r/:runId", async (c) => {
@@ -5495,22 +5562,31 @@ export function createWebApp(deps: WebDeps): Hono {
     (act: (session: SessionHeaders, runId: string, text?: string) => Promise<unknown>) =>
     async (c: Context) => {
       const session = deps.session(c);
-      if (!session) return c.redirect("/login");
+      // SPA.22 — the `wantsJson` dual-mode branch (REQ-BFF-1/3/4): a JSON caller is never handed
+      // the document's 302/404 HTML arms — `{error}` at the preserved status on refusal,
+      // `{ok,redirect}` on success (the leaf navigates the redirect + invalidates).
+      if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
       const slug = c.req.param("project");
       const runId = c.req.param("runId");
       const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-      if (!row || runId == null || runId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
-      const form = await c.req.parseBody().catch(() => ({} as Record<string, unknown>));
+      if (!row || runId == null || runId === "")
+        return wantsJson(c)
+          ? c.json({ error: "not_found" }, 404)
+          : c.html(renderDocument(c.req.path, notFoundElement), 404);
+      const form = await bodyFields(c);
       const text = typeof form["text"] === "string" ? (form["text"] as string) : undefined;
       const note = typeof form["note"] === "string" ? (form["note"] as string) : undefined;
       try {
         await act(session, runId, text ?? note);
       } catch (e) {
         // a stale card (the run moved past the state) re-renders the page rather than erroring out —
-        // the Timeline's fresh read shows the current state.
+        // the Timeline's fresh read shows the current state. A JSON caller gets the api's status
+        // preserved in the envelope so the leaf maps 400/404/409 to invalidate-and-re-read
+        // (design/22 §3's stale-state note); the form post keeps the redirect arm.
+        if (wantsJson(c)) return bffFail(c, e, { msg: "run_steer_failed" });
         if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 400))) throw e;
       }
-      return c.redirect(`/p/${slug}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}` });
     };
 
   app.post("/p/:project/r/:runId/pause", steerHandler((s, runId) => deps.dataSource.pauseRun(s, runId)));
@@ -5529,17 +5605,25 @@ export function createWebApp(deps: WebDeps): Hono {
   // report, which now carries the honest block state (ineligible / pending_review / denied).
   app.post("/p/:project/r/:runId/refund", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    // SPA.22 — the `wantsJson` dual-mode branch (REQ-BFF-1/3/4): the leaf's refund form posts
+    // `{accept: application/json}` and follows `{ok,redirect}` (the same `/p/:slug/r/:runId#report`
+    // target) — an expected refusal's preserved status maps to invalidate-and-re-read, which is
+    // the SSR stale→re-render arm verbatim (design/22 §3's stale-state note).
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const runId = c.req.param("runId");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row || runId == null || runId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row || runId == null || runId === "")
+      return wantsJson(c)
+        ? c.json({ error: "not_found" }, 404)
+        : c.html(renderDocument(c.req.path, notFoundElement), 404);
     try {
       await deps.dataSource.requestRefund(session, runId);
     } catch (e) {
+      if (wantsJson(c)) return bffFail(c, e, { msg: "run_refund_failed" });
       if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 403))) throw e;
     }
-    return c.redirect(`/p/${slug}/r/${runId}#report`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/r/${runId}#report` });
   });
 
   // PRB.05 — the disposition write (§5.7): the five verbs + note + optional reason chip. Progressive
