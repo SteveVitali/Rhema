@@ -51,6 +51,7 @@ import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
+import { billingNoticeFor } from "./billing-copy.js";
 import { createSpaConsult } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
@@ -241,45 +242,6 @@ function oauthRedirectTarget(url: string, log: (msg: string) => void): string | 
   if (isGoogleOAuthRedirect(url)) return url;
   log(`[web] auth: refusing non-Google OAuth redirect target ${url.slice(0, 80)}`);
   return null;
-}
-
-/**
- * BILL.3 (REQ-BILL-16) — map a billing POST failure's stable api code to truthful copy. The generic
- * "temporarily unavailable" line is now ONLY the genuinely-transient answer (Stripe unreachable,
- * or an unknown failure); every classified refusal gets its own sentence so the user knows what
- * actually happened. Unknown codes fall back to the generic note — never a blank page.
- */
-function billingNoticeFor(code: string | undefined): string {
-  switch (code) {
-    case "purchase_closed":
-      return COPY.billing.purchasePausedNote;
-    case "topups_require_plan":
-      return COPY.billing.topupRequiresPlanNote;
-    case "first_month_cap":
-      return COPY.billing.firstMonthCapNote;
-    case "plan_waitlisted":
-      return COPY.billing.planWaitlistedNote;
-    case "no_stripe_customer":
-      return COPY.billing.noStripeCustomerNote;
-    case "stripe_rejected":
-      return COPY.billing.stripeRejectedNote;
-    case "stripe_unconfigured":
-    case "stripe_credentials_unconfigured":
-      return COPY.billing.stripeUnconfiguredNote;
-    case "change":
-      return COPY.billing.changeFailedNote;
-    case "cancel":
-      return COPY.billing.cancelFailedNote;
-    case "autoreload":
-      return COPY.billing.autoReloadFailedNote;
-    case "waitlist":
-      return COPY.billing.waitlistFailedNote;
-    case "checkout":
-    case "portal":
-    case "stripe_unavailable":
-    default:
-      return COPY.billing.stripeDownNote;
-  }
 }
 
 /** The stable code a billing POST failure carries: the api's `{error}` code on an ApiError, else the
@@ -788,6 +750,54 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-BFF-21 (design/22 §7.1) — the one-shot email-confirm consume; the convention handler
   // carries the both-200 redirect arms + the replay-safe swallow.
   app.post("/bff/settings/account/confirm-email", confirmEmailHandler(deps));
+
+  // ---- SPA.16 — the `billing` surface's read twins (REQ-BFF-1/8/9, REQ-DAT-4/12; design/22 §2
+  //  `app.settings.billing` + `billing.return` rows). Each mirrors its document GET's composition
+  //  verbatim: the same seams, the same best-effort degrade — `billing` is null unless BOTH the
+  //  subscription and plans reads land (the SSR's `subscription && plans` gate, so the leaf renders
+  //  the truthful `data-billing-down` state rather than fabricating a free tier); `balance`'s
+  //  `paymentLinkUrl` is re-validated through the Stripe allowlist BEFORE serialization (a refused
+  //  value is never on the wire — REQ-BFF-27). ----
+  app.get("/bff/settings/billing", bffRoute(deps, async (c, session) => {
+    const [subscription, plans, balance] = await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.getSubscription?.(session)).catch(swallowDegraded),
+      Promise.resolve().then(() => deps.dataSource.getPlans?.(session)).catch(swallowDegraded),
+      Promise.resolve().then(() => deps.dataSource.getBillingBalance?.(session)).catch(swallowDegraded),
+    ]);
+    const paymentLinkUrl = balance?.paymentLinkUrl != null
+      ? stripeRedirectTarget(balance.paymentLinkUrl, (m) => console.error(m))
+      : null;
+    return c.json({
+      billing: subscription && plans ? { subscription, plans } : null,
+      balance: balance == null
+        ? null
+        : { ...balance, paymentLinkUrl: paymentLinkUrl ?? undefined },
+    });
+  }));
+  // `GET /billing/return`'s twin — the checkout-return read verbatim: `session_id`/`cancelled` ride
+  // the query (they are URL state, never payload), the row read degrades to `null`, and
+  // `pollAfterSeconds` carries the server's §14.6 webhook-lag verdict (open ∧ ¬cancelled ∧
+  // <30 s old ⇒ 5 s; otherwise absent — the leaf never polls on its own judgment, REQ-BFF-15).
+  app.get("/bff/billing/return", bffRoute(deps, async (c, session) => {
+    const sessionId = c.req.query("session_id") ?? "";
+    const cancelled = c.req.query("cancelled") === "1";
+    const checkoutReturn = sessionId
+      ? await Promise.resolve()
+          .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
+          .catch(swallowDegraded)
+      : null;
+    const openAgeMs = checkoutReturn?.createdAt
+      ? Date.now() - Date.parse(checkoutReturn.createdAt)
+      : Number.POSITIVE_INFINITY;
+    const stillPolling = openAgeMs >= 0 && openAgeMs < 30_000;
+    return c.json({
+      checkoutReturn: checkoutReturn ?? null,
+      cancelled,
+      ...(checkoutReturn?.state === "open" && !cancelled && stillPolling
+        ? { pollAfterSeconds: 5 }
+        : {}),
+    });
+  }));
 
   // ---- SPA.13 — the `voices` surface's read twins (REQ-BFF-1/8/9/11/16; design/22 §2
   // voices/voicesNew/voiceDetail/p.voiceReseed) + the import presign (REQ-BFF-16 §5/E-2 — the BFF
@@ -3650,8 +3660,8 @@ export function createWebApp(deps: WebDeps): Hono {
   // 302 is ever emitted — never a half-minted state, never a non-Stripe hand-off.
   billingPost("subscribe", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? "annual" : "monthly";
     let failure: string | null = null;
@@ -3664,15 +3674,17 @@ export function createWebApp(deps: WebDeps): Hono {
         console.error(`[web] billing subscribe failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
         return undefined;
       });
-    if (!out?.url) return c.redirect(`${base}?notice=${failure ?? "checkout"}`);
+    if (!out?.url) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "checkout"}` });
     const target = stripeRedirectTarget(out.url, (m) => console.error(m));
-    if (!target) return c.redirect(`${base}?notice=checkout`);
-    return c.redirect(target);
+    if (!target) return mutationOutcome(c, { redirect: `${base}?notice=checkout` });
+    // REQ-BFF-3/27 — the Stripe hand-off rides the `{url}` envelope for a JSON caller
+    // (mutationOutcome re-validates at serialization); the form post keeps its 302 verbatim.
+    return mutationOutcome(c, { url: target });
   });
   billingPost("topup", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const packId = typeof form.packId === "string" ? form.packId : "";
     let failure: string | null = null;
     const out = await Promise.resolve()
@@ -3684,39 +3696,39 @@ export function createWebApp(deps: WebDeps): Hono {
         console.error(`[web] billing topup failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
         return undefined;
       });
-    if (!out?.url) return c.redirect(`${base}?notice=${failure ?? "checkout"}`);
+    if (!out?.url) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "checkout"}` });
     const target = stripeRedirectTarget(out.url, (m) => console.error(m));
-    if (!target) return c.redirect(`${base}?notice=checkout`);
-    return c.redirect(target);
+    if (!target) return mutationOutcome(c, { redirect: `${base}?notice=checkout` });
+    return mutationOutcome(c, { url: target });
   });
   // Plan change — an upgrade applies now, a downgrade schedules to period end (§14.2/14.6).
   billingPost("change-plan", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const tier = typeof form.tier === "string" ? form.tier : "";
     const cycle = form.cycle === "annual" ? "annual" as const : "monthly" as const;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.changePlan?.(session, tier, cycle))
       .catch(() => undefined);
-    if (!out || "error" in out) return c.redirect(`${base}?notice=change`);
-    return c.redirect(`${base}?saved=1`);
+    if (!out || "error" in out) return mutationOutcome(c, { redirect: `${base}?notice=change` });
+    return mutationOutcome(c, { redirect: `${base}?saved=1` });
   });
   // Cancel = cancel_at_period_end — access runs to the paid-through date (§14.6).
   billingPost("cancel", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const out = await Promise.resolve()
       .then(() => deps.dataSource.cancelSubscription?.(session))
       .catch(() => undefined);
-    if (!out?.applied) return c.redirect(`${base}?notice=cancel`);
-    return c.redirect(`${base}?saved=1`);
+    if (!out?.applied) return mutationOutcome(c, { redirect: `${base}?notice=cancel` });
+    return mutationOutcome(c, { redirect: `${base}?saved=1` });
   });
   // Auto-reload — the opt-in, user-capped, only unattended charge path (REQ-BILL-17).
   billingPost("auto-reload", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     // BILL.3 — opt-IN is a purchase-path write (it schedules an unattended charge): keep the api's
     // `purchase_closed` class so the notice is the paused copy, not a generic "didn't save".
     let failure: string | null = null;
@@ -3734,13 +3746,13 @@ export function createWebApp(deps: WebDeps): Hono {
         console.error(`[web] billing auto-reload failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
         return undefined;
       });
-    if (!out?.ok) return c.redirect(`${base}?notice=${failure ?? "autoreload"}`);
-    return c.redirect(`${base}?saved=1`);
+    if (!out?.ok) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "autoreload"}` });
+    return mutationOutcome(c, { redirect: `${base}?saved=1` });
   });
   // The Stripe Customer-Portal session — payment methods, invoices, receipts live Stripe-side.
   billingPost("portal", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     let failure: string | null = null;
     const out = await Promise.resolve()
       .then(() => deps.dataSource.createBillingPortalSession?.(session, base))
@@ -3749,24 +3761,24 @@ export function createWebApp(deps: WebDeps): Hono {
         console.error(`[web] billing portal failed: ${failure} (${e instanceof ApiError ? `api ${e.status}` : "no response"})`);
         return undefined;
       });
-    if (!out?.url) return c.redirect(`${base}?notice=${failure ?? "portal"}`);
+    if (!out?.url) return mutationOutcome(c, { redirect: `${base}?notice=${failure ?? "portal"}` });
     const target = stripeRedirectTarget(out.url, (m) => console.error(m));
-    if (!target) return c.redirect(`${base}?notice=portal`);
-    return c.redirect(target);
+    if (!target) return mutationOutcome(c, { redirect: `${base}?notice=portal` });
+    return mutationOutcome(c, { url: target });
   });
   // The Team tier's waitlist row (§14.2 — listed with its price; mechanics are 1.x).
   billingPost("waitlist", async (c, base) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const out = await Promise.resolve()
       .then(() => deps.dataSource.joinTeamWaitlist?.(session, {
         email: typeof form.email === "string" ? form.email : "",
         ...(typeof form.seats === "string" && Number(form.seats) > 0 ? { seats: Number(form.seats) } : {}),
       }))
       .catch(() => undefined);
-    if (!out?.ok) return c.redirect(`${base}?notice=waitlist`);
-    return c.redirect(`${base}?saved=1`);
+    if (!out?.ok) return mutationOutcome(c, { redirect: `${base}?notice=waitlist` });
+    return mutationOutcome(c, { redirect: `${base}?saved=1` });
   });
   // REQ-BILL-19 — the published rate tables, relayed verbatim so a run report's rate-table link
   // resolves on the app host (the api is internal; the upstream endpoint is public).

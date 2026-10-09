@@ -8,6 +8,10 @@ import type {
   AccountExportDto,
   AccountSettingsDto,
   ApprovalSettingsDto,
+  BillingBalanceDto,
+  BillingPlansDto,
+  BillingSubscriptionDto,
+  CheckoutStatusDto,
   DataSettingsDto,
   ChatPanelDto,
   FilesDto,
@@ -543,6 +547,64 @@ export const projectHomeQuery = (s: ProjectHomeSearch = {}) => {
   return queryOptions({
     queryKey: ["bff", "app", { q: s.q ?? null, deleted: s.deleted === "1" }],
     queryFn: () => bffFetch<BffAppHomeTwin>(`/bff/app${suffix}`),
+    retry: retryPolicy,
+  });
+};
+
+// ---- SPA.16 — the `billing` surface's twins (REQ-BFF-1/8/9, REQ-DAT-4/12; design/22 §2
+// `app.settings.billing` + `billing.return` rows). `GET /bff/settings/billing` composes the
+// document's seams verbatim — `billing` is null unless BOTH the subscription and plans reads
+// land (the SSR's own `subscription && plans` gate, so the leaf renders `data-billing-down`
+// rather than fabricating a free tier); `balance` is the §14.5 read with `paymentLinkUrl`
+// already Stripe-allowlist-validated server-side (a refused value never serializes — the key
+// is absent). `saved`/`notice` stay URL state (validated search), never payload.
+// `GET /bff/billing/return` carries the checkout row + `pollAfterSeconds` — the server owns the
+// §14.6 ≤30 s webhook-lag verdict; the leaf's `refetchInterval` reads it (REQ-BFF-15). ----
+
+/** `GET /bff/settings/billing` — the billing surface aggregate (raw DTOs). */
+export interface BffBillingSettingsTwin {
+  readonly billing: {
+    readonly subscription: BillingSubscriptionDto;
+    readonly plans: BillingPlansDto;
+  } | null;
+  readonly balance: BillingBalanceDto | null;
+}
+export const billingSettingsQuery = queryOptions({
+  queryKey: ["bff", "settings", "billing"],
+  queryFn: () => bffFetch<BffBillingSettingsTwin>("/bff/settings/billing"),
+  retry: retryPolicy,
+});
+
+/** `GET /bff/billing/return` — the checkout-return row + the server-owned poll verdict. */
+export interface BffBillingReturnTwin {
+  readonly checkoutReturn: CheckoutStatusDto | null;
+  readonly cancelled: boolean;
+  /** present only while `open ∧ ¬cancelled ∧ <30 s old` — the §14.6 webhook-lag window. */
+  readonly pollAfterSeconds?: number;
+}
+
+export interface BillingReturnSearch {
+  readonly session_id?: string;
+  readonly cancelled?: string;
+}
+
+export const billingReturnQuery = (s: BillingReturnSearch = {}) => {
+  const qs = new URLSearchParams();
+  if (s.session_id != null && s.session_id !== "") qs.set("session_id", s.session_id);
+  if (s.cancelled === "1") qs.set("cancelled", "1");
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+  return queryOptions({
+    queryKey: ["bff", "billing", "return", { session_id: s.session_id ?? null, cancelled: s.cancelled === "1" }],
+    queryFn: () => bffFetch<BffBillingReturnTwin>(`/bff/billing/return${suffix}`),
+    // The server emits `pollAfterSeconds` only inside the ≤30 s window — its absence stops the
+    // poll (an `open` row past the window, an `expired`/`completed` row, or a `cancelled` return
+    // all answer without it — the leaf never polls on its own judgment, REQ-BFF-15).
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      return d != null && typeof d.pollAfterSeconds === "number" && d.pollAfterSeconds > 0
+        ? d.pollAfterSeconds * 1000
+        : false;
+    },
     retry: retryPolicy,
   });
 };

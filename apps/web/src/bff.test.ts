@@ -1867,3 +1867,286 @@ describe("POST /app/grouping + /p/:slug/* — the project-home mutation JSON bra
     }
   });
 });
+
+// ---- SPA.16 — the `billing` surface's twins + JSON mutation branches (REQ-BFF-1/2/3/8/9/15/27,
+//  REQ-DAT-4/12, REQ-BILL-14/16/17; design/22 §2 `app.settings.billing` + `billing.return`) --------
+
+describe("GET /bff/settings/billing — the billing aggregate twin (SPA.16; REQ-BFF-1/8/9)", () => {
+  const SUB = {
+    tier: "writer",
+    subscription: {
+      id: "sub_1", tier: "writer", cycle: "monthly", status: "active",
+      periodStart: "2026-09-01T00:00:00Z", periodEnd: "2026-10-01T00:00:00Z",
+      cancelAtPeriodEnd: false, scheduledTier: null, pastDue: false,
+    },
+    trial: { state: null, entitlement: null },
+    autoReload: { enabled: false, thresholdCredits: null, packId: null, monthlyCapUsd: null },
+    hasStripeCustomer: true,
+    purchase: "open",
+  };
+  const PLANS_B = {
+    version: "pricing-v1", issuedAt: "2026-09-02", usdPerCredit: 0.01, platformRate: 1.4,
+    annualSavingsPct: 0.15, plans: {}, topUpPacks: [], autoReloadDefaults: null,
+    trial: {
+      windowDays: 14,
+      entitlement: { kind: "review", wordCap: 6000, rigor: "standard", modelTier: "base" },
+      pocketCredits: 150, upgradePromoCredits: 800, includedNote: null,
+      postTrialNote: "After the trial.", eligibilityLine: "One trial per person.",
+    },
+  };
+  const BAL = { spendableCredits: 3100, suspended: false, clawbackDebt: 0, purchase: "open" };
+  const billDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        getSubscription: async () => SUB,
+        getPlans: async () => PLANS_B,
+        getBillingBalance: async () => BAL,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("returns {billing:{subscription,plans}, balance} — raw DTOs verbatim", async () => {
+    const res = await createWebApp(billDeps({})).request("/bff/settings/billing", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ billing: { subscription: SUB, plans: PLANS_B }, balance: BAL });
+    expect(res.headers.get("x-rhema-request-id")).toBeTruthy();
+  });
+
+  it("a degraded seam lands billing:null — the SSR's `subscription && plans` gate, never a fabricated tier", async () => {
+    const res = await createWebApp(
+      billDeps({ getSubscription: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/settings/billing", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ billing: null, balance: BAL });
+  });
+
+  it("an upstream 401 rethrows — the unauthenticated envelope, not a polite empty page", async () => {
+    const res = await createWebApp(
+      billDeps({ getPlans: async () => { throw new ApiError(401, "x"); } }),
+    ).request("/bff/settings/billing", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  it("a Stripe-hosted paymentLinkUrl passes verbatim; a refused origin never serializes (REQ-BFF-27)", async () => {
+    const ok = await createWebApp(
+      billDeps({ getBillingBalance: async () => ({ ...BAL, paymentLinkUrl: "https://buy.stripe.com/test_link" }) }),
+    ).request("/bff/settings/billing", { headers: { accept: "application/json" } });
+    expect((await ok.json()).balance.paymentLinkUrl).toBe("https://buy.stripe.com/test_link");
+
+    const bad = await createWebApp(
+      billDeps({ getBillingBalance: async () => ({ ...BAL, paymentLinkUrl: "https://evil.example/pay" }) }),
+    ).request("/bff/settings/billing", { headers: { accept: "application/json" } });
+    const body = await bad.json();
+    expect(body.balance.paymentLinkUrl).toBeUndefined(); // the key is absent — never on the wire
+    expect(body.balance.spendableCredits).toBe(3100);
+  });
+
+  it("no session → 401 JSON, never a redirect", async () => {
+    const res = await createWebApp(billDeps({}, () => null)).request("/bff/settings/billing", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get("location")).toBeNull();
+  });
+});
+
+describe("GET /bff/billing/return — the checkout-return twin (SPA.16; REQ-BILL-14, REQ-BFF-15)", () => {
+  const RET_OPEN = { state: "open", kind: "subscribe", returnTo: null, createdAt: new Date().toISOString() };
+  const retDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        getCheckoutSession: async () => RET_OPEN,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("open + fresh ⇒ {checkoutReturn, cancelled:false, pollAfterSeconds:5} — the ≤30 s window", async () => {
+    const res = await createWebApp(retDeps({})).request("/bff/billing/return?session_id=cs_1", {
+      headers: { accept: "application/json" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.checkoutReturn.state).toBe("open");
+    expect(body.cancelled).toBe(false);
+    expect(body.pollAfterSeconds).toBe(5);
+  });
+
+  it("completed / expired / cancelled / past-window all answer WITHOUT pollAfterSeconds", async () => {
+    const mk = (checkout: unknown) =>
+      retDeps({ getCheckoutSession: async () => checkout });
+    const completed = await createWebApp(mk({ ...RET_OPEN, state: "completed" }))
+      .request("/bff/billing/return?session_id=cs_1", { headers: { accept: "application/json" } });
+    expect((await completed.json()).pollAfterSeconds).toBeUndefined();
+    const expired = await createWebApp(mk({ ...RET_OPEN, state: "expired" }))
+      .request("/bff/billing/return?session_id=cs_1", { headers: { accept: "application/json" } });
+    expect((await expired.json()).pollAfterSeconds).toBeUndefined();
+    // cancelled=1 stops the poll even while the row reads open (the STB.4 live finding verbatim).
+    const cancelled = await createWebApp(mk(RET_OPEN))
+      .request("/bff/billing/return?session_id=cs_1&cancelled=1", { headers: { accept: "application/json" } });
+    const cancelledBody = await cancelled.json();
+    expect(cancelledBody.cancelled).toBe(true);
+    expect(cancelledBody.pollAfterSeconds).toBeUndefined();
+    // past the §14.6 webhook-lag bound — an open row older than 30 s never polls.
+    const stale = await createWebApp(mk({ ...RET_OPEN, createdAt: new Date(Date.now() - 60_000).toISOString() }))
+      .request("/bff/billing/return?session_id=cs_1", { headers: { accept: "application/json" } });
+    expect((await stale.json()).pollAfterSeconds).toBeUndefined();
+  });
+
+  it("no session_id ⇒ checkoutReturn null and no read spent", async () => {
+    let calls = 0;
+    const res = await createWebApp(
+      retDeps({ getCheckoutSession: async () => { calls++; return RET_OPEN; } }),
+    ).request("/bff/billing/return", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ checkoutReturn: null, cancelled: false });
+    expect(calls).toBe(0);
+  });
+
+  it("a degraded read lands checkoutReturn:null (the SSR's tolerate branch)", async () => {
+    const res = await createWebApp(
+      retDeps({ getCheckoutSession: async () => { throw new ApiError(503, "x"); } }),
+    ).request("/bff/billing/return?session_id=cs_1", { headers: { accept: "application/json" } });
+    expect(res.status).toBe(200);
+    expect((await res.json()).checkoutReturn).toBeNull();
+  });
+});
+
+describe("POST /app/settings/billing/* + /settings/billing/* — the JSON mutation branches (SPA.16; REQ-BFF-1/2/3/27)", () => {
+  const mutDeps = (over: Partial<DataSource>, session: WebDeps["session"] = () => SESSION): WebDeps =>
+    ({
+      session,
+      dataSource: {
+        checkSession: async () => true,
+        listProjects: async () => ROWS,
+        ...over,
+      } as DataSource,
+    }) as WebDeps;
+
+  it("subscribe — JSON callers get the validated {url} Stripe hand-off; form posts keep the 302", async () => {
+    const checkout = async (_s: unknown, req: unknown) => ({ sessionId: "cs_1", url: "https://checkout.stripe.com/c/pay/cs_1", req });
+    const seen: unknown[] = [];
+    const app = createWebApp(mutDeps({
+      startCheckout: async (s: unknown, req: unknown) => { seen.push(req); return checkout(s, req); },
+    }));
+    const json = await app.request("/app/settings/billing/subscribe", {
+      ...jsonPost,
+      body: JSON.stringify({ tier: "writer", cycle: "annual" }),
+    });
+    expect(json.status).toBe(200);
+    expect(await json.json()).toEqual({ ok: true, url: "https://checkout.stripe.com/c/pay/cs_1" });
+    expect(seen).toEqual([{ kind: "subscribe", plan: "writer", cycle: "annual", returnTo: "/app/settings/billing" }]);
+    // The form post keeps its 302 verbatim on the SAME mint.
+    const form = await createWebApp(mutDeps({ startCheckout: checkout })).request("/app/settings/billing/subscribe", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ tier: "writer", cycle: "annual" }).toString(),
+      redirect: "manual",
+    });
+    expect(form.status).toBe(302);
+    expect(form.headers.get("location")).toBe("https://checkout.stripe.com/c/pay/cs_1");
+  });
+
+  it("a non-Stripe mint is refused BEFORE the envelope — the notice redirect arm, never {url} (REQ-BFF-27)", async () => {
+    const app = createWebApp(mutDeps({
+      startCheckout: async () => ({ sessionId: "cs_bad", url: "https://evil.example/pay" }),
+    }));
+    const res = await app.request("/app/settings/billing/subscribe", { ...jsonPost, body: "{}" });
+    expect(res.status).toBe(200);
+    // The Stripe validator refused upstream of serialization — the JSON arm gets the same
+    // ?notice=checkout redirect the form post would 302 to (the value was never serialized).
+    expect(await res.json()).toEqual({ ok: true, redirect: "/app/settings/billing?notice=checkout" });
+  });
+
+  it("an api refusal maps its stable code into the redirect — JSON sees the identical URL", async () => {
+    const app = createWebApp(mutDeps({
+      startCheckout: async () => { throw new ApiError(403, "x", undefined, "purchase_closed"); },
+    }));
+    const res = await app.request("/settings/billing/subscribe", { ...jsonPost, body: "{}" });
+    expect(res.status).toBe(200);
+    // The ALIAS base — the redirect returns to whichever mount posted (billingBase verbatim).
+    expect(await res.json()).toEqual({ ok: true, redirect: "/settings/billing?notice=purchase_closed" });
+  });
+
+  it("topup + portal — both ride the {url} envelope for JSON callers", async () => {
+    const app = createWebApp(mutDeps({
+      startCheckout: async () => ({ sessionId: "cs_top", url: "https://checkout.stripe.com/c/pay/cs_top" }),
+      createBillingPortalSession: async () => ({ url: "https://billing.stripe.com/session/bps_1" }),
+    }));
+    const topup = await app.request("/app/settings/billing/topup", {
+      ...jsonPost,
+      body: JSON.stringify({ packId: "pack_10" }),
+    });
+    expect(await topup.json()).toEqual({ ok: true, url: "https://checkout.stripe.com/c/pay/cs_top" });
+    const portal = await app.request("/app/settings/billing/portal", { ...jsonPost, body: "{}" });
+    expect(await portal.json()).toEqual({ ok: true, url: "https://billing.stripe.com/session/bps_1" });
+  });
+
+  it("change-plan / cancel / auto-reload / waitlist — the {ok,redirect} saved/notice arms", async () => {
+    const app = createWebApp(mutDeps({
+      changePlan: async () => ({ applied: "scheduled" }),
+      cancelSubscription: async () => ({ applied: true }),
+      setAutoReload: async () => ({ ok: true }),
+      joinTeamWaitlist: async () => ({ ok: true }),
+    }));
+    const cases: readonly { path: string; body: string; want: string }[] = [
+      { path: "/app/settings/billing/change-plan", body: JSON.stringify({ tier: "writer", cycle: "monthly" }), want: "/app/settings/billing?saved=1" },
+      { path: "/app/settings/billing/cancel", body: "{}", want: "/app/settings/billing?saved=1" },
+      { path: "/app/settings/billing/auto-reload", body: JSON.stringify({ enabled: "1", thresholdCredits: "500", packId: "pack_50", monthlyCapUsd: "50" }), want: "/app/settings/billing?saved=1" },
+      { path: "/app/settings/billing/waitlist", body: JSON.stringify({ email: "lead@example.com", seats: "4" }), want: "/app/settings/billing?saved=1" },
+      { path: "/settings/billing/cancel", body: "{}", want: "/settings/billing?saved=1" },
+    ];
+    for (const row of cases) {
+      const res = await app.request(row.path, { ...jsonPost, body: row.body });
+      expect(res.status, row.path).toBe(200);
+      expect(await res.json(), row.path).toEqual({ ok: true, redirect: row.want });
+    }
+  });
+
+  it("the failure arms map to the notice redirects — never an error status", async () => {
+    const app = createWebApp(mutDeps({
+      changePlan: async () => ({ error: "no" }),
+      cancelSubscription: async () => ({ applied: false }),
+      setAutoReload: async () => { throw new ApiError(403, "x", undefined, "purchase_closed"); },
+      joinTeamWaitlist: async () => ({ ok: false }),
+    }));
+    const cases: readonly { path: string; want: string }[] = [
+      { path: "/app/settings/billing/change-plan", want: "/app/settings/billing?notice=change" },
+      { path: "/app/settings/billing/cancel", want: "/app/settings/billing?notice=cancel" },
+      { path: "/app/settings/billing/auto-reload", want: "/app/settings/billing?notice=purchase_closed" },
+      { path: "/app/settings/billing/waitlist", want: "/app/settings/billing?notice=waitlist" },
+    ];
+    for (const row of cases) {
+      const res = await app.request(row.path, { ...jsonPost, body: "{}" });
+      expect(await res.json(), row.path).toEqual({ ok: true, redirect: row.want });
+    }
+  });
+
+  it("unauthed JSON posts answer 401 {error:unauthenticated}, never a /login redirect", async () => {
+    const app = createWebApp(mutDeps({}, () => null));
+    for (const path of [
+      "/app/settings/billing/subscribe",
+      "/app/settings/billing/topup",
+      "/app/settings/billing/change-plan",
+      "/app/settings/billing/cancel",
+      "/app/settings/billing/auto-reload",
+      "/app/settings/billing/portal",
+      "/app/settings/billing/waitlist",
+      "/settings/billing/subscribe",
+    ]) {
+      const res = await app.request(path, { ...jsonPost, body: "{}" });
+      expect(res.status, path).toBe(401);
+      expect(await res.json(), path).toEqual({ error: "unauthenticated" });
+      expect(res.headers.get("location"), path).toBeNull();
+    }
+  });
+});
