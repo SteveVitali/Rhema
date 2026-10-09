@@ -29,6 +29,7 @@ import type { ContentStore } from "@rhema/mirror";
 import type { Queue } from "@rhema/orchestrator";
 import type { Principal } from "./run-routes.js";
 import type { Converter } from "./import.js";
+import { logApiRouteError } from "./observability.js";
 
 /** The pg-boss queues the ingestion worker consumes (registered in apps/worker/src/main.ts). */
 export const INGEST_JOBS = {
@@ -333,7 +334,11 @@ export function createIngestRoutes(deps: IngestApiDeps): Hono {
     });
     if ("error" in res) {
       if (res.error === "not_found") return c.json({ error: "not_found" }, 404);
-      if (res.error === "provider_error") return c.json(res, 502);
+      if (res.error === "provider_error") {
+        // OBS.1 — the classified provider failure is a user-visible 502: its one structured line.
+        logApiRouteError(c, undefined, { status: 502, upstreamCode: "provider_error", msg: "ingest_provider_failed" });
+        return c.json(res, 502);
+      }
       return c.json(res, 422);
     }
     return c.json(res);

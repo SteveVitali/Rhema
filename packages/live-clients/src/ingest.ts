@@ -14,6 +14,7 @@
 import {
   convertedResultKey,
   conversionResultSchema,
+  createGcsBytesTransport,
   parseQuarantineKey,
   type ConversionResult,
   type SignedUrlProvider,
@@ -113,11 +114,32 @@ export interface GcsObjectsLike {
   file(name: string): GcsObjectFileLike;
 }
 
-/** The deploy binding: a bucket-bound object reader over @google-cloud/storage. */
+/**
+ * The deploy binding: a bucket-bound object reader/writer.
+ *
+ * OBS.1 — byte ops go through `createGcsBytesTransport` (plain fetch, no node streams). The
+ * library `file.download()`/`save()`/`delete()` path funnels every call through teeny-request's
+ * stream mode — the retry-request → teeny-request → node-fetch `res.body` PassThrough whose
+ * stacked pipeline()/eos listener sets produced the api's MaxListenersExceededWarning bursts.
+ * `Storage` remains only for ADC (`authClient.getRequestHeaders`) — no stream APIs are touched.
+ * `getSignedUrl` paths elsewhere in this file are unaffected (they never touch the byte path).
+ */
 export async function createGcsObjects(bucket: string): Promise<GcsObjectsLike> {
   const { Storage } = (await import("@google-cloud/storage")) as typeof import("@google-cloud/storage");
-  const b = new Storage().bucket(bucket);
-  return { file: (name) => b.file(name) as unknown as GcsObjectFileLike };
+  const storage = new Storage();
+  const b = createGcsBytesTransport({
+    getAuthHeaders: (url) => storage.authClient.getRequestHeaders(url),
+  }).bucket(bucket);
+  return {
+    file: (name) => {
+      const f = b.file(name);
+      return {
+        download: () => f.download(),
+        save: (data, opts) => f.save(data, opts),
+        delete: () => f.delete({ ignoreNotFound: true }),
+      };
+    },
+  };
 }
 
 /**

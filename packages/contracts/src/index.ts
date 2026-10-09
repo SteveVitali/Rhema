@@ -98,3 +98,12 @@ export * from "./provenance.js";
 // P1.20 — the §14.7 settings tree's shared contracts (account prefs blob, project safe fields,
 // support-access grant, deletion confirmation)
 export * from "./settings.js";
+
+// OBS.1 — the request-id/trace propagation primitives + the allowlisted structured error line
+// (ADR-053): shared so api and web emit the identical shape and forward the identical header.
+export * from "./observability.js";
+
+// OBS.1 — the plain-fetch GCS byte transport: the root fix for the MaxListenersExceededWarning
+// (the teeny-request/retry-request/node-fetch PassThrough listener pile). Shared so @rhema/mirror
+// and @rhema/live-clients bind the identical byte path.
+export * from "./gcs-bytes.js";

@@ -21,7 +21,7 @@ import {
   type ContentStore,
   type GcsRestoreBucketLike,
 } from "@rhema/mirror";
-import { blockPatchRequestSchema } from "@rhema/contracts";
+import { blockPatchRequestSchema, createGcsBytesTransport } from "@rhema/contracts";
 import { randomUlids } from "@rhema/orchestrator";
 import { createCollabDb, type CollabDb } from "./sql.js";
 import { createCollabExtension, type CollabExtensionDeps } from "./extension.js";
@@ -168,12 +168,25 @@ function liveDeps(env: ReturnType<typeof readCollabEnv>): CollabServiceDeps {
   const pool = new pg.Pool({ connectionString: env.databaseUrl, max: 4 });
   const db = createCollabDb(pool);
   const storage = new Storage();
-  const bucket = storage.bucket(env.objectsBucket);
-  const blobs: RestoreBlobStore = new GcsRestoreBlobStore(
-    bucket as unknown as GcsRestoreBucketLike,
-  );
+  // OBS.1 — byte ops use the plain-fetch transport (no teeny-request stream path → no
+  // PassThrough listener pile, the api's MaxListenersExceededWarning root cause). `Storage`
+  // remains only for ADC (`authClient.getRequestHeaders`).
+  const bucket = createGcsBytesTransport({
+    getAuthHeaders: (url) => storage.authClient.getRequestHeaders(url),
+  }).bucket(env.objectsBucket);
+  const gcsBucket: GcsRestoreBucketLike = {
+    file: (name) => {
+      const f = bucket.file(name);
+      return {
+        download: async (): Promise<[Buffer]> => [Buffer.from((await f.download())[0])],
+        save: (data: Buffer) => f.save(data),
+        delete: (opts?: { ignoreNotFound?: boolean }) => f.delete(opts),
+      };
+    },
+  };
+  const blobs: RestoreBlobStore = new GcsRestoreBlobStore(gcsBucket);
   const storeFor = (workspaceId: string): ContentStore =>
-    new GcsContentStore(bucket, workspaceId);
+    new GcsContentStore(gcsBucket, workspaceId);
   return {
     db,
     storeFor,

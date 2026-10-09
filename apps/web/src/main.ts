@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { createInternalTokenMinter } from "./internal-token.js";
 import { createWebApp } from "./server.js";
+import { requestLogContext } from "./observability.js";
 import { apiDataSource } from "./data.js";
 import type { SessionHeaders } from "./data.js";
 import {
@@ -72,9 +73,17 @@ export function startWebServer(): void {
    * TRUSTED internal channel (ADR-040 — a caller-readable XFF position is never the bucket key when
    * the stamp verifies). No token ⇒ the XFF fallback carries it (dev posture).
    */
-  const apiFetch = async (path: string, init: RequestInit = {}, cookie?: string, clientIp?: string) => {
+  const apiFetch = async (
+    path: string,
+    init: RequestInit = {},
+    cookie?: string,
+    clientIp?: string,
+    requestId?: string,
+  ) => {
     const headers = new Headers(init.headers);
     if (cookie) headers.set("cookie", cookie);
+    // OBS.1 — the request's correlation id joins this auth leg to the same LB→web→api trail.
+    if (requestId) headers.set("x-rhema-request-id", requestId);
     if (clientIp) {
       const stamp = await stampInternal(clientIp);
       if (stamp) {
@@ -101,6 +110,8 @@ export function startWebServer(): void {
     ...(process.env.COLLAB_WS_URL ? { collabWsUrl: process.env.COLLAB_WS_URL } : {}),
     // JOURNEY.1 — the image-baked deploy SHA for /healthz provenance.
     ...(process.env.RHEMA_BUILD_GIT_SHA ? { buildGitSha: process.env.RHEMA_BUILD_GIT_SHA } : {}),
+    // OBS.1 — the Cloud Logging trace join field (app error lines join the LB's trace-sampled log).
+    ...(process.env.GOOGLE_CLOUD_PROJECT ? { gcpProject: process.env.GOOGLE_CLOUD_PROJECT } : {}),
     session(c) {
       const forwarded: Record<string, string> = {};
       const cookie = c.req.header("cookie");
@@ -192,6 +203,7 @@ export function startWebServer(): void {
           },
           cookie,
           clientIp,
+          c ? requestLogContext(c).requestId : undefined,
         );
         // relay the OAuth `state` cookie so the proxied callback can verify it (better-auth binds the
         // flow to the same browser with a signed cookie + verification row).
@@ -214,6 +226,7 @@ export function startWebServer(): void {
         },
         cookie,
         clientIp,
+        c ? requestLogContext(c).requestId : undefined,
       );
       if (c) for (const sc of res.headers.getSetCookie()) c.header("set-cookie", sc, { append: true });
       if (!res.ok) return authError(res);
@@ -222,7 +235,7 @@ export function startWebServer(): void {
     async endSession(c) {
       const cookie = c.req.header("cookie");
       if (cookie) {
-        await apiFetch("/api/auth/sign-out", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }, cookie).catch(() => undefined);
+        await apiFetch("/api/auth/sign-out", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }, cookie, undefined, requestLogContext(c).requestId).catch(() => undefined);
       }
       for (const name of SESSION_COOKIE_NAMES) {
         // A `__Host-`-named deletion still needs Secure (the browser applies the prefix rule to every

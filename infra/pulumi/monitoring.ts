@@ -53,6 +53,8 @@ export const SLO_ALERT_SIGNALS = [
 
 export function createMonitoring(args: MonitoringArgs): {
   sloViolationsMetric: gcp.logging.Metric;
+  lb5xxMetric: gcp.logging.Metric;
+  route5xxMetric: gcp.logging.Metric;
   dashboard: gcp.monitoring.Dashboard;
   alertPolicies: gcp.monitoring.AlertPolicy[];
   apiAvailabilitySlo: gcp.monitoring.Slo;
@@ -92,6 +94,119 @@ export function createMonitoring(args: MonitoringArgs): {
       // textPayload shape: `[slo] violation {"signal":"key",...}` — extract the signal value.
       signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
     },
+  });
+
+  // OBS.1 — the spec'd log-based 5xx metric, over HOT.1's LB request logs: every request the external
+  // HTTPS LB answered 5xx (`httpRequest.status>=500`), labelled by the backend service that served (or
+  // failed to serve) it. The LB log is the outermost frame of the trace trail — it sees 5xxs the app
+  // never reached (backend timeout, no healthy backend) — and `resource.labels.backend_service_name`
+  // is the join key to the backend, while `trace` on the entry joins the app line.
+  const lb5xxMetric = new gcp.logging.Metric(`rhema-${stack}-lb-5xx`, {
+    name: "rhema_lb_5xx_requests",
+    project,
+    filter:
+      'resource.type="http_load_balancer" AND ' +
+      "httpRequest.status>=500",
+    metricDescriptor: {
+      metricKind: "DELTA",
+      valueType: "INT64",
+      unit: "1",
+      labels: [
+        { key: "backend_service", valueType: "STRING", description: "the LB backend service name" },
+        { key: "status", valueType: "STRING", description: "the httpRequest.status the LB logged" },
+      ],
+    },
+    labelExtractors: {
+      backend_service: "EXTRACT(resource.labels.backend_service_name)",
+      status: "EXTRACT(httpRequest.status)",
+    },
+  });
+
+  // OBS.1 — the app-side counterpart: every unhandled/5xx route error emits ONE structured line
+  // through the fixed allowlist formatter (@rhema/contracts observability):
+  // {"severity":"ERROR","msg":"route_error|route_5xx|…","service":…,"route":"<hono template>",
+  // "status":5xx,…}. Cloud Logging parses the JSON stdout line into jsonPayload and hoists the
+  // `severity` field to entry severity, so `severity=ERROR` plus the `status>=500` + `service`/`msg`
+  // presence predicates match exactly the trail an operator is meant to follow — and nothing else
+  // can carry that field shape (the formatter does not accept arbitrary fields). requestId is
+  // deliberately NOT a label: one label value per request would explode the metric's cardinality
+  // (each distinct value is a new time series). The `route` label is the template — raw paths are
+  // user-selected and never reach a log.
+  const route5xxMetric = new gcp.logging.Metric(`rhema-${stack}-route-5xx`, {
+    name: "rhema_route_5xx_errors",
+    project,
+    filter:
+      'resource.type="cloud_run_revision" AND ' +
+      'severity=ERROR AND ' +
+      'jsonPayload.status>=500 AND ' +
+      'jsonPayload.service:* AND ' +
+      'jsonPayload.msg:*',
+    metricDescriptor: {
+      metricKind: "DELTA",
+      valueType: "INT64",
+      unit: "1",
+      labels: [
+        { key: "service", valueType: "STRING", description: "emitting service (api|web|…)" },
+        { key: "route", valueType: "STRING", description: "the registered route template, never a raw path" },
+        { key: "status", valueType: "STRING", description: "HTTP status emitted" },
+        { key: "msg", valueType: "STRING", description: "the structured event name (route_error, route_5xx, …)" },
+      ],
+    },
+    labelExtractors: {
+      service: "EXTRACT(jsonPayload.service)",
+      route: "EXTRACT(jsonPayload.route)",
+      status: "EXTRACT(jsonPayload.status)",
+      msg: "EXTRACT(jsonPayload.msg)",
+    },
+  });
+
+  // OBS.1 — the alert keys the LB-view counter (ADR-055): the LB log is the outermost frame, so it
+  // catches 5xxs the app never saw. Any 5xx is the defect signal (the request was user-visible and
+  // must leave exactly one trail), so the policy fires on count > 0 over the 300s alignment window.
+  // On stages without the ops webhook configured it still records incidents unnotified — the trail
+  // is the deliverable; paging is H7's.
+  //
+  // `resource.type` here is `l7_lb_rule`, NOT the log filter's `http_load_balancer`: the metric
+  // selects log entries under the LOGGING resource type, but logs-based metric TIME SERIES for an
+  // external HTTPS LB land on the "Application Load Balancer Rule (Logs-based Metrics)" MONITORING
+  // resource `l7_lb_rule` (GCP LB docs, monitoring-resource table). Alert/dashboard queries address
+  // the time series, not the log. (Update 124 proved `http_load_balancer` is not a Monitoring
+  // descriptor — the API 400'd on exactly this field.)
+  const route5xxPolicy = new gcp.monitoring.AlertPolicy(`rhema-${stack}-route-5xx`, {
+    displayName: `route 5xx errors — LB-observed (${stack})`,
+    project,
+    combiner: "OR",
+    conditions: [
+      {
+        displayName: "LB request log 5xx",
+        conditionThreshold: {
+          filter:
+            'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" AND ' +
+            'resource.type="l7_lb_rule"',
+          comparison: "COMPARISON_GT",
+          thresholdValue: 0,
+          duration: "0s",
+          aggregations: [{ alignmentPeriod: "300s", perSeriesAligner: "ALIGN_COUNT" }],
+          trigger: { count: 1 },
+        },
+      },
+      {
+        displayName: "app route 5xx structured error logged",
+        conditionThreshold: {
+          filter:
+            'metric.type="logging.googleapis.com/user/rhema_route_5xx_errors" AND ' +
+            'resource.type="cloud_run_revision"',
+          comparison: "COMPARISON_GT",
+          thresholdValue: 0,
+          duration: "0s",
+          aggregations: [{ alignmentPeriod: "300s", perSeriesAligner: "ALIGN_COUNT" }],
+          trigger: { count: 1 },
+        },
+      },
+    ],
+    notificationChannels: channels,
+    alertStrategy: { autoClose: "1800s" },
+    enabled: true,
   });
 
   // One alert policy per probed signal — a breach line is already thresholded by the probe; the policy
@@ -193,6 +308,54 @@ export function createMonitoring(args: MonitoringArgs): {
               },
             },
             {
+              // OBS.1 — the LB-observed 5xx count by backend service: the outermost frame of the
+              // trace trail, including 5xxs the app never reached. (`l7_lb_rule` — the
+              // logs-based-metrics monitoring resource; see the alert policy note.)
+              title: "LB 5xx requests by backend service",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" resource.type="l7_lb_rule"',
+                        aggregation: {
+                          alignmentPeriod: "300s",
+                          perSeriesAligner: "ALIGN_COUNT",
+                          groupByFields: ["metric.label.backend_service"],
+                        },
+                      },
+                    },
+                    plotType: "STACKED_BAR",
+                  },
+                ],
+                yAxis: { label: "5xx requests", scale: "LINEAR" },
+              },
+            },
+            {
+              // OBS.1 — the app-side 5xx trail, broken down by service + route template.
+              title: "route 5xx errors (structured log)",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_route_5xx_errors" resource.type="cloud_run_revision"',
+                        aggregation: {
+                          alignmentPeriod: "300s",
+                          perSeriesAligner: "ALIGN_COUNT",
+                          groupByFields: ["metric.label.service", "metric.label.route"],
+                        },
+                      },
+                    },
+                    plotType: "STACKED_BAR",
+                  },
+                ],
+                yAxis: { label: "5xx errors", scale: "LINEAR" },
+              },
+            },
+            {
               title: "api request count by response class",
               xyChart: {
                 dataSets: [
@@ -247,5 +410,13 @@ export function createMonitoring(args: MonitoringArgs): {
     ),
   });
 
-  return { sloViolationsMetric, dashboard, alertPolicies, apiAvailabilitySlo, ...(notificationChannel ? { notificationChannel } : {}) };
+  return {
+    sloViolationsMetric,
+    lb5xxMetric,
+    route5xxMetric,
+    dashboard,
+    alertPolicies: [...alertPolicies, route5xxPolicy],
+    apiAvailabilitySlo,
+    ...(notificationChannel ? { notificationChannel } : {}),
+  };
 }

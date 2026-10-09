@@ -230,7 +230,7 @@ describe("the voice library (§9.1)", () => {
     const res = await app.request("/v/per_house/fork", { method: "POST" });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/v/per_fork");
-    expect(forkVoice).toHaveBeenCalledWith({}, "per_house");
+    expect(forkVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_house");
   });
 });
 
@@ -266,7 +266,7 @@ describe("the §9.2 creation sheet", () => {
     expect(res.headers.get("location")).toBe("/v/per_new");
     expect(createVoice).toHaveBeenCalledOnce();
     expect(addVoiceSample).toHaveBeenCalledOnce();
-    expect(buildVoice).toHaveBeenCalledWith({}, "per_new", { tier: "quick" });
+    expect(buildVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_new", { tier: "quick" });
   });
 
   it("POST /voices/new — name required; Create-and-build without a sample re-renders the §9.2 rule", async () => {
@@ -288,8 +288,8 @@ describe("the §9.2 creation sheet", () => {
       ...form({ name: "Ada", intent: "build", tier: "full", sample_url: "https://example.com/essay", description: "Terse." }),
     });
     expect(res.status).toBe(302);
-    expect(addVoiceSampleUrl).toHaveBeenCalledWith({}, "per_new", { url: "https://example.com/essay" });
-    expect(buildVoice).toHaveBeenCalledWith({}, "per_new", { tier: "full" });
+    expect(addVoiceSampleUrl).toHaveBeenCalledWith(expect.objectContaining({}), "per_new", { url: "https://example.com/essay" });
+    expect(buildVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_new", { tier: "full" });
   });
 });
 
@@ -405,7 +405,7 @@ describe("the voice detail page (§9.5)", () => {
     const app = createWebApp(makeDeps({ decideRunGate } as Partial<DataSource>));
     const res = await app.request("/v/per_ada/gates/gate_as", { method: "POST", ...form({ action: "approve", runId: "run_g" }) });
     expect(res.status).toBe(302);
-    expect(decideRunGate).toHaveBeenCalledWith({}, "run_g", "gate_as", { action: "approve" });
+    expect(decideRunGate).toHaveBeenCalledWith(expect.objectContaining({}), "run_g", "gate_as", { action: "approve" });
   });
 
   it("POST /v/:id/update — the ONE verb posts no scope ⇒ the api routes it (§9.3)", async () => {
@@ -419,7 +419,7 @@ describe("the voice detail page (§9.5)", () => {
     const res = await app.request("/v/per_ada/update", { method: "POST", ...form({}) });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/v/per_ada");
-    expect(updateVoice).toHaveBeenCalledWith({}, "per_ada", {});
+    expect(updateVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", {});
   });
 
   it("POST /v/:id/update — scope=full_from_quick is the Quick→Full upgrade", async () => {
@@ -431,7 +431,7 @@ describe("the voice detail page (§9.5)", () => {
     }));
     const app = createWebApp(makeDeps({ updateVoice } as Partial<DataSource>));
     await app.request("/v/per_ada/update", { method: "POST", ...form({ scope: "full_from_quick" }) });
-    expect(updateVoice).toHaveBeenCalledWith({}, "per_ada", { scope: "full_from_quick" });
+    expect(updateVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", { scope: "full_from_quick" });
   });
 
   it("POST /v/:id/corrections — the correction lands and redirects to the Description tab", async () => {
@@ -443,7 +443,7 @@ describe("the voice detail page (§9.5)", () => {
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toContain("tab=description");
-    expect(addVoiceCorrection).toHaveBeenCalledWith({}, "per_ada", { text: "Wrong about the semicolons." });
+    expect(addVoiceCorrection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", { text: "Wrong about the semicolons." });
   });
 
   it("POST /v/:id/samples/url — the fetcher-only path (REQ-INGEST-13)", async () => {
@@ -451,7 +451,7 @@ describe("the voice detail page (§9.5)", () => {
     const app = createWebApp(makeDeps({ addVoiceSampleUrl } as Partial<DataSource>));
     const res = await app.request("/v/per_ada/samples/url", { method: "POST", ...form({ url: "https://example.com/piece" }) });
     expect(res.status).toBe(302);
-    expect(addVoiceSampleUrl).toHaveBeenCalledWith({}, "per_ada", { url: "https://example.com/piece" });
+    expect(addVoiceSampleUrl).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", { url: "https://example.com/piece" });
   });
 });
 
@@ -471,7 +471,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
     const app = createWebApp(makeDeps({ setProjectVoice } as Partial<DataSource>));
     const res = await app.request("/p/the-essay/voice", { method: "POST", ...form({ personaId: "per_ada" }) });
     expect(res.status).toBe(302);
-    expect(setProjectVoice).toHaveBeenCalledWith({}, "proj_1", { personaId: "per_ada" });
+    expect(setProjectVoice).toHaveBeenCalledWith(expect.objectContaining({}), "proj_1", { personaId: "per_ada" });
   });
 
   it("GET /p/:slug/run renders the voice line: linked name + pill + the priced chained action", async () => {
@@ -491,7 +491,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
     const res = await app.request("/p/the-essay/update-voice", { method: "POST", ...form({ voice_persona: "per_ada" }) });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toContain("/p/the-essay/run");
-    expect(buildVoice).toHaveBeenCalledWith({}, "per_ada", { tier: "quick", projectId: "proj_1" });
+    expect(buildVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", { tier: "quick", projectId: "proj_1" });
   });
 
   // ---- P1.14 — the §9.6 hatches ----
@@ -546,7 +546,7 @@ describe("the project picker + the run sheet's voice line (§9.6)", () => {
     const app = createWebApp(makeDeps({ adoptProjectVoice } as Partial<DataSource>));
     const res = await app.request("/p/the-essay/voice/adopt", { method: "POST", ...form({ reseed: "true" }) });
     expect(res.status).toBe(302);
-    expect(adoptProjectVoice).toHaveBeenCalledWith({}, "proj_1", { reseed: true });
+    expect(adoptProjectVoice).toHaveBeenCalledWith(expect.objectContaining({}), "proj_1", { reseed: true });
   });
 
   it("POST /p/:slug/voice/fork lands on the NEW project (§9.6 hatch 2)", async () => {
@@ -597,7 +597,7 @@ describe("the seed editor + sample posts", () => {
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/v/per_ada?saved=1");
-    expect(saveVoiceSeed).toHaveBeenCalledWith({}, "per_ada", {
+    expect(saveVoiceSeed).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", {
       description: "New.",
       byline: "B",
       registers: ["essay", "polemic"],
@@ -609,7 +609,7 @@ describe("the seed editor + sample posts", () => {
     const app = createWebApp(makeDeps({ addVoiceSample } as Partial<DataSource>));
     const res = await app.request("/v/per_ada/samples", { method: "POST", ...form({ text: "a b c d", title: "New sample" }) });
     expect(res.status).toBe(302);
-    expect(addVoiceSample).toHaveBeenCalledWith({}, "per_ada", { text: "a b c d", title: "New sample" });
+    expect(addVoiceSample).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", { text: "a b c d", title: "New sample" });
   });
 });
 
@@ -722,7 +722,7 @@ describe("the P1.15 ingestion surfaces (§9.5)", () => {
       headers: { "content-type": "application/x-www-form-urlencoded" },
     });
     expect(res.status).toBe(302);
-    expect(confirmVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1", {
+    expect(confirmVoiceConnection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", "conn_1", {
       items: [
         { externalId: "ext_p1", include: true },
         { externalId: "ext_p2", include: false },
@@ -746,21 +746,21 @@ describe("the P1.15 ingestion surfaces (§9.5)", () => {
       } as Partial<DataSource>),
     );
     await app.request("/v/per_ada/connections/conn_1/discover", { method: "POST" });
-    expect(discoverVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1");
+    expect(discoverVoiceConnection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", "conn_1");
     await app.request("/v/per_ada/connections/conn_1/sync", { method: "POST" });
-    expect(syncVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1");
+    expect(syncVoiceConnection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", "conn_1");
     await app.request("/v/per_ada/sync", { method: "POST" });
-    expect(syncAllVoiceConnections).toHaveBeenCalledWith({}, "per_ada");
+    expect(syncAllVoiceConnections).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada");
     await app.request("/v/per_ada/connections/conn_1/settings", {
       method: "POST",
       ...form({ autoIncludeNew: "on" }),
     });
-    expect(patchVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1", {
+    expect(patchVoiceConnection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", "conn_1", {
       autoIncludeNew: true,
       dailySync: false,
     });
     await app.request("/v/per_ada/connections/conn_1/remove", { method: "POST" });
-    expect(removeVoiceConnection).toHaveBeenCalledWith({}, "per_ada", "conn_1");
+    expect(removeVoiceConnection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", "conn_1");
   });
 
   it("POST /v/:id/connections links a Substack publication by address — no credential field", async () => {
@@ -771,7 +771,7 @@ describe("the P1.15 ingestion surfaces (§9.5)", () => {
       ...form({ provider: "substack", handle: "ada.substack.com" }),
     });
     expect(res.status).toBe(302);
-    expect(createVoiceConnection).toHaveBeenCalledWith({}, "per_ada", {
+    expect(createVoiceConnection).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", {
       provider: "substack",
       handle: "ada.substack.com",
     });
@@ -862,7 +862,7 @@ describe("the P1.15 ingestion surfaces (§9.5)", () => {
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/v/per_ada?tab=samples&sample=di_1&reconstruct=queued");
-    expect(reconstructVoiceSample).toHaveBeenCalledWith({}, "per_ada", "di_1", { tier: "visual", confirmed: true });
+    expect(reconstructVoiceSample).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada", "di_1", { tier: "visual", confirmed: true });
   });
 
   it("POST /v/:id/delete needs the typed 'delete' confirm; otherwise it bounces back", async () => {
@@ -875,6 +875,6 @@ describe("the P1.15 ingestion surfaces (§9.5)", () => {
     const ok = await app.request("/v/per_ada/delete", { method: "POST", ...form({ confirm: "delete" }) });
     expect(ok.status).toBe(302);
     expect(ok.headers.get("location")).toBe("/voices");
-    expect(deleteVoice).toHaveBeenCalledWith({}, "per_ada");
+    expect(deleteVoice).toHaveBeenCalledWith(expect.objectContaining({}), "per_ada");
   });
 });

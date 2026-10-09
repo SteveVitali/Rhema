@@ -17,6 +17,7 @@ import {
 } from "@rhema/orchestrator";
 import type { EventDensity } from "@rhema/contracts";
 import type { Principal } from "./run-routes.js";
+import { logApiRouteError } from "./observability.js";
 
 export interface SseApiDeps extends OrchestratorDeps {
   /** Resolve the authenticated VIEWER (session cookie in prod). Shared with the run-creation route. */
@@ -128,13 +129,26 @@ export function createSseRoutes(deps: SseApiDeps): Hono {
               )
               .catch(() => undefined);
           },
-        }).finally(() => {
-          try {
-            controller.close();
-          } catch {
-            /* already closed by the client disconnect */
-          }
-        });
+        })
+          // OBS.1 — a rejected tail is no longer a silent close: the `void`+`finally` chain
+          // discarded rejections (no log line, an unhandled rejection — the "5xx-class failure
+          // with no app log" shape). Log the ONE structured line and ERROR the stream so the
+          // consumer sees a real failure (EventSource reconnects) instead of a clean EOF.
+          .catch((err: unknown) => {
+            logApiRouteError(c, err, { status: 500, msg: "sse_stream_failed" });
+            try {
+              controller.error(new Error("sse stream failed"));
+            } catch {
+              /* already errored/closed by the client disconnect */
+            }
+          })
+          .finally(() => {
+            try {
+              controller.close();
+            } catch {
+              /* already closed by the client disconnect */
+            }
+          });
       },
     });
     return new Response(stream, { headers: SSE_HEADERS });
