@@ -270,8 +270,8 @@ production router under flipped, unflipped, and AND-gate-off verdicts
 - **PR checks (read once at closeout):** `typecheck / lint / unit` — **pending**
   (recorded; the local 135/135 turbo + 5,254-test suite is the deterministic
   evidence; GD-MAINT.4-1's inherited-red waiver stands for the privsep leg only).
-- **Commits:** `1ddcff9` implementation + deferral rows; `<closeout>` this
-  build-memory advance.
+- **Commits:** `1ddcff9` implementation + deferral rows; `aa20b28` the
+  build-memory closeout.
 - **Memory:** `runs/SPA.14.md` (this file), `pr/SPA.14.md` (the PR body),
   BUILD_INDEX row 144, LEDGER advance (`lastCompleted: SPA.14`,
   `nextTicket: SPAF.5`, `chainTip → stevevitali/spa-14-surface-onboarding`),
