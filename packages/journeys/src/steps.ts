@@ -1780,6 +1780,63 @@ const P1_RUNSHEET: StepFn = async (ctx) => {
     await page.screenshot({ path: join(ctx.outDir, "p1-runsheet-390.png"), fullPage: true });
 };
 
+/** P1.outline (SPA.18) — `/p/:slug/outline` + `/outline/promote` at phone width, renderer-agnostic
+ *  (the runner's document listener pins `data-renderer` per leg): the §10.1 capability contract
+ *  holds under BOTH renderers — an existing outline renders its sections read-only (no `ed.*`
+ *  fields, no delete affordance, no save submit, no new-claim row), while a project with no
+ *  outline renders the designed not-found arm — either way an h1 is present. The promote sheet's
+ *  leg asserts the fact rails + the consent form, or its own not-found arm — never a blank. */
+const P1_OUTLINE: StepFn = async (ctx) => {
+    const { page, slug } = await p1PhoneProject(ctx);
+
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/outline`);
+    await assertNoOverflow(page, `/p/${slug}/outline @390×844`);
+    if ((await page.locator("h1").count()) === 0) {
+      throw new Error(`phone /p/${slug}/outline rendered without its heading`);
+    }
+    if ((await page.locator("[data-outline-sections]").count()) > 0) {
+      // §10.1's read-only arm — an outline exists, so the capability boundary is the assert: the
+      // edit grammar (`ed.*`), the delete affordance, the Save submit, and the new-claim row all
+      // stay withheld at phone width under either renderer.
+      for (const sel of [
+        'input[name^="ed."], textarea[name^="ed."], select[name^="ed."]',
+        "[data-outline-delete]",
+        "form[data-outline-editor] button[type='submit']",
+        "[data-add-claim]",
+      ]) {
+        if ((await page.locator(sel).count()) > 0) {
+          throw new Error(`phone /p/${slug}/outline leaks a desktop-capability control: ${sel}`);
+        }
+      }
+    } else {
+      const text = (await page.textContent("body")) ?? "";
+      if (!/no outline/i.test(text)) {
+        throw new Error(`phone /p/${slug}/outline rendered neither the read-only editor nor the not-found arm`);
+      }
+    }
+    await assertAxeClean(page, `phone /p/${slug}/outline`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-outline-390.png"), fullPage: true });
+
+    // The promotion sheet leg: the consent form carries the fact rails when a promotion read
+    // answers; the not-found arm carries the heading + copy. Both are designed states.
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/outline/promote?scope=thread`);
+    await assertNoOverflow(page, `/p/${slug}/outline/promote @390×844`);
+    if ((await page.locator("[data-promotion-estimate]").count()) > 0) {
+      for (const sel of ["[data-promotion-sources]", "[data-promotion-urls]"]) {
+        if ((await page.locator(sel).count()) === 0) {
+          throw new Error(`phone /p/${slug}/outline/promote renders the estimate without ${sel}`);
+        }
+      }
+    } else {
+      const text = (await page.textContent("body")) ?? "";
+      if (!/wasn.?t found/i.test(text)) {
+        throw new Error(`phone /p/${slug}/outline/promote rendered neither the consent sheet nor the not-found arm`);
+      }
+    }
+    await assertAxeClean(page, `phone /p/${slug}/outline/promote`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-outline-promote-390.png"), fullPage: true });
+};
+
 /** P1.app-new — /app/new's styled workspace chrome at 1440×900: no IDE frame, the three entry
  *  cards, axe clean. */
 const P1_APP_NEW: StepFn = async (ctx) => {
@@ -2344,6 +2401,7 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   "P1.project": P1_PROJECT,
   "P1.pill": P1_PILL,
   "P1.runsheet": P1_RUNSHEET,
+  "P1.outline": P1_OUTLINE,
   "P1.app-new": P1_APP_NEW,
   C1,
   "X1.voices": X1_VOICES,

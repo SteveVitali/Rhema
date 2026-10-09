@@ -45,7 +45,7 @@ import { FAVICON_SVG } from "./brand.js";
 import { COPY } from "./copy.js";
 import type { DataSource, SessionHeaders, ImportInput, ImportPreviewOutcome } from "./data.js";
 import { feedLabelMaps, feedRowsFor } from "./feed-labels.js";
-import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch } from "@rhema/api-client";
+import type { TimelineDto, RunSheetContextDto, GateCardDto, InboxItemDto, ProjectSettingsPatch, OutlineDto } from "@rhema/api-client";
 import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type ScopeRef } from "@rhema/commands";
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
@@ -1019,6 +1019,132 @@ export function createWebApp(deps: WebDeps): Hono {
     }),
   );
 
+  // ---- SPA.18 — the `outline` surface's read twins (design/22 §2 `p.outline`/`p.outlinePromote`;
+  //      REQ-BFF-1/11, REQ-DAT-4/6). The shared view-mapper + estimate helper below are the document
+  //      GET's own composition factored out — the twin serializes the SAME `GateOutlineView` rows,
+  //      the same estimate, the same `cited` fact; `?slug` (the artifact pick) + `?scope/threadId/
+  //      turnId` are server-echoed READ inputs (the document reads them off the URL verbatim), while
+  //      `?saved`/`?notice` flashes stay URL state the leaf renders, never payload. `compact` is
+  //      boot-owned (`deviceClass`) — the twin carries the raw `dto.editable`, the leaf ANDs it.
+
+  /** The document-composed outline rows (§7.3) — one mapper for the SSR GET and the BFF twin. */
+  const outlineViewFor = (o: NonNullable<OutlineDto["outline"]>) => ({
+    thesis: o.thesis,
+    ...(o.venue != null ? { venue: o.venue } : {}),
+    ...(o.targetLength != null ? { targetLength: o.targetLength } : {}),
+    ...(o.protocol != null ? { protocol: o.protocol } : {}),
+    ...(o.voice != null ? { voice: o.voice } : {}),
+    spine: o.spine,
+    sections: o.sections.map((s) => ({
+      ref: s.ref,
+      title: s.title,
+      ...(s.targetWords != null ? { targetWords: s.targetWords } : {}),
+      ...(s.function != null ? { function: s.function } : {}),
+      ...(s.entry != null ? { entry: s.entry } : {}),
+      ...(s.exit != null ? { exit: s.exit } : {}),
+      claims: s.claims.map((cl) => ({
+        id: cl.id,
+        text: cl.text,
+        provenanceKind: cl.provenance.kind,
+        provenance: {
+          ...(cl.provenance.turnId != null ? { turnId: cl.provenance.turnId } : {}),
+          ...(cl.provenance.url != null ? { url: cl.provenance.url } : {}),
+          ...(cl.provenance.notePath != null ? { notePath: cl.provenance.notePath } : {}),
+        },
+        unverified: cl.unverified === true,
+      })),
+    })),
+    ...(o.alternativesConsidered != null ? { alternativesConsidered: o.alternativesConsidered } : {}),
+    gaps: o.gaps.map((g) => ({
+      id: g.id,
+      needed: g.needed,
+      ...(g.relatedClaimId != null ? { relatedClaimId: g.relatedClaimId } : {}),
+      ...(g.sectionRef != null ? { sectionRef: g.sectionRef } : {}),
+    })),
+    ...(o.provenance?.urls != null
+      ? { urls: o.provenance.urls.map((u) => ({ url: u.url, unverified: u.unverified === true })) }
+      : {}),
+  });
+
+  /** The "Draft ≈N credits" line — EST.1's run-sheet estimator over the outline's own words. */
+  const outlineDraftEstimate = (dto: OutlineDto): number | undefined => {
+    try {
+      return surfaceEstimate({
+        workflow: "draft",
+        rigor: "standard",
+        modelTier: "base",
+        inputs: { words: dto.words ?? dto.outline?.targetLength ?? 0 },
+      }).estimateCredits;
+    } catch {
+      return undefined;
+    }
+  };
+
+  app.get(
+    "/bff/p/:slug/outline",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/outline` — the durable-editor twin. `editable` is the API's fact (the
+      // document's `&& !isPhoneRequest` AND lands on the leaf's `deviceClass`); a swallowed/null
+      // outline read answers the document's own not-found-arm twin — `{outline:null}` at 200 —
+      // and a missed slug keeps the 404 envelope (REQ-DAT-13's degrade-parity, verbatim).
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const dto = await deps.dataSource
+        .getOutline?.(session, row.id, c.req.query("slug") ? { slug: c.req.query("slug")! } : undefined)
+        .catch(() => null);
+      if (!dto || !dto.outline) return c.json({ outline: null });
+      const draftEstimateCredits = outlineDraftEstimate(dto);
+      const cited = dto.citedBy.runs.length > 0 || dto.citedBy.draftIds.length > 0;
+      return c.json({
+        outline: {
+          slug,
+          editable: dto.editable === true,
+          saveAction: `/p/${slug}/outline`,
+          deleteAction: `/p/${slug}/outline/delete`,
+          ...(draftEstimateCredits != null ? { draftEstimateCredits } : {}),
+          outline: outlineViewFor(dto.outline),
+          cited,
+        },
+      });
+    }),
+  );
+
+  app.get(
+    "/bff/p/:slug/outline/promote",
+    bffRoute(deps, async (c, session) => {
+      // `GET /p/:slug/outline/promote` — the consent-sheet twin: the api's verbatim facts (scope,
+      // source roster, URL set, estimate + cap) plus the scope/thread/turn the document reads off
+      // the URL (the form's hidden fields replay them — server-echoed, never client-invented).
+      // A refused/missing promotion read is the document's 404 arm → `{outlinePromotion:null}`.
+      const slug = c.req.param("slug") ?? "";
+      const row = await bffProjectRow(c, deps.dataSource, session, slug);
+      if (!row) return c.json({ error: "not_found" }, 404);
+      const scope = (c.req.query("scope") ?? "thread") as "thread" | "turn" | "research";
+      const threadId = c.req.query("threadId") ?? c.req.query("thread");
+      const turnId = c.req.query("turnId") ?? c.req.query("turn");
+      const promotion = await deps.dataSource
+        .getOutlinePromotion?.(session, row.id, {
+          scope,
+          ...(threadId ? { threadId } : {}),
+          ...(turnId ? { turnId } : {}),
+          ...(c.req.query("slug") ? { slug: c.req.query("slug")! } : {}),
+        })
+        .catch(() => null);
+      if (!promotion) return c.json({ outlinePromotion: null });
+      return c.json({
+        outlinePromotion: {
+          slug,
+          projectTitle: row.title,
+          promotion,
+          scope,
+          ...(threadId ? { threadId } : {}),
+          ...(turnId ? { turnId } : {}),
+        },
+      });
+    }),
+  );
+
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
   // flash — the inline boot script resolves dark|light|auto + the per-project paper pin before paint) and
@@ -1552,14 +1678,17 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // The Promote click — the ONLY outline-run creator (the sheet is the consent, like the run sheet's
-  // Run click). Re-renders the sheet with the started line on success.
+  // Run click). Re-renders the sheet with the started line on success. SPA.18 (REQ-BFF-1/2): the JSON
+  // arm posts the same scope/threadId/turnId/slug fields through `bodyFields`, answers the success
+  // as the `{ok,redirect:"/p/:slug"}` envelope (the identical destination the 302 carried), and maps
+  // the refusal codes through `bffFail` at the preserved status — never a redirect.
   app.post("/p/:project/outline/promote", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const scope = (str("scope") || "thread") as "thread" | "turn" | "research";
     try {
@@ -1573,10 +1702,15 @@ export function createWebApp(deps: WebDeps): Hono {
       if (!out) {
         // OBS.1 — the promote seam is unbound: a user-visible 502 gets its one structured line.
         logWebRouteError(c, { status: 502, msg: "outline_promote_unbound", errorClass: "UnboundSeam" });
-        return c.html(renderDocument(c.req.path, notFoundElement), 502);
+        return wantsJson(c)
+          ? c.json({ error: "upstream_unavailable" }, 502)
+          : c.html(renderDocument(c.req.path, notFoundElement), 502);
       }
-      return c.redirect(`/p/${slug}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}`, data: out });
     } catch (e) {
+      // the JSON arm answers the ApiError's stable `{error, detail?}` at the preserved status
+      // (thread_not_found 404 / run_in_progress 409 / ≥500 → 502) — never a redirect, never a sheet.
+      if (wantsJson(c)) return bffFail(c, e, { msg: "outline_promote_failed" });
       // a missing thread/turn or a live-run conflict re-renders the sheet with the honest notice —
       // never a silent failure.
       const notice =
@@ -1648,56 +1782,9 @@ export function createWebApp(deps: WebDeps): Hono {
         404,
       );
     }
-    const o = dto.outline;
-    const view = {
-      thesis: o.thesis,
-      ...(o.venue != null ? { venue: o.venue } : {}),
-      ...(o.targetLength != null ? { targetLength: o.targetLength } : {}),
-      ...(o.protocol != null ? { protocol: o.protocol } : {}),
-      ...(o.voice != null ? { voice: o.voice } : {}),
-      spine: o.spine,
-      sections: o.sections.map((s) => ({
-        ref: s.ref,
-        title: s.title,
-        ...(s.targetWords != null ? { targetWords: s.targetWords } : {}),
-        ...(s.function != null ? { function: s.function } : {}),
-        ...(s.entry != null ? { entry: s.entry } : {}),
-        ...(s.exit != null ? { exit: s.exit } : {}),
-        claims: s.claims.map((cl) => ({
-          id: cl.id,
-          text: cl.text,
-          provenanceKind: cl.provenance.kind,
-          provenance: {
-            ...(cl.provenance.turnId != null ? { turnId: cl.provenance.turnId } : {}),
-            ...(cl.provenance.url != null ? { url: cl.provenance.url } : {}),
-            ...(cl.provenance.notePath != null ? { notePath: cl.provenance.notePath } : {}),
-          },
-          unverified: cl.unverified === true,
-        })),
-      })),
-      ...(o.alternativesConsidered != null ? { alternativesConsidered: o.alternativesConsidered } : {}),
-      gaps: o.gaps.map((g) => ({
-        id: g.id,
-        needed: g.needed,
-        ...(g.relatedClaimId != null ? { relatedClaimId: g.relatedClaimId } : {}),
-        ...(g.sectionRef != null ? { sectionRef: g.sectionRef } : {}),
-      })),
-      ...(o.provenance?.urls != null
-        ? { urls: o.provenance.urls.map((u) => ({ url: u.url, unverified: u.unverified === true })) }
-        : {}),
-    };
-    let draftEstimateCredits: number | undefined;
-    try {
-      // EST.1 — the surface API (the outline card's Draft pre-fill agrees with the sheet).
-      draftEstimateCredits = surfaceEstimate({
-        workflow: "draft",
-        rigor: "standard",
-        modelTier: "base",
-        inputs: { words: dto.words ?? o.targetLength ?? 0 },
-      }).estimateCredits;
-    } catch {
-      draftEstimateCredits = undefined;
-    }
+    const view = outlineViewFor(dto.outline);
+    // EST.1 — the surface API (the outline card's Draft pre-fill agrees with the sheet).
+    const draftEstimateCredits = outlineDraftEstimate(dto);
     const cited = dto.citedBy.runs.length > 0 || dto.citedBy.draftIds.length > 0;
     return c.html(
       renderDocument(c.req.path, outlineElement, {
@@ -1718,21 +1805,29 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // The autosave: the form's `ed.*` fields decode through the SAME grammar the gate card posts → the
-  // api's PATCH `edit` → one new version pair. A no-JS Save and the island's debounced submit land here.
+  // api's PATCH `edit` → one new version pair. A no-JS Save and the island's debounced submit land
+  // here. SPA.18 (REQ-BFF-1/2): a JSON caller may post the SAME flat `ed.*` field map OR a structured
+  // `{edit}` body (`bodyFields` reads the JSON content-type) — the decode is identical either way;
+  // the success answer stays the patch result verbatim (the design/22 unchanged-shape twin — an
+  // `{ok:true, …}` envelope already), while the empty-edits no-op and the failure arm become
+  // `mutationOutcome`/`{error:"save_failed"}` 422 — a JSON caller is never handed a redirect.
   app.post("/p/:project/outline", async (c) => {
     const session = deps.session(c);
     if (!session) return c.json({ error: "unauthenticated" }, 401);
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
     if (!row) return c.json({ error: "not_found" }, 404);
-    const form = await c.req.parseBody();
-    const edits = decodeGateEditFields(form as Record<string, unknown>);
+    const body = await bodyFields(c);
+    const edits =
+      body.edit != null && typeof body.edit === "object" && !Array.isArray(body.edit)
+        ? (body.edit as Record<string, unknown>)
+        : (decodeGateEditFields(body) as Record<string, unknown>);
     const hasEdits = Object.values(edits).some(
       (v) => (Array.isArray(v) ? v.length > 0 : v != null && Object.keys(v).length > 0),
     );
-    if (!hasEdits) return c.redirect(`/p/${slug}/outline`);
+    if (!hasEdits) return mutationOutcome(c, { redirect: `/p/${slug}/outline` });
     const out = await deps.dataSource
-      .patchOutline?.(session, row.id, { edit: edits as Record<string, unknown> })
+      .patchOutline?.(session, row.id, { edit: edits })
       .catch((e: unknown) => e);
     if (out == null || out instanceof Error) {
       return wantsJson(c) ? c.json({ error: "save_failed" }, 422) : c.redirect(`/p/${slug}/outline`);
@@ -1741,19 +1836,23 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // Deletion protection (§7.3): a cited outline's DELETE answers 409 `outline_cited` — the page's
-  // notice names the rule instead of the artifact disappearing under a draft.
+  // notice names the rule instead of the artifact disappearing under a draft. SPA.18: the JSON arm
+  // rides `bffFail` (the `outline_cited` code passes through at 409 — never a redirect) and success
+  // envelopes the same `/p/:slug` target.
   app.post("/p/:project/outline/delete", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
     try {
       await deps.dataSource.deleteOutline?.(session, row.id, undefined);
-      return c.redirect(`/p/${slug}`);
+      return mutationOutcome(c, { redirect: `/p/${slug}` });
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        return c.redirect(`/p/${slug}/outline?notice=cited`);
+        return wantsJson(c)
+          ? bffFail(c, e, { msg: "outline_delete_refused" })
+          : c.redirect(`/p/${slug}/outline?notice=cited`);
       }
       throw e;
     }
@@ -1761,19 +1860,21 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // A gap's Answer — a standalone form (one input + button per gap row) → a `user_typed` claim lands in
   // the gap's section and the gap resolves. The gate card's `ed.gap.<id>` fields hit the same apply.
+  // SPA.18: the JSON arm reads `{text}` off `bodyFields`, keeps the blank-input no-op and the swallow,
+  // and answers the SAME `/outline?saved=1` target as `{ok,redirect}` — never a 302.
   app.post("/p/:project/outline/gaps/:gapId/answer", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
     const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
-    const text = typeof form.text === "string" ? form.text.trim() : "";
-    if (!text) return c.redirect(`/p/${slug}/outline`);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const body = await bodyFields(c);
+    const text = typeof body.text === "string" ? body.text.trim() : "";
+    if (!text) return mutationOutcome(c, { redirect: `/p/${slug}/outline` });
     await deps.dataSource
       .answerOutlineGap?.(session, row.id, c.req.param("gapId"), { text })
       .catch(() => null);
-    return c.redirect(`/p/${slug}/outline?saved=1`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/outline?saved=1` });
   });
 
   // ---- P1.13 — the Figures surface (§7.5): the pane, the card, the /visualize sheet, and the

@@ -89,8 +89,17 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
     // T8 is expected-red — it reports owed under both renderers, it does not gate.
     legNotes: { T8: "the token gate — owed-reporting, not a gate assert" },
   }),
-  outline: gate("outline", [], {
-    owed: ["no free step walks /p/:p/outline today — SPA.18 names its gate subset"],
+  // SPA.18 — `P1.outline` walks `/p/:p/outline` + `/outline/promote` at phone width under BOTH
+  // renderers (the §10.1 read-only contract + the not-found arms — renderer-agnostic). The step is
+  // `expected:"red"` pending its first preview leg (D-SPA.18-*) — a red miss reports `owed`, and a
+  // desktop-width + outline-bearing walk remains owed honestly: no free step can mint an outline
+  // (promotion is a paid run — REQ-VFY-10), so the desktop/editor arms ride this note until a seeded
+  // fixture or a paid leg can carry them.
+  outline: gate("outline", ["P1.outline"], {
+    owed: [
+      "P1.outline is expected:red pending its first preview leg — the Resend secret blocker (D-SPA.18-1) holds the two-leg run",
+      "desktop-width + outline-bearing legs (the editable form's ed.* grammar, autosave status, cited-409 flash) — no free step can mint an outline today; the dom.test parity legs stand in until a seeded fixture or paid leg carries them",
+    ],
   }),
   figures: gate("figures", [], {
     owed: ["no free step walks /p/:p/figures or /visualize today — SPA.19 names its gate subset"],
