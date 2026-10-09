@@ -346,8 +346,11 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // first IDE-framed flip: /p/:slug/export mounts <IdeChrome> — both flags gate together).
     // SPA.19 — `figures` joins on dev only (the /p/:p/figures* + /visualize leaves — unframed,
     // the three GETs consult on `figures` alone); prod waits for SPAF.10 (REQ-SEQ-10).
+    // SPA.20 — `run-sheet` joins on dev only, paired with the already-listed `ide-chrome` (the
+    // /p/:p/run leaf is IDE-framed — the key-level AND lights it under the chrome); prod waits
+    // for SPAF.11.
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {

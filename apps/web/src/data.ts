@@ -78,6 +78,8 @@ import type {
   PrincipalDto,
   CreateProjectDto,
   CreatedProjectDto,
+  EstimateRequestDto,
+  EstimateDto,
   ProjectSearchHitDto,
   ProjectGroupByDto,
   ProtocolCardDto,
@@ -296,6 +298,10 @@ export interface DataSource {
   ): Promise<RunSheetContextDto>;
   /** P1.06 (REQ-BILL-4) — the "don't ask under N credits" pref (`PUT /settings/consent`). */
   setConsentPref?(session: SessionHeaders, dontAskUnder: number): Promise<{ ok: true; dontAskUnder: number }>;
+  /** SPA.20 — the server-owned estimate revalidation (`POST /projects/:id/estimates`): the BFF
+   *  `/bff/p/:slug/estimate` twin's upstream (REQ-BFF-23). Optional — a fixture without it answers
+   *  the seam's unavailable refusal. */
+  estimate?(session: SessionHeaders, projectId: string, req: EstimateRequestDto): Promise<EstimateDto>;
   /** P1.06 — the palette's free-text search over the project index (`GET /projects/search?q=`). */
   searchPalette?(session: SessionHeaders, q: string, projectId?: string): Promise<ProjectSearchHitDto[]>;
   /** PRB.05 — write the user's disposition on a finding (§5.7; reversible until freeze). */
@@ -1148,6 +1154,9 @@ export function apiDataSource(
       createApiClient({ baseUrl, fetch: f, headers: session }).runSheetContext(projectId, args),
     setConsentPref: (session, dontAskUnder) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).setConsentPref(dontAskUnder),
+    // SPA.20 — the typed estimate twin's upstream (`POST /projects/:id/estimates`; REQ-BFF-23).
+    estimate: (session, projectId, req) =>
+      createApiClient({ baseUrl, fetch: f, headers: session }).estimate(projectId, req),
     searchPalette: (session, q, projectId) =>
       createApiClient({ baseUrl, fetch: f, headers: session }).searchProjects(q, undefined, {
         ...(projectId ? { projectId } : {}),
