@@ -7,7 +7,7 @@
 - **Ticket:** `docs/tickets/120_SPAF.7__prod-flip-billing.md` (manifest row 120)
 - **Branch:** `stevevitali/spaf-7-prod-flip-billing`, stacked on
   `stevevitali/spa-16-surface-billing` @ `9e18358` (`OPERATOR` merge policy, **not merged**).
-- **PR:** opened at closeout; `gh pr checks --watch=false` read once at closeout
+- **PR:** #142 — opened at closeout; `gh pr checks --watch=false` read once at closeout
   (result recorded in § PR checks read below; inherited `integration`/privsep red, if it
   reports, is waived per GD-MAINT.4-1 — classified, not repaired).
 - **Goal:** flip `billing` to the SPA on prod — `STAGES.prod.spaSurfaces += 'billing'`
@@ -178,6 +178,8 @@ All four appended to `docs/tickets/DEFERRALS.md` under `## SPAF.7` this run.
 
 ## PR checks read (closeout)
 
-_(Recorded after the closeout-docs push — single `gh pr checks <n> --watch=false` read; any
-`integration`/privsep red that reports is inherited, waived per GD-MAINT.4-1 — classified, not
-repaired.)_
+Single `gh pr checks 142 --watch=false` read after the closeout-docs push: **"no checks
+reported on the 'stevevitali/spaf-7-prod-flip-billing' branch"** (exit 1 — the pipeline
+had not registered checks at stamp time). Recorded verbatim rather than re-polled; any
+`integration`/privsep red that reports later is inherited, waived per GD-MAINT.4-1 —
+classified, not repaired.
