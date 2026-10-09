@@ -7,9 +7,11 @@
 - **Ticket:** `docs/tickets/114_SPAF.4__prod-flip-voices.md` (manifest row 114)
 - **Branch:** `stevevitali/spaf-4-prod-flip-voices`, stacked on
   `stevevitali/spa-13-surface-voices` @ `1388a48` (`OPERATOR` merge policy, **not merged**).
-- **PR:** #136 — opened at closeout; `gh pr checks --watch=false` read once at closeout
-  (recorded below; inherited `integration`/privsep red, if it reports, is waived per
-  GD-MAINT.4-1 — classified, not repaired).
+- **PR:** #136 — opened at closeout; `gh pr checks --watch=false` read once at closeout:
+  **"no checks reported on the branch"** at stamp time (the impl push + closeout-docs push
+  had not yet produced a completed/registered check — recorded honestly, not re-polled;
+  inherited `integration`/privsep red, if it reports, is waived per GD-MAINT.4-1 —
+  classified, not repaired).
 - **Goal:** flip `voices` to the SPA on prod — `STAGES.prod.spaSurfaces += 'voices'` as the
   one-line stage-fact PR; the operator merges + `pulumi up` deploys; rollback = revert +
   redeploy.
@@ -139,4 +141,8 @@ All four appended to `docs/tickets/DEFERRALS.md` under `## SPAF.4` this run.
 
 ## PR checks read (closeout)
 
-_(recorded at closeout below — single `gh pr checks --watch=false` read)_
+Single `gh pr checks 136 --watch=false` read after the closeout-docs push: **"no checks
+reported on the 'stevevitali/spaf-4-prod-flip-voices' branch"** (exit 1 — the pipeline had
+not registered checks at stamp time). Recorded verbatim rather than re-polled; any
+`integration`/privsep red that reports later is inherited, waived per GD-MAINT.4-1 —
+classified, not repaired.
