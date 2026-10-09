@@ -153,11 +153,18 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
     ],
     weeklyHolds: ["R6", "R9"],
   }),
+  // SPA.23 — the mount/registry seam lands the five leaves (`/p/:p`, `/v/:v`, `/v/:n/diff/:m`,
+  // `/a/:artifactId`, `/revisions/:cid`); the steps stay the carried legs the nightly already
+  // walks — renderer-agnostic by construction. What is owed is the ticket's own preview two-leg +
+  // rollback drill — the Resend secret blocker (D-SPA.23-*) holds the pr-<n> run.
   editor: gate("editor", ["N8", "P1.pill", "P1.project", "R7", "T2.badge", "T6", "T7"], {
     legNotes: {
       N8: "type → fork → save, no confirm",
       "P1.pill": "the pill legs + the phone reader-Page markers",
     },
+    owed: [
+      "the SPA.23 preview two-leg + rollback drill (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.23-1) holds the pr-<n> run; the dom.test + bff parity legs stand in",
+    ],
   }),
   "ide-chrome": gate("ide-chrome", ["P1.project"], {
     legNotes: {

@@ -7,7 +7,7 @@
 //
 // Text-agnostic like every surface component — all strings arrive via labels.
 
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode, Ref } from "react";
 import type { GateKind } from "@rhema/contracts";
 import type { DoNothingOutcome, GateCardModel } from "@rhema/findings-core";
 
@@ -37,6 +37,11 @@ export interface ApprovalRowProps {
   readonly card: ReactNode;
   /** render the row open (e.g. deep-linked `?gate=`). */
   readonly defaultOpen?: boolean;
+  /**
+   * SPA.23 — a ref onto the row's `<details>`: React renderers mount `useGatePresence` on it
+   * (an innerHTML presence `<script>` never executes under React). SSR callers omit it.
+   */
+  readonly rowRef?: Ref<HTMLDetailsElement>;
   readonly labels: ApprovalRowLabels;
 }
 
@@ -51,9 +56,10 @@ const summaryStyle: CSSProperties = {
 };
 
 /** The §5.11 approval row + read-before-approve sheet. */
-export function ApprovalRow({ gateId, model, artifact, card, defaultOpen, labels }: ApprovalRowProps): ReactNode {
+export function ApprovalRow({ gateId, model, artifact, card, defaultOpen, rowRef, labels }: ApprovalRowProps): ReactNode {
   return (
     <details
+      {...(rowRef != null ? { ref: rowRef } : {})}
       data-approval-row={gateId}
       data-kind={model.kind}
       data-blocking={model.blocking ? "true" : "false"}

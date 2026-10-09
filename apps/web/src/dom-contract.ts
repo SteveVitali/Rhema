@@ -1408,6 +1408,7 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     a("data-reconstruct-text", "conditional", "pages.tsx"),
     a("data-returned", "conditional", "pages.tsx"),
     u("restored", "conditional", "server.ts restore redirect"),
+    u("layout", "conditional", "server.ts + spa editor leaf", "the §5.8 compare layout pick"),
     u("focus", "conditional", "ide island ?focus=1 deep link"),
     a("data-suggestion-replacement", "conditional", "editor decorations + ide chrome preview"),
   ],

@@ -354,8 +354,12 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // waits for SPAF.12 (REQ-SEQ-10).
     // SPA.22 — `run-report` joins on dev only, paired with `ide-chrome` (the /p/:p/r/:runId leaf
     // is IDE-framed — the key-level AND lights it under the chrome); prod waits for SPAF.13.
+    // SPA.23 — `editor` joins on dev only, paired with `ide-chrome` (the /p/:p + /p/:p/v/* +
+    // diff/artifact/revisions leaves are IDE-framed — the key-level AND lights them under the
+    // chrome); prod waits for SPAF.14 (the LAST surface flip — it sits after SPA.24 per the
+    // manifest note: `editor` flips only when both editor halves land).
     // Preview stays [] and flips only via `rhema:spaSurfaces`; prod flips on SPAF.* commits.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier", "run-report"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier", "run-report", "editor"],
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
