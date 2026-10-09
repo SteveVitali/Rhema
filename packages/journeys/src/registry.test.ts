@@ -22,12 +22,15 @@ describe("the journey step registry", () => {
         // SPA.11 split T2→T2.{badge,matrix} and R8→R8.{showcase,prefs,inbox} the same way.
         // SPA.18 added P1.outline (the phone-width /outline + /outline/promote leg — red pending
         // its first preview run, D-SPA.18-*). SPA.19 added P1.figures (the pane/card/visualize
-        // leg — red pending its first preview run, D-SPA.19-*).
-        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new", "P1.outline", "P1.figures",
+        // leg — red pending its first preview run, D-SPA.19-*). SPA.21 added P1.dossier (the
+        // phone-width dossier leg — red pending its first preview run, D-SPA.21-*).
+        "P1.public", "P1.project", "P1.pill", "P1.runsheet", "P1.app-new", "P1.outline", "P1.figures", "P1.dossier",
         "R1", "R4", "R5", "R6", "R7", "R8.showcase", "R8.prefs", "R8.inbox", "R9",
         "X1.voices", "X1.usage", "X1.home", "X1.inbox", "X1.detail",
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
-        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16",
+        // SPA.21 added T12F/T13F — the seeded-dossier free twins of T12/T13 (REQ-VFY-10's owed
+        // mutation coverage — red pending their first live leg, D-SPA.21-*).
+        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T12F", "T13F",
         // STB.5b added B16/B17/B18A/B18B/B19A/B19B/B19C — the BL-16–19 bounded paid live legs
         // (all `red` until a leg lands its live asserts; B19C is the pre-registered cap drop).
         "B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C",

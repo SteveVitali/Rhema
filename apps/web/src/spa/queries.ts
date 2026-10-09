@@ -445,6 +445,8 @@ export interface BffIdeBag {
   readonly paperThemeUrl?: string;
   readonly files?: FilesDto;
   readonly chat?: ChatPanelDto;
+  /** §7.4's anchored-composer seed — only surfaces that offer "Ask about this draft" emit it. */
+  readonly chatAskAbout?: { readonly ref: string; readonly version?: number; readonly block?: string };
 }
 
 /** `GET /bff/p/:slug/import` — project facts + the ide bag for the chrome publish. */
@@ -883,3 +885,114 @@ export function postRunSheetEstimate(slug: string, req: EstimateRequestDto): Pro
     json: req,
   });
 }
+
+// ---- SPA.21 — the `dossier` surface's twins (REQ-BFF-1/8/9/11, REQ-DAT-1/4/5; design/22 §2
+// `p.review` + `p.obligationNew` rows — the heaviest search surface). `GET /bff/p/:slug/review/:runId`
+// is the document GET's SHARED composition verbatim: the dossier carries RAW findings + `rigor` so
+// the leaf's client-ported `filterFindings`/`applySeverityBudget` (design/22 OQ8 option (b) — the
+// filter keys stay URL state and never refetch) re-derives the same `visible` set the SSR handler
+// computed. What rides the key is only what the SERVER still owns: the `?bulk=`/`?bsec` preview
+// read, the `?gate=` focused-card lookup, the `?disposed`/`?applied`/`?promoted`/`?obligated`/
+// `?ferr`/`?fmsg`/`?bulkdone`/`?bulkskip` flash echoes (a mutation's redirect lands the changed
+// server truth + the notice in one read), and `?focus` (the `initialView:"focus"` seed). `sev`/
+// `kind`/`disp`/`sec`/`url`/`sug`/`obl`/`triage` are the leaf's own — the dossier's filters are
+// the one surface that derives client-side. ----
+
+import type { DossierViewData, DossierViewState, TriageSurfaceState } from "../dossier-view.js";
+
+/**
+ * `GET /bff/p/:slug/review/:runId` — the dossier aggregate twin. `dossier` is `DossierViewData`
+ * verbatim; `dossierView` is the server-decided arms (`bulk`, `bulkDone`, `notice`, `focusedGate` —
+ * `filters`/`triage` echo the forwarded query but the leaf overrides them from its own validated
+ * search); `triage.savedFindingId` echoes `?disposed`; `project`/`paperTheme`/`appTheme`/`ide` are
+ * the chrome shell slice the leaf republishes (REQ-SEQ-12).
+ */
+export interface BffDossierTwin {
+  readonly dossier: DossierViewData;
+  readonly dossierView: DossierViewState;
+  readonly triage?: TriageSurfaceState;
+  readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+  readonly paperTheme: string;
+  readonly appTheme?: string;
+  readonly ide: BffIdeBag;
+}
+
+/** The twin's server-owned search keys — verbatim the document's `c.req.query()` grammar. */
+export interface DossierTwinSearch {
+  readonly disposed?: string;
+  readonly gate?: string;
+  readonly bulk?: string;
+  readonly bsec?: string;
+  readonly bulkdone?: string;
+  readonly bulkskip?: string;
+  readonly applied?: string;
+  readonly promoted?: string;
+  readonly obligated?: string;
+  readonly ferr?: string;
+  readonly fmsg?: string;
+  readonly focus?: string;
+}
+
+const DOSSIER_TWIN_KEYS = [
+  "disposed",
+  "gate",
+  "bulk",
+  "bsec",
+  "bulkdone",
+  "bulkskip",
+  "applied",
+  "promoted",
+  "obligated",
+  "ferr",
+  "fmsg",
+  "focus",
+] as const;
+
+export const dossierQuery = (slug: string, runId: string, search: DossierTwinSearch = {}) =>
+  queryOptions({
+    queryKey: [
+      "bff",
+      "p",
+      slug,
+      "review",
+      runId,
+      JSON.stringify(
+        DOSSIER_TWIN_KEYS.map((k) => [k, search[k] ?? null] as const).filter(
+          ([, v]) => v != null && v !== "",
+        ),
+      ),
+    ],
+    queryFn: () => {
+      const qs = new URLSearchParams();
+      for (const k of DOSSIER_TWIN_KEYS) {
+        const v = search[k];
+        if (v != null && v !== "") qs.set(k, v);
+      }
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      return bffFetch<BffDossierTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/review/${encodeURIComponent(runId)}${suffix}`,
+      );
+    },
+    retry: retryPolicy,
+  });
+
+/** `GET /bff/p/:slug/obligations/new` — the one-field obligation sheet's composition verbatim:
+ *  slug, project title, and the `safeBack`-resolved `back` (the `?back` key's `/p/…` confinement
+ *  runs server-side, never client-derived). The create POST is the SAME `/p/:slug/obligations`
+ *  document path — the leaf's JSON branch gets `{ok,redirect}` or `{error}` verbatim. */
+export interface BffObligationNewTwin {
+  readonly obligationNew: {
+    readonly slug: string;
+    readonly projectTitle: string;
+    readonly back: string;
+  };
+}
+export const obligationNewQuery = (slug: string, back?: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "obligations", "new", back ?? ""],
+    queryFn: () =>
+      bffFetch<BffObligationNewTwin>(
+        `/bff/p/${encodeURIComponent(slug)}/obligations/new${back ? `?back=${encodeURIComponent(back)}` : ""}`,
+      ),
+    retry: retryPolicy,
+  });

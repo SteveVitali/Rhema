@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createTestDb } from "../testing/pglite.js";
 import {
   seedShowcaseProject,
+  seedWritableDossier,
   SHOWCASE_FIXTURE_CLAIMS,
   type ShowcaseSeedDeps,
 } from "./showcase.js";
@@ -146,6 +147,75 @@ describe("the Showcase dossier seed (§15.4)", () => {
     const r2 = await seedShowcaseProject(db, depsFor("ws_sx2", "usr_sx2"));
     expect(r2.slug).toBe(SHOWCASE_SLUG);
     expect(r2.projectId).not.toBe(r.projectId);
+    await db.close();
+  });
+
+  // SPA.21 (REQ-VFY-10) — the seeded WRITABLE dossier the journeys' T12F/T13F free mutation legs
+  // walk: the same fixture dossier on a NORMAL project (showcase=false ⇒ the api's
+  // showcaseReadOnlyGuard accepts its finding writes), idempotent on its slug base, coexisting with
+  // the workspace's read-only Showcase.
+  it("the writable journey dossier seeds showcase=false, coexists with the Showcase, and is slug-idempotent", async () => {
+    const db = await createTestDb();
+    const { workspaceId, ownerId } = await ownerAndWorkspace(db);
+
+    const sx = await seedShowcaseProject(db, depsFor(workspaceId, ownerId));
+    const w = await seedWritableDossier(db, {
+      ...depsFor(workspaceId, ownerId),
+      slugBase: "jrn-dossier",
+      title: "JRN-seed dossier",
+      seedLabel: "journey-dossier-seed",
+    });
+    expect(w.slug).toBe("jrn-dossier");
+    expect(w.projectId).not.toBe(sx.projectId);
+    expect(w.reviewRunId).toBeTruthy();
+
+    const p = (
+      await db.query(`select title, showcase from projects where id = $1`, [w.projectId])
+    ).rows[0] as { title: string; showcase: boolean };
+    expect(p).toEqual({ title: "JRN-seed dossier", showcase: false });
+
+    // the writable dossier carries the full fixture substrate — findings incl. the
+    // suggestion-bearing anchor (the T13F Apply leg's arm) + the triage ledger rows.
+    const findings = (
+      await db.query(
+        `select count(*)::int n, count(*) filter (where suggestion is not null)::int sug
+           from findings where correspondence_id = $1`,
+        [w.reviewCorrId],
+      )
+    ).rows[0] as { n: number; sug: number };
+    expect(findings.n).toBeGreaterThan(0);
+    expect(findings.sug).toBeGreaterThanOrEqual(1);
+    // the frozen_by audit blob names the journey seed, never "showcase-seed".
+    const fb = (
+      await db.query(
+        `select frozen_by->>'label' as label from drafts where project_id = $1 and frozen_by is not null limit 1`,
+        [w.projectId],
+      )
+    ).rows[0] as { label: string } | undefined;
+    expect(fb?.label).toBe("journey-dossier-seed");
+
+    // slug-idempotent: a second call returns the same ids and writes no second project.
+    const w2 = await seedWritableDossier(db, {
+      ...depsFor(workspaceId, ownerId),
+      slugBase: "jrn-dossier",
+      title: "JRN-seed dossier",
+      seedLabel: "journey-dossier-seed",
+    });
+    expect(w2).toEqual(w);
+    const n = (
+      await db.query(
+        `select count(*)::int n from projects where workspace_id = $1 and slug like 'jrn-dossier%'`,
+        [workspaceId],
+      )
+    ).rows[0] as { n: number };
+    expect(n.n).toBe(1);
+    // …and the Showcase stays exactly one row — the writable seed never touches it.
+    const sxN = (
+      await db.query(`select count(*)::int n from projects where workspace_id = $1 and showcase`, [
+        workspaceId,
+      ])
+    ).rows[0] as { n: number };
+    expect(sxN.n).toBe(1);
     await db.close();
   });
 });

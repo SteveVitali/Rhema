@@ -7,8 +7,10 @@
 // DB-lifted token; ADR-016). No leg launches a run — the own-tenant delivered Review is the one the
 // weekly paid leg's earlier steps (N6/N11/R9) already produced on test+jrn-a.
 
+import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "playwright";
 import pg from "pg";
+import { seedWritableDossier, type MigrationDb } from "@rhema/db";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable } from "./occlusion.js";
 import { assertBundleParity, createDraftProject } from "./steps.js";
@@ -1076,6 +1078,184 @@ const T13: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+/** The leg's own-tenant ids (workspace + owner user) off the non-RLS auth tables — the same
+ *  `app.tenant_id` resolution stb5b's `tenantIdFor` carries, plus the owner the seed needs. */
+async function tenantIdentity(email: string): Promise<{ tenantId: string; ownerId: string }> {
+  const r = await db().query(
+    `select wm.workspace_id as tenant, u.id as owner
+       from workspace_members wm join "user" u on u.id = wm.user_id
+      where u.email = $1 order by wm.workspace_id limit 1`,
+    [email],
+  );
+  const row = r.rows[0] as { tenant: string; owner: string } | undefined;
+  if (!row) throw new Error(`no workspace row for ${email} (tenant not provisioned yet)`);
+  return { tenantId: row.tenant, ownerId: row.owner };
+}
+
+/** A `pg.PoolClient` satisfies `MigrationDb` — `exec` is the same call sans rows. */
+function migrationDbOf(client: pg.PoolClient): MigrationDb {
+  return {
+    exec: (sql) => client.query(sql),
+    query: (sql, params) => client.query(sql, params),
+  };
+}
+
+/**
+ * SPA.21 (REQ-VFY-10) — provision the SEEDED WRITABLE dossier on the leg's own tenant at $0: the
+ * Showcase fixture bundle on a NORMAL project (`showcase=false`), so the api's
+ * `showcaseReadOnlyGuard` does not freeze its finding writes — the paid T12/T13 legs' free twins
+ * walk THIS dossier. Idempotent on the per-leg slug base (`jrn-<tag>-dossier`): T12F and T13F seed
+ * separate projects so one's dispositions never poison the other's asserts. Needs
+ * `JOURNEY_DATABASE_URL` — unset ⇒ the step reports owed, never fabricates.
+ */
+async function seededWritableDossier(email: string, tag: string): Promise<{ slug: string; runId: string }> {
+  const { tenantId, ownerId } = await tenantIdentity(email);
+  const client = await db().connect();
+  try {
+    await client.query("begin");
+    // tenant-scoped like the api's txRunner — no-op under a BYPASSRLS system DSN (ADR-093),
+    // load-bearing when JOURNEY_DATABASE_URL binds an RLS role.
+    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const res = await seedWritableDossier(migrationDbOf(client), {
+      workspaceId: tenantId,
+      ownerId,
+      ids: () => randomUUID(),
+      slugBase: `jrn-${tag}-dossier`,
+      title: `JRN ${tag} dossier (seeded writable)`,
+      seedLabel: "journey-dossier-seed",
+    });
+    await client.query("commit");
+    return { slug: res.slug, runId: res.reviewRunId };
+  } catch (e) {
+    await client.query("rollback").catch(() => undefined);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/** T12F (RED; nightly $0; SPA.21) — T12's write legs on the SEEDED writable dossier instead of the
+ *  weekly paid run's own-tenant Review: a defer disposition + note round-trips across a reload,
+ *  Add-to-obligations lands `?obligated`, and `/obligations/new` files a user row the export
+ *  dialog's summary lists. Red pending its first live leg (the preview blocker — D-SPA.21-1). */
+const T12F: StepFn = async (ctx) => {
+  const { page, email } = await ctx.freshUser("t12f");
+  const { slug, runId } = await seededWritableDossier(email, "t12f");
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+
+  // ---- the disposition round-trip (T12 verbatim, on the seed) ----------------------------
+  const note = `${ctx.marker("NOTE")} — deferred on the seeded leg`;
+  const listCard = (id?: string) =>
+    page.locator(`[data-findings-list] [data-finding${id ? `="${id}"` : ""}]`);
+  const card = listCard().first();
+  const fid = (await card.getAttribute("data-finding")) ?? "";
+  if (!fid) throw new Error("the seeded dossier renders no finding card to dispose");
+  const form = card.locator("[data-disposition-form]");
+  await form.locator("input[data-note]").fill(note);
+  const defer = form.locator('button[data-verb="defer"]');
+  await assertClick(defer, "the Defer verb");
+  await defer.click();
+  await page.waitForURL(/disposed=/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+  const cardAfter = listCard(fid);
+  if ((await cardAfter.locator('[data-disposition="defer"]').count()) === 0) {
+    throw new Error("the seeded dossier's deferred finding shows no defer disposition after reload");
+  }
+  const saved = await cardAfter.locator("input[data-note]").inputValue().catch(() => "");
+  if (!saved.includes(ctx.marker("NOTE"))) {
+    throw new Error(`the seeded dossier's disposition note did not round-trip ("${saved.slice(0, 80)}")`);
+  }
+
+  // ---- Add-to-obligations on a different finding (?obligated notice) ----------------------
+  const oblBtn = page.locator("[data-add-obligation]").first();
+  if ((await oblBtn.count()) > 0) {
+    await assertClick(oblBtn, "the Add-to-obligations control");
+    await oblBtn.click();
+    await page.waitForURL(/obligated=/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
+    if ((await page.locator('[data-finding-notice="obligated"]').count()) === 0) {
+      throw new Error("the ?obligated= landing shows no obligated notice");
+    }
+  }
+
+  // ---- /obligations/new files a source:'user' row the export summary lists ---------------
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`);
+  const exportBefore = await page.locator("[data-obligation-id]").count();
+  const oblTitle = ctx.marker("USER-OBL");
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/obligations/new`);
+  await page.fill('input[name="title"]', oblTitle);
+  await page.locator('select[name="severity"]').selectOption("minor");
+  const file2 = page
+    .locator('[data-obligation-form] button[type="submit"], [data-obligation-form] button:not([type])')
+    .first();
+  await assertClick(file2, "the File obligation control");
+  await file2.click();
+  await page.waitForURL(/obligation=new/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`);
+  const items = page.locator("[data-obligation-id]");
+  const after = await items.count();
+  if (after !== exportBefore + 1) {
+    throw new Error(`the export dialog's obligation list moved ${exportBefore} → ${after}, expected +1`);
+  }
+  assertBundleParity(ctx);
+};
+
+/** T13F (RED; nightly $0; SPA.21) — T13's Apply + bulk legs on the seeded writable dossier: the
+ *  fixture's blocking anchor finding IS suggestion-bearing, so Apply lands `?applied=` and
+ *  retracts its own control, and the bulk preview's per-item checklist precedes the `?bulkdone=`
+ *  dispatch — the arms T13 could only prove when the weekly run happened to carry them. Red
+ *  pending its first live leg (the preview blocker — D-SPA.21-1). */
+const T13F: StepFn = async (ctx) => {
+  const { page, email } = await ctx.freshUser("t13f");
+  const { slug, runId } = await seededWritableDossier(email, "t13f");
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+
+  // ---- Apply (the seed's anchor finding carries a suggestion) -----------------------------
+  const apply = page.locator("[data-apply]").first();
+  if ((await apply.count()) === 0) {
+    throw new Error("the seeded dossier carries no suggestion-bearing finding — the fixture regressed");
+  }
+  await assertClick(apply, "the Apply control");
+  const appliedFid = await page.locator("[data-apply-form]").first().getAttribute("data-apply-form");
+  await apply.click();
+  await page.waitForURL(/applied=/, { timeout: 20_000 }).catch(() => settleNav(page, ctx));
+  if (!/applied=/.test(page.url())) {
+    throw new Error(`the Apply click did not land on ?applied= (${page.url()})`);
+  }
+  if ((await page.locator('[data-finding-notice="applied"]').count()) === 0) {
+    throw new Error("the ?applied= landing shows no applied notice");
+  }
+  if (appliedFid) {
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+    const again = await page.locator(`[data-finding="${appliedFid}"] [data-apply]`).count();
+    if (again > 0) throw new Error("the applied finding still offers Apply on the seeded dossier");
+  }
+
+  // ---- the bulk preview's per-item checklist → the ?bulkdone= dispatch ---------------------
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}?bulk=defer_minor`);
+  let preview = page.locator("[data-bulk-preview]");
+  if ((await preview.count()) === 0 || (await preview.locator('input[name="only"]').count()) === 0) {
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}?bulk=apply_notes`);
+    preview = page.locator("[data-bulk-preview]");
+  }
+  if ((await preview.count()) === 0) throw new Error("no bulk action produced a preview on the seed");
+  const only = await preview.locator('input[name="only"]').count();
+  if (only === 0) {
+    const skipped = await preview.locator("[data-bulk-skipped] li").count();
+    throw new Error(`the seeded bulk preview carries no actionable rows (${skipped} skipped)`);
+  }
+  const confirm = preview.locator("button[data-bulk-confirm]");
+  await assertClick(confirm, "the bulk confirm control");
+  await confirm.click();
+  await page.waitForURL(/bulkdone=/, { timeout: 30_000 }).catch(() => settleNav(page, ctx));
+  if (!/bulkdone=/.test(page.url())) {
+    throw new Error(`the bulk dispatch did not land on ?bulkdone= (${page.url()})`);
+  }
+  if ((await page.locator("[data-bulk-done]").count()) === 0) {
+    throw new Error("the bulk landing shows no done notice");
+  }
+  assertBundleParity(ctx);
+};
+
 /** T14 (GREEN; paid) — D-P1.19-1's live halves on the returning tenant: the badge counts only
  *  approvals+decisions; an escalated decision row lands immediately INSIDE quiet hours (never
  *  deferred) while the leg's run_finished rows stay invisible until the window ends; a Decisions
@@ -1369,6 +1549,9 @@ export const STB5A_IMPLS: Readonly<Record<string, StepFn>> = {
   T11,
   T12,
   T13,
+  // SPA.21 — the seeded-dossier free twins of T12/T13 (REQ-VFY-10).
+  T12F,
+  T13F,
   T14,
   T15,
   T16,

@@ -58,11 +58,12 @@ const TEXT_EXT = new Set([".js", ".mjs", ".cjs", ".json", ".html", ".css", ".map
  *  imports by design — COPY table, doc meta, the DOM-contract manifest, the boot wire shape, the
  *  SPA.11 gate-card composition shared SSR↔SPA, the SPA.12 approval-settings composition shared
  *  SSR↔SPA, the SPA.14 FilesPane label bag + the ONB.1 hold-store island/SPA shared, the SPA.16
- *  billing-code→copy mapper + the SPA.20 run-sheet label bag shared SSR↔SPA).
+ *  billing-code→copy mapper + the SPA.20 run-sheet label bag shared SSR↔SPA, the SPA.21
+ *  dossier-view/chat-pane compositions shared SSR↔SPA verbatim).
  *  Anything else under apps/web/src (server.ts, data.ts, pages.tsx, render.tsx, client islands…)
  *  reaching a `public/spa` map is server/island code bundled for the browser — a violation. */
 const SPA_WEB_SRC_ALLOW =
-  /apps\/web\/src\/(spa\/|copy\.|doc-meta\.|dom-contract\.|spa-boot\.|gate-card\.|approval-settings\.|files-labels\.|client\/hold-store\.|state-map\.|billing-copy\.|run-sheet-labels\.)/;
+  /apps\/web\/src\/(spa\/|copy\.|doc-meta\.|dom-contract\.|spa-boot\.|gate-card\.|approval-settings\.|files-labels\.|client\/hold-store\.|state-map\.|billing-copy\.|run-sheet-labels\.|dossier-view\.|chat-pane\.)/;
 
 /** Extra provenance bans applied only inside the SPA bundle's maps (REQ-FW-9's emitted-graph leg):
  *  `@rhema/api-client` is `import type`-only in the client — any dist file in the map means a

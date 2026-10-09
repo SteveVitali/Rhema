@@ -1140,6 +1140,26 @@ export const DOM_CONTRACT: Record<DomContractSurface, readonly DomContractEntry[
     u("bulk", "conditional", "bulk-select param"),
     u("triage", "conditional", "ide island ⌘⇧T triage-mode param"),
     a("data-armed", "conditional", "ide island + spa chrome", "rebut/escalate verb armed state"),
+    // SPA.21 — the phone-width §10.1 arm: below ~768px the Desk is display:none, so the chat
+    // surface mounts inside the Page (SSR pages.tsx + the SPA leaf emit the section verbatim).
+    a(
+      "data-phone-chat",
+      "conditional",
+      "pages.tsx + spa/surfaces/dossier.tsx",
+      "§10.1 phone dossier chat section (the Desk is display:none at phone width)",
+    ),
+    n(
+      "next",
+      "conditional",
+      "pages.tsx + spa/surfaces/dossier.tsx",
+      "the obligation sheet's safe-back hidden field (the POST echoes it for the redirect)",
+    ),
+    u(
+      "back",
+      "conditional",
+      "pages.tsx + server.ts safeBack",
+      "the obligation sheet's ?back= deep link — /p/…-confined at BOTH seams",
+    ),
   ],
   // ---- /p/:p/r/:runId ----
   "run-report": [

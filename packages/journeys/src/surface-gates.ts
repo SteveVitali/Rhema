@@ -126,9 +126,15 @@ export const SURFACE_GATES: Readonly<Record<SpaSurface, SurfaceGate>> = {
       "the SPA.20 preview two-leg + rollback drill (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.20-1) holds the pr-<n> run; the dom.test + bff.test parity legs stand in",
     ],
   }),
-  dossier: gate("dossier", ["N7", "T1"], {
+  // SPA.21 — the F9 subset plus the REQ-VFY-10 seeded-mutation sub-steps this surface owed:
+  // T12F/T13F walk T12/T13's write legs on the seeded writable dossier (`seedWritableDossier` —
+  // the Showcase fixture on a `showcase=false` project), P1.dossier walks the dossier at phone
+  // width under both renderers. All three are `expected:"red"` pending their first live leg (the
+  // Resend secret blocker — D-SPA.21-*) — a red miss reports `owed`, it does not gate.
+  dossier: gate("dossier", ["N7", "T1", "T12F", "T13F", "P1.dossier"], {
     owed: [
-      "the T12F/T13F seeded-dossier mutation free sub-steps (REQ-VFY-10) — SPA.21 owns them",
+      "the SPA.21 preview two-leg + rollback drill (A: ssr, B: flag-on --expect-renderer spa) — the Resend secret blocker (D-SPA.21-1) holds the pr-<n> run; the dom.test + bff parity legs stand in",
+      "T12F/T13F/P1.dossier are expected:red until their first live leg — red misses report owed; the seeded writable dossier provisioning (seedWritableDossier + the JOURNEY_DATABASE_URL arm) is committed and unit-tested",
     ],
     weeklyHolds: ["T10", "T11", "T12", "T13"],
   }),

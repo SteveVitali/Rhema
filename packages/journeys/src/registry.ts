@@ -266,6 +266,30 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: true,
   },
   {
+    // SPA.21 (REQ-VFY-10) — T12's write legs as a FREE step on the seeded writable dossier
+    // (`seedWritableDossier` — the Showcase fixture on a normal project, `showcaseReadOnlyGuard`-
+    // exempt) instead of the weekly run's own-tenant Review. `expected:"red"` until its first
+    // live leg (the Resend secret blocker — D-SPA.21-1); a red miss reports `owed`, never gates.
+    id: "T12F",
+    journey: "both",
+    asserts:
+      "on the seeded writable dossier: a defer disposition + note round-trips a reload, Add-to-obligations lands ?obligated, and /obligations/new files a user row the export summary lists (T12's free twin — the seeded-dossier sub-steps REQ-VFY-10 owed)",
+    owner: "SPA.21",
+    expected: "red",
+    paid: false,
+  },
+  {
+    // SPA.21 — T13's free twin on the same seeded dossier: the fixture's anchor finding carries a
+    // suggestion, so the Apply + bulk-preview arms run deterministically at $0.
+    id: "T13F",
+    journey: "both",
+    asserts:
+      "on the seeded writable dossier: Apply on the suggestion-bearing anchor finding lands ?applied= and retracts its control; a bulk action's per-item checklist precedes the ?bulkdone= dispatch (T13's free twin — REQ-VFY-10)",
+    owner: "SPA.21",
+    expected: "red",
+    paid: false,
+  },
+  {
     id: "T14",
     journey: "both",
     asserts:
@@ -351,6 +375,17 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "phone",
     asserts:
       "/p/:p/figures, /p/:p/figures/:id, and /p/:p/visualize at phone width under either renderer: the pane renders its rows or the designed empty arm; a missing card id lands the not-found arm; the sheet renders the consent form (request/specKind/insist/estimate) — ?request= prefills verbatim — or its own not-found arm; overflow + axe clean, never a blank",
+    owner: "UX.2",
+    expected: "red",
+    paid: false,
+  },
+  {
+    // SPA.21 — `expected:"red"` until its first live leg proves it (the preview secret blocker —
+    // D-SPA.21-1); a red-step failure reports `owed`, it never gates.
+    id: "P1.dossier",
+    journey: "phone",
+    asserts:
+      "the dossier (/p/:p/review/:runId via /showcase) at phone width under either renderer: the letter arm + finding cards render, the §10.1 capability boundary holds (no bulk affordances mount — the Desk is display:none), overflow + axe clean, never a blank",
     owner: "UX.2",
     expected: "red",
     paid: false,

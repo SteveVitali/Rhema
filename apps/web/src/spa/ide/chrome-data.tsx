@@ -134,8 +134,13 @@ export interface IdeTwinShell {
  * to the typed `PaletteData`, the panes that are data (findings/timeline/feed/inbox/status),
  * and `filesBody` built through the SAME `FilesPane` the SSR renders. `chat` is the pane's own
  * degrade state when absent (the seam is best-effort server-side too).
+ *
+ * `extras` is the leaf's own slice — SPA.21's dossier overlays the client-filtered `findings`,
+ * the Margin/Desk pane bodies, the chat panel, the timeline label/href maps, and `renderGateCard`
+ * that the generic mapper cannot derive. Fields it sets WIN over the twin's (`{...base, ...extras}`),
+ * so a leaf's finding filter truly narrows the chrome ticks.
  */
-export function useShellChrome(shell: IdeTwinShell): void {
+export function useShellChrome(shell: IdeTwinShell, extras?: IdeChromeData): void {
   const data = useMemo<IdeChromeData>(() => {
     let palette: PaletteData | undefined;
     try {
@@ -179,7 +184,8 @@ export function useShellChrome(shell: IdeTwinShell): void {
             ),
           }
         : {}),
+      ...extras,
     };
-  }, [shell]);
+  }, [shell, extras]);
   useIdeChromeData(data);
 }
