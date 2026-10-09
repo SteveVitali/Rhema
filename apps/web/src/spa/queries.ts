@@ -9,6 +9,8 @@ import type {
   AccountSettingsDto,
   ApprovalSettingsDto,
   DataSettingsDto,
+  ChatPanelDto,
+  FilesDto,
   GateCardDto,
   InboxItemDto,
   IntegrationsSettingsDto,
@@ -16,6 +18,9 @@ import type {
   PreferencesSettingsDto,
   PrincipalDto,
   ProjectSettingsDto,
+  ProtocolCardDto,
+  TimelineDto,
+  VoiceListRowDto,
   ReseedPreviewDto,
   UsageAccountDto,
   UsageDto,
@@ -28,6 +33,7 @@ import type {
   VoiceUpdatePlanDto,
 } from "@rhema/api-client";
 import type { FeedLabelMaps } from "@rhema/ide";
+import type { FeedRow } from "@rhema/ui";
 import { BffError, bffFetch } from "./bff.js";
 
 /**
@@ -310,3 +316,190 @@ export const projectVoiceReseedQuery = (slug: string) =>
       bffFetch<BffVoiceReseedTwin>(`/bff/p/${encodeURIComponent(slug)}/voice/reseed`),
     retry: retryPolicy,
   });
+
+// ---- SPA.14 — the `onboarding` surface's twins (REQ-BFF-1/8/9/11/15/16, REQ-DAT-1/4/6/9;
+// design/22 §2 app.new/app.newPreview/p.import/p.importPreview rows). The two /app/new* reads
+// gate on `onboarding` alone; the two /p/:p/import* legs AND `ide-chrome` (their payload carries
+// the SSR `ideContext` bag the leaf republishes onto the React chrome). Search state — entry,
+// picks, `qk`, `src` — rides the query string + the key, never the payload shape. A degraded seam
+// lands `null` (protocols/voices); a document redirect leg answers `{ok:true, redirect}` — a JSON
+// caller is never handed a 302. `pollAfterSeconds` is the server-owned pending cadence
+// (IMPORT_PREVIEW_POLL_SECONDS) — the `refetchInterval` below reads it so the SPA's poll cadence
+// IS the document's meta-refresh cadence, never a client-invented timer. ----
+
+/** `GET /bff/app/new` — the sheet's two reads (the document's `loadNewProjectSheet` verbatim). */
+export interface BffNewProjectTwin {
+  readonly newProject: {
+    readonly protocols: readonly ProtocolCardDto[] | null;
+    readonly voices: readonly VoiceListRowDto[] | null;
+  };
+}
+export const newProjectQuery = queryOptions({
+  queryKey: ["bff", "app", "new"],
+  queryFn: () => bffFetch<BffNewProjectTwin>("/bff/app/new"),
+  retry: retryPolicy,
+});
+
+/** The ready preview payload — `PageData.newProject.preview` verbatim + the resolved title. */
+export interface NewProjectPreviewReady {
+  readonly status: "ready";
+  readonly quarantineKey: string;
+  readonly sourceLabel: string;
+  readonly sourceText: string;
+  readonly convertedMarkdown: string;
+  readonly countLine: string;
+  readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+  readonly title?: string;
+  readonly resolvedTitle: string;
+}
+export interface NewProjectPreviewPending {
+  readonly status: "pending";
+  readonly quarantineKey: string;
+  readonly sourceLabel: string;
+  readonly pollAfterSeconds: number;
+}
+/** `GET /bff/app/new/preview` — the poll twin: pending/ready, or the document's redirect leg. */
+export type BffNewProjectPreviewTwin =
+  | { readonly ok: true; readonly redirect: string; readonly newProjectPreview?: never }
+  | { readonly newProjectPreview: NewProjectPreviewReady | NewProjectPreviewPending; readonly ok?: never; readonly redirect?: never };
+
+export interface NewProjectPreviewSearch {
+  readonly entry?: string;
+  readonly qk?: string;
+  readonly title?: string;
+  readonly protocolId?: string;
+  readonly venue?: string;
+  readonly personaId?: string;
+  readonly startVersion?: string;
+  readonly heldToken?: string;
+  readonly src?: string;
+}
+export const newProjectPreviewQuery = (s: NewProjectPreviewSearch) => {
+  const qs = new URLSearchParams();
+  for (const k of ["entry", "qk", "title", "protocolId", "venue", "personaId", "startVersion", "heldToken", "src"] as const) {
+    const v = s[k];
+    if (v != null && v !== "") qs.set(k, v);
+  }
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+  return queryOptions({
+    queryKey: ["bff", "app", "new", "preview", { ...s }],
+    queryFn: () => bffFetch<BffNewProjectPreviewTwin>(`/bff/app/new/preview${suffix}`),
+    // pending ⇒ re-ask at the server-owned cadence; ready/error ⇒ stop (REQ-BFF-15).
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      return d?.newProjectPreview?.status === "pending"
+        ? (d.newProjectPreview.pollAfterSeconds ?? 3) * 1000
+        : false;
+    },
+    retry: retryPolicy,
+  });
+};
+
+/**
+ * The `ide` bag the import twins carry — the SSR `ideContext` bag (`PageData["ide"]`), declared
+ * structurally so the SPA graph never imports page-data.ts (its server seams can't bundle). The
+ * leaf maps this onto `IdeChromeData`: `palette` arrives as the JSON string (parsed here), `files`
+ * becomes `filesBody`, `chat` becomes `chatBody`, `feed` rides through verbatim.
+ */
+export interface BffIdeBag {
+  readonly userId?: string;
+  readonly projectId?: string;
+  readonly initialView?: "write" | "read" | "focus";
+  readonly sourceHref?: string;
+  readonly activeRun?: { readonly runId: string; readonly state: string } | null;
+  readonly inboxCount?: number;
+  readonly findings?: readonly { readonly id: string; readonly severity: string; readonly kind: string; readonly excerpt: string }[];
+  readonly timeline?: readonly { readonly id: string; readonly label: string; readonly state: string; readonly href?: string }[];
+  readonly timelineView?: TimelineDto;
+  readonly feed?: {
+    readonly runId: string;
+    readonly eventsUrl: string;
+    readonly density: "summary" | "details" | "verbose";
+    readonly rows: readonly FeedRow[];
+    readonly lastSeq?: number;
+  };
+  readonly runNextHref?: string;
+  readonly palette?: string;
+  readonly paletteSearchUrl?: string;
+  readonly status?: {
+    readonly version?: string;
+    readonly words?: number;
+    readonly readMin?: number;
+    readonly venueCap?: string;
+    readonly credits?: number;
+    readonly sync?: "synced" | "syncing" | "offline";
+  };
+  readonly themeUrl?: string;
+  readonly paperThemeUrl?: string;
+  readonly files?: FilesDto;
+  readonly chat?: ChatPanelDto;
+}
+
+/** `GET /bff/p/:slug/import` — project facts + the ide bag for the chrome publish. */
+export interface BffImportTwin {
+  readonly import: {
+    readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+    readonly paperTheme: string;
+    readonly appTheme?: string;
+    readonly ide: BffIdeBag;
+  };
+}
+export const projectImportQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "import"],
+    queryFn: () => bffFetch<BffImportTwin>(`/bff/p/${encodeURIComponent(slug)}/import`),
+    retry: retryPolicy,
+  });
+
+/** The conversion payload — `PageData["conversion"]` verbatim (+ the pending cadence). */
+export type BffConversion =
+  | {
+      readonly projectSlug: string;
+      readonly sourceLabel: string;
+      readonly sourceText: string;
+      readonly convertedMarkdown: string;
+      readonly countLine: string;
+      readonly warnings: readonly { readonly message: string; readonly blockId?: string | null }[];
+      readonly quarantineKey?: string;
+      readonly created?: boolean;
+      readonly pending?: false;
+    }
+  | {
+      readonly projectSlug: string;
+      readonly sourceLabel: string;
+      readonly pending: true;
+      readonly quarantineKey: string;
+      readonly created?: boolean;
+      readonly pollAfterSeconds?: number;
+    };
+
+/** `GET /bff/p/:slug/import/preview` — the poll twin (project-scoped `previewImport` re-ask). */
+export type BffImportPreviewTwin =
+  | { readonly ok: true; readonly redirect: string; readonly importPreview?: never }
+  | {
+      readonly importPreview: {
+        readonly project: { readonly title: string; readonly pill: string; readonly slug: string };
+        readonly paperTheme: string;
+        readonly appTheme?: string;
+        readonly ide: BffIdeBag;
+        readonly conversion: BffConversion;
+      };
+      readonly ok?: never;
+      readonly redirect?: never;
+    };
+
+export const projectImportPreviewQuery = (slug: string, search: { readonly qk?: string; readonly src?: string } = {}) => {
+  const qs = new URLSearchParams();
+  if (search.qk) qs.set("qk", search.qk);
+  if (search.src) qs.set("src", search.src);
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+  return queryOptions({
+    queryKey: ["bff", "p", slug, "import", "preview", { qk: search.qk ?? null, src: search.src ?? null }],
+    queryFn: () => bffFetch<BffImportPreviewTwin>(`/bff/p/${encodeURIComponent(slug)}/import/preview${suffix}`),
+    refetchInterval: (q) => {
+      const c = q.state.data?.importPreview?.conversion;
+      return c?.pending === true ? ((c.pollAfterSeconds ?? 3) * 1000) : false;
+    },
+    retry: retryPolicy,
+  });
+};

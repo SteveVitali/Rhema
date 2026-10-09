@@ -16,27 +16,26 @@
 //
 // No credentials, no analytics payloads beyond the beacon shape, no server round-trips except the
 // two same-origin beacons. Without this bundle the SSR forms/links still work end-to-end.
-
-const HOLD_DB = "rhema-hold";
-const HOLD_STORE = "holds";
-const HOLD_KEY = "landing-dropzone";
-const MAX_HOLD_BYTES = 10 * 1024 * 1024; // ≤10 MB per REQ-GROWTH-1
-// The picker's `accept` attr doesn't bind a DROP — enforce the §15.1 file set on every path.
-const HOLD_EXT = new Set(["md", "markdown", "docx", "pdf", "txt"]);
-
-interface HoldRecord {
-  readonly token: string;
-  readonly name: string;
-  readonly type: string;
-  readonly size: number;
-  readonly bytes: ArrayBuffer;
-  /** P1.17 legacy — old records carry `claimed`; ONB.1 ignores it entirely (no claim-on-attach). */
-  readonly claimed?: boolean;
-}
-
-function token(): string {
-  return `hold_${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`;
-}
+//
+// SPA.14 — the IDB hold primitives + notice copy moved to src/client/hold-store.ts so the `onboarding`
+// SPA surface consumes the ONE seam the island uses (same store, same writers, same strings —
+// pinned verbatim by client/landing.test.ts). The durability contract is unchanged: ONE key
+// (`landing-dropzone`), NO claim-on-attach, deletion only by the token-matched
+// `data-held-consumed` marker / `?hc=` echo / Discard.
+import {
+  HELD_DISCARD_CTA,
+  HELD_DISCARDED_TEXT,
+  HOLD_EXT,
+  MAX_HOLD_BYTES,
+  deleteHold,
+  getHold,
+  heldReadyText,
+  heldReattachText,
+  holdKindOf,
+  holdToken,
+  putHold,
+} from "./hold-store.js";
+import type { HoldRecord } from "./hold-store.js";
 
 function beacon(body: Record<string, unknown>): void {
   const payload = JSON.stringify(body);
@@ -56,58 +55,6 @@ function beacon(body: Record<string, unknown>): void {
   }).catch(() => undefined);
 }
 
-function openDb(): Promise<IDBDatabase | null> {
-  return new Promise((resolve) => {
-    try {
-      const req = indexedDB.open(HOLD_DB, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore(HOLD_STORE);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-async function putHold(rec: HoldRecord): Promise<boolean> {
-  const db = await openDb();
-  if (!db) return false;
-  return new Promise((resolve) => {
-    const tx = db.transaction(HOLD_STORE, "readwrite");
-    tx.objectStore(HOLD_STORE).put(rec, HOLD_KEY);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => resolve(false);
-  });
-}
-
-async function getHold(): Promise<HoldRecord | null> {
-  const db = await openDb();
-  if (!db) return null;
-  return new Promise((resolve) => {
-    const tx = db.transaction(HOLD_STORE, "readonly");
-    const req = tx.objectStore(HOLD_STORE).get(HOLD_KEY);
-    req.onsuccess = () => resolve((req.result as HoldRecord | undefined) ?? null);
-    req.onerror = () => resolve(null);
-  });
-}
-
-/** Delete the hold, bytes included — the ONLY writers are the token-matched consumed marker and Discard. */
-async function deleteHold(): Promise<void> {
-  const db = await openDb();
-  if (!db) return;
-  return new Promise((resolve) => {
-    const tx = db.transaction(HOLD_STORE, "readwrite");
-    tx.objectStore(HOLD_STORE).delete(HOLD_KEY);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
-  });
-}
-
-function kindOf(name: string): string {
-  const m = /\.([a-z0-9]+)$/i.exec(name);
-  return m ? m[1]!.toLowerCase() : "text";
-}
-
 // ---- job 1: the drop-zone hold (landing) ---------------------------------------------
 
 const dropzone = document.querySelector<HTMLElement>("[data-dropzone]");
@@ -118,7 +65,7 @@ if (dropzone) {
   const paste = dropzone.querySelector<HTMLTextAreaElement>('textarea[name="paste"]');
 
   const holdFile = async (name: string, type: string, bytes: ArrayBuffer): Promise<void> => {
-    if (!HOLD_EXT.has(kindOf(name))) {
+    if (!HOLD_EXT.has(holdKindOf(name))) {
       if (hint) hint.textContent = "That file type isn't supported yet — drop a .md, .docx, .pdf or .txt.";
       return;
     }
@@ -126,12 +73,12 @@ if (dropzone) {
       if (hint) hint.textContent = "That file is over 10 MB — sign in and upload it directly.";
       return;
     }
-    const rec: HoldRecord = { token: token(), name, type, size: bytes.byteLength, bytes };
+    const rec: HoldRecord = { token: holdToken(), name, type, size: bytes.byteLength, bytes };
     const ok = await putHold(rec);
     if (!ok && hint) hint.textContent = "The hold needs storage access — sign in and upload it directly.";
     beacon({
       event: "landing.dropzone_used",
-      props: { kind: kindOf(name), size: rec.size },
+      props: { kind: holdKindOf(name), size: rec.size },
       token: rec.token,
     });
     window.location.assign("/signup?intent=review&held=1");
@@ -202,13 +149,11 @@ if (heldForm) {
       titleInput.value = rec.name.replace(/\.[^.]+$/, "").slice(0, 120);
     }
     if (notice) {
-      notice.textContent = attached
-        ? `"${rec.name}" is ready — press Continue to upload it.`
-        : `"${rec.name}" is held in this browser, but this browser can't attach it automatically — pick the same file again below to upload it.`;
+      notice.textContent = attached ? heldReadyText(rec.name) : heldReattachText(rec.name);
       // Discard — the OTHER path that deletes a hold (REQ-GROWTH-1's explicit-abandon affordance).
       const discard = document.createElement("button");
       discard.type = "button";
-      discard.textContent = "Discard held file";
+      discard.textContent = HELD_DISCARD_CTA;
       discard.dataset.heldDiscard = "1";
       discard.style.marginLeft = "10px";
       discard.style.fontSize = "12px";
@@ -220,7 +165,7 @@ if (heldForm) {
             /* a cleared input is best-effort — the hold is gone either way */
           }
           if (tokenInput) tokenInput.value = "";
-          notice.textContent = "Held file discarded.";
+          notice.textContent = HELD_DISCARDED_TEXT;
           discard.remove();
         });
       });

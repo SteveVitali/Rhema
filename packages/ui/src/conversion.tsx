@@ -59,15 +59,15 @@ export function ConversionPreview(props: ConversionPreviewProps): ReactNode {
       </p>
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
         <section style={paneStyle} aria-label={props.labels.sourceHeading}>
-          <h3 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
+          <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
             {props.labels.sourceHeading} · {props.sourceLabel}
-          </h3>
+          </h2>
           <pre style={preStyle}>{props.sourceText}</pre>
         </section>
         <section style={paneStyle} aria-label={props.labels.convertedHeading}>
-          <h3 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
+          <h2 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--shell-fg-muted)", marginTop: 0 }}>
             {props.labels.convertedHeading}
-          </h3>
+          </h2>
           <pre style={preStyle}>{props.convertedMarkdown}</pre>
         </section>
       </div>

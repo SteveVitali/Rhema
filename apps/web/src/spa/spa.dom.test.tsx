@@ -25,7 +25,6 @@ import { sessionQuery } from "./queries.js";
 import { PendingShell } from "./states.js";
 
 declare global {
-  // eslint-disable-next-line no-var
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -139,9 +138,9 @@ describe("the auth gate (REQ-FW-5, REQ-BND-7)", () => {
 
   it("a boot-seeded principal satisfies the gate without a fetch — a seed, consumed once", async () => {
     const f = sessionFetch(200);
-    // Mount a leaf with no read of its own (/app/new stays stubbed until its owner ticket) — the
-    // assertion isolates the session seed: not even one fetch fires.
-    await mountAt("/app/new", bootFor({ "/app/new": "spa" }), f);
+    // Mount a leaf with no read of its own (/app/settings/billing stays stubbed until its owner
+    // ticket) — the assertion isolates the session seed: not even one fetch fires.
+    await mountAt("/app/settings/billing", bootFor({ "/app/settings/billing": "spa" }), f);
     expect(assignSpy).not.toHaveBeenCalled();
     expect(f).not.toHaveBeenCalled();
   });

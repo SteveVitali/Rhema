@@ -160,6 +160,14 @@ export const COPY = {
     estimatePending: "Estimate unavailable",
     conversionNotes: "Conversion notes",
     unconvertedNote: "Some source spans could not be converted — they are preserved with [unconverted] markers.",
+    // SPA.14 — the sheet's refusal copy, lifted from server.ts literals so the JSON mutation
+    // branches' `detail` and the SSR inline re-render share the ONE string (REQ-BFF-5's
+    // refusal-as-rerender; REQ-SAFE-10's single-source rule).
+    titleRequired: "A title is required.",
+    uploadOrPasteRequired: "Upload a file or paste the text.",
+    conversionStartFailed: "The conversion could not start — try again.",
+    createFailedFmt: "Could not create the project ({detail}).",
+    createFailed: "Could not create the project.",
   },
 
   project: {

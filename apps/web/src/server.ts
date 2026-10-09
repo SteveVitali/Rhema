@@ -801,6 +801,131 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.json(await deps.dataSource.presignImportUpload(session));
   }));
 
+  // ---- SPA.14 — the `onboarding` surface's read twins (REQ-BFF-1/8/9/11/16, REQ-DAT-1/4/6/9;
+  //  design/22 §2 app.new/app.newPreview/p.import/p.importPreview rows). Each mirrors its document
+  //  GET's composition verbatim: the same seams, the same degrade posture (`swallowDegraded` lands
+  //  `null`; the SSR degrades the sheet reads to empty lists — the twin carries `null` so the leaf
+  //  can tell "degraded" from "empty", and still renders the SSR's empty state). The document's
+  //  server-owned redirects (`?qk` absent, unresolved title, a failed re-preview) become
+  //  `{ok:true, redirect}` — a JSON caller is never handed a 302 (REQ-BFF-1). The pending read
+  //  carries `pollAfterSeconds` so cadence stays server-owned (REQ-BFF-15; IMPORT_PREVIEW_POLL_SECONDS). ----
+  app.get("/bff/app/new", bffRoute(deps, async (c, session) => {
+    // `GET /app/new` — `loadNewProjectSheet`'s two reads verbatim. `entry`/picks/`held`-intent are
+    // URL+client state per §2 — never payload.
+    const [protocols, voices] = await Promise.all([
+      Promise.resolve().then(() => deps.dataSource.listProtocolCards(session)).catch(swallowDegraded),
+      Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(swallowDegraded),
+    ]);
+    return c.json({ newProject: { protocols, voices } });
+  }));
+  app.get("/bff/app/new/preview", bffRoute(deps, async (c, session) => {
+    // `GET /app/new/preview` — the quarantine-key re-preview the poll page re-asks. The document's
+    // three redirect legs (missing `qk`, a failed read-back, an empty resolved title) answer as
+    // `{ok:true, redirect:"/app/new?entry=…"}`; `pending` answers the poll contract; `ready` carries
+    // the §5.3 payload + the server-side resolved title (typed → the document's own H1 → filename
+    // stem — the leaf renders, never re-derives).
+    const entryQ = c.req.query("entry") ?? "draft";
+    const entry = entryQ === "scratch" || entryQ === "outline" || entryQ === "draft" ? entryQ : "draft";
+    const entryHref = `/app/new?entry=${entry}`;
+    const qk = c.req.query("qk");
+    if (!qk) return c.json({ ok: true, redirect: entryHref });
+    const picks = newProjectForm(c.req.query() as Record<string, unknown>);
+    const src = c.req.query("src");
+    const sourceLabel = src ?? "the upload";
+    const out = await Promise.resolve()
+      .then(() =>
+        deps.dataSource.previewWorkspaceImport(session, {
+          quarantineKey: qk,
+          ...(src != null ? { fileName: src } : {}),
+        }),
+      )
+      .catch(() => null);
+    if (!out) return c.json({ ok: true, redirect: entryHref });
+    if (out.status === "pending") {
+      return c.json({
+        newProjectPreview: {
+          status: "pending",
+          quarantineKey: out.quarantineKey,
+          sourceLabel,
+          pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS,
+        },
+      });
+    }
+    const resolvedTitle =
+      picks.title || out.preview.title || sourceLabel.replace(/\.[^.]+$/, "").trim();
+    if (!resolvedTitle) return c.json({ ok: true, redirect: entryHref });
+    return c.json({
+      newProjectPreview: {
+        status: "ready",
+        quarantineKey: out.quarantineKey,
+        sourceLabel,
+        sourceText: "(the uploaded source — already converted)",
+        convertedMarkdown: out.preview.markdown,
+        countLine: countLine(out.preview.counts),
+        warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+        title: out.preview.title,
+        resolvedTitle,
+      },
+    });
+  }));
+  app.get("/bff/p/:slug/import", bffRoute(deps, async (c, session) => {
+    // `GET /p/:slug/import` — project facts + the `ide` block + import-form context (§2 `p.import`).
+    // The document composes `ideContext(c, session, row)`; the twin carries the SAME bag — the leaf
+    // publishes it onto the React chrome (`palette` stays the JSON string the shell re-emits, files/
+    // chat ride their DTOs). `compact` is boot-owned (`deviceClass`) — never payload.
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const ctx = await ideContext(c, session, row);
+    return c.json({
+      import: {
+        project: { title: row.title, pill: row.state.pill, slug },
+        paperTheme: ctx.paperTheme ?? "light",
+        ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+        ide: ctx.ide,
+      },
+    });
+  }));
+  app.get("/bff/p/:slug/import/preview", bffRoute(deps, async (c, session) => {
+    // `GET /p/:slug/import/preview` — the poll twin: `previewImport` on the SAME quarantine key (the
+    // api joins the in-flight execution — never a second upload) + the slim
+    // `ideContext(c, session, {id:slug, slug})` the document composes on this leg (its chrome titles
+    // the shell with the SOURCE label, not the project title — verbatim). A missed slug or an
+    // upstream refusal rides `bffFail` at the preserved status; missing `qk` answers the document's
+    // own `../import` bounce as `{ok:true, redirect}`.
+    const slug = c.req.param("slug") ?? "";
+    const qk = c.req.query("qk");
+    if (!qk) return c.json({ ok: true, redirect: `/p/${slug}/import` });
+    const src = c.req.query("src");
+    const input: ImportInput = { projectSlug: slug, quarantineKey: qk, ...(src ? { fileName: src } : {}) };
+    const out = await deps.dataSource.previewImport(session, input);
+    const ctx = await ideContext(c, session, { id: slug, slug });
+    const project = { title: input.fileName ?? slug, pill: "", slug };
+    const shell = {
+      project,
+      paperTheme: ctx.paperTheme ?? "light",
+      ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
+      ide: ctx.ide,
+    };
+    if (out.status === "pending") {
+      return c.json({
+        importPreview: {
+          ...shell,
+          conversion: {
+            projectSlug: slug,
+            sourceLabel: input.fileName ?? "the upload",
+            pending: true as const,
+            quarantineKey: out.quarantineKey,
+            pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS,
+          },
+        },
+      });
+    }
+    return c.json({
+      importPreview: { ...shell, conversion: toConversionData(slug, input, out.preview, out.quarantineKey) },
+    });
+  }));
+
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
   // flash — the inline boot script resolves dark|light|auto + the per-project paper pin before paint) and
@@ -2442,21 +2567,32 @@ export function createWebApp(deps: WebDeps): Hono {
 
   // The sheet's submit: scratch creates immediately; the upload entries run the workspace-scoped
   // conversion preview FIRST (§5.3's make-or-break moment — nothing is created until the user sees
-  // source-beside-converted and clicks Create).
+  // source-beside-converted and clicks Create). SPA.14 — the `wantsJson` split (REQ-BFF-1/2/3/15/16):
+  // a JSON caller carries `quarantineKey`+`fileName` (the browser's presign→direct-PUT leg already
+  // landed the bytes — the BFF never proxies them) or `paste`; refusals answer the stable
+  // `{error,detail}` the document's inline re-render would paint; `pending` answers the
+  // `{ok,pending:{pollAfterSeconds},redirect:<poll-url>}` contract (the leaf navigates to the
+  // preview leg; the twin's `refetchInterval` re-asks at the SAME server-owned cadence the SSR
+  // meta-refresh keeps); `ready` answers the §5.3 payload inline (the leaf renders it on the sheet —
+  // the document's own POST-time preview is non-addressable state too).
   app.post("/app/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const json = wantsJson(c);
+    const form = await bodyFields(c);
     const entryQ = typeof form.entry === "string" ? form.entry : "";
     const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
       ? (entryQ as NewProjectEntry)
       : "scratch";
     const picks = newProjectForm(form);
-    const sheet = await loadNewProjectSheet(session);
+    // The sheet reads (protocols+voices) exist only to paint the SSR re-render — a JSON caller
+    // re-reads its own warm twin, so the lazy load skips two upstream calls per mutation.
+    const sheetFor = () => loadNewProjectSheet(session);
     if (entry === "scratch") {
       if (!picks.title) {
-        return renderNewProject(c, c.req.path, sheet, {
-          entry, defaultProtocolId: null, askProtocol: false, form: picks, error: "A title is required.",
+        if (json) return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
+        return renderNewProject(c, c.req.path, await sheetFor(), {
+          entry, defaultProtocolId: null, askProtocol: false, form: picks, error: COPY.newProject.titleRequired,
         }, undefined);
       }
       let created;
@@ -2465,43 +2601,63 @@ export function createWebApp(deps: WebDeps): Hono {
           title: picks.title, entry, protocolId: picks.protocolId, venue: picks.venue, personaId: picks.personaId,
         });
       } catch (e) {
-        const message = e instanceof ApiError ? `Could not create the project (${e.code ?? e.status}).` : "Could not create the project.";
-        return renderNewProject(c, c.req.path, sheet, {
+        if (json) return bffFail(c, e, { msg: "new_project_create_failed" });
+        const message = e instanceof ApiError
+          ? COPY.newProject.createFailedFmt.replace("{detail}", String(e.code ?? e.status))
+          : COPY.newProject.createFailed;
+        return renderNewProject(c, c.req.path, await sheetFor(), {
           entry, defaultProtocolId: null, askProtocol: false, form: picks, error: message,
         });
       }
-      return c.redirect(`/p/${created.slug}?created=scratch`);
+      return mutationOutcome(c, { redirect: `/p/${created.slug}?created=scratch` });
     }
     // Upload entries — presign → quarantine PUT → convert → the preview leg (the PRB.20 path,
-    // workspace-scoped: no project exists yet).
+    // workspace-scoped: no project exists yet). A JSON caller replays `quarantineKey`/`qk` (the
+    // browser PUT already landed) or `paste` — never bytes.
     const file = form.file;
     const bytes =
       file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
         ? new Uint8Array(await (file as File).arrayBuffer())
         : undefined;
-    const fileName = bytes && file && typeof file === "object" ? (file as File).name : undefined;
+    const fileName =
+      (bytes && file && typeof file === "object" ? (file as File).name : undefined) ??
+      (typeof form.fileName === "string" && form.fileName !== "" ? form.fileName : undefined);
+    const quarantineKey =
+      (typeof form.qk === "string" && form.qk !== "" ? form.qk : undefined) ??
+      (typeof form.quarantineKey === "string" && form.quarantineKey !== "" ? form.quarantineKey : undefined);
     const paste = typeof form.paste === "string" ? form.paste : "";
-    if (!bytes && !paste.trim()) {
-      return renderNewProject(c, c.req.path, sheet, {
+    if (!bytes && !paste.trim() && !quarantineKey) {
+      if (json) return c.json({ error: "source_required", detail: COPY.newProject.uploadOrPasteRequired }, 400);
+      return renderNewProject(c, c.req.path, await sheetFor(), {
         entry, defaultProtocolId: null, askProtocol: false, form: picks,
-        error: "Upload a file or paste the text.",
+        error: COPY.newProject.uploadOrPasteRequired,
       });
     }
-    const sourceLabel = fileName ?? "pasted text";
+    const sourceLabel = fileName ?? (quarantineKey ? "the upload" : "pasted text");
     const raw = await Promise.resolve()
       .then(() =>
         deps.dataSource.previewWorkspaceImport(session, {
-          ...(bytes ? { bytes, ...(fileName ? { fileName } : {}) } : { text: paste }),
+          ...(bytes
+            ? { bytes, ...(fileName ? { fileName } : {}) }
+            : quarantineKey
+              ? { quarantineKey, ...(fileName ? { fileName } : {}) }
+              : { text: paste }),
         }),
       )
       .catch((e: unknown) => e);
     const out =
       raw && typeof raw === "object" && "status" in raw ? (raw as ImportPreviewOutcome) : null;
     if (!out) {
-      // the preview seam missing/failed — re-render the sheet with the honest error, nothing created.
-      return renderNewProject(c, c.req.path, sheet, {
+      // the preview seam missing/failed — the JSON caller gets the api's refusal at its preserved
+      // status (or the 502 the swallowed failure degrades to); the document re-renders the sheet
+      // with the honest error, nothing created.
+      if (json) {
+        if (raw instanceof ApiError) return bffFail(c, raw, { msg: "new_project_preview_failed" });
+        return c.json({ error: "conversion_start_failed", detail: COPY.newProject.conversionStartFailed }, 502);
+      }
+      return renderNewProject(c, c.req.path, await sheetFor(), {
         entry, defaultProtocolId: null, askProtocol: false, form: picks,
-        error: "The conversion could not start — try again.",
+        error: COPY.newProject.conversionStartFailed,
       });
     }
     // ONB.1 — the title default chain: an explicitly typed title wins; then the document's own
@@ -2512,28 +2668,42 @@ export function createWebApp(deps: WebDeps): Hono {
       (fileName ? fileName.replace(/\.[^.]+$/, "").trim() : "");
     if (out.status === "pending") {
       // the title default resolves on the READY hop (the poll GET re-runs it with preview.title).
-      return renderNewProject(c, c.req.path, sheet, {
+      const pollUrl = newProjectPollUrl(entry, out.quarantineKey, picks, sourceLabel);
+      if (json) {
+        return c.json({
+          ok: true,
+          pending: { pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS },
+          redirect: pollUrl,
+        });
+      }
+      return renderNewProject(c, c.req.path, await sheetFor(), {
         entry, defaultProtocolId: null, askProtocol: false, form: picks,
         pending: { quarantineKey: out.quarantineKey, sourceLabel },
       }, {
-        autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, out.quarantineKey, picks, sourceLabel) },
+        autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: pollUrl },
       });
     }
     if (!resolvedTitle) {
-      return renderNewProject(c, c.req.path, sheet, {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: "A title is required.",
+      if (json) return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
+      return renderNewProject(c, c.req.path, await sheetFor(), {
+        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: COPY.newProject.titleRequired,
       }, undefined);
     }
-    return renderNewProject(c, c.req.path, sheet, {
+    const preview = {
+      quarantineKey: out.quarantineKey,
+      sourceLabel,
+      sourceText: paste || (bytes ? `(${bytes.byteLength} bytes)` : ""),
+      convertedMarkdown: out.preview.markdown,
+      countLine: countLine(out.preview.counts),
+      warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
+    };
+    if (json) {
+      // The ready preview the document renders on the POST — the leaf paints it in place.
+      return c.json({ ok: true, data: { form: { ...picks, title: resolvedTitle }, preview } });
+    }
+    return renderNewProject(c, c.req.path, await sheetFor(), {
       entry, defaultProtocolId: null, askProtocol: false, form: { ...picks, title: resolvedTitle },
-      preview: {
-        quarantineKey: out.quarantineKey,
-        sourceLabel,
-        sourceText: paste || (bytes ? `(${bytes.byteLength} bytes)` : ""),
-        convertedMarkdown: out.preview.markdown,
-        countLine: countLine(out.preview.counts),
-        warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
-      },
+      preview,
     });
   });
 
@@ -2590,18 +2760,21 @@ export function createWebApp(deps: WebDeps): Hono {
   });
 
   // The preview's Create (and Fix-now) — replays the quarantine key + the pick fields; the api adopts
-  // the ALREADY-converted object (never a second upload or a second Job).
+  // the ALREADY-converted object (never a second upload or a second Job). SPA.14 — `wantsJson`: the
+  // JSON caller gets the SAME redirect target in the `{ok,redirect}` envelope (the `?created=&cn=&cu=
+  // &hc=` vocabulary verbatim); a still-converting key is the pending contract, never an error.
   app.post("/app/new/create", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const json = wantsJson(c);
+    const form = await bodyFields(c);
     const entryQ = typeof form.entry === "string" ? form.entry : "";
     const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
       ? (entryQ as NewProjectEntry)
       : "draft";
     const picks = newProjectForm(form);
     const qk = typeof form.qk === "string" ? form.qk : "";
-    const sheet = await loadNewProjectSheet(session);
+    const sheetFor = () => loadNewProjectSheet(session);
     let created;
     try {
       created = await deps.dataSource.createProject(session, {
@@ -2617,15 +2790,26 @@ export function createWebApp(deps: WebDeps): Hono {
       // A still-converting key (a stale preview page or a slow Job) drops back to the converting
       // state — its poll finishes the preview, no bytes re-uploaded.
       if (e instanceof ApiError && e.status === 409 && e.code === "conversion_pending") {
-        return renderNewProject(c, c.req.path, sheet, {
+        const pollUrl = newProjectPollUrl(entry, qk, picks);
+        if (json) {
+          return c.json({
+            ok: true,
+            pending: { pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS },
+            redirect: pollUrl,
+          });
+        }
+        return renderNewProject(c, c.req.path, await sheetFor(), {
           entry, defaultProtocolId: null, askProtocol: false, form: picks,
           pending: { quarantineKey: qk, sourceLabel: "the upload" },
         }, {
-          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, qk, picks) },
+          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: pollUrl },
         });
       }
-      const message = e instanceof ApiError ? `Could not create the project (${e.code ?? e.status}).` : "Could not create the project.";
-      return renderNewProject(c, c.req.path, sheet, {
+      if (json) return bffFail(c, e, { msg: "new_project_create_failed" });
+      const message = e instanceof ApiError
+        ? COPY.newProject.createFailedFmt.replace("{detail}", String(e.code ?? e.status))
+        : COPY.newProject.createFailed;
+      return renderNewProject(c, c.req.path, await sheetFor(), {
         entry, defaultProtocolId: null, askProtocol: false, form: picks, error: message,
       }, undefined);
     }
@@ -2643,9 +2827,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (picks.heldToken) q.set("hc", picks.heldToken);
     const action = typeof form.action === "string" ? form.action : "create";
     if (action === "fix_now" && entry === "draft" && created.draftN != null) {
-      return c.redirect(`/p/${created.slug}/v/${created.draftN}?${q.toString()}`);
+      return mutationOutcome(c, { redirect: `/p/${created.slug}/v/${created.draftN}?${q.toString()}` });
     }
-    return c.redirect(`/p/${created.slug}?${q.toString()}`);
+    return mutationOutcome(c, { redirect: `/p/${created.slug}?${q.toString()}` });
   });
 
   // ---- P1.04 — the row actions (§5.2's "…" menu): the web POSTs resolve slug → id then call the
@@ -4099,14 +4283,34 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/import/preview", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const json = wantsJson(c);
     const slug = c.req.param("project");
-    const input = await parseImportInput(c, slug);
-    const out = await deps.dataSource.previewImport(session, input);
+    const input = await importInputFromFields(await bodyFields(c), slug);
+    const raw = await Promise.resolve()
+      .then(() => deps.dataSource.previewImport(session, input))
+      .catch((e: unknown) => e);
+    if (!(raw && typeof raw === "object" && "status" in raw)) {
+      // The document path keeps today's thrown-failure → error page; the JSON caller gets the
+      // api's refusal at its preserved status (`bffFail`).
+      if (json) return bffFail(c, raw, { msg: "import_preview_failed" });
+      throw raw;
+    }
+    const out = raw as ImportPreviewOutcome;
     if (out.status === "pending") {
       // PRB.21 — a cold convert Job runs ~2.5–4 min; never hold one request for it. Render the
       // converting state; the page re-polls the GET below (the api joins the in-flight execution —
-      // a retry is neither a second upload nor a duplicate `jobs:run`).
+      // a retry is neither a second upload nor a duplicate `jobs:run`). SPA.14 — the JSON caller
+      // gets the pending contract: `redirect` is the SAME server-owned poll URL the meta-refresh
+      // carries; the leaf navigates there and its twin's `refetchInterval` keeps the cadence.
+      const pollUrl = importPollUrl(slug, out.quarantineKey, input.fileName);
+      if (json) {
+        return c.json({
+          ok: true,
+          pending: { pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS },
+          redirect: pollUrl,
+        });
+      }
       return c.html(
         renderDocument(c.req.path, importPreviewElement, {
           ...(await ideContext(c, session, { id: slug, slug })),
@@ -4118,9 +4322,14 @@ export function createWebApp(deps: WebDeps): Hono {
             pending: true,
             quarantineKey: out.quarantineKey,
           },
-          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: importPollUrl(slug, out.quarantineKey, input.fileName) },
+          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: pollUrl },
         }),
       );
+    }
+    if (json) {
+      // The ready preview the document renders on the POST — non-addressable state the leaf
+      // paints in place (the GET twin's `qk` leg stays the poll/refresh target).
+      return c.json({ ok: true, data: { conversion: toConversionData(slug, input, out.preview, out.quarantineKey) } });
     }
     return c.html(
       renderDocument(c.req.path, importPreviewElement, {
@@ -4176,15 +4385,22 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/import/create", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const input = await parseImportInput(c, slug);
+    const input = await importInputFromFields(await bodyFields(c), slug);
     try {
       await deps.dataSource.createImport(session, input);
     } catch (e) {
       // PRB.21 — the converted object wasn't there yet (a stale preview page or a slow Job): the api
       // 409s `conversion_pending` — drop back to the converting state; its poll finishes the preview.
       if (e instanceof ApiError && e.status === 409 && e.code === "conversion_pending" && input.quarantineKey) {
+        if (wantsJson(c)) {
+          return c.json({
+            ok: true,
+            pending: { pollAfterSeconds: IMPORT_PREVIEW_POLL_SECONDS },
+            redirect: importPollUrl(slug, input.quarantineKey, input.fileName),
+          });
+        }
         return c.html(
           renderDocument(c.req.path, importPreviewElement, {
             compact: isPhoneRequest(c),
@@ -4198,10 +4414,11 @@ export function createWebApp(deps: WebDeps): Hono {
           }),
         );
       }
+      if (wantsJson(c)) return bffFail(c, e, { msg: "import_create_failed" });
       throw e;
     }
     // The draft now exists; the flat project view shows it. (Fix-now block editing is PRB.07.)
-    return c.redirect(`/p/${slug}`);
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   // Auth-gated: the run sheet — the launcher for Review / Revise / Fact-check and the ONLY paywall (§5.6).
@@ -6579,10 +6796,17 @@ function importPollUrl(slug: string, quarantineKey: string, sourceLabel?: string
   return `/p/${slug}/import/preview${q}${sourceLabel ? `&src=${encodeURIComponent(sourceLabel)}` : ""}`;
 }
 
-async function parseImportInput(c: Context, slug: string): Promise<ImportInput> {
-  const form = await c.req.parseBody();
-  // PRB.20 — the preview form replays the minted quarantine key in `qk` so Create does not re-upload.
-  const qk = typeof form.qk === "string" && form.qk ? form.qk : undefined;
+/**
+ * The import form's field grammar → `ImportInput` (SPA.14 — extracted so the `wantsJson` branches
+ * share it: `bodyFields` decodes JSON and multipart/urlencoded alike). `qk` is the form vocabulary;
+ * the JSON upload leg additionally accepts the REQ-BFF-16 `quarantineKey`/`fileName` pair it minted
+ * — the BFF still never proxies bytes (a JSON `file` is never a File).
+ */
+async function importInputFromFields(form: Record<string, unknown>, slug: string): Promise<ImportInput> {
+  const qk =
+    (typeof form.qk === "string" && form.qk ? form.qk : undefined) ??
+    (typeof form.quarantineKey === "string" && form.quarantineKey ? form.quarantineKey : undefined);
+  const fileName = typeof form.fileName === "string" && form.fileName ? form.fileName : undefined;
   const paste = typeof form.paste === "string" ? form.paste : "";
   const file = form.file;
   if (file && typeof file === "object" && "arrayBuffer" in file) {
@@ -6594,8 +6818,15 @@ async function parseImportInput(c: Context, slug: string): Promise<ImportInput> 
       ...(qk ? { quarantineKey: qk } : {}),
     };
   }
-  return { projectSlug: slug, text: paste, ...(qk ? { quarantineKey: qk } : {}) };
+  return {
+    projectSlug: slug,
+    text: paste,
+    ...(fileName ? { fileName } : {}),
+    ...(qk ? { quarantineKey: qk } : {}),
+  };
 }
+
+
 
 function toConversionData(slug: string, input: ImportInput, result: ConversionResult, quarantineKey: string) {
   return {
