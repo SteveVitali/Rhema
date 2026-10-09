@@ -111,6 +111,12 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   `preview-stack.mjs config pr-<n> rhema:spaSurfaces "<prior set>,<key>"` in a surface ticket's
   preview legs (design/29 §per-flip runbook). Never committed; prod/dev flips are committed
   stage-fact edits instead (REQ-SEQ-10 — a prod flip is its own operator-merged PR).
+- `rhema:resendApiKey` — MAINT.6's NON-PROD-only secret config (Pulumi secret). On a preview/dev
+  stack it carries the REAL Resend key — `preview-stack.mjs resend-pull` pipes the operator-seeded
+  shared SM `rhema-nonprod-resend-api-key` into it — so that stack's `resend-api-key` SM version
+  carries the real key instead of the placeholder and signed-in preview journeys can send mail.
+  Setting it on prod is refused fail-closed by the program: prod's `resend-api-key` version stays
+  operator-seeded out-of-band.
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
