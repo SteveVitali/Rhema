@@ -16,7 +16,13 @@ import {
   type ProvenanceBase,
   type ProvenanceSpan,
 } from "@rhema/findings-core";
-import { parseRunEvent, type Actor, type Anchor, type ProvenanceSource } from "@rhema/contracts";
+import {
+  isHumanEditableDraftOrigin,
+  parseRunEvent,
+  type Actor,
+  type Anchor,
+  type ProvenanceSource,
+} from "@rhema/contracts";
 import { openHumanRevision } from "./freeze.js";
 import { traceManualRevision } from "./manual-trace.js";
 import { sha256Hex, s3KeyFor, type ContentStore } from "./content-store.js";
@@ -34,8 +40,9 @@ export interface SaveManualRevisionArgs {
   readonly projectId: string;
   /**
    * The draft the editor is bound to: the FROZEN head on the first keystroke's save (this call forks
-   * v(N+1)), or the WORKING `human_revision` head an earlier save already created (autosaves update it
-   * in place — repeated saves never re-fork).
+   * v(N+1) — or routes to the project's working head when one already stands), or the WORKING
+   * human-editable head (`human_revision`/`human_upload`/`duplicate`) autosaves update in place —
+   * repeated saves never re-fork.
    */
   readonly draftId: string;
   readonly markdown: string;
@@ -162,7 +169,8 @@ async function readVersionText(
 
 /**
  * Save the editor's canonical markdown onto the draft's working head (the autosave path — §5.4). Forks a
- * frozen head on first save; otherwise updates the working `human_revision` head in place. Everything lands
+ * frozen head on first save (or routes to the standing working head); otherwise updates the working
+ * human-editable head in place. Everything lands
  * in the caller's transaction: the new content-addressed version, the promoted pointer, the live doc, a
  * snapshot restore point, the projected findings, the block-level provenance map, and the timeline events.
  */
@@ -174,7 +182,11 @@ export async function saveManualRevision(
   const now = deps.clock.now();
   const sink = timelineSink(deps, args, now);
 
-  // 1. Resolve the editable head: frozen → fork v(N+1) (REQ-DATA-24); working human_revision → in place.
+  // 1. Resolve the editable head: frozen → the project's working head or a v(N+1) fork (REQ-DATA-24);
+  //    working human-editable head → in place. `one_working_head_per_project` means at most ONE
+  //    working draft exists per project — a frozen base can never fork while a working head stands
+  //    (the child would collide with the index), so the save must route to that head whether or not
+  //    it descends directly from this base (a `duplicate` head, a deep lineage's open grandchild).
   const draftRes = await exec.query(
     `select id, project_id, n, origin, state, promoted_version_id, live_doc_id, base_draft_id
        from drafts where id = $1 and project_id = $2 for update`,
@@ -187,19 +199,23 @@ export async function saveManualRevision(
   let headN: number;
   let forked = false;
   if (draft.state === "frozen") {
-    // A frozen base with an existing WORKING human_revision child already forked — saving to the base id
-    // again must not fork v(N+2) (a stale client URL or a retried beacon). Route the save to the child.
-    const child = (
+    // A frozen base while a WORKING head already stands — the lineage already forked (or the project
+    // was duplicated with a `duplicate` working head): saving to the base id again must not fork
+    // v(N+2) (a stale client URL, a retried beacon, or a mid-lineage frozen draft can't mint a
+    // second working head — the unique index forbids it). Route the save to the one working head.
+    const working = (
       await exec.query(
-        `select id, n from drafts
-          where base_draft_id = $1 and origin = 'human_revision' and state = 'working'
-          order by n desc limit 1`,
-        [draft.id],
+        `select id, n, origin from drafts where project_id = $1 and state = 'working'`,
+        [args.projectId],
       )
-    ).rows[0] as { id: string; n: number } | undefined;
-    if (child) {
-      headId = child.id;
-      headN = child.n;
+    ).rows[0] as { id: string; n: number; origin: string } | undefined;
+    if (working) {
+      if (!isHumanEditableDraftOrigin(working.origin)) {
+        // the project's open head is in-flight agent/seed work — not the editor's surface.
+        return { ok: false, reason: "not_editable" };
+      }
+      headId = working.id;
+      headN = working.n;
     } else {
       headId = deps.ids("dft");
       headN = await openHumanRevision(exec, {
@@ -212,11 +228,13 @@ export async function saveManualRevision(
       const ev = parseRunEvent("draft.forked", { draftId: headId, baseDraftId: draft.id, n: headN });
       await sink.append(exec, { runId: args.runId ?? headId, type: ev.type, payload: ev.payload, at: now });
     }
-  } else if (draft.state === "working" && draft.origin === "human_revision") {
+  } else if (draft.state === "working" && isHumanEditableDraftOrigin(draft.origin)) {
     headId = draft.id;
     headN = draft.n;
   } else {
-    // a working agent/imported head is edited in place by other surfaces; this path owns human revisions.
+    // a working agent/imported/cut head is edited in place by other surfaces; this path owns human
+    // revisions (the human-authored working origins — human_revision, human_upload, duplicate — are
+    // the Page's editable set, ADR-048).
     return { ok: false, reason: "not_editable" };
   }
 

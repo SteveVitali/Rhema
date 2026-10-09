@@ -17,6 +17,7 @@ import {
 import { buildDocMap, markdownToDoc, pageSchema } from "@rhema/editor";
 import {
   BLOCK_PATCH_ERRORS,
+  isHumanEditableDraftOrigin,
   type BlockPatchError,
   type DocumentBlock,
 } from "@rhema/contracts";
@@ -115,7 +116,7 @@ export async function blockPatchGuards(
     const binding = await resolveDraftBinding(tx, workspaceId, draftId);
     if (!binding) return { ok: false, error: BLOCK_PATCH_ERRORS.blockNotFound, status: 404 as const };
     if (binding.lock) return { ok: false, error: BLOCK_PATCH_ERRORS.locked, status: 409 as const };
-    if (binding.state === "frozen" || binding.origin !== "human_revision") {
+    if (binding.state === "frozen" || !isHumanEditableDraftOrigin(binding.origin)) {
       return { ok: false, error: BLOCK_PATCH_ERRORS.frozenHead, status: 409 as const };
     }
     return { ok: true, binding };

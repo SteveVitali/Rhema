@@ -391,26 +391,39 @@ export function PageEditor(props: PageEditorProps): ReactNode {
           />
         </div>
       </div>
-      <script type="application/json" data-page-doc="1">
-        {JSON.stringify(props.docJson).replace(/</g, "\\u003c")}
-      </script>
+      {/* EDIT.1 — the embeds MUST be dangerouslySetInnerHTML: a JSX child inside <script> is
+          entity-escaped by the renderer, so JSON.parse("…&quot;…") fails and the island
+          silently never mounts (the N8 prod walk caught this — [data-page-root] rendered,
+          [data-page-view] never appeared). The < → < substitution stays: it is the
+          </script> breakout guard. */}
+      <script
+        type="application/json"
+        data-page-doc="1"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(props.docJson).replace(/</g, "\\u003c") }}
+      />
       {/* the stored provenance map (blockId → kind) — the island seeds the plugin + overlay from it */}
-      <script type="application/json" data-page-prov="1">
-        {JSON.stringify(props.provenance ?? {}).replace(/</g, "\\u003c")}
-      </script>
+      <script
+        type="application/json"
+        data-page-prov="1"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(props.provenance ?? {}).replace(/</g, "\\u003c") }}
+      />
       {/* the projected findings' anchors — the island re-resolves span decorations on every edit */}
-      <script type="application/json" data-page-findings="1">
-        {JSON.stringify(
-          props.findings.map((f) => ({
-            findingId: f.findingId,
-            severity: f.severity,
-            anchor: f.anchor ?? null,
-            lost: f.lost,
-            ...(f.kind ? { kind: f.kind } : {}),
-            ...(f.suggestion ? { suggestion: f.suggestion } : {}),
-          })),
-        ).replace(/</g, "\\u003c")}
-      </script>
+      <script
+        type="application/json"
+        data-page-findings="1"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            props.findings.map((f) => ({
+              findingId: f.findingId,
+              severity: f.severity,
+              anchor: f.anchor ?? null,
+              lost: f.lost,
+              ...(f.kind ? { kind: f.kind } : {}),
+              ...(f.suggestion ? { suggestion: f.suggestion } : {}),
+            })),
+          ).replace(/</g, "\\u003c"),
+        }}
+      />
 
       {/* the findings rail — the minimal card affordance the shell shows (the Margin's full surface is P1.07) */}
       {props.findings.length > 0 || props.danglingCites.length > 0 ? (
@@ -446,9 +459,11 @@ export function PageEditor(props: PageEditorProps): ReactNode {
         </form>
       ) : null}
 
-      {/* the sync pill the island drives (SSR'd so the pill exists before JS) — §5.10's vocabulary:
-          synced ✓ / syncing… / offline · n changes queued / read-only. No Save button, ever. */}
-      <div data-sync-pill data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
+      {/* the ONE sync indicator (EDIT.1/ADR-049 — the shell's status bar no longer carries a second,
+          unfed one). §5.10's vocabulary: synced ✓ / syncing… / offline · n changes queued /
+          read-only. A live region so the state changes announce. No Save button, ever. */}
+      <div data-sync-pill role="status" aria-live="polite"
+           data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
            data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
            data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
            style={{ position: "fixed", bottom: "28px", right: "24px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>

@@ -7,7 +7,7 @@
 // correspondence-scoped, and a human revision has none until the review that re-checks it).
 
 import { diffMarkdown, traceRevisionMoves, type MoveTrace } from "@rhema/findings-core";
-import { parseRunEvent } from "@rhema/contracts";
+import { HUMAN_EDITABLE_DRAFT_ORIGINS, parseRunEvent } from "@rhema/contracts";
 import type { ContentStore } from "./content-store.js";
 import type { DeliveryEventAppender } from "./delivery.js";
 import type { SqlExecutor } from "./sql.js";
@@ -18,7 +18,7 @@ export interface ManualTraceDeps {
 }
 
 export interface ManualTraceArgs {
-  /** the human_revision draft whose new version landed. */
+  /** the human-editable working draft (human_revision/human_upload/duplicate) whose version landed. */
   readonly draftId: string;
   /** the artifact_version id the draft just promoted to (the edited markdown). */
   readonly newVersionId: string;
@@ -28,9 +28,11 @@ export interface ManualTraceArgs {
 }
 
 /**
- * Diff a human_revision draft's new promoted version against its base's frozen head and emit
- * `revision.move_traced` (unlinked — a human edit carries no ledger move). Returns the traces emitted;
- * empty when either side's bytes are missing (the seam is honest rather than noisy).
+ * Diff a human-edited draft's new promoted version against its base's frozen head and emit
+ * `revision.move_traced` (unlinked — a human edit carries no ledger move). Any human-editable
+ * working origin traces the same way (`duplicate` heads carry a base too — a copy's lineage links
+ * survive the copy). Returns the traces emitted; empty when either side's bytes are missing (the
+ * seam is honest rather than noisy).
  */
 export async function traceManualRevision(
   exec: SqlExecutor,
@@ -42,8 +44,8 @@ export async function traceManualRevision(
             (select content_sha256 from artifact_versions where id = base.promoted_version_id) as base_sha,
             (select content_sha256 from artifact_versions where id = $2) as new_sha
        from drafts cur join drafts base on base.id = cur.base_draft_id
-      where cur.id = $1 and cur.origin = 'human_revision'`,
-    [args.draftId, args.newVersionId],
+      where cur.id = $1 and cur.origin = any($3::text[])`,
+    [args.draftId, args.newVersionId, [...HUMAN_EDITABLE_DRAFT_ORIGINS]],
   );
   const row = rows.rows[0] as { base_sha: string | null; new_sha: string | null } | undefined;
   if (!row?.base_sha || !row.new_sha) return [];

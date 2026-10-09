@@ -17,7 +17,8 @@ import { InMemoryContentStore, sha256Hex, type SqlExecutor } from "@rhema/mirror
 import { markdownToDoc } from "@rhema/editor";
 import { updateYFragment } from "y-prosemirror";
 import { blockContentHash, splitMarkdownBlocks } from "@rhema/findings-core";
-import { HOLDING_STATES, lockKeys } from "@rhema/orchestrator";
+import { HOLDING_STATES, lockKeys, randomUlids } from "@rhema/orchestrator";
+import { idSchema } from "@rhema/contracts";
 import { createCollabService, type CollabService } from "./server.js";
 import { authenticateConnection, AuthRefusal, FORK_REASON_CODE, resolveDraftBinding } from "./auth.js";
 import { storeDocument, markRestorePoint } from "./materialize.js";
@@ -156,6 +157,15 @@ async function storeNow(fx: Fixture, doc: Y.Doc) {
 }
 
 describe("collab service (P1.03)", () => {
+  // EDIT.1 — the prod composition root minted `dft_${uuid}` ids: saveManualRevision's draft.forked
+  // payload validates `idSchema` and a non-ULID child id threw the whole storeDocument hook (N8 prod
+  // walk caught it in the collab logs). The fixture's ULID-shaped stub masked it; pin the prod
+  // factory to the schema it must satisfy.
+  it("the prod ids factory mints 26-char ULIDs the event schemas accept", () => {
+    const minted = randomUlids()("dft");
+    expect(idSchema.safeParse(minted).success).toBe(true);
+  });
+
   let fx: Fixture;
   beforeEach(async () => {
     fx = await boot();
@@ -312,6 +322,201 @@ describe("collab service (P1.03)", () => {
       intent: "ro",
     });
     expect(ro.readOnly).toBe(true);
+  });
+
+  // EDIT.1 — the N8 frozen-dup leg: duplicating the Showcase lands a `duplicate`/`working` head
+  // (draft state copies verbatim). It is a HUMAN-authored open head — the old
+  // `origin === 'human_revision'` gate attached it read-only and the pill never reached synced.
+  it("a working 'duplicate' head (a project copy) attaches writable and materializes in place", async () => {
+    await fx.exec.query("update drafts set origin = 'duplicate' where id = $1", [DRAFT]);
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DRAFT}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(false);
+
+    const conn = await openDoc(fx);
+    try {
+      const md = BASE_MD + "\nTyped on the copy.\n";
+      typeAll(conn.document!, md);
+      const outcome = await storeNow(fx, conn.document!);
+      expect(outcome).toMatchObject({ locked: false, forked: false, changed: true, draftId: DRAFT, draftN: 1 });
+      const live = (
+        await fx.exec.query("select md_sha256 from live_docs where id = $1", [fx.liveDocId])
+      ).rows[0] as { md_sha256: string };
+      expect(live.md_sha256).toBe(sha256Hex(md));
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("a frozen base while a 'duplicate' working head stands refuses write intent with frozen_fork", async () => {
+    // the showcase copy's rail: v1 frozen + v2 `duplicate` working — typing on v1's doc rebinds to
+    // v2 (a fork would mint a second working draft; `one_working_head_per_project` forbids it).
+    const DUP2 = uid(30);
+    await fx.exec.query("update drafts set state = 'frozen', origin = 'duplicate' where id = $1", [DRAFT]);
+    await fx.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'duplicate','working',$3,$4)`,
+      [DUP2, PROJ, AV, DRAFT],
+    );
+    await expect(
+      authenticateConnection({ db: fx.db, ids, clock }, {
+        documentName: `draft:${DRAFT}`,
+        cookieHeader: null,
+        token: TOKEN,
+        intent: null,
+      }),
+    ).rejects.toSatisfy(
+      (e: unknown) =>
+        e instanceof AuthRefusal &&
+        (JSON.parse(e.reason) as { code: string; draftId: string }).code === FORK_REASON_CODE &&
+        (JSON.parse(e.reason) as { draftId: string }).draftId === DUP2,
+    );
+    // the working dup head itself attaches writable — the rebind lands on the editable surface.
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DUP2}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(false);
+  });
+
+  it("a working agent-origin head (in-flight work) still attaches read-only", async () => {
+    await fx.exec.query("update drafts set origin = 'drafted_from_outline' where id = $1", [DRAFT]);
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DRAFT}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(true);
+  });
+
+  // EDIT.1 — the N8 prod walk: the store-side fork LANDED (v2 in the DB) yet the client's §5.4
+  // banner never flipped. hocuspocus's closeConnections sends an in-band CLOSE but leaves the
+  // socket open, so the provider never re-auths — the frozen_fork refusal it re-points on never
+  // arrives. The store must therefore broadcast `rhema.fork` (the child id + n) out-of-band BEFORE
+  // the close. Drive the real extension hook and capture the broadcast.
+  it("onStoreDocument broadcasts rhema.fork (child id + n) before closing the frozen head's connections", async () => {
+    await fx.exec.query("update drafts set state = 'frozen' where id = $1", [DRAFT]);
+    const conn = await openDoc(fx);
+    const broadcasts: string[] = [];
+    const doc = conn.document!;
+    const realBroadcast = (doc as { broadcastStateless?: (p: string) => void }).broadcastStateless?.bind(doc);
+    (doc as { broadcastStateless: (p: string) => void }).broadcastStateless = (p) => {
+      broadcasts.push(p);
+      realBroadcast?.(p);
+    };
+    const closed: string[] = [];
+    try {
+      typeAll(doc, BASE_MD + "\nFirst write forks.\n");
+      await fx.service.extension.onStoreDocument!({
+        documentName: `draft:${DRAFT}`,
+        document: doc,
+        lastContext: ctx,
+        instance: { closeConnections: (name: string) => closed.push(name) } as never,
+      } as never);
+
+      const child = (
+        await fx.exec.query("select id, n from drafts where base_draft_id = $1", [DRAFT])
+      ).rows[0] as { id: string; n: number };
+      const forkMsg = broadcasts
+        .map((b) => JSON.parse(b) as { type?: string; draftId?: string; draftN?: number })
+        .find((m) => m.type === "rhema.fork");
+      expect(forkMsg, "a rhema.fork stateless reaches the live connection").toMatchObject({
+        type: "rhema.fork",
+        draftId: child.id,
+        draftN: child.n,
+      });
+      expect(closed).toEqual([`draft:${DRAFT}`]);
+      expect(fx.service.runtimes.get(`draft:${DRAFT}`)?.draftId).toBe(child.id);
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("the Showcase attaches read-only at auth and never materializes — no fork, no y_state write (§15.4)", async () => {
+    // the real showcase shape: a frozen seeded head on a showcase-flagged project
+    await fx.exec.query("update projects set showcase = true where id = $1", [PROJ]);
+    await fx.exec.query("update drafts set state = 'frozen' where id = $1", [DRAFT]);
+    const yBefore = (
+      await fx.exec.query("select y_state from live_docs where id = $1", [fx.liveDocId])
+    ).rows[0] as { y_state: Buffer };
+
+    // write intent on the worked example ⇒ a read-only attach (NOT the frozen_fork refusal —
+    // a showcase draft must never reach the fork path at all)
+    const c = await authenticateConnection({ db: fx.db, ids, clock }, {
+      documentName: `draft:${DRAFT}`,
+      cookieHeader: null,
+      token: TOKEN,
+      intent: null,
+    });
+    expect(c.readOnly).toBe(true);
+
+    // the store belt: even if updates somehow reach materialization, nothing is written
+    const conn = await openDoc(fx);
+    try {
+      typeAll(conn.document!, "# Title\n\nTampered showcase.\n");
+      const outcome = await storeNow(fx, conn.document!);
+      expect(outcome).toMatchObject({ locked: true, forked: false, changed: false });
+      const children = (
+        await fx.exec.query("select count(*)::int n from drafts where base_draft_id = $1", [DRAFT])
+      ).rows[0] as { n: number };
+      expect(children.n).toBe(0);
+      const yAfter = (
+        await fx.exec.query("select y_state from live_docs where id = $1", [fx.liveDocId])
+      ).rows[0] as { y_state: Buffer };
+      expect(Buffer.compare(yBefore.y_state, yAfter.y_state)).toBe(0);
+    } finally {
+      await conn.disconnect();
+    }
+  });
+
+  it("a read-only attach reaches the client as the rhema.readonly stateless at connect", async () => {
+    // hold the head so auth attaches read-only
+    await fx.exec.query(
+      `insert into runs(id, workspace_id, project_id, workflow, state, inputs, model_profile, model_tier, rigor,
+         estimate_credits, cap_credits, rate_table_version, lock_set)
+       values ($5,$1,$2,'review',$3,'{}'::jsonb,'p','base','standard',0,0,1,$4)`,
+      [WS, PROJ, HOLDING_STATES[1] /* running */, [lockKeys.draftWrite(DRAFT)], RUN],
+    );
+    const nodeServer = serve({ fetch: fx.service.app.fetch, port: 0 });
+    const wss = new WebSocketServer({ noServer: true });
+    (nodeServer as http.Server).on("upgrade", (req, socket, head) =>
+      wss.handleUpgrade(req, socket, head, (ws) => fx.service.handleUpgrade(ws, req)),
+    );
+    await new Promise<void>((resolve) => {
+      if ((nodeServer as http.Server).listening) resolve();
+      else nodeServer.once("listening", () => resolve());
+    });
+    const port = (nodeServer.address() as AddressInfo).port;
+
+    const provider = new HocuspocusProvider({
+      url: `ws://127.0.0.1:${port}/collab`,
+      name: `draft:${DRAFT}`,
+      token: TOKEN,
+      WebSocketPolyfill: WebSocket,
+    });
+    const readonlyMsg = new Promise<string>((resolve, reject) => {
+      provider.on("stateless", ({ payload }: { payload: string }) => {
+        if (payload.includes("rhema.readonly")) resolve(payload);
+      });
+      provider.on("authenticationFailed", (e: { reason: string }) => reject(new Error(e.reason)));
+      setTimeout(() => reject(new Error("rhema.readonly never arrived")), 8000);
+    });
+    try {
+      expect(JSON.parse(await readonlyMsg) as { type: string }).toMatchObject({
+        type: "rhema.readonly",
+      });
+    } finally {
+      provider.destroy();
+      wss.close();
+      (nodeServer as http.Server).close();
+    }
   });
 
   it("reconstructs a document from the daily snapshot + update deltas (byte-identical)", async () => {
@@ -481,6 +686,86 @@ describe("collab service (P1.03)", () => {
       (nodeServer as http.Server).close();
     }
   }, 15_000);
+
+  // EDIT.1 — the full N8 loop at the protocol level: a real provider types on a frozen head, the
+  // debounced store forks, `rhema.fork` reaches the open connection (the CLOSE message alone never
+  // re-auths — the prod walk proved it), and a rebind provider to the child syncs the same Y.Doc.
+  it("the frozen→v(N+1) loop lands end-to-end: rhema.fork stateless → rebind provider syncs", async () => {
+    await fx.exec.query("update drafts set state = 'frozen' where id = $1", [DRAFT]);
+    const nodeServer = serve({ fetch: fx.service.app.fetch, port: 0 });
+    const wss = new WebSocketServer({ noServer: true });
+    (nodeServer as http.Server).on("upgrade", (req, socket, head) =>
+      wss.handleUpgrade(req, socket, head, (ws) => fx.service.handleUpgrade(ws, req)),
+    );
+    await new Promise<void>((resolve) => {
+      if ((nodeServer as http.Server).listening) resolve();
+      else nodeServer.once("listening", () => resolve());
+    });
+    const port = (nodeServer.address() as AddressInfo).port;
+    const url = `ws://127.0.0.1:${port}/collab`;
+
+    const doc = new Y.Doc();
+    const parent = new HocuspocusProvider({
+      url,
+      name: `draft:${DRAFT}`,
+      token: TOKEN,
+      WebSocketPolyfill: WebSocket,
+      document: doc,
+    });
+    const forkMsg = new Promise<{ draftId: string; draftN: number }>((resolve, reject) => {
+      parent.on("stateless", ({ payload }: { payload: string }) => {
+        try {
+          const m = JSON.parse(payload) as { type?: string; draftId?: string; draftN?: number };
+          if (m.type === "rhema.fork" && m.draftId) resolve({ draftId: m.draftId, draftN: m.draftN ?? 0 });
+        } catch { /* foreign stateless */ }
+      });
+      parent.on("authenticationFailed", (e: { reason: string }) => reject(new Error(e.reason)));
+      setTimeout(() => reject(new Error("rhema.fork never arrived")), 12_000);
+    });
+    const child = new Promise<HocuspocusProvider>((resolve) => {
+      void forkMsg.then(({ draftId }) => {
+        parent.destroy();
+        resolve(
+          new HocuspocusProvider({
+            url,
+            name: `draft:${draftId}`,
+            token: TOKEN,
+            WebSocketPolyfill: WebSocket,
+            document: doc,
+          }),
+        );
+      });
+    });
+    let childProvider: HocuspocusProvider | null = null;
+    try {
+      // wait for the initial attach, then the keystroke IS the fork trigger (2 s debounced store)
+      await new Promise<void>((resolve, reject) => {
+        parent.on("synced", () => resolve());
+        setTimeout(() => reject(new Error("initial sync timeout")), 8000);
+      });
+      doc.getXmlFragment("prosemirror");
+      typeAll(doc, BASE_MD + "\nFirst write forks.\n");
+
+      const { draftId, draftN } = await forkMsg;
+      expect(draftId).not.toBe(DRAFT);
+      expect(draftN).toBe(2);
+
+      childProvider = await child;
+      await new Promise<void>((resolve, reject) => {
+        childProvider!.on("synced", () => resolve());
+        childProvider!.on("authenticationFailed", (e: { reason: string }) =>
+          reject(new Error(e.reason)),
+        );
+        setTimeout(() => reject(new Error("rebound provider never synced")), 8000);
+      });
+      expect(docToCanonicalMarkdown(childProvider.document)).toContain("First write forks.");
+    } finally {
+      parent.destroy();
+      childProvider?.destroy();
+      doc.destroy();
+      (nodeServer as http.Server).close();
+    }
+  }, 30_000);
 
   it("resumes a reconnected provider from the persisted y_state (kill/reconnect)", async () => {
     // persist a post-edit state directly (the y-indexeddb half is client-runtime; this proves the

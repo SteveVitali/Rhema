@@ -20,7 +20,11 @@ import {
   type WhatChangedEntryInput,
   type WhatChangedView,
 } from "@rhema/findings-core";
-import { responseLedgerSidecarSchema, type ResponseLedgerSidecar } from "@rhema/contracts";
+import {
+  isHumanEditableDraftOrigin,
+  responseLedgerSidecarSchema,
+  type ResponseLedgerSidecar,
+} from "@rhema/contracts";
 import { findingObligationState, loadObligation } from "@rhema/obligations";
 import type { ContentStore } from "@rhema/mirror";
 import type { SqlExecutor } from "@rhema/obligations";
@@ -507,8 +511,9 @@ export interface ReReviewSeed {
  * Compute the re-review inputs at run creation (PRB.06): the project's latest review correspondence is the
  * `prior_review`, and `changed_since` is the block diff between the version that review covered (its draft's
  * promoted head) and the version being re-reviewed (the run's target draft — `headDraftId`, else the
- * project's newest promoted draft). A head draft of `origin 'human_revision'` marks every touched block a
- * `humanAdded`/`unverifiable` claim placeholder (REQ-DATA-25; REQ-PROD-11).
+ * project's newest promoted draft). A head draft of a human-editable origin (`human_revision` /
+ * `human_upload` / `duplicate`) marks every touched block a `humanAdded`/`unverifiable` claim
+ * placeholder (REQ-DATA-25; REQ-PROD-11).
  */
 export async function computeReReviewSeed(
   exec: SqlExecutor,
@@ -539,7 +544,7 @@ export async function computeReReviewSeed(
   const beforeMd = await utf8OfVersion(store, prev.promoted_version_id, exec);
   const afterMd = head ? await utf8OfVersion(store, head.promoted_version_id, exec) : null;
   const changedSince = buildChangedSince(beforeMd ?? "", afterMd ?? "", {
-    humanEdit: head?.origin === "human_revision",
+    humanEdit: head?.origin != null && isHumanEditableDraftOrigin(head.origin),
   });
   return { priorReviewId: prev.id, changedSince };
 }

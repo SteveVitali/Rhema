@@ -53,3 +53,5 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-045](ADR-045-h1-to-title-normalization.md) | A document's leading H1 is the title — extracted at convert, defaulted at create, never demoted to a body H2 | ONB.1 | Accepted |
 | [ADR-046](ADR-046-unresolved-figure-inerting.md) | An unresolved relative figure becomes a warning + an inert placeholder — never a live URL | ONB.1 | Accepted |
 | [ADR-047](ADR-047-held-draft-consumed-handshake.md) | The held draft dies only to a token-matched consumed marker or an explicit Discard — never to a page view | ONB.1 | Accepted |
+| [ADR-048](ADR-048-v-working-resolves-the-editable-head.md) | `/v/working` resolves the editable head — working head, else the highest-n draft as the lazy-fork source | EDIT.1 | Accepted |
+| [ADR-049](ADR-049-one-sync-indicator-and-attach-time-readonly.md) | One sync indicator — the Page's `[data-sync-pill]`; read-only reaches the client at attach | EDIT.1 | Accepted |

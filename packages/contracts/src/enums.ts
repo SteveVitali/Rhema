@@ -131,6 +131,22 @@ export const DRAFT_ORIGINS = [
 ] as const;
 export type DraftOrigin = (typeof DRAFT_ORIGINS)[number];
 export const draftOriginSchema = z.enum(DRAFT_ORIGINS);
+/**
+ * EDIT.1 — the origins a WORKING head may carry while still being the person's editable surface
+ * (§5.4): `human_revision` (the canonical edit lineage), `human_upload` (a not-yet-frozen upload —
+ * defensive; the importer freezes), `duplicate` (REQ-PROD-8's row action copies draft state
+ * verbatim, so the copy's head lands `duplicate`/`working` — the user's play copy). A working head
+ * of any other origin (`drafted_from_outline`, `response_to_review`, `imported`, `cut`) is
+ * in-flight agent/seed work — edited by run surfaces, never the Page editor. The
+ * `one_working_head_per_project` index makes this an in-place rule: a working human head can't
+ * fork (the child would be a second working draft).
+ */
+export const HUMAN_EDITABLE_DRAFT_ORIGINS = ["human_revision", "human_upload", "duplicate"] as const;
+export type HumanEditableDraftOrigin = (typeof HUMAN_EDITABLE_DRAFT_ORIGINS)[number];
+export const humanEditableDraftOriginSchema = z.enum(HUMAN_EDITABLE_DRAFT_ORIGINS);
+/** Whether `origin` is a human-editable working-head origin (SQL rows arrive as plain text). */
+export const isHumanEditableDraftOrigin = (origin: string): origin is HumanEditableDraftOrigin =>
+  (HUMAN_EDITABLE_DRAFT_ORIGINS as readonly string[]).includes(origin);
 export const DRAFT_STATES = ["working", "frozen"] as const;
 export type DraftState = (typeof DRAFT_STATES)[number];
 

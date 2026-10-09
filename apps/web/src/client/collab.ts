@@ -137,7 +137,19 @@ export function createCollabSession(opts: CollabSessionOptions): CollabSession {
       },
       onStateless: ({ payload }) => {
         try {
-          const msg = JSON.parse(payload) as { type?: string; restorePointId?: string };
+          const msg = JSON.parse(payload) as {
+            type?: string;
+            restorePointId?: string;
+            draftId?: string;
+            draftN?: number;
+          };
+          // The store-side fork lands out-of-band: the server's CLOSE message never drops the
+          // socket (the provider would sit half-open forever — the N8 prod walk caught the banner
+          // staying "v1 — frozen"), so the store broadcasts `rhema.fork` and we rebind directly.
+          if (msg.type === "rhema.fork" && msg.draftId) {
+            opts.onFork?.({ draftId: msg.draftId, draftN: msg.draftN ?? 0 });
+            return;
+          }
           if (msg.type === "rhema.readonly") {
             readOnly = true;
             emit();

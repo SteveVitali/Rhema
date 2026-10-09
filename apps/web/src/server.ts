@@ -283,9 +283,20 @@ export function createWebApp(deps: WebDeps): Hono {
   // because hand-authored `style=` attributes are pervasive (scoped to styles, which cannot exfiltrate);
   // images may come from the cookieless usercontent origin (the only non-self source). Non-HTML
   // responses (SSE, downloads, JSON) pass through untouched.
+  // EDIT.1 — the Page's collab wire is a same-origin `wss://` endpoint (COLLAB_WS_URL). Chromium maps
+  // 'self' onto wss:// for connect-src, but WebKit's coverage has historically been inconsistent —
+  // carry the configured origin explicitly so the connect works in every engine (the source is the
+  // operator-configured collab origin, never a wildcard).
+  const collabWsSource = (() => {
+    try {
+      return deps.collabWsUrl ? new URL(deps.collabWsUrl).origin : null;
+    } catch {
+      return null;
+    }
+  })();
   const cspFor = (nonce: string) =>
     `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; ` +
-    `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'; font-src 'self'; ` +
+    `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'${collabWsSource ? ` ${collabWsSource}` : ""}; font-src 'self'; ` +
     `object-src 'none'; frame-ancestors 'none'; base-uri 'self'; ` +
     // BILL.3 (ADR-027): a form submission whose response redirects to a Stripe-hosted page is checked
     // against `form-action` — the bare `'self'` blocked every purchase hand-off (the run-sheet Add
@@ -471,7 +482,9 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(principal?.userId ? { userId: principal.userId } : {}),
         projectId: row.id,
         ...(c.req.query("focus") === "1" ? { initialView: "focus" as const } : {}),
-        ...(row.headDraftId ? { sourceHref: `/p/${row.slug}/edit/${row.headDraftId}` } : {}),
+        // EDIT.1 — the Files-pane Source row is an edit entry point: it rides the one resolver
+        // (`/v/working` → the editable head) instead of the legacy /edit/:id redirect hop.
+        ...(row.headDraftId ? { sourceHref: `/p/${row.slug}/v/working` } : {}),
         ...(row.activeRun ? { activeRun: row.activeRun } : {}),
         ...(opts.inboxCount != null ? { inboxCount: opts.inboxCount } : {}),
         ...(opts.findings ? { findings: opts.findings } : {}),
@@ -3106,8 +3119,11 @@ export function createWebApp(deps: WebDeps): Hono {
                 doc: pageLoad.doc,
                 docJson: pageLoad.docJson,
                 // P1.19 — §10.1: the overview's Page is reader-only on phone width.
-                ...(isPhoneRequest(c) ? { readOnly: true } : {}),
-                ...(deps.collabWsUrl && !isPhoneRequest(c) ? { collabWsUrl: deps.collabWsUrl } : {}),
+                // EDIT.1 — the Showcase overview Page is read-only too (§15.4; matches /v/:v).
+                ...(isPhoneRequest(c) || row.showcase ? { readOnly: true } : {}),
+                ...(deps.collabWsUrl && !(isPhoneRequest(c) || row.showcase)
+                  ? { collabWsUrl: deps.collabWsUrl }
+                  : {}),
               },
             }
           : {}),
@@ -4422,11 +4438,13 @@ export function createWebApp(deps: WebDeps): Hono {
   };
 
   // -------------------------------------------------------------------------------------------------------------------
-  // P1.02 — the Page routes (§5.4; REQ-DATA-28/29 amended). `/p/:project/v/working` is the editable
-  // head; `/p/:project/v/:n` renders that version's draft (frozen ⇒ read-only Page — typing would fork,
-  // but the frozen view itself is the read render). The CodeMirror `/edit/:draftId` page is superseded
-  // (redirect below); its same-origin /doc /save /note /cancel-run /revise endpoints stay — they ARE
-  // the Page's transport surface (the seam, unchanged for P1.03's swap).
+  // P1.02 + EDIT.1 — the Page routes (§5.4; REQ-DATA-28/29 amended). `/p/:project/v/working` resolves
+  // the EDITABLE head (ADR-048: the working head, else the highest-n draft — a frozen import or
+  // reviewed head served editable-with-banner as the lazy-fork source); `/p/:project/v/:n` renders
+  // that version's draft exactly (frozen ⇒ still editable — the first keystroke's autosave forks
+  // v(N+1) server-side). The CodeMirror `/edit/:draftId` page is superseded (redirect below); its
+  // same-origin /doc /save /note /cancel-run /revise endpoints stay — they ARE the Page's transport
+  // surface (the seam, unchanged for P1.03's swap).
   // -------------------------------------------------------------------------------------------------------------------
 
   app.get("/p/:project/v/:v", async (c) => {
@@ -4440,7 +4458,14 @@ export function createWebApp(deps: WebDeps): Hono {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     });
-    if (!resolved) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    // EDIT.1 — `working` resolves the EDITABLE head (working head, else highest-n draft served as
+    // the lazy-fork source); a 404 here now means the project has no drafts at all — send the reader
+    // back to the project page (the empty-state cards / import affordance live there) instead of
+    // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404.
+    if (!resolved) {
+      if (v === "working") return c.redirect(`/p/${slug}`);
+      return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    }
     const pageLoad = await loadEditorPage(deps.dataSource, session, row.id, resolved.draftId).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
@@ -4494,8 +4519,14 @@ export function createWebApp(deps: WebDeps): Hono {
           doc,
           docJson: pageLoad.docJson,
           // phone width ⇒ reader-only Page (§10.1): no edits, no collab wire, no version rail.
-          ...(phone ? { readOnly: true } : {}),
-          ...(deps.collabWsUrl && !phone ? { collabWsUrl: deps.collabWsUrl } : {}),
+          // EDIT.1 — the Showcase Page is read-only too (§15.4): the guard 409s its HTTP saves and
+          // the collab attach is read-only, so the SSR must carry the same posture (the read-only
+          // note + banner, no editable affordance).
+          ...(phone || row.showcase ? { readOnly: true } : {}),
+          // a read-only SSR page gets NO collab wire: the island mounts the static view and nothing
+          // connects, types, or forks (locks mid-session still attach read-only + the rhema.readonly
+          // stateless flips the pill — the socket stays for pages that were writable at render).
+          ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
           ...(c.req.query("noted") ? { noteSaved: true } : {}),
           ...(railData && !phone
             ? {
@@ -4644,7 +4675,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!session) return c.redirect("/login");
     const t = await editorTarget(c, session);
     if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const doc = await deps.dataSource.getEditorDoc(session, t.row.id, t.draftId, { exact: true }).catch((e) => {
+    // EDIT.1 — a non-exact read: a stale base id lands on its working child (`/v/<childN>`, the live
+    // editing surface) rather than on the frozen view, matching the save/doc routes' resolution.
+    const doc = await deps.dataSource.getEditorDoc(session, t.row.id, t.draftId).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     });

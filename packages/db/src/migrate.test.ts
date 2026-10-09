@@ -78,4 +78,41 @@ describe("migrations (REQ-DATA-3)", () => {
     });
     await db.close();
   });
+
+  // EDIT.1 (migration 0053): the collab role's store path needs UPDATE on provenance_maps —
+  // saveManualRevision's provenance write is `insert … on conflict do update`, and Postgres
+  // requires UPDATE for the conflict branch even when no row conflicts. Prod denied it (42501)
+  // on the live N8 walk; PGlite's superuser never ACL-checks DML, but `has_table_privilege` reads
+  // the grant catalog faithfully, so the least-privilege matrix is assertable here.
+  it("grants rhema_collab the exact store-path privileges (0028/0053 vs saveManualRevision)", async () => {
+    const db = await createTestDb();
+    // table → privileges the collab service's materialization/fork/sweep paths actually issue.
+    const need: Record<string, string[]> = {
+      drafts: ["SELECT", "INSERT", "UPDATE"],
+      live_docs: ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      restore_points: ["SELECT", "INSERT", "DELETE"],
+      working_copies: ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      artifacts: ["SELECT", "INSERT", "UPDATE"],
+      artifact_versions: ["SELECT", "INSERT"],
+      provenance_maps: ["SELECT", "INSERT", "UPDATE"],
+      findings: ["SELECT", "UPDATE"],
+      timeline_events: ["SELECT", "INSERT"],
+      projects: ["SELECT"],
+      runs: ["SELECT"],
+      session: ["SELECT"],
+      workspace_members: ["SELECT"],
+      workspaces: ["SELECT"],
+      subscriptions: ["SELECT"],
+    };
+    for (const [table, privs] of Object.entries(need)) {
+      for (const priv of privs) {
+        const { ok } = await one(
+          db,
+          `select has_table_privilege('rhema_collab', 'public.${table}', '${priv}') as ok`,
+        );
+        expect(ok, `rhema_collab ${priv} on ${table}`).toBe(true);
+      }
+    }
+    await db.close();
+  });
 });

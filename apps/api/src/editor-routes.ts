@@ -63,10 +63,13 @@ async function editorLock(
   );
 }
 
-/** The draft the editor is bound to: the requested draft, or — when it is a FROZEN base with a WORKING
- *  human_revision child — the child (the user's edits live there; a stale /edit/:frozenId load must see
- *  them). Returns undefined when the draft doesn't exist in the project. Exported for the export routes
- *  (PRB.11) — the export reads the same head the editor shows. */
+/** The draft the editor is bound to: the requested draft, or — when it is a FROZEN base while a
+ *  WORKING head stands — that head (the user's edits live there; a stale /edit/:frozenId load must
+ *  see them). The head needn't be the base's direct human_revision child: a duplicated project's
+ *  `duplicate` working head and a deep lineage's open grandchild are the same surface, and
+ *  `one_working_head_per_project` makes the project-scoped read unambiguous. Returns undefined when
+ *  the draft doesn't exist in the project. Exported for the export routes (PRB.11) — the export
+ *  reads the same head the editor shows. */
 export async function resolveEditorHead(
   exec: SqlExecutor,
   projectId: string,
@@ -81,18 +84,16 @@ export async function resolveEditorHead(
     )
   ).rows[0] as DraftHeadRow | undefined;
   // P1.02: `?exact=1` reads THIS draft's bytes — /v/:n on a frozen draft shows vN itself (read-only),
-  // never its working child.
+  // never its working head.
   if (!opts.exact && head?.state === "frozen") {
-    const child = (
+    const working = (
       await exec.query(
         `select id, project_id, n, origin, state, promoted_version_id, base_draft_id
-           from drafts
-          where base_draft_id = $1 and origin = 'human_revision' and state = 'working'
-          order by n desc limit 1`,
-        [head.id],
+           from drafts where project_id = $1 and state = 'working'`,
+        [projectId],
       )
     ).rows[0] as DraftHeadRow | undefined;
-    if (child) head = child;
+    if (working) head = working;
   }
   return head;
 }
@@ -229,8 +230,12 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
     return venueCapLabel(words, p.venue, row.maxWords);
   };
 
-  // ---- /v/:n + /v/working draft-ref resolution (P1.02): 'working' → the project's working head;
-  //      a number → that draft. 404 when absent. ----
+  // ---- /v/:n + /v/working draft-ref resolution (P1.02 + EDIT.1/ADR-048): 'working' → the
+  //      project's EDITABLE head — the working head when one exists, else the highest-n draft
+  //      (a frozen reviewed head, a frozen import, a seeded head) served as the lazy-fork
+  //      source: the fork itself stays first-write (saveManualRevision), never open-time. A
+  //      number → that draft exactly (the frozen base keeps answering as itself). 404 when
+  //      absent — for 'working' that means the project has no drafts at all. ----
   app.get("/projects/:id/editor/resolve/:v", async (c) => {
     const principal = deps.principal(c);
     if (!principal) return c.json({ error: "unauthenticated" }, 401);
@@ -240,8 +245,8 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       if (v === "working") {
         return (
           (await tx.query(
-            `select id, n, state, origin from drafts where project_id = $1 and state = 'working'
-             order by n desc limit 1`,
+            `select id, n, state, origin from drafts where project_id = $1
+             order by (state = 'working') desc, n desc limit 1`,
             [c.req.param("id")],
           )).rows[0] as { id: string; n: number; state: string; origin: string } | undefined
         );
@@ -288,12 +293,12 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
             | undefined)
         : undefined;
 
-      // Findings were filed on the draft the review READ: the working human_revision child's frozen base,
-      // or the head itself (a frozen vN's review targeted vN — not its own base).
+      // Findings were filed on the draft the review READ: the working head's frozen base, or the
+      // head itself (a frozen vN's review targeted vN — not its own base). The rule keys on
+      // base_draft_id, not origin — a `duplicate` working head (a showcase copy) inherits its base's
+      // findings exactly like a human_revision child does.
       const findingDraftId =
-        head.state === "working" && head.origin === "human_revision" && head.base_draft_id
-          ? head.base_draft_id
-          : head.id;
+        head.state === "working" && head.base_draft_id ? head.base_draft_id : head.id;
       const findingRows = (
         await tx.query(
           `select f.id, f.title, f.severity, f.kind, f.suggestion, f.anchor, d.n as reviewed_n, ci.kind as corr_kind

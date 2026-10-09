@@ -10,7 +10,7 @@ import http from "node:http";
 import type { IncomingMessage } from "node:http";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { Hocuspocus } from "@hocuspocus/server";
+import { Hocuspocus, type Extension } from "@hocuspocus/server";
 import { WebSocketServer, type WebSocket } from "ws";
 import { Storage } from "@google-cloud/storage";
 import pg from "pg";
@@ -22,6 +22,7 @@ import {
   type GcsRestoreBucketLike,
 } from "@rhema/mirror";
 import { blockPatchRequestSchema } from "@rhema/contracts";
+import { randomUlids } from "@rhema/orchestrator";
 import { createCollabDb, type CollabDb } from "./sql.js";
 import { createCollabExtension, type CollabExtensionDeps } from "./extension.js";
 import { sweepRestorePoints, type RestoreBlobStore } from "./restore.js";
@@ -45,6 +46,8 @@ async function routePrincipal(
 export interface CollabService {
   readonly app: Hono;
   readonly hocuspocus: Hocuspocus<Record<string, unknown>>;
+  /** the mounted extension — a test seam (drive onStoreDocument to observe the fork/readonly broadcasts). */
+  readonly extension: Extension<Record<string, unknown>>;
   readonly runtimes: Map<string, DocRuntime>;
   /** ws.WebSocket → handleConnection — the http server's upgrade hook calls this. */
   readonly handleUpgrade: (ws: WebSocket, req: IncomingMessage) => void;
@@ -140,6 +143,7 @@ export function createCollabService(deps: CollabServiceDeps): CollabService {
   return {
     app,
     hocuspocus,
+    extension,
     runtimes,
     handleUpgrade: (ws, req) => {
       // handleConnection returns the ClientConnection — the integration owns the ws event wiring
@@ -174,7 +178,11 @@ function liveDeps(env: ReturnType<typeof readCollabEnv>): CollabServiceDeps {
     db,
     storeFor,
     blobs,
-    ids: (p) => `${p}_${crypto.randomUUID().replaceAll("-", "").slice(0, 24)}`,
+    // EDIT.1 — real ULIDs, never `${p}_${uuid}`: saveManualRevision's draft.forked event validates
+    // the minted child id against idSchema (26-char Crockford ULID) and a non-ULID id throws the
+    // whole storeDocument hook — the keystroke's fork silently dies server-side (the N8 prod walk
+    // caught it: ZodError in the collab logs, the banner never flipped).
+    ids: randomUlids(),
     clock: { now: () => new Date() },
     eventWriter: {
       // collab materializations carry no runId — saveManualRevision routes every event to the

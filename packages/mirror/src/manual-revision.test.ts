@@ -323,4 +323,118 @@ describe("saveManualRevision (PRB.07)", () => {
     });
     expect(r).toEqual({ ok: false, reason: "not_editable" });
   });
+
+  // EDIT.1 — the showcase-copy shape (§15.4 "duplicate to play"; REQ-PROD-8's row action): the copy's
+  // head lands `duplicate`/`working` — a human-authored open head, not in-flight agent work. It IS
+  // the project's editable surface: `one_working_head_per_project` forbids a fork, so saves land in
+  // place. N8's frozen-dup leg caught the old `origin === 'human_revision'` gate attaching read-only.
+  it("a working 'duplicate' head (a project copy) saves in place — no fork, origin stays", async () => {
+    const verId = (
+      await db.exec.query("select promoted_version_id from drafts where id = $1", [frozenDraftId])
+    ).rows[0] as { promoted_version_id: string };
+    const dupId = testDeps(400).ids("dft");
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'duplicate','working',$3,$4)`,
+      [dupId, proj.projectId, verId.promoted_version_id, frozenDraftId],
+    );
+
+    const md = "# MR\n\nThe draft body for MR.\n\nTyped on the copy.\n";
+    const r = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: dupId,
+      markdown: md,
+      userId: USER,
+    });
+    expect(r).toMatchObject({ ok: true, forked: false, changed: true, draftId: dupId, draftN: 2 });
+    const head = (
+      await db.exec.query("select origin, state from drafts where id = $1", [dupId])
+    ).rows[0] as { origin: string; state: string };
+    expect(head).toEqual({ origin: "duplicate", state: "working" }); // provenance stays honest
+    const drafts = await db.exec.query("select count(*)::int n from drafts where project_id = $1", [
+      proj.projectId,
+    ]);
+    expect((drafts.rows[0] as { n: number }).n).toBe(2); // never a third draft
+    const evs = await timelineEvents();
+    expect(evs.some((e) => e.type === "draft.forked")).toBe(false);
+  });
+
+  it("a frozen base save routes to the standing 'duplicate' working head — never a second working draft", async () => {
+    const verId = (
+      await db.exec.query("select promoted_version_id from drafts where id = $1", [frozenDraftId])
+    ).rows[0] as { promoted_version_id: string };
+    const dupId = testDeps(401).ids("dft");
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'duplicate','working',$3,$4)`,
+      [dupId, proj.projectId, verId.promoted_version_id, frozenDraftId],
+    );
+
+    // typing reached the frozen base's document (a stale /v/1 page, a retried beacon) — the unique
+    // index makes a fork impossible; the save lands on the project's ONE working head instead.
+    const r = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: frozenDraftId,
+      markdown: "# MR\n\nThe draft body for MR.\n\nVia the stale base.\n",
+      userId: USER,
+    });
+    expect(r).toMatchObject({ ok: true, forked: false, changed: true, draftId: dupId, draftN: 2 });
+    const working = await db.exec.query(
+      "select count(*)::int n from drafts where project_id = $1 and state = 'working'",
+      [proj.projectId],
+    );
+    expect((working.rows[0] as { n: number }).n).toBe(1);
+  });
+
+  it("a stale frozen base still forks when NO working head stands — the child takes max(n)+1", async () => {
+    // the stale-base crash shape: a later FROZEN draft already occupies n=2 (a fork a run froze
+    // mid-flight), no working head anywhere. base.n+1 would collide on (project_id, n) — REQ-DATA-24's
+    // v(N+1) is the next version NUMBER, so the child lands as v3 based on THIS base.
+    const v2 = testDeps(410).ids("dft");
+    const verId = (
+      await db.exec.query("select promoted_version_id from drafts where id = $1", [frozenDraftId])
+    ).rows[0] as { promoted_version_id: string };
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'human_revision','frozen',$3,$4)`,
+      [v2, proj.projectId, verId.promoted_version_id, frozenDraftId],
+    );
+
+    const md = "# MR\n\nThe draft body for MR.\n\nEdited off the stale v1.\n";
+    const r = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: frozenDraftId,
+      markdown: md,
+      userId: USER,
+    });
+    expect(r).toMatchObject({ ok: true, forked: true, changed: true, draftN: 3 });
+    if (!r.ok) return;
+    const head = (
+      await db.exec.query("select n, origin, state, base_draft_id from drafts where id = $1", [r.draftId])
+    ).rows[0] as { n: number; origin: string; state: string; base_draft_id: string };
+    expect(head).toMatchObject({ n: 3, origin: "human_revision", state: "working", base_draft_id: frozenDraftId });
+  });
+
+  it("a frozen base under a working AGENT head is not_editable — the human save has nowhere to land", async () => {
+    const verId = (
+      await db.exec.query("select promoted_version_id from drafts where id = $1", [frozenDraftId])
+    ).rows[0] as { promoted_version_id: string };
+    const agentHead = testDeps(420).ids("dft");
+    await db.exec.query(
+      `insert into drafts(id, project_id, n, origin, state, promoted_version_id, base_draft_id)
+       values ($1,$2,2,'drafted_from_outline','working',$3,$4)`,
+      [agentHead, proj.projectId, verId.promoted_version_id, frozenDraftId],
+    );
+    const r = await saveManualRevision(db.exec, deps, {
+      workspaceId,
+      projectId: proj.projectId,
+      draftId: frozenDraftId,
+      markdown: "# MR\n\nNowhere to land.\n",
+      userId: USER,
+    });
+    expect(r).toEqual({ ok: false, reason: "not_editable" });
+  });
 });

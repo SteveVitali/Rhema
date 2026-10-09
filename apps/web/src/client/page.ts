@@ -85,10 +85,10 @@ function setLockBanner(lock: { kind: "writer" | "reader"; workflow: string } | n
   if (lockBannerText) lockBannerText.textContent = template.replace("{workflow}", lock?.workflow ?? "");
 }
 
-/** After a frozen_head fork the version banner reads "v{n} — your revision of v{base}". */
+/** After a frozen_head fork the version banner reads §5.4's "Editing vN · findings from vM follow your text". */
 function showForkBanner(root: HTMLElement, draftN: number, baseN: number): void {
   if (!versionBanner || !versionBannerText) return;
-  const fmt = root.dataset["forkFmt"] ?? "v{n} — your revision of v{base}";
+  const fmt = root.dataset["forkFmt"] ?? "Editing v{n} · findings from v{base} follow your text";
   versionBannerText.textContent = fmt.replace("{n}", String(draftN)).replace("{base}", String(baseN));
   versionBanner.style.display = "flex";
 }
@@ -107,6 +107,26 @@ function toBlockSource(v: unknown): BlockSource {
     default:
       return { kind: "human" };
   }
+}
+
+/** Provenance origins (REQ-POS-8): stamp every doc-changing transaction that carries no explicit
+ *  ORIGIN_META with "pasted" (armed by the one-shot paste flag) or "human". Exported for the
+ *  happy-dom regression test — EDIT.1: this hook must apply the tr directly; `view.dispatch`
+ *  inside dispatchTransaction routes back through the hook and blew the stack on the first
+ *  keystroke (the N8 prod walk caught it — latent while the embed bug kept the island dead). */
+export function installOriginDispatch(
+  view: EditorView,
+  opts: { readonly armed: () => boolean; readonly onDocChanged: () => void },
+): void {
+  view.setProps({
+    dispatchTransaction(tr) {
+      if (tr.docChanged && tr.getMeta(ORIGIN_META) == null) {
+        tr.setMeta(ORIGIN_META, opts.armed() ? "pasted" : "human");
+      }
+      view.updateState(view.state.apply(tr));
+      if (tr.docChanged) opts.onDocChanged();
+    },
+  });
 }
 
 async function main(): Promise<void> {
@@ -141,6 +161,7 @@ async function main(): Promise<void> {
           const baseN = draftN;
           rebase(fork.draftId); // rebase owns the session rebind (URL + dataset + provider)
           draftN = fork.draftN;
+          root.dataset["draftN"] = String(draftN);
           showForkBanner(root, fork.draftN, baseN);
         },
         onReadOnly: () => {
@@ -240,17 +261,11 @@ async function main(): Promise<void> {
     });
   };
 
-  const origDispatch = view.dispatch.bind(view);
-  view.setProps({
-    dispatchTransaction(tr) {
-      if (tr.docChanged && tr.getMeta(ORIGIN_META) == null) {
-        tr.setMeta(ORIGIN_META, pasteArmed ? "pasted" : "human");
-      }
-      origDispatch(tr);
-      if (tr.docChanged) {
-        updateMeters();
-        if (provTimer == null) provTimer = window.setTimeout(flushProvenance, PROV_FLUSH_MS);
-      }
+  installOriginDispatch(view, {
+    armed: () => pasteArmed,
+    onDocChanged: () => {
+      updateMeters();
+      if (provTimer == null) provTimer = window.setTimeout(flushProvenance, PROV_FLUSH_MS);
     },
   });
 
