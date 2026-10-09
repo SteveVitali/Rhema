@@ -87,3 +87,42 @@ describe("OBS.1 dashboard tiles", () => {
     expect(SRC).toContain('plotType: "STACKED_BAR"');
   });
 });
+
+describe("SLO.1 weekly-review metrics (REQ-ARCH-34)", () => {
+  const weeklyBlock = SRC.slice(
+    SRC.indexOf('new gcp.logging.Metric(`rhema-${stack}-slo-weekly`'),
+    SRC.indexOf('new gcp.logging.Metric(`rhema-${stack}-slo-weekly-value`'),
+  );
+  const weeklyValueBlock = SRC.slice(
+    SRC.indexOf('new gcp.logging.Metric(`rhema-${stack}-slo-weekly-value`'),
+    SRC.indexOf("const lb5xxMetric"),
+  );
+
+  it("counts every `[slo] weekly` reading on the worker, labelled by signal + status (an empty/unmeasured/error status is visible, never absent)", () => {
+    expect(weeklyBlock).toContain('name: "rhema_slo_weekly"');
+    // The filter threads the AUTONAMED worker service name (rhema-prod-worker-cbdaf0f), not the
+    // literal Pulumi base name — a literal filter silently matches zero log entries.
+    expect(weeklyBlock).toContain('resource.labels.service_name="${workerServiceName}"');
+    expect(weeklyBlock).toContain('textPayload:"[slo] weekly {"');
+    expect(weeklyBlock).toContain('metricKind: "DELTA"');
+    expect(weeklyBlock).toContain('key: "signal"');
+    expect(weeklyBlock).toContain('key: "status"');
+  });
+
+  it("distributions the numeric value per signal (a null value extracts nothing)", () => {
+    expect(weeklyValueBlock).toContain('name: "rhema_slo_weekly_value"');
+    expect(weeklyValueBlock).toContain('valueType: "DISTRIBUTION"');
+    expect(weeklyValueBlock).toContain("valueExtractor");
+    expect(weeklyValueBlock).toContain('key: "signal"');
+    // no `status` label — a distribution point belongs to its signal; the status split lives on the counter.
+    expect(weeklyValueBlock).not.toContain('key: "status"');
+  });
+
+  it("charts the weekly readings by status and the measured value by signal", () => {
+    expect(SRC).toContain('title: "weekly SLO review — readings by status"');
+    expect(SRC).toContain('"metric.label.status"');
+    expect(SRC).toContain('title: "weekly SLO review — measured value by signal"');
+    expect(SRC).toContain("rhema_slo_weekly_value");
+    expect(SRC).toContain('"metric.label.signal"');
+  });
+});

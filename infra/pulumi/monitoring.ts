@@ -22,6 +22,8 @@ export interface MonitoringArgs {
   readonly project: pulumi.Input<string>;
   /** the api Cloud Run service name (for the availability Slo's monitored-service labels). */
   readonly apiServiceName?: pulumi.Input<string>;
+  /** the worker Cloud Run service name (for the `[slo] *` log-metric filters — see below). */
+  readonly workerServiceName?: pulumi.Input<string>;
   /** the api service's region (Cloud Run serviceLabel `location`). */
   readonly region: pulumi.Input<string>;
   /** the ops webhook URL (Pulumi secret config) — the channel exists only when set. */
@@ -53,6 +55,8 @@ export const SLO_ALERT_SIGNALS = [
 
 export function createMonitoring(args: MonitoringArgs): {
   sloViolationsMetric: gcp.logging.Metric;
+  sloWeeklyMetric: gcp.logging.Metric;
+  sloWeeklyValueMetric: gcp.logging.Metric;
   lb5xxMetric: gcp.logging.Metric;
   route5xxMetric: gcp.logging.Metric;
   dashboard: gcp.monitoring.Dashboard;
@@ -61,6 +65,14 @@ export function createMonitoring(args: MonitoringArgs): {
   notificationChannel?: gcp.monitoring.NotificationChannel;
 } {
   const { stack, project, region } = args;
+
+  // Cloud Run services are Pulumi-AUTONAMED — `rhema-prod-worker` deploys as e.g.
+  // `rhema-prod-worker-cbdaf0f`, and THAT full name is the `service_name` resource label on every
+  // log line + run.googleapis.com metric. Any filter naming the base string silently matches
+  // nothing: the violations counter, the weekly metrics, the api-availability Slo and the dashboard's
+  // api tiles all read zero until the real name is threaded through (found on prod at SLO.1 close).
+  const workerServiceName = args.workerServiceName ?? `rhema-${stack}-worker`;
+  const apiServiceName = args.apiServiceName ?? `rhema-${stack}-api`;
 
   // The notification channel — only when the webhook URL is configured (unseeded stages still get the
   // policies; they record incidents, they just don't page).
@@ -80,10 +92,7 @@ export function createMonitoring(args: MonitoringArgs): {
   const sloViolationsMetric = new gcp.logging.Metric(`rhema-${stack}-slo-violations`, {
     name: "rhema_slo_violations",
     project,
-    filter:
-      'resource.type="cloud_run_revision" AND ' +
-      'resource.labels.service_name="rhema-' + stack + '-worker" AND ' +
-      'textPayload:"[slo] violation"',
+    filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] violation"`,
     metricDescriptor: {
       metricKind: "DELTA",
       valueType: "INT64",
@@ -92,6 +101,51 @@ export function createMonitoring(args: MonitoringArgs): {
     },
     labelExtractors: {
       // textPayload shape: `[slo] violation {"signal":"key",...}` — extract the signal value.
+      signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
+    },
+  });
+
+  // SLO.1 / REQ-ARCH-34 — the weekly review's log-based metrics. The `slo.review.weekly` cron logs one
+  // `[slo] weekly {"signal":…,"status":…,"value":…}` line per reading; `rhema_slo_weekly` counts them by
+  // signal + status (an `empty`/`unmeasured`/`error` status is VISIBLE on the tile — never silently
+  // absent) and `rhema_slo_weekly_value` distributions the numeric value (a null value — an empty or
+  // unmeasured reading — extracts nothing, correctly recording no point). The `[slo] weekly-summary`
+  // rollup line is the one-glance row; both are what the docs/ops/slo-review.md weekly checklist reads.
+  const sloWeeklyMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly`, {
+    name: "rhema_slo_weekly",
+    project,
+    filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] weekly {"`,
+    metricDescriptor: {
+      metricKind: "DELTA",
+      valueType: "INT64",
+      unit: "1",
+      labels: [
+        { key: "signal", valueType: "STRING", description: "the §13.5 signal key" },
+        { key: "status", valueType: "STRING", description: "ok|breach|empty|unmeasured|error" },
+      ],
+    },
+    labelExtractors: {
+      signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
+      status: 'REGEXP_EXTRACT(textPayload, "\\"status\\":\\"([a-z_]+)\\"")',
+    },
+  });
+  const sloWeeklyValueMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly-value`, {
+    name: "rhema_slo_weekly_value",
+    project,
+    filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] weekly {"`,
+    metricDescriptor: {
+      metricKind: "DELTA",
+      valueType: "DISTRIBUTION",
+      unit: "1",
+      labels: [{ key: "signal", valueType: "STRING", description: "the §13.5 signal key" }],
+    },
+    // GCP 400s a DISTRIBUTION log metric with no explicit buckets (update 127). Explicit bounds
+    // cover the §13.5 scales: ms-class autosave/delivery values up to minute-class latencies.
+    bucketOptions: {
+      exponentialBuckets: { numFiniteBuckets: 14, growthFactor: 2, scale: 0.01 },
+    },
+    valueExtractor: 'REGEXP_EXTRACT(textPayload, "\\"value\\":([0-9.eE+-]+)")',
+    labelExtractors: {
       signal: 'REGEXP_EXTRACT(textPayload, "\\"signal\\":\\"([a-z0-9_]+)\\"")',
     },
   });
@@ -243,33 +297,45 @@ export function createMonitoring(args: MonitoringArgs): {
 
   // API availability — a Cloud Run request-based SLO on the api service (the §13.5 99.9%/month row;
   // measured platform-side, `api_availability_monthly_pct` is unmeasured at the DB layer on purpose).
-  const apiService = new gcp.monitoring.GenericService(`rhema-${stack}-api-svc`, {
-    serviceId: `api-${stack}`,
-    basicService: {
-      serviceType: "CLOUD_RUN",
-      serviceLabels: {
-        service_name: args.apiServiceName ?? `rhema-${stack}-api`,
-        location: region,
+  // `deleteBeforeReplace`: the serviceId is the resource's physical name — a create-replacement of a
+  // renamed monitored service would collide. Deleting a monitored service cascade-deletes its SLOs,
+  // so the Slo below carries `deletedWith` to be recreated in lockstep (one `up`, no orphan).
+  const apiService = new gcp.monitoring.GenericService(
+    `rhema-${stack}-api-svc`,
+    {
+      serviceId: `api-${stack}`,
+      basicService: {
+        serviceType: "CLOUD_RUN",
+        serviceLabels: {
+          service_name: apiServiceName,
+          location: region,
+        },
       },
     },
-  });
-  const apiAvailabilitySlo = new gcp.monitoring.Slo(`rhema-${stack}-api-availability`, {
-    service: apiService.serviceId,
-    sloId: `api-availability-${stack}`,
-    displayName: "API availability 99.9% monthly (§13.5)",
-    goal: 0.999,
-    calendarPeriod: "MONTH",
-    requestBasedSli: {
-      goodTotalRatio: {
-        // good: 2xx/3xx/4xx; total: all requests. 5xx burns the budget (error-budget burn >2x alerts).
-        goodServiceFilter:
-          'metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision" ' +
-          'AND metric.labels.response_code_class!="5xx"',
-        totalServiceFilter:
-          'metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision"',
+    { deleteBeforeReplace: true },
+  );
+  const apiAvailabilitySlo = new gcp.monitoring.Slo(
+    `rhema-${stack}-api-availability`,
+    {
+      service: apiService.serviceId,
+      sloId: `api-availability-${stack}`,
+      displayName: "API availability 99.9% monthly (§13.5)",
+      goal: 0.999,
+      calendarPeriod: "MONTH",
+      requestBasedSli: {
+        goodTotalRatio: {
+          // good: 2xx/3xx/4xx; total: all requests. 5xx burns the budget (error-budget burn >2x alerts).
+          // Scoped to the api service — an unscoped filter would fold every Cloud Run service's
+          // request count into the api's availability (the pre-SLO.1 filters did exactly that).
+          goodServiceFilter: pulumi.interpolate`metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision" AND resource.labels.service_name="${apiServiceName}" AND metric.labels.response_code_class!="5xx"`,
+          totalServiceFilter: pulumi.interpolate`metric.type="run.googleapis.com/request_count" AND resource.type="cloud_run_revision" AND resource.labels.service_name="${apiServiceName}"`,
+        },
       },
     },
-  });
+    // deletedWith pairs the replace with the monitored service's (GCP cascade-deletes SLOs with
+    // their service); deleteBeforeReplace avoids an sloId collision on the replacement create.
+    { deletedWith: apiService, deleteBeforeReplace: true },
+  );
 
   // The §13.5 dashboard — one widget per probe signal's breach counter + the api request latency/error
   // tiles + the availability SLO tile (select_slo_health over the Slo resource, name interpolated after
@@ -279,7 +345,7 @@ export function createMonitoring(args: MonitoringArgs): {
     // Built via pulumi.all + JSON.stringify (not a hand-escaped interpolate template): the provider
     // validates dashboard_json at plan time, and a serialized Output inside a raw string literal
     // produced invalid JSON live (update 75 preview: "invalid character 'l' after object key:value").
-    dashboardJson: pulumi.all([apiAvailabilitySlo.name]).apply(([sloName]) =>
+    dashboardJson: pulumi.all([apiAvailabilitySlo.name, apiServiceName]).apply(([sloName, apiName]) =>
       JSON.stringify({
         displayName: `rhema-${stack} — §13.5 SLOs`,
         gridLayout: {
@@ -362,7 +428,7 @@ export function createMonitoring(args: MonitoringArgs): {
                   {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
-                        filter: `metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.labels.service_name="rhema-${stack}-api"`,
+                        filter: `metric.type="run.googleapis.com/request_count" resource.type="cloud_run_revision" resource.labels.service_name="${apiName}"`,
                         aggregation: {
                           alignmentPeriod: "60s",
                           perSeriesAligner: "ALIGN_RATE",
@@ -383,7 +449,7 @@ export function createMonitoring(args: MonitoringArgs): {
                   {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
-                        filter: `metric.type="run.googleapis.com/request_latencies" resource.type="cloud_run_revision" resource.labels.service_name="rhema-${stack}-api"`,
+                        filter: `metric.type="run.googleapis.com/request_latencies" resource.type="cloud_run_revision" resource.labels.service_name="${apiName}"`,
                         aggregation: {
                           alignmentPeriod: "60s",
                           perSeriesAligner: "ALIGN_PERCENTILE_95",
@@ -404,6 +470,55 @@ export function createMonitoring(args: MonitoringArgs): {
                 },
               },
             },
+            {
+              // SLO.1 / REQ-ARCH-34 — the weekly-review tile: every `[slo] weekly` reading's status,
+              // grouped. An `empty`/`unmeasured`/`error` bar is an honest "not measured" flag; a
+              // `breach` bar is the budget-breach the ops runbook's weekly checklist acts on.
+              title: "weekly SLO review — readings by status",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_slo_weekly" resource.type="cloud_run_revision"',
+                        aggregation: {
+                          alignmentPeriod: "86400s",
+                          perSeriesAligner: "ALIGN_COUNT",
+                          groupByFields: ["metric.label.status"],
+                        },
+                      },
+                    },
+                    plotType: "STACKED_BAR",
+                  },
+                ],
+                yAxis: { label: "readings", scale: "LINEAR" },
+              },
+            },
+            {
+              // SLO.1 — the weekly readout's measured values per signal (one point per signal per
+              // week; mean over a 7-day alignment collapses the single weekly sample to itself).
+              title: "weekly SLO review — measured value by signal",
+              xyChart: {
+                dataSets: [
+                  {
+                    timeSeriesQuery: {
+                      timeSeriesFilter: {
+                        filter:
+                          'metric.type="logging.googleapis.com/user/rhema_slo_weekly_value" resource.type="cloud_run_revision"',
+                        aggregation: {
+                          alignmentPeriod: "604800s",
+                          perSeriesAligner: "ALIGN_MEAN",
+                          groupByFields: ["metric.label.signal"],
+                        },
+                      },
+                    },
+                    plotType: "LINE",
+                  },
+                ],
+                yAxis: { label: "value", scale: "LINEAR" },
+              },
+            },
           ],
         },
       }),
@@ -412,6 +527,8 @@ export function createMonitoring(args: MonitoringArgs): {
 
   return {
     sloViolationsMetric,
+    sloWeeklyMetric,
+    sloWeeklyValueMetric,
     lb5xxMetric,
     route5xxMetric,
     dashboard,

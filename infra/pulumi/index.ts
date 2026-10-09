@@ -155,6 +155,11 @@ createMonitoring({
   stack,
   project,
   region,
+  // Thread the AUTONAMED Cloud Run service names — `service_name` labels match the deployed name
+  // (`rhema-prod-api-e745ce0`), not the Pulumi base name (SLO.1: the literal-name filters were
+  // silently empty).
+  ...(compute.services.api ? { apiServiceName: compute.services.api.name } : {}),
+  ...(compute.services.worker ? { workerServiceName: compute.services.worker.name } : {}),
   ...(opsAlertWebhookUrl ? { opsAlertWebhookUrl } : {}),
 });
 

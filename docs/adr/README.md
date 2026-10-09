@@ -61,3 +61,6 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-053](ADR-053-observability-log-contract.md) | The structured error log contract — allowlisted fields, route templates, request/trace ids | OBS.1 | Accepted |
 | [ADR-054](ADR-054-5xx-alert-threshold.md) | 5xx alerting keys the LB-observed count, fires on any occurrence | OBS.1 | Accepted |
 | [ADR-055](ADR-055-prod-5xx-provocation.md) | provoke the one verification 5xx by env-misconfiguration, not a deployed fault route | OBS.1 | Accepted |
+| [ADR-056](ADR-056-corrected-slo-probe-definitions.md) | §13.5 probes measure the signal's own quantity — event-paired episodes, live-tail samples, per-attempt cross-checks; no target changed | SLO.1 | Accepted |
+| [ADR-057](ADR-057-weekly-slo-review-mechanism.md) | the REQ-ARCH-34 weekly review is produced by a worker cron into durable log metrics, not walked from memory | SLO.1 | Accepted |
+| [ADR-058](ADR-058-run-start-remediation-levers.md) | run-start latency is remediated with queue wakeups, a warm image cache, and a costed warm-pool deferral | SLO.1 | Accepted |

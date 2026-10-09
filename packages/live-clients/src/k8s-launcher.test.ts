@@ -72,6 +72,10 @@ describe("buildRunTaskJobManifest", () => {
     expect(container.image).toBe("us-central1-docker.pkg.dev/rhema-507501/rhema/run-task@sha256:deadbeef");
   });
 
+  it("SLO.1 — pulls IfNotPresent: the digest pins the bytes, so a warm node's cache is always valid", () => {
+    expect(container.imagePullPolicy).toBe("IfNotPresent");
+  });
+
   it("accepts a fully-qualified repo@digest ref verbatim (the deploy config's pinning shape; PRB.16)", () => {
     const qualified = buildRunTaskJobManifest(config, {
       ...spec,

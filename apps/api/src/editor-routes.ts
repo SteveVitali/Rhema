@@ -399,8 +399,9 @@ export function createEditorRoutes(deps: EditorApiDeps): Hono {
       return r;
     });
     // Fire-and-forget: telemetry never fails or slows a save; a pre-0042 deploy just drops the row.
+    // SLO.1 — `detail='http'` labels the writer path (the collab store path writes `detail='collab'`).
     void deps.db
-      .query(`insert into slo_samples (signal, value_ms, workspace_id) values ('autosave_save_ms', $1, $2)`, [
+      .query(`insert into slo_samples (signal, value_ms, workspace_id, detail) values ('autosave_save_ms', $1, $2, 'http')`, [
         deps.clock.now().getTime() - saveStartedAt,
         principal.workspaceId,
       ])

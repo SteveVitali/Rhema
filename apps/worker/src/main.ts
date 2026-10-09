@@ -17,6 +17,7 @@ import {
   FIGURE_RENDER_QUEUE,
   drainPauseSignals,
   probeSlos,
+  sloWeeklyReview,
   type SqlClient,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
@@ -146,7 +147,11 @@ export async function startWorker(): Promise<void> {
   const pool = new pg.Pool({ connectionString: env.databaseUrl, max: 6, ...pgOpts });
   const redis = new Redis(env.redisUrl, { maxRetriesPerRequest: 3, enableOfflineQueue: true, lazyConnect: false });
   const subscriber = redis.duplicate();
-  const boss = new PgBoss({ connectionString: env.systemDatabaseUrl, max: 5, ...pgOpts });
+  // SLO.1 (§13.5 run-start/gate-resume lever) — `useListenNotify` wakes a worker the moment a job is
+  // created on a `notify: true` queue (below) instead of waiting out the 2 s base poll. The dispatch
+  // slice of queued→provisioning drops from ~1–2 s to ~ms; polling stays on as the correctness floor
+  // (a dropped listener degrades to the poll, never a lost job). One dedicated listen connection.
+  const boss = new PgBoss({ connectionString: env.systemDatabaseUrl, max: 5, ...pgOpts, useListenNotify: true });
 
   // A background service must never let a transient infra blip become an UNHANDLED error that exits the process
   // (a single pg-boss connection timeout on the reaper cron was crashing the whole worker → EventEmitter
@@ -462,8 +467,13 @@ export async function startWorker(): Promise<void> {
     ACCOUNT_HARD_DELETE_JOB, // the api enqueues at the deletion grace end (P1.20)
     PROJECT_PURGE_JOB, // the api enqueues at the tombstone's +30d (D-P1.04-2)
     TEST_TENANT_PURGE_JOB, // JOURNEY.1 — hourly flagged-tenant sweep (createQueue precedes work/send/schedule)
+    "slo.review.weekly", // SLO.1 — the REQ-ARCH-34 weekly review readout (below)
   ]) {
-    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name));
+    // SLO.1 — the run-launch queues carry `notify: true` so job creation wakes the consumer
+    // immediately (the dispatch slice of queued→provisioning / gate→queued→launch). Idempotent —
+    // createQueue updates the queue's options on an existing row.
+    const notify = name === RUN_JOBS.start || name === RUN_JOBS.resume;
+    await retryStartup(`createQueue ${name}`, () => boss.createQueue(name, notify ? { notify: true } : undefined));
   }
   console.log("[worker] startup: queues created; registering consumers");
 
@@ -475,10 +485,12 @@ export async function startWorker(): Promise<void> {
   // The timeout+retry around the build/launch (see `ensureLauncher`/`launcher.launch`) still bounds a true hang.
 
   // run.start / resume / cancel consumers (the payload → orchestrator mapping). pg-boss delivers a batch.
-  await boss.work<RunJobPayload>(RUN_JOBS.start, async (jobs) => {
+  // SLO.1 — NOTIFY wakes these two consumers instantly; `pollingIntervalSeconds: 0.5` is the floor if
+  // the listener is ever down (default 2 s would stack onto the queued→running budget).
+  await boss.work<RunJobPayload>(RUN_JOBS.start, { pollingIntervalSeconds: 0.5 }, async (jobs) => {
     for (const job of jobs) await handleRunStart(deps, job.data);
   });
-  await boss.work<RunJobPayload>(RUN_JOBS.resume, async (jobs) => {
+  await boss.work<RunJobPayload>(RUN_JOBS.resume, { pollingIntervalSeconds: 0.5 }, async (jobs) => {
     for (const job of jobs) {
       const res = await handleRunResume(deps, job.data);
       // re-debit the refunded phases FIRST at resume (REQ-SPEC-24.6), keyed per episode (resume:<run>:<attempt>).
@@ -564,6 +576,27 @@ export async function startWorker(): Promise<void> {
   });
   void probeTick();
   setInterval(probeTick, SLO_SWEEP_INTERVAL_MS);
+
+  // SLO.1 / REQ-ARCH-34 — the WEEKLY review made operational (docs/ops/slo-review.md). `sloWeeklyReview`
+  // reads every §13.5 signal over a 7-day window; the consumer logs one `[slo] weekly` JSON line per
+  // reading + a `[slo] weekly-summary` rollup (the `rhema_slo_weekly` log-based metric + the dashboard's
+  // weekly tile in infra/pulumi/monitoring.ts key on both), so the weekly review is a durable artifact —
+  // not someone's memory. A pg-boss cron (Mon 07:12 UTC — off the :00/:30 cron edges) survives restarts;
+  // the boot readout double-fires at most once per deploy and the log is append-only, so that's fine.
+  const logWeeklyReadout = async (): Promise<void> => {
+    const readings = await sloWeeklyReview(systemExec);
+    const counts = { ok: 0, breach: 0, empty: 0, unmeasured: 0, error: 0 };
+    for (const r of readings) {
+      counts[r.status] += 1;
+      console.log(
+        `[slo] weekly ${JSON.stringify({ signal: r.key, status: r.status, value: r.value, target: r.target, threshold: r.threshold })}`,
+      );
+    }
+    console.log(`[slo] weekly-summary ${JSON.stringify(counts)}`);
+  };
+  await boss.work("slo.review.weekly", logWeeklyReadout);
+  await boss.schedule("slo.review.weekly", "12 7 * * 1");
+  void logWeeklyReadout().catch((err: unknown) => console.error("[worker] slo weekly readout failed:", err));
 
   await boss.work(LEDGER_JOBS.sweepParked, async () => {
     await handleParkedSweep(deps);

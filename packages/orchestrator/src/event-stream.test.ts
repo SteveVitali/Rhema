@@ -145,6 +145,30 @@ describe("RunEventStreamer — exactly-once resumable replay (AC1)", () => {
     expect(n1 + n2).toBe(2); // each event delivered exactly once across both calls
     expect(seqsOf(a.chunks)).toEqual([1, 2]);
   });
+
+  it("SLO.1 — onFlush NEVER samples the catch-up pass (connect backlog or Last-Event-ID replay); only the live tail", async () => {
+    await append({ type: "run.started", payload: {} }); // seq 1 — committed BEFORE this client attached
+    const samples: number[] = [];
+    const a = collectSink();
+    const s = new RunEventStreamer(makeReader(), a.sink, 0, (f) => samples.push(f.emitted));
+    expect(await s.pump()).toBe(1); // the catch-up pass emits the backlog row — and must NOT sample it
+    expect(samples).toEqual([]); // its append→flush delta measured the attach gap, not delivery
+    await append({ type: "step.started", payload: { phase: "1", ordinal: 1, of: 1 } }); // a LIVE row
+    expect(await s.pump()).toBe(1); // the first post-catch-up pass is the tail → samples
+    expect(samples).toEqual([1]);
+
+    // a reconnecting streamer's first pump is ALSO catch-up (the Last-Event-ID replay) — never sampled.
+    await append({ type: "step.finished", payload: { phase: "1", ordinal: 1, of: 1 } });
+    const samples2: number[] = [];
+    const b = collectSink();
+    const s2 = new RunEventStreamer(makeReader(), b.sink, s.lastSeq, (f) => samples2.push(f.emitted));
+    expect(await s2.pump()).toBe(1);
+    expect(samples2).toEqual([]);
+    // …and its next pass tails normally.
+    await append({ type: "run.report", payload: { reportVersionId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" } });
+    expect(await s2.pump()).toBe(1);
+    expect(samples2).toEqual([1]);
+  });
 });
 
 describe("Redis outage — the tail degrades but Postgres replay still serves (AC3)", () => {

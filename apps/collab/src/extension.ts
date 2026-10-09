@@ -187,7 +187,27 @@ export function createCollabExtension(deps: CollabExtensionDeps): CollabExtensio
       const rt = runtimes.get(documentName);
       if (!rt) return;
       const userId = rt.userId || (lastContext as unknown as { userId?: string }).userId || "unknown";
+      // SLO.1 — the §13.5 autosave round-trip's server half on the REAL save path: the Page persists
+      // through this hook, so `storeDocument`'s duration is the signal `autosave_save_ms` was missing
+      // (the pre-SLO.1 writer only sampled the legacy HTTP save route). `detail='collab'` labels the
+      // path; a locked/skipped store is a refusal, not a save, and never samples. Telemetry is
+      // swallowed — a pre-0054 grant or a dropped row never fails the store itself.
+      const storeStartedAt = deps.clock.now().getTime();
       const outcome = await storeDocument(deps, rt, document, { userId });
+      const saveMs = deps.clock.now().getTime() - storeStartedAt;
+      if (!outcome.locked) {
+        // awaited-but-caught: a ~ms indexed insert orders before the next hook's scoped tx (the
+        // PGlite single-wire tests serialize on it) and a telemetry failure still never fails a store.
+        await deps.db
+          .scoped(rt.workspaceId, (tx) =>
+            tx.query(
+              `insert into slo_samples (signal, value_ms, workspace_id, detail)
+                 values ('autosave_save_ms', $1, $2, 'collab')`,
+              [saveMs, rt.workspaceId],
+            ),
+          )
+          .catch(() => undefined);
+      }
       const headMoved = outcome.draftId !== rt.draftId;
       if (headMoved) rt.draftId = outcome.draftId;
       if (outcome.locked || headMoved) {

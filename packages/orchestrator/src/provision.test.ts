@@ -238,6 +238,39 @@ describe("provisionRun (§12.4 step 4)", () => {
     expect(res).toMatchObject({ ok: false, reason: "not_admitted" });
     expect(await stateOf("run1")).toBe("queued");
   });
+
+  it("SLO.1 — a successful provision lands run_start_stage_ms samples (admit_mint + job_launch); failures never sample", async () => {
+    await seedRun(db, { runId: "run1", workspaceId: seed.workspaceId, projectId: seed.projectId, state: "queued", lockSet: [] });
+    const launcher: JobLauncher = { launch: () => Promise.resolve({ jobId: "job-1" }) };
+    const res = await provisionRun(deps, launcher, provisionArgs());
+    expect(res.ok).toBe(true);
+    // the sample write is awaited-but-caught inside provisionRun — a short yield still covers the
+    // ordering on the single-wire PGlite.
+    await new Promise((r) => setTimeout(r, 20));
+    const rows = (
+      await db.client.query(
+        `select detail, value_ms, run_id from slo_samples where signal = 'run_start_stage_ms' order by detail`,
+        [],
+      )
+    ).rows as { detail: string; value_ms: number; run_id: string }[];
+    expect(rows.map((r) => r.detail)).toEqual(["admit_mint", "job_launch"]);
+    for (const r of rows) {
+      expect(r.run_id).toBe("run1");
+      expect(r.value_ms).toBeGreaterThanOrEqual(0);
+    }
+
+    // a launch that fails 3× lands NO stage rows (the failure path's own signal carries it)
+    await db.client.query(`delete from slo_samples`, []);
+    await db.txRunner.run(seed.workspaceId, (tx) =>
+      tx.query("update runs set state='queued', current_attempt=2 where id='run1'", []),
+    );
+    const badLauncher: JobLauncher = { launch: () => Promise.reject(new Error("no capacity")) };
+    const failed = await provisionRun(deps, badLauncher, provisionArgs());
+    expect(failed.ok).toBe(false);
+    await new Promise((r) => setTimeout(r, 20));
+    const n = (await db.client.query(`select count(*)::int n from slo_samples where signal = 'run_start_stage_ms'`, [])).rows[0] as { n: number };
+    expect(n.n).toBe(0);
+  });
 });
 
 describe("DB-backed RunContextResolver (D-P0.07-3)", () => {
