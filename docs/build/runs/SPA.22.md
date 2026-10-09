@@ -155,4 +155,6 @@ named operator prerequisite.
 
 ## PR checks read
 
-_(recorded at closeout — see the PHASE LOG entry)_
+`gh pr checks 153` at closeout (2026-10-09T20:4xZ) → **"no checks reported on the
+'stevevitali/spa-22-surface-run-report' branch"** — the same closeout read as #140-#152
+recorded; no inherited-red classification needed this run.
