@@ -182,6 +182,13 @@ export interface WebDeps {
    */
   readonly collabWsUrl?: string;
   /**
+   * SPA.13 (REQ-BFF-16; design/22 §5/E-2) — the origin CSP `connect-src` admits for the browser's
+   * presign→direct-PUT upload leg (env `GCS_UPLOAD_ORIGIN`). Default `https://storage.googleapis.com`
+   * — the host the api's v4 signer always mints (`presignQuarantinePut`). Deployable dark: the
+   * admission changes no serving behavior until a surface consumes `POST /bff/import/presign`.
+   */
+  readonly gcsUploadOrigin?: string;
+  /**
    * HOT.1 — the public-claims visibility config for the marketing pages (default `PUBLIC_CLAIMS`:
    * every gated claim hidden). A test flips ids here; ACT.1/EST.1 enable claims from config, never
    * by re-introducing parallel copy.
@@ -385,9 +392,20 @@ export function createWebApp(deps: WebDeps): Hono {
       return null;
     }
   })();
+  // SPA.13 (REQ-BFF-16; design/22 §5/E-2) — voices is the first browser-upload surface: the SPA's
+  // presign→direct-PUT leg connects to the signed-URL origin, so connect-src admits it. The value is
+  // the operator-configured upload origin (`deps.gcsUploadOrigin`, default the v4 host) — never a
+  // wildcard, parsed down to scheme+host before it enters the policy.
+  const gcsUploadSource = (() => {
+    try {
+      return new URL(deps.gcsUploadOrigin ?? "https://storage.googleapis.com").origin;
+    } catch {
+      return "https://storage.googleapis.com";
+    }
+  })();
   const cspFor = (nonce: string) =>
     `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; ` +
-    `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'${collabWsSource ? ` ${collabWsSource}` : ""}; font-src 'self'; ` +
+    `img-src 'self' https://usercontent.rhema.tools data:; connect-src 'self'${collabWsSource ? ` ${collabWsSource}` : ""} ${gcsUploadSource}; font-src 'self'; ` +
     `object-src 'none'; frame-ancestors 'none'; base-uri 'self'; ` +
     // BILL.3 (ADR-027): a form submission whose response redirects to a Stripe-hosted page is checked
     // against `form-action` — the bare `'self'` blocked every purchase hand-off (the run-sheet Add
@@ -717,6 +735,71 @@ export function createWebApp(deps: WebDeps): Hono {
   // REQ-BFF-21 (design/22 §7.1) — the one-shot email-confirm consume; the convention handler
   // carries the both-200 redirect arms + the replay-safe swallow.
   app.post("/bff/settings/account/confirm-email", confirmEmailHandler(deps));
+
+  // ---- SPA.13 — the `voices` surface's read twins (REQ-BFF-1/8/9/11/16; design/22 §2
+  // voices/voicesNew/voiceDetail/p.voiceReseed) + the import presign (REQ-BFF-16 §5/E-2 — the BFF
+  // mints the v4-signed PUT and never proxies bytes; the browser PUTs to `url` echoing
+  // `requiredHeaders`). Each read composes exactly the seams its document GET composes; a degraded
+  // seam lands `null`/absent (swallowDegraded's 401 rethrow → `unauthenticated`), never a
+  // fabricated value — {error:"not_found"} remains a refusal, never an empty payload. ----
+  app.get("/bff/voices", bffRoute(deps, async (c, session) =>
+    // `GET /voices` — `PageData.voices` verbatim: the §9.1 three-group read, degraded ⇒ null.
+    c.json({ voices: (await Promise.resolve().then(() => deps.dataSource.listVoiceGroups?.(session)).catch(swallowDegraded)) ?? null })));
+  // Registered BEFORE /bff/voices/:persona — Hono matches in order and "new" would else land on the
+  // param route (the same registration-order rule /v/:persona/samples/url documents).
+  app.get("/bff/voices/new", bffRoute(deps, async (c) =>
+    // `GET /voices/new` — `{voiceNew:{}}` verbatim: the sheet composes no remote reads today (the
+    // form is static copy); the twin keeps the uniform pending/error path and is where future
+    // creation options land.
+    c.json({ voiceNew: {} })));
+  app.get("/bff/voices/:persona", bffRoute(deps, async (c, session) => {
+    // `GET /v/:persona` — `PageData.voice` verbatim: getVoice 404 → not_found; estimate/updatePlan
+    // best-effort; connections/sampleDetail only on ?tab=samples (the document's own composition).
+    const personaId = c.req.param("persona") ?? "";
+    const detail = await deps.dataSource.getVoice(session, personaId).catch((e) => {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    });
+    if (!detail) return c.json({ error: "not_found" }, 404);
+    const tab = c.req.query("tab");
+    const sampleId = c.req.query("sample");
+    const [estimate, updatePlan, connections, sampleDetail] = await Promise.all([
+      deps.dataSource.estimateVoice(session, personaId, detail.tier === "full" ? "full" : "quick").catch(swallowDegraded),
+      Promise.resolve().then(() => deps.dataSource.getVoiceUpdatePlan?.(session, personaId)).catch(swallowDegraded),
+      tab === "samples" && deps.dataSource.listVoiceConnections
+        ? deps.dataSource.listVoiceConnections(session, personaId).catch(swallowDegraded)
+        : undefined,
+      tab === "samples" && sampleId && deps.dataSource.getVoiceSample
+        ? deps.dataSource.getVoiceSample(session, personaId, sampleId).catch(swallowDegraded)
+        : undefined,
+    ]);
+    return c.json({
+      voice: {
+        detail,
+        ...(estimate ? { estimate } : {}),
+        ...(updatePlan ? { updatePlan } : {}),
+        ...(connections ? { connections } : {}),
+        ...(sampleDetail ? { sampleDetail } : {}),
+        ...(tab ? { tab } : {}),
+      },
+    });
+  }));
+  app.get("/bff/p/:slug/voice/reseed", bffRoute(deps, async (c, session) => {
+    // `GET /p/:slug/voice/reseed` — `PageData.voiceReseed` verbatim: slug→id through the request
+    // memo (REQ-BFF-11); the preview seam's miss is the document's own not_found.
+    const slug = c.req.param("slug") ?? "";
+    const row = await bffProjectRow(c, deps.dataSource, session, slug);
+    if (!row) return c.json({ error: "not_found" }, 404);
+    const preview = await deps.dataSource.getVoiceReseedPreview(session, row.id).catch(swallowDegraded);
+    if (!preview) return c.json({ error: "not_found" }, 404);
+    return c.json({ voiceReseed: { slug, projectId: row.id, preview } });
+  }));
+  app.post("/bff/import/presign", bffRoute(deps, async (c, session) => {
+    // REQ-BFF-16 — the api's POST /import/presign verbatim; a web build without the seam answers
+    // the payload's own refusal rather than a route-level 404.
+    if (deps.dataSource.presignImportUpload == null) return c.json({ error: "upload_unavailable" }, 503);
+    return c.json(await deps.dataSource.presignImportUpload(session));
+  }));
 
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
@@ -3744,11 +3827,11 @@ export function createWebApp(deps: WebDeps): Hono {
   // "No voice" — the ad-hoc default, REQ-PERSONA-20); the api pins the profile snapshot server-side.
   app.post("/p/:project/voice", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : null;
     const register = typeof form.register === "string" && form.register !== "" ? form.register : undefined;
     const res = await deps.dataSource
@@ -3757,8 +3840,8 @@ export function createWebApp(deps: WebDeps): Hono {
       .catch((e) => ({ ok: false as const, locked: e instanceof ApiError && e.status === 409 }));
     // P1.14 — the soft lock (§9.6): a direct voice change after v1 409s; the redirect lands on the
     // notice that names the two hatches (adopt / fork).
-    if (!res.ok && res.locked) return c.redirect(`/p/${slug}?voice_locked=1`);
-    return c.redirect(`/p/${slug}`);
+    if (!res.ok && res.locked) return mutationOutcome(c, { redirect: `/p/${slug}?voice_locked=1` });
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   // ---- P1.14 — the §9.6 hatches: adopt the refreshed profile (+ optional charter reseed) or fork
@@ -3784,30 +3867,30 @@ export function createWebApp(deps: WebDeps): Hono {
 
   app.post("/p/:project/voice/adopt", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const reseed = form.reseed === "true" || form.reseed === "on";
     await deps.dataSource.adoptProjectVoice(session, row.id, { reseed }).catch(() => undefined);
-    return c.redirect(`/p/${slug}`);
+    return mutationOutcome(c, { redirect: `/p/${slug}` });
   });
 
   app.post("/p/:project/voice/fork", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const personaId = typeof form.personaId === "string" && form.personaId !== "" ? form.personaId : "";
-    if (!personaId) return c.redirect(`/p/${slug}`);
+    if (!personaId) return mutationOutcome(c, { redirect: `/p/${slug}` });
     const forked = await deps.dataSource
       .forkProjectVoice(session, row.id, { personaId })
       .catch(() => null);
-    if (!forked) return c.redirect(`/p/${slug}`);
-    return c.redirect(`/p/${forked.slug}`);
+    if (!forked) return mutationOutcome(c, { redirect: `/p/${slug}` });
+    return mutationOutcome(c, { redirect: `/p/${forked.slug}` });
   });
 
   // PRB.05 — the per-project approve_triage 24-h opt-in (§6.4 R3): the checkbox writes the
@@ -5586,18 +5669,18 @@ export function createWebApp(deps: WebDeps): Hono {
   // run is NEVER blocked by voice state — this is the optional chained action only.
   app.post("/p/:project/update-voice", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const form = await c.req.parseBody();
+    const row = (await projectRows(c, deps.dataSource, session)).find((r) => r.slug === slug);
+    if (!row) return wantsJson(c) ? c.json({ error: "not_found" }, 404) : c.html(renderDocument(c.req.path, notFoundElement), 404);
+    const form = await bodyFields(c);
     const personaId = typeof form.voice_persona === "string" ? form.voice_persona : "";
     if (personaId) {
       await deps.dataSource
         .buildVoice(session, personaId, { tier: "quick", projectId: row.id })
         .catch(() => undefined);
     }
-    return c.redirect(`/p/${slug}/run${new URL(c.req.url).search}`);
+    return mutationOutcome(c, { redirect: `/p/${slug}/run${new URL(c.req.url).search}` });
   });
 
   // The voice library — the §9.1 three-group destination (your voices / house styles / shared).
@@ -5627,11 +5710,14 @@ export function createWebApp(deps: WebDeps): Hono {
   // §9.5 model, and — on "Create and build" — start the profile_voice{tier: quick} run (§9.2 item 3).
   app.post("/voices/new", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
-    const form = await c.req.parseBody();
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const name = str("name").trim();
     if (!name) {
+      // SPA.13 — the JSON caller gets the refusal the document would re-render (REQ-BFF-2): the
+      // SAME copy as `voiceNew.error`, stable code, preserved status.
+      if (wantsJson(c)) return c.json({ error: "name_required", detail: COPY.voice.new.nameRequired }, 400);
       return c.html(
         renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.nameRequired }, compact: isPhoneRequest(c) }),
         400,
@@ -5652,6 +5738,7 @@ export function createWebApp(deps: WebDeps): Hono {
     // description or ≥1 sample; Full needs ≥4 samples — the creation sheet attaches at most two
     // (text/file + URL), so a Full build always lands on the detail page to add the rest.
     if (intent === "build" && tier === "quick" && !sampleText && !sampleUrl) {
+      if (wantsJson(c)) return c.json({ error: "sample_required", detail: COPY.voice.new.sampleRequired }, 400);
       return c.html(
         renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired }, compact: isPhoneRequest(c) }),
         400,
@@ -5660,6 +5747,7 @@ export function createWebApp(deps: WebDeps): Hono {
     if (intent === "build" && tier === "full") {
       const hasCorpus = sampleText !== "" || sampleUrl !== "";
       if (!hasCorpus) {
+        if (wantsJson(c)) return c.json({ error: "full_required", detail: COPY.voice.new.fullRequired }, 400);
         return c.html(
           renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.fullRequired }, compact: isPhoneRequest(c) }),
           400,
@@ -5693,9 +5781,9 @@ export function createWebApp(deps: WebDeps): Hono {
         .catch(() => false);
       // The api's gate rejected the build (e.g. Full needs ≥4 samples — the sheet carries at most
       // two) → land on the detail page with the notice instead of a silent drop.
-      if (!built) return c.redirect(`/v/${created.personaId}?build_failed=1`);
+      if (!built) return mutationOutcome(c, { redirect: `/v/${created.personaId}?build_failed=1` });
     }
-    return c.redirect(`/v/${created.personaId}`);
+    return mutationOutcome(c, { redirect: `/v/${created.personaId}` });
   });
 
   // The voice detail page (§9.5): five tabs — Overview (pill + diff-of-inputs + gate card),
@@ -5761,9 +5849,9 @@ export function createWebApp(deps: WebDeps): Hono {
   // The seed editor's save — recomputes the J9 hash; the pill flips live on the redirect (§9.3).
   app.post("/v/:persona/seed", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const registers = str("registers")
       .split(",")
@@ -5776,24 +5864,35 @@ export function createWebApp(deps: WebDeps): Hono {
         registers,
       })
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?saved=1`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?saved=1` });
   });
 
   // A pasted sample through the §9.5 model — the response's refreshed corpus words + status are the
   // estimate's <500 ms refresh (REQ-PERSONA-3); the redirect re-reads them.
   app.post("/v/:persona/samples", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string) : "");
     const file = form.file;
     const fileText =
       file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
         ? new TextDecoder().decode(await (file as File).arrayBuffer())
         : "";
+    // SPA.13 (REQ-BFF-16) — a JSON caller can carry a `quarantineKey` instead: the browser already
+    // presigned→PUT the bytes (the BFF never proxies them); the api's convert seam resolves it.
+    // The form path keeps server-side byte-transit (the no-JS floor).
+    const quarantineKey = str("quarantineKey").trim();
     const text = (fileText || str("text")).trim();
-    if (text) {
+    if (quarantineKey) {
+      await deps.dataSource
+        .addVoiceSample(session, personaId, {
+          quarantineKey,
+          ...(str("title").trim() ? { title: str("title").trim() } : {}),
+        })
+        .catch(() => undefined);
+    } else if (text) {
       await deps.dataSource
         .addVoiceSample(session, personaId, {
           text,
@@ -5801,7 +5900,7 @@ export function createWebApp(deps: WebDeps): Hono {
         })
         .catch(() => undefined);
     }
-    return c.redirect(`/v/${personaId}?added=1`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?added=1` });
   });
 
   // P1.14 — the fetcher-only URL ingestion path (REQ-INGEST-13): the api's fetcher is the only
@@ -5809,9 +5908,9 @@ export function createWebApp(deps: WebDeps): Hono {
   // Registered BEFORE /samples/:itemId — otherwise `url` would be eaten as an item id.
   app.post("/v/:persona/samples/url", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const url = typeof form.url === "string" ? form.url.trim() : "";
     const title = typeof form.title === "string" && form.title.trim() !== "" ? form.title.trim() : undefined;
     if (url) {
@@ -5819,20 +5918,20 @@ export function createWebApp(deps: WebDeps): Hono {
         .addVoiceSampleUrl(session, personaId, { url, ...(title ? { title } : {}) })
         .catch(() => undefined);
     }
-    return c.redirect(`/v/${personaId}?tab=samples&added=1`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples&added=1` });
   });
 
   // The per-item include/omit toggle (REQ-INGEST-4).
   app.post("/v/:persona/samples/:itemId", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
-    const included = form.included === "true" || form.included === "on";
+    const form = await bodyFields(c);
+    const included = form.included === true || form.included === "true" || form.included === "on";
     await deps.dataSource
       .setVoiceSampleIncluded(session, personaId, c.req.param("itemId"), included)
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // ---- P1.15 — the Sources pane (§9.5): link / discover / confirm / re-sync / settings / remove. ----
@@ -5842,9 +5941,9 @@ export function createWebApp(deps: WebDeps): Hono {
   // the substack_export connection). There is NO credential field anywhere in the form (AC-I-B).
   app.post("/v/:persona/connections", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const str = (k: string) => (typeof form[k] === "string" ? (form[k] as string).trim() : "");
     const provider = str("provider");
     try {
@@ -5859,6 +5958,13 @@ export function createWebApp(deps: WebDeps): Hono {
           provider: "url",
           url: str("url"),
         });
+      } else if (provider === "substack_export" && str("quarantineKey")) {
+        // SPA.13 (REQ-BFF-16) — the browser's presign→direct-PUT leg already landed the bytes in
+        // quarantine; the JSON body carries the key verbatim. The BFF never proxies them.
+        await deps.dataSource.createVoiceConnection(session, personaId, {
+          provider: "substack_export",
+          quarantineKey: str("quarantineKey"),
+        });
       } else if (provider === "substack_export") {
         const file = form.file;
         const bytes =
@@ -5872,85 +5978,86 @@ export function createWebApp(deps: WebDeps): Hono {
     } catch {
       // The link failed — the Sources pane re-renders with the connection's own error line.
     }
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // The review step: discovery rows land server-side (listing data only — REQ-INGEST-3); the
   // Samples tab then shows them awaiting the confirm checkboxes.
   app.post("/v/:persona/connections/:cid/discover", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource
       .discoverVoiceConnection(session, personaId, c.req.param("cid"))
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // The confirm step (REQ-INGEST-4): checked items' externalIds ride `include` (repeatable);
   // everything the provider listed but the box left unchecked is omitted.
   app.post("/v/:persona/connections/:cid/confirm", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const cid = c.req.param("cid");
-    const form = await c.req.parseBody({ all: true });
-    const included = new Set(
-      (Array.isArray(form.include) ? form.include : form.include ? [form.include] : [])
-        .filter((v): v is string => typeof v === "string"),
-    );
-    const known = (form.known ? (Array.isArray(form.known) ? form.known : [form.known]) : [])
-      .filter((v): v is string => typeof v === "string");
+    // Multi-value grammar: a form post repeats `include`/`known` (parseBody all:true); a JSON caller
+    // posts string arrays — bodyFields decodes them verbatim (REQ-BFF-2's flat-field contract).
+    const form = wantsJson(c)
+      ? await bodyFields(c)
+      : await c.req.parseBody({ all: true });
+    const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : v != null && v !== "" ? [v] : []);
+    const included = new Set(list(form.include).filter((v): v is string => typeof v === "string"));
+    const known = list(form.known).filter((v): v is string => typeof v === "string");
     await deps.dataSource
       .confirmVoiceConnection(session, personaId, cid, {
         items: known.map((externalId) => ({ externalId, include: included.has(externalId) })),
       })
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // The manual Re-sync (REQ-INGEST-6) + "Re-sync all".
   app.post("/v/:persona/connections/:cid/sync", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource
       .syncVoiceConnection(session, personaId, c.req.param("cid"))
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
   app.post("/v/:persona/sync", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource.syncAllVoiceConnections(session, personaId).catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // The per-source settings (auto-include new items; daily auto-sync).
   app.post("/v/:persona/connections/:cid/settings", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     await deps.dataSource
       .patchVoiceConnection(session, personaId, c.req.param("cid"), {
-        autoIncludeNew: form.autoIncludeNew === "on" || form.autoIncludeNew === "true",
-        dailySync: form.dailySync === "on" || form.dailySync === "true",
+        autoIncludeNew: form.autoIncludeNew === "on" || form.autoIncludeNew === "true" || form.autoIncludeNew === true,
+        dailySync: form.dailySync === "on" || form.dailySync === "true" || form.dailySync === true,
       })
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // Remove — soft-detach the source; the items + versions stay in the corpus.
   app.post("/v/:persona/connections/:cid/remove", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     await deps.dataSource
       .removeVoiceConnection(session, personaId, c.req.param("cid"))
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples` });
   });
 
   // The priced reconstruction pass (REQ-INGEST-10): the drawer's button IS the opt-in confirm —
@@ -5958,49 +6065,49 @@ export function createWebApp(deps: WebDeps): Hono {
   // metered worker job (never inline, never inside convert).
   app.post("/v/:persona/samples/:itemId/reconstruct", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const itemId = c.req.param("itemId");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const tier = form.tier === "visual" ? "visual" : "text";
     await deps.dataSource
       .reconstructVoiceSample(session, personaId, itemId, { tier, confirmed: true })
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}?tab=samples&sample=${itemId}&reconstruct=queued`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=samples&sample=${itemId}&reconstruct=queued` });
   });
 
   // Delete the voice (REQ-INGEST-16): the persona vanishes from every read; the purge job cascades.
   app.post("/v/:persona/delete", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     // The typed-name confirm (the form requires it) — belt, since the api cascade is destructive.
     if (typeof form.confirm === "string" && form.confirm === "delete") {
       await deps.dataSource.deleteVoice(session, personaId).catch(() => undefined);
-      return c.redirect("/voices");
+      return mutationOutcome(c, { redirect: "/voices" });
     }
-    return c.redirect(`/v/${personaId}`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}` });
   });
 
   // "Build voice" — a profile_voice{tier} run (§9.2 item 3); the api's gate owns the tier checks.
   app.post("/v/:persona/build", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const tier = form.tier === "full" ? "full" : "quick";
     await deps.dataSource.buildVoice(session, personaId, { tier }).catch(() => undefined);
-    return c.redirect(`/v/${personaId}`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}` });
   });
 
   // P1.14 — the ONE "Update voice" verb (§9.3; REQ-SPEC-27): no `scope` ⇒ the api's routed scope
   // (cheapest sufficient); `scope=full_from_quick` is the Quick→Full upgrade the button carries.
   app.post("/v/:persona/update", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const scope = typeof form.scope === "string" && form.scope !== "" ? form.scope : undefined;
     const register = typeof form.register === "string" && form.register !== "" ? form.register : undefined;
     await deps.dataSource
@@ -6009,15 +6116,15 @@ export function createWebApp(deps: WebDeps): Hono {
         ...(register ? { register } : {}),
       })
       .catch(() => undefined);
-    return c.redirect(`/v/${personaId}`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}` });
   });
 
   // P1.14 — the approve_sample card's decision (§9.2/§6.4): run-scoped (the build is a persona run).
   app.post("/v/:persona/gates/:gid", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const action = typeof form.action === "string" ? form.action : "";
     const runId = typeof form.runId === "string" ? form.runId : undefined;
     // The card's form posts the gate id; the run id rides a hidden field so a stale page can't
@@ -6025,16 +6132,16 @@ export function createWebApp(deps: WebDeps): Hono {
     if (runId && (action === "approve" || action === "wait" || action === "stop")) {
       await deps.dataSource.decideRunGate(session, runId, c.req.param("gid"), { action }).catch(() => undefined);
     }
-    return c.redirect(`/v/${personaId}`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}` });
   });
 
   // P1.14 — "Correct this in your description" (§9.4; REQ-PERSONA-7): the blockquote + the
   // consume-once corrections row write together at the api.
   app.post("/v/:persona/corrections", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const text = typeof form.text === "string" ? form.text.trim() : "";
     const statementRef = typeof form.statementRef === "string" && form.statementRef.trim() !== "" ? form.statementRef.trim() : undefined;
     const artifactId = typeof form.artifactId === "string" && form.artifactId.trim() !== "" ? form.artifactId.trim() : undefined;
@@ -6047,28 +6154,28 @@ export function createWebApp(deps: WebDeps): Hono {
         })
         .catch(() => undefined);
     }
-    return c.redirect(`/v/${personaId}?tab=description&corrected=1`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?tab=description&corrected=1` });
   });
 
   // P1.14 — the house/shared card's Fork (§9.1): the copy becomes your editable persona.
   app.post("/v/:persona/fork", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
     const forked = await deps.dataSource.forkVoice(session, personaId).catch(() => null);
-    if (!forked) return c.redirect(`/v/${personaId}`);
-    return c.redirect(`/v/${forked.personaId}`);
+    if (!forked) return mutationOutcome(c, { redirect: `/v/${personaId}` });
+    return mutationOutcome(c, { redirect: `/v/${forked.personaId}` });
   });
 
   // Cancel an open build (the detail page's Cancel).
   app.post("/v/:persona/cancel", async (c) => {
     const session = deps.session(c);
-    if (!session) return c.redirect("/login");
+    if (!session) return wantsJson(c) ? c.json({ error: "unauthenticated" }, 401) : c.redirect("/login");
     const personaId = c.req.param("persona");
-    const form = await c.req.parseBody();
+    const form = await bodyFields(c);
     const runId = typeof form.runId === "string" ? form.runId : "";
     if (runId) await deps.dataSource.cancelVoiceRun(session, runId).catch(() => undefined);
-    return c.redirect(`/v/${personaId}?cancelled=1`);
+    return mutationOutcome(c, { redirect: `/v/${personaId}?cancelled=1` });
   });
 
   // The client bundles (built by build-client.mjs at `pnpm build` from CLIENT_ENTRIES — HOT.1's

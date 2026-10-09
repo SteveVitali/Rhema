@@ -16,9 +16,16 @@ import type {
   PreferencesSettingsDto,
   PrincipalDto,
   ProjectSettingsDto,
+  ReseedPreviewDto,
   UsageAccountDto,
   UsageDto,
   UsageProjectDto,
+  VoiceConnectionsDto,
+  VoiceDetailDto,
+  VoiceEstimateDto,
+  VoiceListDto,
+  VoiceSampleDetailDto,
+  VoiceUpdatePlanDto,
 } from "@rhema/api-client";
 import type { FeedLabelMaps } from "@rhema/ide";
 import { BffError, bffFetch } from "./bff.js";
@@ -215,5 +222,91 @@ export const projectSettingsQuery = (slug: string) =>
   queryOptions({
     queryKey: ["bff", "p", slug, "settings"],
     queryFn: () => bffFetch<BffProjectSettingsTwin>(`/bff/p/${encodeURIComponent(slug)}/settings`),
+    retry: retryPolicy,
+  });
+
+// ---- SPA.13 — the `voices` surface's twins (REQ-BFF-1/8/9/11/16, REQ-DAT-4/9; design/22 §2
+// voices/voicesNew/voiceDetail/p.voiceReseed rows). One payload per document GET, the SAME
+// composition the SSR handler runs — `?tab`/`?sample` stay URL state (they ride the query string,
+// never the key's shape beyond the leaf's own search). A degraded seam lands `null`/absent — the
+// SSR's own tolerate-and-degrade branches, never a fabricated value; an upstream 401 rides
+// `swallowDegraded`'s rethrow into the `unauthenticated` envelope. ----
+
+/** `GET /bff/voices` — the §9.1 library's three-group read (the document's `listVoiceGroups`
+ *  composition verbatim — the same `{voices, groups}` shape `PageData.voices` carries). */
+export interface BffVoicesTwin {
+  readonly voices: VoiceListDto | null;
+}
+export const voicesQuery = queryOptions({
+  queryKey: ["bff", "voices"],
+  queryFn: () => bffFetch<BffVoicesTwin>("/bff/voices"),
+  retry: retryPolicy,
+});
+
+/**
+ * `GET /bff/voices/new` — the §9.2 creation sheet's options seam (design/22 §2 `voicesNew`). The
+ * document composes nothing today (`{voiceNew:{}}` — the sheet's fields are static copy), so the
+ * twin is a `{voiceNew:{}}` marker the leaf warms for the uniform pending/error path; when the
+ * api grows creation options they land here, not in a second fetch.
+ */
+export interface BffVoiceNewTwin {
+  readonly voiceNew: { readonly error?: never };
+}
+export const voiceNewQuery = queryOptions({
+  queryKey: ["bff", "voices", "new"],
+  queryFn: () => bffFetch<BffVoiceNewTwin>("/bff/voices/new"),
+  retry: retryPolicy,
+});
+
+/**
+ * `GET /bff/voices/:persona` — the §9.5 detail aggregate (design/22 §2 `voiceDetail` — the
+ * document's own composition: `getVoice` 404 → the route's own `not_found`; `estimateVoice` +
+ * `getVoiceUpdatePlan` best-effort; `listVoiceConnections`/`getVoiceSample` only when
+ * `?tab=samples`). `?tab`/`?sample` are search state — they ride the endpoint's query string and
+ * the key carries them verbatim.
+ */
+export interface BffVoiceDetailTwin {
+  readonly voice: {
+    readonly detail: VoiceDetailDto;
+    readonly estimate?: VoiceEstimateDto;
+    readonly updatePlan?: VoiceUpdatePlanDto;
+    readonly connections?: VoiceConnectionsDto;
+    readonly sampleDetail?: VoiceSampleDetailDto;
+    readonly tab?: string;
+  };
+}
+export const voiceDetailQuery = (
+  personaId: string,
+  search: { readonly tab?: string; readonly sample?: string } = {},
+) => {
+  const qs = new URLSearchParams();
+  if (search.tab != null && search.tab !== "") qs.set("tab", search.tab);
+  if (search.sample != null && search.sample !== "") qs.set("sample", search.sample);
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+  return queryOptions({
+    queryKey: ["bff", "voices", personaId, { tab: search.tab ?? null, sample: search.sample ?? null }],
+    queryFn: () =>
+      bffFetch<BffVoiceDetailTwin>(`/bff/voices/${encodeURIComponent(personaId)}${suffix}`),
+    retry: retryPolicy,
+  });
+};
+
+/**
+ * `GET /bff/p/:slug/voice/reseed` — the §9.6 adopt dialog's charter-diff preview (design/22 §2
+ * `p.voiceReseed`): slug→id through the request memo, `getVoiceReseedPreview` verbatim — a miss is
+ * the document's own 404.
+ */
+export interface BffVoiceReseedTwin {
+  readonly voiceReseed: {
+    readonly slug: string;
+    readonly projectId: string;
+    readonly preview: ReseedPreviewDto;
+  };
+}
+export const projectVoiceReseedQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["bff", "p", slug, "voice-reseed"],
+    queryFn: () =>
+      bffFetch<BffVoiceReseedTwin>(`/bff/p/${encodeURIComponent(slug)}/voice/reseed`),
     retry: retryPolicy,
   });
