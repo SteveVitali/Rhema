@@ -139,4 +139,6 @@ closed** — every upstream OPEN row still needs its named operator prerequisite
 
 ## PR checks read
 
-_(recorded at closeout — see the final commit on the branch.)_
+`gh pr checks 151 --watch=false` at closeout → **no checks reported** on
+`stevevitali/spa-21-surface-dossier` (same as #140–#150 — the stacked PRs run no branch
+checks; CI coverage is this run's local green gate above).
