@@ -172,6 +172,8 @@ All four appended to `docs/tickets/DEFERRALS.md` under `## SPAF.6` this run.
 
 ## PR checks read (closeout)
 
-Single `gh pr checks --watch=false` read after the closeout-docs push: _(recorded verbatim
-below at closeout)_. Any `integration`/privsep red that reports is inherited, waived per
-GD-MAINT.4-1 — classified, not repaired.
+Single `gh pr checks 140 --watch=false` read after the closeout-docs push: **"no checks
+reported on the 'stevevitali/spaf-6-prod-flip-project-home' branch"** (exit 1 — the pipeline
+had not registered checks at stamp time). Recorded verbatim rather than re-polled; any
+`integration`/privsep red that reports later is inherited, waived per GD-MAINT.4-1 —
+classified, not repaired.
