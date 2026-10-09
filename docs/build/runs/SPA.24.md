@@ -170,8 +170,11 @@ every upstream OPEN row still needs its named operator prerequisite.
 
 ## PR checks read
 
-`gh pr checks 156 --watch=false` at closeout (2026-10-09T23:33Z) → **`typecheck / lint /
-unit — pending`** (one job reported; the first substantive check status this chain has
-reported — #140–#155 all read "no checks reported"). Not yet resolved at ledger-write time;
-the local green gate (`turbo build/lint/typecheck` + `pnpm test` 5,599/0-fail + all
-`check:*` gates) stands in — recorded per the operating clause, not awaited.
+`gh pr checks 156 --watch=false` at closeout, two reads: (a) 2026-10-09T23:33Z on impl tip
+`d8fff59` → **`typecheck / lint / unit — pending`** (the first substantive check status
+this chain has reported — #140–#155 all read "no checks reported"); (b) 2026-10-09T23:36Z
+on the closeout tip `9d70fcd` → **"no checks reported on the
+'stevevitali/spa-24-editor-collab' branch"** (the check run binds the impl push; the
+docs-only closeout push reported nothing yet). Not resolved at ledger-write time; the
+local green gate (`turbo build/lint/typecheck` + `pnpm test` 5,599/0-fail + all `check:*`
+gates) stands in — recorded per the operating clause, not awaited.
