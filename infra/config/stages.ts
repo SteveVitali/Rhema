@@ -398,11 +398,15 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // SPAF.6 — `project-home` joins them; SPAF.7 — `billing` joins them; SPAF.8 — `export`
     // AND `ide-chrome` join them together; SPAF.9 — `outline` joins them; SPAF.10 —
     // `figures` joins them; SPAF.11 — `run-sheet` joins them; SPAF.12 — `dossier` joins
-    // them; SPAF.13 — `run-report` joins them (REQ-SEQ-10): each prod flip is a one-line
+    // them; SPAF.13 — `run-report` joins them; SPAF.14 — `editor` joins them — the
+    // LAST surface flip (REQ-ED-13) (REQ-SEQ-10): each prod flip is a one-line
     // stage-fact commit, operator-merged + `pulumi up`-deployed; rollback =
     // revert this line + redeploy — reverting removes BOTH SPAF.8 keys, so the
     // /p/:p/import* legs re-dormant together. ≥ one nightly green on prod precedes the
-    // NEXT surface's prod flip. Order is flip order — never re-sort.
+    // NEXT surface's prod flip — SPAF.14 has no next flip, so its bake instead gates
+    // the CLEANUP wave's activation: SPA.26/27/28's island-bundle/SSR/override
+    // deletions must not merge-deploy until this flip has baked ≥1 nightly green.
+    // Order is flip order — never re-sort.
     // SPAF.8 is the first IDE-framed prod activation: `export` ∈ SPA_IDE_FRAMED_SURFACES,
     // so deps.spa's key-level AND lights `/p/:p/export` and mounts IdeChrome
     // (panes/palette/feed) on it; the same `ide-chrome` key resolves the route-level
@@ -432,25 +436,47 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // stays a LIVE EventSource binding on `/p/:p/r/:runId/events` — that SSE endpoint is
     // itself a non-document proxy (session-gated, never flag-consulted) serving
     // identically on either renderer.
-    // `ide-chrome` alone still gates nothing else — editor stays
-    // unflipped. SPAF.9's `outline` and SPAF.10's `figures` are UNFRAMED —
+    // SPAF.14 is the FIFTH and LAST IDE-framed prod activation: `editor` ∈
+    // SPA_IDE_FRAMED_SURFACES too, so all five Page-family consults AND `ide-chrome`
+    // — already flipped since SPAF.8 — and every flipped editor route ∈
+    // SPA_IDE_FRAMED_ROUTES (/p/$project, /p/$project/v/$v, /p/$project/v/$n/diff/$m,
+    // /p/$project/a/$artifactId, /p/$project/revisions/$cid) mounts the chrome.
+    // Every editor consult additionally sits AFTER the Page family's forced-SSR
+    // capability check (REQ-ED-12 + REQ-VFY-5): a phone request or a read-only
+    // `showcase` row keeps the server-rendered Page even flagged — the flag never
+    // re-enables a mount the capability refused, and the server withholds
+    // `collabWsUrl` on those paths so the SPA cannot enable collab by asking. A
+    // flagged hit serves the shell and the /bff/p/:slug* twin performs the ONE
+    // shared composition (the overview / version / diff / artifact / what-changed
+    // reads), so the two renderers read identically; the collab wire is the SAME
+    // `client/collab.ts` `createCollabSession` on either renderer (REQ-ISL-4 — the
+    // SPA binds it through PageSessionRegistry, the SSR Page's `page.js` island binds
+    // it directly), so a revert drops live collab sessions back onto the SSR mount.
+    // `ide-chrome` alone now gates nothing else — with SPAF.14 every surface key is
+    // flipped on prod. SPAF.9's `outline` and SPAF.10's `figures` are UNFRAMED —
     // `/p/:p/outline` + `/p/:p/outline/promote` consult on `outline` alone, and
     // `/p/:p/figures` + `/p/:p/figures/:figureId` + `/p/:p/visualize` consult on
     // `figures` alone, all rendering outside the IDE shell even flagged.
     // `/app`'s session gate + first-five-minutes precedence still
     // run ahead of the `project-home` consult; the billing session gates likewise precede
     // `billing` (unauthed → 302 /login on all three GETs); the outline GETs' + the figures
-    // GETs' + the run-sheet GET's + the two dossier GETs' + the run-report GET's session
-    // gates precede their consults the same way
-    // (unauthed → 302 /login); the seven billing POSTs + the four outline POSTs + the
+    // GETs' + the run-sheet GET's + the two dossier GETs' + the run-report GET's + the
+    // five editor GETs' session gates precede their consults the same way
+    // (unauthed → 302 /login — and on `/p/:p` the unread-`run_finished` handoff read +
+    // the Page family's phone/showcase forced-SSR check still run ahead of the consult);
+    // the seven billing POSTs + the four outline POSTs + the
     // seven figures POSTs + the run-sheet run/exhausted POSTs + the dossier finding POSTs
     // (disposition/apply/promote/obligations + the obligations create + the bulk
     // preview/confirm pair) + the run-report steering POSTs (pause/resume/stop/cancel/
-    // note/walkthrough + refund) stay
+    // note/walkthrough + refund) + the editor POSTs (rename/approvals/decisions/
+    // revision+compare hunk comments/restore + the Page transport's /save /note
+    // /cancel-run /revise family) stay
     // server-validated envelopes/form redirects on either
     // renderer — they were never documents; the `/p/:p/r/:runId/events` SSE proxy isn't
-    // a document either — the live meter's feed stays live on either renderer.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier", "run-report"],
+    // a document either — the live meter's feed stays live on either renderer — and
+    // neither are the Page transport's `/doc` poll nor the apps/collab WebSocket:
+    // both serve identically on either renderer.
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier", "run-report", "editor"],
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe

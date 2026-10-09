@@ -146,9 +146,15 @@ describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", 
     // consult resolves `run-report ∧ ide-chrome` and the leaf mounts the chrome;
     // SPAF.13 is its prod flip — `run-report` appended in flip order after `dossier`,
     // the fourth IDE-framed prod activation.
+    // SPA.23/24 added `editor` on dev (the two halves) — the fifth IDE-framed key:
+    // all five Page-family consults resolve `editor ∧ ide-chrome` and every flipped
+    // editor route mounts the chrome, each AFTER its phone/showcase forced-SSR check
+    // (REQ-ED-12/REQ-VFY-5); SPAF.14 is its prod flip — `editor` appended in flip
+    // order after `run-report`, the fifth and LAST IDE-framed prod activation
+    // (REQ-ED-13 — the editor flips last).
     // Previews stay [] and override only via the rhema:spaSurfaces stack config.
     expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier", "run-report", "editor"]); // SPA.11…23 — the dev flips
-    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier", "run-report"]); // SPAF.1…SPAF.13 — the prod flips
+    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier", "run-report", "editor"]); // SPAF.1…SPAF.14 — the prod flips (ALL surfaces)
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "dev" || name === "prod") continue;
       expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
