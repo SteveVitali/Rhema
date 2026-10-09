@@ -391,8 +391,9 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // `settings` joins them; SPAF.4 — `voices` joins them; SPAF.5 — `onboarding` joins them;
     // SPAF.6 — `project-home` joins them; SPAF.7 — `billing` joins them; SPAF.8 — `export`
     // AND `ide-chrome` join them together; SPAF.9 — `outline` joins them; SPAF.10 —
-    // `figures` joins them; SPAF.11 — `run-sheet` joins them (REQ-SEQ-10): each prod flip
-    // is a one-line stage-fact commit, operator-merged + `pulumi up`-deployed; rollback =
+    // `figures` joins them; SPAF.11 — `run-sheet` joins them; SPAF.12 — `dossier` joins
+    // them (REQ-SEQ-10): each prod flip is a one-line stage-fact commit, operator-merged +
+    // `pulumi up`-deployed; rollback =
     // revert this line + redeploy — reverting removes BOTH SPAF.8 keys, so the
     // /p/:p/import* legs re-dormant together. ≥ one nightly green on prod precedes the
     // NEXT surface's prod flip. Order is flip order — never re-sort.
@@ -406,7 +407,15 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // chrome. A flagged GET serves the shell and the `/bff/p/:slug/run` twin performs the
     // ONE shared `runSheetComposition` — the `rhema_fp` mint + the staleness/exhausted-
     // prompt side effects included — so the two renderers price + log identically.
-    // `ide-chrome` alone still gates nothing else — dossier/run-report/editor stay
+    // SPAF.12 is the THIRD IDE-framed prod activation: `dossier` ∈
+    // SPA_IDE_FRAMED_SURFACES too, so BOTH dossier consults AND `ide-chrome` — already
+    // flipped since SPAF.8 — and `/p/:p/review/:runId` (∈ SPA_IDE_FRAMED_ROUTES) mounts
+    // the chrome while `/p/:p/obligations/new` (∉ the framed routes) serves the shell but
+    // renders its leaf OUTSIDE `.ide`. A flagged review GET serves the shell and the
+    // `/bff/p/:slug/review/:runId` twin performs the ONE shared `dossierComposition` —
+    // the `run.report_viewed` emit + the findings/second-read/rubric/disposition state +
+    // the Margin/Desk filtered list verbatim — so the two renderers read identically.
+    // `ide-chrome` alone still gates nothing else — run-report/editor stay
     // unflipped. SPAF.9's `outline` and SPAF.10's `figures` are UNFRAMED —
     // `/p/:p/outline` + `/p/:p/outline/promote` consult on `outline` alone, and
     // `/p/:p/figures` + `/p/:p/figures/:figureId` + `/p/:p/visualize` consult on
@@ -414,12 +423,15 @@ export const STAGES: Record<StageKind, StageConfig> = {
     // `/app`'s session gate + first-five-minutes precedence still
     // run ahead of the `project-home` consult; the billing session gates likewise precede
     // `billing` (unauthed → 302 /login on all three GETs); the outline GETs' + the figures
-    // GETs' + the run-sheet GET's session gates precede their consults the same way
+    // GETs' + the run-sheet GET's + the two dossier GETs' session gates precede their
+    // consults the same way
     // (unauthed → 302 /login); the seven billing POSTs + the four outline POSTs + the
-    // seven figures POSTs + the run-sheet run/exhausted POSTs stay
+    // seven figures POSTs + the run-sheet run/exhausted POSTs + the dossier finding POSTs
+    // (disposition/apply/promote/obligations + the obligations create + the bulk
+    // preview/confirm pair) stay
     // server-validated envelopes/form redirects on either
     // renderer — they were never documents.
-    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet"],
+    spaSurfaces: ["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier"],
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
