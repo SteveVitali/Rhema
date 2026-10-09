@@ -5726,18 +5726,23 @@ export function createWebApp(deps: WebDeps): Hono {
     const intent = str("intent") === "build" ? "build" : "save";
     // Upload OR paste (§9.2 beta subset): a .md/.txt/.html file decodes to canonical text here; richer
     // formats ride the same quarantine→convert seam the api accepts as `quarantineKey` (the deploy leg).
+    // SPA.13 (REQ-BFF-16) — a JSON caller carries `quarantineKey` instead: the browser already
+    // presigned→PUT the bytes (the BFF never proxies them); the api's convert seam resolves it.
+    const quarantineKey = str("quarantineKey").trim();
     const file = form.sample_file;
     const fileText =
       file && typeof file === "object" && "arrayBuffer" in file && (file as File).size > 0
         ? new TextDecoder().decode(await (file as File).arrayBuffer())
         : "";
     const sampleText = (fileText || str("sample_text")).trim();
+    // A quarantined upload counts as corpus for the sheet's own build gate, same as pasted text.
+    const hasSample = sampleText !== "" || quarantineKey !== "";
     const sampleUrl = str("sample_url").trim();
     const tier = str("tier") === "full" ? "full" : "quick";
     // The sheet's own gate mirrors the api's (shared constants in findings-core): Quick needs a
     // description or ≥1 sample; Full needs ≥4 samples — the creation sheet attaches at most two
     // (text/file + URL), so a Full build always lands on the detail page to add the rest.
-    if (intent === "build" && tier === "quick" && !sampleText && !sampleUrl) {
+    if (intent === "build" && tier === "quick" && !hasSample && !sampleUrl) {
       if (wantsJson(c)) return c.json({ error: "sample_required", detail: COPY.voice.new.sampleRequired }, 400);
       return c.html(
         renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired }, compact: isPhoneRequest(c) }),
@@ -5745,7 +5750,7 @@ export function createWebApp(deps: WebDeps): Hono {
       );
     }
     if (intent === "build" && tier === "full") {
-      const hasCorpus = sampleText !== "" || sampleUrl !== "";
+      const hasCorpus = hasSample || sampleUrl !== "";
       if (!hasCorpus) {
         if (wantsJson(c)) return c.json({ error: "full_required", detail: COPY.voice.new.fullRequired }, 400);
         return c.html(
@@ -5760,7 +5765,16 @@ export function createWebApp(deps: WebDeps): Hono {
       ...(str("description").trim() ? { description: str("description") } : {}),
       mode: str("mode") || "self",
     });
-    if (sampleText) {
+    if (quarantineKey) {
+      // The browser's presign→direct-PUT leg already landed the bytes in quarantine (REQ-BFF-16);
+      // the api's convert seam resolves the key — the BFF never proxied them.
+      await deps.dataSource
+        .addVoiceSample(session, created.personaId, {
+          quarantineKey,
+          ...(str("sample_title").trim() ? { title: str("sample_title").trim() } : {}),
+        })
+        .catch(() => undefined);
+    } else if (sampleText) {
       await deps.dataSource
         .addVoiceSample(session, created.personaId, {
           text: sampleText,
