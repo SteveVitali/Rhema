@@ -256,4 +256,8 @@ All four appended to `docs/tickets/DEFERRALS.md` under `## SPAF.13` this run.
 
 ## PR checks read (closeout)
 
-_To be recorded after the closeout-docs push — `gh pr checks 154 --watch=false`._
+Single `gh pr checks 154 --watch=false` read after the closeout-docs push:
+**`no checks reported`** (the same read as on #140–#153 — the pipeline had not
+registered a job for the stacked branch at stamp time; recorded verbatim rather than
+re-polled). Any `integration`/privsep red that reports later is inherited, waived per
+GD-MAINT.4-1 — classified, not repaired.

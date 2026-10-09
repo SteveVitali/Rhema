@@ -39,7 +39,7 @@ benchmarkSet:    PENDING_CREATE     # §18 corpus = HUMAN-H2 (deferred, D5)
 autonomy:        checkpoint         # pause at gates, real blocks, ADR-013 operator pauses
 mergePolicy:     OPERATOR           # operator merges bottom-up later (REC.3 writes the plan)
 round:           4                  # frontend-spa — spec docs/frontend-spa-spec.md (canonical v1.0)
-updatedAt:       2026-10-09T20:45:00Z         # SPAF.13 landed (prod flip: run-report — PR #154); prior: SPA.22 surface; build NOT DONE — live legs + funded-window rows remain ledgered
+updatedAt:       2026-10-09T20:50:00Z         # SPAF.13 landed (prod flip: run-report — PR #154); prior: SPA.22 surface; build NOT DONE — live legs + funded-window rows remain ledgered
 ```
 
 ## OPEN FINDINGS
