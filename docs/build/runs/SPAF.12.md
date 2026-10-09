@@ -234,4 +234,8 @@ All four appended to `docs/tickets/DEFERRALS.md` under `## SPAF.12` this run.
 
 ## PR checks read (closeout)
 
-_(Recorded after the closeout-docs push — see the ledger's final commit.)_
+Single `gh pr checks 152 --watch=false` read after the closeout-docs push:
+**`typecheck / lint / unit — pending`** (the pipeline had just registered the one job at
+stamp time — stronger than the "no checks reported" reads on #140–#150; recorded verbatim
+rather than re-polled). Any `integration`/privsep red that reports later is inherited,
+waived per GD-MAINT.4-1 — classified, not repaired.
