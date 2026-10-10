@@ -2507,4 +2507,52 @@ describe("SPA.23 — the editor surface's five BFF twins + handoff + JSON write 
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "unauthenticated" });
   });
+
+  // SPACAP.3 (G2) — the showcase leg of the forced-SSR truth rides the twins: a `showcase` row's
+  // `project` bag carries `showcase: true` on every Page-family twin so the leaf can hand the
+  // navigation back to a document load (the server's `isPhoneRequest(c) || row.showcase === true`
+  // arm then serves the forced-SSR document). A non-showcase row omits the key.
+  const spa23ShowcaseDeps = () =>
+    spa23Deps({ listProjects: async () => [{ ...PROJECTS[0]!, headDraftId: "d_7", showcase: true }] });
+
+  it("GET /bff/p/:slug on a showcase row ships project.showcase — the leaf's document-handoff cue", async () => {
+    const res = await createWebApp(spa23ShowcaseDeps()).request("/bff/p/the-politics-of-visibility", JSON_GET);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.project.showcase).toBe(true);
+    // the read-only/collab-withheld posture the BFF already enforced stays verbatim.
+    expect(body.page.readOnly).toBe(true);
+    expect(body.page.collabWsUrl).toBeUndefined();
+  });
+
+  it("the four remaining Page-family twins ship project.showcase on a showcase row — all five hand off", async () => {
+    const app = createWebApp(spa23ShowcaseDeps());
+    for (const path of [
+      "/bff/p/the-politics-of-visibility/v/working",
+      "/bff/p/the-politics-of-visibility/v/6/diff/7",
+      "/bff/p/the-politics-of-visibility/a/a_1",
+      "/bff/p/the-politics-of-visibility/revisions/c_1",
+    ]) {
+      const res = await app.request(path, JSON_GET);
+      expect(res.status, path).toBe(200);
+      const body = await res.json();
+      expect(body.project.showcase, path).toBe(true);
+    }
+  });
+
+  it("a non-showcase row omits the key on every twin — the flag is a row fact, never a stub", async () => {
+    const app = createWebApp(spa23Deps());
+    for (const path of [
+      "/bff/p/the-politics-of-visibility",
+      "/bff/p/the-politics-of-visibility/v/working",
+      "/bff/p/the-politics-of-visibility/v/6/diff/7",
+      "/bff/p/the-politics-of-visibility/a/a_1",
+      "/bff/p/the-politics-of-visibility/revisions/c_1",
+    ]) {
+      const res = await app.request(path, JSON_GET);
+      expect(res.status, path).toBe(200);
+      const body = await res.json();
+      expect("showcase" in body.project, path).toBe(false);
+    }
+  });
 });

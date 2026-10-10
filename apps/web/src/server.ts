@@ -5208,6 +5208,10 @@ export function createWebApp(deps: WebDeps): Hono {
         slug,
         headDraftId: row.headDraftId,
         headDraftN: row.headDraftN ?? null,
+        // SPACAP.3 (G2) — the row leg of the forced-SSR truth the boot map cannot carry
+        // (`isPhoneRequest(c) || row.showcase === true` on the document): the leaf hands a
+        // showcase navigation back to a document load, which lands the forced-SSR arm.
+        ...(row.showcase === true ? { showcase: true } : {}),
       },
       gates: comp.gates,
       decisions: comp.decisions,
@@ -5268,7 +5272,13 @@ export function createWebApp(deps: WebDeps): Hono {
           ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview) }
           : {}),
       },
-      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      project: {
+        title: row.title,
+        pill: row.state.pill,
+        slug,
+        headDraftId: row.headDraftId,
+        ...(row.showcase === true ? { showcase: true } : {}),
+      },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
       ide: ctx.ide,
@@ -5291,7 +5301,13 @@ export function createWebApp(deps: WebDeps): Hono {
     const ctx = await ideContext(c, session, row);
     return c.json({
       compare: { slug, n, m, data },
-      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      project: {
+        title: row.title,
+        pill: row.state.pill,
+        slug,
+        headDraftId: row.headDraftId,
+        ...(row.showcase === true ? { showcase: true } : {}),
+      },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
       ide: ctx.ide,
@@ -5319,7 +5335,13 @@ export function createWebApp(deps: WebDeps): Hono {
     });
     return c.json({
       page: { slug, projectId: row.id, doc, readOnly: true },
-      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      project: {
+        title: row.title,
+        pill: row.state.pill,
+        slug,
+        headDraftId: row.headDraftId,
+        ...(row.showcase === true ? { showcase: true } : {}),
+      },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
       ide: ctx.ide,
@@ -5339,7 +5361,13 @@ export function createWebApp(deps: WebDeps): Hono {
     const ctx = await ideContext(c, session, row);
     return c.json({
       revision: { slug, data },
-      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+      project: {
+        title: row.title,
+        pill: row.state.pill,
+        slug,
+        headDraftId: row.headDraftId,
+        ...(row.showcase === true ? { showcase: true } : {}),
+      },
       paperTheme: ctx.paperTheme ?? "light",
       ...(ctx.theme?.pref ? { appTheme: ctx.theme.pref } : {}),
       ide: ctx.ide,

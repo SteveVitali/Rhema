@@ -9,7 +9,7 @@ import { getSpaBoot, isSpaEnabled } from "../../boot.js";
 import { BffError } from "../../bff.js";
 import { compareQuery } from "../../queries.js";
 import { flagParam, oneParam, strParam, validateSearchParams } from "../../search.js";
-import { PendingShell, SsrHandoff, SurfaceShell } from "../../states.js";
+import { PendingShell, SsrHandoff, SurfaceShell, twinForcesSsr } from "../../states.js";
 import { CompareSurface } from "../../surfaces/editor.js";
 
 export const Route = createFileRoute("/_authenticated/p/$project/v/$n/diff/$m")({
@@ -47,6 +47,9 @@ export const Route = createFileRoute("/_authenticated/p/$project/v/$n/diff/$m")(
       throw q.error;
     }
     if (q.data == null) return <SurfaceShell />;
+    // SPACAP.3 (G2) — the showcase leg of the forced-SSR truth: document-nav back so the server
+    // lands the read-only SSR compare (the boot map owns the phone leg; the twin owns this one).
+    if (twinForcesSsr(q.data)) return <SsrHandoff />;
     return <CompareSurface data={q.data} compact={boot?.deviceClass === "phone"} search={search} />;
   },
 });
