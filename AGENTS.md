@@ -42,6 +42,7 @@ pnpm check:protocol-markers        # no protocol IP in public bundles (public-sa
 pnpm check:no-cookies              # never-cookies ingestion gate (public-safe)
 pnpm check:spa-budget              # SPA bundle gzip ceilings (public-safe)
 pnpm check:spa-env                 # env-leak tripwire: no server env / VITE_* secrets in bundles (public-safe)
+pnpm check:dom-contract            # emitted-DOM manifest: journeys ⊆ manifest ⊆ emitted ⊆ asserted (unit job)
 ```
 
 ## Bazel-compatible invariants (enforced, not advised)
@@ -68,6 +69,62 @@ pnpm check:spa-env                 # env-leak tripwire: no server env / VITE_* s
   estimator/entitlement config; a Review that could not research says so and refunds the research
   phases.
 
+## Frontend — the SPA hybrid (round 4; ADR-106/107/108)
+`apps/web` is a **Hono SSR host + Vite-built TanStack Router/Query SPA + same-origin BFF**.
+React Router survives only as the server-side manifest/match library — it is never shipped to
+browsers. **Authored vs activated:** prod still serves pre-chain ancestors; this section
+describes landed code. Live posture changes only through the operator's ordered activation
+(`docs/build/INTEGRATION_PLAN.md` §R4) — never claim a round-4 surface is live without
+`check-deploy-provenance` green.
+
+- **Renderer split.** The public funnel (`SPA_PUBLIC_ROUTES` — `/`, `/invite`, `/pricing`,
+  `/signup`, `/login`, `/showcase`) stays SSR forever; every other authenticated document GET
+  serves `spaShellDocument` unconditionally (`apps/web/src/spa-shell.ts`). The document census
+  is `SPA_DOCUMENT_ROUTES` in `packages/contracts/src/spa.ts` — a `surfaces: null` row is a
+  server-owned redirect GET (registered in the client tree as a `reloadDocument` stub so the
+  server's 302 still answers).
+- **Flag machinery is deleted (SPA.27/28).** `?ssr=1`, `?renderer=spa`, `x-rhema-renderer`,
+  `SPA_OVERRIDES`, the `SPA_SURFACES` env + `rhema:spaSurfaces` stack key — all inert or removed;
+  never resurrect them (`renderer-overrides.test.ts` + `check:spa-env` are the tripwires).
+  `SPA_SURFACES`/`SPA_IDE_FRAMED_*`/`SPA_DOCUMENT_ROUTES` survive as **contract vocabulary
+  only** — no request-path code consults them.
+- **Forced-SSR is a server verdict (REQ-ED-12, ADR-108).** The five Page-family GETs serve SSR
+  on `isPhoneRequest(c) || row.showcase === true`. The boot `surfaces` map owns the phone leg;
+  the BFF twin's `project.showcase` owns the showcase leg — leaves consult `twinForcesSsr`
+  (`spa/states.tsx`) and hand off through `SsrHandoff` → `navigateDocument` (`spa/dom.ts`, the
+  one document-navigation seam; `/logout`, external hand-offs, binaries are document
+  navigations). The client never decides a renderer.
+- **Transport.** `bffFetch` (`spa/bff.ts`) is the ONE JSON transport — same-origin `/…` paths
+  only, `credentials:"same-origin"`, no client POST retries; non-2xx throws
+  `BffError{status,code,detail?,requestId}`; 401 → `/login` document nav. Reads are the typed
+  `/bff/*` twins. Writes post to the same paths a no-JS form would — the server dual-modes on
+  `content-type`/`accept`: JSON callers get `{ok:true, redirect?, flash?, data?, pending?,
+  url?}` (`url` = allowlist-validated external hand-off only); form posts get the verbatim
+  302+flash URL (the no-JS floor is always equivalent). Failures are
+  `{error:"<stable_code>", detail?}` at the preserved status — a JSON caller never gets a
+  redirect; stale-state 400/404/409 means re-read → invalidate the owning Query keys.
+- **Query conventions (REQ-FW-7).** Loaders orchestrate `ensureQueryData` with
+  endpoint-verbatim keys + `defaultPreloadStaleTime: 0`; leaves use `useQuery` + `SurfaceShell`,
+  not `useSuspenseQuery`.
+- **DOM contract.** `apps/web/src/dom-contract.ts` is the committed selector manifest — the
+  `data-*` hooks / roles / field names are THE test+journey vocabulary; `check:dom-contract`
+  fails on a selector a journey or test cites that the manifest doesn't declare, and on a
+  manifest entry nothing emits or asserts. Never invent an undeclared hook.
+- **Component tests.** `*.dom.test.tsx` run under happy-dom + Testing Library + `axe-core`
+  (`apps/web/vitest.config.ts` `environmentMatchGlobs`, `test-setup.ts`); layout-dependent axe
+  rules stay off — the journey-level axe leg is the deferred authoritative tier.
+- **Permanent islands (ADR-107).** `CLIENT_ENTRIES = ["ide","page","landing"]`
+  (`apps/web/client-entries.mjs`): `page.js`/`ide.js` mount forever on the forced-SSR family +
+  SSR-framed IDE documents; `outline` (SPA.26) and `editor` (SPA.24) are retired. An entry
+  leaves the list only when nothing served can mount it — removing `page`/`ide` is a REQ-ED-12
+  design change, not cleanup.
+- **Source mode (SPA.25, REQ-ED-17).** `spa/page-source-mode.ts` — a CodeMirror 6 view loaded
+  only via `import()` (the `codemirror` async group; plain-text — `@codemirror/lang-markdown`
+  broke the REQ-SAFE-7 ceiling). Commits flow through `applySourceMarkdown`
+  (`packages/editor/src/source-mode.ts`, three-way top-level-block merge); the PM view stays
+  mounted + dispatching inside `data-pm-host`.
+- **Rollback is `git revert` + redeploy** — no flag exists to flip (spec §14.4).
+
 ## Browser journeys (JOURNEY.1; REQ-SPEC-29)
 `packages/journeys` (`@rhema/journeys`) is the committed Playwright suite. `src/registry.ts` is the
 step registry: a step is `expected: "red"` until its owner proves it in Stage B, then flips it
@@ -85,6 +142,14 @@ pnpm --filter @rhema/journeys exec rhema-journeys \
 Post-ADR-093 the guard's `JOURNEY_DATABASE_URL` MUST be the **system-role** DSN — an app-login DSN
 reads `usage_records` as $0 through FORCE RLS and blinds the guard. Nightly $0 legs and the weekly
 `--paid` run come from `.github/workflows/journeys.yml`.
+
+Round-4 CLI surface: `--surface <key[,key…]>` scopes a run to a `SURFACE_GATES` surface;
+`--expect-renderer <ssr|spa>` fails the run when a served document's `data-renderer` differs
+(`spa` on every authenticated SPA-space document, `ssr` on public + forced-SSR arms);
+`--invite-code` (env `RHEMA_INVITE_CODE`) seeds the preview invite path. `--pin-renderer`/
+`JOURNEY_PIN_RENDERER` are **retired** (SPA.28 deleted `x-rhema-renderer`) and refuse loudly with
+exit 2. The marker vocabulary `data-renderer` / `data-mounted` / `data-route` is the settle +
+renderer contract — it stays true on both renderers.
 
 ## Adding a package
 1. Create `apps/<name>` or `packages/<name>` with `package.json` (`@rhema/<name>`, `type: module`,
