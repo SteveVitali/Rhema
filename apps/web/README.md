@@ -1,16 +1,22 @@
 # @rhema/web
 
 The web host: Hono SSR server (`src/`, built by `tsc -b`), the esbuild **island** client bundles
-(`src/client/` → `public/<entry>.js`, built by `build-client.mjs`), and — added by SPA.1 — the
-**Vite SPA bundle** (`src/spa/` → `public/spa/`, built by `vite build`). The SPA output is inert
-until the shell document and skeleton land (SPA.3/SPA.4): nothing serves it and no flag exists yet.
+(`src/client/` → `public/<entry>.js`, built by `build-client.mjs`), and the **Vite SPA bundle**
+(`src/spa/` → `public/spa/`, built by `vite build`). Post-cleanup (SPA.27/SPA.28) every
+authenticated SPA-space document GET serves the shell unconditionally — the migration-window flag
+machinery is deleted and `?ssr=1`/`?renderer=spa`/`x-rhema-renderer` are inert request text
+(spec §14.1). The one remaining request-path renderer verdict is the Page family's forced-SSR
+check — `isPhoneRequest(c) || row.showcase === true` keeps phone and showcase documents on the
+server-rendered read-only Page (ADR-108); the public funnel stays SSR forever (REQ-BND-1). This
+posture is **authored-dormant**: prod serves pre-chain ancestors until the operator's ordered
+merge/deploy (`docs/build/INTEGRATION_PLAN.md` §R4; spec §14.17).
 
 ## Build layout (REQ-TL-2/3/12)
 
 | Source | Builder | Output | Notes |
 |---|---|---|---|
 | `src/` (server + SSR pages) | `tsc -b` (`tsconfig.json`) | `dist/` | unchanged — Vite never touches it |
-| `src/client/` | `build-client.mjs` (esbuild, iife/minified/unhashed) | `public/<entry>.js` | islands — permanent for `landing.js`, retired per-surface as flags flip |
+| `src/client/` | `build-client.mjs` (esbuild, iife/minified/unhashed) | `public/<entry>.js` | the permanent SSR island set `ide.js`/`page.js`/`landing.js` (ADR-107) — `outline` retired at SPA.26, `editor` at SPA.24; an entry leaves `CLIENT_ENTRIES` only when nothing served can mount it |
 | `public/fonts/` | `build-client.mjs` (font copy) | `public/fonts/*.woff2` | §5.9 variable fonts |
 | `src/spa/` | `vite build` (`vite.config.ts`) | `public/spa/assets/*` + `public/spa/.vite/manifest.json` | content-hashed; hidden sourcemaps (provenance-scan only, stripped from the image) |
 
@@ -49,6 +55,12 @@ absent the env var, the shell document keeps the prod CSP exactly.
 - `pnpm check:spa-budget` — REQ-SAFE-7: gzip ceilings over `public/spa` read off
   `.vite/manifest.json` (entry graph ≤250 kB; editor/collab lazy group ≤400 kB; CodeMirror ≤130 kB;
   other async ≤150 kB each; total JS ≤800 kB; CSS ≤60 kB — `spa-budget.json`).
+- `pnpm check:spa-env` — REQ-SAFE-8: env-leak tripwire — no server env / `VITE_*` secret strings in
+  any SPA source or emitted artifact; the retired `SPA_SURFACES`/`SPA_OVERRIDES` env names stay on
+  its banned list.
+- `pnpm check:dom-contract` — the committed `data-*`/`role`/`name` hook manifest
+  (`src/dom-contract.ts`): journeys ⊆ manifest, SPA ⊆ manifest, manifest ⊆ emitted ⊆ asserted —
+  the one emitted-DOM vocabulary both renderers are held to.
 - `pnpm check:protocol-markers` — REQ-ARCH-33: no protocol/eval text in public bundles.
 - `pnpm check:licenses` — REQ-ARCH-40 allowlist over the installed graph.
 - `pnpm check:no-cookies` — the never-cookies ingestion gate.
