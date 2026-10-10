@@ -111,9 +111,12 @@ Closed: none. Probed-and-unchanged: `D-SPACAP.2-1..4`, the `D-SPA.*-1/-2` previe
   values, readout guard sentence, `Harness:` headers on old ledgers; this ledger carries
   the header).
 - `node docs/build/tools/check-append-only.mjs --base 0eaea5d` — **OK**; `--selftest` — OK.
-- `gh pr checks --watch=false` — read once at closeout; result recorded below at commit
-  time (inherited integration/privsep red, if reported, classified and waived per
-  `GD-MAINT.4-1`, not repaired).
+- `gh pr checks 164 --watch=false` (2026-10-10T07:55Z) → **"no checks reported on the
+  'stevevitali/spacap-3-capstone-closure' branch"** — the recurring first-read class
+  SPACAP.2 recorded (the check suite reports on a later read; nothing to classify or
+  waive this read — no `integration`/privsep red was reported, so `GD-MAINT.4-1` is
+  noted but uninvoked). PR **#164** against `stevevitali/spacap-2-composed-verification`,
+  unmerged per `mergePolicy: OPERATOR`.
 
 ## 8 — Deviations / owned decisions
 
