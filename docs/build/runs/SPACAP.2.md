@@ -107,6 +107,7 @@ their live debts are folded into the runbook's recipes where the four ACs are th
   ledgers — this ledger carries the header).
 - `node docs/build/tools/check-append-only.mjs --base 0263581` — **OK** (run post-commit
   on the impl commit `6e7dc48`).
-- `gh pr checks 163 --watch=false` — read once at closeout; result appended below. The
-  inherited `integration`/privsep red, if reported, is waived per GD-MAINT.4-1
-  (classified, not repaired).
+- `gh pr checks 163 --watch=false` (2026-10-10T07:35Z) → **"no checks reported on the
+  'stevevitali/spacap-2-composed-verification' branch"** — the chain's recurring
+  first-read class (same as #140–#162); the inherited `integration`/privsep red, if it
+  reports later, is waived per GD-MAINT.4-1 (classified, not repaired).
