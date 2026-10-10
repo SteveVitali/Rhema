@@ -126,8 +126,9 @@ vocabulary recorded as the settle + renderer contract, true on both renderers.
 - `check-build-memory.sh .` — 0 violations; the standing pre-existing-class warnings only.
 - Canonical vocabulary held in new copy (surface/leaf/twin/envelope are the spec's own words;
   no banned strings introduced).
-- `gh pr checks --watch=false` read once at closeout — recorded in `pr/SPADOC.2.md`; the
-  inherited `integration`/privsep red class, if reported, is waived per GD-MAINT.4-1.
+- `gh pr checks --watch=false` read once at closeout on PR #169 — `typecheck / lint / unit`
+  **pending** (CI registered, in flight; the recurring first-read class). No
+  `integration`/privsep red reported; if it reports later it is the GD-MAINT.4-1 waived class.
 
 ## Deferrals
 
