@@ -19,7 +19,12 @@
 //           `deps.spa(c, "onboarding") && deps.spa(c, "ide-chrome")`.
 //
 // `ssr` wins when both signals arrive — the force-SSR form is the incident/debug escape hatch.
-// No route consults the flag yet (the shell document is SPA.3) — this lands deployable-dark.
+//
+// SPA.27 (the SSR deletion wave) — the authored flag-on set is now the COMPLETE auth'd document
+// surface set: every flipped surface's document handler serves the shell unconditionally, so the
+// consult's only remaining consumers are the catch-all (`?ssr=1` on an SPA-prefixed deep link
+// still lands the SSR 404) and the boot map's renderer seed. The machinery — session gate,
+// renderer overrides, AND-gate — stays exactly as spec §4 ordered it; SPA.28 owns its removal.
 
 import type { Context } from "hono";
 import {
@@ -50,6 +55,19 @@ export interface SpaFlagDeps {
 
 const IDE_FRAMED: ReadonlySet<SpaSurface> = new Set(SPA_IDE_FRAMED_SURFACES);
 
+/**
+ * SPA.27 — the force-SSR override signals (`?ssr=1`, `x-rhema-renderer: ssr`), factored out of
+ * the consult so the Page family's forced-SSR arm can honor the SAME signals against its
+ * surviving server render: the flipped surfaces deleted their SSR documents, but the Page
+ * render is the one SSR arm that stays forever (phone/showcase — REQ-ED-12), so it is also the
+ * one place the escape hatch still has a real SSR document to land on. The consult runs this
+ * same check as its leg (a); SPA.28 retires both.
+ */
+export function ssrOverrideRequested(c: Context): boolean {
+  const rendererHeader = c.req.header(SPA_RENDERER_HEADER)?.trim().toLowerCase();
+  return c.req.query("ssr") === "1" || rendererHeader === "ssr";
+}
+
 /** Build `deps.spa` from the deploy facts. Order inside is normative — do not reorder. */
 export function createSpaConsult(deps: SpaFlagDeps): SpaConsult {
   const surfaces = deps.surfaces ?? new Set<SpaSurface>();
@@ -58,9 +76,8 @@ export function createSpaConsult(deps: SpaFlagDeps): SpaConsult {
     // Session gate FIRST — inside the consult too, so a force-spa override on a signed-out
     // request can never reach the shell (REQ-SEQ-4's "never bypass" clause made structural).
     if (!deps.session(c)) return false;
-    const rendererHeader = c.req.header(SPA_RENDERER_HEADER)?.trim().toLowerCase();
-    if (c.req.query("ssr") === "1" || rendererHeader === "ssr") return false;
-    if (overrides && (c.req.query("renderer") === "spa" || rendererHeader === "spa")) {
+    if (ssrOverrideRequested(c)) return false;
+    if (overrides && (c.req.query("renderer") === "spa" || c.req.header(SPA_RENDERER_HEADER)?.trim().toLowerCase() === "spa")) {
       return true;
     }
     return (

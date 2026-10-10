@@ -51,6 +51,7 @@ export interface SpaShellDeps {
   readonly warn?: (msg: string) => void;
 }
 
+
 /** The `<dir>/.vite/manifest.json` the Vite build emits next to `assets/` (vite.config.ts). */
 export const DEFAULT_SPA_ASSET_ROOT = fileURLToPath(new URL("../public/spa/", import.meta.url));
 
@@ -167,22 +168,17 @@ export async function spaBootPayload(
       .catch(() => null),
   ]);
   const deviceClass = deviceClassFor(c);
-  const memo = new Map<SpaSurface, boolean>();
-  const consult = (key: SpaSurface): boolean => {
-    const hit = memo.get(key);
-    if (hit !== undefined) return hit;
-    const resolved = deps.spa?.(c, key) === true;
-    memo.set(key, resolved);
-    return resolved;
-  };
+  // SPA.27 — the deletion wave made the renderer map STATIC truth: every surface-keyed document
+  // route serves the shell unconditionally now (the SSR documents are gone), so the map no longer
+  // resolves through `deps.spa` — a `?ssr=1`-served shell must still map its route "spa" or the
+  // leaf's SsrHandoff would hand the document straight back into a reload loop. The surviving
+  // exceptions are structural, not flag-driven: `pageMount` routes on phone keep the forced-SSR
+  // Page (REQ-ED-12/REQ-VFY-5), `surfaces:null` rows are server-owned, and the public funnel is
+  // SSR forever (REQ-BND-5).
   const surfaces: Record<string, "spa" | "ssr"> = {};
   for (const doc of SPA_DOCUMENT_ROUTES) {
-    // REQ-ED-12/REQ-VFY-5 — a page-mounting route stays "ssr" on phone even when `editor` flips:
-    // the forced-SSR posture is a capability decision, mirrored here so the SPA never mounts the
-    // editable Page by asking.
     const forcedSsr = deviceClass === "phone" && doc.pageMount === true;
-    surfaces[doc.routeId] =
-      doc.surfaces != null && !forcedSsr && doc.surfaces.every(consult) ? "spa" : "ssr";
+    surfaces[doc.routeId] = doc.surfaces != null && !forcedSsr ? "spa" : "ssr";
   }
   for (const routeId of SPA_PUBLIC_ROUTES) surfaces[routeId] = "ssr";
   const slug = projectSlugFor(c.req.path);
@@ -253,11 +249,37 @@ export function renderSpaShell(
 }
 
 /**
+ * SPA.27 — the non-consult tail of `spaShellResponse`, factored so the flipped surfaces' document
+ * handlers serve the shell UNCONDITIONALLY (their SSR documents are deleted; spec §12.3's
+ * "once-only" posture). A force-SSR signal (`?ssr=1`/`x-rhema-renderer: ssr`) still converges
+ * here — the consult stays wired for the catch-all and the Page family's forced-SSR arm honors
+ * the same signals against its surviving render, but a flipped surface has no SSR document left
+ * to hand to; the boot map's static truth (`spaBootPayload`) keeps the leaf mounting instead of
+ * handing back into a reload loop.
+ */
+export async function spaShellDocument(
+  c: Context,
+  deps: SpaShellDeps,
+  session: SessionHeaders,
+  opts?: { paperTheme?: PaperTheme },
+): Promise<Response> {
+  const root = deps.spaAssetRoot ?? DEFAULT_SPA_ASSET_ROOT;
+  const [boot, entry] = await Promise.all([
+    spaBootPayload(c, deps, session, opts),
+    loadSpaManifest(root, deps.warn ?? ((m) => console.warn(m))),
+  ]);
+  return c.html(renderSpaShell(c, { path: c.req.path, boot, entry }));
+}
+
+/**
  * The handler seam — "serve the shell iff every surface key's consult resolves". Returns null
  * (the handler continues its SSR path) when ANY key fails: the session gate, a `?ssr=1` override,
  * flag membership, or the `ide-chrome` AND-gate. The consult re-checks the session itself, so an
  * override can never hand an anonymous request the shell. A non-empty `surfaces` array is an AND
  * composition (the `/p/:p/import*` legs: `["onboarding","ide-chrome"]`).
+ *
+ * SPA.27: after the deletion wave the ONLY remaining caller is the catch-all (deep links under an
+ * SPA prefix and not-found probes), where the consult's `?ssr=1` leg still lands the SSR 404.
  */
 export async function spaShellResponse(
   c: Context,
@@ -270,10 +292,5 @@ export async function spaShellResponse(
   for (const key of keys) {
     if (deps.spa?.(c, key) !== true) return null;
   }
-  const root = deps.spaAssetRoot ?? DEFAULT_SPA_ASSET_ROOT;
-  const [boot, entry] = await Promise.all([
-    spaBootPayload(c, deps, session, opts),
-    loadSpaManifest(root, deps.warn ?? ((m) => console.warn(m))),
-  ]);
-  return c.html(renderSpaShell(c, { path: c.req.path, boot, entry }));
+  return spaShellDocument(c, deps, session, opts);
 }

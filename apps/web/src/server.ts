@@ -53,8 +53,8 @@ import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectHandoffHandler, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
 import { billingNoticeFor } from "./billing-copy.js";
-import { createSpaConsult } from "./spa-flag.js";
-import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
+import { createSpaConsult, ssrOverrideRequested } from "./spa-flag.js";
+import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
@@ -1902,42 +1902,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/outline/promote", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
-    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
-    const spaDoc = await spaShellResponse(c, deps, "outline", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const scope = (c.req.query("scope") ?? "thread") as "thread" | "turn" | "research";
-    const threadId = c.req.query("threadId") ?? c.req.query("thread");
-    const turnId = c.req.query("turnId") ?? c.req.query("turn");
-    const promotion = await deps.dataSource
-      .getOutlinePromotion?.(session, row.id, {
-        scope,
-        ...(threadId ? { threadId } : {}),
-        ...(turnId ? { turnId } : {}),
-        ...(c.req.query("slug") ? { slug: c.req.query("slug")! } : {}),
-      })
-      .catch(() => null);
-    return c.html(
-      renderDocument(c.req.path, outlinePromoteElement, {
-        ...(promotion
-          ? {
-              outlinePromotion: {
-                slug,
-                projectTitle: row.title,
-                promotion,
-                scope,
-                ...(threadId ? { threadId } : {}),
-                ...(turnId ? { turnId } : {}),
-              },
-            }
-          : {}),
-        compact: isPhoneRequest(c),
-      }),
-      promotion ? 200 : 404,
-    );
+    // SPA.27 — sole renderer: the shell (the SSR sheet + its api reads are deleted; the leaf
+    // composes the same facts off the /bff twin). A `?ssr=1` request converges here too — this
+    // surface has no SSR document left to serve.
+    return spaShellDocument(c, deps, session);
   });
 
   // The Promote click — the ONLY outline-run creator (the sheet is the consent, like the run sheet's
@@ -1974,14 +1942,6 @@ export function createWebApp(deps: WebDeps): Hono {
       // the JSON arm answers the ApiError's stable `{error, detail?}` at the preserved status
       // (thread_not_found 404 / run_in_progress 409 / ≥500 → 502) — never a redirect, never a sheet.
       if (wantsJson(c)) return bffFail(c, e, { msg: "outline_promote_failed" });
-      // a missing thread/turn or a live-run conflict re-renders the sheet with the honest notice —
-      // never a silent failure.
-      const notice =
-        e instanceof ApiError && e.status === 404
-          ? COPY.promote.notFound
-          : e instanceof ApiError && e.status === 409
-            ? COPY.promote.notFound
-            : COPY.promote.notFound;
       // OBS.1 — the failure surfaced as a ≥500 page status gets its one structured line (a handled
       // <500 refusal renders the notice silently — expected, not a server fault).
       if (!(e instanceof ApiError) || e.status >= 500) {
@@ -1994,32 +1954,12 @@ export function createWebApp(deps: WebDeps): Hono {
           stack: stackForLog(e),
         });
       }
-      const promotion = await deps.dataSource
-        .getOutlinePromotion?.(session, row.id, {
-          scope,
-          ...(str("threadId") ? { threadId: str("threadId") } : {}),
-          ...(str("turnId") ? { turnId: str("turnId") } : {}),
-        })
-        .catch(() => null);
-      return c.html(
-        renderDocument(c.req.path, outlinePromoteElement, {
-          ...(promotion
-            ? {
-                outlinePromotion: {
-                  slug,
-                  projectTitle: row.title,
-                  promotion,
-                  scope,
-                  ...(str("threadId") ? { threadId: str("threadId") } : {}),
-                  ...(str("turnId") ? { turnId: str("turnId") } : {}),
-                  notice,
-                },
-              }
-            : {}),
-          compact: isPhoneRequest(c),
-        }),
-        e instanceof ApiError ? (e.status as 400) : 502,
-      );
+      // SPA.27 — the SSR sheet is deleted: a form-mode failure lands back on the sheet URL (the
+      // leaf recomposes the same promotion facts off the twin) instead of a server re-render.
+      const retry = new URLSearchParams({ scope });
+      if (str("threadId")) retry.set("threadId", str("threadId"));
+      if (str("turnId")) retry.set("turnId", str("turnId"));
+      return c.redirect(`/p/${slug}/outline/promote?${retry.toString()}`);
     }
   });
 
@@ -2029,42 +1969,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/outline", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
-    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
-    const spaDoc = await spaShellResponse(c, deps, "outline", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const dto = await deps.dataSource
-      .getOutline?.(session, row.id, c.req.query("slug") ? { slug: c.req.query("slug")! } : undefined)
-      .catch(() => null);
-    if (!dto || !dto.outline) {
-      return c.html(
-        renderDocument(c.req.path, outlineElement, { compact: isPhoneRequest(c) }),
-        404,
-      );
-    }
-    const view = outlineViewFor(dto.outline);
-    // EST.1 — the surface API (the outline card's Draft pre-fill agrees with the sheet).
-    const draftEstimateCredits = outlineDraftEstimate(dto);
-    const cited = dto.citedBy.runs.length > 0 || dto.citedBy.draftIds.length > 0;
-    return c.html(
-      renderDocument(c.req.path, outlineElement, {
-        outline: {
-          slug,
-          editable: dto.editable && !isPhoneRequest(c),
-          saveAction: `/p/${slug}/outline`,
-          deleteAction: `/p/${slug}/outline/delete`,
-          ...(draftEstimateCredits != null ? { draftEstimateCredits } : {}),
-          outline: view,
-          cited,
-          ...(c.req.query("saved") === "1" ? { saved: true } : {}),
-          ...(c.req.query("notice") === "cited" ? { notice: COPY.outlinePage.citedNote } : {}),
-        },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (SSR editor + its api reads deleted; the leaf composes
+    // the same DTO off the /bff twin, `?saved`/`?notice` stay URL flash state).
+    return spaShellDocument(c, deps, session);
   });
 
   // The autosave: the form's `ed.*` fields decode through the SAME grammar the gate card posts → the
@@ -2153,32 +2060,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/visualize", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
-    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
-    const spaDoc = await spaShellResponse(c, deps, "figures", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // the @figure: scope ref carries the marker's `fig_` prefix — the row id is the bare ULID.
-    const figureId = c.req.query("figure") ? figureIdFromRef(c.req.query("figure")!) : undefined;
-    const priorVersion = Number(c.req.query("prior"));
-    const est = figureEstimate(figureId != null);
-    return c.html(
-      renderDocument(c.req.path, visualizeElement, {
-        visualize: {
-          slug,
-          request: c.req.query("request") ?? "",
-          specKind: c.req.query("kind") ?? "",
-          ...(figureId ? { figureId } : {}),
-          ...(Number.isInteger(priorVersion) && priorVersion > 0 ? { priorVersion } : {}),
-          entryPoint: c.req.query("entry") ?? "chat",
-          estimateCredits: est.estimateCredits,
-          capCredits: est.capCredits,
-        },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf recomposes the
+    // request/spec/estimate params off the /bff twin).
+    return spaShellDocument(c, deps, session);
   });
 
   // The Visualize click — the ONLY figure-run creator (the sheet IS the consent). Creates the
@@ -2204,22 +2088,9 @@ export function createWebApp(deps: WebDeps): Hono {
       if (wantsJson(c)) {
         return c.json({ error: "request_required", detail: COPY.visualize.requestRequired }, 422);
       }
-      return c.html(
-        renderDocument(c.req.path, visualizeElement, {
-          visualize: {
-            slug,
-            request,
-            specKind: str("specKind"),
-            ...(figureId ? { figureId } : {}),
-            entryPoint: str("entryPoint") || "chat",
-            estimateCredits: est.estimateCredits,
-            capCredits: est.capCredits,
-            notice: COPY.visualize.requestRequired,
-          },
-          compact: isPhoneRequest(c),
-        }),
-        422,
-      );
+      // SPA.27 — the SSR sheet is deleted: a form-mode validation failure lands back on the
+      // sheet URL (the leaf holds its own field state) instead of a 422 re-render.
+      return c.redirect(`/p/${slug}/visualize`);
     }
     const sourceRefs = figureSourceRefs({
       request,
@@ -2262,27 +2133,9 @@ export function createWebApp(deps: WebDeps): Hono {
           stack: stackForLog(e),
         });
       }
-      return c.html(
-        renderDocument(c.req.path, visualizeElement, {
-          visualize: {
-            slug,
-            request,
-            specKind: str("specKind"),
-            ...(figureId ? { figureId } : {}),
-            entryPoint: str("entryPoint") || "chat",
-            estimateCredits: est.estimateCredits,
-            capCredits: est.capCredits,
-            notice:
-              e instanceof ApiError && e.status === 404
-                ? COPY.visualize.notFound
-                : e instanceof ApiError
-                  ? String(e.code ?? e.message)
-                  : COPY.visualize.notFound,
-          },
-          compact: isPhoneRequest(c),
-        }),
-        e instanceof ApiError ? (e.status as 400) : 502,
-      );
+      // SPA.27 — the SSR sheet is deleted: a form-mode upstream failure lands back on the pane
+      // (the twin re-read reports the true state) instead of a re-rendered error sheet.
+      return c.redirect(`/p/${slug}/figures`);
     }
   });
 
@@ -2290,49 +2143,18 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/figures", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
-    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
-    const spaDoc = await spaShellResponse(c, deps, "figures", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const items = (await deps.dataSource.listFigures?.(session, row.id).catch(() => null)) ?? [];
-    return c.html(
-      renderDocument(c.req.path, figuresElement, {
-        figures: { slug, items },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR pane + listFigures read are deleted; the leaf
+    // composes the same roster off the /bff twin).
+    return spaShellDocument(c, deps, session);
   });
 
   // The figure card (GET): preview + type chips + fields + disclosures + the insert surface.
   app.get("/p/:project/figures/:figureId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult at spec §4's fixed position (after the session gate, before
-    // the page-data reads): the surface's flip ⇒ the shell document, else today's SSR continues.
-    const spaDoc = await spaShellResponse(c, deps, "figures", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const card = await deps.dataSource
-      .getFigure?.(session, row.id, c.req.param("figureId"))
-      .catch(() => null);
-    if (!card) return c.html(renderDocument(c.req.path, figureCardElement, { compact: isPhoneRequest(c) }), 404);
-    return c.html(
-      renderDocument(c.req.path, figureCardElement, {
-        figure: {
-          slug,
-          card,
-          headDraftId: row.headDraftId ?? null,
-          ...(c.req.query("saved") === "1" ? { saved: true } : {}),
-          ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
-        },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR card is deleted; `?saved`/`?notice` stay URL
+    // flash state the leaf renders).
+    return spaShellDocument(c, deps, session);
   });
 
   // The card's field edits (caption/alt/sourceLine) → the api's PATCH (alt ≤250 enforced there).
@@ -2815,43 +2637,12 @@ export function createWebApp(deps: WebDeps): Hono {
         /* telemetry is never fatal */
       }
     }
-    const q = (c.req.query("q") ?? "").trim();
-    const voiceFilter = c.req.query("voice") || null; // a personaId or 'unfiled'
-    const protocolFilter = c.req.query("protocol") || null; // a protocol id (§5.2 organisation)
-    const sort = c.req.query("sort") === "title" ? "title" : "recent"; // Recent is the default
-    const showArchived = c.req.query("archived") === "1";
-    const showDeleted = c.req.query("deleted") === "1";
-    const [rows, voices, groupBy, bal, search, protocols, deletedRows] = await Promise.all([
-      deps.dataSource.listProjects(session),
-      // The P1.04 seams degrade to empty/attention when a data source lacks them (fixtures, stale
-      // bindings) — a missing method is a TypeError, not a rejection, so invoke inside .then.
-      Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
-      Promise.resolve()
-        .then(() => deps.dataSource.getProjectGrouping(session))
-        .catch(() => "attention" as const),
-      // PRB.12 — the §14.5 level-0 balance chip rides the nav (best-effort: a billing-read miss never
-      // blocks the list).
-      deps.dataSource.getBillingBalance(session).catch(() => undefined),
-      q
-        ? Promise.resolve()
-            .then(() => deps.dataSource.searchProjects(session, q))
-            .catch(() => [])
-        : Promise.resolve(null),
-      // the Protocol filter dropdown's options (the four seeded cards — picker metadata only).
-      Promise.resolve().then(() => deps.dataSource.listProtocolCards(session)).catch(() => []),
-      // `?deleted=1` — the 30-day restore window's rows (a separate scope: the list never mixes them).
-      showDeleted
-        ? Promise.resolve()
-            .then(() => deps.dataSource.listDeletedProjects?.(session) ?? [])
-            .catch(() => [])
-        : Promise.resolve([]),
-    ]);
-
     // ---- P1.17 (§15.3) — the first-five-minutes precedence, run BEFORE the list renders ----
     // The Showcase opens first ONLY while it is the workspace's unopened only child; a user who
     // arrived carrying a file (entry draft/outline) wins instead — their file path lands first and
     // the Showcase waits as the list's second row. An archived or already-opened Showcase is just a
     // row. (Showcase rows are excluded from the count — the seed is not "the user's own work".)
+    const rows = await deps.dataSource.listProjects(session);
     const showcaseRows = rows.filter((r) => r.showcase === true);
     const ownRows = rows.filter((r) => r.showcase !== true);
     if (ownRows.length === 0 && showcaseRows.length > 0) {
@@ -2878,40 +2669,10 @@ export function createWebApp(deps: WebDeps): Hono {
       }
     }
 
-    // SPA.3 — the strangler consult at spec §4's fixed position: AFTER the session gate AND the
-    // first-five-minutes precedence (a carried file or an unopened Showcase still wins), before
-    // the render. `project-home`'s flip ⇒ the shell document; else today's list continues.
-    const spaDoc = await spaShellResponse(c, deps, "project-home", session);
-    if (spaDoc) return spaDoc;
-
-    let filtered = voiceFilter
-      ? rows.filter((r) => (voiceFilter === "unfiled" ? r.voice == null : r.voice?.personaId === voiceFilter))
-      : rows;
-    if (protocolFilter) filtered = filtered.filter((r) => r.protocolId === protocolFilter);
-    // Sort applies within each group (Needs-you keeps its deadline order regardless — §5.2).
-    if (sort === "title") filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-    const activeRows = filtered.filter((r) => r.archivedAt == null);
-    const ctx = { voices };
-    const toViews = (list: readonly typeof rows[number][]) => list.map((r) => toProjectRowView(r, ctx));
-    return c.html(renderDocument(c.req.path, projectsElement, {
-      home: {
-        groupBy,
-        attentionGroups: groupByAttention(activeRows).map((g) => ({ ...g, rows: toViews(g.rows) })),
-        voiceGroups: groupByVoice(activeRows).map((g) => ({ ...g, rows: toViews(g.rows) })),
-        voices,
-        voiceFilter,
-        protocolFilter,
-        protocols,
-        sort,
-        showArchived,
-        archivedRows: toViews(filtered.filter((r) => r.archivedAt != null)),
-        showDeleted,
-        deletedRows: toViews(deletedRows),
-        ...(search != null ? { search: { q, results: search } } : {}),
-      },
-      ...(bal ? { balance: { spendableCredits: bal.spendableCredits, heldCredits: bal.heldCredits ?? 0 } } : {}),
-      compact: isPhoneRequest(c),
-    }));
+    // SPA.27 — sole renderer: the shell (the SSR list is deleted; the leaf composes the same
+    // grouping/filter/search state off the /bff twins). The precedence redirects above still run
+    // first — a server-owned redirect wins over any renderer.
+    return spaShellDocument(c, deps, session);
   });
 
   // P1.04 — the Group-by select persists the per-user pref (PUT /settings/project-grouping) then
@@ -2978,40 +2739,12 @@ export function createWebApp(deps: WebDeps): Hono {
     return `/app/new/preview?${p.toString()}`;
   };
 
-  const renderNewProject = (
-    c: Context,
-    path: string,
-    base: { protocols: Awaited<ReturnType<typeof loadNewProjectSheet>>["protocols"]; voices: Awaited<ReturnType<typeof loadNewProjectSheet>>["voices"] },
-    np: Omit<NonNullable<PageData["newProject"]>, "protocols" | "voices">,
-    extra?: Partial<PageData>,
-  ) =>
-    c.html(
-      renderDocument(path, newProjectElement, {
-        newProject: { protocols: base.protocols, voices: base.voices, ...np },
-        compact: isPhoneRequest(c),
-        ...extra,
-      }),
-    );
-
   app.get("/app/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `onboarding`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "onboarding", session);
-    if (spaDoc) return spaDoc;
-    const entryQ = c.req.query("entry");
-    const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
-      ? (entryQ as NewProjectEntry)
-      : "scratch";
-    const sheet = await loadNewProjectSheet(session);
-    return renderNewProject(c, c.req.path, sheet, {
-      entry,
-      defaultProtocolId: null,
-      askProtocol: false,
-      form: { title: "", protocolId: null, venue: null, personaId: null, startVersion: null, heldToken: null },
-      // P1.17 — `?held=1` marks a landing drop-zone hold to claim (the script hydrates the file input).
-      ...(c.req.query("held") === "1" ? { held: true } : {}),
-    });
+    // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf composes the entry /
+    // held-hold / picker state off the /bff twin).
+    return spaShellDocument(c, deps, session);
   });
 
   // The sheet's submit: scratch creates immediately; the upload entries run the workspace-scoped
@@ -3034,15 +2767,12 @@ export function createWebApp(deps: WebDeps): Hono {
       ? (entryQ as NewProjectEntry)
       : "scratch";
     const picks = newProjectForm(form);
-    // The sheet reads (protocols+voices) exist only to paint the SSR re-render — a JSON caller
-    // re-reads its own warm twin, so the lazy load skips two upstream calls per mutation.
-    const sheetFor = () => loadNewProjectSheet(session);
+    // SPA.27 — the SSR sheet is deleted: form-mode validation/upstream failures land back on the
+    // sheet URL (the leaf holds its own field state) instead of an inline re-render.
     if (entry === "scratch") {
       if (!picks.title) {
         if (json) return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
-        return renderNewProject(c, c.req.path, await sheetFor(), {
-          entry, defaultProtocolId: null, askProtocol: false, form: picks, error: COPY.newProject.titleRequired,
-        }, undefined);
+        return c.redirect(`/app/new?entry=${entry}`);
       }
       let created;
       try {
@@ -3051,12 +2781,7 @@ export function createWebApp(deps: WebDeps): Hono {
         });
       } catch (e) {
         if (json) return bffFail(c, e, { msg: "new_project_create_failed" });
-        const message = e instanceof ApiError
-          ? COPY.newProject.createFailedFmt.replace("{detail}", String(e.code ?? e.status))
-          : COPY.newProject.createFailed;
-        return renderNewProject(c, c.req.path, await sheetFor(), {
-          entry, defaultProtocolId: null, askProtocol: false, form: picks, error: message,
-        });
+        return c.redirect(`/app/new?entry=${entry}`);
       }
       return mutationOutcome(c, { redirect: `/p/${created.slug}?created=scratch` });
     }
@@ -3077,10 +2802,7 @@ export function createWebApp(deps: WebDeps): Hono {
     const paste = typeof form.paste === "string" ? form.paste : "";
     if (!bytes && !paste.trim() && !quarantineKey) {
       if (json) return c.json({ error: "source_required", detail: COPY.newProject.uploadOrPasteRequired }, 400);
-      return renderNewProject(c, c.req.path, await sheetFor(), {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks,
-        error: COPY.newProject.uploadOrPasteRequired,
-      });
+      return c.redirect(`/app/new?entry=${entry}`);
     }
     const sourceLabel = fileName ?? (quarantineKey ? "the upload" : "pasted text");
     const raw = await Promise.resolve()
@@ -3098,16 +2820,13 @@ export function createWebApp(deps: WebDeps): Hono {
       raw && typeof raw === "object" && "status" in raw ? (raw as ImportPreviewOutcome) : null;
     if (!out) {
       // the preview seam missing/failed — the JSON caller gets the api's refusal at its preserved
-      // status (or the 502 the swallowed failure degrades to); the document re-renders the sheet
-      // with the honest error, nothing created.
+      // status (or the 502 the swallowed failure degrades to); a form post lands back on the
+      // sheet, nothing created.
       if (json) {
         if (raw instanceof ApiError) return bffFail(c, raw, { msg: "new_project_preview_failed" });
         return c.json({ error: "conversion_start_failed", detail: COPY.newProject.conversionStartFailed }, 502);
       }
-      return renderNewProject(c, c.req.path, await sheetFor(), {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks,
-        error: COPY.newProject.conversionStartFailed,
-      });
+      return c.redirect(`/app/new?entry=${entry}`);
     }
     // ONB.1 — the title default chain: an explicitly typed title wins; then the document's own
     // leading H1 (`preview.title`); then the filename stem. Paste has no default — still required.
@@ -3125,18 +2844,13 @@ export function createWebApp(deps: WebDeps): Hono {
           redirect: pollUrl,
         });
       }
-      return renderNewProject(c, c.req.path, await sheetFor(), {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks,
-        pending: { quarantineKey: out.quarantineKey, sourceLabel },
-      }, {
-        autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: pollUrl },
-      });
+      // SPA.27 — the meta-refresh document is deleted: a form post follows the SAME poll URL the
+      // JSON envelope carries (the leaf's refetchInterval keeps the server-owned cadence).
+      return c.redirect(pollUrl);
     }
     if (!resolvedTitle) {
       if (json) return c.json({ error: "title_required", detail: COPY.newProject.titleRequired }, 400);
-      return renderNewProject(c, c.req.path, await sheetFor(), {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: COPY.newProject.titleRequired,
-      }, undefined);
+      return c.redirect(`/app/new?entry=${entry}`);
     }
     const preview = {
       quarantineKey: out.quarantineKey,
@@ -3150,10 +2864,9 @@ export function createWebApp(deps: WebDeps): Hono {
       // The ready preview the document renders on the POST — the leaf paints it in place.
       return c.json({ ok: true, data: { form: { ...picks, title: resolvedTitle }, preview } });
     }
-    return renderNewProject(c, c.req.path, await sheetFor(), {
-      entry, defaultProtocolId: null, askProtocol: false, form: { ...picks, title: resolvedTitle },
-      preview,
-    });
+    // SPA.27 — the SSR preview leg is deleted: the poll URL round-trips the picks + key so the
+    // preview leaf recomposes the ready card off the /bff twin.
+    return c.redirect(newProjectPollUrl(entry, out.quarantineKey, { ...picks, title: resolvedTitle }, sourceLabel));
   });
 
   // PRB.21-style poll leg for the new-project preview (meta-refresh target): re-preview the SAME
@@ -3165,47 +2878,11 @@ export function createWebApp(deps: WebDeps): Hono {
     const entry: NewProjectEntry = NEW_PROJECT_ENTRIES.has(entryQ as NewProjectEntry)
       ? (entryQ as NewProjectEntry)
       : "draft";
-    const picks = newProjectForm(c.req.query() as Record<string, unknown>);
     const qk = c.req.query("qk");
     if (!qk) return c.redirect(`/app/new?entry=${entry}`);
-    // SPA.3 — the strangler consult (spec §4 order): after the server-owned `qk` redirect, so a
-    // missing quarantine key still lands on the entry sheet under the flag.
-    const spaDoc = await spaShellResponse(c, deps, "onboarding", session);
-    if (spaDoc) return spaDoc;
-    const sheet = await loadNewProjectSheet(session);
-    const sourceLabel = c.req.query("src") ?? "the upload";
-    const out = await Promise.resolve()
-      .then(() =>
-        deps.dataSource.previewWorkspaceImport(session, {
-          quarantineKey: qk,
-          fileName: c.req.query("src") ?? undefined,
-        }),
-      )
-      .catch(() => null);
-    if (!out) return c.redirect(`/app/new?entry=${entry}`);
-    if (out.status === "pending") {
-      return renderNewProject(c, c.req.path, sheet, {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks,
-        pending: { quarantineKey: qk, sourceLabel },
-      }, {
-        autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: newProjectPollUrl(entry, qk, picks, sourceLabel) },
-      });
-    }
-    // ONB.1 — the same default chain as the POST: typed title → the document's H1 → the filename stem.
-    const resolvedTitle =
-      picks.title || out.preview.title || sourceLabel.replace(/\.[^.]+$/, "").trim();
-    if (!resolvedTitle) return c.redirect(`/app/new?entry=${entry}`);
-    return renderNewProject(c, c.req.path, sheet, {
-      entry, defaultProtocolId: null, askProtocol: false, form: { ...picks, title: resolvedTitle },
-      preview: {
-        quarantineKey: qk,
-        sourceLabel,
-        sourceText: "(the uploaded source — already converted)",
-        convertedMarkdown: out.preview.markdown,
-        countLine: countLine(out.preview.counts),
-        warnings: out.preview.warnings.map((w) => ({ message: w.message, blockId: w.anchor?.blockId ?? null })),
-      },
-    });
+    // SPA.27 — sole renderer: the shell (the pending/ready SSR legs are deleted; the leaf's twin
+    // re-asks the quarantine key at the server-owned cadence and recomposes both states).
+    return spaShellDocument(c, deps, session);
   });
 
   // The preview's Create (and Fix-now) — replays the quarantine key + the pick fields; the api adopts
@@ -3223,7 +2900,6 @@ export function createWebApp(deps: WebDeps): Hono {
       : "draft";
     const picks = newProjectForm(form);
     const qk = typeof form.qk === "string" ? form.qk : "";
-    const sheetFor = () => loadNewProjectSheet(session);
     let created;
     try {
       created = await deps.dataSource.createProject(session, {
@@ -3247,20 +2923,13 @@ export function createWebApp(deps: WebDeps): Hono {
             redirect: pollUrl,
           });
         }
-        return renderNewProject(c, c.req.path, await sheetFor(), {
-          entry, defaultProtocolId: null, askProtocol: false, form: picks,
-          pending: { quarantineKey: qk, sourceLabel: "the upload" },
-        }, {
-          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: pollUrl },
-        });
+        // SPA.27 — the meta-refresh document is deleted: follow the poll URL (the leaf's
+        // refetchInterval keeps the cadence).
+        return c.redirect(pollUrl);
       }
       if (json) return bffFail(c, e, { msg: "new_project_create_failed" });
-      const message = e instanceof ApiError
-        ? COPY.newProject.createFailedFmt.replace("{detail}", String(e.code ?? e.status))
-        : COPY.newProject.createFailed;
-      return renderNewProject(c, c.req.path, await sheetFor(), {
-        entry, defaultProtocolId: null, askProtocol: false, form: picks, error: message,
-      }, undefined);
+      // SPA.27 — the SSR sheet is deleted: a form-mode create failure lands back on the sheet.
+      return c.redirect(`/app/new?entry=${entry}`);
     }
     // §5.3's per-entry landing: the project opens with its next-step card (`?created=` drives it) and —
     // for an upload that left warnings — the Conversion-notes line. Fix-now lands on the Page at the
@@ -3366,43 +3035,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/inbox", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `inbox`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "inbox", session);
-    if (spaDoc) return spaDoc;
-    const [items, badge] = await Promise.all([
-      Promise.resolve()
-        .then(() => deps.dataSource.getInbox?.(session) ?? [])
-        .catch(() => []),
-      Promise.resolve()
-        .then(() => deps.dataSource.getInboxBadge?.(session))
-        .then((b) => (b && typeof b.count === "number" ? b.count : 0))
-        .catch(() => 0),
-    ]);
-    // §5.11 — "inline Approve opens the artifact in a side sheet first": an expanded gate row mounts
-    // the run's REAL §6.4 card (the same `gateCardFor` the Needs-you surface renders). The row DTO
-    // carries ids only, so the page loads each touched project's open-gates read once and joins by
-    // gate id — a missing read degrades the row to its deep link, never a failed page.
-    const gateProjectIds = [...new Set(items.filter((i) => i.gate != null).map((i) => i.projectId).filter((p): p is string => p != null))];
-    const gateLists = await Promise.all(
-      gateProjectIds.map((pid) =>
-        Promise.resolve()
-          .then(() => deps.dataSource.listGates(session, pid))
-          .catch(() => [] as GateCardDto[]),
-      ),
-    );
-    const gatesById = new Map(gateLists.flat().map((g) => [g.id, g] as const));
-    const gateCards: Record<string, GateCardDto> = {};
-    for (const it of items) {
-      if (it.gate == null) continue;
-      const card = gatesById.get(it.gate.gateId);
-      if (card) gateCards[it.id] = card;
-    }
-    return c.html(
-      renderDocument(c.req.path, inboxElement, {
-        inbox: { items, badge, gateCards },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR inbox + its items/badge/gate-card reads are
+    // deleted; the leaf composes the same feed off the /bff twins).
+    return spaShellDocument(c, deps, session);
   });
   // A row's "Mark read" — no-JS friendly (plain form POST → redirect back to the Inbox). SPA.11:
   // the `wantsJson` branch (REQ-BFF-1/2) — a JSON caller posts `{item}` and gets the `{ok:true,
@@ -3459,21 +3094,9 @@ export function createWebApp(deps: WebDeps): Hono {
       const ok = out != null && "ok" in out && out.ok === true;
       return c.redirect(`/app/settings/account?notice=${ok ? "email-confirmed" : "email-confirm-failed"}`);
     }
-    // SPA.3 — the strangler consult (spec §4 order): after the confirmEmail consume+redirect so a
-    // token round-trip never lands in the shell.
-    const spaDoc = await spaShellResponse(c, deps, "settings", session);
-    if (spaDoc) return spaDoc;
-    const account = await Promise.resolve()
-      .then(() => deps.dataSource.getAccountSettings?.(session))
-      .catch(() => undefined);
-    return c.html(renderDocument(c.req.path, settingsElement, {
-      settings: {
-        section: "account",
-        ...(account ? { account } : {}),
-        saved: c.req.query("saved") === "1",
-        ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
-      },
-    }));
+    // SPA.27 — sole renderer: the shell (after the confirmEmail consume+redirect so a token
+    // round-trip never lands in the shell; `?saved`/`?notice` stay URL flash state).
+    return spaShellDocument(c, deps, session);
   });
   // SPA.12 — the `wantsJson` split (REQ-BFF-1/2/3): JSON callers post the same flat field
   // vocabulary and get the `{ok:true, redirect}` envelope (the redirect IS the flash URL the
@@ -3542,19 +3165,8 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/preferences", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "settings", session);
-    if (spaDoc) return spaDoc;
-    const prefs = await Promise.resolve()
-      .then(() => deps.dataSource.getPreferencesSettings?.(session))
-      .catch(() => undefined);
-    return c.html(renderDocument(c.req.path, settingsElement, {
-      settings: {
-        section: "preferences",
-        ...(prefs ? { preferences: prefs } : {}),
-        saved: c.req.query("saved") === "1",
-      },
-    }));
+    // SPA.27 — sole renderer: the shell.
+    return spaShellDocument(c, deps, session);
   });
   // One form posts every account default — "" selects unset the key (the api treats null as delete),
   // the consent threshold clamps at 1,000 (REQ-BILL-4), the theme write rides P1.01's endpoint.
@@ -3605,24 +3217,8 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "settings", session);
-    if (spaDoc) return spaDoc;
-    const [notif, projects] = await Promise.all([
-      Promise.resolve().then(() => deps.dataSource.getNotificationPrefs?.(session)).catch(() => undefined),
-      Promise.resolve()
-        .then(() => deps.dataSource.listProjects?.(session))
-        .then((rows) => (rows ?? []).map((r) => ({ id: r.id, title: r.title })))
-        .catch(() => [] as { id: string; title: string }[]),
-    ]);
-    return c.html(renderDocument(c.req.path, settingsElement, {
-      settings: {
-        section: "notifications",
-        ...(notif ? { notifications: { ...notif, projects } } : {}),
-        saved: c.req.query("saved") === "1",
-        ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
-      },
-    }));
+    // SPA.27 — sole renderer: the shell.
+    return spaShellDocument(c, deps, session);
   });
   app.post("/app/settings/notifications", async (c) => {
     const session = deps.session(c);
@@ -3686,19 +3282,8 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/integrations", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "settings", session);
-    if (spaDoc) return spaDoc;
-    const integrations = await Promise.resolve()
-      .then(() => deps.dataSource.getIntegrationsSettings?.(session))
-      .catch(() => undefined);
-    return c.html(renderDocument(c.req.path, settingsElement, {
-      settings: {
-        section: "integrations",
-        ...(integrations ? { integrations } : {}),
-        saved: c.req.query("saved") === "1",
-      },
-    }));
+    // SPA.27 — sole renderer: the shell.
+    return spaShellDocument(c, deps, session);
   });
   app.post("/app/settings/integrations/:id/disconnect", async (c) => {
     const session = deps.session(c);
@@ -3713,42 +3298,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/app/settings/data", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "settings", session);
-    if (spaDoc) return spaDoc;
-    const [privacy, data, acct] = await Promise.all([
-      deps.dataSource.getPrivacySettings(session).catch(() => ({ analyticsOptOut: false })),
-      Promise.resolve().then(() => deps.dataSource.getDataSettings?.(session)).catch(() => undefined),
-      // P1.18 — the latest account-export build (best-effort: the section still renders without it).
-      Promise.resolve()
-        .then(() => deps.dataSource.getAccountExportState?.(session))
-        .then((r) => r ?? { export: null })
-        .catch(() => ({ export: null })),
-    ]);
-    const notice = c.req.query("notice");
-    return c.html(renderDocument(c.req.path, settingsElement, {
-      privacy: { analyticsOptOut: privacy.analyticsOptOut, saved: c.req.query("saved") === "1" },
-      accountExport: {
-        export: acct?.export ?? null,
-        ...(notice ? { notice } : {}),
-        ...(c.req.query("p") != null
-          ? {
-              imported: {
-                projects: Number(c.req.query("p") ?? 0),
-                voices: Number(c.req.query("v") ?? 0),
-                files: Number(c.req.query("f") ?? 0),
-                deduped: false,
-              },
-            }
-          : {}),
-      },
-      settings: {
-        section: "data",
-        ...(data ? { data } : {}),
-        saved: c.req.query("saved") === "1",
-        ...(notice ? { notice } : {}),
-      },
-    }));
+    // SPA.27 — sole renderer: the shell (`?notice`/`?p`/`?v`/`?f`/`?saved` stay URL flash state
+    // the leaf maps).
+    return spaShellDocument(c, deps, session);
   });
   // The REQ-PROD-15 toggle's new home — the checkbox posts "on" when EXCLUDE is checked.
   app.post("/app/settings/data/privacy", async (c) => {
@@ -3856,26 +3408,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/settings", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `settings`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "settings", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session).catch(() => [])).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const [projectSettings, approvalSettings] = await Promise.all([
-      Promise.resolve().then(() => deps.dataSource.getProjectSettings?.(session, row.id)).catch(() => undefined),
-      Promise.resolve().then(() => deps.dataSource.getApprovalSettings?.(session, row.id)).catch(() => undefined),
-    ]);
-    if (!projectSettings) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(renderDocument(c.req.path, projectSettingsElement, {
-      projectSettings: {
-        slug,
-        settings: projectSettings,
-        ...(approvalSettings ? { approvalSettings } : {}),
-        saved: c.req.query("saved") === "1",
-        ...(c.req.query("notice") ? { notice: c.req.query("notice")! } : {}),
-      },
-    }));
+    // SPA.27 — sole renderer: the shell (the leaf composes the settings + approvals read off the
+    // /bff twin; `?saved`/`?notice` stay URL flash state).
+    return spaShellDocument(c, deps, session);
   });
   // The safe-field patch (REQ-GENRE-2): "" selects mean "inherit the account default" (rigor/tier) or
   // "keep" (venue/protocol). A protocol change stamps the marker the next Review's scope card carries.
@@ -3953,20 +3488,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/usage", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `usage`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "usage", session);
-    if (spaDoc) return spaDoc;
-    const [usage, usageAccount] = await Promise.all([
-      deps.dataSource.getUsage(session).catch(() => undefined),
-      // P1.16 — the §14.5 level-1 account read (buckets, period, warnings, next expiry). Best-effort:
-      // a billing-read miss degrades to the glance, never a blank page.
-      Promise.resolve().then(() => deps.dataSource.getUsageAccount?.(session)).catch(() => undefined),
-    ]);
-    return c.html(renderDocument(c.req.path, usageElement, {
-      ...(usage ? { usage } : {}),
-      ...(usageAccount ? { usageAccount } : {}),
-      dwellSurface: "usage",
-    }));
+    // SPA.27 — sole renderer: the shell (the SSR page + its usage/account reads are deleted; the
+    // leaf composes the same level-0/1 facts off the /bff twins).
+    return spaShellDocument(c, deps, session);
   });
   // REQ-BILL-11 — the level-1 CSV export, proxied with the viewer's session (the api is internal).
   app.get("/usage.csv", async (c) => {
@@ -3988,19 +3512,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/usage", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `usage`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "usage", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const rows = await deps.dataSource.listProjects(session).catch(() => []);
-    const row = rows.find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const usageProject = await Promise.resolve()
-      .then(() => deps.dataSource.getUsageProject?.(session, row.id))
-      .then((u) => (u ? { ...u, slug } : undefined))
-      .catch(() => undefined);
-    if (!usageProject) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(renderDocument(c.req.path, projectUsageElement, { usageProject }));
+    // SPA.27 — sole renderer: the shell (the leaf composes the level-2 rollup off the /bff twin;
+    // a missing project is the client router's not-found).
+    return spaShellDocument(c, deps, session);
   });
 
   // ---- P1.16 — billing, full (§14.2/14.3/14.6): the plan card, Checkout/portal/auto-reload POSTs,
@@ -4010,29 +3524,10 @@ export function createWebApp(deps: WebDeps): Hono {
   const billingPageHandler = async (c: Context) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `billing`'s flip ⇒ the shell document. The
-    // shared handler covers BOTH mounts (/app/settings/billing + the /settings/billing alias).
-    const spaDoc = await spaShellResponse(c, deps, "billing", session);
-    if (spaDoc) return spaDoc;
-    const [subscription, plans] = await Promise.all([
-      Promise.resolve().then(() => deps.dataSource.getSubscription?.(session)).catch(() => undefined),
-      Promise.resolve().then(() => deps.dataSource.getPlans?.(session)).catch(() => undefined),
-    ]);
-    return c.html(renderDocument(c.req.path, billingElement, {
-      compact: isPhoneRequest(c),
-      ...(subscription && plans
-        ? {
-            billing: {
-              subscription,
-              plans,
-              ...(c.req.query("saved") === "1" ? { saved: true } : {}),
-              // BILL.3 — the notice code maps through the per-class copy (an api refusal is told
-              // apart from Stripe being down; unknown codes land the generic note).
-              ...(c.req.query("notice") ? { notice: billingNoticeFor(c.req.query("notice")) } : {}),
-            },
-          }
-        : {}),
-    }));
+    // SPA.27 — sole renderer: the shell — the shared handler covers BOTH mounts
+    // (/app/settings/billing + the /settings/billing alias); `?saved`/`?notice` stay URL flash
+    // state the leaf maps through `billingNoticeFor` verbatim.
+    return spaShellDocument(c, deps, session);
   };
   app.get("/app/settings/billing", billingPageHandler);
   app.get("/settings/billing", billingPageHandler);
@@ -4185,27 +3680,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/billing/return", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `billing`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "billing", session);
-    if (spaDoc) return spaDoc;
-    const sessionId = c.req.query("session_id") ?? "";
-    const cancelled = c.req.query("cancelled") === "1";
-    const checkoutReturn = sessionId
-      ? await Promise.resolve()
-          .then(() => deps.dataSource.getCheckoutSession?.(session, sessionId))
-          .catch(() => undefined)
-      : undefined;
-    // §14.6's webhook-lag bound is real: an `open` row auto-refreshes only for 30 s after Checkout
-    // creation, then leaves the pending/email-fallback copy on a stable page instead of polling forever.
-    const openAgeMs = checkoutReturn?.createdAt ? Date.now() - Date.parse(checkoutReturn.createdAt) : Number.POSITIVE_INFINITY;
-    const stillPolling = openAgeMs >= 0 && openAgeMs < 30_000;
-    return c.html(renderDocument(c.req.path, billingReturnElement, {
-      ...(checkoutReturn ? { checkoutReturn } : {}),
-      ...(cancelled ? { checkoutCancelled: true } : {}),
-      ...(checkoutReturn?.state === "open" && !cancelled && stillPolling
-        ? { autoRefresh: { seconds: 5, url: `/billing/return?session_id=${encodeURIComponent(sessionId)}` } }
-        : {}),
-    }));
+    // SPA.27 — sole renderer: the shell (the meta-refresh document is deleted; the leaf polls the
+    // /bff twin's server-owned `pollAfterSeconds` through the same ≤30 s window).
+    return spaShellDocument(c, deps, session);
   });
   // The dwell heartbeat's sink (REQ-BETA-10): the beacon posts {surface, ms}; the route wraps it into the
   // whitelisted `surface.dwell` mint. A missing/malformed body is a quiet 204 — heartbeats are lossy by design.
@@ -4476,9 +3953,13 @@ export function createWebApp(deps: WebDeps): Hono {
     // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
     // REQ-VFY-5): a phone request or a read-only `showcase` row keeps the server-rendered Page
     // even when `editor` flips — the flag never re-enables a mount the capability refused.
-    if (!isPhoneRequest(c) && row.showcase !== true) {
-      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
-      if (spaDoc) return spaDoc;
+    // SPA.27 — the read-only Page is the ONE SSR render that survives the deletion wave, so the
+    // force-SSR escape (`?ssr=1` / `x-rhema-renderer: ssr`) folds into the same arm: it still lands
+    // a real server document here (read-only posture), while every other flipped surface's escape
+    // converges on the shell.
+    const forcedSsr = isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c);
+    if (!forcedSsr) {
+      return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
     }
     const comp = await projectOverviewComposition(c, session, row);
     const { gates, decisions, approvalOverrides, approvalSettings, explainersDismissed, projectVoice, pageLoad } = comp;
@@ -4527,8 +4008,9 @@ export function createWebApp(deps: WebDeps): Hono {
                 docJson: pageLoad.docJson,
                 // P1.19 — §10.1: the overview's Page is reader-only on phone width.
                 // EDIT.1 — the Showcase overview Page is read-only too (§15.4; matches /v/:v).
-                ...(isPhoneRequest(c) || row.showcase ? { readOnly: true } : {}),
-                ...(deps.collabWsUrl && !(isPhoneRequest(c) || row.showcase)
+                // SPA.27 — the `?ssr=1` escape lands this same read-only arm.
+                ...(forcedSsr ? { readOnly: true } : {}),
+                ...(deps.collabWsUrl && !forcedSsr
                   ? { collabWsUrl: deps.collabWsUrl }
                   : {}),
               },
@@ -4582,20 +4064,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/voice/reseed", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "voices", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const preview = await deps.dataSource.getVoiceReseedPreview(session, row.id).catch(() => null);
-    if (!preview) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(
-      renderDocument(c.req.path, voiceReseedElement, {
-        voiceReseed: { slug, projectId: row.id, preview },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR diff sheet is deleted; the leaf composes the
+    // reseed preview off the /bff twin).
+    return spaShellDocument(c, deps, session);
   });
 
   app.post("/p/:project/voice/adopt", async (c) => {
@@ -4831,21 +4302,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/import", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): the import legs are `onboarding` AND
-    // `ide-chrome` — a per-route AND composition since only these two onboarding legs are
-    // IDE-framed (design/29 §route-map).
-    const spaDoc = await spaShellResponse(c, deps, ["onboarding", "ide-chrome"], session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(
-      renderDocument(c.req.path, importElement, {
-        ...(await ideContext(c, session, row)),
-        project: { title: row.title, pill: row.state.pill, slug },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf mounts inside the IDE
+    // chrome and composes the flow off the /bff twins).
+    return spaShellDocument(c, deps, session);
   });
 
   app.post("/p/:project/import/preview", async (c) => {
@@ -4878,34 +4337,18 @@ export function createWebApp(deps: WebDeps): Hono {
           redirect: pollUrl,
         });
       }
-      return c.html(
-        renderDocument(c.req.path, importPreviewElement, {
-          ...(await ideContext(c, session, { id: slug, slug })),
-          project: { title: input.fileName ?? slug, pill: "", slug },
-          compact: isPhoneRequest(c),
-          conversion: {
-            projectSlug: slug,
-            sourceLabel: input.fileName ?? "pasted text",
-            pending: true,
-            quarantineKey: out.quarantineKey,
-          },
-          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: pollUrl },
-        }),
-      );
+      // SPA.27 — the meta-refresh document is deleted: a form post follows the SAME poll URL the
+      // JSON envelope carries (the leaf's refetchInterval keeps the server-owned cadence).
+      return c.redirect(pollUrl);
     }
     if (json) {
       // The ready preview the document renders on the POST — non-addressable state the leaf
       // paints in place (the GET twin's `qk` leg stays the poll/refresh target).
       return c.json({ ok: true, data: { conversion: toConversionData(slug, input, out.preview, out.quarantineKey) } });
     }
-    return c.html(
-      renderDocument(c.req.path, importPreviewElement, {
-        ...(await ideContext(c, session, { id: slug, slug })),
-        project: { title: input.fileName ?? slug, pill: "", slug },
-        compact: isPhoneRequest(c),
-        conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
-      }),
-    );
+    // SPA.27 — the SSR preview leg is deleted: the poll URL round-trips the quarantine key so the
+    // preview leaf recomposes the ready card off the /bff twin.
+    return c.redirect(importPollUrl(slug, out.quarantineKey, input.fileName));
   });
 
   // PRB.21 — the pending preview's poll leg (the page's meta-refresh target): re-preview the SAME
@@ -4917,37 +4360,9 @@ export function createWebApp(deps: WebDeps): Hono {
     const slug = c.req.param("project");
     const qk = c.req.query("qk");
     if (!qk) return c.redirect(`/p/${slug}/import`);
-    // SPA.3 — the strangler consult (spec §4 order): after the server-owned `qk` redirect; the
-    // import legs gate on `onboarding` AND `ide-chrome`.
-    const spaDoc = await spaShellResponse(c, deps, ["onboarding", "ide-chrome"], session);
-    if (spaDoc) return spaDoc;
-    const src = c.req.query("src");
-    const input: ImportInput = { projectSlug: slug, quarantineKey: qk, ...(src ? { fileName: src } : {}) };
-    const out = await deps.dataSource.previewImport(session, input);
-    if (out.status === "pending") {
-      return c.html(
-        renderDocument(c.req.path, importPreviewElement, {
-          ...(await ideContext(c, session, { id: slug, slug })),
-          project: { title: input.fileName ?? slug, pill: "", slug },
-          compact: isPhoneRequest(c),
-          conversion: {
-            projectSlug: slug,
-            sourceLabel: input.fileName ?? "the upload",
-            pending: true,
-            quarantineKey: out.quarantineKey,
-          },
-          autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: importPollUrl(slug, out.quarantineKey, input.fileName) },
-        }),
-      );
-    }
-    return c.html(
-      renderDocument(c.req.path, importPreviewElement, {
-        ...(await ideContext(c, session, { id: slug, slug })),
-        project: { title: input.fileName ?? slug, pill: "", slug },
-        compact: isPhoneRequest(c),
-        conversion: toConversionData(slug, input, out.preview, out.quarantineKey),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the pending/ready SSR legs are deleted; the leaf's twin
+    // re-asks the quarantine key at the server-owned cadence and recomposes both states).
+    return spaShellDocument(c, deps, session);
   });
 
   app.post("/p/:project/import/create", async (c) => {
@@ -4968,18 +4383,9 @@ export function createWebApp(deps: WebDeps): Hono {
             redirect: importPollUrl(slug, input.quarantineKey, input.fileName),
           });
         }
-        return c.html(
-          renderDocument(c.req.path, importPreviewElement, {
-            compact: isPhoneRequest(c),
-            conversion: {
-              projectSlug: slug,
-              sourceLabel: input.fileName ?? "the upload",
-              pending: true,
-              quarantineKey: input.quarantineKey,
-            },
-            autoRefresh: { seconds: IMPORT_PREVIEW_POLL_SECONDS, url: importPollUrl(slug, input.quarantineKey, input.fileName) },
-          }),
-        );
+        // SPA.27 — the meta-refresh document is deleted: follow the poll URL (the leaf's
+        // refetchInterval keeps the cadence).
+        return c.redirect(importPollUrl(slug, input.quarantineKey, input.fileName));
       }
       if (wantsJson(c)) return bffFail(c, e, { msg: "import_create_failed" });
       throw e;
@@ -4994,31 +4400,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/run", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `run-sheet`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "run-sheet", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    // SPA.20 — the sheet's ONE composition (context read → active-run precedence → billing/voice/
-    // pretriage → the RunSheetView) is shared with the `/bff/p/:slug/run` twin verbatim — side
-    // effects (`voice.staleness_shown`, the exhausted-prompt impression, the `rhema_fp` mint)
-    // included, so the two renderers never diverge on a fact or an event.
-    const { view, pretriage, activeRun } = await runSheetComposition(c, session, row, c.req.query());
-    return c.html(renderDocument(c.req.path, runSheetElement, {
-      ...(await ideContext(c, session, row)),
-      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-      runSheet: {
-        slug,
-        projectTitle: row.title,
-        view,
-        ...(activeRun ? { activeRun } : {}),
-        // BILL.3 — the exhausted POST bounced back because purchase is closed: the paused line.
-        ...(c.req.query("notice") === "purchase_paused" ? { notice: COPY.runSheet.purchasePaused } : {}),
-      },
-      ...(pretriage ? { pretriage } : {}),
-      compact: isPhoneRequest(c),
-    }));
+    // SPA.27 — sole renderer: the shell (the SSR sheet is deleted; the leaf composes the ONE
+    // `runSheetComposition` off the `/bff/p/:slug/run` twin — side effects included — and
+    // `?notice=purchase_paused` stays URL flash state).
+    return spaShellDocument(c, deps, session);
   });
 
   // The Run click — the ONLY run creator (REQ-CHAT-25). Mints nothing new: the sheet-minted idempotency key
@@ -5153,123 +4538,28 @@ export function createWebApp(deps: WebDeps): Hono {
       // 502). The leaf repaints server truth off the invalidated twin — the same answers the SSR
       // re-render arms below carry.
       if (wantsJson(c)) return bffFail(c, e, { msg: "run_create_failed" });
-      // Insufficient balance (§14.6): never a silent bill — re-render the sheet with the resolution notice,
-      // no run created. Any other api error is a real failure and propagates.
-      // PRB.21 / D-PRB.20-1 — a run went live between the sheet render and the click (or a second tab):
-      // the api 409s `run_in_progress` and no second hold was taken. Re-render the in-progress state,
-      // refreshing the active run fact from the project list — never an error page.
-      if (e instanceof ApiError && e.status === 409 && e.code === "run_in_progress") {
-        const fresh = await deps.dataSource
-          .listProjects(session)
-          .then((rows) => rows.find((r) => r.slug === slug))
-          .catch(() => undefined);
-        return c.html(
-          renderDocument(c.req.path, runSheetElement, {
-            ...(await ideContext(c, session, { ...fresh, id: row.id, slug })),
-            project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-            runSheet: {
-              slug,
-              projectTitle: row.title,
-              view,
-              activeRun: fresh?.activeRun ?? { runId: "", state: "" },
-            },
-          }),
-          409,
-        );
-      }
+      // SPA.27 — the SSR re-render arms are deleted: a form-mode refusal lands back on the sheet
+      // URL and the leaf repaints the SAME server truth off its twin — `run_in_progress` 409
+      // collapses to the in-progress arm, the 402 balance wall shows through the billing read, and
+      // the `trial_*`/`entitlement_*`/`model_tier_*`/suspension refusals show through the context
+      // read's entitlement/tier facts (the notices were inline paint; there is no URL for them).
       if (e instanceof ApiError && e.status === 402) {
         // the panel is showing again (the Run click hit the balance wall) — count the impression.
         await deps.dataSource.recordExhaustedPrompt(session, "shown").catch(() => undefined);
-        return c.html(renderDocument(c.req.path, runSheetElement, {
-          ...(await ideContext(c, session, row)),
-          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-          runSheet: { slug, projectTitle: row.title, view, notice: COPY.runSheet.insufficient },
-        }));
       }
-      // ACT.1 — every first-spend refusal renders honest copy and creates no run: `trial_denied`
-      // (403), `phone_challenge_required` (403), `trial_ceiling` (429 — paused, retryable tomorrow),
-      // `trial_word_cap`/`trial_shape`/`entitlement_unavailable` (422). The sheet re-renders without
-      // the entitlement (the api's context read now reports none usable) so the dollar/cap arithmetic
-      // the claim would have replaced shows honestly.
       if (
         e instanceof ApiError &&
-        ["trial_denied", "phone_challenge_required", "trial_ceiling", "trial_word_cap", "trial_shape", "entitlement_unavailable"].includes(e.code ?? "")
+        e.status < 500 &&
+        (e.status === 402 ||
+          e.status === 403 ||
+          e.status === 429 ||
+          (e.status === 409 && e.code === "run_in_progress") ||
+          (e.status === 422 &&
+            ["trial_word_cap", "trial_shape", "entitlement_unavailable"].includes(e.code ?? "")))
       ) {
-        const noticeByCode: Record<string, string> = {
-          trial_denied: COPY.runSheet.trialDenied,
-          phone_challenge_required: COPY.runSheet.trialPhoneChallenge,
-          trial_ceiling: COPY.runSheet.trialCeiling,
-          entitlement_unavailable: COPY.runSheet.entitlementUnavailable,
-          trial_shape: COPY.runSheet.trialShape,
-          trial_word_cap: COPY.runSheet.trialWordCapFmt.replace(
-            /\{cap\}/g,
-            String(postCtx?.entitlement?.wordCap ?? "—"),
-          ),
-        };
-        const fresh = buildSheet(
-          {
-            workflow,
-            rigor,
-            ...(submittedTier ? { modelTier: submittedTier } : {}),
-            words: str("words"),
-            claims: str("claims"),
-            ...toggleQuery,
-          },
-          await deps.dataSource.getBillingBalance(session).catch(() => undefined),
-          deps.betaPlanOfferUrl,
-          await Promise.resolve()
-            .then(() =>
-              deps.dataSource.getRunSheetContext?.(session, row.id, {
-                workflow,
-                ...(str("scope") ? { scope: str("scope") } : {}),
-              }),
-            )
-            .catch(() => null),
-        );
-        return c.html(renderDocument(c.req.path, runSheetElement, {
-          ...(await ideContext(c, session, row)),
-          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-          runSheet: { slug, projectTitle: row.title, view: fresh, notice: noticeByCode[e.code!] },
-        }), e.status as 403 | 422 | 429);
+        return c.redirect(`/p/${slug}/run`);
       }
-      // EST.1 — a forged/stale tier the plan locks 403s `model_tier_requires_upgrade`/`trial_base_only`:
-      // re-render the sheet at the plan-clamped tier (the view's `requestedModelTier` carries the "your
-      // plan includes X only" notice) — never the suspension line for a lever the user can't pick.
-      if (
-        e instanceof ApiError &&
-        e.status === 403 &&
-        (e.code === "model_tier_requires_upgrade" || e.code === "trial_base_only")
-      ) {
-        return c.html(renderDocument(c.req.path, runSheetElement, {
-          ...(await ideContext(c, session, row)),
-          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-          runSheet: { slug, projectTitle: row.title, view },
-        }), 403);
-      }
-      // REQ-SPEC-24.7 + PRB.13: a suspension or an unverified email can land between the sheet render and
-      // the Run click — the api 403s with the reason code on the error (`account_suspended` /
-      // `email_unverified`); re-render the sheet with the matching notice, never a silent failure.
-      if (e instanceof ApiError && e.status === 403) {
-        const fresh = buildSheet(
-          {
-            workflow,
-            rigor,
-            ...(submittedTier ? { modelTier: submittedTier } : {}),
-            words: str("words"),
-            claims: str("claims"),
-            ...toggleQuery,
-          },
-          await deps.dataSource.getBillingBalance(session).catch(() => undefined),
-          deps.betaPlanOfferUrl,
-          postCtx,
-        );
-        const notice = e.code === "email_unverified" ? COPY.runSheet.emailUnverified : COPY.runSheet.suspended;
-        return c.html(renderDocument(c.req.path, runSheetElement, {
-          ...(await ideContext(c, session, row)),
-          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-          runSheet: { slug, projectTitle: row.title, view: fresh, notice },
-        }), 403);
-      }
+      // a genuine ≥500 (or an unrecognized refusal) is a real failure — never a silent redirect.
       throw e;
     }
     // SPA.20 — the JSON success answer: `{ok:true, data:{runId,state}}` — the leaf shows the
@@ -5278,12 +4568,9 @@ export function createWebApp(deps: WebDeps): Hono {
     if (wantsJson(c)) {
       return mutationOutcome(c, { data: { runId: created?.runId, state: created?.state } });
     }
-    // Re-render the sheet with the run-started confirmation (the run card lives on the project view — P1.01).
-    return c.html(renderDocument(c.req.path, runSheetElement, {
-      ...(await ideContext(c, session, row)),
-      project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-      runSheet: { slug, projectTitle: row.title, view, started: true },
-    }));
+    // SPA.27 — the `started:true` re-render is deleted: a form-mode success lands on the sheet
+    // URL, where the twin reports the now-active run.
+    return c.redirect(`/p/${slug}/run`);
   });
 
   // PRB.08 — the exhaustion panel's Payment-Link action (§14.6; the beta's ONE real-money channel). A plain
@@ -5449,33 +4736,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/review/:runId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `dossier`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "dossier", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const runId = c.req.param("runId");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const comp = await dossierComposition(c, session, row, runId);
-    if (!comp) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(renderDocument(c.req.path, dossierElement, {
-      // P1.01 — the dossier IS the IDE's flagship reading surface: its findings feed the Margin
-      // (cards ↔ ticks) + the Desk's screen-reader findings table, its run feeds the Timeline.
-      // P1.07 — the ticks echo the SHARED filtered list (the same set the Margin/Desk render).
-      ...(await ideContext(c, session, row, {
-        findings: comp.filteredRows.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
-        ...(comp.timeline
-          ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` }
-          : { timeline: [{ id: runId, label: comp.dossier.versionLabel, state: "delivered", href: `/p/${slug}/review/${runId}` }] }),
-        status: { version: comp.dossier.versionLabel },
-      })),
-      project: { title: comp.dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
-      dossier: comp.dossier,
-      dossierView: comp.dossierView,
-      compact: isPhoneRequest(c),
-      dwellSurface: "dossier",
-      ...(comp.savedFindingId ? { triage: { savedFindingId: comp.savedFindingId } } : {}),
-    }));
+    // SPA.27 — sole renderer: the shell (the SSR dossier is deleted; the leaf composes the shared
+    // `dossierComposition` — view emissions, filters, bulk/gate/deep-link view state — off the
+    // /bff twin, and the client router owns the not-found).
+    return spaShellDocument(c, deps, session);
   });
 
   // SPA.21 — `GET /p/:slug/review/:runId`'s twin (design/22 §2 `p.review` row; REQ-BFF-1/8/9/11):
@@ -5547,25 +4811,10 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/r/:runId", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `run-report`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "run-report", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project");
-    const runId = c.req.param("runId");
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const comp = await runReportComposition(c, session, row, runId);
-    if (!comp) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(
-      renderDocument(c.req.path, runReportElement, {
-        ...(await ideContext(c, session, row, {
-          ...(comp.timeline ? { timelineView: comp.timeline, runNextHref: `/p/${slug}/run` } : {}),
-        })),
-        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-        runReport: { slug, runId, report: comp.report },
-        dwellSurface: "report",
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR report is deleted; the leaf composes the shared
+    // `runReportComposition` + live-feed slice off the /bff twin — the inbox read-receipt rides
+    // the twin verbatim).
+    return spaShellDocument(c, deps, session);
   });
 
   // SPA.22 — `GET /p/:slug/r/:runId`'s twin (design/22 §2 `p.runReport` row; REQ-BFF-1/8/9/11):
@@ -5774,25 +5023,16 @@ export function createWebApp(deps: WebDeps): Hono {
       // JSON callers get the upstream code/status verbatim — the leaf repaints the refusal itself.
       if (wantsJson(c)) return bffFail(c, e, { msg: "dossier_disposition_failed" });
       if (e instanceof ApiError && (e.status === 422 || e.status === 409)) {
-        // Re-render the dossier with the error under the card when we have one; otherwise bounce back
-        // to the project page (the error is on the gate row's form — the POST stays idempotent).
-        if (runId === "") return c.redirect(`${back}${back.includes("?") ? "&" : "?"}derror=${encodeURIComponent(findingId)}`);
-        const dossier = await deps.dataSource.getDossier(session, { projectSlug: slug, runId });
-        const message =
+        // SPA.27 — the dossier re-render is deleted: the form-mode failure bounces back with the
+        // SAME `ferr`/`fmsg` flash vocabulary the finding-action posts already carry (the leaf
+        // renders the notice off URL state — `derror` when there's no dossier to land on).
+        const key = runId === "" ? "derror" : "ferr";
+        const msg =
           e.status === 409
             ? "This finding's disposition is frozen — the ledger locked at delivery."
             : `a rationale is required for ${verb}`;
-        return c.html(
-          renderDocument(c.req.path, dossierElement, {
-            ...(await ideContext(c, session, row, {
-              findings: dossier.findings.map((f) => ({ id: f.id, severity: f.severity, kind: f.kind, excerpt: f.title })),
-            })),
-            project: { title: dossier.projectTitle, pill: "", slug, headDraftId: row.headDraftId },
-            dossier,
-            compact: isPhoneRequest(c),
-            triage: { dispositionError: { findingId, message } },
-          }),
-          e.status as 422 | 409,
+        return c.redirect(
+          `${back}${back.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(findingId)}&fmsg=${encodeURIComponent(msg)}`,
         );
       }
       throw e;
@@ -5873,16 +5113,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/obligations/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `dossier`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "dossier", session);
-    if (spaDoc) return spaDoc;
-    const slug = c.req.param("project") ?? "";
-    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
-    if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const back = safeBack(c.req.query("next") ?? "", `/p/${slug}`);
-    return c.html(renderDocument(c.req.path, obligationNewElement, {
-      obligationNew: { slug, projectTitle: row.title, back },
-    }));
+    // SPA.27 — sole renderer: the shell (the SSR form is deleted; `?next`/`?back` stay the
+    // safeBack-confined URL state the leaf resolves).
+    return spaShellDocument(c, deps, session);
   });
   // SPA.21 — `GET /p/:slug/obligations/new`'s twin (design/22 §2 `p.obligationNew` row): the document's
   // own composition verbatim — slug, project title, the `safeBack`-resolved `back`. The create POST
@@ -5913,15 +5146,13 @@ export function createWebApp(deps: WebDeps): Hono {
       // the document's empty-title arm is a 422 re-render; the JSON arm is the same status + a
       // stable code (the leaf re-renders the form's own error line).
       if (wantsJson(c)) return c.json({ error: "title_required", detail: COPY.obligation.required }, 422);
-      return c.html(renderDocument(c.req.path, obligationNewElement, {
-        obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.required },
-      }), 422);
+      // SPA.27 — the SSR form is deleted: a form-mode failure lands back on the form URL (the
+      // leaf holds its own field/error state) with the safeBack-confined `back` preserved.
+      return c.redirect(`/p/${slug}/obligations/new?back=${encodeURIComponent(back)}`);
     }
     if (deps.dataSource.createObligation == null) {
       if (wantsJson(c)) return c.json({ error: "obligation_unavailable" }, 503);
-      return c.html(renderDocument(c.req.path, obligationNewElement, {
-        obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.failed },
-      }), 503);
+      return c.redirect(`/p/${slug}/obligations/new?back=${encodeURIComponent(back)}`);
     }
     try {
       await deps.dataSource.createObligation(session, row.id, {
@@ -5933,9 +5164,7 @@ export function createWebApp(deps: WebDeps): Hono {
     } catch (e) {
       if (wantsJson(c)) return bffFail(c, e, { msg: "obligation_create_failed" });
       if (e instanceof ApiError && e.status < 500) {
-        return c.html(renderDocument(c.req.path, obligationNewElement, {
-          obligationNew: { slug, projectTitle: row.title, back, error: COPY.obligation.failed },
-        }), 422);
+        return c.redirect(`/p/${slug}/obligations/new?back=${encodeURIComponent(back)}`);
       }
       throw e;
     }
@@ -6192,24 +5421,25 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
     // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    if (!isPhoneRequest(c) && row.showcase !== true) {
-      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
-      if (spaDoc) return spaDoc;
+    // SPA.27 — and so does an explicit `?ssr=1`/`x-rhema-renderer: ssr` escape: it lands on this same
+    // SSR arm (the leaf can't serve it client-side); everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+      const data = await deps.dataSource.getWhatChanged(session, row.id, cid).catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      });
+      if (!data) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      const commented = c.req.query("commented") || undefined;
+      return c.html(
+        renderDocument(c.req.path, revisionElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          revision: { slug, data, ...(commented ? { commentedHunkId: commented } : {}) },
+          compact: isPhoneRequest(c),
+        }),
+      );
     }
-    const data = await deps.dataSource.getWhatChanged(session, row.id, cid).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!data) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const commented = c.req.query("commented") || undefined;
-    return c.html(
-      renderDocument(c.req.path, revisionElement, {
-        ...(await ideContext(c, session, row)),
-        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-        revision: { slug, data, ...(commented ? { commentedHunkId: commented } : {}) },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
   });
 
   app.post("/p/:project/revisions/:cid/hunks/:hunkId/comments", async (c) => {
@@ -6270,69 +5500,70 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
     // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    if (!isPhoneRequest(c) && row.showcase !== true) {
-      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
-      if (spaDoc) return spaDoc;
-    }
-    const v = c.req.param("v") ?? "working";
-    const vcomp = await versionPageComposition(c, session, row, v);
-    // EDIT.1 — `working` resolves the EDITABLE head (working head, else highest-n draft served as
-    // the lazy-fork source); a 404 here now means the project has no drafts at all — send the reader
-    // back to the project page (the empty-state cards / import affordance live there) instead of
-    // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404.
-    if (vcomp.kind === "redirect") return c.redirect(`/p/${slug}`);
-    if (vcomp.kind === "notFound") return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
-    const { doc } = pageLoad;
+    // SPA.27 — and so does an explicit `?ssr=1`/`x-rhema-renderer: ssr` escape: it lands on this same
+    // SSR arm (the leaf can't serve it client-side); everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+      const v = c.req.param("v") ?? "working";
+      const vcomp = await versionPageComposition(c, session, row, v);
+      // EDIT.1 — `working` resolves the EDITABLE head (working head, else highest-n draft served as
+      // the lazy-fork source); a 404 here now means the project has no drafts at all — send the reader
+      // back to the project page (the empty-state cards / import affordance live there) instead of
+      // dead-ending on the 404 view. A numeric /v/:n keeps the truthful 404.
+      if (vcomp.kind === "redirect") return c.redirect(`/p/${slug}`);
+      if (vcomp.kind === "notFound") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      const { pageLoad, railData, restorePoints, restorePreview } = vcomp;
+      const { doc } = pageLoad;
 
-    // P1.08 — the `?restored=<n>` undoable-apply notice is a display echo (never payload).
-    const restoredQ = c.req.query("restored");
-    const restoredN = restoredQ != null ? Number(restoredQ) : null;
-    // P1.19 — §10.1: below ~768px the Page is reader-only (the ✗ column bans editing; the rail's
-    // restore/diff affordances hide with it).
-    const phone = isPhoneRequest(c);
+      // P1.08 — the `?restored=<n>` undoable-apply notice is a display echo (never payload).
+      const restoredQ = c.req.query("restored");
+      const restoredN = restoredQ != null ? Number(restoredQ) : null;
+      // P1.19 — §10.1: below ~768px the Page is reader-only (the ✗ column bans editing; the rail's
+      // restore/diff affordances hide with it).
+      const phone = isPhoneRequest(c);
 
-    return c.html(
-      renderDocument(c.req.path, pageElement, {
-        ...(await ideContext(c, session, row, {
-          status: {
-            version: `v${doc.draftN}`,
-            ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
-            ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
-            ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
+      return c.html(
+        renderDocument(c.req.path, pageElement, {
+          ...(await ideContext(c, session, row, {
+            status: {
+              version: `v${doc.draftN}`,
+              ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+              ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+              ...(doc.venueCap ? { venueCap: doc.venueCap } : {}),
+            },
+          })),
+          project: {
+            title: row.title,
+            pill: row.state.pill,
+            slug,
+            headDraftId: row.headDraftId,
+            // ONB.1 — the consumed-hold marker (`?hc=`) rides the fix-now landing too.
+            ...(c.req.query("hc") ? { heldConsumed: c.req.query("hc") } : {}),
           },
-        })),
-        project: {
-          title: row.title,
-          pill: row.state.pill,
-          slug,
-          headDraftId: row.headDraftId,
-          // ONB.1 — the consumed-hold marker (`?hc=`) rides the fix-now landing too.
-          ...(c.req.query("hc") ? { heldConsumed: c.req.query("hc") } : {}),
-        },
-        compact: phone,
-        page: {
-          slug,
-          projectId: row.id,
-          doc,
-          docJson: pageLoad.docJson,
-          // phone width ⇒ reader-only Page (§10.1): no edits, no collab wire, no version rail.
-          // EDIT.1 — the Showcase Page is read-only too (§15.4): the guard 409s its HTTP saves and
-          // the collab attach is read-only, so the SSR must carry the same posture (the read-only
-          // note + banner, no editable affordance).
-          ...(phone || row.showcase ? { readOnly: true } : {}),
-          // a read-only SSR page gets NO collab wire: the island mounts the static view and nothing
-          // connects, types, or forks (locks mid-session still attach read-only + the rhema.readonly
-          // stateless flips the pill — the socket stays for pages that were writable at render).
-          ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
-          ...(c.req.query("noted") ? { noteSaved: true } : {}),
-          ...(railData && !phone
-            ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview, restoredN) }
-            : {}),
-        },
-        dwellSurface: "page",
-      }),
-    );
+          compact: phone,
+          page: {
+            slug,
+            projectId: row.id,
+            doc,
+            docJson: pageLoad.docJson,
+            // phone width ⇒ reader-only Page (§10.1): no edits, no collab wire, no version rail.
+            // EDIT.1 — the Showcase Page is read-only too (§15.4): the guard 409s its HTTP saves and
+            // the collab attach is read-only, so the SSR must carry the same posture (the read-only
+            // note + banner, no editable affordance).
+            ...(phone || row.showcase ? { readOnly: true } : {}),
+            // a read-only SSR page gets NO collab wire: the island mounts the static view and nothing
+            // connects, types, or forks (locks mid-session still attach read-only + the rhema.readonly
+            // stateless flips the pill — the socket stays for pages that were writable at render).
+            ...(deps.collabWsUrl && !(phone || row.showcase) ? { collabWsUrl: deps.collabWsUrl } : {}),
+            ...(c.req.query("noted") ? { noteSaved: true } : {}),
+            ...(railData && !phone
+              ? { rail: pageRailBag(doc.draftN, railData, restorePoints, restorePreview, restoredN) }
+              : {}),
+          },
+          dwellSurface: "page",
+        }),
+      );
+    }
+    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
   });
 
   // P1.08 — the undoable restore-point apply (§5.8; REQ-IDE-34): the preview card's POST lands here;
@@ -6381,29 +5612,30 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
     // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    if (!isPhoneRequest(c) && row.showcase !== true) {
-      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
-      if (spaDoc) return spaDoc;
+    // SPA.27 — phone / read-only showcase / explicit `?ssr=1` keep the SSR compare; everything
+    // else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+      const n = c.req.param("n") ?? "";
+      const m = c.req.param("m") ?? "";
+      const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      });
+      if (!data) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      const layoutQ = c.req.query("layout");
+      const layout = layoutQ === "inline" || layoutQ === "moves" ? layoutQ : "side";
+      const commented = c.req.query("commented") || undefined;
+      return c.html(
+        renderDocument(c.req.path, compareElement, {
+          ...(await ideContext(c, session, row)),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
+          compact: isPhoneRequest(c),
+          dwellSurface: "page",
+        }),
+      );
     }
-    const n = c.req.param("n") ?? "";
-    const m = c.req.param("m") ?? "";
-    const data = await deps.dataSource.getVersionDiff(session, row.id, n, m).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!data) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const layoutQ = c.req.query("layout");
-    const layout = layoutQ === "inline" || layoutQ === "moves" ? layoutQ : "side";
-    const commented = c.req.query("commented") || undefined;
-    return c.html(
-      renderDocument(c.req.path, compareElement, {
-        ...(await ideContext(c, session, row)),
-        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-        compare: { slug, n, m, layout, data, ...(commented ? { commentedHunkId: commented } : {}) },
-        compact: isPhoneRequest(c),
-        dwellSurface: "page",
-      }),
-    );
+    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
   });
 
   // The compare page's hunk-comment POST — a Guidance row for the next Revise (`source:'inline_comment'`,
@@ -6443,38 +5675,39 @@ export function createWebApp(deps: WebDeps): Hono {
     if (!row) return c.html(renderDocument(c.req.path, notFoundElement), 404);
     // SPA.3 — the consult runs AFTER the Page family's forced-SSR capability check (REQ-ED-12 +
     // REQ-VFY-5): phone / read-only showcase stays server-rendered even when `editor` flips.
-    if (!isPhoneRequest(c) && row.showcase !== true) {
-      const spaDoc = await spaShellResponse(c, deps, "editor", session, { paperTheme: row.paperTheme });
-      if (spaDoc) return spaDoc;
-    }
-    const doc = await deps.dataSource
-      .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
-      .catch((e) => {
-        if (e instanceof ApiError && (e.status === 404 || e.status === 415)) return null;
-        throw e;
-      });
-    if (!doc) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(
-      renderDocument(c.req.path, pageElement, {
-        ...(await ideContext(c, session, row, {
-          status: {
-            version: `v${doc.draftN}`,
-            ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
-            ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+    // SPA.27 — phone / read-only showcase / explicit `?ssr=1` keep the SSR artifact Page;
+    // everything else gets the shell.
+    if (isPhoneRequest(c) || row.showcase === true || ssrOverrideRequested(c)) {
+      const doc = await deps.dataSource
+        .getArtifactPage(session, row.id, c.req.param("artifactId") ?? "")
+        .catch((e) => {
+          if (e instanceof ApiError && (e.status === 404 || e.status === 415)) return null;
+          throw e;
+        });
+      if (!doc) return c.html(renderDocument(c.req.path, notFoundElement), 404);
+      return c.html(
+        renderDocument(c.req.path, pageElement, {
+          ...(await ideContext(c, session, row, {
+            status: {
+              version: `v${doc.draftN}`,
+              ...(doc.meters?.words != null ? { words: doc.meters.words } : {}),
+              ...(doc.meters?.readMin != null ? { readMin: doc.meters.readMin } : {}),
+            },
+          })),
+          project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
+          compact: isPhoneRequest(c),
+          page: {
+            slug,
+            projectId: row.id,
+            doc,
+            docJson: docJsonFor(doc),
+            readOnly: true,
           },
-        })),
-        project: { title: row.title, pill: row.state.pill, slug, headDraftId: row.headDraftId },
-        compact: isPhoneRequest(c),
-        page: {
-          slug,
-          projectId: row.id,
-          doc,
-          docJson: docJsonFor(doc),
-          readOnly: true,
-        },
-        dwellSurface: "page",
-      }),
-    );
+          dwellSurface: "page",
+        }),
+      );
+    }
+    return spaShellDocument(c, deps, session, { paperTheme: row.paperTheme });
   });
 
   // The superseded CodeMirror page redirects to the Page (the route's JSON/form endpoints below stay —
@@ -6625,27 +5858,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/p/:project/export", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `export`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "export", session);
-    if (spaDoc) return spaDoc;
-    const t = await projectRow(c, session);
-    if (!t) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const dialog = await deps.dataSource.getExportDialog(session, t.row.id).catch(() => null);
-    if (!dialog) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    return c.html(
-      renderDocument(c.req.path, exportElement, {
-        ...(await ideContext(c, session, t.row)),
-        project: { title: t.row.title, pill: t.row.state.pill, slug: t.slug, headDraftId: t.row.headDraftId },
-        export: {
-          slug: t.slug,
-          projectId: t.row.id,
-          dialog,
-          ...(c.req.query("error") ? { error: COPY.export.exportFailed } : {}),
-          ...(c.req.query("added") ? { added: true } : {}),
-        },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR dialog is deleted; `?error`/`?added` stay
+    // leaf-owned URL echoes).
+    return spaShellDocument(c, deps, session);
   });
 
   // The export POST — a plain form POST that streams the download back (progressive enhancement: no JS).
@@ -6759,23 +5974,16 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/voices", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "voices", session);
-    if (spaDoc) return spaDoc;
-    const voices = await deps.dataSource
-      .listVoiceGroups(session)
-      .catch(() => ({ voices: [], groups: { your_voices: [], house_styles: [], shared_with_you: [] } }));
-    return c.html(renderDocument(c.req.path, voicesElement, { voices, compact: isPhoneRequest(c) }));
+    // SPA.27 — sole renderer: the shell (the SSR library is deleted).
+    return spaShellDocument(c, deps, session);
   });
 
   // The §9.2 creation sheet (GET) — name required; description/byline/sample/mode/tier optional.
   app.get("/voices/new", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "voices", session);
-    if (spaDoc) return spaDoc;
-    return c.html(renderDocument(c.req.path, voiceNewElement, { voiceNew: {}, compact: isPhoneRequest(c) }));
+    // SPA.27 — sole renderer: the shell (the SSR sheet is deleted).
+    return spaShellDocument(c, deps, session);
   });
 
   // The creation sheet's POST: create the persona (+ Mode metadata), attach any pasted sample through the
@@ -6790,10 +5998,9 @@ export function createWebApp(deps: WebDeps): Hono {
       // SPA.13 — the JSON caller gets the refusal the document would re-render (REQ-BFF-2): the
       // SAME copy as `voiceNew.error`, stable code, preserved status.
       if (wantsJson(c)) return c.json({ error: "name_required", detail: COPY.voice.new.nameRequired }, 400);
-      return c.html(
-        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.nameRequired }, compact: isPhoneRequest(c) }),
-        400,
-      );
+      // SPA.27 — the SSR sheet is deleted: a form-mode failure lands back on the form URL (the
+      // leaf holds its own field/error state; `?err` rides the notice vocabulary).
+      return c.redirect("/voices/new?err=name_required");
     }
     const intent = str("intent") === "build" ? "build" : "save";
     // Upload OR paste (§9.2 beta subset): a .md/.txt/.html file decodes to canonical text here; richer
@@ -6816,19 +6023,13 @@ export function createWebApp(deps: WebDeps): Hono {
     // (text/file + URL), so a Full build always lands on the detail page to add the rest.
     if (intent === "build" && tier === "quick" && !hasSample && !sampleUrl) {
       if (wantsJson(c)) return c.json({ error: "sample_required", detail: COPY.voice.new.sampleRequired }, 400);
-      return c.html(
-        renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.sampleRequired }, compact: isPhoneRequest(c) }),
-        400,
-      );
+      return c.redirect("/voices/new?err=sample_required");
     }
     if (intent === "build" && tier === "full") {
       const hasCorpus = hasSample || sampleUrl !== "";
       if (!hasCorpus) {
         if (wantsJson(c)) return c.json({ error: "full_required", detail: COPY.voice.new.fullRequired }, 400);
-        return c.html(
-          renderDocument(c.req.path, voiceNewElement, { voiceNew: { error: COPY.voice.new.fullRequired }, compact: isPhoneRequest(c) }),
-          400,
-        );
+        return c.redirect("/voices/new?err=full_required");
       }
     }
     const created = await deps.dataSource.createVoice(session, {
@@ -6878,58 +6079,9 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get("/v/:persona", async (c) => {
     const session = deps.session(c);
     if (!session) return c.redirect("/login");
-    // SPA.3 — the strangler consult (spec §4 order): `voices`'s flip ⇒ the shell document.
-    const spaDoc = await spaShellResponse(c, deps, "voices", session);
-    if (spaDoc) return spaDoc;
-    const personaId = c.req.param("persona");
-    const detail = await deps.dataSource.getVoice(session, personaId).catch((e) => {
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    });
-    if (!detail) return c.html(renderDocument(c.req.path, notFoundElement), 404);
-    const tab = c.req.query("tab");
-    const sampleId = c.req.query("sample");
-    const [estimate, updatePlan, connections, sampleDetail] = await Promise.all([
-      deps.dataSource.estimateVoice(session, personaId, detail.tier === "full" ? "full" : "quick").catch(() => undefined),
-      // The diff-of-inputs sheet's pre-computed route (§9.3) — best-effort; the pill alone suffices.
-      deps.dataSource.getVoiceUpdatePlan?.(session, personaId).catch(() => undefined),
-      // P1.15 — the Sources pane + the open sample drawer (best-effort; absent ⇒ the tab degrades
-      // to the items list alone).
-      tab === "samples" && deps.dataSource.listVoiceConnections
-        ? deps.dataSource.listVoiceConnections(session, personaId).catch(() => undefined)
-        : undefined,
-      tab === "samples" && sampleId && deps.dataSource.getVoiceSample
-        ? deps.dataSource.getVoiceSample(session, personaId, sampleId).catch(() => undefined)
-        : undefined,
-    ]);
-    const notice =
-      c.req.query("saved") === "1"
-        ? COPY.voice.detail.seedSaved
-        : c.req.query("added") === "1"
-          ? COPY.voice.detail.sampleAdded
-          : c.req.query("cancelled") === "1"
-            ? COPY.voice.detail.cancelDone
-            : c.req.query("corrected") === "1"
-              ? COPY.voice.detail.correctionAdded
-              : c.req.query("reconstruct") === "queued"
-                ? COPY.voice.detail.reconstructQueued
-                : c.req.query("build_failed") === "1"
-                  ? COPY.voice.new.fullRequired
-                  : undefined;
-    return c.html(
-      renderDocument(c.req.path, voiceDetailElement, {
-        voice: {
-          detail,
-          ...(estimate ? { estimate } : {}),
-          ...(updatePlan ? { updatePlan } : {}),
-          ...(connections ? { connections } : {}),
-          ...(sampleDetail ? { sampleDetail } : {}),
-          ...(notice ? { notice } : {}),
-          ...(tab ? { tab } : {}),
-        },
-        compact: isPhoneRequest(c),
-      }),
-    );
+    // SPA.27 — sole renderer: the shell (the SSR detail page is deleted; `?tab`/`?sample` +
+    // the notice params stay leaf-owned URL state).
+    return spaShellDocument(c, deps, session);
   });
 
   // The seed editor's save — recomputes the J9 hash; the pill flips live on the redirect (§9.3).
