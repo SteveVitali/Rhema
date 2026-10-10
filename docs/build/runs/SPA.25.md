@@ -176,4 +176,13 @@ Opened: `D-SPA.25-1` — the T17 journey leg green on a flagged `pr-<n>` preview
 
 ## PR checks read
 
-Filled at closeout (see `git log` for the commit carrying the recorded verdict).
+`gh pr checks 158 --watch=false` — read once at closeout:
+
+```
+typecheck / lint / unit   pending   https://github.com/SteveVitali/Rhema/actions/runs/38011565019/job/114092508929
+```
+
+One check reporting (`typecheck / lint / unit`), status **pending** at read time —
+the later jobs had not reported yet. No red observed; had the inherited
+`integration`/privsep red reported, it is classified under GD-MAINT.4-1
+(waived, not repaired).
