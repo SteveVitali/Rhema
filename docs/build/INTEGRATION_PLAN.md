@@ -5,6 +5,9 @@
   (mergePolicy: OPERATOR). Merge dry-runs were produced by
   ~/agent-skills/skills/reconcile-build/scripts/merge-dryrun.sh (git merge-tree / --no-commit
   semantics only) — evidence committed at docs/build/reports/REC.3/.
+  2026-10-10 (SPAREC.3): the round-4 section appended below (§R4.0 onward). The round-3
+  body (§1–§11) stands untouched — its "Read at" values are 2026-10-04 facts; §R4.1
+  re-reads every one of them against today's git/GitHub state.
 -->
 # Integration plan — landing the stacked chain
 
@@ -305,3 +308,385 @@ Merges to `main` are permanent; undo with reverts, not resets (shared history):
   arrangement, and §9 is the reconciliation. Merging the stack does not deploy anything.
 - The `deployments`-row table above is illustrative; the authoritative provenance is the
   `deployments` table + each run ledger's recorded tip SHA.
+
+---
+
+# Round 4 — the SPA stack: merge + activation plan (SPAREC.3, 2026-10-10)
+
+**Read at:** 2026-10-10T16:05Z (git + `gh` state) · **mergePolicy:** OPERATOR — this
+section, like the whole file, merges nothing; every command is for the operator.
+**Scope:** the open stack as it exists today — **69 open PRs, #98 → #166** — plus
+**#167** (this ticket's own PR, `stevevitali/sparec-3-integration-plan` stacked on
+`stevevitali/sparec-2-spec-reconciliation`) and the two SPADOC tail rows still to be
+authored (expected #168/#169 — docs-only, deploy-neutral). The round-3 body above
+(§1–§11) was written for a 2026-09-30 world; §R4.1 is the honest re-read.
+
+## R4.1 · External state (re-read this run)
+
+| Fact | Value | How verified |
+|---|---|---|
+| `main` head | `c13d865` — "Merge pull request #97 … slo-1-prod-slo-remediation" | `git log -1 origin/main` |
+| Merge method | **merge commits** — unchanged; `Merge pull request #N` through #97 | `git log --merges origin/main` |
+| Round-3 chain merged through | **PR #97 (SLO.1)** — §1's "#1–#69 merged" is stale; the operator has landed through #97 | `gh pr list --state merged` |
+| Open stack | **#98–#166 contiguous, 69 PRs** — round-3 tail #98–#118 (21 PRs) + round-4 #119–#166 (48 PRs); every open PR is a chain row | `gh pr list --state open` |
+| #98's declared base | **`stevevitali/slo-1-prod-slo-remediation` — a MERGED branch** (the branch wasn't deleted after #97 landed; its head `b1800e1` is an ancestor of `main`) → retarget to `main` as step 0 | `gh pr view 98`, `git merge-base --is-ancestor` |
+| Chain-vs-`main` merge-base | `b1800e1` for #98 (slo-1's final head — IN #98's history); `c3d776c` for everything #99 and above (see §R4.6 drift) | `git merge-base` |
+| Prod deployed provenance | web `6ebb1cb76e14be8bfa6c6dc0731932c9011e6224` · api `0acd16d0f6d5af473f28815b7358140d70e39146` — both commits **inside unmerged PR #118's branch** (`res-3-leg1a-zero-coverage`), `merge-base --is-ancestor`-verified against tip `d263808` (238 commits ahead of `c3d776c`) | `/healthz` read 2026-10-10 (SPACAP.2 report §0) + `git merge-base` this run |
+| Round-4 code on prod | **zero** — `/bff/app` 404; `data-renderer`/`data-mounted`/`data-route`/`spa-root` absent on `/` `/login` `/showcase` `/pricing` | SPACAP.2 §0 curl record |
+| `check-additive-migrations`/never-cookies reds (old §3a/§3b) | **resolved in code, on `main` already** — `b1800e1` ("record migration 0054 in the additive-migration baseline; scope rhema_fp out of never-cookies") merged via #97; the same rhema_fp scope was independently re-committed inside the stack (`406cbcc` ux-2, `ce36fe0` def-4, `56fee60` sec-3) | `git log b1800e1`, `git log` per branch |
+| `integration`/privsep red (old §3c) | **intermittent, waived class** — `d60a70d` (on the res-3 line) skips the mount-namespace legs where the runner can't unshare; `integration` is green on #98/#129 but red on #157/#161 (same `privsep.docker.test.ts` GH-runner kernel-capability failure, log-verified this run — `docker run --cap-add SYS_ADMIN` → EACCES). GD-MAINT.4-1's waiver covers this class on every descendant | `gh pr checks` reads + `gh run view --job 114082167023` |
+| Pending pinned deploys | D-CITE.1-1 (`5baa666`, inside #104) + D-ECON.2-1 (`bbe1e95`, inside #105) — **both ancestors of the deployed SHAs**: prod already runs their code via the later RES.3/MAINT.5 deploys; their dedicated deploys are superseded | `git merge-base --is-ancestor 5baa666 6ebb1cb`, `… bbe1e95 0acd16d` |
+| MAINT.5 | **folded, no dedicated PR** — its fix (`6ebb1cb`, "admit accounts.google.com in CSP form-action") + deploy record (`666640c`) are commits inside #118's branch; prod already runs it on web | `git log --all --grep=form-action`, branch-contains |
+
+## R4.2 · Composition with the round-3 chain (the Q-7 answer, honestly)
+
+Q-7 ruled the rounds on independent schedules; the STACK resolves them anyway:
+
+- **The round-3 chain is merged through #97 only.** PRs #98–#118 (UX.1 → RES.3 +
+  DOC.1/DOC.2/MAINT.3/MAINT.4/MAINT.5-folded) are unmerged and sit **below** the
+  round-4 stack — `spa-1`'s declared base is `res-3-leg1a-zero-coverage`. The round-4
+  chain cannot reach `main` without the round-3 tail landing first. **Merge order is
+  stack order, not round order:** #98 → tip, bottom-up, no exceptions.
+- **Provenance stays exact under merge-commit landings.** The deployed SHAs
+  (`6ebb1cb`/`0acd16d`, inside #118) and every pending pin (`5baa666` inside #104,
+  `bbe1e95` inside #105) are ancestors of the chain tip; once #98–#118 merge, each is
+  a literal ancestor of `main` — §9's `merge-base --is-ancestor` reconciliation
+  applies verbatim. `git log 0acd16d..origin/main` after #118 lands is the round-3
+  delta prod does not yet run; segment 1's deploy retires it.
+- **The superseded pinned deploys need no replay.** D-CITE.1-1's `5baa666` image set
+  and D-ECON.2-1's `bbe1e95` pins named SHAs prod has already passed — their code is
+  live on `6ebb1cb`/`0acd16d`. Do NOT dig out the stale digests; the segment-1 deploy
+  supersedes both rows' unblock condition (their `deployments`-row disposition records
+  `delivered-via-<segment-1-sha>`).
+
+## R4.3 · The open stack (#98 → #167, bottom → top)
+
+Declared bases form one unbroken chain; `gh` reports MERGEABLE on every PR read this
+run. (PR numbers ↔ branches ↔ tickets ↔ the activation segment each belongs to —
+segment column is §R4.7's cadence.)
+
+| PR | branch | ticket | seg |
+|---|---|---|---|
+| #98 | ux-1-copy-ia-brand | UX.1 copy/IA/brand | 0 |
+| #99 | ux-2-layout-responsive | UX.2 layout/responsive | 0 |
+| #100 | def-4-ledger-integrity-refund-window | DEF.4 | 0 |
+| #101 | sec-3-run-task-confinement | SEC.3 | 0 |
+| #102 | ops-1-preview-stages | OPS.1 | 0 |
+| #103 | ops-2-iac-drift-cost-cache | OPS.2 | 0 |
+| #104 | cite-1-citation-completeness | CITE.1 | 0 |
+| #105 | econ-2-cogs-reduction | ECON.2 | 0 |
+| #106 | stb-5a-headless-live-legs | STB.5a | 0 |
+| #107 | stb-5b-bounded-paid-legs | STB.5b | 0 |
+| #108 | cap-1-capstone-gap-analysis | CAP.1 | 0 |
+| #109 | cap-2-composed-verification | CAP.2 | 0 |
+| #110 | cap-3-capstone-closure | CAP.3 | 0 |
+| #111 | rec-1-backlog-and-readiness | REC.1 | 0 |
+| #112 | rec-2-spec-reconciliation | REC.2 | 0 |
+| #113 | rec-3-integration-plan | REC.3 (this file's round-3 section) | 0 |
+| #114 | doc-1-repo-docs-refresh | DOC.1 | 0 |
+| #115 | doc-2-agent-docs-refresh | DOC.2 | 0 |
+| #116 | maint-3-funded-window-repairs | MAINT.3 | 0 |
+| #117 | maint-4-oauth-signin-throttle | MAINT.4 | 0 |
+| #118 | res-3-leg1a-zero-coverage | RES.3 (+ folded MAINT.5) | 0 |
+| #119 | spa-1-vite-toolchain-adr106 | SPA.1 | 1 |
+| #120 | spa-2-flag-plumbing | SPA.2 | 1 |
+| #121 | spa-3-shell-document | SPA.3 | 1 |
+| #122 | spa-4-skeleton | SPA.4 | 1 |
+| #123 | spa-5-bff-conventions | SPA.5 | 1 |
+| #124 | spa-6-journey-harness | SPA.6 | 1 |
+| #125 | spa-7-dom-contract-rtl | SPA.7 | 1 |
+| #126 | spa-8-safety-gates | SPA.8 | 1 |
+| #127 | spa-9-ide-chrome-layout | SPA.9 | 1 |
+| #128 | spa-10-surface-usage | SPA.10 | 1 |
+| #129 | spaf-1-prod-flip-usage | **SPAF.1 flip: `usage`** | 1 |
+| #130 | spa-11-surface-inbox | SPA.11 | 2 |
+| #131 | maint-6-nonprod-session-plumbing | MAINT.6 (insert — preview machinery; prod-inert) | 2 |
+| #132 | spaf-2-prod-flip-inbox | **SPAF.2 flip: `inbox`** | 2 |
+| #133 | spa-12-surface-settings | SPA.12 | 3 |
+| #134 | spaf-3-prod-flip-settings | **SPAF.3 flip: `settings`** | 3 |
+| #135 | spa-13-surface-voices | SPA.13 | 4 |
+| #136 | spaf-4-prod-flip-voices | **SPAF.4 flip: `voices`** | 4 |
+| #137 | spa-14-surface-onboarding | SPA.14 | 5 |
+| #138 | spaf-5-prod-flip-onboarding | **SPAF.5 flip: `onboarding`** | 5 |
+| #139 | spa-15-surface-project-home | SPA.15 | 6 |
+| #140 | spaf-6-prod-flip-project-home | **SPAF.6 flip: `project-home`** | 6 |
+| #141 | spa-16-surface-billing | SPA.16 | 7 |
+| #142 | spaf-7-prod-flip-billing | **SPAF.7 flip: `billing`** | 7 |
+| #143 | spa-17-surface-export-ide-chrome | SPA.17 | 8 |
+| #144 | spaf-8-prod-flip-export-ide-chrome | **SPAF.8 flip: `export` + `ide-chrome`** (joint) | 8 |
+| #145 | spa-18-surface-outline | SPA.18 | 9 |
+| #146 | spaf-9-prod-flip-outline | **SPAF.9 flip: `outline`** | 9 |
+| #147 | spa-19-surface-figures | SPA.19 | 10 |
+| #148 | spaf-10-prod-flip-figures | **SPAF.10 flip: `figures`** | 10 |
+| #149 | spa-20-surface-run-sheet | SPA.20 | 11 |
+| #150 | spaf-11-prod-flip-run-sheet | **SPAF.11 flip: `run-sheet`** | 11 |
+| #151 | spa-21-surface-dossier | SPA.21 | 12 |
+| #152 | spaf-12-prod-flip-dossier | **SPAF.12 flip: `dossier`** | 12 |
+| #153 | spa-22-surface-run-report | SPA.22 | 13 |
+| #154 | spaf-13-prod-flip-run-report | **SPAF.13 flip: `run-report`** | 13 |
+| #155 | spa-23-editor-mount | SPA.23 | 14 |
+| #156 | spa-24-editor-collab | SPA.24 | 14 |
+| #157 | spaf-14-prod-flip-editor | **SPAF.14 flip: `editor` — the LAST flip (REQ-ED-13)** | 14 |
+| #158 | spa-25-source-mode-revival | SPA.25 | 15 |
+| #159 | spa-26-island-retirement | SPA.26 | 15 |
+| #160 | spa-27-ssr-deletion-wave | SPA.27 | 15 |
+| #161 | spa-28-override-machinery-removal | SPA.28 (flag machinery deleted — point of no return) | 15 |
+| #162 | spacap-1-capstone-gap-analysis | SPACAP.1 | 15 |
+| #163 | spacap-2-composed-verification | SPACAP.2 | 15 |
+| #164 | spacap-3-capstone-closure | SPACAP.3 | 15 |
+| #165 | sparec-1-backlog-readiness | SPAREC.1 | 15 |
+| #166 | sparec-2-spec-reconciliation | SPAREC.2 | 15 |
+| #167 | sparec-3-integration-plan | SPAREC.3 (this plan) | 15 |
+| #168/#169 | (SPADOC.1 / SPADOC.2 — authored after this PR) | docs tail, deploy-neutral | 15 |
+
+## R4.4 · Merge order — bottom-up, strictly; merge commits
+
+Mechanics unchanged from §4–§6 — repeat them here verbatim so this section is
+self-contained:
+
+- **Strictly ascending PR number: #98, #99, …, tip.** Never out of order (§4's
+  reasoning holds verbatim — each head contains its ancestors' history).
+- **Merge commit only** (`gh pr merge $PR --merge`): preserves every deployed SHA and
+  every pin as a literal ancestor of `main` — §9's ancestry reconciliation depends on
+  it. Never `--squash`, never `--rebase`.
+- **Retargeting:** merge a PR → delete its head branch → GitHub auto-retargets the
+  child to `main` (the same flow #48–#97 used). Alternative: `gh pr edit <child>
+  --base main` by hand immediately after each merge. Never merge a child still
+  pointing at a merged parent branch.
+- **Per-PR read before merge (§6 verbatim):**
+
+```bash
+gh pr view $PR --json mergeable,mergeStateStatus
+gh pr checks $PR                       # see §R4.5 for the one waived red class
+gh pr merge $PR --merge
+git push origin --delete stevevitali/<branch-for-$PR>
+# sanity before the next (expect 0 real conflicts; count the LABELED markers — this
+# file itself contains literal '<<<<<<<' strings in §6's code fence):
+git fetch origin main && git merge-tree \
+  $(git merge-base origin/main origin/stevevitali/<next-branch>) \
+  origin/main origin/stevevitali/<next-branch> | grep -c '<<<<<<< \.'
+```
+
+- **The segment boundary is a merge PAUSE, not just a deploy.** Do not merge into the
+  next segment's range until the current segment's deploy + legs + ≥1 nightly green
+  are done (§R4.7). Rationale: merging ahead is harmless to activation order (the
+  next flip activates only on its own merge+deploy) but it erases the clean
+  "deploy-SHA = `main` tip at the boundary" provenance and invites the §R4.13 stop-rule
+  violation — never deploy at a SHA past the last fully-verified segment boundary.
+
+## R4.5 · CI state to expect while merging
+
+- **#98 read this run: all five checks green** (`typecheck/lint/unit`, `contracts`,
+  `integration`, `images`, `public-safe`) — the old §3a/§3b reds are resolved in code
+  on `main` (`b1800e1`; §R4.1).
+- **`integration` intermittently red on some later heads** (observed: #157, #161 —
+  `apps/run-task/src/privsep.docker.test.ts`, `docker run --cap-add SYS_ADMIN` →
+  EACCES, the GH-runner kernel-capability gap `d60a70d`'s skip guard doesn't always
+  detect). This is the **GD-MAINT.4-1 waived class** — identical failure shape on the
+  base. Record the red honestly per merge (a waiver row per PR is not needed — the
+  existing waiver names "this + descendant PRs"); if a check fails that is NOT the
+  privsep leg, **stop** — that's a new failure, not the waived class.
+- First-read `pending`/`"no checks reported"` on freshly-pushed heads is the chain's
+  recurring first-read class — re-read once CI registers before merging.
+
+## R4.6 · Known drift — one predicted conflict, two recorded drifts
+
+- **Predicted union conflict — `scripts/check-additive-migrations.test.mjs`.**
+  `ux-1` (#98) was rebased onto slo-1's final head `b1800e1` (carrying the
+  migration-0054 baseline line + the `rhema_fp` gate scope-out); the stack above (#99+)
+  still descends from the pre-`b1800e1` tip `c3d776c`. When the first upper-stack merge
+  replays an edit to the baseline file (the chain adds `0055`–`0058` entries adjacent
+  to where `main` now lists `0054`), **expect exactly one conflicted file** — resolve
+  by union (keep `main`'s `0054` line AND the chain's additions). Verified this run:
+  merge-tree of the whole tip vs `main` = **1 real conflict hunk in that one file**
+  (the only other `<<<<<<<` grep hits are literal strings inside §6's code fence).
+- **Mid-chain drift (same class as old §3d).** `ux-2`'s head (`406cbcc`, the re-committed
+  `rhema_fp` scope fix) advanced after `def-4` forked — GitHub may flag stale
+  CONFLICTING; the change exists identically down-chain (`ce36fe0`, `56fee60`) and
+  merges clean. The §R4.4 merge-tree sanity is the control per step.
+- **`main`-side `.gitleaks.toml` +5 lines** not in the chain — auto-merges; the chain
+  never edits that region.
+
+## R4.7 · The activation cadence — 15 segments (Arm A, REQ-SEQ-10 verbatim)
+
+Merging ≠ deploying. The flip PRs are one-line stage-fact changes dormant until their
+SHA deploys; activations happen ONLY at deploys, and each deploy must land exactly one
+segment's flip surface(s). This is `SPACAP.2_COMPOSED_VERIFICATION.md` §3.1 verbatim —
+refined with today's PR numbers and the segment-0 prerequisite:
+
+| # | merge PRs (bottom-up) | deploy activates | per-deploy verify (ALL must pass before the next segment) |
+|---|---|---|---|
+| 0 | **#98–#118** (round-3 tail; retarget #98 to `main` first) | — none; no SPA code exists above the tip of this range | merge mechanics only — §R4.4 sanity per PR; expect the §R4.6 union conflict at the first `check-additive-migrations` merge. Optional no-op deploy: `main` after #118 ≈ the code prod already runs (`0acd16d` is inside #118) — skip unless the operator wants a clean `main`-SHA deploy row |
+| 1 | #119–#129 (SPA.1–10 + **SPAF.1**) | `usage` | session curls: `/usage`, `/p/<slug>/usage` → `data-renderer="spa"`; `?ssr=1` → `data-renderer="ssr"` (pre-cleanup arm) · `rhema-journeys --stage prod --surface usage --expect-renderer spa --expect-sha <sha>` (D-SPAF.1-2) · nightly green (D-SPAF.1-4) |
+| 2 | #130–#132 (SPA.11, MAINT.6, **SPAF.2**) | `inbox` | `/app/inbox` markers + `?ssr=1` arm · `--surface inbox --expect-renderer spa` (D-SPAF.2-2; gate = T2.badge, R8.inbox, X1.inbox) · nightly green |
+| 3 | #133–#134 (SPA.12, **SPAF.3**) | `settings` | `/settings` + six `/app/settings/*` markers · `--surface settings --expect-renderer spa` (D-SPAF.3-2; T2.matrix, T3, R8.prefs) · nightly green |
+| 4 | #135–#136 (SPA.13, **SPAF.4**) | `voices` | `/voices` `/voices/new` `/v/:persona` markers · `--surface voices --expect-renderer spa` (D-SPAF.4-2; T5, X1.voices) · nightly green |
+| 5 | #137–#138 (SPA.14, **SPAF.5**) | `onboarding` | `/app/new` markers · `--surface onboarding --expect-renderer spa` (D-SPAF.5-2; N1, N3, N4, P1.app-new) · nightly green |
+| 6 | #139–#140 (SPA.15, **SPAF.6**) | `project-home` | `/app` markers · `--surface project-home --expect-renderer spa` (D-SPAF.6-2; R1, R7, T2.badge, T6, T7, P1.project, X1.home) · nightly green |
+| 7 | #141–#142 (SPA.16, **SPAF.7**) | `billing` | `/app/billing*` markers · `--surface billing --expect-renderer spa` (D-SPAF.7-2; N9 free legs) · nightly green |
+| 8 | #143–#144 (SPA.17, **SPAF.8**) | `export` + `ide-chrome` (joint flip) | `/p/:p/export` markers; framed surfaces gain `<IdeChrome>` · `--surface export,ide-chrome --expect-renderer spa` (D-SPAF.8-2; R5, T4, T8-owed, P1.project) · nightly green |
+| 9 | #145–#146 (SPA.18, **SPAF.9**) | `outline` | `/p/:p/outline` + `/outline/promote` markers · `--surface outline --expect-renderer spa` (D-SPAF.9-2; P1.outline — red-step owed-reporting) · nightly green |
+| 10 | #147–#148 (SPA.19, **SPAF.10**) | `figures` | `/p/:p/figures`, `/:figureId`, `/visualize` markers · `--surface figures --expect-renderer spa` (D-SPAF.10-2; P1.figures) · nightly green |
+| 11 | #149–#150 (SPA.20, **SPAF.11**) | `run-sheet` | `/p/:p/run` markers · `--surface run-sheet --expect-renderer spa` (D-SPAF.11-2; N4, R7, N9, P1.runsheet) · nightly green |
+| 12 | #151–#152 (SPA.21, **SPAF.12**) | `dossier` | `/p/:p/review/:runId` markers · `--surface dossier --expect-renderer spa` (D-SPAF.12-2; N7, T1, T12F/T13F/P1.dossier owed-reporting) · nightly green |
+| 13 | #153–#154 (SPA.22, **SPAF.13**) | `run-report` | `/p/:p/r/:runId` markers · `--surface run-report --expect-renderer spa` (D-SPAF.13-2; R6F owed-reporting) · nightly green |
+| 14 | #155–#157 (SPA.23, SPA.24, **SPAF.14**) | `editor` — last flip | all five Page GETs (`/p/:p`, `/v/:v`, `/v/:n/diff/:m`, `/a/:artifactId`, `/revisions/:cid`) markers + the REQ-ED-12 forced-SSR posture (phone-UA + `showcase:true` still `data-renderer="ssr"`, `collabWsUrl` withheld) + transport probes (`/doc` POST + collab WS through the SSR `page.js` mount arm) · `--surface editor --expect-renderer spa` (D-SPAF.14-2; N8, P1.pill, P1.project, R7, T2.badge, T6, T7 — all expected:green, a miss FAILS; T17 owed-reporting) · **nightly green — gates the cleanup wave** (D-SPAF.14-4) |
+| 15 | **after the editor bake only:** #158 → tip (#158–#167 at write time; +#168/#169 when the SPADOC rows land) | cleanup wave + source mode | pre-merge: confirm the step-14 nightly green and every `D-SPAF.*-4` honored in order (D-SPA.26-1/-27-1/-28-1 entry gates) · post-deploy: `/assets/outline.js` → 404; phone-UA `/p/:slug/v/working` → `data-renderer="ssr"` + `page.js`/`ide.js` still served; `?ssr=1`/`x-rhema-renderer` inert (converge on the shell); `--pin-renderer` → exit 2 · then §R4.10's composed verification |
+
+Rollback during the window (segments 1–14): revert the flip's stage-fact line +
+redeploy — SSR is restored in one deploy (D-SPAF.*-3 arms). After segment 15:
+`git revert` of cleanup commits + redeploy only.
+
+## R4.8 · Deploy procedure — verbatim per segment boundary
+
+Prereqs (§3.0 carried): `pulumi login` valid; `gh` + `gcloud` authed to project
+`rhema-507501`; a clean checkout; journey sessions mint on prod through the live
+`rhema.tools` mailbox (`JOURNEY_GCP_ACCESS_TOKEN` or `gcloud auth
+application-default login`) — **no `rhema-nonprod-resend-api-key` needed** (that secret
+gates `pr-<n>` previews only). `$0` legs only — never `--paid` on this path
+(REQ-VFY-10).
+
+```bash
+# === After a segment's merges land (and ONLY then) ===
+git checkout main && git pull --ff-only
+SHA=$(git rev-parse HEAD)              # the segment's boundary merge commit — this
+                                       # IS the expected provenance SHA everywhere below
+
+# 1. Build images at the boundary SHA (the committed image-set; _SERVICES takes the
+#    diff-scoped subset — api+web every segment for provenance parity even when api's
+#    diff is empty, because /healthz gitSha is per-image and the gate compares both;
+#    add worker/collab/run-task when the segment's merged range diffs their graphs —
+#    when in doubt, drop _SERVICES for the full canonical set):
+gcloud builds submit --config infra/cloudbuild/image-set.yaml --project rhema-507501 \
+  --substitutions _AR=us-central1-docker.pkg.dev/rhema-507501/rhema-prod,_TAG=prod,_GIT_SHA=$SHA,_SERVICES=api,web
+gcloud artifacts docker images list us-central1-docker.pkg.dev/rhema-507501/rhema-prod \
+  --include-tags --format='table(package,tag,digest)'   # capture each Digest: line
+
+# 2. Pin the new digests (established procedure — Pulumi.prod.yaml serviceImages JSON,
+#    + runTaskImageDigest / proxyImage when those were rebuilt; unchanged services
+#    keep their current pins):
+cd infra/pulumi && pulumi stack select prod
+pulumi preview      # EXPECT: Cloud Run ~template image bumps only, plus on flip
+                    # segments web env SPA_SURFACES += <key>. ZERO replace/delete and
+                    # zero stateful ops — STOP on any (see §R4.13)
+pulumi up           # the spend step — record the update number
+
+# 3. Provenance gate FIRST — before any verification leg (the harness itself refuses
+#    on a NO-MATCH; SPACAP.2 exercised that refusal on prod):
+cd ../..
+node scripts/check-deploy-provenance.mjs --expect $SHA \
+  --healthz https://rhema.tools --healthz https://api.rhema.tools   # every line PASS
+
+# 4. Write the deployments row (over the IAP tunnel — established practice, e.g.
+#    rhema-prod-proxy-k4wp → 127.0.0.1:15432 → 10.46.0.3:5432):
+DATABASE_URL='postgresql://<system-role>:<pw>@127.0.0.1:15432/rhema' \
+STAGE=prod GIT_SHA=$SHA \
+IMAGE_DIGESTS='{"api":"<repo>/api@sha256:…","web":"<repo>/web@sha256:…","worker":"…",
+                "fetcher":"…","convert":"…","export":"…","collab":"…",
+                "egress-proxy":"…","run-task":"…"}' \
+  node scripts/live/record-deployment.mjs    # stamps protocols_version itself; refuses
+                                           # if compute-protocols-version returns empty
+```
+
+## R4.9 · Per-segment verification legs (the `D-SPAF.*` rows, verbatim)
+
+Per segment, in order — all before the next segment's first merge:
+
+```bash
+# (a) marker curls with a prod session cookie (the surface's flagged GETs — the
+#     runbook §3.1 row names them; sessions mint through the live mailbox):
+curl -s https://rhema.tools/<flagged-route> -H "Cookie: <session>" \
+  | grep -o 'data-renderer="spa"'          # present on every flagged GET
+curl -s 'https://rhema.tools/<flagged-route>?ssr=1' -H "Cookie: <session>" \
+  | grep -o 'data-renderer="ssr"'          # escape arm — segments 1–14 ONLY
+                                           # (deleted machinery post-segment-15)
+
+# (b) the flip's journey leg — the D-SPAF.*-2 recipe (registry gates named in §R4.7):
+pnpm --filter @rhema/journeys build
+pnpm --filter @rhema/journeys exec rhema-journeys --stage prod \
+  --surface <key> --expect-renderer spa --expect-sha $SHA \
+  --out docs/build/reports/<date>_SPAF.<n>-<surface>     # exit 0; commit the report
+#     (segment 8 only: --surface export,ide-chrome)
+
+# (c) the nightly bake — D-SPAF.*-4 / REQ-SEQ-10: ≥1 scheduled journeys run green on
+#     prod AFTER this deploy, before the next segment merges. The schedule is
+#     .github/workflows/journeys.yml cron "5 6 * * *" (06:05 UTC nightly):
+gh run list --workflow journeys.yml --branch main --limit 5
+#     confirm: a completed run STARTED after this deploy, conclusion success.
+#     Only then open the next segment.
+```
+
+## R4.10 · Post-cadence composed verification (BL-82 — after segment 15's deploy)
+
+With `<tip>` = the deployed tip SHA: run `SPACAP.2_COMPOSED_VERIFICATION.md` §3.2–3.5
+**verbatim** (they are the recipes, not paraphrased here): provenance gate → (a) the
+per-surface `--expect-renderer spa` composed run over all 15 surface keys → (b) the
+full free suite `--expect-sha <tip>` → the two-tenant BFF probe (§3.3) → the
+public-SSR regression diff vs `docs/build/reports/2026-10-10_SPACAP.2-public-ssr-baseline/`
++ the `--expect-renderer ssr` N10 leg (§3.4) → the zero-CSP walk (§3.5) → plus
+D-SPACAP.3-1's G2-fix showcase leg and D-MAINT.4-1's OAuth legs. `ready-to-flip`
+reports on the gated `expected:"red"` steps get their `registry.ts` green flip as a
+follow-up commit with the report path — that lands as a NEW tail PR, not inside this
+chain.
+
+## R4.11 · Arm B — the recorded fallback (compressed verification)
+
+If the operator elects a single tip deploy instead of the cadence (G1's
+accepted-amendment path, GATE-ACCEPT.SPA row context): prod jumps all-SSR → all-SPA in
+one deploy; the `D-SPAF.*-1` `?ssr=1` curls and any `x-rhema-renderer` pin are inert
+request text (read them as inert-signal checks per D-SPA.28-2); the per-surface
+`--expect-renderer spa` legs still all run post-deploy (§R4.10's composed form);
+rollback is `git revert` of cleanup commits + redeploy — there is no config arm. The
+verification ORDER the flip rows encode is compressed, not skipped: every per-surface
+leg, the two-tenant probe, the SSR regression, and the CSP walk still execute and
+still gate — record the election in the deploy ledger with its reason. The nightly
+bakes lose their pacing function under Arm B; REQ-SEQ-10's consequence is exactly the
+accepted deviation (BL-83).
+
+## R4.12 · The Resend secret — a parallel track, never a serial blocker
+
+BL-80 / D-MAINT.6-1: `rhema-nonprod-resend-api-key` in Secret Manager `rhema-507501`
+was `NOT_FOUND` on every probe through SPA.25. It gates the `pr-<n>` **preview** leg
+family only — MAINT.6's session-mint proof, `D-OPS.1-1`, `D-SPA.6-1`, every
+`D-SPA.*-1/-2` preview leg/drill. **The prod path above never touches it** — prod
+sessions mint through the live `rhema.tools` mailbox; the program refuses the key on
+prod fail-closed. Position: the operator may seed it at ANY point — ideally during
+the early nightly-bake waits so the preview-leg family produces evidence in parallel;
+it never sits on the merge/deploy critical path. The value never enters this file,
+any ledger, or any log line.
+
+## R4.13 · Rollback, stop conditions, hazards
+
+**Rollback** (unchanged semantics; PROD-BRINGUP §13.2 is the ops-truth copy):
+- Merge layer: §10 verbatim — `git revert -m 1 <merge-sha>`, top-down for ranges;
+  never force-push `main`.
+- Deploy layer, segments 1–14: revert the flip's stage-fact line in
+  `infra/config/stages.ts` + rebuild/redeploy at the reverted SHA → prior renderer in
+  one deploy (the `D-SPAF.*-3` arm).
+- Deploy layer, post-segment-15: `git revert` the cleanup commits (revert the wave
+  bottom-up if the target is inside it) + rebuild/redeploy + re-run the surface legs.
+  `?ssr=1`/`x-rhema-renderer`/`rhema:spaSurfaces` are dead machinery — no rollback may
+  end in a config edit.
+
+**STOP conditions — pause and report, do not push through:**
+- `pulumi preview` shows any replace/delete or a stateful resource diff (the program
+  is append/roll-only in this window).
+- `check-deploy-provenance` returns anything but all-PASS after a deploy.
+- Any marker curl misses `data-renderer="spa"` on a flagged GET (or the `?ssr=1` arm
+  misses `"ssr"` pre-cleanup) — revert that segment's flip before proceeding.
+- Any `--surface … --expect-renderer spa` leg exits non-zero.
+- A nightly journeys run goes red, or shows a new failure class (not the owed/red-step
+  class) — the bake gates the next segment; a red nightly resets that segment's bake.
+- A PR check fails outside the GD-MAINT.4-1 waived privsep class (§R4.5).
+- A merge-tree sanity shows real conflicts beyond the ONE predicted
+  `check-additive-migrations` union hunk (§R4.6) — resolve only that file's union;
+  anything else means the drift model is wrong.
+- Someone asks to deploy at a SHA past the last fully-verified segment boundary —
+  the tip-only deploy IS Arm B (§R4.11) and is an explicit operator election, never a
+  shortcut taken mid-cadence.
+
+**Hazards:** the segment-1 deploy is a large code jump (round-3 tail + SPA.1–10 at
+once) — inherent to the chain, mitigated by the bake cadence on every later surface;
+prod drifts ahead of `main` during the whole window (deployed SHAs are chain commits
+until #118 lands — §9's reconciliation applies); the cleanup wave is the point of no
+return — verify the editor bake record exists before opening segment 15's merges.
