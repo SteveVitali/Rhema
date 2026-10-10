@@ -1,8 +1,9 @@
 import { type ReactNode } from "react";
-// SPA.27 — the SSR deletion wave leaves this module at eleven consumers: the public funnel
-// documents (in ./marketing.js — this file's own surfaces are InvitePage + LoginPage), the Page
-// family's forced-SSR documents (ProjectPage / RevisionPage / ComparePage / PagePage — REQ-ED-12
-// phone/showcase/`?ssr=1` read-only), the not-found document, and the shared chrome helpers
+// SPA.28 — the SSR deletion wave + override removal leave this module at eleven consumers: the
+// public funnel documents (in ./marketing.js — this file's own surfaces are InvitePage +
+// LoginPage), the Page family's forced-SSR documents (ProjectPage / RevisionPage / ComparePage /
+// PagePage — REQ-ED-12 phone/showcase read-only only; the `?ssr=1` escape is gone), the not-found
+// document, and the shared chrome helpers
 // (IdeFrame / PhoneBlockedNote / footer) those pages mount. Every flipped surface's SSR component
 // was deleted with its render path — the SPA leaf emits the same tree off the shared modules
 // (page-chrome / dossier-view / gate-card / chat-pane) the components here still consume.

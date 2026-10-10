@@ -83,6 +83,7 @@ const CURATED_SERVER_ENV = [
   "STRIPE_PAYMENT_LINK_URL",
   "STRIPE_API_BASE_URL",
   "STRIPE_AUTOMATIC_TAX",
+  // SPA.28 — retired server envs stay banned in bundles (the tripwire outlives the machinery).
   "SPA_SURFACES",
   "SPA_OVERRIDES",
   "RHEMA_BUILD_GIT_SHA",

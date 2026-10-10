@@ -113,62 +113,21 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
   });
 });
 
-describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", () => {
-  it("dev + prod carry the flipped surfaces; preview ships [] (REQ-SEQ-5/10)", () => {
-    // SPA.10 flipped `usage` on dev; SPA.11 added `inbox` on dev; SPA.12 added `settings` on dev;
-    // SPA.13 added `voices` on dev; SPA.14 added `onboarding` + `ide-chrome` on dev (the
-    // /p/:p/import* legs' REQ-SEQ-2 AND-gate — `ide-chrome` alone unlocks nothing since no
-    // SPA_IDE_FRAMED_SURFACES key is flipped); SPAF.1 was `usage`'s prod flip, SPAF.2 `inbox`'s,
-    // SPAF.3 `settings`'s, SPAF.4 `voices`'s, SPAF.5 `onboarding`'s, SPAF.6 `project-home`'s,
-    // SPAF.7 `billing`'s, SPAF.8 `export`+`ide-chrome`'s — each a one-line operator-merged
-    // stage-fact commit, in flip order.
-    // SPA.17 added `export` on dev — the first IDE-framed flip: `ide-chrome` is already listed,
-    // so /p/:slug/export's consult resolves `export ∧ ide-chrome` together. SPAF.8 was the prod
-    // pair: `export` AND `ide-chrome` appended in one commit — the AND-gate lights
-    // `/p/:p/export` (the only flipped framed key — dossier/run-sheet/run-report/editor stay
-    // dark) and the `["onboarding","ide-chrome"]` route-level AND gives the /p/:p/import* legs
-    // their first spa verdicts. SPA.18 added `outline` on dev; SPAF.9 is its prod flip —
-    // `outline` is unframed (not in SPA_IDE_FRAMED_SURFACES), so `/p/:p/outline` +
-    // `/p/:p/outline/promote` consult on `outline` alone and render outside the IDE shell.
-    // SPA.19 added `figures` on dev — unframed the same way: `/p/:p/figures`,
-    // `/p/:p/figures/:id`, and `/p/:p/visualize` consult on `figures` alone; SPAF.10 is its
-    // prod flip — `figures` appended in flip order after `outline`.
-    // SPA.20 added `run-sheet` on dev — the second IDE-framed key: its consult resolves
-    // `run-sheet ∧ ide-chrome` and `/p/:p/run` mounts the chrome; SPAF.11 is its prod flip
-    // — `run-sheet` appended in flip order after `figures`, the second IDE-framed prod
-    // activation (ide-chrome has been live on prod since SPAF.8).
-    // SPA.21 added `dossier` on dev — the third IDE-framed key: BOTH dossier consults
-    // resolve `dossier ∧ ide-chrome` (key-level AND), `/p/:p/review/:runId` mounts the
-    // chrome (∈ SPA_IDE_FRAMED_ROUTES) while `/p/:p/obligations/new` renders unframed;
-    // SPAF.12 is its prod flip — `dossier` appended in flip order after `run-sheet`, the
-    // third IDE-framed prod activation.
-    // SPA.22 added `run-report` on dev — the fourth IDE-framed key: the `/p/:p/r/:runId`
-    // consult resolves `run-report ∧ ide-chrome` and the leaf mounts the chrome;
-    // SPAF.13 is its prod flip — `run-report` appended in flip order after `dossier`,
-    // the fourth IDE-framed prod activation.
-    // SPA.23/24 added `editor` on dev (the two halves) — the fifth IDE-framed key:
-    // all five Page-family consults resolve `editor ∧ ide-chrome` and every flipped
-    // editor route mounts the chrome, each AFTER its phone/showcase forced-SSR check
-    // (REQ-ED-12/REQ-VFY-5); SPAF.14 is its prod flip — `editor` appended in flip
-    // order after `run-report`, the fifth and LAST IDE-framed prod activation
-    // (REQ-ED-13 — the editor flips last).
-    // Previews stay [] and override only via the rhema:spaSurfaces stack config.
-    expect(STAGES.dev.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "ide-chrome", "project-home", "billing", "export", "outline", "figures", "run-sheet", "dossier", "run-report", "editor"]); // SPA.11…23 — the dev flips
-    expect(STAGES.prod.spaSurfaces).toEqual(["usage", "inbox", "settings", "voices", "onboarding", "project-home", "billing", "export", "ide-chrome", "outline", "figures", "run-sheet", "dossier", "run-report", "editor"]); // SPAF.1…SPAF.14 — the prod flips (ALL surfaces)
+describe("spa.surfaces stage flag — RETIRED (SPA.28; REQ-SEQ-4's removal leg)", () => {
+  it("no StageConfig carries `spaSurfaces` — the flag can no longer be set, let alone consulted", () => {
+    // SPA.28 — REMOVAL-DETECTING: the strangler flag is gone (all 14 flips landed, SPA.27 deleted
+    // the SSR documents, the consult + override channels are removed). A stage flag that can no
+    // longer change any serving behavior is dead machinery, not a safety knob — post-removal
+    // rollback is revert+redeploy only (D-SPA.27-1). If `spaSurfaces` ever reappears on a stage it
+    // would silently be dead config; this pin refuses that.
     for (const [name, cfg] of Object.entries(STAGES)) {
-      if (name === "dev" || name === "prod") continue;
-      expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
+      expect(Object.prototype.hasOwnProperty.call(cfg, "spaSurfaces"), `stage ${name}`).toBe(false);
     }
+    // The surface vocabulary itself survives — as the always-on fact in @rhema/contracts
+    // (`SPA_SURFACES`) the journey markers + the SPA route map enumerate — never as a stage flag.
+    expect(SPA_SURFACES.length).toBeGreaterThan(0);
   });
 
-  it("the fact is typed over the contracts vocabulary — every listed key is a SpaSurface", () => {
-    // The flip tickets append keys here; this pins that only known keys can ever land.
-    for (const cfg of Object.values(STAGES)) {
-      for (const key of cfg.spaSurfaces) {
-        expect((SPA_SURFACES as readonly string[]).includes(key)).toBe(true);
-      }
-    }
-  });
 });
 
 describe("purchase.mode stage flag (BILL.3; REQ-BILL-16)", () => {

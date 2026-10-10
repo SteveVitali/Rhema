@@ -1,21 +1,24 @@
-// SPA surface flags (SPA.2; spec docs/frontend-spa-spec.md §11 + Appendix D; REQ-SEQ-1/2;
-// design/29 §flag-mechanism — the strangler consult's shared vocabulary). `SPA_SURFACES` is a
-// CSV MODE STRING env (never a secret — same class as `SIGNUP_MODE`): it names which
-// authenticated document GETs serve the SPA shell instead of the SSR document. Unset ⇒ ∅ —
-// every surface stays SSR, so a deploy typo can never silently flip a surface (the
-// `parseSignupMode` fail-closed precedent end-to-end).
+// SPA surface vocabulary (SPA.2; spec docs/frontend-spa-spec.md §11 + Appendix D; REQ-SEQ-1/2;
+// design/29 §flag-mechanism). SPA.28 disposition — STAGE-FACT MIGRATION NOTE: `SPA_SURFACES`
+// was a CSV env + `parseSpaSurfaces` + a per-request `deps.spa` consult while the strangler
+// migration window was open. The window is closed: all 14 surfaces flipped, the SSR documents
+// are deleted (SPA.27), and the override channels (`?ssr=1`, `?renderer=spa`,
+// `x-rhema-renderer`, `SPA_OVERRIDES`, `SPA_RENDERER_HEADER`) are removed (REQ-SEQ-4's removal
+// leg). What survives is the VOCABULARY alone — the route-map keys, the journey `--surface`
+// selector, the surface-gate table — as an always-on fact. Nothing parses it from env and no
+// request-path code consults it.
 //
-// The per-request consult (`deps.spa(c, surface)` in apps/web) applies spec §4's fixed handler
-// order: the session gate, server-owned redirects, and forced-SSR capability checks all run in
-// the route handler BEFORE the consult; inside the consult the renderer override
-// (`?ssr=1`/`x-rhema-renderer`, honored per REQ-SEQ-4) precedes flag membership, and the
-// `ide-chrome` AND-gate applies last.
+// The request-path renderer decision is now a single forced-SSR capability check in the Page
+// family's handlers (phone/showcase — REQ-ED-12): the session gate and server-owned redirects
+// still run ahead of every document, then phone/showcase rows keep their server-rendered Page;
+// every other authenticated document GET serves the shell unconditionally.
 
 /**
- * The flag vocabulary — the 14 surface keys + the `ide-chrome` composite (REQ-SEQ-2; spec
- * Appendix D, verbatim order = the normative flip order, `editor` last). `ide-chrome` has no
- * route of its own: it is the `p.$project` layout (panes/palette/keymap) and exists as a key so
- * a chrome-wide rollback is a one-line flag removal (design/29 F12 Q6).
+ * The surface vocabulary — the 14 surface keys + the `ide-chrome` composite (REQ-SEQ-2; spec
+ * Appendix D, verbatim order = the normative flip order, `editor` last). SPA.28: no longer a
+ * flag set — it is the static census of record the route map + journey surface gates key off
+ * (`ide-chrome` has no route of its own; it is the `p.$project` layout (panes/palette/keymap)
+ * the IDE-framed routes mount inside).
  */
 export const SPA_SURFACES = [
   "usage",
@@ -38,11 +41,10 @@ export type SpaSurface = (typeof SPA_SURFACES)[number];
 
 /**
  * The keys whose EVERY route mounts inside the IDE chrome (design/29 §route-map "IDE-framed"
- * column): an IDE-framed route serves SPA iff its surface key AND `ide-chrome` are both flagged
- * (REQ-SEQ-2 — the AND-gate, last in the consult). `onboarding` is deliberately absent: only
- * its two `/p/:p/import*` legs are IDE-framed, so those handlers compose the gate at route
- * level (`deps.spa(c, "onboarding") && deps.spa(c, "ide-chrome")`) — key-level framing would
- * wrongly hold `/app/new` hostage to the chrome flag.
+ * column). SPA.28: the AND-gate it fed is gone with the consult — this survives as a
+ * documentation fact (which surfaces' routes are chrome-framed); the ROUTE-granular set the
+ * client layout actually gates on is `SPA_IDE_FRAMED_ROUTES`. `onboarding` is deliberately
+ * absent: only its two `/p/:p/import*` legs are IDE-framed (route-level framing in the map).
  */
 export const SPA_IDE_FRAMED_SURFACES: readonly SpaSurface[] = [
   "export",
@@ -74,62 +76,32 @@ export const SPA_IDE_FRAMED_ROUTES: readonly string[] = [
   "/p/$project/export",
 ];
 
-/**
- * REQ-SEQ-4 (spec Appendix D) — the request-level renderer override channel:
- * `x-rhema-renderer: ssr|spa`. The `ssr` half (with `?ssr=1`) is honored on EVERY stage during
- * the migration window — it is the journey leg-A pin + the incident/debug escape hatch; the
- * `spa` half (with `?renderer=spa`) is honored only where the deploy sets `SPA_OVERRIDES=1`
- * (non-prod kinds only). Overrides never bypass the session gate, server redirects, or the
- * forced-SSR capability checks — those run ahead of the flag consult.
- */
-export const SPA_RENDERER_HEADER = "x-rhema-renderer";
-
-const KNOWN: ReadonlySet<string> = new Set(SPA_SURFACES);
-
-/**
- * Parse the `SPA_SURFACES` CSV. Fail-closed: unset/empty ⇒ ∅; unknown tokens are dropped and
- * reported in ONE warn line (never thrown, never fail open — the signupMode precedent).
- * `warn` defaults to `console.warn`; tests inject a collector.
- */
-export function parseSpaSurfaces(
-  raw: string | undefined | null,
-  warn: (msg: string) => void = (m) => console.warn(m),
-): ReadonlySet<SpaSurface> {
-  const out = new Set<SpaSurface>();
-  const dropped: string[] = [];
-  for (const token of (raw ?? "").split(",")) {
-    const t = token.trim();
-    if (t === "") continue;
-    if (KNOWN.has(t)) out.add(t as SpaSurface);
-    else dropped.push(t);
-  }
-  if (dropped.length > 0) {
-    warn(`[rhema] SPA_SURFACES: dropping unknown surface token(s): ${dropped.join(", ")}`);
-  }
-  return out;
-}
+// SPA.28 — REQ-SEQ-4's removal leg: `SPA_RENDERER_HEADER` ("x-rhema-renderer") and
+// `parseSpaSurfaces` (the `SPA_SURFACES` env reader) are DELETED with the override machinery.
+// The journey harness's `--pin-renderer` retired with them (its `--expect-renderer`/`--surface`
+// stay — the `data-renderer` markers remain contractually true).
 
 // ---------------------------------------------------------------------------
 // SPA.3 — the path → route-id / surface-key map (REQ-BND-4/11; design/26 §shell-doc §catch-all;
 // design/25 §route-tree). `routeId` is the emitted `data-route` value AND the key into the boot
 // payload's `surfaces` map; the convention is the TanStack file-route path pattern in `$param`
 // form (design/25's naming note: route ids are path-derived, so both renderers emit the same
-// string for the same shape). `surfaces` is the flag key(s) the document's consult ANDs — the
-// two `/p/:p/import*` legs consult `onboarding` AND `ide-chrome` (their IDE framing is per-route,
-// not per-key). `null` ⇒ never SPA space: the path is a public document, a server-owned
+// string for the same shape). `surfaces` names the surface key(s) the route belongs to —
+// SPA.28: no longer a consult input; a non-null set marks the route SPA space (shell-served),
+// and the multi-key rows (`/p/:p/import*`: `onboarding` + `ide-chrome`) record the route-level
+// IDE framing. `null` ⇒ never SPA space: the path is a public document, a server-owned
 // redirect-only GET, or a non-document endpoint.
 
 /** One known document route shape for the settle/boot vocabulary. */
 export interface SpaDocumentRoute {
   /** The emitted route id — the route's path pattern in `$param` form. */
   readonly routeId: string;
-  /** The surface key(s) the consult ANDs; null ⇒ server-owned (never serves the shell). */
+  /** The surface key(s) the route belongs to; null ⇒ server-owned (never serves the shell). */
   readonly surfaces: readonly SpaSurface[] | null;
   /**
    * The route mounts the editable/read-only Page (REQ-ED-12 + REQ-VFY-5): phone requests and the
-   * `showcase` row flag keep the server-rendered Page even when `editor` flips — the consult's
-   * forced-SSR step is a document decision and the boot map mirrors it so the SPA never enables
-   * collab by asking.
+   * `showcase` row flag keep the server-rendered Page — the one remaining request-path renderer
+   * decision — and the boot map mirrors it so the SPA never enables collab by asking.
    */
   readonly pageMount?: boolean;
 }
@@ -198,13 +170,14 @@ export const SPA_DOCUMENT_ROUTES: readonly SpaDocumentRoute[] = [
   { routeId: "/p/$project/voice/reseed", surfaces: ["voices"] },
 ];
 
-/** The consult's answer for one pathname — `routeId` + the surface key(s), or null for both. */
+/** The route map's answer for one pathname — `routeId` + the surface key(s), or null for both. */
 export interface SpaRouteMatch {
   /** The route's `$param` id; null when the path isn't a known document route shape. */
   readonly routeId: string | null;
   /**
-   * The surface key(s) to consult (ANDed); null ⇒ not SPA space — the catch-all must never serve
-   * the shell for it (public documents, server-owned redirect GETs, non-document endpoints).
+   * The surface key(s) the path belongs to (SPA.28: informational — no consult reads it);
+   * null ⇒ not SPA space — the catch-all must never serve the shell for it (public documents,
+   * server-owned redirect GETs, non-document endpoints).
    */
   readonly surfaces: readonly SpaSurface[] | null;
 }
@@ -223,8 +196,8 @@ const RULES = [...SPA_DOCUMENT_ROUTES, ...SPA_PUBLIC_ROUTES.map((routeId) => ({ 
 /**
  * The fallback surface owner for an UNKNOWN path under a known SPA prefix — the catch-all's deep
  * links (`/p/acme/future-route`, `/app/whatever`) resolve to the longest-prefix surface so the
- * flag consult can still hand them to the client router (which renders its own not-found). The
- * returned `routeId` stays null — the path isn't a known document shape.
+ * catch-all hands them to the client router (which renders its own not-found). The returned
+ * `routeId` stays null — the path isn't a known document shape.
  */
 function fallbackSurfaces(segs: string[]): readonly SpaSurface[] | null {
   const [top, mid] = [segs[0], segs[1]];

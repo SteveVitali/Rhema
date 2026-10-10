@@ -84,7 +84,8 @@ describe("runJourneys — the expected-flag semantics", () => {
 
 // ---------------------------------------------------------------------------
 // SPA.6 — the renderer leg contract (REQ-VFY-7, REQ-SEQ-4): --expect-renderer rides the document
-// response stream; --pin-renderer stamps x-rhema-renderer on EVERY context the runner makes.
+// response stream. SPA.28 — --pin-renderer's x-rhema-renderer stamping is retired (REQ-SEQ-4's
+// removal leg): no runner-created context may inject renderer headers anymore.
 
 /** A page stub with an event tap + a `goto` that fires a scripted document response. */
 function fakeCtxPage(opts: {
@@ -194,32 +195,13 @@ describe("runJourneys — the renderer leg contract (SPA.6; REQ-VFY-7, REQ-SEQ-4
     expect(r.results[0]!.outcome).toBe("pass");
   });
 
-  it("--pin-renderer stamps x-rhema-renderer on every context + flows into the report + ctx", async () => {
-    const { browser, newContextCalls } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR })]);
-    let seen: Readonly<Record<string, string>> | undefined;
-    const r = await run(
-      [step("G12", "green")],
-      {
-        G12: async (ctx) => {
-          seen = ctx.extraHTTPHeaders;
-          await ctx.anon();
-        },
-      },
-      false,
-      { browser, pinRenderer: "ssr" },
-    );
-    expect(r.results[0]!.outcome).toBe("pass");
-    expect(seen).toEqual({ "x-rhema-renderer": "ssr" });
-    expect(newContextCalls[0]).toMatchObject({
-      extraHTTPHeaders: { "x-rhema-renderer": "ssr" },
-    });
-    expect(r.renderer).toEqual({ expect: null, pin: "ssr" });
-  });
-
-  it("no pin ⇒ no extraHTTPHeaders on the context (leg B runs un-pinned)", async () => {
+  it("no context carries extraHTTPHeaders — the renderer pin is retired (SPA.28 removal-detecting)", async () => {
+    // Every leg runs un-pinned now: a resurrected pinRenderer seam would stamp
+    // `x-rhema-renderer` onto every context — the assert refuses that shape outright.
     const { browser, newContextCalls } = browserWithPages([fakeCtxPage({ docUrl: "https://app.test/app", docHtml: SSR })]);
     await run([step("G13", "green")], { G13: async (ctx) => { await ctx.anon(); } }, false, { browser });
     expect(newContextCalls[0]).not.toHaveProperty("extraHTTPHeaders");
+    expect(JSON.stringify(newContextCalls[0])).not.toContain("x-rhema-renderer");
   });
 });
 

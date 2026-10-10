@@ -101,14 +101,9 @@ export interface ComputeArgs {
   stripePaymentLinkUrl?: pulumi.Input<string>;
   /** the egress-proxy base URL the Job's sandbox uses (`ANTHROPIC_BASE_URL`). */
   proxyBaseUrl?: pulumi.Input<string>;
-  /**
-   * SPA.2 — `rhema:spaSurfaces` stack config: the raw CSV override for the web's `SPA_SURFACES`
-   * env (REQ-SEQ-3 — the preview flip path; `preview-stack.mjs config pr-<n> rhema:spaSurfaces
-   * "<prior>,<key>"`). Unset ⇒ the `cfg.spaSurfaces` stage fact wins. Pass-through by design —
-   * this program stays dependency-free of `@rhema/contracts` runtime code, and the web parses
-   * fail-closed anyway (unknown tokens drop + warn at boot, never fail open).
-   */
-  spaSurfaces?: string;
+  // SPA.28 — `rhema:spaSurfaces` / `SPA_SURFACES` / `SPA_OVERRIDES` are retired (REQ-SEQ-4's
+  // removal leg): the shell is the sole renderer for every authenticated document, so there is
+  // no flag env left to emit and no stack-config override path to honor.
   /** the GCS artifacts bucket the run-task harness materializes `/work` from (`OBJECTS_BUCKET`). */
   objectsBucket?: pulumi.Input<string>;
   /**
@@ -933,20 +928,6 @@ export function createCompute(args: ComputeArgs): Compute {
               ? {
                   envs: [
                     { name: "SIGNUP_MODE", value: cfg.signupMode },
-                    // SPA.2 — the strangler flag CSV (REQ-SEQ-3): the stage fact, overridable
-                    // per-stack by `rhema:spaSurfaces` (the preview per-flip path). The web
-                    // parses fail-closed (∅ on unset; unknown tokens dropped + warned).
-                    {
-                      name: "SPA_SURFACES",
-                      value: args.spaSurfaces ?? cfg.spaSurfaces.join(","),
-                    },
-                    // SPA.2 — REQ-SEQ-4: the request-level renderer overrides. `?ssr=1` +
-                    // `x-rhema-renderer: ssr` are honored on EVERY stage; the force-SPA forms
-                    // (`?renderer=spa`, `x-rhema-renderer: spa`) exist only where this env is
-                    // set — the IDENTITY_HEADERS precedent: non-prod kinds only, never prod.
-                    ...(cfg.kind !== "prod"
-                      ? [{ name: "SPA_OVERRIDES", value: "1" }]
-                      : []),
                     // OPS.1 — prod keeps the LB api origin; non-prod self-wires the api service's
                     // `*.run.app` uri (created earlier in this loop — export/fetcher/api precede web)
                     // since there is no public DNS/LB host for the api off prod. The api stays

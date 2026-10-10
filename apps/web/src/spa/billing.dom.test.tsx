@@ -277,6 +277,32 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     expect(main.querySelector('[data-subscribe-form="writer"]')).toBeNull();
   });
 
+  it("a past_due subscription carries the delinquency banner (data-past-due)", async () => {
+    const pastDue = sub({
+      tier: "writer",
+      hasStripeCustomer: true,
+      subscription: { ...PAID_SUB.subscription!, pastDue: true } });
+    await mountAt("/app/settings/billing", BOOT, makeFetch({
+      billing: { billing: { subscription: pastDue, plans: PLANS }, balance: BALANCE } }));
+    expect(el()!.querySelector("[data-past-due]")).not.toBeNull();
+  });
+
+  it("a live trial reports its state verbatim (data-trial-state pending/active/used/denied)", async () => {
+    for (const [state, marker] of [
+      ["trial_pending", "pending"],
+      ["trial_active", "active"],
+      ["trial_denied", "denied"],
+      ["trial_used", "used"],
+    ] as const) {
+      document.body.innerHTML = "";
+      await mountAt("/app/settings/billing", BOOT, makeFetch({
+        billing: {
+          billing: { subscription: sub({ trial: { state, entitlement: null } }), plans: PLANS },
+          balance: BALANCE } }));
+      expect(el()!.querySelector(`[data-trial-state="${marker}"]`), state).not.toBeNull();
+    }
+  });
+
   it("BILL.3 fail-closed — purchase absent mounts NO purchase forms (the paused note renders)", async () => {
     const closed = { ...PAID_SUB, purchase: undefined };
     await mountAt("/app/settings/billing", BOOT, makeFetch({

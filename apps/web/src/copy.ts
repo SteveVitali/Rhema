@@ -2309,11 +2309,11 @@ export const COPY = {
     heldFileReady: "Your held file is here — upload it to start.",
   },
 
-  // SPA.3 — the shell's no-JS floor (REQ-BND-12): names the surface honestly and links the
-  // server-rendered escape instead of leaving a dead document.
+  // SPA.3 — the shell's no-JS floor (REQ-BND-12): names the surface honestly instead of leaving a
+  // dead document. SPA.28: the "Open the server-rendered version" escape string is retired — no
+  // SSR document exists to link (the `?ssr=1` machinery is gone with the flag it escaped).
   spaShell: {
     noJs: "This app surface needs JavaScript — the Rhēma shell mounts it on top of your session.",
-    noJsSsr: "Open the server-rendered version",
   },
 
   // SPA.4 — the client route-error boundary's generic strings (the §5.9 "a banner, never a stack

@@ -9,15 +9,15 @@ import { LandingPage, PricingPage, SignupPage, ShowcasePage } from "./marketing.
 // (partner cohorts still use it). `public` marks the routes reachable without a session;
 // everything else is auth-gated (redirects to /login).
 //
-// SPA.27 (the SSR deletion wave) — `element` is now null on every flipped surface: the route stays
-// in the manifest (path grammar + `public` remain the census of record, `matchAppRoute` still
-// resolves it) but NO SSR document exists for it — the handler serves the SPA shell and the leaf
-// owns composition off the /bff twins. The eleven surviving elements are exactly the surfaces a
-// server document still answers: the public funnel (forever SSR — REQ-BND-1), the Page family's
-// forced-SSR documents (phone/showcase/`?ssr=1` — REQ-ED-12), and the not-found document (every
-// POST refusal + the catch-all's `?ssr=1` leg). Anything outside those eleven was retired with its
-// render path; re-adding an element here does NOT restore a render — the handlers no longer render
-// elements at all for flipped routes.
+// SPA.28 (the SSR deletion wave + override removal) — `element` is now null on every flipped
+// surface: the route stays in the manifest (path grammar + `public` remain the census of record,
+// `matchAppRoute` still resolves it) but NO SSR document exists for it — the handler serves the SPA
+// shell and the leaf owns composition off the /bff twins. The eleven surviving elements are exactly
+// the surfaces a server document still answers: the public funnel (forever SSR — REQ-BND-1), the
+// Page family's forced-SSR documents (phone/showcase only — REQ-ED-12; the `?ssr=1` escape is
+// gone), and the not-found document (every POST refusal + the catch-all's non-SPA arm). Anything
+// outside those eleven was retired with its render path; re-adding an element here does NOT restore
+// a render — the handlers no longer render elements at all for flipped routes.
 
 export interface AppRoute {
   readonly path: string;

@@ -104,10 +104,11 @@ describe("UX.2 — the IDE document invariant (REQ-IDE-8)", () => {
 
   it("served IDE documents carry the stylesheet + island (the server-driven leg)", async () => {
     const app = createWebApp(makeDeps());
-    // SPA.27 — the only SSR IDE documents left are the Page family's forced-SSR arm: phone/showcase
-    // (`MOBILE`) or the `?ssr=1` escape. The flipped surfaces' plain GETs answer the shell.
-    for (const path of ["/p/seed-essay?ssr=1"]) {
-      const res = await app.request(path);
+    // SPA.28 — the only SSR IDE documents left are the Page family's forced-SSR arm: phone
+    // (`MOBILE`) / showcase — the `?ssr=1` escape is gone. The migrated surfaces' plain GETs
+    // answer the shell.
+    for (const path of ["/p/seed-essay"]) {
+      const res = await app.request(path, MOBILE);
       expect(res.status, path).toBe(200);
       const html = await res.text();
       expect(html, `${path}: .ide markup without IDE_CSS`).not.toBe("");
@@ -116,8 +117,8 @@ describe("UX.2 — the IDE document invariant (REQ-IDE-8)", () => {
         expect(html, path).toContain("/assets/ide.js");
       }
     }
-    // the pinned leg — the forced-SSR project page IS an IDE document (the `?ssr=1` escape arm)
-    const proj = await app.request("/p/seed-essay?ssr=1");
+    // the pinned leg — the forced-SSR project page IS an IDE document (the phone arm)
+    const proj = await app.request("/p/seed-essay", MOBILE);
     const html = await proj.text();
     expect(html).toContain('data-ide="1"');
     expect(html).toContain(IDE_CSS_MARK);
@@ -224,6 +225,9 @@ describe("UX.2 — the sync pill never floats (ADR-069; REQ-IDE-43 amended)", ()
   it("the page surface's [data-sync-pill] renders in flow — no position:fixed", async () => {
     const app = createWebApp(
       makeDeps({
+        // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm (`?ssr=1` is gone):
+        // the plain GET leg below is the showcase arm, the MOBILE leg the phone arm.
+        listProjects: async () => [{ ...PROJECTS[0]!, showcase: true }],
         resolveEditorDraft: async (_s: unknown, _p: unknown, v: string) =>
           v === "working" || v === "1"
             ? { draftId: "d_1", draftN: 1, state: "working", origin: "human_revision" }
@@ -243,9 +247,7 @@ describe("UX.2 — the sync pill never floats (ADR-069; REQ-IDE-43 amended)", ()
         }),
       } as never),
     );
-    // SPA.27 — the SSR Page document only exists under the forced-SSR arm: `?ssr=1` carries the
-    // desktop leg, the phone UA carries the §10.1 leg. A plain desktop GET now answers the shell.
-    for (const [path, init] of [["/p/seed-essay/v/working?ssr=1", undefined], ["/p/seed-essay/v/working", MOBILE]] as const) {
+    for (const [path, init] of [["/p/seed-essay/v/working", undefined], ["/p/seed-essay/v/working", MOBILE]] as const) {
       const res = await app.request(path, init);
       expect(res.status).toBe(200);
       const html = await res.text();

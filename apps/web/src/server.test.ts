@@ -81,6 +81,11 @@ const PROJECTS: ProjectRow[] = [
   },
 ];
 
+/** SPA.28 — the only SSR arm left on the Page family is FORCED (phone/showcase — REQ-ED-12); the
+ *  `?ssr=1`/`x-rhema-renderer` escape is gone. SSR render asserts below run against a `showcase`
+ *  row — the desktop-shaped survivor — via this fixture. */
+const SHOWCASE_PROJECTS: ProjectRow[] = [{ ...PROJECTS[0]!, showcase: true }];
+
 const PREVIEW = {
   sourceFormat: "html" as const,
   markdown: "## Heading\n\nA paragraph.\n\n<!-- rhema:unconverted id=\"unconv-1\" -->\n<iframe></iframe>\n<!-- /rhema:unconverted -->\n",
@@ -1088,6 +1093,8 @@ describe("PRB.06 — the revision (What-changed) page", () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
+      // SPA.28 — the SSR What-changed render survives only on the forced-SSR arm: a showcase row.
+      listProjects: async () => SHOWCASE_PROJECTS,
       getWhatChanged: async () => WHAT_CHANGED,
       commentOnHunk: async () => ({ guidanceId: "gdn_1", hunkId: "h1" }),
       ...extra,
@@ -1097,9 +1104,10 @@ describe("PRB.06 — the revision (What-changed) page", () => {
 
   it("renders the strip, the move card with its discharge line + hunk, Unlinked, and the rebutted card", async () => {
     const app = createWebApp(revisionDeps());
-    // SPA.27 — the desktop document is the shell now; the forced-SSR arm (?ssr=1 / phone /
-    // showcase) still renders the What-changed page — the render asserts pin THAT arm.
-    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?ssr=1");
+    // SPA.28 — the desktop document is the shell; the FORCED-SSR arm (the showcase row in
+    // revisionDeps — phone is the other arm) still renders the What-changed page — the render
+    // asserts pin THAT arm. `?ssr=1` is inert now; nothing consults it.
+    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp");
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-what-changed="true"');
@@ -1132,8 +1140,9 @@ describe("PRB.06 — the revision (What-changed) page", () => {
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
     expect(calls).toEqual([{ responseId: "corr_resp", hunkId: "h1", text: "tighten this" }]);
-    // the saved marker renders on the redirect target (forced-SSR arm — the desktop GET is the shell).
-    const page = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1&ssr=1");
+    // the saved marker renders on the redirect target (forced-SSR showcase arm — the desktop GET on
+    // a non-showcase row is the shell).
+    const page = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
     expect((await page.text()).includes('data-comment-saved="true"')).toBe(true);
   });
 
@@ -1162,9 +1171,9 @@ describe("PRB.06 — the revision (What-changed) page", () => {
         throw new ApiError(404, "/x", "not_found");
       },
     });
-    // SPA.27 — the document 404 is deleted (the shell serves + the leaf owns not-found); the
-    // forced-SSR arm keeps the api-404 → not-found seam.
-    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope?ssr=1");
+    // SPA.28 — the desktop document 404 is deleted (the shell serves + the leaf owns not-found); the
+    // forced-SSR arm keeps the api-404 → not-found seam (the showcase row in revisionDeps forces it).
+    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope");
     expect(res.status).toBe(404);
   });
 });
@@ -1210,7 +1219,9 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
       dataSource: {
         ...makeDeps().dataSource,
         listProjects: async () => [
-          { ...PROJECTS[0]!, paperTheme: "follow" as const, headDraftId: "d_head" },
+          // SPA.28 — `showcase: true` is what forces the surviving SSR arm on /p/:slug now (the
+          // `?ssr=1` escape is gone); the render asserts below pin the forced-SSR document.
+          { ...PROJECTS[0]!, paperTheme: "follow" as const, headDraftId: "d_head", showcase: true },
         ],
         listGates: async () => [],
         listDecisions: async () => [],
@@ -1228,9 +1239,9 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
     });
 
   it("the project page mounts the seven regions + the deferred island + stamped theme attrs", async () => {
-    // SPA.27 — forced-SSR arm (the desktop document is the shell; the IDE markup below is the
-    // surviving read-only render ?ssr=1 shares with phone/showcase).
-    const res = await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?ssr=1");
+    // SPA.28 — forced-SSR arm (the showcase row in ideDeps — the desktop document on a non-showcase
+    // row is the shell; the IDE markup below is the surviving read-only render phone/showcase share).
+    const res = await createWebApp(ideDeps()).request("/p/the-politics-of-visibility");
     expect(res.status).toBe(200);
     const html = await res.text();
     // the seven §5.1 regions
@@ -1249,7 +1260,7 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
   });
 
   it("?focus=1 seeds the Focus view (the island strips the flag)", async () => {
-    const html = await (await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1&ssr=1")).text();
+    const html = await (await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1")).text();
     expect(html).toContain('data-view="focus"');
   });
 
@@ -1523,11 +1534,11 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
   });
 
   it("GET /p/:slug?created=draft renders the next-step card + the conversion-notes line", async () => {
-    const app = createWebApp(homeDeps());
-    // SPA.27 — the desktop document is the shell; the next-step card render survives on the
-    // Page family's forced-SSR arm (?ssr=1 / phone / showcase).
+    // SPA.28 — the desktop document is the shell; the next-step card render survives on the Page
+    // family's forced-SSR arm — a showcase row here (the `?ssr=1` escape is gone).
+    const app = createWebApp(homeDeps({ listProjects: async () => SHOWCASE_PROJECTS }));
     const html = await (
-      await app.request("/p/the-politics-of-visibility?created=draft&cn=2&cu=1&ssr=1")
+      await app.request("/p/the-politics-of-visibility?created=draft&cn=2&cu=1")
     ).text();
     expect(html).toContain('data-next-step-card="draft"');
     expect(html).toContain("Review v");
@@ -1700,9 +1711,10 @@ describe("P1.05 — timeline, run page, steering", () => {
     });
 
   it("/p/:slug renders the Timeline pane — next-step card, round parts, the run card", async () => {
-    // SPA.27 — the desktop document is the shell; the Timeline pane render survives on the Page
-    // family's forced-SSR arm.
-    const html = await (await createWebApp(p105Deps()).request("/p/the-politics-of-visibility?ssr=1")).text();
+    // SPA.28 — the desktop document is the shell; the Timeline pane render survives on the Page
+    // family's forced-SSR arm — a showcase row (the `?ssr=1` escape is gone).
+    const deps = p105Deps({ listProjects: async () => SHOWCASE_PROJECTS });
+    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility")).text();
     expect(html).toContain('data-timeline-pane');
     // §5.5's three verbs row — each opens the run sheet for that workflow
     expect(html).toContain('data-timeline-verbs');
@@ -1763,8 +1775,11 @@ describe("P1.05 — timeline, run page, steering", () => {
       ...TIMELINE,
       rounds: [{ ...TIMELINE.rounds[0]!, runs: [WAITING_RUN, ...TIMELINE.rounds[0]!.runs] }],
     };
-    const app = createWebApp(p105Deps({ getTimeline: async () => timeline as never }));
-    const html = await (await app.request("/p/the-politics-of-visibility?ssr=1")).text();
+    const app = createWebApp(
+      p105Deps({ getTimeline: async () => timeline as never, listProjects: async () => SHOWCASE_PROJECTS }),
+    );
+    // the forced-SSR arm (the showcase row — SPA.28 deleted the `?ssr=1` escape).
+    const html = await (await app.request("/p/the-politics-of-visibility")).text();
     // the run card mounts the identical card (same component, same data-gate-card anatomy).
     expect(html).toContain('data-run-card="run_wait"');
     expect(html).toContain('data-gate-card="approve_plan"');
@@ -1777,11 +1792,12 @@ describe("P1.05 — timeline, run page, steering", () => {
 
   it("an active run opens the Desk on the live feed with replayed rows + the same-origin events URL", async () => {
     const live: ProjectRow[] = [
-      { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },
+      // the forced-SSR arm — a showcase row (SPA.28: `?ssr=1` is inert text now).
+      { ...PROJECTS[0]!, showcase: true, activeRun: { runId: "run_live", state: "running" } },
       PROJECTS[1]!,
     ];
     const deps = p105Deps({ listProjects: async () => live });
-    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility?ssr=1")).text();
+    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility")).text();
     expect(html).toContain('data-feed-events="/p/the-politics-of-visibility/r/run_live/events"');
     expect(html).toContain('data-feed-last-seq="2"');
     expect(html).toContain('data-feed-labels='); // the island's embedded label maps

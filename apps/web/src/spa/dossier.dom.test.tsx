@@ -18,7 +18,7 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FindingView } from "@rhema/contracts";
-import type { GateCardDto } from "@rhema/api-client";
+import type { GateCardDto, ChatPanelDto } from "@rhema/api-client";
 import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import type { DossierViewData } from "../dossier-view.js";
@@ -109,6 +109,30 @@ function twinFor(over: Partial<BffDossierTwin> = {}, viewOver: Partial<BffDossie
     ...over,
   };
 }
+
+/** The phone-width Desk chat fixture (chat-surfaces.test.ts's CHAT verbatim). */
+const CHAT: ChatPanelDto = {
+  threads: [{ id: "thr_1", name: "Project chat", isDefault: true, archived: false }],
+  activeThreadId: "thr_1",
+  turns: [],
+  messages: [],
+  pins: { pins: [], footprint: 0, cap: 12 },
+  sources: [],
+  liveRun: null,
+  emptyState: {
+    page: "quiet",
+    deskTab: "chat",
+    chips: [
+      { id: "research", label: "Research a question", verb: "/research" },
+      { id: "thesis", label: "I have a thesis", verb: "chat" },
+      { id: "interview", label: "Interview me", verb: "chat" },
+      { id: "notes", label: "Paste my notes", verb: "notes" },
+    ],
+    nextStep: { kind: "sheet", label: "Start", href: "/p/demo/sheet?workflow=research_burst" },
+  },
+  budgets: { credits: 40, searches: 5, fetches: 10 },
+  defaultTier: "base",
+};
 
 const OBLIGATION_TWIN: BffObligationNewTwin = {
   obligationNew: { slug: SLUG, projectTitle: DOSSIER.projectTitle, back: `/p/${SLUG}` },
@@ -542,6 +566,26 @@ describe("GET /p/:slug/review/:runId mounted (SPA.21)", () => {
       expect(settled?.getAttribute("aria-busy") ?? null).toBeNull();
       expect(settled?.querySelector("button")?.disabled).toBe(false);
     });
+  });
+
+  it("a finding carrying evidence urls paints the once-per-surface explainer (data-evidence-explainer)", async () => {
+    const f = makeFetch({
+      twin: twinFor({
+        dossier: {
+          ...DOSSIER,
+          findings: [
+            ...DOSSIER.findings,
+            finding({ id: "f_e", severity: "note", title: "Cited", evidence: { urls: [{ url: "https://example.test/src" }] } }),
+          ] } }) });
+    await mountAt(`/p/${SLUG}/review/${RUN}`, BOOT, f.impl);
+    expect(el()!.querySelector("[data-evidence-explainer]")).not.toBeNull();
+  });
+
+  it("phone width mounts the Page's own chat section (data-phone-chat — §10.1)", async () => {
+    const f = makeFetch({
+      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: CHAT } }) });
+    await mountAt(`/p/${SLUG}/review/${RUN}`, bootFor(SPA_DOSSIER, "phone"), f.impl);
+    expect(el()!.querySelector("[data-phone-chat]")).not.toBeNull();
   });
 
   it("an unflipped verdict hands the document back to the server", async () => {

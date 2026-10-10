@@ -1,10 +1,12 @@
-// SPA.6 — the renderer/surface flag validation (REQ-VFY-7/8/10, REQ-SEQ-4; design/29 §per-flip
-// runbook). Extracted from cli.ts so the leg contract is unit-testable — `cli.ts` stays the
-// process shell (argv/env/exit codes), this module carries the decisions.
+// SPA.6 — the renderer/surface flag validation (REQ-VFY-7/8/10; design/29 §per-flip runbook).
+// Extracted from cli.ts so the leg contract is unit-testable — `cli.ts` stays the process shell
+// (argv/env/exit codes), this module carries the decisions.
 //
 //   --expect-renderer ssr|spa   assert data-renderer on every same-origin document
-//   --pin-renderer    ssr|spa   x-rhema-renderer on every context (leg A pins ssr; leg B unpinned)
-//   --surface <key[,key…]>      the SURFACE_GATES subset — the per-flip two-leg selector
+//   --surface <key[,key…]>      the SURFACE_GATES subset + the --expect-renderer scope
+//
+// SPA.28 — `--pin-renderer`/`isProdTarget` retired with `x-rhema-renderer` (REQ-SEQ-4's removal
+// leg); the CLI refuses the retired flag outright.
 //
 // Every invalid value is an error STRING returned to the caller (the CLI prints + exits 2) —
 // nothing here throws or exits, so a test asserts the full refusal table.
@@ -21,18 +23,6 @@ export function parseRendererFlag(
   if (raw === undefined) return {};
   if (raw === "ssr" || raw === "spa") return { value: raw };
   return { error: `${flag} must be ssr|spa — got ${JSON.stringify(raw)}` };
-}
-
-/** Is `--web` aiming at the production origin? (`--pin-renderer spa` must refuse there — prod
- *  never sets SPA_OVERRIDES, so the pin could only produce vacuous green.) */
-export function isProdTarget(stage: string | undefined, webUrl: string): boolean {
-  if (stage === "prod") return true;
-  try {
-    const host = new URL(webUrl).hostname;
-    return host === "rhema.tools" || host.endsWith(".rhema.tools");
-  } catch {
-    return false;
-  }
 }
 
 /** Parse `--surface a,b` into canonical keys; unknown tokens are errors (never dropped). */

@@ -16,9 +16,11 @@ export interface SpaBoot {
    *  browser graph never type-loads the hono-facing device module). */
   readonly deviceClass: "phone" | "desktop";
   /**
-   * The per-route renderer map (REQ-BFF-19): every known document routeId → "spa" | "ssr" — the
-   * effective flag set resolved THROUGH the same server consult, so the client's SsrHandoff can
-   * never disagree with the server.
+   * The per-route renderer map (REQ-BFF-19): every known document routeId → "spa" | "ssr". SPA.28:
+   * this is STATIC truth, not a flag set — the producer no longer consults anything per-request.
+   * "ssr" survives only for the structural cases the client still hands to the server: phone
+   * `pageMount` routes (REQ-ED-12's forced-SSR Page), server-owned `surfaces:null` routes, and
+   * the public funnel — so the client's SsrHandoff can never disagree with the server.
    */
   readonly surfaces: Record<string, "spa" | "ssr">;
   readonly project?: { readonly slug: string };

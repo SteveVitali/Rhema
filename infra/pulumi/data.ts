@@ -27,7 +27,7 @@ export interface DataArgs {
    * admits for the browser's presign→direct-PUT leg, from the `rhema:uploadCorsOrigins` stack config
    * (operator-set per stack, never committed). Non-prod app origins are deploy-generated run.app/LB
    * hosts the stage facts can't name ahead of time, so the allowlist rides config — the same
-   * never-committed mechanism `rhema:spaSurfaces` uses. Prod's `domains.app` is admitted
+   * never-committed mechanism the retired `rhema:spaSurfaces` used. Prod's `domains.app` is admitted
    * unconditionally; the list stays explicit — NO wildcard origin.
    */
   uploadCorsOrigins?: readonly string[];

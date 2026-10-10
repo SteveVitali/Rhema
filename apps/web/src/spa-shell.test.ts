@@ -94,10 +94,12 @@ describe("renderSpaShell — the document contract (REQ-BND-1/10/12; spec §3.1)
     const html = renderSpaShell(ctx, { path: "/p/acme/run", boot, entry });
     expect(html).toContain('<div id="spa-root" data-spa-root></div>');
     expect(html).toContain("<noscript>");
-    // REQ-BND-12 — the floor names the surface honestly and links the SSR escape, merged into the
-    // CURRENT query (?x=1 kept, ssr=1 added) so a renderer-forced request still lands the document.
+    // REQ-BND-12 — the floor names the surface honestly. SPA.28: no SSR escape link remains —
+    // there is no server-rendered document left to land on, so the noscript carries no href at
+    // all (a `?ssr=1` link would loop back onto this same shell and lie about the floor).
     expect(html).toContain("needs JavaScript");
-    expect(html).toContain('href="/p/acme/run?x=1&amp;ssr=1"');
+    expect(html).not.toContain("ssr=1");
+    expect(html).not.toContain("server-rendered version");
     const parsed = bootOf(html);
     expect(parsed.surfaces["/p/$project/run"]).toBe("spa");
     expect(parsed.surfaces["/app"]).toBe("ssr");
@@ -173,12 +175,12 @@ describe("SSR settle markers (REQ-SEQ-8; design/27)", () => {
   });
 
   it("a param-shaped SSR document stamps the resolved route id or the raw path", async () => {
-    const app = createWebApp(spaDeps());
-    // SPA.27 — an unmatched SPA-prefixed deep link now serves the shell (the client router owns
-    // not-found); the SSR 404 still answers `?ssr=1` and stamps the raw path.
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
+    // SPA.28 — an unmatched SPA-prefixed deep link serves the shell even carrying `?ssr=1` (the
+    // override channel is gone); the client router owns not-found and stamps the route itself.
     const res = await app.request("/p/acme/unknown-leaf?ssr=1");
-    expect(res.status).toBe(404);
-    expect(await res.text()).toContain('data-route="/p/acme/unknown-leaf"');
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('data-renderer="spa"');
     // A matched shape's SSR 404 (project row absent) stamps the $param id, not the raw path.
     const shaped = await app.request("/p/acme/revisions/c_1");
     expect(shaped.status).toBe(404);
@@ -254,10 +256,10 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     expect(await res.text()).toContain('data-renderer="ssr"');
   });
 
-  it("authenticated deep links reach the shell flag-independent (SPA.27 — flag-off is vacuous; the leaf owns not-found)", async () => {
-    // The flag-empty posture retired with the SSR documents: an empty `spaSurfaces` deploy still
-    // hands SPA-prefixed deep links to the shell — a resurrected membership leg fails this.
-    const app = createWebApp(spaDeps({ spaSurfaces: new Set(), spaAssetRoot: spaFixture() }));
+  it("authenticated deep links reach the shell unconditionally — no flag/consult can veto it", async () => {
+    // SPA.28: there is no consult to resurrect — SPA-prefixed deep links hand to the shell and
+    // the client router owns not-found. A resurrected membership/consult leg fails this.
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
     const res = await app.request("/p/acme/future-route");
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -266,10 +268,8 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     expect(html).not.toContain("data-mounted");
   });
 
-  it("authenticated + surface flipped ⇒ the shell reaches SPA deep links (client router owns not-found)", async () => {
-    const app = createWebApp(
-      spaDeps({ spaSurfaces: new Set(["editor", "ide-chrome"] as const), spaAssetRoot: spaFixture() }),
-    );
+  it("authenticated + SPA-space deep link ⇒ the shell (client router owns not-found)", async () => {
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
     const res = await app.request("/p/acme/future-route");
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -280,36 +280,57 @@ describe("the catch-all split (REQ-BND-4/11)", () => {
     expect(html).not.toContain("data-mounted");
   });
 
-  it("a force-SSR escape (?ssr=1) on a flipped prefix ⇒ the SSR 404, not the shell", async () => {
-    const app = createWebApp(spaDeps({ spaSurfaces: new Set(["project-home"] as const), spaAssetRoot: spaFixture() }));
-    const res = await app.request("/app/future?ssr=1");
-    expect(res.status).toBe(404);
-    expect(await res.text()).toContain('data-renderer="ssr"');
+  it("the retired force-SSR escape (?ssr=1 / x-rhema-renderer: ssr) is INERT — the shell still serves (REQ-SEQ-4 removal)", async () => {
+    // Removal-detecting: a resurrected consult that honors either signal would answer the SSR
+    // 404 here; the only correct answer post-removal is the shell.
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
+    for (const init of [
+      {},
+      { headers: { "x-rhema-renderer": "ssr" } },
+      { headers: { "x-rhema-renderer": "SSRish" } },
+    ]) {
+      const res = await app.request("/app/future?ssr=1", init);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('data-renderer="spa"');
+      expect(html).not.toContain('data-renderer="ssr"');
+    }
   });
 
-  it("a force-SPA header override (SPA_OVERRIDES stage) serves the shell flag-off; anonymous stays gated", async () => {
-    const app = createWebApp(spaDeps({ spaOverrides: true, spaAssetRoot: spaFixture() }));
-    const res = await app.request("/app/future", { headers: { "x-rhema-renderer": "spa" } });
-    expect(res.status).toBe(200);
-    expect(await res.text()).toContain('data-renderer="spa"');
-    // REQ-SEQ-4 — the override never bypasses the session gate.
-    const anon = createWebApp(spaDeps({ session: () => null, spaOverrides: true }));
-    const denied = await anon.request("/app/future", { headers: { "x-rhema-renderer": "spa" } });
-    expect(denied.status).toBe(302);
-    expect(denied.headers.get("location")).toBe("/login");
+  it("the retired force-SPA signals (?renderer=spa / x-rhema-renderer: spa) change nothing; anonymous stays gated", async () => {
+    // Removal-detecting: the shell served anyway, so a spa-pin can't widen anything — and the
+    // session gate still runs first, so it can't open the shell for an anonymous request.
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
+    for (const init of [
+      {},
+      { headers: { "x-rhema-renderer": "spa" } },
+    ]) {
+      const res = await app.request("/app/future?renderer=spa", init);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain('data-renderer="spa"');
+    }
+    const anon = createWebApp(spaDeps({ session: () => null }));
+    for (const init of [
+      {},
+      { headers: { "x-rhema-renderer": "spa" } },
+    ]) {
+      const denied = await anon.request("/app/future?renderer=spa", init);
+      expect(denied.status).toBe(302);
+      expect(denied.headers.get("location")).toBe("/login");
+    }
   });
 
-  it("non-GET verbs keep the SSR 404 even under an SPA prefix + flags", async () => {
-    const app = createWebApp(spaDeps({ spaSurfaces: new Set(["project-home"] as const) }));
+  it("non-GET verbs keep the SSR 404 even under an SPA prefix", async () => {
+    const app = createWebApp(spaDeps());
     const res = await app.request("/app/future", { method: "POST" });
     expect(res.status).toBe(404);
     expect(await res.text()).toContain('data-renderer="ssr"');
   });
 });
 
-describe("the registered-handler consult (spec §4 fixed order)", () => {
-  it("a flipped surface's GET serves the shell — full head parity + boot + manifest tags", async () => {
-    const app = createWebApp(spaDeps({ spaSurfaces: new Set(["usage"] as const), spaAssetRoot: spaFixture() }));
+describe("the registered-handler shell serve (spec §4 fixed order)", () => {
+  it("an SPA-space document GET serves the shell — full head parity + boot + manifest tags", async () => {
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
     const res = await app.request("/usage");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
@@ -321,11 +342,10 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
     // the manifest-resolved tags, nonce-stamped by the CSP middleware
     expect(html).toMatch(/<script nonce="[^"]+" type="module" src="\/assets\/spa\/assets\/main-abc123\.js">/);
     expect(html).toContain('<link rel="modulepreload" href="/assets/spa/assets/chunks/shared-def456.js">');
-    // REQ-BND-10 — the boot embed. SPA.27: the renderer map is static truth — every
-    // surface-keyed document route serves the shell unconditionally, so the map no longer
-    // resolves through `deps.spa` (a `?ssr=1`-served shell must still map "spa" or the leaf's
-    // SsrHandoff would reload-loop). The structural exceptions stay "ssr": server-owned rows
-    // (`surfaces: null`), the public funnel, and pageMount routes on phone (REQ-ED-12).
+    // REQ-BND-10 — the boot embed. SPA.28: the renderer map is static truth — every
+    // surface-keyed document route serves the shell unconditionally (the consult is gone). The
+    // structural exceptions stay "ssr": server-owned rows (`surfaces: null`), the public funnel,
+    // and pageMount routes on phone (REQ-ED-12).
     const boot = bootOf(html);
     expect(boot.surfaces["/usage"]).toBe("spa");
     expect(boot.surfaces["/app"]).toBe("spa");
@@ -340,11 +360,10 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
     expect(html).not.toContain("__Host-rhema.session_token");
   });
 
-  it("SPA.27 — flag-off still serves the shell on a flipped surface: the SSR document is DELETED (the point-of-no-return wave; REQ-TST-1)", async () => {
-    // The flag-empty posture is gone by design: `/usage` has no SSR render path to fall back to,
-    // so a flag-off deploy still answers the shell (and a `?ssr=1` request converges on the same
-    // document — there is no SSR document left to hand to). This is the wave's removal-detecting
-    // pin: resurrecting an SSR arm for a flipped surface fails it.
+  it("the retired override signals cannot resurrect an SSR arm — the shell serves regardless (REQ-SEQ-4 removal; REQ-TST-1)", async () => {
+    // Removal-detecting: `/usage` has no SSR render path AND no consult to honor — `?ssr=1`,
+    // `?renderer=spa`, and both `x-rhema-renderer` values converge on the same shell document.
+    // A resurrected consult/override leg fails this.
     const app = createWebApp(
       spaDeps({
         dataSource: {
@@ -353,9 +372,15 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
         } as unknown as DataSource,
       }),
     );
-    for (const path of ["/usage", "/usage?ssr=1"]) {
-      const res = await app.request(path);
-      expect(res.status).toBe(200);
+    for (const [path, headers] of [
+      ["/usage", {}],
+      ["/usage?ssr=1", {}],
+      ["/usage?renderer=spa", {}],
+      ["/usage", { "x-rhema-renderer": "ssr" }],
+      ["/usage", { "x-rhema-renderer": "spa" }],
+    ] as const) {
+      const res = await app.request(path, { headers });
+      expect(res.status, path).toBe(200);
       const html = await res.text();
       expect(html).toContain('data-renderer="spa"');
       expect(html).toContain('<div id="spa-root" data-spa-root></div>');
@@ -364,10 +389,9 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
     }
   });
 
-  it("/app's first-five-minutes precedence still wins under a flipped project-home", async () => {
+  it("/app's first-five-minutes precedence still wins ahead of the shell serve", async () => {
     const app = createWebApp(
       spaDeps({
-        spaSurfaces: new Set(["project-home"] as const),
         dataSource: {
           checkSession: async () => true,
           listProjects: async () => [
@@ -382,14 +406,13 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
       }),
     );
     const res = await app.request("/app");
-    expect(res.status).toBe(302); // the server-owned redirect runs BEFORE the flag consult
+    expect(res.status).toBe(302); // the server-owned redirect still runs BEFORE the shell serve
     expect(res.headers.get("location")).toBe("/p/the-showcase/review/run_1");
   });
 
-  it("the Page family's forced-SSR posture holds on phone even when editor flips (REQ-ED-12)", async () => {
+  it("the Page family's forced-SSR posture holds on phone (REQ-ED-12 — the last request-path renderer decision)", async () => {
     const app = createWebApp(
       spaDeps({
-        spaSurfaces: new Set(["editor", "ide-chrome"] as const),
         dataSource: {
           checkSession: async () => true,
           listProjects: async () => [
@@ -411,7 +434,7 @@ describe("the registered-handler consult (spec §4 fixed order)", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
       const emptyDir = mkdtempSync(join(tmpdir(), "rhema-spa-empty-"));
-      const app = createWebApp(spaDeps({ spaSurfaces: new Set(["usage"] as const), spaAssetRoot: emptyDir }));
+      const app = createWebApp(spaDeps({ spaAssetRoot: emptyDir }));
       const res = await app.request("/usage");
       expect(res.status).toBe(200); // no 500 — the shell degrades to a noscript-only document
       const html = await res.text();
@@ -454,7 +477,7 @@ describe("GET /assets/spa/* — the name-gated Vite static route (REQ-TL-4/5)", 
 
 describe("CSP on the shell (REQ-FW-3)", () => {
   it("the CSP middleware nonces every script incl. the module entry + the JSON embed; no unsafe-eval", async () => {
-    const app = createWebApp(spaDeps({ spaSurfaces: new Set(["usage"] as const), spaAssetRoot: spaFixture() }));
+    const app = createWebApp(spaDeps({ spaAssetRoot: spaFixture() }));
     const res = await app.request("/usage");
     const csp = res.headers.get("content-security-policy") ?? "";
     expect(csp).toContain("script-src 'self'");

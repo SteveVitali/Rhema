@@ -334,7 +334,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T17",
     journey: "both",
     asserts:
-      "on a SPA-rendered Page the Source toggle swaps to a CodeMirror view seeded with the canonical markdown; typed text commits through the same ProseMirror doc and renders back after toggling (REQ-ED-17 — owed on SSR-pinned stages: the toggle only exists on data-renderer=spa; D-SPA.25-1)",
+      "on a SPA-rendered Page the Source toggle swaps to a CodeMirror view seeded with the canonical markdown; typed text commits through the same ProseMirror doc and renders back after toggling (REQ-ED-17 — the toggle only exists on data-renderer=spa; SPA.28 deleted the SSR-pin channel, so every authenticated stage answers `spa` here; D-SPA.25-1)",
     owner: "SPA.25",
     expected: "red",
     paid: false,

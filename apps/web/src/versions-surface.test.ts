@@ -25,6 +25,9 @@ const PROJECTS: ProjectRow[] = [
     slug: SLUG,
     title: "The Piece",
     headDraftId: "d_2",
+    // SPA.28 — `showcase: true` is the desktop-shaped forced-SSR arm left standing (REQ-ED-12;
+    // the `` escape is gone). The rail/diff/artifact render asserts below pin THAT arm.
+    showcase: true,
     state: { key: "edited_by_you", pill: "Edited by you", overlay: null, suggested: { action: "revise_using_edits", label: "Revise using your edits" } },
   },
 ];
@@ -184,7 +187,7 @@ function form(fields: Record<string, string>): { body: string; headers: Record<s
 describe("P1.08 — the version rail over the Page (§5.8, REQ-IDE-32)", () => {
   it("renders the chips, the ⚑ obligations chip, compare-previous, and the grouped restore dropdown", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/2?ssr=1&ssr=1`);
+    const res = await app.request(`/p/${SLUG}/v/2`);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("data-version-rail");
@@ -212,7 +215,7 @@ describe("P1.08 — the version rail over the Page (§5.8, REQ-IDE-32)", () => {
 
   it("?restore=<id> renders the preview card with the undoable apply form", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/2?restore=rp_named&ssr=1`);
+    const res = await app.request(`/p/${SLUG}/v/2?restore=rp_named`);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("data-restore-preview");
@@ -223,7 +226,7 @@ describe("P1.08 — the version rail over the Page (§5.8, REQ-IDE-32)", () => {
 
   it("?restored=<n> renders the undoable-apply notice", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request(`/p/${SLUG}/v/2?restored=2&ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}/v/2?restored=2`)).text();
     expect(html).toContain("data-restored-notice");
   });
 
@@ -253,7 +256,7 @@ describe("P1.08 — the version rail over the Page (§5.8, REQ-IDE-32)", () => {
 describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
   it("renders the side-by-side layout by default, inside the IDE shell, read-only", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/1/diff/2?ssr=1&ssr=1`);
+    const res = await app.request(`/p/${SLUG}/v/1/diff/2`);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-ide="1"');
@@ -274,10 +277,10 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
 
   it("?layout=inline renders the sequential hunk list; ?layout=moves renders What-changed", async () => {
     const app = createWebApp(makeDeps());
-    const inline = await (await app.request(`/p/${SLUG}/v/1/diff/2?layout=inline&ssr=1`)).text();
+    const inline = await (await app.request(`/p/${SLUG}/v/1/diff/2?layout=inline`)).text();
     expect(inline).toContain('data-compare-layout="inline"');
     expect(inline).toContain('data-hunk-comment="h1"');
-    const moves = await (await app.request(`/p/${SLUG}/v/1/diff/2?layout=moves&ssr=1`)).text();
+    const moves = await (await app.request(`/p/${SLUG}/v/1/diff/2?layout=moves`)).text();
     // the unledgered pair shows the "coherence read" caption + the unlinked hunks.
     expect(moves).toContain("data-unlinked-note");
     expect(moves).toContain('data-hunk="h1"');
@@ -285,7 +288,7 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
 
   it("404s on an unknown version", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/v/1/diff/9?ssr=1&ssr=1`);
+    const res = await app.request(`/p/${SLUG}/v/1/diff/9`);
     expect(res.status).toBe(404);
   });
 
@@ -312,7 +315,7 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
     });
     expect(res.status).toBe(302);
     expect(commentOnCompareHunk).not.toHaveBeenCalled();
-    const html = await (await app.request(`/p/${SLUG}/v/1/diff/2?commented=h1&ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}/v/1/diff/2?commented=h1`)).text();
     expect(html).toContain('data-comment-saved="true"');
   });
 });
@@ -320,7 +323,7 @@ describe("P1.08 — the compare page (§5.8, REQ-IDE-33)", () => {
 describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () => {
   it("renders typed sections: SE/SR rows, I behind Advanced, H as a sealed count — never a row", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request(`/p/${SLUG}/v/2?ssr=1&ssr=1`)).text();
+    const html = await (await app.request(`/p/${SLUG}/v/2`)).text();
     expect(html).toContain("data-files-pane");
     expect(html).toContain('data-files-section="drafts"');
     expect(html).toContain('data-file-row="art_d2"');
@@ -344,7 +347,7 @@ describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () =>
 
   it("the artifact deep link renders the read-only Page inside the IDE shell", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/a/art_outline?ssr=1&ssr=1`);
+    const res = await app.request(`/p/${SLUG}/a/art_outline`);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-ide="1"');
@@ -355,7 +358,7 @@ describe("P1.08 — the Files pane (§5.13, REQ-IDE-35/36/37, REQ-VIS-3)", () =>
 
   it("an H-kind (or unknown) artifact 404s — there is no route for it", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/a/art_hidden?ssr=1&ssr=1`);
+    const res = await app.request(`/p/${SLUG}/a/art_hidden`);
     expect(res.status).toBe(404);
   });
 });
