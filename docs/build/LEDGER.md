@@ -22,7 +22,7 @@
 ```
 projectStatus:   IN_PROGRESS        # NOT DONE — GATE-ACCEPT signed the deviations; open rows remain ledgered on BACKLOG.csv
 nextTicket:      SPACAP.3           # row 142 — capstone closure: close routed gaps (G1–G5); the ACCEPTED-deviations list
-lastCompleted:   SPACAP.2           # 2026-10-10 — capstone composed verification: prod provenance read (pre-chain ancestors), baseline+refusal legs run, 4 ACs deferred w/ verbatim recipes + ordered merge/deploy runbook (PR #163 in BUILD_INDEX 170, unmerged; $0)
+lastCompleted:   SPACAP.2           # 2026-10-10 — composed verification: provenance read, baseline+refusal legs, 4 ACs deferred w/ runbook (PR #163, idx 170; $0)
                   # round 4 DECOMPOSED 2026-10-08 — spec docs/frontend-spa-spec.md v1.0 canonical; 51 rows appended to manifest
 blockedOn:       (nothing)          # GD-MAINT.4-1 waived the inherited privsep CI red 2026-10-07; remaining live legs gate on a FUNDED window + operator rows
 pauseRequested:  false
