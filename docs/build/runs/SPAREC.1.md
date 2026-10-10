@@ -4,8 +4,8 @@
 - **Base:** `stevevitali/spacap-3-capstone-closure` @ `d5e5a3a` (the chain tip, confirmed clean +
   synced at fork).
 - **Branch:** `stevevitali/sparec-1-backlog-readiness`.
-- **PR:** stacked on `stevevitali/spacap-3-capstone-closure`; `gh pr checks --watch=false` read
-  once at closeout (§ 8).
+- **PR:** #165 stacked on `stevevitali/spacap-3-capstone-closure`; `gh pr checks --watch=false`
+  read once at closeout (§ 8).
 - **Harness:** devin-cli subagent (per the 2026-10-08T23:05Z dispatch-tier ruling).
 - **Mode:** `reconcile-build mode=backlog` — documentation/reconciliation only, offline-only, $0,
   no deploys, no production mutations, mergePolicy OPERATOR.
@@ -130,4 +130,8 @@ routing cell) · `scripts/check-coverage-matrix.test.mjs` (BM-VERDICT-01 grammar
 
 ## 8 — PR checks
 
-`gh pr checks --watch=false` read once at closeout — recorded in § 8 of the closeout commit.
+PR **#165** (`gh pr create --base stevevitali/spacap-3-capstone-closure`; never merged —
+mergePolicy OPERATOR). `gh pr checks --watch=false` read **once** at closeout 2026-10-10:
+**"no checks reported on the 'stevevitali/sparec-1-backlog-readiness' branch"** — the chain's
+recurring first-read class (identical on SPA.28/SPACAP.1..3). Inherited `integration`/privsep
+red, if it reports later, is waived per GD-MAINT.4-1 and would be recorded, not inferred.
