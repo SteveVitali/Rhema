@@ -3,7 +3,7 @@
 - **Ticket:** `docs/tickets/141_SPACAP.2__capstone-composed-verification.md` (manifest row 141)
 - **Branch:** `stevevitali/spacap-2-composed-verification` — forked from
   `stevevitali/spacap-1-capstone-gap-analysis` @ `0263581` (the chain tip).
-- **PR:** opened at closeout against `stevevitali/spacap-1-capstone-gap-analysis`;
+- **PR:** #163 against `stevevitali/spacap-1-capstone-gap-analysis` (impl tip `6e7dc48`);
   `gh pr checks --watch=false` read once at closeout (§ 7).
 - **Harness:** devin-cli subagent (per the 2026-10-08T23:05Z dispatch-tier ruling).
 - **Mode:** verification + documentation, $0 — prod READS only, no deploys, no prod
@@ -62,8 +62,14 @@ absent on `/`, `/login`, `/showcase`, `/pricing` — the SPA.3 marker vocabulary
 - `pnpm --filter @rhema/journeys build` — clean (tsc -b).
 - Live legs (§1): baseline probe 6/6 routes green, 0 warnings; refusal run exit 1 with the
   expected NO-MATCH + settle-lapse; `/bff/app` 404; marker curls absent on 4/4 surfaces.
-- `pnpm turbo build lint typecheck`, `pnpm test`, `check:*` gates, build-memory validators —
-  re-run at closeout on the impl commit; results in §6/§7 + the PR body.
+- `pnpm turbo build lint typecheck` — **135/135 tasks** green (full turbo).
+- `pnpm test` — **5,549 pass / 6 skip / 0 fail** (487 files passed, 2 skipped).
+- `pnpm check:licenses` — OK (822). `check:protocol-markers` — OK (248 files).
+  `check:no-cookies` — OK (253). `check:spa-budget` — all ceilings held.
+  `check:spa-env` — OK (111 sources, 146 artifacts). `check:dom-contract` — OK
+  (journey selectors ⊆ manifest ⊆ emitted+asserted).
+- `pnpm vitest run scripts/check-coverage-matrix.test.mjs` — 6/6 green;
+  `node scripts/check-upstream-diff.mjs` — OK (22 ported files).
   *(Docs + one dependency-free `.mjs` script — no production code paths touched.)*
 
 ## 5 — Deferrals
@@ -94,9 +100,13 @@ their live debts are folded into the runbook's recipes where the four ACs are th
 
 ## 7 — Validators + PR checks
 
-- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` — see closeout
-  (§ below; appended post-commit).
-- `node docs/build/tools/check-append-only.mjs --base 0263581` — appended post-commit.
-- `gh pr checks <PR> --watch=false` — read once at closeout; the inherited
-  `integration`/privsep red, if reported, is waived per GD-MAINT.4-1 (classified, not
-  repaired).
+- `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` —
+  **no violations** (7 warnings, all pre-existing classes — same set as SPACAP.1's run:
+  manifest banner coverage, gate-cell wording, nextTicket-vs-GATE-G2, phase-log line
+  budget, legacy index status values, readout guard sentence, `Harness:` headers on old
+  ledgers — this ledger carries the header).
+- `node docs/build/tools/check-append-only.mjs --base 0263581` — **OK** (run post-commit
+  on the impl commit `6e7dc48`).
+- `gh pr checks 163 --watch=false` — read once at closeout; result appended below. The
+  inherited `integration`/privsep red, if reported, is waived per GD-MAINT.4-1
+  (classified, not repaired).
