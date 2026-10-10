@@ -156,4 +156,7 @@ operator precondition, per the standing ruling). Closed: none. `D-OPS.1-1` /
 
 ## 7 — PR checks read
 
-(one read at closeout — result recorded here + in the follow-up commit)
+`gh pr checks 159 --watch=false` (2026-10-10T01:47Z, on closeout tip) →
+**`typecheck / lint / unit` — pending** (run `38014420004`). The same first-reported
+check status as SPA.24/SPA.25's reads; the inherited `integration`/privsep red, if it
+reports later, is waived per GD-MAINT.4-1 (classified, not repaired).
