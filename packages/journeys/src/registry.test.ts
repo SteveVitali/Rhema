@@ -32,7 +32,9 @@ describe("the journey step registry", () => {
         // STB.5a added T1…T16 — the BL-21/BL-22 live legs (nightly $0 T1–T8; weekly paid T9–T16).
         // SPA.21 added T12F/T13F — the seeded-dossier free twins of T12/T13 (REQ-VFY-10's owed
         // mutation coverage — red pending their first live leg, D-SPA.21-*).
-        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T12F", "T13F",
+        // SPA.25 added T17 — the source-mode toggle leg (REQ-ED-17; red while the editor-flag
+        // preview run is owed — the toggle only exists on data-renderer="spa").
+        "T1", "T2.badge", "T2.matrix", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T17", "T12F", "T13F",
         // STB.5b added B16/B17/B18A/B18B/B19A/B19B/B19C — the BL-16–19 bounded paid live legs
         // (all `red` until a leg lands its live asserts; B19C is the pre-registered cap drop).
         "B16", "B17", "B18A", "B18B", "B19A", "B19B", "B19C",

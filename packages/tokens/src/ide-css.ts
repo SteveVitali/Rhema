@@ -301,6 +301,17 @@ export function ideCss(): string {
     ".rm-page .rm-author-mixed { box-shadow: inset 3px 0 0 var(--sev-major); }",
     ".rm-page .rm-author-human { box-shadow: none; }",
     ".rm-page-host[data-readonly='1'] .ProseMirror { caret-color: transparent; }",
+    // SPA.25 — the source view (REQ-ED-17; design/30): a toolbar above the editor with the toggle,
+    // and the CodeMirror surface typeset in the mono font inside the same paper measure. The PM
+    // host hides via `hidden` while the source host is up (the view stays mounted + bound).
+    ".rm-source-bar { display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s2); }",
+    ".rm-source-toggle { font-family: var(--font-shell); font-size: 12px; color: var(--shell-fg-muted); background: transparent; border: 1px solid var(--shell-border); border-radius: var(--radius-1); padding: 2px 10px; cursor: pointer; }",
+    ".rm-source-toggle[aria-pressed='true'] { color: var(--shell-fg); border-color: var(--accent); }",
+    ".rm-source-note { font-family: var(--font-shell); font-size: 12px; color: var(--sev-major); }",
+    ".rm-source-host .cm-editor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; line-height: 1.6; border: 1px solid var(--shell-border); border-radius: var(--radius-1); }",
+    ".rm-source-host .cm-editor.cm-focused { outline: 1px solid var(--accent); outline-offset: -1px; }",
+    ".rm-source-host .cm-content { padding: var(--s2) var(--s3); caret-color: var(--shell-fg); }",
+    ".rm-source-host .cm-gutters { background: var(--shell-raised); color: var(--shell-fg-faint); border-right: 1px solid var(--shell-border); font-size: 0.85em; }",
     // gapcursor / dropcursor / selection chrome PM needs
     ".rm-page-host .ProseMirror-gapcursor { position: relative; }",
     ".rm-page-host .ProseMirror-selectednode { outline: 2px solid var(--accent); }",

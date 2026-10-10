@@ -31,6 +31,7 @@
 
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { EditorView } from "prosemirror-view";
+import type { Transaction } from "prosemirror-state";
 import {
   createCollabPageState,
   createPageState,
@@ -49,6 +50,8 @@ import {
   isCollabWire,
 } from "./page-collab.js";
 import { pageSessionRegistry, type PageSessionRegistry } from "./page-sessions.js";
+import type { SourceModeHandle } from "./page-source-mode.js";
+import { COPY } from "../copy.js";
 
 const PROV_FLUSH_MS = 600; // the provenance capture's piggyback cadence (island verbatim)
 const LOCK_POLL_MS = 10_000; // the §6.3 lock poll cadence (island verbatim)
@@ -96,7 +99,13 @@ export function initSourcesFor(provenance: Readonly<Record<string, unknown>> | n
  */
 export function installOriginDispatch(
   view: EditorView,
-  opts: { readonly armed: () => boolean; readonly onDocChanged: () => void },
+  opts: {
+    readonly armed: () => boolean;
+    readonly onDocChanged: (tr: Transaction) => void;
+    /** every transaction — local AND remote (ySync routes through `view.dispatch`). SPA.25's
+     *  source bridge rides this tap (design/30): remote pulls, stale marking, editable sync. */
+    readonly onTransaction?: (tr: Transaction) => void;
+  },
 ): void {
   view.setProps({
     dispatchTransaction(tr) {
@@ -104,7 +113,8 @@ export function installOriginDispatch(
         tr.setMeta(ORIGIN_META, opts.armed() ? "pasted" : "human");
       }
       view.updateState(view.state.apply(tr));
-      if (tr.docChanged) opts.onDocChanged();
+      if (tr.docChanged) opts.onDocChanged(tr);
+      opts.onTransaction?.(tr);
     },
   });
 }
@@ -139,10 +149,18 @@ export interface PageMountProps {
 export function PageMount(props: PageMountProps): ReactNode {
   const registry = props.registry ?? pageSessionRegistry;
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const pmHostRef = useRef<HTMLDivElement | null>(null);
+  const sourceHostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const entryRef = useRef<ReturnType<PageSessionRegistry["entry"]>>(null);
   const findingsRef = useRef<readonly FindingForDecoration[]>(props.findings ?? []);
   const [mounted, setMounted] = useState(false);
+  // SPA.25 — the source view (REQ-ED-17; design/30): the CodeMirror half lazily mounts inside
+  // `[data-source-host]` while the PM view stays mounted+bound under `[data-pm-host]` (hidden).
+  // `sourceStale` drives `data-source-note` when a foreign doc change lands mid-edit.
+  const [sourceMode, setSourceMode] = useState(false);
+  const [sourceStale, setSourceStale] = useState(false);
+  const sourceRef = useRef<SourceModeHandle | null>(null);
 
   const locked = props.locked === true;
   const hostReadOnly = props.readOnly === true || locked;
@@ -209,6 +227,9 @@ export function PageMount(props: PageMountProps): ReactNode {
       entryRef.current = null;
       // REQ-ED-5 — route-leave IS the pagehide-equivalent: the pending provenance piggyback lands
       // BEFORE the release's `flushOnHide` (the `blur` restore trigger + the provider's flush).
+      // SPA.25 — and the pending source buffer commits BEFORE both (the cleanup order releases the
+      // session before the view dies, so the source flush rides the live wire's last send).
+      sourceRef.current?.commitNow();
       provFlushRef.current?.();
       // release by the entry's CURRENT draftId — a frozen-fork rekey moves it mid-mount, and the
       // child id is the live key (releasing the stale parent id would strand the refcount).
@@ -219,10 +240,11 @@ export function PageMount(props: PageMountProps): ReactNode {
   // ---- the view mount (exactly once per entry per mount; cleanup destroys it) ---------------
   useEffect(() => {
     const host = hostRef.current;
+    const pmHost = pmHostRef.current;
     const entry = entryRef.current;
-    if (!host || !entry) return;
+    if (!host || !pmHost || !entry) return;
 
-    const view = new EditorView(host, {
+    const view = new EditorView(pmHost, {
       state: entry.state,
       editable: () => editableRef.current,
     });
@@ -272,6 +294,9 @@ export function PageMount(props: PageMountProps): ReactNode {
           provTimer = window.setTimeout(flushProvenance, PROV_FLUSH_MS);
         }
       },
+      // SPA.25 — the source bridge's transaction tap: every tr (local commits, remote ySync applies,
+      // the applyLock/onReadOnly empty re-dispatch) reaches the CodeMirror handle.
+      onTransaction: (tr) => sourceRef.current?.onTransaction(tr),
     });
 
     // decorations + the authorship overlay — refreshed on mount and on the chrome's broadcast.
@@ -461,6 +486,8 @@ export function PageMount(props: PageMountProps): ReactNode {
         const now = Date.now();
         if (now - lastMintAt < RESTORE_DEDUPE_MS) return;
         lastMintAt = now;
+        // SPA.25 — a restore point must cover the pending source buffer (design/30).
+        sourceRef.current?.commitNow();
         wire?.markRestorePoint?.();
         setPill({ state: "syncing", queued: wire?.provider.unsyncedChanges ?? 0 });
       };
@@ -487,6 +514,8 @@ export function PageMount(props: PageMountProps): ReactNode {
       const onVisibility = () => {
         if (document.visibilityState === "hidden") {
           // REQ-ED-5 — the pending provenance flush lands with the `blur` trigger + provider flush.
+          // SPA.25 — the pending source buffer commits into the doc first (design/30 flush points).
+          sourceRef.current?.commitNow();
           if (provTimer != null) flushProvenance();
           wire?.flushOnHide?.();
         } else {
@@ -498,6 +527,7 @@ export function PageMount(props: PageMountProps): ReactNode {
       // No Save button, no unsaved-changes dialog, NO beforeunload — pagehide flushes the `blur`
       // restore point + the provider's pending updates; y-indexeddb holds whatever never left.
       const onPageHide = () => {
+        sourceRef.current?.commitNow();
         if (provTimer != null) flushProvenance();
         wire?.flushOnHide?.();
         window.clearInterval(pollTimer);
@@ -523,6 +553,9 @@ export function PageMount(props: PageMountProps): ReactNode {
         provTimer = null;
       }
       provFlushRef.current = null;
+      // SPA.25 — the source handle's destroy commits any pending buffer BEFORE the view dies.
+      sourceRef.current?.destroy();
+      sourceRef.current = null;
       if (viewSink) viewSink.current = null;
       viewRef.current = null;
       setMounted(false);
@@ -540,6 +573,36 @@ export function PageMount(props: PageMountProps): ReactNode {
     // `applyDecorations` reads the latest refs — no dep churn needed beyond `props.findings`.
   }, [props.findings]);
 
+  // ---- the source view (SPA.25; REQ-ED-17; design/30) — a lazy CodeMirror projection over the
+  // SAME mounted PM view. The dynamic import keeps every @codemirror byte in its own async chunk
+  // (REQ-SAFE-7 — the §9/R25 `codemirror` group ceiling names the emitted file). Toggling back is
+  // a flush point: destroy() commits the pending buffer before the CM view leaves.
+  useEffect(() => {
+    if (!sourceMode) return;
+    let cancelled = false;
+    let handle: SourceModeHandle | null = null;
+    void import("./page-source-mode.js").then((m) => {
+      if (cancelled) return;
+      const sourceHost = sourceHostRef.current;
+      const view = viewRef.current;
+      if (!sourceHost || !view) return;
+      handle = m.mountSourceMode({
+        parent: sourceHost,
+        pm: view,
+        editable: () => editableRef.current,
+        ariaLabel: COPY.editor.sourceAriaLabel,
+        onStale: setSourceStale,
+      });
+      sourceRef.current = handle;
+    });
+    return () => {
+      cancelled = true;
+      sourceRef.current = null;
+      handle?.destroy();
+      setSourceStale(false);
+    };
+  }, [sourceMode]);
+
   const hostReadOnlyAttr = hostReadOnly ? "1" : "0";
   return (
     <div data-page-host className="rm-page-host" data-readonly={hostReadOnlyAttr} ref={hostRef}>
@@ -548,6 +611,28 @@ export function PageMount(props: PageMountProps): ReactNode {
           <PmPreview docJson={props.docJson} {...(props.previewCtx ? { ctx: props.previewCtx } : {})} />
         </div>
       )}
+      {/* SPA.25 (REQ-ED-17) — the source/rich toggle lives inside the SPA mount only: the SSR host
+          never emits it, and forced-SSR postures (phone/showcase, REQ-ED-12) never reach this code. */}
+      {mounted ? (
+        <div data-source-bar className="rm-source-bar">
+          <button
+            type="button"
+            data-source-toggle
+            className="rm-source-toggle"
+            aria-pressed={sourceMode}
+            onClick={() => setSourceMode((s) => !s)}
+          >
+            {COPY.editor.sourceToggle}
+          </button>
+          {sourceStale ? (
+            <span data-source-note className="rm-source-note">
+              {COPY.editor.sourceStaleNote}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      <div data-source-host className="rm-source-host" ref={sourceHostRef} hidden={!sourceMode} />
+      <div data-pm-host ref={pmHostRef} hidden={sourceMode} />
     </div>
   );
 }

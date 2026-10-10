@@ -2471,6 +2471,62 @@ The committee met on Tuesday. The report was adopted unanimously.
 An appendix lists the figures; the body argues the method.
 `;
 
+/** SPA.25 (REQ-ED-17) — the source-mode toggle leg, $0. On a SPA-rendered editable Page the Source
+ *  affordance swaps to the CodeMirror projection seeded with the canonical markdown; typed text
+ *  commits through the SAME ProseMirror doc (the hidden `[data-page-view]` re-renders it — a
+ *  divergence between the views is exactly the defect this leg fences) and survives the toggle
+ *  back. `expected: "red"`: the leg only exists on the SPA renderer (flag-on / `--pin-renderer
+ *  spa`), so until the editor-flag preview run lands (the Resend secret blocker, D-SPA.25-1) it
+ *  reports owed on SSR-pinned stages — the dom tests carry the offline assert meanwhile. */
+const T17: StepFn = async (ctx) => {
+  const { page } = await ctx.freshUser("t17");
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker("t17"), FREE_FIXTURE);
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
+  await page.waitForSelector("[data-page-view]", { timeout: 20_000 });
+  const renderer = await page.evaluate(
+    () => document.documentElement.getAttribute("data-renderer"),
+  );
+  if (renderer !== "spa") {
+    throw new Error(
+      `T17 owed — the source toggle is an SPA-rendered affordance (this document served data-renderer=${JSON.stringify(renderer)})`,
+    );
+  }
+  const toggle = page.locator("[data-source-toggle]");
+  await toggle.waitFor({ state: "visible", timeout: 15_000 });
+  if ((await toggle.getAttribute("aria-pressed")) !== "false") {
+    throw new Error("the source toggle reports pressed before any click");
+  }
+  await toggle.click();
+  const cmContent = page.locator("[data-source-host] .cm-content");
+  await cmContent.waitFor({ state: "visible", timeout: 15_000 });
+  const seeded = (await cmContent.textContent()) ?? "";
+  if (!seeded.includes("The committee met on Tuesday")) {
+    throw new Error("the source view did not seed the canonical markdown");
+  }
+  // type a marker paragraph at the end of the document — click the last line, End, Enter×2, type.
+  const marker = `SRC-${ctx.marker("t17")}`;
+  await cmContent.locator(".cm-line").last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(`\n\n${marker}`);
+  // the debounced commit lands in the live PM doc — hidden, but mounted and rendering.
+  await page.waitForFunction(
+    (m) => document.querySelector("[data-page-view]")?.textContent?.includes(m) === true,
+    marker,
+    { timeout: 15_000 },
+  );
+  await toggle.click();
+  const pmHost = page.locator("[data-pm-host]:not([hidden])");
+  await pmHost.waitFor({ state: "visible", timeout: 10_000 });
+  const rendered = (await pmHost.textContent()) ?? "";
+  if (!rendered.includes(marker)) {
+    throw new Error("the source edit did not render in the rich view after toggling back");
+  }
+  // CM left the DOM entirely — the PM view is the only live story again.
+  if ((await page.locator("[data-source-host] .cm-editor").count()) !== 0) {
+    throw new Error("the CodeMirror host still holds an editor after toggling back");
+  }
+};
+
 export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   N1,
   N2,
@@ -2509,4 +2565,6 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   "X1.home": X1_HOME,
   "X1.inbox": X1_INBOX,
   "X1.detail": X1_DETAIL,
+  // SPA.25 — the source-mode toggle leg (REQ-ED-17; red until the editor-flag preview run lands).
+  T17,
 };
