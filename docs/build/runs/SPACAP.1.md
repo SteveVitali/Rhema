@@ -18,7 +18,9 @@
   (INV 8 · ISL 16 · DAT 14 · TST 10 · FW 12 · TL 14 · BFF 30 · ED 17 · UX 16 ·
   NAV 11 · BND 12 · VFY 10 · SAFE 10 · SEQ 12). Schema and verdict vocabulary are
   the round-3 `86_CAP.1` contract, untouched.
-- **`docs/build/CAPSTONE_GAP_ANALYSIS_SPA.md` — the capstone document.** Method
+- **`docs/build/reports/CAPSTONE_GAP_ANALYSIS_SPA.md` — the capstone document**
+  (placed under `reports/` — the build-memory root allowlist does not admit a
+  second top-level `CAPSTONE_GAP_ANALYSIS*` entry; BM-LAYOUT). Method
   and independence statement, verdict roll-ups, the six-seam hunt, the routed gap
   list for SPACAP.3 (five findings G1–G5 with severity/evidence/owner/resolution),
   and caveats.
@@ -101,15 +103,14 @@ gap list. Closed: none (audit ticket — no legs were re-executed).
 ## 6 — Validators
 
 - `bash ~/agent-skills/skills/build-memory/scripts/check-build-memory.sh .` —
-  see § 7 closeout addendum.
-- `node docs/build/tools/check-append-only.mjs --base 30afea7` — see § 7.
+  **no violations** (7 warnings, all pre-existing classes — see § 7).
+- `node docs/build/tools/check-append-only.mjs --base 30afea7` — **OK**
+  (history only grew; run post-impl-commit at `0ddbf59`).
 
 ## 7 — PR checks read
 
-`gh pr checks --watch=false` — recorded in the closeout addendum below.
-
----
-
-## Closeout addendum (2026-10-10)
-
-*(filled at PR creation — see §7 replacement lines committed with the closeout)*
+`gh pr checks 162 --watch=false` (2026-10-10, on impl tip `0ddbf59`) →
+**"no checks reported on the 'stevevitali/spacap-1-capstone-gap-analysis'
+branch"** — the chain's recurring first-read class (same as #161 and
+#140–#160); the inherited `integration`/privsep red, if it reports later, is
+waived per GD-MAINT.4-1 (classified, not repaired).

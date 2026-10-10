@@ -17,7 +17,7 @@ to SPACAP.3**, not fixed here.
   id (Appendix A's 14 families: INV/ISL/DAT/TST/FW/TL/BFF/ED/UX/NAV/BND/VFY/SAFE/SEQ),
   appended to the round-3 design matrix (666 data rows total) under the unchanged
   eleven-column schema and verdict vocabulary.
-- **`docs/build/CAPSTONE_GAP_ANALYSIS_SPA.md` — the capstone.** Independence
+- **`docs/build/reports/CAPSTONE_GAP_ANALYSIS_SPA.md` — the capstone.** Independence
   statement + method, verdict roll-ups, the six-seam hunt, the routed gap list
   (G1–G5), caveats.
 - **`scripts/check-coverage-matrix.test.mjs` — union inventory.** The completeness
