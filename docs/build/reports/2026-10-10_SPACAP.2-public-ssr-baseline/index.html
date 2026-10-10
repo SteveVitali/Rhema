@@ -1,0 +1,239 @@
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any"><title>Rhēma — A serious editor for serious writing.</title><meta name="description" content="Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources and hands back a dossier you can act on."><meta property="og:type" content="website"><meta property="og:site_name" content="Rhēma"><meta property="og:title" content="Rhēma — A serious editor for serious writing."><meta property="og:description" content="Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources and hands back a dossier you can act on."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Rhēma — A serious editor for serious writing."><meta name="twitter:description" content="Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources and hands back a dossier you can act on."><link rel="canonical" href="http://rhema.tools/"><meta property="og:url" content="http://rhema.tools/"><script nonce="Q2W63u0iTy5oT5CpsPvJIw==">!function(){try{var d=document.documentElement;var pref=d.getAttribute('data-app-theme');if(!pref){try{pref=localStorage.getItem('rhema:theme:v1')}catch(e){}}if(pref!=='dark'&&pref!=='light'&&pref!=='auto')pref='dark';d.setAttribute('data-app-theme',pref);var apply=function(){var res=pref;if(pref==='auto'){res=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',res)};apply();if(pref==='auto'&&window.matchMedia){var q=window.matchMedia('(prefers-color-scheme: light)');var on=function(e){if(d.getAttribute('data-app-theme')==='auto'){d.setAttribute('data-theme',e.matches?'light':'dark')}};q.addEventListener?q.addEventListener('change',on):q.addListener&&q.addListener(on)};try{localStorage.setItem('rhema:theme:v1',pref)}catch(e){}var slug=d.getAttribute('data-project');if(slug){if(!d.getAttribute('data-paper')){try{var p=localStorage.getItem('rhema:paper:v1:'+slug);if(p==='light'||p==='follow'||p==='dark')d.setAttribute('data-paper',p)}catch(e){}if(!d.getAttribute('data-paper'))d.setAttribute('data-paper','light')}try{localStorage.setItem('rhema:paper:v1:'+slug,d.getAttribute('data-paper'))}catch(e){}}try{var f=localStorage.getItem('rhema:font:v1');if(f==='sans')d.setAttribute('data-font','sans');var s=localStorage.getItem('rhema:reader-step:v1');if(s&&s!=='0'){var n=parseInt(s,10);if(n>0&&n<=3)d.style.setProperty('--paper-size',(f==='sans'?16:17)+2*n+'px')}}catch(e){}}catch(e){}}();</script><style>@font-face { font-family: 'Literata'; font-style: normal; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Literata'; font-style: italic; font-display: swap; font-weight: 200 900; src: url('/assets/fonts/literata-latin-standard-italic.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900; src: url('/assets/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-display: swap; font-weight: 100 800; src: url('/assets/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations'); }
+:root {
+  --shell-bg: #0f1114;
+  --shell-surface: #161a1f;
+  --shell-raised: #1d2229;
+  --shell-border: #2a3039;
+  --shell-fg: #e6e8eb;
+  --shell-fg-muted: #9aa3ad;
+  --shell-fg-faint: #868d97;
+  --accent: #8ab4f8;
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --s12: 48px;
+  --radius-1: 4px;
+  --radius-2: 8px;
+  --radius-3: 12px;
+  --font-paper: "Literata", "Lora", Georgia, serif;
+  --font-shell: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --paper-size: 17px;
+  --dur-stream: 120ms;
+  --dur-phase: 160ms;
+  --dur-finding: 200ms;
+  --dur-pane: 160ms;
+  --dur-caret: 1200ms;
+}
+[data-theme="light"] {
+  --shell-bg: #f6f7f9;
+  --shell-surface: #fdfdfe;
+  --shell-raised: #f0f2f6;
+  --shell-border: #e3e6ea;
+  --shell-fg: #1a1d21;
+  --shell-fg-muted: #5c6670;
+  --shell-fg-faint: #646b74;
+  --accent: #2b63c9;
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+}
+[data-paper="light"] {
+  --paper-bg: #fffdf8;
+  --paper-fg: #1d1c1a;
+  --paper-fg-muted: #6d6558;
+  --paper-rule: #e8e4dc;
+}
+[data-paper="dark"] {
+  --paper-bg: #17161a;
+  --paper-fg: #e8e4dc;
+  --paper-fg-muted: #b8b2a7;
+  --paper-rule: #2b2a2e;
+}
+.paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+}
+[data-theme="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+}
+[data-paper="light"] .paper {
+  --shell-bg: #fffdf8;
+  --shell-surface: #fffdf8;
+  --shell-raised: #f5f2ea;
+  --shell-border: #e8e4dc;
+  --shell-fg: #1d1c1a;
+  --shell-fg-muted: #6d6558;
+  --shell-fg-faint: #6d6659;
+  --accent: #2b63c9;
+  --sev-blocking: #bd352c;
+  --sev-major: #8a5d0b;
+  --sev-minor: #1e7a55;
+  --sev-note: #5f6873;
+  --kind-claim: #8a5d0b;
+  --kind-discourse: #7a45c9;
+  --kind-argument: #2b63c9;
+  --kind-craft: #0c6e64;
+  --kind-voice: #ad3f78;
+  --kind-continuity: #ad3f78;
+  --kind-structure: #2f7a3d;
+  --state-running: #2b63c9;
+  --state-needs-you: #8a5d0b;
+  --state-ready: #1e7a55;
+  --state-failed: #bd352c;
+}
+[data-paper="dark"] .paper {
+  --shell-bg: #17161a;
+  --shell-surface: #17161a;
+  --shell-raised: #221f24;
+  --shell-border: #2b2a2e;
+  --shell-fg: #e8e4dc;
+  --shell-fg-muted: #b8b2a7;
+  --shell-fg-faint: #9a948a;
+  --accent: #8ab4f8;
+  --sev-blocking: #ff7b72;
+  --sev-major: #f0b24a;
+  --sev-minor: #6cc4a1;
+  --sev-note: #8d97a5;
+  --kind-claim: #f0b24a;
+  --kind-discourse: #b48ef2;
+  --kind-argument: #8ab4f8;
+  --kind-craft: #5fd1c8;
+  --kind-voice: #f28ea8;
+  --kind-continuity: #f28ea8;
+  --kind-structure: #8fc78f;
+  --state-running: #8ab4f8;
+  --state-needs-you: #f0b24a;
+  --state-ready: #6cc4a1;
+  --state-failed: #ff7b72;
+}
+[data-font="sans"] {
+  --font-paper: "Inter", system-ui, sans-serif;
+  --paper-size: 16px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  font-family: var(--font-shell);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.tnum { font-variant-numeric: tabular-nums; }
+.paper {
+  background: var(--paper-bg);
+  color: var(--paper-fg);
+  font-family: var(--font-paper);
+  font-size: var(--paper-size);
+  line-height: 1.55;
+}
+.paper h1, .paper h2, .paper h3, .paper h4 { font-weight: 600; line-height: 1.25; }
+.paper h1 { font-size: 2em; }
+.paper h2 { font-size: 1.625em; }
+.paper h3 { font-size: 1.375em; }
+.paper h4 { font-size: 1.125em; }
+.paper p { margin: 0 0 1em; text-indent: 0; }
+.paper code, .paper .cite-key, .diff-hunk { font-family: var(--font-mono); font-size: 13px; }
+.paper a { color: var(--accent); }
+.paper .muted, .muted-paper { color: var(--paper-fg-muted); }
+@keyframes rhema-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rhema-pulse { animation: rhema-pulse 1.4s ease-in-out infinite; }
+details[data-collapsed-group][open] > summary [data-collapsed-marker] { transform: rotate(90deg); }
+details[data-collapsed-group]:not([open]) > summary [data-cue-when-open] { display: none; }
+details[data-collapsed-group][open] > summary [data-cue-when-closed] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .paper { font-size: 11pt; line-height: 1.4; max-width: 6.5in; color: #1d1c1a; background: #fffdf8; }
+  .ide-rail, .ide-files, .ide-timeline, .ide-desk, .ide-statusbar, .ide-margin { display: none !important; }
+}</style></head><body><div style="min-height:100vh;display:flex;flex-direction:column"><header style="display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;padding:12px 16px;border-bottom:1px solid var(--shell-border);background:var(--shell-surface)"><a href="/" style="font-weight:600;font-size:16px;color:var(--shell-fg);text-decoration:none">Rhēma</a><span style="color:var(--shell-fg-muted);font-size:13px">A serious editor for serious writing.</span><nav style="margin-left:auto;display:flex;gap:12px;align-items:center"><a href="/pricing" style="margin-right:16px">Pricing</a><a href="/login" style="margin-right:16px">Sign in</a><a href="/signup" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--accent);color:var(--shell-bg);font-weight:600;font-size:14px;text-decoration:none">Start with a draft</a></nav></header><main style="flex:1;width:100%;max-width:880px;margin:0 auto;padding:24px 16px;box-sizing:border-box"><section data-section="hero"><h1 style="font-size:40px;line-height:1.15;max-width:18ch;margin:24px 0 16px">An editorial board for everything you write.</h1><p style="color:var(--shell-fg-muted);font-size:16px;line-height:1.6;max-width:68ch">Rhēma reads a finished draft the way a demanding editor would — checks every load-bearing claim against real sources, maps the argument, and hands back a dossier you can act on.</p><form data-dropzone="true" action="/signup" method="get" style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised);margin-top:24px;max-width:560px"><input type="hidden" name="intent" value="review"/><label data-dropzone-label="true" for="hero-file" style="display:block;border:1px dashed var(--shell-border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;color:var(--shell-fg)"><strong>Drop your draft here</strong><div data-dropzone-hint="true" style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:100%;margin-top:6px">.md, .docx, or .pdf — held on this device until you sign in. We never see it first.</div></label><input id="hero-file" name="held" type="file" accept=".md,.markdown,.docx,.pdf,.txt" style="position:absolute;width:1px;height:1px;opacity:0"/><details style="margin-top:12px"><summary style="font-size:13px;color:var(--shell-fg-muted);cursor:pointer">Or paste your text</summary><textarea name="paste" placeholder="Paste your draft…" rows="4" style="width:100%;margin-top:8px;box-sizing:border-box"></textarea></details></form><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:12px"><strong style="color:var(--shell-fg)">No card required.</strong></p><p style="margin-top:8px;font-size:14px"><a href="/signup?entry=draft">Start with a draft</a> · <a href="/signup?entry=outline">Upload an outline</a> · <a href="/signup?entry=scratch">Start from scratch</a></p></section><section data-section="dossier" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">What the board hands back</h2><ul style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;padding-left:18px"><li>Every finding quotes its passage</li><li>Every verdict carries a URL that was fetched and read</li><li>The second read never sees the first reader&#x27;s notes</li><li>Independent second read, not a panel of personas</li></ul><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">A read-only sample dossier — the same worked example the Showcase ships.</p><article data-readonly="true" style="background:var(--paper-bg);color:var(--paper-fg);border:1px solid var(--paper-rule);border-radius:12px;padding:24px;box-shadow:0 1px 0 var(--shell-border)"><div role="note" style="font-size:12px;color:var(--paper-fg-muted);border-bottom:1px solid var(--paper-rule);padding-bottom:12px;margin-bottom:16px">Read-only sample. In your projects, each finding is something you can act on.</div><h2 style="font-size:22px;font-weight:600;margin:0 0 16px">The Politics of Visibility</h2><section aria-label="The Editor&#x27;s letter"><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--paper-fg-muted)">The Editor&#x27;s letter</h3><p style="font-size:16px;line-height:1.55;margin:0 0 12px;max-width:68ch">This is a real essay with a real argument, and the argument is strong enough to survive being tested. So I tested it. The center holds — the piece has a thesis worth the reader&#x27;s time — but two things stand between it and the venue you&#x27;re aiming at.</p><p style="font-size:16px;line-height:1.55;margin:0 0 12px;max-width:68ch">The first is evidentiary: the injury the essay is built on is asserted more than it is shown, and the strongest published counterargument goes unanswered. The second is a matter of record: one of your load-bearing citations says the opposite of what you&#x27;ve claimed it says. The ledger below marks it, with the ruling I read.</p></section><section aria-label="Claim ledger" style="margin-top:24px"><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--paper-fg-muted)">Claim ledger</h3><ul style="margin:8px 0 0;padding:0;border:1px solid var(--paper-rule);border-radius:8px;overflow:hidden"><li data-verdict="substantially_accurate" data-tier="1" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid transparent"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[6]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 1</span><span style="font-size:12px;color:var(--paper-fg-muted);font-weight:400">Substantially accurate</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">Investigators showed a grand jury a diagram of the surveillance operation.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">Supported by the local reporting; re-attribute the citation from the wire report to the original.</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a href="https://minnesotareformer.com/" rel="noreferrer" title="https://minnesotareformer.com/" data-fetched="true" style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:6px;border:1px solid var(--state-ready);background:var(--shell-surface);color:var(--shell-fg);font-size:12px;text-decoration:none;font-variant-numeric:tabular-nums"><span aria-hidden="true" style="color:var(--state-ready)">✓</span><span style="color:var(--shell-fg-muted)">fetched</span><span>minnesotareformer.com</span></a></div></li><li data-verdict="contradicted" data-tier="1" data-contradicted-tier1="true" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid var(--sev-blocking)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[12]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 1</span><span style="font-size:12px;color:var(--sev-blocking);font-weight:600">Contradicted</span><span style="font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--sev-blocking);color:var(--shell-bg)">Contradicted · Tier 1</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">The appellate court struck down the program as unconstitutional.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">The ruling you cite did the opposite: it UPHELD the program, narrowing it on other grounds. As written, the sentence misstates the record — fix before this reaches an editor who checks.</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a href="https://www.courtlistener.com/" rel="noreferrer" title="https://www.courtlistener.com/" data-fetched="true" style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:6px;border:1px solid var(--state-ready);background:var(--shell-surface);color:var(--shell-fg);font-size:12px;text-decoration:none;font-variant-numeric:tabular-nums"><span aria-hidden="true" style="color:var(--state-ready)">✓</span><span style="color:var(--shell-fg-muted)">fetched</span><span>courtlistener.com</span></a></div></li><li data-verdict="verified" data-tier="1" style="list-style:none;padding:12px 14px;border-bottom:1px solid var(--paper-rule);border-left:3px solid transparent"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"><span style="color:var(--paper-fg-muted);font-variant-numeric:tabular-nums;font-size:12px">[49]</span><span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--shell-raised);color:var(--shell-fg-muted)">Tier 1</span><span style="font-size:12px;color:var(--paper-fg-muted);font-weight:400">Verified</span></div><div style="color:var(--paper-fg);font-size:14px;line-height:1.5">The ruling likened the arrangement to leaving the fox in charge of the henhouse.</div><div style="color:var(--paper-fg-muted);font-size:12px;margin-top:4px">Quotation is accurate; the draft truncates it — restore the full clause.</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a href="https://www.courtlistener.com/" rel="noreferrer" title="https://www.courtlistener.com/" data-fetched="true" style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:6px;border:1px solid var(--state-ready);background:var(--shell-surface);color:var(--shell-fg);font-size:12px;text-decoration:none;font-variant-numeric:tabular-nums"><span aria-hidden="true" style="color:var(--state-ready)">✓</span><span style="color:var(--shell-fg-muted)">fetched</span><span>courtlistener.com</span></a></div></li></ul></section><section aria-label="Findings" style="margin-top:24px"><h3 style="font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--paper-fg-muted)">Findings</h3><ul style="margin:8px 0 0;padding:0;list-style:none"><li style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--paper-rule)"><span aria-hidden="true" style="margin-top:6px;width:8px;height:8px;border-radius:999px;background:var(--sev-blocking);flex-shrink:0"></span><div><div style="font-weight:600;font-size:14px">The injury is the thesis, and it is the least-evidenced thing in the piece.</div><div style="color:var(--paper-fg-muted);font-size:13px;margin-top:2px">The central injury claim (anticipatory chilling) is asserted more than shown, and the strongest published counterargument goes unanswered. An independent second read, given only the draft, reached the same verdict.</div></div></li><li style="display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--paper-rule)"><span aria-hidden="true" style="margin-top:6px;width:8px;height:8px;border-radius:999px;background:var(--sev-major);flex-shrink:0"></span><div><div style="font-weight:600;font-size:14px">The essay doesn&#x27;t name the conversation it is in.</div><div style="color:var(--paper-fg-muted);font-size:13px;margin-top:2px">Its thesis and philosophical center each have famous predecessors it never names; at this venue that reads as rediscovery rather than synthesis. Name the lineage and answer it.</div></div></li></ul></section></article></section><section data-section="workflow" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">The workflow, in lifecycle order</h2><ol style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;padding:0;list-style:none"><li style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:14px">Outline</strong><p style="color:var(--shell-fg-muted);font-size:13px;line-height:1.6;max-width:100%;margin-top:6px">The argument&#x27;s skeleton, checked before prose.</p></li><li style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:14px">Draft</strong><p style="color:var(--shell-fg-muted);font-size:13px;line-height:1.6;max-width:100%;margin-top:6px">Your authorship — every suggestion waits for your approval.</p></li><li style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:14px">Review</strong><p style="color:var(--shell-fg-muted);font-size:13px;line-height:1.6;max-width:100%;margin-top:6px">The full board: claims, structure, discourse.</p></li><li style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:14px">Fact-check</strong><p style="color:var(--shell-fg-muted);font-size:13px;line-height:1.6;max-width:100%;margin-top:6px">Every checkable claim against fetched sources.</p></li><li style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised)"><strong style="font-size:14px">Revise</strong><p style="color:var(--shell-fg-muted);font-size:13px;line-height:1.6;max-width:100%;margin-top:6px">Moves proposed as a response — you keep the pen.</p></li></ol><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Draft&#x27;s suggestions never apply themselves — every one waits for your approval.</p></section><section data-section="seat" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">The author&#x27;s seat</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">You read the dossier, pick the moves worth making, and watch the diff. Dispositions, apply-or-decline, a response letter when you revise — the instruments assume it&#x27;s your book.</p></section><section data-section="voices" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">A register, not a person</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">A Voice is a set of registers and tics extracted from your own corpus — it tunes the review to your room, and a staleness pill tells you when the profile has drifted.</p></section><section data-section="runs" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Runs you can watch</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Every run carries its estimate-and-cap card live — the run never exceeds the cap you saw before it started, and the meter is on the page while it works.</p></section><section data-section="models" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Stay on the frontier</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">Powered by Claude — model tiers stay current as the frontier moves, and the rate card publishes what each tier costs before you spend it.</p></section><section data-section="proof" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Show your work</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">The dossier&#x27;s claims ledger is the proof: every verdict links the source it fetched, every contradicted claim shows the passage and the page. Judge the board by its citations.</p></section><section data-section="pricing" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Pricing</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">The same numbers the run sheet quotes — plans, credits, and the per-workflow cost cards.</p><div style="border:1px solid var(--shell-border);border-radius:12px;padding:20px;background:var(--shell-raised);max-width:420px"><strong>Essay</strong><p style="color:var(--shell-fg-muted);font-size:13px;line-height:1.6;max-width:100%">5,000 words · 20 claims — Review 2,600 – 11,730 credits</p></div><p style="margin-top:12px"><a href="/pricing" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--shell-raised);color:var(--shell-fg);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--shell-border)">See pricing</a></p></section><section data-section="changelog" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Changelog</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">What&#x27;s live now: the full editor, the public funnel, and the Showcase.</p></section><section data-section="faq" style="margin-top:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Questions</h2><details style="margin-bottom:8px;max-width:68ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">Does Rhēma write my essay?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">No. The board reviews and proposes; the approval gates keep the pen with you.</p></details><details style="margin-bottom:8px;max-width:68ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">Do I pay to look?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">No card is required to start.</p></details><details style="margin-bottom:8px;max-width:68ch"><summary style="cursor:pointer;font-size:14px;font-weight:600">Is my text used to train models?</summary><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch;margin-top:6px">Never. Drafts, letters, and telemetry stay out of training, and providers are bound by the same terms.</p></details></section><section data-section="final-cta" style="margin-top:48px;margin-bottom:48px"><h2 style="font-size:20px;font-weight:600;margin:0 0 16px;color:var(--shell-fg)">Bring the draft.</h2><p style="color:var(--shell-fg-muted);font-size:14px;line-height:1.6;max-width:68ch">The board reads first, quotes what it found, and shows its sources.</p><p style="margin-top:16px"><a href="/signup" style="display:inline-block;padding:10px 18px;border-radius:8px;background:var(--accent);color:var(--shell-bg);font-weight:600;font-size:14px;text-decoration:none">Start with a draft</a> <a href="/invite" style="margin-left:16px;font-size:14px">Have an invitation? Sign in</a></p></section><script nonce="Q2W63u0iTy5oT5CpsPvJIw==" src="/assets/landing.js" defer=""></script></main><footer style="padding:16px;border-top:1px solid var(--shell-border);color:var(--shell-fg-faint);font-size:12px;text-align:center"><span>Rhēma</span></footer></div></body></html>

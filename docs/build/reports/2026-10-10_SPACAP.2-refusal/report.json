@@ -1,0 +1,40 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "5e138bf30cab",
+  "startedAt": "2026-10-10T07:17:13.633Z",
+  "finishedAt": "2026-10-10T07:17:44.569Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "02635813ba887b9bb0020e3fbb6b63c80af603db",
+    "observed": {
+      "web": "6ebb1cb76e14be8bfa6c6dc0731932c9011e6224",
+      "api": "0acd16d0f6d5af473f28815b7358140d70e39146"
+    },
+    "match": false
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N10",
+      "journey": "new-visitor",
+      "owner": "UX.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 30776,
+      "error": "settle wait lapsed on https://rhema.tools/: wanted data-mounted — observed {\"route\":null,\"renderer\":null,\"mounted\":false}",
+      "screenshot": "N10.png"
+    }
+  ],
+  "passed": false
+}
