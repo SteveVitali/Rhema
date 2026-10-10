@@ -608,6 +608,19 @@ has exactly one owner.
   evaluated, and the ~$7–10/review cost finding vs the $20/mo WTP stop-threshold would itself have
   been a pivot signal. Annotated at the §17 addendum banner, the REQ-BETA-18 row marker, the A.13
   addendum, and the status line. **(ADR-105)**
+- **2026-10-10 (round-4 fold-back, SPAREC.2 — `docs/frontend-spa-spec.md` v1.0 → v1.1 + supersession
+  pointers on `docs/rhema-design-spec.md`):** the frontend-SPA spec is amended to its as-built
+  shape — **§14 Spec amendments** records every landed deviation: the flag machinery's sunset
+  executed per REQ-SEQ-4's own clause (override signals inert; stage fact removed, vocabulary
+  retained), REQ-VFY-8's single-leg flip recipe, REQ-SEQ-9's flag-off parity retired-by-design,
+  REQ-SEQ-7's revert-by-construction rollback, REQ-SEQ-10's pacing-as-activation-cadence,
+  REQ-VFY-10's owed steps folded into the composed suite, REQ-VFY-6's component-axe interim,
+  ADR-108's twin-flagged showcase handoff, ADR-107's forever-SSR island set (`page`/`ide` stay;
+  `outline` retired alone), and REQ-ED-17's plain-text CodeMirror source mode. The six
+  verification-procedure rows stay PARTIAL (GATE-ACCEPT.SPA signed all eight rows ACCEPTED
+  2026-10-10). The product spec gains supersession notes only — §12 `web` row + §13.1 stack line
+  read through the SPA spec; the REQ-BETA-21 CodeMirror stopgap shipped as designed REQ-ED-17.
+  **(ADR-106/107/108; GATE-ACCEPT.SPA)**
 
 ## Decomposition decisions (operator may veto; see the session report)
 
