@@ -55,28 +55,26 @@ const form = (fields: Record<string, string>) => ({
 });
 
 describe("P1.20 — the REQ-PROD-15 opt-out toggle in the §14.7 Data section", () => {
-  const toggleInput = (html: string) =>
-    html.match(/<input[^>]*data-analytics-toggle="true"[^>]*>/)?.[0] ?? "";
+  // SPA.27 — the bound-toggle render asserts retired with the document; the leaf paints the
+  // `data-analytics-toggle` checkbox off the twin's `privacy.analyticsOptOut` (the flag is the
+  // opt-OUT — checked = excluded). The payload pins below keep the flag direction honest.
 
-  it("GET /app/settings/data renders the bound toggle (unchecked while sharing is on — the flag is the opt-OUT)", async () => {
-    const res = await createWebApp(makeDeps()).request("/app/settings/data");
+  it("the twin ships the opt-OUT flag verbatim (sharing on ⇒ analyticsOptOut false)", async () => {
+    const doc = await createWebApp(makeDeps()).request("/app/settings/data");
+    expect(doc.status).toBe(200);
+    expect(await doc.text()).toContain('id="spa-root"');
+    const res = await createWebApp(makeDeps()).request("/bff/settings/data");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-privacy-form="true"');
-    // SPA.6 — the §14.7 account-export request carries its own renderer-agnostic hook.
-    expect(html).toContain('data-export-request-form="true"');
-    expect(html).toContain('data-analytics-toggle="true"');
-    expect(html).toContain("Exclude my usage from product analytics"); // §14.7 verbatim
-    expect(toggleInput(html)).not.toContain("checked"); // analyticsOptOut false ⇒ box unchecked
+    const body = (await res.json()) as { privacy: { analyticsOptOut: boolean } };
+    expect(body.privacy.analyticsOptOut).toBe(false);
   });
 
-  it("reflects the opted-out state (box checked) and the saved banner", async () => {
+  it("the opted-out state rides the twin (?saved=1 stays leaf-owned URL flash)", async () => {
     const res = await createWebApp(
       makeDeps({}, { getPrivacySettings: async () => ({ analyticsOptOut: true }) }),
-    ).request("/app/settings/data?saved=1");
-    const html = await res.text();
-    expect(toggleInput(html)).toContain("checked");
-    expect(html).toContain('data-privacy-saved="true"');
+    ).request("/bff/settings/data");
+    const body = (await res.json()) as { privacy: { analyticsOptOut: boolean } };
+    expect(body.privacy.analyticsOptOut).toBe(true);
   });
 
   it("POST flips the flag — checked box ⇒ optOut true; absent box ⇒ optOut false", async () => {
@@ -122,17 +120,18 @@ describe("P1.20 — the REQ-PROD-15 opt-out toggle in the §14.7 Data section", 
 });
 
 describe("GET /usage — the §14.5 level-1 glance", () => {
-  it("renders the balance + the runs table and carries the dwell heartbeat", async () => {
-    const res = await createWebApp(makeDeps()).request("/usage");
+  it("the twin ships the balance + runs verbatim (the glance + heartbeat are leaf paint)", async () => {
+    // SPA.27 — the rendered glance + the inline dwell script retired with the document; the
+    // leaf mounts the §14.5 level-1 view off the twin and owns the heartbeat client-side.
+    const res = await createWebApp(makeDeps()).request("/bff/usage");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-usage-balance="true"');
-    expect(html).toContain("1,200"); // spendable
-    expect(html).toContain("140"); // held
-    expect(html).toContain('data-usage-run="run_1"');
-    // REQ-BETA-10: the heartbeat script rides the page — it posts to /a/dwell.
-    expect(html).toContain("/a/dwell");
-    expect(html).toContain('var s="usage"');
+    const body = (await res.json()) as {
+      usage: { spendableCredits: number; heldCredits: number; runs: { runId: string }[] } | null;
+      account: unknown;
+    };
+    expect(body.usage?.spendableCredits).toBe(1200);
+    expect(body.usage?.heldCredits).toBe(140);
+    expect(body.usage?.runs.map((r) => r.runId)).toEqual(["run_1"]);
   });
 
   it("redirects to /login unauthenticated", async () => {
@@ -189,19 +188,19 @@ describe("POST /a/dwell — the heartbeat sink (REQ-BETA-10)", () => {
 });
 
 describe("GET /app — the §14.5 level-0 balance chip", () => {
-  it("renders the chip (spendable in the label; held rides the tooltip)", async () => {
-    const res = await createWebApp(makeDeps()).request("/app");
+  it("the twin ships the chip's balance verbatim (spendable + held ride the nav payload)", async () => {
+    const res = await createWebApp(makeDeps()).request("/bff/app");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-balance-chip="true"');
-    expect(html).toContain("1,200");
+    const body = (await res.json()) as { balance: { spendableCredits: number; heldCredits: number } | null };
+    expect(body.balance).toEqual({ spendableCredits: 1200, heldCredits: 140 });
   });
 
-  it("a billing-read miss never blocks the list — the chip simply hides", async () => {
+  it("a billing-read miss degrades the twin's chip field to null — never a 500", async () => {
     const res = await createWebApp(
       makeDeps({}, { getBillingBalance: async () => Promise.reject(new Error("down")) }),
-    ).request("/app");
+    ).request("/bff/app");
     expect(res.status).toBe(200);
-    expect(await res.text()).not.toContain('data-balance-chip="true"');
+    const body = (await res.json()) as { balance: unknown };
+    expect(body.balance).toBeNull(); // the leaf hides the chip off the null
   });
 });

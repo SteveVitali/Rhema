@@ -13,20 +13,16 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GateCardDto, InboxItemDto } from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { InboxPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import type { BffInboxTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -52,8 +48,7 @@ const GATE_CARD: GateCardDto = {
   onExpiry: "proceed_as_proposed",
   spentCredits: 40,
   capCredits: 60,
-  remainingEstimateCredits: 20,
-};
+  remainingEstimateCredits: 20 };
 
 const ITEMS: InboxItemDto[] = [
   {
@@ -72,9 +67,7 @@ const ITEMS: InboxItemDto[] = [
       runId: "run_1",
       kind: "approve_plan",
       workflow: "review",
-      deadlineAt: "2026-10-02T12:00:00Z",
-    },
-  },
+      deadlineAt: "2026-10-02T12:00:00Z" } },
   {
     id: "blk_dec",
     kind: "blocked",
@@ -89,9 +82,7 @@ const ITEMS: InboxItemDto[] = [
       decisionId: "dec_1",
       text: "Keep the section or cut it?",
       options: ["keep", "cut"],
-      obligationId: "obl_1",
-    },
-  },
+      obligationId: "obl_1" } },
   {
     id: "evt_new",
     kind: "event",
@@ -103,8 +94,7 @@ const ITEMS: InboxItemDto[] = [
     projectTitle: "Alpha Essay",
     runId: "run_1",
     unread: true,
-    createdAt: "2026-10-01T08:00:00Z",
-  },
+    createdAt: "2026-10-01T08:00:00Z" },
   {
     id: "evt_old",
     kind: "event",
@@ -114,8 +104,7 @@ const ITEMS: InboxItemDto[] = [
     projectId: "proj_a",
     projectTitle: "Alpha Essay",
     unread: false,
-    createdAt: "2026-09-30T08:00:00Z",
-  },
+    createdAt: "2026-09-30T08:00:00Z" },
   {
     id: "voice_1",
     kind: "voice",
@@ -123,8 +112,7 @@ const ITEMS: InboxItemDto[] = [
     title: "Voice drifted",
     href: "/voices",
     unread: false,
-    createdAt: "2026-09-29T08:00:00Z",
-  },
+    createdAt: "2026-09-29T08:00:00Z" },
 ];
 
 function twin(over?: Partial<BffInboxTwin>): BffInboxTwin {
@@ -134,8 +122,7 @@ function twin(over?: Partial<BffInboxTwin>): BffInboxTwin {
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 /** The fetch stub — every same-origin path the mount can reach is named; anything else 500s so a
@@ -172,8 +159,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(el);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(el);
   mounted.push(root);
   await act(async () => {
@@ -311,8 +297,7 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     expect((post![1] as RequestInit).method).toBe("POST");
     expect((post![1] as RequestInit).headers).toMatchObject({
       "content-type": "application/json",
-      accept: "application/json",
-    });
+      accept: "application/json" });
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ item: "evt_new" });
     // The twin refetches on settle — the row's unread state repaints from the server.
     await vi.waitFor(() => expect(inboxReads()).toBeGreaterThan(baseline));
@@ -343,40 +328,6 @@ describe("GET /app/inbox mounted (REQ-SEQ-9 — the flipped surface)", () => {
     );
   });
 
-  it("REQ-TST-2 parity — every inbox hook the SSR twin emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{ inbox: { items: ITEMS, badge: 2, gateCards: { blk_gate: GATE_CARD } }, compact: false }}
-      >
-        <InboxPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app/inbox", BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-    const emitted = hooksForSurface("inbox").filter((entry) => {
-      if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-      if (entry.kind === "field")
-        return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-      return false;
-    });
-    // The fixture exercises the full row + write vocabulary — a thin set means the fixture drifted.
-    expect(emitted.length).toBeGreaterThanOrEqual(10);
-    expectManifestEmission(spaMarkup, emitted);
-    // And the value-bearing hooks agree verbatim (row ids, gate join, section names).
-    for (const literal of [
-      'data-inbox-row="blk_gate"',
-      'data-inbox-kind="gate"',
-      'data-inbox-kind="decision"',
-      'data-inbox-gate-card="gate_1"',
-      'data-inbox-section="blocked"',
-      'data-inbox-type="voice_stale"',
-      'name="item"',
-    ]) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/app/inbox", BOOT, makeFetch());

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // REQ-GROWTH-13 — exactly ONE `<Paywall>` mount, and it is the run sheet (trivially true at beta, asserted
 // anyway). We scan the source of the two React surfaces (@rhema/ui components + the web app) for JSX mounts
@@ -19,7 +20,9 @@ function walk(dir: string): string[] {
 
 describe("REQ-GROWTH-13 — the run sheet is the only <Paywall> mount", () => {
   it("exactly one JSX <Paywall> mount exists, and it is in the run sheet component", () => {
-    const files = [...walk("packages/ui/src"), ...walk("apps/web/src")];
+    // repo-root-relative — vitest's cwd is the package dir, not the repo root.
+    const root = fileURLToPath(new URL("../../..", import.meta.url));
+    const files = [...walk(join(root, "packages/ui/src")), ...walk(join(root, "apps/web/src"))];
     const mounts: { file: string; count: number }[] = [];
     for (const file of files) {
       // strip block + line comments so prose mentions of `<Paywall>` (docs) do not count as mounts.

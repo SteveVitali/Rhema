@@ -417,7 +417,7 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
     expect(html).not.toContain("Too many attempts");
   });
 
-  it("a run-sheet 403 with error=email_unverified renders the verification notice (not the suspension one)", async () => {
+  it("a run-sheet 403 with error=email_unverified sends the form post back to the sheet (the leaf paints the notice)", async () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
@@ -430,11 +430,12 @@ describe("PRB.13 — open self-serve signup (REQ-BETA-19 amended 2026-09-16)", (
       method: "POST",
       ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_uv", estimateCredits: "560", capCredits: "840" }),
     });
-    expect(res.status).toBe(403);
-    const html = await res.text();
-    expect(html).toContain("Runs need a verified email");
-    expect(html).not.toContain("payment dispute");
-    expect(html).not.toContain("Your run has started");
+    // SPA.27 — the SSR re-render arm is deleted: a form-mode refusal lands back on the sheet URL
+    // and the leaf recomposes the verification notice off the twin's context read (the
+    // `email_unverified` → verification-notice mapping is the leaf's, asserted in
+    // run-sheet.dom.test.tsx). A JSON caller still gets `bffFail`'s 403 verbatim.
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/run");
   });
 });
 
@@ -482,22 +483,10 @@ describe("SEC.2 — form order: email leads in open mode on BOTH forms", () => {
   }
 });
 
-describe("AC2 — project rows derive from the state function", () => {
-  it("renders each project's pill + primary action from its state DTO", async () => {
-    const app = createWebApp(makeDeps({ session: () => ({}) }));
-    const res = await app.request("/app");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("The Politics of Visibility");
-    expect(html).toContain("Edited by you");
-    expect(html).toContain("Revise using your edits");
-    expect(html).toContain("New Essay");
-    expect(html).toContain(">Draft<");
-    expect(html).toContain(">Review<");
-    // rows link to the canonical /p/:project shape
-    expect(html).toContain('href="/p/the-politics-of-visibility"');
-  });
-});
+// SPA.27 — the "AC2 — project rows derive from the state function" SSR asserts retired with the
+// /app document (REQ-TST-1): the project-home leaf renders the same state-DTO projection, covered
+// by spa/project-home.dom.test.tsx; the server's remaining contract is "answers the shell" (pinned
+// in ssr-deletion-wave.test.ts).
 
 describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
   it("the public landing renders the dossier with a contradicted Tier-1 claim + fetched URL, read-only", async () => {
@@ -523,32 +512,20 @@ describe("AC3 — read-only sample dossier (REQ-POS-3)", () => {
 describe("§5.3 import flow (deliverable 4)", () => {
   const authed = () => makeDeps({ session: () => ({}) });
 
-  it("GET /p/:project/import renders the upload form", async () => {
-    const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Import a draft");
-    expect(html).toContain('type="file"');
-    expect(html).toContain("Convert and preview");
-  });
+  // SPA.27 (REQ-TST-1) — the SSR render asserts retired with the import documents: the upload
+  // form, the source-beside-converted preview, the converting state + meta-refresh, and the
+  // quarantine-key hidden field are the onboarding leaf's DOM now (spa/onboarding.dom.test.tsx).
+  // What survives server-side is the POST contract: preview → the server-owned poll URL, the
+  // quarantine key replayed verbatim, create → the project.
 
-  it("POST preview renders source-beside-converted, the count line, warnings + two actions", async () => {
+  it("POST preview answers the server-owned poll URL (the leaf's refetchInterval keeps the cadence)", async () => {
     const res = await createWebApp(authed()).request("/p/the-politics-of-visibility/import/preview", {
       method: "POST",
       ...form({ paste: "<h1>Heading</h1><p>A paragraph.</p><iframe></iframe>" }),
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Conversion preview");
-    expect(html).toContain("3 words · 0 footnotes"); // count line
-    expect(html).toContain("Source");
-    expect(html).toContain("Converted");
-    expect(html).toContain("could not be converted"); // the anchored warning (Conversion notes)
-    expect(html).toContain("Create and fix later");
-    expect(html).toContain("Fix now");
-    expect(html).toContain("unconv-1"); // the unconverted block id shown in the notes
-    // PRB.20 — the preview form replays the minted quarantine key so Create never re-uploads.
-    expect(html).toContain('type="hidden" name="qk" value="quarantine/ws1/up1"');
+    // the SSR preview document is deleted: the ready preview recomposes off the poll URL's /bff twin.
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/p/the-politics-of-visibility/import/preview?qk=");
   });
 
   it("POST create makes the draft and redirects to the project", async () => {
@@ -566,7 +543,7 @@ describe("§5.3 import flow (deliverable 4)", () => {
     expect(res.headers.get("location")).toBe("/login");
   });
 
-  it("PRB.21 — a pending preview renders the converting state + a meta-refresh poll on the quarantine key", async () => {
+  it("PRB.21 — a pending preview follows the SAME server-owned poll URL the JSON envelope carries", async () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
@@ -576,16 +553,15 @@ describe("§5.3 import flow (deliverable 4)", () => {
       method: "POST",
       ...form({ paste: "hello" }),
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("a text import usually takes a few seconds");
-    expect(html).toContain('http-equiv="refresh"');
-    expect(html).toContain("/p/the-politics-of-visibility/import/preview?qk=quarantine%2Fws1%2Fup1");
-    // no Create affordance on a pending page — there is nothing to create yet.
-    expect(html).not.toContain("Create and fix later");
+    // SPA.27 — the meta-refresh document is deleted: the form post redirects to the poll URL
+    // (the leaf navigates; the twin's refetchInterval keeps the server-owned cadence).
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(
+      "/p/the-politics-of-visibility/import/preview?qk=quarantine%2Fws1%2Fup1",
+    );
   });
 
-  it("PRB.21 — the poll GET re-previews the quarantine key: pending stays pending, ready renders the preview", async () => {
+  it("PRB.21 — the /bff poll twin re-previews the SAME quarantine key: pending stays pending, ready answers the preview", async () => {
     const deps = makeDeps({ session: () => ({}) });
     const seen: string[] = [];
     let ready = false;
@@ -597,25 +573,32 @@ describe("§5.3 import flow (deliverable 4)", () => {
           ? { status: "ready" as const, preview: PREVIEW, quarantineKey: input.quarantineKey! }
           : { status: "pending" as const, quarantineKey: input.quarantineKey! };
       },
+      // the twin composes the shell facts too (ideContext) — the fixture's reads answer empty.
+      listProjects: async () => PROJECT_ROWS,
+      getEditorDoc: async () => {
+        throw new ApiError(404, "/x");
+      },
     };
     const app = createWebApp(deps);
-    const url = "/p/the-politics-of-visibility/import/preview?qk=" + encodeURIComponent("quarantine/ws1/up1");
+    const url = "/bff/p/the-politics-of-visibility/import/preview?qk=" + encodeURIComponent("quarantine/ws1/up1");
 
     const p1 = await app.request(url);
     expect(p1.status).toBe(200);
-    expect(await p1.text()).toContain("a text import usually takes a few seconds");
+    expect(((await p1.json()) as { importPreview: { conversion: { pending: boolean; quarantineKey: string } } }).importPreview.conversion).toMatchObject({
+      pending: true,
+      quarantineKey: "quarantine/ws1/up1",
+    });
 
     ready = true;
     const p2 = await app.request(url);
     expect(p2.status).toBe(200);
-    const html = await p2.text();
-    expect(html).toContain("Conversion preview");
-    expect(html).toContain("Create and fix later");
+    const readyOut = (await p2.json()) as { importPreview: { conversion: { pending?: boolean } } };
+    expect(readyOut.importPreview.conversion.pending).not.toBe(true);
     // both polls replayed the SAME quarantine key — never a re-upload.
     expect(seen).toEqual(["quarantine/ws1/up1", "quarantine/ws1/up1"]);
   });
 
-  it("PRB.21 — a create that hits conversion_pending drops back to the converting state", async () => {
+  it("PRB.21 — a create that hits conversion_pending follows the poll URL (the leaf's poll finishes the preview)", async () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
@@ -627,10 +610,10 @@ describe("§5.3 import flow (deliverable 4)", () => {
       method: "POST",
       ...form({ qk: "quarantine/ws1/up1" }),
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("a text import usually takes a few seconds");
-    expect(html).toContain('http-equiv="refresh"');
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(
+      "/p/the-politics-of-visibility/import/preview?qk=quarantine%2Fws1%2Fup1",
+    );
   });
 });
 
@@ -665,45 +648,20 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     expect(res.headers.get("location")).toBe("/login");
   });
 
-  it("renders the launcher: title, Rigor, the dollars-first estimate box and the single Paywall mount", async () => {
+  // SPA.27 (REQ-TST-1) — the SSR sheet render asserts (the launcher, the Fact-check verb + consent
+  // label, the plain Run label, the one `data-paywall` mount) retired with the document: the
+  // run-sheet leaf paints the same view off the `/bff/p/:slug/run` twin (run-sheet.dom.test.tsx).
+
+  it("an unknown project serves the shell — the leaf owns not-found off the twin's 404", async () => {
     const app = createWebApp(authed());
-    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=standard&words=5180")).text();
-    expect(html).toContain("Run the Editor");
-    expect(html).toContain("Review v1 · 5,180 words");
-    expect(html).toContain("≈ $"); // dollars-first
-    expect(html).toContain("never more than");
-    expect(html).toContain('data-paywall="run-sheet"');
-    expect((html.match(/data-paywall="run-sheet"/g) ?? []).length).toBe(1); // REQ-GROWTH-13: exactly one mount
-    expect(html).not.toMatch(/token/i); // AC6
+    const res = await app.request("/p/nope/run");
+    // SPA.27 — the document 404 is deleted with the render branch; the shell boots and the twin's
+    // bffProjectRow miss is what paints not-found (the removal pin lives in ssr-deletion-wave.test).
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('id="spa-root"');
   });
 
-  it("renders the Fact-check verb from the query (consent label — the floor now always crosses)", async () => {
-    const app = createWebApp(authed());
-    // PRB.25: the fact_check floor is (220 intercept + 2×100 churn + 27/claim) ×1.5 metered
-    // coverage — even 0 claims prices 630 > the 500-credit consent threshold, so the verb now
-    // always renders with the confirm label (the no-consent path is covered by the next test).
-    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=fact_check&rigor=quick&modelTier=base&words=600")).text();
-    expect(html).toContain("Fact-check v1");
-    expect(html).toContain('data-run-label="Run fact-check"'); // the verb from the query
-    expect(html).toContain(">Confirm and run</button>");
-    expect(html).toContain('data-needs-consent="true"');
-  });
-
-  it("renders the plain Run label when the estimate stays under the consent threshold", async () => {
-    const app = createWebApp(authed());
-    // review/quick/base with fact_check off: (40 + 0.012×600 + 4×100 churn) ×1.25 ×0.6 ≈ 336 —
-    // under 500 absolute and under 25% of the spendable balance ⇒ no second click.
-    const html = await (await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=quick&modelTier=base&words=600&toggle.fact_check=off")).text();
-    expect(html).toContain(">Run review</button>"); // the visible button label (not the confirm label)
-    expect(html).toContain('data-needs-consent="false"');
-  });
-
-  it("404 for an unknown project", async () => {
-    const app = createWebApp(authed());
-    expect((await app.request("/p/nope/run")).status).toBe(404);
-  });
-
-  it("POST /p/:project/run is the only run creator — it calls createRun and reports the run started", async () => {
+  it("POST /p/:project/run is the only run creator — it calls createRun and lands back on the sheet", async () => {
     const calls: { projectId: string; workflow: string }[] = [];
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
@@ -718,10 +676,11 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
       method: "POST",
       ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_sheet", estimateCredits: "560", capCredits: "840", modelTier: "balanced" }),
     });
-    expect(res.status).toBe(200);
+    // SPA.27 — the `started` re-render is deleted: a form-mode success redirects to the sheet URL
+    // and the invalidated twin reports the now-active run; a JSON caller gets `{ok,data:{runId,state}}`.
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/run");
     expect(calls).toEqual([{ projectId: "proj_pv", workflow: "review" }]);
-    const html = await res.text();
-    expect(html).toContain("Your run has started");
   });
 
   it("PRB.23 — the run POST forwards the submitted toggle set (sentinel resolves unchecked = off)", async () => {
@@ -751,7 +710,7 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
         // second_read deliberately unchecked → absent → resolves false (an explicit off).
       }),
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(302); // success lands back on the sheet (the started render is deleted)
     expect(seen).toEqual([{ fact_check: true, discourse: true, second_read: false }]);
   });
 
@@ -782,7 +741,7 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
         "toggle.second_read": "on",
       }),
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(302);
     expect(seen).toEqual([{}]); // no claim survives — Quick's rigor defaults govern
   });
 
@@ -833,30 +792,22 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
       }),
     };
     const app = createWebApp(deps);
-    const html = await (
-      await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=quick")
-    ).text();
-    const checked = (key: string) =>
-      new RegExp(`name="toggle\\.${key.replace(".", "\\.")}"[^>]*checked`).test(html) ||
-      new RegExp(`checked[^>]*name="toggle\\.${key.replace(".", "\\.")}"`).test(html);
-    expect(checked("discourse"), "seed discourse:true must not render checked under Quick").toBe(
-      false,
-    );
-    expect(
-      checked("second_read"),
-      "seed secondRead:true must not render checked under Quick",
-    ).toBe(false);
-    expect(checked("fact_check"), "Quick keeps fact-check on — the preset's own true").toBe(true);
+    // SPA.27 — the sheet document is deleted; the SAME `buildSheet` view rides the
+    // `/bff/p/:slug/run` twin — `toggleDeltas[].enabled` is the resolved box state the leaf
+    // prefills, so the disable-only rule pins on the payload it consumed from.
+    const enabledOf = async (q: string) => {
+      const view = ((await (await app.request(`/bff/p/the-politics-of-visibility/run?${q}`)).json()) as {
+        runSheet: { view: { toggleDeltas?: { toggle: string; enabled: boolean }[] } };
+      }).runSheet.view;
+      return Object.fromEntries((view.toggleDeltas ?? []).map((t) => [t.toggle, t.enabled]));
+    };
+    const enabled = await enabledOf("workflow=review&rigor=quick");
+    expect(enabled.discourse, "seed discourse:true must not render enabled under Quick").toBe(false);
+    expect(enabled.second_read, "seed secondRead:true must not render enabled under Quick").toBe(false);
+    expect(enabled.fact_check, "Quick keeps fact-check on — the preset's own true").toBe(true);
     // the user's explicit lever still wins in both directions.
-    const htmlOn = await (
-      await app.request(
-        "/p/the-politics-of-visibility/run?workflow=review&rigor=quick&toggle.discourse=on",
-      )
-    ).text();
-    expect(
-      /name="toggle\.discourse"[^>]*checked|checked[^>]*name="toggle\.discourse"/.test(htmlOn),
-      "?toggle.discourse=on still renders checked under Quick",
-    ).toBe(true);
+    const enabledOn = await enabledOf("workflow=review&rigor=quick&toggle.discourse=on");
+    expect(enabledOn.discourse, "?toggle.discourse=on still renders enabled under Quick").toBe(true);
   });
 
   it("MAINT.3 — a trial entitlement renders `Included` only at its own shape; any other shape prices honestly", async () => {
@@ -892,23 +843,22 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     deps.dataSource = { ...deps.dataSource, getRunSheetContext: async () => entitledCtx };
     const app = createWebApp(deps);
 
-    // the mismatching shape: the funded estimate renders, `Included` + the hidden id do not.
-    const quick = await (
-      await app.request("/p/the-politics-of-visibility/run?workflow=review&rigor=quick")
-    ).text();
-    expect(quick).not.toContain('data-included="true"');
-    expect(quick).not.toContain('name="entitlementId"');
-    expect(quick).toContain("data-credits-line");
+    // SPA.27 — the sheet document is deleted; the SAME view rides the `/bff/p/:slug/run` twin —
+    // the shape gate is pinned on `view.entitlementId` (the leaf renders `Included` + the hidden id
+    // off it).
+    const viewOf = async (q: string) =>
+      ((await (await app.request(`/bff/p/the-politics-of-visibility/run?${q}`)).json()) as {
+        runSheet: { view: { entitlementId?: string; estimate?: unknown } };
+      }).runSheet.view;
 
-    // the configured shape: `Included` + the hidden id — the entitlement still claims its run.
-    const standard = await (
-      await app.request(
-        "/p/the-politics-of-visibility/run?workflow=review&rigor=standard&modelTier=base",
-      )
-    ).text();
-    expect(standard).toContain('data-included="true"');
-    expect(standard).toContain('name="entitlementId"');
-    expect(standard).toContain('value="ent_1"');
+    // the mismatching shape: the funded estimate answers, the entitlement does not.
+    const quick = await viewOf("workflow=review&rigor=quick");
+    expect(quick.entitlementId).toBeUndefined();
+    expect(quick.estimate).toBeTruthy();
+
+    // the configured shape: the entitlement still claims its run.
+    const standard = await viewOf("workflow=review&rigor=standard&modelTier=base");
+    expect(standard.entitlementId).toBe("ent_1");
   });
 
   it("PRB.23 — no sentinel ⇒ no toggles sent (rigor defaults apply server-side)", async () => {
@@ -926,11 +876,11 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
       method: "POST",
       ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_tgl2", estimateCredits: "560", capCredits: "840" }),
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(302);
     expect(seen).toEqual([{}]);
   });
 
-  it("PRB.21 — GET renders the in-progress state (not the Run affordance) when the project has an active run", async () => {
+  it("PRB.21 — the twin collapses to the in-progress arm when the project has an active run", async () => {
     const deps = makeDeps({ session: () => ({}) });
     const running: ProjectRow[] = [
       { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "running" } },
@@ -938,47 +888,43 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
     ];
     deps.dataSource = { ...deps.dataSource, listProjects: async () => running };
     const app = createWebApp(deps);
-    const res = await app.request("/p/the-politics-of-visibility/run");
+    // SPA.27 — the document's in-progress render is deleted; the twin emits `activeRun` and the
+    // leaf replaces the Run affordance (the panel can never spawn a duplicate).
+    const res = await app.request("/bff/p/the-politics-of-visibility/run");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("A run is already in progress on this project");
-    expect(html).toContain('href="/p/the-politics-of-visibility/review/run_live"');
-    // the Run affordance is REPLACED — a second click can never spawn a duplicate.
-    expect(html).not.toContain("Confirm and run");
-    expect(html).not.toContain('data-paywall="run-sheet"');
+    const body = (await res.json()) as { runSheet: { activeRun?: { runId: string; state: string } } };
+    expect(body.runSheet.activeRun).toEqual({ runId: "run_live", state: "running" });
   });
 
-  it("PRB.21 — a 409 run_in_progress on POST re-renders the in-progress state (never an error page)", async () => {
+  it("PRB.21 — a 409 run_in_progress on POST lands back on the sheet (the twin reports the live run)", async () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
       createRun: async () => {
         throw new ApiError(409, "http://api/projects/proj_pv/runs", undefined, "run_in_progress");
       },
-      // the re-render refreshes the active-run fact from the project list.
-      listProjects: async () => [
-        { ...PROJECTS[0]!, activeRun: { runId: "run_live", state: "queued" } },
-        PROJECTS[1]!,
-      ],
     };
     const app = createWebApp(deps);
     const res = await app.request("/p/the-politics-of-visibility/run", {
       method: "POST",
       ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_dup", estimateCredits: "560", capCredits: "840" }),
     });
-    expect(res.status).toBe(409);
-    const html = await res.text();
-    expect(html).toContain("A run is already in progress on this project");
-    expect(html).toContain('href="/p/the-politics-of-visibility/review/run_live"');
-    expect(html).not.toContain("Your run has started");
+    // SPA.27 — the re-render arm is deleted: the form post redirects to the sheet URL; the leaf's
+    // invalidated twin re-reads the (now-active) run and collapses to the in-progress arm.
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/run");
   });
 
-  it("an insufficient-balance 402 re-renders the sheet with the resolution notice, not started (§14.6)", async () => {
+  it("an insufficient-balance 402 lands back on the sheet + still counts the panel impression (§14.6)", async () => {
     const deps = makeDeps({ session: () => ({}) });
+    const impressions: string[] = [];
     deps.dataSource = {
       ...deps.dataSource,
       createRun: async () => {
         throw new ApiError(402, "http://api/projects/proj_pv/runs");
+      },
+      recordExhaustedPrompt: async (_s, action) => {
+        impressions.push(action);
       },
     };
     const app = createWebApp(deps);
@@ -986,23 +932,20 @@ describe("run sheet (§5.6 — the launcher + the only paywall)", () => {
       method: "POST",
       ...form({ workflow: "review", rigor: "standard", idempotencyKey: "idem_x", estimateCredits: "560", capCredits: "840" }),
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("more than your spendable balance");
-    expect(html).not.toContain("Your run has started");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/run");
+    // the balance-wall paint moved to the leaf, but the "shown" impression still counts server-side.
+    expect(impressions).toEqual(["shown"]);
   });
 });
 
+// SPA.27 (REQ-TST-1) — the dossier's SSR render asserts (every reading surface, the run card's
+// phase/credits, the claim chips + stances, the rubric rows + cap, the access-report trust chip,
+// the 'Whole piece' group, the conflict row, the obligations header) retired with the document:
+// the dossier leaf paints the same `dossier`/`dossierView` payload off the `/bff` twin and the
+// component-level truth lives in the spa surface/dom tests. What stays server-owned — the session
+// gate, the finding deep-link redirect, the shell boot, the twin's not-found — is pinned below.
 describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/§6.6)", () => {
-  async function getDossierHtml(over: Partial<DossierData> = {}): Promise<string> {
-    const deps = makeDeps({ session: () => ({}) });
-    deps.dataSource = { ...deps.dataSource, getDossier: async () => ({ ...DOSSIER, ...over }) };
-    const app = createWebApp(deps);
-    const res = await app.request("/p/the-politics-of-visibility/review/run_1");
-    expect(res.status).toBe(200);
-    return res.text();
-  }
-
   it("requires a session (redirects to /login)", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/p/the-politics-of-visibility/review/run_1");
@@ -1010,63 +953,20 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     expect(res.headers.get("location")).toBe("/login");
   });
 
-  it("renders every reading surface: run card, letter, claims, second read, rubric, findings", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-run-card="run_1"');
-    expect(html).toContain('data-letter-view="true"');
-    expect(html).toContain('data-claims-table="true"');
-    expect(html).toContain('data-second-read="true"');
-    expect(html).toContain('data-rubric="true"');
-    expect(html).toContain('data-findings-list="true"');
-  });
-
-  it("AC2/REQ-IDE-11 — the run card shows the off phase and the orchestrator credits, no agent prose", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-phase-status="off"');
-    expect(html).toContain("412 / 1,860 cr");
-  });
-
-  it("AC4 — the contradicted Tier-1 claim carries a fetched-✓ chip; the two-source claim shows both stances", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-contradicted-tier1="true"');
-    expect(html).toContain('data-fetched="true"'); // the courtlistener URL is in the fetch log
-    expect(html).toContain('data-stance="supports"');
-    expect(html).toContain('data-stance="contradicts"');
-    expect(html).toContain("not a matter of verification"); // interpretive claim (REQ-OBJ-19)
-  });
-
-  it("AC5 — the rubric renders eight dot rows + a cap, with no aggregate", async () => {
-    const html = await getDossierHtml();
-    expect((html.match(/data-rubric-row=/g) ?? []).length).toBe(8);
-    expect(html).toContain("capped at 2");
-    expect(html.toLowerCase()).not.toContain("out of 40");
-    expect(html).not.toMatch(/\/\s*40/);
-  });
-
-  it("AC6 — the trust chip renders text derived from access_report only", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-trust-chip="true"');
-    expect(html).toContain("52 URLs fetched");
-    expect(html).toContain("second read received the draft only");
-    expect(html).toContain("1 blocked attempt");
-  });
-
-  it("AC7 — an unanchored finding is listed under 'Whole piece', never dropped", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-group="Whole piece"');
-    expect(html).toContain("The injury is the least-evidenced thing in the piece.");
-  });
-
-  it("REQ-IDE-15 — the pre-triage-then-rejected finding renders a conflict row", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-conflict-row="f_conf"');
-    expect(html).toContain("the Editor withdrew it");
-  });
-
-  it("REQ-OBJ-6 — the version header carries the open/addressed obligation summary", async () => {
-    const html = await getDossierHtml();
-    expect(html).toContain('data-version-obligations="true"');
-    expect(html).toContain("⚑ 3 open · 2 addressed");
+  it("the document GET serves the shell; the twin answers the dossier the leaf paints", async () => {
+    const deps = makeDeps({ session: () => ({}) });
+    deps.dataSource = { ...deps.dataSource, getDossier: async () => DOSSIER };
+    const app = createWebApp(deps);
+    const res = await app.request("/p/the-politics-of-visibility/review/run_1");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain("data-spa-boot");
+    // and the twin is the same composition the deleted document composed (REQ-BFF-8/9).
+    const twin = await app.request("/bff/p/the-politics-of-visibility/review/run_1");
+    expect(twin.status).toBe(200);
+    const body = (await twin.json()) as { dossier: { findings: { id: string }[] } };
+    expect(body.dossier.findings.map((f) => f.id)).toContain("f_2");
   });
 
   // D-CAP.1-1 (CAP.3; REQ-IDE-1's second clause — "opening [a deep link] restores the IDE with the
@@ -1093,29 +993,31 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/review/run_1#finding-f_2");
 
+    // SPA.27 — the landed document is the shell now: the layout-restore seam is the twin's `ide`
+    // bag + the leaf's client-side ide state (the SSR `data-ide`/`data-user` attrs are deleted).
     const landed = await app.request("/p/the-politics-of-visibility/review/run_1");
     expect(landed.status).toBe(200);
     const html = await landed.text();
-    // the layout-restore seam: the island keys the user's stored arrangement on these two attrs.
-    expect(html).toContain('data-ide="1"');
-    expect(html).toContain('data-user="u_1"');
-    expect(html).toContain('data-project-id="proj_pv"');
-    expect(html).toContain('src="/assets/ide.js"');
-    // the focused target: the Margin card IS the `finding-<id>` anchor.
-    expect(html).toContain('id="finding-f_2"');
+    expect(html).toContain('id="spa-root"');
+    expect(html).toContain("data-spa-boot");
+    // the focused target: the twin carries the finding the `#finding-f_2` anchor selects.
+    const twin = await app.request("/bff/p/the-politics-of-visibility/review/run_1");
+    const body = (await twin.json()) as { dossier: { findings: { id: string }[] } };
+    expect(body.dossier.findings.map((f) => f.id)).toContain("f_2");
   });
 
-  it("404s for an unknown project slug (no dossier read attempted)", async () => {
+  it("an unknown project slug serves the shell — the leaf owns not-found (no dossier read attempted)", async () => {
     let called = false;
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = { ...deps.dataSource, getDossier: async () => { called = true; return DOSSIER; } };
     const app = createWebApp(deps);
     const res = await app.request("/p/no-such-project/review/run_1");
-    expect(res.status).toBe(404);
+    // SPA.27 — the document 404 is deleted; the twin's miss is the leaf's not-found.
+    expect(res.status).toBe(200);
     expect(called).toBe(false);
   });
 
-  it("STB.2 — an api 404 (a run that completed with no dossier) renders the not-found page, not a 500", async () => {
+  it("STB.2 — an api 404 (a run that completed with no dossier) surfaces as the twin's not-found, never a 500", async () => {
     const deps = makeDeps({ session: () => ({}) });
     deps.dataSource = {
       ...deps.dataSource,
@@ -1124,8 +1026,13 @@ describe("PRB.04 — the delivered-review dossier reading surface (§5.5/§5.7/�
       },
     };
     const app = createWebApp(deps);
+    // the document still serves the shell…
     const res = await app.request("/p/the-politics-of-visibility/review/run_1");
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    // …and the STB.2 seam moved to the twin: the dossier 404 answers `{error:"not_found"}`, never a 500.
+    const twin = await app.request("/bff/p/the-politics-of-visibility/review/run_1");
+    expect(twin.status).toBe(404);
+    expect(((await twin.json()) as { error: string }).error).toBe("not_found");
   });
 });
 
@@ -1190,7 +1097,9 @@ describe("PRB.06 — the revision (What-changed) page", () => {
 
   it("renders the strip, the move card with its discharge line + hunk, Unlinked, and the rebutted card", async () => {
     const app = createWebApp(revisionDeps());
-    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp");
+    // SPA.27 — the desktop document is the shell now; the forced-SSR arm (?ssr=1 / phone /
+    // showcase) still renders the What-changed page — the render asserts pin THAT arm.
+    const res = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?ssr=1");
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-what-changed="true"');
@@ -1223,8 +1132,8 @@ describe("PRB.06 — the revision (What-changed) page", () => {
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
     expect(calls).toEqual([{ responseId: "corr_resp", hunkId: "h1", text: "tighten this" }]);
-    // the saved marker renders on the redirect target.
-    const page = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1");
+    // the saved marker renders on the redirect target (forced-SSR arm — the desktop GET is the shell).
+    const page = await app.request("/p/the-politics-of-visibility/revisions/corr_resp?commented=h1&ssr=1");
     expect((await page.text()).includes('data-comment-saved="true"')).toBe(true);
   });
 
@@ -1253,7 +1162,9 @@ describe("PRB.06 — the revision (What-changed) page", () => {
         throw new ApiError(404, "/x", "not_found");
       },
     });
-    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope");
+    // SPA.27 — the document 404 is deleted (the shell serves + the leaf owns not-found); the
+    // forced-SSR arm keeps the api-404 → not-found seam.
+    const res = await createWebApp(deps).request("/p/the-politics-of-visibility/revisions/nope?ssr=1");
     expect(res.status).toBe(404);
   });
 });
@@ -1317,7 +1228,9 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
     });
 
   it("the project page mounts the seven regions + the deferred island + stamped theme attrs", async () => {
-    const res = await createWebApp(ideDeps()).request("/p/the-politics-of-visibility");
+    // SPA.27 — forced-SSR arm (the desktop document is the shell; the IDE markup below is the
+    // surviving read-only render ?ssr=1 shares with phone/showcase).
+    const res = await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?ssr=1");
     expect(res.status).toBe(200);
     const html = await res.text();
     // the seven §5.1 regions
@@ -1336,7 +1249,7 @@ describe("P1.01 — the IDE shell + theme stamping on /p/:project…", () => {
   });
 
   it("?focus=1 seeds the Focus view (the island strips the flag)", async () => {
-    const html = await (await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1")).text();
+    const html = await (await createWebApp(ideDeps()).request("/p/the-politics-of-visibility?focus=1&ssr=1")).text();
     expect(html).toContain('data-view="focus"');
   });
 
@@ -1420,9 +1333,9 @@ describe("P1.01 — the Settings app-theme control (the no-JS counterpart of the
       },
     });
     const app = createWebApp(deps);
-    const html = await (await app.request("/app/settings/preferences")).text();
-    expect(html).toContain('name="appTheme"');
-    expect(html).toContain('option value="auto" selected');
+    // SPA.27 — the settings document is the shell now (the appTheme select is the leaf's DOM);
+    // the legacy POST's persist + section redirect stays a server contract.
+    expect((await app.request("/app/settings/preferences")).status).toBe(200);
     const res = await app.request("/settings/theme", {
       method: "POST",
       ...form({ appTheme: "auto" }),
@@ -1507,55 +1420,12 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
       },
     });
 
-  it("/app renders the attention groups, the row anatomy, and the control bar (filter/sort/group)", async () => {
-    const res = await createWebApp(homeDeps()).request("/app");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    // the four §5.2 groups render (Quiet collapsed with its Unfiled/Voice sub-counts)
-    for (const g of ["needs_you", "running", "ready_to_read", "quiet"]) {
-      // empty groups render nothing; the fixture rows land in quiet
-      void g;
-    }
-    expect(html).toContain('data-collapsed-group="quiet"');
-    // HOT.1 (REQ-IDE-4) — the suppressed native marker is replaced by an explicit affordance.
-    expect(html).toContain('data-collapsed-marker="true"');
-    expect(html).toContain('data-cue-when-closed="true"');
-    expect(html).toContain("Unfiled");
-    // the bar: search, Group-by (persisted), Protocol filter, Sort, Archived + Deleted affordances
-    expect(html).toContain('name="q"');
-    expect(html).toContain('name="groupBy"');
-    expect(html).toContain('name="protocol"');
-    expect(html).toContain('name="sort"');
-    expect(html).toContain("All protocols");
-    expect(html).toContain("Recent");
-    expect(html).toContain("Show archived");
-    expect(html).toContain("Show recently deleted");
-    // the row: state pill + one primary action + the "…" menu's seven actions
-    expect(html).toContain("Edited by you");
-    expect(html).toContain("Revise using your edits");
-    for (const label of ["Rename", "Duplicate", "Change voice", "Export", "Archive", "Delete"]) {
-      expect(html).toContain(label);
-    }
-    // the Voice filter chips render (All + each voice + Unfiled)
-    expect(html).toContain('data-voice-filters="true"');
-    // exactly one New-project affordance
-    expect(html.match(/data-new-project="true"/g)?.length).toBe(1);
-  });
+  // SPA.27 (REQ-TST-1) — the /app document render asserts (attention groups, row anatomy, control
+  // bar, `?protocol`/`?sort`/`?voice` filtering, `?deleted=1`'s section, /app/new's three entry
+  // cards + pickers, the REQ-PROD-8 startVersion field) retired with the SSR tree: the project-home
+  // + onboarding leaves paint the same payloads (spa/project-home.dom.test.tsx, onboarding tests).
 
-  it("?protocol= filters the rows; ?sort=title orders them; ?voice= narrows to a voice", async () => {
-    const rows = [
-      { ...PROJECTS[0]!, protocolId: "academic" },
-      { ...PROJECTS[1]!, protocolId: "essay" },
-    ];
-    const app = createWebApp(homeDeps({ listProjects: async () => rows }));
-    const html = await (await app.request("/app?protocol=essay")).text();
-    expect(html).toContain("New Essay");
-    expect(html).not.toContain("The Politics of Visibility");
-    const sorted = await (await app.request("/app?sort=title")).text();
-    expect(sorted.indexOf("New Essay")).toBeLessThan(sorted.indexOf("The Politics of Visibility"));
-  });
-
-  it("?deleted=1 renders the restore window's rows; POST /p/:slug/restore calls the api", async () => {
+  it("POST /p/:slug/restore calls the api and lands back on the deleted window", async () => {
     const restoreProject = vi.fn(async () => undefined);
     const app = createWebApp(
       homeDeps({
@@ -1563,10 +1433,6 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
         restoreProject,
       }),
     );
-    const html = await (await app.request("/app?deleted=1")).text();
-    expect(html).toContain('data-deleted-section="true"');
-    expect(html).toContain("Recently deleted");
-    expect(html).toContain("/p/the-politics-of-visibility/restore");
     const res = await app.request("/p/the-politics-of-visibility/restore", { method: "POST" });
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/app?deleted=1");
@@ -1580,33 +1446,6 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/app");
     expect(setProjectGrouping).toHaveBeenCalledWith(expect.objectContaining(SESSION), "voice");
-  });
-
-  it("GET /app/new renders exactly three entry cards + the protocol/venue/Voice pickers", async () => {
-    const html = await (await createWebApp(homeDeps()).request("/app/new")).text();
-    for (const entry of ["scratch", "outline", "draft"]) {
-      expect(html).toContain(`data-entry="${entry}"`);
-    }
-    // no fourth entry point exists (the draft+review import is a 1.x in-project action)
-    expect(html.match(/data-entry="/g)?.length).toBe(3);
-    // protocol cards carry tagline + hold-you-to + the typical Review estimate
-    expect(html).toContain('data-protocol-card="essay"');
-    expect(html).toContain("A thesis that pays off.");
-    expect(html).toContain("Review ≈ 640 credits");
-    // the venue typeahead over the card's table + free text
-    expect(html).toContain('list="np-venues"');
-    expect(html).toContain("n+1");
-    // the Voice picker: No voice + Your voices / House styles optgroups
-    expect(html).toContain("No voice");
-    expect(html).toContain("Your voices");
-    expect(html).toContain("House styles");
-    // SPA.6 — the renderer-agnostic hook the journey pins the submit to (P1.app-new).
-    expect(html).toContain('data-new-project-form="true"');
-  });
-
-  it("the draft entry's sheet carries the REQ-PROD-8 starting-version field", async () => {
-    const html = await (await createWebApp(homeDeps()).request("/app/new?entry=draft")).text();
-    expect(html).toContain('name="startVersion"');
   });
 
   it("POST /app/new scratch creates immediately and lands on the §5.3 next-step card", async () => {
@@ -1636,18 +1475,15 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
       method: "POST",
       ...form({ entry: "draft", title: "My Essay", paste: "<h1>Heading</h1>", startVersion: "3" }),
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    // the §5.3 preview contract: source beside converted, the count line, anchored warnings, both actions
-    expect(html).toContain("Source");
-    expect(html).toContain("Converted");
-    expect(html).toContain("3 words · 0 footnotes");
-    expect(html).toContain("could not be converted");
-    expect(html).toContain("Create and fix later");
-    expect(html).toContain("Fix now");
-    // the form replays the SAME quarantine key + every pick — Create never re-uploads
-    expect(html).toContain('type="hidden" name="qk" value="quarantine/ws1/up_new"');
-    expect(html).toContain('name="startVersion" value="3"');
+    // SPA.27 — the SSR preview leg is deleted: a ready preview follows the SAME poll URL the JSON
+    // envelope carries (the leaf recomposes the §5.3 preview card — Source/Converted, the count
+    // line, the warnings — off the /bff twin). The server contract that survives: the preview ran
+    // BEFORE any create and the poll URL round-trips the SAME quarantine key + every pick.
+    expect(res.status).toBe(302);
+    const loc = res.headers.get("location") ?? "";
+    expect(loc).toContain("/app/new/preview?");
+    expect(loc).toContain("qk=quarantine%2Fws1%2Fup_new");
+    expect(loc).toContain("startVersion=3");
     expect(createProject).not.toHaveBeenCalled();
     expect(previewWorkspaceImport).toHaveBeenCalledOnce();
   });
@@ -1688,15 +1524,17 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
 
   it("GET /p/:slug?created=draft renders the next-step card + the conversion-notes line", async () => {
     const app = createWebApp(homeDeps());
+    // SPA.27 — the desktop document is the shell; the next-step card render survives on the
+    // Page family's forced-SSR arm (?ssr=1 / phone / showcase).
     const html = await (
-      await app.request("/p/the-politics-of-visibility?created=draft&cn=2&cu=1")
+      await app.request("/p/the-politics-of-visibility?created=draft&cn=2&cu=1&ssr=1")
     ).text();
     expect(html).toContain('data-next-step-card="draft"');
     expect(html).toContain("Review v");
     expect(html).toContain("Conversion notes");
   });
 
-  it("a still-converting key re-renders the pending state with a meta-refresh poll (never a re-upload)", async () => {
+  it("a still-converting key follows the server-owned poll URL (never a re-upload)", async () => {
     const app = createWebApp(
       homeDeps({
         previewWorkspaceImport: async () => ({
@@ -1709,12 +1547,12 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
       method: "POST",
       ...form({ entry: "outline", title: "My Essay", paste: "notes" }),
     });
-    const html = await res.text();
-    expect(html).toContain('data-conversion-pending="true"');
-    expect(html).toContain("http-equiv=\"refresh\"");
-    // the poll URL replays the same quarantine key (HTML-escaped & in the meta content)
-    expect(html).toContain("/app/new/preview?entry=outline&amp;");
-    expect(html).toContain("qk=quarantine%2Fws1%2Fup_cold");
+    // SPA.27 — the meta-refresh document is deleted: the form post redirects to the SAME poll URL
+    // the JSON envelope carries; the leaf's refetchInterval keeps the cadence.
+    expect(res.status).toBe(302);
+    const loc = res.headers.get("location") ?? "";
+    expect(loc).toContain("/app/new/preview?entry=outline");
+    expect(loc).toContain("qk=quarantine%2Fws1%2Fup_cold");
   });
 });
 
@@ -1862,7 +1700,9 @@ describe("P1.05 — timeline, run page, steering", () => {
     });
 
   it("/p/:slug renders the Timeline pane — next-step card, round parts, the run card", async () => {
-    const html = await (await createWebApp(p105Deps()).request("/p/the-politics-of-visibility")).text();
+    // SPA.27 — the desktop document is the shell; the Timeline pane render survives on the Page
+    // family's forced-SSR arm.
+    const html = await (await createWebApp(p105Deps()).request("/p/the-politics-of-visibility?ssr=1")).text();
     expect(html).toContain('data-timeline-pane');
     // §5.5's three verbs row — each opens the run sheet for that workflow
     expect(html).toContain('data-timeline-verbs');
@@ -1924,7 +1764,7 @@ describe("P1.05 — timeline, run page, steering", () => {
       rounds: [{ ...TIMELINE.rounds[0]!, runs: [WAITING_RUN, ...TIMELINE.rounds[0]!.runs] }],
     };
     const app = createWebApp(p105Deps({ getTimeline: async () => timeline as never }));
-    const html = await (await app.request("/p/the-politics-of-visibility")).text();
+    const html = await (await app.request("/p/the-politics-of-visibility?ssr=1")).text();
     // the run card mounts the identical card (same component, same data-gate-card anatomy).
     expect(html).toContain('data-run-card="run_wait"');
     expect(html).toContain('data-gate-card="approve_plan"');
@@ -1941,32 +1781,36 @@ describe("P1.05 — timeline, run page, steering", () => {
       PROJECTS[1]!,
     ];
     const deps = p105Deps({ listProjects: async () => live });
-    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility")).text();
+    const html = await (await createWebApp(deps).request("/p/the-politics-of-visibility?ssr=1")).text();
     expect(html).toContain('data-feed-events="/p/the-politics-of-visibility/r/run_live/events"');
     expect(html).toContain('data-feed-last-seq="2"');
     expect(html).toContain('data-feed-labels='); // the island's embedded label maps
   });
 
-  it("/p/:slug/r/:runId renders the Level-3 report; the Advanced disclosure lazy-loads Level 4", async () => {
+  it("/p/:slug/r/:runId serves the shell; the twin splits the Level-3/Level-4 reads on ?advanced=1", async () => {
     const app = createWebApp(p105Deps());
-    const l3 = await (await app.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(l3).toContain("Run report");
-    expect(l3).not.toContain("inputTokens");
-    expect(l3).not.toContain('data-usage-row');
-    // Level 4 loads ONLY on the disclosure — the affordance is a ?advanced=1 read (§14.5)
-    expect(l3).toContain('/p/the-politics-of-visibility/r/run_tl?advanced=1');
-    const adv = await (await app.request("/p/the-politics-of-visibility/r/run_tl?advanced=1")).text();
-    expect(adv).toContain("Run report");
-    expect(adv).toContain('data-usage-row');
-    expect(adv).toContain("4,000");
-    // 404 when the api has no report for the run
+    // SPA.27 — the document is the shell now; the lazy-load contract moved to the twin: the plain
+    // read never carries the Level-4 `advancedView`, `?advanced=1` adds it (§14.5).
+    const l3doc = await app.request("/p/the-politics-of-visibility/r/run_tl");
+    expect(l3doc.status).toBe(200);
+    expect(await l3doc.text()).toContain('id="spa-root"');
+
+    const l3 = (await (await app.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+      runReport: { report: { advancedView?: unknown } };
+    };
+    expect(l3.runReport.report.advancedView).toBeUndefined();
+    const adv = (await (await app.request("/bff/p/the-politics-of-visibility/r/run_tl?advanced=1")).json()) as {
+      runReport: { report: { advancedView?: { rows: { inputTokens: number }[] } } };
+    };
+    expect(adv.runReport.report.advancedView?.rows[0]?.inputTokens).toBe(4000);
+    // 404 when the api has no report for the run — the twin answers not_found, never a 500.
     const missing = createWebApp(
       p105Deps({ getRunReport: async () => { throw new ApiError(404, "no"); } }),
     );
-    expect((await missing.request("/p/the-politics-of-visibility/r/run_x")).status).toBe(404);
+    expect((await missing.request("/bff/p/the-politics-of-visibility/r/run_x")).status).toBe(404);
   });
 
-  it("RPT.1 — report phase durations are truthful: a real sub-minute phase renders seconds, a legacy equal-timestamps row renders '—' (never '0 min')", async () => {
+  it("RPT.1 — the twin forwards truthful durationMs verbatim (the leaf renders sec/min/'—'; never '0 min')", async () => {
     const report = {
       ...REPORT,
       report: {
@@ -1981,11 +1825,12 @@ describe("P1.05 — timeline, run page, steering", () => {
     const app = createWebApp(
       p105Deps({ getRunReport: async () => report as never }),
     );
-    const html = await (await app.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(html).toContain("45 sec");
-    expect(html).toMatch(/300\s*cr · —/);
-    expect(html).toContain("2 min");
-    expect(html).not.toMatch(/0\s*min/);
+    // SPA.27 — the '45 sec'/'—'/'2 min' paint is the leaf's; the server contract is the payload:
+    // durationMs flows through unmassaged (0 stays 0 — the leaf's formatter owns the '—').
+    const body = (await (await app.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+      runReport: { report: { report: { phases: { durationMs: number }[] } } };
+    };
+    expect(body.runReport.report.report.phases.map((p) => p.durationMs)).toEqual([45_000, 0, 120_000]);
   });
 
   it("/app/usage/r/:run redirects to the canonical /p/ path with #report", async () => {
@@ -2085,32 +1930,32 @@ describe("DEF.4 — the refund-window affordance on the run report", () => {
       } as DataSource,
     });
 
-  it("an eligible block renders the 'Get N cr back' control + the 7-day note; absent block renders none", async () => {
+  it("the twin carries an eligible refundWindow block; absent block admits nothing", async () => {
+    // SPA.27 — the 'Get N cr back' control + verdict text are the leaf's paint; the server
+    // contract is the payload: `refundWindow` rides the report verbatim and is absent when the
+    // api emits none.
     const eligible = createWebApp(p105RefundDeps({ refundWindow: { state: "eligible", credits: 160 } }));
-    const html = await (await eligible.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(html).toContain('action="/p/the-politics-of-visibility/r/run_tl/refund"');
-    expect(html).toContain("Get 160 cr back");
-    expect(html).toContain("within 7 days");
+    const body = (await (await eligible.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+      runReport: { report: { refundWindow?: { state: string; credits: number } } };
+    };
+    expect(body.runReport.report.refundWindow).toEqual({ state: "eligible", credits: 160 });
 
     const closed = createWebApp(p105RefundDeps({})); // no refundWindow — the flag admitted nothing
-    const html2 = await (await closed.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(html2).not.toContain("refund");
+    const body2 = (await (await closed.request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+      runReport: { report: { refundWindow?: unknown } };
+    };
+    expect(body2.runReport.report.refundWindow).toBeUndefined();
   });
 
-  it("refunded / pending_review / denied blocks render their recorded verdicts, never a live control", async () => {
-    const refunded = createWebApp(p105RefundDeps({ refundWindow: { state: "refunded", credits: 160 } }));
-    const html = await (await refunded.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(html).toContain("Refunded 160 cr.");
-    expect(html).not.toContain('action="/p/the-politics-of-visibility/r/run_tl/refund"');
-
-    const review = createWebApp(p105RefundDeps({ refundWindow: { state: "pending_review", credits: 160 } }));
-    const html2 = await (await review.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(html2).toContain("Refund request for 160 cr sent for review.");
-    expect(html2).not.toContain("Get 160 cr back");
-
-    const denied = createWebApp(p105RefundDeps({ refundWindow: { state: "denied", credits: 160 } }));
-    const html3 = await (await denied.request("/p/the-politics-of-visibility/r/run_tl")).text();
-    expect(html3).toContain("The refund request was declined.");
+  it("refunded / pending_review / denied blocks ride the twin with their recorded state, never a live control", async () => {
+    const stateOf = async (state: string) =>
+      (((await (await createWebApp(p105RefundDeps({ refundWindow: { state, credits: 160 } }))
+        .request("/bff/p/the-politics-of-visibility/r/run_tl")).json()) as {
+        runReport: { report: { refundWindow?: { state: string } } };
+      }).runReport.report.refundWindow?.state);
+    expect(await stateOf("refunded")).toBe("refunded");
+    expect(await stateOf("pending_review")).toBe("pending_review");
+    expect(await stateOf("denied")).toBe("denied");
   });
 
   it("the POST forwards requestRefund and redirects back to the report (fresh block state)", async () => {

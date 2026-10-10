@@ -155,28 +155,29 @@ function makeDeps(opts: {
 }
 
 describe("the /settings/billing plan card (§14.2/14.6)", () => {
-  it("renders the ladder with pricing.json prices, the plan forms, auto-reload and the waitlist", async () => {
+  // SPA.27 (REQ-TST-1) — the plan-card render asserts (the ladder + prices, the forms' mounts and
+  // absences, the renewal/banner/trial lines, the purchase-paused gates) retired with the
+  // document: the billing leaf paints the SAME `{billing:{subscription,plans}, balance}` payload
+  // the `/bff/settings/billing` twin ships — the pins below assert the payload the leaf gates on
+  // (purchase/absent-purchase/past-due/trial state all ride through verbatim, unmassaged).
+
+  const billingPayload = async (app: ReturnType<typeof createWebApp>) =>
+    (await (await app.request("/bff/settings/billing")).json()) as {
+      billing: { subscription: { tier: string; purchase?: string; subscription?: { status: string; pastDue: boolean; periodEnd: string } | null; trial?: { state: string } | null }; plans: { trial?: { includedNote?: string | null } } } | null;
+      balance: { purchase?: string } | null;
+    };
+
+  it("the twin ships the subscription + plans + balance verbatim (the leaf paints the card)", async () => {
     const app = createWebApp(makeDeps({ subscription: sub({ tier: "free" }) }));
-    const res = await app.request("/settings/billing");
+    const res = await app.request("/bff/settings/billing");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-plan-card="true"');
-    expect(html).toContain('data-current-plan="free"');
-    expect(html).toContain('data-plan="writer"');
-    expect(html).toContain("$20/mo");
-    expect(html).toContain('data-subscribe-form="writer"');
-    // BILL.3 / §14.2 — Free is never offered a Checkout top-up it cannot complete; the honest gate
-    // note renders instead. The pack buttons belong to the paid-plan card (asserted below).
-    expect(html).not.toContain('data-topup-form=');
-    expect(html).toContain('data-topup-gated="true"');
-    expect(html).toContain("Top-ups need a paid plan");
-    expect(html).toContain('data-auto-reload-form="true"');
-    // Team is waitlisted — a waitlist form, never a checkout button (REQ-GROWTH-7).
-    expect(html).toContain('data-waitlist-form="true"');
-    expect(html).not.toContain('data-subscribe-form="team"');
+    const body = await billingPayload(app);
+    expect(body.billing?.subscription.tier).toBe("free");
+    expect(body.billing?.plans).toBeTruthy();
+    expect(body.balance).toBeTruthy();
   });
 
-  it("an active subscription shows the renewal date + the cancel-at-period-end form + the portal", async () => {
+  it("an active subscription's period end + status ride the twin", async () => {
     const app = createWebApp(makeDeps({
       subscription: sub({
         tier: "writer",
@@ -188,27 +189,18 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
         },
       }),
     }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-current-plan="writer"');
-    expect(html).toContain("Renews 2026-10-01");
-    expect(html).toContain('data-cancel-form="true"');
-    expect(html).toContain('data-portal-form="true"');
-    expect(html).toContain('data-topup-form="pack_50"');
-    // the current plan never offers a subscribe form
-    expect(html).not.toContain('data-subscribe-form="writer"');
+    const body = await billingPayload(app);
+    expect(body.billing?.subscription.subscription).toMatchObject({ status: "active", periodEnd: "2026-10-01T00:00:00Z", pastDue: false });
   });
 
-  it("an absent purchase field fails closed — an older api never unlocks the forms", async () => {
+  it("an absent purchase field reaches the leaf unmassaged — the fail-closed gate is client truth", async () => {
     const fixture = sub({ tier: "writer", hasStripeCustomer: true });
     const app = createWebApp(makeDeps({ subscription: { ...fixture, purchase: undefined } }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-purchase-paused="true"');
-    expect(html).not.toContain('data-subscribe-form=');
-    expect(html).not.toContain('data-topup-form=');
-    expect(html).not.toContain('data-portal-form=');
+    const body = await billingPayload(app);
+    expect(body.billing?.subscription.purchase).toBeUndefined();
   });
 
-  it("purchase=closed renders the paused note and mounts no subscribe/top-up/portal form (BILL.3)", async () => {
+  it("purchase=closed rides the twin verbatim (BILL.3 — the leaf mounts no purchase forms)", async () => {
     const app = createWebApp(makeDeps({
       subscription: sub({
         tier: "writer",
@@ -221,17 +213,11 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
         },
       }),
     }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-purchase-paused="true"');
-    expect(html).toContain("Purchases are paused");
-    expect(html).not.toContain('data-subscribe-form=');
-    expect(html).not.toContain('data-topup-form=');
-    expect(html).not.toContain('data-portal-form=');
-    // cancellation stays reachable — it is not a purchase and makes no Stripe call.
-    expect(html).toContain('data-cancel-form="true"');
+    const body = await billingPayload(app);
+    expect(body.billing?.subscription.purchase).toBe("closed");
   });
 
-  it("a past-due subscription renders the renewal-failure banner (§14.6)", async () => {
+  it("a past-due subscription's status + flag ride the twin (§14.6 — the leaf paints the banner)", async () => {
     const app = createWebApp(makeDeps({
       subscription: sub({
         tier: "writer",
@@ -242,26 +228,23 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
         },
       }),
     }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-past-due="true"');
-    expect(html).toContain("renewal payment didn&#x27;t go through");
+    const body = await billingPayload(app);
+    expect(body.billing?.subscription.subscription).toMatchObject({ status: "past_due", pastDue: true });
   });
 
-  it("the trial card renders the factual window line for an active trial while the claim is hidden (HOT.1)", async () => {
+  it("an active trial's window + a null includedNote ride the twin (HOT.1)", async () => {
     const app = createWebApp(makeDeps({
       subscription: sub({
         tier: "free",
         trial: { state: "trial_active", entitlement: { id: "te_1", state: "active", wordCap: 6000, expiresAt: null } },
       }),
     }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-trial-state="active"');
-    // the gated claim (badge + "your review run is Included") stays off; the factual window renders.
-    expect(html).not.toContain("Included");
-    expect(html).toContain("Trial window — 14 days.");
+    const body = await billingPayload(app);
+    expect(body.billing?.subscription.trial?.state).toBe("trial_active");
+    expect(body.billing?.plans.trial?.includedNote ?? null).toBeNull(); // the gated claim stays off
   });
 
-  it("a claim-on DTO (includedNote non-null) renders the Included badge + note (HOT.1 flip seam)", async () => {
+  it("a claim-on DTO (includedNote non-null) reaches the leaf (HOT.1 flip seam)", async () => {
     const app = createWebApp(makeDeps({
       subscription: sub({
         tier: "free",
@@ -269,10 +252,8 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
       }),
       plans: { ...PLANS, trial: { ...PLANS.trial, includedNote: "Your trial review run is Included — no credits spent." } },
     }));
-    const html = await (await app.request("/settings/billing")).text();
-    expect(html).toContain('data-trial-state="active"');
-    expect(html).toContain("Included");
-    expect(html).toContain("Your trial review run is Included");
+    const body = await billingPayload(app);
+    expect(body.billing?.plans.trial?.includedNote).toContain("Included");
   });
 
   it("the subscribe POST mints a Checkout session and 302s to Stripe", async () => {
@@ -318,20 +299,22 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
     expect(res2.headers.get("location")).toBe("https://billing.stripe.com/session/bps_1");
   });
 
-  it("every classified api refusal carries its own notice/copy; only real outages use the generic line", async () => {
+  it("every classified api refusal carries its own ?notice code (the leaf paints the copy)", async () => {
     const apiFailure = (status: number, code: string) =>
       new ApiError(status, "https://api.test/billing/checkout", undefined, code);
+    // SPA.27 — the notice's verbatim copy is leaf paint now (billing leaf dom tests); the server
+    // contract that survives is the classified `?notice=<code>` redirect per refusal.
     const cases: readonly {
-      path: string; body?: URLSearchParams; code: string; copy: string; portal?: boolean;
+      path: string; body?: URLSearchParams; code: string; portal?: boolean;
     }[] = [
-      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "purchase_closed", copy: "Purchases are paused" },
-      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "plan_waitlisted", copy: "plan isn" },
-      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_rejected", copy: "Stripe refused that checkout" },
-      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_unconfigured", copy: "isn&#x27;t configured" },
-      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_unavailable", copy: "Billing is temporarily unavailable" },
-      { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "topups_require_plan", copy: "Top-ups need a paid plan" },
-      { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "first_month_cap", copy: "first month" },
-      { path: "portal", code: "no_stripe_customer", copy: "no card on file", portal: true },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "purchase_closed" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "plan_waitlisted" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_rejected" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_unconfigured" },
+      { path: "subscribe", body: new URLSearchParams({ tier: "writer" }), code: "stripe_unavailable" },
+      { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "topups_require_plan" },
+      { path: "topup", body: new URLSearchParams({ packId: "pack_10" }), code: "first_month_cap" },
+      { path: "portal", code: "no_stripe_customer", portal: true },
     ];
     for (const row of cases) {
       const app = createWebApp(makeDeps(
@@ -344,10 +327,10 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
         redirect: "manual",
       });
       expect(res.status, `${row.path}/${row.code}`).toBe(302);
+      // SPA.27 — the notice copy is leaf paint now; the server contract is the classified
+      // `?notice=<code>` flash the leaf maps to its verbatim line.
       const location = res.headers.get("location") ?? "";
-      expect(location).toBe(`/settings/billing?notice=${row.code}`);
-      const html = await (await app.request(location)).text();
-      expect(html, `${row.path}/${row.code}`).toContain(row.copy);
+      expect(location, `${row.path}/${row.code}`).toBe(`/settings/billing?notice=${row.code}`);
     }
   });
 
@@ -407,9 +390,20 @@ describe("the /settings/billing plan card (§14.2/14.6)", () => {
   });
 });
 
+// SPA.27 — the /billing/return document is deleted; the checkout-return read + the server's
+// §14.6 webhook-lag poll verdict (open ∧ ¬cancelled ∧ <30 s ⇒ `pollAfterSeconds:5`, else absent —
+// REQ-BFF-15) ride the `/bff/billing/return` twin. The leaf owns the confirmed/pending/expired
+// lines + the meta-refresh; the server owns the poll verdict, pinned on the payload below.
 describe("the /billing/return poll (REQ-BILL-14; §14.6 webhook lag)", () => {
-  it("a completed checkout renders the confirmed line + the returnTo continue link", async () => {
-    const app = createWebApp(makeDeps({
+  const checkoutReturn = async (deps: WebDeps, sessionId = "cs_1") =>
+    (await (await createWebApp(deps).request(`/bff/billing/return?session_id=${sessionId}`)).json()) as {
+      checkoutReturn: { state: string; returnTo?: string | null } | null;
+      cancelled: boolean;
+      pollAfterSeconds?: number;
+    };
+
+  it("a completed checkout's row + returnTo ride the twin; no poll verdict", async () => {
+    const body = await checkoutReturn(makeDeps({
       checkoutStatus: {
         state: "completed",
         kind: "subscribe",
@@ -417,71 +411,59 @@ describe("the /billing/return poll (REQ-BILL-14; §14.6 webhook lag)", () => {
         createdAt: new Date().toISOString(),
       },
     }));
-    const res = await app.request("/billing/return?session_id=cs_1");
-    const html = await res.text();
-    expect(html).toContain('data-checkout-state="completed"');
-    expect(html).toContain("Payment confirmed");
-    expect(html).toContain('href="/p/new-essay/run"');
-    expect(html).not.toContain('http-equiv="refresh"');
+    expect(body.checkoutReturn).toMatchObject({ state: "completed", returnTo: "/p/new-essay/run" });
+    expect(body.pollAfterSeconds).toBeUndefined(); // never a forever-poll
   });
 
-  it("an open checkout renders the pending line + auto-refresh (the ≤30 s window)", async () => {
-    const app = createWebApp(makeDeps({
+  it("an open checkout inside the ≤30 s window carries pollAfterSeconds", async () => {
+    const body = await checkoutReturn(makeDeps({
       checkoutStatus: { state: "open", kind: "subscribe", returnTo: null, createdAt: new Date().toISOString() },
     }));
-    const res = await app.request("/billing/return?session_id=cs_1");
-    const html = await res.text();
-    expect(html).toContain('data-checkout-state="open"');
-    expect(html).toContain("Confirming your payment");
-    expect(html).toContain("we&#x27;ll email you");
-    expect(html).toContain('http-equiv="refresh"');
-    expect(html).toContain("session_id=cs_1");
+    expect(body.checkoutReturn?.state).toBe("open");
+    expect(body.pollAfterSeconds).toBe(5);
   });
 
-  it("an open checkout past the 30 s webhook-lag bound keeps the email fallback but stops polling", async () => {
-    const app = createWebApp(makeDeps({
+  it("an open checkout past the 30 s webhook-lag bound stops the poll verdict", async () => {
+    const body = await checkoutReturn(makeDeps({
       checkoutStatus: {
         state: "open",
         kind: "subscribe",
         returnTo: null,
         createdAt: new Date(Date.now() - 31_000).toISOString(),
       },
-    }));
-    const html = await (await app.request("/billing/return?session_id=cs_late")).text();
-    expect(html).toContain('data-checkout-state="open"');
-    expect(html).toContain("we&#x27;ll email you");
-    expect(html).not.toContain('http-equiv="refresh"');
+    }, "cs_late"));
+    expect(body.checkoutReturn?.state).toBe("open");
+    expect(body.pollAfterSeconds).toBeUndefined();
   });
 
-  it("an expired checkout renders the honest expired state — no forever-poll (BILL.3)", async () => {
-    const app = createWebApp(makeDeps({
+  it("an expired checkout answers its state — no poll verdict, ever (BILL.3)", async () => {
+    const body = await checkoutReturn(makeDeps({
       checkoutStatus: {
         state: "expired",
         kind: "topup",
         returnTo: "/settings/billing",
         createdAt: new Date().toISOString(),
       },
-    }));
-    const html = await (await app.request("/billing/return?session_id=cs_exp")).text();
-    expect(html).toContain('data-checkout-state="expired"');
-    expect(html).toContain("checkout expired");
-    expect(html).not.toContain('http-equiv="refresh"');
-    expect(html).toContain('href="/settings/billing"');
+    }, "cs_exp"));
+    expect(body.checkoutReturn).toMatchObject({ state: "expired", returnTo: "/settings/billing" });
+    expect(body.pollAfterSeconds).toBeUndefined();
   });
 });
 
 describe("the §14.5 level-1 account read on /usage (REQ-BILL-8/9/11)", () => {
-  it("renders the plan/period line, bucket bars, warnings, next expiry and the CSV link", async () => {
+  it("the twin ships the level-1 account read verbatim (the leaf paints the line/bars/warnings)", async () => {
     const app = createWebApp(makeDeps({}));
-    const res = await app.request("/usage");
-    const html = await res.text();
-    expect(html).toContain('data-usage-account="true"');
-    expect(html).toContain('data-usage-bucket="included"');
-    expect(html).toContain('data-usage-bucket="topup"');
-    expect(html).toContain("412 cr this period");
-    expect(html).toContain('data-usage-warning="true"');
-    expect(html).toContain('data-usage-next-expiry="true"');
-    expect(html).toContain('href="/usage.csv"');
+    const res = await app.request("/bff/usage");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      usage: { spendableCredits: number } | null;
+      account: { monthToDateCredits: number; buckets: { bucket: string }[]; warnings: string[]; nextExpiry: { credits: number } } | null;
+    };
+    expect(body.usage?.spendableCredits).toBe(3100);
+    expect(body.account?.monthToDateCredits).toBe(412);
+    expect(body.account?.buckets.map((b) => b.bucket)).toEqual(["included", "topup"]);
+    expect(body.account?.warnings[0]).toContain("rollover cap");
+    expect(body.account?.nextExpiry.credits).toBe(500);
   });
 
   it("GET /usage.csv proxies the RFC-4180 download with the session", async () => {
@@ -497,20 +479,23 @@ describe("the §14.5 level-1 account read on /usage (REQ-BILL-8/9/11)", () => {
 });
 
 describe("the §14.5 level-2 project rollup (/p/:project/usage)", () => {
-  it("renders the project total + the runs table with per-run cost and report links", async () => {
+  it("the twin ships the rollup verbatim (the leaf paints the total + the runs table)", async () => {
     const app = createWebApp(makeDeps({}));
-    const res = await app.request(`/p/${SLUG}/usage`);
+    const res = await app.request(`/bff/p/${SLUG}/usage`);
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-project-usage-total="true"');
-    expect(html).toContain("88 cr across 2 runs");
-    expect(html).toContain('data-project-usage-run="run_1"');
-    expect(html).toContain('href="/app/usage/r/run_1"');
+    const body = (await res.json()) as {
+      usageProject: { slug: string; totalCredits: number; runs: { runId: string; credits: number }[] };
+    };
+    expect(body.usageProject.slug).toBe(SLUG);
+    expect(body.usageProject.totalCredits).toBe(88);
+    expect(body.usageProject.runs.map((r) => r.runId)).toEqual(["run_1", "run_2"]);
   });
 
-  it("an unknown project 404s", async () => {
+  it("an unknown project: the document serves the shell; the twin answers not_found", async () => {
     const app = createWebApp(makeDeps({}));
-    const res = await app.request("/p/nope/usage");
-    expect(res.status).toBe(404);
+    // SPA.27 — the document 404 is deleted; the leaf owns not-found off the twin's miss.
+    expect((await app.request("/p/nope/usage")).status).toBe(200);
+    const twin = await app.request("/bff/p/nope/usage");
+    expect(twin.status).toBe(404);
   });
 });

@@ -1,42 +1,22 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { toProjectRowView, groupByAttention, groupByVoice } from "./state-map.js";
 import { renderDocument } from "./render.js";
+// SPA.27 — the deletion wave leaves exactly eleven SSR elements: the public funnel (invite /
+// landing / pricing / signup / login / showcase ± signed-in), the Page family's forced-SSR
+// documents (project / page / compare / revision — REQ-ED-12, phone & showcase & the `?ssr=1`
+// escape), and the not-found document every POST refusal + the catch-all still render. The other
+// thirty flipped-surface elements are deleted with their render paths — `routes.tsx` keeps their
+// manifest rows at `element: null` so the SPA router owns them.
 import {
   inviteElement,
   landingElement,
   pricingElement,
   signupElement,
   loginElement,
-  projectsElement,
   projectElement,
-  newProjectElement,
-  importElement,
-  importPreviewElement,
-  runSheetElement,
-  dossierElement,
   revisionElement,
   pageElement,
   compareElement,
-  exportElement,
-  voicesElement,
-  voiceNewElement,
-  voiceDetailElement,
-  voiceReseedElement,
-  obligationNewElement,
-  settingsElement,
-  projectSettingsElement,
-  usageElement,
-  runReportElement,
-  outlineElement,
-  outlinePromoteElement,
-  figuresElement,
-  figureCardElement,
-  visualizeElement,
-  billingElement,
-  billingReturnElement,
-  projectUsageElement,
-  inboxElement,
   showcaseElement,
   showcaseSignedInElement,
   notFoundElement,
@@ -52,7 +32,6 @@ import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
 import { bffFail, bffRoute, bodyFields, confirmEmailHandler, mutationOutcome, projectHandoffHandler, projectRow as bffProjectRow, projectRows, swallowDegraded, wantsJson } from "./bff.js";
-import { billingNoticeFor } from "./billing-copy.js";
 import { createSpaConsult, ssrOverrideRequested } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellDocument, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
@@ -2710,16 +2689,6 @@ export function createWebApp(deps: WebDeps): Hono {
       // the island deletes the IndexedDB hold ONLY when the echoed token matches its record.
       heldToken: str("heldToken") || null,
     };
-  };
-
-  /** The shared sheet loader: the protocol cards + the Voice picker's personas (+ REQ-GENRE-4's default
-   *  display — Essay for no Voice; the api re-runs the full rule at create). */
-  const loadNewProjectSheet = async (session: SessionHeaders) => {
-    const [protocols, voices] = await Promise.all([
-      Promise.resolve().then(() => deps.dataSource.listProtocolCards(session)).catch(() => []),
-      Promise.resolve().then(() => deps.dataSource.listVoices(session)).catch(() => []),
-    ]);
-    return { protocols, voices };
   };
 
   /** The pending preview's poll URL — the form fields ride the query so a refresh round-trips them. */

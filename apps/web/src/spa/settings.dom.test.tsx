@@ -9,15 +9,16 @@
 // REQ-UX-16 in-flight affordance (`aria-busy` + disabled controls), the multipart import (FormData,
 // never a JSON field), the binary download left a document `<a>`, the degraded-twin
 // `data-settings-unavailable` legs, the `?confirmEmail` consume in beforeLoad, the SsrHandoff
-// no-BFF leg, and the REQ-TST-2 parity legs against the SSR `SettingsPage`/`ProjectSettingsPage`
-// under a PageDataContext provider. Component axe covers the mounted interactive sections.
+// no-BFF leg. SPA.27 — the REQ-TST-2 parity legs against the SSR `SettingsPage`/`ProjectSettingsPage`
+// retired with the deleted SSR components (parity has no second renderer). Component axe covers
+// the mounted interactive sections.
 //
 // The fixtures mirror the retained SSR spec's (settings-pages.test.ts) — the parity legs compare
 // the two renderers on the SAME data.
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
+
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,14 +33,12 @@ import type {
   ProjectSettingsDto,
 } from "@rhema/api-client";
 import { ACCOUNT_DELETION_CONFIRMATION, NOTIFICATION_EVENT_TYPES } from "@rhema/contracts";
-import { PageDataContext } from "../page-data.js";
-import { ProjectSettingsPage, SettingsPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
+
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -305,17 +304,6 @@ function bootFor(surfaces: Record<string, "spa" | "ssr">): SpaBoot {
   return { principal: PRINCIPAL, theme: {}, deviceClass: "desktop", surfaces };
 }
 
-/** The five account-leaf route ids + the project leaf — one `settings` verdict covers all six. */
-const SPA_ALL = {
-  "/app/settings/account": "spa",
-  "/app/settings/preferences": "spa",
-  "/app/settings/notifications": "spa",
-  "/app/settings/integrations": "spa",
-  "/app/settings/data": "spa",
-  "/app/settings/billing": "ssr",
-  "/p/$project/settings": "spa",
-} as const;
-
 let assignSpy: ReturnType<typeof vi.fn>;
 const mounted: Root[] = [];
 
@@ -342,18 +330,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 }
 
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
-
-/** The REQ-TST-2 emission filter — which manifest entries the SSR twin emits on a markup string. */
-function emittedOn(ssrMarkup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("settings").filter((entry) => {
-    if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-    if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-    if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-    if (entry.kind === "field-prefix") return new RegExp(`\\bname=["'\`]${esc(entry.hook)}`).test(ssrMarkup);
-    return false;
-  });
-}
 
 /** A deferred Response — the REQ-UX-16 leg holds a mutation in flight. */
 function deferred<T>() {
@@ -495,31 +471,6 @@ describe("GET /app/settings/account mounted (REQ-SEQ-9)", () => {
     expect(el()!.querySelector('[name="name"]')).toBeNull();
   });
 
-  it("REQ-TST-2 parity — every account hook the SSR page emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ settings: { section: "account", account: ACCOUNT } }}>
-        <SettingsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app/settings/account", BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(8);
-    expectManifestEmission(spaMarkup, emitted);
-    for (const literal of [
-      'data-signin-method="google"',
-      'data-session="s2"',
-      'data-email-pending="true"',
-      'data-deletion-banner="true"',
-      'data-deletion-cancel="true"',
-      'name="sessionId"',
-      'name="byline"',
-      'name="image"',
-    ]) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
   it("component axe on the mounted account section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/account", BOOT, makeFetch());
@@ -593,17 +544,6 @@ describe("GET /app/settings/preferences mounted", () => {
     expect(assignSpy).not.toHaveBeenCalled();
   });
 
-  it("REQ-TST-2 parity — the SSR preferences vocabulary is emitted verbatim", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ settings: { section: "preferences", preferences: PREFS } }}>
-        <SettingsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app/settings/preferences", BOOT, makeFetch());
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(8);
-    expectManifestEmission(el()!.innerHTML, emitted);
-  });
 
   it("component axe on the mounted preferences section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/preferences", BOOT, makeFetch());
@@ -656,17 +596,6 @@ describe("GET /app/settings/notifications mounted", () => {
     expect(assignSpy).not.toHaveBeenCalled();
   });
 
-  it("REQ-TST-2 parity — the SSR notifications vocabulary is emitted verbatim", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ settings: { section: "notifications", notifications: NOTIF } }}>
-        <SettingsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app/settings/notifications", BOOT, makeFetch());
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(8);
-    expectManifestEmission(el()!.innerHTML, emitted);
-  });
 
   it("component axe on the mounted matrix (REQ-VFY-6 — the select-name additions carry)", async () => {
     await mountAt("/app/settings/notifications", BOOT, makeFetch());
@@ -711,17 +640,6 @@ describe("GET /app/settings/integrations mounted", () => {
     expect(assignSpy).not.toHaveBeenCalled();
   });
 
-  it("REQ-TST-2 parity — the SSR integrations vocabulary is emitted verbatim", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider value={{ settings: { section: "integrations", integrations: INTEGRATIONS } }}>
-        <SettingsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app/settings/integrations", BOOT, makeFetch());
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(5);
-    expectManifestEmission(el()!.innerHTML, emitted);
-  });
 });
 
 // ---- /app/settings/data -------------------------------------------------------------------------
@@ -894,23 +812,6 @@ describe("GET /app/settings/data mounted (REQ-ACCT-3/4 + REQ-VIS-11)", () => {
     expect(main.querySelector("[data-account-export]")).not.toBeNull();
   });
 
-  it("REQ-TST-2 parity — the SSR data vocabulary is emitted verbatim", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          settings: { section: "data", data: DATA },
-          privacy: { analyticsOptOut: false, saved: false },
-          accountExport: { export: EXPORT },
-        }}
-      >
-        <SettingsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app/settings/data", BOOT, makeFetch());
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(15);
-    expectManifestEmission(el()!.innerHTML, emitted);
-  });
 
   it("component axe on the mounted data section (REQ-VFY-6)", async () => {
     await mountAt("/app/settings/data", BOOT, makeFetch());
@@ -1009,26 +910,7 @@ describe("GET /p/:project/settings mounted (REQ-GENRE-2 + REQ-GATE-3/10)", () =>
     expect(el()!.querySelector("[data-settings-saved]")).not.toBeNull();
   });
 
-  it("a 404 twin answer maps to the router's not-found — the document's parity", async () => {
-    await mountAt(`/p/${SLUG}/settings`, BOOT, makeFetch({ projectStatus: 404 }));
-    const main = el()!;
-    expect(main.textContent).toContain(COPY.notFound.heading);
-    expect(main.querySelector("[data-approval-settings]")).toBeNull();
-  });
 
-  it("REQ-TST-2 parity — the SSR project-settings vocabulary is emitted verbatim", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{ projectSettings: { slug: SLUG, settings: PROJECT_SETTINGS, approvalSettings: APPROVALS } }}
-      >
-        <ProjectSettingsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt(`/p/${SLUG}/settings`, BOOT, makeFetch());
-    const emitted = emittedOn(ssrMarkup);
-    expect(emitted.length).toBeGreaterThanOrEqual(15);
-    expectManifestEmission(el()!.innerHTML, emitted);
-  });
 
   it("component axe on the mounted project settings (REQ-VFY-6 — the override grid carries)", async () => {
     await mountAt(`/p/${SLUG}/settings`, BOOT, makeFetch());
@@ -1090,64 +972,3 @@ describe("REQ-UX-16/REQ-BFF-30 — mutation pending affordance", () => {
   });
 });
 
-// ---- the whole-manifest emission leg --------------------------------------------------------------
-
-describe("the settings surface's manifest coverage (REQ-VFY-2)", () => {
-  it("every manifest hook the rich fixture set emits is emitted across the mounted sections", async () => {
-    // The union of the SSR emissions across ALL fixture variants IS the per-fixture parity legs'
-    // contract — this roll-up just re-runs them as one assertion for the report line.
-    const fixtures: { path: string; ssr: string }[] = [];
-    const ssrOf = (value: Parameters<typeof PageDataContext.Provider>[0]["value"], project = false) =>
-      renderToStaticMarkup(
-        <PageDataContext.Provider value={value}>
-          {project ? <ProjectSettingsPage /> : <SettingsPage />}
-        </PageDataContext.Provider>,
-      );
-    fixtures.push({
-      path: "/app/settings/account",
-      ssr: ssrOf({ settings: { section: "account", account: ACCOUNT } }),
-    });
-    fixtures.push({
-      path: "/app/settings/preferences",
-      ssr: ssrOf({ settings: { section: "preferences", preferences: PREFS } }),
-    });
-    fixtures.push({
-      path: "/app/settings/notifications",
-      ssr: ssrOf({ settings: { section: "notifications", notifications: NOTIF } }),
-    });
-    fixtures.push({
-      path: "/app/settings/integrations",
-      ssr: ssrOf({ settings: { section: "integrations", integrations: INTEGRATIONS } }),
-    });
-    fixtures.push({
-      path: "/app/settings/data?notice=imported&p=2&v=1&f=3",
-      ssr: ssrOf({
-        settings: { section: "data", data: DATA },
-        privacy: { analyticsOptOut: false },
-        accountExport: {
-          export: EXPORT,
-          notice: "imported",
-          imported: { projects: 2, voices: 1, files: 3, deduped: false },
-        },
-      }),
-    });
-    fixtures.push({
-      path: `/p/${SLUG}/settings`,
-      ssr: ssrOf(
-        { projectSettings: { slug: SLUG, settings: PROJECT_SETTINGS, approvalSettings: APPROVALS } },
-        true,
-      ),
-    });
-    let total = 0;
-    for (const fix of fixtures) {
-      const emitted = emittedOn(fix.ssr);
-      total += emitted.length;
-      await mountAt(fix.path, bootFor(SPA_ALL), makeFetch());
-      expectManifestEmission(el()!.innerHTML, emitted);
-      for (const r of mounted.splice(0)) act(() => r.unmount());
-      document.body.innerHTML = "";
-    }
-    // The fixture set must exercise the surface deeply — a thin total means the fixtures drifted.
-    expect(total).toBeGreaterThanOrEqual(55);
-  });
-});

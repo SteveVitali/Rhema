@@ -171,19 +171,15 @@ const form = (fields: Record<string, string>) => ({
 });
 
 describe("the §14.7 settings tree — six visible sections, canonical paths (P1.20)", () => {
-  it("each section renders the strip; Team is nowhere in the nav", async () => {
+  it("each section serves the shell; the §14.7 nav strip + Team-hiding are leaf paint", async () => {
+    // SPA.27 (REQ-TST-1) — the settings-nav render asserts retired with the document; the web's
+    // surviving contract is the uniform shell hand-off on every section at its canonical path.
     const app = createWebApp(makeDeps());
     for (const s of ["account", "preferences", "notifications", "integrations", "data"]) {
       const res = await app.request(`/app/settings/${s}`);
       expect(res.status, s).toBe(200);
       const html = await res.text();
-      expect(html).toContain('data-settings-nav="true"');
-      for (const t of ["account", "preferences", "notifications", "integrations", "billing", "data"]) {
-        expect(html, `${s} nav ${t}`).toContain(`data-section="${t}"`);
-        expect(html).toContain(`/app/settings/${t}`);
-      }
-      expect(html).not.toContain('data-section="team"');
-      expect(html).not.toContain(">Team<");
+      expect(html, s).toContain('id="spa-root"');
     }
   });
 
@@ -198,17 +194,15 @@ describe("the §14.7 settings tree — six visible sections, canonical paths (P1
 });
 
 describe("Account section", () => {
-  it("renders profile, email change, sign-in methods, sessions with revoke", async () => {
-    const res = await createWebApp(makeDeps()).request("/app/settings/account");
-    const html = await res.text();
-    expect(html).toContain('value="Seed User"');
-    expect(html).toContain('value="S. Seed"');
-    expect(html).toContain("seed@example.test");
-    expect(html).toContain('data-signin-method="google"');
-    expect(html).toContain('data-session="s2"');
-    expect(html).toContain('data-revoke-session="true"');
-    expect(html).toContain("This device");
-    expect(html).toContain("/app/settings/data#delete"); // the delete control lives in Data
+  it("the twin ships profile, sign-in methods, sessions + deletion verbatim (the leaf paints them)", async () => {
+    const res = await createWebApp(makeDeps()).request("/bff/settings/account");
+    expect(res.status).toBe(200);
+    const { account } = (await res.json()) as { account: AccountSettingsDto | null };
+    expect(account?.user).toMatchObject({ name: "Seed User", byline: "S. Seed", email: "seed@example.test" });
+    expect(account?.signInMethods.map((m) => m.kind)).toContain("google");
+    expect(account?.sessions.map((s) => s.id)).toEqual(["s1", "s2"]);
+    expect(account?.sessions[0].current).toBe(true); // the leaf's "This device" label
+    expect(account?.deletion).toBeNull(); // the delete control stays in the Data section
   });
 
   it("posts the profile fields; posts revoke with the session id", async () => {
@@ -243,16 +237,16 @@ describe("Account section", () => {
 });
 
 describe("Preferences section", () => {
-  it("renders the canonical vocab (Base/Balanced/Frontier · Quick/Standard/Full board), no raw model names", async () => {
-    const html = await (await createWebApp(makeDeps()).request("/app/settings/preferences")).text();
-    for (const t of ["Base", "Balanced", "Frontier"]) expect(html).toContain(t);
-    for (const r of ["Quick", "Standard", "Full board"]) expect(html).toContain(r);
-    expect(html).not.toMatch(/opus|sonnet|haiku|gpt-|claude-3/i);
-    expect(html).toContain('data-tier="frontier"');
-    expect(html).toContain('data-approval-policy="run_to_completion"');
-    expect(html).toContain('name="consentUnder"');
-    expect(html).toContain("1,000 max");
-    expect(html).toContain("always win over these account defaults");
+  it("the twin ships the prefs + consent cap + theme verbatim (the canonical-vocab paint is leaf)", async () => {
+    // SPA.27 — the Base/Balanced/Frontier + Quick/Standard/Full board labels and the no-raw-model
+    // invariant are the preferences leaf's dom coverage; the server payload stays honest IDs.
+    const res = await createWebApp(makeDeps()).request("/bff/settings/preferences");
+    expect(res.status).toBe(200);
+    const { preferences } = (await res.json()) as { preferences: PreferencesSettingsDto | null };
+    expect(preferences?.prefs.defaultModelTier).toBe("balanced");
+    expect(preferences?.prefs.rigorByWorkflow).toEqual({ review: "full_board" });
+    expect(preferences?.consentDontAskUnder).toBe(240);
+    expect(preferences?.appTheme).toBe("dark");
   });
 
   it("POST sends the prefs patch (empty selects → null unset) + the clamped threshold + theme", async () => {
@@ -294,22 +288,16 @@ describe("Preferences section", () => {
 });
 
 describe("Notifications section", () => {
-  it("renders the matrix; the two non-configurable rows are locked (no select)", async () => {
-    const html = await (await createWebApp(makeDeps()).request("/app/settings/notifications")).text();
-    expect(html).toContain('data-notification-matrix="true"');
-    // SPA.6 — the form-level hook the journey pins the POST to (settings gate).
-    expect(html).toContain('data-notifications-form="true"');
-    for (const locked of ["spend_gate", "trial_payment"]) {
-      const row = html.match(new RegExp(`<tr[^>]*data-notification-row="${locked}"[^>]*>[\\s\\S]*?</tr>`))?.[0] ?? "";
-      expect(row, locked).toContain("Always on");
-      expect(row).not.toContain("<select"); // nothing to flip — the api rejects a write too
-    }
-    const run = html.match(/<tr[^>]*data-notification-row="run_finished"[\s\S]*?<\/tr>/)?.[0] ?? "";
-    expect(run).toContain('name="email_run_finished"');
-    expect(run).toContain('name="inapp_run_finished"');
-    // run_progress is per-project — the matrix row carries the note, the Advanced list the selects.
-    expect(html).toContain('name="rp_p1"');
-    expect(html).toContain('name="qh_start"');
+  it("the twin ships the matrix + the per-project voice list (locked-row paint is leaf)", async () => {
+    // SPA.27 — the "Always on" lock rows + the select mounts are leaf dom; the twin carries the
+    // matrix + the projects the per-row opt-ins fan out over.
+    const res = await createWebApp(makeDeps()).request("/bff/settings/notifications");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      notifications: (NotificationPrefsDto & { projects?: { id: string; title: string }[] }) | null;
+    };
+    expect(body.notifications?.prefs.email.run_finished).toBe(false);
+    expect(body.notifications?.projects?.map((v) => v.id)).toContain("p1"); // the run_progress advanced rows
   });
 
   it("POST fans out: the account matrix + digest + quiet hours ride the first write; each project is its own call", async () => {
@@ -365,14 +353,12 @@ describe("Notifications section", () => {
 });
 
 describe("Integrations section", () => {
-  it("renders the three uniform cards with their read/never lines + the disconnect form", async () => {
-    const html = await (await createWebApp(makeDeps()).request("/app/settings/integrations")).text();
-    for (const p of ["substack", "medium", "gdrive"]) expect(html).toContain(`data-integration-card="${p}"`);
-    expect(html).toContain("We never post to your Substack.");
-    expect(html).toContain("drive.file scope");
-    expect(html).toContain('data-conn-status="connected"');
-    expect(html).toContain("12 items discovered · 9 in the voice");
-    expect(html).toContain('action="/app/settings/integrations/cn1/disconnect"');
+  it("the twin ships the connection rows verbatim (the read/never lines + card paint are leaf)", async () => {
+    const res = await createWebApp(makeDeps()).request("/bff/settings/integrations");
+    expect(res.status).toBe(200);
+    const { integrations } = (await res.json()) as { integrations: IntegrationsSettingsDto | null };
+    expect(integrations?.connections[0]).toMatchObject({ id: "cn1", provider: "substack", status: "connected", items: 12, includedItems: 9 });
+    expect(integrations?.voices[0].slug).toBe("voice-one");
   });
 
   it("disconnect posts the connection id", async () => {
@@ -387,23 +373,20 @@ describe("Integrations section", () => {
 });
 
 describe("Data section", () => {
-  it("renders the support grant + visible log, the verbatim posture/Q-26 copy, export, delete", async () => {
-    const html = await (await createWebApp(makeDeps()).request("/app/settings/data")).text();
-    expect(html).toContain("Allow Rhema staff to view my projects for support (per request, 72 h)");
-    expect(html).toContain('data-support-log="true"');
-    expect(html).toContain("Staff viewed your projects"); // the accessed log row is user-visible
-    expect(html).toContain("Active until 2026-09-23 00:00 (UTC)");
-    // §14.7 verbatim — training posture + residual-risk sentence; no DPA/SOC 2 badge.
-    expect(html).toContain("Rhema does not train models on your content.");
-    expect(html).toContain("a search query is text that leaves Rhema");
-    expect(html).toContain("Enterprise? Ask us about a DPA");
-    expect(html).not.toMatch(/SOC ?2/i);
-    // §11.7 verbatim — the Q-26 capture-only posture.
-    expect(html).toContain("Rhema learns your working preferences from your decisions to help the Drafter and pre-fill defaults. The Editor never sees this — reviews never soften.");
-    expect(html).toContain('data-account-export="true"');
-    expect(html).toContain('action="/app/settings/data/export"');
-    expect(html).toContain('data-delete-account-form="true"');
-    expect(html).toContain('pattern="delete"');
+  it("the twin ships privacy + the data read + export state verbatim (the §14.7/Q-26 copy is leaf)", async () => {
+    // SPA.27 — the verbatim posture copy, the support-log rows, and the delete/export forms' mounts
+    // are the data leaf's dom coverage; the payload contract survives on the twin.
+    const res = await createWebApp(makeDeps()).request("/bff/settings/data");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      privacy: { analyticsOptOut: boolean };
+      data: DataSettingsDto | null;
+      accountExport: { export: unknown };
+    };
+    expect(body.privacy.analyticsOptOut).toBe(false);
+    expect(body.data?.supportAccess.active).toBe(true);
+    expect(body.data?.supportAccess.log?.length).toBe(2); // the accessed row stays user-visible
+    expect(body.accountExport.export).toBeNull();
   });
 
   it("posts support-access + preference-learning + delete-request/cancel through the api", async () => {
@@ -442,7 +425,7 @@ describe("Data section", () => {
     expect(c.headers.get("location")).toBe("/app/settings/data?notice=deletion-cancelled");
   });
 
-  it("the grace banner renders over every section while the clock runs", async () => {
+  it("the deletion state rides every twin while the grace clock runs (the banner is leaf paint)", async () => {
     const deletion = { requestedAt: "2026-09-20T00:00:00Z", graceEndsAt: "2026-10-04T00:00:00Z" };
     const app = createWebApp(
       makeDeps({}, {
@@ -450,29 +433,24 @@ describe("Data section", () => {
         getDataSettings: async () => ({ ...DATA, deletion }),
       }),
     );
-    const html = await (await app.request("/app/settings/account")).text();
-    expect(html).toContain('data-deletion-banner="true"');
-    expect(html).toContain("2026-10-04");
-    expect(html).toContain('action="/app/settings/account/delete/cancel"');
-    const dataHtml = await (await app.request("/app/settings/data")).text();
-    expect(dataHtml).toContain('data-deletion-banner="true"');
-    expect(dataHtml).not.toContain('data-delete-account-form="true"'); // no second destructive form
+    const account = (await (await app.request("/bff/settings/account")).json()) as { account: AccountSettingsDto | null };
+    expect(account.account?.deletion).toEqual(deletion); // the leaf's banner source
+    const data = (await (await app.request("/bff/settings/data")).json()) as { data: DataSettingsDto | null };
+    expect(data.data?.deletion).toEqual(deletion);
   });
 });
 
 describe("Project settings (/p/:project/settings)", () => {
-  it("renders the safe fields + the approval surface + standing guidance", async () => {
-    const html = await (await createWebApp(makeDeps()).request("/p/demo/settings")).text();
-    expect(html).toContain("Demo — Project settings");
-    expect(html).toContain('name="venue"');
-    expect(html).toContain('name="protocolId"');
-    expect(html).toContain('name="rigorDefault"');
-    expect(html).toContain('name="modelTierDefault"');
-    expect(html).toContain('name="pd_verification"');
-    expect(html).toContain('action="/p/demo/settings/approvals"');
-    expect(html).toContain("Keep openings under 700 words.");
-    expect(html).toContain('action="/p/demo/guidance"'); // Add
-    expect(html).toContain("/p/demo/guidance/g1/retire"); // Retire
+  it("the twin ships the safe fields + the approval surface verbatim (the paint is leaf)", async () => {
+    const res = await createWebApp(makeDeps()).request("/bff/p/demo/settings");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      projectSettings: { slug: string; settings: ProjectSettingsDto; approvalSettings?: ApprovalSettingsDto };
+    };
+    expect(body.projectSettings.slug).toBe("demo");
+    expect(body.projectSettings.settings.project).toMatchObject({ venue: "LRB", protocolId: "essay" });
+    expect(body.projectSettings.settings.project.protocolOverrides?.phaseDefaults?.verification).toBe(false);
+    expect(body.projectSettings.approvalSettings?.standing[0].body).toBe("Keep openings under 700 words.");
   });
 
   it("POST maps the form to the safe-field patch (empty = inherit/clear)", async () => {

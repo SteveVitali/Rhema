@@ -152,27 +152,10 @@ function form(fields: Record<string, string>): { body: string; headers: Record<s
 const SLUG = "the-politics-of-visibility";
 
 describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
-  it("renders the five verbs + a note + optional reason chips on every FINALIZED finding — none while provisional", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/review/run_1`);
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    // two finalized findings carry the form on EACH of the three §5.7 surfaces (body list + Margin
-    // card + Desk row = 2×3); the provisional one does not (P1.07 — one model, three surfaces).
-    expect(html.match(/data-disposition-form="true"/g)).toHaveLength(6);
-    expect(html).toContain(`action="/p/${SLUG}/review/run_1/findings/f_1/disposition"`);
-    for (const verb of ["accept", "adapt", "rebut", "defer", "escalate"]) {
-      expect(html).toContain(`data-verb="${verb}"`);
-    }
-    expect(html).toContain('name="note"');
-    for (const code of ["wrong", "stylistic_disagreement", "already_knew", "too_costly", "not_this_round", "other"]) {
-      expect(html).toContain(`data-reason-chip="${code}"`);
-    }
-    // f_2's recorded defer marks its verb selected and pre-fills the note (reversible until freeze).
-    expect(html).toContain('data-verb="defer" data-selected="true"');
-    // the pre-triage line reports the decided count (REQ-IDE-28).
-    expect(html).toContain('data-pretriage-line="true"');
-  });
+  // SPA.27 (REQ-TST-1) — the disposition-form render asserts (the five verbs × the three §5.7
+  // surfaces, the reason chips, the selected-verb pre-fill, the pre-triage line) retired with the
+  // dossier document: the findings leaf paints them off the twin (findings surface dom tests).
+  // The POST contract — the forward, the flashes, the refusals — stays server-owned below.
 
   it("POST forwards verb/note/reason_code/adapted_text and bounces back with ?disposed=", async () => {
     const recordDisposition = vi.fn(async () => ({ id: "dsp_1", findingId: "f_1", kind: "adapt", status: "proposed" }));
@@ -193,7 +176,7 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
     expect(recordDisposition.mock.calls[0]![3]).not.toHaveProperty("rationale");
   });
 
-  it("a 422 (rationale required) re-renders the dossier with the error under the card", async () => {
+  it("a 422 (rationale required) bounces back with the ferr/fmsg flash the leaf paints under the card", async () => {
     const app = createWebApp(
       makeDeps({ recordDisposition: async () => { throw new ApiError(422, "invalid_disposition"); } }),
     );
@@ -201,13 +184,16 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
       method: "POST",
       ...form({ verb: "rebut", note: "" }),
     });
-    expect(res.status).toBe(422);
-    const html = await res.text();
-    expect(html).toContain("a rationale is required for rebut");
-    expect(html).toContain('role="alert"');
+    // SPA.27 — the dossier re-render is deleted: the refusal rides the SAME `ferr`/`fmsg` flash
+    // vocabulary the finding-action posts carry; the leaf renders the error under the card.
+    expect(res.status).toBe(302);
+    const loc = res.headers.get("location") ?? "";
+    expect(loc).toContain(`/p/${SLUG}/review/run_1?ferr=f_1`);
+    expect(loc).toContain("fmsg=");
+    expect(decodeURIComponent(loc)).toContain("a rationale is required for rebut");
   });
 
-  it("a 409 (frozen at delivery) re-renders with the frozen notice", async () => {
+  it("a 409 (frozen at delivery) bounces back with the frozen notice's flash", async () => {
     const app = createWebApp(
       makeDeps({ recordDisposition: async () => { throw new ApiError(409, "frozen"); } }),
     );
@@ -215,8 +201,10 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
       method: "POST",
       ...form({ verb: "accept" }),
     });
-    expect(res.status).toBe(409);
-    expect(await res.text()).toContain("frozen");
+    expect(res.status).toBe(302);
+    const loc = decodeURIComponent(res.headers.get("location") ?? "");
+    expect(loc).toContain(`/p/${SLUG}/review/run_1?ferr=f_1`);
+    expect(loc).toContain("frozen");
   });
 
   it("the project-scoped POST (a gate row's per-finding override) bounces back to /p/:slug", async () => {
@@ -234,7 +222,9 @@ describe("the dossier's disposition controls (§5.7; REQ-BETA-6)", () => {
 describe("the Needs-you gate cards + Decisions list on the project page (§6.4)", () => {
   it("renders the approve_triage card with the ledger (escalations flagged, 'Approve proposals')", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}`);
+    // SPA.27 — the desktop document is the shell; these render asserts pin the surviving
+    // forced-SSR arm (Page family: ?ssr=1 / phone / showcase).
+    const res = await app.request(`/p/${SLUG}?ssr=1`);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-needs-you="true"');
@@ -267,7 +257,7 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
   it("only an auto-proceed card carries the presence-ping script; its pings hit the activity route (REQ-SPEC-18)", async () => {
     const recordGateActivity = vi.fn(async () => {});
     const app = createWebApp(makeDeps({ listGates: async () => [GATE, GATE_AUTO], recordGateActivity }));
-    const res = await app.request(`/p/${SLUG}`);
+    const res = await app.request(`/p/${SLUG}?ssr=1`);
     expect(res.status).toBe(200);
     const html = await res.text();
     // the wait-default approve_triage card emits NO presence script; the auto-proceed scope card does.
@@ -289,17 +279,9 @@ describe("the Needs-you gate cards + Decisions list on the project page (§6.4)"
 describe("phone width — the SAME components at the narrow input set (§10.1; REQ-SPEC-20)", () => {
   const MOBILE = { headers: { "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Mobile" } };
 
-  it("the dossier stacks the same five verbs + note compactly", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/review/run_1`, MOBILE);
-    const html = await res.text();
-    expect(html).toContain('data-disposition-form="true" data-compact="true"');
-    for (const verb of ["accept", "adapt", "rebut", "defer", "escalate"]) {
-      expect(html).toContain(`data-verb="${verb}"`);
-    }
-    expect(html).toContain('name="note"');
-    expect(html).not.toContain("bulk");
-  });
+  // SPA.27 — the compact dossier render asserts retired with the document (the flipped surfaces
+  // serve the shell at EVERY width; the leaf's own compact layout is client-side now). The gate
+  // card's phone asserts below survive — `/p/:slug` keeps its forced-SSR Page render on phone.
 
   it("the gate card narrows to Approve / Wait for me / Stop — same component, same contract", async () => {
     const app = createWebApp(makeDeps());
@@ -315,7 +297,7 @@ describe("phone width — the SAME components at the narrow input set (§10.1; R
 describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
   it("the project page renders the opt-in checkbox (unchecked while waiting by default)", async () => {
     const app = createWebApp(makeDeps());
-    const html = await (await app.request(`/p/${SLUG}`)).text();
+    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
     expect(html).toContain('data-approval-opt-in="true"');
     expect(html).toContain('name="approve_triage_24h"');
     expect(html).toContain("Auto-approve triage after 24 h");
@@ -330,7 +312,7 @@ describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
         setApprovalOverrides,
       }),
     );
-    const html = await (await app.request(`/p/${SLUG}`)).text();
+    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
     expect(html).toContain('name="approve_triage_24h" checked=""');
 
     const res = await app.request(`/p/${SLUG}/approval-overrides`, {
@@ -350,14 +332,18 @@ describe("the per-project approve_triage 24-h opt-in (§6.4 R3)", () => {
 });
 
 describe("the Revise sheet's pre-triage line (REQ-IDE-28)", () => {
-  it("shows 'you pre-triaged N of M' on the revise sheet only", async () => {
+  it("the twin carries `pretriage` on the revise sheet only", async () => {
+    // SPA.27 — the sheet document is deleted; the pre-triage fact rides the twin (the leaf paints
+    // 'you pre-triaged N of M' off it).
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/run?workflow=revise`);
-    const html = await res.text();
-    expect(html).toContain('data-pretriage-line="true"');
-    expect(html).toContain("1"); // triaged
-    const review = await app.request(`/p/${SLUG}/run?workflow=review`);
-    expect(await review.text()).not.toContain('data-pretriage-line="true"');
+    const res = await app.request(`/bff/p/${SLUG}/run?workflow=revise`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { pretriage?: { triaged: number; total: number } };
+    expect(body.pretriage).toEqual({ triaged: 1, total: 3 });
+    const review = (await (await app.request(`/bff/p/${SLUG}/run?workflow=review`)).json()) as {
+      pretriage?: unknown;
+    };
+    expect(review.pretriage).toBeUndefined();
   });
 });
 
@@ -414,7 +400,7 @@ const SETTINGS = {
 describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => {
   it("each Needs-you row is a <details> ApprovalRow mounting the IDENTICAL card anatomy", async () => {
     const app = createWebApp(makeDeps({ listGates: async () => [GATE] }));
-    const html = await (await app.request(`/p/${SLUG}`)).text();
+    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
     expect(html).toContain('data-approval-row="gate_1"');
     expect(html).toContain("<details"); // SSR/no-JS — the row expands natively
     expect(html).toContain('data-approval-sheet="true"');
@@ -428,19 +414,19 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
     const app = createWebApp(
       makeDeps({ listGates: async () => [GATE_INFO, GATE_DEADLINE, GATE] }),
     );
-    const html = await (await app.request(`/p/${SLUG}`)).text();
+    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
     const order = [...html.matchAll(/data-approval-row="([^"]+)"/g)].map((m) => m[1]);
     expect(order).toEqual(["gate_dl", "gate_1", "gate_info"]);
   });
 
   it("the one-time explainer mounts on the first Approval card until dismissed (§5.11)", async () => {
     const fresh = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: [] }) }));
-    const html = await (await fresh.request(`/p/${SLUG}`)).text();
+    const html = await (await fresh.request(`/p/${SLUG}?ssr=1`)).text();
     expect(html).toContain('data-gate-explainer="true"');
     expect(html).toContain(`action="/p/${SLUG}/explainers/approvals/dismiss"`);
 
     const seen = createWebApp(makeDeps({ getExplainers: async () => ({ dismissed: ["approvals"] }) }));
-    expect(await (await seen.request(`/p/${SLUG}`)).text()).not.toContain('data-gate-explainer');
+    expect(await (await seen.request(`/p/${SLUG}?ssr=1`)).text()).not.toContain('data-gate-explainer');
   });
 
   it("the explainer dismiss POST hits the api seam and bounces back", async () => {
@@ -453,7 +439,7 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
 
   it("the Approvals settings section renders the policy radios + per-kind grid + standing guidance", async () => {
     const app = createWebApp(makeDeps({ getApprovalSettings: async () => SETTINGS }));
-    const html = await (await app.request(`/p/${SLUG}`)).text();
+    const html = await (await app.request(`/p/${SLUG}?ssr=1`)).text();
     expect(html).toContain('data-approval-settings="true"');
     for (const p of ["named", "wait_each", "run_to_completion"]) {
       expect(html).toContain(`data-policy="${p}"`);
@@ -551,7 +537,7 @@ describe("P1.09 — the §6.4 approval surface on the web (AC1/AC5/AC6)", () => 
         autoRun: "on",
       }),
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(302); // SPA.27 — the started re-render is deleted; success lands on the sheet URL
     expect(createRun).toHaveBeenCalledWith(
       expect.anything(),
       "proj_pv",

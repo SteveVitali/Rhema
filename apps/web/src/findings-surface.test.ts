@@ -100,49 +100,48 @@ function form(fields: Record<string, string>): { body: string; headers: Record<s
 }
 
 describe("P1.07 — the dossier's three surfaces share one list (§5.7)", () => {
-  it("renders the Margin surface + the Desk findings table + the Apply affordance", async () => {
+  // SPA.27 — the Margin/Desk/bulk render asserts retired with the document; the ONE
+  // `dossierComposition` (findings + filters + triage + bulk preview) rides the twin verbatim,
+  // and the leaf paints the three surfaces off the same payload.
+  it("the twin ships the full findings list + the view state (leaf paints Margin/Desk/Apply)", async () => {
     const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/review/run_1`);
+    expect((await app.request(`/p/${SLUG}/review/run_1`)).status).toBe(200); // the shell
+    const res = await app.request(`/bff/p/${SLUG}/review/run_1`);
     expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-margin-surface="true"');
-    expect(html).toContain('data-findings-desk="true"');
-    // f_1 + f_2 carry suggestions → the free Apply button posts to the api route.
-    expect(html.match(/data-apply="true"/g)!.length).toBeGreaterThanOrEqual(2);
-    expect(html).toContain(`/p/${SLUG}/review/run_1/findings/f_1/apply`);
-    // the shared filter bar + the bulk affordances render on the Desk surface.
-    expect(html).toContain('data-findings-filters="true"');
-    expect(html).toContain('data-bulk-controls="true"');
-    expect(html).toContain("/findings/bulk-preview");
+    const body = (await res.json()) as {
+      dossier: { findings: { id: string; severity: string }[] };
+      dossierView: { filters: Record<string, unknown>; triage: boolean; bulk?: unknown };
+    };
+    expect(body.dossier.findings.map((f) => f.id)).toEqual(expect.arrayContaining(["f_1", "f_2"]));
+    expect(body.dossierView.triage).toBe(false);
+    expect(body.dossierView.bulk).toBeUndefined();
   });
 
-  it("the shared filters narrow every surface together (?sev=note hides the rest)", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/review/run_1?sev=note`);
-    const html = await res.text();
-    expect(html).toContain('data-desk-row="f_2"');
-    expect(html).not.toContain('data-desk-row="f_1"');
-    expect(html).not.toContain('data-margin-card="true" id="finding-f_1"');
+  it("the shared filter state echoes on the twin (?sev=note) — the leaf narrows every surface", async () => {
+    const res = await createWebApp(makeDeps()).request(`/bff/p/${SLUG}/review/run_1?sev=note`);
+    const { dossierView, dossier } = (await res.json()) as {
+      dossierView: { filters: { sev?: string } };
+      dossier: { findings: { id: string }[] };
+    };
+    expect(dossierView.filters.sev).toBe("note");
+    // the full list still ships — the filter is leaf-applied off the echoed state.
+    expect(dossier.findings.length).toBeGreaterThan(1);
   });
 
-  it("?triage=1 renders the sectioned queue + the progress pill", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/review/run_1?triage=1`);
-    const html = await res.text();
-    expect(html).toContain('data-triage-mode="true"');
-    expect(html).toContain("of 4 decided");
-    expect(html).toContain('data-triage-section="strength"');
+  it("?triage=1 flags the queue mode on the twin's view state", async () => {
+    const res = await createWebApp(makeDeps()).request(`/bff/p/${SLUG}/review/run_1?triage=1`);
+    const { dossierView } = (await res.json()) as { dossierView: { triage: boolean } };
+    expect(dossierView.triage).toBe(true);
   });
 
-  it("?bulk=apply_notes renders the consolidated preview checklist", async () => {
-    const app = createWebApp(makeDeps());
-    const res = await app.request(`/p/${SLUG}/review/run_1?bulk=apply_notes`);
-    const html = await res.text();
-    expect(html).toContain('data-bulk-preview="true"');
-    expect(html).toContain('name="only"');
-    expect(html).toContain('value="f_2"');
-    expect(html).toContain("severity_not_note");
-    expect(html).toContain(`/p/${SLUG}/review/run_1/findings/bulk`);
+  it("?bulk=apply_notes carries the api's preview verbatim (rows + skipped)", async () => {
+    const res = await createWebApp(makeDeps()).request(`/bff/p/${SLUG}/review/run_1?bulk=apply_notes`);
+    const { dossierView } = (await res.json()) as {
+      dossierView: { bulk?: { action: string; preview: { rows: { findingId: string }[]; skipped: { reason: string }[] } } };
+    };
+    expect(dossierView.bulk?.action).toBe("apply_notes");
+    expect(dossierView.bulk?.preview.rows.map((r) => r.findingId)).toEqual(["f_2"]);
+    expect(dossierView.bulk?.preview.skipped[0].reason).toBe("severity_not_note");
   });
 });
 
@@ -200,19 +199,13 @@ describe("P1.07 — the finding write routes", () => {
     expect(res.status).toBe(404);
   });
 
-  it("the palette's free-form obligation (REQ-OBJ-10): the form GETs, the POST files source:'user'", async () => {
+  it("the palette's free-form obligation (REQ-OBJ-10): the GET is the shell; the POST files verbatim", async () => {
     const createObligation = vi.fn(async () => ({ ok: true as const, obligationId: "obl_new" }));
     const app = createWebApp(makeDeps({ createObligation }));
+    // SPA.27 — the form's SSR render is deleted; the GET serves the shell and the leaf mounts it.
     const page = await app.request(`/p/${SLUG}/obligations/new?next=${encodeURIComponent(`/p/${SLUG}/review/run_1`)}`);
     expect(page.status).toBe(200);
-    const html = await page.text();
-    expect(html).toContain('name="title"');
-    expect(html).toContain(`action="/p/${SLUG}/obligations"`);
-    // the palette carries the row (navigation only — the form does the write).
-    const res = await app.request(`/p/${SLUG}/review/run_1`);
-    const shell = await res.text();
-    expect(shell).toContain("New obligation");
-    expect(shell).toContain(`/p/${SLUG}/obligations/new`);
+    expect(await page.text()).toContain('id="spa-root"');
     const res2 = await app.request(`/p/${SLUG}/obligations`, {
       method: "POST",
       ...form({ title: "Re-check the census stats", severity: "major", next: `/p/${SLUG}/review/run_1` }),
@@ -222,14 +215,24 @@ describe("P1.07 — the finding write routes", () => {
     expect(createObligation).toHaveBeenCalledWith(expect.anything(), "proj_pv", { title: "Re-check the census stats", severity: "major" });
   });
 
-  it("an empty obligation title re-renders the form 422", async () => {
+  it("an empty obligation title bounces back to the form (the leaf holds the error line)", async () => {
     const app = createWebApp(makeDeps());
+    // SPA.27 — the 422 re-render retired; the form-mode failure 302s back with the safeBack
+    // confined `back` (the JSON arm keeps the 422 envelope).
     const res = await app.request(`/p/${SLUG}/obligations`, {
       method: "POST",
       ...form({ title: "", next: `/p/${SLUG}` }),
+      redirect: "manual",
     });
-    expect(res.status).toBe(422);
-    expect(await res.text()).toContain("Give the obligation a title.");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain(`/p/${SLUG}/obligations/new?back=`);
+    const json = await app.request(`/p/${SLUG}/obligations`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ title: "", next: `/p/${SLUG}` }),
+    });
+    expect(json.status).toBe(422);
+    expect((await json.json() as { error: string }).error).toBe("title_required");
   });
 
   it("bulk-preview POSTs bounce to the GET preview; bulk dispatch posts the checked subset", async () => {

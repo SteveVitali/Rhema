@@ -109,41 +109,32 @@ describe("export dialog — SSR (PRB.11)", () => {
     expect(res.headers.get("location")).toBe("/login");
   });
 
-  it("renders the format radios, the obligation line + links, the toggle, and the statement preview", async () => {
+  it("the twin ships the dialog verbatim — the leaf paints radios, the obligation line + the statement", async () => {
+    // SPA.27 — the §13.4 dialog render retired with the document; the api's ExportDialogDto
+    // passes through `/bff/p/:slug/export` unmassaged (formats/profiles/citations/obligations/
+    // statement are the leaf's paint inputs).
     const app = createWebApp(makeDeps());
-    const res = await app.request("/p/the-piece/export");
+    expect((await app.request("/p/the-piece/export")).status).toBe(200); // the shell
+    const res = await app.request("/bff/p/the-piece/export");
     expect(res.status).toBe(200);
-    const html = await res.text();
-    // the full seven-format registry (P1.18) renders as radios.
-    expect(html).toContain('name="format"');
-    expect(html).toContain('value="md"');
-    expect(html).toContain('value="docx"');
-    expect(html).toContain('value="pdf"');
-    expect(html).toContain('value="latex"');
-    // SPA.6 — the renderer-agnostic hook the export-gate legs pin to (R5/T4/T8).
-    expect(html).toContain('data-export-form="true"');
-    // the md-profile select, the citation-style select, and the provenance toggle.
-    expect(html).toContain('name="profile"');
-    expect(html).toContain('value="substack"');
-    expect(html).toContain('name="cslStyle"');
-    expect(html).toContain('name="attachProvenance"');
-    expect(html).toContain('data-disclosure-note="true"');
-    expect(html).toContain('data-exclusivity-reminder="true"');
-    // the §11.7 count line — informational, never a block.
-    expect(html).toContain("2 blocking obligations open");
-    expect(html).toContain("export always proceeds");
-    // items link to the dossier they were filed on; the returned pre_export item is marked.
-    expect(html).toContain('/p/the-piece/review/run_9');
-    expect(html).toContain('data-returned="true"');
-    // the attach toggle + statement preview + append field.
-    expect(html).toContain('name="attachAiUse"');
-    expect(html).toContain("AI-use statement");
-    expect(html).toContain("3 review obligations remained open");
-    expect(html).toContain("I rewrote the ending myself.");
-    expect(html).toContain('name="sentence"');
-    // standalone statement downloads.
-    expect(html).toContain("/p/the-piece/export/ai-use/md");
-    expect(html).toContain("/p/the-piece/export/ai-use/docx");
+    const body = (await res.json()) as { export: { slug: string; dialog: ExportDialogDto } };
+    const dialog = body.export.dialog;
+    expect(body.export.slug).toBe("the-piece");
+    // the full seven-format registry (P1.18) reaches the leaf.
+    expect(dialog.formats.map((f) => f.id)).toEqual(["md", "txt", "html", "docx", "rtf", "pdf", "latex"]);
+    expect(dialog.mdProfiles[0].id).toBe("substack");
+    expect(dialog.citations.styles.length).toBe(5);
+    expect(dialog.provenance.available).toBe(true);
+    expect(dialog.surfaces.exclusivityReminder).toContain("not under review");
+    // the §11.7 count line — informational, never a block — plus the returned item's mark.
+    expect(dialog.obligations.line).toBe("2 blocking obligations open");
+    expect(dialog.obligations.items[0].reviewRunId).toBe("run_9");
+    expect(dialog.obligations.returnedIds).toEqual(["ob_3"]);
+    // the AI-use attach + statement preview (the generated line + the append rows ride verbatim).
+    expect(dialog.statement.generated[0]).toContain("editorial-review environment");
+    expect(dialog.statement.generated[1]).toContain("3 review obligations remained open");
+    expect(dialog.statement.additions[0].id).toBe("ad_1");
+    expect(dialog.statement.additions[0].sentence).toBe("I rewrote the ending myself.");
   });
 
   it("POST /export proxies the binary download (format + attach flags forwarded)", async () => {

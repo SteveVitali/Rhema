@@ -14,24 +14,19 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProtocolCardDto, VoiceListRowDto } from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { NewProjectPage } from "../pages.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 // The hold seam is module-mocked: the SAME primitives landing.ts runs, driven by fixture records.
 const holdState: { record: { token: string; name: string; type: string; size: number; bytes: ArrayBuffer } | null; deleted: number } = {
   record: null,
-  deleted: 0,
-};
+  deleted: 0 };
 vi.mock("../client/hold-store.js", async (importActual) => {
   const actual = await importActual<typeof import("../client/hold-store.js")>();
   return {
@@ -40,8 +35,7 @@ vi.mock("../client/hold-store.js", async (importActual) => {
     deleteHold: async () => {
       holdState.deleted += 1;
       holdState.record = null;
-    },
-  };
+    } };
 });
 
 declare global {
@@ -64,8 +58,7 @@ const PROTO: ProtocolCardDto = {
   entryDefault: "scratch",
   typicalWords: 3000,
   typicalReviewCredits: 120,
-  typicalReviewDuration: { lowMinutes: 4, highMinutes: 8 },
-};
+  typicalReviewDuration: { lowMinutes: 4, highMinutes: 8 } };
 
 const VOICE: VoiceListRowDto = {
   personaId: "p1",
@@ -86,9 +79,7 @@ const VOICE: VoiceListRowDto = {
     state: "resting",
     pill: { label: "Ready", tone: "ok" },
     action: "none",
-    detail: { seedChanged: false, samples: { added: 0, removed: 0, changed: 0 }, growthRatio: null, ageDays: 4 },
-  },
-};
+    detail: { seedChanged: false, samples: { added: 0, removed: 0, changed: 0 }, growthRatio: null, ageDays: 4 } } };
 
 const CONVERSION_READY = {
   status: "ready" as const,
@@ -99,8 +90,7 @@ const CONVERSION_READY = {
   countLine: "4 words · 0 footnotes · 0 citation-like spans · 0 tables · 0 figures",
   warnings: [] as { message: string; blockId: string | null }[],
   title: "Draft",
-  resolvedTitle: "Draft",
-};
+  resolvedTitle: "Draft" };
 
 const IMPORT_CONVERSION_READY = {
   projectSlug: SLUG,
@@ -109,8 +99,7 @@ const IMPORT_CONVERSION_READY = {
   convertedMarkdown: "# Paper\n\nConverted body.",
   countLine: "3 words · 0 footnotes · 0 citation-like spans · 0 tables · 0 figures",
   warnings: [] as { message: string; blockId: string | null }[],
-  quarantineKey: "q1",
-};
+  quarantineKey: "q1" };
 
 const IMPORT_SHELL = {
   project: { title: "Acme Paper", pill: "Draft", slug: SLUG },
@@ -118,9 +107,7 @@ const IMPORT_SHELL = {
   ide: {
     projectId: "proj_acme",
     palette: JSON.stringify({ projectSlug: SLUG, goto: [], recentRuns: [], settings: [] }),
-    paletteSearchUrl: `/p/${SLUG}/palette-search`,
-  },
-};
+    paletteSearchUrl: `/p/${SLUG}/palette-search` } };
 
 // ---- fetch stub --------------------------------------------------------------------------------
 
@@ -140,8 +127,7 @@ interface FetchOpts {
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 
 function makeFetch(opts: FetchOpts = {}) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -159,16 +145,14 @@ function makeFetch(opts: FetchOpts = {}) {
     }
     if (url.startsWith(`/bff/p/${SLUG}/import/preview`)) {
       return jsonResponse(200, opts.importPreview ?? {
-        importPreview: { ...IMPORT_SHELL, conversion: IMPORT_CONVERSION_READY },
-      });
+        importPreview: { ...IMPORT_SHELL, conversion: IMPORT_CONVERSION_READY } });
     }
     if (url === "/bff/import/presign") {
       return jsonResponse(200, {
         url: "https://storage.example.test/quarantine/w1/u1",
         key: "quarantine/w1/u1",
         maxBytes: 10_000_000,
-        requiredHeaders: { "content-type": "text/markdown" },
-      });
+        requiredHeaders: { "content-type": "text/markdown" } });
     }
     if (url.startsWith("https://storage.example.test/")) {
       opts.puts?.push({ url, init });
@@ -180,15 +164,13 @@ function makeFetch(opts: FetchOpts = {}) {
     if (url === "/app/new/create") {
       return jsonResponse(200, opts.createPost ?? {
         ok: true,
-        redirect: `/p/fresh?created=draft&hc=${holdState.record?.token ?? "hold_x"}`,
-      });
+        redirect: `/p/fresh?created=draft&hc=${holdState.record?.token ?? "hold_x"}` });
     }
     if (url === `/p/${SLUG}/import/preview`) {
       return jsonResponse(200, opts.importPreviewPost ?? {
         ok: true,
         pending: { pollAfterSeconds: 5 },
-        redirect: `/p/${SLUG}/import/preview?qk=quarantine%2Fw1%2Fu1&src=paper.docx`,
-      });
+        redirect: `/p/${SLUG}/import/preview?qk=quarantine%2Fw1%2Fu1&src=paper.docx` });
     }
     if (url === `/p/${SLUG}/import/create`) {
       return jsonResponse(200, opts.importCreatePost ?? { ok: true, redirect: `/p/${SLUG}` });
@@ -205,8 +187,7 @@ const SPA_ALL = {
   "/app/new": "spa",
   "/app/new/preview": "spa",
   "/p/$project/import": "spa",
-  "/p/$project/import/preview": "spa",
-} as const;
+  "/p/$project/import/preview": "spa" } as const;
 const BOOT = bootFor({ ...SPA_ALL });
 
 let assignSpy: ReturnType<typeof vi.fn>;
@@ -219,8 +200,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(el);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(el);
   mounted.push(root);
   await act(async () => {
@@ -237,16 +217,6 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
 const el = () => document.querySelector<HTMLElement>("[data-spa-root]");
 
 /** Which manifest entries the SSR markup emits — the parity filter (REQ-TST-2). */
-function emittedOn(ssrMarkup: string) {
-  const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-  return hooksForSurface("onboarding").filter((entry) => {
-    if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-    if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-    if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-    if (entry.kind === "field-prefix") return new RegExp(`\\bname=["'\`]${esc(entry.hook)}`).test(ssrMarkup);
-    return false;
-  });
-}
 
 /** Submit one form inside an act — the optional `submitter` rides the field set. */
 async function submit(form: Element, submitter?: Element) {
@@ -301,34 +271,11 @@ describe("GET /app/new mounted (SPA.14)", () => {
     expect(main.querySelector("[data-held-notice]")).not.toBeNull();
   });
 
-  it("REQ-TST-2 parity — every onboarding hook the SSR sheet emits on this fixture is emitted", async () => {
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          newProject: {
-            entry: "draft",
-            protocols: [PROTO],
-            voices: [VOICE],
-            defaultProtocolId: null,
-            askProtocol: false,
-            form: { title: "", protocolId: null, venue: null, personaId: null, startVersion: null, heldToken: null },
-          },
-        }}
-      >
-        <NewProjectPage />
-      </PageDataContext.Provider>,
-    );
-    const emitted = emittedOn(ssrMarkup);
-    await mountAt("/app/new?entry=draft", BOOT, makeFetch());
-    const spaMarkup = el()!.outerHTML;
-    expectManifestEmission(spaMarkup, emitted);
-  });
 
   it("renders the §16.4 stale-venue note on an unverified venue row (data-venue-stale)", async () => {
     const staleProto = {
       ...PROTO,
-      venueBar: { kind: "venues", table: [{ venue: "Preprint", verified_at: null, as_of: "2025-06-01" }], prompt: "" },
-    };
+      venueBar: { kind: "venues", table: [{ venue: "Preprint", verified_at: null, as_of: "2025-06-01" }], prompt: "" } };
     await mountAt("/app/new?entry=draft", BOOT, makeFetch({ proto: staleProto }));
     const note = el()!.querySelector("[data-venue-stale]");
     expect(note).not.toBeNull();
@@ -345,8 +292,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
     expect(post).toBeDefined();
     expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({
       entry: "scratch",
-      title: "Fresh",
-    });
+      title: "Fresh" });
     // the envelope redirect goes through the router → the unflipped /p leaf hands the
     // document back to the server (SsrHandoff) — verbatim flash parameters preserved.
     expect(assignSpy).toHaveBeenCalledWith("/p/fresh?created=scratch");
@@ -384,10 +330,7 @@ describe("GET /app/new mounted (SPA.14)", () => {
           sourceText: "(2 bytes)",
           convertedMarkdown: "# Draft",
           countLine: "1 word",
-          warnings: [],
-        },
-      },
-    };
+          warnings: [] } } };
     const f = makeFetch({ newPost: inline });
     await mountAt("/app/new?entry=draft", BOOT, f);
     const form = el()!.querySelector<HTMLFormElement>('form[action="/app/new"]')!;
@@ -494,10 +437,7 @@ describe("GET /app/new/preview mounted (SPA.14)", () => {
             status: "pending",
             quarantineKey: "q1",
             sourceLabel: "draft.md",
-            pollAfterSeconds: 5,
-          },
-        },
-      }),
+            pollAfterSeconds: 5 } } }),
     );
     expect(el()!.querySelector("[data-conversion-pending]")).not.toBeNull();
     expect(el()!.textContent).toContain("draft.md");
@@ -584,10 +524,7 @@ describe("GET /p/:slug/import/preview mounted (SPA.14)", () => {
         importPreview: {
           importPreview: {
             ...IMPORT_SHELL,
-            conversion: { projectSlug: SLUG, sourceLabel: "paper.docx", pending: true, quarantineKey: "q1", pollAfterSeconds: 5 },
-          },
-        },
-      }),
+            conversion: { projectSlug: SLUG, sourceLabel: "paper.docx", pending: true, quarantineKey: "q1", pollAfterSeconds: 5 } } } }),
     );
     expect(el()!.querySelector("[data-conversion-pending]")).not.toBeNull();
     expect(el()!.textContent).toContain("paper.docx");

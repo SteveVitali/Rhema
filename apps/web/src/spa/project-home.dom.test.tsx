@@ -15,21 +15,16 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectRow, ProjectSearchHitDto, VoiceListRowDto } from "@rhema/api-client";
-import { PageDataContext } from "../page-data.js";
-import { ProjectsPage } from "../pages.js";
-import { groupByAttention, groupByVoice, toProjectRowView } from "../state-map.js";
-import { hooksForSurface } from "../dom-contract.js";
 import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
 import type { BffAppHomeTwin } from "./queries.js";
-import { axeCheck, expectManifestEmission } from "./testkit.js";
+import { axeCheck } from "./testkit.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -56,28 +51,24 @@ const VOICE: VoiceListRowDto = {
   tier: null,
   members: [],
   registers: [],
-  status: { state: "resting", pill: VOICE_STATUS.pill, action: "none", detail: null },
-};
+  status: { state: "resting", pill: VOICE_STATUS.pill, action: "none", detail: null } };
 
 const STATE_QUIET = { key: "draft" as const, pill: "Draft", overlay: null, suggested: { action: "none", label: null } };
 const STATE_NEEDS = {
   key: "outlined" as const,
   pill: "Gate waiting",
   overlay: "needs_you" as const,
-  suggested: { action: "review", label: "Review" },
-};
+  suggested: { action: "review", label: "Review" } };
 const STATE_RUNNING = {
   key: "in_review" as const,
   pill: "Reviewing",
   overlay: "running" as const,
-  suggested: { action: "watch", label: "Watch" },
-};
+  suggested: { action: "watch", label: "Watch" } };
 const STATE_READY = {
   key: "reviewed" as const,
   pill: "Reviewed",
   overlay: null,
-  suggested: { action: "revise", label: "Revise" },
-};
+  suggested: { action: "revise", label: "Revise" } };
 
 const ROW_NEEDS: ProjectRow = {
   id: "proj_needs",
@@ -90,8 +81,7 @@ const ROW_NEEDS: ProjectRow = {
   needsYouDeadlineAt: "2026-10-10T00:00:00Z",
   protocolId: "proto_1",
   statusLine: "a gate is waiting on you",
-  voice: { personaId: "pers_1", name: "Lead", status: { state: "resting", pill: VOICE_STATUS.pill, action: "none", detail: null } },
-};
+  voice: { personaId: "pers_1", name: "Lead", status: { state: "resting", pill: VOICE_STATUS.pill, action: "none", detail: null } } };
 const ROW_RUNNING: ProjectRow = {
   id: "proj_run",
   slug: "beta-piece",
@@ -100,8 +90,7 @@ const ROW_RUNNING: ProjectRow = {
   group: "running",
   activeRun: { runId: "run_1", state: "running" },
   protocolId: "proto_1",
-  statusLine: "a review is running",
-};
+  statusLine: "a review is running" };
 const ROW_READY: ProjectRow = {
   id: "proj_ready",
   slug: "gamma-essay",
@@ -110,30 +99,26 @@ const ROW_READY: ProjectRow = {
   headDraftId: "d2",
   headDraftN: 1,
   group: "ready_to_read",
-  protocolId: "proto_2",
-};
+  protocolId: "proto_2" };
 const ROW_QUIET: ProjectRow = {
   id: "proj_quiet",
   slug: "delta-notes",
   title: "Delta Notes",
   state: STATE_QUIET,
   group: "quiet",
-  protocolId: "proto_2",
-};
+  protocolId: "proto_2" };
 const ROW_ARCHIVED: ProjectRow = {
   ...ROW_QUIET,
   id: "proj_arch",
   slug: "epsilon-old",
   title: "Epsilon Old",
-  archivedAt: "2026-09-01T00:00:00Z",
-};
+  archivedAt: "2026-09-01T00:00:00Z" };
 const ROW_DELETED: ProjectRow = {
   ...ROW_QUIET,
   id: "proj_del",
   slug: "zeta-gone",
   title: "Zeta Gone",
-  deletedAt: "2026-10-01T00:00:00Z",
-};
+  deletedAt: "2026-10-01T00:00:00Z" };
 
 const ROWS: ProjectRow[] = [ROW_NEEDS, ROW_RUNNING, ROW_READY, ROW_QUIET, ROW_ARCHIVED];
 const PROTOCOLS = [
@@ -153,8 +138,7 @@ function twin(over?: Partial<BffAppHomeTwin>): BffAppHomeTwin {
     balance: BAL,
     protocols: PROTOCOLS,
     deletedRows: [],
-    ...over,
-  };
+    ...over };
 }
 
 // ---- the fetch stub + the mount harness (the surface-test grammar verbatim) ----------------------
@@ -162,8 +146,7 @@ function twin(over?: Partial<BffAppHomeTwin>): BffAppHomeTwin {
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
-  });
+    headers: { "content-type": "application/json" } });
 }
 
 interface FetchOpts {
@@ -188,8 +171,7 @@ function makeFetch(opts: FetchOpts = {}) {
       return jsonResponse(200, {
         ...t,
         deletedRows: q.get("deleted") === "1" ? (t.deletedRows.length > 0 ? t.deletedRows : [ROW_DELETED]) : [],
-        ...(q.get("q") ? { search: { q: q.get("q"), results: HITS } } : {}),
-      });
+        ...(q.get("q") ? { search: { q: q.get("q"), results: HITS } } : {}) });
     }
     if (opts.hold?.[url] != null) return opts.hold[url]!;
     if (url === "/app/grouping") return jsonResponse(200, { ok: true, redirect: "/app" });
@@ -220,8 +202,7 @@ async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof
   document.body.appendChild(el);
   const { router, queryClient } = createSpaRouter({
     boot,
-    history: createMemoryHistory({ initialEntries: [path] }),
-  });
+    history: createMemoryHistory({ initialEntries: [path] }) });
   const root = createRoot(el);
   mounted.push(root);
   await act(async () => {
@@ -482,64 +463,6 @@ describe("GET /app mounted — the §5.2 home (SPA.15; REQ-SEQ-9)", () => {
     expect(main.querySelector("[data-project-row]")).toBeNull();
   });
 
-  it("REQ-TST-2 parity — every project-home hook the SSR twin emits on this fixture is emitted", async () => {
-    // The SSR's PageData["home"] is derived through the SAME state-map helpers off the SAME rows.
-    const ctx = { voices: [VOICE] };
-    const toViews = (list: readonly ProjectRow[]) => list.map((r) => toProjectRowView(r, ctx));
-    const active = ROWS.filter((r) => r.archivedAt == null);
-    const ssrMarkup = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          home: {
-            groupBy: "attention",
-            attentionGroups: groupByAttention(active).map((g) => ({ ...g, rows: toViews(g.rows) })),
-            voiceGroups: groupByVoice(active).map((g) => ({ ...g, rows: toViews(g.rows) })),
-            voices: [VOICE],
-            voiceFilter: null,
-            protocolFilter: null,
-            protocols: PROTOCOLS as never,
-            sort: "recent",
-            showArchived: true,
-            archivedRows: toViews([ROW_ARCHIVED]),
-            showDeleted: true,
-            deletedRows: toViews([ROW_DELETED]),
-          },
-          balance: BAL,
-          compact: false,
-        }}
-      >
-        <ProjectsPage />
-      </PageDataContext.Provider>,
-    );
-    await mountAt("/app?archived=1&deleted=1", BOOT, makeFetch());
-    const spaMarkup = el()!.innerHTML;
-    const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-    const emitted = hooksForSurface("project-home").filter((entry) => {
-      if (entry.kind === "attr") return new RegExp(`\\b${esc(entry.hook)}(?:[\\s=>/]|$)`).test(ssrMarkup);
-      if (entry.kind === "attr-prefix") return new RegExp(`\\b${esc(entry.hook)}[\\w-]`).test(ssrMarkup);
-      if (entry.kind === "field") return new RegExp(`\\bname=["']${esc(entry.hook)}["']`).test(ssrMarkup);
-      if (entry.kind === "field-prefix") return new RegExp(`\\bname=["'\`]${esc(entry.hook)}`).test(ssrMarkup);
-      return false;
-    });
-    // The fixture exercises the full controls + group + row + archived/deleted vocabulary.
-    expect(emitted.length).toBeGreaterThanOrEqual(15);
-    expectManifestEmission(spaMarkup, emitted);
-    // And the value-bearing hooks agree verbatim (row ids, indicators, menu actions, sections).
-    for (const literal of [
-      'data-project-row="proj_needs"',
-      'data-indicator="needs_you"',
-      'data-menu-form="archive"',
-      'data-collapsed-group="quiet"',
-      "data-archived-section",
-      "data-deleted-section",
-      'data-deleted-row="proj_del"',
-      'action="/p/zeta-gone/restore"',
-      'name="groupBy"',
-    ]) {
-      expect(spaMarkup, literal).toContain(literal);
-      expect(ssrMarkup, literal).toContain(literal);
-    }
-  });
 
   it("component axe on the mounted surface (REQ-VFY-6)", async () => {
     await mountAt("/app?archived=1&deleted=1", BOOT, makeFetch());

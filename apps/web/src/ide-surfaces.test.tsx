@@ -72,6 +72,9 @@ describe("UX.2 — the IDE document invariant (REQ-IDE-8)", () => {
   it("every route element that renders the IDE shell gets the IDE stylesheet + island, even if its handler forgot PageData.ide", () => {
     // Enumerate the route manifest; render each element with an `ide`-LESS PageData — the exact
     // pre-fix /app/new shape. Any `.ide` markup ⇒ the document must carry IDE_CSS + ide.js.
+    // SPA.27 — flipped rows carry `element: null` (no SSR document exists): `renderToStaticMarkup`
+    // on null emits "" and skips them. The enumeration now covers exactly the forced-SSR
+    // Page-family elements (REQ-ED-12) + the public funnel.
     const ideRoutes: string[] = [];
     for (const route of routes) {
       let body: string;
@@ -91,16 +94,19 @@ describe("UX.2 — the IDE document invariant (REQ-IDE-8)", () => {
       );
     }
     // the enumeration is only meaningful if it actually found IDE routes — pin the set that renders
-    // a shell under empty data and confirm the defect's route is no longer among them.
+    // a shell under empty data and confirm the defect's route is no longer among them. The flipped
+    // rows (run sheet, import, …) are `element: null` now — no SSR document exists to assert.
     expect(ideRoutes).toContain("/p/:project");
-    expect(ideRoutes).toContain("/p/:project/run");
-    expect(ideRoutes).toContain("/p/:project/import");
+    expect(ideRoutes).not.toContain("/p/:project/run");
+    expect(ideRoutes).not.toContain("/p/:project/import");
     expect(ideRoutes).not.toContain("/app/new"); // the fix: the workspace Shell, not IdeFrame
   });
 
   it("served IDE documents carry the stylesheet + island (the server-driven leg)", async () => {
     const app = createWebApp(makeDeps());
-    for (const path of ["/p/seed-essay", "/p/seed-essay/run", "/p/seed-essay/import"]) {
+    // SPA.27 — the only SSR IDE documents left are the Page family's forced-SSR arm: phone/showcase
+    // (`MOBILE`) or the `?ssr=1` escape. The flipped surfaces' plain GETs answer the shell.
+    for (const path of ["/p/seed-essay?ssr=1"]) {
       const res = await app.request(path);
       expect(res.status, path).toBe(200);
       const html = await res.text();
@@ -110,42 +116,45 @@ describe("UX.2 — the IDE document invariant (REQ-IDE-8)", () => {
         expect(html, path).toContain("/assets/ide.js");
       }
     }
-    // the pinned leg — the project page IS an IDE document
-    const proj = await app.request("/p/seed-essay");
+    // the pinned leg — the forced-SSR project page IS an IDE document (the `?ssr=1` escape arm)
+    const proj = await app.request("/p/seed-essay?ssr=1");
     const html = await proj.text();
     expect(html).toContain('data-ide="1"');
     expect(html).toContain(IDE_CSS_MARK);
     expect(html).toContain("/assets/ide.js");
+    // and the flipped surfaces prove the deletion: the shell answers where SSR once did.
+    for (const path of ["/p/seed-essay", "/p/seed-essay/run", "/p/seed-essay/import"]) {
+      const res = await app.request(path);
+      expect(res.status, path).toBe(200);
+      const flipped = await res.text();
+      expect(flipped, path).toContain('data-renderer="spa"');
+      expect(flipped, path).not.toContain('data-ide="1"');
+    }
   });
 });
 
 describe("UX.2 — /app/new is a workspace surface (ADR-065)", () => {
-  it("renders the styled workspace Shell at desktop — no IDE markup, real chrome", async () => {
+  it("SPA.27 — serves the SPA shell at desktop: the SSR workspace sheet is deleted", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/app/new");
     expect(res.status).toBe(200);
     const html = await res.text();
-    // the workspace Shell, not the project IdeFrame — no `.ide` root, no island needed.
+    // the SSR workspace sheet is gone — the shell answers and the onboarding leaf renders the
+    // styled Shell (the ADR-065 "never IdeFrame markup" surface is covered by the leaf's dom test).
+    expect(html).toContain('data-renderer="spa"');
+    expect(html).toContain('<div id="spa-root" data-spa-root></div>');
     expect(html).not.toContain('data-ide="1"');
-    expect(html).toContain("<header");
-    expect(html).toContain("<main");
-    // the §5.3 sheet itself: exactly three entries + the title field.
-    for (const entry of ["scratch", "outline", "draft"]) {
-      expect(html).toContain(`data-entry="${entry}"`);
-    }
-    expect(html).toContain('name="title"');
-    expect(html).toContain("<title>New project · Rhēma</title>");
-    // exactly one page-level heading (UX.1's contract holds on the new chrome).
-    expect(html.match(/<h1[\s>]/g) ?? []).toHaveLength(1);
   });
 
-  it("still renders the §10.1 blocked note — never the form — at phone width", async () => {
+  it("SPA.27 — the phone request still answers the shell; the §10.1 withhold moved to the leaf (boot deviceClass)", async () => {
     const app = createWebApp(makeDeps());
     const res = await app.request("/app/new", MOBILE);
     const html = await res.text();
-    expect(html).toContain('data-phone-blocked="true"');
-    expect(html).not.toContain('action="/app/new"');
-    expect(html).not.toContain('data-ide="1"');
+    // /app/new is not a pageMount route, so no forced-SSR arm fires — the leaf reads
+    // `deviceClass: "phone"` off the boot payload and renders the blocked note itself.
+    expect(res.status).toBe(200);
+    expect(html).toContain('data-renderer="spa"');
+    expect(html).toContain('data-device="phone"');
   });
 });
 
@@ -234,8 +243,10 @@ describe("UX.2 — the sync pill never floats (ADR-069; REQ-IDE-43 amended)", ()
         }),
       } as never),
     );
-    for (const init of [undefined, MOBILE]) {
-      const res = await app.request("/p/seed-essay/v/working", init);
+    // SPA.27 — the SSR Page document only exists under the forced-SSR arm: `?ssr=1` carries the
+    // desktop leg, the phone UA carries the §10.1 leg. A plain desktop GET now answers the shell.
+    for (const [path, init] of [["/p/seed-essay/v/working?ssr=1", undefined], ["/p/seed-essay/v/working", MOBILE]] as const) {
+      const res = await app.request(path, init);
       expect(res.status).toBe(200);
       const html = await res.text();
       const pills = html.match(/data-sync-pill/g) ?? [];

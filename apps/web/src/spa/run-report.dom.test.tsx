@@ -22,17 +22,13 @@
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FeedLabelMaps } from "@rhema/ide";
 import type { RunReportDto, TimelineDto } from "@rhema/api-client";
 import type { RunReportView } from "@rhema/findings-core";
-import { PageDataContext } from "../page-data.js";
-import { RunReportPage } from "../pages.js";
 import { hooksForSurface } from "../dom-contract.js";
-import { COPY } from "../copy.js";
 import { createSpaRouter } from "./main.js";
 import type { SpaBoot } from "./boot.js";
 import { spaRuntime } from "./dom.js";
@@ -293,7 +289,6 @@ class FakeEventSource {
 }
 
 let assignSpy: ReturnType<typeof vi.fn>;
-let beaconSpy: ReturnType<typeof vi.spyOn>;
 const mounted: Root[] = [];
 
 async function mountAt(path: string, boot: SpaBoot, fetchImpl: ReturnType<typeof makeFetch>["impl"]) {
@@ -340,7 +335,7 @@ beforeEach(() => {
   FakeEventSource.instances = [];
   assignSpy = vi.fn();
   spaRuntime.assign = assignSpy;
-  beaconSpy = vi.spyOn(navigator, "sendBeacon").mockReturnValue(true);
+  vi.spyOn(navigator, "sendBeacon").mockReturnValue(true);
   document.documentElement.removeAttribute("data-route");
   document.documentElement.removeAttribute("data-mounted");
   document.title = "";
@@ -703,105 +698,3 @@ describe("GET /p/:slug/r/:runId mounted (SPA.22)", () => {
 
 // ---- REQ-TST-2 — the SSR/SPA parity leg ----------------------------------------------------------
 
-describe("run-report SSR/SPA parity (REQ-TST-2)", () => {
-  it("the SSR RunReportPage and the SPA leaf emit the same run-report hooks", async () => {
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          project: { title: "The Politics of Visibility", pill: "", slug: SLUG },
-          runReport: {
-            slug: SLUG,
-            runId: RUN,
-            report: reportDto({
-              advancedView: ADVANCED_VIEW,
-              refundWindow: { state: "eligible", credits: 160 },
-            }),
-          },
-          compact: false,
-        }}
-      >
-        <RunReportPage />
-      </PageDataContext.Provider>,
-    );
-    const f = makeFetch({
-      twin: twinFor({
-        runReport: {
-          slug: SLUG,
-          runId: RUN,
-          report: reportDto({ refundWindow: { state: "eligible", credits: 160 } }),
-        },
-      }),
-    });
-    await mountAt(`/p/${SLUG}/r/${RUN}?advanced=1`, bootFor(SPA_REPORT), f.impl);
-    const spa = el()!.outerHTML;
-    // every run-report manifest hook the SSR emits, the SPA must emit too (conditional hooks
-    // fixture the same state — the eligible refund + the Advanced rows render identically).
-    const esc = (s: string) => s.replace(/[.*+?^${}()[\]\\|]/g, "\\$&");
-    const missing = hooksForSurface("run-report")
-      .filter((e) => e.kind === "attr")
-      .filter((e) => new RegExp(`\\b${esc(e.hook)}(?:[\\s=>/]|$)`).test(ssr))
-      .filter((e) => !new RegExp(`\\b${esc(e.hook)}(?:[\\s=>/]|$)`).test(spa))
-      .map((e) => e.hook);
-    expect(missing, "hooks the SSR emits but the SPA misses").toEqual([]);
-  });
-
-  it("the compact report mounts the §10.1 phone chat section (the SSR IdeFrame arm)", async () => {
-    // SSR — `data.compact === true && ide.chat` renders the Page-internal chat section.
-    const ssr = renderToStaticMarkup(
-      <PageDataContext.Provider
-        value={{
-          project: { title: "The Politics of Visibility", pill: "", slug: SLUG },
-          runReport: { slug: SLUG, runId: RUN, report: reportDto() },
-          compact: true,
-          ide: {
-            chat: {
-              threads: [{ id: "thr_1", name: "Project chat", isDefault: true, archived: false }],
-              activeThreadId: "thr_1",
-              turns: [],
-              messages: [],
-              pins: { pins: [], footprint: 0, cap: 12 },
-              sources: [],
-              liveRun: null,
-              emptyState: {
-                page: "quiet",
-                deskTab: "chat",
-                chips: [],
-                nextStep: { kind: "sheet", label: "Start", href: `/p/${SLUG}/sheet?workflow=research_burst` },
-              },
-              budgets: { credits: 40, searches: 5, fetches: 10 },
-              defaultTier: "base",
-            },
-          },
-        }}
-      >
-        <RunReportPage />
-      </PageDataContext.Provider>,
-    );
-    expect(ssr).toContain('data-phone-chat="true"');
-    // SPA — the same arm off the twin's `ide.chat` + the boot's device class.
-    const chat = {
-      threads: [{ id: "thr_1", name: "Project chat", isDefault: true, archived: false }],
-      activeThreadId: "thr_1",
-      turns: [],
-      messages: [],
-      pins: { pins: [], footprint: 0, cap: 12 },
-      sources: [],
-      liveRun: null,
-      emptyState: {
-        page: "quiet" as const,
-        deskTab: "chat" as const,
-        chips: [],
-        nextStep: { kind: "sheet" as const, label: "Start", href: `/p/${SLUG}/sheet?workflow=research_burst` },
-      },
-      budgets: { credits: 40, searches: 5, fetches: 10 },
-      defaultTier: "base" as const,
-    };
-    const f = makeFetch({
-      twin: twinFor({ ide: { projectId: "proj_pv", inboxCount: 0, chat: chat as never } }),
-    });
-    await mountAt(`/p/${SLUG}/r/${RUN}`, bootFor(SPA_REPORT, "phone"), f.impl);
-    expect(el()!.querySelector("[data-phone-chat]")).not.toBeNull();
-    expect(beaconSpy).toBeDefined();
-    expect(COPY.report.heading).toBe("Run report");
-  });
-});
