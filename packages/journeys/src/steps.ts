@@ -63,12 +63,33 @@ const GOLDEN_OP_ED = readFileSync(
 
 // ---------------------------------------------------------------- helpers
 
-/** Bundle-parity leg (PR-J4): every served /assets/*.js came back 200 with a JS content-type, and
- *  the visited pages produced no console error / failed request (deliverable 7's full contract). */
+/** The content-type each `/assets/` extension family must answer with — mirrors the server's
+ *  `SPA_ASSET_TYPES` + the island routes' `text/javascript` (REQ-TL-13: the SPA manifest's nested
+ *  js/css/font/image assets ride the same ledger). An extension outside the map still must 200;
+ *  the type assert keys only on families the server serves. */
+const ASSET_CONTENT_TYPE: Readonly<Record<string, string>> = {
+  js: "javascript",
+  css: "text/css",
+  svg: "image/svg+xml",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  woff2: "font/woff2",
+  json: "application/json",
+};
+
+/** Bundle-parity leg (PR-J4; REQ-TL-13): every served `/assets/**` response came back 200 with the
+ *  content-type its extension family carries — island `/assets/<entry>.js`, SPA manifest assets
+ *  under `/assets/spa/**`, and the self-hosted fonts — and the visited pages produced no console
+ *  error / failed request (deliverable 7's full contract). */
 export function assertBundleParity(ctx: StepCtx): void {
-  const bad = ctx.assetHits.filter(
-    (h) => h.status !== 200 || !(h.contentType ?? "").includes("javascript"),
-  );
+  const bad = ctx.assetHits.filter((h) => {
+    if (h.status !== 200) return true;
+    const ext = /\.(\w+)(?:[?#]|$)/.exec(new URL(h.url).pathname)?.[1];
+    const expected = ext != null ? ASSET_CONTENT_TYPE[ext] : undefined;
+    return expected != null && !(h.contentType ?? "").includes(expected);
+  });
   if (bad.length > 0) {
     throw new Error(
       `bundle parity: ${bad.length} asset response(s) failed: ${bad.map((b) => `${b.url} → ${b.status}/${b.contentType}`).join(", ")}`,

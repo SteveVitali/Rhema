@@ -199,7 +199,11 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       page.on("requestfailed", (r) => failedRequests.push(`${r.method()} ${r.url()} ${r.failure()?.errorText ?? ""}`));
       page.on("response", (r) => {
         const url = r.url();
-        if (/\/assets\/[^/]+\.js$/.test(url)) {
+        // REQ-TL-13 — the asset ledger covers the WHOLE `/assets/` space, not just the flat island
+        // bundles: the Vite SPA emits nested paths (`/assets/spa/assets/<name>-<hash>.{js,css,…}`)
+        // that the old `/assets/[^/]+\.js$` regex never saw. Same-origin only; the parity assert in
+        // steps.ts keys content-type by extension.
+        if (onOurOrigin(url, deps.webBaseUrl) && new URL(url).pathname.startsWith("/assets/")) {
           assetHits.push({ url, status: r.status(), contentType: r.headers()["content-type"] ?? null });
         }
         if (deps.expectRenderer == null) return;

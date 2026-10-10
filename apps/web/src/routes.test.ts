@@ -37,4 +37,12 @@ describe("route manifest (§4.2 / REQ-BETA-19)", () => {
     expect(matchAppRoute("/showcase")?.route.path).toBe("/showcase"); // UX.1 — the public worked-example page
     expect(matchAppRoute("/definitely-not-a-page")).toBeUndefined();
   });
+
+  it("SPA.26 / census F8 — the retired source-editor surface keeps NO manifest row", () => {
+    // `/p/:project/edit/:draftId` is a server-owned 302 to `/v/:n` (REQ-INV-8), never an element —
+    // a resurrected `editorElement` row would shadow the redirect through matchAppRoute. The live
+    // `/edit/:draftId/{doc,note,cancel-run,revise}` transports are server routes, not manifest rows.
+    expect(routes.find((r) => r.path.includes("/edit/"))).toBeUndefined();
+    expect(matchAppRoute("/p/the-politics-of-visibility/edit/d_1")).toBeUndefined();
+  });
 });

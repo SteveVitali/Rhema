@@ -205,7 +205,14 @@ describe("the durable editor — GET renders the shared spine-and-sections rows"
     expect(html).toContain('data-unverified="true"');
     expect(html).toContain('data-outline-gap="g1"');
     expect(html).toContain('data-outline-delete="true"');
-    expect(html).toContain("/assets/outline.js"); // the autosave island (editable surface)
+    // SPA.26 — the autosave island retired: no outline.js tag and none of its mount attributes
+    // (`data-autosave`/`data-label-*`); the surviving fallback is the explicit-Save form, which
+    // still posts the same `ed.*` grammar (the POST tests below keep that leg green).
+    expect(html).not.toContain("/assets/outline.js");
+    expect(html).not.toContain("data-autosave");
+    expect(html).not.toContain("data-label-saving");
+    expect(html).toContain('data-outline-editor="true"');
+    expect(html).toContain('action="/p/the-politics-of-visibility/outline"');
   });
 
   it("a cited outline hides the delete button and shows the cited note", async () => {

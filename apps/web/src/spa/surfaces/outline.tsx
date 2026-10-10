@@ -6,8 +6,10 @@
 //   • The autosave island (`client/outline.ts`) becomes a React leg: `ed.*` input events debounce
 //     800 ms into the SAME `POST /p/:slug/outline` — now carrying the flat `ed.*` field map as JSON
 //     (`bodyFields` decodes the identical grammar; the answer stays the patch result verbatim).
-//     `data-autosave-status` rides the form's SSR'd `data-label-{saving,saved,failed}` copy leaves,
-//     with the island's inflight/again coalescing preserved one-for-one.
+//     `data-autosave-status` rides the form's `data-label-{saving,saved,failed}` copy leaves,
+//     with the retired island's inflight/again coalescing preserved one-for-one (SPA.26 — the SSR
+//     fallback drops `data-autosave`/`data-label-*`: they were the island's mount contract; this
+//     leaf emits them as its own autosave vocabulary).
 //   • The delete form + the promote sheet ride the JSON `wantsJson` branches (`{ok,redirect}` /
 //     `{error}` envelopes): the cited-outline 409 navigates in-router to the identical
 //     `?notice=cited` flash URL the form 302 would carry — flashes stay URL-owned, never payload.

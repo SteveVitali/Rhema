@@ -1,9 +1,15 @@
-// Bundle the browser clients: src/client/editor.ts + ide.ts (P1.01) + page.ts (P1.02) → public/*.js (iife,
-// minified), served at /assets/*.js. Also copies the self-hosted variable fonts (the @fontsource-variable
+// Bundle the browser clients: every entry in client-entries.mjs → public/<entry>.js (iife, minified),
+// served at /assets/<entry>.js. Also copies the self-hosted variable fonts (the @fontsource-variable
 // OFL packages — Literata / Inter / JetBrains Mono, latin woff2) to public/fonts/ so themeCss()'s
 // @font-face /assets/fonts/ URLs resolve. `pnpm build` runs this after `tsc -b`; outputs are generated
 // artifacts (gitignored — a fresh checkout rebuilds them; without them the pages degrade to the no-JS
 // SSR forms and the font stacks fall back).
+//
+// SPA.26 — the surviving set is the SSR island set: `landing` (public pages — forever-SSR), `page`
+// + `ide` (the REQ-ED-12 forced-SSR phone/showcase Page + the `?ssr=1` fallback still mount them —
+// ADR-107). The migrated authenticated islands (`outline` here; `editor` at SPA.24) are gone — their
+// SPA surfaces own the behavior now. The auth'd SPA bundle is Vite's job (vite.config.ts →
+// public/spa), never this file's.
 
 import { build } from "esbuild";
 import { mkdir, copyFile } from "node:fs/promises";
