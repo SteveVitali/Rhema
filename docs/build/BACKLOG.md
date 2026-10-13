@@ -1,308 +1,289 @@
-# Rhēma — consolidated backlog (round 2 → round 3)
+# BACKLOG — human-readable view
 
-> Written 2026-09-30 by `reconcile-build mode=backlog` (the REC.1 procedure, run ahead of a REC.1 chain row —
-> ratifying it as a row is itself **BL-04**). The machine-readable form is [`BACKLOG.csv`](BACKLOG.csv). The
-> operational view is [`OPERATIONAL_READINESS.md`](OPERATIONAL_READINESS.md). Chain tip at writing:
-> `stevevitali/stb-4-real-money-external` @ `cf40f28`. This document changes no deferral row, ledger line or
-> manifest line. Where it recommends a change, the owning row does it.
+**Reconciled 2026-10-04 by REC.1** (`stevevitali/rec-1-backlog-and-readiness`). The machine form is
+`BACKLOG.csv`; every gathered source id (DEFERRALS `OPEN`/`PARTIAL` rows, coverage-matrix
+`PARTIAL`/`MISSING` rows, and every live ADR revisit trigger) appears in exactly one `sources` cell.
+`check-backlog.sh` result: **357 expected sources — complete + non-duplicating + verdict-consistent**.
 
-## The contract and how it was checked
+## Matrix sums (recomputed 2026-10-04, 474 rows)
 
-Each owed item appears in exactly one row's `sources` cell. The sources gathered were:
+| Measure | Count |
+|---|---|
+| Engineering closed (MET + MET-DIFFERENTLY + MET-ENGINEERED) | **327 / 474** |
+| Requirement satisfied (MET + MET-DIFFERENTLY only) | **326 / 474** |
+| PARTIAL | 114 |
+| MISSING | 33 |
+| AT-RISK-INTEGRATION | 0 |
 
-| Source | Count | How it appears in `sources` |
-|---|---|---|
-| `DEFERRALS.md` rows whose status (the first status keyword in the last cell) is OPEN / PARTIAL / ACCEPTED-SKELETON | 58 (27 OPEN · 30 PARTIAL · 1 ACCEPTED-SKELETON) | `D-<TICKET>-<n>` |
-| `## Revisit trigger` in `docs/adr/ADR-*.md` | 12 | `ADR-NNN` |
-| Entries in LEDGER `## OPEN FINDINGS` | 10 | `OF-<slug>` (mapping below) |
-| Owed items that no deferral row tracks | 36 | `X-<slug>` (mapping below) |
-| Rows marked DONE that still carry an owed residual | 3 | `D-P0.15k-1`, `D-P1.04-2`, `D-PRB.21-1` |
+**Finding (recorded, not silently corrected):** CAP.3's headline reported 327 requirement-satisfied.
+REC.1 re-verdicted `REQ-SPEC-31` `MET` → `MET-ENGINEERED(D-RES.1-2)` per BM-VERDICT-01 — the row was
+marked MET while citing an OPEN leg (the N6 planted-error dossier-evidence run). The sums above are
+the honest 2026-10-04 reads; the one-point gap is the still-owed live leg, carried on BL-56.
 
-The result is **49 rows**: 46 open, 2 closed, 1 accepted.
+## Status-parse audit (stricter rule applied)
 
-**Checker finding.** `check-backlog.sh` exits 0, but it expects only **38** sources: 26 deferrals plus 12 ADRs.
-The cause is its status parser. It uppercases the last cell, strips its spaces, and matches only a leading
-`OPEN` or `PARTIAL`, so it misses the 32 rows whose status cell begins with `**` (bold) or with a date. For
-example, `**PARTIAL — 2026-09-25 (RCN.1)…` is never counted. A stricter check that applies the file's own rule
-(first keyword in the cell) passes **80/80**: 58 deferrals, 12 ADRs and 10 OPEN FINDINGS, with 0 missing and 0
-duplicates. There are two ways to close the blind spot:
-
-- In agent-skills: have the parser strip `*` and use the first-keyword regex.
-- In this repo: normalize the status cells, which is part of **BL-02**.
-
-## Counts
-
-| Landing | Rows | | Type | Rows |
-|---|---|---|---|---|
-| `round-3/*` (26 proposed tickets) | 31 | | deferred-feature | 13 |
-| `operator` | 8 | | process | 11 |
-| `GATE-G2` | 3 | | defect | 9 |
-| `HUMAN-H2` / `HUMAN-H4` / `HUMAN-H5` | 1 / 1 / 1 | | operational-prereq | 5 |
-| `GATE-ACCEPT` | 1 | | external-dep | 5 |
-| `accepted` | 1 | | docs-drift | 3 |
-| `closed` | 2 | | rights/legal | 2 |
-| | | | schema-refinement | 1 |
-
-Sizes: 21 S · 21 M · 7 L.
-
-## Themes
-
-1. **Integration debt comes first.** 33 stacked PRs (#48–#80) are open. `origin/main` (tip `256f594`) merges only PRs ≤ #47,
-   while prod runs images built from the unmerged `def-3` / `stb-4` branch tips. The `dev` stage is a
-   23-resource skeleton, and no `pr-<n>` preview has ever been deployed. Everything else inherits this base:
-   BL-01 and BL-25.
-2. **Items that are live on prod and should block launch.**
-   - The api's DB role bypasses RLS, and the dossier tables have no RLS (BL-08).
-   - Three Stripe-path fixes are committed but not deployed, while prod holds a live Stripe key and a live
-     Payment Link (BL-09).
-   - Every §13.5 SLO read red during STB.3 (BL-07).
-   - Ledger integrity has loose ends (BL-10).
-   - Signup throttling is per-instance (BL-23).
-3. **Economics.** A quick review costs about $7–10 metered (720 cr metered / 586 cr committed on the one
-   delivered quick review, `01M36663…`). The Writer plan is $20/mo with 2,000 included credits. The estimator
-   still under-models context churn. The operator's G3 decision records this as carried product risk, but no
-   row owns it (BL-13). Related rows: BL-14 (durable estimator constants), BL-30 (the refund window has no
-   caller), and BL-29 (the ~$95/mo infra floor against a ~$50/mo target).
-4. **Remaining live verification.** The Stage-B residue is five bounded paid-run rows (BL-16..20), two $0
-   headless rows (BL-21/22), the launch-verification remainder (BL-24), and one operator browser session
-   (BL-32). Several of these rows predate the DEF.1 reruns and overstate what remains (see *Stale rows*).
-5. **External and human dependencies.** Live-mode Stripe (BL-33), the Usage & Cost admin key (BL-34), the pen
-   test (BL-35), the H2 corpus (BL-40), H4 venue tables (BL-41), H5 showcase content (BL-42), and the nightly
-   golden budget (BL-36).
-6. **Gates.**
-   - G2 is still a **hard** gate before §16.4 claims or a public launch (BL-43..45).
-   - G3 was read early and accepted by the operator (BL-46).
-   - H3 is deferred in part (BL-39).
-   - GATE-ACCEPT has never been signed (BL-47).
-7. **Build-memory process.** The standard v2 tail never ran: CAPSTONE was a single ledger row, with no
-   `COVERAGE_MATRIX.csv`, no GATE-ACCEPT, no REC.1–3 and no DOC.1–2. LEDGER CURRENT STATE has drifted, the
-   manifest's `## Plan extensions` stops at 2026-09-18, and 13+ deferral status cells are stale. This is
-   covered by BL-02..06.
+The upstream checker tokenizes each DEFERRALS status cell on `[^A-Z-]` and reads the *first canonical
+keyword anywhere* — a `RE-DEFERRED` cell (not in its keyword set) falls through to a mid-cell `OPEN`,
+and a `**DONE … Prior OPEN record:**` cell reads OPEN. REC.1 re-read every row with the stricter
+*first recognized keyword* rule (strip non-alphanumerics, accept `RE-DEFERRED`/`ACCEPTED-SKELETON`):
+220 rows → DONE 112, OPEN 74, PARTIAL 32, RE-DEFERRED 1, ACCEPTED-SKELETON 1. Owed rows (106
+OPEN/PARTIAL + 1 RE-DEFERRED = the checker's 107) are all on open backlog rows; none on a closed row.
+`D-DEF.3-2` flipped OPEN → DONE 2026-10-04 (evidence was already in-cell: EST.1 deterministic fix +
+Stage-B live 400 read). `D-P0.06-3`/`D-P0.08b-3` stay carried on BL-02 — their cells hold mid-text
+`open` tokens the validator can never move past (dated status-hygiene notes appended).
 
 ---
 
 ## Rows by landing
 
-### round-3 — integration and build-memory tail (do first)
+### Operator rulings & operator-held deploys (the binding constraints on launch)
 
-| bl_id | title | sources | gate | size |
-|---|---|---|---|---|
-| BL-01 | Integration plan + bottom-up merge of PRs #48–#80 + deployed-tree vs merged-main diff | X-prs-48-80-unmerged · X-tail-rec3-integration · X-prod-tree-vs-main-diff | operator merge | L |
-| BL-02 | Build-memory hygiene: LEDGER CURRENT STATE, GATE DECISIONS heading, RETURN PASS, manifest Plan extensions, DEFERRALS status normalization, stale run-ledger headers | X-ledger-state-drift · X-manifest-plan-extensions-stale · X-deferrals-status-hygiene · X-run-ledger-stale-headers · ADR-004 | — | M |
-| BL-03 | CAP.1 `COVERAGE_MATRIX.csv` from CAPSTONE §3 + reconcile its REQ counts | X-tail-coverage-matrix · X-capstone-req-count-drift | — | M |
-| BL-04 | REC.1 — ratify this backlog as a chain row | X-tail-rec1-backlog | — | S |
-| BL-05 | REC.2 — spec reconciliation (G2/G3/H3 overrides, ADR deviations, ADR-007↔ADR-012 lineage) | X-tail-rec2-spec · ADR-007 · ADR-012 | operator ratifies | M |
-| BL-06 | DOC.1 + DOC.2 docs refresh incl. stale phase readouts | X-tail-doc-refresh · X-phase1-exit-readout-stale | — | M |
+| Row | Owes | Sources of note |
+|---|---|---|
+| BL-01 | Integrate 33 round-2 + round-3 stacked PRs; diff deployed tree vs merged main (prod runs unmerged code) | X-prs-48-80-unmerged; X-prod-tree-vs-main-diff — landing **REC.3** |
+| BL-13 | Unit-economics/pricing ruling: ~$7–10 metered per quick review vs $20/mo plan; metered-flip + paid-account notice | D-PRB.21-1, ADR-038, X-unit-economics |
+| BL-29 | Billed-actuals export confirm (D-OPS.2-1) + warm-floor/HA lever execution (D-OPS.2-2); measured $285.80 list vs ~$50 target | ADR-010, ADR-082 |
+| BL-30 | Refund-window go-live ruling (D-DEF.4-3) + R9 refund journey leg (D-DEF.4-1); window deployed `test_tenants`-gated | ADR-024/071/072 |
+| BL-50 | `GD-ACT.1-1` everyone-flip ruling (D-ACT.1-3) + ASN/IP risk-scorer binding (D-ACT.1-1) | ADR-019/042/043, REQ-GROWTH-10/-15 |
+| BL-51 | `GD-BILL.3-1` re-open ruling + real-money/hosted Portal/pending-email legs (D-BILL.3-1/-2) + OBS.1 fixture re-point | ADR-027/028/029, REQ-BILL-14, REQ-BETA-15 |
+| BL-67 | `pulumi up` CITE.1 pins (D-CITE.1-1) → probe legs L1/L2/N11 + ADR-086 rate read (D-CITE.1-2..5); leg-cap reconciliation | REQ-IDE-25, ADR-006/083–086 |
+| BL-68 | Metered-debit flip + notice; cap calibration on durable store (D-ECON.1-3); unmeasured cells (D-ECON.1-4); Quick findings cap (D-ECON.1-2) | REQ-BILL-7, REQ-SPEC-32, ADR-005/014/031–036/038 |
+| BL-69 | `pulumi up` ECON.2 (D-ECON.2-1) → lever pairs L5/L1/L2/L3 + refit (D-ECON.2-6) + REQ-SPEC-8 restore re-check (D-ECON.2-7) | OF-econ2-restore-read, ADR-087 |
+| BL-71 | `pulumi up` → 21 paid registry steps + paid new-visitor journey (D-CAP.2-1), full JOURNEY.1 suite (D-CAP.2-2), CAP.3 live legs (D-CAP.3-1, carries D-STB.5a-1..3), completed_partial ruling (D-CAP.3-2), phone-44px re-proof (D-CAP.2-3); the 72 CAP.2-routed PARTIAL matrix rows | REQ-ACCT-3, REQ-DATA-20, ADR-020/088/089 |
+| BL-75 | `GD-RES.2-1` retro refund/relabel ruling + zero-coverage scan (D-RES.2-2) + fact_check label extension (D-RES.2-3) | ADR-025/026 |
 
-### round-3 — launch-blocking defects and economics
+### Round-4 funded window (weekly guard resets 2026-10-05 00:00 UTC; $58.08 ≥ $5 recorded)
 
-| bl_id | title | sources | gate | size |
-|---|---|---|---|---|
-| BL-07 | Prod SLOs red (STB.3 F8) — diagnose, remediate, fix probe definitions | X-f8-prod-slos-red · X-slo-probe-gaps · OF-stb3-live-findings | bounded live runs | L |
-| BL-08 | Tenant isolation root cause — BYPASSRLS api role + no RLS on dossier tables | X-api-db-role-bypassrls | new DB role + secret rotation (provided: no) | M |
-| BL-09 | Deploy STB.4 Leg A Stripe fixes + pending-checkout email gap | X-stb4-stripe-fixes-undeployed · X-pending-checkout-email-gap | deploy approval | S |
-| BL-10 | Ledger integrity closeout | D-DEF.2-1 · X-held-check-migration-parity · X-f5-settlement-live-proof · X-balance-divergence-recheck | ≤$5 live leg | M |
-| BL-11 | Small correctness fixes (estimate `modelTier` 400; second-read guidance) | D-DEF.3-2 · X-second-read-guidance-ignored | — | S |
-| BL-12 | `lever-matrix` perf-assertion flake | X-lever-matrix-flake | — | S |
-| BL-13 | Unit economics + pricing model | X-unit-economics · OF-prb21-review-cap-uncompletable · D-PRB.21-1 | operator pricing ruling | L |
-| BL-14 | Durable estimator fold store | D-P0.15k-1 · ADR-005 | — | S |
-| BL-15 | Citation completeness (fetch backfill / fetch-then-cite) | X-citation-completeness · ADR-006 | — | M |
-| BL-23 | Signup admission: invite enforcement live + shared throttle store | D-PRB.01-1 · D-PRB.13-1 · ADR-009 | — | M |
-| BL-26 | Run-task confinement: distroless + tight AppArmor profile | D-P0.06-3 · X-apparmor-unconfined-runtask | — | M |
-| BL-30 | `refundPhases` caller — §14.4 refund window / cancel-with-partials | D-P0.15d-2 | operator product ruling | M |
-| BL-31 | Matcher-3 floor tuning + rubric conjunct / Convergence report | D-P0.12-3 | real disposition corpus | M |
+| Row | Owes |
+|---|---|
+| BL-07 | Named SLO breaches D-SLO.1-5/-6/-7/-8 (success 80 %/wk, delivery-tail p95 2 238 ms, proxy-vs-SDK divergence, egress_denied semantics); REQ-ARCH-34 pauses owning-surface feature work |
+| BL-16 | Skill-input pin legs B16 (D-P0.03-2/-3, D-P0.15b-2, D-P0.15c-2) |
+| BL-17 | Engine-invariant legs B17 (D-P0.09-3, D-P0.08b-2, D-STB.5b-2 — caps-at-launch fix live, step-state decision is D-CAP.3-2's) + ADR-094 |
+| BL-18 | Fetch-policy legs B18A/B (D-PRB.02-3, D-P1.21-2, D-STB.5b-3; fetcher grant stays holdout-only per ADR-095) + REQ-ARCH-21/REQ-SPEC-25 |
+| BL-19 | Workflow-gate/finalize legs B19A/B (D-P0.15-3, D-P0.15c-3, D-P1.10-1, D-P1.12-1, D-P1.14-1) |
+| BL-21 | Dossier headless legs T11–T13 (D-P1.07-1, D-PRB.04-1) — ride D-CAP.2-1's window |
+| BL-22 | Residual account/export legs: citeproc + T8 7-day expiry clock leg + quiet hours + Decisions + T7 purge probe (D-P1.18-1/-19-1/-15-1/-04-2; probe bounded per ADR-092) + ADR-103 |
+| BL-25 | D-OPS.1-1 (non-prod signed-in legs — needs mail/session path per ADR-080), D-OPS.1-2 (paused-AlloyDB leg), D-OPS.1-3 (billing export) + ADR-077–080 |
+| BL-31 | Matcher-3 floor tuning + rubric conjunct (needs H2 adjudication data) + REQ-PROD-12/REQ-WF-15 |
+| BL-56 | RES.1 residual legs (D-RES.1-1), N6 planted-error leg (D-RES.1-2 — gates REQ-SPEC-31), Standard/Base excerpt leg (D-RES.1-3) + ADR-021/022/023 |
+| BL-66 | Stale claim-ledger mount live re-verify (RES.2 fix code-landed; rides D-RES.1-2) |
+| BL-72 | Spend-guard integrity: fail-closed tripwire landed CAP.3; live re-proof + system-role binding convention (D-STB.5b-1, ADR-093) |
 
-### round-3 — live verification (`STB.5-*`)
+### HUMAN gates (operator-held prerequisites — mostly $0, all paused on the operator)
 
-| bl_id | landing | title | sources | budget |
-|---|---|---|---|---|
-| BL-16 | STB.5-bounded-live-legs | Skill-input pins (sidecar-absent; mid-phase `phase:"N"`) | D-P0.03-2 · D-P0.03-3 · D-P0.15b-2 · D-P0.15c-2 | ≤$3 |
-| BL-17 | STB.5-bounded-live-legs | Engine invariants (`completed_partial` cap; post-commit high-water publish) | D-P0.09-3 · D-P0.08b-2 | ≤$5 |
-| BL-18 | STB.5-bounded-live-legs | Fetch-policy legs (Full-board fetcher; memo deny-on-attempt + delivered memo) | D-PRB.02-3 · D-P1.21-2 | ≤$15 |
-| BL-19 | STB.5-bounded-live-legs | Gate + finalize legs (structured edits → next-phase file; outline finalize; approve_sample + leak audit) | D-P0.15-3 · D-P0.15c-3 · D-P1.10-1 · D-P1.12-1 · D-P1.14-1 | ≤$30 |
-| BL-20 | STB.5-bounded-live-legs | research_burst fetch/distill delivered; chat_turn plan-card/turn-result asserts (a turn completed in DEF.3); thread-local routing ruling | D-P1.11-1 · D-DEF.1-1 | ruling + ≤$5 |
-| BL-21 | STB.5-headless-legs | Dossier surfaces on an own-tenant delivered review | D-P1.07-1 · D-PRB.04-1 | $0 |
-| BL-22 | STB.5-headless-legs | Export / notifications / ingest / purge legs | D-P1.18-1 · D-P1.19-1 · D-P1.15-1 · D-P1.04-2 | $0 |
-| BL-24 | STB.5-launch-verification | Canary pause smoke, alert paging, CDN-signed usercontent headers, first-finding ≤4 min | D-P1.22-2 | CDN key (provided: no) + signups |
+| Row | Needs |
+|---|---|
+| BL-20 | Thread-local question-routing product ruling + research_burst delivered leg (D-DEF.1-1, D-P1.11-1) — **H7 ruling + ≤$5** |
+| BL-23 | Real prod invite consumed by a live signup (D-SEC.2-1); shared-throttle store proven live SEC.2 — **H7** |
+| BL-24 | Canary-injection pause smoke, alert-channel page, usercontent CDN signed-URL headers, first-finding ≤4 min — **H7** (CDN key: not provided) |
+| BL-32 | Interactive browser/device legs + Safari/WebKit N8 CSP walk (D-EDIT.1-2) — **H7, $0** |
+| BL-33 | Live-mode Stripe re-verify (real objects, 3DS, Tax, test clocks, v2 rate) + credential hygiene — **H7, ≤$50 real money** |
+| BL-34 | Real admin/org-scoped key → usage.reconcile report + window arms (D-ECON.1-1, D-PRB.08-1) — **H7** |
+| BL-35 | External pen-test procurement + triage — **H7, money** |
+| BL-36 | Nightly golden run + score-floor gate + phase-0 readout refresh — **H7, ~$150–300/night** |
+| BL-37 | Cross-tenant exposure-window access review + disclosure decision + `rls-exposure-since-0026.md` census (D-SEC.1-2) — **H7** |
+| BL-38 | Prod test-data residue cleanup — **H7** |
+| BL-39 | H3 partner-program deferred scope + REQ-BETA-2 north-star (defined, unmeasured — no partners) — **H7** |
+| BL-40 | H2 corpus: ≥24 drafts, two editors + adjudicator, six real PDFs, written provider no-training — **H2, ~$100 k** |
+| BL-41 | H4 venue-table real `verified_at` stamps — **H4** |
+| BL-42 | H5 showcase essay + dossier content sign-off — **H5** |
 
-### round-3 — ops
+### GATE-G2 (hard gate before public launch / §16.4 claims)
 
-| bl_id | title | sources | gate | size |
-|---|---|---|---|---|
-| BL-25 | Non-prod stages: `dev` skeleton + `pr-<n>` preview never run | D-P0.15b-1 · X-dev-stack-stale | operator budget | M |
-| BL-27 | IaC/runbook drift (manual collab secret/role; cosmetic scaling drift; scratch helpers) | X-iac-runbook-drift | — | S |
-| BL-28 | Self-hosted Turbo remote cache | D-P0.01-4 | — | S |
-| BL-29 | Prod cost + HA posture vs the ~$50/mo target | X-infra-cost-vs-target · ADR-010 | operator budget | S |
+| Row | Owes |
+|---|---|
+| BL-43 | Live eval-program bindings: enclave bucket, real `@rhema/evals` import, live arm executors, live cross-family judge, workshop matching UI (D-P0.13-1/-5, D-P0.14-1/-2/-3) |
+| BL-44 | Pilot wave on real variance (D-P0.13-4, D-P0.15c-4, D-P0.15b-3) |
+| BL-45 | G2 wave-1 LIFT read — the 14 G2-routed REQ-EVAL-* PARTIAL rows + OF-g2-deferred |
 
-### operator
+### Reconcile / docs tail (this chain's remaining tickets)
 
-| bl_id | title | sources | gate | size |
-|---|---|---|---|---|
-| BL-32 | Browser session: EventSource run card, CodeMirror editor, versions/approvals/settings/landing/phone, P1.02 page editor | D-PRB.04-2 · D-PRB.07-1 · D-P1.08-1 · D-P1.09-1 · D-P1.17-2 · D-P1.19-2 · D-P1.20-1 · X-p102-page-editor-live-verify | human browser + throwaway account | M |
-| BL-33 | Live-mode Stripe re-verify + credential hygiene | D-P1.16-1 · X-stripe-credential-hygiene | real money ≤$50; test-mode key provided: no | M |
-| BL-34 | Usage & Cost reconcile — real admin/org key | D-PRB.08-1 | admin key provided: no | S |
-| BL-35 | External pen test — procure + triage | D-P1.22-3 | procurement | L |
-| BL-36 | Nightly golden run + score-floor gate + phase-0 readout refresh | D-P0.15-4 · D-P0.15b-4 · D-P0.15c-5 | ~$150–300/night | M |
-| BL-37 | Cross-tenant dossier exposure-window review + disclosure decision | X-dossier-leak-exposure-review | human review | S |
-| BL-38 | Prod test-data residue cleanup | X-prod-test-data-residue | — | S |
-| BL-39 | H3 partner program (deferred in part) + ADR-008 revisit triggers | X-h3-partner-program-deferred · ADR-008 | operator decision | M |
+| Row | Landing |
+|---|---|
+| BL-02 | round-4 (MAINT.3) + upstream `agent-skills` patch — validator-stuck status cells (D-P0.06-3, D-P0.08b-3), check-backlog parser, GATE-ACCEPT false-positive, PHASE-LOG rotation |
+| BL-05 | **REC.2** — fold G2/G3/H3 overrides + ADR deviations into the spec; ADR-007 vs ADR-012 shell lineage |
+| BL-06 | **DOC.1 + DOC.2** — repo/agent docs refresh incl. stale phase readouts |
 
-### HUMAN-H2 / HUMAN-H4 / HUMAN-H5
+### Watch rows (per-trigger, evaluated at each REC.1 sweep)
 
-| bl_id | landing | title | sources | gate |
-|---|---|---|---|---|
-| BL-40 | HUMAN-H2 | Corpus commissioning + editors + six real PDFs + written provider no-training verification | D-P0.13-3 · D-PRB.02-2 | ≈$100k (Q-23) |
-| BL-41 | HUMAN-H4 | Venue-table `verified_at` stamps | D-P1.21-1 | operator |
-| BL-42 | HUMAN-H5 | Showcase essay + sample-dossier sign-off (REQ-POS-3) | D-P1.17-1 · D-PRB.01-2 | licensing decision |
+| Row | Scope |
+|---|---|
+| BL-47 | GATE-ACCEPT signed 2026-10-04 (13/13 ACCEPTED); its standing ADR triggers (ADR-001/002/003/011/013/015/016/017) ride as watch |
+| BL-76 | Product/UX-surface triggers (ADR-044–052, 059–061, 063–070, 099, 102) |
+| BL-77 | Infra/security/process triggers (ADR-040, 073–076, 081, 090–092, 098, 100) |
 
-### GATE-G2 (hard gate before §16.4 claims and public launch)
+### Accepted / time-based / spec-scheduled
 
-| bl_id | title | sources | gate |
-|---|---|---|---|
-| BL-43 | Eval live bindings (enclave bucket, real `@rhema/evals`, arm executors, judge, workshop UI) | D-P0.13-1 · D-P0.13-5 · D-P0.14-1 · D-P0.14-2 · D-P0.14-3 | H2 corpus |
-| BL-44 | Pilot wave — real σ_d + fixed n | D-P0.13-4 · D-P0.15c-4 · D-P0.15b-3 | pilot spend + provider verification |
-| BL-45 | G2 wave-1 LIFT read | OF-g2-deferred | operator |
+| Row | Note |
+|---|---|
+| BL-46 | G3 early read on zero partner data — ACCEPTED 2026-09-23 (REQ-BETA-18 thresholds never evaluated) |
+| BL-74 | OBS.1 evidence windows: 24 h zero-MaxListenersWarning soak (D-OBS.1-2, clean since 06:46Z) + first nightly JOURNEY.1 on merged SHA (D-OBS.1-3) + N4 selector-drift fix (X-obs1-n4-selector-drift) + ADR-053 |
+| BL-73 | 33 MISSING spec-scheduled 1.x/Later rows + REQ-OBJ-9/-14 — no work owed this chain; REC.2 confirms the schedule |
 
-### GATE-ACCEPT · accepted · closed
+### Closed (landed — record only)
 
-| bl_id | landing | title | sources | status |
-|---|---|---|---|---|
-| BL-47 | GATE-ACCEPT | Operator-signed accepted-deviations list. ADR revisit triggers become watch items: ADR-001 (Vertex / pricing / multi-provider), ADR-002 (open-source stub swap), ADR-003 (Cloud Run once `CAP_SYS_ADMIN` is relaxed), ADR-011 (per-phase write grant) | X-tail-gate-accept · ADR-001 · ADR-002 · ADR-003 · ADR-011 | open |
-| BL-46 | accepted | G3 read early with zero partner data (operator PROCEED, 2026-09-23) | X-g3-early-read | accepted |
-| BL-48 | closed | Resolved OPEN FINDINGS (record only) | OF-g1-core-met · OF-g1-passed-accepted-exceptions · OF-req-coverage-info · OF-stb2-cross-tenant-dossier · OF-def1-stage-b · OF-def2-landed · OF-def3-stage-a | closed |
-| BL-49 | closed | Deferral rows whose status cell already records DONE (the flip happens in BL-02) | D-PRB.03-1 · D-PRB.16-4 | closed |
+BL-03 (CAP.1 matrix), BL-04 (this run), BL-08 (SEC.1 rhema_app_login), BL-09 (BILL.3 Stripe fixes
+deployed), BL-10 (DEF.4 ledger integrity), BL-11 (EST.1/DEF.4 nits — D-DEF.3-2 flipped 2026-10-04),
+BL-12 (EST.1 lever-matrix flake), BL-14 (ECON.1 durable store), BL-15 (CITE.1 citation completeness
+mechanism), BL-26 (SEC.3 distroless+AppArmor), BL-27/28 (OPS.2 IaC/runbook + turbo-cache),
+BL-48 (resolved findings record), BL-49 (DONE deferral rows), BL-52 (HOT.1/RUN.1 dossier+walkthrough),
+BL-53 (EDIT.1), BL-54 (HOT.1 quiet affordance), BL-55 (RUN.1 chat+Send occlusion), BL-57 (EST.1+RPT.1),
+BL-58 (EST.1 tier control), BL-59 (RUN.1 scope gate), BL-60 (ONB.1 import), BL-61/63 (UX.1 copy+brand),
+BL-62 (UX.2+ACT.1 layout/pricing), BL-64 (ONB.1 fidelity), BL-65 (HOT.1+OBS.1 ops).
 
 ---
 
-## OF- id mapping (LEDGER `## OPEN FINDINGS`, in file order)
+## Themes
 
-| id | Ledger entry (opening words) | Ledger state | Row |
-|---|---|---|---|
-| OF-g1-core-met | "G1 CORE criterion MET live (2026-09-11, P0.15k Stage B, PR #28)" | resolved | BL-48 (closed) |
-| OF-g1-passed-accepted-exceptions | "GATE G1 dispositioned PASSED (2026-09-15, with accepted exceptions)" | resolved. The ±2% exception was ruled by D-PRB.16-5, the gate-edit exception sits in BL-19, and the fold-durability caveat sits in BL-14 | BL-48 (closed) |
-| OF-g2-deferred | "G2 DEFERRED (operator decision 2026-09-15)" | open — hard gate | BL-45 |
-| OF-req-coverage-info | "REQ coverage (informational)" | informational; the validator reports 0 warnings today | BL-48 (closed) |
-| OF-stb2-cross-tenant-dossier | "STB.2 finding (RESOLVED — DEPLOYED + VERIFIED 2026-09-25 ~22:14Z)" | resolved. The root cause is **not** fixed and is tracked as X-api-db-role-bypassrls in BL-08. The exposure review is BL-37 | BL-48 (closed) |
-| OF-prb21-review-cap-uncompletable | "D-PRB.21-1 (OPEN) — the review workflow is uncompletable at derived caps" | the entry still says OPEN, but the row has been DONE since 2026-09-23. The pricing residual is open | BL-13 |
-| OF-stb3-live-findings | "STB.3 live findings (2026-09-26 …) F1–F10" | F1–F7, F9 and F10 are fixed (DEF.1–3); **F8 has no owner** | BL-07 |
-| OF-def1-stage-b | "DEF.1 Stage B executed on prod (2026-09-26 …)" | resolved; residual is D-DEF.1-1 (BL-20) | BL-48 (closed) |
-| OF-def2-landed | "DEF.2 landed … STB.3 findings F4/F5/F6 repaired" | resolved. Its operator legs ran in DEF.2 Stage B. Residuals are in BL-10 | BL-48 (closed) |
-| OF-def3-stage-a | "DEF.3 Stage A landed … F7/F9/F10" | resolved (D-DEF.3-1 DONE); the probe sub-leg gap is in X-slo-probe-gaps | BL-48 (closed) |
+1. **The live legs are one funded window.** Every guard-refused leg (B16–B19, T-residuals, N6,
+   L-lever pairs, the CAP.2/CAP.3 paid steps) converges on the same 2026-10-05 weekly reset +
+   `pulumi up` + operator walk — BL-67/69/71 are the deploy spine, BL-16..19/21/22/56/66 the payload.
+2. **Operator rulings gate money surfaces.** GD-ACT.1-1 (trial everyone-flip), GD-BILL.3-1
+   (re-open purchase), GD-RES.2-1 (retro refund/relabel), the metered-debit flip + notice, and the
+   refund-window go-live are all operator-held; the code is shipped closed-mode.
+3. **The guard itself was the finding.** D-STB.5b-1's $0-through-RLS read means the spend cap could
+   silently pass; the fail-closed tripwire is landed, the convention binding is owed (BL-72).
+4. **SLOs are honestly named, not green.** Four named breaches (D-SLO.1-5..8) carry their own rows;
+   under REQ-ARCH-34 they pause feature work on the owning surfaces.
+5. **Build-memory hygiene is real debt.** Validator-stuck status cells and the upstream parser
+   blind spots are tracked on BL-02 rather than rewritten under append-only rules.
+6. **Spec-deferred ≠ dropped.** The 33 MISSING rows are 1.x/Later scope the spec itself schedules —
+   parked on BL-73 for REC.2 to confirm, not silently closed.
 
-## X- id mapping (owed items that no deferral row tracks)
+## ADR revisit-trigger sweep — 2026-10-04
 
-| id | What is owed | Evidence | Row |
-|---|---|---|---|
-| X-f8-prod-slos-red | Prod SLOs red. Run-start p95 was 3080 s (target ≤45 s), success 66.7% (≥97% weekly), gate-resume p95 443 s (≤60 s), event-delivery p95 105.9 s (≤2 s). DEF.1–3 fixed F1–F7/F9/F10; nothing owns F8. RCN.1 measured a first-start p95 of ≈57 s on n=15, so the 3080 s probe value probably mixes resume and retry transitions. Diagnose that before remediating. **2026-10-03 (SLO.1):** diagnosis confirmed on prod — the 3080 s was the `started_at` overwrite mixing gate waits into "start"; corrected per-episode probes shipped + run-start levers (LISTEN/NOTIFY, `IfNotPresent`, prewarm DaemonSet, stage samples); prod re-read under the corrected probes is D-SLO.1-2 | `runs/STB.3.md` §4 F8 and evidence table; `packages/orchestrator/src/slo.ts` targets; D-P0.15-5; `runs/SLO.1.md`; D-SLO.1-2 | BL-07 |
-| X-slo-probe-gaps | Four probe problems: `mirror_errors_10m`=1 is unexplained; the event-delivery p95 is dominated by quiet-period batch gaps; the `proxy_vs_sdk` ±2% target predates the D-PRB.16-5 by-design divergence ruling; the D-DEF.3-1 `egress_denied_10m` sub-leg is missing from its DONE evidence. Paging was never asserted (that part is D-P1.22-2). **2026-10-03 (SLO.1):** all four resolved in the probe layer — `mirror_errors_10m` = a retried-phase `engine.error`, now scoped to delivery-validation + `boundary.violation`; delivery p95 is live-tail-only (`detail='tail'`, replay excluded at the streamer); `proxy_vs_sdk` compares per (run,attempt) usd↔usd with the D-PRB.16-5 ruling untouched (the ±2% target unchanged — real divergence still flags); the `egress_denied_10m` sub-leg evidence is recorded in `runs/SLO.1.md` §0 | `runs/STB.3.md` F8; `runs/DEF.3.md` §5–§6; `runs/SLO.1.md` §0 + ADR-056 | BL-07 |
-| X-unit-economics | About $7–10 metered per quick review against the $20/mo Writer plan (2,000 included credits, `pricing.json`). This appears only as a caveat in the 2026-09-23 G3 decision; "pricing-model question … carried as product risk into P1" | LEDGER GATE DECISIONS 2026-09-23; D-PRB.21-1 residual; STB.3 figure run estimated 7, metered 58 | BL-13 |
-| X-tail-coverage-matrix | No `COVERAGE_MATRIX.csv`; CAPSTONE was a single ledger row | `docs/build/` listing; manifest chain row "CAPSTONE (ledger)" | BL-03 |
-| X-capstone-req-count-drift | CAPSTONE §3 summary (115/301/44/9) does not match its own table (118/298/41/12); REQ-BETA-16/17/18 are classified inconsistently | `readouts/CAPSTONE.md` §3 | BL-03 |
-| X-tail-gate-accept | No signed GATE-ACCEPT accepted-deviations list, which `projectStatus: DONE` requires | layout BM-TAIL-01; manifest has no GATE-ACCEPT row | BL-47 |
-| X-tail-rec1-backlog | REC.1 has no chain row; this run writes its artifacts ahead of it | manifest chain ends at STB.4 (58) | BL-04 |
-| X-tail-rec2-spec | No TICKET_VS_SPEC / SPEC_RECONCILIATION_PLAN; the G2/G3/H3 overrides never folded back into the spec | manifest `## Spec amendments applied` | BL-05 |
-| X-tail-rec3-integration | No INTEGRATION_PLAN / release notes / next-round memo | `docs/build/` listing | BL-01 |
-| X-tail-doc-refresh | DOC.1/DOC.2 (refresh-repo-docs / agent-docs) never ran | manifest chain | BL-06 |
-| X-prs-48-80-unmerged | 33 stacked PRs (#48 PRB.19 → #80 STB.4) are open; `origin/main` tip `256f594` merges only PRs ≤ #47; HEAD is 133 commits ahead | `BUILD_INDEX.md`; `git rev-list origin/main..HEAD` | BL-01 |
-| X-prod-tree-vs-main-diff | STB.1 deployed `4fcf03e` and STB.2 deployed `f3c7e13` under a pre-merge authorization, with a follow-up to diff the deployed tree against the post-merge tree | `runs/STB.1.md` header; `runs/STB.2.md` §9 | BL-01 |
-| X-ledger-state-drift | CURRENT STATE drift: `nextTicket: DONE` while `projectStatus: IN_PROGRESS`; `lastCompleted: P1.22` (should be STB.4); `returnPass: PRB.18` (mostly landed); state lines carry whole histories (LEDGER.md ≈ 209 KB); the `## GATE DECISIONS` heading is missing (the table sits under OPEN FINDINGS) | `LEDGER.md` lines 16–40 and 150–176 | BL-02 |
-| X-manifest-plan-extensions-stale | `## Plan extensions` stops at 2026-09-18, but PRB.20–25 (09-22/23), the P1 body writes, RCN.1, STB.1–4 and DEF.1–3 (09-25/26) were inserted since | `00_MANIFEST.md` §Plan extensions vs chain table | BL-02 |
-| X-deferrals-status-hygiene | Status cells whose first keyword contradicts the cell (see *Stale rows*); P1 rows not amended with DEF.1 evidence; the bold/date-prefixed status cells that `check-backlog.sh` cannot parse | this analysis; CAPSTONE §7 MINOR (2) | BL-02 |
-| X-run-ledger-stale-headers | DEF.2 and DEF.3 run-ledger headers still say "operator-gated" / "Stage B OWED" although their §7/§6 record the work done. Correct this with a dated note, not a rewrite | `runs/DEF.2.md` header and §5; `runs/DEF.3.md` header and §5 | BL-02 |
-| X-g3-early-read | G3 was read with zero partner data. The REQ-BETA-18 thresholds were never evaluated; the operator accepted proceeding | LEDGER GATE DECISIONS 2026-09-23 | BL-46 |
-| X-h3-partner-program-deferred | Partner recruitment, the REQ-BETA-17 deal and house-credit grants are deferred (not cancelled); the invite machinery is retained | LEDGER GATE DECISIONS 2026-09-16 (H3); ADR-008 | BL-39 |
-| X-api-db-role-bypassrls | The prod api connects as `postgres` (`rolbypassrls=true`), so `withTenant`/RLS filter nothing. `correspondence_items`/`findings`/`claims`/`revision_obligations` are not RLS tables. Only the dossier route was patched | `runs/STB.2.md` §3 root cause and §8.1; LEDGER OPEN FINDINGS (STB.2) | BL-08 |
-| X-dossier-leak-exposure-review | No access-log review or disclosure decision for the exposure window (route deploy → 2026-09-25 ~22:14Z) | `runs/STB.2.md` §3 and §9.3 | BL-37 |
-| X-stb4-stripe-fixes-undeployed | The double-`included` grant, the `/billing/return` 404 and the client-trusted `rateTableVersion` fixes (`cf40f28`) were committed after the only STB.4 deploy (worker at `86441d6`). Prod carries a live Stripe key | `runs/STB.4.md` C.6 and Leg A "Bugs found"; git log | BL-09 |
-| X-pending-checkout-email-gap | The pending-checkout copy promises "we'll email you", but no pending-mail job exists | `runs/STB.4.md` Leg A (f) | BL-09 |
-| X-stripe-credential-hygiene | No usable test-mode Stripe key (test key provided: no). The `dev` Stripe secret payload is empty. A live-mode key sits in a local developer env file (value not recorded). Needed for the D-P1.16-1 test-clock and redelivery legs | `runs/STB.4.md` Leg A preamble | BL-33 |
-| X-f5-settlement-live-proof | F5 (commitStep incremental debits; cancel = release-only; fail = refund) is deployed with `def3` but was never live-proved on a multi-phase run. DEF.2 §7 has no F5 leg | `runs/DEF.2.md` §2 and §7; `runs/DEF.3.md` §6 | BL-10 |
-| X-held-check-migration-parity | Prod's `held>=0` check was validated via a manual drop/re-add. Migration 0044 still adds it `NOT VALID`, and no migration validates it, so fresh environments diverge from prod | `runs/DEF.2.md` §7; `packages/db/migrations/0044_ledger_integrity.sql` | BL-10 |
-| X-balance-divergence-recheck | The nightly assertion's "1 balance divergence" was not re-read after the DEF.2 `--apply` repair | `runs/STB.4.md` C.3 | BL-10 |
-| X-apparmor-unconfined-runtask | The run-task pod runs AppArmor `Unconfined` with `SYS_ADMIN`, the DEF.1 fix that let `unshare` work. There is no plan for a mount-only profile | `runs/DEF.1.md` §7.1 (def1f); `packages/live-clients/src/k8s-launcher.ts` | BL-26 |
-| X-second-read-guidance-ignored | Guided-retry `opts.guidance` is dropped on the scoped second-read path ("acceptable, noted") | `runs/DEF.1.md` §6 | BL-11 |
-| X-lever-matrix-flake | The `packages/run-sheet` `lever-matrix.test.ts` <100 ms assertion fails under full-suite load (133/159 ms against 16/23 ms in isolation). It recurs in ~9 run/PR records since PRB.15 | `runs/STB.4.md` §G; CAPSTONE §1; LEDGER PHASE LOG | BL-12 |
-| X-iac-runbook-drift | The `rhema:collabDatabaseUrl` secret and `rhema_collab` LOGIN were applied by hand and are not in `infra/PROD-BRINGUP.md` or a migration. Also: the persistent cosmetic Cloud Run scaling drift, the `alloydbCluster` output warning, and uncommitted scratch helpers (`q.ts`, `cloudbuild-stb2.yaml`) | `runs/STB.1.md` §3/§7/§9; `runs/STB.2.md` §9.1; `runs/STB.4.md` C.6 | BL-27 |
-| X-dev-stack-stale | The `dev` stack holds only the 23-resource skeleton, and its pins differ from prod; every Stage-B leg ran on prod | D-P1.22-2 STB.1 note; `infra/pulumi/Pulumi.dev.yaml` | BL-25 |
-| X-prod-test-data-residue | STB.2 test draft `01M3D7E1…` v7 on `my-first-project`, and a stray `deployments` row `prod:82179e1` (`0.4.0+test`) | `runs/STB.2.md` §6; `runs/DEF.1.md` §7.1 | BL-38 |
-| X-citation-completeness | G1 recorded "§16.4 marketing claims await the citation-completeness follow-up (ADR-006)"; no row owns it | `readouts/GATE-G1.md`; LEDGER GATE DECISIONS 2026-09-15 | BL-15 |
-| X-infra-cost-vs-target | A ~$50/mo target was authorized against a documented ~$95/mo always-on floor, to be closed by GKE free-tier and idle levers. Actual spend was never measured against the target | LEDGER GATE DECISIONS 2026-09-17; `infra/PROD-BRINGUP.md` §0 | BL-29 |
-| X-p102-page-editor-live-verify | The 8 REQs owned by P1.02 are marked "gate-pending" with no D-row. The P1.02 ledger folded them into D-P1.01-1, which is now DONE but never mentions P1.02. **2026-10-01 (JOURNEY.1):** the automatable half is journey step **N8** (owner EDIT.1, expected-red) — the edit→fork→sync-pill browser leg runs nightly once green | CAPSTONE §3 | BL-32 |
-| X-phase1-exit-readout-stale | The phase-1 exit readout's "instrumented costs" row still reads PARTIAL and cites D-P0.08-2/D-P0.15-2, both of which are now DONE | CAPSTONE §2 | BL-06 |
+Read: every `docs/adr/ADR-*.md` `## Revisit trigger` section. Statuses: **quiet** (condition not
+met), **fired-answered** (condition met, answered by a landed change or an open row), **dormant**
+(trigger is spec-deferred/1.x scope). No **fired-unanswered** triggers — every live trigger rides a
+backlog row above. No **superseded** ADRs.
 
-## Rows marked DONE that still owe something (added as sources)
-
-| id | Residual | Row |
+| ADR | State | Evidence read |
 |---|---|---|
-| D-P0.15k-1 | `INSTRUMENTED_OVERRIDES` is process-local, so folded constants do not survive restarts (ADR-005's trigger) | BL-14 |
-| D-P1.04-2 | Live `project.purge` evidence fires only at a real tombstone+30d (or a hand-dated row) | BL-22 |
-| D-PRB.21-1 | "Residual pricing-model question stays OPEN for G3" | BL-13 |
+| ADR-001 | quiet | No server-side web tools on a cloud-native channel; API terms unchanged (run evidence: direct-API path live all round 3) |
+| ADR-002 | quiet | Repo still private; stub swap verified green in `public-safe` CI |
+| ADR-003 | quiet | No cloud change; pinned Pulumi providers building clean |
+| ADR-004 | quiet | `docs/build/` within validator bounds; rotation is a watch item (BL-02, not a trigger fire) |
+| ADR-005 | fired-answered | ECON.1 landed the durable `cost_card_cells`/`cap_calibration_reports` store (BL-14 closed; refit on BL-68) |
+| ADR-006 | fired-answered | CITE.1 mechanism-A backfill + canonical cited⇒retrieved join shipped; measured-rate read owed → D-CITE.1-5 (BL-67) |
+| ADR-007 | fired-answered | P1 surfaces shipped on the ADR-012 Hono-SSR shell — the stopgap was discarded; lineage reconciliation → BL-05 |
+| ADR-008 | quiet | Test-mode persists by operator pause (ADR-028/BL-51), not past the point revenue matters — purchase is closed |
+| ADR-009 | fired-answered | Multi-instance bypass was proven live and fixed: shared Redis throttle store bound + verified cross-instance 429 (SEC.2; D-SEC.2-1 on BL-23) |
+| ADR-010 | quiet | `db-g1-small` not shown outgrown; bill posture measured $285.80 list (BL-29 carries the levers) |
+| ADR-011 | quiet | No undeclared-path write need observed; per-run grant held |
+| ADR-012 | quiet | No shipped surface needed client-owned `hydrateRoot`; N8 walks green (D-EDIT.1-2 carries the Safari half) |
+| ADR-013 | quiet | Round-3 scope pause list stands; each clause is operator-held on its row (BL-29/50/51/68/69) |
+| ADR-014 | quiet | ECON.2 restore read NOT MET (≈$14.25 gap) → interim terms stand (BL-69); no $50/day absorbed-COGS week |
+| ADR-015 | quiet | Unverified-delivery rate not observed >1 %/wk; monitored via weekly review |
+| ADR-016 | quiet | JOURNEY.1 flake <5 %; the defects it missed are all landed (BL-52..65) |
+| ADR-017 | quiet | Zero cross-tenant rows on the 8-route probe post-SEC.1 |
+| ADR-018 | quiet | No user-serving DDL need; `rhema_app_login` single-membership (census owed → D-SEC.1-2, BL-37) |
+| ADR-019 | fired-answered | ACT.1 flag + EST.1 re-derived `plans.whatItCovers` both live; claims config updated |
+| ADR-020 | quiet | Mailbox still Gmail DWD; nonce contract unchanged |
+| ADR-021 | quiet | No verification need > floor observed; two eligibility classes hold |
+| ADR-022 | quiet | Pair set still `models × {search, fetch}`; probe latency acceptable (RES.1 probes $7.49) |
+| ADR-023 | quiet | `fact_check` shape unchanged; no fetch-log attribution landed |
+| ADR-024 | quiet | One run-level fault label (`platform_fault`) only |
+| ADR-025 | fired-answered | Second workflow label question = the fact_check extension → D-RES.2-3 on BL-75 |
+| ADR-026 | quiet | One forcing flag; floors inside `webTools` bound |
+| ADR-027 | quiet | Stripe hosted surface still the three documented origins |
+| ADR-028 | dormant | Re-open pause stands pending `GD-BILL.3-1` (BL-51) — purchase deliberately closed-mode |
+| ADR-029 | quiet | No Stripe-hosted completion emails enabled; no server-pushed return channel |
+| ADR-030 | quiet | Tax not activated; Checkout API contract unchanged |
+| ADR-031 | quiet | No `metered_over_debit` refunds observed (flagged-tenant legs only, $0) |
+| ADR-032 | quiet | First weekly refit reported zero admissible samples — one window; watch continues via D-ECON.1-3 |
+| ADR-033 | quiet | Upstream `editorial-review` still lacks `findings_cap` → D-ECON.1-2 (BL-68) |
+| ADR-034 | quiet | No new pre-run surface outside `surfaceEstimate`/`surfacePricer` |
+| ADR-035 | quiet | No fourth tier level / per-workflow entitlement landed |
+| ADR-036 | quiet | Refit has no admissible samples yet → real percentiles not in ETA leg (D-ECON.1-3) |
+| ADR-037 | quiet | SLO.1's corrected probes did not need sub-20 s meter freshness |
+| ADR-038 | quiet | No new burn classification / DEBT row kind landed |
+| ADR-039 | quiet | Memorystore fallback not flapping; beta abuse economics not measured (H7 real-invite leg owed) |
+| ADR-040 | quiet | Single first-party caller; web still on Cloud Run |
+| ADR-041 | quiet | No third send surface; refused-send latency unremarkable |
+| ADR-042 | quiet | ECON.2 restore NOT MET → entitlement stays test_tenants (GD-ACT.1-1 on BL-50) |
+| ADR-043 | quiet | Operator go-live ruling owed — that IS GD-ACT.1-1 (BL-50) |
+| ADR-044 | quiet | ONB.1 measured p95 736–922 ms within budget; not warm-capacity-bound |
+| ADR-045 | quiet | No converter producing non-title leading H1 |
+| ADR-046 | quiet | Figure upload/management (P1.13 lane) not landed — inerting stands |
+| ADR-047 | quiet | Holds stay per-browser by design; `?hc=` handshake verified live (ONB.1) |
+| ADR-048 | quiet | No frozen-directly-editable draft kind; `/v/working` head resolution green (EDIT.1) |
+| ADR-049 | quiet | Single persistent save-state surface; no reauth in collab protocol |
+| ADR-050 | quiet | Only `approve_scope` uses informational-default; R7 invariant held live (RUN.1) |
+| ADR-051 | quiet | `chat_turn` still writes artifacts; no queue-behind-run ask |
+| ADR-052 | quiet | Provider-key governance unchanged; walkthrough model on worker key |
+| ADR-053 | quiet | No user-text-in-log leak demonstrated; allowlist holding (BL-74 carries soak evidence) |
+| ADR-054 | quiet | OR-combined policy incidents acceptable; provocation leg proven (OBS.1) |
+| ADR-055 | quiet | No sanctioned fault-injection surface added; the single provocation leg executed |
+| ADR-056 | quiet | §13.5 table unamended; corrected probes read honest on prod (SLO.1 Stage B) |
+| ADR-057 | quiet | Retention adequate for now; weekly series live (15 `rhema_slo_weekly` rows) |
+| ADR-058 | quiet | First post-fix weekly review pending the 10-05 window — watch continues |
+| ADR-059 | quiet | No surface rendering strings outside COPY/INBOX_COPY |
+| ADR-060 | quiet | No per-locale/experiment lede divergence needed |
+| ADR-061 | dormant | No `one_x` workflow shipped — spec-scheduled (BL-73) |
+| ADR-062 | quiet | H5 sign-off not yet granted (BL-42); `getShowcaseEntry` fallback correct |
+| ADR-063 | quiet | No new collapsed event class needing repeat-badge behavior |
+| ADR-064 | quiet | One transactional template family (magic link) — verified through real mailbox |
+| ADR-065 | quiet | New-project flow still global; shells distinct by design |
+| ADR-066 | quiet | Pricing matrix ≤6 columns |
+| ADR-067 | quiet | Phone-legal action set ≤2 items (44 px rule re-proof → D-CAP.2-3) |
+| ADR-068 | quiet | Axe licence fine; expressible violations green; harness runs in CI-with-browser leg |
+| ADR-069 | quiet | No persistent status channel on Page; sync pill in-flow |
+| ADR-070 | quiet | Faint tier still real text; AA contrast holds |
+| ADR-071 | quiet | No user-refunded-resume ruling — refund window runs `test_tenants` (BL-30) |
+| ADR-072 | quiet | reconcile write-order single-caller; no second bypass need |
+| ADR-073 | quiet | Scoped launch shape has no `inputs` object yet (spec §12.6 unchanged) |
+| ADR-074 | quiet | No fourth util-linux applet needed; distroless image live |
+| ADR-075 | quiet | Single AppArmor profile; SPO re-eval unwarranted |
+| ADR-076 | quiet | `apparmor.test.ts` tripwire green — no unnamed mount argv |
+| ADR-077 | quiet | Dev standing projection within $15/mo window (OPS.1 measured) |
+| ADR-078 | quiet | Prod stays out-of-VPC migrate; <900 s migrations |
+| ADR-079 | quiet | No exfil concern; previews carry generated secrets only |
+| ADR-080 | quiet | Non-prod mail path / `is_test` session fixture not yet built → D-OPS.1-1 (BL-25) |
+| ADR-081 | quiet | Shared Bearer adequate at current team size |
+| ADR-082 | quiet | Billed actuals not yet exported → D-OPS.2-1 (BL-29); $285.80 recompute stands |
+| ADR-083 | quiet | No query-sensitive cited-URL class observed; `fetch_log` kinds stable |
+| ADR-084 | quiet | Completeness rate is a reported signal; SLO row decision awaits Stage-B evidence (D-CITE.1-5) |
+| ADR-085 | quiet | Stage-B measured rate owed → D-CITE.1-5; `trulyUnretrieved` baseline = 0 |
+| ADR-086 | fired-answered | Canonical baseline measured **1.0** vs legacy 0.675 (13 misses all `normalizationOnly`) — the pre-registered 0.95 bar reads trivially met; per ADR-086(b) the mechanism's value rests on the parity fix, which is exactly what shipped. Stage-B probe read still owed → D-CITE.1-5 (BL-67) |
+| ADR-087 | quiet | Deploy + weekly-guard blocks not yet cleared → D-ECON.2-1..4 legs owed (BL-69) |
+| ADR-088 | quiet | Clock legs still owed (T8 7-day, T7 purge) → BL-22; no test-tenant purge exemption granted |
+| ADR-089 | quiet | CAP.2 composed re-verification not run → D-CAP.2-2 (BL-71) |
+| ADR-090 | quiet | System-pool hash-lookup+stamp sufficient; allowlist unchanged |
+| ADR-091 | quiet | Deterministic deconflict correct UX so far; slug rules stable |
+| ADR-092 | quiet | pg-boss schema pinned; bounded probe is the convention (carries T7 on BL-22) |
+| ADR-093 | quiet | Live re-proof of the fail-closed guard owed → D-STB.5b-1 (BL-72) |
+| ADR-094 | quiet | Reopens with D-CAP.3-2's step-state decision (BL-71) |
+| ADR-095 | quiet | Server-side `web_fetch` keeps egress-proxy coverage; grant stays holdout-only (BL-18) |
+| ADR-096 | quiet | Exercised-surface leg awaits D-CAP.2-2's suite (BL-71) |
+| ADR-097 | quiet | Sharing semantics unchanged; single named layout |
+| ADR-098 | quiet | Reserved REQ-SPEC ids not reused; matrix annotation stands |
+| ADR-099 | dormant | 1.x collaboration scope — spec-scheduled (BL-73) |
+| ADR-100 | quiet | No run shape bypasses hydration/launch; retention guarantees hold |
+| ADR-101 | quiet | No `Domain=` cookie; subdomain isolation holds (CDN signed-URL headers owed → BL-24) |
+| ADR-102 | dormant | Mobile app is spec-scheduled 1.x (BL-73) |
+| ADR-103 | dormant | Richer notification actions are 1.x scope; signed-email actions adequate for beta |
 
-## Stale rows — recommendations only (nothing flipped here)
+## Risk-register review — 2026-10-04
 
-These rows' remaining scope appears to be superseded by later live evidence. **BL-02** is where the flips
-belong, each with a dated amendment note.
+The project maintains **no standalone risk register**; the live risk surfaces are the LEDGER **OPEN
+FINDINGS** list and `docs/security/` (tenancy-audit, rls-exposure-since-0026, pen-test package,
+usercontent-csp-audit). Reviewed this sweep — every open item maps to a row:
 
-| Row | Status | Evidence that supersedes it | Recommendation |
-|---|---|---|---|
-| D-P0.03-3 | OPEN (first keyword) | Same cell: "**DONE (2026-09-26, STB.3 — prod):** figure run `01M3DK07CYZZXM4Y6CDBHKK0C7` … `inputs.phase="0"` committed only phase-0 artifacts, wrote `.rhema/phase-result.json`" | Flip to DONE. Carry the mid-phase pin (`phase:"2"`) as a note (BL-16) |
-| D-PRB.03-1 | PARTIAL | Same cell: "**DONE — 2026-09-26 (DEF.2 Stage B, prod)**: non-provisional `estimate_cache` row … repeat call 80 ms, zero new `est_*` usage rows" | Flip to DONE (BL-49) |
-| D-PRB.16-4 | PARTIAL | Same cell: "**DONE (2026-09-26, STB.3 — prod):** `confirm_cost` gate `01M3DQ59…` … `gate.expiry` consumed → `cancelled`" | Flip to DONE (BL-49) |
-| D-P0.15b-2 · D-P0.15c-2 | PARTIAL | RCN.1: every bring-up leg is live on prod (`fetch_log` inference ×3,089, cap-402 run `01M364236…`, credential deny rows); the sole residual is the pin legs, already owned by D-P0.03-2/-3 | Flip to DONE with a pointer to D-P0.03-2 |
-| D-P0.15b-3 · D-P0.15c-3 | PARTIAL | RCN.1: the run legs landed on prod (3 reviews + revise + fact-check + quick-voice + folds). Residuals are already owned by D-P0.13-4/D-P0.14-1/D-P0.15c-4 (pilot), D-P0.15-3 (gate edit) and D-P0.15d-2 (refund) | Flip to DONE with pointers. Double-tracking inflates the PARTIAL count |
-| D-P0.15b-4 · D-P0.15c-5 | PARTIAL | The "operator's G1-ready flag" is superseded because **G1 PASSED 2026-09-15** (LEDGER GATE DECISIONS; `readouts/GATE-G1.md`). Start-latency p95 was measured (D-P0.15-5 DONE, ≈57 s). The nightly golden is owned by D-P0.15-4 | Flip to DONE. Keep the readout rewrite as a DOC item (BL-06/BL-36) |
-| D-P0.15b-1 | PARTIAL | The dev/pr-test bring-up premise is superseded by the prod bring-up (PRB.15: `pulumi up prod`, 24/24 migrations; PRB.19 sign-in). The residual is **not** stale: `pr-<n>` full-stack up/destroy has never been exercised | Re-scope under BL-25; keep open |
-| D-P1.11-1 | PARTIAL | Last amended at STB.3 (chat_turn `cap_reached`). **DEF.3 Stage B** then completed chat_turn `01M3EVPYKJ9W3KBGDCPBZEXDV7` at 27 cr under cap 40 (D-DEF.3-1 DONE; `runs/DEF.3.md` §6) | Re-assess: the delivered-turn leg may be met (confirm the plan-card event + `turn-result.json` sidecar). The research_burst half stays open with D-DEF.1-1 (BL-20) |
-| D-P1.10-1 · D-P1.12-1 · D-P1.14-1 · D-P1.07-1 · D-P1.21-2 | PARTIAL | Last amended at STB.3 (defect-killed). **DEF.1 Stage B** then completed: draft `01M3E8F8…` (8/8 predicates, delivered `drafts/v8.md` + `correspondence/drafting_note/1/`), outline `01M3E2EC…` (4/4), profile_voice `01M3E8CX…` (6/6), and review `01M3EAAZ…` (delivered `correspondence/review/1/`) — `runs/DEF.1.md` §7.2 | Re-assess each against DEF.1. D-P1.10-1's delivery legs look met (only the approve_plan structured edit remains). D-P1.07-1 may now have its own-tenant dossier |
-| LEDGER OPEN FINDINGS "D-PRB.21-1 (OPEN)" | OPEN in ledger | D-PRB.21-1 DONE 2026-09-23 (`01M36663…` delivered) | Annotate RESOLVED; the residual is BL-13 |
-| LEDGER RETURN PASS `PRB.18` / `returnPass: PRB.18` | open | Google + magic-link + Stripe-originated purchase landed 2026-09-22 (D-P0.01-3, D-PRB.17-1, D-PRB.13-2 DONE); gate expiry done (D-PRB.16-4). Only the browser SSE/editor legs remain (BL-32) | Prune to those two legs or clear |
+| Open finding / risk surface | Home |
+|---|---|
+| G2 deferred — hard gate before launch/§16.4 claims | BL-45 (GATE-G2) |
+| STB.3 F8 — prod SLOs honestly red | BL-07 (named D-SLO.1-5..8) |
+| DEF.1 research leg `blocked` | BL-20 |
+| OBS.1 N4 selector drift (journey substrate vs ACT.1 variant) | BL-74 |
+| OBS.1 BILL.3 fixture drift (one-off prod write, paused) | BL-51 |
+| Upstream `agent-skills` parser/rotation findings | BL-02 |
+| Citation-completeness Stage-B rate read | BL-67 |
+| ECON.2 restore read NOT MET + rate-table caveat | BL-69 |
+| Weekly spend-guard RLS blindness | BL-72 |
+| Cross-tenant exposure-window review (`rls-exposure-since-0026.md`) | BL-37 (+D-SEC.1-2) |
+| Pen-test package awaiting procurement | BL-35 |
+| Prod test-data residue | BL-38 |
+| Deployed tree ≠ merged main | BL-01 (REC.3) |
 
-## Sources that could not be placed
-
-None. All 58 status-owed deferral rows, all 12 ADR revisit triggers and all 10 OPEN FINDINGS entries sit in
-exactly one row, as do the 36 X- items and 3 DONE-with-residual ids. No spec-mandated register with deferred
-rows and no `COVERAGE_MATRIX.csv` exists to gather from. The missing matrix is itself X-tail-coverage-matrix
-(BL-03).
-
-## Added 2026-09-30 — the prod design review (`reports/2026-09-30_prod-design-review.md`)
-
-Sixteen rows (BL-50…BL-65) carry the review's `PR-*` finding ids. Three review findings folded into existing
-rows: PR-S1 → **BL-08** (live `/voices` proof of the BYPASSRLS root cause), PR-R2 → **BL-07** (SLOs still red
-after DEF.1–3), PR-E5 → **BL-13** (632 cr charged vs ≈1,625 cr metered on one Quick/Base review). The review
-also extends **BL-38** (its own test account + two test projects on prod).
-
-### round-3 — prod hotfix (P0, $0, deploy-first)
-
-| bl | title | sources |
-|---|---|---|
-| BL-52 | Dossier 500 on `evidence.urls` absent (incl. the Showcase) + walkthrough job failing | PR-J3 |
-| BL-53 | No edit path: `page.js` never routed; Edit source → `/v/working` 404 on fresh imports; `my-first-project` unopenable | PR-J4 |
-| BL-65 | Ops: digest query on non-existent `runs.finished_at`; api listener leak; LB 5xx untraced | PR-O1 PR-O2 PR-O3 |
-
-### round-3 — core journey (P0)
-
-| bl | title | sources |
-|---|---|---|
-| BL-50 | Trial entitlement not honored (REQ-SPEC-8) | PR-J1 |
-| BL-51 | Credit purchase broken (CSP blocks the Stripe redirect; checkout returns no URL) | PR-J2 |
-| BL-55 | Chat turn 502 + Send occluded by the status bar | PR-J6 |
-| BL-56 | Review did no web research (16/16 Unverifiable) yet completed and charged | PR-Q1 |
-
-### round-3 — honesty and correctness (P1)
-
-| bl | title | sources |
-|---|---|---|
-| BL-54 | Project list looks empty (Quiet group collapsed, no affordance) | PR-J5 |
-| BL-57 | One estimate everywhere + honest run report + live meter | PR-E1 PR-E3 PR-E4 PR-R3 |
-| BL-58 | Model tier not user-controllable; Free gets Balanced | PR-E2 |
-| BL-59 | "Informational" Approve-scope gate blocks indefinitely | PR-R1 |
-| BL-60 | Import latency (3.5–5.6 min) + held draft lost (REQ-GROWTH-1) | PR-R4 |
-
-### round-3 — polish (P2)
-
-| bl | title | sources |
-|---|---|---|
-| BL-61 | Copy + IA: "private beta", build jargon, unbuilt workflows exposed, inbox count | PR-U1 PR-U2 PR-U3 PR-U4 |
-| BL-62 | Layout/responsive: `/app/new` unstyled, pricing phone overflow, phone action row | PR-U5 PR-U6 PR-U7 |
-| BL-63 | Brand/meta/email: titles, meta, OG, favicon, `/showcase`, magic-link email | PR-U8 PR-U9 |
-| BL-64 | Import fidelity: H1 demotion, relative figure paths | PR-R5 |
+Spec-register deferred rows: the 33 `MISSING` matrix rows are all spec-scheduled 1.x/Later scope —
+parked on BL-73; REC.2 confirms the schedule during spec reconciliation.

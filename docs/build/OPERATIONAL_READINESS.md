@@ -1,185 +1,159 @@
 # Rhēma — operational readiness
 
-> Written 2026-09-30 by `reconcile-build mode=backlog`, alongside [`BACKLOG.md`](BACKLOG.md) /
-> [`BACKLOG.csv`](BACKLOG.csv). Every "owner" below is a backlog row (`BL-nn`) and names its landing. Evidence
-> comes from the committed build memory: `docs/tickets/DEFERRALS.md`, `docs/build/LEDGER.md`,
-> `docs/build/runs/*`, `docs/build/readouts/*`.
+> Rewritten 2026-10-04 by REC.1 (`reconcile-build mode=backlog`), alongside
+> [`BACKLOG.md`](BACKLOG.md) / [`BACKLOG.csv`](BACKLOG.csv). Supersedes the 2026-09-30 read — every
+> round-3 disposition that changed a capability row is named. Every "owner" is a backlog row naming
+> its landing. Evidence is the committed build memory: `docs/tickets/DEFERRALS.md`,
+> `docs/build/LEDGER.md`, `docs/build/runs/*`, `docs/build/readouts/*`, `docs/build/COVERAGE_MATRIX.csv`.
 
 ## Verdict
 
-**Prod is live, but not ready for a public launch.** `rhema.tools` is live on prod and serves real
-self-serve paid traffic. Signup, ingest, review, delivery, dossier and the Stripe top-up have all run on prod
-with real rows, and DEF.1 completed review, draft, outline and profile_voice runs live.
+**Prod is live and materially healthier than the 2026-09-30 read, but still not launch-ready.**
 
-It is **not launch-ready**, and one hard gate plus four live-risk items stand in the way:
+What changed since the last read (all live-verified on prod, run ledgers committed):
 
-- **G2 (wave-1 LIFT).** A hard gate before §16.4 claims or a public launch. It is deferred, and its H2 corpus
-  does not exist.
-- **Undeployed Stripe fixes.** Fixes for the payment path, including a double `included` grant, are committed
-  but not deployed, while prod holds a live Stripe key (BL-09).
-- **RLS bypass.** The api's DB role bypasses row-level security (BL-08).
-- **Red SLOs.** Every §13.5 SLO read red during STB.3 (BL-07).
-- **Unmerged code.** Prod runs code from 33 unmerged PRs (BL-01).
+- **RLS bypass closed** (SEC.1, `runs/SEC.1.md`): the api serves through `rhema_app_login`
+  (NOBYPASSRLS); an 8-route two-tenant probe read clean.
+- **Stripe-path fixes deployed** (BILL.3): the purchase path runs deliberately **closed**
+  (`purchaseMode:"closed"`, ADR-028); the double-`included`-grant defect class is fixed at source.
+  Prod no longer exposes the purchase surface to real users pending `GD-BILL.3-1`.
+- **Ledger integrity closed** (DEF.4): `held>=0` convalidated, `assertBalances` 0 divergences / 71
+  accounts, refund-window settle path live behind `REFUND_WINDOW_MODE=test_tenants`.
+- **SLO probes corrected** (SLO.1): the seven mis-measuring probes now read honestly — run-start p95
+  27.8 s ≤45, gate-resume 25.9 s ≤60. Four **named** breaches remain (D-SLO.1-5..8).
+- **Product repaired end-to-end**: dossier 500 (HOT.1), edit path (EDIT.1), chat + Send occlusion
+  (RUN.1), quiet affordance (HOT.1), scope-gate deadlock (RUN.1), import path (ONB.1), copy/IA
+  (UX.1), layout/pricing phone (UX.2+ACT.1), estimator single-sourcing (EST.1+RPT.1).
+- **GATE-ACCEPT signed 2026-10-04** — all 13 capstone deviations ACCEPTED
+  (`readouts/GATE-ACCEPT.md`); build state is `IN_PROGRESS`, not DONE.
+
+What still stands between here and a public launch — one hard gate, plus operator-held rulings and
+one funded live-verification window:
+
+- **G2 (wave-1 LIFT)** — hard gate before §16.4 claims or launch; H2 corpus does not exist (BL-40/45).
+- **Unmerged code** — prod still runs the stacked-branch tip; 33 round-2 + ~30 round-3 PRs are
+  unmerged (BL-01 → REC.3).
+- **Operator rulings** — trial everyone-flip (`GD-ACT.1-1`), purchase re-open (`GD-BILL.3-1`),
+  retro refund/relabel (`GD-RES.2-1`), metered-debit flip + notice, refund-window go-live
+  (`D-DEF.4-3`), pricing ruling (BL-13/29/30/50/51/68/75).
+- **One funded window** — every guard-refused leg converges on the 2026-10-05 ISO weekly reset:
+  queued `pulumi up`s (CITE.1 pins at tip, ECON.2), 21 paid registry steps + paid new-visitor
+  journey (D-CAP.2-1), the full JOURNEY.1 suite (D-CAP.2-2), CAP.3's live legs (D-CAP.3-1),
+  RES.1/N6 legs (D-RES.1-*), lever pairs (D-ECON.2-2..5), STB.5a/b residuals (BL-16..19/21/22/56/66/67/69/71).
+- **HUMAN gates** — H7 browser/invite/Stripe/admin-key legs, H2 corpus (~$100k), H4 venue stamps,
+  H5 showcase sign-off, pen-test procurement (BL-32..42).
 
 ## Capability matrix
 
-| # | Capability | Code state | Infra needed | Human gate | Owner |
+| # | Capability | Code state (highest layer reached) | Infra needed | Human gate (owner · due) | Proof |
 |---|---|---|---|---|---|
-| 1 | Sign-up, sign-in, admission | Live: Better Auth (Google + magic link), open self-serve signup. The invite gate is built but never run against a real invite; the throttle is per-instance | Redis-backed shared counter (Redis is already bound in api) | none | BL-23 → `round-3/SEC.2-signup-admission` |
-| 2 | Tenant isolation + data security | The dossier route is patched (workspace predicate). **The api role is BYPASSRLS**; dossier tables have no RLS. The run-task keeps the two-uid split and egress-only access, and (SEC.3) runs the distroless image under the Localhost `rhema-run-task` AppArmor profile — mount-scoped, no longer `Unconfined` | A non-BYPASSRLS api DB role + secret | operator: DB role + secret rotation (provided: no); pen-test procurement; exposure review | BL-08, BL-26, BL-35, BL-37 |
-| 3 | Import + ingestion | Live: paste, upload, Substack export, discovered items, priced visual-PDF reconstruct (STB.3). The AC-I-A re-sync dedup is unexercised | deployed (fetcher, convert Job) | none | BL-22 → `round-3/STB.5-headless-legs` |
-| 4 | Review (core workflow) | Delivers on prod (DEF.1 `01M3EAAZ…`, 447/1,083 cr, scoped second-read live, `boundary.attested` violations 0). Citations use Path B (strip + downgrade). Neither the Full-board fetcher nor the memo deny-on-attempt has run live | deployed (GKE `runs` ns, egress proxy) | none (cost → row 9) | BL-15, BL-18 |
-| 5 | Other workflows (draft, outline, profile_voice, chat, research_burst, revise, figures) | draft, outline and profile_voice completed live (DEF.1), and a chat_turn completed at 27/40 cr (DEF.3). Revise and figures were proven earlier. research_burst ends `blocked` at `plan` on thread-local questions, so fetch/distill has never run. The gate-edit → next-phase file and finalize legs are unproven | deployed | operator product ruling (thread-local research routing) | BL-19, BL-20 → `round-3/STB.5-bounded-live-legs` |
-| 6 | IDE surfaces (editor, versions, findings, approvals, inbox, settings, landing, phone) | All P1.01–P1.20 surfaces are landed and return 200 headless on prod. The browser-interactive legs are unobserved | deployed | human browser session + throwaway account | BL-21, BL-32 |
-| 7 | Payments (Stripe) | The top-up Payment Link runs in live mode, and two real purchases landed on 2026-09-22. Subscriptions, portal, auto-reload and trial were verified only against a local test-mode edge (STB.4). **Three fixes on that path are not deployed** | api/web/worker redeploy | operator: real money (≤$50 ceiling), test-mode key (provided: no) | BL-09, BL-33 |
-| 8 | Metering, ledger, reconciliation | The proxy is the meter of record, with cap-402 and clamped debits; F4/F5/F6 are fixed and deployed. The `held>=0` check is validated on prod only by hand. There is no live F5 settle proof, the provider reconcile is blocked on a placeholder admin key, and `refundPhases` has no caller | none new | operator: admin/org key (provided: no) | BL-10, BL-30, BL-34 |
-| 9 | Estimation + pricing | `estimate_cache` + Haiku pre-pass are live (DEF.2). The estimator folds are process-local. **Unit economics are open**: a quick review costs ~$7–10 metered | none | operator pricing ruling | BL-13, BL-14 → `round-3/ECON.*` |
-| 10 | Export + data rights | Export formats and the account-zip download are live (STB.2). The citeproc, import round-trip and 7-day-expiry legs are unexercised, as is the delete lifecycle on a throwaway account | deployed (export Job) | human (throwaway-account delete lifecycle) | BL-22, BL-32 |
-| 11 | Notifications + inbox | Inbox rows and email delivery are live; signed actions work (303 → 410 on replay); `/api/action` fixed (DEF.3). Quiet hours, Decisions-row transitions, stale-voice and badge click-through are unexercised | deployed | none | BL-22 |
-| 12 | Observability + SLOs | Deployed: monitoring stack, dashboard, alert policies, api-availability SLO, `slo_samples` probes. **SLOs are red**, and paging to the channel has never been asserted. Probe definitions have gaps | none | none | BL-07, BL-24 |
-| 13 | Infra, stages, delivery | The prod Pulumi stack is live (update 91). `dev` is a 23-resource skeleton, and `pr-<n>` previews have never run. **33 PRs are unmerged**; manual changes sit outside IaC | dev + preview stages; merged `main` | operator merge (mergePolicy OPERATOR); operator budget | BL-01, BL-25, BL-27, BL-28, BL-29 |
-| 14 | Evaluation program (§18 / G2) | Machinery built and exercised on the dev set with fakes. Not yet built: live enclave bucket, real `@rhema/evals`, arm executors, judge, workshop UI | a benchmark GCS bucket + principal | HUMAN-H2 (corpus ≈$100k, editors, written provider no-training verification) | BL-40 → BL-43, BL-44, BL-45 |
-| 15 | Content + claims | The Showcase uses fixture content; venue tables are honestly stale-dated; §16.4 efficacy claims are **forbidden** until G2 | none | HUMAN-H5 (essay), HUMAN-H4 (venue tables) | BL-41, BL-42, BL-45, BL-15 |
-| 16 | Build memory + governance | The validator shows 0 violations, but LEDGER state has drifted, the manifest's `## Plan extensions` stops at 2026-09-18, and the v2 tail never ran (no COVERAGE_MATRIX, REC.1–3, DOC.1–2 or GATE-ACCEPT) | none | operator signs GATE-ACCEPT | BL-02..06, BL-47 |
+| 1 | Sign-up, sign-in, admission | **Live.** Better Auth (Google + magic link), open self-serve, shared Redis throttle store proven across instances (SEC.2) | deployed | H7: real invite consumed by a live signup — operator · on acceptance of the invite leg (BL-23, D-SEC.2-1) | `runs/SEC.2.md`; `runs/JOURNEY.1.md` N2 |
+| 2 | Tenant isolation + data security | **Live.** `rhema_app_login` NOBYPASSRLS; distroless run-task image + Localhost `rhema-run-task` AppArmor profile on prod; zero mount denials on the scoped leg | none new | H7: exposure-window access review + disclosure (operator · before pen test); pen-test procurement (operator · pre-launch) — BL-35/37, D-SEC.1-2 | `runs/SEC.1.md`, `runs/SEC.3.md` |
+| 3 | Import + ingestion | **Live.** Paste/upload/Substack import path live (ONB.1 N1/N3, conversion preview p95 736–922 ms); held-draft handshake verified | deployed | none blocking | `runs/ONB.1.md` |
+| 4 | Review (core workflow) | **Live.** Delivers with research floor + preflight (RES.1 probes $7.49); canonical cited⇒retrieved completeness identity shipped + persisted (CITE.1); **queued `pulumi up` for CITE.1 image pins** (D-CITE.1-1) | CITE.1 pins deploy (operator · now — Pulumi logged in) | Operator deploy → probe legs L1/L2/N11 + ADR-086 rate read (BL-67) | `runs/RES.1.md`, `runs/CITE.1.md` |
+| 5 | Other workflows | **Mostly live.** draft/outline/profile_voice/chat delivered live (DEF.1/3, RUN.1 three turns ~16 cr); research_burst `blocked` at `plan` on thread-local questions (product ruling owed); finalize/approve legs guard-refused until the funded window | deployed | Operator product ruling on thread-local routing (BL-20); funded window 2026-10-05 (BL-18/19) | `runs/DEF.1.md`, `runs/RUN.1.md` |
+| 6 | IDE surfaces | **Live headless.** All P1 surfaces return 200; `/v/working` edit path live (EDIT.1); `/app/new` shell + phone layout green at 390/320 px (UX.2) | deployed | H7: interactive browser/device legs + Safari N8 walk (operator · H7 session) — BL-32, D-EDIT.1-2 | `runs/EDIT.1.md`, `runs/UX.2.md` |
+| 7 | Payments (Stripe) | **Deliberately closed.** Purchase path deployed `purchaseMode:"closed"`; N9 flagged-tenant legs green at $0; pending-checkout email trigger documented (ADR-029) | deployed | Operator ruling `GD-BILL.3-1` to re-open + live-mode Stripe legs ≤$50 real money (BL-33/51, D-BILL.3-1/-2) | `runs/BILL.3.md`, ADR-028 |
+| 8 | Metering, ledger, reconciliation | **Live.** Proxy meter of record; `held>=0` convalidated; nightly `assertBalances` 0 divergences; refund window deployed test-tenants-gated; usage.reconcile blocked on placeholder admin key | none new | H7: admin/org-scoped key (operator · on provision) — BL-34; go-live ruling D-DEF.4-3 (BL-30) | `runs/DEF.4.md` |
+| 9 | Estimation + pricing | **Live mechanism, open economics.** Single-source `surfacePricer` everywhere (EST.1); durable cap-calibration store live (ECON.1); ~$7–10 metered per quick review vs $20/mo plan; restore read NOT MET (≈$14.25 gap) | none new | Operator: pricing ruling + metered-debit flip + paid-account notice (BL-13/68/69); funded calibration legs | `runs/EST.1.md`, `runs/ECON.1.md`, `runs/ECON.2.md` |
+| 10 | Export + data rights | **Mostly live.** Export formats + account zip live; anonymous export token + deterministic slug deconflict landed (CAP.3 fixes); T7 purge probe bounded (ADR-092); T8 7-day expiry is a clock leg | deployed | Funded window + clock legs (BL-22); no human gate | `runs/CAP.3.md`, `runs/STB.5a.md` |
+| 11 | Notifications + inbox | **Live.** Digest sweep green post-HOT.1 (`finished_at`→`ended_at`); signed actions 303→410; Inbox honest rows (ADR-063) | deployed | none | `runs/HOT.1.md`, `runs/UX.1.md` |
+| 12 | Observability + SLOs | **Live and honest.** Corrected probes read true (start 27.8 s, resume 25.9 s); 15 `rhema_slo_weekly` series; LB 5xx metrics + alert policies live (OBS.1); **named red**: D-SLO.1-5/-6/-7/-8 | deployed | none blocking; weekly review continues (BL-07) | `runs/SLO.1.md`, `runs/OBS.1.md` |
+| 13 | Infra, stages, delivery | **Partial.** Prod Pulumi live; `dev` deployed + `pr-102` preview up/destroy proven (OPS.1); turbo-cache scale-to-zero live (OPS.2); **deployed tree ≠ merged main**; measured bill $285.80 list vs ~$50 target | dev + previews live; merged `main` absent | Operator merge REC.3 (BL-01); billed-actuals export + lever ruling D-OPS.2-1/-2 (BL-29); D-OPS.1-1..3 (BL-25) | `runs/OPS.1.md`, `runs/OPS.2.md`, ADR-082 |
+| 14 | Evaluation program (§18 / G2) | **Machinery only.** Dev-set exercised with fakes; enclave bucket, real `@rhema/evals`, arm executors, judge, workshop UI unbuilt | benchmark GCS bucket + principal | H2 corpus ≈$100k + editors + provider no-training verification (operator · pre-G2) — BL-40/43/44/45 | `readouts/GATE-G2.md` (deferred) |
+| 15 | Content + claims | **Partial.** Showcase on fixture content; venue tables stale-dated; §16.4 claims forbidden until G2 | none | H5 essay + H4 venue stamps (operator · pre-launch) — BL-41/42 | ADR-062; `runs/GATE-G2` disposition |
+| 16 | Build memory + governance | **Trustworthy again.** REC.1 reconciled backlog (357 sources, 0 orphans); `check-append-only` + `check-build-memory` green at this commit; validator-stuck cells named on BL-02 | none | none — REC.1 lands it | this commit; `runs/REC.1.md` |
 
-Capability notes:
+## Critical path (ordered)
 
-- **1 Admission.** ADR-009's revisit trigger (a) has fired in principle: the beta-grade throttle now fronts
-  open self-serve signup on a multi-instance deploy.
-- **2 Isolation.** Close the api-role bypass (BL-08) before the pen test engagement (BL-35), or the testers
-  will re-find it.
-- **7 Payments.** Prod runs with a live Stripe key while the double-`included`-grant fix is undeployed.
-  Treat BL-09 as the first code deploy after the merge.
-- **9 Economics.** On 2026-09-23 the operator accepted proceeding past G3 with this as a *carried product
-  risk*. No row owned it until now.
-- **12 SLOs.** RCN.1 measured a first-start p95 of ≈57 s (n=15). STB.3's 3,080 s probe reading probably
-  includes resume and retry transitions, so BL-07 must separate probe error from real latency before it
-  tunes infra.
+Each step names `ticket:` (backlog row → landing) and `proof:` (the artifact that shows it done).
+Steps 1–4 are what **continuing to operate safely** requires; 5–10 get to **public launch + §16.4 claims**.
 
-## Critical path
+1. **Integrate the chain.** Merge the round-2 (#48–#80) and round-3 (#81–#110+) stacks bottom-up;
+   diff deployed tree vs merged `main`.
+   ticket: `REC.3` (BL-01) — proof: `docs/build/INTEGRATION_PLAN.md`; every service's `deployments`
+   provenance SHA passes `git merge-base --is-ancestor <sha> origin/main`.
+2. **Deploy the queued tips.** Run the two pending `pulumi up`s — CITE.1 image pins at the chain tip
+   (D-CITE.1-1) and ECON.2 (D-ECON.2-1) — now that Pulumi is logged in.
+   ticket: `operator deploy` (BL-67, BL-69) — proof: Pulumi update ids + `deployments` rows at the
+   tip SHA in `runs/REC.3.md` or the next round's stage-B records.
+3. **Run the funded live-verification window** (post-2026-10-05 00:00 UTC ISO guard reset):
+   21 paid registry steps + paid new-visitor journey (D-CAP.2-1), full JOURNEY.1 suite on the tip
+   (D-CAP.2-2), CAP.3 live legs incl. export-token/import/purge re-verify (D-CAP.3-1, D-STB.5a-1..3),
+   STB.5b B16–B19 legs, RES.1 residuals + N6 planted-error (D-RES.1-1..3 — flips REQ-SPEC-31 to MET),
+   ECON.2 lever pairs + refit (D-ECON.2-2..6), guard re-proof (D-STB.5b-1).
+   ticket: `round-4 funded window` (BL-16..19, BL-21/22, BL-56, BL-66, BL-67, BL-69, BL-71, BL-72) —
+   proof: per-leg run ids + flipped D-rows in `docs/tickets/DEFERRALS.md`; weekly metered spend
+   within the $5 guard on the system-scoped DSN.
+4. **Operator rulings on money surfaces.** `GD-ACT.1-1` (trial everyone-flip), `GD-BILL.3-1`
+   (purchase re-open), `GD-RES.2-1` (retro refund/relabel), metered-debit flip + paid-account notice,
+   `D-DEF.4-3` refund-window go-live, and the BL-13/BL-29 pricing/lever rulings.
+   ticket: `operator` (BL-13, BL-29, BL-30, BL-50, BL-51, BL-68, BL-75) — proof: dated GATE
+   DECISIONS rows in `LEDGER.md` + the resulting config diffs (`trial.audience`, `purchaseMode`,
+   `REFUND_WINDOW_MODE`) with live-verified flips.
+5. **H7 operator session** (one sitting): real invite signup (D-SEC.2-1), interactive
+   browser/device legs + Safari N8 (D-EDIT.1-2), live-mode Stripe re-verify ≤$50 (D-BILL.3-1/-2),
+   admin/org key → usage.reconcile (D-ECON.1-1), exposure-window review + disclosure decision
+   (D-SEC.1-2), prod test-data cleanup.
+   ticket: `HUMAN-H7` (BL-23, BL-24, BL-32, BL-33, BL-34, BL-37, BL-38) — proof: `invite_redemptions`
+   row, real `cs_`/`sub_` ids in `stripe_events`, a `usage.reconcile` drift-%, the completed
+   `rls-exposure-since-0026.md` census + dated disclosure ruling.
+6. **Get the named SLOs green.** D-SLO.1-5 (success 80 %/wk), D-SLO.1-6 (event-delivery tail
+   p95 2 238 ms), D-SLO.1-7 (proxy-vs-SDK divergent attempts), D-SLO.1-8 (egress_denied canary
+   semantics); under REQ-ARCH-34 each breach pauses feature work on its owning surface.
+   ticket: `round-4 SLO.2` (BL-07) — proof: 7 consecutive green days on the `rhema-prod — §13.5`
+   dashboard + the named rows flipped in DEFERRALS.
+7. **External security.** Pen-test procurement + triage.
+   ticket: `operator` (BL-35) — proof: pen-test readout in `docs/build/readouts/`, zero open
+   criticals per `docs/security/pen-test-findings-triage.md`.
+8. **The G2 program** (hard gate). H2 corpus commissioning → live eval bindings → pilot wave →
+   wave-1 LIFT read.
+   ticket: `HUMAN-H2` (BL-40) → `GATE-G2` (BL-43, BL-44, BL-45) — proof: corpus registered in the
+   enclave with IAA ≥ the pre-registered floor; `recordPilotPower` σ_d + n; `readouts/GATE-G2.md`
+   carrying PASSED with wave-1 LIFT.
+9. **Real content.** H5 showcase essay + dossier sign-off; H4 venue-table `verified_at` stamps.
+   ticket: `HUMAN-H5` (BL-42) + `HUMAN-H4` (BL-41) — proof: `assertShowcaseFixture` green on the real
+   bundle; `protocols.venue_table_verified_at` non-null.
+10. **Close the build.** REC.2 spec reconciliation (BL-05), DOC.1/DOC.2 docs refresh (BL-06),
+    round-4 maintenance incl. the validator-stuck cells (BL-02), then the final ledger read.
+    ticket: `REC.2` → `DOC.1`/`DOC.2` → `round-4` — proof: `check-backlog.sh` still green,
+    `LEDGER.md` `projectStatus: DONE` only when every open row above has a landed disposition.
 
-This is the ordered path from today's state to a public launch. Steps 1–8 are what **continuing to operate the
-live paid service safely** requires. Steps 9–14 get from there to **public launch and §16.4 claims**. Each step
-names its `ticket:` (a proposed round-3 id where no chain row exists yet) and the `proof:` that shows it done.
-
-1. **Integrate the chain.** Write the integration plan, merge PRs #48–#80 bottom-up, and diff the deployed
-   tree against merged `main`.
-   ticket: `round-3/REC.3-integration-merge` (BL-01) — proof: `docs/build/INTEGRATION_PLAN.md` committed.
-   Every service's `deployments` provenance SHA passes `git merge-base --is-ancestor <sha> origin/main`, and
-   the merge PRs show as merged on the remote.
-2. **Make build memory trustworthy again.**
-   ticket: `round-3/MAINT.2-ledger-hygiene` (BL-02), then `round-3/REC.1-backlog` (BL-04) — proof:
-   `check-build-memory.sh .` exits 0. LEDGER CURRENT STATE reads the true `lastCompleted`/`nextTicket`, and
-   `## GATE DECISIONS` has its heading back. `check-backlog.sh`'s expected-source count equals the
-   first-keyword count of status-owed deferral rows plus the ADRs.
-3. **Deploy the Stripe-path fixes.**
-   ticket: `round-3/BILL.1-stripe-fixes-deploy` (BL-09) — proof: a `deployments` row for api, web and worker
-   at or after `cf40f28`, and the STB.4 regression tests green in CI. One subscription activation on prod
-   shows exactly one `grant(included)` per period in `credit_ledger`.
-4. **Close the RLS bypass.**
-   ticket: `round-3/SEC.1-tenant-isolation` (BL-08) — proof: on prod, `pg_roles.rolbypassrls = false` for the
-   api's login role. RLS policies exist on `correspondence_items`, `findings`, `claims` and
-   `revision_obligations`, with a deterministic cross-tenant test. The STB.2 foreign-pair read still answers
-   404.
-5. **Close out ledger integrity.**
-   ticket: `round-3/DEF.4-ledger-integrity` (BL-10) — proof:
-   - `recompute-balances --apply` passes its test under an active `held>=0` constraint.
-   - A migration validates `credit_balances_held_nonnegative`.
-   - The nightly `assertBalances` logs 0 divergences.
-   - One cancelled and one failed multi-phase run on prod show release-only and refund settle rows.
-6. **Get the SLOs green.**
-   ticket: `round-3/SLO.1-prod-slo-remediation` (BL-07) — proof: the `rhema-prod — §13.5 SLOs` dashboard shows
-   7 consecutive days within the `packages/orchestrator/src/slo.ts` targets:
-   - run-start p95 ≤ 45 s
-   - success ≥ 97% weekly
-   - gate-resume p95 ≤ 60 s
-   - event-delivery p95 ≤ 2 s
-
-   A test alert must also reach the wired channel.
-7. **Harden signup admission.**
-   ticket: `round-3/SEC.2-signup-admission` (BL-23) — proof: a live log of 429s tripping on the shared count
-   across ≥2 instances, and an `invite_redemptions` row from a gated signup.
-8. **Settle the economics.**
-   ticket: `round-3/ECON.1-unit-economics` (BL-13) + `round-3/ECON.2-durable-estimator-store` (BL-14) —
-   proof: an operator pricing ruling recorded in LEDGER GATE DECISIONS, and ≥3 quick reviews delivered inside
-   their derived caps, with metered and committed credits recorded in the run ledger. The plan's
-   `whatItCovers` figures must be recomputed from the measured cost, and the folded constants must survive a
-   worker restart.
-9. **Run the remaining live-verification legs.**
-   ticket: `round-3/STB.5-bounded-live-legs` (BL-16..20), `round-3/STB.5-headless-legs` (BL-21, BL-22) and
-   `round-3/STB.5-launch-verification` (BL-24) — proof: `docs/build/runs/STB.5.md`, with each named D-row
-   flipped to DONE and carrying its run ids. The canary-injection run is paused, with a `pause_signals` row.
-10. **Operator legs.**
-    ticket: `operator` (BL-32 browser session, BL-33 live-mode Stripe, BL-34 admin key) — proof:
-    - A browser-leg section in `runs/STB.5.md` with a trace or screenshot per leg.
-    - Real `cs_`/`sub_`/`in_` ids in `stripe_events`.
-    - A `usage.reconcile` window row with provider totals and a drift %.
-11. **External security.**
-    ticket: `round-3/SEC.3-runtask-confinement` (BL-26), then `operator` (BL-35 pen test) — proof:
-    `privsep-check.js` green inside the distroless production image under the Localhost
-    `rhema-run-task` AppArmor profile, and a pen-test readout in `docs/build/readouts/` triaged per
-    `docs/security/pen-test-findings-triage.md` with zero open criticals.
-12. **The G2 program.**
-    ticket: `HUMAN-H2` (BL-40), then `GATE-G2` (BL-43, BL-44, BL-45), with `round-3/CITE.1-citation-completeness`
-    (BL-15) — proof: the corpus is registered in the enclave with an IAA ≥ the pre-registered floor, and
-    `recordPilotPower` has written σ_d + n. `docs/build/readouts/GATE-G2.md` must carry a PASSED disposition
-    with wave-1 LIFT, and the citation-completeness metric must be reported.
-13. **Real content.**
-    ticket: `HUMAN-H5` (BL-42) + `HUMAN-H4` (BL-41) — proof: `assertShowcaseFixture` green on the real bundle,
-    and `protocols.venue_table_verified_at` non-null in a seeded db.
-14. **Close the build.**
-    ticket: `round-3/CAP.1-coverage-matrix` (BL-03), `round-3/REC.2-spec-reconciliation` (BL-05),
-    `round-3/DOC.1-DOC.2-docs-refresh` (BL-06), then `GATE-ACCEPT` (BL-47) — proof: `COVERAGE_MATRIX.csv`
-    and `SPEC_RECONCILIATION_PLAN.md` committed, `docs/build/readouts/GATE-ACCEPT.md` signed by the operator,
-    and LEDGER `projectStatus: DONE`.
-
-Off the critical path, owned but not sequenced:
-
-- BL-11 small fixes and BL-12 CI flake
-- BL-25 dev/preview stages, which should precede any further live-verification round
-- BL-27 IaC drift, BL-28 Turbo cache and BL-29 cost posture
-- BL-30 refund window and BL-31 matcher tuning
-- BL-36 nightly golden (budget-gated)
-- BL-37 exposure review, BL-38 test-data cleanup and BL-39 H3 decision
+Off the critical path (owned, not sequenced): BL-25 dev/preview residuals, BL-31 matcher tuning
+(needs H2 data), BL-36 nightly golden (budget-gated), BL-39 H3 partner decision, BL-46 (accepted),
+BL-47/76/77 watch rows, BL-73 spec-scheduled 1.x scope, BL-74 time-based soak windows.
 
 ## Cost and risk posture
 
-### Measured costs (from the run ledgers; credits at $0.01)
+### Measured costs (from committed run ledgers; credits at $0.01)
 
 | What | Figure | Source |
 |---|---|---|
-| STB.3 bounded live legs (9 runs + ingest) | **$4.51 committed / $13.04 metered** (451 cr / 1,304 cr over 526 proxy rows). About 853 cr of burn was never committed and was absorbed as platform cost under the D-PRB.16-5 ruling | `runs/STB.3.md` |
-| DEF.1 Stage B reruns (6 runs) | 2,053 cr committed (≈$20.53), every leg under its cap | `runs/DEF.1.md` §7 |
-| DEF.2 + DEF.3 Stage B | ≈$0.53 of a ≤$8 target | LEDGER `updatedAt` note |
-| Provider-window metered side, 2026-09-26 UTC | $24.23 list · 3,363 cr · 1,001 proxy rows (100% `provider_request_id` coverage); the provider side is not computable without the admin key | `runs/STB.4.md` Leg C |
-| **Per quick review** | **~$7–10 metered**. The one delivered derived-cap quick review, `01M36663…`, metered 720 cr and committed 586 cr (cap 783). STB.3's figure run estimated 7 cr and metered 58 cr (8.6× under) | LEDGER GATE DECISIONS 2026-09-23; D-PRB.21-1 |
-| Writer plan | $20/mo, 2,000 included credits (≈2.8 quick reviews at 720 cr metered). The G3 row itself calls $7–10/review against the $20/mo stop-threshold "a pivot signal" | `packages/contracts/src/domain/pricing.json`; LEDGER 2026-09-23 |
-| **Prod infra** | **~$95/mo always-on floor** (Cloud SQL db-g1-small, 1× e2-medium GKE, BASIC Redis, proxy MIG ×1) against a **~$50/mo authorized target**. The actual monthly bill has never been measured against the target (BL-29) | LEDGER GATE DECISIONS 2026-09-17; `infra/PROD-BRINGUP.md` §0 |
-| Nightly golden run (not running) | ~$150–300/night — not authorized | D-P0.15-4 |
-| H2 corpus (not started) | ≈$100k across two quarters | manifest H2 (Q-23) |
-| Live-mode Stripe legs (unspent) | ≤$50 ceiling authorized for STB.4; test mode was used, so $0 was spent | manifest row 58; `runs/STB.4.md` |
+| Prod infra (measured) | **$285.80/mo list** — OPS.2 billing-read recompute vs ~$50/mo target; billed-actuals export owed (D-OPS.2-1) | `runs/OPS.2.md`, ADR-082 |
+| Per quick review | **~$7–10 metered**; one derived-cap delivery metered 720 cr / committed 586 cr (cap 783) | LEDGER GD 2026-09-23; D-PRB.21-1 |
+| RES.1 live probes | $7.49 total across the verification set | `runs/RES.1.md` |
+| Weekly flagged-tenant metered spend (week 2026-09-28) | **$58.08** under the system role (1,675 proxy rows) — the $5 weekly guard's measured reason for refusing `--paid` | `runs/STB.5b.md`, D-STB.5b-1 |
+| CITE.1 + ECON.2 stage-B legs | $0 (guard-refused / deploy-pending) | `runs/STB.5b.md` |
+| H2 corpus (not started) | ≈$100k across two quarters (Q-23) | manifest H2 |
+| Live-mode Stripe legs | ≤$50 ceiling authorized; $0 spent (test mode) | `runs/STB.4.md` |
+| Nightly golden (not running) | ~$150–300/night — not authorized | D-P0.15-4 |
 
-Round-3 live budgets proposed in the backlog: BL-16 ≤$3, BL-17 ≤$5, BL-18 ≤$15, BL-19 ≤$30, BL-20 ≤$5 and
-BL-10 ≤$5, about **≤$63** of inference. The rest (BL-21/22/24/32) is $0 inference.
+### Risks, ranked (2026-10-04 read)
 
-### Risks, ranked
-
-1. **Money correctness on live money.** The undeployed fix for the double `included` grant on subscription
-   activation, while a live Stripe key is active (BL-09). The fix is small; the exposure is real.
-2. **Tenant isolation.** The api's login role bypasses RLS. One cross-tenant read was already found and
-   patched at the route level, so the systemic cause is open (BL-08). Its exposure window has had no
-   access-log review (BL-37).
-3. **Integration.** Prod runs code from unmerged branches, and there is no functioning `dev` or `pr-<n>`
-   stage to catch a regression before prod (BL-01, BL-25).
-4. **Margin.** Metered cost per review is at or above plan-level revenue per user-month, and uncommitted burn
-   is absorbed by the platform by ruling (BL-13).
-5. **Reliability.** Run success was 66.7% and run-start p95 3,080 s on the STB.3 window. These are real
-   readings, not waived (BL-07).
-6. **Claims and legal.** §16.4 efficacy claims are forbidden until G2 LIFT. REQ-EVAL-16's consequences apply
-   retroactively to UI already built if the eval fails, so G2 is a hard gate before any marketing launch
-   (BL-45).
-7. **External security assurance.** The pen test is unprocured. The run-task pod's AppArmor
-   `Unconfined` posture was closed by SEC.3 — it now runs the Localhost `rhema-run-task` profile with
-   `SYS_ADMIN` narrowed by the profile's mount allow-list; the pen-test procurement remains (BL-35).
-8. **Governance.** The drifted ledger and the unrun v2 tail make the committed memory an unreliable resume
-   point. Several DEFERRALS rows overstate what is still owed (BL-02, *Stale rows* in `BACKLOG.md`).
+1. **Integration.** Prod runs the stacked-branch tip; ~63 PRs unmerged; no regression net between
+   tip and `main` until REC.3 lands (BL-01).
+2. **Margin.** Metered cost per review ≈ plan-level revenue/user-month; the pricing ruling +
+   metered-flip + notice are operator-held, deliberately unlaunched (BL-13/68/69).
+3. **Spend-guard integrity.** The $5 weekly guard reads $0 through the app role's RLS — the
+   fail-closed tripwire is landed but the binding convention + live re-proof are owed; a future
+   paid leg on the wrong DSN would silently pass (BL-72, D-STB.5b-1).
+4. **Reliability.** Four named SLO breaches remain; probes now read honestly so the reds are real
+   (BL-07).
+5. **Claims and legal.** §16.4 claims forbidden until G2 LIFT; REQ-EVAL-16 consequences apply
+   retroactively to built UI (BL-45).
+6. **Money surfaces paused on purpose.** Purchase closed-mode, refund window test-tenants, trial
+   test-tenants — each safe as-is, each needing its operator ruling to open (BL-30/50/51).
+7. **Exposure review.** The RLS-bypass exposure window predating SEC.1 has no access-log census
+   (BL-37, D-SEC.1-2); pen test unprocured (BL-35).
+8. **Unexercised legs.** The funded-window backlog is large but bounded and pre-costed (≤$63
+   inference + the CAP.2 paid steps under the $5/wk guard).
