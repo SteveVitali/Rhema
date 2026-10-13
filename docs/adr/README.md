@@ -109,3 +109,5 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-101](ADR-101-usercontent-origin-is-a-subdomain.md) | The user-content origin is a subdomain of the apex zone, not a separate registrable domain — retro-fitted record | CAP.3 | Proposed |
 | [ADR-102](ADR-102-phone-width-web-carries-inputs.md) | Phone-width web carries the gate/disposition/chat inputs — the app banner waits for the app — retro-fitted record | CAP.3 | Proposed |
 | [ADR-103](ADR-103-open-wait-only-signed-email-actions.md) | Signed email actions are Open/Wait-only — retro-fitted record | CAP.3 | Proposed |
+| [ADR-104](ADR-104-gate-g2-deferred-ui-before-wave1-lift.md) | GATE G2 deferred — Phase-B UI built before the wave-1 LIFT eval — retro-fitted record | `16c_GATE-G2` (the decision; LEDGER § GATE DECISIONS 2026-09-15); REC.2 (the fold-back) | Accepted |
+| [ADR-105](ADR-105-gate-g3-read-early-proceed.md) | GATE G3 read early — PROCEED to the full IDE on operator evidence; the REQ-BETA-18 window skipped — retro-fitted record | `28b_GATE-G3` (the decision; LEDGER § GATE DECISIONS 2026-09-23); REC.2 (the fold-back) | Accepted |
