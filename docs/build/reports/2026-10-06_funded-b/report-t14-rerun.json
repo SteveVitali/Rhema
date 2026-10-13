@@ -1,0 +1,36 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "cb7b013ed89b",
+  "startedAt": "2026-10-06T20:45:56.410Z",
+  "finishedAt": "2026-10-06T20:46:26.195Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "476a0ed2863ead086b69f77da691b222133f7fdb",
+    "observed": {
+      "web": "476a0ed2863ead086b69f77da691b222133f7fdb",
+      "api": "476a0ed2863ead086b69f77da691b222133f7fdb"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 22.780752,
+    "capUsd": 150,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "T14",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": true,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 29741,
+      "screenshot": "T14.png"
+    }
+  ],
+  "passed": true
+}

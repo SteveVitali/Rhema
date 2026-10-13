@@ -77,7 +77,13 @@ interface SignedInLeg {
 }
 
 async function signInLeg(ctx: StepCtx, tag: string): Promise<SignedInLeg> {
-  const s = await ctx.freshUser(tag);
+  // Funded-window mode: `JOURNEY_FUNDED_STABLE_TAG` (e.g. "a" → test+jrn-a@…) points the leg at
+  // the operator-funded STABLE tenant instead of a fresh test tenant. A fresh flagged tenant
+  // carries only the 10-cr daily allowance — no paid run's hold clears it (402
+  // insufficient_balance), so without a per-tenant grant the paid legs are unexecutable by
+  // construction. Unset ⇒ the original fresh-tenant shape (nightly/weekly CI).
+  const stableTag = process.env.JOURNEY_FUNDED_STABLE_TAG;
+  const s = stableTag ? await ctx.returningUser(stableTag) : await ctx.freshUser(tag);
   // the tenant exists by the time magic-link provisioning returns; retry briefly for the join row
   let tenantId: string | null = null;
   for (let i = 0; i < 10 && !tenantId; i++) {
@@ -152,8 +158,8 @@ async function headDraftId(projectId: string): Promise<string> {
 }
 
 interface RunReport {
-  /** buildRunReport shape: state + steps are TOP-LEVEL (no `run` wrapper; inputs are NOT
-   *  returned — frozen inputs are read straight off `runs.inputs` when a leg needs them). */
+  /** the report's own shape: state + steps are top-level INSIDE it (the route wraps it —
+   *  `GET /runs/:id/report` returns `{kind:"ok", report, projectSlug, refundWindow?}`). */
   runId?: string;
   state?: string;
   steps?: { phase: string; ordinal: number; state: string; credits: number }[];
@@ -163,7 +169,9 @@ interface RunReport {
 async function runReport(ctx: StepCtx, leg: SignedInLeg, runId: string): Promise<RunReport> {
   const r = await apiFetch(ctx, leg.context, `/runs/${runId}/report`);
   if (r.status !== 200) throw new Error(`GET /runs/${runId}/report → ${r.status}: ${r.text.slice(0, 160)}`);
-  return r.body as RunReport;
+  const body = r.body as { kind?: string; report?: RunReport } & RunReport;
+  // unwrap the route's `{kind:"ok", report:{…}}` envelope — a bare RunReport body is tolerated too.
+  return body.report ?? body;
 }
 
 /** Poll `/runs/:id/report` until the run reaches `until` (a state name or "terminal"). */
@@ -255,9 +263,9 @@ const B16: StepFn = async (ctx) => {
     | { state: string; inputs: Record<string, unknown> }
     | undefined;
   const steps = (await plainQuery(
-    `select phase, ordinal, state from steps where run_id = $1 order by ordinal`,
+    `select phase, ordinal, state, result from steps where run_id = $1 order by ordinal`,
     [runId],
-  )) as unknown as { phase: string; ordinal: number; state: string }[];
+  )) as unknown as { phase: string; ordinal: number; state: string; result: { status?: string; predicatesPassed?: boolean } | null }[];
   const artifactPaths = (
     await scopedQuery(
       leg.tenantId,
@@ -303,11 +311,20 @@ async function tailSse(
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let text = "";
+    // ONE pending read at a time, kept across loop iterations. Racing `reader.read()` against the
+    // 4 s re-check inside the loop ABANDONS the pending read when the timeout wins — and a stream
+    // reader queues pending reads, so every later chunk resolves an abandoned promise whose value
+    // is silently dropped. After the first >4 s idle gap the tail could never see another chunk
+    // (this is why live tails saw only the connect-time backlog — e.g. seqs 1..4). The timeout
+    // here only re-checks `stop()`; the in-flight `read` is reused on the next pass.
+    let pending = reader.read();
     while (!stop()) {
-      const { done, value } = await Promise.race([
-        reader.read(),
-        new Promise<{ done: true; value: undefined }>((r) => setTimeout(() => r({ done: true, value: undefined }), 4_000)),
+      const r = await Promise.race([
+        pending.then(({ done, value }) => ({ done, value, timedOut: false as const })),
+        new Promise<{ timedOut: true }>((res2) => setTimeout(() => res2({ timedOut: true }), 4_000)),
       ]);
+      if (r.timedOut) continue; // `pending` still owns the next chunk — do not issue a second read
+      const { done, value } = r;
       if (done) break;
       if (value) {
         text += dec.decode(value, { stream: true });
@@ -317,7 +334,11 @@ async function tailSse(
           text = text.slice(cut + 2);
         }
       }
+      pending = reader.read();
     }
+    // release the abandoned in-flight read so the socket can drain/close cleanly
+    void pending.catch(() => undefined);
+    reader.cancel().catch(() => undefined);
     buf.push(text);
   } catch {
     /* abort/close ends the tail — seqs collected so far stand */
@@ -339,8 +360,10 @@ const B17: StepFn = async (ctx) => {
   let terminal = false;
   const tail = tailSse(ctx, leg, runId, () => terminal, 15 * 60_000);
   await waitRun(ctx, leg, runId, "terminal", 15 * 60_000);
-  // give the publisher a breath beyond the terminal state, then close the tail.
-  await new Promise((r) => setTimeout(r, 5_000));
+  // give the publisher a breath beyond the terminal state, then close the tail — the server's
+  // safety poll is 10 s (pollIntervalMs default), so 12 s guarantees one post-commit poll cycle
+  // lands inside the tail even when the Redis wakeup path is degraded.
+  await new Promise((r) => setTimeout(r, 12_000));
   terminal = true;
   const liveSeqs = await tail;
 

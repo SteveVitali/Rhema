@@ -1,0 +1,40 @@
+{
+  "step": "B19A",
+  "nonce": "b76029538106",
+  "at": "2026-10-06T19:39:51.557Z",
+  "capUsd": 4,
+  "asserts": [
+    {
+      "id": "gate-opened",
+      "pass": true,
+      "evidence": "gate kind: approve_plan"
+    },
+    {
+      "id": "structured-edit-decided",
+      "pass": true,
+      "evidence": "decisions.action=edit; overlay_version_ids: 2"
+    },
+    {
+      "id": "edit-lands-in-next-phase-file",
+      "pass": true,
+      "evidence": "overlay versions on agents/author/drafting/v2/02-structure-plan.md, agents/author/drafting/v2/02-structure-plan.json; created_by user: true — the write-back pair the next phase materializes"
+    },
+    {
+      "id": "run-finalized",
+      "pass": true,
+      "evidence": "runs.state = completed (the post-gate phases committed, the run finalized + delivered)"
+    },
+    {
+      "id": "marker-in-committed-artifact",
+      "pass": false,
+      "evidence": "marker JRN-B76029538106-STB5B-MARKER not observed in later artifact rows — the overlay version write-back is proven but the content-level carry was not observed"
+    }
+  ],
+  "runId": "01M49ACX9S1ZXWQHX0SEKTPWN2",
+  "meteredUsd": 2.471587,
+  "overlayVersionIds": [
+    "01M49AVRCJ1WT73A9AW8441TW0",
+    "01M49AVRF1JTEJAP3YAPTB26M7"
+  ],
+  "note": "content-level marker carry (the draft artifact's prose) is evidence-only — the DB-provable half is the user-authored structure-plan version the next phase materialized from"
+}

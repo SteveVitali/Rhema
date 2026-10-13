@@ -134,9 +134,14 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "on the golden-op-ed dossier every cited source URL carries a retrieval chip — fetched ✓ or the ADR-083 \"Search result\" label — with zero chip-less citations (claims table and findings evidence alike)",
     owner: "CITE.1",
-    // CITE.1 — red until Stage B runs Leg 3 (the ≤$4 weekly-capped paid leg) and commits the
-    // dossier screenshot; the runner's post-step PNG is the AC8 evidence.
-    expected: "red",
+    // CITE.1 — green 2026-10-06 (funded-window A2 redeploy, prod 476a0ed): the canonical-fold
+    // fix (claimUrlViews folds claim_sources.normalized_url on read; delivery persists the
+    // canonical form) shipped on the deployed images; the delivered Leg-3 dossier
+    // /p/jrn-7e6d14996693-cite1/review/01M48YYS50Z6CNX517RJQXRCJ2 re-walked live — 7/7 cited
+    // URLs chipped, 0 chip-less, 6/6 findings-evidence URLs stamped; persisted completeness
+    // 7/7/0/0 matches. Evidence: docs/build/reports/2026-10-06_n11-reverify/ +
+    // runs/FUNDED-2026-10-06-A.md §C.
+    expected: "green",
     paid: true,
   },
   // ---- returning-user journey ---------------------------------------------
@@ -195,9 +200,10 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "the delivered report's refund control is visible+enabled+unobscured; the click reports \"Refunded N cr.\" and spendable moves exactly +N; a second eligible request renders \"sent for review\" and moves nothing",
     owner: "DEF.4",
-    // DEF.4 — red until Stage B flips `refundWindow` to `test_tenants` on the evidence deploy and
-    // the journey walks it green ($≤3 total; two Quick/Base runs on the planted excerpt).
-    expected: "red",
+    // DEF.4 — green 2026-10-06 (funded window B): live prod walk on `fcbbc66` — leg A auto-refunded
+    // 504 cr (spendable +504), leg B "sent for review" (pending_review row + alerted_at by the
+    // stranded sweep). Evidence: docs/build/reports/2026-10-06_funded-b/ + runs/FUNDED-2026-10-06-A.md §B.6.
+    expected: "green",
     paid: true,
   },
   // ---- STB.5a weekly paid riders (jrn-a; ride the weekly leg's own-tenant delivered Review) ----
@@ -236,7 +242,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "Apply on a suggestion-bearing finding lands ?applied= and retracts its own control; a bulk action's preview shows the per-item checklist before the confirm lands ?bulkdone= (D-P1.07-1 — red while no suggestion-bearing finding exists)",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {
@@ -319,9 +325,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T3",
     journey: "both",
     asserts:
-      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Red on two live defects the leg exposed: D-STB.5a-1 (the anonymous /export/download token lookup runs unscoped against FORCE-RLS account_exports → 404 for every valid token) and D-STB.5a-2 (importAccountZip → artifacts_project_id_fkey 500 — the seed showcase slug collides, the skipped row's mapped id orphans its artifacts)",
+      "the account zip exports → the in-app download AND the real emailed token link resolve to the same zip → a FRESH account's import restores the project+voice → the re-import reports deduped; the zip carries no protocol marker (D-P1.18-1c/d + REQ-ARCH-33). Flipped green 2026-10-06 on the deployed tip fcbbc66 (nonce 6c268536d58b): CAP.3's D-STB.5a-1 system-pool token lookup → the emailed link 302s to the presigned zip, and D-STB.5a-2's slug deconflict → notice=imported parity + re-import deduped",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -355,9 +361,9 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     id: "T7",
     journey: "both",
     asserts:
-      "the delete enqueues a pgboss project.purge job start_after tombstone+30d, singleton-keyed on the project (D-P1.04-2's schedule half — owed: the app-login role has no pgboss schema grant, needs a system-scoped JOURNEY_DATABASE_URL or a pgboss.job SELECT grant; the live-destruction half is clock-owed)",
+      "the delete enqueues a pgboss project.purge job start_after tombstone+30d, singleton-keyed on the project — read via migration 0058's rhema_project_purge_schedule probe on the app role (D-P1.04-2's schedule half; the live-destruction half stays clock-owed). Flipped green 2026-10-06 on the deployed tip fcbbc66 (nonce 6c268536d58b): the probe returns the singleton-keyed row under JOURNEY_DATABASE_URL bound to rhema_app_login",
     owner: "STB.5a",
-    expected: "red",
+    expected: "green",
     paid: false,
   },
   {
@@ -378,7 +384,7 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     asserts:
       "a pinned `phase:'4'` review with NO `sidecar` input commits exactly the craft phase (one done step, `.rhema/phase-result.json` written, frozen inputs show sidecar absent + the phase pin) then stops `completed` (BL-16; D-P0.03-2, D-P0.03-3 residual)",
     owner: "STB.5b",
-    expected: "red",
+    expected: "green",
     paid: true,
   },
   {

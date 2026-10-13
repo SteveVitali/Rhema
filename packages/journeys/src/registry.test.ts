@@ -38,12 +38,22 @@ describe("the journey step registry", () => {
     expect(green).toEqual(
       // P1 flipped red→green on prod proof (UX.2 Stage B, nonce 4ff89a27d950 @6723784).
       [
-        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "X1",
-        // STB.5a's greens: the $0 legs that pass on free tenants (T1, T2, T4–T6) + the weekly
-        // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3 is
-        // red on two live defects its legs exposed (D-STB.5a-1 emailed token 404, D-STB.5a-2
-        // import 500); T7/T8/T13/T15/T16 stay red — clock/prerequisite/read-path rows.
-        "T1", "T2", "T4", "T5", "T6", "T9", "T10", "T11", "T12", "T14",
+        // R9 flipped red→green 2026-10-06 (funded window B): live refund leg A auto-refunded 504 cr
+        // (+504 spendable), leg B "sent for review" (pending_review + sweep alerted_at) — D-DEF.4-1 DONE.
+        // N11 flipped red→green 2026-10-06 (funded-window A2 redeploy @476a0ed): the claimUrlViews
+        // canonical-fold fix deployed; the Leg-3 dossier re-walked 7/7 chipped / 0 chip-less.
+        "C1", "N1", "N2", "N2.invite", "N3", "N4", "N5", "N7", "N8", "N9", "N10", "N11", "P1", "R1", "R4", "R5", "R6", "R7", "R8", "R9", "X1",
+        // STB.5a's greens: the $0 legs that pass on free tenants (T1–T7) + the weekly
+        // paid riders whose prerequisites the weekly leg itself produces (T9–T12, T14). T3+T7
+        // flipped green 2026-10-06 on the deployed tip fcbbc66 (CAP.3's fixes verified live —
+        // nonce 6c268536d58b); T13 flipped green 2026-10-06 (funded window B continuation —
+        // Apply + bulk-preview legs landed on the delivered funded dossier, nonce b76029538106-class);
+        // T8/T15/T16 stay red — clock/prerequisite rows.
+        "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T9", "T10", "T11", "T12", "T13", "T14",
+        // B16 flipped green 2026-10-06 (funded window B continuation): the pinned phase-4,
+        // sidecar-absent review committed exactly the craft phase + phase-result then stopped —
+        // D-P0.03-2 DONE.
+        "B16",
       ].sort(),
     );
   });

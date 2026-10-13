@@ -165,8 +165,17 @@ describe("markerGateEdit", () => {
 const b16Base = {
   runInputs: { phase: "4" },
   runState: "completed",
-  steps: [{ phase: "craft", ordinal: 1, state: "done" }],
-  artifactPaths: ["agents/editor/04-craft-notes.md", "agents/editor/.rhema/phase-result.json"],
+  // `.rhema/phase-result.json` is transient harness-control — never mirrored to artifacts (the
+  // committed done+predicatesPassed step IS the proof: the oracle's phase_result leg gates it).
+  steps: [
+    {
+      phase: "craft",
+      ordinal: 1,
+      state: "done",
+      result: { status: "done", predicatesPassed: true },
+    },
+  ],
+  artifactPaths: ["agents/editor/04-craft-notes.md", "drafts/v1.md"],
 };
 
 describe("evalB16Asserts", () => {
@@ -197,11 +206,18 @@ describe("evalB16Asserts", () => {
       )!.pass,
     ).toBe(false);
   });
-  it("phase-result-written fails without the .rhema twin; run-stopped fails on non-completed", () => {
+  it("phase-result-written fails when the commit predicate never ran clean; run-stopped fails on non-completed", () => {
     expect(
-      evalB16Asserts({ ...b16Base, artifactPaths: ["agents/editor/04-craft-notes.md"] }).find(
-        (x) => x.id === "phase-result-written",
-      )!.pass,
+      evalB16Asserts({
+        ...b16Base,
+        steps: [{ phase: "craft", ordinal: 1, state: "done", result: { status: "done", predicatesPassed: false } }],
+      }).find((x) => x.id === "phase-result-written")!.pass,
+    ).toBe(false);
+    expect(
+      evalB16Asserts({
+        ...b16Base,
+        steps: [{ phase: "craft", ordinal: 1, state: "done", result: null }],
+      }).find((x) => x.id === "phase-result-written")!.pass,
     ).toBe(false);
     expect(evalB16Asserts({ ...b16Base, runState: "running" }).find((x) => x.id === "run-stopped")!.pass).toBe(false);
   });
@@ -341,12 +357,15 @@ describe("evalB19Asserts", () => {
 // ---------------------------------------------------------------- wiring
 
 describe("STB.5b step wiring", () => {
-  it("every B-step has a registry row (paid, red, owner STB.5b) and a wired impl", () => {
+  it("every B-step has a registry row (paid, owner STB.5b; red until the owner flips it on live proof) and a wired impl", () => {
+    // B16 flipped red→green 2026-10-06 (funded window B continuation): the pinned phase-4,
+    // sidecar-absent review proved live (D-P0.03-2 → DONE). The rest stay red on owed asserts.
+    const flippedGreen = new Set(["B16"]);
     for (const id of Object.keys(STB5B_IMPLS)) {
       const row = STEP_REGISTRY.find((s) => s.id === id);
       expect(row, id).toBeDefined();
       expect(row!.paid, id).toBe(true);
-      expect(row!.expected, id).toBe("red");
+      expect(row!.expected, id).toBe(flippedGreen.has(id) ? "green" : "red");
       expect(row!.owner, id).toBe("STB.5b");
       expect(STB5B_IMPLS[id]).toBeTypeOf("function");
     }

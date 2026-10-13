@@ -94,7 +94,11 @@ export function claimUrlViews(claim: Claim, fetchLog: FetchLog, searchOnly?: Fet
     });
   };
   for (const s of claim.sources ?? []) {
-    push(s.url, s.normalizedUrl, s.accessedAt, s.stance);
+    // CITE.1 live parity defect (2026-10-06): `claim_sources.normalized_url` can persist the proxy's
+    // richer form (trailing slash kept), while `fetchLog` keys are canonical — the raw value missed
+    // `fetchLog.has()` and rendered a covered citation chip-less. Fold the stored form through the
+    // canonical function exactly like the singular `url` below.
+    push(s.url, normalizeUrl(s.url, s.normalizedUrl), s.accessedAt, s.stance);
   }
   if (claim.url) {
     push(claim.url, normalizeUrl(claim.url, claim.normalizedUrl), claim.accessedAt);

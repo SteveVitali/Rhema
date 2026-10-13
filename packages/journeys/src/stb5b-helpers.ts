@@ -36,6 +36,7 @@ export function buildPinnedReviewBody(args: { idempotencyKey: string }): Record<
   return {
     workflow: "review",
     idempotencyKey: args.idempotencyKey,
+    rigor: "quick", // the cheapest notch; omitted rigor 500s on runs.rigor NOT NULL (D-FUND-1)
     modelTier: "base", // the trial plan gate refuses any other tier — and any OMITTED one
     inputs: { phase: "4" },
   };
@@ -47,6 +48,7 @@ export function buildHighWaterReviewBody(args: { idempotencyKey: string }): Reco
   return {
     workflow: "review",
     idempotencyKey: args.idempotencyKey,
+    rigor: "quick", // same cheap pinned shape as B16 (D-FUND-1 — the route does not default it)
     modelTier: "base",
     inputs: { phase: "4" },
   };
@@ -73,6 +75,7 @@ export function buildMemoFetchBody(args: {
   return {
     workflow: "review",
     protocol: "memo",
+    rigor: "quick", // the prior live memo review ran Quick (D-FUND-1 — rigor is never defaulted)
     modelTier: "base",
     idempotencyKey: args.idempotencyKey,
     userSources: args.userSources,
@@ -232,6 +235,8 @@ interface StepRowLite {
   readonly phase: string;
   readonly ordinal: number;
   readonly state: string;
+  /** `steps.result` — carries `predicatesPassed` (the completion oracle's all-legs verdict). */
+  readonly result?: { status?: string; predicatesPassed?: boolean } | null;
 }
 
 /** B16 — BL-16a (sidecar absent) + BL-16b (mid-phase pin): the frozen inputs carry no `sidecar`
@@ -243,7 +248,18 @@ export function evalB16Asserts(args: {
   steps: StepRowLite[];
   artifactPaths: string[];
 }): Stb5bAssert[] {
-  const phaseResult = args.artifactPaths.some((p) => p.endsWith(".rhema/phase-result.json"));
+  // `.rhema/phase-result.json` is a TRANSIENT harness-control file — seat-tables.ts never harvests
+  // `.rhema/` into the artifact mirror (0 artifact rows anywhere on prod), so it can never appear
+  // in artifactPaths. It is proven transitively instead: the completion oracle's `phase_result`
+  // leg only lets a step commit `done` when the file parsed `{status:"done"}` — Leg-1a's attempt-2
+  // `engine.error` ("missing or unparseable .rhema/phase-result.json [leg=phase_result]") is the
+  // negative half of the same predicate. A single done step with predicatesPassed IS the evidence.
+  const craft = args.steps.length === 1 ? args.steps[0] : undefined;
+  const phaseResult =
+    craft != null &&
+    craft.state === "done" &&
+    craft.result?.status === "done" &&
+    craft.result?.predicatesPassed === true;
   return [
     {
       id: "sidecar-absent",
@@ -266,7 +282,9 @@ export function evalB16Asserts(args: {
     {
       id: "phase-result-written",
       pass: phaseResult,
-      evidence: `${args.artifactPaths.length} artifact path(s)${phaseResult ? " — .rhema/phase-result.json present" : " — no .rhema/phase-result.json"}`,
+      evidence: phaseResult
+        ? `craft step committed done with predicatesPassed=true — the oracle's phase_result leg parsed .rhema/phase-result.json (transient; never mirrored to artifacts: ${args.artifactPaths.length} path(s))`
+        : `no single done+predicatesPassed craft step — ${args.steps.map((s) => `${s.phase}/${s.ordinal}/${s.state}`).join(", ") || "(none)"} (phase-result is never an artifact row)`,
     },
     {
       id: "run-stopped",

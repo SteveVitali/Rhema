@@ -1,0 +1,61 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "6c268536d58b",
+  "startedAt": "2026-10-06T13:35:30.778Z",
+  "finishedAt": "2026-10-06T13:36:38.678Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "fcbbc663857ae34041716c3b51ebc8482d803772",
+    "observed": {
+      "web": "fcbbc663857ae34041716c3b51ebc8482d803772",
+      "api": "fcbbc663857ae34041716c3b51ebc8482d803772"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "P1",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 14267,
+      "error": "/v/working @390 landed on /p/showcase/v/working with neither the project page nor the §10.1 note",
+      "screenshot": "P1.png"
+    },
+    {
+      "id": "T3",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 41886,
+      "screenshot": "T3.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11542,
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": false
+}

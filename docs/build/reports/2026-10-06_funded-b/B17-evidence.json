@@ -1,0 +1,47 @@
+{
+  "step": "B17",
+  "nonce": "c69852932a40",
+  "at": "2026-10-06T19:13:01.415Z",
+  "capUsd": 1.5,
+  "asserts": [
+    {
+      "id": "live-tail-saw-commit",
+      "pass": true,
+      "evidence": "max run_events.seq=43; live-tail seqs saw [7,8,9,39,40,41,42,43]"
+    },
+    {
+      "id": "second-subscriber-high-water",
+      "pass": true,
+      "evidence": "post-commit replay max seq=43 vs committed high-water 43 — a subscriber arriving after the commit sees the high-water row (D-P0.08b-2)"
+    },
+    {
+      "id": "postgres-source-of-truth",
+      "pass": true,
+      "evidence": "run_events rows exist (max seq 43); event types seen: cost.final, run.state_changed, step.finished, step.started, usage.tick"
+    },
+    {
+      "id": "audit-iteration-cap",
+      "pass": false,
+      "evidence": "unreachable by construction: ITERATION_CAPS.{audit,gapCheck}=3 are declared (mirror/attestation.ts:20) but have NO consumer — only .replan is enforced (orchestrator/internal-api.ts:1336–1348) — and `completed_partial` is a RUN state, not a step state (STEP_STATES = pending/running/done/skipped/failed). No run shape can produce a 4th audit iteration → completed_partial step (D-P0.09-3 defect, recorded)"
+    }
+  ],
+  "runId": "01M499YRCQ3HTGYNPCZSHXE2NX",
+  "meteredUsd": 0.468499,
+  "liveSeqs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    39,
+    40,
+    41,
+    42,
+    43
+  ],
+  "replayMax": 43
+}
