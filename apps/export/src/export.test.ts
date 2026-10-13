@@ -394,7 +394,13 @@ describe("AC5 — pandoc AND typst are confined to the export image", () => {
   it("no other service Dockerfile installs or copies pandoc/typst", () => {
     for (const svc of services) {
       const dockerfile = join(repoRoot, "apps", svc, "Dockerfile");
-      const text = readFileSync(dockerfile, "utf8").toLowerCase();
+      // Ops lines only — comments may name the packages (e.g. run-task's GPL licence precedent cites
+      // pandoc) without installing or copying them, which is what AC5 forbids.
+      const text = readFileSync(dockerfile, "utf8")
+        .toLowerCase()
+        .split("\n")
+        .filter((l) => !l.trimStart().startsWith("#"))
+        .join("\n");
       expect(text, `${svc} Dockerfile must not carry pandoc`).not.toContain("pandoc");
       expect(text, `${svc} Dockerfile must not carry typst`).not.toContain("typst");
     }

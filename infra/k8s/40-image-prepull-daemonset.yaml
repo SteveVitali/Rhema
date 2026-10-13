@@ -34,10 +34,10 @@ spec:
         - name: prewarm
           image: ${RUN_TASK_IMAGE}
           imagePullPolicy: IfNotPresent
-          # /bin/sleep exists on the bookworm-slim run-task image; even if a future distroless swap
-          # (SEC.3) drops it, the kubelet pulls the image BEFORE exec — a CrashLoopBackOff sleeper
-          # still warms the cache, which is the pod's entire job.
-          command: ["/bin/sleep", "infinity"]
+          # The distroless run-task image (SEC.3) has no /bin/sleep — the sleeper runs node itself.
+          # (Even a CrashLoopBackOff would still warm the cache — the kubelet pulls BEFORE exec —
+          #  but a running sleeper keeps the DS Ready, which apply.sh waits on.)
+          command: ["/nodejs/bin/node", "-e", "setInterval(() => {}, 1e9)"]
           resources:
             requests:
               cpu: 5m

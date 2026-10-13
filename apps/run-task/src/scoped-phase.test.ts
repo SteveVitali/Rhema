@@ -67,9 +67,11 @@ describe("buildScopedPhasePlan (§12.6)", () => {
     expect(unshareArgv.slice(0, 4)).toEqual(["unshare", "--mount", "--propagation", "private"]);
     // the runner re-escalates to REAL uid 0 inside the namespace — util-linux `mount` refuses any
     // ruid≠0 caller ("must be superuser") even with ambient CAP_SYS_ADMIN; the model still drops to
-    // the scoped uid via scoped-runner.sh.
-    expect(unshareArgv.slice(5, -2)).toEqual(["/usr/bin/setpriv", "--reuid", "0", "--regid", "0", "--clear-groups", "--"]);
-    expect(unshareArgv.slice(-2)).toEqual([SCOPED_RUNNER, "/config/scoped-spec.json"]);
+    // the scoped uid via scoped-runner.js (SEC.3 — the shell runner is gone with the shell).
+    expect(unshareArgv.slice(5, -3)).toEqual(["/usr/bin/setpriv", "--reuid", "0", "--regid", "0", "--clear-groups", "--"]);
+    // SEC.3 — the argv tail is `<node> <scoped-runner.js> <spec>`: node by absolute path (no PATH in
+    // the namespace), the compiled TS runner, then the spec file it applies the mount plan to.
+    expect(unshareArgv.slice(-3)).toEqual([process.execPath, SCOPED_RUNNER, "/config/scoped-spec.json"]);
   });
 
   it("mounts exactly the enumerated draft, read-only, at a distinct uid, tools=[Read]", () => {
@@ -137,7 +139,7 @@ describe("scopedRunnerEnv (REQ-SPEC-10/11)", () => {
     expect(env.ANTHROPIC_API_KEY).toBe(PROXY_PLACEHOLDER_ANTHROPIC_API_KEY);
     expect(env.ANTHROPIC_BASE_URL).toBe("http://127.0.0.1:9"); // the loopback injector, never the egress proxy
   });
-  it("keeps PATH for the harness-side runner (the model's env is re-scrubbed by scoped-runner.sh)", () => {
+  it("keeps PATH for the harness-side runner (the model's env is re-scrubbed by scoped-runner.js)", () => {
     expect(env.PATH).toBeTypeOf("string");
   });
 });

@@ -1,5 +1,5 @@
 // @rhema/run-task — the scoped producer query (DEF.1 / D-P0.15h-5; §12.6). Runs as the DISTINCT scoped
-// uid inside a private mount namespace (`unshare --mount` + `scoped-runner.sh` ro-binds ONLY the
+// uid inside a private mount namespace (`unshare --mount` + `scoped-runner.js` ro-binds ONLY the
 // enumerated input files into its cwd before the uid drop). argv: `scoped-query.js <spec.json>` — the
 // serialized `ScopedLaunchSpec` plus a `query` block ({prompt, model, maxBudgetUsd, maxTurns}) the
 // harness wrote.
@@ -34,6 +34,12 @@ function env(name: string): string {
 }
 
 async function main(): Promise<void> {
+  // SEC.3 — the direct identity line: the DISTINCT scoped uid (agentUid + roleOffset), proving the
+  // setpriv drop to a uid that is neither harness nor agent. Ids + cap names only.
+  {
+    const { identityLine } = await import("./identity.js");
+    console.error(identityLine("scoped-query"));
+  }
   const { readFile, mkdir } = await import("node:fs/promises");
   const specPath = process.argv[2];
   if (!specPath) throw new Error("scoped-query: usage: scoped-query.js <spec.json> [--cwd <dir>]");

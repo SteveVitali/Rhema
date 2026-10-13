@@ -180,6 +180,12 @@ async function writeAgentResult(resultPath: string, agentResult: AgentResultFile
 
 /** Run the phase as uid `agent`: load the vendored SDK, build the engine, stream events to fd 3, exit by subtype. */
 export async function main(): Promise<void> {
+  // SEC.3 — the direct identity line: uid 10002 + the (empty) cap set, proving the harness's setpriv drop
+  // landed before any SDK work. Ids + cap names only — never a secret, env value, or path content.
+  {
+    const { identityLine } = await import("./identity.js");
+    console.log(identityLine("agent-entry"));
+  }
   // umask 0 so files/dirs the agent (uid 10002) creates are world-writable (0666/0777). The harness (uid 10001)
   // is in a DISTINCT group (no shared group — Dockerfile), so when it re-materializes `/work` for the NEXT phase
   // in the same pod it must be able to OVERWRITE the agent-created outputs (e.g. `agents/<seat>/.rhema/*.json`).

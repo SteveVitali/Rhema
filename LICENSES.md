@@ -33,6 +33,22 @@ not an npm dependency, so the automated npm scan cannot see it — hence this ex
 PDF rendering in the `export` container; a separate-process system binary. Permissive, but recorded
 because the npm scan cannot see non-npm binaries.
 
+### `util-linux` — GPL-2.0-or-later, vendored static applets (SEC.3)
+The distroless run-task image vendors three statically-linked util-linux applets — `setpriv`,
+`unshare`, `mount` — built from the SHA-256-pinned upstream tarball (kernel.org, util-linux 2.40.4)
+because the runtime has no package manager. They are invoked as **separate processes** by absolute
+argv, never linked into our TypeScript — the pandoc precedent: separate-process invocation does not
+trigger GPL copyleft.
+
+### `libcap-ng` — LGPL-2.1-or-later, statically linked into setpriv (SEC.3)
+`setpriv` links libcap-ng; the toolchain ships only a shared object, so it is built static from the
+SHA-256-pinned upstream source (libcap-ng 0.8.5). Static linkage into a GPL-2.0 binary produces a
+GPL-2.0 whole in any case; the binary remains a separate process.
+
+### `dumb-init` — MIT, static PID-1 init (SEC.3)
+The PID-1 reaper + signal forwarder in the distroless run-task image — the equivalent-approved tini
+substitute (ADR-074), built static from the SHA-256-pinned upstream source (dumb-init 1.2.5).
+
 ### Fonts — OFL-1.1 / vendor-specific
 Bundled font files (SIL Open Font License and vendor licences) shipped as assets in the
 export/marketing containers. Redistribution terms are honored per font and enumerated here as fonts

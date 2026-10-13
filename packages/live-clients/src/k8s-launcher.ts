@@ -26,6 +26,14 @@ export const HARNESS_SECRET_MOUNT = "/var/run/rhema/harness";
 export const RUN_TOKEN_FILE = "run-token";
 export const PROXY_CREDENTIAL_FILE = "proxy-credential";
 
+/**
+ * SEC.3 — the Localhost AppArmor profile the run-task container launches under (infra/k8s/apparmor/
+ * rhema-run-task), loaded on every sandbox-pool node by the apparmor-loader DaemonSet. Replaces the
+ * DEF.1 Stage-B unconfinement (F-StageB-5): the default profile denied mount(2) outright, so the scoped
+ * runner's unshare/tmpfs/binds could not apply; the committed profile allows exactly that sequence.
+ */
+export const RUN_TASK_APPARMOR_PROFILE = "rhema-run-task";
+
 /** Static, deploy-provided config the launcher binds once (the per-run bits come from `JobSpec`). */
 export interface GkeLauncherConfig {
   /** the k8s namespace run-task Jobs live in. */
@@ -59,6 +67,13 @@ export interface GkeLauncherConfig {
   readonly gkeEndpoint?: string;
   /** the cluster CA certificate, base64-encoded (GKE `masterAuth.clusterCaCertificate`). */
   readonly gkeCaData?: string;
+  /**
+   * SEC.3 — the container `appArmorProfile` override. Default: `{ type: "Localhost", localhostProfile:
+   * "rhema-run-task" }` (RUN_TASK_APPARMOR_PROFILE). The `type` is the k8s enum value forwarded VERBATIM
+   * from deploy config (`rhema:runTaskAppArmorType` → worker `RUN_TASK_APPARMOR_TYPE`), so a rollback to
+   * the previous profile type is a config flip — never a code revert and never an enum literal here.
+   */
+  readonly appArmor?: { readonly type: string; readonly localhostProfile?: string };
 }
 
 /** A k8s name: lowercase alphanumeric + `-`, ≤63 chars, starting/ending alphanumeric (RFC 1123 label). */
@@ -185,27 +200,39 @@ export function buildRunTaskJobManifest(config: GkeLauncherConfig, spec: JobSpec
               // the re-pull loses nothing; k8s's tag-oriented default heuristic is irrelevant.
               imagePullPolicy: "IfNotPresent",
               env,
-              // The Phase-0 stand-in image (bookworm-slim) starts as ROOT under tini ONLY so its entrypoint can
-              // drop root → harness (uid 10001) → agent (uid 10002) via setpriv, then unshare/mount the scoped-
-              // subagent namespaces. Root is dropped immediately and does nothing else (Dockerfile). The
-              // hardened distroless + ambient-caps + runAsNonRoot target is D-P0.06-3. Least-privilege here:
-              // drop ALL, then add back exactly the caps the privilege-drop + mount isolation need.
+              // The distroless image (SEC.3) starts as ROOT under dumb-init ONLY so its pure-argv
+              // entrypoint can drop root → harness (uid 10001) → agent (uid 10002) via setpriv, then
+              // unshare/mount the scoped-subagent namespaces. Root is dropped immediately and does
+              // nothing else (Dockerfile). Least-privilege here: drop ALL, then add back exactly the
+              // caps the privilege-drop + mount isolation need.
               securityContext: {
                 readOnlyRootFilesystem: true,
-                // DEF.1 Stage-B (live finding, review run 01M3EAAZ… second_read): containerd's default
-                // `cri-containerd.apparmor.d` profile denies mount(2) OUTRIGHT regardless of
-                // CAP_SYS_ADMIN — the scoped subagent's `unshare -m` then fails at its implicit
-                // propagation change ("cannot change root filesystem propagation") and the input-
-                // scoped tmpfs/binds can never apply. The §12.6 boundary is uid + mount-namespace
-                // (the pod already holds SYS_ADMIN/SYS_CHROOT for exactly this) — unconfine AppArmor
-                // for the run-task container so the mount calls the boundary itself requires work.
-                appArmorProfile: { type: "Unconfined" },
+                // SEC.3 — Localhost confinement, not the DEF.1 unconfinement: `rhema-run-task` allows
+                // exactly the scoped runner's sequence (propagation-private on /, the /work tmpfs
+                // overmount, the stash→scoped ro binds) and denies every other mount — F-StageB-5's
+                // runtime-default denial is preserved for out-of-scope ops. The profile is loaded on
+                // every sandbox node by the apparmor-loader DaemonSet; `type`/`localhostProfile` come
+                // from deploy config so a rollback is a config flip, never a code revert.
+                appArmorProfile: config.appArmor
+                  ? {
+                      type: config.appArmor.type,
+                      ...(config.appArmor.localhostProfile
+                        ? { localhostProfile: config.appArmor.localhostProfile }
+                        : {}),
+                    }
+                  : { type: "Localhost", localhostProfile: RUN_TASK_APPARMOR_PROFILE },
                 capabilities: {
                   // SETUID/SETGID: the harness→agent uid drop (setpriv). SYS_ADMIN: unshare/mount the input-
                   // scoped subagent namespaces (§12.6). SYS_CHROOT: the scoped-runner chroot.
                   add: ["SETUID", "SETGID", "SYS_ADMIN", "SYS_CHROOT"],
                   drop: ["ALL"],
                 },
+                // SEC.3 (ADR-076): allowPrivilegeEscalation stays TRUE — explicitly, not load-bearing:
+                // k8s makes the flag a NO-OP whenever the container holds CAP_SYS_ADMIN (the scoped
+                // mount boundary needs it, so `false` is not an option anyway), and the ambient-cap
+                // launch does not rely on exec-escalation — the privsep self-test's nnp leg proves the
+                // ambient set survives execve under no_new_privs. The model's process still carries
+                // --no-new-privs from its own setpriv drop, so the model sees nnp=1 regardless.
                 allowPrivilegeEscalation: true,
               },
               volumeMounts: [

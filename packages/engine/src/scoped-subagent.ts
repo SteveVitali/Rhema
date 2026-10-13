@@ -106,7 +106,7 @@ export interface ScopedLaunchSpec {
    * load-bearing: util-linux `mount` gates on `getuid()` before calling mount(2), so the harness's ambient
    * CAP_SYS_ADMIN is invisible to it (and the binary's setuid bit only fixes the EFFECTIVE uid — ruid stays
    * harness's and `mount` exits "must be superuser"). The runner must therefore run with ruid 0; the
-   * harness holds ambient CAP_SETUID so `setpriv --reuid 0` succeeds. scoped-runner.sh still drops to the
+   * harness holds ambient CAP_SETUID so `setpriv --reuid 0` succeeds. scoped-runner.js still drops to the
    * distinct scoped uid with --no-new-privs before the model's process execs — the MODEL's privilege is
    * unchanged; only the trusted setup runner carries ruid 0.
    */

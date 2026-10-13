@@ -1,5 +1,6 @@
 // @rhema/run-task — the HARNESS supervisor (uid `harness`; §12.4 step 4, REQ-SPEC-10/11). This is the process
-// the image entrypoint runs (entrypoint.sh → this, as uid harness with only CAP_SETUID+CAP_SYS_ADMIN). It is the
+// the image's pure-argv ENTRYPOINT runs (dumb-init → setpriv → this, as uid harness with the ambient four-cap
+// set — SEC.3; the shell entrypoint is gone). It is the
 // ONLY holder of the run token + proxy credential. In order it:
 //   1. reads the run token (0400, owner harness — the agent uid cannot) + the run spec (phase + manifest);
 //   2. materializes /work from the server-generated hydration manifest (GcsContentStore → materializeWork),
@@ -100,6 +101,13 @@ export async function fetchRunSpec(args: { apiBaseUrl: string; runId: string; ru
 }
 
 export async function main(): Promise<void> {
+  // SEC.3 — the direct identity line (D-P0.15f-1 / D-P1.22-2(a)): real uid/gid + the ambient capability
+  // summary, printed before anything else so a pod log proves the two-uid split without inference. Ids +
+  // cap names only — never a secret, env value, or path content.
+  {
+    const { identityLine } = await import("./identity.js");
+    console.log(identityLine("harness"));
+  }
 /** Ship one buffered audit batch to the internal API (run-token auth). A non-2xx throws so the buffered
  *  writer restores its rows for the next flush — append-only, never silently dropped. */
 async function postAudit(args: {

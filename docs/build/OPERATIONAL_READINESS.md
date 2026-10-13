@@ -26,7 +26,7 @@ It is **not launch-ready**, and one hard gate plus four live-risk items stand in
 | # | Capability | Code state | Infra needed | Human gate | Owner |
 |---|---|---|---|---|---|
 | 1 | Sign-up, sign-in, admission | Live: Better Auth (Google + magic link), open self-serve signup. The invite gate is built but never run against a real invite; the throttle is per-instance | Redis-backed shared counter (Redis is already bound in api) | none | BL-23 → `round-3/SEC.2-signup-admission` |
-| 2 | Tenant isolation + data security | The dossier route is patched (workspace predicate). **The api role is BYPASSRLS**; dossier tables have no RLS. The run-task keeps the two-uid split and egress-only access, but runs AppArmor `Unconfined` | A non-BYPASSRLS api DB role + secret | operator: DB role + secret rotation (provided: no); pen-test procurement; exposure review | BL-08, BL-26, BL-35, BL-37 |
+| 2 | Tenant isolation + data security | The dossier route is patched (workspace predicate). **The api role is BYPASSRLS**; dossier tables have no RLS. The run-task keeps the two-uid split and egress-only access, and (SEC.3) runs the distroless image under the Localhost `rhema-run-task` AppArmor profile — mount-scoped, no longer `Unconfined` | A non-BYPASSRLS api DB role + secret | operator: DB role + secret rotation (provided: no); pen-test procurement; exposure review | BL-08, BL-26, BL-35, BL-37 |
 | 3 | Import + ingestion | Live: paste, upload, Substack export, discovered items, priced visual-PDF reconstruct (STB.3). The AC-I-A re-sync dedup is unexercised | deployed (fetcher, convert Job) | none | BL-22 → `round-3/STB.5-headless-legs` |
 | 4 | Review (core workflow) | Delivers on prod (DEF.1 `01M3EAAZ…`, 447/1,083 cr, scoped second-read live, `boundary.attested` violations 0). Citations use Path B (strip + downgrade). Neither the Full-board fetcher nor the memo deny-on-attempt has run live | deployed (GKE `runs` ns, egress proxy) | none (cost → row 9) | BL-15, BL-18 |
 | 5 | Other workflows (draft, outline, profile_voice, chat, research_burst, revise, figures) | draft, outline and profile_voice completed live (DEF.1), and a chat_turn completed at 27/40 cr (DEF.3). Revise and figures were proven earlier. research_burst ends `blocked` at `plan` on thread-local questions, so fetch/distill has never run. The gate-edit → next-phase file and finalize legs are unproven | deployed | operator product ruling (thread-local research routing) | BL-19, BL-20 → `round-3/STB.5-bounded-live-legs` |
@@ -116,9 +116,9 @@ names its `ticket:` (a proposed round-3 id where no chain row exists yet) and th
     - A `usage.reconcile` window row with provider totals and a drift %.
 11. **External security.**
     ticket: `round-3/SEC.3-runtask-confinement` (BL-26), then `operator` (BL-35 pen test) — proof:
-    `privsep-check.sh` green inside the distroless image under a non-`Unconfined` AppArmor profile, and a
-    pen-test readout in `docs/build/readouts/` triaged per `docs/security/pen-test-findings-triage.md` with
-    zero open criticals.
+    `privsep-check.js` green inside the distroless production image under the Localhost
+    `rhema-run-task` AppArmor profile, and a pen-test readout in `docs/build/readouts/` triaged per
+    `docs/security/pen-test-findings-triage.md` with zero open criticals.
 12. **The G2 program.**
     ticket: `HUMAN-H2` (BL-40), then `GATE-G2` (BL-43, BL-44, BL-45), with `round-3/CITE.1-citation-completeness`
     (BL-15) — proof: the corpus is registered in the enclave with an IAA ≥ the pre-registered floor, and
@@ -178,7 +178,8 @@ BL-10 ≤$5, about **≤$63** of inference. The rest (BL-21/22/24/32) is $0 infe
 6. **Claims and legal.** §16.4 efficacy claims are forbidden until G2 LIFT. REQ-EVAL-16's consequences apply
    retroactively to UI already built if the eval fails, so G2 is a hard gate before any marketing launch
    (BL-45).
-7. **External security assurance.** The pen test is unprocured, and the run-task pod runs AppArmor
-   `Unconfined` with `SYS_ADMIN` behind compensating controls (BL-35, BL-26).
+7. **External security assurance.** The pen test is unprocured. The run-task pod's AppArmor
+   `Unconfined` posture was closed by SEC.3 — it now runs the Localhost `rhema-run-task` profile with
+   `SYS_ADMIN` narrowed by the profile's mount allow-list; the pen-test procurement remains (BL-35).
 8. **Governance.** The drifted ledger and the unrun v2 tail make the committed memory an unreliable resume
    point. Several DEFERRALS rows overstate what is still owed (BL-02, *Stale rows* in `BACKLOG.md`).

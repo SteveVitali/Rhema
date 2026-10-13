@@ -16,11 +16,16 @@ describe("buildAgentLaunch (REQ-SPEC-10)", () => {
     command: ["/usr/local/bin/node", "/app/dist/agent-entry.js"],
   });
 
-  it("drops to the agent uid/gid and clears supplementary groups (absolute setpriv — no PATH in the scrubbed env)", () => {
+  it("drops to the agent uid/gid, clears groups, and strips every capability vector (absolute setpriv — no PATH in the scrubbed env)", () => {
     // setpriv MUST be absolute: the scrubbed agent env has no PATH, so a bare `setpriv` → `spawn … ENOENT` and
     // the agent never launches (the live D-P0.15e-2 root cause). Same for the exec'd `node` (caller passes it).
-    expect(launch.argv.slice(0, 7)).toEqual(["/usr/bin/setpriv", "--reuid", "10000", "--regid", "10000", "--clear-groups", "--"]);
-    expect(launch.argv.slice(7)).toEqual(["/usr/local/bin/node", "/app/dist/agent-entry.js"]);
+    // F-SEC3-2: ambient caps survive execve of unmarked binaries — without the explicit clear the agent
+    // inherits the harness's ambient CAP_SETUID (a kernel path back to uid 10001 / the harness token).
+    expect(launch.argv.slice(0, 12)).toEqual([
+      "/usr/bin/setpriv", "--reuid", "10000", "--regid", "10000", "--clear-groups",
+      "--inh-caps", "-all", "--ambient-caps", "-all", "--no-new-privs", "--",
+    ]);
+    expect(launch.argv.slice(12)).toEqual(["/usr/local/bin/node", "/app/dist/agent-entry.js"]);
     expect(launch.uid).toBe(10000);
   });
 

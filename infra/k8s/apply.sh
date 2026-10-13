@@ -20,6 +20,11 @@ export WORKER_GSA_EMAIL="rhema-${STACK}-worker@${PROJECT}.iam.gserviceaccount.co
 #   RUN_TASK_IMAGE="$(pulumi stack output runTaskImageDigest)" RUN_TASK_NODEPOOL="$(gcloud container node-pools list --cluster rhema-${STACK}-gke --region <region> --format='value(name)')"
 export RUN_TASK_IMAGE="${RUN_TASK_IMAGE:?set RUN_TASK_IMAGE to the full repo@sha256:<digest> run-task ref — see the example above}"
 export RUN_TASK_NODEPOOL="${RUN_TASK_NODEPOOL:?set RUN_TASK_NODEPOOL to the run-task node pool real k8s name — see the example above}"
+# SEC.3 — the apparmor-loader DaemonSet (50-*.yaml): the digest-pinned loader image ref pushed to the
+# stack's AR repo (`docker build -f infra/k8s/apparmor/Dockerfile.loader …`; push under Private Google
+# Access — the sandbox pool has no internet route). Apply BEFORE enabling the Localhost profile on
+# the worker config: a run pod lands on a node only after that node's loader has the profile enforced.
+export APPARMOR_LOADER_IMAGE="${APPARMOR_LOADER_IMAGE:?set APPARMOR_LOADER_IMAGE to the full repo@sha256:<digest> apparmor-loader ref — same repo as RUN_TASK_IMAGE, tag apparmor-loader}"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -31,6 +36,9 @@ kubectl apply -f "${DIR}/20-run-task-egress-policy.yaml"
 envsubst < "${DIR}/30-worker-job-rbac.yaml" | kubectl apply -f -
 # SLO.1 — the image-prewarm DaemonSet carries the stack-templated digest + pool name.
 envsubst < "${DIR}/40-image-prepull-daemonset.yaml" | kubectl apply -f -
+# SEC.3 — the apparmor-loader DaemonSet: the digest-pinned loader image + the same pool name.
+envsubst < "${DIR}/50-apparmor-loader-daemonset.yaml" | kubectl apply -f -
+kubectl -n kube-system rollout status daemonset/apparmor-loader --timeout=300s
 
 # Complete the Workload-Identity binding GSA-side (the KSA annotation above is only the pod-side half).
 gcloud iam service-accounts add-iam-policy-binding "${RUN_TASK_GSA_EMAIL}" \
@@ -38,4 +46,4 @@ gcloud iam service-accounts add-iam-policy-binding "${RUN_TASK_GSA_EMAIL}" \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:${PROJECT}.svc.id.goog[runs/run-task-ksa]"
 
-echo "applied: runs namespace + run-task-ksa (WI-bound to ${RUN_TASK_GSA_EMAIL}) + run-task-egress NetworkPolicy + worker launcher RBAC (${WORKER_GSA_EMAIL})"
+echo "applied: runs namespace + run-task-ksa (WI-bound to ${RUN_TASK_GSA_EMAIL}) + run-task-egress NetworkPolicy + worker launcher RBAC (${WORKER_GSA_EMAIL}) + apparmor-loader DaemonSet (image ${APPARMOR_LOADER_IMAGE})"

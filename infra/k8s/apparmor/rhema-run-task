@@ -1,0 +1,129 @@
+# SEC.3 — the run-task container's least-privilege AppArmor profile (`profile rhema-run-task`),
+# loaded on every sandbox-pool node by infra/k8s/apparmor-loader.yaml and referenced by the pod's
+# securityContext.appArmorProfile { type: Localhost, localhostProfile: rhema-run-task }.
+#
+# F-StageB-5 — the DEF.1 live run proved containerd's RuntimeDefault profile denies mount(2)
+# OUTRIGHT regardless of CAP_SYS_ADMIN, so the scoped runner's `unshare -m` propagation change and
+# its tmpfs/bind sequence could never apply (the pod ran with no profile as the stopgap). This profile is
+# the inverse: it names EVERY mount the scoped runner needs and denies the rest, plus the ambient
+# cap set the two-uid launch requires (SETUID/SETGID for the drops, SYS_ADMIN for unshare+mount,
+# SYS_CHROOT for the scoped root).
+#
+# AppArmor mount-rule grammar (man apparmor.d): `mount options=(...) [fstype=T] src -> dst,`.
+# The rule's option list is the allowed set — a mount request is granted when its flags are a
+# subset of the rule's options AND source/dest match. Each rule below mirrors ONE argv the
+# scoped runner emits (packages/engine/src/scoped-subagent.ts → mountsArgv), so a new mount
+# flag in code needs a matching rule here — the deterministic test pins the tuple.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile rhema-run-task flags=(attach_disconnected,mediate_deleted) {
+  include <abstractions/base>
+
+  # ── capabilities — exactly the pod's add-set (securityContext.capabilities). ──
+  capability setuid,
+  capability setgid,
+  capability sys_admin,
+  capability sys_chroot,
+
+  # ── the scoped runner's mounts (scoped-subagent.ts → mountPlan argv; scoped-runner.js re-issues
+  #    them inside the private mount ns). `mount --bind -o ro` is TWO syscalls (bind, then ro
+  #    remount — util-linux 2.40 may use the atomic mount_setattr path, so both shapes are listed).
+  # 1) `unshare --mount --propagation private` → recursive propagation-private on the ns root.
+  mount options=(private,rprivate) -> /,
+  # 2) stash binds: each enumerated /work file → /tmp/scoped-stash/<role>/<name> (the stash sits
+  #    OUTSIDE the /work overmount on the writable /tmp emptyDir — scoped-phase.ts). `**` — the
+  #    stash target is a FILE under the role dir, two components deep.
+  mount options=(rw,bind) /work/** -> /tmp/scoped-stash/**,
+  mount options=(ro,bind) /work/** -> /tmp/scoped-stash/**,
+  mount options=(ro,remount,bind) -> /tmp/scoped-stash/**,
+  # 3) the /work tmpfs overmount. nosuid/nodev are MOUNT FLAGS in the request (only size=64m rides in
+  # the data arg), so they must sit in the rule's option set — F-SEC3-5: a bare `options=(rw)` denies.
+  mount options=(rw,nosuid,nodev) fstype=tmpfs -> /work/,
+  # 4) scoped binds: each stash file → /work/scoped/<role>/<name>, then the ro remount.
+  mount options=(rw,bind) /tmp/scoped-stash/** -> /work/scoped/**,
+  mount options=(ro,bind) /tmp/scoped-stash/** -> /work/scoped/**,
+  mount options=(ro,remount,bind) -> /work/scoped/**,
+  # 5) util-linux ≥2.40's NEW mount API — `mount --bind -o ro` is open_tree clone →
+  #    mount_setattr(ro) → move_mount. move_mount audits as `mount` flags="rw, move" on the DEST
+  #    (live AVC 2026-10-03: `cannot mount … read-only` on the stash bind — F-SEC3-5); the ro
+  #    setattr audits ⊆ the remount rules above. The tmpfs attach takes the same move_mount leg.
+  mount options=(rw,move) -> /tmp/scoped-stash/**,
+  mount options=(rw,move) -> /work/scoped/**,
+  mount options=(rw,move) -> /work/,
+  # every other mount(2) shape is denied by the absence of a matching rule.
+
+  # ── the run-task binaries + files. Distroless has no shell; everything execs by absolute argv. ──
+  /nodejs/bin/node ix,
+  /usr/bin/dumb-init ix,
+  /usr/bin/setpriv ix,
+  /usr/bin/unshare ix,
+  /usr/bin/mount ix,
+  /app/package.json r,
+  /app/dist/ r,
+  /app/dist/** r,
+  /app/node_modules/** rm,            # .js reads + mmap'd .node addons (never ix — no child exec from deps)
+  /app/vendor/** r,
+  /app/vendor/** ix,                  # the vendored native claude binary — the SDK's own subprocess
+  # dir-granule: stageSkills() READDIRs /app/skills to enumerate what it stages — `/**` alone denied
+  # the dir read live (audit 2026-10-03, intake 0-events / missing phase-result — F-SEC3-5).
+  /app/skills/ r,
+  /app/skills/** r,
+  /etc/passwd r,
+  /etc/group r,
+  /etc/nsswitch.conf r,
+  /etc/host.conf r,                   # glibc resolver order file — the audit DENIED it live (F-SEC3-5)
+  /etc/resolv.conf r,
+  /etc/hosts r,
+  /etc/hostname r,
+  /etc/ssl/** r,                      # the CA bundle the harness's TLS to api/proxy verifies against
+  /usr/share/zoneinfo/** r,
+  # work roots: /work (the tmpfs target + scoped root), /tmp (the stash — mountpoint creation needs
+  # write), /config, and the harness-only secret mount (read — never write). Nothing under /work execs:
+  # the interpreters are the five ix rules above.
+  # dir-granule rules — `/**` does not grant write on the dir itself, and the runner mkdir's
+  # /tmp/scoped-stash/<role>, /work/scoped/<role> (inside the tmpfs overmount) and binds /config/hook.sock.
+  /work/ rw,
+  /work/** rwkl,
+  /tmp/ rw,
+  /tmp/** rwkl,
+  /config/ rw,
+  /config/** rwk,
+  # the harness-only secret mount (read — never write). A k8s Secret volume is a SYMLINK FARM —
+  # `run-token -> ..data/run-token -> ..<timestamped-dir>/run-token` — and AppArmor resolves the
+  # link, so the rule must name the resolved depth, not the single component. F-SEC3-5: a bare
+  # `harness/*` denied the token read at live runtime (EACCES, claims.4-era pod log).
+  /var/run/rhema/harness/ r,
+  /var/run/rhema/harness/** r,
+  # procfs/sysfs reads the node runtime + the runner's /proc/self/status checks need.
+  @{PROC}/** r,
+  /sys/** r,
+  /dev/null rw,
+  /dev/zero rw,
+  /dev/full rw,
+  /dev/random r,
+  /dev/urandom r,
+  /dev/pts/** rw,
+  /dev/ptmx rw,
+  /dev/shm/** rwkl,
+  # signals — the kubelet's SIGTERM/SIGKILL arrives from an UNCONFINED peer; without `receive
+  # peer=unconfined` graceful shutdown denies (same tuple docker-default carries). Same-profile
+  # send+receive covers dumb-init's signal forwarding and node's child kills.
+  signal (receive) peer=unconfined,
+  signal (send,receive) peer=rhema-run-task,
+  # the egress-proxy socket + DNS the harness opens. The pod's only route is the proxy — the
+  # network boundary lives in the pod egress policy, not in this profile.
+  network inet stream,
+  network inet6 stream,
+  network inet dgram,
+  network inet6 dgram,
+  # netlink raw — libuv's interface enumeration and the Bun runtime's pool threads both open
+  # NETLINK_ROUTE sockets at startup; the live audit showed repeated `create` denials from
+  # `libuv-worker` + `Bun Pool` comms and the query returned 0 events (F-SEC3-5). Writes still
+  # gate on CAP_NET_ADMIN, which the pod does not hold.
+  network netlink raw,
+  # the PreToolUse hook daemon (harness) ↔ agent hook client is an AF_UNIX stream socket under
+  # /config (hook-daemon.ts). AF_UNIX socket(2)/bind/connect/accept are mediated by `unix` rules,
+  # not `network inet` — F-SEC3-5. `type=stream` only; no datagram/seqpacket endpoint exists.
+  unix type=stream,
+}

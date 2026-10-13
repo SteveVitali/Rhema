@@ -1,0 +1,18 @@
+# apparmor-loader — the image the apparmor-loader DaemonSet (infra/k8s/50-apparmor-loader-daemonset.yaml)
+# runs privileged on every sandbox-pool node to `apparmor_parser -r` the rhema-run-task profile into the
+# node's kernel AppArmor module (SEC.3, ADR-075). The sandbox pool has no internet route — this image is
+# built by the `images` CI job and pushed to the stack's Artifact Registry repo under Private Google
+# Access, and the DaemonSet pins it by DIGEST (envsubst at apply time, same as the run-task prewarmer).
+#
+# Base: ubuntu:24.04 — the smallest maintained base whose `apparmor` package ships a parser that matches
+# the GKE node kernel's AppArmor feature set (abstractions/base, abi/4.0). The image needs a shell
+# anyway (the load-verify-reapply loop), so ubuntu is cheaper than a from-scratch build.
+FROM ubuntu:24.04
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends apparmor \
+  && rm -rf /var/lib/apt/lists/*
+# The committed profile — the SAME file the deterministic tests pin (a copy, not a generate, so the
+# shipped profile is bytewise what the tests + the launcher assert).
+COPY infra/k8s/apparmor/rhema-run-task /etc/apparmor.d/rhema-run-task
+COPY infra/k8s/apparmor/loader-entrypoint.sh /usr/local/bin/loader-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/loader-entrypoint.sh"]

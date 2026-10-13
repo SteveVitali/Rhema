@@ -120,6 +120,40 @@ describe("buildPhaseOutputs — reading a phase's /work outputs (P0.15e)", () =>
     expect(out.subtype).toBe("error_during_execution");
     expect(out.agentError).toBeUndefined();
   });
+
+  // F-SEC3-3 (live run 01M416S2XP7FN37PR3FGZ1SXBX): a prior review's DELIVERED
+  // `correspondence/review/<n>/second-read.json` is hydrated into /work — the basename cascade resolved
+  // it as the producer marker and the delivery check rejected the run (`producer`: the stale
+  // producerQueryId isn't in this run's subagent_launches). The marker read must never resolve a
+  // non-`.rhema/` path.
+  it("ignores a prior review's delivered second-read.json marker in the delivery dossier (stale-marker F-SEC3-3)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["agents/editor/.rhema/phase-result.json", enc({ status: "done" })],
+      ["agents/editor/editors-letter.md", enc("# Letter\n\nDone.")],
+      ["agents/editor/.rhema/findings.json", enc(validFindings)],
+      ["agents/editor/.rhema/rubric.json", enc(validRubric)],
+      // the STALE marker — a prior round's delivered producer claim, not this run's:
+      ["correspondence/review/1/second-read.json", enc({ producerQueryId: "qry_PRIOR_ROUND", expectedProducerQueryId: "qry_PRIOR_ROUND" })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(letter), "editor");
+    expect(out.delivery).toBeDefined();
+    expect(out.delivery!.secondReadProducerQueryId).toBeUndefined();
+  });
+
+  it("reads the fresh seat-scoped marker into the delivery dossier (the real producer claim still crosses)", () => {
+    const files = new Map<string, Uint8Array>([
+      [AGENT_RESULT_FILENAME, enc({ subtype: "success", usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0, webSearchRequests: 0, webFetchRequests: 0, costUsd: 0 } })],
+      ["agents/editor/.rhema/phase-result.json", enc({ status: "done" })],
+      ["agents/editor/editors-letter.md", enc("# Letter\n\nDone.")],
+      ["agents/editor/.rhema/findings.json", enc(validFindings)],
+      ["agents/editor/.rhema/rubric.json", enc(validRubric)],
+      // the launch order's markerPath is agents/<seat>/.rhema/second-read.json (runspec.ts):
+      ["agents/editor/.rhema/second-read.json", enc({ producerQueryId: "qry_THIS_RUN", expectedProducerQueryId: "qry_THIS_RUN" })],
+    ]);
+    const out = buildPhaseOutputs(files, makeSpec(letter), "editor");
+    expect(out.delivery!.secondReadProducerQueryId).toBe("qry_THIS_RUN");
+  });
 });
 
 // Residue 1 (P0.15h): the per-phase skill-execution fix. Driven phase-by-phase, an intermediate phase (craft,
