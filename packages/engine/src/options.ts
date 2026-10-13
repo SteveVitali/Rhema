@@ -8,10 +8,15 @@
 // content flags off, and the injected `PreToolUse` hook. The options TYPE is ours (the SDK is vendored and
 // DI'd); the vendored SDK's own options are a superset.
 
+import {
+  COGS_FANOUT_BASELINE,
+  COGS_FANOUT_TUNED,
+  COGS_PHASE_COMPACT_WINDOWS,
+} from "@rhema/contracts";
 import type { PhaseRequest } from "./engine.js";
 import { buildAgentEnv } from "./scrubbed-env.js";
 import { buildOtelConfig } from "./otel.js";
-import { buildAgentRoster, mainModelForTier } from "./roster.js";
+import { buildAgentRoster, mainModelForTier, routeModelForPhaseClass } from "./roster.js";
 import type { AgentDef } from "./roster.js";
 
 /** A `PreToolUse` hook callback shape (the SDK's; kept structural — the callback is injected by run-task). */
@@ -135,8 +140,8 @@ export interface AgentSdkQueryOptions {
   /** subagent fan-out limits (§12.2). NOT real SDK fields — advisory only (F5); un-enforced by the wrapper. */
   maxSubagentDepth: 1;
   maxConcurrentSubagents: number;
-  /** 1-hour prompt caching (§12.2). NOT a real SDK field — advisory only (F5). */
-  cacheControlTtl: "1h";
+  /** the prompt-cache TTL intent (§12.2's 1-h; ECON.2 L4's ON arm is the ≈5-min CLI default). NOT a real SDK field — advisory only (F5); the env carries the real effect. */
+  cacheControlTtl: "1h" | "5m";
   /** the GCS session store (§12.2). NOT a real SDK field — advisory only (F5); not applied by the wrapper. */
   sessionStore: SessionStore;
   abortController: AbortController;
@@ -164,19 +169,34 @@ export interface BuildOptionsDeps {
 
 /** Build the §12.2 options object for one phase. */
 export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): AgentSdkQueryOptions {
+  const tier = deps.tier ?? "base";
+  // ECON.2 (ADR-087) — the run's frozen lever set resolves the four phase-level knobs; absent flags
+  // ⇒ the pre-ECON.2 shape bit for bit. L1: per-`phaseClass` autoCompactWindow (research holds the
+  // batch working-set floor — subagent sessions share the setting). L2: the fan-out cap realized
+  // through the CLI env (the `research_fanout` prompt contract carries the batch size; runspec
+  // interpolates the same COGS_FANOUT_* constants). L3: §12.3 per-class routing within the tier's
+  // allowlist. L4: the cache-TTL choice realized by omitting ENABLE_PROMPT_CACHING_1H.
+  const levers = req.levers;
+  const fanout = levers?.l2FanoutShape ? COGS_FANOUT_TUNED : COGS_FANOUT_BASELINE;
+  const model = levers?.l3PhaseRouting
+    ? (routeModelForPhaseClass(tier, req.phase.phaseClass) ?? mainModelForTier(tier))
+    : mainModelForTier(tier);
+  const autoCompactWindow = levers?.l1PerPhaseWindow
+    ? (COGS_PHASE_COMPACT_WINDOWS[req.phase.phaseClass] ?? TRANSCRIPT_COMPACTION_WINDOW_TOKENS)
+    : TRANSCRIPT_COMPACTION_WINDOW_TOKENS;
   const env = {
     ...buildAgentEnv({
       runId: req.runId,
       proxyBaseUrl: deps.proxyBaseUrl,
       configDir: deps.configDir,
-      maxConcurrentSubagents: MAX_CONCURRENT_SUBAGENTS,
+      maxConcurrentSubagents: fanout.maxConcurrent,
+      ...(levers?.l4CacheTtl5m ? { promptCaching1h: false } : {}),
     }),
     ...buildOtelConfig(),
   };
-  const tier = deps.tier ?? "base";
   return {
     cwd: req.cwd,
-    model: mainModelForTier(tier), // explicit + allowlisted + priceable (F4) — never the CLI's off-list default
+    model, // explicit + allowlisted + priceable (F4) — never the CLI's off-list default
     skillsDir: deps.skillsDir,
     skills: "all", // enable the harness-staged skills so `/editorial-review` resolves (F2)
     ...(deps.claudeCodeExecutablePath ? { pathToClaudeCodeExecutable: deps.claudeCodeExecutablePath } : {}),
@@ -186,14 +206,14 @@ export function buildQueryOptions(req: PhaseRequest, deps: BuildOptionsDeps): Ag
     allowedTools: [...ALLOWED_TOOLS],
     disallowedTools: [...COSMETIC_DISALLOWED_TOOLS],
     tools: [...BASE_TOOLS], // the advertised schema set — PRB.23 measured −54 KB/request
-    // the intra-phase transcript bound (PRB.24) — flag-tier settings, session-wide
-    settings: { autoCompactWindow: TRANSCRIPT_COMPACTION_WINDOW_TOKENS },
+    // the intra-phase transcript bound (PRB.24) — flag-tier settings, session-wide; per-phase when L1 is on
+    settings: { autoCompactWindow },
     maxBudgetUsd: req.maxBudgetUsd,
     maxTurns: req.maxTurns,
     env,
     maxSubagentDepth: 1,
-    maxConcurrentSubagents: MAX_CONCURRENT_SUBAGENTS,
-    cacheControlTtl: "1h",
+    maxConcurrentSubagents: fanout.maxConcurrent,
+    cacheControlTtl: levers?.l4CacheTtl5m ? "5m" : "1h",
     sessionStore: deps.sessionStore,
     abortController: deps.abortController,
   };

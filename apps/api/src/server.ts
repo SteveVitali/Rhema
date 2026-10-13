@@ -466,6 +466,8 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
           },
         }
       : {}),
+    // ECON.2 (REQ-SPEC-32(c)) — the server-default COGS lever set (env `COGS_LEVERS`); unset ⇒ all-off.
+    ...(env.cogsLevers ? { cogsLevers: env.cogsLevers } : {}),
     // PRB.16 — the live session binding (D-P0.01-3): `principal` reads the request-scoped principal the
     // session middleware resolved (cookie → session row → personal-workspace membership); `db` is the
     // tenant-scoped client the account routes consume (signup/invite/userEmailVerified); `auth` mounts

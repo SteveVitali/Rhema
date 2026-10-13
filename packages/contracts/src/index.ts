@@ -55,6 +55,8 @@ export * from "./domain/showcase.js";
 export * from "./domain/trial.js";
 // ACT.1 — the trial claim render model (audience gating, generated note lines, deriveTrialWordCap).
 export * from "./domain/trial-claims.js";
+// ECON.2 — the named COGS levers (frozen per run, REQ-SPEC-32(c); ADR-087).
+export * from "./domain/cogs-levers.js";
 export * from "./domain/usage.js";
 export * from "./growth-lint.js";
 

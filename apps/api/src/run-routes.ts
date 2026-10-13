@@ -64,7 +64,9 @@ import {
   gateTrialUnlock,
   trialEntitlementFor,
   recordAnalyticsEvent,
+  isTestWorkspace,
 } from "@rhema/ledger";
+import { resolveCogsLevers, sanitizeCogsLevers, type CogsLevers } from "@rhema/contracts";
 import { planOf, modelTierAllowed, effectiveConcurrency, normalizeUrl } from "@rhema/contracts";
 import { parseScopes } from "@rhema/commands";
 import { registrableDomain } from "@rhema/mirror";
@@ -155,6 +157,12 @@ export interface RunApiDeps extends OrchestratorDeps {
    * tests bind a failing implementation to prove the sheet workflow refuses before a run row can start.
    */
   readonly estimateBuilder?: typeof buildEstimate;
+  /**
+   * ECON.2 (REQ-SPEC-32(c); ADR-087) — the server's DEFAULT COGS lever set, env-bound at deploy
+   * (`COGS_LEVERS` JSON; a lever's adopted arm once the Stage-B measurement lands). Unset ⇒ all-off,
+   * the pre-ECON.2 shape. A client's `inputs.cogsLevers` may override only on `is_test` workspaces.
+   */
+  readonly cogsLevers?: Partial<CogsLevers>;
 }
 
 type Vars = { Variables: { run: RunTokenClaims } };
@@ -933,6 +941,23 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       };
     }
 
+    // ECON.2 (REQ-SPEC-32(c); ADR-087) — freeze the COGS lever set into `inputs.cogsLevers` so every
+    // phase spec + the provision path read the run's recorded arms. Resolution is SERVER-authored:
+    //   · the server default (env-bound `deps.cogsLevers`, all-off when unset) always applies;
+    //   · a client-supplied `inputs.cogsLevers` only counts on an `is_test` workspace — the
+    //     measurement ON/OFF arms — like `force_unverified`; anywhere else it is stripped to the
+    //     server default (a non-test tenant can never reach for an unmeasured arm).
+    // The key rides `runs.inputs` only — runspec strips it before the prompt's `key=value` lines.
+    const cogsIsTest = await deps.txRunner
+      .run(principal.workspaceId, (tx) => isTestWorkspace(tx, principal.workspaceId))
+      .catch(() => false); // a flag-read error fails closed: server default wins
+    const cogsLevers = resolveCogsLevers({
+      client: (inputs as Record<string, unknown>).cogsLevers,
+      isTest: cogsIsTest,
+      ...(deps.cogsLevers ? { defaults: sanitizeCogsLevers(deps.cogsLevers) } : {}),
+    });
+    inputs = { ...inputs, cogsLevers };
+
     const res = await createRun(deps, {
       idempotencyKey: body.idempotencyKey,
       workflow,
@@ -956,7 +981,9 @@ export function createRunRoutes(deps: RunApiDeps): Hono<Vars> {
       rateTableVersion: CURRENT_RATE_TABLE_VERSION,
       phaseClassesUsed: phaseClassesForWorkflow(workflow),
       inputs,
-      inputSnapshot: body.inputSnapshot ?? {},
+      // ECON.2 — the resolved arms also freeze into the measurement record (`input_snapshot`); the
+      // Stage-B on/off comparison joins proxy ledger rows on this, never on the mutable inputs.
+      inputSnapshot: { ...(body.inputSnapshot ?? {}), cogsLevers },
       sheetLaunched: body.sheetLaunched ?? true,
       entitlementId: body.entitlementId,
       imageDigest: body.imageDigest,

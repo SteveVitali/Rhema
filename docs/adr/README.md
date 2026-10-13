@@ -92,3 +92,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-084](ADR-084-citation-completeness-persistence-shape.md) | Citation-completeness persistence — a separate `runs.citation_completeness` column + a system-pool daily rollup; a reported signal, not an SLO | CITE.1 | Proposed |
 | [ADR-085](ADR-085-mechanism-a-bounded-predelivery-backfill.md) | Mechanism A — a bounded, separately-metered pre-delivery backfill re-entry (never the research budget, never the RES.1 floor) | CITE.1 | Proposed |
 | [ADR-086](ADR-086-cite1-preregistered-completeness-target.md) | CITE.1 pre-registered Stage-B target — aggregate ≥0.95 after backfill, no run <0.80 | CITE.1 | Proposed |
+| [ADR-087](ADR-087-econ2-preregistered-lever-protocol.md) | ECON.2 pre-registered lever-measurement protocol — fixtures, arms, adoption rule, offline ceilings | ECON.2 | Proposed |

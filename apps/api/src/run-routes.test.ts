@@ -124,6 +124,73 @@ describe("POST /projects/:id/runs", () => {
     expect(deps.ledger.opsOf("hold")).toHaveLength(1);
   });
 
+  it("ECON.2 — cogsLevers freeze: server-authored on real tenants, client arms on is_test (REQ-SPEC-32(c))", async () => {
+    // a client-supplied lever set on a NON-test workspace is discarded — the run freezes the
+    // server default (all-off here; no `cogsLevers` dep bound) — into inputs AND the snapshot.
+    const r1 = await app.request(`/projects/${seed.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ inputs: { draftId: seed.draftId, sidecar: true, cogsLevers: { l4CacheTtl5m: true, l5ResearchEnvelope: true } } })),
+    });
+    expect(r1.status).toBe(201);
+    const { runId } = (await r1.json()) as { runId: string };
+    const row = (await db.client.query("select inputs, input_snapshot from runs where id = $1", [runId])).rows[0] as {
+      inputs: { cogsLevers?: Record<string, boolean> } | string;
+      input_snapshot: { cogsLevers?: Record<string, boolean> } | string;
+    };
+    const inputs = typeof row.inputs === "string" ? JSON.parse(row.inputs) : row.inputs;
+    const snap = typeof row.input_snapshot === "string" ? JSON.parse(row.input_snapshot) : row.input_snapshot;
+    const ALL_OFF = {
+      l1PerPhaseWindow: false, l2FanoutShape: false, l3PhaseRouting: false,
+      l4CacheTtl5m: false, l5ResearchEnvelope: false,
+    };
+    expect(inputs.cogsLevers).toEqual(ALL_OFF); // the client's {l4,l5} did NOT freeze
+    expect(snap.cogsLevers).toEqual(ALL_OFF);   // the measurement record carries the resolved arms
+
+    // the server default (deploy `COGS_LEVERS` → deps.cogsLevers) freezes on a real tenant …
+    const app2 = createApp({
+      ...deps,
+      principal: () => principal(),
+      cogsLevers: { l1PerPhaseWindow: true, l3PhaseRouting: true },
+    });
+    const seed2 = await seedProject(db, {
+      userId: seed.userId, billingAccountId: seed.billingAccountId,
+      workspaceId: seed.workspaceId, projectId: "prj_econ2b", draftN: 1,
+    });
+    const r2 = await app2.request(`/projects/${seed2.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({ idempotencyKey: "idem-http-econ2b", draftId: seed2.draftId, inputs: { draftId: seed2.draftId, sidecar: true } })),
+    });
+    expect(r2.status).toBe(201);
+    const { runId: runId2 } = (await r2.json()) as { runId: string };
+    const inputs2 = (await db.client.query("select inputs from runs where id = $1", [runId2])).rows[0] as { inputs: { cogsLevers: Record<string, boolean> } | string };
+    expect((typeof inputs2.inputs === "string" ? JSON.parse(inputs2.inputs) : inputs2.inputs).cogsLevers)
+      .toEqual({ ...ALL_OFF, l1PerPhaseWindow: true, l3PhaseRouting: true });
+
+    // …and on a flagged is_test workspace the client's per-key set overrides the server default
+    // (the Stage-B measurement arms — same gating precedent as force_unverified).
+    await db.client.query("update workspaces set is_test = true where id = $1", [seed.workspaceId]);
+    const seed3 = await seedProject(db, {
+      userId: seed.userId, billingAccountId: seed.billingAccountId,
+      workspaceId: seed.workspaceId, projectId: "prj_econ2c", draftN: 1,
+    });
+    const r3 = await app2.request(`/projects/${seed3.projectId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runBody({
+        idempotencyKey: "idem-http-econ2c",
+        draftId: seed3.draftId,
+        inputs: { draftId: seed3.draftId, sidecar: true, cogsLevers: { l3PhaseRouting: false, l4CacheTtl5m: true, bogus: true } },
+      })),
+    });
+    expect(r3.status).toBe(201);
+    const { runId: runId3 } = (await r3.json()) as { runId: string };
+    const inputs3 = (await db.client.query("select inputs from runs where id = $1", [runId3])).rows[0] as { inputs: { cogsLevers: Record<string, boolean> } | string };
+    expect((typeof inputs3.inputs === "string" ? JSON.parse(inputs3.inputs) : inputs3.inputs).cogsLevers)
+      .toEqual({ ...ALL_OFF, l1PerPhaseWindow: true, l4CacheTtl5m: true }); // client l3:false + bogus dropped
+  });
+
   it("rejects a model-profile override lacking capabilities (422)", async () => {
     const res = await app.request(`/projects/${seed.projectId}/runs`, {
       method: "POST",

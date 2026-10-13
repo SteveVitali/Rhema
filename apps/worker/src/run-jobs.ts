@@ -4,6 +4,7 @@
 // is wired at deploy; these handlers are the payload → orchestrator mapping, deterministically testable.
 
 import type { ModelTier } from "@rhema/contracts";
+import { sanitizeCogsLevers } from "@rhema/contracts";
 import {
   provisionRun,
   reap,
@@ -137,13 +138,20 @@ export async function handleRunStart(deps: WorkerRunDeps, job: RunJobPayload): P
   // `preflight`-stamped probe past the bound), so the run must genuinely reach verification before the
   // delivered coverage reads zero. Unreachable for non-test tenants by construction.
   const forceUnverified = run.is_test === true && run.inputs?.force_unverified === true;
+  // ECON.2 (REQ-SPEC-32(c); ADR-087) — the run's frozen lever set rides `inputs.cogsLevers` (frozen
+  // server-side at creation); L5 tunes ONLY the above-RES.1-floor headroom of the web bound
+  // (authorWebToolPolicy). Absent/malformed ⇒ all-off, the pre-ECON.2 shape.
+  const levers = sanitizeCogsLevers(run.inputs?.cogsLevers);
   const webTools = forceUnverified
     ? { search: true, fetch: true, searchBudget: 0, fetchBudget: 0, searchFloor: 0, fetchFloor: 0,
         // CITE.1 — the backfill allowance is zeroed too: a forced-Unverified run must not rescue
         // its coverage through the mechanism's fetch grant (ADR-085).
         backfillFetchBudget: 0 }
     : authorAssistantWebToolPolicy({ workflow, inputs: run.inputs ?? {} }) ??
-      authorWebToolPolicy({ ...(claims != null ? { claims } : {}) });
+      authorWebToolPolicy({
+        ...(claims != null ? { claims } : {}),
+        l5ResearchEnvelope: levers.l5ResearchEnvelope,
+      });
   // P1.21 (REQ-WF-8/§16.4) — a Memo run's `user_sources[]` text rides the credential context as
   // `draftText`: the proxy's n-gram guard diffs every search query against it, so internal figures
   // cannot leak inside a query (the fetch-side deny is the frozen `urlPolicy.userSourceDomains`).

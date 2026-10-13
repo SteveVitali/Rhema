@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_TIERS, isModelPriceable, CURRENT_RATE_TABLE_VERSION, type ModelTier } from "@rhema/contracts";
-import { rosterModelIds, mainModelForTier } from "@rhema/engine";
-import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, authorResearchFloor, authorResearchPreflight, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES, RESEARCH_FLOOR_SHARE, RESEARCH_PARALLELISM } from "./allowlist.js";
+import { rosterModelIds, mainModelForTier, routeModelForPhaseClass } from "@rhema/engine";
+import { MODELS_BY_TIER, authorRunAllowlist, authorWebToolPolicy, authorAssistantWebToolPolicy, authorResearchFloor, authorResearchPreflight, urlPolicyFromInputs, FETCH_MAX_CONTENT_TOKENS, CITE_BACKFILL_FETCH_ALLOWANCE, ANTHROPIC_ENDPOINT, ANTHROPIC_PROBE_ENDPOINT, RESEARCH_BURST_MAX_SOURCES, RESEARCH_FLOOR_SHARE, RESEARCH_PARALLELISM } from "./allowlist.js";
 
 // F4 — the model-allowlist trap. The proxy admits a request only when `body.model` is EXACTLY on the run's
 // allowlist (`MODELS_BY_TIER`, an exact-match includes) AND priceable in the rate table; otherwise it 403s the
@@ -16,6 +16,15 @@ describe("roster ↔ proxy allowlist ↔ rate table alignment (F4)", () => {
       it(`${tier}: '${id}' is on the tier allowlist AND priceable`, () => {
         expect(allow.has(id)).toBe(true);
         expect(isModelPriceable(CURRENT_RATE_TABLE_VERSION, id)).toBe(true);
+      });
+    }
+    // ECON.2 L3 — the per-phaseClass route resolves only inside the tier's own allowlist (the §12.3
+    // table is a refinement OF the tier roster, never a wider set — F4 guard extended per-class).
+    for (const cls of ["research", "judge", "generate", "package"] as const) {
+      const id = routeModelForPhaseClass(tier, cls);
+      it(`${tier}/${cls}: '${id}' is allowlisted AND priceable`, () => {
+        expect(allow.has(id!)).toBe(true);
+        expect(isModelPriceable(CURRENT_RATE_TABLE_VERSION, id!)).toBe(true);
       });
     }
   }
@@ -110,6 +119,57 @@ describe("authorWebToolPolicy (PRB.22 — the per-run research bound)", () => {
     expect(authorResearchFloor({ claims: 4, rigor: "quick", searchBudget: 12, fetchBudget: 28 })).toEqual({
       searchFloor: 6,
       fetchFloor: 14,
+    });
+  });
+
+  // ECON.2 L5 (REQ-SPEC-31(2) preserved; ADR-087) — the tuned envelope touches ONLY the headroom
+  // above the RES.1 floor: floors are computed on the UNTUNED budgets and freeze absolute; the
+  // non-reserved share halves; the per-page cap drops 8 000 → 4 000; CITE.1's backfill allowance
+  // stays sized on the untuned budget. A removal of the flag must fall back to the untuned shape.
+  describe("L5 — the above-floor tuned envelope (l5ResearchEnvelope)", () => {
+    const off = authorWebToolPolicy({ claims: 20 });
+    const on = authorWebToolPolicy({ claims: 20, l5ResearchEnvelope: true });
+
+    it("floors are IDENTICAL to the untuned policy — the RES.1 guarantee is absolute-preserved", () => {
+      expect(on.searchFloor).toBe(off.searchFloor);
+      expect(on.fetchFloor).toBe(off.fetchFloor);
+      // …and still half the UNTUNED bound (14/40 at claims=20), not half the tuned one.
+      expect(on.searchFloor).toBe(14);
+      expect(on.fetchFloor).toBe(40);
+      // research-class traffic keeps a real ceiling: floor ≤ tuned budget always.
+      expect(on.searchFloor!).toBeLessThanOrEqual(on.searchBudget!);
+      expect(on.fetchFloor!).toBeLessThanOrEqual(on.fetchBudget!);
+    });
+
+    it("halves only the above-floor headroom (budget = floor + ⌈headroom × 0.5⌉)", () => {
+      expect(on.searchBudget).toBe(off.searchFloor! + Math.ceil((off.searchBudget! - off.searchFloor!) * 0.5));
+      expect(on.fetchBudget).toBe(off.fetchFloor! + Math.ceil((off.fetchBudget! - off.fetchFloor!) * 0.5));
+      expect(on.searchBudget).toBe(21); // 14 + ⌈14×0.5⌉
+      expect(on.fetchBudget).toBe(60); // 40 + ⌈40×0.5⌉
+      // non-research traffic's share (budget − floor) is what actually halved.
+      expect(on.searchBudget! - on.searchFloor!).toBeLessThan(off.searchBudget! - off.searchFloor!);
+    });
+
+    it("drops the per-page context cap to 4 000 tokens and shrinks the wave's maxUses", () => {
+      expect(on.fetchMaxContentTokens).toBe(4_000);
+      expect(off.fetchMaxContentTokens).toBe(FETCH_MAX_CONTENT_TOKENS);
+      expect(on.fetchMaxUses!).toBe(Math.floor(60 / RESEARCH_PARALLELISM));
+      expect(on.searchMaxUses!).toBe(Math.floor(21 / RESEARCH_PARALLELISM));
+    });
+
+    it("keeps CITE.1's backfill allowance sized on the UNTUNED budget (the citation mechanism is not an L5 casualty)", () => {
+      expect(on.backfillFetchBudget).toBe(Math.min(off.fetchBudget!, CITE_BACKFILL_FETCH_ALLOWANCE));
+      expect(on.backfillFetchBudget).toBe(off.backfillFetchBudget);
+    });
+
+    it("a claim-less tuned bound still floors absolutely and stays tool-bearing", () => {
+      const small = authorWebToolPolicy({ l5ResearchEnvelope: true });
+      expect(small.searchFloor).toBe(4);
+      expect(small.fetchFloor).toBe(8);
+      expect(small.searchBudget).toBe(4 + Math.ceil((8 - 4) * 0.5)); // 6
+      expect(small.fetchBudget).toBe(8 + Math.ceil((16 - 8) * 0.5)); // 12
+      expect(small.searchMaxUses!).toBeGreaterThanOrEqual(1);
+      expect(small.fetchMaxUses!).toBeGreaterThanOrEqual(1);
     });
   });
 });
