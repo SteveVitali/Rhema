@@ -1576,6 +1576,7 @@ const claimsLabels: ClaimsTableLabels = {
   heading: R.claimsHeading,
   tierLabel: (t) => `Tier ${t}`,
   fetchedLabel: R.fetchedLabel,
+  searchResultLabel: R.searchResultLabel,
   stanceLabel: (s) => R.stanceLabel[s] ?? s,
   notCheckableLabel: (k) => (k ? fmt(R.notCheckableFmt, { kind: R.kindNounLabel[k] ?? k }) : ""),
   accessedLabel: (a) => a.slice(0, 10),
@@ -1608,7 +1609,9 @@ const findingsLabels: FindingsListLabels = {
   rejectedHeading: R.rejectedHeading,
   promoteLabel: R.promoteLabel,
   // P1.07 — the evidence block's labels (claim findings show the verdict chip + fetched ✓, REQ-IDE-25).
+  // CITE.1 — a search-hit-only url renders the "Search result" chip instead (ADR-084).
   fetchedLabel: `${R.fetchedLabel} ✓`,
+  searchResultLabel: R.searchResultLabel,
   accessedLabel: (a) => a.slice(0, 10),
 };
 
@@ -1621,6 +1624,7 @@ const marginLabels: MarginLabels = {
   provisionalLabel: findingsLabels.provisionalLabel,
   dispositionLabel: findingsLabels.dispositionLabel,
   fetchedLabel: findingsLabels.fetchedLabel,
+  searchResultLabel: findingsLabels.searchResultLabel,
   accessedLabel: findingsLabels.accessedLabel,
   chipLabel: (count, topSeverityLabel, topCount) =>
     fmt(R.marginChipFmt, { count, top: topCount, severity: topSeverityLabel }),
@@ -1965,6 +1969,7 @@ function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: Re
   const err = data.triage?.dispositionError;
   const compact = data.compact ?? false;
   const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
+  const searchOnly = fetchLogFromRows((dossier.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })));
   const obligationFor = (view: FindingView) => {
     const state = dossier.findingObligations?.[view.id];
     return state ? { state, label: R.obligationStateLabel[state] ?? state } : undefined;
@@ -1976,7 +1981,7 @@ function dossierSurfaces(data: ReturnType<typeof usePageData>): { marginBody: Re
     return evidence != null
       ? {
           ...(evidence.verdict != null ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict } : {}),
-          urls: evidenceUrlViews(evidence, fetchLog),
+          urls: evidenceUrlViews(evidence, fetchLog, searchOnly),
         }
       : undefined;
   };
@@ -2360,6 +2365,7 @@ export function DossierPage(): ReactNode {
   }
 
   const fetchLog = fetchLogFromRows(dossier.fetchLog.map((normalizedUrl) => ({ normalizedUrl })));
+  const searchOnly = fetchLogFromRows((dossier.searchResultLog ?? []).map((normalizedUrl) => ({ normalizedUrl })));
   const claimRows: ClaimTableRow[] = dossier.claims.map((c) => ({
     ordinal: c.ordinal,
     text: c.text,
@@ -2369,7 +2375,7 @@ export function DossierPage(): ReactNode {
     ...(c.kind ? { kind: c.kind } : {}),
     checkable: checkable(c.kind),
     ...(c.note ? { note: c.note } : {}),
-    urls: claimUrlViews(c, fetchLog),
+    urls: claimUrlViews(c, fetchLog, searchOnly),
     // P1.13 — a figure-linked Tier-1 claim (§7.5; REQ-VIZ-13) carries the card link, so the
     // claims table shows WHICH figure each row verifies (a `none`-provenance figure's claims land
     // here too — their Unsupported verdict is the ledger row's own field).
@@ -2662,7 +2668,7 @@ export function DossierPage(): ReactNode {
                   ...(evidence.verdict != null
                     ? { verdictLabel: R.verdictLabel[evidence.verdict] ?? evidence.verdict }
                     : {}),
-                  urls: evidenceUrlViews(evidence, fetchLog),
+                  urls: evidenceUrlViews(evidence, fetchLog, searchOnly),
                 }
               : undefined;
           }}

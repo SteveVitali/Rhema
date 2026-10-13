@@ -476,10 +476,12 @@ describe("handleProxyRequest — server web tools guaranteed + logged end-to-end
     await handleProxyRequest(request(), h);
     // usage_records.searches > 0 (the §12.7 meter of record).
     expect(h.usageWriter.rows[0]!.searches).toBe(2);
-    // and the RESULT urls are logged as fetch rows (the provenance cited⇒fetched resolves against).
-    const fetchedUrls = h.fetchLogWriter.rows.filter((r) => r.kind === "fetch").map((r) => r.url);
-    expect(fetchedUrls).toContain("https://reuters.com/article/x");
-    expect(fetchedUrls).toContain("https://nature.com/y");
+    // CITE.1 — the RESULT urls land on `search` rows carrying `url` (the guard/chip retrieved set is
+    // fetch ∪ search-url rows; a search hit is retrieval evidence, not a fetch).
+    const searchRows = h.fetchLogWriter.rows.filter((r) => r.kind === "search");
+    const searchUrls = searchRows.map((r) => r.url).filter((u): u is string => u !== undefined);
+    expect(searchUrls).toContain("https://reuters.com/article/x");
+    expect(searchUrls).toContain("https://nature.com/y");
   });
 });
 
@@ -722,6 +724,61 @@ describe("handleProxyRequest — RES.1 executed-only history + research floor + 
     const searchTools = tools.filter((t) => t.name === "web_search");
     expect(searchTools).toHaveLength(1);
     expect(searchTools[0]!.type).toBe("web_search_20250305"); // the real server tool, not the impostor
+  });
+
+  it("a `backfill`-stamped request draws the DEDICATED allowance on an exhausted research budget — floor intact", async () => {
+    // fetchBudget 6 fully spent + fetchFloor 2 reserved: research would see nothing; the re-entry's
+    // fetches draw `backfillFetchBudget` — a separate line, never the research budget nor the floor.
+    const context = ctx({ webTools: { fetchBudget: 6, fetchFloor: 2, searchBudget: 24, backfillFetchBudget: 4 } });
+    const shared = new ResearchUsageTracker();
+    shared.record("run_1", { fetches: 6 }); // committed research budget fully spent
+
+    const research = harness({ context });
+    await handleProxyRequest(request(), { ...research, researchUsage: shared });
+    expect(toolsOf(research).some((t) => t.name === "web_fetch")).toBe(false); // exhausted + floored
+
+    const backfill = harness({ context });
+    await handleProxyRequest(
+      request({ headers: { ...request().headers, [PHASE]: "backfill" } }),
+      { ...backfill, researchUsage: shared },
+    );
+    const tools = toolsOf(backfill);
+    expect(tools.find((t) => t.name === "web_fetch")?.max_uses).toBe(4); // the allowance, untouched by research
+    expect(tools.some((t) => t.name === "web_search")).toBe(false); // backfill never discovers — fetch only
+    // the stamp lands on the request's fetch_log row (the completeness `backfilled` ids read it).
+    expect(backfill.fetchLogWriter.rows.some((r) => r.kind === "inference" && r.phaseClass === "backfill")).toBe(true);
+  });
+
+  it("a metered BACKFILL response settles on the dedicated counter — the research bound is untouched", async () => {
+    const context = ctx({ webTools: { fetchBudget: 6, fetchFloor: 2, backfillFetchBudget: 4 } });
+    const shared = new ResearchUsageTracker();
+    const fetchResponse: UpstreamResponse = {
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        usage: { input_tokens: 1, output_tokens: 1, server_tool_use: { web_fetch_requests: 2 } },
+      }),
+    };
+    const h = harness({ context, response: fetchResponse });
+    await handleProxyRequest(
+      request({ headers: { ...request().headers, [PHASE]: "backfill" } }),
+      { ...h, researchUsage: shared },
+    );
+    // metered to the run (the usage row + the dedicated counter)…
+    expect(shared.backfillUsage("run_1")).toEqual({ fetches: 2 });
+    // …but the research bound sees nothing — the floor's reservation is never spent by the mechanism.
+    expect(shared.usage("run_1")).toEqual({ fetches: 0, searches: 0 });
+    const research = harness({ context });
+    await handleProxyRequest(request(), { ...research, researchUsage: shared });
+    expect(toolsOf(research).find((t) => t.name === "web_fetch")?.max_uses).toBe(4); // 6 − 2 floor − 0 research
+    // …and the allowance shrinks for the NEXT backfill call: 4 − 2 = 2 left.
+    const backfill2 = harness({ context });
+    await handleProxyRequest(
+      request({ headers: { ...request().headers, [PHASE]: "backfill" } }),
+      { ...backfill2, researchUsage: shared },
+    );
+    expect(toolsOf(backfill2).find((t) => t.name === "web_fetch")?.max_uses).toBe(2);
   });
 });
 

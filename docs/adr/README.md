@@ -88,3 +88,7 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-080](ADR-080-preview-journey-subset.md) | Preview exercises only the credential-free journey legs; the rest defer per-leg | OPS.1 | Proposed |
 | [ADR-081](ADR-081-turbo-remote-cache-server-and-placement.md) | Self-hosted Turborepo remote cache — turborepo-remote-cache on scale-to-zero Cloud Run, GCS-backed, in the prod stack | OPS.2 | Proposed |
 | [ADR-082](ADR-082-measured-cost-posture.md) | Measured cost posture — the warm floor, not the documented $95, is the real floor; the $50 budget alert is the compensating control | OPS.2 | Proposed |
+| [ADR-083](ADR-083-canonical-url-identity-and-search-result-retrieval.md) | Canonical URL identity — one `normalizeUrl` in @rhema/contracts, applied on both sides, and url-bearing `search` rows count as retrieval evidence | CITE.1 | Proposed |
+| [ADR-084](ADR-084-citation-completeness-persistence-shape.md) | Citation-completeness persistence — a separate `runs.citation_completeness` column + a system-pool daily rollup; a reported signal, not an SLO | CITE.1 | Proposed |
+| [ADR-085](ADR-085-mechanism-a-bounded-predelivery-backfill.md) | Mechanism A — a bounded, separately-metered pre-delivery backfill re-entry (never the research budget, never the RES.1 floor) | CITE.1 | Proposed |
+| [ADR-086](ADR-086-cite1-preregistered-completeness-target.md) | CITE.1 pre-registered Stage-B target — aggregate ≥0.95 after backfill, no run <0.80 | CITE.1 | Proposed |

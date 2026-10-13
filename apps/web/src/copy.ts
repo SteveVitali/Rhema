@@ -282,6 +282,7 @@ export const COPY = {
     findingsHeading: "Findings",
     readOnlyNote: "Read-only sample. In your projects, each finding is something you can act on.",
     fetchedLabel: "fetched",
+    searchResultLabel: "Search result",
     contradictedTierOneLabel: "Contradicted · Tier 1",
   },
 
@@ -334,6 +335,7 @@ export const COPY = {
     },
     claimsHeading: "Claim ledger",
     fetchedLabel: "fetched",
+    searchResultLabel: "Search result",
     verdictLabel: {
       verified: "Verified",
       substantially_accurate: "Substantially accurate",

@@ -53,6 +53,12 @@ export interface WebToolPolicyData {
    */
   readonly searchFloor?: number;
   readonly fetchFloor?: number;
+  /**
+   * CITE.1 (ADR-085) — the backfill allowance: a dedicated web_fetch bound for the harness-stamped
+   * `backfill` phase class (the bounded pre-delivery citation re-entry). Separate from `fetchBudget`
+   * and never drawable from the RES.1 floor share.
+   */
+  readonly backfillFetchBudget?: number;
   readonly fetchMaxContentTokens?: number;
 }
 

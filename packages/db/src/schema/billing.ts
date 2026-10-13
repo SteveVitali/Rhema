@@ -43,6 +43,9 @@ export const usageRecords = pgTable("usage_records", {
   reconciled: boolean("reconciled").default(false),
   // PRB.08 (0020; REQ-BILL-13): the provider's per-request id — the usage.reconcile join key.
   providerRequestId: text("provider_request_id"),
+  // CITE.1 (0056): the request's harness-stamped phase class — `backfill` rows are metered to the
+  // run but separable from RES.1's research spend (the ECON.2 mechanism-cost delta).
+  phaseClass: text("phase_class"),
 });
 
 export const creditLedger = pgTable("credit_ledger", {

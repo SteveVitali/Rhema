@@ -11,25 +11,19 @@
 //   • the PRODUCER check — the second read's `producerQueryId` must be an orchestrator-launched scoped query.
 
 import type { ClaimVerdict, ClaimSourceCheck, SidecarFilename } from "@rhema/contracts";
+import { normalizeUrl } from "@rhema/contracts";
 import { parseSidecar, verdictDeterminingSource } from "@rhema/protocols";
 import type { ClaimLedgerSidecar } from "@rhema/contracts";
 import type { SqlExecutor } from "./sql.js";
 
+// CITE.1 (ADR-083) — `normalizeUrl` moved to @rhema/contracts (the one definition the guard, the chip
+// matcher, the scorer, and every scan share). Re-exported here so every existing `@rhema/mirror`
+// import site keeps resolving the identical function.
+export { normalizeUrl };
+
 type ClaimRow = ClaimLedgerSidecar["claims"][number];
 
-// ---------------------------------------------------------------- url normalization + registrable domain
-
-/** Normalize a URL for cited⇒fetched matching: lower-case scheme+host + path, drop query/fragment (anti-exfil,
- *  matching @rhema/hooks' path-ignoring-query rule and the proxy's normalized_url). */
-export function normalizeUrl(raw: string): string {
-  try {
-    const u = new URL(raw);
-    const path = u.pathname.replace(/\/+$/, "") || "/";
-    return `${u.protocol.toLowerCase()}//${u.host.toLowerCase()}${path}`;
-  } catch {
-    return raw.trim().toLowerCase();
-  }
-}
+// ---------------------------------------------------------------- registrable domain
 
 /** A small public-suffix set so `registrableDomain` returns eTLD+1 for the common multi-part TLDs. */
 const MULTI_PART_TLDS = new Set([

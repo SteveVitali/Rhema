@@ -108,6 +108,8 @@ describe("collectFiles — the base selection", () => {
       "packages/db/migrations/0053_collab_provenance_maps_update.sql",
       "packages/db/migrations/0054_collab_slo_samples.sql",
       "packages/db/migrations/0055_refund_window.sql",
+      "packages/db/migrations/0056_cite1_phase_class.sql",
+      "packages/db/migrations/0057_cite1_citation_completeness.sql",
     ]);
   });
 

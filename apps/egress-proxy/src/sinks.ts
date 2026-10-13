@@ -53,6 +53,7 @@ const USAGE_COLUMNS = [
   "credits",
   "source",
   "provider_request_id",
+  "phase_class",
 ] as const;
 
 export class SqlUsageWriter implements UsageWriter {
@@ -87,6 +88,7 @@ export class SqlUsageWriter implements UsageWriter {
       row.credits,
       row.source,
       row.providerRequestId,
+      row.phaseClass,
     ];
     const placeholders = USAGE_COLUMNS.map((_, i) => `$${i + 1}`).join(", ");
     await this.db.query(
@@ -109,6 +111,7 @@ const FETCH_LOG_COLUMNS = [
   "bytes",
   "decision",
   "deny_reason",
+  "phase_class",
 ] as const;
 
 export class SqlFetchLogWriter implements FetchLogWriter {
@@ -128,6 +131,7 @@ export class SqlFetchLogWriter implements FetchLogWriter {
       row.bytes,
       row.decision,
       row.denyReason,
+      row.phaseClass,
     ];
     const placeholders = FETCH_LOG_COLUMNS.map((_, i) => `$${i + 1}`).join(", ");
     await this.db.query(

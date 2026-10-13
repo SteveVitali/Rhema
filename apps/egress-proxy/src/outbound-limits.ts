@@ -126,8 +126,15 @@ export function extractExecutedServerToolUses(body: unknown): { searches: number
 
 /** A server-tool activity the proxy read from a RESPONSE (this turn's real search/fetch), for the fetch log. */
 export type ServerToolActivity =
-  | { readonly kind: "search"; readonly query: string }
-  | { readonly kind: "fetch"; readonly url: string; readonly bytes?: number };
+  | { readonly kind: "search"; readonly query: string; readonly url?: undefined; readonly bytes?: undefined }
+  /**
+   * CITE.1 (ADR-084) — a URL a `web_search_tool_result` surfaced: logged `kind:'search'` (the shape the
+   * delivery guard's `RetrievedUrl` union already accepts), NOT `fetch` — the page was never retrieved,
+   * only its snippet was. This is what lets the completeness record, the dossier's "Search result" chip,
+   * and the §12.8(c) search-domain provenance tell a snippet from a fetched page.
+   */
+  | { readonly kind: "search"; readonly url: string; readonly bytes?: number; readonly query?: undefined }
+  | { readonly kind: "fetch"; readonly url: string; readonly bytes?: number; readonly query?: undefined };
 
 /**
  * The byte receipt for one returned page (PRB.19 — `fetch_log.bytes` on `kind=fetch` server-tool rows). The
@@ -156,14 +163,18 @@ function resultBytes(r: Record<string, unknown>): number | undefined {
  * research through Anthropic's SERVER-SIDE web tools (the fetches never traverse the proxy as separate requests
  * — D-P0.15-2, diagnosed live P0.15h). An error result is an object (not an array) → nothing was fetched.
  */
-function collectResultUrls(content: unknown, out: ServerToolActivity[]): void {
+function collectResultUrls(
+  content: unknown,
+  out: ServerToolActivity[],
+  kind: "search" | "fetch" = "fetch",
+): void {
   const results = Array.isArray(content) ? content : content && typeof content === "object" ? [content] : [];
   for (const r of results) {
     if (!r || typeof r !== "object") continue;
     const u = (r as Record<string, unknown>)["url"];
     if (typeof u === "string" && u) {
       const bytes = resultBytes(r as Record<string, unknown>);
-      out.push({ kind: "fetch", url: u, ...(bytes !== undefined ? { bytes } : {}) });
+      out.push({ kind, url: u, ...(bytes !== undefined ? { bytes } : {}) });
     }
   }
 }
@@ -187,8 +198,10 @@ function collectFromContent(content: unknown, out: ServerToolActivity[]): void {
         out.push({ kind: "fetch", url: input["url"] });
       }
     } else if (typeof type === "string" && (type.includes("web_search_tool_result") || type.includes("web_fetch_tool_result"))) {
-      // the server-tool RESULT block: its `content` carries the pages the search/fetch returned (each with `url`).
-      collectResultUrls(b["content"], out);
+      // the server-tool RESULT block: its `content` carries the pages the search/fetch returned (each
+      // with `url`). CITE.1 (ADR-084) — a `web_search_tool_result`'s urls are SEARCH HITS (`kind:
+      // 'search'` — retrieved as snippets only); a `web_fetch_tool_result`'s are fetched pages.
+      collectResultUrls(b["content"], out, type.includes("web_search") ? "search" : "fetch");
     }
   }
 }
@@ -265,8 +278,9 @@ export function extractResponseServerToolsSse(body: string): ServerToolActivity[
         blocks.set(index, { name, json: seeded });
       } else if (typeof cbType === "string" && (cbType.includes("web_search_tool_result") || cbType.includes("web_fetch_tool_result"))) {
         // a server-tool RESULT block streams complete at `content_block_start` (not via input deltas): its
-        // `content` holds the returned pages, each with the `url` the model reads + cites (feeds cited⇒fetched).
-        collectResultUrls(cb?.["content"], out);
+        // `content` holds the returned pages, each with the `url` the model reads + cites (feeds
+        // cited⇒fetched). CITE.1 (ADR-084) — search-result urls log as `search` rows (snippet-only).
+        collectResultUrls(cb?.["content"], out, cbType.includes("web_search") ? "search" : "fetch");
       }
     } else if (type === "content_block_delta") {
       const index = ev["index"];
@@ -374,7 +388,15 @@ export const RESEARCH_GRANT_TTL_MS = 10 * 60 * 1000;
 export class ResearchUsageTracker {
   private readonly byRun = new Map<
     string,
-    { fetches: number; searches: number; grants: Map<number, { searches: number; fetches: number; expiresAt: number }> }
+    {
+      fetches: number;
+      searches: number;
+      /** CITE.1 (ADR-085) — `backfill`-class committed fetches: a SEPARATE counter that never enters
+       *  `fetches`, so the mechanism's spend can never shrink the research budget (or the floor share)
+       *  the main counters feed. */
+      backfillFetches: number;
+      grants: Map<number, { searches: number; fetches: number; expiresAt: number; cls?: string }>;
+    }
   >();
   private grantSeq = 0;
   private readonly now: () => number;
@@ -386,15 +408,25 @@ export class ResearchUsageTracker {
   private row(runId: string) {
     let cur = this.byRun.get(runId);
     if (!cur) {
-      cur = { fetches: 0, searches: 0, grants: new Map() };
+      cur = { fetches: 0, searches: 0, backfillFetches: 0, grants: new Map() };
       this.byRun.set(runId, cur);
     }
     return cur;
   }
 
   /** Record one served response's server-tool use for the run (from `usage.server_tool_use` / parsed blocks). */
-  record(runId: string, delta: { readonly fetches?: number; readonly searches?: number }): void {
+  record(
+    runId: string,
+    delta: { readonly fetches?: number; readonly searches?: number },
+    cls?: string,
+  ): void {
     const cur = this.row(runId);
+    // CITE.1 — `backfill` use settles on its own counter only: the research budgets and the floor are
+    // never drawn down by the mechanism (ADR-085).
+    if (cls === "backfill") {
+      cur.backfillFetches += delta.fetches ?? 0;
+      return;
+    }
     cur.fetches += delta.fetches ?? 0;
     cur.searches += delta.searches ?? 0;
   }
@@ -406,9 +438,24 @@ export class ResearchUsageTracker {
   }
 
   /**
+   * CITE.1 — the run's committed + in-flight `backfill`-class fetch use: the input to the dedicated
+   * `backfillFetchBudget` bound (ADR-085 — a separate allowance, never the research budget/floor).
+   */
+  backfillUsage(runId: string): { fetches: number } {
+    const cur = this.byRun.get(runId);
+    if (!cur) return { fetches: 0 };
+    const now = this.now();
+    for (const [id, g] of cur.grants) if (g.expiresAt <= now) cur.grants.delete(id);
+    let inflight = 0;
+    for (const g of cur.grants.values()) if (g.cls === "backfill") inflight += g.fetches;
+    return { fetches: cur.backfillFetches + inflight };
+  }
+
+  /**
    * The run's RESERVED-but-unsettled server-tool use: the sum of live admission grants (`max_uses` values
    * already handed to in-flight requests). A grant older than `RESEARCH_GRANT_TTL_MS` is expired out —
    * a wedged request's reservation cannot starve later verification (RES.1's fail-safe direction).
+   * `backfill`-class grants are excluded — their dedicated allowance is tracked by `backfillUsage`.
    */
   inflight(runId: string): { searches: number; fetches: number } {
     const cur = this.byRun.get(runId);
@@ -418,6 +465,7 @@ export class ResearchUsageTracker {
     let searches = 0;
     let fetches = 0;
     for (const g of cur.grants.values()) {
+      if (g.cls === "backfill") continue;
       searches += g.searches;
       fetches += g.fetches;
     }
@@ -427,9 +475,14 @@ export class ResearchUsageTracker {
   /**
    * Reserve the grants a request was just admitted with (the `max_uses` on the forwarded web tools).
    * The returned reservation is released when the response is metered (the committed delta replaces the
-   * grant) or when the forward fails — never double-counted, never leaked past the TTL.
+   * grant) or when the forward fails — never double-counted, never leaked past the TTL. `cls` tags the
+   * grant's admission class so a `backfill` grant never masquerades as research headroom.
    */
-  reserve(runId: string, grant: { readonly searches: number; readonly fetches: number }): ResearchReservation {
+  reserve(
+    runId: string,
+    grant: { readonly searches: number; readonly fetches: number },
+    cls?: string,
+  ): ResearchReservation {
     if (grant.searches <= 0 && grant.fetches <= 0) return { release: () => undefined };
     const cur = this.row(runId);
     const id = ++this.grantSeq;
@@ -437,6 +490,7 @@ export class ResearchUsageTracker {
       searches: Math.max(0, grant.searches),
       fetches: Math.max(0, grant.fetches),
       expiresAt: this.now() + RESEARCH_GRANT_TTL_MS,
+      ...(cls !== undefined ? { cls } : {}),
     });
     let released = false;
     return {

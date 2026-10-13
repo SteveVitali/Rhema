@@ -6,7 +6,7 @@
 // fetched (P0.09 validates against it). Kinds: `inference` for the /v1/messages call itself; `fetch`/`search`
 // for the server-tool invocations the proxy inspects for the outbound-channel limits.
 
-/** A `fetch_log` row (mirrors packages/db enforcement.ts, incl. the 0006 `attempt` column). */
+/** A `fetch_log` row (mirrors packages/db enforcement.ts, incl. the 0006 `attempt` + 0056 `phase_class` columns). */
 export interface FetchLogRow {
   readonly runId: string;
   readonly ts: string;
@@ -20,6 +20,10 @@ export interface FetchLogRow {
   readonly bytes: number | null;
   readonly decision: "allow" | "deny";
   readonly denyReason: string | null;
+  /** CITE.1 — the harness-stamped `x-rhema-phase-class` (`research`/`preflight`/`backfill`, else NULL):
+   *  the column that lets the delivery completeness record name which retrieved urls the backfill
+   *  mechanism produced (and lets ECON.2 cost it). */
+  readonly phaseClass: string | null;
 }
 
 /** Lowercase scheme+host, drop fragment; keep path + query. `null` for a non-URL. */
@@ -41,6 +45,8 @@ export interface FetchLogBase {
   readonly attempt: number;
   readonly agentLabel: string;
   readonly ts?: string;
+  /** CITE.1 — the request's harness-stamped phase class (`x-rhema-phase-class`), folded onto the row. */
+  readonly phaseClass?: string | null;
 }
 
 /** Build the per-request `inference` row: the proxied endpoint URL, its status, and the allow/deny decision. */
@@ -67,6 +73,7 @@ export function buildRequestFetchLogRow(
     bytes: input.bytes ?? null,
     decision: input.decision,
     denyReason: input.denyReason ?? null,
+    phaseClass: base.phaseClass ?? null,
   };
 }
 
@@ -98,5 +105,6 @@ export function buildServerToolFetchLogRow(
     bytes: input.bytes ?? null,
     decision: input.decision,
     denyReason: input.denyReason ?? null,
+    phaseClass: base.phaseClass ?? null,
   };
 }

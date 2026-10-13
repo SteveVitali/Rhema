@@ -1,4 +1,5 @@
 import type { ClaimLedgerSidecar } from "@rhema/contracts";
+import { normalizeUrl } from "@rhema/contracts";
 
 // Citation-fetch compliance scorer (§18 spirit; P0.15j / closes D-P0.15i-2 — the measurement that turns
 // "prompt guessing" into hill-climbing). It quantifies exactly what the delivery guard `validateCitedFetched`
@@ -13,9 +14,9 @@ import type { ClaimLedgerSidecar } from "@rhema/contracts";
 // authority; this is the instrument that measures the same quantity continuously.
 //
 // PARITY: matching a cited URL to the fetch log must use the SAME normalization the guard uses, or the score
-// lies. The default `normalizeCitedUrl` below is a copy of @rhema/mirror `normalizeUrl` (kept here so this
-// §18 scoring layer takes no dependency on the run-delivery layer); a live caller that already has mirror
-// loaded SHOULD inject `normalize: normalizeUrl` for exact byte-parity. The parity cases are pinned in the test.
+// lies. CITE.1 (ADR-083): `normalizeCitedUrl` below IS @rhema/contracts `normalizeUrl` — the one canonical
+// definition the guard, the chip matcher, and this scorer share (this §18 layer already depends on
+// @rhema/contracts; the old in-file copy is gone so the score can never drift from the guard again).
 
 type ClaimRow = ClaimLedgerSidecar["claims"][number];
 
@@ -27,19 +28,11 @@ export interface CitedClaim {
 }
 
 /**
- * Normalize a URL for cited⇒fetched matching — a copy of @rhema/mirror `normalizeUrl` (the guard's own
- * normalization), so the offline score matches the live guard. Lower-case scheme+host+path; drop trailing
- * slashes, query, and fragment. Keep in sync with mirror; the test pins the shared cases.
+ * Normalize a URL for cited⇒fetched matching — re-exported from @rhema/contracts (CITE.1/ADR-083), the
+ * single definition the delivery guard, the findings-core chip matcher, and this scorer share.
+ * Lower-case scheme+host+path; drop trailing slashes, query, and fragment.
  */
-export function normalizeCitedUrl(raw: string): string {
-  try {
-    const u = new URL(raw);
-    const path = u.pathname.replace(/\/+$/, "") || "/";
-    return `${u.protocol.toLowerCase()}//${u.host.toLowerCase()}${path}`;
-  } catch {
-    return raw.trim().toLowerCase();
-  }
-}
+export const normalizeCitedUrl: (raw: string) => string = normalizeUrl;
 
 /** One cited URL that is absent from the fetch log — the same shape the guard reports. */
 export interface CitationMiss {
@@ -69,8 +62,8 @@ export interface CitationCompliance {
  * @param claims the fact-check's claim ledger rows (`claim.url` + `claim.sources[].url` are the cited URLs).
  * @param fetchedNormalizedUrls the NORMALIZED urls the proxy fetched this run (fetch_log `normalized_url`,
  *   decision=allow) — exactly the set the guard resolves citations against.
- * @param normalize the URL normalizer; defaults to `normalizeCitedUrl`. Inject @rhema/mirror `normalizeUrl`
- *   at a live call site for exact guard parity.
+ * @param normalize the URL normalizer; defaults to `normalizeCitedUrl` (= @rhema/contracts `normalizeUrl`,
+ *   the guard's own — inject only in tests).
  *
  * Compliance is computed over DISTINCT normalized cited URLs (a URL cited by many claims counts once toward the
  * fraction), while `misses` lists every (claim, url) occurrence so a report can point at each offending claim.

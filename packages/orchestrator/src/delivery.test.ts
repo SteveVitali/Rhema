@@ -184,6 +184,72 @@ describe("deliverRun (orchestrator wiring)", () => {
     expect(deps.eventWriter.events.some((e) => e.type === "cost.final")).toBe(false);
   });
 
+  // ---- CITE.1 (REQ-VIS-9; ADR-084/085) — the persisted measured record --------------------------------
+
+  it("persists runs.citation_completeness + emits run.citation_completeness + carries strippedCitations (BL-15)", async () => {
+    // fixture: one parity-rescued cite (proxy-form stored normalized_url keeps the query) + one true miss.
+    await db.pg.query(
+      `insert into fetch_log(run_id, ts, agent_label, attempt, kind, url, normalized_url, decision)
+       values ($1, now(), 'editor', 1, 'fetch', 'https://x.test/a/?id=7', 'https://x.test/a/?id=7', 'allow')`,
+      [RUN],
+    );
+    const claimLedger: ClaimLedgerSidecar = {
+      sidecar: "claim_ledger",
+      version: 1,
+      claims: [
+        { ordinal: 1, text: "c1", tier: 2, verdict: "verified", url: "https://x.test/a", normalizedUrl: "https://x.test/a", humanAdded: false },
+        { ordinal: 2, text: "c2", tier: 2, verdict: "verified", url: "https://gone.test/x", normalizedUrl: "https://gone.test/x", humanAdded: false },
+      ],
+    } as ClaimLedgerSidecar;
+    const result = await deliverRun(
+      { ...deps, store },
+      {
+        billingAccountId: "ba_seed",
+        holdLedgerId: "hold_1",
+        spentCredits: 42,
+        capCredits: 100,
+        delivery: delivery({ claimLedger, sidecars: [{ filename: "01-claim-ledger.json", json: claimLedger }] }),
+      },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // the orchestrator result stops discarding the strip count + carries the record (REQ-VIS-9).
+    expect(result.strippedCitations).toBe(1);
+    expect(result.citationCompleteness).toMatchObject({
+      cited: 2,
+      covered: 1,
+      missed: 1,
+      stripped: 1,
+      missedUrls: ["https://gone.test/x"],
+      backfillRan: false,
+    });
+    // runs.citation_completeness persisted atomically with the delivery (its own column — runs.delivery
+    // stays RES.2's write-once label and is NULL here since coverage > 0).
+    const run = (
+      await db.client.query("select delivery, citation_completeness from runs where id=$1", [RUN])
+    ).rows[0] as { delivery: unknown; citation_completeness: { cited: number; covered: number; missed: number; missedUrls: string[] } | null };
+    expect(run.delivery).toBeNull();
+    expect(run.citation_completeness).toMatchObject({ cited: 2, covered: 1, missed: 1, missedUrls: ["https://gone.test/x"] });
+    // the internal event — counts + identifiers only.
+    const ev = deps.eventWriter.events.find((e) => e.type === "run.citation_completeness");
+    expect(ev).toBeDefined();
+    expect(ev?.payload).toMatchObject({ cited: 2, covered: 1, missed: 1, stripped: 1, backfillRan: false });
+  });
+
+  it("a full-coverage delivery persists the record too (the rate needs the 100% rows)", async () => {
+    const result = await deliverRun(
+      { ...deps, store },
+      { billingAccountId: "ba_seed", holdLedgerId: "hold_1", spentCredits: 42, capCredits: 100, delivery: delivery() },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.strippedCitations).toBe(0);
+    const run = (
+      await db.client.query("select citation_completeness from runs where id=$1", [RUN])
+    ).rows[0] as { citation_completeness: { cited: number; covered: number } | null };
+    expect(run.citation_completeness).toMatchObject({ cited: 1, covered: 1 });
+  });
+
   // ---- RES.2 (REQ-SPEC-31(3)) — the Unverified classification ------------------------------------
   // The predicate runs on POST-STRIP coverage the mirror counts: ≥1 checkable Tier-1/2 claim, zero
   // covered. The label + `run.unverified` commit atomically with `finalizing → completed`; the

@@ -61,6 +61,39 @@ describe("claimUrlViews — the fetched ⇒ log join (REQ-IDE-25)", () => {
     });
     expect(claimUrlViews(c, log)).toHaveLength(1);
   });
+
+  // CITE.1 — the "Search result" chip (ADR-083): the retrieved set is fetch ∪ search-url rows; a url
+  // covered ONLY by a search hit still gets `fetched` but is stamped `retrievedBy:"search"` so the UI
+  // can label it distinctly (never chip-less).
+  it("a search-hit url stamps retrievedBy:'search' — the 'Search result' chip, not the fetch chip", () => {
+    const c = claim({
+      url: "https://news.example/story",
+      normalizedUrl: "https://news.example/story",
+    });
+    const union = fetchLogFromRows([{ normalizedUrl: "https://news.example/story" }]);
+    const searchOnly = fetchLogFromRows([{ normalizedUrl: "https://news.example/story" }]);
+    const [v] = claimUrlViews(c, union, searchOnly);
+    expect(v?.fetched).toBe(true);
+    expect(v?.retrievedBy).toBe("search");
+  });
+
+  it("a page-fetched url stamps retrievedBy:'fetch' even when the search-only set is bound", () => {
+    const c = claim({
+      url: "https://courtlistener.com/opinion/1",
+      normalizedUrl: "https://courtlistener.com/opinion/1",
+    });
+    const searchOnly = fetchLogFromRows([{ normalizedUrl: "https://elsewhere.example/hit" }]);
+    const [v] = claimUrlViews(c, log, searchOnly);
+    expect(v?.fetched).toBe(true);
+    expect(v?.retrievedBy).toBe("fetch");
+  });
+
+  it("an unretrieved url carries NO retrievedBy — the missing chip stays missing", () => {
+    const c = claim({ url: "https://memory.example/gone", normalizedUrl: "https://memory.example/gone" });
+    const [v] = claimUrlViews(c, log, fetchLogFromRows([]));
+    expect(v?.fetched).toBe(false);
+    expect(v?.retrievedBy).toBeUndefined();
+  });
 });
 
 describe("summaries (§5.7)", () => {

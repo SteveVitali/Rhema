@@ -18,6 +18,7 @@ import {
   drainPauseSignals,
   probeSlos,
   sloWeeklyReview,
+  recordCitationCompletenessDaily,
   type SqlClient,
 } from "@rhema/orchestrator";
 import { USER_SERVING_ROLE } from "@rhema/db";
@@ -480,6 +481,7 @@ export async function startWorker(): Promise<void> {
     PROJECT_PURGE_JOB, // the api enqueues at the tombstone's +30d (D-P1.04-2)
     TEST_TENANT_PURGE_JOB, // JOURNEY.1 — hourly flagged-tenant sweep (createQueue precedes work/send/schedule)
     "slo.review.weekly", // SLO.1 — the REQ-ARCH-34 weekly review readout (below)
+    "cite.completeness.daily", // CITE.1 — the cross-tenant completeness rollup (below)
   ]) {
     // SLO.1 — the run-launch queues carry `notify: true` so job creation wakes the consumer
     // immediately (the dispatch slice of queued→provisioning / gate→queued→launch). Idempotent —
@@ -609,6 +611,31 @@ export async function startWorker(): Promise<void> {
   await boss.work("slo.review.weekly", logWeeklyReadout);
   await boss.schedule("slo.review.weekly", "12 7 * * 1");
   void logWeeklyReadout().catch((err: unknown) => console.error("[worker] slo weekly readout failed:", err));
+
+  // CITE.1 (REQ-VIS-9; ADR-084) — the cross-tenant citation-completeness rollup: a REPORTED signal
+  // (deliberately not a §13.5 SLO row). Daily on the system executor, flagged test tenants excluded:
+  // the trailing-7d aggregate upserts `citation_completeness_daily` and logs one `[cite]` JSON line —
+  // the table is the durable time series, the log line the metric seam. A failure (a not-yet-migrated
+  // column on a partial deploy) logs and retries next sweep — never fatal.
+  const citeTick = async (): Promise<void> => {
+    const agg = await recordCitationCompletenessDaily(systemExec);
+    console.log(
+      `[cite] completeness ${JSON.stringify({
+        runs: agg.runs,
+        cited: agg.cited,
+        covered: agg.covered,
+        missed: agg.missed,
+        stripped: agg.stripped,
+        backfillRanRuns: agg.backfillRanRuns,
+        backfillResolved: agg.backfillResolved,
+        searchCovered: agg.searchCovered,
+        rate: agg.rate,
+      })}`,
+    );
+  };
+  await boss.work("cite.completeness.daily", citeTick);
+  await boss.schedule("cite.completeness.daily", "45 3 * * *");
+  void citeTick().catch((err: unknown) => console.error("[worker] cite completeness failed:", err));
 
   await boss.work(LEDGER_JOBS.sweepParked, async () => {
     await handleParkedSweep(deps);

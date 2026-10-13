@@ -70,6 +70,23 @@ export const sloSamples = pgTable("slo_samples", {
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// CITE.1 (0057; REQ-VIS-9; ADR-084) — the cross-tenant citation-completeness rollup: one row per UTC
+// day the worker's `cite.completeness.daily` sweep ran. Counts + rates only, system-pool written,
+// flagged test tenants excluded at write time; `rate` is null on a cited=0 day (never fabricated).
+export const citationCompletenessDaily = pgTable("citation_completeness_daily", {
+  day: date("day").primaryKey(),
+  runs: integer("runs").notNull(),
+  cited: integer("cited").notNull(),
+  covered: integer("covered").notNull(),
+  missed: integer("missed").notNull(),
+  stripped: integer("stripped").notNull(),
+  backfillRanRuns: integer("backfill_ran_runs").notNull(),
+  backfillResolved: integer("backfill_resolved").notNull(),
+  searchCovered: integer("search_covered").notNull(),
+  rate: doublePrecision("rate"),
+  computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // The project-scoped, non-run half of the §5.5 timeline (migration 0019; PRB.07): human-revision events
 // (`draft.forked`, the manual `revision.move_traced`) carry no runs FK target, so they land here instead of
 // `run_events`. Payloads are the same RUN_EVENTS catalogue shapes — `parseRunEvent` gates every write.

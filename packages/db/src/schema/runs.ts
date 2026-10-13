@@ -65,6 +65,10 @@ export const runs = pgTable("runs", {
   // RES.2 (0047; REQ-SPEC-31(3)): the write-once delivery classification — {label:'unverified',
   // checkableClaims, coveredClaims} + platform-fault settlement markers. Read, never recomputed.
   delivery: jsonb("delivery"),
+  // CITE.1 (0057; REQ-VIS-9; ADR-084): the measured cited⇒retrieved record the mirror computed at
+  // delivery — counts + normalized-url identifiers + the mechanism-A backfill outcome. Written
+  // atomically with finalization; kept out of `delivery` so RES.2's write-once shape is untouched.
+  citationCompleteness: jsonb("citation_completeness"),
 });
 
 export const steps = pgTable("steps", {

@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
+    "@rhema/findings-core": "workspace:*",
     "@rhema/mirror": "workspace:*"
   }
 }

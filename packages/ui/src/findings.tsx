@@ -18,6 +18,8 @@ export interface FindingCardLabels {
   readonly dispositionLabel?: (kind: string, applied?: boolean) => string;
   /** P1.07 — the evidence block's labels (§5.7): the verdict chip + per-URL "fetched ✓". */
   readonly fetchedLabel?: string;
+  /** CITE.1 — the per-URL label when only search-hit rows cover it ("Search result", no ✓). */
+  readonly searchResultLabel?: string;
   readonly accessedLabel?: (accessed: string) => string;
 }
 
@@ -37,7 +39,13 @@ export interface FindingCardProps {
    */
   readonly evidence?: {
     readonly verdictLabel?: string;
-    readonly urls: readonly { readonly url: string; readonly fetched: boolean; readonly accessedAt?: string }[];
+    readonly urls: readonly {
+      readonly url: string;
+      readonly fetched: boolean;
+      readonly accessedAt?: string;
+      /** CITE.1 — `"search"` when only search-hit rows cover the url (the "Search result" chip). */
+      readonly retrievedBy?: "fetch" | "search";
+    }[];
   };
 }
 
@@ -94,7 +102,11 @@ export function FindingCard({ view, labels, obligation, controls, evidence }: Fi
                 <a href={u.url} style={{ color: "var(--accent)" }}>{u.url}</a>
                 {u.accessedAt != null && labels.accessedLabel ? <> · {labels.accessedLabel(u.accessedAt)}</> : null}
                 {u.fetched && labels.fetchedLabel ? (
-                  <> <span data-fetched-chip="true" style={{ fontSize: "11px", color: "var(--state-ready)" }}>{labels.fetchedLabel} ✓</span></>
+                  u.retrievedBy === "search" ? (
+                    <> <span data-fetched-chip="search" style={{ fontSize: "11px", color: "var(--paper-fg-muted)" }}>{labels.searchResultLabel ?? labels.fetchedLabel}</span></>
+                  ) : (
+                    <> <span data-fetched-chip="true" style={{ fontSize: "11px", color: "var(--state-ready)" }}>{labels.fetchedLabel} ✓</span></>
+                  )
                 ) : null}
               </li>
             ))}

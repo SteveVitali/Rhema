@@ -249,6 +249,23 @@ describe("GET /projects/:id/review/:runId/dossier — the delivered-review read 
     expect(dto.findingObligations).toEqual({ fnd_1: "open", fnd_2: "discharged" });
   });
 
+  it("CITE.1 — a search-hit url joins the retrieved set and lands on searchResultLog (the 'Search result' chip)", async () => {
+    await seedDeliveredReview();
+    // a search-hit row (kind='search' + url-bearing normalized_url) for a url NO fetch row covers.
+    await db.client.query(
+      `insert into fetch_log(run_id, ts, agent_label, kind, url, normalized_url, status, decision)
+       values ($1,now(),'w1','search',NULL,'https://news.example/hit',NULL,'allow')`,
+      [RUN],
+    );
+    const res = await getDossier(seed.projectId, RUN);
+    expect(res.status).toBe(200);
+    const dto = (await res.json()) as { fetchLog: string[]; searchResultLog: string[] };
+    // the retrieved set is fetch ∪ search-url rows; the search-only subset carries the chip label.
+    expect(dto.fetchLog).toContain("https://news.example/hit");
+    expect(dto.fetchLog).toContain("https://example.com/stat");
+    expect(dto.searchResultLog).toEqual(["https://news.example/hit"]);
+  });
+
   it("RES.2 — the persisted run-level label surfaces on the dossier banner AND the run card, read never recomputed", async () => {
     await seedDeliveredReview();
     // no label → both slots absent.

@@ -284,6 +284,23 @@ export const RUN_EVENTS = {
       coveredClaims: z.number().int(),
     }),
   },
+  // CITE.1 (REQ-VIS-9) — the measured citation-completeness record the mirror computed at delivery:
+  // post-backfill counts + ids only (normalized urls are identifiers, never prose). `backfillResolved`
+  // counts cited urls rescued by mechanism-A backfill traffic (ADR-085).
+  "run.citation_completeness": {
+    visibility: "internal",
+    density: "verbose",
+    payload: z.object({
+      cited: z.number().int(),
+      covered: z.number().int(),
+      missed: z.number().int(),
+      stripped: z.number().int(),
+      backfillRan: z.boolean(),
+      backfillResolved: z.number().int(),
+      searchCovered: z.number().int(),
+      missedUrls: z.array(boundedText),
+    }),
+  },
   // misc summary
   "check.result": {
     visibility: "user",

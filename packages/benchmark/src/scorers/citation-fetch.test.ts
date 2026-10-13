@@ -6,9 +6,11 @@ import {
   assertCitationComplianceFloor,
   type CitedClaim,
 } from "./citation-fetch.js";
-// PARITY: the guard's own normalizer, imported so the test pins scorer↔guard agreement (dev-only import;
-// @rhema/mirror is a devDependency of @rhema/benchmark — no production edge, see package.json).
-import { normalizeUrl } from "@rhema/mirror";
+// PARITY: the guard's own normalizer + validator, imported so the test pins scorer↔guard agreement
+// (dev-only import; @rhema/mirror + @rhema/findings-core are devDependencies of @rhema/benchmark —
+// no production edge, see package.json).
+import { normalizeUrl, validateCitedFetched } from "@rhema/mirror";
+import { claimUrlViews, fetchLogFromRows } from "@rhema/findings-core";
 
 // P0.15j — the citation-fetch-compliance eval (closes D-P0.15i-2). These fixtures model the two live shapes
 // observed in P0.15i Stage B: a DISCIPLINED fact-check (every cited URL fetched → the guard passes) and the
@@ -134,6 +136,66 @@ describe("citation-fetch compliance eval (P0.15j / D-P0.15i-2)", () => {
       const claims: CitedClaim[] = [{ ordinal: 0, url: "https://Example.com/Article/?utm=x#top" }];
       const fetched = new Set([normalizeUrl("https://example.com/Article")]);
       expect(citationFetchCompliance(claims, fetched, normalizeUrl).compliant).toBe(true);
+    });
+  });
+
+  // CITE.1 (ADR-083/084) — the THREE-way parity pin: scorer ↔ guard ↔ chip must agree on every case.
+  // Each row is a stored fetch_log `normalized_url` in the PROXY's write form (which keeps the query,
+  // the trailing slash, `URL.toString()` output) plus the cited url the ledger carried; `covered` is the
+  // expected post-fix verdict on ALL THREE surfaces. Pre-fix the chip + the byte-join disagreed with
+  // the guard (real fetches stripped/chip-less); post-fix they can never drift — a regression in any
+  // one of the three fails this table.
+  describe("three-way parity: scorer ↔ guard ↔ chip (CITE.1)", () => {
+    const CASES: { name: string; stored: string; cited: string; covered: boolean; kind?: "fetch" | "search" }[] = [
+      { name: "trailing slash on the stored side", stored: "https://x.test/a/", cited: "https://x.test/a", covered: true },
+      { name: "query on the stored side", stored: "https://x.test/a/?id=7", cited: "https://x.test/a", covered: true },
+      { name: "query on the cited side", stored: "https://x.test/a/", cited: "https://x.test/a?id=7", covered: true },
+      { name: "fragment dropped both ways", stored: "https://x.test/a#frag", cited: "https://x.test/a", covered: true },
+      { name: "scheme+host case folds", stored: "https://X.TEST/a", cited: "https://x.test/a", covered: true },
+      { name: "path case stays significant — a MISS on all three", stored: "https://x.test/A", cited: "https://x.test/a", covered: false },
+      { name: "search-hit row counts retrieved (guard + chip + scorer agree)", stored: "https://hit.test/p", cited: "https://hit.test/p", covered: true, kind: "search" },
+      { name: "a true miss stays a miss everywhere", stored: "https://x.test/other", cited: "https://gone.test/x", covered: false },
+    ];
+
+    for (const tc of CASES) {
+      it(`${tc.name} — ${tc.covered ? "covered" : "missed"} identically`, () => {
+        // the delivered read path: stored rows re-canonicalized on read (ADR-083) — the guard's set,
+        // the scorer's set and the chip's set are THE SAME canonical identity.
+        const canonicalSet = new Set([normalizeUrl(tc.stored)]);
+
+        // (1) the guard — `validateCitedFetched` unchanged (ADR-006).
+        const claim = {
+          ordinal: 0,
+          url: tc.cited,
+          sources: [] as { url: string }[],
+        };
+        const guard = validateCitedFetched([claim as never], canonicalSet);
+        expect(guard.misses).toHaveLength(tc.covered ? 0 : 1);
+
+        // (2) the scorer.
+        const score = citationFetchCompliance([claim], canonicalSet);
+        expect(score.compliant).toBe(tc.covered);
+
+        // (3) the dossier chip — `fetchLogFromRows` canonicalizes the stored proxy form, then
+        // `claimUrlViews` stamps `fetched` (+ `retrievedBy` for the search-hit label).
+        const log = fetchLogFromRows([{ normalizedUrl: tc.stored }]);
+        const searchOnly = tc.kind === "search" ? log : undefined;
+        const view = claimUrlViews(
+          { url: tc.cited, normalizedUrl: normalizeUrl(tc.cited), ordinal: 0 } as never,
+          log,
+          searchOnly,
+        );
+        expect(view[0]?.fetched).toBe(tc.covered);
+        if (tc.covered && tc.kind === "search") expect(view[0]?.retrievedBy).toBe("search");
+        if (tc.covered && tc.kind !== "search") expect(view[0]?.retrievedBy).toBe("fetch");
+      });
+    }
+
+    it("normalizeCitedUrl IS the canonical guard normalizer (same function, not a copy)", () => {
+      // ADR-083 — the scorer re-exports @rhema/contracts `normalizeUrl`; identity is the guarantee.
+      for (const c of ["https://a.test/x/", "HTTPS://B.test/Y?z=1#f", "not a url"]) {
+        expect(normalizeCitedUrl(c)).toBe(normalizeUrl(c));
+      }
     });
   });
 });

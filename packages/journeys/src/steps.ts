@@ -44,6 +44,14 @@ const PLANTED_EXCERPT = readFileSync(
   "utf8",
 );
 
+/** CITE.1 — a committed copy of packages/protocols/fixtures/_evals/golden-op-ed.md (the canonical
+ *  "golden" op-ed Leg 3 reviews). N11 drives a Quick/Base Review on it and chip-checks the
+ *  delivered dossier. Kept local so the journeys package stays self-contained. */
+const GOLDEN_OP_ED = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../fixtures/golden-op-ed.md"),
+  "utf8",
+);
+
 // ---------------------------------------------------------------- helpers
 
 /** Bundle-parity leg (PR-J4): every served /assets/*.js came back 200 with a JS content-type, and
@@ -1962,14 +1970,16 @@ const R8: StepFn = async (ctx) => {
 // Flag-off stages legitimately fail this step — it flips green only where `refundWindow` admits
 // the JOURNEY.1 tenant (`test_tenants` on the Stage-B evidence deploy).
 
-/** Launch a Quick/Base Review on the planted excerpt and wait for its terminal state (the same
- *  unattended ceremony R6/N6 drive — rigor=quick + this-run autorun + the card's data-run-state). */
+/** Launch a Quick/Base Review and wait for its terminal state (the same unattended ceremony
+ *  R6/N6 drive — rigor=quick + this-run autorun + the card's data-run-state). `doc` defaults to
+ *  the planted excerpt; CITE.1's N11 passes the golden op-ed. */
 async function launchQuickReviewToDelivery(
   page: Page,
   ctx: StepCtx,
   tag: string,
+  doc = PLANTED_EXCERPT,
 ): Promise<{ slug: string; runId: string; state: string }> {
-  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker(tag), PLANTED_EXCERPT);
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker(tag), doc);
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
   const rigor = page.locator('input[name="rigor"][value="quick"]');
   if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
@@ -2074,6 +2084,62 @@ const R9: StepFn = async (ctx) => {
   assertBundleParity(ctx);
 };
 
+// ---- CITE.1 — N11 (RED→CITE.1; paid): the golden-op-ed Quick/Base Review end-to-end, then the
+// citation-chip invariant on its delivered dossier. ADR-083/-085: a cited URL is covered when its
+// canonical identity appears in the run's fetch_log (fetched ✓) or in a URL-bearing search row
+// (the "Search result" label); uncovered citations render chip-less (`data-url-in-log="false"`).
+// CITE.1's target — ≥ 0.80 per-run, ≥ 0.95 aggregate — means exactly zero chip-less rows here.
+
+/** N11 (RED→green under CITE.1; paid) — one Quick/Base Review of the golden op-ed delivered
+ *  end-to-end, then the dossier's citation-chip invariant: every claim-source URL renders with
+ *  `data-url-in-log="true"` and a retrieval chip (`a[data-fetched="true"]` fetched ✓ or
+ *  `a[data-fetched="search"]` the ADR-083 "Search result" label); no cited URL is chip-less, on the
+ *  claims table or in the findings' evidence lists. The runner's post-step screenshot is the AC8
+ *  evidence PNG; the strip-count cross-check against `runs.citation_completeness` is recorded in
+ *  the CITE.1 run ledger. */
+const N11: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  const { slug, runId, state } = await launchQuickReviewToDelivery(
+    page,
+    ctx,
+    "CITE1",
+    GOLDEN_OP_ED,
+  );
+  if (state !== "completed" && state !== "completed_partial") {
+    throw new Error(`run ${runId} ended ${state}, not delivered`);
+  }
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
+
+  // The claims table's source rows: `span[data-claim-url]` carries data-url-in-log —
+  // "false" means the cited URL was neither fetched nor search-covered → renders chip-less.
+  const urlRows = page.locator("span[data-claim-url]");
+  const total = await urlRows.count();
+  if (total === 0) throw new Error("delivered dossier shows no cited source URLs to chip-check");
+  const uncovered = await page.locator('span[data-claim-url][data-url-in-log="false"]').count();
+  if (uncovered > 0) {
+    throw new Error(`${uncovered}/${total} cited source URLs render without a retrieval chip`);
+  }
+  // every covered row shows one of the two chip variants — fetched ✓ or "Search result".
+  const chips = await page.locator('a[data-fetched="true"], a[data-fetched="search"]').count();
+  if (chips < total) {
+    throw new Error(`only ${chips}/${total} cited source URLs carry a retrieval chip`);
+  }
+  // the findings' evidence lists stamp the same retrieval coverage ([data-fetched-chip]); an
+  // uncovered evidence URL would render a bare link — assert none do.
+  const evidenceLis = await page.locator("div[data-finding-evidence] li:has(> a)").count();
+  if (evidenceLis > 0) {
+    const stamped = await page
+      .locator("div[data-finding-evidence] li:has(> [data-fetched-chip])")
+      .count();
+    if (stamped < evidenceLis) {
+      throw new Error(
+        `${evidenceLis - stamped}/${evidenceLis} findings-evidence URLs render without a chip`,
+      );
+    }
+  }
+  assertBundleParity(ctx);
+};
+
 // ---------------------------------------------------------------- the free fixture (≤300 words)
 
 const FREE_FIXTURE = `# Journey fixture
@@ -2093,6 +2159,7 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   N8,
   N9,
   N10,
+  N11,
   R1,
   R4,
   R5,

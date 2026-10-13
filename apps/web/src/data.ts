@@ -217,8 +217,12 @@ export interface DossierData {
   readonly letterTitle: string;
   readonly letterSections: readonly LetterSection[];
   readonly claims: readonly Claim[];
-  /** normalized URLs the proxy request log confirms fetched (the cited⇒fetched source — §12.7). */
+  /** normalized URLs the proxy request log confirms retrieved (fetch + url-bearing search rows — the
+   *  guard's cited⇒retrieved join set; CITE.1/ADR-084). */
   readonly fetchLog: readonly string[];
+  /** CITE.1 — normalized urls covered ONLY by `search` rows (a hit the run's searches surfaced, never a
+   *  page fetch): the "Search result" chip set (ADR-084). */
+  readonly searchResultLog?: readonly string[];
   readonly findings: readonly FindingView[];
   readonly rubric: readonly RubricRowInput[];
   /** PRB.06 — the prior round's rubric when this dossier is a re-review (the round-summary delta renders

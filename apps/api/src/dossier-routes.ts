@@ -466,14 +466,26 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
       }
       const claims = claimRows.map((r) => toClaim(r, sourcesByClaim.get(r.id) ?? []));
 
-      const fetchLog = (
+      // CITE.1 (ADR-084) — the chip set is the GUARD's join set: every url-bearing retrieved row
+      // (a page fetch OR a search hit the run surfaced — snippet retrieval counts as retrieved
+      // evidence for cited⇒fetched). `searchResultLog` carries the search-covered subset so the UI
+      // can label those urls "Search result" instead of "Fetched" (search-result chip parity).
+      const retrievalRows = (
         await tx.query(
-          `select distinct normalized_url from fetch_log
-            where run_id = $1 and kind = 'fetch' and decision = 'allow' and normalized_url is not null
+          `select distinct normalized_url, kind from fetch_log
+            where run_id = $1 and kind in ('fetch','search') and decision = 'allow'
+              and normalized_url is not null
             order by normalized_url`,
           [runId],
         )
-      ).rows.map((r) => (r as { normalized_url: string }).normalized_url);
+      ).rows as { normalized_url: string; kind: string }[];
+      const fetchLog = retrievalRows.map((r) => r.normalized_url);
+      const fetchedSet = new Set(
+        retrievalRows.filter((r) => r.kind === "fetch").map((r) => r.normalized_url),
+      );
+      const searchResultLog = retrievalRows
+        .filter((r) => r.kind === "search" && !fetchedSet.has(r.normalized_url))
+        .map((r) => r.normalized_url);
 
       // ---- trust chip: the access_report re-derived from persisted server-side facts (REQ-PROD-2) ----
       const report = await buildAccessReport(tx, { runId, attempt: run.current_attempt });
@@ -541,6 +553,7 @@ export function createDossierRoutes(deps: DossierApiDeps): Hono {
         letterSections,
         claims,
         fetchLog,
+        searchResultLog,
         findings,
         rubric: corr.rubric?.dimensions ?? [],
         ...(priorRubric ? { priorRubric } : {}),

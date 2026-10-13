@@ -186,7 +186,16 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   }
 
   const agentId = presentedAgentId(req.headers) ?? ctx.agentId;
-  const logBase: FetchLogBase = { runId: ctx.runId, attempt: ctx.attempt, agentLabel: agentId };
+  // CITE.1 — the harness-stamped phase class (`x-rhema-phase-class`, which the agent cannot set) rides
+  // every fetch_log + usage_records row of this request: `backfill` marks the citation re-entry's
+  // traffic so the completeness record + the ECON.2 mechanism delta can name it.
+  const phaseClass = presentedPhaseClass(req.headers);
+  const logBase: FetchLogBase = {
+    runId: ctx.runId,
+    attempt: ctx.attempt,
+    agentLabel: agentId,
+    ...(phaseClass !== undefined ? { phaseClass } : {}),
+  };
   const writeFetch = async (row: FetchLogRow): Promise<void> => {
     // meterOnly contexts (the est_ claim pre-pass) carry no `runs` row — fetch_log FKs to runs(id),
     // so the write would throw inside meter() and truncate a served response. Their meter of record
@@ -387,25 +396,33 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
   // RES.1 — the research floor (REQ-SPEC-31(2)): only a request stamped `research` by the harness
   // (`x-rhema-phase-class`, which the agent cannot set) may draw the floor share; `preflight` bypasses
   // the bound entirely (its probe declares `max_uses: 1`) so a budget-exhausted resume still re-preflights.
-  const phaseClass = presentedPhaseClass(req.headers);
+  // CITE.1 — `backfill` (the bounded pre-delivery citation re-entry, ADR-085) draws its OWN allowance
+  // (`backfillFetchBudget` − the tracker's dedicated backfill counter): it never touches the research
+  // budget and can never draw RES.1's reserved floor share.
   const preflight = phaseClass === "preflight";
   const floorEligible = phaseClass === "research";
+  const backfill = phaseClass === "backfill";
   let reservation: ResearchReservation | undefined;
   let ensured: { body: unknown; added: boolean };
   if (isMessagesCreate) {
     // Committed + the live in-flight grants is the bound — serialized here, per-request, so N parallel
-    // requests cannot each be granted the same remaining slice before any of them meters.
+    // requests cannot each be granted the same remaining slice before any of them meters. A backfill
+    // request's bound is the dedicated allowance instead (committed + in-flight backfill-class use only).
     const inflight = researchUsage.inflight(ctx.runId);
     const used = preflight
       ? { searches: 0, fetches: 0 }
-      : { searches: committed.searches + inflight.searches, fetches: committed.fetches + inflight.fetches };
+      : backfill
+        ? { searches: 0, fetches: researchUsage.backfillUsage(ctx.runId).fetches }
+        : { searches: committed.searches + inflight.searches, fetches: committed.fetches + inflight.fetches };
     ensured = ensureServerWebTools(outboundBody, resolveServerWebToolConfig(ctx.webTools), used, {
       floorEligible,
       bypassBudget: preflight,
+      backfill,
     });
     // The grant this request received becomes a reservation — released inside `meter` when the response's
-    // real usage lands (or by the caller on a forward failure). Idempotent.
-    reservation = researchUsage.reserve(ctx.runId, webToolGrantsOf(ensured.body));
+    // real usage lands (or by the caller on a forward failure). Idempotent. `backfill` grants are
+    // class-tagged so they never masquerade as research headroom.
+    reservation = researchUsage.reserve(ctx.runId, webToolGrantsOf(ensured.body), backfill ? "backfill" : undefined);
   } else {
     ensured = { body: outboundBody, added: false };
   }
@@ -450,6 +467,10 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
           stepId: presentedStep(req.headers),
           // the provider's per-request id — the usage.reconcile join key (REQ-BILL-13).
           providerRequestId: headerValue(upstream.headers, "request-id") ?? null,
+          // CITE.1 — the harness-stamped phase class lands on the row of record (ADR-085): the
+          // `backfill` stamp is what the per-run mechanism-cost delta + the completeness record's
+          // `backfilled` ids read.
+          phaseClass,
         });
         await deps.usageWriter.write(metered.row);
         await deps.capAccountant.record(ctx.runId, metered.platformCredits);
@@ -468,16 +489,25 @@ export async function prepareProxyRequest(req: ProxyRequest, deps: PrepareDeps):
       // research runs — charging its executions against the envelope shrinks the very share it verifies
       // (the first live probe spent 2 of 8 searches + 2 of 16 fetches on preflight alone). The usage row
       // still meters above (billing truth); only the bound-tracker skips the probe.
+      // CITE.1 — a `backfill` request settles its fetches on the tracker's DEDICATED counter
+      // (`record(…, "backfill")`): the mechanism's spend never consumes the research budget or the
+      // reserved floor share (ADR-085).
       if (!preflight) {
-        researchUsage.record(ctx.runId, {
-          fetches: usage?.webFetchRequests ?? 0,
-          searches: usage?.webSearchRequests ?? 0,
-        });
+        researchUsage.record(
+          ctx.runId,
+          {
+            fetches: usage?.webFetchRequests ?? 0,
+            searches: usage?.webSearchRequests ?? 0,
+          },
+          backfill ? "backfill" : undefined,
+        );
       }
       for (const act of serverTools) {
         await writeFetch(
           act.kind === "search"
-            ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "search", query: loggableQuery(act.query), decision: "allow" })
+            ? buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, act.url
+                ? { kind: "search", url: act.url, ...(act.bytes !== undefined ? { bytes: act.bytes } : {}), decision: "allow" }
+                : { kind: "search", query: loggableQuery(act.query), decision: "allow" })
             : buildServerToolFetchLogRow({ ...logBase, ts: nowIso() }, { kind: "fetch", url: act.url, ...(act.bytes !== undefined ? { bytes: act.bytes } : {}), decision: "allow" }),
         );
       }

@@ -32,6 +32,7 @@ export * from "./user-sources.js";
 export * from "./internal-api.js";
 export * from "./runspec.js";
 export * from "./delivery.js";
+export * from "./citation-completeness.js";
 export * from "./reaper.js";
 export * from "./stranded-sweep.js";
 export * from "./spend.js";
