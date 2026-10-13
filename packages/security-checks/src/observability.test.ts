@@ -33,7 +33,10 @@ describe("the §13.5 SLO wiring — registry → sweep → metric → policies �
   });
 
   it("the log-based metric keys on the worker's breach lines and is labelled by signal", () => {
-    expect(monitoring).toContain('"rhema_slo_violations"');
+    // OPS.1 — metric names are stack-scoped off prod (log metrics are project-global): the
+    // template is `${metricPrefix}_slo_violations` → `rhema_slo_violations` on prod exactly,
+    // `rhema_<stack>_slo_violations` on dev/pr-<n>.
+    expect(monitoring).toContain('_slo_violations`');
     expect(monitoring).toContain('textPayload:"[slo] violation"');
     expect(monitoring).toContain('key: "signal"');
     expect(monitoring).toContain("labelExtractors");

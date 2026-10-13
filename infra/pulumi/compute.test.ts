@@ -76,9 +76,10 @@ describe("ONB.1 — the warm convert-svc keeps every §12.1/§13.3 isolation pro
     expect(SRC).toContain('name: convertSvc.name');
     expect(SRC).toContain('role: "roles/run.invoker"');
     // The service block must carry NO vpcAccess (the §12.1 posture the Job already runs under —
-    // the extract covers the convertSvc literal through the services-loop marker).
+    // the extract covers the convertSvc literal through the OPS.1 migrate-Job marker, which sits
+    // between convert-svc and the services loop).
     const svcStart = SRC.indexOf('new gcp.cloudrunv2.Service(name("convert-svc")');
-    const svcEnd = SRC.indexOf("--- Cloud Run services", svcStart);
+    const svcEnd = SRC.indexOf("OPS.1 (owned decision (b))", svcStart);
     const block = SRC.slice(svcStart, svcEnd);
     expect(block).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
     expect(block).not.toContain("vpcAccess:"); // the property — a comment may name the posture
@@ -113,7 +114,9 @@ describe("SEC.2 — the trusted client-IP channel is deploy config on BOTH ends 
     // so "penultimate" would be caller-controlled — and the web would stamp it through the trusted
     // OIDC channel. Prod web therefore must NOT keep INGRESS_TRAFFIC_ALL; non-prod does (no public
     // DNS fronts those stages' LBs).
-    expect(SRC).toContain('svc === "web" && cfg.kind !== "prod"');
+    // OPS.1 (F-OPS.1-8) — the api joins web in the non-prod ALL set: no LB fronts those stages,
+    // the program grants api-public-invoker on purpose, and run.app is the smoke/journey path.
+    expect(SRC).toContain('(svc === "web" || svc === "api") && cfg.kind !== "prod"');
     expect(SRC).toContain('"INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"');
   });
 });
@@ -127,7 +130,7 @@ describe("RUN.1 — the worker's walkthrough model key is deploy config (ADR-052
     // `isWorker` envs block, so `loadWalkthroughGenerator` can never stub on a deployed stage.
     const workerBlock = SRC.slice(
       SRC.indexOf("...(isWorker"),
-      SRC.indexOf("svc === \"api\""),
+      SRC.indexOf('...(svc === "api"'),
     );
     expect(workerBlock).toContain(
       '{ name: "WALKTHROUGH_MODEL_KEY_SECRET", value: secretVersion(secrets.anthropicApiKey) }',

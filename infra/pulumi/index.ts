@@ -13,6 +13,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as gcp from "@pulumi/gcp";
 import * as random from "@pulumi/random";
+import * as tls from "@pulumi/tls";
 import { stageConfigFor } from "../config/stages";
 import { createNetwork } from "./network";
 import { createData } from "./data";
@@ -81,10 +82,26 @@ const opsAlertWebhookUrl = rhemaConfig.getSecret("opsAlertWebhookUrl");
 // PRB.15 — the real digest-pinned service images as a JSON `{service: ref}` map (the images CI publishes
 // it; REQ-ARCH-39). Missing entries fall back to the placeholder so `preview` stays plannable.
 const serviceImages = rhemaConfig.getObject<Record<string, string>>("serviceImages");
+// OPS.1 — deploy-provenance inputs for the non-prod migrate Job's `deployments` row (REQ-ARCH-39):
+// the chain-tip SHA the images were built at + the computed protocols version; unset ⇒ the migrate
+// Job skips the record leg (a bare `pulumi preview` stays clean).
+const gitSha = rhemaConfig.get("gitSha");
+const protocolsVersion = rhemaConfig.get("protocolsVersion");
 
+const isProd = cfg.kind === "prod";
 const network = createNetwork({ stack, cfg, region });
-const secrets = createSecrets({ stack, region });
-const data = createData({ stack, cfg, region, network, alloydbPassword });
+// OPS.1 — `system-database-url` is a non-prod-only container: it carries the program-generated
+// `postgres`-role DSN and is kept OUT of ALL_SECRET_IDS so prod's provisioned set is byte-identical.
+const secrets = createSecrets({ stack, region, extraIds: isProd ? [] : ["system-database-url"] });
+// OPS.1 — non-prod postgres bootstrap: the operator's `rhema:alloydbPassword` config still wins when
+// set (prod + any operator-seeded dev); otherwise a @pulumi/random value lives ONLY in encrypted
+// state + the `alloydb-password` secret — no hand step, nothing in the repo.
+const generatedPostgresPassword =
+  !isProd && alloydbPassword === undefined
+    ? new random.RandomPassword("rhema-postgres-password", { length: 32, special: false })
+    : undefined;
+const postgresPassword = alloydbPassword ?? generatedPostgresPassword?.result;
+const data = createData({ stack, cfg, region, network, alloydbPassword: postgresPassword });
 
 // SEC.1 (REQ-SPEC-30; REQ-ARCH-30) — the user-serving role's credential is generated HERE (never
 // operator-handled, never committed): `rhema_app_login`'s password is a @pulumi/random secret output
@@ -97,19 +114,130 @@ const appDbPassword = new random.RandomPassword("rhema-app-login-password", {
   length: 32,
   special: false, // URL-inlined into the DSN — no percent-encoding surface
 });
+// AlloyDB's generated pg_hba is hostssl-only — every DSN below carries `sslmode=require` (the
+// migrate Job's first run failed `no pg_hba.conf entry … no encryption`, dev update 73 finding).
+// pg-connection-string aliases `require` to verify-full semantics, which rejects AlloyDB's
+// self-signed instance cert — `uselibpqcompat=true` restores real libpq `require` (encrypt,
+// no CA pinning — correct for private-IP-only traffic inside the VPC).
 const appDatabaseDsn = pulumi.secret(
-  pulumi.interpolate`postgresql://rhema_app_login:${appDbPassword.result}@${data.databaseHost}:5432/rhema`,
+  pulumi.interpolate`postgresql://rhema_app_login:${appDbPassword.result}@${data.databaseHost}:5432/rhema?sslmode=require&uselibpqcompat=true`,
 );
 // Only version the secret on stages that wire it (requiredSecrets — compute.ts's `requires` gate);
-// a versionless preview container stays empty and harmless.
+// a versionless preview container stays empty and harmless. OPS.1 — every version the program
+// writes is collected: the services/Jobs that mount `versions/latest` must dependsOn them
+// (a revision starting before its version exists fails "secret … was not found" — live finding).
+const secretVersions: gcp.secretmanager.SecretVersion[] = [];
 if (cfg.requiredSecrets.includes("app-database-url")) {
-  new gcp.secretmanager.SecretVersion(`rhema-${stack}-app-database-url-v1`, {
-    secret: secrets.byId["app-database-url"].id,
-    secretData: appDatabaseDsn,
-  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-app-database-url-v1`, {
+      secret: secrets.byId["app-database-url"].id,
+      secretData: appDatabaseDsn,
+    }),
+  );
 }
 export const appDatabaseDsnOutput = appDatabaseDsn;
+
+// OPS.1 (REQ-ARCH-30 / REQ-SPEC-30; owned decision (c)) — the rest of the fresh-stack generated set,
+// NON-PROD ONLY. On `dev`/`pr-<n>` the program itself mints every remaining role credential + the
+// HMAC/key material and writes them as Secret Manager versions, so a fresh stack boots with zero
+// hand-set `rhema:*DatabaseUrl` secret configs and no two-pass operator ceremony: the in-VPC migrate
+// Job reads these DSNs back via secretKeyRef and turns the NOLOGIN roles live (`ALTER ROLE … LOGIN
+// PASSWORD`). Values exist ONLY inside encrypted Pulumi state + Secret Manager — never the repo,
+// never a plaintext env, never a ledger. `system-database-url`'s container is non-prod-only (created
+// via `extraIds` above), and NOTHING in this block runs on prod: prod's `collab-database-url`,
+// `alloydb-password`, `run-token-signing-key`, `better-auth-secret`, and `email-action-secret` keep
+// their operator-seeded values and hand-managed role state (OPS.2 adopts them, untouched here).
+let systemDatabaseDsn: pulumi.Output<string> | undefined;
+if (!isProd) {
+  if (!postgresPassword) {
+    throw new pulumi.RunError("non-prod stack has no postgres password — set rhema:alloydbPassword or let the program generate it");
+  }
+  // `rhema_collab`'s LOGIN credential (migration 0001 creates it NOLOGIN; the migrate Job logs it in).
+  const collabDbPassword = new random.RandomPassword("rhema-collab-password", {
+    length: 32,
+    special: false,
+  });
+  const collabDatabaseDsn = pulumi.secret(
+    pulumi.interpolate`postgresql://rhema_collab:${collabDbPassword.result}@${data.databaseHost}:5432/rhema?sslmode=require&uselibpqcompat=true`,
+  );
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-collab-database-url-v1`, {
+      secret: secrets.byId["collab-database-url"].id,
+      secretData: collabDatabaseDsn,
+    }),
+  );
+  // The composed system DSN — the elevated `postgres` role confined to the audited system seams
+  // (worker's SYSTEM_DATABASE_URL, the api's circuit-breaker read, the egress-proxy resolver, the
+  // migrate Job). Cloud Run mounts it by secretKeyRef; it is never a plaintext env.
+  systemDatabaseDsn = pulumi.secret(
+    pulumi.interpolate`postgresql://postgres:${postgresPassword}@${data.databaseHost}:5432/rhema?sslmode=require&uselibpqcompat=true`,
+  );
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-system-database-url-v1`, {
+      secret: secrets.byId["system-database-url"].id,
+      secretData: systemDatabaseDsn,
+    }),
+  );
+  // The `alloydb-password` container mirrors the EFFECTIVE bootstrap password (the operator's config
+  // value when set, the generated one otherwise) so operator psql/debug paths keep working.
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-alloydb-password-v1`, {
+      secret: secrets.byId["alloydb-password"].id,
+      secretData: pulumi.secret(pulumi.interpolate`${postgresPassword}`),
+    }),
+  );
+  // The RS256 run-token keypair (SEC.1's single-secret shape — the private PKCS8 PEM; every loader
+  // derives the public half via `createPublicKey` at boot). @pulumi/tls keeps the value stable in
+  // state across `up`s — generated in-program would rotate the key on every preview.
+  const runTokenKey = new tls.PrivateKey("rhema-run-token-key", {
+    algorithm: "RSA",
+    rsaBits: 4096,
+  });
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-run-token-signing-key-v1`, {
+      secret: secrets.byId["run-token-signing-key"].id,
+      secretData: pulumi.secret(runTokenKey.privateKeyPemPkcs8),
+    }),
+  );
+  // The better-auth signing secret + the one-click email-action HMAC — random high-entropy material.
+  secretVersions.push(
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-better-auth-secret-v1`, {
+      secret: secrets.byId["better-auth-secret"].id,
+      secretData: new random.RandomPassword("rhema-better-auth", { length: 48, special: false }).result,
+    }),
+    new gcp.secretmanager.SecretVersion(`rhema-${stack}-email-action-secret-v1`, {
+      secret: secrets.byId["email-action-secret"].id,
+      secretData: new random.RandomPassword("rhema-email-action", { length: 48, special: false }).result,
+    }),
+  );
+  // OPS.1 (F-OPS.1-9 — live finding: the pr-102 worker crash-looped on `anthropic-api-key` "no
+  // versions") — the operator-only secrets get explicit NON-PROD PLACEHOLDER versions so a guarded
+  // preview boots every service with zero out-of-band seeding. The value is deliberately invalid
+  // (any real provider/billing call 401s — which is what $0-inference previews WANT); prod still
+  // refuses to run this block and keeps hand-seeded values only.
+  for (const id of [
+    "anthropic-api-key",
+    "anthropic-admin-key",
+    "resend-api-key",
+    "ops-alert-webhook-url",
+    "stripe-secret",
+    "stripe-webhook-secret",
+    "google-oauth-client-secret",
+    "user-content-signing-key",
+  ] as const) {
+    secretVersions.push(
+      new gcp.secretmanager.SecretVersion(`rhema-${stack}-${id}-placeholder-v1`, {
+        secret: secrets.byId[id].id,
+        secretData: `ops1-nonprod-placeholder-${stack}-not-a-real-key`,
+      }),
+    );
+  }
+}
 const iam = createIam({ stack, project, secrets, buckets: data.buckets });
+// OPS.1 — Memorystore's `redis://<host>:6379` URL carries no credential (private-IP, no AUTH), so the
+// program composes it from the instance output instead of an operator-set `rhema:redisUrl`/`workerRedisUrl`
+// secret config. The configs still win when present (prod's shared `rhema:redisUrl` is unchanged).
+const generatedRedisUrl = pulumi.interpolate`redis://${data.redis.host}:6379`;
 const compute = createCompute({
   stack,
   cfg,
@@ -121,20 +249,26 @@ const compute = createCompute({
   buckets: data.buckets,
   placeholderImage,
   ...(serviceImages ? { serviceImages } : {}),
+  ...(gitSha ? { gitSha } : {}),
+  ...(protocolsVersion ? { protocolsVersion } : {}),
   proxyImage,
   // the proxy's ReloadableAnthropicSecretProvider needs the FULL secret-version resource name
   // (`projects/<p>/secrets/<name>/versions/latest`); the bare secretId is parsed as the project id by the
   // Secret Manager client → CONSUMER_INVALID (surfaced live P0.15e).
   anthropicKeySecret: pulumi.interpolate`${secrets.anthropicApiKey.id}/versions/latest`,
-  ...(proxyDatabaseUrl ? { proxyDatabaseUrl } : {}),
+  // OPS.1 — the proxy's resolver DSN is the generated system DSN on non-prod (the config path stays
+  // for prod, where the operator seeds `rhema:proxyDatabaseUrl`).
+  ...(proxyDatabaseUrl || systemDatabaseDsn
+    ? { proxyDatabaseUrl: proxyDatabaseUrl ?? systemDatabaseDsn! }
+    : {}),
   // worker env (all optional; OBJECTS_BUCKET defaults to the artifacts bucket).
   ...(workerDatabaseUrl ? { workerDatabaseUrl } : {}),
   ...(workerSystemDatabaseUrl ? { workerSystemDatabaseUrl } : {}),
-  ...(workerRedisUrl ? { workerRedisUrl } : {}),
+  workerRedisUrl: workerRedisUrl ?? generatedRedisUrl,
   // api env (PRB.15 prod) + the Resend From address.
   ...(apiDatabaseUrl ? { apiDatabaseUrl } : {}),
   ...(apiSystemDatabaseUrl ? { apiSystemDatabaseUrl } : {}),
-  ...(apiRedisUrl ? { apiRedisUrl } : {}),
+  apiRedisUrl: apiRedisUrl ?? generatedRedisUrl,
   ...(collabDatabaseUrl ? { collabDatabaseUrl } : {}),
   ...(emailFrom ? { emailFrom } : {}),
   ...(runTaskImageDigest ? { runTaskImageDigest } : {}),
@@ -145,6 +279,7 @@ const compute = createCompute({
   ...(googleOauthClientId ? { googleOauthClientId } : {}),
   ...(stripePaymentLinkUrl ? { stripePaymentLinkUrl } : {}),
   objectsBucket: data.buckets["artifacts"].name,
+  secretVersions,
 });
 
 // JOURNEY.1 — adopt the journey-mailbox resources (the hand-created DWD service account, the Gmail

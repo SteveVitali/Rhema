@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ALL_SECRET_IDS,
+  NONPROD_GENERATED_SECRET_IDS,
   PROD_DOMAINS,
   PROD_REQUIRED_SECRETS,
   STAGES,
@@ -188,5 +189,37 @@ describe("stage secret requirements (PRB.15 — HUMAN-H6's seeding checklist; RE
     expect(STAGES.preview.allowsProductionSecrets).toBe(false);
     expect(STAGES.dev.allowsProductionSecrets).toBe(false);
     expect(STAGES.prod.allowsProductionSecrets).toBe(true);
+  });
+
+  it("OPS.1 — non-prod stages require ONLY the provider key + the IaC-generated set (REQ-ARCH-38)", () => {
+    const expected = ["anthropic-api-key", ...NONPROD_GENERATED_SECRET_IDS];
+    for (const stage of ["dev", "preview"] as const) {
+      expect([...STAGES[stage].requiredSecrets].sort(), stage).toEqual([...expected].sort());
+      // no third-party credential id is ever REQUIRED on a non-prod stack — each consumer fails
+      // closed with a named reason when its secret name is unwired.
+      for (const thirdParty of [
+        "stripe-secret",
+        "stripe-webhook-secret",
+        "resend-api-key",
+        "google-oauth-client-secret",
+        "anthropic-admin-key",
+        "ops-alert-webhook-url",
+        "user-content-signing-key",
+      ]) {
+        expect(STAGES[stage].requiredSecrets, `${stage}/${thirdParty}`).not.toContain(thirdParty);
+      }
+    }
+    // The generated set + the shared ALL_SECRET_IDS cover every required non-prod id — a required
+    // id with no provisioned container would hang the wiring (the `system-database-url` container
+    // is provisioned by the program's extraIds path, asserted in compute.test.ts).
+    for (const id of STAGES.dev.requiredSecrets) {
+      expect(
+        id === "system-database-url" || (ALL_SECRET_IDS as readonly string[]).includes(id),
+        `${id} must have a provisioned container`,
+      ).toBe(true);
+    }
+    // Prod is untouched: system-database-url never enters prod's provisioned or required set.
+    expect(ALL_SECRET_IDS).not.toContain("system-database-url");
+    expect(PROD_REQUIRED_SECRETS).not.toContain("system-database-url");
   });
 });

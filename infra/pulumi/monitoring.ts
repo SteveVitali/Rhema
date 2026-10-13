@@ -66,6 +66,20 @@ export function createMonitoring(args: MonitoringArgs): {
 } {
   const { stack, project, region } = args;
 
+  // OPS.1 — log-based metric names are PROJECT-GLOBAL, not stack-scoped: prod already owns
+  // `rhema_lb_5xx_requests`/`rhema_route_5xx_errors`/the `rhema_slo_*` names, so every non-prod
+  // stack suffixes its own (`rhema_dev_lb_5xx_requests`, `rhema_pr_1_…`) or the create 409s —
+  // surfaced live on the first dev full-stack up (OPS.1 Stage B). Prod keeps the bare names so
+  // its deployed metrics/filters don't churn (a rename deletes + recreates the metric).
+  const metricPrefix = stack === "prod" ? "rhema" : `rhema_${stack.replace(/-/g, "_")}`;
+  const METRIC = {
+    sloViolations: `${metricPrefix}_slo_violations`,
+    sloWeekly: `${metricPrefix}_slo_weekly`,
+    sloWeeklyValue: `${metricPrefix}_slo_weekly_value`,
+    lb5xx: `${metricPrefix}_lb_5xx_requests`,
+    route5xx: `${metricPrefix}_route_5xx_errors`,
+  } as const;
+
   // Cloud Run services are Pulumi-AUTONAMED — `rhema-prod-worker` deploys as e.g.
   // `rhema-prod-worker-cbdaf0f`, and THAT full name is the `service_name` resource label on every
   // log line + run.googleapis.com metric. Any filter naming the base string silently matches
@@ -90,7 +104,7 @@ export function createMonitoring(args: MonitoringArgs): {
 
   // The log-based counter over the worker's `[slo] violation` lines, labelled by signal.
   const sloViolationsMetric = new gcp.logging.Metric(`rhema-${stack}-slo-violations`, {
-    name: "rhema_slo_violations",
+    name: METRIC.sloViolations,
     project,
     filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] violation"`,
     metricDescriptor: {
@@ -112,7 +126,7 @@ export function createMonitoring(args: MonitoringArgs): {
   // unmeasured reading — extracts nothing, correctly recording no point). The `[slo] weekly-summary`
   // rollup line is the one-glance row; both are what the docs/ops/slo-review.md weekly checklist reads.
   const sloWeeklyMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly`, {
-    name: "rhema_slo_weekly",
+    name: METRIC.sloWeekly,
     project,
     filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] weekly {"`,
     metricDescriptor: {
@@ -130,7 +144,7 @@ export function createMonitoring(args: MonitoringArgs): {
     },
   });
   const sloWeeklyValueMetric = new gcp.logging.Metric(`rhema-${stack}-slo-weekly-value`, {
-    name: "rhema_slo_weekly_value",
+    name: METRIC.sloWeeklyValue,
     project,
     filter: pulumi.interpolate`resource.type="cloud_run_revision" AND resource.labels.service_name="${workerServiceName}" AND textPayload:"[slo] weekly {"`,
     metricDescriptor: {
@@ -156,7 +170,7 @@ export function createMonitoring(args: MonitoringArgs): {
   // never reached (backend timeout, no healthy backend) — and `resource.labels.backend_service_name`
   // is the join key to the backend, while `trace` on the entry joins the app line.
   const lb5xxMetric = new gcp.logging.Metric(`rhema-${stack}-lb-5xx`, {
-    name: "rhema_lb_5xx_requests",
+    name: METRIC.lb5xx,
     project,
     filter:
       'resource.type="http_load_balancer" AND ' +
@@ -187,7 +201,7 @@ export function createMonitoring(args: MonitoringArgs): {
   // (each distinct value is a new time series). The `route` label is the template — raw paths are
   // user-selected and never reach a log.
   const route5xxMetric = new gcp.logging.Metric(`rhema-${stack}-route-5xx`, {
-    name: "rhema_route_5xx_errors",
+    name: METRIC.route5xx,
     project,
     filter:
       'resource.type="cloud_run_revision" AND ' +
@@ -235,7 +249,7 @@ export function createMonitoring(args: MonitoringArgs): {
         displayName: "LB request log 5xx",
         conditionThreshold: {
           filter:
-            'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" AND ' +
+            `metric.type="logging.googleapis.com/user/${METRIC.lb5xx}" AND ` +
             'resource.type="l7_lb_rule"',
           comparison: "COMPARISON_GT",
           thresholdValue: 0,
@@ -248,7 +262,7 @@ export function createMonitoring(args: MonitoringArgs): {
         displayName: "app route 5xx structured error logged",
         conditionThreshold: {
           filter:
-            'metric.type="logging.googleapis.com/user/rhema_route_5xx_errors" AND ' +
+            `metric.type="logging.googleapis.com/user/${METRIC.route5xx}" AND ` +
             'resource.type="cloud_run_revision"',
           comparison: "COMPARISON_GT",
           thresholdValue: 0,
@@ -261,6 +275,12 @@ export function createMonitoring(args: MonitoringArgs): {
     notificationChannels: channels,
     alertStrategy: { autoClose: "1800s" },
     enabled: true,
+  }, {
+    // OPS.1 (live finding — the first dev full-stack up): a fresh log-metric's descriptor takes up
+    // to ~10 min to be usable in alert filters. dependOn orders the policies after the metric
+    // resources; on a cold stack a still-propagating descriptor can still 404 once — rerun `up`
+    // converges (documented in the runbook's preview path).
+    dependsOn: [lb5xxMetric, route5xxMetric],
   });
 
   // One alert policy per probed signal — a breach line is already thresholded by the probe; the policy
@@ -276,7 +296,7 @@ export function createMonitoring(args: MonitoringArgs): {
             displayName: `${sig} breached (probe-logged)`,
             conditionThreshold: {
               filter:
-                'metric.type="logging.googleapis.com/user/rhema_slo_violations" AND ' +
+                `metric.type="logging.googleapis.com/user/${METRIC.sloViolations}" AND ` +
                 'resource.type="cloud_run_revision" AND ' +
                 `metric.labels.signal="${sig}"`,
               comparison: "COMPARISON_GT",
@@ -292,6 +312,10 @@ export function createMonitoring(args: MonitoringArgs): {
         notificationChannels: channels,
         alertStrategy: { autoClose: "1800s" },
         enabled: true,
+      }, {
+        // Same propagation guard as route5xxPolicy — the signal filters read
+        // `METRIC.sloViolations`, a fresh descriptor on cold stacks.
+        dependsOn: [sloViolationsMetric],
       }),
   );
 
@@ -359,7 +383,7 @@ export function createMonitoring(args: MonitoringArgs): {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
                         filter:
-                          'metric.type="logging.googleapis.com/user/rhema_slo_violations" resource.type="cloud_run_revision"',
+                          `metric.type="logging.googleapis.com/user/${METRIC.sloViolations}" resource.type="cloud_run_revision"`,
                         aggregation: {
                           alignmentPeriod: "300s",
                           perSeriesAligner: "ALIGN_COUNT",
@@ -384,7 +408,7 @@ export function createMonitoring(args: MonitoringArgs): {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
                         filter:
-                          'metric.type="logging.googleapis.com/user/rhema_lb_5xx_requests" resource.type="l7_lb_rule"',
+                          `metric.type="logging.googleapis.com/user/${METRIC.lb5xx}" resource.type="l7_lb_rule"`,
                         aggregation: {
                           alignmentPeriod: "300s",
                           perSeriesAligner: "ALIGN_COUNT",
@@ -407,7 +431,7 @@ export function createMonitoring(args: MonitoringArgs): {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
                         filter:
-                          'metric.type="logging.googleapis.com/user/rhema_route_5xx_errors" resource.type="cloud_run_revision"',
+                          `metric.type="logging.googleapis.com/user/${METRIC.route5xx}" resource.type="cloud_run_revision"`,
                         aggregation: {
                           alignmentPeriod: "300s",
                           perSeriesAligner: "ALIGN_COUNT",
@@ -481,7 +505,7 @@ export function createMonitoring(args: MonitoringArgs): {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
                         filter:
-                          'metric.type="logging.googleapis.com/user/rhema_slo_weekly" resource.type="cloud_run_revision"',
+                          `metric.type="logging.googleapis.com/user/${METRIC.sloWeekly}" resource.type="cloud_run_revision"`,
                         aggregation: {
                           alignmentPeriod: "86400s",
                           perSeriesAligner: "ALIGN_COUNT",
@@ -505,7 +529,7 @@ export function createMonitoring(args: MonitoringArgs): {
                     timeSeriesQuery: {
                       timeSeriesFilter: {
                         filter:
-                          'metric.type="logging.googleapis.com/user/rhema_slo_weekly_value" resource.type="cloud_run_revision"',
+                          `metric.type="logging.googleapis.com/user/${METRIC.sloWeeklyValue}" resource.type="cloud_run_revision"`,
                         aggregation: {
                           alignmentPeriod: "604800s",
                           perSeriesAligner: "ALIGN_MEAN",

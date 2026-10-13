@@ -1883,7 +1883,15 @@ const N10: StepFn = async (ctx) => {
       }
     }
     const body = (await page.textContent("body")) ?? "";
-    if (/private beta/i.test(body)) throw new Error(`${path} still claims "private beta"`);
+    // OPS.1 (F-OPS.1-11) — the "private beta" ban is open-mode-shaped: on invite-mode stages
+    // (dev/pr-<n> — stages.ts `signupMode: "invite"`) the honest access-gated copy IS the private-
+    // beta heading (copy.ts `invite.heading`, rendered only when invite mode is live). Detect the
+    // mode from the `invite.accessNote` marker — open mode never renders it — and only then is the
+    // heading legitimate; everywhere else the ban stands unchanged.
+    const inviteMode = /Access is by invitation|invitation code is required/i.test(body);
+    if (!inviteMode && /private beta/i.test(body)) {
+      throw new Error(`${path} still claims "private beta"`);
+    }
     if (/\b1\.x\b/i.test(body)) throw new Error(`${path} leaks the "1.x" roadmap term`);
     if (/coming soon/i.test(body)) throw new Error(`${path} carries a "coming soon" promise`);
   }

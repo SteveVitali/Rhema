@@ -1,15 +1,51 @@
+# Pulumi stack: dev — the shared-integration stage (OPS.1 — full-stack rewrite 2026-10-04).
+#
+# OPS.1 takes dev off the 23-resource skeleton (STB.1 run ledger §1) to the full production-parity
+# program: AlloyDB + Redis + GKE + egress-proxy MIG + the seven Cloud Run services + the in-VPC
+# `migrate` Job. Two OPS.1 changes make a fresh `dev` boot with NO hand-set secret configs:
+#
+#   1. IaC-generated secrets (owned decision (c); stages.ts NONPROD_GENERATED_SECRET_IDS): the
+#      program mints the postgres bootstrap password, the rhema_app_login/rhema_collab role DSNs,
+#      the composed system DSN, the RS256 run-token keypair, better-auth + email-action secrets —
+#      all as Secret Manager VERSIONS on the stack-local containers. Values live in encrypted
+#      Pulumi state + SM only. The stale hand-encrypted `rhema:*DatabaseUrl` configs were dropped:
+#      the generated `*-database-url` secretKeyRefs win by `requiredSecrets` gating in compute.ts.
+#   2. The in-VPC `migrate` Job (owned decision (b)) runs migrations + `ALTER ROLE … LOGIN` for the
+#      generated role passwords + the real-project seed (dev is the only stage allowed it) inside
+#      the VPC — no operator tunnel, no hand ALTER.
+#
+# What IS still operator-set here:
+#   rhema:serviceImages / rhema:runTaskImageDigest / rhema:proxyImage — the digest-pinned image
+#     set for the `rhema-dev` AR repo. Stage B builds all nine on the OPS.1 tip and pins them
+#     below (production-parity pins: the same SHAs prod would carry at this code line, pushed to
+#     the dev repo — never `rhema-prod-*` refs, REQ-ARCH-38).
+#   rhema:anthropic-api-key — seeded as a Secret Manager version on `rhema-dev-anthropic-api-key`
+#     (the NON-prod provider key — value never in this file or any ledger).
+#
+# NOT set (by design): no `rhema:*DatabaseUrl`, no `rhema:redisUrl` (composed off the Memorystore
+# output), no Stripe/Resend/Google-OAuth secrets (DEV_REQUIRED_SECRETS excludes them — the
+# gated consumers fail closed with named reasons), no domains (web self-wires the api's
+# *.run.app uri; signup.mode=invite from the stage facts).
 config:
   gcp:project: rhema-507501
   gcp:region: us-central1
   rhema:placeholderImage: us-docker.pkg.dev/cloudrun/container/hello
   rhema:deployProxyMig: "true"
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/egress-proxy@sha256:14ef1097c17ca75f5345c644c415629e8fbe7e72db431e6a785a9239b81b6ea6
-  rhema:proxyDatabaseUrl:
-    secure: AAABAEwmbigwPCueEZIV8InN9Q+4HZUFvSSeEX9PwsUUZjzLEz5d1JULEwRgtgo1lP/hn6vtYxk3A1uwt7PYdxxNAR9RCaCpotyS2yVeCsIKBENuEvdrVKFoZF0Tvdie5g6TqMQzkw3ms9qDFfdufBzx7iX1HGC9V6PU
-  rhema:workerDatabaseUrl:
-    secure: AAABAGoWTp0brekwScb5WgTohYzGzBARo4twAc8bEkcnbhF98WBY6ZG1KblB/JEWHHUGRr+MixLTu1tblGgugzKQBG+zvPzFZQ7loOd+oZNGG3WANW2SNjE/sXSzREQ+NXrIp8qdQ0O1nsWp1+nOUH07s+5W4/BbpVbE
-  rhema:workerSystemDatabaseUrl:
-    secure: AAABANinhgLxDZ+Ri4AKTbBErot//U7NycMnSpGYdiferYHKgX0SfoLxuTx7cxr3gWrsj3A3+RW39Ui/MDut9isgAj/0xqdgvjvyeDo8IdkdOp/VGMq5dFu3fH8v+en7T5bP7kJr9qv9QlRU//uozn6Gls9hdzlM5jwi
-  rhema:workerRedisUrl:
-    secure: AAABAIgPCveM8nsUckmJxlXwIjwNFECc60tlYtbQFume7kA0lJw2rEoRpxlhdXcdGQaqW57K+Y1e
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/run-task@sha256:72b78a9494cb4905d4481784e750a48c6f4454a98c07f8ccebc6385cbb54d891
+  # SEC.3 — run-task pods run under the Localhost `rhema-run-task` AppArmor profile (the loader
+  # DaemonSet lands it via infra/k8s/apply.sh — run after `pulumi up`, same as prod).
+  rhema:runTaskAppArmorType: Localhost
+  rhema:runTaskAppArmorLocalhostProfile: rhema-run-task
+  # OPS.1 Stage B (2026-10-04) — the nine-service digest set for the rhema-dev AR repo, pinned at
+  # OPS.1 commit 14d75eb. api/web/fetcher/convert/export/collab/run-task/egress-proxy are the
+  # PROD-PARITY manifests — the same image content prod runs (rhema-prod@ops1-tag copies via
+  # `docker buildx imagetools create`; the index digest differs under the rhema-dev repo because
+  # re-tagging re-serializes the OCI index — the layers/config are byte-identical). worker is the
+  # ONLY diff'd image: built at this commit (buildx linux/amd64, tag :ops1) because it must carry
+  # the new dist/migrate.js entry the migrate Job runs.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/api@sha256:72d3d93251a88e2ee1dc5bdcc03300a03c86ad6d7d68d34d5d031e9bddc90097","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/web@sha256:fb320cbaeaa510caf9c1fd2de94c0f1c0a2901426e56abdbd1fe44986b36253d","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/worker@sha256:5ded93bcba38946f9f35eecdcba9f40458ef2e6ef17811dbff86dfe0b7e206d7","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/fetcher@sha256:f05f1762e897df382361fb1a09d2e2851b1e70f27afb6f0f8e4ac110c805e352","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/convert@sha256:d3221100faf035ccf81533eb9cc82380ca5a549585f36c692fef0f6ecc1109fe","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/export@sha256:f6a08dab64233d9740292dbedd03d08cb6517acad5795deecc242ef4f54d0f25","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-dev/collab@sha256:5dbb05f0c8fef5a7c607f76637c95ab2d6e19de6639546212f770b18331a8385"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/run-task@sha256:22f0e3f13020bf89ac3f1425e13a26a80080ec1eb69c17a92cd20747f42222be
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-dev/egress-proxy@sha256:f781264866d2c226e464eeb87261cbf9dd6668d0c83f5f61bc20ad68ae7c5f53
+  # OPS.1 — the migrate Job's deployments-provenance leg (REQ-ARCH-39): the OPS.1 implementation
+  # commit the images carry + `node scripts/compute-protocols-version.mjs` at the same commit.
+  rhema:gitSha: 14d75ebffd520f86f58546bf99e0910736e84112
+  rhema:protocolsVersion: 0.4.0+ec61156725a895ab

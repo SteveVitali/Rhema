@@ -31,10 +31,19 @@ export type ServiceName = (typeof SERVICES)[number];
 
 export interface Iam {
   serviceAccounts: Record<ServiceName, gcp.serviceaccount.Account>;
+  /**
+   * OPS.1 (live finding — the first dev full-stack up): every IAM member this module creates.
+   * Containers that consume a grant (Cloud Run services mounting secretKeyRefs, the convert
+   * gcsfuse mount, the migrate Job) must `dependsOn` these — otherwise resource-graph ordering
+   * lets a revision start before its SA's grant exists (gcsfuse mount PermissionDenied /
+   * `versions/latest was not found`, surfaced live at update 68).
+   */
+  members: pulumi.Resource[];
 }
 
 export function createIam(args: IamArgs): Iam {
   const { stack, project, secrets, buckets } = args;
+  const members: pulumi.Resource[] = [];
 
   const serviceAccounts = {} as Record<ServiceName, gcp.serviceaccount.Account>;
   for (const svc of SERVICES) {
@@ -45,12 +54,15 @@ export function createIam(args: IamArgs): Iam {
   }
 
   const secretAccessor = "roles/secretmanager.secretAccessor";
-  const grantSecret = (id: string, secret: gcp.secretmanager.Secret, sa: gcp.serviceaccount.Account) =>
-    new gcp.secretmanager.SecretIamMember(`rhema-${stack}-${id}`, {
+  const grantSecret = (id: string, secret: gcp.secretmanager.Secret, sa: gcp.serviceaccount.Account) => {
+    const m = new gcp.secretmanager.SecretIamMember(`rhema-${stack}-${id}`, {
       secretId: secret.id,
       role: secretAccessor,
       member: pulumi.interpolate`serviceAccount:${sa.email}`,
     });
+    members.push(m);
+    return m;
+  };
 
   // The egress-proxy is the sole reader of the provider key FOR MODEL TRAFFIC (REQ-ARCH-31): every
   // model call from a run pod egresses through the proxy's injection header. Two narrow operator-side
@@ -95,16 +107,28 @@ export function createIam(args: IamArgs): Iam {
   grantSecret("api-reads-appdb", secrets.byId["app-database-url"], serviceAccounts["api"]);
   grantSecret("worker-reads-appdb", secrets.byId["app-database-url"], serviceAccounts["worker"]);
   grantSecret("collab-reads-collabdb", secrets.byId["collab-database-url"], serviceAccounts["collab"]);
+  // OPS.1 — the generated non-prod DSN secrets: api + worker read `system-database-url` (the composed
+  // postgres-role DSN) via secretKeyRef, and the in-VPC migrate Job — running under the worker SA —
+  // reads all three DSNs to drive `ALTER ROLE … LOGIN`. Gated on the container's existence so prod's
+  // IAM surface is untouched (`system-database-url` is a non-prod-only container).
+  if (secrets.byId["system-database-url"]) {
+    grantSecret("api-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["api"]);
+    grantSecret("worker-reads-sysdb", secrets.byId["system-database-url"], serviceAccounts["worker"]);
+    grantSecret("worker-reads-collabdb", secrets.byId["collab-database-url"], serviceAccounts["worker"]);
+  }
 
   // Bucket access: the api/worker read+write artifacts + user-content; the run-task harness reads
   // artifacts (to materialize /work); the benchmark-enclave bucket is granted to NO product SA here — it
   // is read only by the `rhema_benchmark` principal out-of-band (REQ-EVAL-3 / D-P0.13-1).
-  const grantBucket = (id: string, bucket: gcp.storage.Bucket, sa: gcp.serviceaccount.Account, role: string) =>
-    new gcp.storage.BucketIAMMember(`rhema-${stack}-${id}`, {
+  const grantBucket = (id: string, bucket: gcp.storage.Bucket, sa: gcp.serviceaccount.Account, role: string) => {
+    const m = new gcp.storage.BucketIAMMember(`rhema-${stack}-${id}`, {
       bucket: bucket.name,
       role,
       member: pulumi.interpolate`serviceAccount:${sa.email}`,
     });
+    members.push(m);
+    return m;
+  };
   grantBucket("api-rw-artifacts", buckets["artifacts"], serviceAccounts["api"], "roles/storage.objectAdmin");
   grantBucket("api-rw-usercontent", buckets["user-content"], serviceAccounts["api"], "roles/storage.objectAdmin");
   grantBucket("worker-rw-artifacts", buckets["artifacts"], serviceAccounts["worker"], "roles/storage.objectAdmin");
@@ -121,7 +145,7 @@ export function createIam(args: IamArgs): Iam {
   // an api-presigned PUT (presignQuarantinePut); the FETCHER's SA is objectCreator CONDITIONED to that
   // prefix only ("a service account limited to the quarantine prefix" — §12.1), and the convert Job's SA
   // is read-only over the bucket so it can fetch the quarantined bytes before writing the canonical doc.
-  new gcp.storage.BucketIAMMember(`rhema-${stack}-fetcher-quarantine-creator`, {
+  members.push(new gcp.storage.BucketIAMMember(`rhema-${stack}-fetcher-quarantine-creator`, {
     bucket: buckets["user-content"].name,
     role: "roles/storage.objectCreator",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["fetcher"].email}`,
@@ -130,7 +154,7 @@ export function createIam(args: IamArgs): Iam {
       description: "The fetcher may create objects only under quarantine/ (§13.3 upload quarantine).",
       expression: pulumi.interpolate`resource.name.startsWith("projects/_/buckets/${buckets["user-content"].name}/objects/quarantine/")`,
     },
-  });
+  }));
   grantBucket(
     "convert-ro-usercontent",
     buckets["user-content"],
@@ -141,7 +165,7 @@ export function createIam(args: IamArgs): Iam {
   // into through its mounted bucket volume (the api reads the object back — stdout is not the transport).
   // `objectUser` (create+delete+get, prefix-conditioned) rather than bare objectCreator because the gcsfuse
   // write path needs more than a single create call (mkdir placeholders, close/rename).
-  new gcp.storage.BucketIAMMember(`rhema-${stack}-convert-converted-writer`, {
+  members.push(new gcp.storage.BucketIAMMember(`rhema-${stack}-convert-converted-writer`, {
     bucket: buckets["user-content"].name,
     role: "roles/storage.objectUser",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["convert"].email}`,
@@ -151,34 +175,34 @@ export function createIam(args: IamArgs): Iam {
         "The convert Job writes only under converted/ — its read stays bucket-wide, its write is the one prefix (§13.3).",
       expression: pulumi.interpolate`resource.name.startsWith("projects/_/buckets/${buckets["user-content"].name}/objects/converted/")`,
     },
-  });
+  }));
 
   // PRB.20 — the api mints GCS v4 signed PUTs for `quarantine/`; on Cloud Run the storage client signs via
   // IAM Credentials `signBlob`, which needs `serviceAccountTokenCreator` on the CALLING service account.
   // The self-grant is the minimum surface (no key material on the service — REQ-ARCH-30).
-  new gcp.serviceaccount.IAMMember(`rhema-${stack}-api-signs-own-blobs`, {
+  members.push(new gcp.serviceaccount.IAMMember(`rhema-${stack}-api-signs-own-blobs`, {
     serviceAccountId: serviceAccounts["api"].name,
     role: "roles/iam.serviceAccountTokenCreator",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["api"].email}`,
-  });
+  }));
 
   // The egress-proxy MIG VM pulls its digest-pinned image from Artifact Registry with its instance SA (the COS
   // startup-script `docker pull`). Without this the pull is denied ("Unauthenticated request") — surfaced live
   // P0.15e. Project-level reader is the minimum (mirrors the run-task node grant below).
-  new gcp.projects.IAMMember(`rhema-${stack}-proxy-artifactregistry-reader`, {
+  members.push(new gcp.projects.IAMMember(`rhema-${stack}-proxy-artifactregistry-reader`, {
     project,
     role: "roles/artifactregistry.reader",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["egress-proxy"].email}`,
-  });
+  }));
 
   // The run-task GKE nodes pull the digest-pinned image from Artifact Registry over Private Google Access
   // (the sandbox subnet has no NAT / no internet). Without this the nodes fail to pull and never register
   // (P0.15c symptom: 0/1 nodes). A project-level reader on the node/pod GSA is the minimum (D-P0.15c-8).
-  new gcp.projects.IAMMember(`rhema-${stack}-runtask-artifactregistry-reader`, {
+  members.push(new gcp.projects.IAMMember(`rhema-${stack}-runtask-artifactregistry-reader`, {
     project,
     role: "roles/artifactregistry.reader",
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["run-task"].email}`,
-  });
+  }));
 
   // The worker launches the two-uid run-task Jobs on the GKE cluster (createGkeJobLauncher → k8s Job create).
   // P1.22 (D-P0.01-5 least-privilege close): `roles/container.developer` was the stand-in — it can create and
@@ -196,11 +220,11 @@ export function createIam(args: IamArgs): Iam {
       "in-cluster powers come from the `runs`-namespace RBAC Role (infra/k8s/30-worker-job-rbac.yaml).",
     permissions: ["container.clusters.get", "container.clusters.list"],
   });
-  new gcp.projects.IAMMember(`rhema-${stack}-worker-gke-job-launcher`, {
+  members.push(new gcp.projects.IAMMember(`rhema-${stack}-worker-gke-job-launcher`, {
     project,
     role: gkeClusterAccess.name,
     member: pulumi.interpolate`serviceAccount:${serviceAccounts["worker"].email}`,
-  });
+  }));
 
-  return { serviceAccounts };
+  return { serviceAccounts, members };
 }
