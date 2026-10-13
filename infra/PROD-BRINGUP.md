@@ -69,14 +69,54 @@ pulumi config set          rhema:serviceImages \
     "export":"<repo>/export@sha256:…","collab":"<repo>/collab@sha256:…"}'
 # internalApiUrl defaults to https://api.rhema.tools on prod; proxyBaseUrl is set after the MIG stands up:
 pulumi config set          rhema:proxyBaseUrl        'http://<proxy-internal-address>:8443'  # the proxy serves PLAIN HTTP (surfaced live 2026-09-17 — https:// gets "wrong version number"); the address is the RESERVED rhema-prod-proxy-ip — read it via `gcloud compute addresses describe rhema-prod-proxy-ip-* --region us-central1` (the MIG re-assigns ephemeral IPs on every template roll without it)
+# OPS.2 — collab: the `rhema_collab` role's DSN was set by hand at STB.1 (2026-09-25) and is
+# ADOPTED AS-IS — never re-set, rotated, or role-altered (the SEC.1 switch moved the collab env to
+# the Secret Manager `rhema-prod-collab-database-url` version, so on prod this config key is now a
+# dead fallback kept for roll compatibility; non-prod stacks get an IaC-generated DSN instead):
+#   rhema:collabDatabaseUrl   — postgresql://rhema_collab:<pw>@<host>:5432/rhema  (Pulumi secret)
+# The matching one-time role enable was the operator's `alter role rhema_collab login password
+# '<pw>'` (executed STB.1; assert `rolcanlogin=t, rolbypassrls=f` — see §11's collab step):
+#   rhema:internalApiUrl      — api's internal URL (worker API_INTERNAL_URL + web reach)
+#   rhema:googleOauthClientId — the OAuth WEB CLIENT ID (plain config; the SECRET is the SM
+#                               google-oauth-client-secret container — see §6)
+#   rhema:stripePaymentLinkUrl— the Stripe Payment Link URL the exhaustion panel 302s to (PRB.17)
 ```
+
+### Config keys the program reads but the operator normally does NOT set
+
+Completeness reference (the `infra/config/runbook-completeness.test.ts` gate requires every
+`rhema:*` key read in `infra/pulumi/*.ts` to be named here — a hand-set key that never enters this
+runbook is exactly how `collabDatabaseUrl` drifted):
+
+- `rhema:placeholderImage` — the stand-in container image each service runs until a digest pin
+  lands (`us-docker.pkg.dev/cloudrun/container/hello` on prod); missing `serviceImages` entries
+  fall back to it so `preview` stays plannable.
+- `rhema:deployProxyMig` — `"true"` (prod default): the egress-proxy MIG is program-managed; set
+  `"false"` only to run the proxy out-of-band.
+- `rhema:apiDatabaseUrl` / `rhema:apiRedisUrl` / `rhema:workerRedisUrl` — legacy/fallback names:
+  `apiDatabaseUrl` reads only when `appDatabaseUrl` is absent (superseded 2026-09-17); the Redis
+  keys are per-service overrides of the shared `rhema:redisUrl`.
+- `rhema:opsAlertWebhookUrl` — Pulumi secret config for the ops-alert sink; the worker mounts the
+  SM `ops-alert-webhook-url` version instead (webhook catcher, PRB.17 gate answer). Setting the
+  config is optional; the SM version is what serves.
+- `rhema:ciRepository` — JOURNEY.1's GitHub `owner/repo` for the WIF token-creator condition
+  (default `SteveVitali/Rhema`).
+- `rhema:gitSha` / `rhema:protocolsVersion` — OPS.1 deploy-provenance inputs for the NON-PROD
+  migrate Job's `deployments` row (chain-tip SHA + computed protocols version; unset ⇒ the record
+  leg skips). Prod records via `scripts/live/record-deployment.mjs` (§8).
+- `rhema:runTaskAppArmorType` / `rhema:runTaskAppArmorLocalhostProfile` — SEC.3's pod AppArmor
+  deploy config (`Localhost` / `rhema-run-task` on prod; a rollback flips these keys, never code).
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
 ```bash
 # _GIT_SHA (JOURNEY.1) bakes the commit into api/web images → /healthz build.gitSha (provenance).
-gcloud builds submit --config cloudbuild.yaml --project rhema-507501 \
+# OPS.2 — the ONE committed image-set definition (BL-27): `_SERVICES` takes any comma-separated
+# subset for a diff-scoped rebuild (unknown names fail the build); the default is the full set.
+# Never hand-edit a copy — that copy-then-edit pattern is exactly the Stage B drift OPS.2 retired.
+gcloud builds submit --config infra/cloudbuild/image-set.yaml --project rhema-507501 \
   --substitutions _AR=us-central1-docker.pkg.dev/rhema-507501/rhema-prod,_TAG=prod,_GIT_SHA=$(git rev-parse HEAD)
+# subset rebuild: append `,_SERVICES=api,web`
 # then capture each pushed digest:
 gcloud artifacts docker images list us-central1-docker.pkg.dev/rhema-507501/rhema-prod \
   --include-tags --format='table(package,tag,digest)'
@@ -301,3 +341,58 @@ system DSNs are untouched throughout — system paths never leave the elevated r
   (`D-P0.01-1`, `D-P0.01-7`, `D-P0.15b-1`, `D-P0.15c-1`, `D-P0.07-4`'s serve leg).
 - Live leftovers (auth binding, user-content signed-URL serving, Stripe live mode, provider-smoke)
   stay OPEN and route to PRB.16/PRB.17 per their named paths.
+
+## 12. OPS.2 — cost posture, the $50 budget alert + the Turbo remote cache
+
+### 12a. Reading the bill
+
+No public API returns billed actuals and there is no populated BigQuery export yet (the
+`billing_export_prod` dataset is provisioned; the console-only export flip is D-OPS.2-1). Until
+then, `scripts/live/billing-read.mjs` recomputes the monthly bill bottom-up — live `gcloud`
+inventory × Cloud Billing Catalog API list prices, every matched SKU printed:
+
+```bash
+node scripts/live/billing-read.mjs          # markdown table + sources
+node scripts/live/billing-read.mjs --json   # ledger/CI-consumable
+```
+
+The stack carries a `$50/mo` Billing Budget alert (`rhema-prod-budget-50`, thresholds
+50 %/90 %-forecast/100 % → billing-admin emails). One provider quirk is now permanent knowledge:
+`gcp.billing.Budget` (google-beta) refuses ADC without a quota project — run preview/up as
+`GOOGLE_CLOUD_QUOTA_PROJECT=rhema-507501 pulumi …` (or `gcloud auth application-default
+set-quota-project rhema-507501`; `cloudresourcemanager.googleapis.com` must be enabled in the
+quota project — it is, 2026-10-03).
+
+### 12b. The Turbo remote cache (ADR-081; D-P0.01-4 discharged)
+
+`turboCacheUrl` (stack output) is the v8-artifacts endpoint. The Bearer token lives ONLY in
+`rhema-prod-turbo-cache-token` — the program mints it, never the operator's env:
+
+```bash
+# wire CI (repo-admin) + local dev:
+gh secret set TURBO_API   -R SteveVitali/Rhema --body "$(pulumi stack output turboCacheUrl)"
+gh secret set TURBO_TOKEN -R SteveVitali/Rhema --body "$(gcloud secrets versions access latest \
+  --secret=rhema-prod-turbo-cache-token --project=rhema-507501)"
+# never print the token into a log, ledger, or PR body
+```
+
+The service scales to zero (min 0 / max 2, ~$0–2/mo); artifacts land in
+`rhema-507501-turbo-cache-prod` (private, 30-day lifecycle, project-internal — no
+protocol-bearing artifact leaves the project). Rotation = a fresh secret version + repo-secret
+update; nothing else depends on the value.
+
+### 12c. Cloud SQL HA pre-plan (plan-only — never executed inside OPS.2)
+
+The measured bill (ADR-082) puts the always-on floor ≈ $285/mo, dominated by the Cloud Run warm
+floor; the HA levers below are priced but NOT executed:
+
+- **Cloud SQL ZONAL→REGIONAL** (`availabilityType`, ≈ +$25.55/mo): a settings flip on
+  `rhema-prod-postgres` — preserves `backupConfiguration` (35 daily backups) + the 7-day PITR
+  window (unchanged by the flip; re-verify `pointInTimeRecoveryEnabled` stays true after). Plan:
+  maintenance window → flip → observe a failover rehearsal (`gcloud sql instances failover
+  rhema-prod-postgres` drills the standby promote; ~2–4 min writer unavailability) → roll back by
+  flipping ZONAL only if the drill surfaces a problem.
+- **Memorystore BASIC→STANDARD_HA** (≈ +$35.77/mo): tier flip on the instance, brief reconnect.
+- **Proxy MIG ×2** (≈ +$12.2/mo): `targetSize` 1→2 (regional MIG already spans zones).
+- **Warm-floor levers** (the bigger dollars, still plan-only): `convert-svc` cpuIdle→request-based
+  (−$44), `export`/`fetcher` minScale 1→0 (−$19.4), worker right-size (−$26).

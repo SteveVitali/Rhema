@@ -1,0 +1,9 @@
+{
+  "name": "@rhema/turbo-cache",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "turborepo-remote-cache": "2.14.2"
+  }
+}

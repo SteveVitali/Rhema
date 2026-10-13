@@ -22,6 +22,8 @@ import { createIam } from "./iam";
 import { createCompute } from "./compute";
 import { createMonitoring } from "./monitoring";
 import { createJourneys } from "./journeys";
+import { createTurboCache } from "./turbo-cache";
+import { createBilling } from "./billing";
 
 // The Pulumi stack name IS the Rhema stage name (dev | pr-<n> | prod); config resolves the stage kind.
 const stack = pulumi.getStack();
@@ -129,13 +131,43 @@ const appDatabaseDsn = pulumi.secret(
 const secretVersions: gcp.secretmanager.SecretVersion[] = [];
 if (cfg.requiredSecrets.includes("app-database-url")) {
   secretVersions.push(
-    new gcp.secretmanager.SecretVersion(`rhema-${stack}-app-database-url-v1`, {
-      secret: secrets.byId["app-database-url"].id,
-      secretData: appDatabaseDsn,
-    }),
+    new gcp.secretmanager.SecretVersion(
+      `rhema-${stack}-app-database-url-v1`,
+      {
+        secret: secrets.byId["app-database-url"].id,
+        secretData: appDatabaseDsn,
+      },
+      // OPS.2 — prod only: `secretData` is write-only (the SecretVersion GET cannot return it),
+      // so any `pulumi refresh` marks it stale and every later preview plans a REPLACE carrying
+      // identical bytes — drift noise on a secret version that is immutable by design and a
+      // rotation footgun (a rewritten version whose DSN no longer matches the DB role's password
+      // would break prod). Non-prod keeps full management: a rotated RandomPassword there SHOULD
+      // propagate a new version.
+      isProd ? { ignoreChanges: ["secretData"] } : {},
+    ),
   );
 }
 export const appDatabaseDsnOutput = appDatabaseDsn;
+
+// OPS.2 — the self-hosted Turborepo remote-cache Bearer token (turbo-cache.ts). Program-minted on
+// EVERY stage (a brand-new secret with no operator-seeded state to adopt — it joins
+// NONPROD_GENERATED_SECRET_IDS for dev/preview and is required on prod like the rest). Prod keeps
+// the same `secretData` ignore as app-database-url: the value is immutable-by-design and a
+// refresh-driven replace would be drift noise on the quiet-preview contract.
+const turboCacheToken = new random.RandomPassword("rhema-turbo-cache-token", {
+  length: 48,
+  special: false,
+});
+secretVersions.push(
+  new gcp.secretmanager.SecretVersion(
+    `rhema-${stack}-turbo-cache-token-v1`,
+    {
+      secret: secrets.byId["turbo-cache-token"].id,
+      secretData: turboCacheToken.result,
+    },
+    isProd ? { ignoreChanges: ["secretData"] } : {},
+  ),
+);
 
 // OPS.1 (REQ-ARCH-30 / REQ-SPEC-30; owned decision (c)) — the rest of the fresh-stack generated set,
 // NON-PROD ONLY. On `dev`/`pr-<n>` the program itself mints every remaining role credential + the
@@ -282,6 +314,25 @@ const compute = createCompute({
   secretVersions,
 });
 
+// OPS.2 — the self-hosted Turborepo remote cache (D-P0.01-4): scale-to-zero Cloud Run in front of a
+// project-private GCS bucket; the program-minted Bearer mounts via secretKeyRef. `turboCacheUrl`
+// is the value CI's TURBO_API points at (repo-admin wiring — Stage B leg).
+const turboCache = createTurboCache({
+  stack,
+  project,
+  region,
+  isProd,
+  secrets,
+  image: serviceImages?.["turbo-cache"] ?? placeholderImage,
+  secretVersionDeps: secretVersions,
+});
+
+// OPS.2 — the prod cost-watch IaC (BL-8): the $50/mo budget alert + the billing-export BigQuery
+// dataset. Gated on the stage fact — only prod carries `billingAccountId`.
+if (cfg.billingAccountId) {
+  createBilling({ stack, project, region, billingAccountId: cfg.billingAccountId });
+}
+
 // JOURNEY.1 — adopt the journey-mailbox resources (the hand-created DWD service account, the Gmail
 // API enablement, and the Token-Creator grants for the CI WIF principal + the operator). `import:`
 // brings the pre-existing resources under management without replacing them.
@@ -312,11 +363,17 @@ export const stageKind = cfg.kind;
 export const maxUsdPerRun = cfg.maxUsdPerRun;
 export const vpcSelfLink = network.network.selfLink;
 export const sandboxSubnet = network.sandboxSubnetSelfLink;
-// The Postgres endpoint facts — engine-gated (PRB.15 amended 2026-09-17): `alloydbCluster` is set on
+// The Postgres endpoint facts — engine-gated (PRB.15 amended 2026-09-17): `alloydbCluster` exists on
 // AlloyDB stages (dev/preview), `cloudSqlInstance` on Cloud SQL stages (prod); `databaseHost` is the
 // private IP either way — what the operator's DATABASE_URLs + the migrate/seed runner point at.
-export const alloydbCluster = data.alloydbCluster?.name;
-export const cloudSqlInstance = data.cloudSqlInstance?.name;
+// OPS.2 — each output is emitted ONLY where its engine's resource exists: an `export const` bound to
+// `undefined` makes every preview of the other stage print "Undefined value (<name>) will not show
+// as a stack output" — the warning noise that hid real drift since STB.1. Under this program's
+// CommonJS module system a conditional `exports` write registers the stack output only when the
+// branch runs (the Pulumi engine walks module.exports after the program completes).
+const engineOutputs = exports as unknown as Record<string, unknown>;
+if (data.alloydbCluster) engineOutputs.alloydbCluster = data.alloydbCluster.name;
+if (data.cloudSqlInstance) engineOutputs.cloudSqlInstance = data.cloudSqlInstance.name;
 export const databaseHost = data.databaseHost;
 export const redisHost = data.redis.host;
 export const bucketNames = pulumi.all(Object.values(data.buckets).map((b) => b.name));
@@ -327,6 +384,8 @@ export const anthropicSecretId = secrets.anthropicApiKey.secretId;
 // operator seeds (the stage facts' requiredSecrets — values never leave the operator's env).
 export const lbIpAddress = compute.lbIpAddress;
 export const dnsRecords = compute.dnsRecords;
+// OPS.2 — the remote-cache endpoint CI's TURBO_API points at (D-P0.01-4).
+export const turboCacheUrl = turboCache.url;
 export const requiredSecrets = cfg.requiredSecrets;
 // A single machine-readable fact the post-deploy check asserts: the sandbox is fully isolated.
 export const sandboxIsolated = {

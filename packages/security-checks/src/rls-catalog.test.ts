@@ -422,6 +422,37 @@ const USER_ROLE_GRANTS: Record<string, string> = {
 
 const PRIVILEGE_OF: Record<string, string> = { s: "select", i: "insert", u: "update", d: "delete" };
 
+/**
+ * OPS.2 — the `rhema_collab` role's pinned grant map (0004 + 0028 + 0053 + 0054 — the "exactly
+ * 0028's grants" AC counts its amendments). A table absent from this map carries NO expectation —
+ * any privilege found on an unpinned table fails the census, so a collab grant can never land
+ * silently (the same property USER_ROLE_GRANTS gives `rhema_app`).
+ */
+const COLLAB_ROLE_GRANTS: Record<string, string> = {
+  // 0004 — the working-head surface (REQ-ARCH-25): the live doc, restore points, working copies.
+  live_docs: "siud",
+  restore_points: "siud",
+  working_copies: "siud",
+  // 0004 (s,u) + 0028 (s,i,u) — drafts incl. the offline-edit fork's human_revision insert.
+  drafts: "siu",
+  // 0028 — the unscoped auth-read tables + the FORCE-RLS document-authorization join.
+  session: "s",
+  workspace_members: "s",
+  workspaces: "s",
+  subscriptions: "s",
+  projects: "s",
+  runs: "s",
+  // 0028 — debounced materialization + findings re-projection + the project event stream.
+  artifacts: "siu",
+  artifact_versions: "si",
+  findings: "su",
+  timeline_events: "si",
+  // 0028 (s,i) + 0053 (u) — the block-level provenance map per materialized version.
+  provenance_maps: "siu",
+  // 0054 — the collab-path autosave probe writes `detail='collab'` samples.
+  slo_samples: "i",
+};
+
 describe("the user-role split (SEC.1; REQ-SPEC-30; ADR-017/018)", () => {
   it("rhema_app_login exists as NOLOGIN NOBYPASSRLS NOSUPERUSER, a member of rhema_app only", async () => {
     const role = (
@@ -509,6 +540,77 @@ describe("the user-role split (SEC.1; REQ-SPEC-30; ADR-017/018)", () => {
     const live = new Set(tables);
     for (const pinned of Object.keys(USER_ROLE_GRANTS)) {
       if (!live.has(pinned)) problems.push(`${pinned}: pinned in USER_ROLE_GRANTS but absent from the schema`);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  // OPS.2 (REQ-SPEC-30; the prod-adoption AC) — the fresh-stack path (OPS.1's mechanism: the
+  // migrate entry's `alter role rhema_collab login password E'…'`, born NOLOGIN by 0001) yields a
+  // role that can authenticate but can NEVER bypass RLS, with exactly the pinned grant map. On
+  // prod this is the state STB.1 hand-applied and OPS.2 adopted as-is — this test is the
+  // deterministic assertion that the adopted posture is what the mechanism produces.
+  it("rhema_collab post-adoption: LOGIN + NOBYPASSRLS + exactly the pinned grants", async () => {
+    // The same statement shape apps/worker/src/migrate.ts's `loginStatements` emits on a fresh
+    // stack (verified there by migrate.test.ts) — a NOLOGIN→LOGIN flip, never an attribute change.
+    await pg.exec(`alter role rhema_collab login password E'pglite-test-only'`);
+    const role = (
+      await pg.query(
+        `select rolsuper, rolbypassrls, rolinherit, rolcreatedb, rolcreaterole, rolreplication, rolcanlogin
+           from pg_roles where rolname = 'rhema_collab'`,
+      )
+    ).rows[0] as Record<string, boolean>;
+    expect(role.rolcanlogin, "the fresh-stack ALTER must yield LOGIN").toBe(true);
+    expect(role.rolbypassrls, "rhema_collab must never bypass RLS (REQ-SPEC-30)").toBe(false);
+    expect(role.rolsuper).toBe(false);
+    expect(role.rolinherit).toBe(false); // 0001's `noinherit` — no ambient privilege
+    expect(role.rolcreatedb).toBe(false);
+    expect(role.rolcreaterole).toBe(false);
+    expect(role.rolreplication).toBe(false);
+    // Membership: no LOGIN-capable parent, never postgres/cloudsqlsuperuser-adjacent.
+    const memberOf = (
+      await pg.query(
+        `select p.rolname from pg_auth_members am
+           join pg_roles m on m.oid = am.member join pg_roles p on p.oid = am.roleid
+          where m.rolname = 'rhema_collab'`,
+      )
+    ).rows as { rolname: string }[];
+    expect(memberOf.map((r) => r.rolname)).toEqual([]);
+
+    // Schema usage (0004's `grant usage on schema public … rhema_collab`) is the connect-time
+    // prerequisite of every table grant.
+    const schemaUsage = (
+      await pg.query(`select has_schema_privilege('rhema_collab', 'public', 'usage') ok`)
+    ).rows[0] as { ok: boolean };
+    expect(schemaUsage.ok).toBe(true);
+
+    // The grant census: every table's rhema_collab privilege set equals the pin — absent ⇒ none.
+    const tables = (await catalog()).map((t) => t.relname);
+    const problems: string[] = [];
+    for (const t of tables) {
+      const pin = COLLAB_ROLE_GRANTS[t] ?? "";
+      for (const [letter, priv] of Object.entries(PRIVILEGE_OF)) {
+        const has = (
+          await pg.query(`select has_table_privilege('rhema_collab', $1, $2) ok`, [
+            `public.${t}`,
+            priv,
+          ])
+        ).rows[0] as { ok: boolean };
+        const want = pin.includes(letter);
+        if (has.ok !== want) {
+          problems.push(
+            `${t}: ${priv} ${has.ok ? "granted but" : "NOT granted —"} pinned '${pin}' — ` +
+              (has.ok
+                ? "a collab grant outside 0004/0028/0053/0054 — deliberate? (REQ-SPEC-30)"
+                : "grant it in a migration or update the pin"),
+          );
+        }
+      }
+    }
+    const live = new Set(tables);
+    for (const pinned of Object.keys(COLLAB_ROLE_GRANTS)) {
+      if (!live.has(pinned)) {
+        problems.push(`${pinned}: pinned in COLLAB_ROLE_GRANTS but absent from the schema`);
+      }
     }
     expect(problems).toEqual([]);
   });

@@ -75,6 +75,11 @@ export const ALL_SECRET_IDS = [
   "collab-database-url", // SEC.1 — the `rhema_collab` role's DSN (REQ-ARCH-30: no plaintext env on
   //   collab). Operator-seeded like the rest — seed BEFORE the deploy that flips collab's env to
   //   secretKeyRef or the service crash-loops on a versionless secret.
+  "turbo-cache-token", // OPS.2 — the Bearer every CI/local turbo client presents to the self-hosted
+  //   remote-cache service (apps/turbo-cache). Its version is PULUMI-MANAGED on EVERY stage (a
+  //   @pulumi/random value the program writes — never operator-seeded, never committed; REQ-ARCH-30).
+  //   The token is the endpoint's only authz (the Cloud Run service is deliberately unauthenticated
+  //   for GitHub-hosted runners — see the OPS.2 cache-server ADR).
 ] as const;
 
 /**
@@ -102,6 +107,8 @@ export const NONPROD_GENERATED_SECRET_IDS = [
   "app-database-url",
   "collab-database-url",
   "system-database-url",
+  "turbo-cache-token", // OPS.2 — program-written on every stage (all-stages generated: prod's token
+  //   is ALSO IaC-minted — a brand-new secret with no operator-seeded state to adopt).
 ] as const;
 
 /** The dev secret set (OPS.1 — trimmed 2026-10-04): the shared-integration stack boots on the
@@ -251,6 +258,14 @@ export interface StageConfig {
    * (HUMAN-H6); provisioning stays versionless, values never enter the program or any ledger.
    */
   readonly requiredSecrets: readonly string[];
+  /**
+   * OPS.2 — the Cloud Billing account this stage's budget alert + billing-export dataset attach to
+   * (`billingAccounts/…` id, a non-secret fact). Prod only: the $50/mo budget alert (the operator's
+   * stated ceiling — ADR-010's ~$50 target / ~$95 floor) is a prod posture, and the export dataset
+   * lives in the prod project so the console export flip is one step (D-OPS.2-1). Undefined ⇒ the
+   * billing module creates nothing.
+   */
+  readonly billingAccountId?: string;
 }
 
 /**
@@ -330,6 +345,9 @@ export const STAGES: Record<StageKind, StageConfig> = {
     refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
+    // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
+    // rhema-507501`). Enables the $50 budget alert + the `billing_export` BigQuery dataset.
+    billingAccountId: "018CB8-639CF9-C243C7",
   },
 };
 
