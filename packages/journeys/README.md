@@ -24,8 +24,19 @@ and the deploy-provenance check.
   tenant, expired cookie) re-mints. `assertTestIdentity` makes non-test sessions impossible.
 - `src/spend-guard.ts` — the weekly ≤ $5 metered-spend bound (flagged-tenant `usage_records`).
 - `src/provenance.ts` + `scripts/check-deploy-provenance.mjs` — the deploy SHA vs chain-tip check.
-- `src/steps.ts` — the step implementations (`STEP_IMPLS`), one per registry row.
-- `fixtures/paid-fixture.md` — the ≤300-word paid fixture (plants one knowingly-false claim for N6).
+- `src/steps.ts` — the step implementations (`STEP_IMPLS`), one per registry row; `src/impls.ts` is
+  the map the runner consumes (base steps + the STB.5a live-leg map, split out to avoid an import
+  cycle).
+- `src/cli.ts` — the `rhema-journeys` entrypoint (nightly $0 legs; weekly adds `--paid`).
+- `src/nonce.ts` — the run nonce + test-identity helpers (every created artifact is nonce-namespaced
+  so steps are idempotent).
+- `src/stb5a.ts` / `src/stb5b.ts` — the bounded live-leg step sets (BL-21/BL-22 browser walks;
+  BL-16…19 paid legs riding the spend guard).
+- `src/provision-res1.ts` — RES.1's live-probe provisioning through the real surfaces.
+- `fixtures/` — the journey inputs: `paid-fixture.md` (the ≤300-word paid fixture that plants one
+  knowingly-false claim for N6), `golden-op-ed.md`, `planted-error-essay.md` /
+  `planted-error-excerpt.md` (RES.1), `restore-eval-essay.md` (ECON.2's ~6,000-word restore
+  measurement).
 
 ## Run it
 

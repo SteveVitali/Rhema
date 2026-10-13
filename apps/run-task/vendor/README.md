@@ -16,9 +16,9 @@ apps/run-task/vendor/claude-agent-sdk-linux-x64/claude  # the platform NATIVE bi
 **Both are required for a live run.** The wrapper (`sdk.mjs`) is a thin control-plane shim: its `query()`
 spawns the separate **native `claude` CLI binary** and speaks a stdio protocol to it. That binary is NOT in
 the wrapper package — it ships as the platform optionalDependency `@anthropic-ai/claude-agent-sdk-linux-x64`
-(the GKE node arch is `node:22-bookworm-slim` = glibc `linux-x64`; use the `-musl` variant only on an Alpine
-base). Vendoring only the wrapper makes the first live `query()` throw `Native CLI binary for linux-x64 not
-found` **before any inference** (preflight audit F1).
+(the runtime is `gcr.io/distroless/nodejs22-debian12` since SEC.3 — still glibc `linux-x64`; use the
+`-musl` variant only on an Alpine base). Vendoring only the wrapper makes the first live `query()` throw
+`Native CLI binary for linux-x64 not found` **before any inference** (preflight audit F1).
 
 The `apps/run-task/Dockerfile` runtime stage copies `vendor/` and:
 
