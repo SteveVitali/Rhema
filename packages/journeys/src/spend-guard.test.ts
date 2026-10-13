@@ -4,9 +4,12 @@ import { checkWeeklySpendCap, WEEKLY_PAID_CAP_USD, type SpendDb } from "./spend-
 // JOURNEY.1 — the weekly $5 spend guard: reads flagged-tenant usage for the ISO week, fails the
 // paid run before dispatch when the cap is spent.
 
-function fakeDb(usd: number, capture?: { sql?: string; params?: unknown[] }): SpendDb {
+function fakeDb(usd: number, capture?: { sql?: string; params?: unknown[] }, bypassRls = true): SpendDb {
   return {
     async query(sql, params) {
+      if (sql.includes("pg_roles")) {
+        return { rows: [{ bypass_rls: bypassRls }] };
+      }
       if (capture) {
         capture.sql = sql;
         capture.params = params;
@@ -49,5 +52,18 @@ describe("checkWeeklySpendCap", () => {
     expect(r.weeklyMeteredUsd).toBeNull();
     expect(r.withinCap).toBe(true);
     expect(r.reason).toContain("no-db");
+  });
+  // D-STB.5b-1 (CAP.3): the prod reading — JOURNEY_DATABASE_URL bound the app-login role, FORCE
+  // RLS filtered usage_records to zero rows, and the guard greenlit a paid leg over a $58.08 week.
+  it("a non-RLS-bypassing pool fails CLOSED — a blind $0 is not a measurement", async () => {
+    const r = await checkWeeklySpendCap({ db: fakeDb(0, undefined, false) });
+    expect(r.withinCap).toBe(false);
+    expect(r.weeklyMeteredUsd).toBeNull();
+    expect(r.reason).toContain("system DSN");
+  });
+  it("the meter query never runs under an untrusted role (the read itself is refused)", async () => {
+    const capture: { sql?: string } = {};
+    await checkWeeklySpendCap({ db: fakeDb(999, capture, false) });
+    expect(capture.sql).toBeUndefined();
   });
 });

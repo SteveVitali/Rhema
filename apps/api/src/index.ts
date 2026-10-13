@@ -601,6 +601,9 @@ export function createApp(deps?: ApiDeps & BetaApiDeps): Hono {
           txRunner: deps.txRunner,
           ids: deps.ids,
           clock: deps.clock,
+          // CAP.3 (D-STB.5a-1) — the emailed token link's cross-tenant lookup rides the BYPASSRLS
+          // system pool; the user pool is FORCE-RLS'd empty without a tenant GUC.
+          ...(deps.systemExec ? { systemExec: deps.systemExec } : {}),
           ...(deps.queue ? { queue: deps.queue } : {}),
           ...(deps.exportPresign ? { presignGet: deps.exportPresign } : {}),
           ...(deps.contentStore ? { store: deps.contentStore } : {}),

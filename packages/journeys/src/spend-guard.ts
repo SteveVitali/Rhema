@@ -40,6 +40,24 @@ export async function checkWeeklySpendCap(
   // ISO week start (Monday 00:00 UTC).
   const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
+  // D-STB.5b-1 (CAP.3): a DB bound under `rhema_app_login` reads usage_records through FORCE RLS —
+  // the week's real spend filters to $0 and the guard greenlights a paid leg it was built to stop.
+  // A meter read is only trustworthy from a role that bypasses RLS (superuser or BYPASSRLS — the
+  // system-role contract the worker binds for cross-tenant reads); pg_roles is world-readable so
+  // the probe runs under any role. An untrusted pool fails CLOSED: refuse the leg, don't attest.
+  const trust = await deps.db.query(
+    `select (r.rolsuper or r.rolbypassrls) as bypass_rls from pg_roles r where r.rolname = current_user`,
+  );
+  if (trust.rows[0]?.bypass_rls !== true) {
+    return {
+      capUsd: cap,
+      weeklyMeteredUsd: null,
+      withinCap: false,
+      reason:
+        "meter pool is not RLS-bypassing (app-login reads usage_records as $0 under FORCE RLS): " +
+        "bind JOURNEY_DATABASE_URL to the system DSN — refusing to trust a blind read",
+    };
+  }
   const r = await deps.db.query(
     `select coalesce(sum(u.list_cost_usd), 0)::float8 as usd
        from usage_records u

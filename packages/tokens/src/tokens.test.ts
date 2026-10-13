@@ -136,4 +136,25 @@ describe("ideCss()", () => {
   it("the only modal styling is the Cancel-run shell modal — no generic modal utilities", () => {
     expect(css).toContain(".ide-modal");
   });
+  // D-CAP.2-3 (UX.2 / ADR-067) — the cascade seam: the phone override for `.ide .ide-actions a`
+  // (≥44 px inside `@media (max-width: ${bpPhone-1}px)`) must be the LAST equal-specificity
+  // declaration of the property. A base rule emitted after the media block silently deads the
+  // override at every width — the rule prod shipped (25-px targets at 390 px; journey P1 red).
+  it("the phone ≥44-px action-row rule wins the cascade — base rule precedes the media override", () => {
+    const phoneBlock = `@media (max-width: ${LAYOUT.bpPhonePx - 1}px)`;
+    const mediaIdx = css.indexOf(phoneBlock);
+    expect(mediaIdx, "phone media block present").toBeGreaterThan(-1);
+    const baseIdx = css.indexOf(".ide .ide-actions a { display: inline-flex; align-items: center; min-height: 24px");
+    const phoneIdx = css.indexOf(".ide .ide-actions a { min-height: 44px");
+    expect(baseIdx, "base 24-px rule present").toBeGreaterThan(-1);
+    expect(phoneIdx, "phone 44-px override present").toBeGreaterThan(-1);
+    // the base rule is OUTSIDE the media block and BEFORE it; the override is inside.
+    expect(baseIdx).toBeLessThan(mediaIdx);
+    expect(phoneIdx).toBeGreaterThan(mediaIdx);
+    // no equal-specificity `.ide .ide-actions a` declaration may follow the override —
+    // a later base min-height is exactly the dead-override defect this guards.
+    const overrideDeclIdx = css.indexOf("min-height: 44px", phoneIdx);
+    const tail = css.slice(overrideDeclIdx);
+    expect(tail).not.toMatch(/\.ide \.ide-actions a \{[^}]*min-height/);
+  });
 });

@@ -14,10 +14,30 @@ import type { SqlExecutor } from "./sql.js";
 /**
  * Iteration caps as orchestrator budgets (REQ-DATA-20; §12.6): a fidelity audit / gap check may iterate at
  * most 3×, a re-plan at most 2×; exceeding one ends the step `completed_partial` with the artifact retained.
- * Encoded here as data; re-plan (2) is enforced in the orchestrator's `recordReplan` (P0.08). The audit/gap
- * enforcement is part of the live input-scoped subagent loop (deferred with the live subagent launch).
+ * Encoded here as data; re-plan (2) is enforced in the orchestrator's replan path (P0.08/P1.10). CAP.3
+ * (D-STB.5b-2) gives the audit/gap caps their consumer: every input-scoped subagent iteration is a
+ * `subagent_launches` row through `recordSubagentLaunch`, so the launch recorder refuses the (cap+1)-th
+ * launch for a capped role — the ledger is the budget, counted per run across attempts.
  */
 export const ITERATION_CAPS = { audit: 3, gapCheck: 3, replan: 2 } as const;
+
+/** The scoped-role labels whose launches are bounded by `ITERATION_CAPS` (§12.6 roles). */
+export const SCOPED_LABEL_CAPS: Readonly<Record<string, number>> = {
+  "fidelity-auditor": ITERATION_CAPS.audit,
+  "gap-analyst": ITERATION_CAPS.gapCheck,
+};
+
+/** The (cap+1)-th scoped launch of a capped role for one run — the audit budget spent. */
+export class IterationCapError extends Error {
+  constructor(
+    readonly runId: string,
+    readonly label: string,
+    readonly cap: number,
+  ) {
+    super(`iteration cap reached: scoped role '${label}' already launched ${cap}× for run ${runId} (ITERATION_CAPS)`);
+    this.name = "IterationCapError";
+  }
+}
 
 export interface SubagentScoping {
   readonly label: string;
@@ -67,12 +87,28 @@ export interface RecordLaunchArgs {
   readonly producerQueryId?: string;
 }
 
-/** Record an orchestrator-launched input-scoped subagent (§12.6; the producer-check + attestation source). */
+/**
+ * Record an orchestrator-launched input-scoped subagent (§12.6; the producer-check + attestation source).
+ * CAP.3 (D-STB.5b-2): this is also the iteration-cap choke point — a capped role's (cap+1)-th launch for the
+ * run throws `IterationCapError` BEFORE the row lands, so the launch loop ends the audit with the artifacts
+ * already produced rather than burning a fourth query. Uncapped roles (second-reader, holdout-calibrator)
+ * are untouched.
+ */
 export async function recordSubagentLaunch(
   exec: SqlExecutor,
   deps: { ids: (prefix: string) => string; clock: { now(): Date } },
   args: RecordLaunchArgs,
 ): Promise<string> {
+  const cap = SCOPED_LABEL_CAPS[args.label];
+  if (cap != null) {
+    const prior = (
+      await exec.query(
+        `select count(*)::int as n from subagent_launches where run_id = $1 and label = $2`,
+        [args.runId, args.label],
+      )
+    ).rows[0] as { n: number };
+    if (prior.n >= cap) throw new IterationCapError(args.runId, args.label, cap);
+  }
   const id = deps.ids("sub");
   const paths = args.inputPaths ?? [];
   await exec.query(

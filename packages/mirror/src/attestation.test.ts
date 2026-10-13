@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { materializeSeat } from "./materialize.js";
-import { accessReportEvent, buildAccessReport, recordMounts, recordSubagentLaunch, renderAccessReportMd } from "./attestation.js";
+import { accessReportEvent, buildAccessReport, ITERATION_CAPS, IterationCapError, recordMounts, recordSubagentLaunch, renderAccessReportMd } from "./attestation.js";
 import { parseRunEvent } from "@rhema/contracts";
 import { createMirrorTestDb, testDeps, type MirrorTestDb } from "./testing/harness.js";
 import { InMemoryContentStore } from "./content-store.js";
@@ -74,6 +74,59 @@ describe("access report (attestation)", () => {
     expect(md).toContain("# Access report");
     expect(md).toContain("second-reader: explicit_files");
     expect(md).toContain("URLs fetched: 2");
+  });
+
+  // D-STB.5b-2 (CAP.3; REQ-DATA-20, §12.6) — the audit/gap-check iteration caps were declared in
+  // ITERATION_CAPS with no consumer (only .replan was enforced). The launch ledger is the budget:
+  // a capped role's (cap+1)-th `subagent_launches` row is refused before it lands.
+  it("ITERATION_CAPS bound a capped role's launches at the ledger — the (cap+1)-th is refused", async () => {
+    const launchDeps = testDeps(1000);
+    for (let i = 0; i < ITERATION_CAPS.audit; i++) {
+      await recordSubagentLaunch(db.exec, launchDeps, {
+        runId, attempt: i + 1, label: "fidelity-auditor", inputsKind: "explicit_files",
+        inputPaths: ["/work/project/drafts/v1.md"],
+      });
+    }
+    await expect(
+      recordSubagentLaunch(db.exec, launchDeps, {
+        runId, attempt: 9, label: "fidelity-auditor", inputsKind: "explicit_files",
+        inputPaths: ["/work/project/drafts/v1.md"],
+      }),
+    ).rejects.toMatchObject({ name: "IterationCapError", cap: ITERATION_CAPS.audit });
+    const n = (await db.exec.query(
+      `select count(*)::int as n from subagent_launches where run_id = $1 and label = 'fidelity-auditor'`,
+      [runId],
+    )).rows[0] as { n: number };
+    expect(n.n).toBe(ITERATION_CAPS.audit); // the refused launch left no row
+  });
+
+  it("the gap-analyst cap binds independently; uncapped roles are untouched; the count is per-run", async () => {
+    const launchDeps = testDeps(2000);
+    for (let i = 0; i < ITERATION_CAPS.gapCheck; i++) {
+      await recordSubagentLaunch(db.exec, launchDeps, {
+        runId, attempt: 1, label: "gap-analyst", inputsKind: "explicit_files", inputPaths: [],
+      });
+    }
+    await expect(
+      recordSubagentLaunch(db.exec, launchDeps, {
+        runId, attempt: 1, label: "gap-analyst", inputsKind: "explicit_files", inputPaths: [],
+      }),
+    ).rejects.toBeInstanceOf(IterationCapError);
+    // a different run's budget is its own; the uncapped calibrator label is unaffected.
+    await seedRun(db.exec, { runId: "run_att2", workspaceId, projectId, state: "running" });
+    await recordSubagentLaunch(db.exec, launchDeps, {
+      runId: "run_att2", attempt: 1, label: "gap-analyst", inputsKind: "explicit_files", inputPaths: [],
+    });
+    for (let i = 0; i < ITERATION_CAPS.gapCheck + 2; i++) {
+      await recordSubagentLaunch(db.exec, launchDeps, {
+        runId, attempt: 1, label: "holdout-calibrator", inputsKind: "explicit_files", inputPaths: [],
+      });
+    }
+    const cal = (await db.exec.query(
+      `select count(*)::int as n from subagent_launches where run_id = $1 and label = 'holdout-calibrator'`,
+      [runId],
+    )).rows[0] as { n: number };
+    expect(cal.n).toBe(ITERATION_CAPS.gapCheck + 2);
   });
 
   it("re-materialization at resume replaces the (run, attempt) manifest row", async () => {

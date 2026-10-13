@@ -2,6 +2,7 @@
   "$comment": "SEC.1 (REQ-SPEC-30; ADR-017) — THE SYSTEM-POOL BOUNDARY. Every file listed here may reference the system-pool seams (systemExec / systemTxRunner / systemPool / systemDatabaseUrl / SYSTEM_DATABASE_URL). Everything else — user routes above all — must not touch them: eslint-plugin-rhema/no-system-pool-in-user-route enforces it and packages/security-checks pins this list so an addition is a deliberate, reviewed act. See docs/security/tenancy-audit.md for the per-path audit.",
   "files": {
     "apps/api/src/admin-cli.ts": "operator CLI — SYSTEM_DATABASE_URL only (cross-tenant support/tooling by design)",
+    "apps/api/src/account-export-routes.ts": "CAP.3 (D-STB.5a-1; ADR-090) — the anonymous emailed-token download resolves token_sha256→row + stamps downloaded_at on systemExec: the token IS the credential (no session ⇒ no tenant GUC ⇒ the FORCE-RLS table reads empty on the user pool); unbound ⇒ 503 fail-closed",
     "apps/api/src/billing-routes.ts": "Stripe webhook intake writes stripe_events (system table) through systemExec",
     "apps/api/src/claim-prepass.ts": "proxy credential mint/revoke for the claim pre-pass — elevated seam",
     "apps/api/src/env.ts": "parses SYSTEM_DATABASE_URL",
