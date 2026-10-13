@@ -152,7 +152,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     scopes: ["section", "selection", "version"],
     levers: ["target", "venue", "protect", "rigor", "tier"],
     note: "--target 900 or --venue nyt-oped; --protect @section:IV",
-    disabledReason: "Cut to length is a 1.x workflow — not yet available.",
+    disabledReason: "Cut to length isn't available yet.",
   },
   {
     verb: "lineedit",
@@ -163,7 +163,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     phase: "one_x",
     scopes: ["section", "selection", "version"],
     levers: ["rigor", "tier"],
-    disabledReason: "Line edit is a 1.x workflow — not yet available.",
+    disabledReason: "Line edit isn't available yet.",
   },
   {
     verb: "title",
@@ -174,7 +174,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     phase: "one_x",
     scopes: ["version"],
     levers: ["variants", "rigor", "tier"],
-    disabledReason: "Titles is a 1.x workflow — not yet available.",
+    disabledReason: "Titles isn't available yet.",
   },
   {
     verb: "abstract",
@@ -185,7 +185,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     phase: "one_x",
     scopes: ["version"],
     levers: ["variants", "rigor", "tier"],
-    disabledReason: "Abstract is a 1.x workflow — not yet available.",
+    disabledReason: "Abstract isn't available yet.",
   },
   {
     verb: "reverse-outline",
@@ -196,7 +196,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     phase: "one_x",
     scopes: ["version"],
     levers: ["rigor", "tier"],
-    disabledReason: "Reverse outline is a 1.x workflow — not yet available.",
+    disabledReason: "Reverse outline isn't available yet.",
   },
   {
     verb: "steelman",
@@ -207,7 +207,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     phase: "one_x",
     scopes: ["version", "outline"],
     levers: ["rigor", "tier"],
-    disabledReason: "Steelman is a 1.x workflow — not yet available.",
+    disabledReason: "Steelman isn't available yet.",
   },
   {
     verb: "interview",
@@ -218,7 +218,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     phase: "one_x",
     scopes: ["outline", "version"],
     levers: ["rigor", "tier"],
-    disabledReason: "Interview me is a 1.x workflow — not yet available.",
+    disabledReason: "Interview me isn't available yet.",
   },
   {
     verb: "rounds",
@@ -230,7 +230,7 @@ export const VERB_TABLE: readonly VerbSpec[] = [
     scopes: ["version"],
     levers: ["until", "max", "budget"],
     note: "--until minor|rubric>=4 --max 3 --budget 6000",
-    disabledReason: "Run rounds is a 1.x workflow — not yet available.",
+    disabledReason: "Run rounds isn't available yet.",
   },
 ];
 

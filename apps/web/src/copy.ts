@@ -7,8 +7,22 @@ export const COPY = {
   brand: "Rhēma",
   tagline: "A serious editor for serious writing.",
 
+  // UX.1 — the public routes' meta descriptions (render.tsx emits them as description/OG/Twitter).
+  // Factual, no claims beyond what the pages themselves show; figures stay on /pricing (config-derived).
+  meta: {
+    landing:
+      "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources and hands back a dossier you can act on.",
+    pricing: "Rhēma pricing — plans, credits, and the per-workflow cost cards.",
+    signup: "Create a Rhēma account — Google or a magic link, no password.",
+    signIn: "Sign in to Rhēma — Google or a magic link, no password.",
+    showcase:
+      "The Rhēma Showcase — a read-only worked example: a real essay's dossier, letter, claims ledger, and findings.",
+  },
+
   invite: {
     heading: "Rhēma is in private beta.",
+    // UX.1 — open mode never claims a closed program: the invite surface's heading follows the mode.
+    headingOpen: "Welcome to Rhēma.",
     lede:
       "Rhēma reads a finished draft the way a demanding editor would — it checks every load-bearing claim against real sources, maps the argument, and hands back a dossier you can act on.",
     accessNote: "Access is by invitation. If you have a code, sign in below.",
@@ -151,7 +165,6 @@ export const COPY = {
   project: {
     backToList: "All projects",
     backToProject: "Back to the project",
-    betaNote: "The full editing surface arrives with the studio. This is the beta view.",
     importCta: "Import a draft",
     editCta: "Edit source",
     exportCta: "Export",
@@ -200,16 +213,20 @@ export const COPY = {
     // run exists (at most one per project; the api 409s a second create — this is the honest screen).
     inProgress: "A run is already in progress on this project.",
     openRun: "Open the live run",
-    // PRB.08 — the exhaustion panel's Payment Link action + the suspended-account notice + the final-month
-    // beta-plan offer (copy + link only — REQ-BETA-14/15, §14.6; no subscription machinery).
+    // PRB.08 — the exhaustion panel's Payment Link action + the suspended-account notice + the offer
+    // line (copy + link only — REQ-BETA-14/15, §14.6; no subscription machinery). UX.1: the old text
+    // claimed a "beta plan" no pricing.json plan backs — the honest version just points at /pricing
+    // (itself config-derived; no terms are hand-written here).
     buyCredits: "Add credits",
     // BILL.3 — the exhaustion panel + the bounced POST while purchase is closed for the account.
     purchasePaused: "Purchases are paused while we finish rolling them out — your balance and work are safe.",
     suspended: "This account is paused while a payment dispute is open — runs can't start until it resolves.",
     // PRB.13 — the verified-email gate's notice (REQ-BETA-19 amended): the sign-in link is the verification.
     emailUnverified: "Runs need a verified email — your sign-in link verifies it.",
-    planOffer: "Beta pricing ends when we launch. Founding users keep the beta rate for a year.",
-    planOfferLink: "See the beta plan",
+    // renders only when the deploy configures the offer link (env `BETA_PLAN_OFFER_URL`); the copy
+    // makes no pricing claim — it points at the config-derived pricing page.
+    planOffer: "Plans and credit packs are listed on the pricing page.",
+    planOfferLink: "See pricing",
     factCheckToggle: "Fact-check every claim",
     discourseToggle: "Map the field",
     secondReadToggle: "Second read",
@@ -699,7 +716,7 @@ export const COPY = {
   },
   appBanner: {
     enabled: false, // the shipped-app flag — flips when the 1.x app exists (REQ-MOBILE-3 amended)
-    label: "Open in the Rhema app",
+    label: "Open in the Rhēma app",
   },
 
   // P1.19 — the §5.11 Inbox (`/app/inbox`; REQ-IDE-2 amended): needs-you → unread → earlier → voices.
@@ -1068,7 +1085,7 @@ export const COPY = {
       noDocument: "Not fetched yet.",
       reconstructTextCta: "Reconstruct text (~4 credits)",
       reconstructVisualCta: "Visual reconstruction (~180 credits)",
-      reconstructQueued: "Reconstruction queued — the new version lands here.",
+      reconstructQueued: "Reconstruction queued — the new version appears here when it's ready.",
       deleteVoiceHeading: "Delete this voice",
       deleteVoiceNote: "Deletes the voice, its samples, and profile data. Type “delete” to confirm.",
       deleteVoiceCta: "Delete voice",
@@ -1209,7 +1226,7 @@ export const COPY = {
     /** REQ-PROD-15 carried into Data — the §14.7 verbatim toggle (checked = excluded). */
     analyticsLabel: "Exclude my usage from product analytics",
     analyticsNote:
-      "Usage events tell us which parts of the beta earn their keep. Turning this off stops new telemetry and removes your events from every report.",
+      "Usage events tell us which parts of Rhēma earn their keep. Turning this off stops new telemetry and removes your events from every report.",
     // P1.01 — the app-theme control (REQ-IDE-38): dark/light/auto, persisted per user; the IDE shell's
     // theme menu writes the same field.
     themeHeading: "Appearance",
@@ -1405,7 +1422,7 @@ export const COPY = {
       voiceHeading: "Voice",
       voiceNone: "No voice linked",
       tagsHeading: "Tags",
-      tagsPlaceholder: "Tags land in 1.x — nothing to edit yet.",
+      tagsPlaceholder: "Tags aren't available yet — nothing to edit here.",
       approvalsHeading: "Approvals",
       guidanceHeading: "Standing guidance",
       saveCta: "Save settings",
@@ -1634,7 +1651,7 @@ export const COPY = {
         findings: "Findings",
         claims: "Claims",
       },
-      emptyChat: "The Assistant lands here in a later pass.",
+      emptyChat: "No chat yet — ask the Assistant anything about this project.",
       emptyFeed: "No run activity yet.",
       emptyFindings: "No findings yet.",
       emptyClaims: "No claims yet.",
@@ -2070,7 +2087,7 @@ export const COPY = {
         "The second read never sees the first reader's notes",
         "Independent second read, not a panel of personas",
       ] as const,
-      sampleNote: "A read-only sample dossier — the fixture the Showcase ships.",
+      sampleNote: "A read-only sample dossier — the same worked example the Showcase ships.",
     },
     workflow: {
       heading: "The workflow, in lifecycle order",
@@ -2120,7 +2137,7 @@ export const COPY = {
     },
     changelog: {
       heading: "Changelog",
-      body: "Phase 1 — the full IDE, the public funnel, and the Showcase launch together.",
+      body: "What's live now: the full editor, the public funnel, and the Showcase.",
     },
     faq: {
       heading: "Questions",
@@ -2213,6 +2230,15 @@ export const COPY = {
 
   // ---- §15.4 — the Showcase row + dossier chrome ----
   showcase: {
+    // UX.1 — `/showcase`'s own page copy (the signed-out static sample; signed-in lands on the
+    // viewer's real Showcase project).
+    pageHeading: "Showcase",
+    pageLede:
+      "A read-only worked example — the dossier Rhēma hands back on a real essay: the editor's letter, the claims ledger, and the findings.",
+    readOnlyNote:
+      "Every account ships this same example in its workspace. Sign in to see yours — it stays read-only so the sample never changes.",
+    signUpCta: "Create your account",
+    signInCta: "Sign in",
     rowLabel: "Worked example",
     bannerTitle: "Welcome — a worked example",
     bannerBody: "This dossier is read-only: it shows what the board hands back before your own work is in. Duplicate it into a project of your own to play with the moves.",
@@ -2221,7 +2247,7 @@ export const COPY = {
     heldFileReady: "Your held file is here — upload it to start.",
   },
 
-  footer: "Rhēma · private beta",
+  footer: "Rhēma",
 } as const;
 
 /** A `[path, value]` pair for every string leaf in the copy tree (functions/objects skipped). */

@@ -1499,6 +1499,99 @@ const X1: StepFn = async (ctx) => {
   }
 };
 
+/** UX.1 — N10 (GREEN): the public surfaces carry honest copy + real document chrome. A distinct
+ *  route-aware `<title>` on every public route; description + OG + Twitter tags; the favicon serves
+ *  200 and every document links it; exactly ONE `<h1>` per page; no "private beta" / "1.x" /
+ *  "coming soon" wording anywhere; and `/showcase` renders the read-only sample dossier to a
+ *  signed-out visitor (manifest invariant 13). */
+const N10: StepFn = async (ctx) => {
+  const { page } = await ctx.anon();
+  const titles = new Set<string>();
+  for (const path of ["/", "/pricing", "/signup", "/login", "/showcase"]) {
+    await gotoOk(page, `${ctx.webBaseUrl}${path}`);
+    const t = await page.title();
+    if (!t || !/Rhēma/.test(t)) throw new Error(`${path}'s <title> is empty or unbranded ("${t}")`);
+    if (titles.has(t)) throw new Error(`${path}'s <title> repeats another route's ("${t}")`);
+    titles.add(t);
+    const h1s = await page.locator("h1").count();
+    if (h1s !== 1) throw new Error(`${path} renders ${h1s} <h1> elements — exactly one per page`);
+    for (const sel of [
+      'meta[name="description"]',
+      'meta[property="og:title"]',
+      'meta[property="og:description"]',
+      'meta[name="twitter:card"]',
+      'link[rel="icon"]',
+    ]) {
+      if ((await page.locator(sel).count()) === 0) {
+        throw new Error(`${path} is missing ${sel}`);
+      }
+    }
+    const body = (await page.textContent("body")) ?? "";
+    if (/private beta/i.test(body)) throw new Error(`${path} still claims "private beta"`);
+    if (/\b1\.x\b/i.test(body)) throw new Error(`${path} leaks the "1.x" roadmap term`);
+    if (/coming soon/i.test(body)) throw new Error(`${path} carries a "coming soon" promise`);
+  }
+  // the favicon actually serves (the head link is meaningless if the endpoint 404s).
+  const icon = await page.goto(`${ctx.webBaseUrl}/favicon.svg`);
+  if (!icon || icon.status() !== 200) throw new Error(`/favicon.svg → ${icon?.status()}`);
+  // /showcase's signed-out leg IS the sample dossier — its letter text is on the page.
+  await gotoOk(page, `${ctx.webBaseUrl}/showcase`);
+  const sc = (await page.textContent("body")) ?? "";
+  if (!sc.includes("The Politics of Visibility") || !sc.includes("tested")) {
+    throw new Error("/showcase did not render the sample dossier to a signed-out visitor");
+  }
+};
+
+/** UX.1 — R8 (GREEN, $0): the signed-in legs. `/showcase` resolves to the workspace's own Showcase
+ *  (the dossier redirect) or the static sample — never another tenant's; Preferences lists ONLY
+ *  the launched workflows (no "1.x"/unlaunched rows); the Inbox's waiting count IS its Needs-you
+ *  row count and a project name rides each row. */
+const R8: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+  // /showcase — signed-in resolves to the tenant's Showcase project or the sample page; either way
+  // it must render a dossier surface and never a foreign slug.
+  const r = await page.goto(`${ctx.webBaseUrl}/showcase`, { waitUntil: "domcontentloaded" });
+  if (!r || r.status() >= 400) throw new Error(`signed-in GET /showcase → ${r?.status()}`);
+  const scBody = (await page.textContent("body")) ?? "";
+  const onShowcase = /\/showcase$/.test(page.url()) || /\/p\/[^/]+/.test(page.url());
+  if (!onShowcase) throw new Error(`signed-in /showcase landed somewhere unexpected (${page.url()})`);
+  if (!/The Politics of Visibility|Showcase/i.test(scBody)) {
+    throw new Error("signed-in /showcase renders neither the workspace Showcase nor the sample");
+  }
+  // Preferences — every rigor-by-workflow row must be a launched workflow; nothing unlaunched shows.
+  await gotoOk(page, `${ctx.webBaseUrl}/app/settings/preferences`);
+  const prefNames = await page
+    .locator('select[name^="rigor_"]')
+    .evaluateAll((els) => els.map((e) => e.getAttribute("name")));
+  for (const name of prefNames) {
+    if (/cut_to_length|line_edit|titles|abstract|reverse_outline|steelman|interview|run_rounds|map_the_field|compose_voice/.test(name ?? "")) {
+      throw new Error(`Preferences renders an unlaunched workflow row: ${name}`);
+    }
+  }
+  const prefBody = (await page.textContent("body")) ?? "";
+  if (/\b1\.x\b|not yet available|isn't available/i.test(prefBody)) {
+    throw new Error("Preferences copy still references unavailable workflows");
+  }
+  // Inbox — the "waiting on your call" count equals the Needs-you row count, verbatim.
+  await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);
+  const badge = await page.locator("[data-inbox-badge]").textContent().catch(() => null);
+  const blocked = await page.locator('[data-inbox-section="blocked"] [data-inbox-row]').count();
+  const n = badge ? Number((/\d+/.exec(badge) ?? [NaN])[0]) : NaN;
+  if (!Number.isNaN(n) && n !== blocked) {
+    throw new Error(`Inbox badge says ${n} but renders ${blocked} waiting rows`);
+  }
+  // every Inbox row carries a project name (the row's project-meta line or the gate copy's slug).
+  const rows = page.locator("[data-inbox-row]");
+  const rowCount = await rows.count();
+  for (let i = 0; i < rowCount; i++) {
+    const meta = await rows.nth(i).locator("[data-inbox-project]").count();
+    const text = (await rows.nth(i).textContent()) ?? "";
+    if (meta === 0 && !/·/.test(text)) {
+      throw new Error(`Inbox row ${i} carries no project name`);
+    }
+  }
+};
+
 // ---------------------------------------------------------------- the free fixture (≤300 words)
 
 const FREE_FIXTURE = `# Journey fixture
@@ -1517,11 +1610,13 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   N7,
   N8,
   N9,
+  N10,
   R1,
   R4,
   R5,
   R6,
   R7,
+  R8,
   P1,
   C1,
   X1,

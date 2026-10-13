@@ -442,7 +442,10 @@ interface MailJob {
 
 /**
  * Upsert the §5.11 Inbox row on (user_id, collapse_key): a repeat event re-writes title/body/href in
- * place and re-marks the row unread — collapse means UPDATE, not a second row.
+ * place and re-marks the row unread — collapse means UPDATE, not a second row. UX.1 (ADR-063):
+ * `keepReadOnRepeat` opts a low-signal event class out of the re-unread — the copy still updates
+ * (the collapsed row stays current) but a repeat no longer re-badges (a crashy run requeuing three
+ * times produced three unread "Run recovered" rows — the design review's noise).
  */
 async function upsertInboxItem(
   tx: SqlClient,
@@ -458,6 +461,8 @@ async function upsertInboxItem(
     collapseKey: string;
     visibleAt: Date;
     now: Date;
+    /** repeat upserts leave `read_at` alone (the row refreshes without re-badging). */
+    keepReadOnRepeat?: boolean;
   },
 ): Promise<void> {
   const payload = {
@@ -471,7 +476,8 @@ async function upsertInboxItem(
      values ($1,$2,$3,'event',$4::jsonb,$5,$6,$7,null,$8)
      on conflict (user_id, collapse_key) where collapse_key is not null
      do update set payload = excluded.payload, project_id = excluded.project_id, run_id = excluded.run_id,
-                   visible_at = excluded.visible_at, read_at = null`,
+                   visible_at = excluded.visible_at,
+                   read_at = case when $9::boolean then inbox_items.read_at else null end`,
     [
       deps.ids("ibx"),
       args.userId,
@@ -481,6 +487,7 @@ async function upsertInboxItem(
       args.runId,
       args.visibleAt,
       args.now,
+      args.keepReadOnRepeat === true,
     ],
   );
 }
@@ -508,6 +515,8 @@ async function deliverInApp(
     billingAccountId?: string | null;
     tag?: string | null;
     now: Date;
+    /** UX.1 — repeat collapses keep the row's read state (no re-badge; the run-recovered notice). */
+    keepReadOnRepeat?: boolean;
   },
 ): Promise<boolean> {
   if (!inAppEnabled(args.prefs, args.eventType, args.projectId)) return false;
@@ -532,6 +541,7 @@ async function deliverInApp(
     }),
     visibleAt,
     now: args.now,
+    ...(args.keepReadOnRepeat === true ? { keepReadOnRepeat: true } : {}),
   });
   return true;
 }
@@ -911,6 +921,9 @@ async function runTerminal(
             ...(projectTitle ? { projectTitle } : {}),
             workflowLabel: r.workflow.replace(/_/g, " "),
             ...(deliveryLabel ? { deliveryLabel } : {}),
+            // UX.1 (ADR-063) — a `completed_partial` run renders "stopped early — the kept results
+            // are ready", never "finished — the deliverable is ready".
+            ...(outcome === "completed_partial" ? { partial: true } : {}),
           }
         : { ...(projectTitle ? { projectTitle } : {}) };
   const inAppOnly = eventType === "run_cancelled_recovered" || outcome === "completed_partial";
@@ -929,6 +942,9 @@ async function runTerminal(
     href: landing,
     copy,
     now,
+    // UX.1 (ADR-063) — an orphan-requeue can fire repeatedly on a crashy run; the collapsed row
+    // updates each time but a repeat recovery never re-badges (one unread, ever, per run).
+    ...(variant === "recovered" ? { keepReadOnRepeat: true } : {}),
   });
 
   if (inAppOnly) return inboxed ? { action: "inbox", eventType } : { action: "noop", reason: "disabled" };

@@ -107,6 +107,15 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: false,
   },
+  {
+    id: "N10",
+    journey: "new-visitor",
+    asserts:
+      "every public route carries a distinct branded title + description/OG/Twitter + favicon + exactly one <h1>; no 'private beta'/'1.x'/'coming soon' copy; signed-out /showcase renders the sample dossier",
+    owner: "UX.1",
+    expected: "green",
+    paid: false,
+  },
   // ---- returning-user journey ---------------------------------------------
   {
     id: "R1",
@@ -145,6 +154,15 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     journey: "returning",
     asserts: "an informational gate does not block; labels match behaviour",
     owner: "RUN.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "R8",
+    journey: "returning",
+    asserts:
+      "signed-in /showcase resolves to the workspace Showcase (or the static sample); Preferences lists only launched workflows; the Inbox waiting count equals its Needs-you rows and every row names its project",
+    owner: "UX.1",
     expected: "green",
     paid: false,
   },

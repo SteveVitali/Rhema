@@ -64,3 +64,9 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-056](ADR-056-corrected-slo-probe-definitions.md) | §13.5 probes measure the signal's own quantity — event-paired episodes, live-tail samples, per-attempt cross-checks; no target changed | SLO.1 | Accepted |
 | [ADR-057](ADR-057-weekly-slo-review-mechanism.md) | the REQ-ARCH-34 weekly review is produced by a worker cron into durable log metrics, not walked from memory | SLO.1 | Accepted |
 | [ADR-058](ADR-058-run-start-remediation-levers.md) | run-start latency is remediated with queue wakeups, a warm image cache, and a costed warm-pool deferral | SLO.1 | Accepted |
+| [ADR-059](ADR-059-user-facing-jargon-lint.md) | The build-jargon lint lives in `copy.test.ts` over `collectCopyStrings()` — sanctioned exceptions are enumerated, not broad | UX.1 | Accepted |
+| [ADR-060](ADR-060-route-metadata-favicon-heading.md) | Route-aware document head — `<page> · Rhēma` titles, public-route social tags, inline-SVG favicon, exactly one `<h1>` | UX.1 | Accepted |
+| [ADR-061](ADR-061-manifest-derived-launched-workflows.md) | The launched-workflow set derives from the shipped manifests — `LAUNCHED_WORKFLOW_KEYS`, with `reseed_charter` filtered from user surfaces | UX.1 | Accepted |
+| [ADR-062](ADR-062-showcase-route-target.md) | `/showcase` — signed-out visitors get the static sample dossier; signed-in viewers resolve to their own Showcase | UX.1 | Accepted |
+| [ADR-063](ADR-063-inbox-honest-rows.md) | Honest Inbox rows — the waiting count IS the rendered Needs-you rows, partials say "stopped early", recoveries collapse without re-badging | UX.1 | Accepted |
+| [ADR-064](ADR-064-magic-link-email.md) | The branded magic-link email — one template, expiry derived from `expiresIn`, a per-send nonce subject that never carries the token | UX.1 | Accepted |

@@ -563,3 +563,65 @@ describe("BILL.3 — the tagged pending-checkout trial_payment leg", () => {
     expect(sent[0]!.html).not.toContain("evil.example");
   });
 });
+
+// UX.1 (ADR-063) — the design review's Inbox copy fixes: a partial run never claims it "finished",
+// a heartbeat-stale orphan requeue says what actually happened, and a REPEAT recovery refreshes the
+// collapsed row without re-badging it (the crashy-run noise).
+describe("UX.1 — honest terminal Inbox rows (partial + recovered)", () => {
+  it("completed_partial renders 'stopped early — the kept results are ready' in-app and stays mail-suppressed", async () => {
+    const { runId } = await seedWaitingRun();
+    await db.client.query("update runs set state = 'completed_partial' where id = $1", [runId]);
+    expect(
+      await handleNotifyJob(deps, {
+        type: "run_terminal",
+        runId,
+        workspaceId: seed.workspaceId,
+        outcome: "completed_partial",
+      }),
+    ).toMatchObject({ action: "inbox", eventType: "run_finished" });
+    await deliverAll();
+    expect(sent).toHaveLength(0); // §5.11: the mail arm is completed/failed-only
+    const row = (
+      await db.client.query(
+        "select payload->>'title' as title, payload->>'body' as body from inbox_items where run_id = $1",
+        [runId],
+      )
+    ).rows[0] as { title: string; body: string | null };
+    expect(row.title).toBe("review stopped early — the kept results are ready");
+    expect(row.title).not.toContain("finished"); // never claims a completed deliverable
+    expect(row.body).toBe("Seed project"); // the project name rides the row
+  });
+
+  it("an orphan requeue reads 'Run stalled — restarted automatically' and a repeat never re-badges", async () => {
+    const { runId } = await seedWaitingRun();
+    // a heartbeat-stale recovery lands while the run is live again (the guard accepts it).
+    await db.client.query("update runs set state = 'running' where id = $1", [runId]);
+    const payload: NotificationJobPayload = {
+      type: "run_terminal",
+      runId,
+      workspaceId: seed.workspaceId,
+      outcome: "recovered",
+    };
+    expect(await handleNotifyJob(deps, payload)).toMatchObject({
+      action: "inbox",
+      eventType: "run_cancelled_recovered",
+    });
+    let row = (
+      await db.client.query("select payload->>'title' as title, read_at from inbox_items where run_id = $1", [runId])
+    ).rows[0] as { title: string; read_at: Date | null };
+    expect(row.title).toBe("Run stalled — restarted automatically");
+    expect(row.title).not.toBe("Run recovered"); // the design review's noise — never again
+    expect(row.read_at).toBeNull();
+
+    // the reader saw it…
+    await db.client.query("update inbox_items set read_at = now() where run_id = $1", [runId]);
+    // …a second recovery on the same run refreshes the collapsed row WITHOUT re-badging it.
+    expect(await handleNotifyJob(deps, payload)).toMatchObject({ action: "inbox" });
+    row = (
+      await db.client.query("select read_at, payload->>'title' as title from inbox_items where run_id = $1", [runId])
+    ).rows[0];
+    expect(row.read_at).not.toBeNull(); // still read — one unread, ever, per run
+    await deliverAll();
+    expect(sent).toHaveLength(0); // cancelled/recovered never mails
+  });
+});

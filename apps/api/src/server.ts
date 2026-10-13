@@ -59,6 +59,7 @@ import {
 } from "@rhema/contracts";
 import { provisionPersonalAccount, SIGNUP_THROTTLE_DEFAULTS } from "./signup.js";
 import { MAGIC_LINK_THROTTLE_DEFAULTS } from "./auth.js";
+import { magicLinkSender } from "./magic-link-email.js";
 import { createGcpOidcVerifier } from "./gcp-oidc.js";
 import { createShowcaseSeeder } from "./showcase.js";
 import { readApiEnv, type ApiEnv } from "./env.js";
@@ -180,15 +181,10 @@ export async function buildApiDeps(env: ApiEnv): Promise<{ deps: ApiDeps; boss: 
         },
         pool, // Better Auth's Kysely adapter accepts a pg.Pool directly.
         // magic-link send → the worker's `auth.mail` queue (Resend is PRB.16's deferred leg — the
-        // enqueue still runs so the transport claim exists for a later re-drive).
-        async ({ email, url }) => {
-          await queue.send("auth.mail", {
-            to: email,
-            subject: "Sign in to Rhema",
-            text: `Sign in to Rhema: ${url}`,
-            html: `<p><a href="${url}">Sign in to Rhema</a></p>`,
-          });
-        },
+        // enqueue still runs so the transport claim exists for a later re-drive). UX.1: the branded
+        // template — macron'd Rhēma, a real button + text fallback, the configured expiry, the
+        // ignore-it safety line, and a per-send nonce subject (distinct per send; never the token).
+        magicLinkSender(queue),
         {
           // SEC.2 (REQ-BETA-19 amended) — the SAME admission boundary POST /signup enforces, on every
           // Better Auth creation path: `user.create.before` throttles + mode/invite-checks (throwing a
