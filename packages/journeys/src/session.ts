@@ -121,13 +121,39 @@ export class JourneySessions {
     const page = await context.newPage();
     await page.goto(`${this.deps.webBaseUrl}/signup`, { waitUntil: "domcontentloaded" });
     const sentAt = Math.floor(Date.now() / 1000) - 30;
-    await page.fill('input[name="email"]', email);
-    // the magic-link submit (never the google button — this harness uses no third-party IdP)
-    await page.click('button[name="method"][value="magic_link"]');
-    // "link sent" — the POST round-trips api admission + personal-workspace provisioning (the
-    // Showcase seed writes artifacts + content-store bytes), so 15 s is too tight on prod; 45 s
-    // still fails fast enough to matter.
-    await page.waitForSelector('[role="status"]', { timeout: 45_000 });
+    // "link sent" vs a refusal — the POST round-trips api admission + personal-workspace
+    // provisioning (the Showcase seed writes artifacts + content-store bytes), so 15 s is too
+    // tight on prod; 45 s still fails fast enough to matter. The per-IP magic-link throttle is a
+    // token bucket: a refusal ("Too many attempts — wait a few minutes") is followed by
+    // acceptance ~a minute later (observed live across three runs — the bucket refills, a
+    // longer-window quota would not have admitted the next send ~60 s on). A bounded wait+resubmit
+    // rides the refill so a burst of per-step mints doesn't fail mid-run; a non-throttle alert or
+    // a persistent refusal still fails with the page's own words.
+    const alertText = async (): Promise<string | null> =>
+      (await page.locator('[role="alert"]').first().textContent().catch(() => null))?.trim() ?? null;
+    let sent = false;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await page.fill('input[name="email"]', email);
+      // the magic-link submit (never the google button — this harness uses no third-party IdP)
+      await page.click('button[name="method"][value="magic_link"]');
+      await page
+        .waitForSelector('[role="status"], [role="alert"]', { timeout: 45_000 })
+        .catch(() => undefined);
+      sent = await page
+        .locator('[role="status"]')
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (sent) break;
+      const alert = await alertText();
+      if (/too many attempts|wait a few minutes|rate limit|slow down/i.test(alert ?? "") && attempt < 4) {
+        await page.waitForTimeout(75_000);
+        continue;
+      }
+      throw new Error(
+        `signup for ${email} never showed the "link sent" status${alert ? ` — page alert: ${alert}` : ""} (${page.url()})`,
+      );
+    }
     const link = await this.deps.mailbox.awaitMagicLink(
       email,
       sentAt,

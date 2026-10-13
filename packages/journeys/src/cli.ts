@@ -12,7 +12,7 @@
 import { chromium } from "playwright";
 import pg from "pg";
 import { STEP_REGISTRY } from "./registry.js";
-import { STEP_IMPLS } from "./steps.js";
+import { ALL_IMPLS } from "./impls.js";
 import { createGmailClient } from "./mailbox.js";
 import { fetchDeployedSha, provenanceMatch } from "./provenance.js";
 import { checkWeeklySpendCap } from "./spend-guard.js";
@@ -109,7 +109,7 @@ try {
     nonce,
     paid,
     steps,
-    impls: STEP_IMPLS,
+    impls: ALL_IMPLS,
     provenance: { expected: expectSha, observed, match: provOk },
     spend: {
       weeklyMeteredUsd: spend.weeklyMeteredUsd,

@@ -26,4 +26,7 @@ regexes = [
   # `quarantine/ws<n>/up<n>` is an object-storage KEY (workspace-id/upload-id path), not a
   # credential — used across the web import/quarantine tests (carried from main, 4b1e31f).
   '''quarantine/ws[0-9]+/up[0-9]+''',
+  # CITE.1/STB.5a — a CSL-JSON bibliography cite key for the headless journey fixture, not a
+  # secret (gitleaks generic-api-key false positive on packages/journeys/src/stb5a-helpers.ts).
+  '''journey2026stb5a''',
 ]
