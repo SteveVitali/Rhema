@@ -94,3 +94,4 @@ One row per ADR, numeric order. Regenerate with `build-memory adr-index`
 | [ADR-086](ADR-086-cite1-preregistered-completeness-target.md) | CITE.1 pre-registered Stage-B target — aggregate ≥0.95 after backfill, no run <0.80 | CITE.1 | Proposed |
 | [ADR-087](ADR-087-econ2-preregistered-lever-protocol.md) | ECON.2 pre-registered lever-measurement protocol — fixtures, arms, adoption rule, offline ceilings | ECON.2 | Proposed |
 | [ADR-088](ADR-088-stb5a-live-leg-clocks-and-cadence.md) | STB.5a live-leg clock rule, cadence map, and the honest-owed boundary for clock legs | STB.5a | Proposed |
+| [ADR-089](ADR-089-cap1-verdict-rubric.md) | CAP.1 coverage verdict rubric — the five-verdict scale and its evidence bars | CAP.1 | Proposed |
