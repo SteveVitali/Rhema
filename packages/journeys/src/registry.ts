@@ -369,6 +369,72 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "red",
     paid: false,
   },
+  // ---- STB.5b bounded paid live legs (BL-16–19; cheapest-first order) -------------------------
+  // All start `red`: a leg that lands its live asserts flips green with evidence in its own PR;
+  // a leg refused/blocked/unexercised reports owed. Per-leg caps: stb5b-helpers.STB5B_CAPS.
+  {
+    id: "B16",
+    journey: "both",
+    asserts:
+      "a pinned `phase:'4'` review with NO `sidecar` input commits exactly the craft phase (one done step, `.rhema/phase-result.json` written, frozen inputs show sidecar absent + the phase pin) then stops `completed` (BL-16; D-P0.03-2, D-P0.03-3 residual)",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "B17",
+    journey: "both",
+    asserts:
+      "a post-commit replay subscriber sees the run's high-water seq and the live tail saw the commit event — Postgres run_events stays the source of truth (BL-17b; D-P0.08b-2). BL-17a's audit-cap leg is reported unreachable-by-construction (ITERATION_CAPS.{audit,gapCheck} have no consumer; completed_partial is a run state, never a step state)",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "B18A",
+    journey: "both",
+    asserts:
+      "a full_board review pinned to verification lands kind='fetch' allow rows in fetch_log joined to the run (BL-18a's provable half). The fetchViaFetcher-binding half is reported unreachable on this leg — the fetcher client is granted to holdout-calibrator only; a review's fetch rides the server-tool path (D-PRB.02-3)",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "B18B",
+    journey: "both",
+    asserts:
+      "a memo-protocol run freezes urlPolicy{fetchUserDataForbidden, userSourceDomains}; a fetch attempt at the user-source host is denied pre-forward (deny row + user_source_fetch pause); zero fetch_log rows carry the source's content (BL-18b; D-P1.21-2)",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "B19A",
+    journey: "both",
+    asserts:
+      "a Quick non-preview draft run opens approve_plan; a structured `edit` decision lands user-authored 02-structure-plan.{md,json} overlay versions, the next phase commits on them, and the run delivers (BL-19a; D-P0.15-3, D-P1.10-1)",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "B19B",
+    journey: "both",
+    asserts:
+      "an outline promotion run opens approve_outline; a structured `edit` lands overlay versions on agents/author/outline/<slug>.{md,json}, the run finalizes delivered with the promoted outline artifact and the outline.approved event (BL-19b; D-P1.12-1)",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
+  {
+    id: "B19C",
+    journey: "both",
+    asserts:
+      "a full-tier profile_voice build opens approve_sample and exercises the calibration/hold-out legs — pre-registered DROP within the ≤$25/≈$12 envelope (~$15 alone); stays owed on D-P1.14-1 until a funded window carries it",
+    owner: "STB.5b",
+    expected: "red",
+    paid: true,
+  },
 ];
 
 export function stepById(id: string): JourneyStep | undefined {

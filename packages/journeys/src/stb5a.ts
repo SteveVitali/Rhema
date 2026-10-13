@@ -62,8 +62,9 @@ async function openFindingsDesk(page: Page): Promise<boolean> {
 let pool: pg.Pool | null = null;
 
 /** The read-only stage DB — bound by the operator for Stage-B legs; unset on scheduled CI (the
- *  private DB is unreachable there — the affected steps then report "owed", never fabricated). */
-function db(): pg.Pool {
+ *  private DB is unreachable there — the affected steps then report "owed", never fabricated).
+ *  STB.5b's paid legs reuse this seam (`@rhema/journeys` keeps one DB client per process). */
+export function db(): pg.Pool {
   const url = process.env.JOURNEY_DATABASE_URL;
   if (!url) throw new Error("needs JOURNEY_DATABASE_URL (a read pool bound to the stage Postgres)");
   pool ??= new pg.Pool({ connectionString: url, max: 2 });
@@ -76,7 +77,8 @@ function db(): pg.Pool {
  * directly. The cookie was minted by the real magic-link flow this run; nothing is lifted from a
  * DB. `Origin` rides the app origin the api's mutation allowlist admits.
  */
-async function apiFetch(
+/** Shared with the STB.5b paid-leg steps (the same session-cookie seam). */
+export async function apiFetch(
   ctx: StepCtx,
   context: BrowserContext,
   path: string,
