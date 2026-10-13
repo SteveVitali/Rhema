@@ -340,3 +340,64 @@ describe("leg E — the Unverified settlement retry (RES.2; REQ-SPEC-31(3))", ()
     expect(out.filter((o) => o.kind === "unverified_settled")).toEqual([]);
   });
 });
+
+describe("leg G — the pending_review refund-request page (DEF.4; REQ-SPEC-24(6))", () => {
+  async function seedPendingRefund(requestId: string, runId: string, state = "pending_review") {
+    await seedRun(db, { runId, workspaceId: seed.workspaceId, projectId: seed.projectId, state: "completed", stateSince: AGO(60_000) });
+    await db.client.query(
+      `insert into user_refund_requests
+         (id, workspace_id, billing_account_id, run_id, user_id, state, credits, quarter, requested_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [requestId, seed.workspaceId, seed.billingAccountId, runId, seed.userId, state, 160, "2026Q3", AGO(60_000)],
+    );
+  }
+
+  it("pages ops ONCE for an unalerted pending request and stamps alerted_at (send-then-mark)", async () => {
+    await seedPendingRefund("urr_1", "run_rr1");
+    const alerts: unknown[] = [];
+    const out = await sweepStrandedRuns({ ...sweepDeps(), alert: (a) => void alerts.push(a) });
+    expect(out).toEqual([
+      { kind: "refund_review_alerted", requestId: "urr_1", runId: "run_rr1", workspaceId: seed.workspaceId },
+    ]);
+    expect(alerts).toEqual([
+      {
+        kind: "refund_review_pending",
+        requestId: "urr_1",
+        runId: "run_rr1",
+        workspaceId: seed.workspaceId,
+        billingAccountId: seed.billingAccountId,
+        credits: 160,
+      },
+    ]);
+    // the durable marker landed — a second pass sends nothing.
+    const marked = await db.client.query("select alerted_at is not null as marked from user_refund_requests where id = 'urr_1'");
+    expect((marked.rows[0] as { marked: boolean }).marked).toBe(true);
+    const out2 = await sweepStrandedRuns({ ...sweepDeps(), alert: (a) => void alerts.push(a) });
+    expect(out2).toEqual([]);
+    expect(alerts).toHaveLength(1);
+  });
+
+  it("never pages a decided request, and a throwing sink leaves the row unalerted for the next pass", async () => {
+    await seedPendingRefund("urr_done", "run_done", "refunded");
+    await seedPendingRefund("urr_dead", "run_dead");
+    const alerts: unknown[] = [];
+    await expect(
+      sweepStrandedRuns({
+        ...sweepDeps(),
+        alert: async () => { throw new Error("webhook down"); },
+      }),
+    ).rejects.toThrow("webhook down");
+    // send-then-mark: the failed send left alerted_at unset — the next pass retries it.
+    const unalerted = await db.client.query(
+      "select count(*)::int as n from user_refund_requests where state = 'pending_review' and alerted_at is null",
+    );
+    expect((unalerted.rows[0] as { n: number }).n).toBe(1);
+    const out = await sweepStrandedRuns({ ...sweepDeps(), alert: (a) => void alerts.push(a) });
+    expect(out).toEqual([
+      { kind: "refund_review_alerted", requestId: "urr_dead", runId: "run_dead", workspaceId: seed.workspaceId },
+    ]);
+    expect(alerts).toHaveLength(1);
+    // the refunded row never entered the scan at all.
+    expect(alerts).toEqual([expect.objectContaining({ requestId: "urr_dead" })]);
+  });
+});

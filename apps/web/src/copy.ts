@@ -1977,6 +1977,7 @@ export const COPY = {
       reconcile_drift: "a reconciliation correction",
       platform_fault: "a platform fault",
       operator: "an operator adjustment",
+      user_window: "requested within your refund window",
     } as Record<string, string>,
     workedExample: "Worked example — the seeded Showcase run; these are illustrative figures, not your usage.",
     phaseHeading: "Phases",
@@ -2045,6 +2046,13 @@ export const COPY = {
     // REQ-BILL-19 (P1.16) — the report links its frozen rate-table version to the published tables.
     rateTableFmt: "Priced under rate table v{v}.",
     rateTableLink: "See the published rates",
+    // DEF.4 — the §14.4 refund-window affordance (REQ-SPEC-29): rendered only while the api's
+    // `refundWindow` block is present on the report; a plain form POST, never client JS.
+    refundCtaFmt: "Get {n} cr back",
+    refundNote: "Refundable within 7 days of delivery — the credits return to your balance.",
+    refundedFmt: "Refunded {n} cr.",
+    refundReviewFmt: "Refund request for {n} cr sent for review.",
+    refundDenied: "The refund request was declined.",
   },
 
   // ---- P1.17 (§15.1–§15.4) — the public funnel: landing (twelve sections, the v0.3 order), the

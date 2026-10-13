@@ -7,6 +7,7 @@
 //   POST /runs/:id/resume              — resume a steering-parked run; body {note?} (Resume-with-note).
 //   POST /runs/:id/notes               — queue a note for the next phase → Guidance{queued_message}.
 //   POST /runs/:id/stop                — Stop, keep partials (the canonical cancelRun path).
+//   POST /runs/:id/refund              — DEF.4 the §14.4 refund window (flag-gated; REQ-SPEC-24(6)).
 //   POST /runs/:id/walkthrough/retry   — re-enqueue the one package-class walkthrough call after failure.
 // No prompt, transcript, reasoning, private memory, or source-note body ever leaves these endpoints —
 // the read models come from @rhema/findings-core's whitelisted row shapes.
@@ -43,8 +44,11 @@ import {
   RUN_JOBS,
   TIER_MODEL,
   type OrchestratorDeps,
+  type SqlClient,
 } from "@rhema/orchestrator";
 import { repriceParkedRun, durationCells, effectivePlanTier, sizeBandFor } from "@rhema/ledger";
+import { isTestWorkspace, refundEligibility, requestUserRefund } from "@rhema/ledger";
+import type { RefundWindowBlock, RefundWindowMode } from "@rhema/contracts";
 import {
   allowedModelTiers,
   capFromEstimate,
@@ -71,6 +75,25 @@ export interface TimelineApiDeps extends OrchestratorDeps {
    *  RunApiDeps; unset ⇒ cards render without the editable slots). */
   readonly store?: ContentStore;
   contentStoreFor?(workspaceId: string): Promise<ContentStore>;
+  /**
+   * DEF.4 — the §14.4 refund-window switch (`REFUND_WINDOW_MODE`; REQ-SPEC-29): `open` admits every
+   * workspace, `test_tenants` admits only JOURNEY.1-flagged `workspaces.is_test` rows (the Stage-B
+   * posture), unset/`off` ⇒ `POST /runs/:id/refund` refuses `refund_closed` and the report carries no
+   * refund block — the flag fails closed like `purchaseMode`.
+   */
+  readonly refundWindowMode?: RefundWindowMode;
+}
+
+/** DEF.4 — does the refundWindow flag admit this workspace? One admission check for the POST route
+ *  and the report's affordance block so they can never disagree about the surface existing. */
+async function refundWindowAdmits(
+  deps: TimelineApiDeps,
+  tx: SqlClient,
+  workspaceId: string,
+): Promise<boolean> {
+  if (deps.refundWindowMode === "open") return true;
+  if (deps.refundWindowMode === "test_tenants") return isTestWorkspace(tx, workspaceId);
+  return false;
 }
 
 // ---- row shapes (server facts only) ----
@@ -788,12 +811,40 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
         // REQ-BILL-19 — the report links its frozen rate-table version to /pricing/rates.
         ...(run.rate_table_version != null ? { rateTableVersion: Number(run.rate_table_version) } : {}),
       });
+      // DEF.4 — the §14.4 refund affordance (REQ-SPEC-29): the block is present ONLY while the
+      // refundWindow flag admits this workspace — absent ⇒ the surface renders no control at all.
+      // A recorded request row wins (it IS the audit verdict); otherwise the live eligibility read
+      // answers "can this still be refunded" (+how much) or an honest `ineligible`.
+      let refundWindow: RefundWindowBlock | undefined;
+      if (await refundWindowAdmits(deps, tx, principal.workspaceId)) {
+        const req = (
+          await tx.query(
+            "select state, credits::int as credits from user_refund_requests where run_id = $1",
+            [runId],
+          )
+        ).rows[0] as { state: RefundWindowBlock["state"]; credits: number } | undefined;
+        if (req) {
+          refundWindow = { state: req.state, credits: req.credits };
+        } else {
+          const elig = await refundEligibility(tx, {
+            runId,
+            workspaceId: principal.workspaceId,
+            now: deps.clock.now(),
+          });
+          refundWindow = {
+            state: elig !== "not_found" && elig.eligible ? "eligible" : "ineligible",
+            credits: elig === "not_found" ? 0 : Math.max(0, elig.refundableCredits),
+          };
+        }
+      }
+
       return {
         kind: "ok" as const,
         report,
         ...(advanced ? { advancedView: buildRunReportAdvanced(runId, reportUsage) } : {}),
         // the owning project's slug — the `/app/usage/r/:run` redirect resolves its /p/ path from it.
         projectSlug: run.project_slug,
+        ...(refundWindow ? { refundWindow } : {}),
       };
     });
 
@@ -888,6 +939,31 @@ export function createTimelineRoutes(deps: TimelineApiDeps): Hono {
     const res = await cancelRun(deps, { runId: c.req.param("id"), workspaceId: principal.workspaceId });
     if (!res.ok) return c.json({ error: res.reason, ...(res.state != null ? { state: res.state } : {}) }, res.reason === "not_found" ? 404 : 409);
     return c.json(res);
+  });
+
+  // DEF.4 — the §14.4 user refund window (BL-30; REQ-SPEC-24(6); REQ-SPEC-30/32): one tenant tx on
+  // the USER pool refunds every committed phase through RES.2's `refundPhases` plumbing under the
+  // `user_window` reason; the durable request row is the audit + the idempotency. The quarterly
+  // allowance auto-refunds the first eligible request; a second lands `pending_review` for the
+  // operator verb (the sweep pages ops). Flag-closed ⇒ `refund_closed` 403 like `purchase_closed`.
+  app.post("/runs/:id/refund", async (c) => {
+    const principal = deps.principal(c);
+    if (!principal) return c.json({ error: "unauthenticated" }, 401);
+    const admitted = await deps.txRunner.run(principal.workspaceId, (tx) =>
+      refundWindowAdmits(deps, tx, principal.workspaceId),
+    );
+    if (!admitted) return c.json({ error: "refund_closed" }, 403);
+    const res = await requestUserRefund(deps, {
+      runId: c.req.param("id"),
+      workspaceId: principal.workspaceId,
+      userId: principal.userId,
+    });
+    if (res.kind === "not_found") return c.json({ error: "not_found" }, 404);
+    if (res.kind === "ineligible") return c.json({ error: res.reason }, 409);
+    if (res.kind === "denied") return c.json({ error: "denied", requestId: res.requestId }, 409);
+    if (res.kind === "pending_review")
+      return c.json({ status: "pending_review", requestId: res.requestId, credits: res.credits }, 202);
+    return c.json({ status: "refunded", requestId: res.requestId, credits: res.credits });
   });
 
   // Walkthrough retry — clears the failed record and re-enqueues the one package-class call.

@@ -4,6 +4,7 @@ import type { HarnessRunSpec, ScopedPhaseLaunch } from "@rhema/orchestrator";
 import {
   buildScopedPhasePlan,
   runScopedPhase,
+  scopedPromptWithGuidance,
   scopedRunnerEnv,
   SCOPED_RUNNER,
   type ScopedPhaseDeps,
@@ -95,6 +96,38 @@ describe("buildScopedPhasePlan (§12.6)", () => {
       buildScopedPhasePlan({ ...LAUNCH, files: [] }, { agentUid: 10002, specPath: "/c/s.json" }),
     ).toThrow(/no enumerated files/);
   });
+
+  // DEF.4 (BL-11(b); REQ-DATA-17) — the guided retry reaches the scoped second read ONLY through
+  // its query prompt. The mount set stays exactly [draft]; nothing about the launch order changes.
+  it("appends guided-retry text to query.prompt while the mount set stays exactly [draft]", () => {
+    const guidance =
+      "Previous attempt incomplete: completion predicate second_read_producer_checked failed (expected producer marker absent). Complete every declared artifact.";
+    const { specJson } = buildScopedPhasePlan(LAUNCH, {
+      agentUid: 10002,
+      specPath: "/config/scoped-spec.json",
+      guidance,
+    });
+    const guided = JSON.parse(specJson) as {
+      files: string[];
+      mountPlan: { binds: unknown[] };
+      query: { prompt: string };
+    };
+    expect(guided.query.prompt).toBe(`${LAUNCH.prompt}\n\n${guidance}`);
+    // the mount set + inputs are untouched — the guidance is the only thing that changed.
+    expect(guided.files).toEqual(["/work/project/drafts/v1.md"]);
+    expect(guided.mountPlan.binds).toHaveLength(1);
+  });
+
+  it("scopedPromptWithGuidance is a no-op without guidance and never mutates the base prompt", () => {
+    expect(scopedPromptWithGuidance(LAUNCH.prompt)).toBe(LAUNCH.prompt);
+    expect(scopedPromptWithGuidance(LAUNCH.prompt, "   ")).toBe(LAUNCH.prompt);
+    expect(scopedPromptWithGuidance(LAUNCH.prompt, "retry the read")).toBe(
+      `${LAUNCH.prompt}\n\nretry the read`,
+    );
+    // the unguided path keeps the launch order verbatim — spec.query.prompt === SECOND_READ_PROMPT.
+    const { specJson } = buildScopedPhasePlan(LAUNCH, { agentUid: 10002, specPath: "/c/s.json" });
+    expect((JSON.parse(specJson) as { query: { prompt: string } }).query.prompt).toBe(LAUNCH.prompt);
+  });
 });
 
 describe("scopedRunnerEnv (REQ-SPEC-10/11)", () => {
@@ -146,5 +179,29 @@ describe("runScopedPhase — output persistence (DEF.1 F2)", () => {
     const out = await runScopedPhase(SPEC, ARGS, deps);
     expect(out.produced).toBe(false);
     expect(JSON.parse(written.get("/work/project/.rhema/phase-result.json")!)).toMatchObject({ status: "blocked" });
+  });
+
+  // DEF.4 — a guided retry lands the predicate-failure text in the spec file's query.prompt, and the
+  // guidance appears NOWHERE in the /work outputs the commit loop judges (it crosses inside the
+  // query only; the written artifact is the query's own answer).
+  it("a guided retry writes guidance into the spec's query.prompt — never into /work control files", async () => {
+    const guidance = "Previous attempt incomplete: producer marker absent. Complete every declared artifact.";
+    const { deps, written } = memDeps({
+      code: 0,
+      stdout: JSON.stringify({ text: "the second read", subtype: "success", usage: {} }),
+      stderr: "",
+    });
+    await runScopedPhase(SPEC, { ...ARGS, guidance }, deps);
+    const specFile = JSON.parse(written.get("/config/scoped-spec.json")!) as {
+      files: string[];
+      query: { prompt: string };
+    };
+    expect(specFile.query.prompt).toBe(`${LAUNCH.prompt}\n\n${guidance}`);
+    expect(specFile.files).toEqual(["/work/project/drafts/v1.md"]);
+    // no guidance text in the outputs — the marker, agent-result and phase-result stay free of it.
+    for (const [path, content] of written) {
+      if (path === "/config/scoped-spec.json") continue;
+      expect(content, `${path} leaked the guidance text`).not.toContain(guidance);
+    }
   });
 });

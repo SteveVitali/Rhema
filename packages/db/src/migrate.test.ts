@@ -36,6 +36,25 @@ describe("migrations (REQ-DATA-3)", () => {
     await db.close();
   });
 
+  // DEF.4 (0055): the AC's deterministic half — every fresh stage ends with the held>=0 check
+  // VALIDATED, matching prod's post-DEF.2-repair state (0044 added it NOT VALID on purpose; the
+  // validate lived only in prod's manual repair until 0055).
+  it("validates credit_balances_held_nonnegative on a fresh database (0055 parity)", async () => {
+    const db = await createTestDb();
+    const { convalidated } = await one(
+      db,
+      "select convalidated from pg_constraint where conname = 'credit_balances_held_nonnegative'",
+    );
+    expect(convalidated).toBe(true);
+    // and the refund-window table landed with its tenant guard (the RLS census pins the policy).
+    const { rls } = await one(
+      db,
+      "select relforcerowsecurity as rls from pg_class where relname = 'user_refund_requests'",
+    );
+    expect(rls).toBe(true);
+    await db.close();
+  });
+
   it("records the full forward-only history", async () => {
     const db = await createTestDb();
     const names = (await db.query("select name from _migrations order by name")).rows.map(

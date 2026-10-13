@@ -41,6 +41,7 @@ export * from "./domain/agent-types.js";
 // versioned provider rate tables + list-cost math (REQ-SPEC-11, REQ-BILL-2; §12.7, §14.1)
 export * from "./domain/rates.js";
 export * from "./domain/debit-mode.js";
+export * from "./domain/refund-window.js";
 export * from "./domain/durations.js";
 export * from "./domain/estimate.js";
 

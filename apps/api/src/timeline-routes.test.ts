@@ -724,3 +724,152 @@ describe("RPT.1 — the reconciled run report (§14.4)", () => {
     expect(((await res2.json()) as { report: { workedExample?: boolean } }).report.workedExample).toBeUndefined();
   });
 });
+
+// ---- DEF.4 — the §14.4 user refund window (REQ-SPEC-24(6); REQ-SPEC-30/32) ----
+// The route sits next to /stop on the USER pool, flag-gated off/test_tenants/open (the same posture
+// as purchaseMode — JOURNEY.1's is_test workspaces are the Stage-B allowlist). The report's
+// `refundWindow` block is the surface's affordance source of truth: absent ⇒ no control renders.
+
+const refundApp = (refundWindowMode: "off" | "test_tenants" | "open") =>
+  createApp({ ...deps, principal: () => principal(), db: sql, refundWindowMode });
+
+/** A completed run inside the window with one committed 160-cr phase debit on `included` (the
+ *  clock is FixedClock 2026-09-02; ended_at 2026-09-01 = day 1 of 7). */
+async function seedRefundableRun(runId: string, opts: { endedAt?: Date } = {}): Promise<void> {
+  await db.client.query(
+    "insert into credit_balances(billing_account_id, bucket, available, held) values ($1,'included',5000,0) on conflict do nothing",
+    [seed.billingAccountId],
+  );
+  await seedRun(db, { runId, workspaceId: seed.workspaceId, projectId: seed.projectId, state: "completed" });
+  await db.client.query(
+    "insert into steps(id, run_id, phase, ordinal, state) values ($1,$2,'craft',1,'done')",
+    [`st_${runId}`, runId],
+  );
+  await db.client.query(
+    `insert into credit_ledger(id, workspace_id, billing_account_id, kind, credits, bucket, run_id, phase_id, source, idempotency_key)
+     values ($1,$2,$3,'debit',160,'included',$4,$5,'phase',$6)`,
+    [`led_${runId}`, seed.workspaceId, seed.billingAccountId, runId, `st_${runId}`, `debit:${runId}`],
+  );
+  await db.client.query("update runs set ended_at = $2 where id = $1", [
+    runId,
+    opts.endedAt ?? new Date("2026-09-01T12:00:00Z"),
+  ]);
+}
+
+const includedAvailable = async () =>
+  Number(
+    (
+      (await db.client.query(
+        "select available from credit_balances where billing_account_id = $1 and bucket = 'included'",
+        [seed.billingAccountId],
+      )).rows[0] as { available: number }
+    ).available,
+  );
+
+describe("POST /runs/:id/refund (DEF.4; REQ-SPEC-24(6))", () => {
+  it("flag off ⇒ refund_closed 403 and the report carries no refund block (fail-closed money path)", async () => {
+    await seedRefundableRun("run_rf0");
+    const app0 = refundApp("off");
+    const res = await app0.request("/runs/run_rf0/refund", { method: "POST" });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "refund_closed" });
+    const report = await (await app0.request("/runs/run_rf0/report")).json();
+    expect("refundWindow" in report).toBe(false);
+  });
+
+  it("test_tenants admits a JOURNEY.1-flagged workspace and refuses an unflagged one", async () => {
+    await seedRefundableRun("run_rf1");
+    const appT = refundApp("test_tenants");
+    // unflagged ⇒ closed
+    expect((await appT.request("/runs/run_rf1/refund", { method: "POST" })).status).toBe(403);
+    // flag the workspace (server-set only — the test writes the durable flag)
+    await db.client.query("update workspaces set is_test = true where id = $1", [seed.workspaceId]);
+    const res = await appT.request("/runs/run_rf1/refund", { method: "POST" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ status: "refunded", credits: 160 });
+  });
+
+  it("open mode refunds every committed phase: 200 + request row + refund ledger rows + cost.refunded — balance moves exactly N", async () => {
+    await seedRefundableRun("run_rf2");
+    const before = await includedAvailable();
+    const res = await refundApp("open").request("/runs/run_rf2/refund", { method: "POST" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { status: string; requestId: string; credits: number };
+    expect(body).toMatchObject({ status: "refunded", credits: 160 });
+    expect((await includedAvailable()) - before).toBe(160);
+    const rows = (
+      await db.client.query("select kind, reason, credits from credit_ledger where run_id = 'run_rf2' and kind = 'refund'")
+    ).rows as { kind: string; reason: string; credits: number }[];
+    expect(rows).toEqual([{ kind: "refund", reason: "user_window", credits: 160 }]);
+    const req = (
+      await db.client.query("select state, decision, quarter from user_refund_requests where run_id = 'run_rf2'")
+    ).rows[0] as { state: string; decision: string; quarter: string };
+    expect(req).toEqual({ state: "refunded", decision: "auto_allowance", quarter: "2026Q3" });
+    expect(
+      deps.eventWriter.forRun("run_rf2").find((e) => e.type === "cost.refunded")?.payload,
+    ).toMatchObject({ credits: 160, reason: "user_window" });
+    // the report now reports refunded (the block IS the audit's read model)
+    const report = await (await refundApp("open").request("/runs/run_rf2/report")).json();
+    expect((report as { refundWindow: unknown }).refundWindow).toEqual({ state: "refunded", credits: 160 });
+  });
+
+  it("the report block answers eligible+figure before the request and ineligible on a day-8 run", async () => {
+    await seedRefundableRun("run_rf3");
+    const appO = refundApp("open");
+    const before = await (await appO.request("/runs/run_rf3/report")).json();
+    expect((before as { refundWindow: unknown }).refundWindow).toEqual({ state: "eligible", credits: 160 });
+    // day 8 — the window's edge
+    await db.client.query("update runs set ended_at = '2026-08-24T00:00:00Z' where id = 'run_rf3'");
+    const after = await (await appO.request("/runs/run_rf3/report")).json();
+    expect((after as { refundWindow: unknown }).refundWindow).toEqual({ state: "ineligible", credits: 160 });
+    const res = await appO.request("/runs/run_rf3/refund", { method: "POST" });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "window_expired" });
+  });
+
+  it("the second eligible request in the quarter answers 202 pending_review — no money moved — and a replay stays pending", async () => {
+    await seedRefundableRun("run_rf4");
+    await seedRefundableRun("run_rf5");
+    const appO = refundApp("open");
+    expect((await (await appO.request("/runs/run_rf4/refund", { method: "POST" })).json()).status).toBe("refunded");
+    const res = await appO.request("/runs/run_rf5/refund", { method: "POST" });
+    expect(res.status).toBe(202);
+    const body = (await res.json()) as { status: string; credits: number };
+    expect(body).toMatchObject({ status: "pending_review", credits: 160 });
+    expect(
+      (await db.client.query("select count(*)::int n from credit_ledger where run_id = 'run_rf5' and kind = 'refund'")).rows[0],
+    ).toEqual({ n: 0 });
+    // a replay returns the recorded verdict (202 again, same request row — never a second refund)
+    const replay = await appO.request("/runs/run_rf5/refund", { method: "POST" });
+    expect(replay.status).toBe(202);
+    expect(
+      (await db.client.query("select count(*)::int n from user_refund_requests where run_id = 'run_rf5'")).rows[0],
+    ).toEqual({ n: 1 });
+    // and the report block tells the user their request is queued
+    const report = await (await appO.request("/runs/run_rf5/report")).json();
+    expect((report as { refundWindow: unknown }).refundWindow).toEqual({ state: "pending_review", credits: 160 });
+  });
+
+  it("replaying a refunded request is a no-op — same verdict, no second refund row", async () => {
+    await seedRefundableRun("run_rf6");
+    const appO = refundApp("open");
+    await appO.request("/runs/run_rf6/refund", { method: "POST" });
+    const again = await appO.request("/runs/run_rf6/refund", { method: "POST" });
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ status: "refunded", credits: 160 });
+    expect(
+      (await db.client.query("select count(*)::int n from credit_ledger where run_id = 'run_rf6' and kind = 'refund'")).rows[0],
+    ).toEqual({ n: 1 });
+  });
+
+  it("an unknown or foreign-scoped run is 404; a failed run is 409 state", async () => {
+    const appO = refundApp("open");
+    expect((await appO.request("/runs/run_nope/refund", { method: "POST" })).status).toBe(404);
+    await seedRun(db, { runId: "run_fail", workspaceId: seed.workspaceId, state: "failed" });
+    const res = await appO.request("/runs/run_fail/refund", { method: "POST" });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "state" });
+    const anon = createApp({ ...deps, principal: () => null, db: sql, refundWindowMode: "open" });
+    expect((await anon.request("/runs/run_fail/refund", { method: "POST" })).status).toBe(401);
+  });
+});

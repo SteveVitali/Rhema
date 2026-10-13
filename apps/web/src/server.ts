@@ -4350,6 +4350,25 @@ export function createWebApp(deps: WebDeps): Hono {
   }));
   app.post("/p/:project/r/:runId/walkthrough", steerHandler((s, runId) => deps.dataSource.retryWalkthrough(s, runId)));
 
+  // DEF.4 — the §14.4 refund-window POST (plain form; REQ-SPEC-24(6)). The report's `refundWindow`
+  // block is the only place this control renders, so the api's flag + eligibility re-check is the
+  // authority — an expected refusal (closed flag / ineligible / already decided) just re-renders the
+  // report, which now carries the honest block state (ineligible / pending_review / denied).
+  app.post("/p/:project/r/:runId/refund", async (c) => {
+    const session = deps.session(c);
+    if (!session) return c.redirect("/login");
+    const slug = c.req.param("project");
+    const runId = c.req.param("runId");
+    const row = (await deps.dataSource.listProjects(session)).find((r) => r.slug === slug);
+    if (!row || runId == null || runId === "") return c.html(renderDocument(c.req.path, notFoundElement), 404);
+    try {
+      await deps.dataSource.requestRefund(session, runId);
+    } catch (e) {
+      if (!(e instanceof ApiError && (e.status === 404 || e.status === 409 || e.status === 403))) throw e;
+    }
+    return c.redirect(`/p/${slug}/r/${runId}#report`);
+  });
+
   // PRB.05 — the disposition write (§5.7): the five verbs + note + optional reason chip. Progressive
   // enhancement: a plain form POST; a validation error re-renders the dossier with the error under the
   // card (a rebut/escalate with no rationale round-trips a 422). Two mount paths: the dossier route (its

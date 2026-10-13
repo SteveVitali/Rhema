@@ -11,7 +11,7 @@
 // group→egress firewall. The abstract facts (no internet reachability for the sandbox; per-run caps;
 // versioned isolated buckets) are provider-independent and carry over verbatim.
 
-import type { DebitMode, PurchaseMode, SignupMode } from "@rhema/contracts";
+import type { DebitMode, PurchaseMode, RefundWindowMode, SignupMode } from "@rhema/contracts";
 
 export type StageKind = "dev" | "preview" | "prod";
 
@@ -214,6 +214,15 @@ export interface StageConfig {
    */
   debitMode: DebitMode;
   /**
+   * DEF.4 — `refundWindow.mode` (ADR-071; REQ-SPEC-29), deployed to the api as `REFUND_WINDOW_MODE`
+   * (a mode string — never a secret). `off` refuses `refund_closed` and renders no affordance
+   * anywhere; `test_tenants` admits only server-flagged `is_test` workspaces — the Stage-B
+   * posture, which is still closed for every real user; `open` flips only after BL-30's product
+   * ruling (D-DEF.4-3 — an operator commit, auditable, never a flag that could fail open).
+   * Unset/unknown env parses `off` — fail-closed on a money path.
+   */
+  refundWindowMode: RefundWindowMode;
+  /**
    * PRB.15 — the stage's public serving surface (undefined off prod: previews keep the
    * `${stack}.rhema.dev` placeholder and never need real DNS). The Pulumi program builds the managed
    * cert's SAN list + the URL map's host rules from this block — the numbers the tests assert are the
@@ -270,6 +279,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     signupMode: "invite", // PRB.13 — dev keeps the private-beta invite gate (open is prod-only)
     purchaseMode: "closed", // BILL.3 — purchase stays closed everywhere until the operator re-opens (ADR-028)
     debitMode: "committed", // ECON.1 — the metered flip is operator-paused; ship dark (ADR-031)
+    refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
@@ -283,6 +293,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     signupMode: "invite", // PRB.13 — previews never self-serve
     purchaseMode: "closed", // BILL.3 — never a real purchase on a preview
     debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
+    refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
   },
   prod: {
@@ -300,6 +311,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     signupMode: "open", // PRB.15 — self-serve paid beta on prod (REQ-BETA-19 amended)
     purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
     debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
+    refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
   },

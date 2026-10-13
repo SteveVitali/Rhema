@@ -166,6 +166,17 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     expected: "green",
     paid: false,
   },
+  {
+    id: "R9",
+    journey: "returning",
+    asserts:
+      "the delivered report's refund control is visible+enabled+unobscured; the click reports \"Refunded N cr.\" and spendable moves exactly +N; a second eligible request renders \"sent for review\" and moves nothing",
+    owner: "DEF.4",
+    // DEF.4 — red until Stage B flips `refundWindow` to `test_tenants` on the evidence deploy and
+    // the journey walks it green ($≤3 total; two Quick/Base runs on the planted excerpt).
+    expected: "red",
+    paid: true,
+  },
   // ---- phone-width reader ---------------------------------------------------
   {
     id: "P1",

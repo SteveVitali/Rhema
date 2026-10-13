@@ -64,7 +64,8 @@ export type StrandedSweepOutcome =
   | { readonly kind: "gate_rearmed"; readonly gateId: string; readonly runId: string; readonly workspaceId: string }
   | { readonly kind: "preflight_alerted"; readonly runId: string; readonly workspaceId: string }
   | { readonly kind: "unverified_settled"; readonly runId: string; readonly workspaceId: string }
-  | { readonly kind: "metered_resettled"; readonly runId: string; readonly workspaceId: string };
+  | { readonly kind: "metered_resettled"; readonly runId: string; readonly workspaceId: string }
+  | { readonly kind: "refund_review_alerted"; readonly requestId: string; readonly runId: string; readonly workspaceId: string };
 
 interface StuckRow {
   readonly id: string;
@@ -317,6 +318,50 @@ export async function sweepStrandedRuns(
     } catch {
       // one run's residue must never wedge the sweep — it re-surfaces on the next pass.
     }
+  }
+
+  // ---- Leg G (DEF.4; REQ-SPEC-24(6)): a `pending_review` refund request pages ops ONCE. --------
+  // A second-in-quarter §14.4 request parks WITHOUT moving money — a human must approve/deny it, so
+  // the parked row is itself the page. Send-then-mark on `alerted_at` (0055): a sink failure leaves
+  // the marker unset and the next pass retries; a request the operator already decided never
+  // re-pages. The UPDATE rides `systemTxRunner` — the request table's review fields are deliberately
+  // un-granted to the user role (the user path INSERTs only; it can never self-mark or self-decide).
+  const pendingRefunds = (
+    await deps.systemExec.query(
+      `select id, run_id, workspace_id, billing_account_id, credits::int as credits
+         from user_refund_requests
+        where state = 'pending_review' and alerted_at is null
+        order by requested_at`,
+      [],
+    )
+  ).rows as {
+    id: string; run_id: string; workspace_id: string; billing_account_id: string; credits: number;
+  }[];
+  const reviewTxRunner = deps.systemTxRunner ?? deps.txRunner;
+  for (const row of pendingRefunds) {
+    // Leg D's pattern: a throwing sink propagates (the cron logs it) and leaves `alerted_at` unset —
+    // the next pass retries the unmarked row; a delivered alert is never re-paged.
+    await deps.alert?.({
+      kind: "refund_review_pending",
+      requestId: row.id,
+      runId: row.run_id,
+      workspaceId: row.workspace_id,
+      billingAccountId: row.billing_account_id,
+      credits: row.credits,
+    });
+    await reviewTxRunner.run(row.workspace_id, (tx) =>
+      tx.query(
+        `update user_refund_requests set alerted_at = $3
+          where id = $1 and workspace_id = $2 and state = 'pending_review'`,
+        [row.id, row.workspace_id, now],
+      ),
+    );
+    outcomes.push({
+      kind: "refund_review_alerted",
+      requestId: row.id,
+      runId: row.run_id,
+      workspaceId: row.workspace_id,
+    });
   }
 
   return outcomes;

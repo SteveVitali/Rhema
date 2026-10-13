@@ -5,9 +5,11 @@
 import {
   parseDebitMode,
   parsePurchaseMode,
+  parseRefundWindowMode,
   parseSignupMode,
   type DebitMode,
   type PurchaseMode,
+  type RefundWindowMode,
   type SignupMode,
 } from "@rhema/contracts";
 
@@ -102,6 +104,14 @@ export interface ApiEnv {
    * the proxy meter. Unset/unknown ⇒ `committed` — fail-closed to the launched mode.
    */
   readonly debitMode: DebitMode;
+  /**
+   * DEF.4 — `refundWindow.mode` (ADR-07x; `REFUND_WINDOW_MODE`): `off` (default on every stage —
+   * BL-30's product ruling hasn't opened it) ⇒ `POST /runs/:id/refund` refuses `refund_closed` and
+   * the report carries no refund block; `test_tenants` admits only JOURNEY.1 `is_test` workspaces
+   * (the Stage-B posture for the R9 journey); `open` admits everyone. Unset/unknown ⇒ `off` —
+   * fail-closed, never fail open on a money path.
+   */
+  readonly refundWindowMode: RefundWindowMode;
   /**
    * BILL.3 — `STRIPE_AUTOMATIC_TAX=true` sends `automatic_tax[enabled]` on Checkout sessions; valid
    * only after the operator activates a Tax registration Stripe-side (paused under BL-33/HUMAN-H7).
@@ -235,6 +245,8 @@ export function readApiEnv(): ApiEnv {
     // Checkout automatic-tax opt (off until the operator activates a Tax registration).
     purchaseMode: parsePurchaseMode(process.env.PURCHASE_MODE),
     debitMode: parseDebitMode(process.env.DEBIT_MODE),
+    // DEF.4 — the refund-window switch; unknown/unset parses to `off` (never fail open).
+    refundWindowMode: parseRefundWindowMode(process.env.REFUND_WINDOW_MODE),
     ...(process.env.STRIPE_AUTOMATIC_TAX === "true" ? { stripeAutomaticTax: true } : {}),
     // PRB.16 — Better Auth secret NAMES (values load from Secret Manager at boot). The Google OAuth
     // client id is public deploy config; its SECRET is a secret name like the rest.

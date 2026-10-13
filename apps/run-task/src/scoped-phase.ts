@@ -58,6 +58,13 @@ export interface ScopedPhaseArgs {
   readonly agentUid: number;
   /** where the runner script lives in the image (default `/app/scoped-runner.sh`). */
   readonly runnerScript?: string;
+  /**
+   * DEF.4 (BL-11(b); REQ-DATA-17) — the guided-retry's predicate-failure text. It is appended to the
+   * scoped query's PROMPT (the only channel the scoped query reads), never to `inputs` — a scoped
+   * launch has no `inputs.guidance` to merge, and the run's own guidance must never cross. The mount
+   * set stays exactly `files`; nothing about the launch order changes but the prompt line.
+   */
+  readonly guidance?: string;
 }
 
 export interface ScopedPhaseOutcome {
@@ -76,13 +83,25 @@ export interface ScopedQueryFile {
 }
 
 /**
+ * DEF.4 — the guided-retry merge for the scoped prompt: the loop's predicate-failure text is the
+ * ONLY guidance that may cross, appended after the protocol prompt on its own paragraph. Run-scope
+ * / standing `inputs.guidance` never reaches this function (the scoped branch carries no inputs
+ * merge), and the text never lands in an event payload — it lives in the tmpfs spec file only.
+ */
+export function scopedPromptWithGuidance(prompt: string, guidance?: string): string {
+  const g = guidance?.trim();
+  return g ? `${prompt}\n\n${g}` : prompt;
+}
+
+/**
  * Assemble the launch spec + the spec-file payload for the launch order. `files` are already absolute
  * (the server resolved them against the seat roots); `buildScopedLaunchSpec` builds the private-mount
  * plan + the `unshare` argv; `runnerArgv` binds the spec file path the runner applies the plan to.
+ * `guidance` (a guided retry's predicate-failure text) folds into `query.prompt` only.
  */
 export function buildScopedPhasePlan(
   launch: ScopedPhaseLaunch,
-  args: { agentUid: number; specPath: string; runnerScript?: string },
+  args: { agentUid: number; specPath: string; runnerScript?: string; guidance?: string },
 ): { readonly unshareArgv: readonly string[]; readonly specJson: string } {
   const scoped = buildScopedLaunchSpec({
     role: launch.role,
@@ -100,7 +119,7 @@ export function buildScopedPhasePlan(
   const specJson = JSON.stringify({
     ...scoped,
     query: {
-      prompt: launch.prompt,
+      prompt: scopedPromptWithGuidance(launch.prompt, args.guidance),
       model: launch.model,
       maxBudgetUsd: launch.maxBudgetUsd,
       maxTurns: launch.maxTurns,
@@ -144,6 +163,7 @@ export async function runScopedPhase(
     agentUid: args.agentUid,
     specPath,
     runnerScript: args.runnerScript,
+    ...(args.guidance !== undefined ? { guidance: args.guidance } : {}),
   });
   await deps.mkdir(args.configDir);
   await deps.writeFile(specPath, specJson);

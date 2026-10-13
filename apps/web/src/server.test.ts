@@ -1945,3 +1945,73 @@ describe("P1.05 — timeline, run page, steering", () => {
     expect((await down.request("/p/the-politics-of-visibility/r/run_live/events")).status).toBe(502);
   });
 });
+
+// DEF.4 — the §14.4 refund-window surface (REQ-SPEC-29): the report's `refundWindow` block is the
+// ONLY place the control renders (flag-absent ⇒ no control at all), the POST is a plain form
+// through the data seam, and the redirect lands back on the report for the fresh block state.
+describe("DEF.4 — the refund-window affordance on the run report", () => {
+  const SESSION = { cookie: "tok" };
+  const p105RefundDeps = (over: Partial<DataSource> = {}): WebDeps =>
+    makeDeps({
+      session: () => SESSION,
+      dataSource: {
+        ...makeDeps().dataSource,
+        getRunReport: async () =>
+          ({
+            kind: "ok",
+            report: { runId: "run_tl", workflow: "review", state: "completed", estimateCredits: 840, spentCredits: 520, capCredits: 840, refundedCredits: 0, estimateRatio: 0.62, meteredCredits: 520, differences: [], phases: [], seatSplit: [], flags: [], claims: null, drivers: [], suggestedGuidance: [] },
+            projectSlug: "the-politics-of-visibility",
+            ...(over.refundWindow !== undefined ? { refundWindow: over.refundWindow } : {}),
+          }) as never,
+        requestRefund: vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 })),
+        ...over,
+      } as DataSource,
+    });
+
+  it("an eligible block renders the 'Get N cr back' control + the 7-day note; absent block renders none", async () => {
+    const eligible = createWebApp(p105RefundDeps({ refundWindow: { state: "eligible", credits: 160 } }));
+    const html = await (await eligible.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(html).toContain('action="/p/the-politics-of-visibility/r/run_tl/refund"');
+    expect(html).toContain("Get 160 cr back");
+    expect(html).toContain("within 7 days");
+
+    const closed = createWebApp(p105RefundDeps({})); // no refundWindow — the flag admitted nothing
+    const html2 = await (await closed.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(html2).not.toContain("refund");
+  });
+
+  it("refunded / pending_review / denied blocks render their recorded verdicts, never a live control", async () => {
+    const refunded = createWebApp(p105RefundDeps({ refundWindow: { state: "refunded", credits: 160 } }));
+    const html = await (await refunded.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(html).toContain("Refunded 160 cr.");
+    expect(html).not.toContain('action="/p/the-politics-of-visibility/r/run_tl/refund"');
+
+    const review = createWebApp(p105RefundDeps({ refundWindow: { state: "pending_review", credits: 160 } }));
+    const html2 = await (await review.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(html2).toContain("Refund request for 160 cr sent for review.");
+    expect(html2).not.toContain("Get 160 cr back");
+
+    const denied = createWebApp(p105RefundDeps({ refundWindow: { state: "denied", credits: 160 } }));
+    const html3 = await (await denied.request("/p/the-politics-of-visibility/r/run_tl")).text();
+    expect(html3).toContain("The refund request was declined.");
+  });
+
+  it("the POST forwards requestRefund and redirects back to the report (fresh block state)", async () => {
+    const requestRefund = vi.fn(async () => ({ status: "refunded" as const, requestId: "urr_1", credits: 160 }));
+    const app = createWebApp(p105RefundDeps({ requestRefund }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", { method: "POST", ...form({}) });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
+    expect(requestRefund).toHaveBeenCalledWith(expect.objectContaining(SESSION), "run_tl");
+  });
+
+  it("an expected refusal (409 ineligible / 403 closed) still redirects — the report re-reads the block", async () => {
+    const requestRefund = vi.fn(async () => {
+      throw new ApiError(409, "http://api/runs/run_tl/refund", undefined, "window_expired");
+    });
+    const app = createWebApp(p105RefundDeps({ requestRefund }));
+    const res = await app.request("/p/the-politics-of-visibility/r/run_tl/refund", { method: "POST", ...form({}) });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/p/the-politics-of-visibility/r/run_tl#report");
+  });
+});

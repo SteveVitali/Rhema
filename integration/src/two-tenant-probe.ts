@@ -64,6 +64,8 @@ export interface TenantMarkers {
   readonly guidanceId: string;
   readonly inboxItemId: string;
   readonly actionTokenId: string;
+  /** DEF.4 — a completed, in-window, debit-bearing run: the refund WRITE leg's target. */
+  readonly refundableRunId: string;
   /** human-readable marker strings (names/titles) that must never cross. */
   readonly textMarkers: readonly string[];
   /** every marker — ids + text — flattened for the response scan. */
@@ -102,6 +104,9 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
   const guidanceId = `gui_probe_${t}`;
   const inboxItemId = `inb_probe_${t}`;
   const actionTokenId = `eat_probe_${t}`;
+  const refundableRunId = `run_probe_${t}_ref`;
+  await seedRun(db, { runId: refundableRunId, workspaceId, projectId, state: "completed" });
+  await db.pg.query("update runs set ended_at = now() where id = $1", [refundableRunId]);
 
   await db.pg.exec(`
     insert into personas (id, workspace_id, display_name, mode, kind, provenance)
@@ -133,13 +138,21 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
       on conflict (user_id) do nothing;
     insert into email_action_tokens (id, workspace_id, gate_id, run_id, user_id, action, expires_at)
       values ('${actionTokenId}','${workspaceId}','${gateId}','${runId}','${userId}','open',now()+interval '1 hour');
+    -- DEF.4 — a refund-eligible run per tenant (terminal, in-window, one committed debit): the
+    -- refund WRITE leg proves a foreign id can never resolve into a refund, however eligible.
+    insert into steps (id, run_id, phase, ordinal, state)
+      values ('st_${refundableRunId}','${refundableRunId}','craft',1,'done');
+    insert into credit_balances (billing_account_id, bucket, available, held)
+      values ('${billingAccountId}','included',5000,0) on conflict do nothing;
+    insert into credit_ledger (id, workspace_id, billing_account_id, kind, credits, bucket, run_id, phase_id, source, idempotency_key)
+      values ('led_${refundableRunId}','${workspaceId}','${billingAccountId}','debit',160,'included','${refundableRunId}','st_${refundableRunId}','phase','debit:${refundableRunId}');
   `);
 
   const ids = [
     userId, billingAccountId, workspaceId, projectId, draftId, runId, gateId, personaId,
     connectionId, discoveredItemId, threadId, artifactId, artifactVersionId, correspondenceId,
     findingId, figureId, liveDocId, restorePointId, decisionRequestId, checkoutSessionId,
-    guidanceId, inboxItemId, actionTokenId,
+    guidanceId, inboxItemId, actionTokenId, refundableRunId,
   ];
   const textMarkers = ["VOICE", "ITEM", "THREAD", "PATH", "FINDING", "FIGURE", "RP", "DCR", "GUIDANCE"].map(
     (n) => marker(n),
@@ -148,7 +161,7 @@ export async function seedProbeTenant(db: OrchestratorTestDb, t: "a" | "b"): Pro
     userId, workspaceId, billingAccountId, projectId, draftId, runId, gateId, personaId,
     connectionId, discoveredItemId, threadId, artifactId, artifactVersionId, correspondenceId,
     findingId, figureId, liveDocId, restorePointId, decisionRequestId, checkoutSessionId,
-    guidanceId, inboxItemId, actionTokenId,
+    guidanceId, inboxItemId, actionTokenId, refundableRunId,
     textMarkers,
     all: [...ids, ...textMarkers],
   };
@@ -232,6 +245,8 @@ export interface ProbeFinding {
 export interface ProbeReport {
   readonly mode: "deterministic" | "live";
   readonly routesProbed: number;
+  /** DEF.4 — tenant-scoped WRITE routes probed (the refund route; a finding, not a count, fails it). */
+  readonly writesProbed: number;
   readonly routesExempt: readonly string[];
   readonly findings: readonly ProbeFinding[];
   readonly ownDataSanity: readonly string[];
@@ -277,14 +292,17 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
       ...deps,
       principal: sessionScopedPrincipal,
       db: createScopedDb(userPool, { role: USER_SERVING_ROLE }),
+      // DEF.4 — the refund write leg runs under the harshest posture (flag OPEN): a foreign id must
+      // still 404 and write nothing — the workspace predicate + RLS, not the flag, is the boundary.
+      refundWindowMode: "open",
     });
     const principalOf = (t: TenantMarkers): Principal => ({
       userId: t.userId,
       workspaceId: t.workspaceId,
       billingAccountId: t.billingAccountId,
     });
-    const requestAs = async (t: TenantMarkers, path: string): Promise<Response> =>
-      runWithPrincipal(principalOf(t), async () => app.request(path));
+    const requestAs = async (t: TenantMarkers, path: string, init?: RequestInit): Promise<Response> =>
+      runWithPrincipal(principalOf(t), async () => app.request(path, init));
 
     // ---- census: every GET route is probed or explicitly exempted; an exemption that names a gone
     // route is stale and fails too. ----
@@ -354,9 +372,70 @@ export async function runDeterministicProbe(): Promise<ProbeReport> {
       }
     }
 
+    // ---- the refund WRITE leg (DEF.4; REQ-SPEC-30): POST /runs/<foreign refund-eligible run>/refund
+    // as each tenant must 404 — the workspace predicate + RLS hide the row entirely — and must leave
+    // NO request row / NO refund ledger row on the foreign run. The supplied id is excluded from the
+    // marker scan (the requester chose it); any other foreign marker in the body is a finding. The
+    // own-run POST is the sanity: the route is genuinely mounted (fail-closed ≠ dead).
+    let writesProbed = 0;
+    for (const [as, foreign, tag] of [
+      [a, b, "a"],
+      [b, a, "b"],
+    ] as const) {
+      const res = await requestAs(as, `/runs/${foreign.refundableRunId}/refund`, { method: "POST" });
+      writesProbed++;
+      if (res.status !== 404) {
+        findings.push({
+          route: "POST /runs/:id/refund",
+          asTenant: tag,
+          status: res.status,
+          leaked: ["a foreign run id resolved — the refund write must 404"],
+        });
+      }
+      const body = await res.text().catch(() => "");
+      const hits = scanForMarkers(body, foreign.all).filter((m) => m !== foreign.refundableRunId);
+      if (hits.length) {
+        findings.push({ route: "POST /runs/:id/refund", asTenant: tag, status: res.status, leaked: hits });
+      }
+      // and the durable check: no request row, no refund ledger row on the foreign run.
+      const reqN = Number(
+        (
+          (await db.client.query("select count(*)::int n from user_refund_requests where run_id = $1", [
+            foreign.refundableRunId,
+          ])).rows[0] as { n: number }
+        ).n,
+      );
+      const ledN = Number(
+        (
+          (await db.client.query(
+            "select count(*)::int n from credit_ledger where run_id = $1 and kind = 'refund'",
+            [foreign.refundableRunId],
+          )).rows[0] as { n: number }
+        ).n,
+      );
+      if (reqN !== 0 || ledN !== 0) {
+        findings.push({
+          route: "POST /runs/:id/refund",
+          asTenant: tag,
+          status: res.status,
+          leaked: [`foreign run carries ${reqN} request row(s) + ${ledN} refund row(s)`],
+        });
+      }
+    }
+    {
+      const own = await requestAs(a, `/runs/${a.refundableRunId}/refund`, { method: "POST" });
+      writesProbed++;
+      if (own.status !== 200) {
+        ownDataSanity.push(
+          `a: own refund-eligible run did not refund under flag-open (status ${own.status})`,
+        );
+      }
+    }
+
     return {
       mode: "deterministic",
       routesProbed: probed.length,
+      writesProbed,
       routesExempt: [...GET_EXEMPTIONS.keys()],
       findings,
       ownDataSanity,
@@ -404,6 +483,7 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
   };
   const aMarkers = await markersOf(sessionA);
   const bMarkers = await markersOf(sessionB);
+  let writesProbed = 0;
 
   // api JSON: every list route as each tenant must contain none of the other's markers
   for (const [session, foreign, tag] of [
@@ -422,6 +502,23 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
       const hits = [...foreign].filter((m) => body.includes(m) && m !== foreignId);
       if (status === 200 || hits.length) {
         findings.push({ route: `GET /voices/<foreign>`, asTenant: tag, status, leaked: hits.slice(0, 10) });
+      }
+      // DEF.4 — the refund WRITE leg: POSTing the foreign id must never refund (2xx) nor echo
+      // foreign markers beyond the supplied id — 403 (flag) / 404 (scope) are the only honest answers.
+      const wr = await fetch(`${baseUrl}/runs/${encodeURIComponent(foreignId)}/refund`, {
+        method: "POST",
+        headers: { cookie: session },
+      });
+      writesProbed++;
+      const wrBody = await wr.text().catch(() => "");
+      const wrHits = [...foreign].filter((m) => wrBody.includes(m) && m !== foreignId);
+      if (wr.status < 300 || wr.status >= 500 || wrHits.length) {
+        findings.push({
+          route: "POST /runs/<foreign>/refund",
+          asTenant: tag,
+          status: wr.status,
+          leaked: wrHits.slice(0, 10).concat(wr.status < 300 || wr.status >= 500 ? [`status ${wr.status}`] : []),
+        });
       }
     }
   }
@@ -444,6 +541,7 @@ export async function runLiveProbe(baseUrl: string, webUrl?: string): Promise<Pr
   return {
     mode: "live",
     routesProbed: LIVE_LIST_ROUTES.length + (webUrl ? LIVE_PAGES.length : 0),
+    writesProbed,
     routesExempt: [],
     findings,
     ownDataSanity: aMarkers.size === 0 ? ["a: no own markers extracted — session may be dead"] : [],

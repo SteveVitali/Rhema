@@ -2700,6 +2700,36 @@ export function RunReportPage(): ReactNode {
           advancedHref={`/p/${runReport.slug}/r/${runReport.runId}?advanced=1`}
         />
       </div>
+      {/* DEF.4 — the §14.4 refund-window affordance (REQ-SPEC-24(6)): rendered ONLY while the api's
+          `refundWindow` block is present on the report — the flag admitting nothing ⇒ no control at
+          all. A plain form POST (no-JS) to the web route that forwards `requestRefund`. */}
+      {runReport.report.refundWindow?.state === "eligible" ? (
+        <form method="post" action={`/p/${runReport.slug}/r/${runReport.runId}/refund`} data-refund-form="true" style={{ margin: "0 0 12px" }}>
+          <button
+            type="submit"
+            data-refund-cta="true"
+            style={{ fontSize: "12px", padding: "4px 10px", borderRadius: "4px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", color: "var(--shell-fg)", cursor: "pointer" }}
+          >
+            {fmt(RP.refundCtaFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
+          </button>
+          <span style={{ fontSize: "12px", color: "var(--shell-fg-faint)", marginLeft: "8px" }}>{RP.refundNote}</span>
+        </form>
+      ) : null}
+      {runReport.report.refundWindow?.state === "refunded" ? (
+        <p data-refund-state="refunded" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 12px" }}>
+          {fmt(RP.refundedFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
+        </p>
+      ) : null}
+      {runReport.report.refundWindow?.state === "pending_review" ? (
+        <p data-refund-state="pending_review" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 12px" }}>
+          {fmt(RP.refundReviewFmt, { n: runReport.report.refundWindow.credits.toLocaleString("en-US") })}
+        </p>
+      ) : null}
+      {runReport.report.refundWindow?.state === "denied" ? (
+        <p data-refund-state="denied" style={{ fontSize: "12px", color: "var(--shell-fg-muted)", margin: "0 0 12px" }}>
+          {RP.refundDenied}
+        </p>
+      ) : null}
       {/* REQ-BILL-19 (P1.16) — the report links its frozen rate-table version to the published tables. */}
       {runReport.report.report.rateTableVersion != null ? (
         <p data-rate-table-link="true" style={{ fontSize: "12px", color: "var(--shell-fg-faint)", margin: "0 0 12px" }}>

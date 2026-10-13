@@ -1948,6 +1948,124 @@ const R8: StepFn = async (ctx) => {
   }
 };
 
+// ---- DEF.4 — R9 (RED→DEF.4; paid): the §14.4 refund window end-to-end on the flagged tenant.
+// The run sheet → delivered report → "Get N cr back" → "Refunded N cr." with the balance moving
+// EXACTLY N; then a second delivered run's request renders "sent for review" and moves NOTHING.
+// Flag-off stages legitimately fail this step — it flips green only where `refundWindow` admits
+// the JOURNEY.1 tenant (`test_tenants` on the Stage-B evidence deploy).
+
+/** Launch a Quick/Base Review on the planted excerpt and wait for its terminal state (the same
+ *  unattended ceremony R6/N6 drive — rigor=quick + this-run autorun + the card's data-run-state). */
+async function launchQuickReviewToDelivery(
+  page: Page,
+  ctx: StepCtx,
+  tag: string,
+): Promise<{ slug: string; runId: string; state: string }> {
+  const slug = await createDraftProject(page, ctx.webBaseUrl, ctx.marker(tag), PLANTED_EXCERPT);
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run?workflow=review&rigor=quick`);
+  const rigor = page.locator('input[name="rigor"][value="quick"]');
+  if ((await rigor.count()) > 0 && !(await rigor.isChecked())) await rigor.check();
+  const auto = page.locator('input[name="autoRun"]');
+  if ((await auto.count()) > 0 && !(await auto.isChecked())) {
+    if (!(await auto.isVisible())) {
+      const summary = page.locator('details:has(input[name="autoRun"]) > summary');
+      if ((await summary.count()) > 0) await summary.first().click();
+    }
+    await auto.check();
+  }
+  const runBtn = page.locator('button[data-run-button="true"]').first();
+  await assertActionable(runBtn, "Review launch");
+  await runBtn.click();
+  await page.waitForLoadState("domcontentloaded");
+  const alert = page.locator('p[role="alert"]').first();
+  if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
+    throw new Error(`run launch refused: ${(await alert.textContent())?.trim()}`);
+  }
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
+  const card = page.locator("[data-run-card]").first();
+  await card.waitFor({ state: "attached", timeout: 90_000 });
+  const runId = (await card.getAttribute("data-run-card")) ?? "";
+  if (!runId) throw new Error("the run card carries no data-run-card id");
+  const TERMINAL = new Set(["completed", "completed_partial", "failed", "cancelled"]);
+  const deadline = Date.now() + 40 * 60_000;
+  let state = "";
+  while (Date.now() < deadline) {
+    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+    state = (await card.getAttribute("data-run-state")) ?? "";
+    if (TERMINAL.has(state)) break;
+    await new Promise((r) => setTimeout(r, 2_000));
+  }
+  if (!TERMINAL.has(state)) throw new Error(`run ${runId} did not reach a terminal state within 40 min`);
+  return { slug, runId, state };
+}
+
+/** The §14.5 level-1 spendable figure (data-usage-balance) — the refund leg's exact-movement read. */
+async function readSpendable(page: Page, ctx: StepCtx): Promise<number> {
+  await gotoOk(page, `${ctx.webBaseUrl}/app/usage`);
+  const text = (await page.locator("[data-usage-balance]").textContent()) ?? "";
+  const m = /(\d[\d,]*)\s*cr/i.exec(text);
+  if (m?.[1] == null) throw new Error(`the usage balance is unreadable: "${text}"`);
+  return Number(m[1].replace(/,/g, ""));
+}
+
+const R9: StepFn = async (ctx) => {
+  const { page } = await ctx.returningUser("a");
+
+  // ---- leg 1: the first eligible request — control → refunded → exact balance movement. ----
+  const runA = await launchQuickReviewToDelivery(page, ctx, "R9A");
+  const spendableBefore = await readSpendable(page, ctx);
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${runA.slug}/r/${runA.runId}`);
+  const cta = page.locator("[data-refund-cta]").first();
+  await cta.waitFor({ state: "attached", timeout: 15_000 }).catch(() => {
+    throw new Error("the delivered report renders no refund control — the flag/affordance is absent");
+  });
+  await assertActionable(cta, "the refund control"); // visible + enabled + unobscured
+  const ctaText = ((await cta.textContent()) ?? "").trim();
+  const n = /(\d[\d,]*)\s*cr/i.exec(ctaText)?.[1];
+  if (n == null) throw new Error(`the refund control carries no figure: "${ctaText}"`);
+  const refundN = Number(n.replace(/,/g, ""));
+  await cta.click();
+  await page.waitForLoadState("domcontentloaded");
+  const refunded = page.locator('[data-refund-state="refunded"]').first();
+  await refunded.waitFor({ state: "attached", timeout: 15_000 });
+  const refundedText = ((await refunded.textContent()) ?? "").trim();
+  if (!new RegExp(`Refunded ${refundN.toLocaleString("en-US")} cr`, "i").test(refundedText)) {
+    throw new Error(`the post-refund line does not read "Refunded ${refundN} cr.": "${refundedText}"`);
+  }
+  // the exact movement — the usage glance's spendable rose by precisely the refunded figure.
+  const spendableAfter = await readSpendable(page, ctx);
+  if (spendableAfter !== spendableBefore + refundN) {
+    throw new Error(
+      `the refund moved spendable ${spendableBefore} → ${spendableAfter} (+${spendableAfter - spendableBefore}) — expected exactly +${refundN}`,
+    );
+  }
+
+  // ---- leg 2: the quarter's allowance is spent — the second request goes to review, not money. ----
+  const runB = await launchQuickReviewToDelivery(page, ctx, "R9B");
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${runB.slug}/r/${runB.runId}`);
+  const cta2 = page.locator("[data-refund-cta]").first();
+  await cta2.waitFor({ state: "attached", timeout: 15_000 }).catch(() => {
+    throw new Error("the second run's report renders no refund control — it should still offer review");
+  });
+  await assertActionable(cta2, "the refund control (second request)");
+  await cta2.click();
+  await page.waitForLoadState("domcontentloaded");
+  const pending = page.locator('[data-refund-state="pending_review"]').first();
+  await pending.waitFor({ state: "attached", timeout: 15_000 });
+  const pendingText = ((await pending.textContent()) ?? "").trim();
+  if (!/sent for review/i.test(pendingText)) {
+    throw new Error(`the second request did not render "sent for review": "${pendingText}"`);
+  }
+  // and it moved no money — the balance is exactly where the first refund left it.
+  const spendablePending = await readSpendable(page, ctx);
+  if (spendablePending !== spendableAfter) {
+    throw new Error(
+      `a pending-review request moved the balance (${spendableAfter} → ${spendablePending}) — the allowance was not spent`,
+    );
+  }
+  assertBundleParity(ctx);
+};
+
 // ---------------------------------------------------------------- the free fixture (≤300 words)
 
 const FREE_FIXTURE = `# Journey fixture
@@ -1973,6 +2091,7 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   R6,
   R7,
   R8,
+  R9,
   P1,
   C1,
   X1,

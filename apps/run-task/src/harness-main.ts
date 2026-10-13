@@ -230,6 +230,10 @@ async function postAudit(args: {
           proxyBaseUrl: agentProxyBaseUrl,
           runId,
           agentUid,
+          // DEF.4 (BL-11(b)) — a guided retry's predicate-failure text reaches the scoped query
+          // appended to its prompt. The non-scoped merge below writes `inputs.guidance`; a scoped
+          // launch has no inputs to merge into, and the mount set stays exactly `launch.files`.
+          ...(opts.guidance !== undefined ? { guidance: opts.guidance } : {}),
         },
         {
           log: console.log,

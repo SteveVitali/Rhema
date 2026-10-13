@@ -548,6 +548,10 @@ export function createCompute(args: ComputeArgs): Compute {
                     // ECON.1 — `debit.mode` (ADR-031): the api's run-create/finalize paths read it.
                     // All stages ship `committed`; the operator flips the stage fact post-notice.
                     { name: "DEBIT_MODE", value: cfg.debitMode },
+                    // DEF.4 — `refundWindow.mode` (ADR-071): the api's refund route + report block
+                    // read it. `test_tenants` admits only `is_test` workspaces — closed for every
+                    // real user; `open` flips by operator commit after BL-30 (D-DEF.4-3).
+                    { name: "REFUND_WINDOW_MODE", value: cfg.refundWindowMode },
                     { name: "OBJECTS_BUCKET", value: args.buckets["artifacts"].name },
                     { name: "MAX_USD_PER_RUN", value: String(cfg.maxUsdPerRun) },
                     // The api mints run tokens → both key halves from the ONE signing-key secret (name
