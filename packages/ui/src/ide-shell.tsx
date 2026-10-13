@@ -291,14 +291,18 @@ export function IdeShell(props: IdeShellProps): ReactNode {
 
       {/* Desk — the bottom drawer (⌘J): Chat / Live feed / Findings / Claims (§5.1). */}
       <section className="ide-desk" data-pane="desk" aria-label={L.desk.heading}>
-        <div className="ide-desk-tabs" role="tablist" aria-label={L.desk.heading}>
-          {(["chat", "feed", "findings", "claims"] as const).map((tab) => (
-            <button key={tab} type="button" role="tab" data-ide-desk-tab={tab}
-                    aria-selected={(deskOpen ? "feed" : "chat") === tab}>
-              {L.desk.tabs[tab]}
-            </button>
-          ))}
-          <button type="button" data-ide-desk-toggle aria-label={L.desk.close} style={{ marginLeft: "auto", color: "var(--shell-fg-muted)", background: "none", border: "none", cursor: "pointer" }}>×</button>
+        {/* UX.2 (REQ-IDE-42) — the × must live OUTSIDE the tablist: role=tablist's required
+            children are tabs only (axe aria-required-children). The head row keeps the layout. */}
+        <div className="ide-desk-head">
+          <div className="ide-desk-tabs" role="tablist" aria-label={L.desk.heading}>
+            {(["chat", "feed", "findings", "claims"] as const).map((tab) => (
+              <button key={tab} type="button" role="tab" data-ide-desk-tab={tab}
+                      aria-selected={(deskOpen ? "feed" : "chat") === tab}>
+                {L.desk.tabs[tab]}
+              </button>
+            ))}
+          </div>
+          <button type="button" data-ide-desk-toggle aria-label={L.desk.close} style={{ color: "var(--shell-fg-muted)", background: "none", border: "none", cursor: "pointer" }}>×</button>
         </div>
         <div className="ide-desk-body" role="tabpanel">
           {/* All four tab bodies render; data-desk-tab on .ide picks the visible one in CSS. */}

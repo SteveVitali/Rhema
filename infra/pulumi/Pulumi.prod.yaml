@@ -285,15 +285,21 @@ config:
   # resume, live-tail-only event delivery samples 'detail=tail', collab-path autosave
   # 'detail=collab' + migration 0054's rhema_collab grant, delivery-validation∪boundary
   # mirror class, system-cancelled success denominator, per-(run,attempt) proxy-vs-SDK),
-  # the REQ-ARCH-34 weekly review (slo.review.weekly pg-boss queue+cron+boot readout,
-  # rhema_slo_weekly(+_value) log metrics + two dashboard tiles in monitoring.ts), and the
-  # ≤$0 run-start levers (pg-boss useListenNotify+notify:true+0.5s poll floor on
-  # run.start/run.resume, imagePullPolicy:IfNotPresent, run_start_stage_ms attribution;
-  # the image-prewarm DaemonSet rides infra/k8s/apply.sh, not Pulumi). fetcher/convert/
-  # export/egress-proxy have no diff'd runtime code — they keep their pins.
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:146b972e5d7c4e2abeb4953f2d6c453e332b5a9a6bf1d4e82c3a29df1996baee","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:426c555720dccac238978506faf8f6b6a0458ae26b895e3340e1c7fe01b823d9","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:445697970a7f715ffb3ee9965c55dbe1f9cec38ffb492f363458eedc0c2065c4","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:da402e3f1ee7952974aa46680300c56dea2dceee75218e7f01e79a93a4d7891d","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:fb62d20693f7cce76fd31109a25e4494cb135766496480f03dd6d216c5c062ba","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:1cc61f114cf26c795f9c318d399259ef4e97f56ee40406df7be161a3b91d79ad","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:c9f066260b46e1a93499dfdc05a64dd652bdd8a34049f54bc196a680584cea0c"}'
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:884bcc44b2d4d373dc2a1400fbef0c4315745552bec88685d9fc4f67439b1310
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:cb639623d72669562b29b8129165f38dbb5b76970b6464bef5d644bc4e37fae0
+  # UX.2 — all nine images rebuilt on chain-tip 993920c (stevevitali/ux-2-layout-responsive; tag
+  # `ux2b`, Cloud Build f96933ce). Carries the layout/responsive set: /app/new workspace Shell +
+  # the IdeFrame document invariant (ADR-065), the pricing matrix's labelled scroll region
+  # (ADR-066), the phone ≥44-px action/target floor (ADR-067), the in-flow sync pill (ADR-069),
+  # and the faint-tier AA retune (ADR-070 — axe color-contrast fix on the first P1 leg);
+  # axe-core rides the journeys harness only — no image change class (ADR-068). No migrations.
+  # UX.2 Stage-B iteration 3 (tag ux2c, Cloud Build 511ddeb5, 2026-10-03, chain-tip SHA 6723784 —
+  # stacks on the ux2b deploy): all nine images rebuilt on the tip. Carries the remaining live-axe
+  # fixes a prod pre-flight sweep surfaced: the desk's × moved out of role=tablist into
+  # .ide-desk-head (aria-required-children), programmatic names on the ov_* override + /app
+  # groupBy/protocol/sort selects (select-name), and the compact-chat thread-link/chip ≥44-px
+  # phone floor (target-size — the one finding the last P1 run hit). No migrations.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:42312749a63a111b6b9d876cf7d7b9a20e747f68f59c5dfbe895e751c86f12c6","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:9059e2f44001c5336503ef3f4302f14bebd47c95c4af481f1f182a09deec2722","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:3133bfed5590880abddbf36665f779b4997bbe6eafa16e70d7e22b7773e48fb9","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:5a18a7739014f953f6b0e760253ac51727e70b1b8723e7c01c40ca705415223e","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:2a6fd042c52ac54fffe0975fc26c2d79efc94e1f766a4443f3f0bfd8f0af7299","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:93853b8de694a9b2d357260db633e21149fdc56e1857c846cb919aa6c745d94f","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:f24978a841b7338bd05832e403e17c8881d19804f542af663ea0f20c657b0878"}'
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:af0da9e474076d511a4d0b687c8c416e6fd66c6338562e2a8c720aa2bc87aee1
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:603b926fba7e589dc2b509b558e211780ed01ee821ba786a29c5ba2bec5f05bf
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00

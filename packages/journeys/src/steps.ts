@@ -16,6 +16,12 @@ import { freshIdentity, assertTestIdentity } from "./session.js";
 // ACT.1 — the journey asserts against the SHIPPED config (the same typed pricing.json the
 // surfaces render from), never a second literal copy of the trial's figures.
 import { PRICING, PUBLIC_CLAIM_COPY, trialIncludedNote } from "@rhema/contracts";
+// UX.2 (ADR-068) — axe-core as the WCAG 2.2 AA checker: the prebuilt script source injects into the
+// page (never bundled into shipped artifacts; journeys is dev tooling, MPL-2.0 exception checked in).
+import axeCore from "axe-core";
+
+/** The injectable axe build (UMD — `page.addScriptTag({content})`, not an import in the page). */
+const AXE_SOURCE = axeCore.source;
 
 /** The committed ≤300-word paid fixture (one planted false claim for N6). Loaded at module init. */
 const PAID_FIXTURE = readFileSync(
@@ -1362,31 +1368,381 @@ const R7: StepFn = async (ctx) => {
 
 // ---------------------------------------------------------------- phone + claims + isolation
 
-/** P1 (RED, UX.2) — phone width: no horizontal overflow; primary actions ≥ 44 px. */
-const P1: StepFn = async (ctx) => {
-  const { page } = await ctx.anon();
-  await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/pricing", "/login"]) {
-    await gotoOk(page, `${ctx.webBaseUrl}${path}`);
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    if (overflow > 1) throw new Error(`${path}: horizontal overflow ${overflow}px at 390w`);
-    const small = await page.evaluate(() => {
-      const bad: string[] = [];
-      for (const el of document.querySelectorAll("a,button")) {
-        const r = el.getBoundingClientRect();
-        const visible = r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
-        const primary = el.matches("button,[role='button'],a[class*='cta'],a[data-cta]");
-        if (visible && primary && r.height > 0 && r.height < 44) {
-          bad.push(
-            `${el.tagName.toLowerCase()} ${(el.textContent ?? "").slice(0, 24)} (${Math.round(r.height)}px)`,
-          );
-        }
-      }
-      return bad;
+/** UX.2 — page-level horizontal overflow in px (≤1px tolerance for scrollbar/sub-pixel wobble). */
+async function pageOverflowPx(page: Page): Promise<number> {
+  return page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+}
+
+/**
+ * UX.2 (ADR-068) — one deterministic axe-core WCAG 2.2 AA pass over the loaded document (tags
+ * wcag2a/wcag2aa/wcag21a/wcag21aa/wcag22aa). Any violation fails the step with the rule ids and
+ * their first targets; there is no severity floor and no rule disabled silently.
+ */
+async function assertAxeClean(page: Page, label: string): Promise<void> {
+  // CDP evaluation, not a <script> tag: the page's CSP (script-src 'self' 'nonce-…') correctly
+  // refuses addScriptTag({content}); Runtime.evaluate is how an external checker attaches.
+  await page.evaluate(AXE_SOURCE);
+  const violations = await page.evaluate(async () => {
+    const w = globalThis as unknown as {
+      axe?: {
+        run(
+          root: Document,
+          opts: { runOnly: { type: string; values: string[] } },
+        ): Promise<{ violations: { id: string; nodes: { target: string[] }[] }[] }>;
+      };
+    };
+    if (!w.axe) throw new Error("axe-core did not inject");
+    const res = await w.axe.run(document, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
     });
-    if (small.length > 0) throw new Error(`${path}: sub-44px primary actions: ${small.join("; ")}`);
+    return res.violations.map(
+      (v) =>
+        `${v.id} ×${v.nodes.length} [${v.nodes
+          .slice(0, 3)
+          .map((n) => n.target.join(" "))
+          .join("; ")}]`,
+    );
+  });
+  if (violations.length > 0) {
+    throw new Error(`${label}: ${violations.length} WCAG-AA violation(s): ${violations.join(" | ")}`);
+  }
+}
+
+/** UX.2 — the pill's rect must not cover any text-bearing leaf element (honest geometry, not the
+ *  presence of position:fixed alone — in-flow layout makes overlap structurally impossible, but the
+ *  assertion measures it so a regression in ANY positioning mode is caught). */
+async function pillTextOverlap(page: Page): Promise<string | null> {
+  const pill = page.locator("[data-sync-pill]").first();
+  if ((await pill.count()) === 0) return "(no sync pill rendered)";
+  return pill.evaluate((el) => {
+    const pr = el.getBoundingClientRect();
+    if (pr.width === 0 || pr.height === 0) return null;
+    for (const other of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
+      if (other === el || el.contains(other) || other.contains(el)) continue;
+      // Chromium keeps layout boxes for children of a CLOSED <details> (content-visibility),
+      // so getBoundingClientRect is nonzero for elements that are neither painted nor
+      // hittable — exclude them (the <summary> itself stays live).
+      const closed = other.closest("details:not([open])");
+      if (closed && !closed.querySelector(":scope > summary")?.contains(other)) continue;
+      const ownText = Array.from(other.childNodes).some(
+        (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "",
+      );
+      if (!ownText) continue;
+      const or = other.getBoundingClientRect();
+      if (or.width === 0 || or.height === 0) continue;
+      const ix = Math.min(pr.right, or.right) - Math.max(pr.left, or.left);
+      const iy = Math.min(pr.bottom, or.bottom) - Math.max(pr.top, or.top);
+      if (ix > 1 && iy > 1) {
+        return `${other.tagName.toLowerCase()} "${(other.textContent ?? "").trim().slice(0, 40)}"`;
+      }
+    }
+    return null;
+  });
+}
+
+/** UX.2 — a rect-overlap check between two located elements (pill vs status bar / composer). */
+async function rectsOverlap(a: { x: number; y: number; w: number; h: number } | null, b: { x: number; y: number; w: number; h: number } | null): Promise<boolean> {
+  if (!a || !b) return false;
+  const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return ix > 1 && iy > 1;
+}
+
+/** P1 (UX.2) — the responsive contract (REQ-MOBILE-3 amended by UX.2, REQ-SPEC-20, REQ-IDE-42/43):
+ *  the anonymous surfaces and the signed-in phone surfaces never overflow the page; the pricing
+ *  matrix scrolls inside a labelled keyboard-focusable region instead; phone controls are real
+ *  buttons ≥44px (24px floor everywhere); the §10.1 desktop-capability set never renders on phone;
+ *  the sync pill is in-flow — never over text, the composer, or the status bar; /app/new renders
+ *  styled chrome; and axe WCAG 2.2 AA is clean on every touched surface at BOTH review widths. */
+const P1: StepFn = async (ctx) => {
+  const MOBILE = { "sec-ch-ua-mobile": "?1" };
+  const PHONE = { width: 390, height: 844 };
+  const DESKTOP = { width: 1440, height: 900 };
+
+  const assertNoOverflow = async (page: Page, label: string): Promise<void> => {
+    const px = await pageOverflowPx(page);
+    if (px > 1) throw new Error(`${label}: horizontal overflow ${px}px`);
+  };
+
+  /** Every visible control under `sel` meets `minPx` on BOTH axes (labels for the error). */
+  const assertTargetSize = async (page: Page, sel: string, minPx: number, label: string) => {
+    const bad = await page.evaluate(
+      ([selector, floor]) => {
+        const out: string[] = [];
+        for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden")
+            continue;
+          if (r.width < floor || r.height < floor) {
+            out.push(
+              `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)}`,
+            );
+          }
+        }
+        return out;
+      },
+      [sel, minPx] as const,
+    );
+    if (bad.length > 0) throw new Error(`${label}: sub-${minPx}px targets: ${bad.join("; ")}`);
+  };
+
+  // ---- leg 1: anonymous public surfaces at 390×844 and 320×844 (the narrowest phone) ----
+  {
+    const { page } = await ctx.anon();
+    for (const w of [390, 320]) {
+      await page.setViewportSize({ width: w, height: 844 });
+      for (const path of ["/", "/pricing", "/login"]) {
+        await gotoOk(page, `${ctx.webBaseUrl}${path}`);
+        await assertNoOverflow(page, `${path} @${w}w`);
+      }
+    }
+    await page.setViewportSize(PHONE);
+    await gotoOk(page, `${ctx.webBaseUrl}/pricing`);
+    // the matrix rule (ADR-066): the TABLE is wider than the phone — the SCROLL REGION absorbs it;
+    // the page itself never scrolls horizontally.
+    const matrix = page.locator('.table-scroll[role="region"][aria-label]');
+    if ((await matrix.count()) === 0) {
+      throw new Error("/pricing: the matrix has no labelled scroll region");
+    }
+    const region = matrix.first();
+    if (!(await region.evaluate((el) => el.tabIndex >= 0))) {
+      throw new Error("/pricing: the matrix region is not keyboard-focusable");
+    }
+    const innerScroll = await region.evaluate((el) => el.scrollWidth - el.clientWidth);
+    if (innerScroll <= 0) {
+      throw new Error("/pricing: the matrix region does not scroll horizontally at 390px");
+    }
+    const caption = await region.evaluate((el) => {
+      const by = el.getAttribute("aria-labelledby");
+      if (by) return document.getElementById(by)?.textContent ?? null;
+      return el.getAttribute("aria-label");
+    });
+    if (!caption || caption.trim().length === 0) {
+      throw new Error("/pricing: the matrix scroll region has no accessible name");
+    }
+    // keyboard: the region is Tab-reachable, and whatever is focused shows the 2-px focus ring.
+    let focusedOnRegion = false;
+    let focusedOutlinePx = 0;
+    for (let i = 0; i < 24; i++) {
+      await page.keyboard.press("Tab");
+      const st = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        return {
+          isRegion: el?.classList.contains("table-scroll") ?? false,
+          outline: el ? parseFloat(getComputedStyle(el).outlineWidth) || 0 : 0,
+          style: el ? getComputedStyle(el).outlineStyle : "none",
+        };
+      });
+      if (st.outline < 2 || st.style === "none") {
+        throw new Error(`/pricing: Tab stop ${i + 1} shows no ≥2px focus ring (${st.outline}px ${st.style})`);
+      }
+      if (st.isRegion) {
+        focusedOnRegion = true;
+        focusedOutlinePx = st.outline;
+        break;
+      }
+    }
+    if (!focusedOnRegion) throw new Error("/pricing: the matrix region was never Tab-reached in 24 stops");
+    void focusedOutlinePx;
+    // REQ-IDE-42 — 200% text resize: zoom 2× on a DOUBLED viewport keeps the layout at 390 CSS px
+    // while every glyph renders twice as large — the honest WCAG 1.4.4 emulation (zoom on the same
+    // viewport would demand a 195-px layout, stricter than 1.4.10's 320-px floor).
+    await page.setViewportSize({ width: 780, height: 844 });
+    await page.evaluate(() => {
+      document.body.style.zoom = "2";
+    });
+    const zoomed = await page.evaluate(() => {
+      const doc = document.documentElement;
+      // normalize: layout px = rendered px / 2 while body.zoom is 2.
+      return Math.round((doc.scrollWidth - doc.clientWidth) / 2);
+    });
+    if (zoomed > 1) {
+      throw new Error(`/pricing 390-px layout @200% zoom: horizontal overflow ${zoomed}px`);
+    }
+    await page.evaluate(() => {
+      document.body.style.zoom = "";
+    });
+    await page.setViewportSize(PHONE);
+    await assertAxeClean(page, "/pricing @390×844");
+    await page.screenshot({ path: join(ctx.outDir, "p1-pricing-390.png"), fullPage: true });
+  }
+
+  // ---- leg 2: the signed-in phone surfaces — the project page, the run sheet, the Page's pill ----
+  {
+    const { context, page } = await ctx.returningUser("a");
+    await context.setExtraHTTPHeaders(MOBILE);
+    await page.setViewportSize(PHONE);
+    await gotoOk(page, `${ctx.webBaseUrl}/app`);
+    await followProjectLink(page, ctx);
+    const slug = /^\/p\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1];
+    if (!slug) throw new Error(`no project slug on ${page.url()}`);
+
+    // The project page at 390×844 (ADR-067): overflow, phonebar + action-row targets, §10.1.
+    await assertNoOverflow(page, `/p/${slug} @390×844`);
+    await assertTargetSize(page, ".ide-phonebar a", 44, "phone bar links");
+    await assertTargetSize(page, ".ide-actions a", 44, "project action row");
+    await assertTargetSize(
+      page,
+      "[data-gate-actions] button, [data-decision-option], .chat-composer button, .ide-phone-only .chat-threads a, .ide-phone-only [data-chat-chip]",
+      44,
+      "gate/decision/composer/chat buttons + links",
+    );
+    // WCAG 2.5.8 floor: every OTHER visible control is at least 24px.
+    await assertTargetSize(page, "button, [role='button']", 24, "all buttons");
+    for (const sel of [".ide-phonebar a", ".ide-actions a"]) {
+      for (const el of await page.locator(sel).all()) {
+        await assertActionable(el, `${sel} "${((await el.textContent()) ?? "").trim()}"`);
+      }
+    }
+    // §10.1's desktop-capability set never renders at phone width (capability boundary preserved).
+    const banned = await page.evaluate(() => {
+      const hits: string[] = [];
+      for (const sel of [
+        'form[action$="/run"]',
+        'a[href$="/import"]',
+        'a[href$="/export"]',
+        "[data-rename-form]",
+        "[data-new-project]",
+        'form[action="/app/new"]',
+      ]) {
+        if (document.querySelector(sel)) hits.push(sel);
+      }
+      return hits;
+    });
+    if (banned.length > 0) {
+      throw new Error(`phone /p/${slug} renders §10.1-prohibited controls: ${banned.join(", ")}`);
+    }
+    await assertAxeClean(page, `phone /p/${slug}`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-project-390.png"), fullPage: true });
+
+    // The Page's sync pill at phone width (ADR-069 + §10.1): /v/working is an EDITOR surface —
+    // phone requests land on the project page (or the §10.1 note) and the editor never mounts,
+    // so no pill exists to float. If a mounted editor ever reaches phone again, its pill must
+    // be there AND in-flow; a fixed/sticky pill anywhere is the regression this leg guards.
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/v/working`);
+    const pillLanded = new URL(page.url()).pathname;
+    await assertNoOverflow(page, `phone ${pillLanded} (via /v/working)`);
+    const pill = page.locator("[data-sync-pill]").first();
+    const editorMounted = (await page.locator("[data-page-mount]").count()) > 0;
+    if (editorMounted && (await pill.count()) === 0) {
+      throw new Error(`phone ${pillLanded}: the page editor mounted without its sync pill`);
+    }
+    if ((await pill.count()) > 0) {
+      const pos = await pill.evaluate((el) => getComputedStyle(el).position);
+      if (pos === "fixed" || pos === "sticky") {
+        throw new Error(`sync pill is position:${pos} — floats over body text at phone width`);
+      }
+      const overlapped = await pillTextOverlap(page);
+      if (overlapped) throw new Error(`sync pill covers text at phone width: ${overlapped}`);
+    }
+    if (pillLanded !== `/p/${slug}` && !editorMounted && (await page.locator("[data-phone-blocked]").count()) === 0) {
+      throw new Error(`/v/working @390 landed on ${pillLanded} with neither the project page nor the §10.1 note`);
+    }
+    await assertAxeClean(page, `phone ${pillLanded} (via /v/working)`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-pill-390.png"), fullPage: true });
+
+    // The run sheet at phone width — the §10.1 note, never the run form.
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
+    await assertNoOverflow(page, `/p/${slug}/run @390×844`);
+    if ((await page.locator("[data-phone-blocked]").count()) === 0) {
+      throw new Error("run sheet at phone width lacks the §10.1 capability note");
+    }
+    if ((await page.locator("form[data-run-sheet]").count()) > 0) {
+      throw new Error("the run sheet's run form renders at phone width");
+    }
+    await assertAxeClean(page, `phone /p/${slug}/run`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-runsheet-390.png"), fullPage: true });
+  }
+
+  // ---- leg 3: desktop 1440×900 — /app/new's styled shell + the pill clear of composer/statusbar ----
+  {
+    const { page } = await ctx.returningUser("a");
+    await page.setViewportSize(DESKTOP);
+    await gotoOk(page, `${ctx.webBaseUrl}/app/new`);
+    // ADR-065: a workspace surface — no IDE markup at all, and the chrome renders STYLED (the
+    // review's symptom was the stacked unstyled shell).
+    if ((await page.locator('.ide[data-ide="1"]').count()) > 0) {
+      throw new Error("/app/new still renders the IDE frame for a workspace surface");
+    }
+    if ((await page.locator('a[href="/app"]').count()) === 0) {
+      throw new Error("/app/new renders no workspace chrome (no back link)");
+    }
+    const headerBorder = await page
+      .locator("header")
+      .first()
+      .evaluate((el) => getComputedStyle(el).borderBottomWidth);
+    if (headerBorder === "0px" || headerBorder === "") {
+      throw new Error("/app/new's chrome header is unstyled (no border — the unstyled-shell symptom)");
+    }
+    for (const entry of ["scratch", "outline", "draft"]) {
+      if ((await page.locator(`[data-entry="${entry}"]`).count()) === 0) {
+        throw new Error(`/app/new lacks the "${entry}" entry card`);
+      }
+    }
+    await assertNoOverflow(page, "desktop /app/new");
+    await assertAxeClean(page, "desktop /app/new");
+    await page.screenshot({ path: join(ctx.outDir, "p1-app-new-1440.png"), fullPage: true });
+
+    // The Page's pill at 1440 — in-flow, disjoint from the status bar AND the open-desk composer.
+    // The pill only exists where the editor mounts; draft-less /v/working redirects to /p/:slug
+    // (EDIT.1), so walk the project list until one serves a mounted editor.
+    await gotoOk(page, `${ctx.webBaseUrl}/app`);
+    const candidates = await page
+      .locator('a[href^="/p/"]')
+      .evaluateAll((els) => [
+        ...new Set(
+          els
+            .map((e) => e.getAttribute("href") ?? "")
+            .filter((h) => /^\/p\/[^/?]+$/.test(h)),
+        ),
+      ]);
+    let pill: Locator | null = null;
+    for (const h of candidates.slice(0, 12)) {
+      await gotoOk(page, `${ctx.webBaseUrl}${h}/v/working`);
+      if (!/\/v\//.test(new URL(page.url()).pathname)) continue; // redirected — no working head
+      await page.waitForSelector("[data-sync-pill]", { timeout: 10_000 }).catch(() => null);
+      if ((await page.locator("[data-sync-pill]").count()) > 0) {
+        pill = page.locator("[data-sync-pill]").first();
+        break;
+      }
+    }
+    if (!pill) throw new Error("no project in the first 12 renders the mounted-editor sync pill at 1440");
+    // open the Desk on chat (pane state is attr-driven: the island would set exactly this).
+    await page.evaluate(() => {
+      const ide = document.querySelector<HTMLElement>(".ide");
+      if (ide) {
+        ide.dataset["desk"] = "open";
+        ide.dataset["deskTab"] = "chat";
+      }
+    });
+    const pillBox = await pill.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left, y: r.top, w: r.width, h: r.height };
+    });
+    const box = async (sel: string) =>
+      page
+        .locator(sel)
+        .first()
+        .evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return { x: r.left, y: r.top, w: r.width, h: r.height };
+        })
+        .catch(() => null);
+    for (const [sel, name] of [
+      ["footer.ide-statusbar", "the status bar"],
+      [".chat-composer", "the chat composer"],
+      [".ide-desk", "the open desk"],
+    ] as const) {
+      if (await rectsOverlap(pillBox, await box(sel))) {
+        throw new Error(`the sync pill overlaps ${name} at 1440×900`);
+      }
+    }
+    const desktopOverlap = await pillTextOverlap(page);
+    if (desktopOverlap) throw new Error(`sync pill covers text at desktop: ${desktopOverlap}`);
+    await assertNoOverflow(page, `${new URL(page.url()).pathname} @1440×900`);
+    await page.screenshot({ path: join(ctx.outDir, "p1-pill-1440.png"), fullPage: true });
   }
 };
 

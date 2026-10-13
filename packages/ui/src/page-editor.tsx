@@ -324,6 +324,22 @@ export function PageEditor(props: PageEditorProps): ReactNode {
       data-readonly={readOnly ? "1" : "0"}
       {...(props.focusFindingId ? { "data-focus-finding": props.focusFindingId } : {})}
     >
+      {/* the ONE sync indicator (EDIT.1/ADR-049 — the shell's status bar carries no second,
+          unfed one). §5.10's vocabulary: synced ✓ / syncing… / offline · n changes queued /
+          read-only. A live region so the state changes announce. No Save button, ever.
+          UX.2 (ADR-069; REQ-IDE-43 amended) — the pill renders IN FLOW at the paper's head: a fixed
+          float can never not overlap something (body text at phone width; the Desk's composer or
+          the status bar at desktop). The island finds it by attribute — placement-agnostic. */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
+        <div data-sync-pill role="status" aria-live="polite"
+             data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
+             data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
+             data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
+             style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "2px 10px", borderRadius: "999px", border: "1px solid var(--shell-border)", background: "var(--shell-raised)", fontSize: "12px", color: "var(--shell-fg-muted)", whiteSpace: "nowrap" }}>
+          {L.sync.synced}
+        </div>
+      </div>
+
       {/* the version / fork / lock banners — an explicit readOnly read (an artifact page) shows the
           plain read-only note, not the frozen-draft fork copy. */}
       {props.readOnly !== true && (props.baseDraftN != null || props.state === "frozen") ? (
@@ -458,17 +474,6 @@ export function PageEditor(props: PageEditorProps): ReactNode {
           {props.noteSaved ? <span style={{ fontSize: "12px", color: "var(--sev-minor)", marginLeft: "8px" }}>{L.noteSaved}</span> : null}
         </form>
       ) : null}
-
-      {/* the ONE sync indicator (EDIT.1/ADR-049 — the shell's status bar no longer carries a second,
-          unfed one). §5.10's vocabulary: synced ✓ / syncing… / offline · n changes queued /
-          read-only. A live region so the state changes announce. No Save button, ever. */}
-      <div data-sync-pill role="status" aria-live="polite"
-           data-label-synced={L.sync.synced} data-label-syncing={L.sync.syncing}
-           data-label-offline={L.sync.offline} data-label-readonly={L.sync.readOnly}
-           data-label-queued={L.sync.queued} data-label-locked={L.sync.locked}
-           style={{ position: "fixed", bottom: "28px", right: "24px", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
-        {L.sync.synced}
-      </div>
 
       {/* the island — mounts the ProseMirror view over data-page-doc (deferred; no-JS keeps the preview) */}
       <script src="/assets/page.js" defer />

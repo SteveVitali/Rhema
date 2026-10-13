@@ -1,0 +1,36 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "4ff89a27d950",
+  "startedAt": "2026-10-03T12:48:09.049Z",
+  "finishedAt": "2026-10-03T12:48:16.708Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "6723784c2a3b4aa449fc237c7aaddca254ab4f00",
+    "observed": {
+      "web": "6723784c2a3b4aa449fc237c7aaddca254ab4f00",
+      "api": "6723784c2a3b4aa449fc237c7aaddca254ab4f00"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "results": [
+    {
+      "id": "P1",
+      "journey": "phone",
+      "owner": "UX.2",
+      "expected": "red",
+      "paid": false,
+      "outcome": "ready-to-flip",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 7579,
+      "screenshot": "P1.png"
+    }
+  ],
+  "passed": true
+}

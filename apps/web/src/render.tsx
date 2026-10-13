@@ -141,7 +141,13 @@ export function renderDocument(
     (data.project?.slug ? ` data-project="${escapeHtml(data.project.slug)}"` : "");
   // IDE documents (the /p/:project… routes) carry the pane stylesheet + the ide.js island; the editor
   // page's own bundle (editor.js) is emitted by the editor element itself.
-  const island = data.ide ? `<script src="/assets/ide.js" defer></script>` : "";
+  // UX.2 (ADR-065) — belt-and-braces: rendered markup carrying `data-ide="1"` is an IDE document
+  // whether or not the handler remembered `data.ide` (the /app/new defect was IdeFrame markup with
+  // the flag unset — an unstyled shell). The markup is ground truth: a frame without its stylesheet
+  // can never ship again; a route that forgets `ide` renders styled-but-inert and the route
+  // enumeration test (ide-surfaces.test.ts) still flags the missing data block.
+  const isIde = data.ide != null || body.includes('data-ide="1"');
+  const island = isIde ? `<script src="/assets/ide.js" defer></script>` : "";
   // UX.1 — route-aware head: distinct title everywhere; description + OG + Twitter only on routes
   // that carry a description (the public set); favicon on every page. Every interpolated value is
   // attribute-escaped (`escapeHtml`) — titles/descriptions come from COPY or bounded DTO strings.
@@ -167,7 +173,7 @@ export function renderDocument(
     `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="any">` +
     `${refresh}<title>${escapeHtml(doc.title)}</title>${social}` +
     `<script>${BOOT}</script>` +
-    `<style>${THEME_CSS}</style>${data.ide ? `<style>${IDE_CSS}</style>` : ""}</head>` +
+    `<style>${THEME_CSS}</style>${isIde ? `<style>${IDE_CSS}</style>` : ""}</head>` +
     `<body>${body}${island}${data.dwellSurface ? dwellBeacon(data.dwellSurface) : ""}</body></html>`
   );
 }
