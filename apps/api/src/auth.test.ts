@@ -367,3 +367,70 @@ describe("SEC.2 — OAuth invite code: serverContext promotion only behind the v
     expect(stateValues(db)[0]!.serverContext).toBeUndefined();
   });
 });
+
+// MAINT.4 — the OAuth sign-in START throttle rides the audited channel (the library's
+// built-in limiter is DISABLED: under ADR-040 its `getIP` resolved null on every request
+// and keyed ONE global `no-trusted-ip` bucket — prod's 3-starts/10s-for-everyone 429s).
+// `NODE_ENV=test` leaves the library limiter off anyway, so the config is asserted
+// directly and the behavior tests pin the app channel's wiring, not the library's.
+describe("MAINT.4 — the app-owned OAuth sign-in start throttle", () => {
+  it("the built-in rate limiter is disabled on the built auth instance", () => {
+    const auth = createAuth(DEV, memoryAdapter({}), noSend, { admission: admission() });
+    expect(auth.options.rateLimit?.enabled).toBe(false);
+  });
+
+  it("rapid starts from distinct stamped IPs never share a bucket (the library's global-bucket regression)", async () => {
+    const db: MemoryDB = {};
+    const { auth } = authWith(
+      db,
+      admission({
+        verifyInternalToken: async (t) => t === "good-token",
+        signinThrottle: createIpEmailThrottle({ perIp: 2, perEmail: 100, windowMs: 10_000 }),
+      }),
+    );
+    // 4 starts inside one 10 s window from 4 distinct trusted IPs — the library's old
+    // `/sign-in/*` rule (3/10s on ONE global bucket) would have 429'd the 4th; the app
+    // channel keys per verified IP, so every distinct client gets its own budget.
+    for (let i = 1; i <= 4; i++) {
+      const res = await socialSignIn(auth, {
+        "x-rhema-internal-token": "good-token",
+        "x-rhema-client-ip": `10.0.0.${i}`,
+      });
+      expect(res.status, `stamped 10.0.0.${i}`).toBe(200);
+    }
+  });
+
+  it("same-IP abuse still throttles via the app channel → 429 rate_limited", async () => {
+    const db: MemoryDB = {};
+    const { auth } = authWith(
+      db,
+      admission({
+        verifyInternalToken: async (t) => t === "good-token",
+        signinThrottle: createIpEmailThrottle({ perIp: 2, perEmail: 100, windowMs: 10_000 }),
+      }),
+    );
+    const stamp = { "x-rhema-internal-token": "good-token", "x-rhema-client-ip": "10.1.2.3" };
+    expect((await socialSignIn(auth, stamp)).status).toBe(200);
+    expect((await socialSignIn(auth, stamp)).status).toBe(200);
+    const res = await socialSignIn(auth, stamp);
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { message?: string }).message).toBe("rate_limited");
+  });
+
+  it("an unstamped caller keys on the penultimate XFF hop — the ADR-040 trust rule unchanged", async () => {
+    const db: MemoryDB = {};
+    const { auth } = authWith(
+      db,
+      admission({
+        signinThrottle: createIpEmailThrottle({ perIp: 2, perEmail: 100, windowMs: 10_000 }),
+      }),
+    );
+    // Three chains with DIFFERENT forged first hops but the same penultimate (LB-attested)
+    // hop share one bucket — the forged hops cannot spread the abuse across buckets.
+    expect((await socialSignIn(auth, { "x-forwarded-for": "1.2.3.4, 7.7.7.7, 130.211.0.1" })).status).toBe(200);
+    expect((await socialSignIn(auth, { "x-forwarded-for": "5.6.7.8, 7.7.7.7, 130.211.0.1" })).status).toBe(200);
+    expect((await socialSignIn(auth, { "x-forwarded-for": "9.9.9.9, 7.7.7.7, 130.211.0.1" })).status).toBe(429);
+    // a different penultimate hop is a different bucket entirely.
+    expect((await socialSignIn(auth, { "x-forwarded-for": "9.9.9.9, 8.8.8.8, 130.211.0.1" })).status).toBe(200);
+  });
+});

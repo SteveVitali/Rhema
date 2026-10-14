@@ -79,6 +79,14 @@ export interface AuthAdmission {
   readonly accountThrottle: IpEmailThrottle;
   /** The magic-link SEND throttle (per IP + per email) on `POST /sign-in/magic-link`. */
   readonly magicLinkThrottle: IpEmailThrottle;
+  /**
+   * MAINT.4 — the OAuth sign-in START throttle (per IP only — the provider identity is
+   * unknown at initiation) on `POST /sign-in/social` + `/sign-in/oauth2/*`. It replaces
+   * the library's built-in `/sign-in/*` limiter, which is now disabled (`rateLimit` on
+   * the options below): its `getIP` keying could not see the client under ADR-040 and
+   * collapsed every caller into one global `no-trusted-ip` bucket.
+   */
+  readonly signinThrottle?: IpEmailThrottle;
   /** Verify the web service's OIDC token so its stamped `x-rhema-client-ip` is trusted (ADR-040). */
   readonly verifyInternalToken?: (token: string) => Promise<boolean>;
 }
@@ -137,6 +145,17 @@ async function inviteCodeFor(ctx: { query?: Record<string, unknown>; request?: R
  * and enforced AT the api where the send happens (ADR-041).
  */
 export const MAGIC_LINK_THROTTLE_DEFAULTS = { perIp: 20, perEmail: 4, windowMs: 3_600_000 } as const;
+
+/**
+ * MAINT.4 — the OAuth sign-in START throttle (per source IP) on `sign-in/social` +
+ * `sign-in/oauth2/*`. 10/min/IP is sized for real retries: a user clicking "Continue
+ * with Google" on a flaky connection gets ~6 s between counted starts, while one IP's
+ * abuse saturates at 10/min. (The library default it replaces was 3/10s on a SINGLE
+ * global bucket — the prod 429s this ticket repairs.) The email dimension is dead at
+ * initiation — the provider has not told us who the user is — so `attempt` is always
+ * called ip-only; `perEmail` exists only for the shared options shape.
+ */
+export const OAUTH_SIGNIN_THROTTLE_DEFAULTS = { perIp: 10, perEmail: 10, windowMs: 60_000 } as const;
 
 const NO_VERIFY = async () => false;
 
@@ -315,6 +334,19 @@ export function createAuth(
               // `additionalData.rhema_ic` stays client-supplied: `inviteCodeFor` reads it as a fallback
               // and the invite gate validates it either way, so the untrusted channel buys nothing.
               if (path === "/sign-in/social" || path.endsWith("/sign-in/social") || /\/sign-in\/oauth2(\/|$)/.test(path)) {
+                // MAINT.4 — the OAuth sign-in START throttle: the library's built-in
+                // `/sign-in/*` limiter is disabled (`rateLimit` below — its XFF keying is
+                // broken under ADR-040), so the audited channel carries the limit. It runs
+                // BEFORE the token early-returns below so an unstamped caller still keys
+                // on the penultimate XFF hop (`resolveClientIp`'s rule) rather than
+                // escaping the bucket entirely.
+                if (admission.signinThrottle) {
+                  const ip = await authClientIp(ctx, admission.verifyInternalToken ?? NO_VERIFY);
+                  const verdict = await admission.signinThrottle.attempt(ip);
+                  if (!verdict.allowed) {
+                    throw new APIError("TOO_MANY_REQUESTS", { message: "rate_limited", code: "rate_limited" });
+                  }
+                }
                 const verify = admission.verifyInternalToken ?? NO_VERIFY;
                 const headers = ctx.request?.headers ?? ctx.headers;
                 const token = headers?.get(INTERNAL_IDENTITY_HEADER);
@@ -383,6 +415,22 @@ export function createAuth(
         },
       }),
     ],
+    // MAINT.4 — the library's built-in rate limiter is OFF deliberately. It was never
+    // opted into or audited (better-auth v1.7.2 defaults it ON only in production,
+    // `rateLimit.enabled = options.rateLimit?.enabled ?? isProduction`), and its `getIP`
+    // keying is broken under ADR-040: `beginAuth`'s stamped web→api channel deliberately
+    // omits XFF, and authProxy's relayed multi-hop XFF is rejected without
+    // `trustedProxies` — so every request resolved null → ONE shared `no-trusted-ip`
+    // bucket (prod evidence: 3 sign-in starts per 10 s across ALL users; the library's
+    // own "falling back to a single shared per-path bucket" warning; 8×429 in 14d on
+    // `sign-in/social`). The app's audited channel owns the limit instead:
+    // `admission.signinThrottle` in the `hooks.before` social branch keys on
+    // `resolveClientIp` — the OIDC-verified stamp, else the penultimate XFF hop. Do NOT
+    // list `x-rhema-client-ip` in `ipAddressHeaders` below — `getIP` cannot verify the
+    // OIDC stamp, so a direct api caller could mint unlimited forged buckets.
+    // (Reachable-mutation audit recorded in `docs/build/runs/MAINT.4.md`: every
+    // unauthenticated creation path keeps an app-channel limit; no `customRules` needed.)
+    rateLimit: { enabled: false },
     advanced: {
       // `cookiePrefix` puts `__Host-` literally in the cookie NAME better-auth tracks, so the same
       // name round-trips set→read. `useSecureCookies:false` suppresses the library's `__Secure-`
@@ -395,10 +443,13 @@ export function createAuth(
       // the __Host- contract. Disabled explicitly so the intent is reviewable, not just defaulted.
       crossSubDomainCookies: { enabled: false },
       defaultCookieAttributes: { secure, sameSite: "lax", path: "/", httpOnly: true },
-      // Resolve the real client IP for rate limiting — every request arrives via the web service's
-      // server-side proxy or the LB, both of which forward the original client in x-forwarded-for.
-      // Without this the limiter falls back to ONE shared per-path bucket (warned live 2026-09-22:
-      // "could not determine a client IP") and a handful of retries 403/429s sign-in for everyone.
+      // MAINT.4 — kept only for the session record's best-effort `ip_address` (this field
+      // used to feed the built-in limiter, which `rateLimit.enabled:false` above disables).
+      // Post-ADR-040 the "both forward the original client in x-forwarded-for" premise no
+      // longer holds: `beginAuth` deliberately omits XFF (the OIDC-verified stamp is the
+      // trusted channel), and authProxy's relayed chain is multi-hop — `getIP` rejects a
+      // multi-hop chain without `trustedProxies`, resolving null. The app throttles never
+      // read this; they resolve the client through `resolveClientIp` (client-ip.ts).
       ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
     },
   }) as unknown as ReturnType<typeof betterAuth>;
