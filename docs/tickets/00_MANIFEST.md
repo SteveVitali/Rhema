@@ -1,4 +1,6 @@
 # Rhema build manifest — the ticket chain
+| REQ family | ticket(s) |
+|---|---|
 
 This directory is the **execution runbook** for building Rhema per the canonical, ratified spec
 `docs/rhema-design-spec.md` (v1.0, 2026-09-01), as a chain of **50 tickets** (28 full
@@ -142,9 +144,9 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 16+ | `16z_MAINT.1__build-memory-v2-migration.md` | 0 | **(post-P0.15i follow-up, RUN 1 of 3)** MAINT.1 / RH.1 — migrate Rhēma onto build memory v2 (committed `docs/build/` root, moved run ledgers, reconstructed LEDGER/BUILD_INDEX, retro-fit ADRs, chain-table + docs reconciliation). Offline, no code, no spend. Also reconciles the chain-table rows for the hand-inserted `16_P0.15e…i` + these three follow-ups. |
 | 16+ | `16_P0.15j__fact-check-citation-discipline.md` | 0→B | **(post-P0.15i follow-up, RUN 2 of 3)** the fact-check must cite only tool-retrieved URLs so a Review DELIVERS (`cited⇒fetched` green) — a citation-fetch-compliance eval + skill/model discipline (or, on an operator spec-ruling, a harness citation-backfill). Closes D-P0.15i-2. **Stage A offline; Stage B operator-gated (live).** |
 | 16+ | `16_P0.15k__live-three-project-reviews-and-instrumented-cost.md` | 0→B | **(post-P0.15i follow-up, RUN 3 of 3)** the last live G1 legs — the three-project Reviews (D-P0.15-1) + instrumented cost runs (D-P0.15-2) + gate round-trip + rewrite `docs/phase0-exit-readout.md` with measured values, flag G1 ready. **Operator-gated (real infra + paid inference).** Depends on 16_P0.15j. |
-| — | `16a_GATE-G1__phase0-exit.md` | 0→B | **GATE** (operator) — Phase-0 exit; **reads only after `16_P0.15k` closes the live criteria** (via 16z_MAINT.1 → 16_P0.15j → 16_P0.15k; the `16_P0.15d` note above is superseded — the live work ran through P0.15e–i and these follow-ups); see § Milestone gates |
+| — | `16a_GATE-G1__phase0-exit.md` | 0→B | **GATE** (operator) superseded-by(readouts/GATE-G1.md — read + PASSED 2026-09-15) — Phase-0 exit; **reads only after `16_P0.15k` closes the live criteria** (via 16z_MAINT.1 → 16_P0.15j → 16_P0.15k; the `16_P0.15d` note above is superseded — the live work ran through P0.15e–i and these follow-ups); see § Milestone gates |
 | — | `16b_HUMAN-H2__benchmark-corpus.md` | B | **HUMAN** — corpus + editors + provider verification (start during Phase 0); must complete before wave 1 |
-| — | `16c_GATE-G2__wave1-lift.md` | B→RB | **GATE** (operator) — wave 1 + LIFT; on failure REQ-EVAL-16 consequences apply **before any UI spend beyond Phase 0** |
+| — | `16c_GATE-G2__wave1-lift.md` | B→RB | **GATE** (operator) deferred(HUMAN-H2 — corpus track, eval deferred this round) — wave 1 + LIFT; on failure REQ-EVAL-16 consequences apply **before any UI spend beyond Phase 0** |
 | 17 | `17_PRB.01__beta-shell-and-invites.md` | RB | invite-gated flat shell, project list, sample dossier |
 | 18 | `18_PRB.02__import-fetcher-convert.md` | RB | fetcher + convert services, upload/paste, conversion preview |
 | 19 | `19_PRB.03__estimator-and-run-sheet.md` | RB | stateless estimates + claim pre-pass, the run sheet, consent |
@@ -304,6 +306,39 @@ the failure mode to refuse is "beta as marketing preview while the full build ba
 | 147 | `147_SPADOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs (SPA era) |
 | 148 | `148_SPADOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs (SPA era) |
 
+
+### Round 5 — post-SPA disposition (spec: `docs/post-spa-disposition-spec.md`, ratified 2026-10-15)
+
+| # | file | phase | scope | gate |
+|---|---|---|---|---|
+| 150 | `150_HUMAN-H8__operator-session-bundle.md` | R5 marker | **human** — the REQ-G1-5 single-session bundle (merges, Resend seed, rulings) | — |
+| 151 | `151_HYGIENE.1__memory-hygiene.md` | R5 hygiene | parser alignment + status-cell normalization + literal DROP closes + INDEX/anchor fixes | — |
+| 152 | `152_FIX.1__journey-fixture-repairs.md` | R5 fixtures | owed-leg substrate: P1.dossier UA, T17/T12F/T13F/T15/T16, T8 mint script (gated) | — |
+| 153 | `153_VERIF.1__composed-verification-ffbb8ad.md` | R5 stream-V | $0 SHA-exact composed pass on ffbb8ad (BL-82, D-SPA.28-1, D-SPACAP.2-*, D-CAP.1-2) | — |
+| 154 | `154_NAVC.1__delegated-interceptor.md` | R5 nav | delegated click interceptor + stub ids + data-spa-native + SsrHandoff replace + spy migration | — |
+| 154a | `154a_NAVC.5__ssrhandoff-replace-seam.md` | R5 nav | SsrHandoff replace-mode seam + ~12-suite assign→replace spy migration | — |
+| 155 | `155_NAVC.2__settle-contract.md` | R5 nav | data-nav-count (all docs) + mounted-pending + settleClientNav/settleDocumentNav + documentLoads | — |
+| 156 | `156_NAVC.3__session-invariants.md` | R5 nav | registry destroy-identity fix + Query freshness policy + data-page-session + transition tests | — |
+| 157 | `157_NAVC.4__nav-acceptance-legs.md` | R5 nav | R10 + R10.keepalive (paid:false) + scroll/keymap/head + server-boundary acceptance | — |
+| 158 | `158_R5ECON.1__spend-guard-repairs.md` | R5 econ | seed-pollution exclusion + cumulative-scope pin + cap enforcement + fail-closed paid | — |
+| 159 | `159_R5ECON.2__testcheaproute-arm.md` | R5 econ | intra-tier Haiku arm via cogsLevers + COGS_LEVERS_TEST default + truthful metering | — |
+| 160 | `160_R5ECON.3__funded-window-regime.md` | R5 econ | cap table in registry + funded tenant + REQ-FND-7 driver prereqs + window-runner | — |
+| 161 | `161_R5OPS.1__ops-residuals.md` | R5 ops | canary smoke + alert/CDN legs + nightly-golden driver + BL-07 classification | — |
+| 162 | `162_BL38.1__prod-residue-cleanup.md` | R5 ops | BL-38 guarded cleanup script — dry-run → operator confirm → apply | operator confirm |
+| 163 | `163_HUMAN-H9__cost-posture-ruling.md` | R5 marker | **human** — ~$50-target-vs-architecture posture ruling | — |
+| 164 | `164_COST.1__prod-cost-posture.md` | R5 ops | **skeleton** — REQ-COST-1..6 levers; expands on H9 + billing export | H9 |
+| 165 | `165_VERIF.2__preview-legs.md` | R5 stream-V | 15 preview legs on owned pr-<n> behind the Resend seed | H8 |
+| 166 | `166_GATE-R5F__funded-window.md` | R5 marker | **gate** — funded-window open; §5.5 thresholds verbatim; ~$60 envelope | operator |
+| 167 | `167_FUNDED.1__funded-window-wave.md` | R5 funded | **skeleton** — the paid-leg wave; expands at GATE-R5F | R5F |
+| 168 | `168_R5CAP.1__capstone-gap-analysis.md` | tail | **capstone** — round-5 REQ coverage + disposition completeness | — |
+| 169 | `169_R5CAP.3__capstone-closure.md` | tail | **capstone** — routed gaps + accepted-deviations draft | — |
+| 170 | `170_GATE-ACCEPT.R5__accepted-deviations.md` | tail | **gate** — operator signs the R5 deviations list | operator |
+| 171 | `171_R5REC.1__backlog-and-readiness.md` | tail | **reconcile** — backlog + readiness (mode=backlog) | — |
+| 172 | `172_R5REC.2__spec-reconciliation.md` | tail | **reconcile** — spec fold-back: nav mechanism + settle contract + defect block (REQ-MEM-6/7/8) | — |
+| 173 | `173_R5REC.3__integration-plan.md` | tail | **reconcile** — §R5 merge/deploy plan (never merges) | — |
+| 174 | `174_R5DOC.1__repo-docs-refresh.md` | tail | **docs** — refresh-repo-docs | — |
+| 175 | `175_R5DOC.2__agent-docs-refresh.md` | tail | **docs** — agent-docs | — |
+
 ## Milestone gates (thresholds quoted verbatim from the spec; pre-registered — never guessed past)
 
 **G1 — Phase-0 exit (spec §17 Phase-0 row, exit criterion):** "a Review of each of the three real
@@ -337,6 +372,16 @@ exists but conversion fails, or dispositions skew rebut/`wrong`; **stop-and-reth
 rate < 20%, partners visibly prefer exporting to chat, or median stated WTP < $20/mo". Thresholds
 are registered before the beta opens (REQ-BETA-20/22). Full-IDE ticket bodies are written after
 this gate reads.
+
+
+**GATE-R5F — Funded-window open (round 5):** the spec §5.5 checklist verbatim — system-role DSN
++ pg_roles probe → cumulative < the re-authorized ~$60 round cap on the pinned-scope query →
+per-leg cap enforcement → ordering T9 → launchers → riders → B19C last → JOURNEY_FUNDED_STABLE_TAG
+tenant + purge exemption → REQ-ECON-6 seed exclusions live. Estimated ~$20–40 with levers.
+
+**GATE-ACCEPT.R5 — Round-5 accepted deviations:** the operator signs R5CAP.3's deviations list
+(expected: deferred intent-preload allowlist, levered-vs-unlevered cap basis, honestly-owed
+substrate legs, NAVC-18 freshness parity trade-off).
 
 ## Phase gates & special points
 
@@ -539,6 +584,18 @@ providers); REQ-OBJ-9/12/13/14 (1.x learning), 15 (v2 spike, gated); REQ-POS-10 
 rendering); REQ-SPEC-5/23/26/28 (superseded/reserved). MVP-phase coverage: every other ID above
 has exactly one owner.
 
+
+| REQ id(s) | owner ticket(s) |
+|---|---|
+| REQ-NAVM-1..4/6..8 | NAVC.1 · REQ-NAVM-5 → NAVC.5 · REQ-NAVM-9/10 → NAVC.4 |
+| REQ-NAVT-1..8 | NAVC.2 (1/2/3/6/7-nav-count) · NAVC.1 (8) · NAVC.3 (5-emit + 7-page-session) · NAVC.4 (4/5-legs) |
+| REQ-NAVC-13 | NAVC.1 · REQ-NAVC-16/19/21/23 → NAVC.4 · REQ-NAVC-17/18/20/22 → NAVC.3 |
+| REQ-ECON-1..5/10/11/12 | R5ECON.2 · REQ-ECON-6/7/8/13 → R5ECON.1 · REQ-ECON-9 → R5ECON.1+R5ECON.3 |
+| REQ-FND-6/7/8 | R5ECON.3 (FUNDED.1 executes under GATE-R5F) |
+| REQ-FIX-* | FIX.1 · REQ-OPS-1..7 → R5OPS.1 (+VERIF.2 for OPS-5) · REQ-COST-1..6 → COST.1 |
+| REQ-MEM-1..5/9/10 | HYGIENE.1 · REQ-MEM-6/7/8 → R5REC.2 |
+| REQ-G1-1..5 | R5CAP.1/R5CAP.3 (1/4/5) · VERIF.1+VERIF.2 (3: V-1/V-2) · HYGIENE.1 (2 + 3: V-3) · HUMAN-H8 (5: bundle) |
+
 ## Spec amendments applied
 
 - **2026-09-02 (cloud provider + inference channel; Q-3 / §12 / §13 / REQ-ARCH-1/2/30/31):** the ratified
@@ -658,6 +715,14 @@ has exactly one owner.
    tightened (metered-cost caps, mechanical "additive" check, more pauses).
 
 ## Plan extensions (append-only: inserts, splits, rounds)
+
+- **2026-10-15 — ROUND 5 (post-SPA disposition; `docs/post-spa-disposition-spec.md` canonical, operator-ratified
+  2026-10-15).** 27 rows appended under the `### Round 5` banner: 2 HUMAN markers (H8 operator
+  bundle, H9 cost-posture ruling), 11 implement-spec tickets (HYGIENE.1, FIX.1, VERIF.1/2,
+  NAVC.1–4, ECON.1–3, OPS.1, BL38.1), 1 skeleton (COST.1), 1 gate (GATE-R5F) + 1 funded skeleton
+  (FUNDED.1), and the tail (CAP.1, CAP.3, GATE-ACCEPT.R5, REC.1–3, DOC.1–2 — CAP.2 omitted: V-1/V-2
+  are the composed verification). Stacks on the round-5 synthesis branch; `mergePolicy: OPERATOR`.
+  Decomposition prompt: `docs/decomposition-prompt.md`.
 
 - **2026-10-07 — ROUND 4 (frontend SPA migration; `docs/frontend-spa-spec.md` canonical v1.0, operator-ratified 2026-10-08).** 51 rows appended under the `### Round 4` banner: 9 foundations (SPA.1–9), 13 surface tickets + editor split in two (SPA.10–24), 14 prod-flip PRs (SPAF.1–14 — one line each, ≥1 nightly green between flips), 4 cleanup tickets (SPA.25–28 — Source-mode revival per operator ruling Q-8, island retirement, SSR deletion wave, override removal), and the full v2 tail (SPACAP.1–3, GATE-ACCEPT.SPA, SPAREC.1–3, SPADOC.1–2). Stacks on the round-3 chain tip; `mergePolicy: OPERATOR`; the declared rebase checkpoint sits at the foundations↔surfaces boundary (spec R24). Decomposition prompt: `docs/decomposition-prompt.md`.
 
