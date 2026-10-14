@@ -9,6 +9,7 @@ import {
   stageKindFor,
   sandboxSubnetOf,
 } from "./stages.js";
+import { SPA_SURFACES } from "@rhema/contracts";
 
 describe("stage kinds (§13.2)", () => {
   it("maps concrete stack names to kinds", () => {
@@ -108,6 +109,23 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
     for (const [name, cfg] of Object.entries(STAGES)) {
       if (name === "prod") continue;
       expect(cfg.signupMode, `stage ${name}`).toBe("invite");
+    }
+  });
+});
+
+describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", () => {
+  it("every stage ships [] — no flag is set anywhere until the foundation set lands (REQ-SEQ-5)", () => {
+    for (const [name, cfg] of Object.entries(STAGES)) {
+      expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
+    }
+  });
+
+  it("the fact is typed over the contracts vocabulary — every listed key is a SpaSurface", () => {
+    // The flip tickets append keys here; this pins that only known keys can ever land.
+    for (const cfg of Object.values(STAGES)) {
+      for (const key of cfg.spaSurfaces) {
+        expect((SPA_SURFACES as readonly string[]).includes(key)).toBe(true);
+      }
     }
   });
 });

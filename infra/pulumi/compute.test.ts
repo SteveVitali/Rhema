@@ -151,3 +151,33 @@ describe("RUN.1 — the worker's walkthrough model key is deploy config (ADR-052
     expect(grants).toHaveLength(2);
   });
 });
+
+describe("SPA.2 — the strangler flag is deploy config on the web (REQ-SEQ-3)", () => {
+  const INDEX_SRC = readFileSync(fileURLToPath(new URL("./index.ts", import.meta.url)), "utf8");
+
+  /** The web-only envs block inside the Cloud Run services loop (`...(svc === "web" ? {`). */
+  const webBlock = (() => {
+    const start = SRC.indexOf('...(svc === "web"');
+    return SRC.slice(start, SRC.indexOf("vpcAccess:", start));
+  })();
+
+  it("web env carries SPA_SURFACES — stage fact by default, rhema:spaSurfaces when set", () => {
+    // Inside the web envs block (beside SIGNUP_MODE): the stage fact, overridable per-stack by
+    // the `rhema:spaSurfaces` Pulumi config — the preview per-flip path (`preview-stack.mjs
+    // config`). The web parses it fail-closed; nothing else may emit it.
+    expect(webBlock).not.toBe("");
+    expect(webBlock).toContain("SPA_SURFACES");
+    expect(webBlock).toContain("args.spaSurfaces ?? cfg.spaSurfaces.join");
+    expect(SRC.match(/name: "SPA_SURFACES"/g)).toHaveLength(1); // web only — never api/worker
+    expect(INDEX_SRC).toContain('rhemaConfig.get("spaSurfaces")');
+    expect(INDEX_SRC).toContain("spaSurfaces ? { spaSurfaces }");
+  });
+
+  it("SPA_OVERRIDES=1 rides non-prod kinds only — the IDENTITY_HEADERS precedent (REQ-SEQ-4)", () => {
+    // The force-SPA override forms must be REFUSED on prod: the env is emitted iff
+    // `cfg.kind !== "prod"` and only inside the web block.
+    expect(webBlock).toContain('cfg.kind !== "prod"');
+    expect(webBlock).toContain('name: "SPA_OVERRIDES", value: "1"');
+    expect(SRC.match(/name: "SPA_OVERRIDES"/g)).toHaveLength(1);
+  });
+});

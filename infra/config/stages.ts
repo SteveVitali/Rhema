@@ -11,7 +11,13 @@
 // group→egress firewall. The abstract facts (no internet reachability for the sandbox; per-run caps;
 // versioned isolated buckets) are provider-independent and carry over verbatim.
 
-import type { DebitMode, PurchaseMode, RefundWindowMode, SignupMode } from "@rhema/contracts";
+import type {
+  DebitMode,
+  PurchaseMode,
+  RefundWindowMode,
+  SignupMode,
+  SpaSurface,
+} from "@rhema/contracts";
 
 export type StageKind = "dev" | "preview" | "prod";
 
@@ -246,6 +252,14 @@ export interface StageConfig {
    */
   refundWindowMode: RefundWindowMode;
   /**
+   * SPA.2 — `spa.surfaces` (REQ-SEQ-3; spec §11): the strangler flag set, deployed to the web
+   * service as the `SPA_SURFACES` CSV (a mode string, never a secret). Every stage ships `[]` —
+   * REQ-SEQ-5 sets no flag on any stage until the foundation set lands; per-surface `dev` flips
+   * ride the surface tickets, the `prod` flip is a separate operator-merged commit, and a
+   * preview overrides this fact via the `rhema:spaSurfaces` stack config (never committed).
+   */
+  readonly spaSurfaces: readonly SpaSurface[];
+  /**
    * PRB.15 — the stage's public serving surface (undefined off prod: previews keep the
    * `${stack}.rhema.dev` placeholder and never need real DNS). The Pulumi program builds the managed
    * cert's SAN list + the URL map's host rules from this block — the numbers the tests assert are the
@@ -311,6 +325,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     purchaseMode: "closed", // BILL.3 — purchase stays closed everywhere until the operator re-opens (ADR-028)
     debitMode: "committed", // ECON.1 — the metered flip is operator-paused; ship dark (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
+    spaSurfaces: [], // SPA.2 — REQ-SEQ-5: no flag on any stage until the foundation set lands
     requiredSecrets: DEV_REQUIRED_SECRETS,
   },
   preview: {
@@ -325,6 +340,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     purchaseMode: "closed", // BILL.3 — never a real purchase on a preview
     debitMode: "committed", // ECON.1 — previews keep the launched charge semantics (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — test-tenant-only everywhere until the go-live ruling
+    spaSurfaces: [], // SPA.2 — previews flip only via the rhema:spaSurfaces stack config
     requiredSecrets: PREVIEW_REQUIRED_SECRETS,
   },
   prod: {
@@ -343,6 +359,7 @@ export const STAGES: Record<StageKind, StageConfig> = {
     purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
     debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
+    spaSurfaces: [], // SPA.2 — prod flips are separate one-line operator-merged commits (REQ-SEQ-10)
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe

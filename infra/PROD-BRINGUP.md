@@ -106,6 +106,11 @@ runbook is exactly how `collabDatabaseUrl` drifted):
   leg skips). Prod records via `scripts/live/record-deployment.mjs` (§8).
 - `rhema:runTaskAppArmorType` / `rhema:runTaskAppArmorLocalhostProfile` — SEC.3's pod AppArmor
   deploy config (`Localhost` / `rhema-run-task` on prod; a rollback flips these keys, never code).
+- `rhema:spaSurfaces` — SPA.2's per-flip PREVIEW override (REQ-SEQ-3): a `SPA_SURFACES` CSV that
+  beats the `StageConfig.spaSurfaces` fact for this stack only, set via
+  `preview-stack.mjs config pr-<n> rhema:spaSurfaces "<prior set>,<key>"` in a surface ticket's
+  preview legs (design/29 §per-flip runbook). Never committed; prod/dev flips are committed
+  stage-fact edits instead (REQ-SEQ-10 — a prod flip is its own operator-merged PR).
 
 ## 2b. Build + push the production image set (before `up` so services boot real images)
 
