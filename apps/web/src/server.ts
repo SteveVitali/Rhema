@@ -50,6 +50,7 @@ import { parseScopes, scopedInputs, serializeScopes, scopeChip, VERB_TABLE, type
 import type { PaletteData } from "@rhema/ide";
 import type { FeedRow } from "@rhema/ui";
 import type { PageData } from "./page-data.js";
+import { bffRoute, swallowDegraded, wantsJson } from "./bff.js";
 import { createSpaConsult } from "./spa-flag.js";
 import { DEFAULT_SPA_ASSET_ROOT, spaShellResponse } from "./spa-shell.js";
 import { isPhoneRequest } from "./device.js";
@@ -521,6 +522,25 @@ export function createWebApp(deps: WebDeps): Hono {
     return c.json(feedLabelMaps());
   });
 
+  // SPA.5 (REQ-BFF-1/8/9, REQ-DAT-1/4/12; design/22 §2) — the REFERENCE read twin: the `/usage`
+  // document's data contract as JSON (the §2 table's `usage` row — `UsageDto` + `UsageAccountDto`
+  // raw, composed once). Degrade semantics are verbatim: each seam is best-effort — a miss lands
+  // `null` (the wrapped fetch already counted it into `degraded_reads`) — while an upstream 401 is
+  // NOT degradation (`swallowDegraded` rethrows → the `{error:"unauthenticated"}` envelope, never
+  // an empty page). SPA.10's `usage` surface builds on this shape.
+  app.get(
+    "/bff/usage",
+    bffRoute(deps, async (c, session) => {
+      const [usage, account] = await Promise.all([
+        deps.dataSource.getUsage(session).catch(swallowDegraded),
+        Promise.resolve()
+          .then(() => deps.dataSource.getUsageAccount?.(session))
+          .catch(swallowDegraded),
+      ]);
+      return c.json({ usage: usage ?? null, account: account ?? null });
+    }),
+  );
+
   // ---- P1.01 — the IDE shell (§5.1; REQ-IDE-8/38) ---------------------------------------------------
   // Every /p/:project… document is an IDE surface: renderDocument stamps the theme attrs (no wrong-theme
   // flash — the inline boot script resolves dark|light|auto + the per-project paper pin before paint) and
@@ -715,9 +735,8 @@ export function createWebApp(deps: WebDeps): Hono {
     for (const [k, v] of Object.entries(form)) if (typeof v === "string") out[k] = v;
     return out;
   };
-  const wantsJson = (c: Context) =>
-    (c.req.header("content-type") ?? "").includes("application/json") ||
-    (c.req.header("accept") ?? "").includes("application/json");
+  // SPA.5 — `wantsJson` is now the shared BFF convention (bff.ts); the chat branches below consume
+  // the same helper every surface mutation's JSON branch keys on.
   const chatProject = async (c: Context, session: SessionHeaders) => {
     const row = (await deps.dataSource.listProjects(session)).find(
       (r) => r.slug === c.req.param("project"),

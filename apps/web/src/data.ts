@@ -1,4 +1,4 @@
-import { createApiClient, ApiError } from "@rhema/api-client";
+import { createApiClient, ApiError, parseRunEventReplay } from "@rhema/api-client";
 import type {
   ProjectRow,
   InviteCheckDto,
@@ -69,6 +69,8 @@ import type {
   AutoReloadRequestDto,
   UsageAccountDto,
   UsageProjectDto,
+  PresignedImportDto,
+  RunEventDto,
   UsageRunAdvancedDto,
   RatesPublicationDto,
   ThemeSettingsDto,
@@ -808,6 +810,12 @@ export interface DataSource {
     runId: string,
     opts?: { after?: string; lastEventId?: string },
   ): Promise<Response>;
+  /**
+   * SPA.5 (REQ-DAT-13, REQ-BFF-16) — `POST /import/presign`: mint a workspace-scoped quarantine key +
+   * the ≤25 MB v4-signed PUT URL. The seam `POST /bff/import/presign` (SPA.13/14) relays verbatim —
+   * the browser then PUTs bytes directly (the signature carries auth; no cookie to GCS).
+   */
+  presignImportUpload?(session: SessionHeaders): Promise<PresignedImportDto>;
   // ---- P1.11 — the Assistant chat surface (§7.1/§7.4/§7.6; every method session-forwards) ----
   /** `GET /projects/:id/chat` — the Desk Chat read (threads + ensured default, turns, pins, sources,
    *  the §7.6 empty-state model, the live-run flag). Optional seam: absent ⇒ the tab's placeholder. */
@@ -1013,30 +1021,16 @@ export interface DataSource {
   ): Promise<{ ok: true; prefs: unknown } | { error: string }>;
 }
 
-/** A user-visible run event as the feed consumes it (the SSE `data:` payload). */
-export interface FeedEventRow {
-  readonly seq: number;
-  readonly type: string;
-  readonly payload: unknown;
-  readonly density: string;
-  readonly agentLabel?: string;
-  readonly at: string;
-}
+/**
+ * A user-visible run event as the feed consumes it (the SSE `data:` payload). SPA.5 (REQ-DAT-13) —
+ * the wire type now lives in `@rhema/api-client` (`RunEventDto`); this alias keeps the feed's
+ * vocabulary stable for existing call sites.
+ */
+export type FeedEventRow = RunEventDto;
 
-/** Parse a `?poll=1` SSE replay body into event rows (id:/event:/data: triplets, one record per block). */
+/** Parse a `?poll=1` SSE replay body into event rows — delegates to the api-client parser. */
 export function parseSseReplay(text: string): FeedEventRow[] {
-  const out: FeedEventRow[] = [];
-  for (const block of text.split("\n\n")) {
-    const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
-    if (!dataLine) continue;
-    try {
-      const ev = JSON.parse(dataLine.slice(5).trim()) as FeedEventRow;
-      if (typeof ev.seq === "number" && typeof ev.type === "string") out.push(ev);
-    } catch {
-      /* a malformed record is skipped, never fatal */
-    }
-  }
-  return out;
+  return parseRunEventReplay(text);
 }
 
 /**
@@ -1468,25 +1462,11 @@ export function apiDataSource(
     stopRun: (session, runId) => client(session).stopRun(runId),
     requestRefund: (session, runId) => client(session).requestRefund(runId),
     retryWalkthrough: (session, runId) => client(session).retryWalkthrough(runId),
-    getRunEvents: async (session, runId) => {
-      const res = await f(
-        `${baseUrl}/runs/${encodeURIComponent(runId)}/events?poll=1`,
-        { headers: session },
-      );
-      if (!res.ok) throw new ApiError(res.status, `run ${runId} events`);
-      return parseSseReplay(await res.text());
-    },
-    streamRunEvents: (session, runId, opts) =>
-      f(
-        `${baseUrl}/runs/${encodeURIComponent(runId)}/events${opts?.after ? `?after=${encodeURIComponent(opts.after)}` : ""}`,
-        {
-          headers: {
-            ...session,
-            accept: "text/event-stream",
-            ...(opts?.lastEventId ? { "last-event-id": opts.lastEventId } : {}),
-          },
-        },
-      ),
+    // SPA.5 (REQ-DAT-13) — the feed's raw-fetch seams are now typed api-client members: the client
+    // owns the `?poll=1` replay parse + the live stream's accept/last-event-id forwarding.
+    getRunEvents: (session, runId) => client(session).getRunEvents(runId),
+    streamRunEvents: (session, runId, opts) => client(session).streamRunEvents(runId, opts),
+    presignImportUpload: (session) => client(session).presignImportUpload(),
     // P1.11 — the Assistant chat surface (every call session-forwarded; the api owns the rules).
     getChat: (session, projectId, opts) => client(session).getChat(projectId, opts),
     createChatThread: (session, projectId, req) => client(session).createChatThread(projectId, req),
