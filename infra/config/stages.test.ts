@@ -114,12 +114,13 @@ describe("signup.mode stage flag (PRB.13; REQ-BETA-19 amended 2026-09-16)", () =
 });
 
 describe("spa.surfaces stage flag (SPA.2; REQ-SEQ-3/5 — the strangler flag)", () => {
-  it("dev carries the flipped surfaces; preview + prod ship [] (REQ-SEQ-5/10)", () => {
-    // SPA.10 — `usage` is the first surface to flip on dev; previews override only via the
-    // rhema:spaSurfaces stack config and prod flips on SPAF.1's own operator-merged commit.
+  it("dev + prod carry the flipped surfaces; preview ships [] (REQ-SEQ-5/10)", () => {
+    // SPA.10 flipped `usage` on dev; SPAF.1 is `usage`'s prod flip — the one-line operator-merged
+    // stage-fact commit. Previews stay [] and override only via the rhema:spaSurfaces stack config.
     expect(STAGES.dev.spaSurfaces).toEqual(["usage"]);
+    expect(STAGES.prod.spaSurfaces).toEqual(["usage"]); // SPAF.1 — the prod flip
     for (const [name, cfg] of Object.entries(STAGES)) {
-      if (name === "dev") continue;
+      if (name === "dev" || name === "prod") continue;
       expect(cfg.spaSurfaces, `stage ${name}`).toEqual([]);
     }
   });

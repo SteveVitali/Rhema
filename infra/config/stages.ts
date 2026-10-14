@@ -361,7 +361,10 @@ export const STAGES: Record<StageKind, StageConfig> = {
     purchaseMode: "closed", // BILL.3 — purchase closed until the operator's re-open decision (ADR-028)
     debitMode: "committed", // ECON.1 — flips only after calibrated caps + paid-account notice (ADR-031)
     refundWindowMode: "test_tenants", // DEF.4 — JOURNEY.1-flagged tenants only; `open` awaits BL-30 (D-DEF.4-3)
-    spaSurfaces: [], // SPA.2 — prod flips are separate one-line operator-merged commits (REQ-SEQ-10)
+    // SPAF.1 — `usage` is the first prod surface flip (REQ-SEQ-10): a one-line stage-fact commit,
+    // operator-merged + `pulumi up`-deployed; rollback = revert this line + redeploy. ≥ one nightly
+    // green on prod precedes the NEXT surface's prod flip.
+    spaSurfaces: ["usage"],
     domains: PROD_DOMAINS,
     requiredSecrets: PROD_REQUIRED_SECRETS,
     // OPS.2 — the prod billing account (verified live: `gcloud billing projects describe
