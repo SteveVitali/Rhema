@@ -7,6 +7,15 @@ import type { Rigor, AgentTypeKey, WorkflowKey } from "@rhema/contracts";
 // exist in the stub — the extra `completionPredicates`/`skill`/`defaultInputs`/`workflowKey` are only
 // read by the private orchestrator, so they live here without breaking the stub build.
 
+/**
+ * REQ-SAFE-2 (SPA.8) — the package-level protocol-IP sentinel, planted as an exported string constant
+ * (comments are stripped by minifiers; literals are not) adjacent to the manifest field vocabulary —
+ * the phase manifest bodies this types file describes are protocol IP and must never reach a client
+ * bundle. `check:protocol-markers` fails closed if this marker is absent from the package's sources
+ * (unarmed tripwire) and fails on any hit inside a public artifact (a leak). Never delete or rename.
+ */
+export const SENTINEL_PROTOCOL_ONLY = "rhema:protocol-only";
+
 /** Phase class routing category (§12.2 / §12.3). Research phases fan out subagents; the rest do not. */
 export type PhaseClass = "research" | "judge" | "generate" | "package";
 

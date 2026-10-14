@@ -128,3 +128,49 @@
 8. **REQ-SAFE-8** — Runtime config reaches the SPA via server-rendered bootstrap JSON in the nonced shell; a single `env.ts` module is the only permitted `import.meta.env` reader; `VITE_*` names matching secret patterns fail `check:spa-env`, and the built bundle is scanned for server env-var names as a leak tripwire.
 9. **REQ-SAFE-9** — The `public-safe` job's step order becomes: install → stub build → SPA build → gitleaks → licenses → markers+provenance → no-cookies → bundle-budget → spa-env; `install` precedes the licence enumeration.
 10. **REQ-SAFE-10** — Vite `outDir`/`publicDir`, the ESLint/prettier ignore sets, `check:protocol-markers` TARGET_DIRS, and the Dockerfile asset COPY change in the same PR — generated output stays outside the lint graph and inside the scan graph.
+
+## Resolution — 2026-10-08 (SPA.8)
+
+*(Append-only addendum; the findings above are preserved verbatim as history.)*
+
+SPA.8 implemented the gate repairs this design prescribed, on top of the output layout SPA.1 chose
+(`vite.config.ts`: `outDir: "public/spa"`, `publicDir: false`, `sourcemap: "hidden"`):
+
+- **F1 — RESOLVED.** `check-protocol-markers.mjs` now scans the real emitted tree —
+  `apps/web/public` (islands + `public/spa` SPA output) and `packages/api-client/dist` are
+  REQUIRED_DIRS that fail closed when absent; `apps/web/dist`, `apps/web/build`, `apps/mobile/dist`
+  remain opportunistic. The `public-safe` job builds `@rhema/web...` before the scan (landed in
+  SPA.1, verified in `ci.yml`).
+- **F2 — RESOLVED (three layers live).** (1) `eslint.config.js` bans `@rhema/protocols`,
+  `@rhema/evals` (paths + subpath patterns) and value imports of `@rhema/api-client`
+  (`allowTypeImports`) across `apps/web/src/{spa,client}`; (2) the marker script parses every
+  emitted `.map` `sources[]`, resolves each entry against the map's directory, and fails on
+  `packages/protocols|evals|apps/run-task`/`evals/` provenance; (3) the four sentinels are planted
+  in `packages/protocols/src/{protocols.ts,manifest-types.ts}` as exported string constants —
+  placed outside the `protocols_version` content-addressed trio so the frozen hash does not move —
+  and the checker fails when they are absent (the armed test proves both directions).
+- **F3 — RESOLVED.** `check-no-cookies.mjs` TARGETS gained `apps/web/src/{spa,client}`,
+  `apps/web/public` emitted output, and `packages/ui/src`; rules are brace-aware
+  (`name={…}`, credential JSX props) and the generated-bundle false positive (`password:!0` in
+  minified React DOM's input-type table) is excluded via the quoted/value-aware construct rules —
+  tested in `check-no-cookies.test.mjs`.
+- **F4 — RESOLVED.** `apps/web/src/spa/copy-containment.test.ts` flags inline JSX text + literal
+  user-facing attributes in SPA sources and proves every `COPY.*` reference resolves to a real
+  `collectCopyStrings` leaf; `launch-surface.test.ts` sweeps `apps/web/src/spa` recursively.
+- **F5 — OUT OF SCOPE for SPA.8** (shell/CSP legs belong to the render-shell ticket; the
+  `form-action`/`navigate-to` analysis above stands).
+- **F6 — landed in SPA.1** (`check:spa-budget` + `spa-budget.json` ceilings).
+- **F7 — RESOLVED.** `check:spa-env` (REQ-SAFE-8) fails on secret-shaped `VITE_*` names in
+  client sources and `.env*` files, `import.meta.env` outside the `env.ts` reader seam,
+  `process.env` in client sources/artifacts, secret-patterned `process.env` in
+  `vite.config.ts`/`build-client.mjs`, and server env names as quoted strings inside emitted
+  artifacts — including `.map` `sourcesContent` (the `names[]` identifier table is structural
+  metadata, not a leak). The banned set is partly derived from real server-side
+  `process.env.*` reads (armed floor) and partly curated.
+- **F8 — RESOLVED.** `check-licenses` asserts the enumeration covers the SPA dependency set
+  (`react`, `react-dom`, `@tanstack/*`, `vite`, `@vitejs/plugin-react`, `axe-core`) plus a
+  whole-graph size floor — a truncated enumeration is exit-2, not green.
+- **F9 — RESOLVED.** `public-safe` runs install → stub/evals build → `@rhema/web...` build →
+  gitleaks → licenses → markers → no-cookies → spa-budget → spa-env (`ci.yml`).
+- **REQ-SAFE-10** — `apps/web/public/**` stays ESLint-ignored and scan-covered; no Dockerfile
+  change was needed (the image already COPYs `apps/web/public`).

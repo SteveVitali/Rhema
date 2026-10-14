@@ -40,6 +40,8 @@ pnpm test                          # vitest, colocated *.test.ts
 pnpm check:licenses                # licence allowlist + exceptions (public-safe)
 pnpm check:protocol-markers        # no protocol IP in public bundles (public-safe)
 pnpm check:no-cookies              # never-cookies ingestion gate (public-safe)
+pnpm check:spa-budget              # SPA bundle gzip ceilings (public-safe)
+pnpm check:spa-env                 # env-leak tripwire: no server env / VITE_* secrets in bundles (public-safe)
 ```
 
 ## Bazel-compatible invariants (enforced, not advised)

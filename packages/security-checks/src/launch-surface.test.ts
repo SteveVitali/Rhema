@@ -80,7 +80,21 @@ const exportFiles = readdirSync(exportDir)
   .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
   .map((f) => `apps/export/src/${f}`);
 
-const ALL_SURFACES = [...SURFACE_FILES, ...clientFiles, ...exportFiles];
+// SPA.8 — the Vite SPA source tree (`apps/web/src/spa`, incl. routes/) is a shipped surface too:
+// same claim sweep, recursive, tests excluded (assertions legitimately quote copy).
+import { statSync } from "node:fs";
+function* walkSurface(dir: string): Generator<string> {
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    if (statSync(p).isDirectory()) yield* walkSurface(p);
+    else yield p;
+  }
+}
+const spaFiles = [...walkSurface(join(REPO, "apps/web/src/spa"))]
+  .filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f) && !/\.dom\.test\.tsx$/.test(f))
+  .map((f) => f.slice(REPO.length + 1));
+
+const ALL_SURFACES = [...SURFACE_FILES, ...clientFiles, ...exportFiles, ...spaFiles];
 
 describe("the REQ-EVAL-19 wave gate — the flag that must stay closed (P1.22 W8)", () => {
   it("COMPARATIVE_WAVE_MET is still false — no criterion-meeting wave has landed", () => {

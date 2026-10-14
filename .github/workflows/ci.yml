@@ -246,3 +246,7 @@ jobs:
       # the manifest is absent) and after the scan gates, per the REQ-SAFE-9 step order.
       - name: SPA bundle budget (REQ-SAFE-7)
         run: pnpm check:spa-budget
+      # REQ-SAFE-8 (SPA.8): env-leak tripwire — server env names / process.env reads / secret-shaped
+      # VITE_* names must not reach client artifacts; runs last so every emitted artifact exists.
+      - name: SPA env-leak tripwire (REQ-SAFE-8)
+        run: pnpm check:spa-env

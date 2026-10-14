@@ -83,6 +83,7 @@
 **Retrieved:** 2026-10-07
 **Implication for the spec:** a bundled-SPA build makes this gap *load-bearing* — the whole client surface ships from the bundle dir. The spec must require (a) the marker scan to target the real Vite output dir, and (b) the public-safe job to build the SPA before scanning (or accept a dev-time-only scan with an explicit admission).
 **Outline delta:** CORRECTS D2's implicit premise — today the gate is weak *before* the migration; the SPA must strengthen it, not just preserve it.
+**Resolution (SPA.8, 2026-10-08):** RESOLVED — `check-protocol-markers` scans `apps/web/public` + `apps/web/public/spa` + `packages/api-client/dist` as REQUIRED_DIRS (fail-closed, no silent skip); `public-safe` builds `@rhema/web...` before scanning (SPA.1); the four sentinels are planted in `packages/protocols/src` and the checker verifies arming; `.map` `sources[]` provenance rejects protocols/evals/run-task paths. Full mapping in `docs/design/28_spa-safety-gates.md` §Resolution.
 
 ### F6 — no-cookies, licenses, copy lints, and CSP all survive — with scan-list maintenance obligations
 

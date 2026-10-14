@@ -140,4 +140,78 @@ export default tseslint.config(
       },
     },
   },
+  {
+    // REQ-SAFE-8/REQ-SAFE-9 (SPA.8; design/28): client-bundle sources must never import the private
+    // protocol/eval packages — that is the IP-leak vector the public-safe marker+provenance job scans
+    // the emitted graph for; the lint catches it at author time. `@rhema/api-client` stays legal only
+    // as `import type` — DTOs are compile-time shapes; runtime data rides the boot JSON + BFF fetches.
+    // Env is the second tripwire: client code never reads `process.env` and reads `import.meta.env`
+    // only inside the single `src/spa/env.ts` reader (runtime config is server-rendered boot JSON).
+    files: [
+      "apps/web/src/spa/**/*.ts",
+      "apps/web/src/spa/**/*.tsx",
+      "apps/web/src/client/**/*.ts",
+      "apps/web/src/client/**/*.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@rhema/protocols",
+              message:
+                "private protocol IP must never enter a client bundle (REQ-ARCH-33 / REQ-SAFE-9).",
+            },
+            {
+              name: "@rhema/evals",
+              message: "private eval IP must never enter a client bundle (REQ-ARCH-33 / REQ-SAFE-9).",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@rhema/protocols/*", "@rhema/evals/*"],
+              message:
+                "private protocol/eval subpaths must never enter a client bundle (REQ-SAFE-9).",
+            },
+            {
+              group: ["@rhema/api-client", "@rhema/api-client/*"],
+              allowTypeImports: true,
+              message:
+                "@rhema/api-client is type-only in client bundles — runtime data rides the boot JSON / BFF fetches.",
+            },
+          ],
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "MemberExpression[object.type='MetaProperty'][object.meta.name='import'][property.name='env']",
+          message:
+            "import.meta.env is banned in client sources outside apps/web/src/spa/env.ts (REQ-SAFE-8) — runtime config rides the server-rendered boot JSON.",
+        },
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message:
+            "process.env does not exist in the browser bundle — a read here is a leak vector (REQ-SAFE-8).",
+        },
+      ],
+    },
+  },
+  {
+    // `src/spa/env.ts` is the single sanctioned import.meta.env reader (REQ-SAFE-8); process.env
+    // stays banned there too.
+    files: ["apps/web/src/spa/env.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message:
+            "process.env does not exist in the browser bundle — even the env reader uses import.meta.env only.",
+        },
+      ],
+    },
+  },
 );
