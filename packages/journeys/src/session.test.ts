@@ -97,6 +97,89 @@ describe("JourneySessions — pin + wiring order (REQ-SEQ-4, REQ-VFY-7)", () => 
   });
 });
 
+// MAINT.6 (D-OPS.1-1) — the invite-code channel through mint: the seeded code rides the /signup
+// form's real `code` field (the web stamps it `rhema_ic` on the link's callbackURL); absent ⇒ the
+// field is left empty and open-mode minting is unchanged.
+describe("JourneySessions — the --invite-code mint channel", () => {
+  const harness = (inviteCode?: string, codeVisible = true) => {
+    const stateDir = mkdtempSync(path.join(tmpdir(), "jrns-ic-"));
+    const fills: [string, string][] = [];
+    const clicks: string[] = [];
+    const page = {
+      url: () => "https://app.test/app",
+      goto: async () => ({ status: () => 200 }),
+      fill: async (sel: string, val: string) => {
+        fills.push([sel, val]);
+      },
+      click: async (sel: string) => {
+        clicks.push(sel);
+      },
+      waitForSelector: async () => ({}),
+      waitForLoadState: async () => undefined,
+      waitForTimeout: async () => undefined,
+      locator: (sel: string) => ({
+        // MAINT.6 — `codeVisible` models the invite-mode shape (the input rendered directly);
+        // false models open-mode's collapsed <details> disclosure, which the mint opens first.
+        isVisible: async () =>
+          sel === 'input[name="code"]' ? codeVisible : sel.includes("summary") || sel.includes("status"),
+        fill: async (val: string) => {
+          fills.push([sel, val]);
+        },
+        click: async () => {
+          clicks.push(sel);
+        },
+        first: () => ({
+          isVisible: async () => sel.includes("status"), // the "link sent" status appears
+          textContent: async () => null,
+        }),
+      }),
+    } as unknown as Page;
+    const context = {
+      newPage: async () => page,
+      storageState: async () => undefined,
+      close: async () => undefined,
+      cookies: async () => [{ name: "rhema.session_token" }],
+    };
+    const browser = {
+      newContext: async () => context,
+    } as unknown as Browser;
+    const mailbox = {
+      awaitMagicLink: async () => "https://app.test/api/auth/magic-link/verify?token=t",
+    };
+    const sessions = new JourneySessions({
+      browser,
+      mailbox: mailbox as never,
+      webBaseUrl: "https://app.test",
+      stateDir,
+      ...(inviteCode ? { inviteCode } : {}),
+    });
+    return { sessions, fills, clicks };
+  };
+
+  it("fills input[name=code] with the seeded code before the magic_link submit", async () => {
+    const { sessions, fills } = harness("prv-131-test");
+    const email = freshIdentity("abcd", "ic");
+    const s = await sessions.signIn(email);
+    expect(s.via).toBe("mailbox");
+    const codeFills = fills.filter(([sel]) => sel === 'input[name="code"]');
+    expect(codeFills).toEqual([['input[name="code"]', "prv-131-test"]]);
+    expect(fills).toContainEqual(['input[name="email"]', email]);
+  });
+
+  it("leaves the code field untouched when no invite code is configured", async () => {
+    const { sessions, fills } = harness();
+    await sessions.signIn(freshIdentity("efgh", "ic"));
+    expect(fills.some(([sel]) => sel === 'input[name="code"]')).toBe(false);
+  });
+
+  it("opens the collapsed <details> disclosure first when the code field is hidden (open-mode form)", async () => {
+    const { sessions, fills, clicks } = harness("prv-131-test", /* codeVisible */ false);
+    await sessions.signIn(freshIdentity("ijkl", "ic"));
+    expect(clicks).toContain('details:has(input[name="code"]) > summary');
+    expect(fills).toContainEqual(['input[name="code"]', "prv-131-test"]);
+  });
+});
+
 describe("provenanceMatch — the deploy-provenance compare", () => {
   it("matches full and short SHAs in either direction", () => {
     const full = "e6c91039e66ac3c42e97b6a8ce67150516a67ddf";

@@ -11,15 +11,24 @@
 //     worker's) cannot be up'd, refreshed, destroyed, or removed through this path.
 //
 // Usage:
-//   node scripts/live/preview-stack.mjs init     pr-<n>
-//   node scripts/live/preview-stack.mjs select   pr-<n>
-//   node scripts/live/preview-stack.mjs config   pr-<n> <key> <value> [--secret]
-//   node scripts/live/preview-stack.mjs output   pr-<n> [name] [--json]
-//   node scripts/live/preview-stack.mjs preview  pr-<n>
-//   node scripts/live/preview-stack.mjs up       pr-<n>
-//   node scripts/live/preview-stack.mjs refresh  pr-<n>
-//   node scripts/live/preview-stack.mjs destroy  pr-<n>
-//   node scripts/live/preview-stack.mjs rm       pr-<n>
+//   node scripts/live/preview-stack.mjs init        pr-<n>
+//   node scripts/live/preview-stack.mjs select      pr-<n>
+//   node scripts/live/preview-stack.mjs config      pr-<n> <key> <value> [--secret]
+//   node scripts/live/preview-stack.mjs resend-pull pr-<n>
+//   node scripts/live/preview-stack.mjs output      pr-<n> [name] [--json]
+//   node scripts/live/preview-stack.mjs preview     pr-<n>
+//   node scripts/live/preview-stack.mjs up          pr-<n>
+//   node scripts/live/preview-stack.mjs refresh     pr-<n>
+//   node scripts/live/preview-stack.mjs seed-invite pr-<n>
+//   node scripts/live/preview-stack.mjs destroy     pr-<n>
+//   node scripts/live/preview-stack.mjs rm          pr-<n>
+//
+// MAINT.6 runbook — a session-capable preview (signed-in journey legs, D-OPS.1-1):
+//   init → config rhema:serviceImages <json> (+ rhema:gitSha / rhema:protocolsVersion) →
+//   resend-pull → up → `gcloud run jobs execute rhema-<stack>-migrate --region us-central1 --wait`
+//   → seed-invite → `rhema-journeys --web https://<web>.run.app --api https://<api>.run.app
+//   --invite-code prv-<n>-test …` (the code is deterministic — `prv-<n>-test`, non-secret,
+//   admits only test+*@rhema.tools identities through the real magic-link path).
 //
 // Every pulumi call runs `-C infra/pulumi` (the program dir) and never touches another
 // stack. The guard is deliberately thin: the refusal logic is pure and unit-tested; the
@@ -40,8 +49,9 @@ export const PREVIEW_STACK_RE = /^pr-\d+$/;
 
 /** Verbs that may run against an OWNED stack without creating/destroying it. */
 const READ_ONLY_VERBS = new Set(["select", "output"]);
-/** Verbs that deploy or refresh state — ownership required. */
-const DEPLOY_VERBS = new Set(["preview", "up", "refresh", "config"]);
+/** Verbs that deploy or refresh state — ownership required. `resend-pull`/`seed-invite`
+ *  (MAINT.6) mutate stack config / execute the stack's migrate Job — same ownership gate. */
+const DEPLOY_VERBS = new Set(["preview", "up", "refresh", "config", "resend-pull", "seed-invite"]);
 /** Verbs that destroy state — ownership required, spelled out so a grep finds them. */
 const DESTRUCTIVE_VERBS = new Set(["destroy", "rm"]);
 
@@ -73,7 +83,7 @@ export function classifyVerb(stack, verb) {
   if (READ_ONLY_VERBS.has(verb)) return "read";
   if (DEPLOY_VERBS.has(verb)) return "deploy";
   if (DESTRUCTIVE_VERBS.has(verb)) return "destructive";
-  throw new GuardRefusal(`preview-stack: unknown verb '${verb}' (allowed: init select output config preview up refresh destroy rm)`);
+  throw new GuardRefusal(`preview-stack: unknown verb '${verb}' (allowed: init select output config resend-pull seed-invite preview up refresh destroy rm)`);
 }
 
 /**
@@ -116,11 +126,76 @@ function pulumiExec(args, { capture = false } = {}) {
   return { status: r.status ?? 1, stdout: r.stdout ?? "" };
 }
 
+/** The gcloud seam (resend-pull reads the shared secret; seed-invite executes the migrate Job). */
+function gcloudExec(args, { capture = false } = {}) {
+  const r = spawnSync("gcloud", args, {
+    stdio: capture ? ["inherit", "pipe", "inherit"] : "inherit",
+    encoding: "utf8",
+  });
+  return { status: r.status ?? 1, stdout: r.stdout ?? "" };
+}
+
+/**
+ * `pulumi config set` with the value on STDIN — MAINT.6's `resend-pull` moves the Resend key
+ * process-to-process (gcloud stdout → this script's memory → pulumi stdin) so it NEVER lands in
+ * an argv list, a log line, or the repo. `config set` reads stdin when the value arg is absent.
+ */
+function pulumiSecretStdin(args, value) {
+  const r = spawnSync("pulumi", ["-C", PROGRAM_DIR, ...args], {
+    input: value,
+    stdio: ["pipe", "inherit", "inherit"],
+    encoding: "utf8",
+  });
+  return { status: r.status ?? 1 };
+}
+
+/** `rhema:<key>` config value on the stack, or undefined when unset/unreadable. */
+function stackConfigValue(exec, stack, key) {
+  const r = exec(["config", "get", key, "--stack", stack], { capture: true });
+  const v = r.status === 0 ? (r.stdout ?? "").trim() : "";
+  return v === "" ? undefined : v;
+}
+
+// --- MAINT.6 constants (D-OPS.1-1) -----------------------------------------------------------
+
+/** The shared, operator-seeded Secret Manager name holding the send-only non-prod Resend key. */
+export const NONPROD_RESEND_SECRET = "rhema-nonprod-resend-api-key";
+/** The Resend From address — the verified sender on the shared (prod-account) key, plain config. */
+export const RESEND_FROM = "hello@rhema.tools";
+const DEFAULT_PROJECT = "rhema-507501";
+const DEFAULT_REGION = "us-central1";
+
+/** The deterministic, non-secret invite code a preview carries — `prv-<n>-test`. */
+export function previewInviteCode(stack) {
+  return `prv-${stack.slice(3)}-test`;
+}
+
+/**
+ * Parse `gcloud run jobs executions list --format=json` output into the newest execution's
+ * success facts. Pure — unit-tested; returns null on unparseable/empty output.
+ */
+export function latestExecutionFacts(jsonText) {
+  let list;
+  try {
+    list = JSON.parse(jsonText);
+  } catch {
+    return null;
+  }
+  const item = Array.isArray(list) ? list[0] : undefined;
+  if (!item) return null;
+  return {
+    name: item?.metadata?.name ?? null,
+    succeededCount: item?.status?.succeededCount ?? 0,
+    failedCount: item?.status?.failedCount ?? 0,
+    completionTime: item?.status?.completionTime ?? null,
+  };
+}
+
 /**
  * Dispatch `verb` for `stack`. `exec` is injectable so tests never shell out.
  * `rest` carries verb-local args (config: key/value; output: name/--json).
  */
-export function run(stack, verb, rest = [], { exec = pulumiExec } = {}) {
+export function run(stack, verb, rest = [], { exec = pulumiExec, gcloud = gcloudExec, execSecret = pulumiSecretStdin } = {}) {
   const category = classifyVerb(stack, verb);
   if (verb === "init") {
     // Refuse adoption when the name already resolves to a stack (tagged or not).
@@ -155,6 +230,90 @@ export function run(stack, verb, rest = [], { exec = pulumiExec } = {}) {
       }
       return exec(["config", "set", "--stack", stack, ...(secret ? ["--secret"] : []), key, value]).status;
     }
+    case "resend-pull": {
+      // MAINT.6 — pull the shared non-prod Resend key into `rhema:resendApiKey` SECRET config so
+      // the stack's `resend-api-key` placeholder is replaced by the real send-only key at `up`
+      // (index.ts resendVersionPlan; prod stacks are refused at classifyVerb before any of this).
+      const project = stackConfigValue(exec, stack, "gcp:project") ?? DEFAULT_PROJECT;
+      const access = gcloud(
+        ["secrets", "versions", "access", "latest", "--secret", NONPROD_RESEND_SECRET, "--project", project],
+        { capture: true },
+      );
+      if (access.status !== 0 || (access.stdout ?? "").trim() === "") {
+        // OPERATOR PREREQUISITE (ticket 149): the operator seeds the shared secret out of band.
+        console.error(
+          `preview-stack: resend-pull could not read '${NONPROD_RESEND_SECRET}' in project '${project}' — ` +
+            "the operator prerequisite is unmet (a send-only Resend key on the prod account, so " +
+            "rhema.tools stays a verified sender). Nothing was changed.",
+        );
+        return 1;
+      }
+      const set = execSecret(["config", "set", "--secret", "--stack", stack, "rhema:resendApiKey"], access.stdout);
+      if (set.status !== 0) return set.status;
+      // The worker's mailer also needs EMAIL_FROM — the verified sender on the shared account
+      // (plain, non-secret deploy config; same value prod carries in Pulumi.prod.yaml).
+      const from = exec(["config", "set", "--stack", stack, "rhema:emailFrom", RESEND_FROM]);
+      if (from.status !== 0) return from.status;
+      console.log(
+        `preview-stack: resend-pull set rhema:resendApiKey (--secret, stdin — never printed) ` +
+          `+ rhema:emailFrom=${RESEND_FROM} on '${stack}'`,
+      );
+      return 0;
+    }
+    case "seed-invite": {
+      // MAINT.6 — one code-bound invite row (`email NULL`, max_uses 10000, deterministic
+      // `prv-<n>-test`) written by the in-VPC migrate Job over its system-database-url
+      // secretKeyRef — no DSN materializes on this workstation (REQ-ARCH-39).
+      const project = stackConfigValue(exec, stack, "gcp:project") ?? DEFAULT_PROJECT;
+      const region = stackConfigValue(exec, stack, "gcp:region") ?? DEFAULT_REGION;
+      const code = previewInviteCode(stack);
+      const job = `rhema-${stack}-migrate`;
+      const run = gcloud(
+        [
+          "run", "jobs", "execute", job,
+          "--project", project,
+          "--region", region,
+          "--wait",
+          "--args", `node,/app/dist/migrate.js,--seed-invite,${code}`,
+        ],
+        { capture: true },
+      );
+      if (run.status !== 0) {
+        console.error(
+          `preview-stack: seed-invite failed to execute ${job} — is the stack up? ` +
+            "(the migrate Job exists after the first 'up'; it bootstraps + migrates the db itself)",
+        );
+        return run.status;
+      }
+      // Assert the execution actually SUCCEEDED — `--wait` returns on completion either way.
+      const listed = gcloud(
+        [
+          "run", "jobs", "executions", "list",
+          "--job", job,
+          "--project", project,
+          "--region", region,
+          "--sort-by", "~createTime",
+          "--limit", "1",
+          "--format", "json",
+        ],
+        { capture: true },
+      );
+      if (listed.status !== 0) return listed.status;
+      const latest = latestExecutionFacts(listed.stdout);
+      if (!latest || !latest.completionTime || latest.succeededCount < 1 || latest.failedCount > 0) {
+        console.error(
+          `preview-stack: seed-invite execution did not complete cleanly ` +
+            `(succeeded=${latest?.succeededCount ?? "?"}, failed=${latest?.failedCount ?? "?"}) — ` +
+            `inspect 'gcloud run jobs executions list --job ${job} --region ${region}'`,
+        );
+        return 1;
+      }
+      console.log(
+        `preview-stack: seeded invite '${code}' on '${stack}' via ${job} ` +
+          `(execution ${latest.name ?? "(unnamed)"} completed)`,
+      );
+      return 0;
+    }
     case "preview":
       return exec(["preview", "--stack", stack]).status;
     case "up":
@@ -175,7 +334,7 @@ export function run(stack, verb, rest = [], { exec = pulumiExec } = {}) {
 
 function usage() {
   console.error(
-    "usage: node scripts/live/preview-stack.mjs <init|select|output|config|preview|up|refresh|destroy|rm> <pr-<n>> [args]\n" +
+    "usage: node scripts/live/preview-stack.mjs <init|select|output|config|resend-pull|seed-invite|preview|up|refresh|destroy|rm> <pr-<n>> [args]\n" +
       "  the only permitted stack names match ^pr-\\d+$; prod is refused for every verb; " +
       `mutations require ${OWNER_TAG_KEY}=${OWNER_TAG_VALUE}`,
   );

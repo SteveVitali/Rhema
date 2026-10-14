@@ -61,6 +61,14 @@ export interface SessionDeps {
    * the leg's first docs unobserved.
    */
   readonly onPage?: (page: Page) => void;
+  /**
+   * MAINT.6 (D-OPS.1-1) — the seeded invite code for an invite-mode stage (`--invite-code` /
+   * `RHEMA_INVITE_CODE`). Carried through the /signup form's real `code` field — the web stamps
+   * it as `rhema_ic` on the emailed link's callbackURL, so the api's verify leg sees the same
+   * code the admission check consumed. Unset ⇒ the field is left empty (open-mode stages are
+   * unaffected; an invite-mode stage without it correctly refuses the signup).
+   */
+  readonly inviteCode?: string;
 }
 
 export interface SignedIn {
@@ -152,6 +160,20 @@ export class JourneySessions {
     let sent = false;
     for (let attempt = 1; attempt <= 4; attempt++) {
       await page.fill('input[name="email"]', email);
+      // MAINT.6 — invite-mode stages need the seeded code on the form's real `code` field (the
+      // wire shape a human produces: POST /signup code → api admission → rhema_ic on the link's
+      // callbackURL). Absent ⇒ the field stays empty and open-mode stages behave exactly as before.
+      // On open-mode forms the field lives inside the collapsed <details> disclosure — a human
+      // opens it to type, so do the same (invite-mode renders it directly visible; `fill` on a
+      // hidden input would just wait forever).
+      if (this.deps.inviteCode) {
+        const codeInput = page.locator('input[name="code"]');
+        if (!(await codeInput.isVisible())) {
+          const disclosure = page.locator('details:has(input[name="code"]) > summary');
+          if (await disclosure.isVisible()) await disclosure.click();
+        }
+        await codeInput.fill(this.deps.inviteCode);
+      }
       // the magic-link submit (never the google button — this harness uses no third-party IdP)
       await page.click('button[name="method"][value="magic_link"]');
       await page

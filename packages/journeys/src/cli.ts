@@ -8,7 +8,9 @@
 // --stage <prod|dev|pr-N> | --out <dir> | --state-dir <dir> | --expect-sha <sha> | --nonce <n> |
 // --surface <key[,key…]> (the SURFACE_GATES subset — the per-flip two-leg selector) |
 // --expect-renderer <ssr|spa> (fails the run when a served document's data-renderer differs) |
-// --pin-renderer <ssr|spa> (x-rhema-renderer on every context; `spa` refused on prod targets).
+// --pin-renderer <ssr|spa> (x-rhema-renderer on every context; `spa` refused on prod targets) |
+// --invite-code <code> (MAINT.6 — the seeded preview invite; env RHEMA_INVITE_CODE — rides the
+// /signup form's `code` field, which the web stamps `rhema_ic` on the magic link's callbackURL).
 // --stage resolves the stage's public origins (prod is the only stage with real DNS today —
 // infra/config/stages.ts); any other stage still needs explicit --web/--api overrides.
 
@@ -54,6 +56,10 @@ const date = new Date().toISOString().slice(0, 10);
 const outDir = arg("--out") ?? `docs/build/reports/${date}_JOURNEY.1-journeys`;
 const stateDir = arg("--state-dir") ?? process.env.JOURNEY_STATE_DIR ?? ".journeys-state";
 const expectSha = arg("--expect-sha") ?? process.env.JOURNEY_EXPECT_SHA;
+// MAINT.6 (D-OPS.1-1) — invite-mode stages (previews keep signupMode=invite) need the seeded
+// code on the /signup submit; open-mode stages are unaffected (the web still validates a supplied
+// code). Absent ⇒ today's behavior verbatim.
+const inviteCode = arg("--invite-code") ?? process.env.RHEMA_INVITE_CODE;
 
 // SPA.6 — the renderer leg contract (REQ-VFY-7/8, REQ-SEQ-4). `--expect-renderer` asserts
 // data-renderer on every same-origin document; `--pin-renderer` stamps x-rhema-renderer on every
@@ -185,6 +191,7 @@ try {
     },
     ...(expectRenderer ? { expectRenderer } : {}),
     ...(pinRenderer ? { pinRenderer } : {}),
+    ...(inviteCode ? { inviteCode } : {}),
   });
 } finally {
   await browser.close();

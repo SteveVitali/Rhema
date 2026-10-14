@@ -68,6 +68,14 @@ export interface ComputeArgs {
   collabDatabaseUrl?: pulumi.Input<string>;
   /** the worker's Resend From address (`EMAIL_FROM`, plain deploy config). */
   emailFrom?: pulumi.Input<string>;
+  /**
+   * MAINT.6 (D-OPS.1-1) — mount `RESEND_API_KEY_SECRET` on the worker even though
+   * `resend-api-key` is not in the non-prod `requiredSecrets` set: index.ts sets this when a
+   * `rhema:resendApiKey` secret config seeded the REAL key version (the placeholder stays
+   * unmounted — an unkeyed preview's mail.send keeps no-op'ing exactly as before). Prod needs
+   * nothing here: `requiredSecrets` already carries `resend-api-key` there.
+   */
+  resendSecretWired?: boolean;
   /** the digest-pinned run-task image the worker launches as the two-uid GKE Job. */
   runTaskImageDigest?: pulumi.Input<string>;
   /**
@@ -338,7 +346,7 @@ export function createCompute(args: ComputeArgs): Compute {
     ...(requires("anthropic-admin-key")
       ? [{ name: "ANTHROPIC_ADMIN_KEY_SECRET", value: secretVersion(secrets.anthropicAdminKey) }]
       : []),
-    ...(requires("resend-api-key")
+    ...(requires("resend-api-key") || args.resendSecretWired === true
       ? [{ name: "RESEND_API_KEY_SECRET", value: secretVersion(secrets.resendApiKey) }]
       : []),
     ...(requires("email-action-secret")

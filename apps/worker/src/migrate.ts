@@ -19,6 +19,11 @@
 //      `buildDeploymentProvenance` (the same builder integration/record-deployment.ts uses).
 //   `--probe <url>` mode — a tiny in-VPC HTTP probe for the smoke's api `/healthz` leg (prints the
 //   status + the provenance gitSha field only — no page text, per the smoke-log rule).
+//   `--seed-invite <code>` mode — MAINT.6 (D-OPS.1-1): insert ONE code-bound invite row for the
+//   preview's test-session minting (email NULL, max_uses 10000, deterministic code `prv-<n>-test`,
+//   idempotent upsert). `preview-stack.mjs seed-invite` executes this Job with an `--args`
+//   override — the row is written over the same `system-database-url` secretKeyRef the migrate leg
+//   mounts, so no DSN ever leaves the VPC. Preview-kind stages only (fail-closed).
 //
 // Env: SYSTEM_DATABASE_URL (required), APP_DATABASE_URL + COLLAB_DATABASE_URL (required — the role
 // passwords live inside them), RHEMA_STAGE (the stack name; preview detection goes through
@@ -104,6 +109,98 @@ export function maintenanceDsn(dsn: string): string {
 
 const SEED_MARKERS = ["tr_pv1", "tr_sd1", "tr_cr1"]; // same idempotence markers as the dev runner
 
+// --- MAINT.6 — the preview invite seed (`--seed-invite <code>`; D-OPS.1-1) -------------------
+//
+// One code-bound invite row lets the journey harness mint signed-in sessions on an invite-mode
+// `pr-<n>` preview through the real magic-link path (REQ-BETA-19's invite posture is preserved —
+// we seed AROUND the gate, never open it). The code is deterministic (`prv-<n>-test`) and
+// non-secret: it admits only `test+*@rhema.tools` identities the mailbox pin already guards.
+
+/** The seeded preview invite code shape — `prv-<n>-<suffix>` (the verb always uses `-test`). */
+export const PREVIEW_INVITE_CODE_RE = /^prv-\d+-[a-z0-9][a-z0-9-]*$/;
+/** Effectively unbounded for a disposable preview — the api's consume guard, not the count, gates. */
+export const PREVIEW_INVITE_MAX_USES = 10_000;
+
+/**
+ * Fail-closed admission for `--seed-invite`: preview-kind stage names only (the same mapping
+ * `seedPlanFor` uses — `pr-*`/unknown → `preview`, but the verb only ever names `pr-<n>`) and the
+ * deterministic code shape. Returns a reason string instead of throwing so `main` can exit 2.
+ */
+export function seedInvitePlan(stage: string, code: string): { ok: true } | { ok: false; reason: string } {
+  const kind = stageKindFor(stage);
+  // `dev` is reachable in theory (stageKindFor maps it) but the verb's contract is pr-<n>-only —
+  // refuse everything that isn't a preview name so a stray execute on dev/prod can't seed.
+  if (!/^pr-\d+$/.test(stage) || kind !== "preview") {
+    return {
+      ok: false,
+      reason: `seed-invite is pr-<n> preview stacks only — stage '${stage}' resolves kind '${kind}' (refused)`,
+    };
+  }
+  if (!PREVIEW_INVITE_CODE_RE.test(code)) {
+    return {
+      ok: false,
+      reason: `seed-invite code must match ${PREVIEW_INVITE_CODE_RE} (deterministic prv-<n>-test) — refused '${code}'`,
+    };
+  }
+  return { ok: true };
+}
+
+export interface SeedInviteResult {
+  readonly code: string;
+  readonly usedCount: number;
+  readonly maxUses: number;
+}
+
+/**
+ * Upsert the ONE preview invite row: `email NULL` (any test identity may redeem it), the generous
+ * `max_uses` (many per-step mints per run), un-revoked and un-expired — while preserving
+ * `used_count` across re-seeds (idempotent; a live preview's redemptions stay counted).
+ */
+export async function seedPreviewInviteRow(
+  db: { query(sql: string, params?: unknown[]): Promise<{ rows: unknown[] }> },
+  code: string,
+  maxUses: number = PREVIEW_INVITE_MAX_USES,
+): Promise<SeedInviteResult> {
+  await db.query(
+    `insert into invites (code, email, max_uses, note, created_by)
+       values ($1, null, $2, $3, 'maint6-seed-invite')
+       on conflict (code) do update
+         set email = null,
+             max_uses = excluded.max_uses,
+             expires_at = null,
+             revoked_at = null`,
+    [code, maxUses, "MAINT.6 preview session code (preview-stack.mjs seed-invite)"],
+  );
+  const row = (
+    await db.query(`select used_count, max_uses from invites where code = $1`, [code])
+  ).rows[0] as { used_count: number; max_uses: number } | undefined;
+  if (!row) throw new Error(`seed-invite: '${code}' upserted but not readable`);
+  return { code, usedCount: row.used_count, maxUses: row.max_uses };
+}
+
+
+/**
+ * The idempotent `create database rhema` bootstrap shared by `runMigrate` and `--seed-invite` —
+ * a fresh preview's `rhema` db may not exist yet when the seed leg runs first.
+ */
+export async function ensureRhemaDatabase(
+  systemDatabaseUrl: string,
+  log: (msg: string) => void = console.log,
+): Promise<void> {
+  const boot = new pg.Pool({ connectionString: maintenanceDsn(systemDatabaseUrl), max: 1 });
+  try {
+    const exists = (await boot.query(`select 1 from pg_database where datname = 'rhema'`)).rowCount;
+    if (!exists) {
+      await boot.query("create database rhema");
+      log("[migrate] created database rhema");
+    } else {
+      log("[migrate] rhema database present");
+    }
+  } finally {
+    await boot.end();
+  }
+}
+
 export interface MigrateResult {
   readonly applied: string[];
   readonly rolesEnabled: string[];
@@ -125,21 +222,7 @@ export async function runMigrate(env: {
 
   // 1 — bootstrap the `rhema` database off the maintenance db (idempotent). CREATE DATABASE can't
   //     run inside a transaction/DO block, so check-then-create as two plain statements.
-  {
-    const boot = new pg.Pool({ connectionString: maintenanceDsn(env.systemDatabaseUrl), max: 1 });
-    try {
-      const exists = (await boot.query(`select 1 from pg_database where datname = 'rhema'`))
-        .rowCount;
-      if (!exists) {
-        await boot.query("create database rhema");
-        log("[migrate] created database rhema");
-      } else {
-        log("[migrate] rhema database present");
-      }
-    } finally {
-      await boot.end();
-    }
-  }
+  await ensureRhemaDatabase(env.systemDatabaseUrl, log);
 
   const pool = new pg.Pool({ connectionString: env.systemDatabaseUrl });
   try {
@@ -244,6 +327,45 @@ export async function main(): Promise<number> {
       return 2;
     }
     return probe(url, console.log);
+  }
+  const seedIdx = args.indexOf("--seed-invite");
+  if (seedIdx >= 0) {
+    // MAINT.6 — `preview-stack.mjs seed-invite pr-<n>` executes this Job with
+    // `--args node,/app/dist/migrate.js,--seed-invite,prv-<n>-test`. Self-sufficient on a fresh
+    // stack: bootstrap + applyMigrations run first (both idempotent) so `invites` always exists.
+    const code = args[seedIdx + 1] ?? "";
+    const stage = process.env.RHEMA_STAGE ?? "";
+    const plan = seedInvitePlan(stage, code);
+    if (!plan.ok) {
+      console.error(`[seed-invite] ${plan.reason}`);
+      return 2;
+    }
+    const systemDsn = process.env.SYSTEM_DATABASE_URL;
+    if (!systemDsn) {
+      console.error("[seed-invite] missing required env SYSTEM_DATABASE_URL");
+      return 2;
+    }
+    try {
+      await ensureRhemaDatabase(systemDsn, console.log);
+      const pool = new pg.Pool({ connectionString: systemDsn, max: 1 });
+      try {
+        const db: MigrationDb = {
+          exec: (sql) => pool.query(sql),
+          query: (sql, params) => pool.query(sql, params as unknown[]),
+        };
+        await applyMigrations(db, { onApplied: (n) => console.log(`[seed-invite] migrated ${n}`) });
+        const res = await seedPreviewInviteRow(db, code);
+        console.log(
+          `[seed-invite] ${res.code} live — email NULL, used ${res.usedCount}/${res.maxUses} (idempotent upsert)`,
+        );
+      } finally {
+        await pool.end();
+      }
+      return 0;
+    } catch (err) {
+      console.error("[seed-invite] failed:", err instanceof Error ? err.message : err);
+      return 1;
+    }
   }
   const req = (name: string): string => {
     const v = process.env[name];

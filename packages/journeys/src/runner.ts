@@ -110,6 +110,11 @@ export interface RunnerDeps {
   readonly expectRenderer?: RendererName;
   /** REQ-SEQ-4 — the `x-rhema-renderer` pin on every context (the leg-A `ssr` pin). */
   readonly pinRenderer?: RendererName;
+  /**
+   * MAINT.6 (D-OPS.1-1) — the seeded invite code every fresh session mint submits on the /signup
+   * form (`--invite-code` / `RHEMA_INVITE_CODE`). Unset ⇒ mints run the un-seeded path verbatim.
+   */
+  readonly inviteCode?: string;
 }
 
 export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
@@ -131,6 +136,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     stateDir: deps.stateDir,
     extraHTTPHeaders: contextHeaders,
     onPage: (page) => wireCurrent?.(page),
+    ...(deps.inviteCode ? { inviteCode: deps.inviteCode } : {}),
   });
   const results: StepResult[] = [];
   const startedAt = new Date().toISOString();
