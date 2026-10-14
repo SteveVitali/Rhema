@@ -50,3 +50,10 @@ scan read the skeleton DOM (fixed: wait for first link), and the `[^/]+` href fi
 Per-page + dossier-banner probes now wait for attached state. Result: **N8 PASS both legs** —
 fresh-import fork AND Showcase-duplicate locked-version path under the SPA.
 Reports: `docs/build/reports/2026-10-14_ARMB2-harness-legs*/`, `2026-10-15_ARMB2-n8-legb3/`.
+
+## Deployed (2026-10-14)
+
+`pulumi up` update 150 → provenance PASS → `deployments` row `prod:ffbb8ad` (Cloud Build
+`d16ff6db`, all ten images re-pinned). Deployed-SHA verification
+(`reports/2026-10-14_ARMB2-deployed-legs/`): **T5, N4, N8, T7 — all PASS**; spend $0.
+Full free suite running against the deployed SHA.
