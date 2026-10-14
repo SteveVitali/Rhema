@@ -16,8 +16,8 @@
 
 ```
 projectStatus:   IN_PROGRESS
-nextUnit:        A2
-lastCompleted:   B1
+nextUnit:        O1
+lastCompleted:   G1 (all 22 research/design rows done)
 blockedOn:       (nothing)
 pauseRequested:  false
 returnPass:      (none)
@@ -26,7 +26,7 @@ specOut:         docs/post-spa-disposition-spec.md
 memoryRoot:      docs
 autonomy:        interactive (operator answers §Q rows live)
 round:           1
-updatedAt:       2026-10-14T19:05:00Z
+updatedAt:       2026-10-14T20:01:50Z
 ```
 
 ## 0. Working theses (to be tested, not assumed)
