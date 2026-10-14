@@ -31,6 +31,7 @@ manifest:        docs/tickets/00_MANIFEST.md
 canonicalSpec:   docs/rhema-design-spec.md + docs/frontend-spa-spec.md (round-4 spec — additive)
 memoryRoot:      docs/build
 dispatchTarget:  subagent           # sizing + the round-4 dispatch tier (operator ruling 2026-10-08: subagent)
+harness:         devin-cli/swe-2/subagent   # BM-HARNESS-01
 buildWorktree:   /Users/stevenvitali/Rhēma
 buildBranchBase: stevevitali/res-3-leg1a-zero-coverage  # round 4 stacks on the round-3 chain tip (D6/Q-7)
 pinnedBaseSha:   fab08ed           # round-4 stack forks from the chain tip (decompose commit); round-1..3 fork point: bbb5d81
