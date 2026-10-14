@@ -538,8 +538,12 @@ async function n8TypeForkSave(
   };
   await noConfirm();
 
-  // type into the live doc — the keystroke IS the fork trigger (2 s debounce + close/re-auth loop)
-  await page.click("[data-page-view]");
+  // type into the live doc — the keystroke IS the fork trigger (2 s debounce + close/re-auth loop).
+  // Click a text block, never the view's geometric center: for short docs the center lands on the
+  // `contenteditable="false"` front-matter <pre>, a NodeSelection that swallows keystrokes (the
+  // ARMB.2 prod walk: no transaction → nothing synced → the frozen-head fork never fired).
+  await page.locator("[data-page-view] p").last().click();
+  await page.keyboard.press("End");
   await page.keyboard.type(` ${markerText}`);
   await noConfirm();
 
@@ -623,10 +627,19 @@ const N8: StepFn = async (ctx) => {
   // ---------- leg B — a reviewed (or frozen-lineage) locked version on jrn-a ----------
   const { page: ret } = await ctx.returningUser("a");
   await gotoOk(ret, `${ctx.webBaseUrl}/app`);
+  // SPA timing: /app's project rows paint on the twin's data paint, not on data-mounted — read
+  // the link set only after the leaf attaches (an empty workspace lapses into a legit empty scan).
+  await ret
+    .locator('a[href^="/p/"]')
+    .first()
+    .waitFor({ state: "attached", timeout: 15_000 })
+    .catch(() => undefined);
   const allHrefs = await ret.locator('a[href^="/p/"]').evaluateAll((els) =>
     [...new Set(els.map((e) => (e as HTMLAnchorElement).getAttribute("href") ?? ""))],
   );
-  const hrefs = allHrefs.filter((h) => /^\/p\/[^/]+$/.test(h));
+  // `?rename=1`/hash variants are the same project — a bare `[^/]+` filter lets them consume the
+  // scan window and push a real candidate (e.g. /p/showcase) past the slice's end.
+  const hrefs = allHrefs.filter((h) => /^\/p\/[^/?#]+$/.test(h));
   // dossier links can also ride the /app rows directly (latestReviewRunId cards)
   const dossierHrefs = allHrefs.filter((h) => /^\/p\/[^/]+\/review\/[^/]+/.test(h));
   let reviewed: { slug: string; frozenN: number } | null = null;
@@ -635,6 +648,14 @@ const N8: StepFn = async (ctx) => {
   for (const href of hrefs.slice(0, 12)) {
     await gotoOk(ret, `${ctx.webBaseUrl}${href}`);
     const slug = href.split("/")[2] ?? "";
+    // SPA timing: data-mounted settles on the route match while a useQuery leaf still paints its
+    // skeleton — the host/rail/empty-state attach on the twin's data paint. Bare counts read the
+    // pending DOM and miss every affordance (the ARMB.2 prod walk: leg-B scanned skeletons).
+    await ret
+      .locator("[data-page-host], li[data-version-chip], [data-ide-state]")
+      .first()
+      .waitFor({ state: "attached", timeout: 15_000 })
+      .catch(() => undefined);
     // a read-only Page (the Showcase, or a head held by a live run) is not a candidate — but a
     // read-only page's dossier may be the Showcase (the duplicate fallback's substrate)
     if ((await ret.locator('[data-page-host][data-readonly="1"]').count()) > 0) {
@@ -643,7 +664,9 @@ const N8: StepFn = async (ctx) => {
         const dh = await dossierLink.getAttribute("href");
         if (dh) {
           await gotoOk(ret, `${ctx.webBaseUrl}${dh}`);
-          if ((await ret.locator("[data-showcase-banner]").count()) > 0) showcaseDossier = dh;
+          const banner = ret.locator("[data-showcase-banner]").first();
+          await banner.waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
+          if ((await banner.count()) > 0) showcaseDossier = dh;
         }
       }
       continue;
@@ -667,7 +690,9 @@ const N8: StepFn = async (ctx) => {
   if (!reviewed && !fallbackReviewed && !showcaseDossier) {
     for (const dh of dossierHrefs.slice(0, 8)) {
       await gotoOk(ret, `${ctx.webBaseUrl}${dh}`);
-      if ((await ret.locator("[data-showcase-banner]").count()) > 0) {
+      const banner = ret.locator("[data-showcase-banner]").first();
+      await banner.waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
+      if ((await banner.count()) > 0) {
         showcaseDossier = dh;
         break;
       }
@@ -681,6 +706,7 @@ const N8: StepFn = async (ctx) => {
     // no reviewed head on jrn-a — duplicate the Showcase into a frozen review-lineage head
     await gotoOk(ret, `${ctx.webBaseUrl}${showcaseDossier}`);
     const dup = ret.locator("[data-showcase-banner] [data-duplicate-form] button").first();
+    await dup.waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
     if ((await dup.count()) === 0) throw new Error("the Showcase banner carries no Duplicate affordance");
     await dup.click();
     await ret.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });

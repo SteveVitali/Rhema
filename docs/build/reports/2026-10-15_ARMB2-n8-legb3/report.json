@@ -1,0 +1,39 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "6af6aeb5a434",
+  "startedAt": "2026-10-14T17:11:18.021Z",
+  "finishedAt": "2026-10-14T17:11:51.001Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "d5a74cc",
+    "observed": {
+      "web": "d5a74cc",
+      "api": "d5a74cc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": null
+  },
+  "results": [
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "pass",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 32905,
+      "screenshot": "N8.png"
+    }
+  ],
+  "passed": true
+}

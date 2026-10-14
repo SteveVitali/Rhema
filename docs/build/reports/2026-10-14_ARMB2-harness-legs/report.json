@@ -1,0 +1,66 @@
+{
+  "tool": "rhema-journeys",
+  "nonce": "f161baea0f5a",
+  "startedAt": "2026-10-14T16:23:46.800Z",
+  "finishedAt": "2026-10-14T16:25:56.492Z",
+  "webBaseUrl": "https://rhema.tools",
+  "apiBaseUrl": "https://api.rhema.tools",
+  "provenance": {
+    "expected": "d5a74cc",
+    "observed": {
+      "web": "d5a74cc",
+      "api": "d5a74cc"
+    },
+    "match": true
+  },
+  "spend": {
+    "weeklyMeteredUsd": 0,
+    "capUsd": 5,
+    "withinCap": true
+  },
+  "renderer": {
+    "expect": "spa"
+  },
+  "results": [
+    {
+      "id": "N4",
+      "journey": "new-visitor",
+      "owner": "EST.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 16441,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa; /pricing served data-renderer=ssr — expected spa",
+      "screenshot": "N4.png"
+    },
+    {
+      "id": "N8",
+      "journey": "both",
+      "owner": "EDIT.1",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 101180,
+      "error": "import: the fork banner never flipped to \"Editing vN\" (the fork/rebind loop did not land)",
+      "screenshot": "N8.png"
+    },
+    {
+      "id": "T7",
+      "journey": "both",
+      "owner": "STB.5a",
+      "expected": "green",
+      "paid": false,
+      "outcome": "fail",
+      "consoleErrors": [],
+      "failedRequests": [],
+      "durationMs": 11827,
+      "error": "expect-renderer=spa: /signup served data-renderer=ssr — expected spa; /signup served data-renderer=ssr — expected spa",
+      "screenshot": "T7.png"
+    }
+  ],
+  "passed": false
+}

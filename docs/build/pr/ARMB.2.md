@@ -41,3 +41,12 @@ the enqueue (the job row exists and verifies). Now polls the probe for ≤15 s.
 
 - [x] Focused DOM packs + typecheck + lint + public-safe gates
 - [ ] Post-deploy re-run: T5/N8/T7/N4 on the deployed SHA — expected green-or-owed
+
+## Update — leg-B verification (2026-10-15)
+
+Live re-run on `d5a74cc` after two further leg-B races were root-caused: the `/app` link
+scan read the skeleton DOM (fixed: wait for first link), and the `[^/]+` href filter let
+`?rename=1` duplicates push `/p/showcase` past the `slice(0, 12)` window (fixed: `[^/?#]+`).
+Per-page + dossier-banner probes now wait for attached state. Result: **N8 PASS both legs** —
+fresh-import fork AND Showcase-duplicate locked-version path under the SPA.
+Reports: `docs/build/reports/2026-10-14_ARMB2-harness-legs*/`, `2026-10-15_ARMB2-n8-legb3/`.
