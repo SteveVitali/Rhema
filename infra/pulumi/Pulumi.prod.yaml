@@ -331,7 +331,10 @@ config:
   # INTEGRATION_PLAN §R4.11). Full canonical image set built at the round-4 chain tip
   # b35473d (Cloud Build 2e2a1a99-d9e7-4b91-bd97-6b2cbab6efa8) — prod jumps all-SSR →
   # all-SPA in one deploy; the SPA.28 cleanup wave rides with it (no flip machinery left).
-  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:b4a7c0ea3098516338e803a8070f4954e4e2437fa4be03f7f4a25c3d61cf6265","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:51656039f3f2509dc35eb5a8fab0514dfed3f3dbb9e22338cb8f813e55427485","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:459de58fc75eadd366d681ba0fb07be91681c0218554611e6790e0b023d334dc","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:de4af43d2245953f4519495e25f223f43aa440ac46f730ccc2de2942487aad4e","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:310470eedce8b8cf34500437826e9e10500fd329a370e2440f25b67df8fc9fdd","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:95751c301af004b889255c122669b5e745fe9e1ff3e0871519ad495015b0bad7","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:51bbbe81cb8947f75dcb69dd55acbbc91e72965a64d85bf1459c4e0d44f9e849","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:701d8337d7fee56a1310bfe3cf7fc7f70acce3fbc710e90bc552b3975a1c6de4"}'
+  # 2026-10-14 — ARMB.1 corrective re-pin (Cloud Build fca67583, chain commit d5a74cc):
+  # the SPA asset-base fix (vite base → /assets/spa/) + the data-ssr-cause verdict stamp —
+  # full set rebuilt at the corrective SHA so every image's provenance is one commit.
+  rhema:serviceImages: '{"api":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/api@sha256:9b9285dc8c69c90c9100425efc447d8f46b7533c87cc6a7e8a6ed6be47c6484d","web":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/web@sha256:d8ba13ffcdc85e3554acd9ea7feda5805deebfa629da5197a23d8ade8f95180a","worker":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/worker@sha256:ce2f1fd0cdd2c4da206eb6c876f3b42b634c60eaebd439d37026adfae7a925cb","fetcher":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/fetcher@sha256:851209a7566d0d32fa7aad7dfb34fea0679e205c257c1a4e587b682b3b108f33","convert":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/convert@sha256:f44a3246abbebe5b396ed8018e2d1c708def7fa108253bc6070ae6305efdbf63","export":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/export@sha256:282d1e1eb39c3c1c42ac3292dbcecc9ab19fdeb21691ec4f5e1985e5def9a325","collab":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/collab@sha256:bff78088630b055f423d982313c2adc0722c6d73f83fa62e61f86d52a4a26c33","turbo-cache":"us-central1-docker.pkg.dev/rhema-507501/rhema-prod/turbo-cache@sha256:fc06d73ca50abf716f10fa372b60f15afebb9fdf5e2f2e1d7d69c10114e70929"}'
   # SEC.3 (build sec3-73718cd, Cloud Build 90a36278, 2026-10-03, SHA 73718cd): the distroless
   # run-task image — no shell/pkg manager, static setpriv/unshare/mount/dumb-init, pure-argv
   # ENTRYPOINT (dumb-init → setpriv ambient caps → node harness-main), TS scoped-runner. Third
@@ -346,7 +349,8 @@ config:
   # funded-window A2 canonical persist (mirror/delivery.ts — @rhema/mirror is a direct
   # run-task dep).
   # 2026-10-14 — ARMB-1: run-task re-pinned to the b35473d tip build (af04f25f).
-  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:af04f25f093efad90bb010e6e5e9c4791a59f3ae6b2e103eae584f726034243e
+  # 2026-10-14 — ARMB.1 corrective: run-task re-pinned to the d5a74cc build (fca67583).
+  rhema:runTaskImageDigest: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/run-task@sha256:df854e9d2559022ace9fcb96a064b288b4afc719a1b2acdca72fa93408ce95e2
   # SEC.3 — the run-task pod's appArmorProfile: Localhost + the `rhema-run-task` profile (loaded on
   # every sandbox node by the apparmor-loader DaemonSet). Rollback = flip the type back to the prior
   # posture + re-pin the prior digest — config only, no code revert.
@@ -355,7 +359,8 @@ config:
   # 2026-10-06 — egress-proxy re-pinned to the fcbbc66 tip build (f1efda63): CITE.1's
   # canonical cited⇒retrieved parity + search-row logging + backfill metering.
   # 2026-10-14 — ARMB-1: egress-proxy re-pinned to the b35473d tip build (df9154f1).
-  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:df9154f181ff5aa71fd18e8a5ba30c1ee4d4fa800c570a328ffb97a6ed75cd28
+  # 2026-10-14 — ARMB.1 corrective: egress-proxy re-pinned to the d5a74cc build (fca67583).
+  rhema:proxyImage: us-central1-docker.pkg.dev/rhema-507501/rhema-prod/egress-proxy@sha256:184ee4a7792bdcf0b9fbac47d04acc2e8ab24933f4ae5e61f9d9213a53a4af25
   rhema:proxyBaseUrl: http://10.8.16.4:8443
   rhema:internalApiUrl: https://rhema-prod-api-e745ce0-tkbl73n3tq-uc.a.run.app
   rhema:stripePaymentLinkUrl: https://buy.stripe.com/14AaEQbU030E61k5D7a7C00
