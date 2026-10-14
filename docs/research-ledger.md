@@ -1,122 +1,135 @@
 <!--
-  Template: docs/research-ledger.md (BM-SYNTH-01). Living until ratified, then frozen.
+  Round-5 research & design ledger — synthesize-spec mode=plan output (2026-10-14).
+  The round-4 ledger is preserved at docs/research-ledger-frontend-spa.md (frozen, canonical).
   One writer touches CURRENT STATE + change log; every stamp is `date -u` at writing (BM-CLOCK-01).
 -->
-# frontend-spa — research & design ledger
+# post-spa-disposition — research & design ledger
 
 - **Status vocabulary:** `open` → `in-progress` → `done` | `blocked-on-operator` | `dropped(reason)`.
   Every row ends `done` with **evidence** — a path into the spec, a source actually fetched, or
   an explicit decision + rationale.
 - **Owner vocabulary:** `R` research · `D` design · `A` architecture · `P` product · `S` synthesis.
-- **⚑** marks an operator-fixed constraint (do not relitigate) — see `docs/frontend-spa-brief.md`.
+- **⚑** marks an operator-fixed constraint (do not relitigate) — see `docs/post-spa-disposition-brief.md`.
 - **Nothing cited that was not read.**
 
 ## CURRENT STATE
 
 ```
-projectStatus:   DONE
-nextUnit:        (none) — ledger frozen at ratification; hand-off = decompose-spec via docs/decomposition-prompt.md
-lastCompleted:   O3 — spec ratified canonical v1.0; O2 review applied; O4 decomposition prompt written
+projectStatus:   IN_PROGRESS
+nextUnit:        A1
+lastCompleted:   (none)
 blockedOn:       (nothing)
 pauseRequested:  false
-brief:           docs/frontend-spa-brief.md
-specOut:         docs/frontend-spa-spec.md
+returnPass:      (none)
+brief:           docs/post-spa-disposition-brief.md
+specOut:         docs/post-spa-disposition-spec.md
 memoryRoot:      docs
 autonomy:        interactive (operator answers §Q rows live)
 round:           1
-updatedAt:       2026-10-08T01:06:14Z
+updatedAt:       2026-10-14T18:50:14Z
 ```
 
 ## 0. Working theses (to be tested, not assumed)
 
-- **T1 — The BFF seam can serve typed JSON without new public surface.** `data.ts`/`page-data.ts`/
-  `api-client` already shape most data; the extraction is large but mechanical. (A1, A3, B3)
-- **T2 — Islands→React is mostly mechanical, except the editor/collab island.** PM+Y.Doc+decorations
-  are framework-agnostic; the binding question is real, the feature-parity bar is high. (A2, B4)
-- **T3 — Journeys survive; SSR-string tests largely don't.** Playwright asserts DOM, not SSR —
-  the registry is reusable; the ~6k-line HTML-string test files are the real casualty and the
-  verification strategy must consciously replace their coverage. (A4, D1)
-- **T4 — Hybrid (public SSR + auth'd SPA) beats SPA-everything on risk and cost.** ⚑-consistent;
-  the boundary question is Q-1's. (A1, C3, B1)
-- **T5 — Strangler-route migration behind a flag beats big-bang.** Each surface can ship as SPA while
-  SSR stays the fallback per-route — matching this repo's flag discipline (ADR-flag convention).
-  (D3, B1)
-- **T6 — The SPA must not regress the auth/OAuth hand-offs.** MAINT.5 proved browsers enforce
-  `form-action` on redirect targets; a SPA swaps form POSTs for `window.location` navigations — the
-  CSP/seam implications are a design input, not an afterthought. (B3, D2)
+- **T1 — A delegated same-origin click interceptor is the right nav mechanism.** It covers shared
+  SSR components and injected HTML (dossier/report bodies) without an invasive `<Link>` port; a
+  component-port hypothesis must show it handles `dangerouslySetInnerHTML` links to be viable.
+  (A1, A2, A3)
+- **T2 — Nav mechanism is contract-invisible today and needs a new settle hook.** `data-mounted`
+  stamps identically on document loads and client navs; the journeys suite cannot see the
+  difference — a durable hook (e.g. a nav-type counter or performance-entry probe) is part of the
+  fix, not a nice-to-have. (A3, A4)
+- **T3 — Most paid-leg spend is model tokens, so test-tenant tier routing is the biggest lever.**
+  Fixture-size caps already exist (≤300 words); the spend audit must show where dollars actually
+  go before levers are ranked. (B1, B2, B3)
+- **T4 — The owed free legs are substrate-only (fixture/ruling/clock), not product defects.** Each
+  resolves via a seed, a ruling, or a clock — the census must catch any that are actually code.
+  (C1–C5)
+- **T5 — The $285.80 → ~$50 prod-cost gap is posture levers, not traffic.** Min-instance floors,
+  SQL tier, proxy MIG, Redis sizing — the audit must decompose the bill before naming levers.
+  (D1)
+- **T6 — Every open backlog row admits a clean disposition (build / operator / defer / drop).**
+  Rows that resist all four are synthesis findings in their own right. (G1)
 
-## A. Surface inventory & ground truth
-
-| id | item | owner | status | evidence |
-|---|---|---|---|---|
-| A1 | Route/surface census — enumerate all ~175 `server.ts` routes + `routes.tsx`/`pages.tsx` sections; classify public vs auth'd vs app-shell; per-route data needs + interactivity level + mutation POSTs; output a per-surface table the decomposition consumes | R | done | `docs/research/01_route-census.md` — ~181 registrations collapse to ~120 route rows; ~20 non-HTML BFF endpoints enumerated; REQ-INV-1..8 emitted |
-| A2 | Island inventory + island↔server contract map — the 5 bundles (`page`/`ide`/`landing`/`outline`/`editor`), their `<script type=json>` reads, `data-*` attrs, polls, SSE, ws, form fallbacks; what each needs from a typed data layer | R | done | `docs/research/02_island-contract-map.md` — 5 entries + 2 non-island scripts; collab wire protocol mapped; REQ-ISL-1..16 emitted |
-| A3 | Data-layer audit — `data.ts`/`page-data.ts`/`api-client` DTO coverage: which routes already have JSON (api-client methods), which are SSR-only extractions needed; mutation catalog (form POSTs → prospective API calls) incl. status/error-code surface | R | done | `docs/research/03_data-layer-audit.md` — DataSource seam (~120 methods) IS the BFF inventory; ~70 form-POST mutations catalogued; REQ-DAT-1..14 emitted |
-| A4 | Test-surface audit — classify ~6k-line HTML-string test files (keep/rewrite/drop per suite); journeys registry step inventory + which selectors/`data-*` are load-bearing; what a component-test layer must replace | R | done | `docs/research/04_test-surface-audit.md` — 34 files/~481 its classified; ~90 load-bearing `data-*` hooks enumerated; protocol-marker gate found vacuous over `public/` (pre-existing gap); REQ-TST-1..10 emitted |
-
-## B. Architecture
+## A. Client-side navigation completion
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| B1 | Framework decision matrix — TanStack Router+Query vs React Router 7 data routers vs TanStack Start; SSR-hybrid options per Q-1; type-sharing of contracts DTOs through the BFF; emits recommendation + ADR-007 amendment draft | A| done | `docs/design/20_spa-framework-binding.md` — matrix (Router+Query chosen; RR7-fw/Start rejected); ADR-106 draft; REQ-FW-1..12 emitted |
-| B2 | Toolchain — Vite vs keep-esbuild (Q-3); dev server/HMR, code-splitting, sourcemaps, fonts/assets, module scripts vs iife under `script-src 'self'`+nonce CSP ⚑; bundle-size budget | A | done — docs/design/21_spa-toolchain.md | 2026-10-07 (worker 278cca6a) |
-| B3 | BFF API shape — keep web-BFF JSON (session cookies same-origin ⚑) vs direct api calls; stable error codes; SSE + collab-ws subscriptions in SPA; OAuth hand-off as `location.assign` not form POST (T6); optimistic-mutation convention | A | done — docs/design/22_spa-bff-api-shape.md | 2026-10-07 (worker 51a84895) |
-| B4 | Editor/collab binding — ProseMirror+Y.Doc+decorations into React (binding lib vs hand-rolled view); sync-machine/lock-poll/findings-rail into the component tree; parity checklist vs `page.js` | A| done | `docs/design/23_spa-editor-collab-binding.md` — hand-rolled mount + module-scope session registry; 29-row parity checklist; REQ-ED-1..16 emitted |
+| A1 | Anchor census: every `<a href>` / injected-HTML link in `spa/` + shared SSR components, classified by destination class (in-tree / SPA_PUBLIC / forced-SSR-family / `reloadDocument` stub / external / `download` / `target` / modifier attrs) → the interception decision table | R | open | |
+| A2 | TanStack Router API surface for href→route resolution at runtime (`matchRoute`/`buildLocation`/`flatRoutes`, `reloadDocument` stub behavior under `router.navigate`, `<Link>`'s own skip semantics) — what a delegated handler can reuse | R | open | |
+| A3 | Mechanism design: delegated document-level interceptor vs dual-renderer `<NavLink>` vs hybrid — skip-list semantics, `twinForcesSsr`/`SsrHandoff` interplay, scroll/focus/title duties on client navs, history parity (push vs replace) | D | open | |
+| A4 | Verification design: the settle-contract extension that lets journeys + dom-contract *see* nav mechanism (counter hook / performance entries); a client-nav chain leg (`/app`→`/p/:p`→`/v/working`) asserting zero document loads; REQ-NAV-6 keep-alive proof once navs stay in-router | D | open | |
+| A5 | Dormant-machinery audit: what becomes live once navs are client-side (intent prefetch, scrollRestoration, keymap `router.navigate` chords, focus/aria-live, Query-cache reuse, PageSessionRegistry) — what needs verification or fixing | R | open | |
 
-## C. Product & UX
-
-| id | item | owner | status | evidence |
-|---|---|---|---|---|
-| C1 | UX goals + design-system scope — target feel (transitions, skeletons, optimistic states, cmd-palette-class affordances?); `@rhema/tokens` reuse vs new system; a11y floor (WCAG 2.2 AA shipped — must not regress) ⚑; phone posture (P1.19's reader-only Page decision revisited in SPA world) | P| done | `docs/design/24_spa-ux-design-system.md` — generated-CSS-over-tokens carried verbatim; phone = server-stamped immutable capability; REQ-UX-1..16 emitted |
-| C2 | Navigation/IA — post-SPA route tree; deep-link/back/scroll-restoration semantics; cross-route state persistence (Desk chord, held-file, theme) | P| done | `docs/design/25_spa-navigation-ia.md` — normative route tree + search-param schema + redirect/404 semantics; REQ-NAV-1..11 emitted |
-| C3 | Public/auth'd boundary — which routes stay SSR (marketing/pricing/sample/login) under Q-1's hybrid; SEO/first-paint floor | P| done | `docs/design/26_spa-public-auth-boundary.md` — definitive boundary table; shell-doc spec; catch-all split; REQ-BND-1..12 emitted |
-
-## D. Verification & gates
+## B. Test economics (funded-window prerequisite ⚑)
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| D1 | Acceptance mechanics — journeys adaptation plan (which steps need new probes vs survive); component-test strategy (vitest+RTL vs playwright-ct); visual/a11y regression story; the phone/rhythm legs | D| done | `docs/design/27_spa-acceptance-mechanics.md` — vitest+happy-dom+RTL (playwright-ct dead upstream); dom-contract manifest; per-surface $0 gate sets; REQ-VFY-1..10 emitted |
-| D2 | Safety gates — never-cookies/protocol-marker/public-safe scans over a bundled SPA; banned-vocab lint on client copy; CSP in bundled world; bundle-size budget + CI enforcement | D| done | `docs/design/28_spa-safety-gates.md` — 3-layer protocol gate; CSP analysis (no navigate-to — BFF validators); bundle budgets; REQ-SAFE-1..10 emitted |
-| D3 | Migration sequencing — strangler vs flag vs cutover (recommendation feeds Q-5); per-surface ordering; rollback posture; preview-stage dogfooding; interplay with the unmerged 45-PR stack | D | done — docs/design/29_spa-migration-sequencing.md | 2026-10-07 (worker 19ccfc03) |
+| B1 | Spend audit: per-leg USD from `usage_records`/ledger rows for the funded-window set + the $58.08 baseline week — top burners by model-tier × phases × fixture size | R | open | |
+| B2 | Entitlement/model-tier routing surface: how run tiers resolve (`is_test` tenant path), whether a cheaper test tier preserves REQ-SPEC-32 money-truthfulness (debit = metered burn at the tier actually run) | R | open | |
+| B3 | Lever + guard design: ranked levers (tier routing, fixture sizing, per-leg USD caps, deterministic providers for non-model legs, phase reduction) → the regime the funded window opens under; weekly guard + per-ticket cap + tripwire composition | D | open | |
+
+## C. Fixture substrate & owed free legs
+
+| id | item | owner | status | evidence |
+|---|---|---|---|---|
+| C1 | T17 source-view canonical-markdown seeding — what fixture, where it lives, who mints it | R | open | |
+| C2 | P1.dossier phone bulk-affordance contract (§10.1) — the ruling options framed for §Q | R | open | |
+| C3 | T8 expired-token leg — clock-owed vs operator-approved backdated mint; what the mint script touches | R | open | |
+| C4 | T12F/T13F suggestion-bearing dossier fixture — what a delivered review + suggestion seed requires | R | open | |
+| C5 | BL-22 residuals (citeproc, quiet-hours, Decisions row, stale voice, T7 purge residual) + BL-78 live legs — per-item need and blocker | R | open | |
+
+## D. Ops & stage residuals
+
+| id | item | owner | status | evidence |
+|---|---|---|---|---|
+| D1 | Prod-cost lever decomposition: the $285.80 measured bill by service vs the ~$50 target — which levers exist in Pulumi (min-instances, SQL tier, proxy MIG, Redis, LB), posture implications per lever | R | open | |
+| D2 | BL-24 launch-verification remainder: canary-injection pause smoke, alert-channel page, usercontent CDN headers, first-finding ≤4 min — current state per item | R | open | |
+| D3 | BL-25/80 preview legs: nonprod Resend secret → `pr-<n>` session mint → signed-in preview journeys — what MAINT.6's close requires | R | open | |
+| D4 | BL-36 nightly golden + BL-74 soak evidence — current state, what closes each | R | open | |
+
+## E. Memory & spec hygiene
+
+| id | item | owner | status | evidence |
+|---|---|---|---|---|
+| E1 | BL-02 validator hygiene: DEFERRALS status-cell normalization, upstream agent-skills patch list, GATE-ACCEPT false-positive fix — enumerate precisely | R | open | |
+| E2 | BL-05 REC.2 reconciliation scope: which GATE-ACCEPT deviations + ADR triggers + the nav deviation fold back into `rhema-design-spec`/`frontend-spa-spec` | R | open | |
+| E3 | BL-73 Later-scope census: confirm the 33 MISSING matrix rows are spec-scheduled Later (not lost work) | R | open | |
+
+## F. Funded-window leg census
+
+| id | item | owner | status | evidence |
+|---|---|---|---|---|
+| F1 | Enumerate every ledgered paid leg (BL-16…21, 56, 66–72, 78/79 residuals + D-CAP.2-1's 21 steps): registry id, what it verifies, spend class, blocker → the ticket-able list under the B3 regime | R | open | |
+
+## G. Disposition map
+
+| id | item | owner | status | evidence |
+|---|---|---|---|---|
+| G1 | Open BL-row + open DEFERRALS census → per-row disposition (decompose / operator / defer / drop) — the artifact that lets `projectStatus` close when the round lands | S | open | |
 
 ## O. Spec synthesis & review process
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| O1 | draft `docs/frontend-spa-spec.md` from the ledger (front matter + §0 + decision register + appendices) | S | done | `docs/frontend-spa-spec.md` + `docs/OUTLINE_TRACE.md` |
-| O2 | fresh-context adversarial review (consistency, coverage of every row, realism, self-contradiction) | S | done | spec Appendix E — 15 findings dispositioned, 0 blockers; 2 majors adapted (E-1 handler-order, E-2 upload-gate scope); spec v0.2 |
-| O3 | operator ratification round — §Q rows answered, spec → `canonical`, ledger frozen | S | done | operator ratified 2026-10-08; 7 §12.2 questions answered (Q-8…Q-14); spec → canonical v1.0 |
-| O4 | write `docs/decomposition-prompt.md` — hand-off to decompose-spec | S | in-progress | |
+| O1 | Draft the spec from the ledger notes | S | open | |
+| O2 | Fresh-context adversarial review (consistency, coverage of every ledger row, MVP realism, self-contradiction) | S | open | |
+| O3 | Operator ratification round — §Q answers → canonical | S | open | |
+| O4 | `docs/decomposition-prompt.md` hand-off to decompose-spec | S | open | |
 
 ## Q. Operator decisions register
 
 | id | question (abridged) | decision | unblocks / new rows |
 |---|---|---|---|
-| Q-1 | SSR scope: hybrid (public SSR + auth'd SPA) vs SPA-everything vs SSR+hydration framework | **Hybrid: public/marketing/login stay SSR; auth’d app shell becomes the SPA** (operator, 2026-10-07) | B1, C3 |
-| Q-2 | Framework: TanStack Router+Query vs React Router 7 data routers vs TanStack Start | **TanStack Router + Query** (operator, 2026-10-07) | B1 |
-| Q-3 | Bundler: Vite (amends ADR-007) vs esbuild-only | **Vite — ADR-007 to be amended in the spec (recorded reason: SPA toolchain; SSR posture unchanged for public surfaces)** (operator, 2026-10-07) | B2 |
-| Q-4 | Design ambition: reskin-on-existing-copy vs real redesign pass (design-system ticket) | **Port + polish: existing visual language migrated; fix layout/interaction debt; no dedicated redesign ticket** (operator, 2026-10-07) | C1, ticket sizing |
-| Q-5 | Migration strategy: strangler-behind-flag vs branch cutover vs big-bang | **Strangler behind per-surface flag — SSR stays the fallback; journeys verify before each flip; rollback is a config flip** (operator, 2026-10-07) | D3 |
-| Q-6 | Budget/pacing: funded live-verification legs + round-4 spend envelope | **$50 envelope authorized; spend frugally — cheapest viable models, short/small projects, reuse existing fixtures where possible** (operator, 2026-10-07) | D1, sequencing |
-| Q-7 | Chain interaction: SPA work stacks atop the 45-PR chain vs waits for merge | **SPA work stacks on the current chain tip (MAINT.x precedent); the 45-PR merge proceeds independently on the operator's schedule** (operator, 2026-10-07) | D3 |
-| Q-8 | Dead Source-mode code (editor.js / intent:"ro" / data-save-url): drop vs revive | **Revive as a designed feature** — dead artifacts still retire (REQ-ED-16); Source-mode rebuild = REQ-ED-17, own ticket post-editor-flip (operator, 2026-10-08, interactive) | spec R20 + §6 REQ-ED-17 |
-| Q-9 | Upload gating: infra change vs server-transit interim path | **Gate on infra** — `connect-src` + GCS bucket-CORS before the first browser-upload surface flips (`voices` #4); no dual path (operator, 2026-10-08, interactive) | spec R21 |
-| Q-10 | `?ssr=1` / `x-rhema-renderer` override surface area | **Always-on through the whole migration window**, removed at final cleanup (operator, 2026-10-08, interactive) | spec R8/§11 |
-| Q-11 | Mid-build 45-PR chain merge: rebase strategy | **One checkpoint rebase** at the foundations↔surfaces boundary + per-surface replay (operator, 2026-10-08, interactive) | spec R24 |
-| Q-12 | `ide-chrome` composite: real flag vs ordering-only | **Real flag** — AND-gated, one-line chrome-wide rollback (operator, 2026-10-08, interactive) | spec R9/§11 |
-| Q-13 | Bundle-budget ceilings: hard gate vs warn-then-tighten | **Hard CI gate from the start**; values calibrated in the toolchain ticket's PR (operator, 2026-10-08, interactive) | spec R25/§9 |
-| Q-14 | Flag granularity: 14-key vocabulary final? | **Final** — `settings` one flip across sub-pages; `import` rides `onboarding` (operator, 2026-10-08, interactive) | spec R22/§11 |
+| Q-1 | P1.dossier: does the phone dossier show §10.1 bulk affordances, or is read-only-phone the contract? | | C2 → fixture or design |
+| Q-2 | T8: operator-approved backdated-token mint script, or wait the 7-day clock (ADR-088)? | | C3 |
+| Q-3 | Nav mechanism: accept A3's recommendation as spec'd, or is the interceptor-vs-port trade operator-level? | | A3, O1 |
+| Q-4 | Spec shape: standalone `post-spa-disposition-spec.md` + §14-style amendments back into `frontend-spa-spec` (vs one merged doc)? | | O1 |
+| Q-5 | BL-38 cleanup scope: the enumerated items (test draft v7, stray provenance row, 2026-09-30 review account, two Library-After-Dark projects) — all four confirmed for removal? | | G1 |
+| Q-6 | Funded-window envelope: budget cap + timing under the B3 regime (prior ledgered bound ~$150 cumulative) | | F1 |
+| Q-7 | Cost-lever authority: which prod-posture changes are pre-authorized vs per-change approval (min-instance floors, SQL tier, proxy/Redis sizing)? | | D1 → tickets |
+| Q-8 | BL-13 economics ruling: confirm it stays operator-register-only (no spec rows) this round | | G1 |
 
 ## Change log
-<!-- append-only; one line per edit, stamped from the clock at the moment of writing -->
-- 2026-10-07T20:22:03Z — ledger created by synthesize-spec mode=plan (brief `docs/frontend-spa-brief.md`; 4 streams, 15 rows, 7 §Q registers).
-- 2026-10-07T20:36:13Z — A2 done: `docs/research/02_island-contract-map.md` written (island contracts + collab protocol; REQ-ISL-1..16).
-- 2026-10-07T20:41:26Z — A4 done: `docs/research/04_test-surface-audit.md` written (per-file dispositions; REQ-TST-1..10).
-- 2026-10-07T21:00:00Z — A3 done: `docs/research/03_data-layer-audit.md` written (BFF seam + mutation catalog; REQ-DAT-1..14).
-- 2026-10-07T21:25:32Z — A1 done: `docs/research/01_route-census.md` written (~181 registrations, ~120 route rows; REQ-INV-1..8). A-stream complete; B/C/D streams dispatch.
-- 2026-10-07T22:09:37Z — B1/C2/C3/B4/C1/D1/D2 done: design notes `docs/design/20_spa-framework-binding.md`, `23_spa-editor-collab-binding.md`, `24_spa-ux-design-system.md`, `25_spa-navigation-ia.md`, `26_spa-public-auth-boundary.md`, `27_spa-acceptance-mechanics.md`, `28_spa-safety-gates.md` (REQ-FW/ED/UX/NAV/BND/VFY/SAFE emitted; REQ namespaces renamed from worker drafts to avoid collisions with product-spec REQ-ARCH/REQ-GATE). B2/B3/D3 still in flight.
-- 2026-10-07T22:55:00Z — B2/D3 done: `docs/design/21_spa-toolchain.md` (Vite package-scoped, publicDir:false + outDir public/spa, file-based routing + autoCodeSplitting, manifest-driven shell, hidden sourcemaps, pin set w/ ≥7-day staleness; REQ-TL-1..14), `docs/design/29_spa-migration-sequencing.md` (SPA_SURFACES follows the signupMode precedent end-to-end; 14 surface keys + ide-chrome AND-gate; /p/:slug rides `editor`; two-leg per-flip procedure via x-rhema-renderer override + ?ssr=1 escape hatch; prod flip = separate one-line stage-fact PR; ~40 PRs sizing estimate; REQ-SEQ-1..12). B3 (BFF contract) still in flight.
-- 2026-10-07T23:20:00Z — B3 done: `docs/design/22_spa-bff-api-shape.md` (GET /bff/* twins for ~45 auth'd reads; wantsJson dual-mode on existing POSTs; {ok,redirect,flash,data,pending,url} mutation envelope; {error,detail?} at preserved status; pending-vs-optimistic classification; presign→direct-PUT uploads w/ CSP+CORS prerequisite flagged; slug→id once-per-request memo; GET /session + data-spa-boot; REQ-BFF-1..30). ALL 13 RESEARCH ROWS CLOSED — next: O1 spec draft.
-- 2026-10-08T01:06:14Z — O2 done: fresh-context adversarial review of spec v0.1 — 15 findings (E-1…E-15), 0 blockers; 2 majors adapted (E-1 renderer-override consult restored to §4 handler order; E-2 upload infra prereq re-bound to `voices` flip #4); spec → v0.2.
-- 2026-10-08T01:06:14Z — O3 done: operator ratification session — 7 §12.2 questions answered interactively (Q-8…Q-14); R20 reversed to Source-mode REVIVE (REQ-ED-17); spec → canonical v1.0; ledger frozen at ratification, round 1.
-- 2026-10-07T22:52:16Z — O1 done: `docs/frontend-spa-spec.md` v0.1 drafted — 191 REQ ids folded across 14 families verbatim (INV/ISL/DAT/TST/FW/TL/BFF/ED/UX/NAV/BND/VFY/SAFE/SEQ), R1–R27 synthesis rulings resolving inter-note conflicts, 4 normative tables adopted by reference, §12.2 queues 7 operator ratification questions; `docs/OUTLINE_TRACE.md` proves brief superset (18/18 OL). Next: O2 fresh-context adversarial review.
+
+- 2026-10-14T18:50:14Z — ledger created by synthesize-spec mode=plan; brief `docs/post-spa-disposition-brief.md`; round-4 ledger frozen at `docs/research-ledger-frontend-spa.md`.
