@@ -11,7 +11,7 @@
 - **Requirement ids stamped:** REQ-FIX-P1D REQ-FIX-T17 REQ-FIX-T12F REQ-FIX-T13F
   REQ-FIX-T15 REQ-FIX-T16 REQ-FIX-T8 REQ-FIX-BL78-5B4 REQ-FIX-BL78-5B5
   REQ-FIX-BL78-M31 REQ-FIX-BL22-T7DEST
-- **Started:** 2026-10-14 · **Closed:** _pending_
+- **Started:** 2026-10-14 · **Closed:** 2026-10-14T23:51Z
 - **Config:** harness/ledger; **Live stage: none**; **Production mutations: none**
   (the T8 mint + BL-78 seed executions stay operator-gated per the ticket's gate line);
   metered spend **$0**; zero prod writes, zero deploys, zero merges
@@ -210,4 +210,39 @@ the `date -u` clock (`2026-10-14T23:48Z`); all new stamps this run are `2026-10-
 
 ## Evidence report
 
-_(Phase 6 — filled at closeout.)_
+- `npx vitest run packages/db/src/seed/showcase.test.ts` → **7/7 pass** — incl. the new
+  `seedOpenApprovalGate` pin (waiting_gate + unresolved/unheld/blocking/on_expiry=wait)
+  and the anchor `exact`-resolution/splice test.
+- `npx vitest run packages/contracts` → **293/293** (29 files).
+- `pnpm --filter @rhema/journeys typecheck` clean; eslint clean on @rhema/journeys,
+  @rhema/db, @rhema/contracts.
+- `pnpm turbo build lint typecheck` → **135/135** (57 s).
+- `pnpm test` → **5,577 pass / 4 skip / 0 fail** (489 files, 1,077 s).
+- `check:licenses` (822 pkgs) · `check:protocol-markers` (248 files) ·
+  `check:no-cookies` (253 files) · `check:spa-env` (111 client / 146 emitted) ·
+  `check:spa-budget` (all ceilings) · `check:dom-contract` — all OK.
+- Scripts: `node --check` clean; both exit 1 without `SYSTEM_DATABASE_URL` (the guard
+  fires before any DB work). Self-review fixed the mooted arm's direct state UPDATE →
+  transition-row-only (REQ-OBJ-1 trigger) and the mint dry-run `ready_at` text.
+- `pnpm install --frozen-lockfile` → OK.
+- `check-build-memory.sh .` → **0 violations**, 9 warnings — all pre-existing classes
+  (134 unbannered manifest rows; GATE-G3 bare word; `2_PRB.16b` lowest-unlanded;
+  legacy oversized PHASE LOG entries; 41 legacy `run` live-verification values; the
+  2026-10-15 clock-ahead stamps — pre-existing, BM-CLOCK-01; 3 pre-guard readouts; 88
+  harness-header-less legacy ledgers).
+- `node docs/build/tools/check-append-only.mjs --base 9239234` → **append-only OK**
+  (tree + staged).
+- `check-backlog.sh` → **complete + non-duplicating + verdict-consistent** at 373
+  expected sources (the four new D-FIX.1-* rows each homed exactly once — BL-22 hosts
+  -1/-2/-4, BL-78 hosts -3); self-review caught + fixed interior commas in the two
+  refreshed BACKLOG cells (the reader is comma-naive).
+- CI at closeout: pending (the recurring first-read class — recorded, not waited on).
+
+## Closeout
+
+- Branch `stevevitali/fix-1-journey-fixture-repairs` @ `0c338ed` + closeout;
+  **PR #173** stacked on `stevevitali/hygiene-1-memory-hygiene` — mergePolicy
+  OPERATOR, never merged by this run.
+- `LEDGER.md`: `lastCompleted → FIX.1`, `nextTicket → VERIF.1` (row 153),
+  `chainTip → stevevitali/fix-1-journey-fixture-repairs`, PHASE LOG Round-5 entry.
+- `BUILD_INDEX.md` seq 179.
