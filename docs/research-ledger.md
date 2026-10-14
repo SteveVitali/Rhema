@@ -84,9 +84,9 @@ updatedAt:       2026-10-14T19:05:00Z
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
 | D1 | Prod-cost lever decomposition: the $285.80 measured bill by service vs the ~$50 target — which levers exist in Pulumi (min-instances, SQL tier, proxy MIG, Redis, LB), posture implications per lever | R | done | `docs/research/r5_d1_cost-levers.md` — biggest lever is a live-vs-IaC cpu-throttling drift on convert-svc (−$44); $50 unreachable under current architecture → Q-7 is target-vs-posture |
-| D2 | BL-24 launch-verification remainder: canary-injection pause smoke, alert-channel page, usercontent CDN headers, first-finding ≤4 min — current state per item | R | in-progress | |
-| D3 | BL-25/80 preview legs: nonprod Resend secret → `pr-<n>` session mint → signed-in preview journeys — what MAINT.6's close requires | R | in-progress | |
-| D4 | BL-36 nightly golden + BL-74 soak evidence — current state, what closes each | R | in-progress | |
+| D2 | BL-24 launch-verification remainder: canary-injection pause smoke, alert-channel page, usercontent CDN headers, first-finding ≤4 min — current state per item | R | done | r5_d234_stage-residuals.md — all live-evidence residuals; soak re-query $0; nightly green merge-dependent |
+| D3 | BL-25/80 preview legs: nonprod Resend secret → `pr-<n>` session mint → signed-in preview journeys — what MAINT.6's close requires | R | done | r5_d234_stage-residuals.md — all live-evidence residuals; soak re-query $0; nightly green merge-dependent |
+| D4 | BL-36 nightly golden + BL-74 soak evidence — current state, what closes each | R | done | r5_d234_stage-residuals.md — all live-evidence residuals; soak re-query $0; nightly green merge-dependent |
 
 ## E. Memory & spec hygiene
 
