@@ -53,6 +53,7 @@ import type { PageData } from "./page-data.js";
 import { loadEditorPage, docJsonFor } from "./page-data.js";
 import type { ConversionResult } from "@rhema/contracts";
 import {
+  PRICING,
   RIGORS,
   MODEL_TIERS,
   forwardedClientIp,
@@ -5801,7 +5802,19 @@ function buildSheet(
   const scoped = scopeRefs.length > 0 ? scopedInputs(scopeRefs, ctx?.sections ?? []) : null;
   // §14.3 — a trial entitlement whose word cap the draft exceeds covers the FIRST wordCap words: the
   // sheet's scope becomes the covered slice (a "first N words" pill) so the Included line stays honest.
-  const entitlement = ctx?.entitlement ?? null;
+  // MAINT.3 — the entitlement applies ONLY to the one configured shape (review at
+  // PRICING.trial.entitlement's rigor + tier — the api's `trial_shape` gate reads the same config).
+  // Rendering `Included` + posting the hidden entitlementId for ANY other shape (a Quick launch on an
+  // entitled account) 422'd every launch and never re-offered the funded figure: suppress the
+  // entitlement on a shape mismatch so the honest estimate renders and the run launches on credits.
+  const rawEntitlement = ctx?.entitlement ?? null;
+  const entitlement =
+    rawEntitlement &&
+    workflow === PRICING.trial.entitlement.kind &&
+    rigor === PRICING.trial.entitlement.rigor &&
+    modelTier === PRICING.trial.entitlement.modelTier
+      ? rawEntitlement
+      : null;
   const effectiveScopes: ScopeRef[] =
     scopeRefs.length === 0 && entitlement && words > entitlement.wordCap
       ? [{ kind: "words", upto: entitlement.wordCap }]

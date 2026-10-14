@@ -118,6 +118,35 @@ describe("POST /projects/:id/findings/:fid/disposition — the five-verb write (
     expect((await postDisposition("f_1", { kind: "rebut", rationale: "x" })).status).toBe(409);
   });
 
+  // MAINT.3 (D-STB.5b-4) — a defer-target on a CLOSED obligation is a clean 409, never a 500: the
+  // closed-world refusal (`mooted → deferred` has no edge) maps to `obligation_not_routable` and the
+  // disposition write rolls back with the tx (live repro: requestId 5796fa21… on a stale chip).
+  it("defer on a finding whose obligation is mooted → 409 obligation_not_routable, nothing written", async () => {
+    await seedReview([{ id: "f_1", ordinal: 1 }]);
+    await db.pg.query(
+      `insert into revision_obligations(id, project_id, source, severity, title, state, finding_id, opened_on_draft_id, created_by)
+       values ('obl_m',$1,'finding','major','a mooted debt','open','f_1',$2,'{"kind":"system"}'::jsonb)`,
+      [seed.projectId, seed.draftId],
+    );
+    await db.pg.query(
+      `insert into obligation_findings(obligation_id, finding_id, correspondence_id, relation)
+       values ('obl_m','f_1','corr_r1','root')`,
+    );
+    await db.pg.query(
+      `insert into obligation_transitions(id, obligation_id, from_state, to_state, cause, by_actor, at)
+       values ('otr_m','obl_m','open','mooted','moot','{"kind":"system"}', now())`,
+    );
+
+    const res = await postDisposition("f_1", { kind: "defer" });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("obligation_not_routable");
+    const written = await db.pg.query("select id from dispositions where finding_id = 'f_1'");
+    expect(written.rows).toHaveLength(0); // the write rolled back — the debt was already closed
+    const obl = (await db.pg.query("select state from revision_obligations where id = 'obl_m'")).rows[0] as { state: string };
+    expect(obl.state).toBe("mooted"); // unchanged
+  });
+
   it("another workspace's project reads/writes as 404 — explicit tenant check (RLS is the live backstop)", async () => {
     const other = await seedProject(db, {
       draftN: 1,

@@ -164,6 +164,16 @@ export function scopedRunnerEnv(args: { runId: string; proxyBaseUrl: string }): 
  * oracle reads). On any launch/query failure the agent-result + a `blocked` phase-result still land,
  * so the commit loop reports the phase honestly instead of dying on a missing file.
  */
+/**
+ * MAINT.3 (D-STB.5b-5) — a scoped query can return `subtype=success` with EMPTY text (observed
+ * twice on prod `476a0ed`, killing two outline runs terminal `phase_blocked` — an unrecoverable
+ * death for what is a transient empty completion). One re-issue with a correction nudge rides the
+ * same prompt-guidance channel a guided retry uses; a persistent empty still reports `blocked`
+ * honestly (the verdict is not relaxed — the run still fails when the phase truly cannot produce).
+ */
+export const EMPTY_SUCCESS_NUDGE =
+  "Your previous response reported success but produced no text. A success with no output is a failure: produce the artifact's full text now.";
+
 export async function runScopedPhase(
   spec: HarnessRunSpec,
   args: ScopedPhaseArgs,
@@ -171,28 +181,39 @@ export async function runScopedPhase(
 ): Promise<ScopedPhaseOutcome> {
   const { launch } = args;
   const specPath = `${args.configDir}/scoped-spec.json`;
-  const { unshareArgv, specJson } = buildScopedPhasePlan(launch, {
-    agentUid: args.agentUid,
-    specPath,
-    runnerScript: args.runnerScript,
-    ...(args.runnerNode !== undefined ? { runnerNode: args.runnerNode } : {}),
-    ...(args.guidance !== undefined ? { guidance: args.guidance } : {}),
-  });
   await deps.mkdir(args.configDir);
-  await deps.writeFile(specPath, specJson);
-
   const env = scopedRunnerEnv({ runId: args.runId, proxyBaseUrl: args.proxyBaseUrl });
-  const res = await deps.spawnCollect(unshareArgv, env);
-  if (res.stderr.trim()) deps.log?.(`[scoped] stderr: ${res.stderr.trim().slice(0, 500)}`);
 
-  let parsed: ScopedQueryResult | null = null;
-  try {
-    parsed = JSON.parse(res.stdout.trim()) as ScopedQueryResult;
-  } catch {
-    parsed = null;
+  const attempt = async (guidance?: string) => {
+    const { unshareArgv, specJson } = buildScopedPhasePlan(launch, {
+      agentUid: args.agentUid,
+      specPath,
+      runnerScript: args.runnerScript,
+      ...(args.runnerNode !== undefined ? { runnerNode: args.runnerNode } : {}),
+      ...(guidance !== undefined ? { guidance } : {}),
+    });
+    await deps.writeFile(specPath, specJson);
+    const res = await deps.spawnCollect(unshareArgv, env);
+    if (res.stderr.trim()) deps.log?.(`[scoped] stderr: ${res.stderr.trim().slice(0, 500)}`);
+    let parsed: ScopedQueryResult | null = null;
+    try {
+      parsed = JSON.parse(res.stdout.trim()) as ScopedQueryResult;
+    } catch {
+      parsed = null;
+    }
+    return { res, parsed };
+  };
+
+  let { res, parsed } = await attempt(args.guidance);
+  let subtype = parsed?.subtype ?? "error_during_execution";
+  let text = parsed?.text?.trim() ?? "";
+  if (subtype === "success" && text.length === 0) {
+    deps.log?.(`[scoped] ${launch.role} returned empty text on sdk=success — re-issuing once with a correction nudge`);
+    const retryGuidance = args.guidance ? `${args.guidance}\n\n${EMPTY_SUCCESS_NUDGE}` : EMPTY_SUCCESS_NUDGE;
+    ({ res, parsed } = await attempt(retryGuidance));
+    subtype = parsed?.subtype ?? "error_during_execution";
+    text = parsed?.text?.trim() ?? "";
   }
-  const subtype = parsed?.subtype ?? "error_during_execution";
-  const text = parsed?.text?.trim() ?? "";
   const produced = res.code === 0 && subtype === "success" && text.length > 0;
 
   // the agent-result fact (oracle leg a + provisional usage) — same shape agent-entry writes.

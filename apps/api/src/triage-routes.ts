@@ -32,6 +32,7 @@ import {
 import {
   findingObligationState,
   mootObligation,
+  ObligationTransitionError,
   routeDisposition,
   spawnAndRouteMinor,
   type DeferHorizon,
@@ -364,6 +365,13 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
       return c.json(dto, 200);
     } catch (e) {
       if (e instanceof DispositionFrozenError) return c.json({ error: "frozen" }, 409);
+      // MAINT.3 (D-STB.5b-4) — a disposition whose obligation can no longer route (it closed under a
+      // stale chip — `defer` on a `mooted` debt, `rebut` on `discharged`, …) is a client-visible
+      // conflict, never an internal error: the closed-world refusal maps to 409 so the caller can
+      // refresh the finding's true state. The disposition write rolls back with the tx.
+      if (e instanceof ObligationTransitionError) {
+        return c.json({ error: "obligation_not_routable", detail: e.reason }, 409);
+      }
       throw e;
     }
   });
@@ -431,16 +439,23 @@ export function createTriageRoutes(deps: TriageApiDeps): Hono {
         await deps.db.query(`select state, opened_on_draft_id from revision_obligations where id = $1`, [open.obligation_id])
       ).rows[0] as { state: string; opened_on_draft_id: string | null } | undefined;
       const live = ob != null && (ob.state === "open" || ob.state === "reopened" || ob.state === "deferred");
-      if (live && body.answer === "re-defer") {
-        await routeDisposition(deps.db, oblDeps, {
-          obligationId: open.obligation_id,
-          kind: "defer",
-          deferHorizon: { until: "next_review" },
-          draftId: ob!.opened_on_draft_id ?? "",
-          byActor,
-        });
-      } else if (live) {
-        await mootObligation(deps.db, oblDeps, { obligationId: open.obligation_id, byActor });
+      try {
+        if (live && body.answer === "re-defer") {
+          await routeDisposition(deps.db, oblDeps, {
+            obligationId: open.obligation_id,
+            kind: "defer",
+            deferHorizon: { until: "next_review" },
+            draftId: ob!.opened_on_draft_id ?? "",
+            byActor,
+          });
+        } else if (live) {
+          await mootObligation(deps.db, oblDeps, { obligationId: open.obligation_id, byActor });
+        }
+      } catch (e) {
+        // MAINT.3 (D-STB.5b-4) — the `live` read races the obligation itself (another disposition or
+        // a delivery fold may close it between the select and the transition). The leg is best-effort
+        // by design: a closed-world refusal lets the request's answer stand.
+        if (!(e instanceof ObligationTransitionError)) throw e;
       }
     }
     await deps.db.query(
