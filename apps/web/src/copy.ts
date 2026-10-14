@@ -2257,6 +2257,13 @@ export const COPY = {
     heldFileReady: "Your held file is here — upload it to start.",
   },
 
+  // SPA.3 — the shell's no-JS floor (REQ-BND-12): names the surface honestly and links the
+  // server-rendered escape instead of leaving a dead document.
+  spaShell: {
+    noJs: "This app surface needs JavaScript — the Rhēma shell mounts it on top of your session.",
+    noJsSsr: "Open the server-rendered version",
+  },
+
   footer: "Rhēma",
 } as const;
 
