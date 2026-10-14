@@ -269,18 +269,26 @@ describe("GET /app/settings/billing mounted (SPA.16)", () => {
     const nav = main.querySelector("[data-settings-nav]");
     expect(nav).not.toBeNull();
     expect(nav!.querySelector('[data-section="billing"]')?.getAttribute("aria-current")).toBe("page");
-    // The plan card + ladder — pricing DTO verbatim.
+    // The plan card + ladder — pricing DTO verbatim. The section containers carry their own
+    // manifest hooks ([data-plan-ladder] wraps the [data-plan] cards; [data-topups] wraps the
+    // pack forms/gate; [data-auto-reload] wraps the auto-reload form) — asserted alongside the
+    // controls so the SPA.16-manifested hooks are covered (SPA.18 chain-debt repair).
     expect(main.querySelector('[data-plan-card]')).not.toBeNull();
     expect(main.querySelector('[data-current-plan="free"]')).not.toBeNull();
+    expect(main.querySelector("[data-plan-ladder]")).not.toBeNull();
     expect(main.querySelector('[data-plan="writer"]')).not.toBeNull();
     expect(main.textContent).toContain("$20/mo");
     // Free's subscribe entry + the honest top-up gate (never a Checkout it cannot complete).
     expect(main.querySelector('[data-subscribe-form="writer"]')).not.toBeNull();
+    expect(main.querySelector("[data-topups]")).not.toBeNull();
     expect(main.querySelector("[data-topup-form]")).toBeNull();
     expect(main.querySelector("[data-topup-gated]")).not.toBeNull();
     expect(main.textContent).toContain("Top-ups need a paid plan");
     // Auto-reload + the Team waitlist (a waitlist form, never a checkout button — REQ-GROWTH-7).
+    // The auto-reload select carries name="packId" even on free — the field hook is asserted here.
+    expect(main.querySelector("[data-auto-reload]")).not.toBeNull();
     expect(main.querySelector("[data-auto-reload-form]")).not.toBeNull();
+    expect(main.querySelector('[data-auto-reload-form] [name="packId"]')).not.toBeNull();
     expect(main.querySelector("[data-waitlist-form]")).not.toBeNull();
     expect(main.querySelector('[data-subscribe-form="team"]')).toBeNull();
     // No Stripe customer + purchase open ⇒ the honest no-card note names the reason.
