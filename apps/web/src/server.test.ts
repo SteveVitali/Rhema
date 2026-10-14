@@ -1600,6 +1600,8 @@ describe("P1.04 — the /app home + the three-entry new-project flow (§5.2/§5.
     expect(html).toContain("No voice");
     expect(html).toContain("Your voices");
     expect(html).toContain("House styles");
+    // SPA.6 — the renderer-agnostic hook the journey pins the submit to (P1.app-new).
+    expect(html).toContain('data-new-project-form="true"');
   });
 
   it("the draft entry's sheet carries the REQ-PROD-8 starting-version field", async () => {

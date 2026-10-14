@@ -12,6 +12,9 @@ import pg from "pg";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable } from "./occlusion.js";
 import { assertBundleParity, createDraftProject } from "./steps.js";
+// SPA.6 (REQ-VFY-4) — the settle contract: post-action waits are the mounted markers, never bare
+// domcontentloaded; POST targets are data hooks, never `form[action]` strings.
+import { gotoOk as gotoSettled, settleNav, type SettleScope } from "./settle.js";
 import {
   CITE_KEY,
   buildSubstackExportZip,
@@ -25,9 +28,10 @@ import {
 
 // ---------------------------------------------------------------- shared plumbing
 
-async function gotoOk(page: Page, url: string): Promise<void> {
-  const r = await page.goto(url, { waitUntil: "domcontentloaded" });
-  if (!r || r.status() >= 400) throw new Error(`GET ${url} → ${r?.status()}`);
+/** The canonical nav: status check, then the settle markers (scope derives from the target — every
+ *  call site navigates to the web origin). */
+async function gotoOk(page: Page, url: string, scope?: SettleScope): Promise<void> {
+  await gotoSettled(page, url, scope ?? { webBaseUrl: url });
 }
 
 /** scrollIntoViewIfNeeded before the occlusion check — elementFromPoint returns null off-viewport
@@ -167,6 +171,8 @@ async function findDeliveredReview(
   ).filter((s, i, a) => a.indexOf(s) === i);
   const reviewHrefs: { slug: string; runId: string; href: string }[] = [];
   for (const slug of slugs) {
+    // a probe, not a leg: ≥400 candidates are skipped, so this keeps a raw goto (the renderer
+    // assert still rides the runner's response listener).
     const r = await page.goto(`${ctx.webBaseUrl}/p/${slug}`, { waitUntil: "domcontentloaded" }).catch(() => null);
     if (!r || r.status() >= 400) continue;
     const hrefs = await page
@@ -267,8 +273,7 @@ async function readInboxBadge(page: Page, ctx: StepCtx): Promise<number> {
  *  own-tenant half is T10 (weekly, after the paid leg delivers). */
 const T1: StepFn = async (ctx) => {
   const { page } = await ctx.freshUser("t1");
-  const r = await page.goto(`${ctx.webBaseUrl}/showcase`, { waitUntil: "domcontentloaded" });
-  if (!r || r.status() >= 400) throw new Error(`signed-in GET /showcase → ${r?.status()}`);
+  await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
   // signed-in resolves to the workspace Showcase dossier (or the static sample at /showcase —
   // either carries the dossier surface; the seeded test-tenant path is the dossier redirect).
   if (!/review\/|\/showcase$/.test(new URL(page.url()).pathname)) {
@@ -324,7 +329,7 @@ const T2: StepFn = async (ctx) => {
   const quietSelect = page.locator('select[name="qh_enabled"]');
   await assertClick(quietSelect, "the quiet-hours enable select");
   await assertClick(
-    page.locator('form[action="/app/settings/notifications"] button[type="submit"], form[action="/app/settings/notifications"] button:not([type])').first(),
+    page.locator('[data-notifications-form] button[type="submit"], [data-notifications-form] button:not([type])').first(),
     "the notification settings Save",
   );
   assertBundleParity(ctx);
@@ -354,10 +359,10 @@ const T3: StepFn = async (ctx) => {
   if ((await page.locator("[data-account-export]").count()) === 0) {
     throw new Error("the settings page renders no account-export section");
   }
-  const requestBtn = page.locator('[data-account-export] form[action="/app/settings/data/export"] button');
+  const requestBtn = page.locator("[data-account-export] [data-export-request-form] button");
   await assertClick(requestBtn.first(), "the Export-everything control");
   await requestBtn.first().click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const deadline = Date.now() + 6 * 60_000;
   let ready = false;
   while (Date.now() < deadline) {
@@ -428,7 +433,7 @@ const T3: StepFn = async (ctx) => {
     buffer: Buffer.from(zipBytes),
   });
   await importForm.locator('button[type="submit"]').click();
-  await b.page.waitForLoadState("domcontentloaded");
+  await settleNav(b.page, ctx);
   if (!/notice=imported/.test(b.page.url())) {
     defects.push(`the import did not land on notice=imported (${b.page.url()}) — D-STB.5a-2`);
   } else {
@@ -453,7 +458,7 @@ const T3: StepFn = async (ctx) => {
       buffer: Buffer.from(zipBytes),
     });
     await again.locator('button[type="submit"]').click();
-    await b.page.waitForLoadState("domcontentloaded");
+    await settleNav(b.page, ctx);
     if (!/notice=deduped/.test(b.page.url()) && (await b.page.locator('[data-import-notice="deduped"]').count()) === 0) {
       defects.push(`the re-import did not report deduped (${b.page.url()})`);
     }
@@ -518,14 +523,14 @@ const T5: StepFn = async (ctx) => {
   const zipA = await buildSubstackExportZip(substackFixturePosts());
 
   await gotoOk(page, `${ctx.webBaseUrl}/v/${pid}?tab=samples`);
-  const linkForm = page.locator('form[action$="/connections"]:has(input[name="file"])');
+  const linkForm = page.locator("form:has(button[data-link-export])");
   await linkForm.locator('input[name="file"]').setInputFiles({
     name: "substack-export.zip",
     mimeType: "application/zip",
     buffer: Buffer.from(zipA),
   });
   await linkForm.locator("button[data-link-export]").click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
 
   // the connection row lands. Auto-include defaults ON — free items would land 'included' at
   // discovery and skip the review form entirely; the leg needs the pending list, so the settings
@@ -537,16 +542,16 @@ const T5: StepFn = async (ctx) => {
   const autoInclude = src.locator('input[name="autoIncludeNew"]');
   if ((await autoInclude.count()) > 0 && (await autoInclude.isChecked())) {
     await autoInclude.uncheck();
-    const saveSettings = src.locator('form[action$="/settings"] button[type="submit"], form[action$="/settings"] button:not([type])');
+    const saveSettings = src.locator('[data-source-settings-form] button[type="submit"], [data-source-settings-form] button:not([type])');
     await saveSettings.first().click();
-    await page.waitForLoadState("domcontentloaded");
+    await settleNav(page, ctx);
   }
   const srcAfter = page.locator(`li[data-source="${cid}"]`);
   const discover = srcAfter.locator("button[data-discover]");
   if ((await discover.count()) > 0) {
     await assertClick(discover, "the source's Discover control");
     await discover.click();
-    await page.waitForLoadState("domcontentloaded");
+    await settleNav(page, ctx);
   }
   // review rows appear (the two fixture posts, 'new' — auto-include is off), checked by default.
   const reviewItems = page.locator("[data-review-item]");
@@ -560,7 +565,7 @@ const T5: StepFn = async (ctx) => {
   const confirm = page.locator("button[data-confirm-cta]");
   await assertClick(confirm, "the confirm-and-include control");
   await confirm.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
 
   // The confirm's enqueue rides the api's pg-boss send — a dropped send-it connection 500s the
   // route and the web handler swallows it silently (observed live: items stayed 'new'). The
@@ -571,7 +576,7 @@ const T5: StepFn = async (ctx) => {
     await gotoOk(page, `${ctx.webBaseUrl}/v/${pid}?tab=samples`);
     if ((await page.locator("button[data-confirm-cta]").count()) === 0) break;
     await page.locator("button[data-confirm-cta]").click();
-    await page.waitForLoadState("domcontentloaded");
+    await settleNav(page, ctx);
     await page.waitForTimeout(4_000);
   }
 
@@ -656,7 +661,7 @@ const T5: StepFn = async (ctx) => {
   const resync = page.locator(`li[data-source="${cid}"] button[data-resync]`);
   await assertClick(resync.first(), "the Re-sync control");
   await resync.first().click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   await waitSync({ prevDb: firstDb, prevRowText: firstStamp });
   await gotoOk(page, `${ctx.webBaseUrl}${openHref}`);
   const v2 = await versionsOf();
@@ -702,10 +707,10 @@ const T6: StepFn = async (ctx) => {
   // the delete control rides the /app row's ⋯ menu (a formAction item labelled Delete).
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   const row = await openProjectRowMenu(page, title);
-  const del = row.locator(`form[action="/p/${slug}/delete"] button`);
+  const del = row.locator('form[data-menu-form="delete"] button');
   await assertClick(del, "the row's Delete menu item");
   await del.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
 
   // the 30-day window section — the tombstoned row + an actionable Restore.
   await gotoOk(page, `${ctx.webBaseUrl}/app?deleted=1`);
@@ -715,7 +720,7 @@ const T6: StepFn = async (ctx) => {
   if ((await deletedRow.count()) === 0) {
     throw new Error(`the deleted row is absent from the restore window ("${title}")`);
   }
-  const restore = deletedRow.locator(`form[action="/p/${slug}/restore"] button`);
+  const restore = deletedRow.locator("[data-restore-form] button");
   await assertClick(restore, "the deleted row's Restore control");
   // …and the live list no longer carries it.
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
@@ -742,10 +747,10 @@ const T7: StepFn = async (ctx) => {
 
   await gotoOk(page, `${ctx.webBaseUrl}/app`);
   const row = await openProjectRowMenu(page, title);
-  const del = row.locator(`form[action="/p/${slug}/delete"] button`);
+  const del = row.locator('form[data-menu-form="delete"] button');
   await assertClick(del, "the row's Delete menu item");
   await del.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
 
   // the queued job — pgboss.job rows are the schedule of record (the api enqueues with
   // startAfterMs = 30 d and singletonKey project.purge:<projectId>). CAP.3 (D-STB.5a-3): the
@@ -847,10 +852,10 @@ const T9: StepFn = async (ctx) => {
   // the window then means deferred, never disabled) — the matrix cells are on/off selects.
   const inApp = page.locator('select[name="inapp_run_finished"]');
   if ((await inApp.count()) > 0 && (await inApp.inputValue()) !== "on") await inApp.selectOption("on");
-  const submit = page.locator('form[action="/app/settings/notifications"] button[type="submit"], form[action="/app/settings/notifications"] button:not([type])').first();
+  const submit = page.locator('[data-notifications-form] button[type="submit"], [data-notifications-form] button:not([type])').first();
   await assertClick(submit, "the notification settings Save");
   await submit.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   // the saved window round-trips on reload — the form re-renders the stored values.
   await gotoOk(page, `${ctx.webBaseUrl}/app/settings/notifications`);
   const savedStart = await page.locator('input[name="qh_start"]').inputValue();
@@ -919,7 +924,7 @@ const T11: StepFn = async (ctx) => {
   if (!fid) throw new Error("no Desk row carries a finding link");
   await assertClick(link, "a Desk finding link");
   await link.click();
-  await page.waitForLoadState("domcontentloaded").catch(() => undefined);
+  await settleNav(page, ctx).catch(() => undefined);
   if ((await page.locator(`[data-finding="${fid}"]`).count()) === 0) {
     throw new Error(`the finding link's anchor target #finding-${fid} is absent`);
   }
@@ -955,7 +960,7 @@ const T12: StepFn = async (ctx) => {
   const defer = form.locator('button[data-verb="defer"]');
   await assertClick(defer, "the Defer verb");
   await defer.click();
-  await page.waitForURL(/disposed=/, { timeout: 15_000 }).catch(() => page.waitForLoadState("domcontentloaded"));
+  await page.waitForURL(/disposed=/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
   // the round-trip: reload — the card carries the defer kind AND the note re-hydrates the field.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/review/${runId}`);
   const cardAfter = listCard(fid);
@@ -972,7 +977,7 @@ const T12: StepFn = async (ctx) => {
   if ((await oblBtn.count()) > 0) {
     await assertClick(oblBtn, "the Add-to-obligations control");
     await oblBtn.click();
-    await page.waitForURL(/obligated=/, { timeout: 15_000 }).catch(() => page.waitForLoadState("domcontentloaded"));
+    await page.waitForURL(/obligated=/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
     if ((await page.locator('[data-finding-notice="obligated"]').count()) === 0) {
       throw new Error("the ?obligated= landing shows no obligated notice");
     }
@@ -985,10 +990,10 @@ const T12: StepFn = async (ctx) => {
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/obligations/new`);
   await page.fill('input[name="title"]', oblTitle);
   await page.locator('select[name="severity"]').selectOption("minor");
-  const file2 = page.locator('form[action$="/obligations"] button[type="submit"], form[action$="/obligations"] button:not([type])').first();
+  const file2 = page.locator('[data-obligation-form] button[type="submit"], [data-obligation-form] button:not([type])').first();
   await assertClick(file2, "the File obligation control");
   await file2.click();
-  await page.waitForURL(/obligation=new/, { timeout: 15_000 }).catch(() => page.waitForLoadState("domcontentloaded"));
+  await page.waitForURL(/obligation=new/, { timeout: 15_000 }).catch(() => settleNav(page, ctx));
   // the summary — the export dialog's never-blocking obligation list gains the user row.
   await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`);
   const items = page.locator("[data-obligation-id]");
@@ -1019,11 +1024,10 @@ const T13: StepFn = async (ctx) => {
     throw new Error("no suggestion-bearing finding on the delivered Review — Apply waits on the next weekly paid journey");
   }
   await assertClick(apply, "the Apply control");
-  // the apply form's action carries the finding id (/findings/<fid>/apply).
-  const applyAction = await page.locator('form[action*="/apply"]').first().getAttribute("action");
-  const appliedFid = /\/findings\/([^/]+)\/apply/.exec(applyAction ?? "")?.[1] ?? null;
+  // the apply form's hook carries the finding id (REQ-VFY-4 — the action URL is SSR detail).
+  const appliedFid = await page.locator("[data-apply-form]").first().getAttribute("data-apply-form");
   await apply.click();
-  await page.waitForURL(/applied=/, { timeout: 20_000 }).catch(() => page.waitForLoadState("domcontentloaded"));
+  await page.waitForURL(/applied=/, { timeout: 20_000 }).catch(() => settleNav(page, ctx));
   if (!/applied=/.test(page.url())) {
     throw new Error(`the Apply click did not land on ?applied= (${page.url()})`);
   }
@@ -1054,7 +1058,7 @@ const T13: StepFn = async (ctx) => {
   const confirm = preview.locator("button[data-bulk-confirm]");
   await assertClick(confirm, "the bulk confirm control");
   await confirm.click();
-  await page.waitForURL(/bulkdone=/, { timeout: 30_000 }).catch(() => page.waitForLoadState("domcontentloaded"));
+  await page.waitForURL(/bulkdone=/, { timeout: 30_000 }).catch(() => settleNav(page, ctx));
   if (!/bulkdone=/.test(page.url())) {
     throw new Error(`the bulk dispatch did not land on ?bulkdone= (${page.url()})`);
   }
@@ -1089,7 +1093,7 @@ const T14: StepFn = async (ctx) => {
   const esc = escForm.locator('button[data-verb="escalate"]');
   await assertClick(esc, "the Escalate verb");
   await esc.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const afterEscalate = await readInboxBadge(page, ctx);
   if (afterEscalate !== baseline + 1) {
     throw new Error(`the badge moved ${baseline} → ${afterEscalate} on escalate, expected +1`);
@@ -1201,7 +1205,7 @@ const T14: StepFn = async (ctx) => {
   const answer = (await dismiss.count()) > 0 ? dismiss : decide;
   await assertClick(answer.first(), "the decision row's answer control");
   await answer.first().click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const afterAnswer = await readInboxBadge(page, ctx);
   if (afterAnswer !== baseline) {
     throw new Error(`the badge moved ${afterEscalate} → ${afterAnswer} after answering, expected ${baseline}`);
@@ -1257,7 +1261,7 @@ const T14: StepFn = async (ctx) => {
     }
     await assertClick(option, `the ${answers[i]} option`);
     await option.click();
-    await page.waitForLoadState("domcontentloaded");
+    await settleNav(page, ctx);
     // the request closes — THAT row leaves the open list.
     const stillOpen = await page.locator(`[data-decisions-list] [data-decision="${answeredId}"]`).count();
     if (stillOpen > 0) {
@@ -1318,13 +1322,13 @@ const T16: StepFn = async (ctx) => {
   const pid = await createVoice(page, ctx, "T16VOICE");
   // a fact change — add a paste sample through the real form.
   await gotoOk(page, `${ctx.webBaseUrl}/v/${pid}?tab=samples`);
-  const pasteForm = page.locator('form[action$="/samples"]').first();
+  const pasteForm = page.locator("[data-samples-form]").first();
   if ((await pasteForm.count()) > 0) {
     const area = pasteForm.locator("textarea").first();
     if ((await area.count()) > 0) {
       await area.fill(`${ctx.marker("SAMPLE")}\n\nA paragraph of new material — the fact change the staleness leg feeds on.`);
       await pasteForm.locator('button[type="submit"], button:not([type])').first().click();
-      await page.waitForLoadState("domcontentloaded");
+      await settleNav(page, ctx);
     }
   }
   await gotoOk(page, `${ctx.webBaseUrl}/app/inbox`);

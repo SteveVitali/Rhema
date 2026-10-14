@@ -176,4 +176,18 @@ describe("HOT.1 — dossier evidence shapes that shipped in prod all render (REQ
     const plain = await getDossierHtml([]);
     expect(plain).not.toContain("data-delivery-label");
   });
+
+  it("SPA.6 — the showcase banner's Duplicate affordance carries data-duplicate-form (N7's post target)", async () => {
+    const data: DossierData = { ...dossier([]), showcase: true };
+    const dataSource: DataSource = { ...makeDeps([]).dataSource, getDossier: async () => data };
+    const res = await createWebApp({ dataSource, session: () => ({}) }).request("/p/showcase/review/run_1");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("data-showcase-banner");
+    expect(html).toContain('data-duplicate-form="true"');
+    expect(html).toContain('action="/p/showcase/duplicate"');
+    // an ordinary dossier never grows the showcase affordance.
+    const plain = await getDossierHtml([]);
+    expect(plain).not.toContain("data-duplicate-form");
+  });
 });

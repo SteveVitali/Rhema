@@ -12,6 +12,12 @@ import type { JourneyStep } from "./registry.js";
 import type { MailboxClient } from "./mailbox.js";
 import { JourneySessions, stableIdentity, freshIdentity, assertTestIdentity } from "./session.js";
 import { marker } from "./nonce.js";
+import {
+  RENDERER_HEADER,
+  onOurOrigin,
+  rendererOfDocument,
+  type RendererName,
+} from "./settle.js";
 
 export interface StepCtx {
   readonly step: JourneyStep;
@@ -36,6 +42,18 @@ export interface StepCtx {
   readonly assetHits: { url: string; status: number; contentType: string | null }[];
   /** the run's evidence dir (UX.2 — a multi-surface step commits its own per-width screenshots) */
   readonly outDir: string;
+  /**
+   * SPA.6 (REQ-VFY-7) — `--expect-renderer`: every same-origin HTML document this step's pages
+   * load is checked for `data-renderer="<this>"` by the runner (also asserted inside the settle
+   * helpers). `null` ⇒ the run doesn't pin a renderer.
+   */
+  readonly expectRenderer: RendererName | null;
+  /**
+   * SPA.6 (REQ-SEQ-4) — the extra HTTP headers every runner-created context carries (the
+   * `x-rhema-renderer` pin on leg A, empty on leg B). Steps that roll their own context
+   * (R4's real-phone context) MUST spread this into `newContext({ extraHTTPHeaders })`.
+   */
+  readonly extraHTTPHeaders: Readonly<Record<string, string>>;
 }
 
 export type StepFn = (ctx: StepCtx) => Promise<void>;
@@ -67,6 +85,8 @@ export interface JourneyReport {
   provenance: { expected?: string | undefined; observed: Record<string, string | null>; match: boolean };
   /** the spend-guard outcome for paid runs (nightly runs carry zeros) */
   spend: { weeklyMeteredUsd: number | null; capUsd: number; withinCap: boolean };
+  /** SPA.6 — the renderer leg contract the run was invoked with (nulls when un-pinned). */
+  renderer: { expect: RendererName | null; pin: RendererName | null };
   results: StepResult[];
   /** every green step passed? (the process exit code) */
   passed: boolean;
@@ -86,15 +106,31 @@ export interface RunnerDeps {
   readonly impls: Readonly<Record<string, StepFn>>;
   readonly provenance: JourneyReport["provenance"];
   readonly spend: JourneyReport["spend"];
+  /** REQ-VFY-7 — `data-renderer` every same-origin document must carry (unset ⇒ no assert). */
+  readonly expectRenderer?: RendererName;
+  /** REQ-SEQ-4 — the `x-rhema-renderer` pin on every context (the leg-A `ssr` pin). */
+  readonly pinRenderer?: RendererName;
 }
 
 export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
   await mkdir(deps.outDir, { recursive: true });
+  // the per-request renderer override (REQ-SEQ-4): leg A pins x-rhema-renderer on EVERY context —
+  // anon pages, cached mints, and fresh mints alike (a pinned session context that skipped it
+  // would silently run the wrong leg).
+  const contextHeaders: Readonly<Record<string, string>> = deps.pinRenderer
+    ? { [RENDERER_HEADER]: deps.pinRenderer }
+    : {};
+  // Session pages are wired from INSIDE JourneySessions (onPage fires before the mint's first
+  // navigation) — `wireCurrent` swaps in the running step's listener set so a minted page's docs
+  // are checked against the step that requested it, never a stale/empty set.
+  let wireCurrent: ((page: Page) => void) | undefined;
   const sessions = new JourneySessions({
     browser: deps.browser,
     mailbox: deps.mailbox,
     webBaseUrl: deps.webBaseUrl,
     stateDir: deps.stateDir,
+    extraHTTPHeaders: contextHeaders,
+    onPage: (page) => wireCurrent?.(page),
   });
   const results: StepResult[] = [];
   const startedAt = new Date().toISOString();
@@ -128,6 +164,12 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       continue;
     }
 
+    // REQ-VFY-7 — the renderer assert rides the response stream: every same-origin HTML document
+    // response must carry `data-renderer` equal to `--expect-renderer`. Document responses only —
+    // client-side route transitions serve no document and change no renderer. Reads are awaited
+    // (allSettled) after the impl so a pending body can't race the classification.
+    const rendererViolations: string[] = [];
+    const docReads: Promise<unknown>[] = [];
     const wirePage = (page: Page): void => {
       page.on("console", (m) => {
         if (m.type() === "error") consoleErrors.push(m.text());
@@ -139,6 +181,32 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
         if (/\/assets\/[^/]+\.js$/.test(url)) {
           assetHits.push({ url, status: r.status(), contentType: r.headers()["content-type"] ?? null });
         }
+        if (deps.expectRenderer == null) return;
+        if (r.request().resourceType() !== "document") return;
+        if (r.status() < 200 || r.status() >= 300) return; // redirects/errors carry no marker
+        if (!onOurOrigin(url, deps.webBaseUrl)) return;
+        if (!(r.headers()["content-type"] ?? "").includes("text/html")) return;
+        docReads.push(
+          r
+            .text()
+            .then((body) => {
+              const observed = rendererOfDocument(body);
+              if (observed !== deps.expectRenderer) {
+                let path = url;
+                try {
+                  path = new URL(url).pathname;
+                } catch {
+                  /* keep the raw url */
+                }
+                rendererViolations.push(
+                  `${path} served data-renderer=${observed ?? "(absent)"} — expected ${deps.expectRenderer}`,
+                );
+              }
+            })
+            .catch(() => {
+              rendererViolations.push(`${url}: document body unreadable for the renderer check`);
+            }),
+        );
       });
     };
 
@@ -154,9 +222,14 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       failedRequests,
       assetHits,
       outDir: deps.outDir,
+      expectRenderer: deps.expectRenderer ?? null,
+      extraHTTPHeaders: contextHeaders,
       marker: (name) => marker(deps.nonce, name),
       async anon() {
-        const context = await deps.browser.newContext({ baseURL: deps.webBaseUrl });
+        const context = await deps.browser.newContext({
+          baseURL: deps.webBaseUrl,
+          ...(Object.keys(contextHeaders).length > 0 ? { extraHTTPHeaders: contextHeaders } : {}),
+        });
         const page = await context.newPage();
         wirePage(page);
         return { context, page };
@@ -164,24 +237,37 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
       async freshUser(tag, o) {
         const email = freshIdentity(deps.nonce, tag);
         assertTestIdentity(email);
-        const s = await sessions.signIn(email, { useCache: o?.useCache ?? false });
-        wirePage(s.page);
-        return s;
+        // wired by sessions.onPage → wireCurrent — including the mint's own first navigation.
+        return sessions.signIn(email, { useCache: o?.useCache ?? false });
       },
       async returningUser(tag) {
         const email = stableIdentity(tag);
         assertTestIdentity(email);
-        const s = await sessions.signIn(email, { useCache: true });
-        wirePage(s.page);
-        return s;
+        return sessions.signIn(email, { useCache: true });
       },
     };
 
+    // sessions.onPage routes to THIS step's listeners while the impl runs (cleared at classify).
+    wireCurrent = wirePage;
+    let stepError: unknown = null;
     try {
       await impl(ctx);
-      res.outcome = step.expected === "green" ? "pass" : "ready-to-flip";
     } catch (e) {
-      res.error = e instanceof Error ? e.message : String(e);
+      stepError = e;
+    }
+    // settle the in-flight renderer checks, then classify: a wrong/absent marker on a green step
+    // fails the run exactly like an impl throw (on a red step it reports owed — REQ-VFY-7).
+    await Promise.allSettled(docReads);
+    wireCurrent = undefined;
+    if (stepError == null && rendererViolations.length > 0) {
+      stepError = new Error(
+        `expect-renderer=${deps.expectRenderer}: ${rendererViolations.join("; ")}`,
+      );
+    }
+    if (stepError == null) {
+      res.outcome = step.expected === "green" ? "pass" : "ready-to-flip";
+    } else {
+      res.error = stepError instanceof Error ? stepError.message : String(stepError);
       res.outcome = step.expected === "red" ? "owed" : "fail";
     }
     res.durationMs = Date.now() - t0;
@@ -213,6 +299,7 @@ export async function runJourneys(deps: RunnerDeps): Promise<JourneyReport> {
     apiBaseUrl: deps.apiBaseUrl,
     provenance: deps.provenance,
     spend: deps.spend,
+    renderer: { expect: deps.expectRenderer ?? null, pin: deps.pinRenderer ?? null },
     results,
     passed,
   };

@@ -297,6 +297,8 @@ describe("Notifications section", () => {
   it("renders the matrix; the two non-configurable rows are locked (no select)", async () => {
     const html = await (await createWebApp(makeDeps()).request("/app/settings/notifications")).text();
     expect(html).toContain('data-notification-matrix="true"');
+    // SPA.6 — the form-level hook the journey pins the POST to (settings gate).
+    expect(html).toContain('data-notifications-form="true"');
     for (const locked of ["spend_gate", "trial_payment"]) {
       const row = html.match(new RegExp(`<tr[^>]*data-notification-row="${locked}"[^>]*>[\\s\\S]*?</tr>`))?.[0] ?? "";
       expect(row, locked).toContain("Always on");

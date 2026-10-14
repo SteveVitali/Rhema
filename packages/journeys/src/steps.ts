@@ -9,6 +9,15 @@ import { fileURLToPath } from "node:url";
 import type { Locator, Page } from "playwright";
 import type { StepCtx, StepFn } from "./runner.js";
 import { assertActionable, clickActionable } from "./occlusion.js";
+// SPA.6 (REQ-VFY-3/4) — the settle contract: journeys wait on `data-mounted`/`data-route`, never
+// on `domcontentloaded`/`form[action]`/inline-script internals (the markers exist on BOTH
+// renderers, so the same probe proves the SSR fallback AND the flagged SPA).
+import {
+  gotoOk as gotoSettled,
+  reloadSettled,
+  settleNav,
+  type SettleScope,
+} from "./settle.js";
 // ONB.1 — N1/N3 must sign in through the real magic link INSIDE the anonymous context that holds
 // the IndexedDB draft (sessions.signIn mints a NEW context — a separate storage partition where
 // the hold does not exist). The identities are still test-mailbox-only.
@@ -77,9 +86,11 @@ export function assertBundleParity(ctx: StepCtx): void {
   }
 }
 
-async function gotoOk(page: Page, url: string): Promise<void> {
-  const r = await page.goto(url, { waitUntil: "domcontentloaded" });
-  if (!r || r.status() >= 400) throw new Error(`GET ${url} → ${r?.status()}`);
+/** The canonical nav: status check, then the settle markers. The scope derives from the target
+ *  URL — every call site navigates to the web origin, so the markers apply unconditionally; the
+ *  `data-renderer` assert rides the runner's document-response listener (REQ-VFY-7). */
+async function gotoOk(page: Page, url: string, scope?: SettleScope): Promise<void> {
+  await gotoSettled(page, url, scope ?? { webBaseUrl: url });
 }
 
 /** Create a minimal scratch project through the real UI and return its slug (from the redirect). */
@@ -110,12 +121,13 @@ async function followProjectLink(page: Page, ctx: StepCtx, sel = 'a[href^="/p/"]
   if ((await row.count()) === 0) throw new Error("no project link on the page");
   if (await row.isVisible().catch(() => false)) {
     await row.click();
-    await page.waitForLoadState("domcontentloaded");
+    // a document nav (SSR) or a client nav (SPA) — the settle contract covers both.
+    await settleNav(page, ctx);
     return;
   }
   const href = await row.getAttribute("href");
   if (!href) throw new Error("project link has no href");
-  await gotoOk(page, `${ctx.webBaseUrl}${href}`);
+  await gotoOk(page, `${ctx.webBaseUrl}${href}`, ctx);
 }
 
 // ---------------------------------------------------------------- new-visitor
@@ -144,8 +156,10 @@ const N2: StepFn = async (ctx) => {
 const N2_INVITE: StepFn = async (ctx) => {
   const { context, page } = await ctx.anon();
   for (const path of ["/signup", "/login"]) {
-    await gotoOk(page, `${ctx.webBaseUrl}${path}`);
-    const code = page.locator(`form[action="${path}"] input[name="code"]`);
+    await gotoOk(page, `${ctx.webBaseUrl}${path}`, ctx);
+    // REQ-VFY-4 — the auth form is located by the field it carries, never its POST action string.
+    const authForm = `form:has(input[name="code"])`;
+    const code = page.locator(`${authForm} input[name="code"]`);
     if ((await code.count()) === 0) {
       throw new Error(`${path} renders no invitation-code field at all`);
     }
@@ -153,7 +167,7 @@ const N2_INVITE: StepFn = async (ctx) => {
     if (required === null) {
       // open mode — the email field must come first, and the code input must sit inside a
       // (closed) <details> disclosure — never bare on the form.
-      const first = page.locator(`form[action="${path}"] input:visible`).first();
+      const first = page.locator(`${authForm} input:visible`).first();
       const name = await first.getAttribute("name");
       if (name !== "email") {
         throw new Error(
@@ -169,7 +183,7 @@ const N2_INVITE: StepFn = async (ctx) => {
       if (!(await code.first().isVisible())) {
         throw new Error(`invite-mode ${path}'s required code field is not visible`);
       }
-      const first = page.locator(`form[action="${path}"] input:visible`).first();
+      const first = page.locator(`${authForm} input:visible`).first();
       const name = await first.getAttribute("name");
       if (name !== "code") {
         throw new Error(`invite-mode ${path}'s first field is "${name}", not "code"`);
@@ -222,7 +236,9 @@ const N1: StepFn = async (ctx) => {
   await page.click('button[name="method"][value="magic_link"]');
   await page.waitForSelector('[role="status"]', { timeout: 45_000 });
   const link = await ctx.mailbox.awaitMagicLink(email, sentAt, 120_000);
-  await page.goto(link, { waitUntil: "domcontentloaded" });
+  // the magic link is the one cross-auth nav — status + the settle markers (REQ-VFY-4), never a
+  // bare load-state wait.
+  await gotoOk(page, link, ctx);
   // post-auth the intent lands on /app/new?entry=draft&held=1 — the FIRST hydrated load
   await page.waitForURL(/\/app\/new/, { timeout: 30_000 });
   const name = await awaitHeldFile(page);
@@ -273,21 +289,23 @@ const N3: StepFn = async (ctx) => {
   await page.click('button[name="method"][value="magic_link"]');
   await page.waitForSelector('[role="status"]', { timeout: 45_000 });
   const link = await ctx.mailbox.awaitMagicLink(email, sentAt, 120_000);
-  await page.goto(link, { waitUntil: "domcontentloaded" });
+  await gotoOk(page, link, ctx);
   await page.waitForURL(/\/app\/new/, { timeout: 30_000 });
   if ((await awaitHeldFile(page)) !== "n3-held.md") {
     throw new Error("the held file did not hydrate on the post-auth load");
   }
-  // submit → the conversion preview must render READY (its Create form exists only on the ready
-  // render; the pending page meta-refreshes under it) inside the §13.5 20 s bound.
+  // submit → the conversion preview must render READY inside the §13.5 20 s bound. REQ-VFY-4
+  // re-spec: wait on the hook (`data-conversion-form`), not the POST action — the pending page
+  // re-polls under either renderer (SSR meta-refresh; the SPA's client poll).
   const t0 = Date.now();
   await page.click('button[type="submit"], button:not([type])');
-  await page.waitForSelector('form[action="/app/new/create"]', { timeout: 20_000 });
+  await page.waitForSelector("[data-conversion-form]", { timeout: 20_000 });
   const ms = Date.now() - t0;
   if (ms > 20_000) throw new Error(`preview took ${ms}ms (> 20 s)`);
   // Create → the project lands and the `?hc=` consumed marker echoes the hold's token.
-  await page.click('form[action="/app/new/create"] button[type="submit"][name="action"][value="create"]');
+  await page.click('[data-conversion-action="create"]');
   await page.waitForURL(/\/p\/[a-z0-9-]+.*created=/, { timeout: 30_000 });
+  await settleNav(page, ctx);
   const landed = new URL(page.url());
   if (!landed.searchParams.get("hc")) {
     throw new Error(`create landing carried no consumed marker (?hc= missing): ${page.url()}`);
@@ -318,10 +336,10 @@ function bandOf(text: string): { low: number; high: number } | null {
 
 /** The run sheet's estimate-box figure + band for a lever/inputs override (`?words=`/`?claims=`/`?tier=`/`?rigor=`).
  *  MAINT.3 (D-OBS.1-3 N4) — an entitled trial tenant renders the §14.3 `Included` variant: no
- *  `[data-credits-line]`. The sheet's own recompute payload (`var R={…cells…}`, §5.6 item 2) still
- *  embeds the SAME lever matrix the funded variant prints — read the cell for the resolved
- *  rigor|tier|toggles exactly as the inline script does. The assertion is unchanged: the figure the
- *  run would actually be estimated at, never a fabricated number. */
+ *  `[data-credits-line]`. The sheet's recompute payload (`[data-estimate-matrix]` — the typed JSON
+ *  embed, §5.6 item 2) carries the SAME lever matrix the funded variant prints — read the cell for
+ *  the resolved rigor|tier|toggles exactly as the recompute does. The assertion is unchanged: the
+ *  figure the run would actually be estimated at, never a fabricated number. */
 async function sheetFigure(
   page: Page,
   ctx: StepCtx,
@@ -335,13 +353,13 @@ async function sheetFigure(
   if ((await page.locator("[data-included='true']").count()) === 0) {
     throw new Error(`run sheet renders neither a credits line nor the Included variant`);
   }
+  // REQ-VFY-4 re-spec: read the TYPED embed (`<script type="application/json" data-estimate-
+  // matrix>` — the same lever matrix the SPA's recompute consumes), never the inline `var R=`
+  // script's internals.
   const cell = await page.evaluate(() => {
-    const script = [...document.querySelectorAll("script")]
-      .map((s) => s.textContent ?? "")
-      .find((t) => t.includes("var R="));
-    const m = script ? /var R=(\{.*?\});var f=/.exec(script) : null;
-    if (!m) return null;
-    const R = JSON.parse(m[1] ?? "{}") as {
+    const embed = document.querySelector('script[type="application/json"][data-estimate-matrix]');
+    if (!embed?.textContent) return null;
+    const R = JSON.parse(embed.textContent) as {
       modelTier: string;
       cells: Record<string, { e: number; lo: number; hi: number }>;
     };
@@ -633,7 +651,7 @@ const N8: StepFn = async (ctx) => {
   } else if (showcaseDossier) {
     // no reviewed head on jrn-a — duplicate the Showcase into a frozen review-lineage head
     await gotoOk(ret, `${ctx.webBaseUrl}${showcaseDossier}`);
-    const dup = ret.locator('[data-showcase-banner] form[action$="/duplicate"] button').first();
+    const dup = ret.locator("[data-showcase-banner] [data-duplicate-form] button").first();
     if ((await dup.count()) === 0) throw new Error("the Showcase banner carries no Duplicate affordance");
     await dup.click();
     await ret.waitForURL(/\/p\/[a-z0-9-]+/i, { timeout: 15_000 });
@@ -695,6 +713,8 @@ async function n9ClickToStripe(
   if (!(await navigated)) {
     throw new Error(`${label}: stayed on ${page.url()} — no Stripe-hosted hand-off`);
   }
+  // REQ-VFY-4 exception: the Stripe-hosted checkout is a FOREIGN origin — the settle markers do
+  // not apply; the raw load-state wait + host check is the probe (settle helpers no-op there).
   await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => undefined);
   if (!n9StripeHosted(page.url())) {
     throw new Error(`${label}: landed on non-Stripe URL ${page.url()}`);
@@ -837,7 +857,8 @@ const N5: StepFn = async (ctx) => {
   if ((await launch.count()) === 0) throw new Error("no Review launch control on the run sheet");
   await assertActionable(launch, "Review launch");
   await launch.click();
-  await page.waitForLoadState("domcontentloaded");
+  // the launch POST's doc nav (SSR) or mutation re-render (SPA) — settle on the markers.
+  await settleNav(page, ctx);
   // a launch refusal re-renders the sheet with role=alert — surface the honest notice.
   const alert = page.locator('p[role="alert"]').first();
   if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
@@ -891,15 +912,16 @@ export async function createDraftProject(
   title: string,
   text: string,
 ): Promise<string> {
-  await gotoOk(page, `${webBaseUrl}/app/new?entry=draft`);
+  await gotoOk(page, `${webBaseUrl}/app/new?entry=draft`, { webBaseUrl });
   await page.fill('input[name="title"]', title);
   await page.fill('textarea[name="paste"]', text);
+  // REQ-VFY-4 — data hooks, not POST actions (the SPA mounts the same hooks).
   await page.click(
-    'form[action="/app/new"] button[type="submit"], form[action="/app/new"] button:not([type])',
+    'form[data-new-project-form] button[type="submit"], form[data-new-project-form] button:not([type])',
   );
-  // pending → meta-refresh (5 s cadence) → preview: wait for the preview's Create form. A cold
+  // pending → re-poll (5 s cadence) → preview: wait for the preview's Create control. A cold
   // convert Job runs ~2.5–4 min (PRB.21's own note), so the budget is 5 min — never a stale page.
-  const create = page.locator('form[action="/app/new/create"] button[value="create"]').first();
+  const create = page.locator('[data-conversion-action="create"]').first();
   await create.waitFor({ state: "visible", timeout: 300_000 });
   // the preview panes can push the actions row below the fold — scroll so the occlusion check's
   // center point is inside the viewport (elementFromPoint returns null off-viewport).
@@ -941,7 +963,7 @@ const N6: StepFn = async (ctx) => {
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   // a launch refusal re-renders the sheet with role=alert (402 balance / 403 gate / 409 conflict /
   // suspension) — surface the honest notice instead of a bare timeout.
   const alert = page.locator('p[role="alert"]').first();
@@ -1014,11 +1036,11 @@ const N7: StepFn = async (ctx) => {
     // it's visible; otherwise follow the href directly.
     if (await row.isVisible().catch(() => false)) {
       await row.click();
-      await page.waitForLoadState("domcontentloaded");
+      await settleNav(page, ctx);
     } else {
       const href = await row.getAttribute("href");
       if (!href) throw new Error("dossier link has no href");
-      await gotoOk(page, `${ctx.webBaseUrl}${href}`);
+      await gotoOk(page, `${ctx.webBaseUrl}${href}`, ctx);
     }
   }
   // /p/<slug> is the overview when fixtures exist — the dossier itself lives at /p/<slug>/review/<runId>.
@@ -1088,7 +1110,7 @@ const R4: StepFn = async (ctx) => {
   await assertActionable(send, "chat Send @1440×900"); // RUN.1 — was occluded by footer.ide-statusbar
   await input.fill(`${ctx.marker("CHAT")} — one-word reply please`);
   await send.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   // the turn's answer: the reloaded transcript carries [data-chat-turn] rows; poll the turn-status
   // endpoint until the run leaves queued/running (a bounded wait — the paid turn is the point).
   const slug = /\/p\/([a-z0-9-]+)/i.exec(page.url())?.[1];
@@ -1128,6 +1150,10 @@ const R4: StepFn = async (ctx) => {
   const phone = await ctx.browser.newContext({
     baseURL: ctx.webBaseUrl,
     storageState: await context.storageState(),
+    // SPA.6 — a step-rolled context keeps the run's renderer pin (REQ-SEQ-4).
+    ...(Object.keys(ctx.extraHTTPHeaders).length > 0
+      ? { extraHTTPHeaders: ctx.extraHTTPHeaders }
+      : {}),
     userAgent:
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     viewport: { width: 390, height: 844 },
@@ -1136,7 +1162,7 @@ const R4: StepFn = async (ctx) => {
   });
   try {
     const pp = await phone.newPage();
-    await gotoOk(pp, page.url());
+    await gotoOk(pp, page.url(), ctx);
     const sendP = pp
       .locator('.ide-phone-only form[data-chat-composer] button[type="submit"]')
       .first();
@@ -1167,7 +1193,7 @@ const R5: StepFn = async (ctx) => {
   }
   const dup = page
     .locator(
-      'form[action$="/duplicate"] button[type="submit"], form[action$="/duplicate"] button:not([type])',
+      '[data-duplicate-form] button[type="submit"], [data-duplicate-form] button:not([type])',
     )
     .first();
   if ((await dup.count()) === 0) throw new Error("no duplicate control on the Showcase");
@@ -1178,13 +1204,12 @@ const R5: StepFn = async (ctx) => {
   if (!slug || slug === "showcase")
     throw new Error(`duplicate did not land on a copy (url ${page.url()})`);
   // open the export dialog and submit — the response is a file download.
-  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
-  const exportForm = page.locator('form[data-export-form="true"], form[action$="/export"]');
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`, ctx);
+  // REQ-VFY-4 — the export surface is located by its hook on both renderers.
+  const exportForm = page.locator('form[data-export-form="true"]');
   if ((await exportForm.count()) === 0) {
     // the dialog may be a /p/:slug/export page — try the direct route.
-    const r = await page.goto(`${ctx.webBaseUrl}/p/${slug}/export`);
-    if (!r || r.status() >= 400)
-      throw new Error(`export surface missing (GET /p/${slug}/export → ${r?.status()})`);
+    await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/export`, ctx);
   }
   const download = page.waitForEvent("download", { timeout: 20_000 }).catch(() => null);
   const resp = page
@@ -1194,9 +1219,7 @@ const R5: StepFn = async (ctx) => {
     )
     .catch(() => null);
   const submit = page
-    .locator(
-      'form[action$="/export"] button[type="submit"], form[data-export-form] button[type="submit"]',
-    )
+    .locator('form[data-export-form] button[type="submit"], form[data-export-form] button:not([type])')
     .first();
   if ((await submit.count()) === 0) throw new Error("no export submit control");
   await assertActionable(submit, "export submit");
@@ -1235,7 +1258,7 @@ const R6: StepFn = async (ctx) => {
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const alert = page.locator('p[role="alert"]').first();
   if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
     throw new Error(`run launch refused: ${(await alert.textContent())?.trim()}`);
@@ -1259,7 +1282,8 @@ const R6: StepFn = async (ctx) => {
   let lastReload = 0;
   while (Date.now() < deadline) {
     if (Date.now() - lastReload > 25_000) {
-      await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+      // REQ-VFY-4 — the remount assert: reload re-settles on the markers (SSR serve AND SPA shell).
+      await reloadSettled(page, ctx).catch(() => undefined);
       lastReload = Date.now();
     }
     const card = page.locator(cardSel).first();
@@ -1492,39 +1516,57 @@ async function rectsOverlap(a: { x: number; y: number; w: number; h: number } | 
  *  buttons ≥44px (24px floor everywhere); the §10.1 desktop-capability set never renders on phone;
  *  the sync pill is in-flow — never over text, the composer, or the status bar; /app/new renders
  *  styled chrome; and axe WCAG 2.2 AA is clean on every touched surface at BOTH review widths. */
-const P1: StepFn = async (ctx) => {
-  const MOBILE = { "sec-ch-ua-mobile": "?1" };
-  const PHONE = { width: 390, height: 844 };
-  const DESKTOP = { width: 1440, height: 900 };
+// —— SPA.6 (REQ-VFY-8; design/27 F9): P1 is split per-surface so `--surface` gates exactly the legs
+//    a flip touches (`--steps P1` still selects the whole family by id-prefix). The probes are the
+//    composite's verbatim; shared setup/assert helpers are hoisted.
+const MOBILE_HEADERS = { "sec-ch-ua-mobile": "?1" };
+const PHONE_VIEWPORT = { width: 390, height: 844 };
+const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 
-  const assertNoOverflow = async (page: Page, label: string): Promise<void> => {
-    const px = await pageOverflowPx(page);
-    if (px > 1) throw new Error(`${label}: horizontal overflow ${px}px`);
-  };
+const assertNoOverflow = async (page: Page, label: string): Promise<void> => {
+  const px = await pageOverflowPx(page);
+  if (px > 1) throw new Error(`${label}: horizontal overflow ${px}px`);
+};
 
-  /** Every visible control under `sel` meets `minPx` on BOTH axes (labels for the error). */
-  const assertTargetSize = async (page: Page, sel: string, minPx: number, label: string) => {
-    const bad = await page.evaluate(
-      ([selector, floor]) => {
-        const out: string[] = [];
-        for (const el of document.querySelectorAll<HTMLElement>(selector)) {
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden")
-            continue;
-          if (r.width < floor || r.height < floor) {
-            out.push(
-              `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)}`,
-            );
-          }
+/** Every visible control under `sel` meets `minPx` on BOTH axes (labels for the error). */
+const assertTargetSize = async (page: Page, sel: string, minPx: number, label: string) => {
+  const bad = await page.evaluate(
+    ([selector, floor]) => {
+      const out: string[] = [];
+      for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0 || getComputedStyle(el).visibility === "hidden")
+          continue;
+        if (r.width < floor || r.height < floor) {
+          out.push(
+            `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)}`,
+          );
         }
-        return out;
-      },
-      [sel, minPx] as const,
-    );
-    if (bad.length > 0) throw new Error(`${label}: sub-${minPx}px targets: ${bad.join("; ")}`);
-  };
+      }
+      return out;
+    },
+    [sel, minPx] as const,
+  );
+  if (bad.length > 0) throw new Error(`${label}: sub-${minPx}px targets: ${bad.join("; ")}`);
+};
 
-  // ---- leg 1: anonymous public surfaces at 390×844 and 320×844 (the narrowest phone) ----
+/** The signed-in phone prologue the P1 legs share — the returning-user context carrying the mobile
+ *  UA hint. `setExtraHTTPHeaders` REPLACES the context's header map, so the run's renderer pin is
+ *  merged back in explicitly (REQ-SEQ-4 — a leg-A pin dropped here would silently flip the leg). */
+async function p1PhoneProject(ctx: StepCtx): Promise<{ page: Page; slug: string }> {
+  const { context, page } = await ctx.returningUser("a");
+  await context.setExtraHTTPHeaders({ ...ctx.extraHTTPHeaders, ...MOBILE_HEADERS });
+  await page.setViewportSize(PHONE_VIEWPORT);
+  await gotoOk(page, `${ctx.webBaseUrl}/app`, ctx);
+  await followProjectLink(page, ctx);
+  const slug = /^\/p\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1];
+  if (!slug) throw new Error(`no project slug on ${page.url()}`);
+  return { page, slug };
+}
+
+/** P1.public — the anonymous surfaces at 390×844 and 320×844 (the narrowest phone), the pricing
+ *  matrix's labelled scroll region + focus ring, the 200% zoom layout, axe clean. */
+const P1_PUBLIC: StepFn = async (ctx) => {
   {
     const { page } = await ctx.anon();
     for (const w of [390, 320]) {
@@ -1534,7 +1576,7 @@ const P1: StepFn = async (ctx) => {
         await assertNoOverflow(page, `${path} @${w}w`);
       }
     }
-    await page.setViewportSize(PHONE);
+    await page.setViewportSize(PHONE_VIEWPORT);
     await gotoOk(page, `${ctx.webBaseUrl}/pricing`);
     // the matrix rule (ADR-066): the TABLE is wider than the phone — the SCROLL REGION absorbs it;
     // the page itself never scrolls horizontally.
@@ -1600,20 +1642,16 @@ const P1: StepFn = async (ctx) => {
     await page.evaluate(() => {
       document.body.style.zoom = "";
     });
-    await page.setViewportSize(PHONE);
+    await page.setViewportSize(PHONE_VIEWPORT);
     await assertAxeClean(page, "/pricing @390×844");
     await page.screenshot({ path: join(ctx.outDir, "p1-pricing-390.png"), fullPage: true });
   }
+};
 
-  // ---- leg 2: the signed-in phone surfaces — the project page, the run sheet, the Page's pill ----
-  {
-    const { context, page } = await ctx.returningUser("a");
-    await context.setExtraHTTPHeaders(MOBILE);
-    await page.setViewportSize(PHONE);
-    await gotoOk(page, `${ctx.webBaseUrl}/app`);
-    await followProjectLink(page, ctx);
-    const slug = /^\/p\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1];
-    if (!slug) throw new Error(`no project slug on ${page.url()}`);
+/** P1.project — the signed-in project page at phone width: overflow, phonebar + action-row targets,
+ *  the §10.1 desktop-capability set never mounts, axe clean. */
+const P1_PROJECT: StepFn = async (ctx) => {
+    const { page, slug } = await p1PhoneProject(ctx);
 
     // The project page at 390×844 (ADR-067): overflow, phonebar + action-row targets, §10.1.
     await assertNoOverflow(page, `/p/${slug} @390×844`);
@@ -1635,13 +1673,14 @@ const P1: StepFn = async (ctx) => {
     // §10.1's desktop-capability set never renders at phone width (capability boundary preserved).
     const banned = await page.evaluate(() => {
       const hits: string[] = [];
+      // REQ-VFY-4 — data hooks, not POST actions (the SPA mounts the same hooks).
       for (const sel of [
-        'form[action$="/run"]',
+        "form[data-run-sheet]",
         'a[href$="/import"]',
         'a[href$="/export"]',
         "[data-rename-form]",
         "[data-new-project]",
-        'form[action="/app/new"]',
+        "form[data-new-project-form]",
       ]) {
         if (document.querySelector(sel)) hits.push(sel);
       }
@@ -1652,6 +1691,12 @@ const P1: StepFn = async (ctx) => {
     }
     await assertAxeClean(page, `phone /p/${slug}`);
     await page.screenshot({ path: join(ctx.outDir, "p1-project-390.png"), fullPage: true });
+};
+
+/** P1.pill — the Page's sync pill in-flow at phone AND 1440 (over no text, the composer, or the
+ *  status bar) + the phone Page's §10.1 reader contract (data-readonly, no collab wire, no rail). */
+const P1_PILL: StepFn = async (ctx) => {
+    const { page, slug } = await p1PhoneProject(ctx);
 
     // The Page's sync pill at phone width (ADR-069 + §10.1 + P1.19): /v/working is an EDITOR
     // surface. Below ~768px the shipped contract is P1.19's READER-only Page — `isPhoneRequest`
@@ -1710,6 +1755,14 @@ const P1: StepFn = async (ctx) => {
     await assertAxeClean(page, `phone ${pillLanded} (via /v/working)`);
     await page.screenshot({ path: join(ctx.outDir, "p1-pill-390.png"), fullPage: true });
 
+    // the desktop half — the pill clear of the status bar AND the open-desk composer at 1440.
+    await p1DesktopPillLeg(ctx);
+};
+
+/** P1.runsheet — the run sheet at phone width: the §10.1 capability note, never the run form. */
+const P1_RUNSHEET: StepFn = async (ctx) => {
+    const { page, slug } = await p1PhoneProject(ctx);
+
     // The run sheet at phone width — the §10.1 note, never the run form.
     await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}/run`);
     await assertNoOverflow(page, `/p/${slug}/run @390×844`);
@@ -1721,12 +1774,13 @@ const P1: StepFn = async (ctx) => {
     }
     await assertAxeClean(page, `phone /p/${slug}/run`);
     await page.screenshot({ path: join(ctx.outDir, "p1-runsheet-390.png"), fullPage: true });
-  }
+};
 
-  // ---- leg 3: desktop 1440×900 — /app/new's styled shell + the pill clear of composer/statusbar ----
-  {
+/** P1.app-new — /app/new's styled workspace chrome at 1440×900: no IDE frame, the three entry
+ *  cards, axe clean. */
+const P1_APP_NEW: StepFn = async (ctx) => {
     const { page } = await ctx.returningUser("a");
-    await page.setViewportSize(DESKTOP);
+    await page.setViewportSize(DESKTOP_VIEWPORT);
     await gotoOk(page, `${ctx.webBaseUrl}/app/new`);
     // ADR-065: a workspace surface — no IDE markup at all, and the chrome renders STYLED (the
     // review's symptom was the stacked unstyled shell).
@@ -1751,7 +1805,13 @@ const P1: StepFn = async (ctx) => {
     await assertNoOverflow(page, "desktop /app/new");
     await assertAxeClean(page, "desktop /app/new");
     await page.screenshot({ path: join(ctx.outDir, "p1-app-new-1440.png"), fullPage: true });
+};
 
+/** The desktop half of P1.pill — the pill in-flow at 1440, disjoint from the status bar AND the
+ *  open-desk composer (hoisted so P1_PILL reads as its two legs). */
+async function p1DesktopPillLeg(ctx: StepCtx): Promise<void> {
+    const { page } = await ctx.returningUser("a");
+    await page.setViewportSize(DESKTOP_VIEWPORT);
     // The Page's pill at 1440 — in-flow, disjoint from the status bar AND the open-desk composer.
     // The pill only exists where the editor mounts; draft-less /v/working redirects to /p/:slug
     // (EDIT.1), so walk the project list until one serves a mounted editor.
@@ -1810,8 +1870,7 @@ const P1: StepFn = async (ctx) => {
     if (desktopOverlap) throw new Error(`sync pill covers text at desktop: ${desktopOverlap}`);
     await assertNoOverflow(page, `${new URL(page.url()).pathname} @1440×900`);
     await page.screenshot({ path: join(ctx.outDir, "p1-pill-1440.png"), fullPage: true });
-  }
-};
+}
 
 /** C1 (RED, ACT.1) — claims equal the entitlement config, per AUDIENCE (ADR-043): while
  *  `trial.audience` sits at `test_tenants` an anonymous `/` + `/pricing` carry NO trial claim
@@ -1864,61 +1923,97 @@ const C1: StepFn = async (ctx) => {
   }
 };
 
-/** X1 (GREEN, SEC.1) — two flagged tenants: no foreign markers on the listed surfaces. */
-const X1: StepFn = async (ctx) => {
-  const a = await ctx.returningUser("a");
+/** SPA.6 (REQ-VFY-8; design/27 F9) — X1 is split per-surface so `--surface` gates exactly the legs
+ *  a flip touches (`--steps X1` still selects the family by id-prefix). The planted fixture — A's
+ *  nonce voice + nonce-titled scratch project — is shared across the legs inside one run: the
+ *  first leg to call plants it, the rest replay the cached promise. Both sanity halves (A sees its
+ *  own markers) live INSIDE the plant, so a vacuous fixture fails whichever leg runs first. */
+interface X1Fixture {
+  readonly aMarker: string;
+  readonly aVoice: string;
+  readonly aSlug: string;
+}
+const x1FixtureCache = new Map<string, Promise<X1Fixture>>();
+
+async function x1Fixture(ctx: StepCtx): Promise<X1Fixture> {
+  const key = `${ctx.nonce}|${ctx.webBaseUrl}`;
+  let p = x1FixtureCache.get(key);
+  if (!p) {
+    p = (async () => {
+      const a = await ctx.returningUser("a");
+      // A plants a nonce marker: a scratch project titled with it AND a nonce-named voice (the
+      // "save" intent is free — X1 is a $0 leg; "build" would be paid).
+      const aMarker = ctx.marker("TENANTA");
+      const aVoice = ctx.marker("VOICEA");
+      await gotoOk(a.page, `${ctx.webBaseUrl}/voices/new`, ctx);
+      const nameField = a.page.locator('input[name="name"]').first();
+      if ((await nameField.count()) === 0) throw new Error("no name field on /voices/new");
+      await nameField.fill(aVoice);
+      // intent=save is the $0 leg; the first submit button is intent=build (a metered voice build
+      // that also 400s without a sample — never click it here).
+      await a.page.click('button[name="intent"][value="save"]');
+      await settleNav(a.page, ctx);
+      // sanity: the voice lands on A's own /voices (else the isolation probes are vacuous).
+      await gotoOk(a.page, `${ctx.webBaseUrl}/voices`, ctx);
+      if (!((await a.page.textContent("body")) ?? "").includes(aVoice)) {
+        throw new Error("tenant A's own voice is absent from /voices (vacuous check)");
+      }
+      await gotoOk(a.page, `${ctx.webBaseUrl}/app/new?entry=scratch`, ctx);
+      await a.page.fill('input[name="title"]', aMarker);
+      await a.page.click('button[type="submit"], button:not([type])');
+      await a.page.waitForURL(/\/p\/([a-z0-9-]+)/i, { timeout: 15_000 });
+      const aSlug = /\/p\/([a-z0-9-]+)/i.exec(a.page.url())?.[1] ?? "";
+      // sanity: A sees its own marker on /app (the isolation asserts aren't vacuous).
+      await gotoOk(a.page, `${ctx.webBaseUrl}/app`, ctx);
+      const aBody = (await a.page.textContent("body")) ?? "";
+      if (!aBody.includes(aMarker)) {
+        const quiet = a.page.locator('details[data-collapsed-group="quiet"] > summary');
+        if ((await quiet.count()) > 0) {
+          await quiet.first().click();
+          const again = (await a.page.textContent("body")) ?? "";
+          if (!again.includes(aMarker))
+            throw new Error("tenant A cannot see its own marker (vacuous check)");
+        } else {
+          throw new Error("tenant A cannot see its own marker (vacuous check)");
+        }
+      }
+      return { aMarker, aVoice, aSlug };
+    })();
+    x1FixtureCache.set(key, p);
+  }
+  return p;
+}
+
+/** The B-side foreign-marker probe one leg shares: B's document at `path` carries none of A's
+ *  markers. */
+async function x1NoForeign(ctx: StepCtx, path: string, label: string): Promise<void> {
+  const fx = await x1Fixture(ctx);
   const b = await ctx.returningUser("b");
-  // A plants a nonce marker: a scratch project titled with it AND a nonce-named voice (the "save"
-  // intent is free — X1 is a $0 leg; "build" would be paid).
-  const aMarker = ctx.marker("TENANTA");
-  const aVoice = ctx.marker("VOICEA");
-  await gotoOk(a.page, `${ctx.webBaseUrl}/voices/new`);
-  const nameField = a.page.locator('input[name="name"]').first();
-  if ((await nameField.count()) === 0) throw new Error("no name field on /voices/new");
-  await nameField.fill(aVoice);
-  // intent=save is the $0 leg; the first submit button is intent=build (a metered voice build that
-  // also 400s without a sample — never click it here).
-  await a.page.click('button[name="intent"][value="save"]');
-  await a.page.waitForLoadState("domcontentloaded");
-  // sanity: the voice lands on A's own /voices (else the isolation probe below is vacuous).
-  await gotoOk(a.page, `${ctx.webBaseUrl}/voices`);
-  if (!((await a.page.textContent("body")) ?? "").includes(aVoice)) {
-    throw new Error("tenant A's own voice is absent from /voices (vacuous check)");
-  }
-  await gotoOk(a.page, `${ctx.webBaseUrl}/app/new?entry=scratch`);
-  await a.page.fill('input[name="title"]', aMarker);
-  await a.page.click('button[type="submit"], button:not([type])');
-  await a.page.waitForURL(/\/p\/([a-z0-9-]+)/i, { timeout: 15_000 });
-  const aSlug = /\/p\/([a-z0-9-]+)/i.exec(a.page.url())?.[1] ?? "";
-  // B walks the tenant surfaces — A's marker and slug must never appear.
-  for (const path of ["/app", "/app/inbox", "/usage", "/voices"]) {
-    const r = await b.page.goto(`${ctx.webBaseUrl}${path}`, { waitUntil: "domcontentloaded" });
-    if (!r || r.status() >= 400) throw new Error(`B GET ${path} → ${r?.status()}`);
-    const body = (await b.page.textContent("body")) ?? "";
-    if (body.includes(aMarker) || body.includes(aSlug) || body.includes(aVoice)) {
-      throw new Error(`tenant B sees tenant A's marker on ${path}`);
-    }
-  }
-  // detail-route isolation: B cannot open A's project.
-  const r = await b.page.goto(`${ctx.webBaseUrl}/p/${aSlug}`, { waitUntil: "domcontentloaded" });
-  const status = r?.status() ?? 0;
+  await gotoOk(b.page, `${ctx.webBaseUrl}${path}`, ctx);
   const body = (await b.page.textContent("body")) ?? "";
-  if (status < 400 && body.includes(aMarker)) {
-    throw new Error(`tenant B opened tenant A's project /p/${aSlug}`);
+  if (body.includes(fx.aMarker) || body.includes(fx.aSlug) || body.includes(fx.aVoice)) {
+    throw new Error(`tenant B sees tenant A's marker on ${path} (${label})`);
   }
-  // sanity: A sees its own marker (the assertions above aren't vacuous).
-  await gotoOk(a.page, `${ctx.webBaseUrl}/app`);
-  const aBody = (await a.page.textContent("body")) ?? "";
-  if (!aBody.includes(aMarker)) {
-    const quiet = a.page.locator('details[data-collapsed-group="quiet"] > summary');
-    if ((await quiet.count()) > 0) {
-      await quiet.first().click();
-      const again = (await a.page.textContent("body")) ?? "";
-      if (!again.includes(aMarker))
-        throw new Error("tenant A cannot see its own marker (vacuous check)");
-    } else {
-      throw new Error("tenant A cannot see its own marker (vacuous check)");
-    }
+}
+
+const X1_VOICES: StepFn = (ctx) => x1NoForeign(ctx, "/voices", "voices list");
+const X1_USAGE: StepFn = (ctx) => x1NoForeign(ctx, "/usage", "usage");
+const X1_HOME: StepFn = (ctx) => x1NoForeign(ctx, "/app", "project list");
+const X1_INBOX: StepFn = (ctx) => x1NoForeign(ctx, "/app/inbox", "inbox");
+
+/** X1.detail — the detail-route isolation: B cannot open A's project document (a ≥400 folds, or a
+ *  served document that never carries A's marker). */
+const X1_DETAIL: StepFn = async (ctx) => {
+  const fx = await x1Fixture(ctx);
+  const b = await ctx.returningUser("b");
+  const r = await b.page.goto(`${ctx.webBaseUrl}/p/${fx.aSlug}`, {
+    waitUntil: "domcontentloaded",
+  });
+  const status = r?.status() ?? 0;
+  if (status < 400) await settleNav(b.page, ctx); // a served doc — assert the settle markers too
+  const body = (await b.page.textContent("body")) ?? "";
+  if (status < 400 && body.includes(fx.aMarker)) {
+    throw new Error(`tenant B opened tenant A's project /p/${fx.aSlug}`);
   }
 };
 
@@ -1962,7 +2057,8 @@ const N10: StepFn = async (ctx) => {
     if (/\b1\.x\b/i.test(body)) throw new Error(`${path} leaks the "1.x" roadmap term`);
     if (/coming soon/i.test(body)) throw new Error(`${path} carries a "coming soon" promise`);
   }
-  // the favicon actually serves (the head link is meaningless if the endpoint 404s).
+  // the favicon actually serves (the head link is meaningless if the endpoint 404s). Non-HTML —
+  // no document markers exist here, so this keeps a raw goto (settle helpers are for our HTML).
   const icon = await page.goto(`${ctx.webBaseUrl}/favicon.svg`);
   if (!icon || icon.status() !== 200) throw new Error(`/favicon.svg → ${icon?.status()}`);
   // /showcase's signed-out leg IS the sample dossier — its letter text is on the page.
@@ -1981,8 +2077,7 @@ const R8: StepFn = async (ctx) => {
   const { page } = await ctx.returningUser("a");
   // /showcase — signed-in resolves to the tenant's Showcase project or the sample page; either way
   // it must render a dossier surface and never a foreign slug.
-  const r = await page.goto(`${ctx.webBaseUrl}/showcase`, { waitUntil: "domcontentloaded" });
-  if (!r || r.status() >= 400) throw new Error(`signed-in GET /showcase → ${r?.status()}`);
+  await gotoOk(page, `${ctx.webBaseUrl}/showcase`, ctx);
   const scBody = (await page.textContent("body")) ?? "";
   const onShowcase = /\/showcase$/.test(page.url()) || /\/p\/[^/]+/.test(page.url());
   if (!onShowcase) throw new Error(`signed-in /showcase landed somewhere unexpected (${page.url()})`);
@@ -2053,12 +2148,12 @@ async function launchQuickReviewToDelivery(
   const runBtn = page.locator('button[data-run-button="true"]').first();
   await assertActionable(runBtn, "Review launch");
   await runBtn.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const alert = page.locator('p[role="alert"]').first();
   if ((await alert.count()) > 0 && (await alert.isVisible().catch(() => false))) {
     throw new Error(`run launch refused: ${(await alert.textContent())?.trim()}`);
   }
-  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`);
+  await gotoOk(page, `${ctx.webBaseUrl}/p/${slug}`, ctx);
   const card = page.locator("[data-run-card]").first();
   await card.waitFor({ state: "attached", timeout: 90_000 });
   const runId = (await card.getAttribute("data-run-card")) ?? "";
@@ -2067,7 +2162,8 @@ async function launchQuickReviewToDelivery(
   const deadline = Date.now() + 40 * 60_000;
   let state = "";
   while (Date.now() < deadline) {
-    await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {});
+    // REQ-VFY-4 — the remount assert: every poll reload re-settles on the markers.
+    await reloadSettled(page, ctx).catch(() => undefined);
     state = (await card.getAttribute("data-run-state")) ?? "";
     if (TERMINAL.has(state)) break;
     await new Promise((r) => setTimeout(r, 2_000));
@@ -2102,7 +2198,7 @@ const R9: StepFn = async (ctx) => {
   if (n == null) throw new Error(`the refund control carries no figure: "${ctaText}"`);
   const refundN = Number(n.replace(/,/g, ""));
   await cta.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const refunded = page.locator('[data-refund-state="refunded"]').first();
   await refunded.waitFor({ state: "attached", timeout: 15_000 });
   const refundedText = ((await refunded.textContent()) ?? "").trim();
@@ -2126,7 +2222,7 @@ const R9: StepFn = async (ctx) => {
   });
   await assertActionable(cta2, "the refund control (second request)");
   await cta2.click();
-  await page.waitForLoadState("domcontentloaded");
+  await settleNav(page, ctx);
   const pending = page.locator('[data-refund-state="pending_review"]').first();
   await pending.waitFor({ state: "attached", timeout: 15_000 });
   const pendingText = ((await pending.textContent()) ?? "").trim();
@@ -2226,7 +2322,16 @@ export const STEP_IMPLS: Readonly<Record<string, StepFn>> = {
   R7,
   R8,
   R9,
-  P1,
+  // SPA.6 — the P1/X1 splits (REQ-VFY-8): per-surface legs replacing the composite ids.
+  "P1.public": P1_PUBLIC,
+  "P1.project": P1_PROJECT,
+  "P1.pill": P1_PILL,
+  "P1.runsheet": P1_RUNSHEET,
+  "P1.app-new": P1_APP_NEW,
   C1,
-  X1,
+  "X1.voices": X1_VOICES,
+  "X1.usage": X1_USAGE,
+  "X1.home": X1_HOME,
+  "X1.inbox": X1_INBOX,
+  "X1.detail": X1_DETAIL,
 };

@@ -120,6 +120,8 @@ describe("export dialog — SSR (PRB.11)", () => {
     expect(html).toContain('value="docx"');
     expect(html).toContain('value="pdf"');
     expect(html).toContain('value="latex"');
+    // SPA.6 — the renderer-agnostic hook the export-gate legs pin to (R5/T4/T8).
+    expect(html).toContain('data-export-form="true"');
     // the md-profile select, the citation-style select, and the provenance toggle.
     expect(html).toContain('name="profile"');
     expect(html).toContain('value="substack"');

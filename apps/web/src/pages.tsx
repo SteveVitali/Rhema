@@ -613,7 +613,7 @@ export function ProjectsPage(): ReactNode {
                   style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", borderBottom: "1px solid var(--shell-border)" }}
                 >
                   <span style={{ flex: "1 1 auto", color: "var(--shell-fg)", fontSize: "14px" }}>{row.title}</span>
-                  <form method="post" action={`${row.href}/restore`} style={{ margin: 0 }}>
+                  <form method="post" action={`${row.href}/restore`} data-restore-form="true" style={{ margin: 0 }}>
                     <button type="submit" style={{ fontSize: "12px" }}>{COPY.projectHome.actionRestore}</button>
                   </form>
                 </li>
@@ -1120,7 +1120,7 @@ export function NewProjectPage(): ReactNode {
         <p data-held-notice role="status" style={{ fontSize: "13px", color: "var(--state-ready)" }} />
       ) : null}
       {np && !np.pending && !np.preview ? (
-        <form method="post" action="/app/new" encType="multipart/form-data" data-held="1" style={{ maxWidth: "68ch" }}>
+        <form method="post" action="/app/new" encType="multipart/form-data" data-held="1" data-new-project-form="true" style={{ maxWidth: "68ch" }}>
           <input type="hidden" name="entry" value={entry} />
           {/* ONB.1 — the island stamps the hold's token here; the create redirect echoes it as
               `?hc=` so the hold is deleted only after a server-confirmed consumption. */}
@@ -1886,7 +1886,7 @@ function findingControlsFor(
   return (
     <>
       {view.suggestion != null && gate.ok ? (
-        <form method="post" action={`/p/${slug}/review/${runId}/findings/${view.id}/apply`} style={{ display: "inline" }}>
+        <form method="post" action={`/p/${slug}/review/${runId}/findings/${view.id}/apply`} data-apply-form={view.id} style={{ display: "inline" }}>
           <button
             type="submit"
             data-apply="true"
@@ -2413,7 +2413,7 @@ export function DossierPage(): ReactNode {
         >
           <strong>{COPY.showcase.bannerTitle}</strong>
           <span style={{ color: "var(--shell-fg-muted)" }}> — {COPY.showcase.bannerBody} </span>
-          <form method="post" action={`/p/${dossier.slug}/duplicate`} style={{ display: "inline" }}>
+          <form method="post" action={`/p/${dossier.slug}/duplicate`} data-duplicate-form="true" style={{ display: "inline" }}>
             <button type="submit" style={{ fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
               {COPY.showcase.duplicateCta}
             </button>
@@ -3399,7 +3399,7 @@ export function ObligationNewPage(): ReactNode {
       {obligationNew?.error ? (
         <p role="alert" style={{ color: "var(--sev-major)", fontSize: "13px" }}>{obligationNew.error}</p>
       ) : null}
-      <form method="post" action={`/p/${slug}/obligations`} style={{ maxWidth: "68ch" }}>
+      <form method="post" action={`/p/${slug}/obligations`} data-obligation-form="true" style={{ maxWidth: "68ch" }}>
         <input type="hidden" name="next" value={obligationNew?.back ?? `/p/${slug}`} />
         <label style={{ fontSize: "13px", color: "var(--shell-fg-muted)", display: "block" }}>
           {COPY.obligation.titleLabel}
@@ -3630,7 +3630,7 @@ function VoiceSourceCard({ pid, conn, samples }: { pid: string; conn: VoiceConne
         </form>
       </div>
       {/* the per-source settings (§9.5 Settings): auto-include + daily auto-sync. */}
-      <form method="post" action={`/v/${pid}/connections/${conn.id}/settings`} style={{ margin: "6px 0 0", display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
+      <form method="post" action={`/v/${pid}/connections/${conn.id}/settings`} data-source-settings-form="true" style={{ margin: "6px 0 0", display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", color: "var(--shell-fg-muted)" }}>
         <label style={{ display: "flex", gap: "4px", alignItems: "center" }}>
           <input type="checkbox" name="autoIncludeNew" defaultChecked={conn.auto_include_new !== false} />
           {VC.detail.autoIncludeLabel}
@@ -4045,7 +4045,7 @@ export function VoiceDetailPage(): ReactNode {
                 </ul>
               )}
               {compact === true ? null : (
-              <form method="post" action={`/v/${pid}/samples`} encType="multipart/form-data" style={{ marginTop: "10px" }}>
+              <form method="post" action={`/v/${pid}/samples`} encType="multipart/form-data" data-samples-form="true" style={{ marginTop: "10px" }}>
                 <label style={{ fontSize: "12px", color: "var(--shell-fg-muted)", display: "block" }}>
                   {VC.detail.addSampleTitleLabel}
                   <input name="title" style={fieldStyle} />
@@ -4737,7 +4737,7 @@ function NotificationsSection(): ReactNode {
   const toHHMM = (mins: number) =>
     `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
   return (
-    <form method="post" action="/app/settings/notifications" style={{ marginTop: "8px" }}>
+    <form method="post" action="/app/settings/notifications" data-notifications-form="true" style={{ marginTop: "8px" }}>
       <table data-notification-matrix="true" style={{ borderCollapse: "collapse", fontSize: "13px", width: "100%" }}>
         <thead>
           <tr>
@@ -5050,7 +5050,7 @@ function DataSection(): ReactNode {
         {accountExport?.notice === "requested" ? (
           <p data-export-notice="true" style={{ fontSize: "12px", color: "var(--state-ready)", margin: "0 0 8px" }}>{COPY.accountExport.building}</p>
         ) : null}
-        <form method="post" action="/app/settings/data/export">
+        <form method="post" action="/app/settings/data/export" data-export-request-form="true">
           <button type="submit" style={{ fontSize: "13px" }}>{COPY.accountExport.cta}</button>
         </form>
         <h4 style={{ fontSize: "13px", margin: "16px 0 6px" }}>{COPY.accountExport.importHeading}</h4>

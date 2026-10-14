@@ -273,14 +273,52 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: true,
   },
   // ---- phone-width reader ---------------------------------------------------
+  // SPA.6 (REQ-VFY-8; design/27 F9) — P1 is SPLIT into per-surface legs so `--surface` can gate
+  // exactly the legs a flip touches; `--steps P1` still selects the whole family by prefix.
+  // The asserts/owners/green evidence carry over verbatim from the pre-split P1 row — the same
+  // probes, partitioned (the composite's prod proof: run 4ff89a27d950 @6723784, UX.2 Stage B).
   {
-    id: "P1",
+    id: "P1.public",
     journey: "phone",
     asserts:
-      "no horizontal overflow at 390/320 px (pricing matrix scrolls inside its labelled region, never the page); phone controls ≥ 44 px primaries / ≥ 24 px all; §10.1's desktop-only set never renders on phone; the sync pill is in-flow — over no text, the composer, or the status bar; /app/new styled at 1440×900; axe WCAG 2.2 AA clean on every touched surface",
+      "the anonymous surfaces (/, /pricing, /login) never overflow at 390/320 px; the pricing matrix scrolls inside a labelled keyboard-focusable region (never the page); 200% text zoom keeps the 390-px layout; axe clean",
     owner: "UX.2",
-    // UX.2 Stage B: flipped green on prod proof — run 4ff89a27d950 against chain-tip 6723784
-    // (provenance matched on web+api healthz; $0 spend; docs/build/reports/UX.2/report.json).
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "P1.project",
+    journey: "phone",
+    asserts:
+      "the project page at phone width (sec-ch-ua-mobile): no overflow, ≥44px primary targets / ≥24px floor, §10.1's desktop-capability set never mounts, axe clean",
+    owner: "UX.2",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "P1.pill",
+    journey: "phone",
+    asserts:
+      "the sync pill is in-flow at phone and 1440 — over no text, the composer, or the status bar; the phone Page carries the reader contract (data-readonly, no collab wire, no version rail, nothing editable)",
+    owner: "UX.2",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "P1.runsheet",
+    journey: "phone",
+    asserts:
+      "the run sheet at phone width renders the §10.1 capability note and never the run form; axe clean",
+    owner: "UX.2",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "P1.app-new",
+    journey: "phone",
+    asserts:
+      "/app/new at 1440×900 renders the styled workspace chrome — no IDE frame, the three entry cards, axe clean",
+    owner: "UX.2",
     expected: "green",
     paid: false,
   },
@@ -294,10 +332,45 @@ export const STEP_REGISTRY: readonly JourneyStep[] = [
     paid: false,
   },
   // ---- two-tenant isolation ----------------------------------------------------
+  // SPA.6 (REQ-VFY-8; design/27 F9) — X1 is SPLIT per surface for the same gating reason;
+  // `--steps X1` selects the family by prefix. The planted fixture (a nonce voice + a nonce
+  // scratch project on tenant A) is shared across the legs inside one run.
   {
-    id: "X1",
+    id: "X1.voices",
     journey: "two-tenants",
-    asserts: "no foreign rows on /voices, /usage, project list, dossier, Inbox (API probe + journey)",
+    asserts: "tenant B's /voices carries none of tenant A's markers (voice/project/ slug)",
+    owner: "SEC.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "X1.usage",
+    journey: "two-tenants",
+    asserts: "tenant B's /usage carries none of tenant A's markers",
+    owner: "SEC.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "X1.home",
+    journey: "two-tenants",
+    asserts: "tenant B's /app project list carries none of tenant A's markers",
+    owner: "SEC.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "X1.inbox",
+    journey: "two-tenants",
+    asserts: "tenant B's /app/inbox carries none of tenant A's markers",
+    owner: "SEC.1",
+    expected: "green",
+    paid: false,
+  },
+  {
+    id: "X1.detail",
+    journey: "two-tenants",
+    asserts: "tenant B cannot open tenant A's /p/<slug> document (≥400 or no marker content)",
     owner: "SEC.1",
     expected: "green",
     paid: false,
