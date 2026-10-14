@@ -92,9 +92,9 @@ updatedAt:       2026-10-14T19:05:00Z
 
 | id | item | owner | status | evidence |
 |---|---|---|---|---|
-| E1 | BL-02 validator hygiene: DEFERRALS status-cell normalization, upstream agent-skills patch list, GATE-ACCEPT false-positive fix — enumerate precisely | R | in-progress | |
-| E2 | BL-05 REC.2 reconciliation scope: which GATE-ACCEPT deviations + ADR triggers + the nav deviation fold back into `rhema-design-spec`/`frontend-spa-spec` | R | in-progress | |
-| E3 | BL-73 Later-scope census: confirm the 33 MISSING matrix rows are spec-scheduled Later (not lost work) | R | in-progress | |
+| E1 | BL-02 validator hygiene: DEFERRALS status-cell normalization, upstream agent-skills patch list, GATE-ACCEPT false-positive fix — enumerate precisely | R | done | r5_e_memory-hygiene.md — checkers disagree (priority vs positional); ~50 never-flip cells; G2/G3/H3 already folded; nav spec gap confirmed; REQ-MEM-1..10 |
+| E2 | BL-05 REC.2 reconciliation scope: which GATE-ACCEPT deviations + ADR triggers + the nav deviation fold back into `rhema-design-spec`/`frontend-spa-spec` | R | done | r5_e_memory-hygiene.md — checkers disagree (priority vs positional); ~50 never-flip cells; G2/G3/H3 already folded; nav spec gap confirmed; REQ-MEM-1..10 |
+| E3 | BL-73 Later-scope census: confirm the 33 MISSING matrix rows are spec-scheduled Later (not lost work) | R | done | r5_e_memory-hygiene.md — checkers disagree (priority vs positional); ~50 never-flip cells; G2/G3/H3 already folded; nav spec gap confirmed; REQ-MEM-1..10 |
 
 ## F. Funded-window leg census
 
